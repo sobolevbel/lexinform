@@ -177,3 +177,17 @@ def test_run_report_renders_and_fits() -> None:
     assert len(text) <= MESSAGE_LIMIT
     ok_text = MessageFormatter("ru").run_report(report.model_copy(update={"errors": []}), []).text
     assert ok_text.startswith("<b>✅") and "<pre>" not in ok_text
+
+
+def test_new_bill_details_are_separated_by_blank_lines(process_3039, print_3039) -> None:  # type: ignore[no-untyped-def]
+    text = MessageFormatter("ru").new_bill(_bill(process_3039, make_analysis()), print_3039).text
+    practical = text.index("Что это значит на практике")
+    affected = text.index("Кого касается")
+    effective = text.index("Вступление в силу")
+    stage = text.index("Стадия:")
+    applicant = text.index("Инициатор:")
+    assert "\n\n" in text[practical:affected]
+    assert "\n\n" in text[affected:effective]
+    assert "\n\n" in text[effective:stage]
+    # short facts (stage, applicant/date) stay grouped on adjacent lines
+    assert "\n\n" not in text[stage:applicant]

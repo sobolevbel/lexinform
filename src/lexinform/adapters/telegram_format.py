@@ -121,21 +121,29 @@ class MessageFormatter:
             f"{ICON['effective']} <b>{esc(lb.effective_date)}:</b> "
             f"{esc(a.effective_date.strip() if a.effective_date else lb.effective_date_unknown)}"
         )
+        # Short one-line facts are grouped compactly; the paragraphs above are
+        # separated by blank lines so they read as distinct blocks.
+        meta_lines: list[str] = []
         last = bill.last_stage
         if last is not None:
             when = f" ({last.date.isoformat()})" if last.date else ""
-            details.append(f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {esc(last.stage_name)}{when}")
+            meta_lines.append(
+                f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {esc(last.stage_name)}{when}"
+            )
         applicant = lb.applicant_labels.get(s.applicant_type, s.applicant_type.value)
         doc_date = s.document_date.isoformat() if s.document_date else "—"
-        details.append(
+        meta_lines.append(
             f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {esc(applicant)}   "
             f"{ICON['doc_date']} <b>{esc(lb.document_date)}:</b> {esc(doc_date)}"
         )
         if s.prints_considered_jointly:
-            details.append(f"{esc(lb.joint_prints)} {esc(', '.join(s.prints_considered_jointly))}")
+            meta_lines.append(
+                f"{esc(lb.joint_prints)} {esc(', '.join(s.prints_considered_jointly))}"
+            )
         if bill.analysis.truncated or bill.analysis.text_source == "metadata_only":
-            details.append(f"{ICON['note']} <i>{esc(lb.partial_text_note)}</i>")
-        details_block = "\n".join(details)
+            meta_lines.append(f"{ICON['note']} <i>{esc(lb.partial_text_note)}</i>")
+        details.append("\n".join(meta_lines))
+        details_block = "\n\n".join(details)
 
         links = [link(s.web_url, lb.link_process)]
         pdf = print_info.main_pdf if print_info else None
