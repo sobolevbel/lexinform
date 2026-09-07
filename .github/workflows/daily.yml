@@ -53,9 +53,14 @@ jobs:
       - run: uv sync --frozen --no-dev
 
       - name: Restore database from state branch
+        id: restore
         run: uv run --frozen --no-dev lexinform db restore "$STATE_FILE" --missing-ok
 
+      # The run exits 1 when it had errors, but whatever it did publish is recorded in the
+      # database, so the state must be saved anyway (otherwise the next run would post duplicates).
       - name: Run lexinform
+        id: run
+        continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           LEXINFORM_TELEGRAM_BOT_TOKEN: ${{ secrets.LEXINFORM_TELEGRAM_BOT_TOKEN }}
@@ -70,7 +75,7 @@ jobs:
           uv run --frozen --no-dev lexinform run "${ARGS[@]}"
 
       - name: Dump database and push state branch
-        if: ${{ inputs.dry_run != true }}
+        if: ${{ inputs.dry_run != true && steps.restore.outcome == 'success' }}
         run: |
           set -euo pipefail
           uv run --frozen --no-dev lexinform db dump "$STATE_FILE"
@@ -83,3 +88,9 @@ jobs:
           fi
           git commit -m "state: $(date -u +%Y-%m-%dT%H:%MZ)"
           git push origin "HEAD:$STATE_BRANCH"
+
+      - name: Fail the job if the run reported errors
+        if: ${{ steps.run.outcome == 'failure' }}
+        run: |
+          echo "lexinform run finished with errors (see the run report / log channel)"
+          exit 1

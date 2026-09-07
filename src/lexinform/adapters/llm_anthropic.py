@@ -10,6 +10,7 @@ from typing import Any, Protocol
 import anthropic
 
 from lexinform.adapters.llm_prompts import PROMPT_VERSION, build_user_prompt, system_prompt
+from lexinform.errors import LlmUnavailableError
 from lexinform.models import Analysis, AnalysisRecord, BillContext
 from lexinform.settings import Effort
 
@@ -17,11 +18,12 @@ log = logging.getLogger(__name__)
 
 
 class LlmError(RuntimeError):
-    """Per-bill LLM failure (refusal, validation, transient API error)."""
+    """Per-bill LLM failure (refusal, truncated output, bad request for this input)."""
 
 
-class LlmFatalError(RuntimeError):
-    """Systemic failure that will not go away by moving to the next bill (auth, permissions)."""
+class LlmFatalError(LlmUnavailableError):
+    """Systemic failure that will not go away by moving to the next bill: auth, permissions,
+    rate limits, connection problems, server errors, missing credentials."""
 
 
 class _ParsedMessageLike(Protocol):
@@ -70,13 +72,19 @@ class AnthropicAnalyzer:
                 messages=[{"role": "user", "content": user_prompt}],
                 output_format=Analysis,
             )
-        except (anthropic.AuthenticationError, anthropic.PermissionDeniedError) as exc:
-            raise LlmFatalError(str(exc)) from exc
+        except (
+            anthropic.AuthenticationError,
+            anthropic.PermissionDeniedError,
+            anthropic.RateLimitError,
+            anthropic.InternalServerError,
+            anthropic.APIConnectionError,
+        ) as exc:
+            raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
         except TypeError as exc:
             # The SDK raises TypeError when no credentials can be resolved at request time.
-            raise LlmFatalError(f"LLM client misconfigured: {exc}") from exc
+            raise LlmFatalError(f"client misconfigured: {_short(exc)}") from exc
         except anthropic.APIError as exc:
-            raise LlmError(f"{type(exc).__name__}: {exc}") from exc
+            raise LlmError(f"{type(exc).__name__}: {_short(exc)}") from exc
 
         if response.stop_reason == "refusal":
             raise LlmError("model refused the request")
@@ -114,3 +122,8 @@ class AnthropicAnalyzer:
 def _usage_int(usage: Any, field: str) -> int | None:
     value = getattr(usage, field, None)
     return int(value) if isinstance(value, int) else None
+
+
+def _short(exc: BaseException, limit: int = 300) -> str:
+    text = str(exc).strip().splitlines()[0] if str(exc).strip() else type(exc).__name__
+    return text[:limit]

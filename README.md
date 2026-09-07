@@ -183,8 +183,19 @@ analysis so prompt changes are traceable.
 | `lexinform show NUMBER` | Stages and attachments from the API, local status |
 | `lexinform db init / dump FILE / restore FILE [--missing-ok]` | Database maintenance |
 
-Exit code is `1` when a run had systemic errors (LLM auth, failed publications), so cron and GitHub
-Actions surface problems; failures on individual bills are retried on the next run (up to 3 times).
+## Failure behaviour
+
+The bot never crashes on an outage. Each phase (discovery, analysis, publishing, tracking) is
+isolated: when the Sejm API, the LLM API or Telegram is unavailable, the phase stops with a clear
+message such as `analysis: LLM API unavailable: RateLimitError: 429`, the remaining phases still
+run, and the run report with all errors goes to the technical channel (if configured). Outages do
+not consume the per-bill retry budget; a problem with one bill (unparsable PDF, model refusal) is
+retried on the next run up to 3 times without blocking the others. A publication interrupted
+between "sent" and "recorded" is flagged as `unknown` and never re-sent automatically.
+
+The process exits with code `1` when a run had errors so cron and GitHub Actions show it red; the
+daily workflow still saves the database state in that case, otherwise the next run would post
+duplicates.
 
 ## Project layout
 

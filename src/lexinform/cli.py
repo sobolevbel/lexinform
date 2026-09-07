@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -10,9 +11,11 @@ from typing import Annotated
 import typer
 
 from lexinform import __version__
+from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier
+from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.container import Container, build_container
 from lexinform.logging_setup import configure_logging
-from lexinform.models import Bill, BillStatus, flatten_stages, stage_fingerprint
+from lexinform.models import Bill, BillStatus, RunReport, flatten_stages, stage_fingerprint
 from lexinform.services.pipeline import RunOptions
 from lexinform.settings import Settings
 
@@ -82,7 +85,12 @@ def run(
     ] = None,
 ) -> None:
     """Daily job: discover, prefilter, analyse, publish, track."""
-    c = _container()
+    settings = _settings()
+    try:
+        c = build_container(settings)
+    except Exception as exc:
+        _report_startup_failure(settings, f"startup failed: {type(exc).__name__}: {exc}")
+        raise typer.Exit(code=1) from None
     s = c.settings
     try:
         pipeline = c.pipeline(dry_run=dry_run)
@@ -308,6 +316,26 @@ def db_restore(
     finally:
         c.close()
     typer.echo(f"restored from {source}")
+
+
+def _report_startup_failure(settings: Settings, message: str) -> None:
+    """Log a startup problem and, when a log channel is configured, post it there too."""
+    logging.getLogger(__name__).error(message)
+    if not (settings.telegram_log_channel_id and settings.telegram_bot_token):
+        return
+    try:
+        now = datetime.now(UTC)
+        report = RunReport(started_at=now, finished_at=now, since=now, mode="run", errors=[message])
+        client = TelegramBotClient(
+            settings.telegram_bot_token, base_url=settings.telegram_api_base_url
+        )
+        TelegramRunNotifier(
+            client,
+            MessageFormatter(settings.output_language),
+            channel_id=settings.telegram_log_channel_id,
+        ).notify(report, [])
+    except Exception as exc:  # nothing more we can do
+        logging.getLogger(__name__).error("could not post startup failure to log channel: %s", exc)
 
 
 def _load_bill(c: Container, number: str) -> Bill:

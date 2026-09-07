@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from datetime import datetime, timedelta
 
 from pydantic import BaseModel
 
+from lexinform.errors import ServiceUnavailableError
 from lexinform.logging_setup import MemoryLogHandler
 from lexinform.models import RunReport
 from lexinform.ports import BillRepository, Clock, RunNotifier
@@ -80,9 +82,9 @@ class DailyPipeline:
         run_id = self._repo.start_run(report)
         try:
             self._execute(opts, since, report)
-        except Exception as exc:
-            report.errors.append(f"run crashed: {type(exc).__name__}: {exc}")
-            raise
+        except Exception as exc:  # last line of defence: report, never crash the process
+            log.exception("run failed unexpectedly: %s", exc)
+            report.errors.append(f"unexpected failure: {type(exc).__name__}: {exc}")
         finally:
             report.finished_at = self._clock.now()
             self._repo.finish_run(run_id, report)
@@ -112,34 +114,61 @@ class DailyPipeline:
             log.error(msg)
             report.errors.append(msg)
 
+        self._phase(report, "discovery", lambda: self._discover(opts, since, report))
+        self._phase(report, "analysis", lambda: self._analyse(opts, report))
+        self._phase(report, "publishing", lambda: self._publish(opts, report))
+        if opts.track:
+            self._phase(report, "tracking", lambda: self._track(opts, report))
+
+    @staticmethod
+    def _phase(report: RunReport, name: str, action: Callable[[], None]) -> None:
+        """Run one phase; an external outage or a bug ends the phase, not the run."""
+        try:
+            action()
+        except ServiceUnavailableError as exc:
+            message = f"{name}: {exc.describe()}"
+            log.error(message)
+            report.errors.append(message)
+        except Exception as exc:
+            message = f"{name} failed: {type(exc).__name__}: {exc}"
+            log.exception(message)
+            report.errors.append(message)
+
+    def _discover(self, opts: RunOptions, since: datetime, report: RunReport) -> None:
         discovered = self._discovery.discover(opts.term, since)
         report.discovered = discovered.new
         report.prefilter_hits = discovered.prefilter_hits
 
+    def _analyse(self, opts: RunOptions, report: RunReport) -> None:
         analysed = self._analysis.analyze_pending(opts.term, limit=opts.max_analyze)
         report.analyzed = analysed.analyzed
         report.analysis_failures = analysed.failed
         report.llm_input_tokens += analysed.input_tokens
         report.llm_output_tokens += analysed.output_tokens
         if analysed.fatal_error:
-            report.errors.append(f"LLM: {analysed.fatal_error}")
+            report.errors.append(f"analysis: {analysed.fatal_error}")
 
+    def _publish(self, opts: RunOptions, report: RunReport) -> None:
         published = self._publishing.publish_new(
             opts.term, min_score=opts.min_score, limit=opts.max_publish, publish=opts.publish
         )
         report.published = published.published
-        if published.failed:
+        if published.fatal_error:
+            report.errors.append(f"publishing: {published.fatal_error}")
+        elif published.failed:
             report.errors.append(f"{published.failed} publication(s) failed")
 
-        if opts.track:
-            tracked = self._tracking.check_updates(opts.term, publish=opts.publish)
-            report.tracked = tracked.checked
-            report.updates = tracked.published if opts.publish else tracked.changed
-            report.reanalyzed = tracked.reanalyzed
-            report.llm_input_tokens += tracked.input_tokens
-            report.llm_output_tokens += tracked.output_tokens
-            if tracked.failed:
-                report.errors.append(f"{tracked.failed} status update(s) failed")
+    def _track(self, opts: RunOptions, report: RunReport) -> None:
+        tracked = self._tracking.check_updates(opts.term, publish=opts.publish)
+        report.tracked = tracked.checked
+        report.updates = tracked.published if opts.publish else tracked.changed
+        report.reanalyzed = tracked.reanalyzed
+        report.llm_input_tokens += tracked.input_tokens
+        report.llm_output_tokens += tracked.output_tokens
+        if tracked.fatal_error:
+            report.errors.append(f"tracking: {tracked.fatal_error}")
+        elif tracked.failed:
+            report.errors.append(f"{tracked.failed} status update(s) failed")
 
     def _notify(self, report: RunReport, captured: MemoryLogHandler) -> None:
         if self._notifier is None:

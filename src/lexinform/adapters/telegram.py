@@ -11,6 +11,7 @@ from typing import Any
 import httpx2 as httpx
 
 from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.errors import TelegramUnavailableError
 from lexinform.models import Bill, PrintInfo, RunReport, StatusChange
 from lexinform.ports import SejmGateway
 
@@ -88,9 +89,26 @@ class TelegramBotClient:
     def close(self) -> None:
         self._client.close()
 
+    MAX_ATTEMPTS = 3
+
     def _call(self, method: str, **kwargs: Any) -> dict[str, Any]:
-        for attempt in (1, 2):
-            response = self._client.post(f"/{method}", **kwargs)
+        rate_limited_once = False
+        for attempt in range(1, self.MAX_ATTEMPTS + 1):
+            try:
+                response = self._client.post(f"/{method}", **kwargs)
+            except httpx.TransportError as exc:
+                if attempt == self.MAX_ATTEMPTS:
+                    raise TelegramUnavailableError(
+                        f"{method}: {type(exc).__name__} after {attempt} attempts"
+                    ) from exc
+                log.warning("Telegram %s: %s, retry %d", method, type(exc).__name__, attempt)
+                self._sleep(2.0 * attempt)
+                continue
+            if response.status_code >= 500:
+                if attempt == self.MAX_ATTEMPTS:
+                    raise TelegramUnavailableError(f"{method}: HTTP {response.status_code}")
+                self._sleep(2.0 * attempt)
+                continue
             try:
                 body = response.json()
             except ValueError as exc:
@@ -101,12 +119,15 @@ class TelegramBotClient:
             code = int(body.get("error_code", response.status_code))
             description = str(body.get("description", ""))
             retry_after = (body.get("parameters") or {}).get("retry_after")
-            if code == 429 and attempt == 1 and retry_after is not None:
+            if code == 429 and not rate_limited_once and retry_after is not None:
+                rate_limited_once = True
                 log.warning("Telegram rate limit, sleeping %ss", retry_after)
                 self._sleep(float(retry_after))
                 continue
+            if code == 401:
+                raise TelegramUnavailableError(f"bot token rejected: {description}")
             raise TelegramError(code, description)
-        raise TelegramError(429, "rate limited twice")
+        raise TelegramUnavailableError(f"{method}: gave up after {self.MAX_ATTEMPTS} attempts")
 
 
 @dataclass
@@ -142,6 +163,8 @@ class TelegramPublisher:
             return result
         try:
             doc_id = self._send_pdf(pdf.url, pdf.name, rendered.caption, reply_to=message_id)
+        except TelegramUnavailableError:
+            raise
         except (TelegramError, httpx.HTTPError, RuntimeError) as exc:
             # The card is already out with a PDF link; a failed attachment is not fatal.
             log.warning("Could not attach PDF for druk %s: %s", bill.number, exc)

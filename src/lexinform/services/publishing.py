@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
+from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
     PrintInfo,
@@ -22,6 +23,7 @@ class PublishingResult:
     published: int = 0
     skipped: int = 0
     failed: int = 0
+    fatal_error: str | None = None
 
 
 class PublishingService:
@@ -51,7 +53,14 @@ class PublishingService:
                 self._record_skipped(bill)
                 result.skipped += 1
                 continue
-            if self.publish_bill(bill):
+            try:
+                ok = self.publish_bill(bill)
+            except ServiceUnavailableError as exc:
+                result.failed += 1
+                result.fatal_error = exc.describe()
+                log.error("aborting publishing phase: %s", result.fatal_error)
+                break
+            if ok:
                 result.published += 1
             else:
                 result.failed += 1
@@ -74,6 +83,9 @@ class PublishingService:
         print_info = self._safe_print(bill)
         try:
             sent = self._publisher.publish_new_bill(bill, print_info)
+        except ServiceUnavailableError as exc:
+            self._repo.mark_publication(pub_id, PublicationStatus.FAILED, error=exc.describe())
+            raise
         except Exception as exc:
             log.exception("publishing druk %s failed: %s", bill.number, exc)
             self._repo.mark_publication(

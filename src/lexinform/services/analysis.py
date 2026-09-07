@@ -10,8 +10,8 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from lexinform.adapters.llm_anthropic import LlmFatalError
 from lexinform.adapters.pdf_text import TextBudget
+from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     AnalysisRecord,
     Bill,
@@ -74,9 +74,10 @@ class AnalysisService:
                 break
             try:
                 record = self.analyze_bill(bill)
-            except LlmFatalError as exc:
-                result.fatal_error = str(exc)
-                log.error("LLM fatal error, aborting analysis phase: %s", exc)
+            except ServiceUnavailableError as exc:
+                # Not the bill's fault: stop the phase without consuming its retry attempts.
+                result.fatal_error = exc.describe()
+                log.error("aborting analysis phase: %s", result.fatal_error)
                 break
             except Exception as exc:  # per-bill isolation: one failure must not block the rest
                 result.failed += 1

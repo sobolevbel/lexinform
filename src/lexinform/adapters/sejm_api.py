@@ -20,6 +20,7 @@ from urllib.parse import quote
 
 import httpx2 as httpx
 
+from lexinform.errors import SejmApiUnavailableError
 from lexinform.models import (
     Attachment,
     DocumentType,
@@ -35,7 +36,7 @@ BILL_DOCUMENT_TYPE = "projekt ustawy"
 
 
 class SejmApiError(RuntimeError):
-    """Raised for non-retryable HTTP failures (4xx) or after retries are exhausted."""
+    """A 4xx answer for one request (missing print, bad number): a per-item problem."""
 
 
 class SejmApiClient:
@@ -123,14 +124,18 @@ class SejmApiClient:
                 response = self._client.request(method, url, params=params)
             except httpx.TransportError as exc:
                 if attempt > self._max_retries:
-                    raise SejmApiError(
+                    raise SejmApiUnavailableError(
                         f"{method} {url} failed after {attempt} attempts: {exc}"
                     ) from exc
                 self._wait(attempt, f"{method} {url}: {exc}")
                 continue
-            if response.status_code >= 500 and attempt <= self._max_retries:
-                self._wait(attempt, f"{method} {url}: HTTP {response.status_code}")
-                continue
+            if response.status_code >= 500:
+                if attempt <= self._max_retries:
+                    self._wait(attempt, f"{method} {url}: HTTP {response.status_code}")
+                    continue
+                raise SejmApiUnavailableError(
+                    f"{method} {url}: HTTP {response.status_code} after {attempt} attempts"
+                )
             if response.status_code >= 400:
                 raise SejmApiError(f"{method} {url}: HTTP {response.status_code}")
             return response

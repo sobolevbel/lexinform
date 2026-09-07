@@ -11,6 +11,7 @@ import hashlib
 import logging
 from dataclasses import dataclass
 
+from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
     PrintInfo,
@@ -36,6 +37,7 @@ class TrackingResult:
     failed: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
+    fatal_error: str | None = None
 
 
 class StatusTrackingService:
@@ -68,6 +70,10 @@ class StatusTrackingService:
             result.checked += 1
             try:
                 change = self._detect(bill, result)
+            except ServiceUnavailableError as exc:
+                result.fatal_error = exc.describe()
+                log.error("aborting tracking phase: %s", result.fatal_error)
+                break
             except Exception as exc:
                 result.failed += 1
                 log.exception("tracking druk %s failed: %s", bill.number, exc)
@@ -75,11 +81,19 @@ class StatusTrackingService:
             if change is None:
                 continue
             result.changed += 1
-            if publish:
-                if self._publish(bill, change):
-                    result.published += 1
-                else:
-                    result.failed += 1
+            if not publish:
+                continue
+            try:
+                ok = self._publish(bill, change)
+            except ServiceUnavailableError as exc:
+                result.failed += 1
+                result.fatal_error = exc.describe()
+                log.error("aborting tracking phase: %s", result.fatal_error)
+                break
+            if ok:
+                result.published += 1
+            else:
+                result.failed += 1
         log.info(
             "tracking: checked=%d changed=%d reanalyzed=%d published=%d failed=%d",
             result.checked,
@@ -183,6 +197,9 @@ class StatusTrackingService:
         fresh = self._repo.get(bill.term, bill.number) or bill
         try:
             sent = self._publisher.publish_status_update(fresh, change, reply_to)
+        except ServiceUnavailableError as exc:
+            self._repo.mark_publication(pub_id, PublicationStatus.FAILED, error=exc.describe())
+            raise
         except Exception as exc:
             log.exception("status update for druk %s failed: %s", bill.number, exc)
             self._repo.mark_publication(
