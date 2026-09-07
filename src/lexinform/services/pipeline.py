@@ -31,7 +31,7 @@ class RunOptions(BaseModel):
     max_publish: int = 10
     max_analyze: int = 40
     max_text_prefilter: int = 20
-    min_score: int = 2
+    min_score: int = 3
     mode: str = "run"
 
 

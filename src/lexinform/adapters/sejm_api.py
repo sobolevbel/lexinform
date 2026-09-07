@@ -32,6 +32,7 @@ from lexinform.models import (
     BillSubmission,
     Committee,
     DocumentType,
+    Mp,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
@@ -174,6 +175,10 @@ class SejmApiClient:
     def get_voting(self, term: int, sitting: int, number: int) -> tuple[Vote, ...]:
         data = self._get_json(f"/sejm/term{term}/votings/{sitting}/{number}")
         return tuple(parse_vote(v) for v in data.get("votes") or ())
+
+    def list_mps(self, term: int) -> tuple[Mp, ...]:
+        data = self._get_json(f"/sejm/term{term}/MP")
+        return tuple(parse_mp(m) for m in data) if isinstance(data, list) else ()
 
     def get_committee(self, term: int, code: str) -> Committee:
         data = self._get_json(f"/sejm/term{term}/committees/{quote(code)}")
@@ -389,6 +394,18 @@ def parse_submission(item: dict[str, Any], *, term: int) -> BillSubmission:
         consultation_end=_date(item.get("publicConsultationEndDate")),
         consultation_results=bool(item.get("consultationResults", False)),
         withdrawn_date=_date(item.get("withdrawnDate")),
+    )
+
+
+def parse_mp(item: dict[str, Any]) -> Mp:
+    return Mp(
+        id=_int(item.get("id")) or 0,
+        first_name=str(item.get("firstName") or ""),
+        last_name=str(item.get("lastName") or ""),
+        second_name=item.get("secondName") or None,
+        accusative_name=item.get("accusativeName") or None,
+        club=str(item.get("club") or "niez."),
+        active=bool(item.get("active", True)),
     )
 
 

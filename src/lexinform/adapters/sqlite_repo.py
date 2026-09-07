@@ -17,6 +17,7 @@ from lexinform.models import (
     ActInfo,
     AnalysisRecord,
     Bill,
+    BillAuthors,
     BillStatus,
     BillSubmission,
     ProcessSummary,
@@ -116,6 +117,10 @@ MIGRATIONS: tuple[str, ...] = (
     CREATE INDEX ix_bills_entry_into_force ON bills(entry_into_force);
     CREATE UNIQUE INDEX ux_pub_once_per_kind ON publications(term, number, kind, channel_id)
         WHERE kind IN ('act_published', 'in_force');
+    """,
+    # v5: signatories of deputies' bills, by club
+    """
+    ALTER TABLE bills ADD COLUMN authors_json TEXT;
     """,
 )
 
@@ -386,6 +391,12 @@ class SqliteBillRepository:
 
     # ------------------------------------------------------------------ published acts
 
+    def save_authors(self, term: int, number: str, authors: BillAuthors) -> None:
+        self._conn.execute(
+            "UPDATE bills SET authors_json = ? WHERE term = ? AND number = ?",
+            (authors.model_dump_json(), term, number),
+        )
+
     def save_act(self, term: int, number: str, act: ActInfo) -> None:
         self._conn.execute(
             "UPDATE bills SET act_json = ?, entry_into_force = ? WHERE term = ? AND number = ?",
@@ -647,6 +658,11 @@ class SqliteBillRepository:
             ),
             linked_number=row["linked_number"],
             act=ActInfo.model_validate_json(row["act_json"]) if row["act_json"] else None,
+            authors=(
+                BillAuthors.model_validate_json(row["authors_json"])
+                if row["authors_json"]
+                else None
+            ),
             first_seen_at=datetime.fromisoformat(row["first_seen_at"]),
             last_checked_at=datetime.fromisoformat(row["last_checked_at"]),
         )

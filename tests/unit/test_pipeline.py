@@ -18,6 +18,7 @@ from lexinform.models import (
     Category,
     Committee,
     DocumentType,
+    Mp,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
@@ -839,3 +840,48 @@ def test_failed_act_notice_is_retried_next_run() -> None:
     w.publisher.fail_on = set()
     w.clock.advance(days=1)
     assert w.run().acts_published == 1 and len(w.publisher.acts) == 1  # type: ignore[attr-defined]
+
+
+DEPUTIES_LETTER = (
+    "Druk nr 4200\nniżej podpisani posłowie wnoszą projekt ustawy:\n- o zmianie ustawy o cudzoziemcach.\n"
+    "Do reprezentowania wnioskodawców w pracach nad projektem ustawy upoważniamy posła Jana Kowalskiego.\n\n"
+    " (-)  Jan Kowalski;  (-)  Anna Nowak;  (-)  Piotr Zieliński.\n\n"
+    "Tłoczono z polecenia Marszałka Sejmu\n\nProjekt\nUSTAWA\n" + FOREIGNER_TEXT
+)
+
+
+def test_deputies_bill_card_shows_signatory_clubs_and_representative() -> None:
+    w = World(extractor=FakeTextExtractor(DEPUTIES_LETTER))
+    w.gateway.mps = (
+        Mp(
+            id=1,
+            first_name="Jan",
+            last_name="Kowalski",
+            accusative_name="Jana Kowalskiego",
+            club="KO",
+        ),
+        Mp(id=2, first_name="Anna", last_name="Nowak", club="KO"),
+        Mp(id=3, first_name="Piotr", last_name="Zieliński", club="Lewica"),
+    )
+    w.add_bill("4200", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
+    w.run()
+    bill = w.repo.get(10, "4200")
+    assert bill is not None and bill.authors is not None
+    assert bill.authors.clubs == (("KO", 2), ("Lewica", 1))
+    assert (
+        bill.authors.representative == "Jan Kowalski" and bill.authors.representative_club == "KO"
+    )
+    text = MessageFormatter("ru").new_bill(bill, None).text
+    assert (
+        "Инициатор:</b> депутатский (подписали: KO 2, Lewica 1 · представитель: Jan Kowalski, KO)"
+        in text
+    )
+    assert w.gateway.calls.count("list_mps") == 1  # the directory is fetched once per process
+
+
+def test_government_bill_does_not_fetch_the_mp_directory() -> None:
+    w = World()
+    w.add_bill("4201", "Rządowy projekt ustawy o zmianie ustawy o cudzoziemcach")
+    w.run()
+    assert "list_mps" not in w.gateway.calls
+    assert w.repo.get(10, "4201").authors is None  # type: ignore[union-attr]

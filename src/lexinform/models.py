@@ -122,6 +122,41 @@ class VotingSummary(BaseModel):
     clubs: tuple[ClubVotes, ...] = ()
 
 
+class Mp(BaseModel):
+    """A member of parliament from GET /MP (only what the author lookup needs)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    id: int
+    first_name: str
+    last_name: str
+    second_name: str | None = None
+    accusative_name: str | None = None
+    club: str = "niez."
+    active: bool = True
+
+    @property
+    def first_last_name(self) -> str:
+        return f"{self.first_name} {self.last_name}"
+
+    @property
+    def full_name(self) -> str:
+        middle = f" {self.second_name}" if self.second_name else ""
+        return f"{self.first_name}{middle} {self.last_name}"
+
+
+class BillAuthors(BaseModel):
+    """Who signed a bill, resolved to parliamentary clubs."""
+
+    model_config = ConfigDict(frozen=True)
+
+    representative: str | None = None
+    representative_club: str | None = None
+    clubs: tuple[tuple[str, int], ...] = ()  # (club, signatories) largest first
+    signatories: int = 0
+    unresolved: int = 0
+
+
 class Committee(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -417,6 +452,7 @@ class Bill(BaseModel):
     submission: BillSubmission | None = None  # the /bills entry (consultation dates, RPW number)
     linked_number: str | None = None  # RPW <-> print number once the print is assigned
     act: ActInfo | None = None  # the published act, once it appears in Dziennik Ustaw
+    authors: BillAuthors | None = None  # signatories of a deputies' bill, by club
     first_seen_at: dt.datetime
     last_checked_at: dt.datetime
 

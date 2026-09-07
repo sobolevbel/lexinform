@@ -78,6 +78,9 @@ Sejm API ──► discover (modifiedSince) ──► keyword prefilter ──�
    character budget that keeps the start of the act and of the justification, and sent to Claude with
    a structured-output schema (`relevant`, `score`, `category`, `summary`, `key_changes`,
    `affected_groups`, `practical_impact`, `effective_date`, `confidence`).
+   For deputies' and committee bills the cover letter of the print is parsed for the signatories
+   and the representative, and names are matched against `/MP` to show which clubs stand behind
+   the bill ("подписали: Lewica 21 · представитель: Daria Gosek-Popiołek, Lewica").
 4. **Publish.** Relevant bills with `score >= LEXINFORM_MIN_SCORE` are posted, highest score first,
    at most `LEXINFORM_MAX_PUBLISH_PER_RUN` per run. A publication row is written *before* sending, so
    a crash can never produce a duplicate post.
@@ -174,7 +177,7 @@ All settings are environment variables (or a `.env` file). `ANTHROPIC_API_KEY` i
 | `LEXINFORM_LLM_MODEL` | `claude-opus-5` | Any Claude model id |
 | `LEXINFORM_LLM_EFFORT` | `medium` | `low` … `max` |
 | `LEXINFORM_OUTPUT_LANGUAGE` | `ru` | Language of summaries and labels (`ru`, `en`; add more in `i18n.py`) |
-| `LEXINFORM_MIN_SCORE` | `2` | Minimum importance to publish |
+| `LEXINFORM_MIN_SCORE` | `3` | Minimum importance to publish (2 = indirectly affects foreigners is not posted) |
 | `LEXINFORM_MAX_PUBLISH_PER_RUN` | `10` | Flood protection |
 | `LEXINFORM_MAX_ANALYZE_PER_RUN` | `40` | Cap on LLM calls per run |
 | `LEXINFORM_TEXT_BUDGET_CHARS` | `1500000` | Safety cap on bill text sent to the LLM (~750k tokens of Polish); real prints are sent in full |

@@ -161,7 +161,8 @@ class MessageFormatter:
         doc_date = self.fmt_date(s.document_date) if s.document_date else "—"
         date_label = lb.received if bill.is_pre_print else lb.document_date
         meta_lines.append(
-            f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {esc(applicant)}   "
+            f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {esc(applicant)}"
+            f"{self._authors_suffix(bill)}   "
             f"{ICON['doc_date']} <b>{esc(date_label)}:</b> {esc(doc_date)}"
         )
         if s.prints_considered_jointly:
@@ -393,6 +394,25 @@ class MessageFormatter:
         if bill.is_pre_print:
             return "#" + _tag_safe(bill.number.replace("/", "_"))
         return f"#druk{_tag_safe(bill.number)}"
+
+    def _authors_suffix(self, bill: Bill) -> str:
+        """ " (KO 17, Lewica 12 · представитель: Jan Kowalski, KO)" for deputies' bills."""
+        a = bill.authors
+        if a is None:
+            return ""
+        lb = self._labels
+        parts: list[str] = []
+        if a.clubs:
+            clubs = ", ".join(f"{esc(club)} {n}" for club, n in a.clubs[:CLUBS_PER_SIDE])
+            if len(a.clubs) > CLUBS_PER_SIDE:
+                clubs += ", …"
+            parts.append(f"{esc(lb.signatories)}: {clubs}")
+        if a.representative:
+            rep = esc(a.representative)
+            if a.representative_club:
+                rep += f", {esc(a.representative_club)}"
+            parts.append(f"{esc(lb.representative)}: {rep}")
+        return f" ({' · '.join(parts)})" if parts else ""
 
     def _consultation_line(self, bill: Bill) -> str:
         sub = bill.submission

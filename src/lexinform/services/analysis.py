@@ -12,9 +12,11 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from lexinform.adapters.pdf_text import TextBudget
+from lexinform.authors import MpDirectory, parse_cover_letter
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     AnalysisRecord,
+    ApplicantType,
     Bill,
     BillContext,
     BillStatus,
@@ -57,6 +59,7 @@ class AnalysisService:
         self._llm = llm
         self._budget = text_budget
         self._max_attempts = max_attempts
+        self._mps: MpDirectory | None = None
 
     # ------------------------------------------------------------------ first analysis
 
@@ -146,6 +149,8 @@ class AnalysisService:
     ) -> AnalysisRecord:
         text, truncated, source = self._load_text(document)
         meta = detail or bill.summary
+        if source == "pdf" and document is not None and document.kind == "print":
+            self._save_authors(bill, meta.applicant_type, text)
         ctx = BillContext(
             number=bill.number,
             title=meta.title or bill.summary.title,
@@ -165,6 +170,23 @@ class AnalysisService:
         record.revision = previous.revision + 1 if previous else 1
         self._repo.save_analysis(bill.term, bill.number, record)
         return record
+
+    def _save_authors(self, bill: Bill, applicant: ApplicantType, text: str) -> None:
+        """Signatories (deputies' bills) or the representative (committee bills) from the cover
+        letter. Best effort: never fails the analysis."""
+        if applicant not in (ApplicantType.DEPUTIES, ApplicantType.COMMITTEE):
+            return
+        try:
+            letter = parse_cover_letter(text)
+            if not letter.signatories and not letter.representative:
+                return
+            if self._mps is None:
+                self._mps = MpDirectory.from_mps(self._gateway.list_mps(bill.term))
+            self._repo.save_authors(bill.term, bill.number, self._mps.resolve(letter))
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("authors of druk %s not resolved: %s", bill.number, exc)
 
     @staticmethod
     def _original_document(print_info: PrintInfo | None) -> TextDocument | None:

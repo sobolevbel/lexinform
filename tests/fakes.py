@@ -16,6 +16,7 @@ from lexinform.models import (
     BillSubmission,
     Category,
     Committee,
+    Mp,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
@@ -45,6 +46,7 @@ class FakeSejmGateway:
     sizes: dict[str, int] = field(default_factory=dict)
     votings: dict[tuple[int, int], tuple[Vote, ...]] = field(default_factory=dict)
     committees: dict[str, Committee] = field(default_factory=dict)
+    mps: tuple[Mp, ...] = ()
     submissions: list[BillSubmission] = field(default_factory=list)
     acts: dict[str, ActInfo] = field(default_factory=dict)
     calls: list[str] = field(default_factory=list)
@@ -90,6 +92,10 @@ class FakeSejmGateway:
     def get_committee(self, term: int, code: str) -> Committee:
         self.calls.append(f"get_committee:{code}")
         return self.committees[code]
+
+    def list_mps(self, term: int) -> tuple[Mp, ...]:
+        self.calls.append("list_mps")
+        return self.mps
 
     def attachment_size(self, url: str) -> int | None:
         return self.sizes.get(url)

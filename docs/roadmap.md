@@ -17,6 +17,8 @@ Done the same day, see the commit history:
 - **Feature 2**: Dz.U. publication notice + entry-into-force reminder (schema v4).
 - Action signals, cheap tier: consultation dates on cards, committee referral with name and hint,
   public hearing label.
+- Authors of deputies' bills: signatories parsed from the print's cover letter, resolved to clubs
+  via `/MP` (schema v5). Publish threshold raised to importance 3.
 
 Still open:
 

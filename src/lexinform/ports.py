@@ -10,10 +10,12 @@ from lexinform.models import (
     ActInfo,
     AnalysisRecord,
     Bill,
+    BillAuthors,
     BillContext,
     BillStatus,
     BillSubmission,
     Committee,
+    Mp,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
@@ -52,6 +54,8 @@ class SejmGateway(Protocol):
     def get_voting(self, term: int, sitting: int, number: int) -> tuple[Vote, ...]: ...
 
     def get_committee(self, term: int, code: str) -> Committee: ...
+
+    def list_mps(self, term: int) -> tuple[Mp, ...]: ...
 
     def attachment_size(self, url: str) -> int | None: ...
 
@@ -174,6 +178,9 @@ class BillRepository(Protocol):
 
     # published acts
     def save_act(self, term: int, number: str, act: ActInfo) -> None: ...
+
+    # authors
+    def save_authors(self, term: int, number: str, authors: BillAuthors) -> None: ...
 
     def list_due_in_force(self, term: int, channel_id: str, *, today: date) -> list[Bill]: ...
 

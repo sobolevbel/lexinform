@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     telegram_api_base_url: str = "https://api.telegram.org"
 
     # Pipeline
-    min_score: int = Field(default=2, ge=1, le=5)
+    min_score: int = Field(default=3, ge=1, le=5)
     max_publish_per_run: int = 10
     max_analyze_per_run: int = 40
     max_analysis_attempts: int = 3
