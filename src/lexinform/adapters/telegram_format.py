@@ -91,7 +91,7 @@ class MessageFormatter:
         s = bill.summary
 
         header = (
-            f"{ICON['new_bill']} <b>{esc(lb.new_bill_header)} — druk nr {esc(s.number)}</b>\n"
+            f"{ICON['new_bill']} <b>{esc(lb.new_bill_header)} — druk nr {esc(s.number)}</b>\n\n"
             f"<b>{esc(s.title)}</b>"
         )
         meta = (
@@ -174,7 +174,7 @@ class MessageFormatter:
         analysis = bill.analysis.analysis if bill.analysis else None
 
         header = (
-            f"{ICON['update']} <b>{esc(lb.update_header)} — druk nr {esc(s.number)}</b>\n"
+            f"{ICON['update']} <b>{esc(lb.update_header)} — druk nr {esc(s.number)}</b>\n\n"
             f"<b>{esc(s.title)}</b>"
         )
         badge = ""

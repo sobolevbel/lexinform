@@ -154,7 +154,7 @@ All settings are environment variables (or a `.env` file). `ANTHROPIC_API_KEY` i
 | `LEXINFORM_MIN_SCORE` | `2` | Minimum importance to publish |
 | `LEXINFORM_MAX_PUBLISH_PER_RUN` | `10` | Flood protection |
 | `LEXINFORM_MAX_ANALYZE_PER_RUN` | `40` | Cap on LLM calls per run |
-| `LEXINFORM_TEXT_BUDGET_CHARS` | `80000` | Max characters of bill text sent to the LLM |
+| `LEXINFORM_TEXT_BUDGET_CHARS` | `1500000` | Safety cap on bill text sent to the LLM (~750k tokens of Polish); real prints are sent in full |
 | `LEXINFORM_MAX_PDF_DOWNLOAD_MB` | `25` | Bigger PDFs are analysed from metadata only |
 | `LEXINFORM_FIRST_RUN_LOOKBACK_DAYS` | `1` | Watermark for the very first run |
 | `LEXINFORM_TRACK_CLOSED_GRACE_DAYS` | `30` | Keep tracking closed bills this long |

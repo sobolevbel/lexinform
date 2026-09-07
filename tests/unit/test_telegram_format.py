@@ -191,3 +191,10 @@ def test_new_bill_details_are_separated_by_blank_lines(process_3039, print_3039)
     assert "\n\n" in text[effective:stage]
     # short facts (stage, applicant/date) stay grouped on adjacent lines
     assert "\n\n" not in text[stage:applicant]
+
+
+def test_headers_are_followed_by_blank_line(process_3039, print_3039) -> None:  # type: ignore[no-untyped-def]
+    text = MessageFormatter("ru").new_bill(_bill(process_3039, make_analysis()), print_3039).text
+    assert text.startswith(
+        f"📜 <b>Новый законопроект — druk nr 3039</b>\n\n<b>{process_3039.title}"
+    )
