@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from lexinform.adapters.llm_anthropic import AnthropicAnalyzer, LlmError
+from lexinform.adapters.llm_anthropic import AnthropicAnalyzer, LlmError, LlmFatalError
 from lexinform.adapters.llm_prompts import PROMPT_VERSION, build_user_prompt, system_prompt
 from lexinform.models import Analysis, ApplicantType, BillContext
 from tests.fakes import make_analysis
@@ -84,3 +84,13 @@ def test_prompts_mention_truncation_and_metadata_only() -> None:
     assert "NIEDOSTĘPNY" in build_user_prompt(_ctx(text="", text_source="metadata_only"))
     assert system_prompt("ru") == system_prompt("RU")
     assert "legalization" in system_prompt("en")
+
+
+def test_missing_credentials_is_fatal() -> None:
+    class _Broken:
+        def parse(self, **kwargs: Any) -> Any:
+            raise TypeError("Could not resolve authentication method")
+
+    client = SimpleNamespace(messages=_Broken())
+    with pytest.raises(LlmFatalError):
+        AnthropicAnalyzer(client).analyze(_ctx())

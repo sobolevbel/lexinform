@@ -25,7 +25,9 @@ class Settings(BaseSettings):
     # Storage
     db_path: Path = Path("lexinform.db")
 
-    # LLM (ANTHROPIC_API_KEY is read by the SDK itself)
+    # LLM. The key is read under its plain name (no LEXINFORM_ prefix) from the environment or
+    # .env so that one variable serves both this app and the anthropic SDK.
+    anthropic_api_key: str | None = Field(default=None, validation_alias="ANTHROPIC_API_KEY")
     llm_model: str = "claude-opus-5"
     llm_effort: Effort = "medium"
     llm_max_tokens: int = 4000

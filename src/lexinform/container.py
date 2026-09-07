@@ -35,7 +35,7 @@ class Container:
 
     def analyzer(self) -> AnthropicAnalyzer:
         return AnthropicAnalyzer(
-            anthropic.Anthropic(),
+            anthropic.Anthropic(api_key=self.settings.anthropic_api_key),
             model=self.settings.llm_model,
             output_language=self.settings.output_language,
             effort=self.settings.llm_effort,

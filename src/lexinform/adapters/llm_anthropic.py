@@ -72,6 +72,9 @@ class AnthropicAnalyzer:
             )
         except (anthropic.AuthenticationError, anthropic.PermissionDeniedError) as exc:
             raise LlmFatalError(str(exc)) from exc
+        except TypeError as exc:
+            # The SDK raises TypeError when no credentials can be resolved at request time.
+            raise LlmFatalError(f"LLM client misconfigured: {exc}") from exc
         except anthropic.APIError as exc:
             raise LlmError(f"{type(exc).__name__}: {exc}") from exc
 

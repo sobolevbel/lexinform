@@ -46,13 +46,13 @@ class MemoryLogHandler(logging.Handler):
         self.capacity = capacity
         self.lines: list[str] = []
         self.dropped = 0
-        self.setFormatter(logging.Formatter("%(levelname)s %(name)s: %(message)s"))
 
     def emit(self, record: logging.LogRecord) -> None:
         if len(self.lines) >= self.capacity:
             self.dropped += 1
             return
-        self.lines.append(self.format(record))
+        # Message only: tracebacks belong in the full log, not in the Telegram report.
+        self.lines.append(f"{record.levelname} {record.name}: {record.getMessage()}")
 
     def install(self) -> None:
         logging.getLogger().addHandler(self)
