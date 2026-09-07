@@ -53,7 +53,7 @@ jobs:
       - run: uv sync --frozen --no-dev
 
       - name: Restore database from state branch
-        run: uv run lexinform db restore "$STATE_FILE" --missing-ok
+        run: uv run --frozen --no-dev lexinform db restore "$STATE_FILE" --missing-ok
 
       - name: Run lexinform
         env:
@@ -67,13 +67,13 @@ jobs:
           ARGS=()
           if [ -n "${{ inputs.since }}" ]; then ARGS+=(--since "${{ inputs.since }}"); fi
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS+=(--dry-run); fi
-          uv run lexinform run "${ARGS[@]}"
+          uv run --frozen --no-dev lexinform run "${ARGS[@]}"
 
       - name: Dump database and push state branch
         if: ${{ inputs.dry_run != true }}
         run: |
           set -euo pipefail
-          uv run lexinform db dump "$STATE_FILE"
+          uv run --frozen --no-dev lexinform db dump "$STATE_FILE"
           cd state
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
