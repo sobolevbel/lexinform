@@ -81,7 +81,7 @@ Sejm API ──► discover (modifiedSince) ──► keyword prefilter ──�
 ## Quick start (local)
 
 ```bash
-git clone https://github.com/eugeneskycash/lexinform && cd lexinform
+git clone https://github.com/sobolevbel/lexinform && cd lexinform
 uv sync                                   # installs Python 3.12 + dependencies into .venv
 cp .env.example .env                      # fill in ANTHROPIC_API_KEY and the Telegram values
 
@@ -129,10 +129,10 @@ may delay scheduled workflows by minutes to an hour under load; if you need exac
 Images are published to GHCR on every `v*` tag.
 
 ```bash
-docker run --rm --env-file .env -v lexinform-data:/data ghcr.io/eugeneskycash/lexinform:latest run
+docker run --rm --env-file .env -v lexinform-data:/data ghcr.io/sobolevbel/lexinform:latest run
 ```
 
-Schedule it with cron or a systemd timer, e.g. `0 5 * * * docker run --rm --env-file /etc/lexinform.env -v lexinform-data:/data ghcr.io/eugeneskycash/lexinform:latest run`.
+Schedule it with cron or a systemd timer, e.g. `0 5 * * * docker run --rm --env-file /etc/lexinform.env -v lexinform-data:/data ghcr.io/sobolevbel/lexinform:latest run`.
 The database lives in the `lexinform-data` volume.
 
 ## Configuration

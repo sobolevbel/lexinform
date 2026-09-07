@@ -28,8 +28,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/eugeneskycash/lexinform"
-Issues = "https://github.com/eugeneskycash/lexinform/issues"
+Homepage = "https://github.com/sobolevbel/lexinform"
+Issues = "https://github.com/sobolevbel/lexinform/issues"
 
 [project.scripts]
 lexinform = "lexinform.cli:app"
