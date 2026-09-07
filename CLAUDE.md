@@ -41,6 +41,37 @@ Invariants worth keeping:
 - Pre-print bills (`RPW/…`) have no process: skip `get_process`/`get_print` for them; when the
   print appears, the print inherits the card (`new_bill` row aliased with the same `message_id`).
 
+## Database versioning and migrations
+
+The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
+tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
+`SCHEMA_VERSION = len(MIGRATIONS)` (v5 as of Sept 2026). `migrate()` reads `user_version` and
+runs every later script inside its own transaction, stamping the new version at the end, so a
+failed script leaves the database at the previous version.
+
+How state travels: the daily workflow runs `db init` (fresh schema at the current version) →
+`db restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing
+`PRAGMA user_version = N;`. `restore()` drops all tables, replays the dump with foreign keys off,
+sets `user_version` from that trailing line (1 when a legacy dump has none) and calls `migrate()`.
+So a dump written by an older release is upgraded on the first run of the new one; nothing manual.
+
+Adding a migration:
+
+1. Append one string to `MIGRATIONS`; never edit or reorder earlier entries (deployed dumps carry
+   their version). Plain SQL only: `ALTER TABLE … ADD COLUMN` (nullable or with a default), new
+   tables, indexes, `UPDATE` backfills. SQLite cannot change a column's type or constraints: for
+   that, create the new table, `INSERT … SELECT`, drop and rename.
+2. Extend the model and `_row_to_bill` / mapping code. JSON columns (`summary_json`,
+   `analysis_json`, `stages_json`, …) are pydantic dumps: new fields need defaults so old rows still
+   load; renaming a JSON field is a data migration (SQL `json_set` or a one-off Python step).
+3. Extend `test_restore_of_a_previous_schema_dump_applies_missing_migrations` in
+   `tests/unit/test_sqlite_repo.py` (it restores a hand-built v1 dump and asserts the new columns)
+   and, before pushing, run the real dump through it: `git show origin/state:lexinform.sql`,
+   `db init` + `db restore`, then `sqlite3 file "PRAGMA user_version"` and `lexinform show 2699`.
+
+There is no downgrade. To roll back, revert the code and restore the previous dump from the
+`state` branch history; the state branch is the backup.
+
 ## Sejm API lessons (verified live, Sept 2026)
 
 - `/processes` only lists bills that already have a print number. Bills at the consultation
