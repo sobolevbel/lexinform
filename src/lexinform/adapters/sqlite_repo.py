@@ -1,0 +1,510 @@
+"""SQLite implementation of BillRepository (stdlib sqlite3, no ORM).
+
+Schema is versioned with PRAGMA user_version; `migrate()` applies missing steps in order.
+`dump()` / `restore()` move the whole database through a text SQL script so the state can live in
+a git branch with readable diffs.
+"""
+
+from __future__ import annotations
+
+import json
+import sqlite3
+from collections.abc import Iterable
+from datetime import datetime, timedelta
+from pathlib import Path
+
+from lexinform.models import (
+    AnalysisRecord,
+    Bill,
+    BillStatus,
+    ProcessSummary,
+    Publication,
+    PublicationKind,
+    PublicationStatus,
+    RunReport,
+    Stage,
+    StatusChange,
+)
+
+MIGRATIONS: tuple[str, ...] = (
+    # v1
+    """
+    CREATE TABLE bills (
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        title TEXT NOT NULL,
+        change_date TEXT NOT NULL,
+        closure_date TEXT,
+        passed INTEGER,
+        status TEXT NOT NULL,
+        prefilter_hits TEXT NOT NULL DEFAULT '[]',
+        summary_json TEXT NOT NULL,
+        stages_json TEXT,
+        stages_fingerprint TEXT,
+        analysis_json TEXT,
+        analysis_attempts INTEGER NOT NULL DEFAULT 0,
+        last_error TEXT,
+        first_seen_at TEXT NOT NULL,
+        last_checked_at TEXT NOT NULL,
+        PRIMARY KEY (term, number)
+    );
+    CREATE INDEX ix_bills_status ON bills(status);
+    CREATE INDEX ix_bills_change_date ON bills(change_date);
+
+    CREATE TABLE status_changes (
+        id INTEGER PRIMARY KEY,
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        old_fingerprint TEXT,
+        new_fingerprint TEXT NOT NULL,
+        new_stages_json TEXT NOT NULL,
+        closure_detected INTEGER NOT NULL DEFAULT 0,
+        passed INTEGER,
+        detected_at TEXT NOT NULL,
+        UNIQUE (term, number, new_fingerprint)
+    );
+
+    CREATE TABLE publications (
+        id INTEGER PRIMARY KEY,
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        status TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        message_id INTEGER,
+        document_message_ids TEXT NOT NULL DEFAULT '[]',
+        status_change_id INTEGER REFERENCES status_changes(id),
+        created_at TEXT NOT NULL,
+        sent_at TEXT,
+        error TEXT
+    );
+    CREATE UNIQUE INDEX ux_pub_new ON publications(term, number, channel_id)
+        WHERE kind = 'new_bill';
+    CREATE UNIQUE INDEX ux_pub_change ON publications(status_change_id, channel_id)
+        WHERE kind = 'status_update';
+    CREATE INDEX ix_pub_status ON publications(status);
+
+    CREATE TABLE runs (
+        id INTEGER PRIMARY KEY,
+        started_at TEXT NOT NULL,
+        finished_at TEXT,
+        since TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        ok INTEGER,
+        report_json TEXT
+    );
+    """,
+)
+
+
+def _iso(value: datetime | None) -> str | None:
+    return value.isoformat() if value else None
+
+
+class SqliteBillRepository:
+    def __init__(self, path: Path | str) -> None:
+        self._path = str(path)
+        if self._path != ":memory:":
+            Path(self._path).parent.mkdir(parents=True, exist_ok=True)
+        self._conn = sqlite3.connect(self._path, isolation_level=None)  # autocommit; explicit txns
+        self._conn.row_factory = sqlite3.Row
+        self._conn.execute("PRAGMA foreign_keys = ON")
+        if self._path != ":memory:":
+            self._conn.execute("PRAGMA journal_mode = WAL")
+        self._in_txn = False
+
+    # ------------------------------------------------------------------ schema / lifecycle
+
+    def migrate(self) -> None:
+        current = int(self._conn.execute("PRAGMA user_version").fetchone()[0])
+        for version, script in enumerate(MIGRATIONS[current:], start=current + 1):
+            self._conn.executescript(f"BEGIN;{script}PRAGMA user_version = {version};COMMIT;")
+
+    def close(self) -> None:
+        self._conn.close()
+
+    def begin(self) -> None:
+        if not self._in_txn:
+            self._conn.execute("BEGIN")
+            self._in_txn = True
+
+    def commit(self) -> None:
+        if self._in_txn:
+            self._conn.execute("COMMIT")
+            self._in_txn = False
+
+    def rollback(self) -> None:
+        if self._in_txn:
+            self._conn.execute("ROLLBACK")
+            self._in_txn = False
+
+    def dump(self) -> str:
+        return "\n".join(self._conn.iterdump()) + "\n"
+
+    def restore(self, script: str) -> None:
+        """Replace the current contents with a script produced by `dump()`."""
+        tables = [
+            r[0]
+            for r in self._conn.execute(
+                "SELECT name FROM sqlite_master WHERE type IN ('table','index')"
+                " AND name NOT LIKE 'sqlite_%'"
+            )
+        ]
+        for name in tables:
+            self._conn.execute(f'DROP TABLE IF EXISTS "{name}"')
+        self._conn.executescript(script)
+        # iterdump does not carry user_version; recompute from the highest table set we know.
+        self._conn.execute(f"PRAGMA user_version = {len(MIGRATIONS)}")
+
+    # ------------------------------------------------------------------ bills
+
+    def get(self, term: int, number: str) -> Bill | None:
+        row = self._conn.execute(
+            "SELECT * FROM bills WHERE term = ? AND number = ?", (term, number)
+        ).fetchone()
+        return self._row_to_bill(row) if row else None
+
+    def upsert_summary(self, summary: ProcessSummary, *, now: datetime) -> Bill:
+        existing = self.get(summary.term, summary.number)
+        if existing is None:
+            self._conn.execute(
+                """
+                INSERT INTO bills (term, number, title, change_date, closure_date, passed, status,
+                                   summary_json, first_seen_at, last_checked_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    summary.term,
+                    summary.number,
+                    summary.title,
+                    summary.change_date.isoformat(),
+                    _iso_date(summary.closure_date),
+                    _bool(summary.passed),
+                    BillStatus.DISCOVERED.value,
+                    summary.model_dump_json(),
+                    now.isoformat(),
+                    now.isoformat(),
+                ),
+            )
+        else:
+            self._conn.execute(
+                """
+                UPDATE bills SET title = ?, change_date = ?, closure_date = ?, passed = ?,
+                                 summary_json = ?, last_checked_at = ?
+                WHERE term = ? AND number = ?
+                """,
+                (
+                    summary.title,
+                    summary.change_date.isoformat(),
+                    _iso_date(summary.closure_date),
+                    _bool(summary.passed),
+                    summary.model_dump_json(),
+                    now.isoformat(),
+                    summary.term,
+                    summary.number,
+                ),
+            )
+        bill = self.get(summary.term, summary.number)
+        assert bill is not None
+        return bill
+
+    def set_status(
+        self, term: int, number: str, status: BillStatus, *, prefilter_hits: list[str] | None = None
+    ) -> None:
+        if prefilter_hits is None:
+            self._conn.execute(
+                "UPDATE bills SET status = ? WHERE term = ? AND number = ?",
+                (status.value, term, number),
+            )
+        else:
+            self._conn.execute(
+                "UPDATE bills SET status = ?, prefilter_hits = ? WHERE term = ? AND number = ?",
+                (status.value, json.dumps(prefilter_hits, ensure_ascii=False), term, number),
+            )
+
+    def save_stages(
+        self, term: int, number: str, stages: tuple[Stage, ...], fingerprint: str
+    ) -> None:
+        self._conn.execute(
+            "UPDATE bills SET stages_json = ?, stages_fingerprint = ?\n"
+            "WHERE term = ? AND number = ?",
+            (
+                json.dumps([s.model_dump(mode="json") for s in stages], ensure_ascii=False),
+                fingerprint,
+                term,
+                number,
+            ),
+        )
+
+    def save_analysis(self, term: int, number: str, record: AnalysisRecord) -> None:
+        self._conn.execute(
+            """
+            UPDATE bills SET analysis_json = ?, status = ?, last_error = NULL
+            WHERE term = ? AND number = ?
+            """,
+            (record.model_dump_json(), BillStatus.ANALYZED.value, term, number),
+        )
+
+    def record_analysis_failure(self, term: int, number: str, error: str) -> None:
+        self._conn.execute(
+            """
+            UPDATE bills SET status = ?, analysis_attempts = analysis_attempts + 1, last_error = ?
+            WHERE term = ? AND number = ?
+            """,
+            (BillStatus.ANALYSIS_FAILED.value, error[:2000], term, number),
+        )
+
+    def list_by_status(self, term: int, statuses: list[BillStatus], *, limit: int) -> list[Bill]:
+        if not statuses:
+            return []
+        placeholders = ",".join("?" for _ in statuses)
+        rows = self._conn.execute(
+            f"""
+            SELECT * FROM bills WHERE term = ? AND status IN ({placeholders})
+            ORDER BY change_date DESC LIMIT ?
+            """,
+            (term, *[s.value for s in statuses], limit),
+        ).fetchall()
+        return [self._row_to_bill(r) for r in rows]
+
+    def list_publish_candidates(
+        self, term: int, channel_id: str, *, min_score: int, limit: int
+    ) -> list[Bill]:
+        rows = self._conn.execute(
+            """
+            SELECT b.* FROM bills b
+            WHERE b.term = ? AND b.status = ? AND b.analysis_json IS NOT NULL
+              AND NOT EXISTS (
+                  SELECT 1 FROM publications p
+                  WHERE p.term = b.term AND p.number = b.number AND p.kind = 'new_bill'
+                    AND p.channel_id = ? AND p.status IN ('sent', 'skipped', 'pending', 'unknown')
+              )
+            """,
+            (term, BillStatus.ANALYZED.value, channel_id),
+        ).fetchall()
+        bills = [self._row_to_bill(r) for r in rows]
+        eligible = [
+            b
+            for b in bills
+            if b.analysis is not None
+            and b.analysis.analysis.relevant
+            and b.analysis.analysis.score >= min_score
+        ]
+        eligible.sort(
+            key=lambda b: (
+                -(b.analysis.analysis.score if b.analysis else 0),
+                b.summary.document_date or b.summary.change_date.date(),
+            )
+        )
+        return eligible[:limit]
+
+    def list_tracked(
+        self, term: int, channel_id: str, *, closed_grace_days: int, now: datetime
+    ) -> list[Bill]:
+        cutoff = (now - timedelta(days=closed_grace_days)).date().isoformat()
+        rows = self._conn.execute(
+            """
+            SELECT b.* FROM bills b
+            JOIN publications p ON p.term = b.term AND p.number = b.number
+            WHERE b.term = ? AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
+              AND (b.closure_date IS NULL OR b.closure_date >= ?)
+            ORDER BY b.number
+            """,
+            (term, channel_id, cutoff),
+        ).fetchall()
+        return [self._row_to_bill(r) for r in rows]
+
+    # ------------------------------------------------------------------ publications
+
+    def create_publication(self, publication: Publication) -> int:
+        cur = self._conn.execute(
+            """
+            INSERT INTO publications (term, number, kind, status, channel_id, message_id,
+                document_message_ids, status_change_id, created_at, sent_at, error)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT DO UPDATE SET status = excluded.status, created_at = excluded.created_at,
+                                      error = NULL
+            """,
+            (
+                publication.term,
+                publication.number,
+                publication.kind.value,
+                publication.status.value,
+                publication.channel_id,
+                publication.message_id,
+                json.dumps(publication.document_message_ids),
+                publication.status_change_id,
+                publication.created_at.isoformat(),
+                _iso(publication.sent_at),
+                publication.error,
+            ),
+        )
+        # lastrowid is unreliable after an upsert that took the UPDATE path, so look the row up
+        # by its natural key instead.
+        del cur
+        if publication.kind is PublicationKind.STATUS_UPDATE:
+            row = self._conn.execute(
+                "SELECT id FROM publications WHERE status_change_id = ? AND channel_id = ?"
+                " AND kind = 'status_update'",
+                (publication.status_change_id, publication.channel_id),
+            ).fetchone()
+        else:
+            row = self._conn.execute(
+                "SELECT id FROM publications WHERE term = ? AND number = ? AND channel_id = ?"
+                " AND kind = 'new_bill'",
+                (publication.term, publication.number, publication.channel_id),
+            ).fetchone()
+        assert row is not None
+        return int(row[0])
+
+    def mark_publication(
+        self,
+        publication_id: int,
+        status: PublicationStatus,
+        *,
+        message_id: int | None = None,
+        document_message_ids: list[int] | None = None,
+        error: str | None = None,
+        sent_at: datetime | None = None,
+    ) -> None:
+        self._conn.execute(
+            """
+            UPDATE publications SET status = ?,
+                message_id = COALESCE(?, message_id),
+                document_message_ids = COALESCE(?, document_message_ids),
+                error = ?, sent_at = COALESCE(?, sent_at)
+            WHERE id = ?
+            """,
+            (
+                status.value,
+                message_id,
+                json.dumps(document_message_ids) if document_message_ids is not None else None,
+                error[:2000] if error else None,
+                _iso(sent_at),
+                publication_id,
+            ),
+        )
+
+    def get_publication(
+        self, term: int, number: str, kind: str, channel_id: str
+    ) -> Publication | None:
+        row = self._conn.execute(
+            """
+            SELECT * FROM publications WHERE term = ? AND number = ? AND kind = ? AND channel_id = ?
+            ORDER BY id DESC LIMIT 1
+            """,
+            (term, number, kind, channel_id),
+        ).fetchone()
+        return self._row_to_publication(row) if row else None
+
+    def mark_stale_pending_as_unknown(self, *, now: datetime) -> int:
+        cur = self._conn.execute(
+            "UPDATE publications SET status = ?, error = ? WHERE status = ?",
+            (
+                PublicationStatus.UNKNOWN.value,
+                f"left pending by a crashed run; marked unknown at {now.isoformat()}",
+                PublicationStatus.PENDING.value,
+            ),
+        )
+        return int(cur.rowcount or 0)
+
+    # ------------------------------------------------------------------ status changes
+
+    def add_status_change(self, change: StatusChange) -> int | None:
+        try:
+            cur = self._conn.execute(
+                """
+                INSERT INTO status_changes (term, number, old_fingerprint, new_fingerprint,
+                                            new_stages_json, closure_detected, passed, detected_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    change.term,
+                    change.number,
+                    change.old_fingerprint,
+                    change.new_fingerprint,
+                    json.dumps(
+                        [s.model_dump(mode="json") for s in change.new_stages], ensure_ascii=False
+                    ),
+                    int(change.closure_detected),
+                    _bool(change.passed),
+                    change.detected_at.isoformat(),
+                ),
+            )
+        except sqlite3.IntegrityError:
+            return None
+        return int(cur.lastrowid or 0)
+
+    # ------------------------------------------------------------------ runs
+
+    def last_successful_run_started_at(self) -> datetime | None:
+        row = self._conn.execute(
+            "SELECT started_at FROM runs WHERE ok = 1 AND mode = 'run'"
+            " ORDER BY started_at DESC LIMIT 1"
+        ).fetchone()
+        return datetime.fromisoformat(row[0]) if row else None
+
+    def start_run(self, report: RunReport) -> int:
+        cur = self._conn.execute(
+            "INSERT INTO runs (started_at, since, mode) VALUES (?, ?, ?)",
+            (report.started_at.isoformat(), report.since.isoformat(), report.mode),
+        )
+        return int(cur.lastrowid or 0)
+
+    def finish_run(self, run_id: int, report: RunReport) -> None:
+        self._conn.execute(
+            "UPDATE runs SET finished_at = ?, ok = ?, report_json = ? WHERE id = ?",
+            (_iso(report.finished_at), int(report.ok), report.model_dump_json(), run_id),
+        )
+
+    # ------------------------------------------------------------------ row mapping
+
+    @staticmethod
+    def _row_to_bill(row: sqlite3.Row) -> Bill:
+        stages = tuple(Stage.model_validate(s) for s in json.loads(row["stages_json"] or "[]"))
+        analysis = (
+            AnalysisRecord.model_validate_json(row["analysis_json"])
+            if row["analysis_json"]
+            else None
+        )
+        return Bill(
+            summary=ProcessSummary.model_validate_json(row["summary_json"]),
+            status=BillStatus(row["status"]),
+            prefilter_hits=json.loads(row["prefilter_hits"] or "[]"),
+            stages=stages,
+            stages_fingerprint=row["stages_fingerprint"],
+            analysis=analysis,
+            analysis_attempts=int(row["analysis_attempts"]),
+            last_error=row["last_error"],
+            first_seen_at=datetime.fromisoformat(row["first_seen_at"]),
+            last_checked_at=datetime.fromisoformat(row["last_checked_at"]),
+        )
+
+    @staticmethod
+    def _row_to_publication(row: sqlite3.Row) -> Publication:
+        return Publication(
+            id=int(row["id"]),
+            term=int(row["term"]),
+            number=row["number"],
+            kind=PublicationKind(row["kind"]),
+            status=PublicationStatus(row["status"]),
+            channel_id=row["channel_id"],
+            message_id=row["message_id"],
+            document_message_ids=json.loads(row["document_message_ids"] or "[]"),
+            status_change_id=row["status_change_id"],
+            created_at=datetime.fromisoformat(row["created_at"]),
+            sent_at=datetime.fromisoformat(row["sent_at"]) if row["sent_at"] else None,
+            error=row["error"],
+        )
+
+
+def _bool(value: bool | None) -> int | None:
+    return None if value is None else int(value)
+
+
+def _iso_date(value: object) -> str | None:
+    return None if value is None else str(value)
+
+
+def rows_to_numbers(bills: Iterable[Bill]) -> list[str]:
+    return [b.number for b in bills]

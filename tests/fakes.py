@@ -1,0 +1,158 @@
+"""In-memory fakes for the ports. Used by unit tests of services and the pipeline."""
+
+from __future__ import annotations
+
+from collections.abc import Iterator
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+
+from lexinform.adapters.llm_prompts import PROMPT_VERSION
+from lexinform.models import (
+    Analysis,
+    AnalysisRecord,
+    Bill,
+    BillContext,
+    Category,
+    PrintInfo,
+    ProcessDetail,
+    ProcessSummary,
+    RunReport,
+    StatusChange,
+)
+
+
+class FixedClock:
+    def __init__(self, start: datetime | None = None) -> None:
+        self.current = start or datetime(2026, 9, 7, 6, 0, tzinfo=UTC)
+
+    def now(self) -> datetime:
+        return self.current
+
+    def advance(self, **kwargs: int) -> None:
+        self.current += timedelta(**kwargs)
+
+
+@dataclass
+class FakeSejmGateway:
+    processes: list[ProcessSummary] = field(default_factory=list)
+    details: dict[str, ProcessDetail] = field(default_factory=dict)
+    prints: dict[str, PrintInfo] = field(default_factory=dict)
+    files: dict[str, bytes] = field(default_factory=dict)
+    sizes: dict[str, int] = field(default_factory=dict)
+    calls: list[str] = field(default_factory=list)
+
+    def iter_processes(
+        self, term: int, *, modified_since: datetime | None = None, document_type: str | None = None
+    ) -> Iterator[ProcessSummary]:
+        self.calls.append("iter_processes")
+        for p in self.processes:
+            if modified_since is None or p.change_date >= modified_since.replace(tzinfo=None):
+                yield p
+
+    def get_process(self, term: int, number: str) -> ProcessDetail:
+        self.calls.append(f"get_process:{number}")
+        return self.details[number]
+
+    def get_print(self, term: int, number: str) -> PrintInfo:
+        self.calls.append(f"get_print:{number}")
+        if number not in self.prints:
+            raise RuntimeError(f"no print {number}")
+        return self.prints[number]
+
+    def attachment_size(self, url: str) -> int | None:
+        return self.sizes.get(url)
+
+    def download(self, url: str) -> bytes:
+        self.calls.append(f"download:{url}")
+        return self.files[url]
+
+
+class FakeTextExtractor:
+    def __init__(self, text: str = "Art. 1. Tekst ustawy. " * 50) -> None:
+        self.text = text
+
+    def extract(self, data: bytes) -> str:
+        return self.text
+
+
+def make_analysis(
+    *, relevant: bool = True, score: int = 5, category: Category = Category.LEGAL_STAY
+) -> Analysis:
+    return Analysis(
+        relevant=relevant,
+        score=score,
+        category=category,
+        summary="Проект меняет правила легализации пребывания.",
+        key_changes=["Изменение 1", "Изменение 2"],
+        affected_groups=["держатели ВНЖ"],
+        practical_impact="Нужно подать заявление раньше.",
+        effective_date="через 14 дней после публикации",
+        confidence=0.9,
+        rationale="Меняет ustawa o cudzoziemcach.",
+    )
+
+
+class FakeLlm:
+    def __init__(
+        self, script: dict[str, Analysis | Exception] | None = None, default: Analysis | None = None
+    ) -> None:
+        self.script = script or {}
+        self.default = default or make_analysis()
+        self.contexts: list[BillContext] = []
+
+    def analyze(self, ctx: BillContext) -> AnalysisRecord:
+        self.contexts.append(ctx)
+        outcome = self.script.get(ctx.number, self.default)
+        if isinstance(outcome, Exception):
+            raise outcome
+        return AnalysisRecord(
+            analysis=outcome,
+            model="fake",
+            prompt_version=PROMPT_VERSION,
+            input_chars=len(ctx.text),
+            truncated=ctx.truncated,
+            text_source=ctx.text_source,
+            created_at=datetime(2026, 9, 7, tzinfo=UTC),
+            input_tokens=100,
+            output_tokens=50,
+        )
+
+
+@dataclass
+class FakePublishResult:
+    message_id: int
+    document_message_ids: list[int] = field(default_factory=list)
+
+
+class FakePublisher:
+    def __init__(self, fail_on: set[str] | None = None) -> None:
+        self.new_bills: list[tuple[Bill, PrintInfo | None]] = []
+        self.updates: list[tuple[Bill, StatusChange, int | None]] = []
+        self.fail_on = fail_on or set()
+        self._next_id = 100
+
+    def _id(self) -> int:
+        self._next_id += 1
+        return self._next_id
+
+    def publish_new_bill(self, bill: Bill, print_info: PrintInfo | None) -> FakePublishResult:
+        if bill.number in self.fail_on:
+            raise RuntimeError("telegram down")
+        self.new_bills.append((bill, print_info))
+        return FakePublishResult(message_id=self._id(), document_message_ids=[self._id()])
+
+    def publish_status_update(
+        self, bill: Bill, change: StatusChange, reply_to: int | None
+    ) -> FakePublishResult:
+        if bill.number in self.fail_on:
+            raise RuntimeError("telegram down")
+        self.updates.append((bill, change, reply_to))
+        return FakePublishResult(message_id=self._id())
+
+
+class FakeNotifier:
+    def __init__(self) -> None:
+        self.calls: list[tuple[RunReport, list[str]]] = []
+
+    def notify(self, report: RunReport, log_lines: list[str]) -> None:
+        self.calls.append((report, log_lines))
