@@ -1,3 +1,4 @@
+# Daily job: discover, analyse, publish, track; state lives in the "state" branch.
 name: Daily run
 
 on:

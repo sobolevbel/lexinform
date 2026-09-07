@@ -1,3 +1,4 @@
+# Weekly live checks against api.sejm.gov.pl.
 name: Integration (live Sejm API)
 
 on:

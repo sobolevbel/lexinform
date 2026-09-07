@@ -1,3 +1,4 @@
+# Publishes ghcr.io/sobolevbel/lexinform on version tags.
 name: Docker image
 
 on:
