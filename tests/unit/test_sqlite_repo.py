@@ -173,3 +173,62 @@ def test_dry_run_transaction_rolls_back(repo, processes_page, now) -> None:  # t
     repo.rollback()
     assert repo.get(10, processes_page[0].number) is None
     assert now.tzinfo is UTC and isinstance(datetime.now(UTC), datetime)
+
+
+def test_dump_restore_with_publications_and_status_changes(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
+    repo.upsert_summary(process_3039, now=now)
+    change_id = repo.add_status_change(
+        StatusChange(
+            term=10,
+            number="3039",
+            old_fingerprint="a",
+            new_fingerprint="b",
+            new_stages=[],
+            detected_at=now,
+        )
+    )
+    repo.create_publication(
+        Publication(
+            term=10,
+            number="3039",
+            kind=PublicationKind.NEW_BILL,
+            status=PublicationStatus.SENT,
+            channel_id="chan",
+            created_at=now,
+            message_id=1,
+        )
+    )
+    repo.create_publication(
+        Publication(
+            term=10,
+            number="3039",
+            kind=PublicationKind.STATUS_UPDATE,
+            status=PublicationStatus.SENT,
+            channel_id="chan",
+            status_change_id=change_id,
+            created_at=now,
+            message_id=2,
+        )
+    )
+    script = repo.dump()
+
+    fresh = SqliteBillRepository(":memory:")
+    fresh.migrate()  # a pre-existing schema must be replaced, not merged
+    fresh.restore(script)
+    fresh.migrate()
+    assert fresh.get(10, "3039") is not None
+    assert fresh.get_publication(10, "3039", "new_bill", "chan").message_id == 1  # type: ignore[union-attr]
+    assert fresh.get_publication(10, "3039", "status_update", "chan").status_change_id == change_id  # type: ignore[union-attr]
+    assert (
+        fresh.add_status_change(
+            StatusChange(
+                term=10,
+                number="3039",
+                old_fingerprint="a",
+                new_fingerprint="b",
+                new_stages=[],
+                detected_at=now,
+            )
+        )
+        is None
+    )  # unique index restored too

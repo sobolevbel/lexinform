@@ -146,14 +146,19 @@ class SqliteBillRepository:
         tables = [
             r[0]
             for r in self._conn.execute(
-                "SELECT name FROM sqlite_master WHERE type IN ('table','index')"
-                " AND name NOT LIKE 'sqlite_%'"
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
             )
         ]
-        for name in tables:
-            self._conn.execute(f'DROP TABLE IF EXISTS "{name}"')
-        self._conn.executescript(script)
-        # iterdump does not carry user_version; recompute from the highest table set we know.
+        # The dump creates tables in arbitrary order while publications reference status_changes,
+        # so foreign-key enforcement must be off while the script runs.
+        self._conn.execute("PRAGMA foreign_keys = OFF")
+        try:
+            for name in tables:
+                self._conn.execute(f'DROP TABLE IF EXISTS "{name}"')
+            self._conn.executescript(script)
+        finally:
+            self._conn.execute("PRAGMA foreign_keys = ON")
+        # iterdump does not carry user_version; the dump always comes from the current schema.
         self._conn.execute(f"PRAGMA user_version = {len(MIGRATIONS)}")
 
     # ------------------------------------------------------------------ bills
