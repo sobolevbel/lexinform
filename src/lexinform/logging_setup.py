@@ -48,6 +48,8 @@ class MemoryLogHandler(logging.Handler):
         self.dropped = 0
 
     def emit(self, record: logging.LogRecord) -> None:
+        if getattr(record, "in_report", False):
+            return  # already listed in the run report's errors
         if len(self.lines) >= self.capacity:
             self.dropped += 1
             return

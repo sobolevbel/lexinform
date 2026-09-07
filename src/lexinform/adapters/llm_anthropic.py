@@ -75,11 +75,17 @@ class AnthropicAnalyzer:
         except (
             anthropic.AuthenticationError,
             anthropic.PermissionDeniedError,
+            anthropic.NotFoundError,  # unknown model id: would fail for every bill
             anthropic.RateLimitError,
             anthropic.InternalServerError,
             anthropic.APIConnectionError,
         ) as exc:
             raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
+        except anthropic.BadRequestError as exc:
+            if _is_input_problem(exc):
+                raise LlmError(f"BadRequestError: {_short(exc)}") from exc
+            # Unsupported parameter, malformed schema, ...: a configuration problem, not this bill.
+            raise LlmFatalError(f"BadRequestError: {_short(exc)}") from exc
         except TypeError as exc:
             # The SDK raises TypeError when no credentials can be resolved at request time.
             raise LlmFatalError(f"client misconfigured: {_short(exc)}") from exc
@@ -122,6 +128,14 @@ class AnthropicAnalyzer:
 def _usage_int(usage: Any, field: str) -> int | None:
     value = getattr(usage, field, None)
     return int(value) if isinstance(value, int) else None
+
+
+_INPUT_PROBLEM_MARKERS = ("prompt is too long", "too many tokens", "exceeds the context")
+
+
+def _is_input_problem(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return any(marker in text for marker in _INPUT_PROBLEM_MARKERS)
 
 
 def _short(exc: BaseException, limit: int = 300) -> str:

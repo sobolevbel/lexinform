@@ -36,11 +36,15 @@ class Category(StrEnum):
     NONE = "none"
 
 
+BILL_DOCUMENT_TYPE = "projekt ustawy"  # the `documentType` display string used by the API filter
+
+
 class ApplicantType(StrEnum):
     GOVERNMENT = "government"
     DEPUTIES = "deputies"
     SENATE = "senate"
     PRESIDENT = "president"
+    PRESIDIUM = "presidium"
     CITIZENS = "citizens"
     COMMITTEE = "committee"
     UNKNOWN = "unknown"
@@ -80,7 +84,23 @@ class Stage(BaseModel):
     committee_code: str | None = None
     report_file: str | None = None
     text_after3: str | None = None
+    position: str | None = None  # SenatePosition: what the Senate did (not part of the fingerprint)
+    proposal: str | None = None  # CommitteeReport: what the committee proposes
+    sub_committee: bool = False  # CommitteeReport: a sub-committee report, not the final one
     children: tuple[Stage, ...] = ()
+
+    @property
+    def carries_bill_text(self) -> bool:
+        """True for committee reports whose PDF contains the (amended) bill text.
+
+        Additional reports ("-A" prints) answering 2nd-reading amendments contain only tables of
+        amendments; `proposal` says "załączony projekt ustawy" when the full text is attached.
+        """
+        if self.stage_type != "CommitteeReport" or not self.report_file or self.sub_committee:
+            return False
+        if self.proposal is not None:
+            return "projekt" in self.proposal.lower()
+        return not (self.print_number or "").upper().endswith("-A")
 
 
 class ProcessSummary(BaseModel):
@@ -286,6 +306,7 @@ class RunReport(BaseModel):
     finished_at: dt.datetime | None = None
     since: dt.datetime
     mode: str
+    discovery_ok: bool = False  # discovery finished: the watermark may advance past `started_at`
     discovered: int = 0
     prefilter_hits: int = 0
     analyzed: int = 0
@@ -326,6 +347,7 @@ _APPLICANT_PREFIXES: tuple[tuple[str, ApplicantType], ...] = (
     ("senacki", ApplicantType.SENATE),
     ("przedstawiony przez prezydenta", ApplicantType.PRESIDENT),
     ("prezydencki", ApplicantType.PRESIDENT),
+    ("przedstawiony przez prezydium", ApplicantType.PRESIDIUM),
     ("obywatelski", ApplicantType.CITIZENS),
     ("komisyjny", ApplicantType.COMMITTEE),
 )
@@ -414,7 +436,7 @@ def latest_text_document(stages: tuple[Stage, ...] | list[Stage]) -> TextDocumen
     for stage in flatten_stages(stages):
         if stage.text_after3:
             text_after3 = stage.text_after3
-        if stage.stage_type == "CommitteeReport" and stage.report_file:
+        if stage.carries_bill_text:
             report = stage.report_file
     if text_after3:
         return TextDocument(url=text_after3, kind="text_after3")

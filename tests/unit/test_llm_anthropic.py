@@ -94,3 +94,39 @@ def test_missing_credentials_is_fatal() -> None:
     client = SimpleNamespace(messages=_Broken())
     with pytest.raises(LlmFatalError):
         AnthropicAnalyzer(client).analyze(_ctx())
+
+
+class _Raising:
+    def __init__(self, exc: Exception) -> None:
+        self.exc = exc
+
+    def parse(self, **kwargs: Any) -> Any:
+        raise self.exc
+
+
+def _api_error(cls: type, message: str) -> Exception:
+    import httpx2 as httpx
+
+    response = httpx.Response(400, request=httpx.Request("POST", "https://api.test/v1/messages"))
+    return cls(message, response=response, body=None)
+
+
+def test_unknown_model_and_bad_parameters_are_fatal_but_oversized_input_is_per_bill() -> None:
+    import anthropic
+
+    with pytest.raises(LlmFatalError):
+        AnthropicAnalyzer(
+            SimpleNamespace(messages=_Raising(_api_error(anthropic.NotFoundError, "model: x")))
+        ).analyze(_ctx())
+    with pytest.raises(LlmFatalError):
+        AnthropicAnalyzer(
+            SimpleNamespace(
+                messages=_Raising(_api_error(anthropic.BadRequestError, "thinking: unsupported"))
+            )
+        ).analyze(_ctx())
+    with pytest.raises(LlmError):
+        AnthropicAnalyzer(
+            SimpleNamespace(
+                messages=_Raising(_api_error(anthropic.BadRequestError, "prompt is too long"))
+            )
+        ).analyze(_ctx())

@@ -49,6 +49,7 @@ class StatusTrackingService:
         channel_id: str,
         analysis: AnalysisService | None = None,
         closed_grace_days: int = 30,
+        max_publish_attempts: int = 3,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -57,10 +58,13 @@ class StatusTrackingService:
         self._channel_id = channel_id
         self._analysis = analysis
         self._closed_grace_days = closed_grace_days
+        self._max_publish_attempts = max_publish_attempts
 
     def check_updates(self, term: int, *, publish: bool = True) -> TrackingResult:
         result = TrackingResult()
         now = self._clock.now()
+        if publish and not self._retry_failed(term, result):
+            return result
         tracked = self._repo.list_tracked(
             term, self._channel_id, closed_grace_days=self._closed_grace_days, now=now
         )
@@ -102,6 +106,28 @@ class StatusTrackingService:
         )
         return result
 
+    def _retry_failed(self, term: int, result: TrackingResult) -> bool:
+        """Re-send status updates whose post failed earlier. False if Telegram is down."""
+        for change in self._repo.list_failed_status_changes(
+            term, self._channel_id, max_attempts=self._max_publish_attempts
+        ):
+            bill = self._repo.get(change.term, change.number)
+            if bill is None:
+                continue
+            log.info("retrying status update for druk %s", bill.number)
+            try:
+                ok = self._publish(bill, change)
+            except ServiceUnavailableError as exc:
+                result.failed += 1
+                result.fatal_error = exc.describe()
+                log.error("aborting tracking phase: %s", result.fatal_error)
+                return False
+            if ok:
+                result.published += 1
+            else:
+                result.failed += 1
+        return True
+
     # ------------------------------------------------------------------ detection
 
     def _detect(self, bill: Bill, result: TrackingResult) -> StatusChange | None:
@@ -130,17 +156,23 @@ class StatusTrackingService:
 
         if old_fp is None:
             return None  # first time we see stages for this bill: seed silently
-        if not stages_changed and not content_changed:
-            return None
+        # Discovery refreshes the summary (and its closure date) before tracking runs, so closure
+        # is detected against what was already announced, not against the stored summary.
+        closure_detected = detail.closure_date is not None and not self._repo.closure_announced(
+            bill.term, bill.number
+        )
+        new_stages = diff_stages(bill.stages, detail.stages) if stages_changed else []
+        if not (new_stages or content_changed or closure_detected):
+            return None  # nothing worth a post (e.g. a stage was edited or removed upstream)
 
         fresh = self._repo.get(bill.term, bill.number) or bill
         change = StatusChange(
             term=bill.term,
             number=bill.number,
             old_fingerprint=old_fp,
-            new_fingerprint=self._change_key(new_fp, fresh),
-            new_stages=diff_stages(bill.stages, detail.stages) if stages_changed else [],
-            closure_detected=detail.closure_date is not None and bill.summary.closure_date is None,
+            new_fingerprint=self._change_key(new_fp, fresh, closed=closure_detected),
+            new_stages=new_stages,
+            closure_detected=closure_detected,
             passed=detail.passed,
             content_changed=content_changed,
             detected_at=now,
@@ -159,11 +191,12 @@ class StatusTrackingService:
         return change
 
     @staticmethod
-    def _change_key(stage_fp: str, bill: Bill) -> str:
-        """Dedupe key for status_changes: stages plus the analysed text revision."""
+    def _change_key(stage_fp: str, bill: Bill, *, closed: bool) -> str:
+        """Dedupe key for status_changes: stages, analysed text revision, closure announcement."""
         revision = bill.analysis.revision if bill.analysis else 0
         source = bill.analysis.source_url if bill.analysis else ""
-        return hashlib.sha256(f"{stage_fp}|{revision}|{source}".encode()).hexdigest()
+        key = f"{stage_fp}|{revision}|{source}" + ("|closed" if closed else "")
+        return hashlib.sha256(key.encode()).hexdigest()
 
     def _safe_print(self, bill: Bill) -> PrintInfo | None:
         try:

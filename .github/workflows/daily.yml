@@ -31,6 +31,7 @@ env:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -68,15 +69,19 @@ jobs:
           LEXINFORM_TELEGRAM_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_CHANNEL_ID }}
           LEXINFORM_TELEGRAM_LOG_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID }}
           LEXINFORM_LOG_LEVEL: INFO
+          INPUT_SINCE: ${{ inputs.since }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
         run: |
           set -euo pipefail
           ARGS=()
-          if [ -n "${{ inputs.since }}" ]; then ARGS+=(--since "${{ inputs.since }}"); fi
-          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS+=(--dry-run); fi
+          if [ -n "$INPUT_SINCE" ]; then ARGS+=(--since "$INPUT_SINCE"); fi
+          if [ "$INPUT_DRY_RUN" = "true" ]; then ARGS+=(--dry-run); fi
           uv run --frozen --no-dev lexinform run "${ARGS[@]}"
 
+      # Runs even when the run step was cancelled by the job timeout: whatever was posted is in the
+      # database and must be saved, otherwise the next run would post it again.
       - name: Dump database and push state branch
-        if: ${{ inputs.dry_run != true && steps.restore.outcome == 'success' }}
+        if: ${{ always() && inputs.dry_run != true && steps.restore.outcome == 'success' && steps.run.outcome != 'skipped' }}
         run: |
           set -euo pipefail
           uv run --frozen --no-dev lexinform db dump "$STATE_FILE"
@@ -88,7 +93,14 @@ jobs:
             echo "state unchanged"; exit 0
           fi
           git commit -m "state: $(date -u +%Y-%m-%dT%H:%MZ)"
-          git push origin "HEAD:$STATE_BRANCH"
+          # Someone may have pushed to the branch meanwhile (e.g. a manual dump): rebase and retry.
+          for attempt in 1 2 3; do
+            if git push origin "HEAD:$STATE_BRANCH"; then exit 0; fi
+            echo "push rejected, rebasing (attempt $attempt)"
+            git fetch origin "$STATE_BRANCH"
+            git rebase "origin/$STATE_BRANCH" || { git rebase --abort; exit 1; }
+          done
+          exit 1
 
       - name: Fail the job if the run reported errors
         if: ${{ steps.run.outcome == 'failure' }}

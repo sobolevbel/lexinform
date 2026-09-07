@@ -215,7 +215,7 @@ def test_dry_run_leaves_database_empty() -> None:
     report = w.run(dry_run=True)
     assert report.published == 1 and report.mode == "dry_run"  # type: ignore[attr-defined]
     assert w.repo.get(10, "3039") is None
-    assert w.repo.last_successful_run_started_at() is None
+    assert w.repo.last_discovery_started_at() is None
 
 
 def test_tracking_posts_exactly_one_update_per_change() -> None:
@@ -347,3 +347,95 @@ def test_max_analyze_zero_skips_llm() -> None:
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     report = w.run(max_analyze=0)
     assert report.analyzed == 0 and report.analysis_failures == 0 and w.llm.contexts == []  # type: ignore[attr-defined]
+
+
+def test_failed_status_update_is_retried_on_the_next_run() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.gateway.details["3039"] = _detail(w.gateway.processes[0], REFERRED)
+    w.publisher.fail_on = {"3039"}  # Telegram rejects the update
+    w.clock.advance(days=1)
+    report = w.run()
+    assert report.updates == 0 and report.errors  # type: ignore[attr-defined]
+    assert w.publisher.updates == []
+
+    w.publisher.fail_on = set()
+    w.clock.advance(days=1)
+    report2 = w.run()  # stages unchanged since, yet the lost update is posted now
+    assert report2.updates == 1 and not report2.errors  # type: ignore[attr-defined]
+    _, change, reply_to = w.publisher.updates[0]
+    assert [st.stage_name for st in change.new_stages] == ["Skierowano do I czytania"]
+    assert reply_to == 101
+
+    w.clock.advance(days=1)
+    assert w.run().updates == 0  # type: ignore[attr-defined]
+
+
+def test_closure_is_announced_once_even_though_discovery_refreshes_the_summary() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+
+    closed = w.gateway.processes[0].model_copy(
+        update={
+            "closure_date": dt.date(2026, 9, 8),
+            "passed": True,
+            "change_date": dt.datetime(2026, 9, 8, 10, 0),
+        }
+    )
+    w.gateway.processes[0] = closed
+    w.gateway.details["3039"] = _detail(closed, REFERRED)
+    w.clock.advance(days=1)
+    report = w.run()
+    assert report.updates == 1  # type: ignore[attr-defined]
+    _, change, _ = w.publisher.updates[0]
+    assert change.closure_detected and change.passed
+
+    w.clock.advance(days=1)
+    assert w.run().updates == 0  # type: ignore[attr-defined]
+
+
+def test_removed_stage_without_new_stages_does_not_post_an_empty_update() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
+    w.run()
+    w.gateway.details["3039"] = _detail(w.gateway.processes[0], START)  # Sejm removed a stage
+    w.clock.advance(days=1)
+    assert w.run().updates == 0  # type: ignore[attr-defined]
+    assert w.publisher.updates == []
+
+
+def test_watermark_advances_after_a_run_with_publishing_errors() -> None:
+    w = World(fail_publish={"3039"})
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    first_start = w.clock.now()
+    assert w.run().errors  # type: ignore[attr-defined]
+    w.clock.advance(days=5)
+    assert w.pipeline.resolve_since(None) == first_start - dt.timedelta(days=1)
+
+
+def test_unreadable_pdf_falls_back_to_metadata_without_burning_attempts() -> None:
+    class _BrokenExtractor:
+        def extract(self, data: bytes) -> str:
+            raise ValueError("not a PDF")
+
+    w = World()
+    w.pipeline._analysis._extractor = _BrokenExtractor()  # type: ignore[attr-defined]
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    report = w.run()
+    assert report.analyzed == 1 and report.analysis_failures == 0  # type: ignore[attr-defined]
+    assert w.llm.contexts[0].text_source == "metadata_only"
+    assert w.repo.get(10, "3039").analysis_attempts == 0  # type: ignore[union-attr]
+
+
+def test_migration_failure_is_reported_not_raised() -> None:
+    w = World()
+
+    def boom() -> None:
+        raise RuntimeError("database is locked")
+
+    w.repo.migrate = boom  # type: ignore[method-assign]
+    report = w.run()
+    assert report.errors and "database is locked" in report.errors[0]  # type: ignore[attr-defined]
+    assert w.notifier.calls  # the log channel still gets the report

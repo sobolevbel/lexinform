@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from lexinform.adapters.sqlite_repo import SqliteBillRepository
+from lexinform.adapters.sqlite_repo import MIGRATIONS, SCHEMA_VERSION, SqliteBillRepository
 from lexinform.models import (
     BillStatus,
     Publication,
@@ -156,15 +156,75 @@ def test_tracked_and_status_change_dedup(repo, process_3039, now) -> None:  # ty
 def test_runs_and_dump_restore(repo, now) -> None:  # type: ignore[no-untyped-def]
     report = RunReport(started_at=now, since=now, mode="run")
     run_id = repo.start_run(report)
-    assert repo.last_successful_run_started_at() is None
+    assert repo.last_discovery_started_at() is None
     report.finished_at = now
+    report.errors.append("publishing: 1 publication(s) failed")
     repo.finish_run(run_id, report)
-    assert repo.last_successful_run_started_at() == now
+    # errors after discovery do not hold the watermark back
+    assert repo.last_discovery_started_at() is None
+    report.discovery_ok = True
+    repo.finish_run(run_id, report)
+    assert repo.last_discovery_started_at() == now
     script = repo.dump()
+    assert script.rstrip().endswith(f"PRAGMA user_version = {SCHEMA_VERSION};")
     other = SqliteBillRepository(":memory:")
     other.restore(script)
     other.migrate()
-    assert other.last_successful_run_started_at() == now
+    assert other.last_discovery_started_at() == now
+
+
+def test_restore_of_a_previous_schema_dump_applies_missing_migrations() -> None:
+    """A dump from an older release (v1, no version line) must be migrated, not stamped current."""
+    old = SqliteBillRepository(":memory:")
+    old._conn.executescript(f"BEGIN;{MIGRATIONS[0]}PRAGMA user_version = 1;COMMIT;")
+    old._conn.execute(
+        "INSERT INTO runs (started_at, since, mode, ok) VALUES ('2026-09-01T05:00:00+00:00',"
+        " '2026-08-31T05:00:00+00:00', 'run', 1)"
+    )
+    legacy_dump = "\n".join(old._conn.iterdump()) + "\n"  # what the v1 release wrote
+    assert "user_version" not in legacy_dump
+
+    repo = SqliteBillRepository(":memory:")
+    repo.migrate()  # fresh schema at the current version, as in the daily workflow
+    repo.restore(legacy_dump)
+    assert int(repo._conn.execute("PRAGMA user_version").fetchone()[0]) == SCHEMA_VERSION
+    columns = {r[1] for r in repo._conn.execute("PRAGMA table_info(publications)")}
+    assert "attempts" in columns
+    # the v2 backfill copies ok -> discovery_ok for old runs
+    assert repo.last_discovery_started_at() is not None
+
+
+def test_failed_status_updates_are_listed_for_retry(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
+    repo.upsert_summary(process_3039, now=now)
+    change_id = repo.add_status_change(
+        StatusChange(
+            term=10,
+            number="3039",
+            old_fingerprint="a",
+            new_fingerprint="b",
+            new_stages=[],
+            content_changed=True,
+            detected_at=now,
+        )
+    )
+    pub_id = repo.create_publication(
+        Publication(
+            term=10,
+            number="3039",
+            kind=PublicationKind.STATUS_UPDATE,
+            status=PublicationStatus.PENDING,
+            channel_id="chan",
+            status_change_id=change_id,
+            created_at=now,
+        )
+    )
+    repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
+    [change] = repo.list_failed_status_changes(10, "chan", max_attempts=3)
+    assert change.id == change_id and change.content_changed is True
+    repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
+    repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
+    assert repo.list_failed_status_changes(10, "chan", max_attempts=3) == []
+    assert repo.closure_announced(10, "3039") is False
 
 
 def test_dry_run_transaction_rolls_back(repo, processes_page, now) -> None:  # type: ignore[no-untyped-def]

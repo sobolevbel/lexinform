@@ -35,19 +35,25 @@ class PublishingService:
         clock: Clock,
         *,
         channel_id: str,
+        max_attempts: int = 3,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
         self._publisher = publisher
         self._clock = clock
         self._channel_id = channel_id
+        self._max_attempts = max_attempts
 
     def publish_new(
         self, term: int, *, min_score: int, limit: int, publish: bool = True
     ) -> PublishingResult:
         result = PublishingResult()
         for bill in self._repo.list_publish_candidates(
-            term, self._channel_id, min_score=min_score, limit=limit
+            term,
+            self._channel_id,
+            min_score=min_score,
+            limit=limit,
+            max_attempts=self._max_attempts,
         ):
             if not publish:
                 self._record_skipped(bill)

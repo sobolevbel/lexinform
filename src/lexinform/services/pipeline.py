@@ -24,6 +24,7 @@ class RunOptions(BaseModel):
     term: int
     since: datetime | None = None
     dry_run: bool = False
+    discover: bool = True
     publish: bool = True
     track: bool = True
     max_publish: int = 10
@@ -57,37 +58,50 @@ class DailyPipeline:
         self._overlap = timedelta(days=rerun_overlap_days)
 
     def resolve_since(self, requested: datetime | None) -> datetime:
+        """Discovery watermark: the start of the last run that completed discovery, minus overlap.
+
+        Publishing or analysis errors do not hold the watermark back: bills are stored on discovery
+        and retried from the database, so only a failed discovery must be re-scanned.
+        """
         if requested is not None:
             return requested
-        last = self._repo.last_successful_run_started_at()
+        last = self._repo.last_discovery_started_at()
         if last is not None:
             return last - self._overlap
         return self._clock.now() - self._first_run_lookback
 
     def run(self, opts: RunOptions) -> RunReport:
-        self._repo.migrate()
         started = self._clock.now()
-        since = self.resolve_since(opts.since)
         report = RunReport(
-            started_at=started, since=since, mode="dry_run" if opts.dry_run else opts.mode
+            started_at=started, since=started, mode="dry_run" if opts.dry_run else opts.mode
         )
-        log.info(
-            "run started (mode=%s, since=%s, term=%d)", report.mode, since.isoformat(), opts.term
-        )
-
         captured = MemoryLogHandler()
         captured.install()
-        if opts.dry_run:
-            self._repo.begin()
-        run_id = self._repo.start_run(report)
+        run_id: int | None = None
         try:
-            self._execute(opts, since, report)
+            self._repo.migrate()
+            report.since = self.resolve_since(opts.since)
+            log.info(
+                "run started (mode=%s, since=%s, term=%d)",
+                report.mode,
+                report.since.isoformat(),
+                opts.term,
+            )
+            if opts.dry_run:
+                self._repo.begin()
+            run_id = self._repo.start_run(report)
+            self._execute(opts, report.since, report)
         except Exception as exc:  # last line of defence: report, never crash the process
             log.exception("run failed unexpectedly: %s", exc)
             report.errors.append(f"unexpected failure: {type(exc).__name__}: {exc}")
         finally:
             report.finished_at = self._clock.now()
-            self._repo.finish_run(run_id, report)
+            if run_id is not None:
+                try:
+                    self._repo.finish_run(run_id, report)
+                except Exception as exc:
+                    log.exception("could not record the run: %s", exc)
+                    report.errors.append(f"could not record the run: {type(exc).__name__}: {exc}")
             if opts.dry_run:
                 self._repo.rollback()
                 log.info("dry run: database changes rolled back")
@@ -111,10 +125,11 @@ class DailyPipeline:
         stale = self._repo.mark_stale_pending_as_unknown(now=self._clock.now())
         if stale:
             msg = f"{stale} publication(s) were left pending by a previous run; marked unknown"
-            log.error(msg)
+            log.error(msg, extra={"in_report": True})
             report.errors.append(msg)
 
-        self._phase(report, "discovery", lambda: self._discover(opts, since, report))
+        if opts.discover:
+            self._phase(report, "discovery", lambda: self._discover(opts, since, report))
         self._phase(report, "analysis", lambda: self._analyse(opts, report))
         self._phase(report, "publishing", lambda: self._publish(opts, report))
         if opts.track:
@@ -123,19 +138,21 @@ class DailyPipeline:
     @staticmethod
     def _phase(report: RunReport, name: str, action: Callable[[], None]) -> None:
         """Run one phase; an external outage or a bug ends the phase, not the run."""
+        # `in_report` keeps these out of the captured warnings: they are listed as errors already.
         try:
             action()
         except ServiceUnavailableError as exc:
             message = f"{name}: {exc.describe()}"
-            log.error(message)
+            log.error(message, extra={"in_report": True})
             report.errors.append(message)
         except Exception as exc:
             message = f"{name} failed: {type(exc).__name__}: {exc}"
-            log.exception(message)
+            log.exception(message, extra={"in_report": True})
             report.errors.append(message)
 
     def _discover(self, opts: RunOptions, since: datetime, report: RunReport) -> None:
         discovered = self._discovery.discover(opts.term, since)
+        report.discovery_ok = True
         report.discovered = discovered.new
         report.prefilter_hits = discovered.prefilter_hits
 

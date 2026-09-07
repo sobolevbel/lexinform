@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from collections.abc import Iterable
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -94,11 +93,28 @@ MIGRATIONS: tuple[str, ...] = (
         report_json TEXT
     );
     """,
+    # v2: retry bookkeeping for failed posts, re-analysis flag on status changes, watermark on runs
+    """
+    ALTER TABLE status_changes ADD COLUMN content_changed INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE publications ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE runs ADD COLUMN discovery_ok INTEGER;
+    UPDATE runs SET discovery_ok = ok;
+    """,
 )
+
+SCHEMA_VERSION = len(MIGRATIONS)
+_VERSION_LINE = "PRAGMA user_version = "
 
 
 def _iso(value: datetime | None) -> str | None:
     return value.isoformat() if value else None
+
+
+def _dump_version(script: str) -> int:
+    for line in reversed(script.splitlines()):
+        if line.startswith(_VERSION_LINE):
+            return int(line[len(_VERSION_LINE) :].rstrip(";").strip())
+    return 1
 
 
 class SqliteBillRepository:
@@ -139,7 +155,8 @@ class SqliteBillRepository:
             self._in_txn = False
 
     def dump(self) -> str:
-        return "\n".join(self._conn.iterdump()) + "\n"
+        version = int(self._conn.execute("PRAGMA user_version").fetchone()[0])
+        return "\n".join(self._conn.iterdump()) + f"\n{_VERSION_LINE}{version};\n"
 
     def restore(self, script: str) -> None:
         """Replace the current contents with a script produced by `dump()`."""
@@ -158,8 +175,10 @@ class SqliteBillRepository:
             self._conn.executescript(script)
         finally:
             self._conn.execute("PRAGMA foreign_keys = ON")
-        # iterdump does not carry user_version; the dump always comes from the current schema.
-        self._conn.execute(f"PRAGMA user_version = {len(MIGRATIONS)}")
+        # iterdump does not carry user_version, so dump() appends it; a dump written by an older
+        # release lacks the line and is at most v1. migrate() then applies what is missing.
+        self._conn.execute(f"PRAGMA user_version = {_dump_version(script)}")
+        self.migrate()
 
     # ------------------------------------------------------------------ bills
 
@@ -259,21 +278,33 @@ class SqliteBillRepository:
             (BillStatus.ANALYSIS_FAILED.value, error[:2000], term, number),
         )
 
-    def list_by_status(self, term: int, statuses: list[BillStatus], *, limit: int) -> list[Bill]:
+    def list_by_status(
+        self,
+        term: int,
+        statuses: list[BillStatus],
+        *,
+        limit: int,
+        max_attempts: int | None = None,
+    ) -> list[Bill]:
         if not statuses:
             return []
         placeholders = ",".join("?" for _ in statuses)
+        attempts_clause = "AND analysis_attempts < ?" if max_attempts is not None else ""
+        params: list[object] = [term, *[s.value for s in statuses]]
+        if max_attempts is not None:
+            params.append(max_attempts)
+        params.append(limit)
         rows = self._conn.execute(
             f"""
-            SELECT * FROM bills WHERE term = ? AND status IN ({placeholders})
+            SELECT * FROM bills WHERE term = ? AND status IN ({placeholders}) {attempts_clause}
             ORDER BY change_date DESC LIMIT ?
             """,
-            (term, *[s.value for s in statuses], limit),
+            params,
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
     def list_publish_candidates(
-        self, term: int, channel_id: str, *, min_score: int, limit: int
+        self, term: int, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
     ) -> list[Bill]:
         rows = self._conn.execute(
             """
@@ -282,10 +313,12 @@ class SqliteBillRepository:
               AND NOT EXISTS (
                   SELECT 1 FROM publications p
                   WHERE p.term = b.term AND p.number = b.number AND p.kind = 'new_bill'
-                    AND p.channel_id = ? AND p.status IN ('sent', 'skipped', 'pending', 'unknown')
+                    AND p.channel_id = ?
+                    AND (p.status IN ('sent', 'skipped', 'pending', 'unknown')
+                         OR (p.status = 'failed' AND p.attempts >= ?))
               )
             """,
-            (term, BillStatus.ANALYZED.value, channel_id),
+            (term, BillStatus.ANALYZED.value, channel_id, max_attempts),
         ).fetchall()
         bills = [self._row_to_bill(r) for r in rows]
         eligible = [
@@ -377,7 +410,8 @@ class SqliteBillRepository:
             UPDATE publications SET status = ?,
                 message_id = COALESCE(?, message_id),
                 document_message_ids = COALESCE(?, document_message_ids),
-                error = ?, sent_at = COALESCE(?, sent_at)
+                error = ?, sent_at = COALESCE(?, sent_at),
+                attempts = attempts + ?
             WHERE id = ?
             """,
             (
@@ -386,6 +420,7 @@ class SqliteBillRepository:
                 json.dumps(document_message_ids) if document_message_ids is not None else None,
                 error[:2000] if error else None,
                 _iso(sent_at),
+                int(status is PublicationStatus.FAILED),
                 publication_id,
             ),
         )
@@ -420,8 +455,9 @@ class SqliteBillRepository:
             cur = self._conn.execute(
                 """
                 INSERT INTO status_changes (term, number, old_fingerprint, new_fingerprint,
-                                            new_stages_json, closure_detected, passed, detected_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                                            new_stages_json, closure_detected, passed,
+                                            content_changed, detected_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     change.term,
@@ -433,6 +469,7 @@ class SqliteBillRepository:
                     ),
                     int(change.closure_detected),
                     _bool(change.passed),
+                    int(change.content_changed),
                     change.detected_at.isoformat(),
                 ),
             )
@@ -440,11 +477,35 @@ class SqliteBillRepository:
             return None
         return int(cur.lastrowid or 0)
 
+    def closure_announced(self, term: int, number: str) -> bool:
+        row = self._conn.execute(
+            "SELECT 1 FROM status_changes WHERE term = ? AND number = ? AND closure_detected = 1"
+            " LIMIT 1",
+            (term, number),
+        ).fetchone()
+        return row is not None
+
+    def list_failed_status_changes(
+        self, term: int, channel_id: str, *, max_attempts: int
+    ) -> list[StatusChange]:
+        """Status changes whose update post failed and may be retried."""
+        rows = self._conn.execute(
+            """
+            SELECT c.* FROM status_changes c
+            JOIN publications p ON p.status_change_id = c.id AND p.kind = 'status_update'
+            WHERE c.term = ? AND p.channel_id = ? AND p.status = 'failed' AND p.attempts < ?
+            ORDER BY c.id
+            """,
+            (term, channel_id, max_attempts),
+        ).fetchall()
+        return [self._row_to_status_change(r) for r in rows]
+
     # ------------------------------------------------------------------ runs
 
-    def last_successful_run_started_at(self) -> datetime | None:
+    def last_discovery_started_at(self) -> datetime | None:
+        """Start of the last full run whose discovery phase completed (the watermark)."""
         row = self._conn.execute(
-            "SELECT started_at FROM runs WHERE ok = 1 AND mode = 'run'"
+            "SELECT started_at FROM runs WHERE discovery_ok = 1 AND mode = 'run'"
             " ORDER BY started_at DESC LIMIT 1"
         ).fetchone()
         return datetime.fromisoformat(row[0]) if row else None
@@ -458,8 +519,15 @@ class SqliteBillRepository:
 
     def finish_run(self, run_id: int, report: RunReport) -> None:
         self._conn.execute(
-            "UPDATE runs SET finished_at = ?, ok = ?, report_json = ? WHERE id = ?",
-            (_iso(report.finished_at), int(report.ok), report.model_dump_json(), run_id),
+            "UPDATE runs SET finished_at = ?, ok = ?, discovery_ok = ?, report_json = ?"
+            " WHERE id = ?",
+            (
+                _iso(report.finished_at),
+                int(report.ok),
+                int(report.discovery_ok),
+                report.model_dump_json(),
+                run_id,
+            ),
         )
 
     # ------------------------------------------------------------------ row mapping
@@ -486,6 +554,21 @@ class SqliteBillRepository:
         )
 
     @staticmethod
+    def _row_to_status_change(row: sqlite3.Row) -> StatusChange:
+        return StatusChange(
+            id=int(row["id"]),
+            term=int(row["term"]),
+            number=row["number"],
+            old_fingerprint=row["old_fingerprint"],
+            new_fingerprint=row["new_fingerprint"],
+            new_stages=[Stage.model_validate(s) for s in json.loads(row["new_stages_json"])],
+            closure_detected=bool(row["closure_detected"]),
+            passed=None if row["passed"] is None else bool(row["passed"]),
+            content_changed=bool(row["content_changed"]),
+            detected_at=datetime.fromisoformat(row["detected_at"]),
+        )
+
+    @staticmethod
     def _row_to_publication(row: sqlite3.Row) -> Publication:
         return Publication(
             id=int(row["id"]),
@@ -509,7 +592,3 @@ def _bool(value: bool | None) -> int | None:
 
 def _iso_date(value: object) -> str | None:
     return None if value is None else str(value)
-
-
-def rows_to_numbers(bills: Iterable[Bill]) -> list[str]:
-    return [b.number for b in bills]

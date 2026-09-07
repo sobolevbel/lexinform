@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from lexinform.adapters.pdf_text import TextBudget
 from lexinform.errors import ServiceUnavailableError
@@ -65,13 +66,12 @@ class AnalysisService:
         if limit <= 0:
             return result
         candidates = self._repo.list_by_status(
-            term, [BillStatus.ANALYSIS_PENDING, BillStatus.ANALYSIS_FAILED], limit=limit * 2
+            term,
+            [BillStatus.ANALYSIS_PENDING, BillStatus.ANALYSIS_FAILED],
+            limit=limit,
+            max_attempts=self._max_attempts,
         )
         for bill in candidates:
-            if bill.analysis_attempts >= self._max_attempts:
-                continue
-            if result.analyzed + result.failed >= limit:
-                break
             try:
                 record = self.analyze_bill(bill)
             except ServiceUnavailableError as exc:
@@ -119,7 +119,7 @@ class AnalysisService:
             candidate.kind == "print"
             and print_info is not None
             and print_info.change_date is not None
-            and print_info.change_date.replace(tzinfo=record.created_at.tzinfo) > record.created_at
+            and _as_utc(print_info.change_date) > _as_utc(record.created_at)
         ):
             return candidate
         return None
@@ -175,8 +175,24 @@ class AnalysisService:
             return None
 
     def _load_text(self, document: TextDocument | None) -> tuple[str, bool, TextSource]:
+        """Text of the document, or metadata-only when it cannot be fetched or read.
+
+        Only an outage of the Sejm API propagates; a missing file or a broken PDF is not a reason to
+        burn one of the bill's analysis attempts, the designed fallback is analysing the metadata.
+        """
         if document is None:
             return "", False, "metadata_only"
+        try:
+            return self._load_pdf_text(document)
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning(
+                "%s unreadable (%s: %s); using metadata only", document.url, type(exc).__name__, exc
+            )
+            return "", False, "metadata_only"
+
+    def _load_pdf_text(self, document: TextDocument) -> tuple[str, bool, TextSource]:
         size = self._gateway.attachment_size(document.url)
         if size is not None and size > self._max_pdf_bytes:
             log.warning("%s is %d bytes, over limit; using metadata only", document.url, size)
@@ -191,3 +207,8 @@ class AnalysisService:
             return "", False, "metadata_only"
         budgeted = self._budget.apply(text)
         return budgeted.text, budgeted.truncated, "pdf"
+
+
+def _as_utc(value: datetime) -> datetime:
+    """Naive datetimes in our own records are UTC; API timestamps arrive already aware."""
+    return value if value.tzinfo is not None else value.replace(tzinfo=UTC)

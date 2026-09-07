@@ -2,9 +2,11 @@
 
 Verified behaviour of the API (September 2026):
 - `/processes` honours `limit`, `offset`, `modifiedSince` (full ISO datetime, date-only is an
-  error) and `documentType` (the Polish display string, e.g. "projekt ustawy"); `sort_by` is
-  ignored, results come in ascending print-number order. We therefore paginate by offset until a
-  short page.
+  error) and `documentType` (the Polish display string, e.g. "projekt ustawy"); `sort_by` and
+  `passed` are ignored, results come in ascending print-number order. We therefore paginate by
+  offset until an empty page.
+- All timestamps (`changeDate`, `modifiedSince`) are naive local time of the Sejm servers
+  (Europe/Warsaw); `Z` or an offset suffix is rejected. `SEJM_TZ` converts both ways.
 - `/prints` ignores `limit`/`modifiedSince`, so we never list it; we only fetch single prints.
 - Attachments are served from `/prints/{number}/{attachment name}`.
 """
@@ -14,14 +16,16 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable, Iterator
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import quote
+from zoneinfo import ZoneInfo
 
 import httpx2 as httpx
 
 from lexinform.errors import SejmApiUnavailableError
 from lexinform.models import (
+    BILL_DOCUMENT_TYPE,
     Attachment,
     DocumentType,
     PrintInfo,
@@ -30,9 +34,25 @@ from lexinform.models import (
     Stage,
 )
 
+__all__ = ["BILL_DOCUMENT_TYPE", "SejmApiClient", "SejmApiError"]
+
 log = logging.getLogger(__name__)
 
-BILL_DOCUMENT_TYPE = "projekt ustawy"
+SEJM_TZ = ZoneInfo("Europe/Warsaw")
+
+
+def to_sejm_local(value: datetime) -> datetime:
+    """Aware datetime -> naive wall clock as the Sejm API expects it."""
+    if value.tzinfo is None:
+        return value
+    return value.astimezone(SEJM_TZ).replace(tzinfo=None)
+
+
+def from_sejm_local(value: datetime) -> datetime:
+    """Naive Sejm API timestamp -> aware datetime (UTC)."""
+    if value.tzinfo is not None:
+        return value
+    return value.replace(tzinfo=SEJM_TZ).astimezone(UTC)
 
 
 class SejmApiError(RuntimeError):
@@ -74,21 +94,31 @@ class SejmApiClient:
     ) -> Iterator[ProcessSummary]:
         params: dict[str, str | int] = {"limit": self._page_size}
         if modified_since is not None:
-            params["modifiedSince"] = modified_since.replace(tzinfo=None, microsecond=0).isoformat()
+            local = to_sejm_local(modified_since).replace(microsecond=0)
+            params["modifiedSince"] = local.isoformat()
         if document_type:
             params["documentType"] = document_type
         offset = 0
+        previous_first: str | None = None
         while True:
             page = self._get_json(
                 f"/sejm/term{term}/processes", params={**params, "offset": offset}
             )
             if not isinstance(page, list):
                 raise SejmApiError(f"Unexpected /processes payload: {type(page).__name__}")
+            if not page:
+                return
+            first = str(page[0].get("number"))
+            if first == previous_first:
+                # The server ignored `offset`: stop instead of looping forever.
+                log.warning("/processes returned the same page twice at offset %d", offset)
+                return
+            previous_first = first
             for item in page:
                 yield parse_process_summary(item)
             if len(page) < self._page_size:
                 return
-            offset += self._page_size
+            offset += len(page)
 
     def get_process(self, term: int, number: str) -> ProcessDetail:
         data = self._get_json(f"/sejm/term{term}/processes/{quote(number)}")
@@ -129,7 +159,7 @@ class SejmApiClient:
                     ) from exc
                 self._wait(attempt, f"{method} {url}: {exc}")
                 continue
-            if response.status_code >= 500:
+            if response.status_code >= 500 or response.status_code == 429:
                 if attempt <= self._max_retries:
                     self._wait(attempt, f"{method} {url}: HTTP {response.status_code}")
                     continue
@@ -161,6 +191,11 @@ def _datetime(value: Any) -> datetime | None:
     return datetime.fromisoformat(str(value))
 
 
+def _aware_datetime(value: Any) -> datetime | None:
+    parsed = _datetime(value)
+    return from_sejm_local(parsed) if parsed is not None else None
+
+
 def _document_type_enum(value: Any) -> DocumentType:
     try:
         return DocumentType(str(value))
@@ -169,7 +204,9 @@ def _document_type_enum(value: Any) -> DocumentType:
 
 
 def _summary_fields(item: dict[str, Any]) -> dict[str, Any]:
-    change_date = _datetime(item.get("changeDate")) or _datetime(item.get("webGeneratedDate"))
+    change_date = _aware_datetime(item.get("changeDate")) or _aware_datetime(
+        item.get("webGeneratedDate")
+    )
     if change_date is None:
         raise SejmApiError(f"Process {item.get('number')} has no changeDate")
     return {
@@ -185,7 +222,8 @@ def _summary_fields(item: dict[str, Any]) -> dict[str, Any]:
         "closure_date": _date(item.get("closureDate")),
         "passed": item.get("passed"),
         "urgency_status": item.get("urgencyStatus"),
-        "eu_related": str(item.get("UE") or "NO").upper() == "YES",
+        # UEStatus enum: NO | ADAPTATION | ENFORCEMENT (never "YES").
+        "eu_related": str(item.get("UE") or "NO").upper() != "NO",
         "rcl_num": item.get("rclNum"),
         "rcl_link": item.get("rclLink"),
         "prints_considered_jointly": tuple(
@@ -206,9 +244,12 @@ def parse_stage(item: dict[str, Any]) -> Stage:
         print_number=item.get("printNumber"),
         sitting_num=item.get("sittingNum"),
         decision=item.get("decision"),
+        position=item.get("position"),
         committee_code=item.get("committeeCode"),
         report_file=item.get("reportFile"),
         text_after3=item.get("textAfter3"),
+        proposal=item.get("proposal"),
+        sub_committee=bool(item.get("subCommittee", False)),
         children=tuple(parse_stage(c) for c in item.get("children") or ()),
     )
 
@@ -245,7 +286,7 @@ def parse_print(
         title=str(item.get("title") or "").strip(),
         document_date=_date(item.get("documentDate")),
         delivery_date=_date(item.get("deliveryDate")),
-        change_date=_datetime(item.get("changeDate")),
+        change_date=_aware_datetime(item.get("changeDate")),
         attachments=attachments,
         additional_prints=additional,
     )

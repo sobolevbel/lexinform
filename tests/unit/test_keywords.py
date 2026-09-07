@@ -61,3 +61,7 @@ def test_match_returns_pattern_names() -> None:
         "cudzoziemcy",
         "karta_polaka",
     ]
+
+
+def test_tolerated_stay_is_matched() -> None:
+    assert "pobyt_kwalifikowany" in KeywordPrefilter().match("zgoda na pobyt tolerowany")

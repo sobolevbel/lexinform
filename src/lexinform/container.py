@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import anthropic
 
@@ -32,6 +32,7 @@ class Container:
     gateway: SejmApiClient
     formatter: MessageFormatter
     prefilter: KeywordPrefilter
+    _telegram: TelegramBotClient | None = field(default=None, init=False, repr=False)
 
     def analyzer(self) -> AnthropicAnalyzer:
         return AnthropicAnalyzer(
@@ -58,10 +59,12 @@ class Container:
         return BillDiscoveryService(self.gateway, self.repo, self.prefilter, self.clock)
 
     def telegram_client(self) -> TelegramBotClient:
-        self.settings.require_telegram()
-        return TelegramBotClient(
-            self.settings.telegram_bot_token, base_url=self.settings.telegram_api_base_url
-        )
+        if self._telegram is None:
+            self.settings.require_telegram()
+            self._telegram = TelegramBotClient(
+                self.settings.telegram_bot_token, base_url=self.settings.telegram_api_base_url
+            )
+        return self._telegram
 
     def telegram_publisher(self, *, channel_id: str | None = None) -> TelegramPublisher:
         return TelegramPublisher(
@@ -95,7 +98,14 @@ class Container:
             self.repo,
             self.discovery_service(),
             analysis,
-            PublishingService(self.gateway, self.repo, publisher, self.clock, channel_id=channel),
+            PublishingService(
+                self.gateway,
+                self.repo,
+                publisher,
+                self.clock,
+                channel_id=channel,
+                max_attempts=self.settings.max_publish_attempts,
+            ),
             StatusTrackingService(
                 self.gateway,
                 self.repo,
@@ -104,6 +114,7 @@ class Container:
                 channel_id=channel,
                 analysis=analysis,
                 closed_grace_days=self.settings.track_closed_grace_days,
+                max_publish_attempts=self.settings.max_publish_attempts,
             ),
             self.clock,
             notifier=self.run_notifier(dry_run=dry_run),
@@ -114,6 +125,8 @@ class Container:
     def close(self) -> None:
         self.gateway.close()
         self.repo.close()
+        if self._telegram is not None:
+            self._telegram.close()
 
 
 def build_container(settings: Settings) -> Container:

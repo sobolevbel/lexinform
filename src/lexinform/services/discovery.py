@@ -6,9 +6,8 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime
 
-from lexinform.adapters.sejm_api import BILL_DOCUMENT_TYPE
 from lexinform.keywords import KeywordPrefilter
-from lexinform.models import BillStatus, DocumentType, ProcessSummary
+from lexinform.models import BILL_DOCUMENT_TYPE, BillStatus, DocumentType, ProcessSummary
 from lexinform.ports import BillRepository, Clock, SejmGateway
 
 log = logging.getLogger(__name__)

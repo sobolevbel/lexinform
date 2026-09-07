@@ -94,11 +94,16 @@ class BillRepository(Protocol):
     def record_analysis_failure(self, term: int, number: str, error: str) -> None: ...
 
     def list_by_status(
-        self, term: int, statuses: list[BillStatus], *, limit: int
+        self,
+        term: int,
+        statuses: list[BillStatus],
+        *,
+        limit: int,
+        max_attempts: int | None = None,
     ) -> list[Bill]: ...
 
     def list_publish_candidates(
-        self, term: int, channel_id: str, *, min_score: int, limit: int
+        self, term: int, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
     ) -> list[Bill]: ...
 
     def list_tracked(
@@ -128,8 +133,14 @@ class BillRepository(Protocol):
     # status changes
     def add_status_change(self, change: StatusChange) -> int | None: ...
 
+    def closure_announced(self, term: int, number: str) -> bool: ...
+
+    def list_failed_status_changes(
+        self, term: int, channel_id: str, *, max_attempts: int
+    ) -> list[StatusChange]: ...
+
     # runs
-    def last_successful_run_started_at(self) -> datetime | None: ...
+    def last_discovery_started_at(self) -> datetime | None: ...
 
     def start_run(self, report: RunReport) -> int: ...
 

@@ -6,8 +6,15 @@ from html.parser import HTMLParser
 import pytest
 
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
-from lexinform.adapters.telegram_format import MESSAGE_LIMIT, MessageFormatter, fit
-from lexinform.models import AnalysisRecord, Bill, BillStatus, RunReport, StatusChange
+from lexinform.adapters.telegram_format import MESSAGE_LIMIT, MessageFormatter, _shrink_block, fit
+from lexinform.models import (
+    AnalysisRecord,
+    Bill,
+    BillStatus,
+    RunReport,
+    StatusChange,
+    flatten_stages,
+)
 from tests.fakes import make_analysis
 
 
@@ -198,3 +205,23 @@ def test_headers_are_followed_by_blank_line(process_3039, print_3039) -> None:  
     assert text.startswith(
         f"📜 <b>Новый законопроект — druk nr 3039</b>\n\n<b>{process_3039.title}"
     )
+
+
+@pytest.mark.parametrize("budget", range(41, 120, 7))
+def test_shrink_block_keeps_html_well_formed_at_tight_budgets(budget: int) -> None:
+    block = "🔑 <b>Ключевые изменения</b>\n• Tom &amp; Jerry &lt;x&gt;\n• " + "и" * 200
+    out = _shrink_block(block, budget)
+    assert len(out) <= budget
+    if out:
+        _check_html(out)
+        assert out.startswith("🔑 <b>Ключевые изменения</b>\n")
+        assert "&" not in out.replace("&amp;", "").replace("&lt;", "").replace("&gt;", "")
+
+
+def test_senate_position_is_rendered_from_position_field(process_1962) -> None:  # type: ignore[no-untyped-def]
+    senate = next(
+        s for s in flatten_stages(process_1962.stages) if s.stage_type == "SenatePosition"
+    )
+    assert senate.position  # the fixture carries the Senate outcome in `position`
+    line = MessageFormatter._stage_line(senate)
+    assert senate.position in line

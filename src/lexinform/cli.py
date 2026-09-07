@@ -86,14 +86,17 @@ def run(
 ) -> None:
     """Daily job: discover, prefilter, analyse, publish, track."""
     settings = _settings()
+    c: Container | None = None
     try:
         c = build_container(settings)
+        pipeline = c.pipeline(dry_run=dry_run)
     except Exception as exc:
         _report_startup_failure(settings, f"startup failed: {type(exc).__name__}: {exc}")
+        if c is not None:
+            c.close()
         raise typer.Exit(code=1) from None
     s = c.settings
     try:
-        pipeline = c.pipeline(dry_run=dry_run)
         report = pipeline.run(
             RunOptions(
                 term=s.term,
@@ -222,6 +225,7 @@ def track(
             RunOptions(
                 term=s.term,
                 dry_run=dry_run,
+                discover=False,
                 publish=not dry_run,
                 track=True,
                 max_analyze=0,

@@ -33,7 +33,7 @@ KEYWORD_PATTERNS: tuple[KeywordPattern, ...] = (
     _p("obywatele_ukrainy",  r"\bobywatel\w*\s+ukrainy\b"),
     _p("wizy",               r"\bwiz(a|y|ie|ę|ą|om|ach|ami|ow\w*)\b"),
     _p("zezwolenie_pobyt",   r"\bzezwoleni\w*\s+na\s+pobyt\w*"),
-    _p("pobyt_kwalifikowany", r"\bpobyt\w*\s+(czasow|sta[łl]|rezydent|toleorwan|humanitarn)\w*"),
+    _p("pobyt_kwalifikowany", r"\bpobyt\w*\s+(czasow|sta[łl]|rezydent|tolerowan|humanitarn)\w*"),
     _p("legalizacja",        r"\blegalizac\w*"),
     _p("karta_polaka",       r"\bkar[tc]\w*\s+polaka\b"),
     _p("straz_graniczna",    r"\bstra[żz]\w*\s+graniczn\w*"),
@@ -74,6 +74,3 @@ class KeywordPrefilter:
         if not haystack.strip():
             return []
         return [p.name for p in self._patterns if p.regex.search(haystack)]
-
-    def is_candidate(self, *texts: str | None) -> bool:
-        return bool(self.match(*texts))

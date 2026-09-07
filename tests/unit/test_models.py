@@ -8,6 +8,7 @@ from lexinform.models import (
     applicant_from_title,
     diff_stages,
     flatten_stages,
+    latest_text_document,
     stage_fingerprint,
 )
 
@@ -77,3 +78,32 @@ def test_fixture_detail_parses(process_1962) -> None:  # type: ignore[no-untyped
     assert process_1962.last_stage is not None
     assert process_1962.last_stage.stage_name == "Uchwalono"
     assert len(flatten_stages(process_1962.stages)) == 18
+
+
+def _report(print_number: str, **kw: object) -> Stage:
+    return Stage(
+        stage_name="Sprawozdanie komisji",
+        stage_type="CommitteeReport",
+        print_number=print_number,
+        report_file=f"https://api.test/prints/{print_number}/{print_number}.pdf",
+        **kw,  # type: ignore[arg-type]
+    )
+
+
+def test_amendment_only_reports_do_not_count_as_bill_text() -> None:
+    full = _report("2689", proposal="załączony projekt ustawy")
+    amendments = _report("2689-A", proposal="przyjąć poprawki")
+    sub = _report("2689", proposal="załączony projekt ustawy", sub_committee=True)
+    legacy_full = _report("2689")  # stored before `proposal` was parsed
+    legacy_additional = _report("2689-A")
+    assert full.carries_bill_text and legacy_full.carries_bill_text
+    assert not amendments.carries_bill_text
+    assert not sub.carries_bill_text
+    assert not legacy_additional.carries_bill_text
+    doc = latest_text_document((full, amendments))
+    assert doc is not None and doc.url.endswith("/2689/2689.pdf")
+
+
+def test_presidium_applicant_is_recognised() -> None:
+    title = "Przedstawiony przez Prezydium Sejmu projekt uchwały w sprawie ..."
+    assert applicant_from_title(title) is ApplicantType.PRESIDIUM

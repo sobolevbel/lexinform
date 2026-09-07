@@ -48,9 +48,10 @@ class Settings(BaseSettings):
     max_publish_per_run: int = 10
     max_analyze_per_run: int = 40
     max_analysis_attempts: int = 3
+    max_publish_attempts: int = 3  # failed posts are retried on later runs up to this many times
     first_run_lookback_days: int = 1
     rerun_overlap_days: int = 1
-    track_closed_grace_days: int = 30
+    track_closed_grace_days: int = 90  # Dz.U. publication follows ~30-40 days after closure
 
     # Logging
     log_level: str = "INFO"

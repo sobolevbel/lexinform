@@ -157,7 +157,8 @@ All settings are environment variables (or a `.env` file). `ANTHROPIC_API_KEY` i
 | `LEXINFORM_TEXT_BUDGET_CHARS` | `1500000` | Safety cap on bill text sent to the LLM (~750k tokens of Polish); real prints are sent in full |
 | `LEXINFORM_MAX_PDF_DOWNLOAD_MB` | `25` | Bigger PDFs are analysed from metadata only |
 | `LEXINFORM_FIRST_RUN_LOOKBACK_DAYS` | `1` | Watermark for the very first run |
-| `LEXINFORM_TRACK_CLOSED_GRACE_DAYS` | `30` | Keep tracking closed bills this long |
+| `LEXINFORM_TRACK_CLOSED_GRACE_DAYS` | `90` | Keep tracking closed bills this long (Dz.U. publication follows 30–40 days after the Sejm vote) |
+| `LEXINFORM_MAX_PUBLISH_ATTEMPTS` | `3` | Retry a failed Telegram post on later runs at most this many times |
 | `LEXINFORM_LOG_LEVEL` / `LEXINFORM_LOG_JSON` | `INFO` / `false` | Logging |
 
 ## Scoring rubric

@@ -71,6 +71,9 @@ def fit(text: str, limit: int) -> str:
     boundary = max(cut.rfind("\n\n"), cut.rfind("\n"), cut.rfind(" "))
     if boundary > limit // 2:
         cut = cut[:boundary]
+    amp = cut.rfind("&")
+    if amp != -1 and ";" not in cut[amp:]:
+        cut = cut[:amp]  # never leave half an HTML entity behind
     return cut.rstrip() + ELLIPSIS
 
 
@@ -260,8 +263,9 @@ class MessageFormatter:
     @staticmethod
     def _stage_line(stage: Stage) -> str:
         parts = [stage.date.isoformat() + ":" if stage.date else "", stage.stage_name]
-        if stage.decision:
-            parts.append(f"— {stage.decision}")
+        outcome = stage.decision or stage.position  # SenatePosition reports via `position`
+        if outcome:
+            parts.append(f"— {outcome}")
         if stage.print_number:
             parts.append(f"(druk {stage.print_number})")
         if stage.committee_code and stage.stage_type == "Referral":
@@ -292,10 +296,19 @@ def _tag_safe(number: str) -> str:
 
 
 def _shrink_block(block: str, allowed: int) -> str:
-    """Trim a block to `allowed` chars keeping its HTML well-formed."""
+    """Trim a block to `allowed` chars keeping its HTML well-formed.
+
+    Blocks are "<b>header</b>\n<escaped body>"; cutting is only allowed inside the body, at a line
+    boundary, so no tag or entity is ever split. A block that cannot keep its header is dropped.
+    """
     if block.endswith("</pre>"):
         opening = block.index("<pre>") + len("<pre>")
         inner = block[opening : -len("</pre>")]
         room = allowed - opening - len("</pre>")
         return block[:opening] + fit(inner, max(room, 0)) + "</pre>" if room > 10 else ""
-    return fit(block, allowed)
+    header_end = block.find("\n")
+    if header_end == -1 or header_end + 1 >= allowed:
+        return ""
+    head, body = block[: header_end + 1], block[header_end + 1 :]
+    kept = fit(body, allowed - len(head))
+    return head + kept if kept.strip(ELLIPSIS) else ""
