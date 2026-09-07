@@ -25,7 +25,8 @@ from lexinform.models import (
     latest_text_document,
     stage_fingerprint,
 )
-from lexinform.ports import BillRepository, LlmAnalyzer, SejmGateway, TextExtractor
+from lexinform.ports import BillRepository, LlmAnalyzer, SejmGateway
+from lexinform.services.documents import PdfTextLoader
 
 log = logging.getLogger(__name__)
 
@@ -44,19 +45,17 @@ class AnalysisService:
         self,
         gateway: SejmGateway,
         repo: BillRepository,
-        extractor: TextExtractor,
+        loader: PdfTextLoader,
         llm: LlmAnalyzer,
         *,
         text_budget: TextBudget,
-        max_pdf_bytes: int,
         max_attempts: int = 3,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
-        self._extractor = extractor
+        self._loader = loader
         self._llm = llm
         self._budget = text_budget
-        self._max_pdf_bytes = max_pdf_bytes
         self._max_attempts = max_attempts
 
     # ------------------------------------------------------------------ first analysis
@@ -188,27 +187,18 @@ class AnalysisService:
         if document is None:
             return "", False, "metadata_only"
         try:
-            return self._load_pdf_text(document)
+            text = self._loader.load(document.url)
         except ServiceUnavailableError:
             raise
         except Exception as exc:
             log.warning(
-                "%s unreadable (%s: %s); using metadata only", document.url, type(exc).__name__, exc
+                "%s unreadable (%s: %s); using metadata only",
+                document.url,
+                type(exc).__name__,
+                exc,
             )
             return "", False, "metadata_only"
-
-    def _load_pdf_text(self, document: TextDocument) -> tuple[str, bool, TextSource]:
-        size = self._gateway.attachment_size(document.url)
-        if size is not None and size > self._max_pdf_bytes:
-            log.warning("%s is %d bytes, over limit; using metadata only", document.url, size)
-            return "", False, "metadata_only"
-        data = self._gateway.download(document.url)
-        if len(data) > self._max_pdf_bytes:
-            log.warning("%s is %d bytes, over limit; using metadata only", document.url, len(data))
-            return "", False, "metadata_only"
-        text = self._extractor.extract(data)
-        if len(text.strip()) < 200:
-            log.warning("%s yielded almost no text (%d chars)", document.url, len(text))
+        if text is None:
             return "", False, "metadata_only"
         budgeted = self._budget.apply(text)
         return budgeted.text, budgeted.truncated, "pdf"

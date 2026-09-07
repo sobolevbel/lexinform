@@ -27,8 +27,10 @@ from lexinform.models import (
 )
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.discovery import BillDiscoveryService
+from lexinform.services.documents import PdfTextLoader
 from lexinform.services.pipeline import DailyPipeline, RunOptions
 from lexinform.services.publishing import PublishingService
+from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
 from tests.fakes import (
     FakeLlm,
@@ -73,7 +75,14 @@ REFERRED = START + (
 
 
 class World:
-    def __init__(self, *, fail_publish: set[str] | None = None, llm_script=None) -> None:  # type: ignore[no-untyped-def]
+    def __init__(  # type: ignore[no-untyped-def]
+        self,
+        *,
+        fail_publish: set[str] | None = None,
+        llm_script=None,
+        text_prefilter: bool = True,
+        extractor=None,
+    ) -> None:
         self.clock = FixedClock()
         self.repo = SqliteBillRepository(":memory:")
         self.repo.migrate()
@@ -81,17 +90,24 @@ class World:
         self.llm = FakeLlm(script=llm_script)
         self.publisher = FakePublisher(fail_on=fail_publish)
         self.notifier = FakeNotifier()
+        self.extractor = extractor or FakeTextExtractor()
+        self.loader = PdfTextLoader(self.gateway, self.extractor, max_bytes=10_000_000)
         analysis = AnalysisService(
             self.gateway,
             self.repo,
-            FakeTextExtractor(),
+            self.loader,
             self.llm,
             text_budget=TextBudget(10_000),
-            max_pdf_bytes=10_000_000,
         )
         self.pipeline = DailyPipeline(
             self.repo,
-            BillDiscoveryService(self.gateway, self.repo, KeywordPrefilter(), self.clock),
+            BillDiscoveryService(
+                self.gateway,
+                self.repo,
+                KeywordPrefilter(),
+                self.clock,
+                text_prefilter=text_prefilter,
+            ),
             analysis,
             PublishingService(
                 self.gateway, self.repo, self.publisher, self.clock, channel_id=CHANNEL
@@ -106,6 +122,11 @@ class World:
             ),
             self.clock,
             notifier=self.notifier,
+            text_prefilter=(
+                TextPrefilterService(self.gateway, self.repo, self.loader, KeywordPrefilter())
+                if text_prefilter
+                else None
+            ),
         )
 
     def add_bill(
@@ -143,7 +164,9 @@ def test_happy_path_publishes_relevant_bill_once() -> None:
         and report.published == 1
     )  # type: ignore[attr-defined]
     assert [b.number for b, _ in w.publisher.new_bills] == ["3039"]
-    assert w.repo.get(10, "4000").status is BillStatus.SKIPPED_PREFILTER  # type: ignore[union-attr]
+    # the VAT bill's text (fake extractor: generic act text) does not mention foreigners either
+    assert w.repo.get(10, "4000").status is BillStatus.SKIPPED_TEXT_PREFILTER  # type: ignore[union-attr]
+    assert report.text_prefilter_checked == 1 and report.text_prefilter_hits == 0  # type: ignore[attr-defined]
     assert len(w.llm.contexts) == 1 and w.llm.contexts[0].text_source == "pdf"
 
     # second run: nothing new
@@ -426,8 +449,7 @@ def test_unreadable_pdf_falls_back_to_metadata_without_burning_attempts() -> Non
         def extract(self, data: bytes) -> str:
             raise ValueError("not a PDF")
 
-    w = World()
-    w.pipeline._analysis._extractor = _BrokenExtractor()  # type: ignore[attr-defined]
+    w = World(extractor=_BrokenExtractor())
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     report = w.run()
     assert report.analyzed == 1 and report.analysis_failures == 0  # type: ignore[attr-defined]
@@ -623,3 +645,85 @@ def test_submissions_with_a_print_or_closed_are_not_pre_print_bills() -> None:
     )
     report = w.run()
     assert report.pre_print_discovered == 0 and report.discovered == 0  # type: ignore[attr-defined]
+
+
+FOREIGNER_TEXT = (
+    "Art. 1. W ustawie o cudzoziemcach wprowadza się zmiany. "
+    "Art. 2. Zezwolenie na pobyt czasowy wydaje wojewoda. "
+    "Art. 3. Cudzoziemiec składa wniosek osobiście. " * 3
+)
+
+
+def test_text_prefilter_catches_bills_with_neutral_titles() -> None:
+    w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT))
+    w.add_bill("4100", "Rządowy projekt ustawy o zmianie niektórych ustaw w związku z cyfryzacją")
+    report = w.run()
+    assert report.prefilter_hits == 0  # the title said nothing  # type: ignore[attr-defined]
+    assert report.text_prefilter_checked == 1 and report.text_prefilter_hits == 1  # type: ignore[attr-defined]
+    assert report.analyzed == 1 and report.published == 1  # type: ignore[attr-defined]
+    bill = w.repo.get(10, "4100")
+    assert bill is not None and bill.status is BillStatus.ANALYZED
+    assert bill.prefilter_hits == [
+        "text:cudzoziemcy",
+        "text:zezwolenie_pobyt",
+        "text:pobyt_kwalifikowany",
+    ]
+    assert "Найден по тексту проекта" in MessageFormatter("ru").new_bill(bill, None).text
+    # the PDF was downloaded once: the analysis reused the prefilter's text
+    assert sum(1 for c in w.gateway.calls if c.startswith("download:")) == 1
+
+
+def test_text_prefilter_rejects_a_single_stray_mention() -> None:
+    w = World(extractor=FakeTextExtractor("Art. 1. " * 40 + "cudzoziemiec " + "Art. 2. " * 40))
+    w.add_bill("4100", "Rządowy projekt ustawy o podatku")
+    report = w.run()
+    assert report.text_prefilter_hits == 0 and report.analyzed == 0  # type: ignore[attr-defined]
+    bill = w.repo.get(10, "4100")
+    assert bill is not None and bill.status is BillStatus.SKIPPED_TEXT_PREFILTER
+    assert bill.prefilter_hits == ["text:cudzoziemcy"]  # weak hit kept for tuning
+
+
+def test_text_prefilter_without_pdf_or_with_broken_pdf_skips_quietly() -> None:
+    class _Broken:
+        def extract(self, data: bytes) -> str:
+            raise ValueError("not a PDF")
+
+    w = World(extractor=_Broken())
+    w.add_bill("4100", "Rządowy projekt ustawy o podatku")
+    w.add_bill("4101", "Rządowy projekt ustawy o lasach", with_pdf=False)
+    report = w.run()
+    assert report.text_prefilter_checked == 2 and not report.errors  # type: ignore[attr-defined]
+    assert w.repo.get(10, "4100").status is BillStatus.SKIPPED_TEXT_PREFILTER  # type: ignore[union-attr]
+    assert w.repo.get(10, "4101").status is BillStatus.SKIPPED_TEXT_PREFILTER  # type: ignore[union-attr]
+
+
+def test_text_prefilter_outage_leaves_bills_pending() -> None:
+    from lexinform.errors import SejmApiUnavailableError
+
+    class _DownOnDownload(FakeSejmGateway):
+        def download(self, url: str) -> bytes:
+            raise SejmApiUnavailableError("GET pdf: connection refused")
+
+    w = World()
+    down = _DownOnDownload()
+    down.processes, down.details, down.prints, down.files = (
+        w.gateway.processes,
+        w.gateway.details,
+        w.gateway.prints,
+        w.gateway.files,
+    )
+    w.gateway = down
+    w.loader._gateway = down  # type: ignore[attr-defined]
+    w.pipeline._text_prefilter._gateway = down  # type: ignore[attr-defined]
+    w.add_bill("4100", "Rządowy projekt ustawy o podatku")
+    report = w.run()
+    assert any(e.startswith("text prefilter:") for e in report.errors)  # type: ignore[attr-defined]
+    assert w.repo.get(10, "4100").status is BillStatus.TEXT_PREFILTER_PENDING  # type: ignore[union-attr]
+
+
+def test_text_prefilter_can_be_disabled() -> None:
+    w = World(text_prefilter=False, extractor=FakeTextExtractor(FOREIGNER_TEXT))
+    w.add_bill("4100", "Rządowy projekt ustawy o podatku")
+    w.run()
+    assert w.repo.get(10, "4100").status is BillStatus.SKIPPED_PREFILTER  # type: ignore[union-attr]
+    assert not any(c.startswith("download:") for c in w.gateway.calls)

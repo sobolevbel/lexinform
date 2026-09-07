@@ -22,7 +22,9 @@ class DocumentType(StrEnum):
 
 class BillStatus(StrEnum):
     DISCOVERED = "discovered"
-    SKIPPED_PREFILTER = "skipped_prefilter"
+    SKIPPED_PREFILTER = "skipped_prefilter"  # title/description miss, text never checked
+    TEXT_PREFILTER_PENDING = "text_prefilter_pending"  # title miss; the print text is next
+    SKIPPED_TEXT_PREFILTER = "skipped_text_prefilter"  # title and text miss
     ANALYSIS_PENDING = "analysis_pending"
     ANALYSIS_FAILED = "analysis_failed"
     ANALYZED = "analyzed"
@@ -448,6 +450,8 @@ class RunReport(BaseModel):
     pre_print_discovered: int = 0
     linked: int = 0
     prefilter_hits: int = 0
+    text_prefilter_checked: int = 0
+    text_prefilter_hits: int = 0
     analyzed: int = 0
     analysis_failures: int = 0
     published: int = 0

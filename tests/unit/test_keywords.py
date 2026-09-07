@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from lexinform.keywords import KeywordPrefilter
+from lexinform.keywords import KeywordPrefilter, accept_text_hits
 
 prefilter = KeywordPrefilter()
 
@@ -65,3 +65,19 @@ def test_match_returns_pattern_names() -> None:
 
 def test_tolerated_stay_is_matched() -> None:
     assert "pobyt_kwalifikowany" in KeywordPrefilter().match("zgoda na pobyt tolerowany")
+
+
+def test_match_counts_and_acceptance_threshold() -> None:
+    text = "cudzoziemiec ... cudzoziemcy ... zezwolenie na pobyt czasowy ... wiza"
+    counts = KeywordPrefilter().match_counts(text)
+    assert counts["cudzoziemcy"] == 2 and counts["zezwolenie_pobyt"] == 1 and counts["wizy"] == 1
+    assert accept_text_hits(counts, min_distinct=2, min_occurrences=3)
+    assert not accept_text_hits({"cudzoziemcy": 1}, min_distinct=2, min_occurrences=3)
+    assert accept_text_hits({"cudzoziemcy": 3}, min_distinct=2, min_occurrences=3)
+    assert not accept_text_hits({}, min_distinct=1, min_occurrences=1)
+
+
+def test_real_print_text_passes_the_text_prefilter(print_3039_pdf_text: str) -> None:
+    counts = KeywordPrefilter().match_counts(print_3039_pdf_text)
+    assert counts["cudzoziemcy"] > 3
+    assert accept_text_hits(counts, min_distinct=2, min_occurrences=3)

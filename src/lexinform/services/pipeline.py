@@ -15,6 +15,7 @@ from lexinform.ports import BillRepository, Clock, RunNotifier
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.publishing import PublishingService
+from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
 
 log = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ class RunOptions(BaseModel):
     track: bool = True
     max_publish: int = 10
     max_analyze: int = 40
+    max_text_prefilter: int = 20
     min_score: int = 2
     mode: str = "run"
 
@@ -44,6 +46,7 @@ class DailyPipeline:
         clock: Clock,
         *,
         notifier: RunNotifier | None = None,
+        text_prefilter: TextPrefilterService | None = None,
         first_run_lookback_days: int = 1,
         rerun_overlap_days: int = 1,
         pre_print: bool = True,
@@ -55,6 +58,7 @@ class DailyPipeline:
         self._tracking = tracking
         self._clock = clock
         self._notifier = notifier
+        self._text_prefilter = text_prefilter
         self._first_run_lookback = timedelta(days=first_run_lookback_days)
         self._overlap = timedelta(days=rerun_overlap_days)
         self._pre_print = pre_print
@@ -132,6 +136,8 @@ class DailyPipeline:
 
         if opts.discover:
             self._phase(report, "discovery", lambda: self._discover(opts, since, report))
+        if self._text_prefilter is not None:
+            self._phase(report, "text prefilter", lambda: self._prefilter_text(opts, report))
         self._phase(report, "analysis", lambda: self._analyse(opts, report))
         self._phase(report, "publishing", lambda: self._publish(opts, report))
         if opts.track:
@@ -158,6 +164,14 @@ class DailyPipeline:
         report.discovered = discovered.new
         report.pre_print_discovered = discovered.pre_print_new
         report.prefilter_hits = discovered.prefilter_hits
+
+    def _prefilter_text(self, opts: RunOptions, report: RunReport) -> None:
+        assert self._text_prefilter is not None
+        checked = self._text_prefilter.run(opts.term, limit=opts.max_text_prefilter)
+        report.text_prefilter_checked = checked.checked
+        report.text_prefilter_hits = checked.hits
+        if checked.fatal_error:
+            report.errors.append(f"text prefilter: {checked.fatal_error}")
 
     def _analyse(self, opts: RunOptions, report: RunReport) -> None:
         analysed = self._analysis.analyze_pending(opts.term, limit=opts.max_analyze)

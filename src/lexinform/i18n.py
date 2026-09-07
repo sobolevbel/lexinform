@@ -51,6 +51,7 @@ class Labels:
     committee_hint: str
     no_print_yet: str
     received: str
+    found_in_text: str
     pre_print_stage: str
     pre_print_note: str
     consultation: str
@@ -107,6 +108,7 @@ RU = Labels(
     committee_hint="организации и граждане могут направить в комиссию своё мнение",
     no_print_yet="номер druku ещё не присвоен",
     received="Поступил в Сейм",
+    found_in_text="Найден по тексту проекта: название об иностранцах не говорит.",
     pre_print_stage="проект поступил в Сейм, ожидает присвоения номера druku",
     pre_print_note=(
         "Анализ основан на официальном описании проекта: текст пока доступен только на сайте Сейма."
@@ -208,6 +210,7 @@ EN = Labels(
     committee_hint="organisations and citizens may send their opinion to the committee",
     no_print_yet="no print number yet",
     received="Received by the Sejm",
+    found_in_text="Found by scanning the bill text: the title does not mention foreigners.",
     pre_print_stage="submitted to the Sejm, awaiting a print number",
     pre_print_note=(
         "Analysis based on the official description: the text is only on the Sejm website so far."

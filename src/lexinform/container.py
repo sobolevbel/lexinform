@@ -18,8 +18,10 @@ from lexinform.keywords import KeywordPrefilter
 from lexinform.ports import Publisher, RunNotifier
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.discovery import BillDiscoveryService
+from lexinform.services.documents import PdfTextLoader
 from lexinform.services.pipeline import DailyPipeline
 from lexinform.services.publishing import PublishingService
+from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
 from lexinform.settings import Settings
 
@@ -33,6 +35,17 @@ class Container:
     formatter: MessageFormatter
     prefilter: KeywordPrefilter
     _telegram: TelegramBotClient | None = field(default=None, init=False, repr=False)
+    _loader: PdfTextLoader | None = field(default=None, init=False, repr=False)
+
+    def pdf_loader(self) -> PdfTextLoader:
+        """One loader (and text cache) per process, shared by the text prefilter and analysis."""
+        if self._loader is None:
+            self._loader = PdfTextLoader(
+                self.gateway,
+                PypdfTextExtractor(),
+                max_bytes=self.settings.max_pdf_download_mb * 1024 * 1024,
+            )
+        return self._loader
 
     def analyzer(self) -> AnthropicAnalyzer:
         return AnthropicAnalyzer(
@@ -48,15 +61,32 @@ class Container:
         return AnalysisService(
             self.gateway,
             self.repo,
-            PypdfTextExtractor(),
+            self.pdf_loader(),
             self.analyzer(),
             text_budget=TextBudget(self.settings.text_budget_chars),
-            max_pdf_bytes=self.settings.max_pdf_download_mb * 1024 * 1024,
             max_attempts=self.settings.max_analysis_attempts,
         )
 
     def discovery_service(self) -> BillDiscoveryService:
-        return BillDiscoveryService(self.gateway, self.repo, self.prefilter, self.clock)
+        return BillDiscoveryService(
+            self.gateway,
+            self.repo,
+            self.prefilter,
+            self.clock,
+            text_prefilter=self.settings.text_prefilter_enabled,
+        )
+
+    def text_prefilter_service(self) -> TextPrefilterService | None:
+        if not self.settings.text_prefilter_enabled:
+            return None
+        return TextPrefilterService(
+            self.gateway,
+            self.repo,
+            self.pdf_loader(),
+            self.prefilter,
+            min_distinct=self.settings.text_prefilter_min_distinct,
+            min_occurrences=self.settings.text_prefilter_min_occurrences,
+        )
 
     def telegram_client(self) -> TelegramBotClient:
         if self._telegram is None:
@@ -119,6 +149,7 @@ class Container:
             ),
             self.clock,
             notifier=self.run_notifier(dry_run=dry_run),
+            text_prefilter=self.text_prefilter_service(),
             first_run_lookback_days=self.settings.first_run_lookback_days,
             rerun_overlap_days=self.settings.rerun_overlap_days,
             pre_print=self.settings.pre_print_enabled,

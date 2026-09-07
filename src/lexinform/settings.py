@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     max_publish_per_run: int = 10
     max_analyze_per_run: int = 40
     max_analysis_attempts: int = 3
+    text_prefilter_enabled: bool = True  # scan the print PDF when the title says nothing
+    text_prefilter_min_distinct: int = 2  # accept when this many different patterns occur ...
+    text_prefilter_min_occurrences: int = 3  # ... or when patterns occur this many times in total
+    text_prefilter_max_per_run: int = 20
     pre_print_enabled: bool = True  # also watch /bills for bills without a print number yet
     voting_club_breakdown: bool = True  # fetch per-MP votes to show how each club voted
     max_publish_attempts: int = 3  # failed posts are retried on later runs up to this many times

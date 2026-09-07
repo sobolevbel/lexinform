@@ -69,7 +69,11 @@ Sejm API ──► discover (modifiedSince) ──► keyword prefilter ──�
    "print number assigned" under the same message. Withdrawn RPW entries get a final update.
 2. **Prefilter.** Polish word stems (`cudzoziem*`, `obywatelstw*`, `zezwoleni* na pobyt`, `Kart* Polaka`,
    `Straż* Graniczn*`, …) with word boundaries decide which bills deserve an LLM call. The filter is
-   deliberately over-inclusive; the LLM makes the final relevance call.
+   deliberately over-inclusive; the LLM makes the final relevance call. Bills whose title and
+   description say nothing (`o zmianie niektórych ustaw…`) get a second chance: their print PDF is
+   downloaded and scanned with the same patterns, and the bill goes on to analysis when at least
+   two different patterns occur or the patterns occur three times in total (bandwidth, not tokens).
+   Such cards carry the note "found by scanning the bill text".
 3. **Analyse.** The bill PDF is downloaded from the API, text is extracted (`pypdf`), cut to a
    character budget that keeps the start of the act and of the justification, and sent to Claude with
    a structured-output schema (`relevant`, `score`, `category`, `summary`, `key_changes`,
@@ -170,6 +174,9 @@ All settings are environment variables (or a `.env` file). `ANTHROPIC_API_KEY` i
 | `LEXINFORM_FIRST_RUN_LOOKBACK_DAYS` | `1` | Watermark for the very first run |
 | `LEXINFORM_TRACK_CLOSED_GRACE_DAYS` | `90` | Keep tracking closed bills this long (Dz.U. publication follows 30–40 days after the Sejm vote) |
 | `LEXINFORM_MAX_PUBLISH_ATTEMPTS` | `3` | Retry a failed Telegram post on later runs at most this many times |
+| `LEXINFORM_TEXT_PREFILTER_ENABLED` | `true` | Scan the print PDF when the title/description miss the keywords |
+| `LEXINFORM_TEXT_PREFILTER_MIN_DISTINCT` / `_MIN_OCCURRENCES` | `2` / `3` | Text hits needed to send a bill to analysis |
+| `LEXINFORM_TEXT_PREFILTER_MAX_PER_RUN` | `20` | Cap on PDFs scanned per run |
 | `LEXINFORM_PRE_PRINT_ENABLED` | `true` | Also watch `/bills` for submitted bills without a print number (consultation stage) |
 | `LEXINFORM_VOTING_CLUB_BREAKDOWN` | `true` | Fetch per-MP votes to show how each club voted |
 | `LEXINFORM_LOG_LEVEL` / `LEXINFORM_LOG_JSON` | `INFO` / `false` | Logging |
@@ -193,6 +200,7 @@ analysis so prompt changes are traceable.
 |---|---|
 | `lexinform run [--since D] [--dry-run] [--no-publish] [--no-track] [--max-publish N] [--max-analyze N] [--min-score N]` | The daily job |
 | `lexinform scan [--since D]` | Discovery + prefilter, prints candidates |
+| `lexinform reprefilter [--limit N] [--include-text-skipped]` | Scan the PDFs of bills the title prefilter skipped; passes become candidates for the next `run` |
 | `lexinform analyze NUMBER [--force] [--json]` | Analyse one bill |
 | `lexinform preview NUMBER [--to CHAT]` | Render (or send to a test chat) the card |
 | `lexinform track [--dry-run]` | Only the status-tracking phase |

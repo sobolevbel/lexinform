@@ -36,11 +36,14 @@ class BillDiscoveryService:
         repo: BillRepository,
         prefilter: KeywordPrefilter,
         clock: Clock,
+        *,
+        text_prefilter: bool = True,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
         self._prefilter = prefilter
         self._clock = clock
+        self._text_prefilter = text_prefilter
 
     def discover(self, term: int, since: datetime, *, pre_print: bool = True) -> DiscoveryResult:
         result = DiscoveryResult()
@@ -68,6 +71,12 @@ class BillDiscoveryService:
                 result.new += 1
         if result.seen == 0:
             log.warning("Sejm API returned no bills modified since %s", since.isoformat())
+
+    def _miss_status(self, summary: ProcessSummary) -> BillStatus:
+        """A title miss goes on to the text stage, unless there is no print to read."""
+        if self._text_prefilter and not summary.is_pre_print:
+            return BillStatus.TEXT_PREFILTER_PENDING
+        return BillStatus.SKIPPED_PREFILTER
 
     def _find_submission(self, summary: ProcessSummary) -> BillSubmission | None:
         """The /bills entry of a numbered print: consultation dates, applicant, RPW number."""
@@ -115,11 +124,11 @@ class BillDiscoveryService:
         needs_prefilter = is_new or (
             title_changed
             and existing is not None
-            and existing.status == BillStatus.SKIPPED_PREFILTER
+            and existing.status in (BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER)
         )
         if needs_prefilter:
             hits = self._prefilter.match(summary.title, summary.description)
-            status = BillStatus.ANALYSIS_PENDING if hits else BillStatus.SKIPPED_PREFILTER
+            status = BillStatus.ANALYSIS_PENDING if hits else self._miss_status(summary)
             self._repo.set_status(bill.term, bill.number, status, prefilter_hits=hits)
             if hits:
                 result.prefilter_hits += 1

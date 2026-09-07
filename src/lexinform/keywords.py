@@ -74,3 +74,22 @@ class KeywordPrefilter:
         if not haystack.strip():
             return []
         return [p.name for p in self._patterns if p.regex.search(haystack)]
+
+    def match_counts(self, *texts: str | None) -> dict[str, int]:
+        """Pattern name -> number of occurrences, only for patterns that occur at all."""
+        haystack = self._normalize(" \n ".join(t for t in texts if t))
+        if not haystack.strip():
+            return {}
+        counts = {p.name: len(p.regex.findall(haystack)) for p in self._patterns}
+        return {name: n for name, n in counts.items() if n}
+
+
+def accept_text_hits(counts: dict[str, int], *, min_distinct: int, min_occurrences: int) -> bool:
+    """Whether keyword hits inside a full bill text justify an LLM analysis.
+
+    One stray "cudzoziemiec" in a 200-page tax bill is noise; several distinct topics, or the same
+    topic repeated, is signal.
+    """
+    if not counts:
+        return False
+    return len(counts) >= min_distinct or sum(counts.values()) >= min_occurrences

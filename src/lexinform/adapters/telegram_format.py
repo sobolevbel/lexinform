@@ -43,6 +43,7 @@ ICON = {
     "committee": "📮",
     "consultation": "🗣",
     "print": "🔢",
+    "search": "🔎",
 }
 CLUBS_PER_SIDE = 4
 
@@ -156,6 +157,8 @@ class MessageFormatter:
             meta_lines.append(
                 f"{esc(lb.joint_prints)} {esc(', '.join(s.prints_considered_jointly))}"
             )
+        if any(h.startswith("text:") for h in bill.prefilter_hits):
+            meta_lines.append(f"{ICON['search']} <i>{esc(lb.found_in_text)}</i>")
         if bill.is_pre_print and bill.analysis.text_source == "metadata_only":
             meta_lines.append(f"{ICON['note']} <i>{esc(lb.pre_print_note)}</i>")
         elif bill.analysis.truncated or bill.analysis.text_source == "metadata_only":
@@ -272,6 +275,8 @@ class MessageFormatter:
             [
                 f"discovered: {report.discovered} (+{report.pre_print_discovered} without print"
                 f" number) · prefilter hits: {report.prefilter_hits}",
+                f"text prefilter: checked {report.text_prefilter_checked} · "
+                f"hits {report.text_prefilter_hits}",
                 f"analyzed: {report.analyzed} · failures: {report.analysis_failures}",
                 f"published: {report.published} · tracked: {report.tracked} · "
                 f"updates: {report.updates} · re-analyzed: {report.reanalyzed} · "

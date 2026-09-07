@@ -131,17 +131,64 @@ def scan(since: SinceOpt = None) -> None:
         pipeline = c.pipeline(dry_run=True)
         effective = pipeline.resolve_since(_utc(since))
         result = c.discovery_service().discover(c.settings.term, effective)
+        text_service = c.text_prefilter_service()
+        text_hits = (
+            text_service.run(c.settings.term, limit=c.settings.text_prefilter_max_per_run).hits
+            if text_service
+            else 0
+        )
         pending = c.repo.list_by_status(c.settings.term, [BillStatus.ANALYSIS_PENDING], limit=500)
     finally:
         c.close()
     typer.echo(
         f"since={effective.isoformat()} seen={result.seen} new={result.new} "
-        f"hits={result.prefilter_hits}"
+        f"pre_print={result.pre_print_new} title_hits={result.prefilter_hits} "
+        f"text_hits={text_hits}"
     )
     for bill in pending:
         typer.echo(
             f"  druk {bill.number:>6}  [{', '.join(bill.prefilter_hits)}]  {bill.summary.title}"
         )
+
+
+@app.command()
+def reprefilter(
+    limit: Annotated[int, typer.Option(help="How many skipped bills to scan.")] = 50,
+    include_text_skipped: Annotated[
+        bool,
+        typer.Option("--include-text-skipped", help="Also re-scan bills already rejected by text."),
+    ] = False,
+) -> None:
+    """Scan the print PDFs of bills the title prefilter skipped.
+
+    Bills that pass become analysis candidates for the next `run` (use `run --no-publish` after a
+    large backfill to avoid flooding the channel).
+    """
+    c = _container()
+    try:
+        service = c.text_prefilter_service()
+        if service is None:
+            typer.echo("text prefilter is disabled (LEXINFORM_TEXT_PREFILTER_ENABLED)", err=True)
+            raise typer.Exit(code=2)
+        statuses = [BillStatus.SKIPPED_PREFILTER]
+        if include_text_skipped:
+            statuses.append(BillStatus.SKIPPED_TEXT_PREFILTER)
+        skipped = [
+            b
+            for b in c.repo.list_by_status(c.settings.term, statuses, limit=limit)
+            if not b.is_pre_print
+        ]
+        accepted = 0
+        for bill in skipped:
+            ok = service.check(bill)
+            accepted += int(ok)
+            fresh = c.repo.get(bill.term, bill.number)
+            hits = ", ".join(fresh.prefilter_hits) if fresh else ""
+            verdict = "PASS" if ok else "skip"
+            typer.echo(f"  {verdict}  druk {bill.number:>6}  [{hits}]  {bill.summary.title}")
+    finally:
+        c.close()
+    typer.echo(f"scanned={len(skipped)} accepted={accepted}")
 
 
 @app.command()
@@ -161,7 +208,10 @@ def analyze(
         bill = _load_bill(c, number)
         if bill.status == BillStatus.ANALYZED and not force:
             typer.echo(f"druk {number} already analysed; use --force to redo", err=True)
-        elif bill.status == BillStatus.SKIPPED_PREFILTER and not force:
+        elif (
+            bill.status in (BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER)
+            and not force
+        ):
             typer.echo(
                 f"druk {number} was skipped by the prefilter; use --force to analyse anyway",
                 err=True,

@@ -47,3 +47,10 @@ def processes_page() -> list[ProcessSummary]:
 @pytest.fixture
 def now() -> datetime:
     return datetime(2026, 9, 7, 6, 0, tzinfo=UTC)
+
+
+@pytest.fixture(scope="session")
+def print_3039_pdf_text() -> str:
+    from lexinform.adapters.pdf_text import PypdfTextExtractor
+
+    return PypdfTextExtractor().extract((FIXTURES / "print_3039.pdf").read_bytes())
