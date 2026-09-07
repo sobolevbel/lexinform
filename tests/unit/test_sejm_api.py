@@ -187,3 +187,30 @@ def test_bills_endpoint_parses_pre_print_submissions_and_pages() -> None:
     found = client.find_submission(10, "3039")
     assert found is not None and found.number == "RPW/26666/2026"
     assert client.find_submission(10, "0") is None
+
+
+def test_process_carries_publication_fields_and_eli_act_is_parsed() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/processes/2699"):
+            return httpx.Response(200, content=(FIXTURES / "process_2699.json").read_bytes())
+        if request.url.path == "/eli/acts/DU/2026/1099":
+            return httpx.Response(
+                200, content=(FIXTURES / "eli_act_DU_2026_1099.json").read_bytes()
+            )
+        return httpx.Response(404)
+
+    client = _client(handler)
+    detail = client.get_process(10, "2699")
+    assert detail.eli == "DU/2026/1099" and detail.display_address == "Dz.U. 2026 poz. 1099"
+    assert detail.isap_url == "https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260001099"
+    assert detail.passed and detail.closure_date == date(2026, 7, 17)
+
+    act = client.get_act("DU/2026/1099")
+    assert act is not None
+    assert act.display_address == "Dz.U. 2026 poz. 1099" and act.title.startswith("Ustawa z dnia")
+    assert act.act_date == date(2026, 7, 17)  # `announcementDate` is the date in the title
+    assert act.promulgation_date == date(2026, 8, 18)  # the Dziennik Ustaw date
+    assert act.entry_into_force == date(2026, 11, 19) and act.in_force == "IN_FORCE"
+    assert act.text_pdf_url == "https://api.test/eli/acts/DU/2026/1099/text.pdf"
+    assert act.isap_url and act.isap_url.endswith("WDU20260001099")
+    assert client.get_act("DU/2026/999999") is None  # not indexed (yet): no error

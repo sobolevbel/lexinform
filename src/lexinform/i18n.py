@@ -60,6 +60,20 @@ class Labels:
     print_assigned: str
     process_withdrawn: str
     link_submission_pdf: str
+    act_published_header: str
+    journal: str
+    published_on: str
+    enters_into_force: str
+    already_in_force_since: str
+    entry_into_force_unknown: str
+    partial_vacatio_note: str
+    in_force_header: str
+    in_force_since: str
+    act_summary: str
+    link_isap: str
+    link_act_pdf: str
+    tag_published: str
+    tag_in_force: str
     date_format: str = "%Y-%m-%d"
     stage_type_labels: dict[str, str] = field(default_factory=dict)
     senate_position_labels: dict[str, str] = field(default_factory=dict)
@@ -119,6 +133,22 @@ RU = Labels(
     print_assigned="Проекту присвоен номер druku",
     process_withdrawn="Проект отозван до присвоения номера druku.",
     link_submission_pdf="PDF проекта (сайт Сейма)",
+    act_published_header="Опубликован в Dziennik Ustaw",
+    journal="Публикация",
+    published_on="опубликован",
+    enters_into_force="Вступает в силу",
+    already_in_force_since="Уже действует с",
+    entry_into_force_unknown="дата вступления в силу пока не указана",
+    partial_vacatio_note=(
+        "Отдельные положения могут вступать в силу в другие сроки — см. текст закона."
+    ),
+    in_force_header="С сегодняшнего дня действует",
+    in_force_since="вступил в силу",
+    act_summary="Суть закона",
+    link_isap="ISAP",
+    link_act_pdf="Текст закона (PDF)",
+    tag_published="опубликован",
+    tag_in_force="вступилвсилу",
     date_format="%d.%m.%Y",
     stage_type_labels={
         "ToPresident": "Закон передан Президенту",
@@ -221,6 +251,20 @@ EN = Labels(
     print_assigned="Print number assigned",
     process_withdrawn="The bill was withdrawn before receiving a print number.",
     link_submission_pdf="Bill PDF (Sejm website)",
+    act_published_header="Published in Dziennik Ustaw",
+    journal="Publication",
+    published_on="published",
+    enters_into_force="Enters into force",
+    already_in_force_since="Already in force since",
+    entry_into_force_unknown="entry-into-force date not stated yet",
+    partial_vacatio_note="Some provisions may enter into force on other dates — see the act.",
+    in_force_header="In force from today",
+    in_force_since="in force since",
+    act_summary="What the act does",
+    link_isap="ISAP",
+    link_act_pdf="Act text (PDF)",
+    tag_published="published",
+    tag_in_force="inforce",
     stage_type_labels={
         "ToPresident": "Sent to the President",
         "PresidentSignature": "✍️ Signed by the President",

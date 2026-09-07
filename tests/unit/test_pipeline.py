@@ -11,6 +11,7 @@ from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
+    ActInfo,
     ApplicantType,
     BillStatus,
     BillSubmission,
@@ -119,6 +120,7 @@ class World:
                 self.clock,
                 channel_id=CHANNEL,
                 analysis=analysis,
+                eli=self.gateway,
             ),
             self.clock,
             notifier=self.notifier,
@@ -727,3 +729,113 @@ def test_text_prefilter_can_be_disabled() -> None:
     w.run()
     assert w.repo.get(10, "4100").status is BillStatus.SKIPPED_PREFILTER  # type: ignore[union-attr]
     assert not any(c.startswith("download:") for c in w.gateway.calls)
+
+
+ELI = "DU/2026/1099"
+
+
+def _act(**kw: object) -> ActInfo:
+    base: dict[str, object] = dict(
+        eli=ELI,
+        display_address="Dz.U. 2026 poz. 1099",
+        title="Ustawa z dnia 17 lipca 2026 r. o zmianie ustawy o cudzoziemcach",
+        act_date=dt.date(2026, 7, 17),
+        promulgation_date=dt.date(2026, 9, 9),
+        entry_into_force=dt.date(2026, 9, 20),
+        in_force="NOT_IN_FORCE",
+        text_pdf_url="https://api.test/eli/acts/DU/2026/1099/text.pdf",
+        fetched_at=dt.datetime(2026, 9, 9, 6, 0, tzinfo=dt.UTC),
+    )
+    base.update(kw)
+    return ActInfo(**base)  # type: ignore[arg-type]
+
+
+def _publish_act(w: World, number: str = "3039") -> None:
+    """The process gains an ELI address (the act appeared in Dziennik Ustaw)."""
+    s = w.gateway.processes[0].model_copy(
+        update={
+            "closure_date": dt.date(2026, 9, 8),
+            "passed": True,
+            "eli": ELI,
+            "display_address": "Dz.U. 2026 poz. 1099",
+            "change_date": dt.datetime(2026, 9, 9, 9, 0),
+        }
+    )
+    w.gateway.processes[0] = s
+    w.gateway.details[number] = _detail(s, REFERRED)
+
+
+def test_act_publication_is_announced_once_and_reminded_on_entry_into_force() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    card_id = w.repo.get_publication(10, "3039", "new_bill", CHANNEL).message_id  # type: ignore[union-attr]
+
+    _publish_act(w)
+    w.clock.advance(days=2)  # 2026-09-09: ELI on the process, but the ELI API lags behind
+    report = w.run()
+    assert report.acts_published == 0 and not report.errors  # type: ignore[attr-defined]
+    assert w.repo.get(10, "3039").act is None  # type: ignore[union-attr]
+
+    w.gateway.acts[ELI] = _act()
+    w.clock.advance(days=1)
+    report2 = w.run()
+    assert report2.acts_published == 1 and report2.in_force_posted == 0  # type: ignore[attr-defined]
+    bill, reply_to = w.publisher.acts[0]
+    assert reply_to == card_id and bill.act is not None and bill.act.eli == ELI
+    text = MessageFormatter("ru").new_bill  # keep formatter import used
+    rendered = MessageFormatter("ru").act_published(bill).text
+    assert "Опубликован в Dziennik Ustaw — druk nr 3039" in rendered
+    assert "Dz.U. 2026 poz. 1099 (опубликован 09.09.2026)" in rendered
+    assert "Вступает в силу:</b> 20.09.2026" in rendered and "#опубликован #druk3039" in rendered
+    assert text  # noqa: S101  (formatter reference)
+
+    w.clock.advance(days=1)
+    assert w.run().acts_published == 0 and len(w.publisher.acts) == 1  # type: ignore[attr-defined]
+
+    # entry into force: 2026-09-20 (Warsaw); the 06:00 UTC run on the 19th is still the 19th
+    w.clock.current = dt.datetime(2026, 9, 19, 6, 0, tzinfo=dt.UTC)
+    assert w.run().in_force_posted == 0  # type: ignore[attr-defined]
+    w.clock.current = dt.datetime(2026, 9, 20, 6, 0, tzinfo=dt.UTC)
+    report3 = w.run()
+    assert report3.in_force_posted == 1  # type: ignore[attr-defined]
+    bill2, reply_to2 = w.publisher.in_force[0]
+    assert reply_to2 == card_id
+    rendered2 = MessageFormatter("ru").in_force(bill2).text
+    assert "С сегодняшнего дня действует — druk nr 3039" in rendered2
+    assert "Суть закона" in rendered2 and "#вступилвсилу #druk3039" in rendered2
+    w.clock.advance(days=1)
+    assert w.run().in_force_posted == 0 and len(w.publisher.in_force) == 1  # type: ignore[attr-defined]
+
+
+def test_act_discovered_already_in_force_gets_no_separate_reminder() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    _publish_act(w)
+    w.clock.current = dt.datetime(2026, 10, 1, 6, 0, tzinfo=dt.UTC)
+    w.gateway.acts[ELI] = _act(fetched_at=w.clock.current, in_force="IN_FORCE")
+    report = w.run()
+    assert report.acts_published == 1 and report.in_force_posted == 0  # type: ignore[attr-defined]
+    bill, _ = w.publisher.acts[0]
+    assert "Уже действует с</b> 20.09.2026" in MessageFormatter("ru").act_published(bill).text
+    assert w.publisher.in_force == []
+    pub = w.repo.get_publication(10, "3039", "in_force", CHANNEL)
+    assert pub is not None and pub.status is PublicationStatus.SKIPPED
+    w.clock.advance(days=1)
+    assert w.run().in_force_posted == 0  # type: ignore[attr-defined]
+
+
+def test_failed_act_notice_is_retried_next_run() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    _publish_act(w)
+    w.gateway.acts[ELI] = _act()
+    w.publisher.fail_on = {"3039"}
+    w.clock.advance(days=2)
+    report = w.run()
+    assert report.acts_published == 0 and report.errors  # type: ignore[attr-defined]
+    w.publisher.fail_on = set()
+    w.clock.advance(days=1)
+    assert w.run().acts_published == 1 and len(w.publisher.acts) == 1  # type: ignore[attr-defined]

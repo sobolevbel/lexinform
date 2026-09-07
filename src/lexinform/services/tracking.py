@@ -8,11 +8,13 @@ updated print) the bill is re-analysed first and the update also lists what chan
 import hashlib
 import logging
 from dataclasses import dataclass
+from zoneinfo import ZoneInfo
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
     PrintInfo,
+    ProcessDetail,
     Publication,
     PublicationKind,
     PublicationStatus,
@@ -22,7 +24,7 @@ from lexinform.models import (
     diff_stages,
     stage_fingerprint,
 )
-from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway
+from lexinform.ports import BillRepository, Clock, EliGateway, Publisher, SejmGateway
 from lexinform.services.analysis import AnalysisService
 
 log = logging.getLogger(__name__)
@@ -33,6 +35,8 @@ class TrackingResult:
     checked: int = 0
     changed: int = 0
     linked: int = 0
+    acts_published: int = 0
+    in_force_posted: int = 0
     reanalyzed: int = 0
     published: int = 0
     failed: int = 0
@@ -51,9 +55,13 @@ class StatusTrackingService:
         *,
         channel_id: str,
         analysis: AnalysisService | None = None,
+        eli: EliGateway | None = None,
         closed_grace_days: int = 30,
+        passed_max_days: int = 180,
         max_publish_attempts: int = 3,
         club_breakdown: bool = True,
+        in_force_reminders: bool = True,
+        local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -61,7 +69,11 @@ class StatusTrackingService:
         self._clock = clock
         self._channel_id = channel_id
         self._analysis = analysis
+        self._eli = eli
         self._closed_grace_days = closed_grace_days
+        self._passed_max_days = passed_max_days
+        self._in_force_reminders = in_force_reminders
+        self._local_tz = local_tz
         self._max_publish_attempts = max_publish_attempts
         self._club_breakdown = club_breakdown
         self._committee_names: dict[str, str] = {}
@@ -74,14 +86,19 @@ class StatusTrackingService:
         if not self._reconcile_pre_print(term, result, publish=publish):
             return result
         tracked = self._repo.list_tracked(
-            term, self._channel_id, closed_grace_days=self._closed_grace_days, now=now
+            term,
+            self._channel_id,
+            closed_grace_days=self._closed_grace_days,
+            passed_max_days=self._passed_max_days,
+            now=now,
         )
         for bill in tracked:
             if bill.is_pre_print:
                 continue  # no legislative process yet; handled by _reconcile_pre_print
             result.checked += 1
             try:
-                change = self._detect(bill, result)
+                detail = self._gateway.get_process(bill.term, bill.number)
+                change = self._detect(bill, detail, result)
             except ServiceUnavailableError as exc:
                 result.fatal_error = exc.describe()
                 log.error("aborting tracking phase: %s", result.fatal_error)
@@ -90,22 +107,19 @@ class StatusTrackingService:
                 result.failed += 1
                 log.exception("tracking druk %s failed: %s", bill.number, exc)
                 continue
-            if change is None:
-                continue
-            result.changed += 1
-            if not publish:
-                continue
+            if change is not None:
+                result.changed += 1
             try:
-                ok = self._publish(bill, change)
+                if change is not None and publish:
+                    self._count(self._publish(bill, change), result)
+                self._check_act(bill, detail, result, publish=publish)
             except ServiceUnavailableError as exc:
                 result.failed += 1
                 result.fatal_error = exc.describe()
                 log.error("aborting tracking phase: %s", result.fatal_error)
                 break
-            if ok:
-                result.published += 1
-            else:
-                result.failed += 1
+        if result.fatal_error is None and publish and self._in_force_reminders:
+            self._remind_in_force(term, result)
         log.info(
             "tracking: checked=%d changed=%d reanalyzed=%d published=%d failed=%d",
             result.checked,
@@ -278,8 +292,9 @@ class StatusTrackingService:
 
     # ------------------------------------------------------------------ detection
 
-    def _detect(self, bill: Bill, result: TrackingResult) -> StatusChange | None:
-        detail = self._gateway.get_process(bill.term, bill.number)
+    def _detect(
+        self, bill: Bill, detail: ProcessDetail, result: TrackingResult
+    ) -> StatusChange | None:
         print_info = self._safe_print(bill)
         now = self._clock.now()
 
@@ -386,6 +401,108 @@ class StatusTrackingService:
         except Exception as exc:
             log.warning("print %s unavailable: %s", bill.number, exc)
             return None
+
+    # ------------------------------------------------------------------ published acts
+
+    def _check_act(
+        self, bill: Bill, detail: ProcessDetail, result: TrackingResult, *, publish: bool
+    ) -> None:
+        """Once the process carries an ELI, fetch the act and announce the publication once."""
+        if self._eli is None or not detail.eli:
+            return
+        act = bill.act
+        if act is None or (act.entry_into_force is None and detail.eli == act.eli):
+            fetched = self._eli.get_act(detail.eli)
+            if fetched is None:
+                log.info("druk %s: act %s not in the ELI API yet", bill.number, detail.eli)
+                return
+            if act is not None and fetched.entry_into_force is None:
+                return  # nothing new
+            act = fetched
+            self._repo.save_act(bill.term, bill.number, act)
+            log.info(
+                "druk %s published as %s, in force %s",
+                bill.number,
+                act.display_address,
+                act.entry_into_force,
+            )
+        if not publish or self._posted(bill, PublicationKind.ACT_PUBLISHED):
+            return
+        fresh = self._repo.get(bill.term, bill.number) or bill
+        if self._publish_kind(fresh, PublicationKind.ACT_PUBLISHED):
+            result.acts_published += 1
+        else:
+            result.failed += 1
+
+    def _remind_in_force(self, term: int, result: TrackingResult) -> None:
+        today = self._clock.now().astimezone(self._local_tz).date()
+        for bill in self._repo.list_due_in_force(term, self._channel_id, today=today):
+            act = bill.act
+            if act is None or act.entry_into_force is None:
+                continue
+            if act.already_in_force_when_fetched:
+                # Discovered late: the publication notice already said "in force since ...".
+                self._record(bill, PublicationKind.IN_FORCE, PublicationStatus.SKIPPED)
+                continue
+            if self._posted(bill, PublicationKind.IN_FORCE):
+                continue
+            try:
+                if self._publish_kind(bill, PublicationKind.IN_FORCE):
+                    result.in_force_posted += 1
+                else:
+                    result.failed += 1
+            except ServiceUnavailableError as exc:
+                result.failed += 1
+                result.fatal_error = exc.describe()
+                log.error("aborting tracking phase: %s", result.fatal_error)
+                return
+
+    def _posted(self, bill: Bill, kind: PublicationKind) -> bool:
+        """True when a post of this kind exists and must not be attempted (again)."""
+        pub = self._repo.get_publication(bill.term, bill.number, kind.value, self._channel_id)
+        if pub is None:
+            return False
+        if pub.status is PublicationStatus.FAILED:
+            return pub.attempts >= self._max_publish_attempts
+        return True
+
+    def _record(self, bill: Bill, kind: PublicationKind, status: PublicationStatus) -> int:
+        return self._repo.create_publication(
+            Publication(
+                term=bill.term,
+                number=bill.number,
+                kind=kind,
+                status=status,
+                channel_id=self._channel_id,
+                created_at=self._clock.now(),
+            )
+        )
+
+    def _publish_kind(self, bill: Bill, kind: PublicationKind) -> bool:
+        """Post an act notice or an in-force reminder as a reply to the card (pending first)."""
+        pub_id = self._record(bill, kind, PublicationStatus.PENDING)
+        card = self._repo.get_publication(
+            bill.term, bill.number, PublicationKind.NEW_BILL.value, self._channel_id
+        )
+        reply_to = card.message_id if card else None
+        try:
+            if kind is PublicationKind.ACT_PUBLISHED:
+                sent = self._publisher.publish_act_published(bill, reply_to)
+            else:
+                sent = self._publisher.publish_in_force(bill, reply_to)
+        except ServiceUnavailableError as exc:
+            self._repo.mark_publication(pub_id, PublicationStatus.FAILED, error=exc.describe())
+            raise
+        except Exception as exc:
+            log.exception("%s post for druk %s failed: %s", kind.value, bill.number, exc)
+            self._repo.mark_publication(
+                pub_id, PublicationStatus.FAILED, error=f"{type(exc).__name__}: {exc}"
+            )
+            return False
+        self._repo.mark_publication(
+            pub_id, PublicationStatus.SENT, message_id=sent.message_id, sent_at=self._clock.now()
+        )
+        return True
 
     # ------------------------------------------------------------------ publishing
 

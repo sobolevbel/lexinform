@@ -11,7 +11,15 @@ import html
 from dataclasses import dataclass
 
 from lexinform.i18n import Labels, labels_for
-from lexinform.models import Bill, PrintInfo, RunReport, Stage, StatusChange, VotingSummary
+from lexinform.models import (
+    ActInfo,
+    Bill,
+    PrintInfo,
+    RunReport,
+    Stage,
+    StatusChange,
+    VotingSummary,
+)
 
 MESSAGE_LIMIT = 4096
 ELLIPSIS = "…"
@@ -44,6 +52,9 @@ ICON = {
     "consultation": "🗣",
     "print": "🔢",
     "search": "🔎",
+    "published": "📖",
+    "journal": "📰",
+    "in_force": "⚖️",
 }
 CLUBS_PER_SIDE = 4
 
@@ -260,6 +271,79 @@ class MessageFormatter:
         text = self._assemble(fixed, flexible=[stages_block, changes_block, summary_block])
         return RenderedMessage(text=text)
 
+    # ------------------------------------------------------------------ published act
+
+    def act_published(self, bill: Bill) -> RenderedMessage:
+        lb = self._labels
+        act = bill.act
+        if act is None:
+            raise ValueError(f"bill {bill.number} has no act")
+        header = (
+            f"{ICON['published']} <b>{esc(lb.act_published_header)} — "
+            f"{self._number_label(bill)}</b>\n\n<b>{esc(act.title or bill.summary.title)}</b>"
+        )
+        lines = [f"{ICON['journal']} <b>{esc(lb.journal)}:</b> {esc(act.display_address)}"]
+        if act.promulgation_date:
+            lines[0] += f" ({esc(lb.published_on)} {self.fmt_date(act.promulgation_date)})"
+        if act.entry_into_force is None:
+            lines.append(f"{ICON['effective']} <i>{esc(lb.entry_into_force_unknown)}</i>")
+        elif act.already_in_force_when_fetched:
+            lines.append(
+                f"{ICON['effective']} <b>{esc(lb.already_in_force_since)}</b> "
+                f"{self.fmt_date(act.entry_into_force)}"
+            )
+        else:
+            lines.append(
+                f"{ICON['effective']} <b>{esc(lb.enters_into_force)}:</b> "
+                f"{self.fmt_date(act.entry_into_force)}"
+            )
+        lines.append(f"{ICON['note']} <i>{esc(lb.partial_vacatio_note)}</i>")
+        facts = "\n".join(lines)
+        links_block = f"{ICON['links']} " + " | ".join(self._act_links(bill, act))
+        tags = f"#{lb.tag_published} {self._number_tag(bill)} #Sejm{bill.term}"
+        return RenderedMessage(text=self._assemble([header, facts, links_block, tags], flexible=[]))
+
+    def in_force(self, bill: Bill) -> RenderedMessage:
+        lb = self._labels
+        act = bill.act
+        if act is None or act.entry_into_force is None:
+            raise ValueError(f"bill {bill.number} has no entry-into-force date")
+        header = (
+            f"{ICON['in_force']} <b>{esc(lb.in_force_header)} — {self._number_label(bill)}</b>\n\n"
+            f"<b>{esc(act.title or bill.summary.title)}</b>"
+        )
+        facts = (
+            f"{ICON['journal']} {esc(act.display_address)} · {esc(lb.in_force_since)} "
+            f"{self.fmt_date(act.entry_into_force)}\n"
+            f"{ICON['note']} <i>{esc(lb.partial_vacatio_note)}</i>"
+        )
+        summary_block = ""
+        practical = ""
+        if bill.analysis is not None:
+            a = bill.analysis.analysis
+            summary_block = (
+                f"{ICON['about']} <b>{esc(lb.act_summary)}</b>\n{esc(a.summary.strip())}"
+            )
+            if a.practical_impact.strip():
+                practical = (
+                    f"{ICON['practical']} <b>{esc(lb.practical_impact)}:</b> "
+                    f"{esc(a.practical_impact.strip())}"
+                )
+        links_block = f"{ICON['links']} " + " | ".join(self._act_links(bill, act))
+        tags = f"#{lb.tag_in_force} {self._number_tag(bill)} #Sejm{bill.term}"
+        fixed = [header, facts, links_block, tags]
+        return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block, practical]))
+
+    def _act_links(self, bill: Bill, act: ActInfo) -> list[str]:
+        lb = self._labels
+        links = [link(bill.summary.web_url, lb.link_process)]
+        isap = act.isap_url or bill.summary.isap_url
+        if isap:
+            links.append(link(isap, lb.link_isap))
+        if act.text_pdf_url:
+            links.append(link(act.text_pdf_url, lb.link_act_pdf))
+        return links
+
     # ------------------------------------------------------------------ run report
 
     def run_report(self, report: RunReport, log_lines: list[str]) -> RenderedMessage:
@@ -281,6 +365,7 @@ class MessageFormatter:
                 f"published: {report.published} · tracked: {report.tracked} · "
                 f"updates: {report.updates} · re-analyzed: {report.reanalyzed} · "
                 f"linked: {report.linked}",
+                f"acts published: {report.acts_published} · in force: {report.in_force_posted}",
                 f"tokens in/out: {report.llm_input_tokens}/{report.llm_output_tokens}",
             ]
         )

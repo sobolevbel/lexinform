@@ -42,6 +42,18 @@ class ConsolePublisher:
         )
         return ConsolePublishResult(message_id=message_id)
 
+    def publish_act_published(self, bill: Bill, reply_to: int | None) -> ConsolePublishResult:
+        rendered = self._formatter.act_published(bill)
+        message_id = self._emit(
+            f"ACT PUBLISHED druk {bill.number} (reply to {reply_to})", rendered.text
+        )
+        return ConsolePublishResult(message_id=message_id)
+
+    def publish_in_force(self, bill: Bill, reply_to: int | None) -> ConsolePublishResult:
+        rendered = self._formatter.in_force(bill)
+        message_id = self._emit(f"IN FORCE druk {bill.number} (reply to {reply_to})", rendered.text)
+        return ConsolePublishResult(message_id=message_id)
+
 
 class ConsoleRunNotifier:
     def __init__(self, formatter: MessageFormatter, stream: TextIO = sys.stdout) -> None:

@@ -133,6 +133,16 @@ class TelegramPublisher:
         message_id = self._client.send_message(self._channel_id, rendered.text, reply_to=reply_to)
         return TelegramPublishResult(message_id=message_id)
 
+    def publish_act_published(self, bill: Bill, reply_to: int | None) -> TelegramPublishResult:
+        rendered = self._formatter.act_published(bill)
+        message_id = self._client.send_message(self._channel_id, rendered.text, reply_to=reply_to)
+        return TelegramPublishResult(message_id=message_id)
+
+    def publish_in_force(self, bill: Bill, reply_to: int | None) -> TelegramPublishResult:
+        rendered = self._formatter.in_force(bill)
+        message_id = self._client.send_message(self._channel_id, rendered.text, reply_to=reply_to)
+        return TelegramPublishResult(message_id=message_id)
+
 
 class TelegramRunNotifier:
     """Posts the run report and captured warnings to a technical log channel."""

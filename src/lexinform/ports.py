@@ -7,6 +7,7 @@ from datetime import date, datetime
 from typing import Protocol
 
 from lexinform.models import (
+    ActInfo,
     AnalysisRecord,
     Bill,
     BillContext,
@@ -57,6 +58,12 @@ class SejmGateway(Protocol):
     def download(self, url: str) -> bytes: ...
 
 
+class EliGateway(Protocol):
+    """The ELI (European Legislation Identifier) API of the Sejm: published acts."""
+
+    def get_act(self, eli: str) -> ActInfo | None: ...
+
+
 class TextExtractor(Protocol):
     def extract(self, data: bytes) -> str: ...
 
@@ -79,6 +86,10 @@ class Publisher(Protocol):
     def publish_status_update(
         self, bill: Bill, change: StatusChange, reply_to: int | None
     ) -> PublishResult: ...
+
+    def publish_act_published(self, bill: Bill, reply_to: int | None) -> PublishResult: ...
+
+    def publish_in_force(self, bill: Bill, reply_to: int | None) -> PublishResult: ...
 
 
 class RunNotifier(Protocol):
@@ -120,7 +131,13 @@ class BillRepository(Protocol):
     ) -> list[Bill]: ...
 
     def list_tracked(
-        self, term: int, channel_id: str, *, closed_grace_days: int, now: datetime
+        self,
+        term: int,
+        channel_id: str,
+        *,
+        closed_grace_days: int,
+        passed_max_days: int,
+        now: datetime,
     ) -> list[Bill]: ...
 
     # publications
@@ -154,6 +171,11 @@ class BillRepository(Protocol):
     def list_pre_print(self, term: int) -> list[Bill]: ...
 
     def link_bills(self, term: int, pre_print_number: str, print_number: str) -> None: ...
+
+    # published acts
+    def save_act(self, term: int, number: str, act: ActInfo) -> None: ...
+
+    def list_due_in_force(self, term: int, channel_id: str, *, today: date) -> list[Bill]: ...
 
     def list_failed_status_changes(
         self, term: int, channel_id: str, *, max_attempts: int

@@ -329,6 +329,12 @@ def show(
         typer.echo(f"  {att.name}  {att.url}")
     for extra in print_info.additional_prints:
         typer.echo(f"  + {extra.number}: {extra.title}")
+    if detail.eli:
+        typer.echo(f"\npublished: {detail.display_address} ({detail.eli}) {detail.isap_url or ''}")
+    if local and local.act:
+        typer.echo(
+            f"act: promulgated {local.act.promulgation_date}, in force {local.act.entry_into_force}"
+        )
     typer.echo(
         "\nlocal: "
         + (

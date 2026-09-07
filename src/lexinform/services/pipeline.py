@@ -198,6 +198,8 @@ class DailyPipeline:
         report.updates = tracked.published if opts.publish else tracked.changed
         report.reanalyzed = tracked.reanalyzed
         report.linked = tracked.linked
+        report.acts_published = tracked.acts_published
+        report.in_force_posted = tracked.in_force_posted
         report.llm_input_tokens += tracked.input_tokens
         report.llm_output_tokens += tracked.output_tokens
         if tracked.fatal_error:

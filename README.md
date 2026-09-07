@@ -90,7 +90,15 @@ Sejm API ──► discover (modifiedSince) ──► keyword prefilter ──�
    the analysis), the bill is re-analysed with the previous analysis as context and the update also
    lists what changed. Bills that did not change are never sent to the LLM again. Updates whose
    Telegram post failed are retried on later runs.
-6. **Report.** If `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` is set, a run report with counters, token
+6. **Publication and entry into force.** Once the process carries an ELI address, the act is
+   fetched from the Sejm's ELI API (`/eli/acts/DU/{year}/{pos}`) and a reply "Опубликован в
+   Dziennik Ustaw" gives the journal position, the publication date and the entry-into-force date
+   with links to ISAP and the act's PDF. On the entry-into-force day (Warsaw time) a second reply
+   "С сегодняшнего дня действует" repeats the summary. Bills passed by the Sejm are followed until
+   their act is published (up to `LEXINFORM_TRACK_PASSED_MAX_DAYS`), because the Senate, the
+   President and publication take weeks. Limitation: ELI exposes a single entry-into-force date, so
+   staged provisions are only covered by the note in the message.
+7. **Report.** If `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` is set, a run report with counters, token
    usage, errors and captured warnings is posted there. The main channel only ever gets bill posts.
 
 ## Quick start (local)
@@ -173,6 +181,8 @@ All settings are environment variables (or a `.env` file). `ANTHROPIC_API_KEY` i
 | `LEXINFORM_MAX_PDF_DOWNLOAD_MB` | `25` | Bigger PDFs are analysed from metadata only |
 | `LEXINFORM_FIRST_RUN_LOOKBACK_DAYS` | `1` | Watermark for the very first run |
 | `LEXINFORM_TRACK_CLOSED_GRACE_DAYS` | `90` | Keep tracking closed bills this long (Dz.U. publication follows 30–40 days after the Sejm vote) |
+| `LEXINFORM_TRACK_PASSED_MAX_DAYS` | `180` | Keep following passed bills whose act is not published yet |
+| `LEXINFORM_IN_FORCE_REMINDERS` | `true` | Post a reminder on the day the act enters into force |
 | `LEXINFORM_MAX_PUBLISH_ATTEMPTS` | `3` | Retry a failed Telegram post on later runs at most this many times |
 | `LEXINFORM_TEXT_PREFILTER_ENABLED` | `true` | Scan the print PDF when the title/description miss the keywords |
 | `LEXINFORM_TEXT_PREFILTER_MIN_DISTINCT` / `_MIN_OCCURRENCES` | `2` / `3` | Text hits needed to send a bill to analysis |

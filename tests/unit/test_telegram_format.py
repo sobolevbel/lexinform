@@ -9,6 +9,7 @@ import pytest
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
 from lexinform.adapters.telegram_format import MESSAGE_LIMIT, MessageFormatter, _shrink_block, fit
 from lexinform.models import (
+    ActInfo,
     AnalysisRecord,
     Bill,
     BillStatus,
@@ -284,3 +285,35 @@ def test_dates_use_the_language_format(process_3039, print_3039) -> None:  # typ
     en = MessageFormatter("en").new_bill(_bill(process_3039, make_analysis()), print_3039).text
     assert "Дата druku:</b> " in ru and ".2026" in ru.split("Дата druku:</b> ")[1][:10]
     assert "2026-" in en.split("Print date:</b> ")[1][:10]
+
+
+def test_act_messages_render_in_both_languages(process_3039) -> None:  # type: ignore[no-untyped-def]
+    act = ActInfo(
+        eli="DU/2026/1099",
+        display_address="Dz.U. 2026 poz. 1099",
+        title="Ustawa z dnia 17 lipca 2026 r. o zmianie ustawy",
+        promulgation_date=dt.date(2026, 8, 18),
+        entry_into_force=dt.date(2026, 11, 19),
+        text_pdf_url="https://api.sejm.gov.pl/eli/acts/DU/2026/1099/text.pdf",
+        isap_url="https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260001099",
+        fetched_at=datetime(2026, 8, 20, tzinfo=UTC),
+    )
+    bill = _bill(process_3039, make_analysis()).model_copy(update={"act": act})
+    for lang in ("ru", "en"):
+        for text in (
+            MessageFormatter(lang).act_published(bill).text,
+            MessageFormatter(lang).in_force(bill).text,
+        ):
+            _check_html(text)
+            assert len(text) <= MESSAGE_LIMIT
+            assert "text.pdf" in text and "isap.sejm.gov.pl" in text
+    ru = MessageFormatter("ru").act_published(bill).text
+    assert "📖 <b>Опубликован в Dziennik Ustaw — druk nr 3039</b>" in ru
+    assert "Отдельные положения могут вступать в силу" in ru
+    no_date = bill.model_copy(update={"act": act.model_copy(update={"entry_into_force": None})})
+    assert (
+        "дата вступления в силу пока не указана"
+        in MessageFormatter("ru").act_published(no_date).text
+    )
+    with pytest.raises(ValueError):
+        MessageFormatter("ru").in_force(no_date)

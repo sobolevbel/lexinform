@@ -26,6 +26,7 @@ import httpx2 as httpx
 from lexinform.errors import SejmApiUnavailableError
 from lexinform.models import (
     BILL_DOCUMENT_TYPE,
+    ActInfo,
     ApplicantType,
     Attachment,
     BillSubmission,
@@ -83,6 +84,7 @@ class SejmApiClient:
             transport=transport,
             follow_redirects=True,
         )
+        self._base_url = base_url.rstrip("/")
         self._page_size = page_size
         self._max_retries = max_retries
         self._backoff = backoff_seconds
@@ -162,6 +164,13 @@ class SejmApiClient:
         data = self._get_json(f"/sejm/term{term}/prints/{quote(number)}")
         return parse_print(data, term=term)
 
+    def get_act(self, eli: str) -> ActInfo | None:
+        """The published act from the ELI API; None when the act is not (yet) indexed there."""
+        response = self._request("GET", f"/eli/acts/{eli}", allow_404=True)
+        if response.status_code == 404:
+            return None
+        return parse_act(response.json(), fetched_at=datetime.now(UTC), base_url=self._base_url)
+
     def get_voting(self, term: int, sitting: int, number: int) -> tuple[Vote, ...]:
         data = self._get_json(f"/sejm/term{term}/votings/{sitting}/{number}")
         return tuple(parse_vote(v) for v in data.get("votes") or ())
@@ -187,7 +196,12 @@ class SejmApiClient:
         return self._request("GET", path, params=params).json()
 
     def _request(
-        self, method: str, url: str, *, params: dict[str, str | int] | None = None
+        self,
+        method: str,
+        url: str,
+        *,
+        params: dict[str, str | int] | None = None,
+        allow_404: bool = False,
     ) -> httpx.Response:
         attempt = 0
         while True:
@@ -208,6 +222,8 @@ class SejmApiClient:
                 raise SejmApiUnavailableError(
                     f"{method} {url}: HTTP {response.status_code} after {attempt} attempts"
                 )
+            if response.status_code == 404 and allow_404:
+                return response
             if response.status_code >= 400:
                 raise SejmApiError(f"{method} {url}: HTTP {response.status_code}")
             return response
@@ -271,7 +287,19 @@ def _summary_fields(item: dict[str, Any]) -> dict[str, Any]:
         "prints_considered_jointly": tuple(
             str(p) for p in item.get("printsConsideredJointly") or ()
         ),
+        "eli": item.get("ELI") or None,
+        "display_address": item.get("displayAddress") or None,
+        "isap_url": _link(item.get("links"), "isap"),
     }
+
+
+def _link(links: Any, rel: str) -> str | None:
+    if not isinstance(links, list):
+        return None
+    for li in links:
+        if li.get("rel") == rel and li.get("href"):
+            return str(li["href"])
+    return None
 
 
 def parse_process_summary(item: dict[str, Any]) -> ProcessSummary:
@@ -378,7 +406,27 @@ def parse_process_detail(item: dict[str, Any]) -> ProcessDetail:
         **_summary_fields(item),
         stages=tuple(parse_stage(s) for s in item.get("stages") or ()),
         title_final=item.get("titleFinal"),
-        eli=item.get("ELI"),
+    )
+
+
+def parse_act(item: dict[str, Any], *, fetched_at: datetime, base_url: str) -> ActInfo:
+    eli = str(item["ELI"])
+    return ActInfo(
+        eli=eli,
+        display_address=str(item.get("displayAddress") or eli),
+        title=str(item.get("title") or "").strip(),
+        act_date=_date(item.get("announcementDate")),
+        promulgation_date=_date(item.get("promulgation")),
+        entry_into_force=_date(item.get("entryIntoForce")),
+        in_force=item.get("inForce"),
+        status=item.get("status"),
+        text_pdf_url=f"{base_url}/eli/acts/{eli}/text.pdf" if item.get("textPDF") else None,
+        isap_url=(
+            f"https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id={item['address']}"
+            if item.get("address")
+            else None
+        ),
+        fetched_at=fetched_at,
     )
 
 

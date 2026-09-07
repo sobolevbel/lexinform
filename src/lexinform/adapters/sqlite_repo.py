@@ -9,11 +9,12 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from lexinform.models import (
     PRE_PRINT_PREFIX,
+    ActInfo,
     AnalysisRecord,
     Bill,
     BillStatus,
@@ -107,6 +108,14 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE bills ADD COLUMN submission_json TEXT;
     ALTER TABLE bills ADD COLUMN linked_number TEXT;
     ALTER TABLE status_changes ADD COLUMN withdrawn INTEGER NOT NULL DEFAULT 0;
+    """,
+    # v4: the published act (Dziennik Ustaw) and its entry into force
+    """
+    ALTER TABLE bills ADD COLUMN act_json TEXT;
+    ALTER TABLE bills ADD COLUMN entry_into_force TEXT;
+    CREATE INDEX ix_bills_entry_into_force ON bills(entry_into_force);
+    CREATE UNIQUE INDEX ux_pub_once_per_kind ON publications(term, number, kind, channel_id)
+        WHERE kind IN ('act_published', 'in_force');
     """,
 )
 
@@ -345,19 +354,60 @@ class SqliteBillRepository:
         return eligible[:limit]
 
     def list_tracked(
-        self, term: int, channel_id: str, *, closed_grace_days: int, now: datetime
+        self,
+        term: int,
+        channel_id: str,
+        *,
+        closed_grace_days: int,
+        passed_max_days: int,
+        now: datetime,
     ) -> list[Bill]:
+        """Published bills still worth polling.
+
+        Closed bills are followed for `closed_grace_days`; bills passed by the Sejm whose act has
+        not appeared in Dziennik Ustaw yet are followed longer (`passed_max_days`), because the
+        Senate, the President and publication take weeks.
+        """
         cutoff = (now - timedelta(days=closed_grace_days)).date().isoformat()
+        passed_cutoff = (now - timedelta(days=passed_max_days)).date().isoformat()
         rows = self._conn.execute(
             """
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
             WHERE b.term = ? AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
               AND b.status != ?
-              AND (b.closure_date IS NULL OR b.closure_date >= ?)
+              AND (b.closure_date IS NULL OR b.closure_date >= ?
+                   OR (b.passed = 1 AND b.act_json IS NULL AND b.closure_date >= ?))
             ORDER BY b.number
             """,
-            (term, channel_id, BillStatus.LINKED.value, cutoff),
+            (term, channel_id, BillStatus.LINKED.value, cutoff, passed_cutoff),
+        ).fetchall()
+        return [self._row_to_bill(r) for r in rows]
+
+    # ------------------------------------------------------------------ published acts
+
+    def save_act(self, term: int, number: str, act: ActInfo) -> None:
+        self._conn.execute(
+            "UPDATE bills SET act_json = ?, entry_into_force = ? WHERE term = ? AND number = ?",
+            (act.model_dump_json(), _iso_date(act.entry_into_force), term, number),
+        )
+
+    def list_due_in_force(self, term: int, channel_id: str, *, today: date) -> list[Bill]:
+        """Published bills whose act enters into force today or earlier, not yet reminded."""
+        rows = self._conn.execute(
+            """
+            SELECT b.* FROM bills b
+            JOIN publications p ON p.term = b.term AND p.number = b.number
+            WHERE b.term = ? AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
+              AND b.entry_into_force IS NOT NULL AND b.entry_into_force <= ?
+              AND NOT EXISTS (
+                  SELECT 1 FROM publications r
+                  WHERE r.term = b.term AND r.number = b.number AND r.kind = 'in_force'
+                    AND r.channel_id = ?
+              )
+            ORDER BY b.entry_into_force, b.number
+            """,
+            (term, channel_id, today.isoformat(), channel_id),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
@@ -424,8 +474,13 @@ class SqliteBillRepository:
         else:
             row = self._conn.execute(
                 "SELECT id FROM publications WHERE term = ? AND number = ? AND channel_id = ?"
-                " AND kind = 'new_bill'",
-                (publication.term, publication.number, publication.channel_id),
+                " AND kind = ?",
+                (
+                    publication.term,
+                    publication.number,
+                    publication.channel_id,
+                    publication.kind.value,
+                ),
             ).fetchone()
         assert row is not None
         return int(row[0])
@@ -591,6 +646,7 @@ class SqliteBillRepository:
                 else None
             ),
             linked_number=row["linked_number"],
+            act=ActInfo.model_validate_json(row["act_json"]) if row["act_json"] else None,
             first_seen_at=datetime.fromisoformat(row["first_seen_at"]),
             last_checked_at=datetime.fromisoformat(row["last_checked_at"]),
         )
@@ -618,6 +674,7 @@ class SqliteBillRepository:
             term=int(row["term"]),
             number=row["number"],
             kind=PublicationKind(row["kind"]),
+            attempts=int(row["attempts"]),
             status=PublicationStatus(row["status"]),
             channel_id=row["channel_id"],
             message_id=row["message_id"],

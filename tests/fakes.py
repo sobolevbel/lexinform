@@ -8,6 +8,7 @@ from datetime import UTC, date, datetime, timedelta
 
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
 from lexinform.models import (
+    ActInfo,
     Analysis,
     AnalysisRecord,
     Bill,
@@ -45,7 +46,12 @@ class FakeSejmGateway:
     votings: dict[tuple[int, int], tuple[Vote, ...]] = field(default_factory=dict)
     committees: dict[str, Committee] = field(default_factory=dict)
     submissions: list[BillSubmission] = field(default_factory=list)
+    acts: dict[str, ActInfo] = field(default_factory=dict)
     calls: list[str] = field(default_factory=list)
+
+    def get_act(self, eli: str) -> ActInfo | None:
+        self.calls.append(f"get_act:{eli}")
+        return self.acts.get(eli)
 
     def iter_bills(
         self, term: int, *, received_from: date | None = None
@@ -154,6 +160,8 @@ class FakePublisher:
     def __init__(self, fail_on: set[str] | None = None) -> None:
         self.new_bills: list[tuple[Bill, PrintInfo | None]] = []
         self.updates: list[tuple[Bill, StatusChange, int | None]] = []
+        self.acts: list[tuple[Bill, int | None]] = []
+        self.in_force: list[tuple[Bill, int | None]] = []
         self.fail_on = fail_on or set()
         self._next_id = 100
 
@@ -173,6 +181,18 @@ class FakePublisher:
         if bill.number in self.fail_on:
             raise RuntimeError("telegram down")
         self.updates.append((bill, change, reply_to))
+        return FakePublishResult(message_id=self._id())
+
+    def publish_act_published(self, bill: Bill, reply_to: int | None) -> FakePublishResult:
+        if bill.number in self.fail_on:
+            raise RuntimeError("telegram down")
+        self.acts.append((bill, reply_to))
+        return FakePublishResult(message_id=self._id())
+
+    def publish_in_force(self, bill: Bill, reply_to: int | None) -> FakePublishResult:
+        if bill.number in self.fail_on:
+            raise RuntimeError("telegram down")
+        self.in_force.append((bill, reply_to))
         return FakePublishResult(message_id=self._id())
 
 

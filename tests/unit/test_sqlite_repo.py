@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from lexinform.adapters.sqlite_repo import MIGRATIONS, SCHEMA_VERSION, SqliteBillRepository
 from lexinform.models import (
+    ActInfo,
     BillStatus,
     Publication,
     PublicationKind,
@@ -125,7 +126,7 @@ def test_stale_pending_marked_unknown(repo, processes_page, now) -> None:  # typ
 def test_tracked_and_status_change_dedup(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
     repo.upsert_summary(process_3039, now=now)
     repo.save_stages(10, "3039", process_3039.stages, stage_fingerprint(process_3039.stages))
-    assert repo.list_tracked(10, "chan", closed_grace_days=30, now=now) == []
+    assert repo.list_tracked(10, "chan", closed_grace_days=30, passed_max_days=180, now=now) == []
     pid = repo.create_publication(
         Publication(
             term=10,
@@ -138,7 +139,7 @@ def test_tracked_and_status_change_dedup(repo, process_3039, now) -> None:  # ty
         )
     )
     assert pid
-    tracked = repo.list_tracked(10, "chan", closed_grace_days=30, now=now)
+    tracked = repo.list_tracked(10, "chan", closed_grace_days=30, passed_max_days=180, now=now)
     assert [b.number for b in tracked] == ["3039"]
     assert tracked[0].stages_fingerprint == stage_fingerprint(process_3039.stages)
     change = StatusChange(
@@ -191,7 +192,7 @@ def test_restore_of_a_previous_schema_dump_applies_missing_migrations() -> None:
     columns = {r[1] for r in repo._conn.execute("PRAGMA table_info(publications)")}
     assert "attempts" in columns
     bill_columns = {r[1] for r in repo._conn.execute("PRAGMA table_info(bills)")}
-    assert {"submission_json", "linked_number"} <= bill_columns
+    assert {"submission_json", "linked_number", "act_json", "entry_into_force"} <= bill_columns
     # the v2 backfill copies ok -> discovery_ok for old runs
     assert repo.last_discovery_started_at() is not None
 
@@ -294,3 +295,80 @@ def test_dump_restore_with_publications_and_status_changes(repo, process_3039, n
         )
         is None
     )  # unique index restored too
+
+
+def _act(**kw: object) -> ActInfo:
+    base: dict[str, object] = dict(
+        eli="DU/2026/1099",
+        display_address="Dz.U. 2026 poz. 1099",
+        title="Ustawa z dnia 17 lipca 2026 r.",
+        promulgation_date=date(2026, 8, 18),
+        entry_into_force=date(2026, 11, 19),
+        fetched_at=datetime(2026, 8, 20, tzinfo=UTC),
+    )
+    base.update(kw)
+    return ActInfo(**base)  # type: ignore[arg-type]
+
+
+def _sent_card(repo: SqliteBillRepository, number: str, now: datetime) -> None:
+    repo.create_publication(
+        Publication(
+            term=10,
+            number=number,
+            kind=PublicationKind.NEW_BILL,
+            status=PublicationStatus.SENT,
+            channel_id="chan",
+            created_at=now,
+            message_id=1,
+        )
+    )
+
+
+def test_passed_bills_stay_tracked_until_their_act_is_published(repo, process_3039) -> None:  # type: ignore[no-untyped-def]
+    closed = process_3039.model_copy(update={"closure_date": date(2026, 7, 17), "passed": True})
+    now = datetime(2026, 8, 25, tzinfo=UTC)  # 39 days after closure
+    repo.upsert_summary(closed, now=now)
+    _sent_card(repo, "3039", now)
+
+    def tracked() -> list[str]:
+        bills = repo.list_tracked(10, "chan", closed_grace_days=30, passed_max_days=180, now=now)
+        return [b.number for b in bills]
+
+    assert tracked() == ["3039"]  # past the 30-day grace, but passed and not published yet
+    repo.save_act(10, "3039", _act())
+    assert tracked() == []  # published: the reminder query takes over
+    now = datetime(2027, 3, 1, tzinfo=UTC)
+    repo.upsert_summary(closed, now=now)
+    repo._conn.execute("UPDATE bills SET act_json = NULL")
+    assert tracked() == []  # 200+ days without publication (veto, Tribunal): dropped
+
+
+def test_in_force_reminders_are_due_once(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
+    repo.upsert_summary(process_3039, now=now)
+    _sent_card(repo, "3039", now)
+    repo.save_act(10, "3039", _act())
+    assert repo.list_due_in_force(10, "chan", today=date(2026, 11, 18)) == []
+    due = repo.list_due_in_force(10, "chan", today=date(2026, 11, 19))
+    assert [b.number for b in due] == ["3039"] and due[0].act is not None
+    first = repo.create_publication(
+        Publication(
+            term=10,
+            number="3039",
+            kind=PublicationKind.IN_FORCE,
+            status=PublicationStatus.SENT,
+            channel_id="chan",
+            created_at=now,
+        )
+    )
+    again = repo.create_publication(
+        Publication(
+            term=10,
+            number="3039",
+            kind=PublicationKind.IN_FORCE,
+            status=PublicationStatus.PENDING,
+            channel_id="chan",
+            created_at=now,
+        )
+    )
+    assert first == again  # one reminder per bill and channel, enforced by the schema
+    assert repo.list_due_in_force(10, "chan", today=date(2026, 12, 1)) == []

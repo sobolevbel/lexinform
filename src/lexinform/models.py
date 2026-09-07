@@ -60,6 +60,8 @@ class ApplicantType(StrEnum):
 class PublicationKind(StrEnum):
     NEW_BILL = "new_bill"
     STATUS_UPDATE = "status_update"
+    ACT_PUBLISHED = "act_published"  # the act appeared in Dziennik Ustaw
+    IN_FORCE = "in_force"  # reminder on the day the act enters into force
 
 
 class PublicationStatus(StrEnum):
@@ -208,6 +210,28 @@ class BillSubmission(BaseModel):
         return submission_pdf_url(self.term, self.number)
 
 
+class ActInfo(BaseModel):
+    """The published act, from the ELI API (GET /eli/acts/{publisher}/{year}/{pos})."""
+
+    model_config = ConfigDict(frozen=True)
+
+    eli: str  # "DU/2026/1099"
+    display_address: str  # "Dz.U. 2026 poz. 1099"
+    title: str
+    act_date: dt.date | None = None  # `announcementDate`: the date in the act's title
+    promulgation_date: dt.date | None = None  # publication in Dziennik Ustaw
+    entry_into_force: dt.date | None = None  # single date; staged provisions are not modelled
+    in_force: str | None = None  # IN_FORCE | NOT_IN_FORCE
+    status: str | None = None  # "obowiązujący", ...
+    text_pdf_url: str | None = None
+    isap_url: str | None = None
+    fetched_at: dt.datetime
+
+    @property
+    def already_in_force_when_fetched(self) -> bool:
+        return self.entry_into_force is not None and self.entry_into_force <= self.fetched_at.date()
+
+
 class ProcessSummary(BaseModel):
     """An item of GET /processes (or, for pre-print bills, derived from GET /bills)."""
 
@@ -230,6 +254,9 @@ class ProcessSummary(BaseModel):
     rcl_link: str | None = None
     prints_considered_jointly: tuple[str, ...] = ()
     applicant: ApplicantType | None = None  # explicit (from /bills); else derived from the title
+    eli: str | None = None  # set once the act is published in Dziennik Ustaw
+    display_address: str | None = None  # "Dz.U. 2026 poz. 1099"
+    isap_url: str | None = None
 
     @property
     def web_url(self) -> str:
@@ -271,7 +298,6 @@ class ProcessDetail(ProcessSummary):
 
     stages: tuple[Stage, ...] = ()
     title_final: str | None = None
-    eli: str | None = None
 
     @property
     def last_stage(self) -> Stage | None:
@@ -390,6 +416,7 @@ class Bill(BaseModel):
     last_error: str | None = None
     submission: BillSubmission | None = None  # the /bills entry (consultation dates, RPW number)
     linked_number: str | None = None  # RPW <-> print number once the print is assigned
+    act: ActInfo | None = None  # the published act, once it appears in Dziennik Ustaw
     first_seen_at: dt.datetime
     last_checked_at: dt.datetime
 
@@ -415,6 +442,7 @@ class Publication(BaseModel):
     id: int | None = None
     term: int
     number: str
+    attempts: int = 0
     kind: PublicationKind
     status: PublicationStatus
     channel_id: str
@@ -452,6 +480,8 @@ class RunReport(BaseModel):
     prefilter_hits: int = 0
     text_prefilter_checked: int = 0
     text_prefilter_hits: int = 0
+    acts_published: int = 0
+    in_force_posted: int = 0
     analyzed: int = 0
     analysis_failures: int = 0
     published: int = 0

@@ -1,0 +1,73 @@
+{
+    "address": "WDU20260001099",
+    "announcementDate": "2026-07-17",
+    "changeDate": "2026-08-27T11:18:01",
+    "displayAddress": "Dz.U. 2026 poz. 1099",
+    "pos": 1099,
+    "promulgation": "2026-08-18",
+    "publisher": "DU",
+    "status": "obowiązujący",
+    "textHTML": false,
+    "textPDF": true,
+    "title": "Ustawa z dnia 17 lipca 2026 r. o zmianie ustawy o nabywaniu nieruchomości przez cudzoziemców oraz ustawy - Prawo o notariacie",
+    "type": "Ustawa",
+    "volume": 0,
+    "year": 2026,
+    "authorizedBody": [],
+    "directives": [],
+    "entryIntoForce": "2026-11-19",
+    "inForce": "IN_FORCE",
+    "keywords": [
+        "cudzoziemcy",
+        "notariat",
+        "nieruchomości"
+    ],
+    "keywordsNames": [],
+    "obligated": [],
+    "previousTitle": [],
+    "prints": [
+        {
+            "link": "https://www.sejm.gov.pl/Sejm10.nsf/PrzebiegProc.xsp?nr=2699",
+            "linkPrintAPI": "https://api.sejm.gov.pl/sejm/term10/prints/2699",
+            "linkProcessAPI": "https://api.sejm.gov.pl/sejm/term10/processes/2699",
+            "number": "2699",
+            "term": 10
+        }
+    ],
+    "references": {
+        "Akty uchylone": [
+            {
+                "id": "DU/2018/833",
+                "date": "2026-11-19"
+            }
+        ],
+        "Akty zmienione": [
+            {
+                "id": "DU/1991/91",
+                "date": "2026-11-19"
+            },
+            {
+                "id": "DU/1920/178",
+                "date": "2026-11-19"
+            }
+        ]
+    },
+    "releasedBy": [
+        "SEJM"
+    ],
+    "texts": [
+        {
+            "fileName": "D20261099.pdf",
+            "type": "O"
+        },
+        {
+            "fileName": "D20261099.pdf",
+            "type": "I"
+        },
+        {
+            "fileName": "D20261099L.pdf",
+            "type": "T"
+        }
+    ],
+    "ELI": "DU/2026/1099"
+}
