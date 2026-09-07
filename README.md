@@ -115,6 +115,8 @@ and keeps its state in a dedicated `state` branch as a plain-text SQL dump. No s
 5. **Run it once by hand.** *Actions → Daily run → Run workflow* with `dry_run` checked. Check the
    log, then run again without `dry_run`. From then on it fires every day at 05:00 UTC.
 
+The live state of this deployment is in the [`state`](https://github.com/sobolevbel/lexinform/tree/state) branch.
+
 How the state branch works: the workflow checks out `state` into a worktree, restores the SQLite
 database from `state/lexinform.sql`, runs the bot, dumps the database back and pushes the branch with
 the workflow's own `GITHUB_TOKEN` (`permissions: contents: write`). Nothing else is needed; the daily
