@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from lexinform.models import BillContext
 
-PROMPT_VERSION = "2026-09-v1"
+PROMPT_VERSION = "2026-09-v2"
 
 _LANGUAGE_NAMES = {"ru": "Russian", "pl": "Polish", "en": "English", "uk": "Ukrainian"}
 
@@ -23,10 +23,10 @@ You receive the text of a bill (projekt ustawy) submitted to the Sejm. Decide wh
   2 - indirect impact: border management, tax residency, general labour or consumer law with a specific foreigner angle, ratification of bilateral agreements.
   1 - marginal: foreigners mentioned only in passing.
 - category: legal_stay | employment | social | indirect | marginal | none (none when relevant is false).
-- summary: 3-6 sentences in {language}, plain language, no legalese. Explain what the bill does and why.
-- key_changes: up to 6 short bullets in {language}, each a concrete change.
+- summary: SHORT. 2-3 plain sentences in {language}, at most ~350 characters, no legalese: what the bill does and for whom. Details belong in key_changes, not here.
+- key_changes: up to 5 bullets in {language}, each one concrete change in at most ~120 characters.
 - affected_groups: who is affected, in {language} (e.g. holders of temporary residence permits, Ukrainian citizens under temporary protection, foreign students).
-- practical_impact: 1-3 sentences in {language}: what changes for a foreigner in practice (deadlines, documents, fees, rights).
+- practical_impact: 1-2 sentences in {language}: what changes for a foreigner in practice (deadlines, documents, fees, rights).
 - effective_date: the vacatio legis / entry-into-force rule quoted from the text, translated to {language}; null if absent.
 - confidence: 0-1. Lower it when the text is truncated or only metadata was available.
 - rationale: one sentence (in {language}) justifying score and category.

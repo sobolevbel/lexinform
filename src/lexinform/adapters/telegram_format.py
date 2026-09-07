@@ -19,6 +19,28 @@ ELLIPSIS = "…"
 FILLED = "●"
 EMPTY = "○"
 
+SCORE_ICON = {5: "🔴", 4: "🟠", 3: "🟡", 2: "🟢", 1: "⚪"}
+ICON = {
+    "new_bill": "📜",
+    "update": "🔄",
+    "importance": "📊",
+    "category": "🏷",
+    "about": "📝",
+    "key_changes": "🔑",
+    "practical": "💡",
+    "affected": "👥",
+    "effective": "📅",
+    "stage": "🏛",
+    "applicant": "✍️",
+    "doc_date": "📄",
+    "links": "🔗",
+    "new_stages": "🧭",
+    "changed": "🆕",
+    "passed": "✅",
+    "closed": "🏁",
+    "note": "ℹ️",
+}
+
 
 @dataclass(frozen=True)
 class RenderedMessage:
@@ -29,6 +51,10 @@ class RenderedMessage:
 def importance_bar(score: int) -> str:
     score = max(1, min(5, score))
     return FILLED * score + EMPTY * (5 - score)
+
+
+def score_icon(score: int) -> str:
+    return SCORE_ICON.get(max(1, min(5, score)), "⚪")
 
 
 def esc(value: object) -> str:
@@ -67,47 +93,50 @@ class MessageFormatter:
         s = bill.summary
 
         header = (
-            f"<b>{importance_bar(a.score)} {esc(lb.new_bill_header)}"
-            f" — druk nr {esc(s.number)}</b>\n"
+            f"{ICON['new_bill']} <b>{esc(lb.new_bill_header)} — druk nr {esc(s.number)}</b>\n"
             f"<b>{esc(s.title)}</b>"
         )
         meta = (
-            f"<b>{esc(lb.importance)}:</b> {a.score}/5 — "
-            f"{esc(lb.score_labels.get(a.score, ''))}\n"
-            f"<b>{esc(lb.category)}:</b> "
+            f"{score_icon(a.score)} <b>{esc(lb.importance)}:</b> {importance_bar(a.score)} "
+            f"{a.score}/5 — {esc(lb.score_labels.get(a.score, ''))}\n"
+            f"{ICON['category']} <b>{esc(lb.category)}:</b> "
             f"{esc(lb.category_labels.get(a.category, a.category.value))}"
         )
-        summary_block = f"<b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
+        summary_block = f"{ICON['about']} <b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
         changes_block = ""
         if a.key_changes:
             bullets = "\n".join(f"• {esc(c.strip())}" for c in a.key_changes if c.strip())
-            changes_block = f"<b>{esc(lb.key_changes)}</b>\n{bullets}"
+            changes_block = f"{ICON['key_changes']} <b>{esc(lb.key_changes)}</b>\n{bullets}"
 
         details: list[str] = []
         if a.practical_impact.strip():
-            details.append(f"<b>{esc(lb.practical_impact)}:</b> {esc(a.practical_impact.strip())}")
+            details.append(
+                f"{ICON['practical']} <b>{esc(lb.practical_impact)}:</b> "
+                f"{esc(a.practical_impact.strip())}"
+            )
         if a.affected_groups:
             details.append(
-                f"<b>{esc(lb.affected)}:</b> {esc(', '.join(g.strip() for g in a.affected_groups))}"
+                f"{ICON['affected']} <b>{esc(lb.affected)}:</b> "
+                f"{esc(', '.join(g.strip() for g in a.affected_groups))}"
             )
         details.append(
-            f"<b>{esc(lb.effective_date)}:</b> "
+            f"{ICON['effective']} <b>{esc(lb.effective_date)}:</b> "
             f"{esc(a.effective_date.strip() if a.effective_date else lb.effective_date_unknown)}"
         )
         last = bill.last_stage
         if last is not None:
             when = f" ({last.date.isoformat()})" if last.date else ""
-            details.append(f"<b>{esc(lb.stage)}:</b> {esc(last.stage_name)}{when}")
+            details.append(f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {esc(last.stage_name)}{when}")
         applicant = lb.applicant_labels.get(s.applicant_type, s.applicant_type.value)
         doc_date = s.document_date.isoformat() if s.document_date else "—"
         details.append(
-            f"<b>{esc(lb.applicant)}:</b> {esc(applicant)}   "
-            f"<b>{esc(lb.document_date)}:</b> {esc(doc_date)}"
+            f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {esc(applicant)}   "
+            f"{ICON['doc_date']} <b>{esc(lb.document_date)}:</b> {esc(doc_date)}"
         )
         if s.prints_considered_jointly:
             details.append(f"{esc(lb.joint_prints)} {esc(', '.join(s.prints_considered_jointly))}")
         if bill.analysis.truncated or bill.analysis.text_source == "metadata_only":
-            details.append(f"<i>{esc(lb.partial_text_note)}</i>")
+            details.append(f"{ICON['note']} <i>{esc(lb.partial_text_note)}</i>")
         details_block = "\n".join(details)
 
         links = [link(s.web_url, lb.link_process)]
@@ -116,7 +145,7 @@ class MessageFormatter:
             links.append(link(pdf.url, lb.link_pdf))
         if s.rcl_link:
             links.append(link(s.rcl_link, lb.link_rcl))
-        links_block = " | ".join(links)
+        links_block = f"{ICON['links']} " + " | ".join(links)
 
         tags = " ".join(
             [
@@ -139,34 +168,45 @@ class MessageFormatter:
         s = bill.summary
         analysis = bill.analysis.analysis if bill.analysis else None
 
-        header = f"<b>{esc(lb.update_header)} — druk nr {esc(s.number)}</b>\n<b>{esc(s.title)}</b>"
+        header = (
+            f"{ICON['update']} <b>{esc(lb.update_header)} — druk nr {esc(s.number)}</b>\n"
+            f"<b>{esc(s.title)}</b>"
+        )
         badge = ""
         if analysis is not None:
             badge = (
-                f"{importance_bar(analysis.score)} {analysis.score}/5 — "
+                f"{score_icon(analysis.score)} {importance_bar(analysis.score)} "
+                f"{analysis.score}/5 — "
                 f"{esc(lb.category_labels.get(analysis.category, analysis.category.value))}"
             )
 
         stage_lines = [f"• {self._stage_line(st)}" for st in change.new_stages]
         stages_block = (
-            f"<b>{esc(lb.new_stages)}</b>\n" + "\n".join(stage_lines) if stage_lines else ""
+            f"{ICON['new_stages']} <b>{esc(lb.new_stages)}</b>\n" + "\n".join(stage_lines)
+            if stage_lines
+            else ""
         )
         closure = ""
         if change.closure_detected:
-            closure = esc(lb.process_passed if change.passed else lb.process_closed)
+            icon = ICON["passed"] if change.passed else ICON["closed"]
+            closure = f"{icon} {esc(lb.process_passed if change.passed else lb.process_closed)}"
 
         summary_block = ""
         changes_block = ""
         if analysis is not None:
-            summary_block = f"<b>{esc(lb.current_summary)}</b>\n{esc(analysis.summary.strip())}"
+            summary_block = (
+                f"{ICON['about']} <b>{esc(lb.current_summary)}</b>\n{esc(analysis.summary.strip())}"
+            )
             if change.content_changed:
                 bullets = "\n".join(
                     f"• {esc(c.strip())}" for c in analysis.changes_since_previous if c.strip()
                 )
                 if bullets:
-                    changes_block = f"<b>{esc(lb.changes_since_previous)}</b>\n{bullets}"
+                    changes_block = (
+                        f"{ICON['changed']} <b>{esc(lb.changes_since_previous)}</b>\n{bullets}"
+                    )
                 else:
-                    changes_block = f"<i>{esc(lb.reanalyzed_note)}</i>"
+                    changes_block = f"{ICON['note']} <i>{esc(lb.reanalyzed_note)}</i>"
 
         links = [link(s.web_url, lb.link_process)]
         text_after3 = next((st.text_after3 for st in change.new_stages if st.text_after3), None)
@@ -174,7 +214,7 @@ class MessageFormatter:
             links.append(link(text_after3, lb.link_text_after3))
         elif bill.analysis and bill.analysis.source_url and change.content_changed:
             links.append(link(bill.analysis.source_url, lb.link_pdf))
-        links_block = " | ".join(links)
+        links_block = f"{ICON['links']} " + " | ".join(links)
         tags = f"#{lb.tag_update} #druk{_tag_safe(s.number)} #Sejm{s.term}"
 
         fixed = [header, badge, closure, links_block, tags]

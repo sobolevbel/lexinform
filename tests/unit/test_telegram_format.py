@@ -61,9 +61,9 @@ def test_new_bill_card_contains_all_sections(process_3039, print_3039) -> None: 
     rendered = MessageFormatter("ru").new_bill(bill, print_3039)
     text = rendered.text
     _check_html(text)
-    assert "●●●●●" in text
-    assert "druk nr 3039" in text
-    assert "Важность:</b> 5/5" in text
+    assert text.startswith("📜 <b>Новый законопроект — druk nr 3039</b>")
+    assert "🔴 <b>Важность:</b> ●●●●● 5/5" in text
+    assert "📝 <b>О чём проект</b>" in text
     assert "О чём проект" in text and "Ключевые изменения" in text
     assert "PrzebiegProc.xsp?nr=3039" in text
     assert "prints/3039/3039.pdf" in text
@@ -149,7 +149,8 @@ def test_status_update_with_reanalysis_shows_summary_and_diff(process_3039) -> N
     text = MessageFormatter("ru").status_update(bill, change).text
     _check_html(text)
     assert "Суть проекта" in text and "Что изменилось с прошлого раза" in text
-    assert "Срок подачи сокращён" in text and "●●●●○ 4/5" in text
+    assert "Срок подачи сокращён" in text and "🟠 ●●●●○ 4/5" in text
+    assert "🆕 <b>Что изменилось с прошлого раза</b>" in text
     assert "Новые стадии" not in text
 
 
