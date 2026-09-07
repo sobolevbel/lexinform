@@ -35,7 +35,7 @@ Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony na te
 🏛 Стадия: Skierowano do I czytania w komisjach (2026-09-03)
 ✍️ Инициатор: депутатский   📄 Дата druku: 2026-08-03
 
-🔗 Ход процесса в Сейме | PDF druku
+🔗 Ход процесса в Сейме | PDF
 
 #важность5 #легализация #druk3039 #Sejm10
 ```
