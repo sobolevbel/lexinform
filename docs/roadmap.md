@@ -1,8 +1,33 @@
-# Roadmap: next three features
+# Roadmap
 
 Planned on 2026-09-07 after the first production runs. Purpose of the project, restated by the
 owner: catch bills that may affect foreigners **early**, follow their whole legislative life, and
 give readers a chance to **act in time** (public consultations, hearings, opinions to committees).
+
+## Status (2026-09-07, evening)
+
+Done the same day, see the commit history:
+
+- **Bills before they get a print number** (`RPW/…` entries from `/bills`): discovered, analysed
+  from the official description, published with the public consultation dates; linked to the print
+  when it is assigned (same Telegram thread), withdrawal announced. Not in the original plan; it
+  surfaced when a consultation-stage bill (RPW/29075/2026) was missing from the channel.
+- **Feature 3**: voting totals + per-club breakdown, Senate/President outcomes, committee names.
+- **Feature 1**: keyword search inside the print PDF (`reprefilter` CLI, shared text cache).
+- **Feature 2**: Dz.U. publication notice + entry-into-force reminder (schema v4).
+- Action signals, cheap tier: consultation dates on cards, committee referral with name and hint,
+  public hearing label.
+
+Still open:
+
+- Consultation deadline reminder (e.g. 3 days before `publicConsultationEndDate`).
+- Medium tier of action signals: committee sitting agendas (`/committees/{code}/sittings`) and the
+  next Sejm sitting agenda (`/proceedings`) mentioning the bill.
+- Ukrainian-language channel; weekly digest; static site from the state dump.
+
+The sections below are the original plan, kept for the rationale and the verified API facts.
+
+---
 
 Verified API facts used below (curl, 2026-09-07):
 
