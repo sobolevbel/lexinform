@@ -166,3 +166,18 @@ def test_telegram_client_retries_transport_errors_then_gives_up() -> None:
 
     with pytest.raises(TelegramUnavailableError):
         TelegramBotClient("T", transport=httpx.MockTransport(unauthorized)).send_message("@c", "x")
+
+
+def test_bot_not_admin_is_an_outage() -> None:
+    def forbidden(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            403,
+            json={
+                "ok": False,
+                "error_code": 403,
+                "description": "Forbidden: bot is not a member of the channel chat",
+            },
+        )
+
+    with pytest.raises(TelegramUnavailableError, match="not a member"):
+        TelegramBotClient("T", transport=httpx.MockTransport(forbidden)).send_message("@c", "x")

@@ -124,8 +124,9 @@ class TelegramBotClient:
                 log.warning("Telegram rate limit, sleeping %ss", retry_after)
                 self._sleep(float(retry_after))
                 continue
-            if code == 401:
-                raise TelegramUnavailableError(f"bot token rejected: {description}")
+            if code in (401, 403):
+                # Wrong token, or the bot is not an admin of the channel: affects every message.
+                raise TelegramUnavailableError(f"HTTP {code}: {description}")
             raise TelegramError(code, description)
         raise TelegramUnavailableError(f"{method}: gave up after {self.MAX_ATTEMPTS} attempts")
 
