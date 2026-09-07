@@ -1,0 +1,85 @@
+name: Daily run
+
+on:
+  schedule:
+    - cron: "0 5 * * *"  # 05:00 UTC every day (07:00 in Warsaw during summer time)
+  workflow_dispatch:
+    inputs:
+      since:
+        description: "Only bills modified since (YYYY-MM-DD). Leave empty for the automatic watermark."
+        required: false
+        default: ""
+      dry_run:
+        description: "Dry run: print messages, do not post, do not persist"
+        type: boolean
+        default: false
+
+# One run at a time so two runs never race on the state branch.
+concurrency:
+  group: lexinform-daily
+  cancel-in-progress: false
+
+permissions:
+  contents: write  # needed to push the state branch with the automatic GITHUB_TOKEN
+
+env:
+  STATE_BRANCH: state
+  STATE_FILE: state/lexinform.sql
+  LEXINFORM_DB_PATH: ${{ github.workspace }}/lexinform.db
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out state branch (create it if missing)
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin "$STATE_BRANCH" >/dev/null; then
+            git fetch origin "$STATE_BRANCH"
+            git worktree add state "origin/$STATE_BRANCH"
+            git -C state checkout -B "$STATE_BRANCH"
+          else
+            git worktree add --detach state
+            git -C state checkout --orphan "$STATE_BRANCH"
+            git -C state rm -rf --quiet . || true
+            echo "# lexinform state branch: SQLite dump written by the daily workflow" > state/README.md
+          fi
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --no-dev
+
+      - name: Restore database from state branch
+        run: uv run lexinform db restore "$STATE_FILE" --missing-ok
+
+      - name: Run lexinform
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LEXINFORM_TELEGRAM_BOT_TOKEN: ${{ secrets.LEXINFORM_TELEGRAM_BOT_TOKEN }}
+          LEXINFORM_TELEGRAM_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_CHANNEL_ID }}
+          LEXINFORM_TELEGRAM_LOG_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID }}
+          LEXINFORM_LOG_LEVEL: INFO
+        run: |
+          set -euo pipefail
+          ARGS=()
+          if [ -n "${{ inputs.since }}" ]; then ARGS+=(--since "${{ inputs.since }}"); fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS+=(--dry-run); fi
+          uv run lexinform run "${ARGS[@]}"
+
+      - name: Dump database and push state branch
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          set -euo pipefail
+          uv run lexinform db dump "$STATE_FILE"
+          cd state
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "state unchanged"; exit 0
+          fi
+          git commit -m "state: $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push origin "HEAD:$STATE_BRANCH"
