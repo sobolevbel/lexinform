@@ -2,7 +2,7 @@
 
 **lexinform** is a small daily bot that watches bills submitted to the Polish Sejm, picks out the ones
 that matter to foreigners living in Poland, asks an LLM to score and summarise them, and posts the
-result to a Telegram channel together with the bill's PDF. It then keeps an eye on each published
+result to a Telegram channel with a link to the bill's PDF. It then keeps an eye on each published
 bill and posts an update whenever the legislative process moves (committee, readings, Senate, ...).
 
 - Source of truth: the official Sejm REST API (`api.sejm.gov.pl`), no scraping.
@@ -40,7 +40,7 @@ Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony na te
 #важность5 #легализация #druk3039 #Sejm10
 ```
 
-The PDF of the print is attached as a reply to the card. When a bill moves to a new stage, an
+The card links to the bill's PDF on the Sejm API (no file attachments). When a bill moves to a new stage, an
 "Обновление — druk nr 3039" message is posted **as a reply to the original card**: the new stages,
 the current summary, and, when the text of the bill itself changed (committee report with
 amendments, text after the 3rd reading, updated print), a fresh LLM analysis with a

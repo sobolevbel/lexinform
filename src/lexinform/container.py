@@ -68,7 +68,6 @@ class Container:
             self.telegram_client(),
             self.formatter,
             channel_id=channel_id or self.settings.telegram_channel_id,
-            gateway=self.gateway,
         )
 
     def publisher(self, *, dry_run: bool) -> Publisher:

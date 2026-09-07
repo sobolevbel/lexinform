@@ -198,11 +198,11 @@ def preview(
         print_info = c.gateway.get_print(c.settings.term, number)
         if to:
             result = c.telegram_publisher(channel_id=to).publish_new_bill(bill, print_info)
-            typer.echo(f"sent message {result.message_id} documents={result.document_message_ids}")
+            typer.echo(f"sent message {result.message_id}")
         else:
             rendered = c.formatter.new_bill(bill, print_info)
             typer.echo(rendered.text)
-            typer.echo(f"\n[{len(rendered.text)} chars] caption: {rendered.caption}")
+            typer.echo(f"\n[{len(rendered.text)} chars]")
     finally:
         c.close()
 

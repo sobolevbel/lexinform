@@ -1,7 +1,7 @@
 """Renders Telegram HTML messages from domain models. Pure functions, no I/O.
 
-Telegram limits: 4096 characters per message, 1024 per document caption. Everything derived from
-external data is passed through html.escape; only our own markup is raw HTML.
+Telegram limit: 4096 characters per message. Everything derived from external data is passed
+through html.escape; only our own markup is raw HTML.
 """
 
 from __future__ import annotations
@@ -13,7 +13,6 @@ from lexinform.i18n import Labels, labels_for
 from lexinform.models import Bill, PrintInfo, RunReport, Stage, StatusChange
 
 MESSAGE_LIMIT = 4096
-CAPTION_LIMIT = 1024
 ELLIPSIS = "…"
 
 FILLED = "●"
@@ -45,7 +44,6 @@ ICON = {
 @dataclass(frozen=True)
 class RenderedMessage:
     text: str
-    caption: str
 
 
 def importance_bar(score: int) -> str:
@@ -158,8 +156,7 @@ class MessageFormatter:
 
         fixed = [header, meta, details_block, links_block, tags]
         text = self._assemble(fixed, flexible=[summary_block, changes_block])
-        caption = fit(f"Druk nr {esc(s.number)} — {esc(s.title)}", CAPTION_LIMIT)
-        return RenderedMessage(text=text, caption=caption)
+        return RenderedMessage(text=text)
 
     # ------------------------------------------------------------------ status update
 
@@ -219,7 +216,7 @@ class MessageFormatter:
 
         fixed = [header, badge, closure, links_block, tags]
         text = self._assemble(fixed, flexible=[stages_block, changes_block, summary_block])
-        return RenderedMessage(text=text, caption="")
+        return RenderedMessage(text=text)
 
     # ------------------------------------------------------------------ run report
 
@@ -248,7 +245,7 @@ class MessageFormatter:
         if log_lines:
             logs = "<b>warnings</b>\n<pre>" + esc("\n".join(log_lines)) + "</pre>"
         text = self._assemble([head, counters, errors], flexible=[logs])
-        return RenderedMessage(text=text, caption="")
+        return RenderedMessage(text=text)
 
     # ------------------------------------------------------------------ helpers
 

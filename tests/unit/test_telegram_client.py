@@ -8,7 +8,7 @@ import pytest
 from lexinform.adapters.telegram import TelegramBotClient, TelegramError, TelegramPublisher
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import AnalysisRecord, Bill, BillStatus
-from tests.fakes import FakeSejmGateway, make_analysis
+from tests.fakes import make_analysis
 
 
 def _client(handler, sleeps: list[float] | None = None) -> TelegramBotClient:  # type: ignore[no-untyped-def]
@@ -64,7 +64,7 @@ def test_api_error_raises() -> None:
     assert exc.value.code == 400
 
 
-def test_publisher_sends_card_then_pdf_by_url(process_3039, print_3039, now) -> None:  # type: ignore[no-untyped-def]
+def test_publisher_sends_card_only(process_3039, print_3039, now) -> None:  # type: ignore[no-untyped-def]
     posted: list[str] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -89,10 +89,7 @@ def test_publisher_sends_card_then_pdf_by_url(process_3039, print_3039, now) -> 
         first_seen_at=now,
         last_checked_at=now,
     )
-    gateway = FakeSejmGateway(sizes={print_3039.main_pdf.url: 1_000_000})
-    publisher = TelegramPublisher(
-        _client(handler), MessageFormatter("ru"), channel_id="@chan", gateway=gateway
-    )
+    publisher = TelegramPublisher(_client(handler), MessageFormatter("ru"), channel_id="@chan")
     result = publisher.publish_new_bill(bill, print_3039)
-    assert posted == ["sendMessage", "sendDocument"]
-    assert result.message_id == 1 and result.document_message_ids == [2]
+    assert posted == ["sendMessage"]
+    assert result.message_id == 1 and result.document_message_ids == []

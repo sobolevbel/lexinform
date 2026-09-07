@@ -6,7 +6,7 @@ from html.parser import HTMLParser
 import pytest
 
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
-from lexinform.adapters.telegram_format import CAPTION_LIMIT, MESSAGE_LIMIT, MessageFormatter, fit
+from lexinform.adapters.telegram_format import MESSAGE_LIMIT, MessageFormatter, fit
 from lexinform.models import AnalysisRecord, Bill, BillStatus, RunReport, StatusChange
 from tests.fakes import make_analysis
 
@@ -69,7 +69,6 @@ def test_new_bill_card_contains_all_sections(process_3039, print_3039) -> None: 
     assert "prints/3039/3039.pdf" in text
     assert "#важность5 #легализация #druk3039 #Sejm10" in text
     assert "Стадия:</b> Skierowanie" in text
-    assert len(rendered.caption) <= CAPTION_LIMIT and "Druk nr 3039" in rendered.caption
 
 
 def test_partial_text_note_and_escaping(process_3039, print_3039) -> None:  # type: ignore[no-untyped-def]

@@ -31,10 +31,6 @@ class ConsolePublisher:
     def publish_new_bill(self, bill: Bill, print_info: PrintInfo | None) -> ConsolePublishResult:
         rendered = self._formatter.new_bill(bill, print_info)
         message_id = self._emit(f"NEW BILL druk {bill.number}", rendered.text)
-        if print_info and print_info.main_pdf:
-            self._stream.write(
-                f"[document] {print_info.main_pdf.url}\n[caption] {rendered.caption}\n"
-            )
         return ConsolePublishResult(message_id=message_id)
 
     def publish_status_update(
