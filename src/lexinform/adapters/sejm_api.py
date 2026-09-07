@@ -27,11 +27,14 @@ from lexinform.errors import SejmApiUnavailableError
 from lexinform.models import (
     BILL_DOCUMENT_TYPE,
     Attachment,
+    Committee,
     DocumentType,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
     Stage,
+    Vote,
+    VotingSummary,
 )
 
 __all__ = ["BILL_DOCUMENT_TYPE", "SejmApiClient", "SejmApiError"]
@@ -127,6 +130,14 @@ class SejmApiClient:
     def get_print(self, term: int, number: str) -> PrintInfo:
         data = self._get_json(f"/sejm/term{term}/prints/{quote(number)}")
         return parse_print(data, term=term)
+
+    def get_voting(self, term: int, sitting: int, number: int) -> tuple[Vote, ...]:
+        data = self._get_json(f"/sejm/term{term}/votings/{sitting}/{number}")
+        return tuple(parse_vote(v) for v in data.get("votes") or ())
+
+    def get_committee(self, term: int, code: str) -> Committee:
+        data = self._get_json(f"/sejm/term{term}/committees/{quote(code)}")
+        return parse_committee(data, term=term)
 
     def attachment_size(self, url: str) -> int | None:
         response = self._request("HEAD", url)
@@ -250,7 +261,53 @@ def parse_stage(item: dict[str, Any]) -> Stage:
         text_after3=item.get("textAfter3"),
         proposal=item.get("proposal"),
         sub_committee=bool(item.get("subCommittee", False)),
+        voting=parse_voting(voting) if isinstance(voting := item.get("voting"), dict) else None,
         children=tuple(parse_stage(c) for c in item.get("children") or ()),
+    )
+
+
+def _int(value: Any) -> int | None:
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def parse_voting(item: dict[str, Any]) -> VotingSummary:
+    pdf = next(
+        (link.get("href") for link in item.get("links") or () if link.get("rel") == "pdf"), None
+    )
+    return VotingSummary(
+        yes=_int(item.get("yes")) or 0,
+        no=_int(item.get("no")) or 0,
+        abstain=_int(item.get("abstain")) or 0,
+        not_participating=_int(item.get("notParticipating")) or 0,
+        total_voted=_int(item.get("totalVoted")),
+        majority_type=item.get("majorityType"),
+        majority_votes=_int(item.get("majorityVotes")),
+        sitting=_int(item.get("sitting")),
+        voting_number=_int(item.get("votingNumber")),
+        date=_aware_datetime(item.get("date")),
+        description=item.get("description"),
+        topic=item.get("topic"),
+        pdf_url=pdf,
+    )
+
+
+def parse_vote(item: dict[str, Any]) -> Vote:
+    return Vote(
+        mp=_int(item.get("MP")) or 0,
+        club=str(item.get("club") or ""),
+        vote=str(item.get("vote") or ""),
+    )
+
+
+def parse_committee(item: dict[str, Any], *, term: int) -> Committee:
+    return Committee(
+        term=term,
+        code=str(item["code"]),
+        name=str(item.get("name") or item["code"]).strip(),
+        name_genitive=item.get("nameGenitive"),
     )
 
 

@@ -115,6 +115,7 @@ class Container:
                 analysis=analysis,
                 closed_grace_days=self.settings.track_closed_grace_days,
                 max_publish_attempts=self.settings.max_publish_attempts,
+                club_breakdown=self.settings.voting_club_breakdown,
             ),
             self.clock,
             notifier=self.run_notifier(dry_run=dry_run),

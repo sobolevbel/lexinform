@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+from collections.abc import Iterable
 from enum import StrEnum
 from typing import Literal
 
@@ -70,6 +71,62 @@ SourceKind = Literal["print", "committee_report", "text_after3", "metadata"]
 # --------------------------------------------------------------------------- Sejm data
 
 
+class ClubVotes(BaseModel):
+    """How one parliamentary club voted; computed from the per-MP list of a voting."""
+
+    model_config = ConfigDict(frozen=True)
+
+    club: str
+    yes: int = 0
+    no: int = 0
+    abstain: int = 0
+    absent: int = 0
+
+
+class Vote(BaseModel):
+    """One MP's vote from GET /votings/{sitting}/{number}."""
+
+    model_config = ConfigDict(frozen=True)
+
+    mp: int
+    club: str
+    vote: str  # YES | NO | ABSTAIN | ABSENT | ...
+
+
+class VotingSummary(BaseModel):
+    """Result of a Sejm vote as embedded in a `Voting` stage (`clubs` is filled by us)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    yes: int
+    no: int
+    abstain: int
+    not_participating: int = 0
+    total_voted: int | None = None
+    majority_type: str | None = None
+    majority_votes: int | None = None
+    sitting: int | None = None
+    voting_number: int | None = None
+    date: dt.datetime | None = None
+    description: str | None = None
+    topic: str | None = None
+    pdf_url: str | None = None
+    clubs: tuple[ClubVotes, ...] = ()
+
+
+class Committee(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    term: int
+    code: str
+    name: str
+    name_genitive: str | None = None
+
+    @property
+    def web_url(self) -> str:
+        return committee_web_url(self.term, self.code)
+
+
 class Stage(BaseModel):
     """One node of the legislative process tree returned by /processes/{n}."""
 
@@ -87,6 +144,10 @@ class Stage(BaseModel):
     position: str | None = None  # SenatePosition: what the Senate did (not part of the fingerprint)
     proposal: str | None = None  # CommitteeReport: what the committee proposes
     sub_committee: bool = False  # CommitteeReport: a sub-committee report, not the final one
+    voting: VotingSummary | None = None  # Voting: results (not part of the fingerprint)
+    committee_name: str | None = (
+        None  # Referral: resolved by us from /committees (not fingerprinted)
+    )
     children: tuple[Stage, ...] = ()
 
     @property
@@ -335,6 +396,27 @@ class RunReport(BaseModel):
 
 def process_web_url(term: int, number: str) -> str:
     return f"https://www.sejm.gov.pl/Sejm{term}.nsf/PrzebiegProc.xsp?nr={number}"
+
+
+def committee_web_url(term: int, code: str) -> str:
+    return (
+        f"https://www.sejm.gov.pl/Sejm{term}.nsf/agent.xsp?symbol=KOMISJAST"
+        f"&NrKadencji={term}&KodKom={code}"
+    )
+
+
+def aggregate_clubs(votes: Iterable[Vote]) -> tuple[ClubVotes, ...]:
+    """Per-club totals, largest "yes" first (then "no", "abstain"); independents form a club."""
+    counts: dict[str, dict[str, int]] = {}
+    for vote in votes:
+        club = counts.setdefault(
+            vote.club or "niez.", {"yes": 0, "no": 0, "abstain": 0, "absent": 0}
+        )
+        key = {"YES": "yes", "NO": "no", "ABSTAIN": "abstain"}.get(vote.vote.upper(), "absent")
+        club[key] += 1
+    result = [ClubVotes(club=name, **c) for name, c in counts.items()]
+    result.sort(key=lambda c: (-c.yes, -c.no, -c.abstain, c.club))
+    return tuple(result)
 
 
 def print_web_url(term: int, number: str) -> str:

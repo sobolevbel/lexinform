@@ -16,7 +16,9 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    Stage,
     StatusChange,
+    aggregate_clubs,
     diff_stages,
     stage_fingerprint,
 )
@@ -50,6 +52,7 @@ class StatusTrackingService:
         analysis: AnalysisService | None = None,
         closed_grace_days: int = 30,
         max_publish_attempts: int = 3,
+        club_breakdown: bool = True,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -59,6 +62,8 @@ class StatusTrackingService:
         self._analysis = analysis
         self._closed_grace_days = closed_grace_days
         self._max_publish_attempts = max_publish_attempts
+        self._club_breakdown = club_breakdown
+        self._committee_names: dict[str, str] = {}
 
     def check_updates(self, term: int, *, publish: bool = True) -> TrackingResult:
         result = TrackingResult()
@@ -164,6 +169,7 @@ class StatusTrackingService:
         new_stages = diff_stages(bill.stages, detail.stages) if stages_changed else []
         if not (new_stages or content_changed or closure_detected):
             return None  # nothing worth a post (e.g. a stage was edited or removed upstream)
+        new_stages = [self._enrich(bill.term, st) for st in new_stages]
 
         fresh = self._repo.get(bill.term, bill.number) or bill
         change = StatusChange(
@@ -189,6 +195,39 @@ class StatusTrackingService:
             "; ".join(s.stage_name for s in change.new_stages) or "-",
         )
         return change
+
+    def _enrich(self, term: int, stage: Stage) -> Stage:
+        """Add what the stage tree does not carry: per-club votes and committee names.
+
+        Best effort: a failure here degrades the update, it never blocks it (except an outage).
+        """
+        try:
+            if (
+                self._club_breakdown
+                and stage.stage_type == "Voting"
+                and stage.voting is not None
+                and not stage.voting.clubs
+                and stage.voting.sitting is not None
+                and stage.voting.voting_number is not None
+            ):
+                votes = self._gateway.get_voting(
+                    term, stage.voting.sitting, stage.voting.voting_number
+                )
+                voting = stage.voting.model_copy(update={"clubs": aggregate_clubs(votes)})
+                return stage.model_copy(update={"voting": voting})
+            if stage.stage_type == "Referral" and stage.committee_code and not stage.committee_name:
+                name = self._committee_name(term, stage.committee_code)
+                return stage.model_copy(update={"committee_name": name})
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("could not enrich stage %s: %s", stage.stage_name, exc)
+        return stage
+
+    def _committee_name(self, term: int, code: str) -> str:
+        if code not in self._committee_names:
+            self._committee_names[code] = self._gateway.get_committee(term, code).name
+        return self._committee_names[code]
 
     @staticmethod
     def _change_key(stage_fp: str, bill: Bill, *, closed: bool) -> str:

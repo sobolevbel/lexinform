@@ -41,6 +41,17 @@ class Labels:
     run_report_title: str
     tag_importance: str
     tag_update: str
+    voting: str
+    votes_for: str
+    votes_against: str
+    votes_abstain: str
+    not_voting: str
+    link_voting_pdf: str
+    referred_to_committee: str
+    committee_hint: str
+    date_format: str = "%Y-%m-%d"
+    stage_type_labels: dict[str, str] = field(default_factory=dict)
+    senate_position_labels: dict[str, str] = field(default_factory=dict)
     score_labels: dict[int, str] = field(default_factory=dict)
     category_labels: dict[Category, str] = field(default_factory=dict)
     category_tags: dict[Category, str] = field(default_factory=dict)
@@ -76,6 +87,31 @@ RU = Labels(
     run_report_title="Отчёт о запуске lexinform",
     tag_importance="важность",
     tag_update="обновление",
+    voting="Голосование",
+    votes_for="за",
+    votes_against="против",
+    votes_abstain="воздержались",
+    not_voting="не голосовали",
+    link_voting_pdf="протокол голосования (PDF)",
+    referred_to_committee="Направлен в комиссию",
+    committee_hint="организации и граждане могут направить в комиссию своё мнение",
+    date_format="%d.%m.%Y",
+    stage_type_labels={
+        "ToPresident": "Закон передан Президенту",
+        "PresidentSignature": "✍️ Президент подписал закон",
+        "Veto": "⛔ Президент наложил вето",
+        "PresidentToTribunal": "⚖️ Президент направил закон в Конституционный трибунал",
+        "PublicHearing": (
+            "📢 Публичные слушания (wysłuchanie publiczne) — можно подать заявку на участие"
+        ),
+        "SenatePositionConsideration": "Сейм рассмотрел позицию Сената",
+    },
+    senate_position_labels={
+        "nie wniósł poprawek": "Сенат принял закон без поправок",
+        "wniósł poprawki": "Сенат внёс поправки",
+        "wniósł poprawkę": "Сенат внёс поправку",
+        "odrzucił ustawę": "Сенат отклонил закон",
+    },
     score_labels={
         5: "изменения в легализации пребывания",
         4: "работа, Karta Polaka, спецзакон по Украине",
@@ -140,6 +176,28 @@ EN = Labels(
     run_report_title="lexinform run report",
     tag_importance="importance",
     tag_update="update",
+    voting="Vote",
+    votes_for="for",
+    votes_against="against",
+    votes_abstain="abstained",
+    not_voting="did not vote",
+    link_voting_pdf="voting record (PDF)",
+    referred_to_committee="Referred to committee",
+    committee_hint="organisations and citizens may send their opinion to the committee",
+    stage_type_labels={
+        "ToPresident": "Sent to the President",
+        "PresidentSignature": "✍️ Signed by the President",
+        "Veto": "⛔ Vetoed by the President",
+        "PresidentToTribunal": "⚖️ Referred by the President to the Constitutional Tribunal",
+        "PublicHearing": "📢 Public hearing (wysłuchanie publiczne) — participation requests open",
+        "SenatePositionConsideration": "Sejm considered the Senate position",
+    },
+    senate_position_labels={
+        "nie wniósł poprawek": "Senate passed the bill without amendments",
+        "wniósł poprawki": "Senate introduced amendments",
+        "wniósł poprawkę": "Senate introduced an amendment",
+        "odrzucił ustawę": "Senate rejected the bill",
+    },
     score_labels={
         5: "changes to legalization of stay",
         4: "employment, Karta Polaka, Ukraine special act",

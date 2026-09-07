@@ -4,7 +4,10 @@ import datetime as dt
 
 from lexinform.models import (
     ApplicantType,
+    ClubVotes,
     Stage,
+    Vote,
+    aggregate_clubs,
     applicant_from_title,
     diff_stages,
     flatten_stages,
@@ -107,3 +110,37 @@ def test_amendment_only_reports_do_not_count_as_bill_text() -> None:
 def test_presidium_applicant_is_recognised() -> None:
     title = "Przedstawiony przez Prezydium Sejmu projekt uchwały w sprawie ..."
     assert applicant_from_title(title) is ApplicantType.PRESIDIUM
+
+
+def test_fingerprint_ignores_enrichment_fields(process_1962) -> None:  # type: ignore[no-untyped-def]
+    def strip(stages):  # type: ignore[no-untyped-def]
+        return tuple(
+            st.model_copy(
+                update={
+                    "voting": None,
+                    "position": None,
+                    "committee_name": None,
+                    "children": strip(st.children),
+                }
+            )
+            for st in stages
+        )
+
+    assert stage_fingerprint(process_1962.stages) == stage_fingerprint(strip(process_1962.stages))
+    voting = next(s for s in flatten_stages(process_1962.stages) if s.stage_type == "Voting")
+    assert voting.voting is not None and voting.voting.clubs == ()
+
+
+def test_aggregate_clubs_counts_and_orders() -> None:
+    votes = [
+        Vote(mp=1, club="PiS", vote="ABSTAIN"),
+        Vote(mp=2, club="KO", vote="YES"),
+        Vote(mp=3, club="KO", vote="YES"),
+        Vote(mp=4, club="KO", vote="ABSENT"),
+        Vote(mp=5, club="Lewica", vote="YES"),
+        Vote(mp=6, club="", vote="NO"),
+    ]
+    clubs = aggregate_clubs(votes)
+    assert [c.club for c in clubs] == ["KO", "Lewica", "niez.", "PiS"]
+    assert clubs[0] == ClubVotes(club="KO", yes=2, absent=1)
+    assert clubs[3].abstain == 1

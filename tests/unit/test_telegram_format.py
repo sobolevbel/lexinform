@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 from datetime import UTC, datetime
 from html.parser import HTMLParser
 
@@ -11,7 +12,9 @@ from lexinform.models import (
     AnalysisRecord,
     Bill,
     BillStatus,
+    ClubVotes,
     RunReport,
+    Stage,
     StatusChange,
     flatten_stages,
 )
@@ -223,5 +226,61 @@ def test_senate_position_is_rendered_from_position_field(process_1962) -> None: 
         s for s in flatten_stages(process_1962.stages) if s.stage_type == "SenatePosition"
     )
     assert senate.position  # the fixture carries the Senate outcome in `position`
-    line = MessageFormatter._stage_line(senate)
-    assert senate.position in line
+    line = MessageFormatter("ru")._stage_line(senate)
+    assert "Сенат внёс поправки" in line and "(druk 2994)" in line
+    odd = senate.model_copy(update={"position": "odroczył rozpatrywanie"})
+    assert "odroczył rozpatrywanie" in MessageFormatter("ru")._stage_line(odd)  # unknown: raw
+
+
+def test_voting_stage_renders_totals_clubs_and_pdf_link(process_1962) -> None:  # type: ignore[no-untyped-def]
+    voting_stage = next(s for s in flatten_stages(process_1962.stages) if s.stage_type == "Voting")
+    assert voting_stage.voting is not None and voting_stage.voting.yes == 239
+    fmt = MessageFormatter("ru")
+    plain = fmt._stage_line(voting_stage)
+    assert "239 за, 1 против, 199 воздержались" in plain and "votings/62/108/pdf" in plain
+    assert "\n" not in plain  # no club line without club data
+    clubs = (
+        ClubVotes(club="KO", yes=152),
+        ClubVotes(club="PSL-TD", yes=31),
+        ClubVotes(club="Lewica", yes=21),
+        ClubVotes(club="Polska2050", yes=13),
+        ClubVotes(club="Centrum", yes=12),
+        ClubVotes(club="PiS", abstain=178, absent=6),
+        ClubVotes(club="Konfederacja", no=1),
+    )
+    enriched = voting_stage.model_copy(
+        update={"voting": voting_stage.voting.model_copy(update={"clubs": clubs})}
+    )
+    line = fmt._stage_line(enriched)
+    assert "За: KO 152, PSL-TD 31, Lewica 21, Polska2050 13, …" in line
+    assert "Против: Konfederacja 1" in line and "Воздержались: PiS 178" in line
+    _check_html(line)
+
+
+def test_president_stages_and_committee_referral_have_labels() -> None:
+    fmt = MessageFormatter("ru")
+    signed = Stage(
+        stage_name="Podpisanie", stage_type="PresidentSignature", date=dt.date(2026, 8, 13)
+    )
+    veto = Stage(stage_name="Wniosek Prezydenta (weto)", stage_type="Veto", print_number="2863")
+    referral = Stage(
+        stage_name="Skierowanie",
+        stage_type="Referral",
+        committee_code="ASW",
+        committee_name="Komisja Administracji i Spraw Wewnętrznych",
+    )
+    bare = Stage(stage_name="Skierowanie", stage_type="Referral", committee_code="ASW")
+    assert fmt._stage_line(signed) == "13.08.2026: ✍️ Президент подписал закон"
+    assert fmt._stage_line(veto) == "⛔ Президент наложил вето (druk 2863)"
+    assert (
+        "Направлен в комиссию: Komisja Administracji i Spraw Wewnętrznych (ASW)"
+        in fmt._stage_line(referral)
+    )
+    assert fmt._stage_line(bare) == "Skierowanie [ASW]"
+
+
+def test_dates_use_the_language_format(process_3039, print_3039) -> None:  # type: ignore[no-untyped-def]
+    ru = MessageFormatter("ru").new_bill(_bill(process_3039, make_analysis()), print_3039).text
+    en = MessageFormatter("en").new_bill(_bill(process_3039, make_analysis()), print_3039).text
+    assert "Дата druku:</b> " in ru and ".2026" in ru.split("Дата druku:</b> ")[1][:10]
+    assert "2026-" in en.split("Print date:</b> ")[1][:10]

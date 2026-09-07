@@ -13,11 +13,13 @@ from lexinform.models import (
     Bill,
     BillContext,
     Category,
+    Committee,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
     RunReport,
     StatusChange,
+    Vote,
 )
 
 
@@ -39,6 +41,8 @@ class FakeSejmGateway:
     prints: dict[str, PrintInfo] = field(default_factory=dict)
     files: dict[str, bytes] = field(default_factory=dict)
     sizes: dict[str, int] = field(default_factory=dict)
+    votings: dict[tuple[int, int], tuple[Vote, ...]] = field(default_factory=dict)
+    committees: dict[str, Committee] = field(default_factory=dict)
     calls: list[str] = field(default_factory=list)
 
     def iter_processes(
@@ -58,6 +62,14 @@ class FakeSejmGateway:
         if number not in self.prints:
             raise RuntimeError(f"no print {number}")
         return self.prints[number]
+
+    def get_voting(self, term: int, sitting: int, number: int) -> tuple[Vote, ...]:
+        self.calls.append(f"get_voting:{sitting}/{number}")
+        return self.votings[(sitting, number)]
+
+    def get_committee(self, term: int, code: str) -> Committee:
+        self.calls.append(f"get_committee:{code}")
+        return self.committees[code]
 
     def attachment_size(self, url: str) -> int | None:
         return self.sizes.get(url)

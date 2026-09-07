@@ -12,12 +12,15 @@ from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
     BillStatus,
     Category,
+    Committee,
     DocumentType,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
     PublicationStatus,
     Stage,
+    Vote,
+    VotingSummary,
 )
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.discovery import BillDiscoveryService
@@ -439,3 +442,61 @@ def test_migration_failure_is_reported_not_raised() -> None:
     report = w.run()
     assert report.errors and "database is locked" in report.errors[0]  # type: ignore[attr-defined]
     assert w.notifier.calls  # the log channel still gets the report
+
+
+VOTED = REFERRED + (
+    Stage(
+        stage_name="III czytanie na posiedzeniu Sejmu",
+        stage_type="SejmReading",
+        date=dt.date(2026, 9, 10),
+        decision="uchwalono",
+        sitting_num=62,
+        children=(
+            Stage(
+                stage_name="Głosowanie",
+                stage_type="Voting",
+                date=dt.date(2026, 9, 10),
+                voting=VotingSummary(yes=261, no=0, abstain=182, sitting=62, voting_number=16),
+            ),
+        ),
+    ),
+)
+
+
+def test_tracking_enriches_votes_with_clubs_and_referrals_with_committee_names() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.gateway.votings[(62, 16)] = (
+        Vote(mp=1, club="KO", vote="YES"),
+        Vote(mp=2, club="PiS", vote="ABSTAIN"),
+    )
+    w.gateway.committees["ASW"] = Committee(term=10, code="ASW", name="Komisja ASW")
+    referral = Stage(stage_name="Skierowanie", stage_type="Referral", committee_code="ASW")
+    stages = VOTED[:2] + (VOTED[1].model_copy(update={"children": (referral,)}),) + VOTED[2:]
+    w.gateway.details["3039"] = _detail(w.gateway.processes[0], stages)
+    w.clock.advance(days=1)
+    assert w.run().updates == 1  # type: ignore[attr-defined]
+    _, change, _ = w.publisher.updates[0]
+    voting = next(s for s in change.new_stages if s.stage_type == "Voting")
+    assert voting.voting is not None
+    assert [(c.club, c.yes, c.abstain) for c in voting.voting.clubs] == [
+        ("KO", 1, 0),
+        ("PiS", 0, 1),
+    ]
+    ref = next(s for s in change.new_stages if s.stage_type == "Referral")
+    assert ref.committee_name == "Komisja ASW"
+
+
+def test_vote_detail_failure_degrades_to_totals_only() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    # no entry in gateway.votings -> KeyError inside enrichment
+    w.gateway.details["3039"] = _detail(w.gateway.processes[0], VOTED)
+    w.clock.advance(days=1)
+    report = w.run()
+    assert report.updates == 1 and not report.errors  # type: ignore[attr-defined]
+    _, change, _ = w.publisher.updates[0]
+    voting = next(s for s in change.new_stages if s.stage_type == "Voting")
+    assert voting.voting is not None and voting.voting.clubs == () and voting.voting.yes == 261

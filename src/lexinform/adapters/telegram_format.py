@@ -6,11 +6,12 @@ through html.escape; only our own markup is raw HTML.
 
 from __future__ import annotations
 
+import datetime as dt
 import html
 from dataclasses import dataclass
 
 from lexinform.i18n import Labels, labels_for
-from lexinform.models import Bill, PrintInfo, RunReport, Stage, StatusChange
+from lexinform.models import Bill, PrintInfo, RunReport, Stage, StatusChange, VotingSummary
 
 MESSAGE_LIMIT = 4096
 ELLIPSIS = "…"
@@ -38,7 +39,10 @@ ICON = {
     "passed": "✅",
     "closed": "🏁",
     "note": "ℹ️",
+    "voting": "🗳",
+    "committee": "📮",
 }
+CLUBS_PER_SIDE = 4
 
 
 @dataclass(frozen=True)
@@ -129,12 +133,12 @@ class MessageFormatter:
         meta_lines: list[str] = []
         last = bill.last_stage
         if last is not None:
-            when = f" ({last.date.isoformat()})" if last.date else ""
+            when = f" ({self.fmt_date(last.date)})" if last.date else ""
             meta_lines.append(
                 f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {esc(last.stage_name)}{when}"
             )
         applicant = lb.applicant_labels.get(s.applicant_type, s.applicant_type.value)
-        doc_date = s.document_date.isoformat() if s.document_date else "—"
+        doc_date = self.fmt_date(s.document_date) if s.document_date else "—"
         meta_lines.append(
             f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {esc(applicant)}   "
             f"{ICON['doc_date']} <b>{esc(lb.document_date)}:</b> {esc(doc_date)}"
@@ -260,17 +264,67 @@ class MessageFormatter:
 
     # ------------------------------------------------------------------ helpers
 
-    @staticmethod
-    def _stage_line(stage: Stage) -> str:
-        parts = [stage.date.isoformat() + ":" if stage.date else "", stage.stage_name]
-        outcome = stage.decision or stage.position  # SenatePosition reports via `position`
+    def fmt_date(self, value: dt.date) -> str:
+        return value.strftime(self._labels.date_format)
+
+    def _stage_line(self, stage: Stage) -> str:
+        """One bullet of the "new stages" list; may span two lines (voting + club breakdown)."""
+        lb = self._labels
+        when = f"{self.fmt_date(stage.date)}: " if stage.date else ""
+        if stage.stage_type == "Voting" and stage.voting is not None:
+            return when + self._voting_lines(stage.voting)
+        if stage.stage_type == "SenatePosition" and stage.position:
+            text = lb.senate_position_labels.get(stage.position.strip().lower(), stage.position)
+            return when + esc(text) + self._print_suffix(stage)
+        if stage.stage_type == "Referral" and stage.committee_code:
+            if stage.committee_name:
+                name = f"{stage.committee_name} ({stage.committee_code})"
+                head = f"{ICON['committee']} {esc(lb.referred_to_committee)}: {esc(name)}"
+                return f"{when}{head} — {esc(lb.committee_hint)}"
+            return f"{when}{esc(stage.stage_name)} [{esc(stage.committee_code)}]"
+        label = lb.stage_type_labels.get(stage.stage_type)
+        if label is not None:
+            line = when + esc(label)
+            if stage.decision:
+                line += f" — {esc(stage.decision)}"
+            return line + self._print_suffix(stage)
+        parts = [stage.stage_name]
+        outcome = stage.decision or stage.position
         if outcome:
             parts.append(f"— {outcome}")
-        if stage.print_number:
-            parts.append(f"(druk {stage.print_number})")
-        if stage.committee_code and stage.stage_type == "Referral":
-            parts.append(f"[{stage.committee_code}]")
-        return esc(" ".join(p for p in parts if p))
+        return when + esc(" ".join(parts)) + self._print_suffix(stage)
+
+    @staticmethod
+    def _print_suffix(stage: Stage) -> str:
+        return f" (druk {esc(stage.print_number)})" if stage.print_number else ""
+
+    def _voting_lines(self, v: VotingSummary) -> str:
+        lb = self._labels
+        totals = (
+            f"{ICON['voting']} <b>{esc(lb.voting)}:</b> {v.yes} {esc(lb.votes_for)}, "
+            f"{v.no} {esc(lb.votes_against)}, {v.abstain} {esc(lb.votes_abstain)}"
+        )
+        if v.not_participating:
+            totals += f" · {esc(lb.not_voting)}: {v.not_participating}"
+        if v.pdf_url:
+            totals += f" · {link(v.pdf_url, lb.link_voting_pdf)}"
+        if not v.clubs:
+            return totals
+        sides = [
+            (lb.votes_for, [(c.club, c.yes) for c in v.clubs if c.yes]),
+            (lb.votes_against, [(c.club, c.no) for c in v.clubs if c.no]),
+            (lb.votes_abstain, [(c.club, c.abstain) for c in v.clubs if c.abstain]),
+        ]
+        rendered = []
+        for label, entries in sides:
+            if not entries:
+                continue
+            entries.sort(key=lambda e: -e[1])
+            shown = ", ".join(f"{esc(club)} {n}" for club, n in entries[:CLUBS_PER_SIDE])
+            if len(entries) > CLUBS_PER_SIDE:
+                shown += ", …"
+            rendered.append(f"{esc(label.capitalize())}: {shown}")
+        return totals + "\n  " + " · ".join(rendered)
 
     @staticmethod
     def _assemble(fixed: list[str], *, flexible: list[str]) -> str:

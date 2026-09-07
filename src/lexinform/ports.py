@@ -11,6 +11,7 @@ from lexinform.models import (
     Bill,
     BillContext,
     BillStatus,
+    Committee,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
@@ -19,6 +20,7 @@ from lexinform.models import (
     RunReport,
     Stage,
     StatusChange,
+    Vote,
 )
 
 
@@ -38,6 +40,10 @@ class SejmGateway(Protocol):
     def get_process(self, term: int, number: str) -> ProcessDetail: ...
 
     def get_print(self, term: int, number: str) -> PrintInfo: ...
+
+    def get_voting(self, term: int, sitting: int, number: int) -> tuple[Vote, ...]: ...
+
+    def get_committee(self, term: int, code: str) -> Committee: ...
 
     def attachment_size(self, url: str) -> int | None: ...
 
