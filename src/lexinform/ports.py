@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from datetime import datetime
+from datetime import date, datetime
 from typing import Protocol
 
 from lexinform.models import (
@@ -11,6 +11,7 @@ from lexinform.models import (
     Bill,
     BillContext,
     BillStatus,
+    BillSubmission,
     Committee,
     PrintInfo,
     ProcessDetail,
@@ -36,6 +37,12 @@ class SejmGateway(Protocol):
         modified_since: datetime | None = None,
         document_type: str | None = None,
     ) -> Iterator[ProcessSummary]: ...
+
+    def iter_bills(
+        self, term: int, *, received_from: date | None = None
+    ) -> Iterator[BillSubmission]: ...
+
+    def find_submission(self, term: int, print_number: str) -> BillSubmission | None: ...
 
     def get_process(self, term: int, number: str) -> ProcessDetail: ...
 
@@ -140,6 +147,13 @@ class BillRepository(Protocol):
     def add_status_change(self, change: StatusChange) -> int | None: ...
 
     def closure_announced(self, term: int, number: str) -> bool: ...
+
+    # pre-print bills
+    def save_submission(self, term: int, number: str, submission: BillSubmission) -> None: ...
+
+    def list_pre_print(self, term: int) -> list[Bill]: ...
+
+    def link_bills(self, term: int, pre_print_number: str, print_number: str) -> None: ...
 
     def list_failed_status_changes(
         self, term: int, channel_id: str, *, max_attempts: int

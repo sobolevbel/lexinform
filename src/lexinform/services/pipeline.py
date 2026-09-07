@@ -46,6 +46,7 @@ class DailyPipeline:
         notifier: RunNotifier | None = None,
         first_run_lookback_days: int = 1,
         rerun_overlap_days: int = 1,
+        pre_print: bool = True,
     ) -> None:
         self._repo = repo
         self._discovery = discovery
@@ -56,6 +57,7 @@ class DailyPipeline:
         self._notifier = notifier
         self._first_run_lookback = timedelta(days=first_run_lookback_days)
         self._overlap = timedelta(days=rerun_overlap_days)
+        self._pre_print = pre_print
 
     def resolve_since(self, requested: datetime | None) -> datetime:
         """Discovery watermark: the start of the last run that completed discovery, minus overlap.
@@ -151,9 +153,10 @@ class DailyPipeline:
             report.errors.append(message)
 
     def _discover(self, opts: RunOptions, since: datetime, report: RunReport) -> None:
-        discovered = self._discovery.discover(opts.term, since)
+        discovered = self._discovery.discover(opts.term, since, pre_print=self._pre_print)
         report.discovery_ok = True
         report.discovered = discovered.new
+        report.pre_print_discovered = discovered.pre_print_new
         report.prefilter_hits = discovered.prefilter_hits
 
     def _analyse(self, opts: RunOptions, report: RunReport) -> None:
@@ -180,6 +183,7 @@ class DailyPipeline:
         report.tracked = tracked.checked
         report.updates = tracked.published if opts.publish else tracked.changed
         report.reanalyzed = tracked.reanalyzed
+        report.linked = tracked.linked
         report.llm_input_tokens += tracked.input_tokens
         report.llm_output_tokens += tracked.output_tokens
         if tracked.fatal_error:

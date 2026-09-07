@@ -59,7 +59,14 @@ Sejm API ──► discover (modifiedSince) ──► keyword prefilter ──�
 ```
 
 1. **Discover.** `GET /sejm/term10/processes?documentType=projekt ustawy&modifiedSince=…` lists
-   bills changed since the last successful run (with one day of overlap).
+   bills changed since the last run that completed discovery (with one day of overlap). In
+   addition, `GET /sejm/term10/bills?dateOfReceiptFrom=…` lists bills that were **submitted but have
+   no print (druk) number yet** (`RPW/…` numbers). This is the earliest public trace of a bill and
+   the stage where public consultations run, so such bills get a card too, analysed from the
+   official title and description (their PDF sits behind the Sejm website's bot protection). When
+   the print number is assigned, the print inherits the card: the RPW entry is marked `linked`, the
+   full text is analysed against the earlier analysis, and the thread continues with an update
+   "print number assigned" under the same message. Withdrawn RPW entries get a final update.
 2. **Prefilter.** Polish word stems (`cudzoziem*`, `obywatelstw*`, `zezwoleni* na pobyt`, `Kart* Polaka`,
    `Straż* Graniczn*`, …) with word boundaries decide which bills deserve an LLM call. The filter is
    deliberately over-inclusive; the LLM makes the final relevance call.
@@ -71,10 +78,14 @@ Sejm API ──► discover (modifiedSince) ──► keyword prefilter ──�
    at most `LEXINFORM_MAX_PUBLISH_PER_RUN` per run. A publication row is written *before* sending, so
    a crash can never produce a duplicate post.
 5. **Track.** For every published bill the stage tree is re-fetched and hashed; a changed hash
-   produces exactly one update message listing the new stages. If a newer text of the bill exists
-   (committee report, text after the 3rd reading, or a print changed after the analysis), the bill
-   is re-analysed with the previous analysis as context and the update also lists what changed.
-   Bills that did not change are never sent to the LLM again.
+   produces exactly one update message listing the new stages. Votes show the totals and how each
+   club voted (fetched from `/votings/{sitting}/{number}`), Senate and President stages are rendered
+   as outcomes ("Senate introduced amendments", "vetoed by the President"), committee referrals show
+   the committee name with a hint that opinions can be sent to it. If a newer text of the bill
+   exists (committee report with the full text, text after the 3rd reading, or a print changed after
+   the analysis), the bill is re-analysed with the previous analysis as context and the update also
+   lists what changed. Bills that did not change are never sent to the LLM again. Updates whose
+   Telegram post failed are retried on later runs.
 6. **Report.** If `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` is set, a run report with counters, token
    usage, errors and captured warnings is posted there. The main channel only ever gets bill posts.
 
@@ -159,6 +170,8 @@ All settings are environment variables (or a `.env` file). `ANTHROPIC_API_KEY` i
 | `LEXINFORM_FIRST_RUN_LOOKBACK_DAYS` | `1` | Watermark for the very first run |
 | `LEXINFORM_TRACK_CLOSED_GRACE_DAYS` | `90` | Keep tracking closed bills this long (Dz.U. publication follows 30–40 days after the Sejm vote) |
 | `LEXINFORM_MAX_PUBLISH_ATTEMPTS` | `3` | Retry a failed Telegram post on later runs at most this many times |
+| `LEXINFORM_PRE_PRINT_ENABLED` | `true` | Also watch `/bills` for submitted bills without a print number (consultation stage) |
+| `LEXINFORM_VOTING_CLUB_BREAKDOWN` | `true` | Fetch per-MP votes to show how each club voted |
 | `LEXINFORM_LOG_LEVEL` / `LEXINFORM_LOG_JSON` | `INFO` / `false` | Logging |
 
 ## Scoring rubric
@@ -183,7 +196,7 @@ analysis so prompt changes are traceable.
 | `lexinform analyze NUMBER [--force] [--json]` | Analyse one bill |
 | `lexinform preview NUMBER [--to CHAT]` | Render (or send to a test chat) the card |
 | `lexinform track [--dry-run]` | Only the status-tracking phase |
-| `lexinform show NUMBER` | Stages and attachments from the API, local status |
+| `lexinform show NUMBER` | Stages and attachments from the API, local status (`RPW/…` numbers show the submission) |
 | `lexinform db init / dump FILE / restore FILE [--missing-ok]` | Database maintenance |
 
 ## Failure behaviour

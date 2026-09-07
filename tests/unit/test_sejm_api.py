@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfo
 
 import httpx2 as httpx
 import pytest
 
 from lexinform.adapters.sejm_api import SejmApiClient, SejmApiError
-from lexinform.models import DocumentType
+from lexinform.models import ApplicantType, DocumentType
 from tests.conftest import FIXTURES
 
 
@@ -135,3 +135,55 @@ def test_change_dates_are_converted_from_warsaw_time_and_ue_status_parsed() -> N
     assert detail.change_date.replace(tzinfo=None) != naive  # shifted by the Warsaw offset
     assert detail.change_date.astimezone(ZoneInfo("Europe/Warsaw")).replace(tzinfo=None) == naive
     assert detail.eu_related is (raw.get("UE", "NO") != "NO")
+
+
+def test_bills_endpoint_parses_pre_print_submissions_and_pages() -> None:
+    items = [
+        {
+            "applicantType": "DEPUTIES",
+            "consultationResults": False,
+            "dateOfReceipt": "2026-08-31",
+            "description": "odejścia od sztywnego ograniczenia",
+            "euRelated": False,
+            "number": "RPW/29075/2026",
+            "publicConsultation": True,
+            "publicConsultationEndDate": "2026-09-30",
+            "publicConsultationStartDate": "2026-08-31",
+            "status": "ACTIVE",
+            "submissionType": "BILL",
+            "term": 10,
+            "title": "Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony",
+        },
+        {
+            "applicantType": "GOVERNMENT",
+            "dateOfReceipt": "2026-08-03",
+            "number": "RPW/26666/2026",
+            "print": "3039",
+            "status": "WITHDRAWN",
+            "withdrawnDate": "2026-09-01",
+            "submissionType": "BILL",
+            "term": 10,
+            "title": "Rządowy projekt",
+        },
+    ]
+    seen: list[dict[str, str]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        params = dict(request.url.params)
+        seen.append(params)
+        if params.get("print") == "3039":
+            return httpx.Response(200, json=[items[1]])
+        return httpx.Response(200, json=items if params.get("offset", "0") == "0" else [])
+
+    client = _client(handler)
+    subs = list(client.iter_bills(10, received_from=datetime(2026, 9, 1, tzinfo=UTC).date()))
+    assert seen[0]["dateOfReceiptFrom"] == "2026-09-01" and seen[0]["limit"] == "500"
+    assert [s.number for s in subs] == ["RPW/29075/2026", "RPW/26666/2026"]
+    first, second = subs
+    assert first.applicant is ApplicantType.DEPUTIES and first.print_number is None
+    assert first.consultation_end == date(2026, 9, 30) and first.public_consultation
+    assert first.pdf_url.endswith("/10-RPW-29075-2026/$file/10-RPW-29075-2026.pdf")
+    assert second.print_number == "3039" and second.is_closed and second.withdrawn_date
+    found = client.find_submission(10, "3039")
+    assert found is not None and found.number == "RPW/26666/2026"
+    assert client.find_submission(10, "0") is None

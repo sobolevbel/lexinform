@@ -13,9 +13,11 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from lexinform.models import (
+    PRE_PRINT_PREFIX,
     AnalysisRecord,
     Bill,
     BillStatus,
+    BillSubmission,
     ProcessSummary,
     Publication,
     PublicationKind,
@@ -99,6 +101,12 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE publications ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0;
     ALTER TABLE runs ADD COLUMN discovery_ok INTEGER;
     UPDATE runs SET discovery_ok = ok;
+    """,
+    # v3: bills submitted but not yet numbered (RPW) and their link to the later print
+    """
+    ALTER TABLE bills ADD COLUMN submission_json TEXT;
+    ALTER TABLE bills ADD COLUMN linked_number TEXT;
+    ALTER TABLE status_changes ADD COLUMN withdrawn INTEGER NOT NULL DEFAULT 0;
     """,
 )
 
@@ -345,12 +353,39 @@ class SqliteBillRepository:
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
             WHERE b.term = ? AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
+              AND b.status != ?
               AND (b.closure_date IS NULL OR b.closure_date >= ?)
             ORDER BY b.number
             """,
-            (term, channel_id, cutoff),
+            (term, channel_id, BillStatus.LINKED.value, cutoff),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
+
+    # ------------------------------------------------------------------ pre-print bills
+
+    def save_submission(self, term: int, number: str, submission: BillSubmission) -> None:
+        self._conn.execute(
+            "UPDATE bills SET submission_json = ? WHERE term = ? AND number = ?",
+            (submission.model_dump_json(), term, number),
+        )
+
+    def list_pre_print(self, term: int) -> list[Bill]:
+        rows = self._conn.execute(
+            "SELECT * FROM bills WHERE term = ? AND number LIKE ? AND status != ?"
+            " ORDER BY change_date",
+            (term, f"{PRE_PRINT_PREFIX}%", BillStatus.LINKED.value),
+        ).fetchall()
+        return [self._row_to_bill(r) for r in rows]
+
+    def link_bills(self, term: int, pre_print_number: str, print_number: str) -> None:
+        self._conn.execute(
+            "UPDATE bills SET linked_number = ?, status = ? WHERE term = ? AND number = ?",
+            (print_number, BillStatus.LINKED.value, term, pre_print_number),
+        )
+        self._conn.execute(
+            "UPDATE bills SET linked_number = ? WHERE term = ? AND number = ?",
+            (pre_print_number, term, print_number),
+        )
 
     # ------------------------------------------------------------------ publications
 
@@ -456,8 +491,8 @@ class SqliteBillRepository:
                 """
                 INSERT INTO status_changes (term, number, old_fingerprint, new_fingerprint,
                                             new_stages_json, closure_detected, passed,
-                                            content_changed, detected_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                            content_changed, withdrawn, detected_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     change.term,
@@ -470,6 +505,7 @@ class SqliteBillRepository:
                     int(change.closure_detected),
                     _bool(change.passed),
                     int(change.content_changed),
+                    int(change.withdrawn),
                     change.detected_at.isoformat(),
                 ),
             )
@@ -549,6 +585,12 @@ class SqliteBillRepository:
             analysis=analysis,
             analysis_attempts=int(row["analysis_attempts"]),
             last_error=row["last_error"],
+            submission=(
+                BillSubmission.model_validate_json(row["submission_json"])
+                if row["submission_json"]
+                else None
+            ),
+            linked_number=row["linked_number"],
             first_seen_at=datetime.fromisoformat(row["first_seen_at"]),
             last_checked_at=datetime.fromisoformat(row["last_checked_at"]),
         )
@@ -565,6 +607,7 @@ class SqliteBillRepository:
             closure_detected=bool(row["closure_detected"]),
             passed=None if row["passed"] is None else bool(row["passed"]),
             content_changed=bool(row["content_changed"]),
+            withdrawn=bool(row["withdrawn"]),
             detected_at=datetime.fromisoformat(row["detected_at"]),
         )
 

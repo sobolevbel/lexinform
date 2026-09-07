@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
 from lexinform.models import (
@@ -12,6 +12,7 @@ from lexinform.models import (
     AnalysisRecord,
     Bill,
     BillContext,
+    BillSubmission,
     Category,
     Committee,
     PrintInfo,
@@ -43,7 +44,20 @@ class FakeSejmGateway:
     sizes: dict[str, int] = field(default_factory=dict)
     votings: dict[tuple[int, int], tuple[Vote, ...]] = field(default_factory=dict)
     committees: dict[str, Committee] = field(default_factory=dict)
+    submissions: list[BillSubmission] = field(default_factory=list)
     calls: list[str] = field(default_factory=list)
+
+    def iter_bills(
+        self, term: int, *, received_from: date | None = None
+    ) -> Iterator[BillSubmission]:
+        self.calls.append("iter_bills")
+        for sub in self.submissions:
+            if received_from is None or sub.date_of_receipt >= received_from:
+                yield sub
+
+    def find_submission(self, term: int, print_number: str) -> BillSubmission | None:
+        self.calls.append(f"find_submission:{print_number}")
+        return next((s for s in self.submissions if s.print_number == print_number), None)
 
     def iter_processes(
         self, term: int, *, modified_since: datetime | None = None, document_type: str | None = None

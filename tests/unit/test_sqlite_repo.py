@@ -190,6 +190,8 @@ def test_restore_of_a_previous_schema_dump_applies_missing_migrations() -> None:
     assert int(repo._conn.execute("PRAGMA user_version").fetchone()[0]) == SCHEMA_VERSION
     columns = {r[1] for r in repo._conn.execute("PRAGMA table_info(publications)")}
     assert "attempts" in columns
+    bill_columns = {r[1] for r in repo._conn.execute("PRAGMA table_info(bills)")}
+    assert {"submission_json", "linked_number"} <= bill_columns
     # the v2 backfill copies ok -> discovery_ok for old runs
     assert repo.last_discovery_started_at() is not None
 

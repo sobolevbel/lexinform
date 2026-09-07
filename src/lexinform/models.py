@@ -26,6 +26,10 @@ class BillStatus(StrEnum):
     ANALYSIS_PENDING = "analysis_pending"
     ANALYSIS_FAILED = "analysis_failed"
     ANALYZED = "analyzed"
+    LINKED = "linked"  # a pre-print (RPW) entry that became a numbered print (Bill.linked_number)
+
+
+PRE_PRINT_PREFIX = "RPW/"  # numbers of bills that have not been assigned a print (druk) number yet
 
 
 class Category(StrEnum):
@@ -164,8 +168,46 @@ class Stage(BaseModel):
         return not (self.print_number or "").upper().endswith("-A")
 
 
+class BillSubmission(BaseModel):
+    """An item of GET /bills: a submitted bill, possibly before it gets a print (druk) number.
+
+    This is the earliest public trace of a bill and the only place that carries the public
+    consultation dates, so it is what lets readers act before the Sejm even starts working.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    term: int
+    number: str  # "RPW/29075/2026"
+    title: str
+    description: str | None = None
+    applicant: ApplicantType = ApplicantType.UNKNOWN
+    status: str = "ACTIVE"  # ACTIVE | WITHDRAWN | NOT_PROCEEDED | OBSOLETE | ADOPTED
+    submission_type: str = "BILL"  # BILL | DRAFT_RESOLUTION | BILL_AMENDMENT | RESOLUTION_AMENDMENT
+    date_of_receipt: dt.date
+    print_number: str | None = None
+    eu_related: bool = False
+    public_consultation: bool = False
+    consultation_start: dt.date | None = None
+    consultation_end: dt.date | None = None
+    consultation_results: bool = False
+    withdrawn_date: dt.date | None = None
+
+    @property
+    def is_bill(self) -> bool:
+        return self.submission_type == "BILL"
+
+    @property
+    def is_closed(self) -> bool:
+        return self.status in ("WITHDRAWN", "NOT_PROCEEDED", "OBSOLETE")
+
+    @property
+    def pdf_url(self) -> str:
+        return submission_pdf_url(self.term, self.number)
+
+
 class ProcessSummary(BaseModel):
-    """An item of GET /processes."""
+    """An item of GET /processes (or, for pre-print bills, derived from GET /bills)."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -185,6 +227,7 @@ class ProcessSummary(BaseModel):
     rcl_num: str | None = None
     rcl_link: str | None = None
     prints_considered_jointly: tuple[str, ...] = ()
+    applicant: ApplicantType | None = None  # explicit (from /bills); else derived from the title
 
     @property
     def web_url(self) -> str:
@@ -192,7 +235,33 @@ class ProcessSummary(BaseModel):
 
     @property
     def applicant_type(self) -> ApplicantType:
+        if self.applicant is not None and self.applicant is not ApplicantType.UNKNOWN:
+            return self.applicant
         return applicant_from_title(self.title)
+
+    @property
+    def is_pre_print(self) -> bool:
+        return is_pre_print_number(self.number)
+
+    @classmethod
+    def from_submission(cls, sub: BillSubmission) -> ProcessSummary:
+        """A summary for a bill that has no legislative process yet (no print number)."""
+        received = dt.datetime.combine(sub.date_of_receipt, dt.time(0, 0), tzinfo=dt.UTC)
+        return cls(
+            term=sub.term,
+            number=sub.number,
+            title=sub.title,
+            description=sub.description,
+            document_type=BILL_DOCUMENT_TYPE,
+            document_type_enum=DocumentType.BILL,
+            process_start_date=sub.date_of_receipt,
+            document_date=sub.date_of_receipt,
+            change_date=received,
+            closure_date=sub.withdrawn_date if sub.is_closed else None,
+            passed=False if sub.is_closed else None,
+            eu_related=sub.eu_related,
+            applicant=sub.applicant,
+        )
 
 
 class ProcessDetail(ProcessSummary):
@@ -317,6 +386,8 @@ class Bill(BaseModel):
     analysis: AnalysisRecord | None = None
     analysis_attempts: int = 0
     last_error: str | None = None
+    submission: BillSubmission | None = None  # the /bills entry (consultation dates, RPW number)
+    linked_number: str | None = None  # RPW <-> print number once the print is assigned
     first_seen_at: dt.datetime
     last_checked_at: dt.datetime
 
@@ -327,6 +398,10 @@ class Bill(BaseModel):
     @property
     def number(self) -> str:
         return self.summary.number
+
+    @property
+    def is_pre_print(self) -> bool:
+        return self.summary.is_pre_print
 
     @property
     def last_stage(self) -> Stage | None:
@@ -359,6 +434,7 @@ class StatusChange(BaseModel):
     closure_detected: bool = False
     passed: bool | None = None
     content_changed: bool = False
+    withdrawn: bool = False  # pre-print bill withdrawn before getting a print number
     detected_at: dt.datetime
 
 
@@ -369,6 +445,8 @@ class RunReport(BaseModel):
     mode: str
     discovery_ok: bool = False  # discovery finished: the watermark may advance past `started_at`
     discovered: int = 0
+    pre_print_discovered: int = 0
+    linked: int = 0
     prefilter_hits: int = 0
     analyzed: int = 0
     analysis_failures: int = 0
@@ -394,7 +472,19 @@ class RunReport(BaseModel):
 # --------------------------------------------------------------------------- pure helpers
 
 
+def is_pre_print_number(number: str) -> bool:
+    return number.startswith(PRE_PRINT_PREFIX)
+
+
+def submission_pdf_url(term: int, number: str) -> str:
+    """Where the Sejm site serves the text of a bill without a print number (browser only)."""
+    slug = f"{term}-{number.replace('/', '-')}"
+    return f"https://orka.sejm.gov.pl/Druki{term}ka.nsf/Projekty/{slug}/$file/{slug}.pdf"
+
+
 def process_web_url(term: int, number: str) -> str:
+    if is_pre_print_number(number):
+        return submission_pdf_url(term, number)
     return f"https://www.sejm.gov.pl/Sejm{term}.nsf/PrzebiegProc.xsp?nr={number}"
 
 

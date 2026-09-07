@@ -86,7 +86,8 @@ class PublishingService:
                 created_at=now,
             )
         )
-        print_info = self._safe_print(bill)
+        print_info = None if bill.is_pre_print else self._safe_print(bill)
+        bill = self._with_submission(bill)
         try:
             sent = self._publisher.publish_new_bill(bill, print_info)
         except ServiceUnavailableError as exc:
@@ -120,6 +121,22 @@ class PublishingService:
             )
         )
         log.info("druk %s marked as skipped (publishing disabled)", bill.number)
+
+    def _with_submission(self, bill: Bill) -> Bill:
+        """Attach the /bills entry (public consultation dates) to a numbered print, best effort."""
+        if bill.submission is not None or bill.is_pre_print:
+            return bill
+        try:
+            sub = self._gateway.find_submission(bill.term, bill.number)
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("submission lookup for druk %s failed: %s", bill.number, exc)
+            return bill
+        if sub is None:
+            return bill
+        self._repo.save_submission(bill.term, bill.number, sub)
+        return bill.model_copy(update={"submission": sub})
 
     def _safe_print(self, bill: Bill) -> PrintInfo | None:
         try:

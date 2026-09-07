@@ -8,9 +8,12 @@ import pytest
 
 from lexinform.adapters.pdf_text import TextBudget
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
+from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
+    ApplicantType,
     BillStatus,
+    BillSubmission,
     Category,
     Committee,
     DocumentType,
@@ -500,3 +503,123 @@ def test_vote_detail_failure_degrades_to_totals_only() -> None:
     _, change, _ = w.publisher.updates[0]
     voting = next(s for s in change.new_stages if s.stage_type == "Voting")
     assert voting.voting is not None and voting.voting.clubs == () and voting.voting.yes == 261
+
+
+RPW = "RPW/29075/2026"
+
+
+def _submission(**kw: object) -> BillSubmission:
+    base: dict[str, object] = dict(
+        term=10,
+        number=RPW,
+        title="Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony",
+        description="odejścia od sztywnego ograniczenia ...",
+        applicant=ApplicantType.DEPUTIES,
+        date_of_receipt=dt.date(2026, 9, 2),
+        public_consultation=True,
+        consultation_start=dt.date(2026, 9, 2),
+        consultation_end=dt.date(2026, 9, 30),
+    )
+    base.update(kw)
+    return BillSubmission(**base)  # type: ignore[arg-type]
+
+
+def test_pre_print_bill_is_discovered_analysed_from_metadata_and_published() -> None:
+    w = World()
+    w.gateway.submissions.append(_submission())
+    report = w.run()
+    assert report.pre_print_discovered == 1 and report.analyzed == 1 and report.published == 1  # type: ignore[attr-defined]
+    assert not any(c.startswith("get_process") for c in w.gateway.calls)
+    ctx = w.llm.contexts[0]
+    assert ctx.number == RPW and ctx.text_source == "metadata_only"
+    assert ctx.applicant_type is ApplicantType.DEPUTIES
+    bill, print_info = w.publisher.new_bills[0]
+    assert bill.is_pre_print and print_info is None
+    assert bill.submission is not None and bill.submission.consultation_end == dt.date(2026, 9, 30)
+    text = MessageFormatter("ru").new_bill(bill, None).text
+    assert "RPW/29075/2026 (номер druku ещё не присвоен)" in text
+    assert "Общественные консультации:</b> 02.09.2026 — 30.09.2026" in text
+    assert "orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-29075-2026/" in text
+    assert "#RPW_29075_2026" in text and "ожидает присвоения номера druku" in text
+
+    # second run: nothing new, and the pre-print bill is not polled as a process
+    w.clock.advance(days=1)
+    report2 = w.run()
+    assert report2.published == 0 and report2.updates == 0 and report2.tracked == 0  # type: ignore[attr-defined]
+
+
+def test_pre_print_bill_that_gets_a_print_number_continues_in_the_same_thread() -> None:
+    w = World()
+    w.gateway.submissions.append(_submission())
+    w.run()
+    card_message_id = w.repo.get_publication(10, RPW, "new_bill", CHANNEL).message_id  # type: ignore[union-attr]
+
+    # the Sejm assigns druk 3100; /processes and /bills both show it now
+    w.gateway.submissions[0] = _submission(print_number="3100")
+    w.add_bill("3100", "Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony")
+    w.gateway.processes[-1] = w.gateway.processes[-1].model_copy(
+        update={"change_date": dt.datetime(2026, 9, 8, 9, 0)}
+    )
+    w.clock.advance(days=1)
+    report = w.run()
+    assert report.linked == 1 and report.published == 0 and report.updates == 1  # type: ignore[attr-defined]
+    assert (
+        report.reanalyzed == 1
+    )  # the real print text is analysed against the metadata analysis  # type: ignore[attr-defined]
+    assert len(w.publisher.new_bills) == 1  # no second card
+    bill, change, reply_to = w.publisher.updates[0]
+    assert reply_to == card_message_id and bill.number == "3100"
+    assert bill.linked_number == RPW and change.content_changed
+    assert [st.stage_type for st in change.new_stages] == ["Start"]
+    text = MessageFormatter("ru").status_update(bill, change).text
+    assert (
+        "Обновление — druk nr 3100" in text and "Проекту присвоен номер druku: <b>3100</b>" in text
+    )
+    pre = w.repo.get(10, RPW)
+    assert pre is not None and pre.status is BillStatus.LINKED and pre.linked_number == "3100"
+    assert w.repo.get(10, "3100").analysis.revision == 2  # type: ignore[union-attr]
+
+    # afterwards the print is tracked like any other bill, the RPW entry is not
+    w.clock.advance(days=1)
+    report3 = w.run()
+    assert report3.tracked == 1 and report3.updates == 0 and report3.linked == 0  # type: ignore[attr-defined]
+
+
+def test_withdrawn_pre_print_bill_is_announced_once() -> None:
+    w = World()
+    w.gateway.submissions.append(_submission())
+    w.run()
+    w.gateway.submissions[0] = _submission(status="WITHDRAWN", withdrawn_date=dt.date(2026, 9, 5))
+    w.clock.advance(days=1)
+    assert w.run().updates == 1  # type: ignore[attr-defined]
+    bill, change, _ = w.publisher.updates[0]
+    assert change.withdrawn and change.closure_detected
+    assert "Проект отозван" in MessageFormatter("ru").status_update(bill, change).text
+    w.clock.advance(days=1)
+    assert w.run().updates == 0  # type: ignore[attr-defined]
+
+
+def test_numbered_print_card_shows_consultation_dates_and_explicit_applicant() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")  # title gives no applicant
+    w.gateway.submissions.append(
+        _submission(
+            number="RPW/26666/2026", print_number="3039", applicant=ApplicantType.GOVERNMENT
+        )
+    )
+    w.run()
+    bill, _ = w.publisher.new_bills[0]
+    assert bill.summary.applicant_type is ApplicantType.GOVERNMENT
+    assert "Общественные консультации" in MessageFormatter("ru").new_bill(bill, None).text
+    assert w.repo.get(10, "RPW/26666/2026") is None  # never seen as pre-print: no phantom row
+
+
+def test_submissions_with_a_print_or_closed_are_not_pre_print_bills() -> None:
+    w = World()
+    w.gateway.submissions.append(_submission(number="RPW/1/2026", print_number="9"))
+    w.gateway.submissions.append(_submission(number="RPW/2/2026", status="WITHDRAWN"))
+    w.gateway.submissions.append(
+        _submission(number="RPW/3/2026", submission_type="DRAFT_RESOLUTION")
+    )
+    report = w.run()
+    assert report.pre_print_discovered == 0 and report.discovered == 0  # type: ignore[attr-defined]

@@ -49,6 +49,16 @@ class Labels:
     link_voting_pdf: str
     referred_to_committee: str
     committee_hint: str
+    no_print_yet: str
+    received: str
+    pre_print_stage: str
+    pre_print_note: str
+    consultation: str
+    consultation_until: str
+    consultation_hint: str
+    print_assigned: str
+    process_withdrawn: str
+    link_submission_pdf: str
     date_format: str = "%Y-%m-%d"
     stage_type_labels: dict[str, str] = field(default_factory=dict)
     senate_position_labels: dict[str, str] = field(default_factory=dict)
@@ -95,6 +105,18 @@ RU = Labels(
     link_voting_pdf="протокол голосования (PDF)",
     referred_to_committee="Направлен в комиссию",
     committee_hint="организации и граждане могут направить в комиссию своё мнение",
+    no_print_yet="номер druku ещё не присвоен",
+    received="Поступил в Сейм",
+    pre_print_stage="проект поступил в Сейм, ожидает присвоения номера druku",
+    pre_print_note=(
+        "Анализ основан на официальном описании проекта: текст пока доступен только на сайте Сейма."
+    ),
+    consultation="Общественные консультации",
+    consultation_until="до",
+    consultation_hint="мнение можно направить через страницу проекта на сайте Сейма",
+    print_assigned="Проекту присвоен номер druku",
+    process_withdrawn="Проект отозван до присвоения номера druku.",
+    link_submission_pdf="PDF проекта (сайт Сейма)",
     date_format="%d.%m.%Y",
     stage_type_labels={
         "ToPresident": "Закон передан Президенту",
@@ -184,6 +206,18 @@ EN = Labels(
     link_voting_pdf="voting record (PDF)",
     referred_to_committee="Referred to committee",
     committee_hint="organisations and citizens may send their opinion to the committee",
+    no_print_yet="no print number yet",
+    received="Received by the Sejm",
+    pre_print_stage="submitted to the Sejm, awaiting a print number",
+    pre_print_note=(
+        "Analysis based on the official description: the text is only on the Sejm website so far."
+    ),
+    consultation="Public consultation",
+    consultation_until="until",
+    consultation_hint="opinions can be submitted via the bill's page on the Sejm website",
+    print_assigned="Print number assigned",
+    process_withdrawn="The bill was withdrawn before receiving a print number.",
+    link_submission_pdf="Bill PDF (Sejm website)",
     stage_type_labels={
         "ToPresident": "Sent to the President",
         "PresidentSignature": "✍️ Signed by the President",

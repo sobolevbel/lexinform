@@ -111,7 +111,7 @@ def test_telegram_down_marks_failed_and_stops_publishing() -> None:
 def test_unexpected_bug_in_a_phase_is_reported() -> None:
     w = World()
 
-    def bug(term: int, since: datetime):  # type: ignore[no-untyped-def]
+    def bug(term: int, since: datetime, **kwargs: object):  # type: ignore[no-untyped-def]
         raise KeyError("oops")
 
     w.pipeline._discovery.discover = bug  # type: ignore[method-assign]

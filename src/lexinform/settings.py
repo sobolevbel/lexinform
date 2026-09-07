@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     max_publish_per_run: int = 10
     max_analyze_per_run: int = 40
     max_analysis_attempts: int = 3
+    pre_print_enabled: bool = True  # also watch /bills for bills without a print number yet
     voting_club_breakdown: bool = True  # fetch per-MP votes to show how each club voted
     max_publish_attempts: int = 3  # failed posts are retried on later runs up to this many times
     first_run_lookback_days: int = 1

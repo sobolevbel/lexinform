@@ -93,6 +93,10 @@ class AnalysisService:
 
     def analyze_bill(self, bill: Bill) -> AnalysisRecord:
         """First analysis from the original print. Persists the result; raises on failure."""
+        if bill.is_pre_print:
+            # No process, no print, and the PDF sits behind the Sejm website's bot protection:
+            # the official title and description are all we have at this stage.
+            return self._run(bill, None, None, previous=None)
         detail = self._gateway.get_process(bill.term, bill.number)
         self._repo.save_stages(
             bill.term, bill.number, detail.stages, stage_fingerprint(detail.stages)
@@ -136,18 +140,19 @@ class AnalysisService:
     def _run(
         self,
         bill: Bill,
-        detail: ProcessDetail,
+        detail: ProcessDetail | None,
         document: TextDocument | None,
         *,
         previous: AnalysisRecord | None,
     ) -> AnalysisRecord:
         text, truncated, source = self._load_text(document)
+        meta = detail or bill.summary
         ctx = BillContext(
             number=bill.number,
-            title=detail.title or bill.summary.title,
-            description=detail.description or bill.summary.description,
-            document_date=detail.document_date or bill.summary.document_date,
-            applicant_type=detail.applicant_type,
+            title=meta.title or bill.summary.title,
+            description=meta.description or bill.summary.description,
+            document_date=meta.document_date or bill.summary.document_date,
+            applicant_type=meta.applicant_type,
             text=text,
             truncated=truncated,
             text_source=source,

@@ -15,7 +15,15 @@ from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.container import Container, build_container
 from lexinform.logging_setup import configure_logging
-from lexinform.models import Bill, BillStatus, RunReport, flatten_stages, stage_fingerprint
+from lexinform.models import (
+    Bill,
+    BillStatus,
+    ProcessSummary,
+    RunReport,
+    flatten_stages,
+    is_pre_print_number,
+    stage_fingerprint,
+)
 from lexinform.services.pipeline import RunOptions
 from lexinform.settings import Settings
 
@@ -239,13 +247,18 @@ def track(
 
 
 @app.command()
-def show(number: Annotated[str, typer.Argument(help="Print (druk) number.")]) -> None:
+def show(
+    number: Annotated[str, typer.Argument(help="Print (druk) number, or RPW/… before one.")],
+) -> None:
     """Show what the Sejm API and the local database know about a bill."""
     c = _container()
     try:
+        local = c.repo.get(c.settings.term, number)
+        if is_pre_print_number(number):
+            _show_pre_print(c, number, local)
+            return
         detail = c.gateway.get_process(c.settings.term, number)
         print_info = c.gateway.get_print(c.settings.term, number)
-        local = c.repo.get(c.settings.term, number)
     finally:
         c.close()
     typer.echo(f"{detail.title}\n{detail.web_url}")
@@ -342,8 +355,49 @@ def _report_startup_failure(settings: Settings, message: str) -> None:
         logging.getLogger(__name__).error("could not post startup failure to log channel: %s", exc)
 
 
+def _show_pre_print(c: Container, number: str, local: Bill | None) -> None:
+    sub = local.submission if local and local.submission else None
+    if sub is None:
+        sub = next((b for b in c.gateway.iter_bills(c.settings.term) if b.number == number), None)
+    if sub is None:
+        typer.echo(f"{number}: not found in /bills", err=True)
+        raise typer.Exit(code=1)
+    typer.echo(f"{sub.title}\n{sub.pdf_url}")
+    typer.echo(
+        f"received={sub.date_of_receipt} applicant={sub.applicant.value} status={sub.status}"
+        f" print={sub.print_number or '-'}"
+        f" consultation={sub.consultation_start}..{sub.consultation_end}"
+    )
+    if sub.description:
+        typer.echo(f"description: {sub.description}")
+    typer.echo(
+        "\nlocal: "
+        + (
+            f"status={local.status.value} hits={local.prefilter_hits} linked={local.linked_number}"
+            if local
+            else "not in database"
+        )
+    )
+
+
 def _load_bill(c: Container, number: str) -> Bill:
     bill = c.repo.get(c.settings.term, number)
+    if bill is None and is_pre_print_number(number):
+        sub = next((b for b in c.gateway.iter_bills(c.settings.term) if b.number == number), None)
+        if sub is None:
+            typer.echo(f"{number}: not found in /bills", err=True)
+            raise typer.Exit(code=1)
+        bill = c.repo.upsert_summary(ProcessSummary.from_submission(sub), now=c.clock.now())
+        c.repo.save_submission(bill.term, bill.number, sub)
+        hits = c.prefilter.match(sub.title, sub.description)
+        c.repo.set_status(
+            bill.term,
+            bill.number,
+            BillStatus.ANALYSIS_PENDING if hits else BillStatus.SKIPPED_PREFILTER,
+            prefilter_hits=hits,
+        )
+        bill = c.repo.get(c.settings.term, number)
+        assert bill is not None
     if bill is None:
         detail = c.gateway.get_process(c.settings.term, number)
         bill = c.repo.upsert_summary(detail, now=c.clock.now())

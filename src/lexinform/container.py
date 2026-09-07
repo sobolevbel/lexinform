@@ -121,6 +121,7 @@ class Container:
             notifier=self.run_notifier(dry_run=dry_run),
             first_run_lookback_days=self.settings.first_run_lookback_days,
             rerun_overlap_days=self.settings.rerun_overlap_days,
+            pre_print=self.settings.pre_print_enabled,
         )
 
     def close(self) -> None:

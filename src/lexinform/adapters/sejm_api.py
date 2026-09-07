@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable, Iterator
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
@@ -26,7 +26,9 @@ import httpx2 as httpx
 from lexinform.errors import SejmApiUnavailableError
 from lexinform.models import (
     BILL_DOCUMENT_TYPE,
+    ApplicantType,
     Attachment,
+    BillSubmission,
     Committee,
     DocumentType,
     PrintInfo,
@@ -122,6 +124,35 @@ class SejmApiClient:
             if len(page) < self._page_size:
                 return
             offset += len(page)
+
+    BILLS_PAGE_SIZE = 500
+
+    def iter_bills(
+        self, term: int, *, received_from: date | None = None
+    ) -> Iterator[BillSubmission]:
+        """GET /bills: submitted bills incl. those without a print number yet."""
+        params: dict[str, str | int] = {"limit": self.BILLS_PAGE_SIZE}
+        if received_from is not None:
+            params["dateOfReceiptFrom"] = received_from.isoformat()
+        offset = 0
+        while True:
+            page = self._get_json(f"/sejm/term{term}/bills", params={**params, "offset": offset})
+            if not isinstance(page, list) or not page:
+                return
+            for item in page:
+                yield parse_submission(item, term=term)
+            if len(page) < self.BILLS_PAGE_SIZE:
+                return
+            offset += len(page)
+
+    def find_submission(self, term: int, print_number: str) -> BillSubmission | None:
+        page = self._get_json(f"/sejm/term{term}/bills", params={"print": print_number})
+        items = (
+            [i for i in page if str(i.get("print")) == print_number]
+            if isinstance(page, list)
+            else []
+        )
+        return parse_submission(items[0], term=term) if items else None
 
     def get_process(self, term: int, number: str) -> ProcessDetail:
         data = self._get_json(f"/sejm/term{term}/processes/{quote(number)}")
@@ -299,6 +330,37 @@ def parse_vote(item: dict[str, Any]) -> Vote:
         mp=_int(item.get("MP")) or 0,
         club=str(item.get("club") or ""),
         vote=str(item.get("vote") or ""),
+    )
+
+
+_APPLICANTS = {
+    "GOVERNMENT": ApplicantType.GOVERNMENT,
+    "DEPUTIES": ApplicantType.DEPUTIES,
+    "SENATE": ApplicantType.SENATE,
+    "PRESIDENT": ApplicantType.PRESIDENT,
+    "PRESIDIUM": ApplicantType.PRESIDIUM,
+    "CITIZENS": ApplicantType.CITIZENS,
+    "COMMITTEE": ApplicantType.COMMITTEE,
+}
+
+
+def parse_submission(item: dict[str, Any], *, term: int) -> BillSubmission:
+    return BillSubmission(
+        term=term,
+        number=str(item["number"]),
+        title=str(item.get("title") or "").strip(),
+        description=item.get("description") or None,
+        applicant=_APPLICANTS.get(str(item.get("applicantType") or ""), ApplicantType.UNKNOWN),
+        status=str(item.get("status") or "ACTIVE"),
+        submission_type=str(item.get("submissionType") or "BILL"),
+        date_of_receipt=_date(item.get("dateOfReceipt")),
+        print_number=str(item["print"]) if item.get("print") else None,
+        eu_related=bool(item.get("euRelated", False)),
+        public_consultation=bool(item.get("publicConsultation", False)),
+        consultation_start=_date(item.get("publicConsultationStartDate")),
+        consultation_end=_date(item.get("publicConsultationEndDate")),
+        consultation_results=bool(item.get("consultationResults", False)),
+        withdrawn_date=_date(item.get("withdrawnDate")),
     )
 
 

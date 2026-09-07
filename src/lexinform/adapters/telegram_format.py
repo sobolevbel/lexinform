@@ -41,6 +41,8 @@ ICON = {
     "note": "ℹ️",
     "voting": "🗳",
     "committee": "📮",
+    "consultation": "🗣",
+    "print": "🔢",
 }
 CLUBS_PER_SIDE = 4
 
@@ -98,7 +100,7 @@ class MessageFormatter:
         s = bill.summary
 
         header = (
-            f"{ICON['new_bill']} <b>{esc(lb.new_bill_header)} — druk nr {esc(s.number)}</b>\n\n"
+            f"{ICON['new_bill']} <b>{esc(lb.new_bill_header)} — {self._number_label(bill)}</b>\n\n"
             f"<b>{esc(s.title)}</b>"
         )
         meta = (
@@ -128,6 +130,10 @@ class MessageFormatter:
             f"{ICON['effective']} <b>{esc(lb.effective_date)}:</b> "
             f"{esc(a.effective_date.strip() if a.effective_date else lb.effective_date_unknown)}"
         )
+        consultation = self._consultation_line(bill)
+        if consultation:
+            details.append(consultation)
+
         # Short one-line facts are grouped compactly; the paragraphs above are
         # separated by blank lines so they read as distinct blocks.
         meta_lines: list[str] = []
@@ -137,22 +143,30 @@ class MessageFormatter:
             meta_lines.append(
                 f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {esc(last.stage_name)}{when}"
             )
+        elif bill.is_pre_print:
+            meta_lines.append(f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {esc(lb.pre_print_stage)}")
         applicant = lb.applicant_labels.get(s.applicant_type, s.applicant_type.value)
         doc_date = self.fmt_date(s.document_date) if s.document_date else "—"
+        date_label = lb.received if bill.is_pre_print else lb.document_date
         meta_lines.append(
             f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {esc(applicant)}   "
-            f"{ICON['doc_date']} <b>{esc(lb.document_date)}:</b> {esc(doc_date)}"
+            f"{ICON['doc_date']} <b>{esc(date_label)}:</b> {esc(doc_date)}"
         )
         if s.prints_considered_jointly:
             meta_lines.append(
                 f"{esc(lb.joint_prints)} {esc(', '.join(s.prints_considered_jointly))}"
             )
-        if bill.analysis.truncated or bill.analysis.text_source == "metadata_only":
+        if bill.is_pre_print and bill.analysis.text_source == "metadata_only":
+            meta_lines.append(f"{ICON['note']} <i>{esc(lb.pre_print_note)}</i>")
+        elif bill.analysis.truncated or bill.analysis.text_source == "metadata_only":
             meta_lines.append(f"{ICON['note']} <i>{esc(lb.partial_text_note)}</i>")
         details.append("\n".join(meta_lines))
         details_block = "\n\n".join(details)
 
-        links = [link(s.web_url, lb.link_process)]
+        if bill.is_pre_print:
+            links = [link(s.web_url, lb.link_submission_pdf)]
+        else:
+            links = [link(s.web_url, lb.link_process)]
         pdf = print_info.main_pdf if print_info else None
         if pdf is not None:
             links.append(link(pdf.url, lb.link_pdf))
@@ -164,7 +178,7 @@ class MessageFormatter:
             [
                 f"#{lb.tag_importance}{a.score}",
                 f"#{lb.category_tags.get(a.category, a.category.value)}",
-                f"#druk{_tag_safe(s.number)}",
+                self._number_tag(bill),
                 f"#Sejm{s.term}",
             ]
         )
@@ -181,7 +195,7 @@ class MessageFormatter:
         analysis = bill.analysis.analysis if bill.analysis else None
 
         header = (
-            f"{ICON['update']} <b>{esc(lb.update_header)} — druk nr {esc(s.number)}</b>\n\n"
+            f"{ICON['update']} <b>{esc(lb.update_header)} — {self._number_label(bill)}</b>\n\n"
             f"<b>{esc(s.title)}</b>"
         )
         badge = ""
@@ -199,9 +213,19 @@ class MessageFormatter:
             else ""
         )
         closure = ""
-        if change.closure_detected:
+        if change.withdrawn:
+            closure = f"{ICON['closed']} {esc(lb.process_withdrawn)}"
+        elif change.closure_detected:
             icon = ICON["passed"] if change.passed else ICON["closed"]
             closure = f"{icon} {esc(lb.process_passed if change.passed else lb.process_closed)}"
+        if (
+            bill.linked_number
+            and not bill.is_pre_print
+            and change.old_fingerprint == bill.linked_number
+        ):
+            assigned = f"{ICON['print']} {esc(lb.print_assigned)}: <b>{esc(bill.number)}</b>"
+            closure = f"{assigned}\n{closure}" if closure else assigned
+        consultation = self._consultation_line(bill)
 
         summary_block = ""
         changes_block = ""
@@ -227,9 +251,9 @@ class MessageFormatter:
         elif bill.analysis and bill.analysis.source_url and change.content_changed:
             links.append(link(bill.analysis.source_url, lb.link_pdf))
         links_block = f"{ICON['links']} " + " | ".join(links)
-        tags = f"#{lb.tag_update} #druk{_tag_safe(s.number)} #Sejm{s.term}"
+        tags = f"#{lb.tag_update} {self._number_tag(bill)} #Sejm{s.term}"
 
-        fixed = [header, badge, closure, links_block, tags]
+        fixed = [header, badge, closure, consultation, links_block, tags]
         text = self._assemble(fixed, flexible=[stages_block, changes_block, summary_block])
         return RenderedMessage(text=text)
 
@@ -246,10 +270,12 @@ class MessageFormatter:
         )
         counters = "\n".join(
             [
-                f"discovered: {report.discovered} · prefilter hits: {report.prefilter_hits}",
+                f"discovered: {report.discovered} (+{report.pre_print_discovered} without print"
+                f" number) · prefilter hits: {report.prefilter_hits}",
                 f"analyzed: {report.analyzed} · failures: {report.analysis_failures}",
                 f"published: {report.published} · tracked: {report.tracked} · "
-                f"updates: {report.updates} · re-analyzed: {report.reanalyzed}",
+                f"updates: {report.updates} · re-analyzed: {report.reanalyzed} · "
+                f"linked: {report.linked}",
                 f"tokens in/out: {report.llm_input_tokens}/{report.llm_output_tokens}",
             ]
         )
@@ -266,6 +292,32 @@ class MessageFormatter:
 
     def fmt_date(self, value: dt.date) -> str:
         return value.strftime(self._labels.date_format)
+
+    def _number_label(self, bill: Bill) -> str:
+        if bill.is_pre_print:
+            return f"{esc(bill.number)} ({esc(self._labels.no_print_yet)})"
+        return f"druk nr {esc(bill.number)}"
+
+    @staticmethod
+    def _number_tag(bill: Bill) -> str:
+        if bill.is_pre_print:
+            return "#" + _tag_safe(bill.number.replace("/", "_"))
+        return f"#druk{_tag_safe(bill.number)}"
+
+    def _consultation_line(self, bill: Bill) -> str:
+        sub = bill.submission
+        if sub is None or not sub.public_consultation or sub.consultation_end is None:
+            return ""
+        lb = self._labels
+        period = f"{esc(lb.consultation_until)} {self.fmt_date(sub.consultation_end)}"
+        if sub.consultation_start:
+            period = (
+                f"{self.fmt_date(sub.consultation_start)} — {self.fmt_date(sub.consultation_end)}"
+            )
+        return (
+            f"{ICON['consultation']} <b>{esc(lb.consultation)}:</b> {period} — "
+            f"{esc(lb.consultation_hint)}"
+        )
 
     def _stage_line(self, stage: Stage) -> str:
         """One bullet of the "new stages" list; may span two lines (voting + club breakdown)."""
