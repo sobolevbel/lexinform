@@ -5,10 +5,11 @@ on:
   schedule:
     # Three times a day: prints and agendas appear during Warsaw working hours, and a reader
     # who wants to act on a consultation deadline should not wait until tomorrow morning.
-    # GitHub may delay scheduled runs by up to an hour.
-    - cron: "0 5 * * *"   # 07:00 Warsaw (summer time)
-    - cron: "0 11 * * *"  # 13:00
-    - cron: "0 17 * * *"  # 19:00
+    # Off the full hour on purpose: GitHub queues ":00" crons behind everyone else's (the 05:00
+    # run of 2026-09-08 started at 09:25); odd minutes are picked up far sooner.
+    - cron: "23 4 * * *"   # 06:23 Warsaw (summer time)
+    - cron: "23 10 * * *"  # 12:23
+    - cron: "23 16 * * *"  # 18:23
   workflow_dispatch:
     inputs:
       since:

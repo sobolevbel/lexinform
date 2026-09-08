@@ -13,7 +13,7 @@ Everything else in `README.md`; roadmap and verified API facts in `docs/roadmap.
 - `.env` holds real secrets and is untracked; never print values. `.env.example` mirrors keys.
 - Messages to readers are Russian (labels in `i18n.py`, RU + EN); Polish law titles stay Polish.
 - Prod state = SQLite dump in the `state` branch, written by `.github/workflows/daily.yml`
-  (05:00, 11:00, 17:00 UTC). To test against real data: `git show origin/state:lexinform.sql > /tmp/s.sql`,
+  (04:23, 10:23, 16:23 UTC; full-hour crons were delayed by 4+ hours). To test against real data: `git show origin/state:lexinform.sql > /tmp/s.sql`,
   `LEXINFORM_DB_PATH=/tmp/t.db uv run lexinform db init && … db restore /tmp/s.sql`, then
   `lexinform run --dry-run --since YYYY-MM-DD` (real LLM calls, DB rolled back, prints to stdout).
 
