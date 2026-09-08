@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfo

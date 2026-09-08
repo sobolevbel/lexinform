@@ -1,7 +1,5 @@
 """fan_out: parallel steps, sequential consumption."""
 
-from __future__ import annotations
-
 import threading
 import time
 

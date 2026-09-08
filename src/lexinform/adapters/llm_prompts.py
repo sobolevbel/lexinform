@@ -1,8 +1,6 @@
 """Prompt text for the bill analyzer. Keep the system prompt stable within a PROMPT_VERSION so
 prompt caching hits across all bills analysed in one run."""
 
-from __future__ import annotations
-
 from lexinform.models import BillContext, TriageContext
 
 PROMPT_VERSION = "2026-09-v3"

@@ -5,8 +5,6 @@ the PDF costs bandwidth, not tokens, so every title miss gets its text scanned; 
 enough distinct topics or repeated mentions go on to the (paid) LLM analysis.
 """
 
-from __future__ import annotations
-
 import logging
 from dataclasses import dataclass
 

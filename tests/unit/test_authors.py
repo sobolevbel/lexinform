@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from lexinform.authors import MpDirectory, parse_cover_letter
 from lexinform.models import Mp
 

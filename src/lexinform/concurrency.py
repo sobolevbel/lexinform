@@ -8,8 +8,6 @@ input order, and that is where every database write happens: SQLite sees a singl
 nothing is threaded at all, so a plain loop and the parallel version behave identically.
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable, Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass

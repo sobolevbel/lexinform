@@ -8,8 +8,6 @@ The Sejm API returns agendas as HTML fragments: `<li>` items for a Sejm sitting,
 print pointing at another), so the text is what counts.
 """
 
-from __future__ import annotations
-
 import html
 import re
 

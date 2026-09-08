@@ -1,7 +1,5 @@
 """Section trimming and excerpt building for Sejm prints."""
 
-from __future__ import annotations
-
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.keywords import KeywordPrefilter
 from lexinform.sections import PAGE_BREAK, excerpts, trim_print

@@ -1,7 +1,5 @@
 """Interfaces (typing.Protocol) that services depend on. Adapters implement them."""
 
-from __future__ import annotations
-
 from collections.abc import Iterator
 from datetime import date, datetime
 from typing import Protocol

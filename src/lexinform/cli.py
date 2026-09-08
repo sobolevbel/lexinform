@@ -1,7 +1,5 @@
 """Command-line interface."""
 
-from __future__ import annotations
-
 import logging
 import sys
 from datetime import UTC, datetime

@@ -1,8 +1,6 @@
 """The aggregate the services work on: a bill with its status, stages, analysis, submission,
 act and authors, plus the two bookkeeping rows (publications and detected status changes)."""
 
-from __future__ import annotations
-
 import datetime as dt
 
 from pydantic import BaseModel, ConfigDict, Field

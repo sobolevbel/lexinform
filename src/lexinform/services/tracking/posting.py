@@ -4,8 +4,6 @@ Every post is recorded as `pending` before it is sent (see CLAUDE.md, "Pending-b
 failure is recorded on the same row and retried on later runs up to `max_attempts`.
 """
 
-from __future__ import annotations
-
 import logging
 from collections.abc import Callable
 from datetime import date

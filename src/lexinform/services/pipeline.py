@@ -1,7 +1,5 @@
 """The daily run: discover -> prefilter -> analyse -> publish -> track -> report."""
 
-from __future__ import annotations
-
 import logging
 import time
 from collections.abc import Callable

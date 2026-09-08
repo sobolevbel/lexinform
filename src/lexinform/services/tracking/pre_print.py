@@ -6,8 +6,6 @@ entry is withdrawn the thread is closed with one last update. The same listing t
 publishes the opinions received in a consultation (`consultationResults`), which is announced once.
 """
 
-from __future__ import annotations
-
 import hashlib
 import logging
 

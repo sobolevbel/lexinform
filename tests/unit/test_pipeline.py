@@ -1,7 +1,5 @@
 """End-to-end pipeline tests on fakes: idempotency, failure isolation, tracking."""
 
-from __future__ import annotations
-
 import datetime as dt
 
 import pytest

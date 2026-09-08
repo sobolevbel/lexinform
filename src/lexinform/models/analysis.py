@@ -1,9 +1,8 @@
 """The LLM side: what the model sees (contexts), what it answers (Analysis, Triage) and how
 the answers are stored, plus token accounting."""
 
-from __future__ import annotations
-
 import datetime as dt
+from typing import Self
 
 from pydantic import BaseModel, Field
 
@@ -40,8 +39,8 @@ class TokenUsage(BaseModel):
     cache_read: int = 0
     cache_creation: int = 0
 
-    def plus(self, other: TokenUsage) -> TokenUsage:
-        return TokenUsage(
+    def plus(self, other: Self) -> Self:
+        return type(self)(
             input=self.input + other.input,
             output=self.output + other.output,
             cache_read=self.cache_read + other.cache_read,
@@ -49,21 +48,9 @@ class TokenUsage(BaseModel):
         )
 
 
-def usage_of(record: AnalysisRecord | TriageRecord) -> TokenUsage:
-    return TokenUsage(
-        input=record.input_tokens or 0,
-        output=record.output_tokens or 0,
-        cache_read=record.cache_read_input_tokens or 0,
-        cache_creation=record.cache_creation_input_tokens or 0,
-    )
-
-
-def add_usage(target: dict[str, TokenUsage], record: AnalysisRecord | TriageRecord) -> None:
-    """Accumulate a record's tokens under its model."""
-    target[record.model] = target.get(record.model, TokenUsage()).plus(usage_of(record))
-
-
 class AnalysisRecord(BaseModel):
+    """A stored analysis: the model's answer plus how it was obtained (model, text, tokens)."""
+
     analysis: Analysis
     model: str
     prompt_version: str
@@ -91,6 +78,8 @@ class Triage(BaseModel):
 
 
 class TriageRecord(BaseModel):
+    """A triage answer with its provenance; not persisted on its own."""
+
     triage: Triage
     model: str
     prompt_version: str
@@ -100,7 +89,22 @@ class TriageRecord(BaseModel):
     cache_creation_input_tokens: int | None = None
 
     def rejects(self, *, min_confidence: float) -> bool:
+        """A confident "does not affect foreigners" ends the analysis here."""
         return not self.triage.affects_foreigners and self.triage.confidence >= min_confidence
+
+
+def usage_of(record: AnalysisRecord | TriageRecord) -> TokenUsage:
+    return TokenUsage(
+        input=record.input_tokens or 0,
+        output=record.output_tokens or 0,
+        cache_read=record.cache_read_input_tokens or 0,
+        cache_creation=record.cache_creation_input_tokens or 0,
+    )
+
+
+def add_usage(target: dict[str, TokenUsage], record: AnalysisRecord | TriageRecord) -> None:
+    """Accumulate a record's tokens under its model."""
+    target[record.model] = target.get(record.model, TokenUsage()).plus(usage_of(record))
 
 
 class TriageContext(BaseModel):

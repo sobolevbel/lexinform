@@ -1,7 +1,5 @@
 """Operator commands through typer, against a temporary database (no network, no Telegram)."""
 
-from __future__ import annotations
-
 from datetime import UTC, datetime
 from pathlib import Path
 

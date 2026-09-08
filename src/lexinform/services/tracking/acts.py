@@ -1,7 +1,5 @@
 """After the Sejm: the act in Dziennik Ustaw (ELI API) and the day it enters into force."""
 
-from __future__ import annotations
-
 import logging
 from zoneinfo import ZoneInfo
 

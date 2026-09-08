@@ -1,7 +1,5 @@
 """Composition root: builds adapters and services from Settings. No DI framework."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 import anthropic

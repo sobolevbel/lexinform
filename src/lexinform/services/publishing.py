@@ -1,7 +1,5 @@
 """Publishes analysed, relevant bills exactly once per channel."""
 
-from __future__ import annotations
-
 import logging
 from dataclasses import dataclass
 

@@ -1,7 +1,5 @@
 """Logging configuration: human-readable by default, JSON lines when requested."""
 
-from __future__ import annotations
-
 import json
 import logging
 import sys

@@ -1,7 +1,5 @@
 """Finds new/changed bills in the Sejm API and runs the keyword prefilter on new ones."""
 
-from __future__ import annotations
-
 import logging
 from dataclasses import dataclass
 from datetime import datetime

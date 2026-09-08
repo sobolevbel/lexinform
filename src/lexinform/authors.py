@@ -6,10 +6,9 @@ upoważniamy posła X. (-) A; (-) B; ...". Names are matched against the MP dire
 show which clubs stand behind a bill.
 """
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass, field
+from typing import Self
 
 from lexinform.models import BillAuthors, Mp
 
@@ -63,7 +62,7 @@ class MpDirectory:
     display: dict[str, str] = field(default_factory=dict)  # key -> "First Last"
 
     @classmethod
-    def from_mps(cls, mps: tuple[Mp, ...]) -> MpDirectory:
+    def from_mps(cls, mps: tuple[Mp, ...]) -> Self:
         d = cls()
         for mp in mps:
             for name in (mp.first_last_name, mp.full_name):

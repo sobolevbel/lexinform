@@ -1,7 +1,5 @@
 """Outages of external systems must end a phase with a clear error, never crash the run."""
 
-from __future__ import annotations
-
 from collections.abc import Iterator
 from datetime import datetime
 

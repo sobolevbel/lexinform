@@ -2,8 +2,6 @@
 readers can still send an opinion, which is the point of the whole channel) and the notice that
 the Sejm published the opinions received."""
 
-from __future__ import annotations
-
 import logging
 from zoneinfo import ZoneInfo
 

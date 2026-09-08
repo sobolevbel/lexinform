@@ -1,7 +1,5 @@
 """Enumerations and literal types shared by every other model."""
 
-from __future__ import annotations
-
 from enum import StrEnum
 from typing import Literal
 

@@ -6,8 +6,6 @@ snapshots ("claude-sonnet-5-20260601") price like their family; an unknown model
 the report simply shows no dollar figure.
 """
 
-from __future__ import annotations
-
 from collections.abc import Mapping
 
 from lexinform.models import TokenUsage

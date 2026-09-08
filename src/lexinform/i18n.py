@@ -4,8 +4,6 @@ Bill titles stay in Polish; only the surrounding UI text is localised. The LLM o
 language is controlled separately (Settings.output_language) and normally matches.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 
 from lexinform.models import ApplicantType, Category

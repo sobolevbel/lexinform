@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from lexinform.adapters.pdf_text import PypdfTextExtractor, TextBudget
 from tests.conftest import FIXTURES
 

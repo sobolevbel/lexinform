@@ -1,7 +1,5 @@
 """Runtime configuration. Environment variables with the LEXINFORM_ prefix, or a .env file."""
 
-from __future__ import annotations
-
 from pathlib import Path
 from typing import Literal
 

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import pytest
 
 from lexinform.keywords import KeywordPrefilter, accept_text_hits

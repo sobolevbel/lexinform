@@ -1,7 +1,5 @@
 """Live checks against api.sejm.gov.pl. Run with: uv run pytest -m integration"""
 
-from __future__ import annotations
-
 from datetime import UTC, datetime, timedelta
 
 import pytest

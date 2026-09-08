@@ -1,7 +1,5 @@
 """Stage-level helpers: enrichment from other endpoints and the dedupe key of a change."""
 
-from __future__ import annotations
-
 import hashlib
 import logging
 

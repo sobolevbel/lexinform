@@ -5,8 +5,6 @@ rejecting us as a whole. Services treat it as phase-fatal: stop the current phas
 burn per-bill retry attempts, report a clear message. Anything else is a per-bill problem.
 """
 
-from __future__ import annotations
-
 
 class ServiceUnavailableError(RuntimeError):
     system: str = "external service"

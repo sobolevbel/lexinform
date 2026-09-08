@@ -1,7 +1,5 @@
 """What one run reports to the log channel and stores in the `runs` table."""
 
-from __future__ import annotations
-
 import datetime as dt
 
 from pydantic import BaseModel, Field

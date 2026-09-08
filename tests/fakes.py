@@ -1,7 +1,5 @@
 """In-memory fakes for the ports. Used by unit tests of services and the pipeline."""
 
-from __future__ import annotations
-
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta

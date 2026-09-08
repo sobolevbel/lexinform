@@ -5,8 +5,6 @@ Patterns are Polish word stems anchored with word boundaries so that e.g. `wiz` 
 false positives here only cost an LLM request, while false negatives lose a bill forever.
 """
 
-from __future__ import annotations
-
 import re
 from dataclasses import dataclass
 

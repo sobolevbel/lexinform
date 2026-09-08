@@ -1,7 +1,5 @@
 """Agenda HTML -> items and print numbers (pure functions on real API fixtures)."""
 
-from __future__ import annotations
-
 import json
 
 from lexinform.agenda import agenda_items, html_to_text, items_mentioning, print_numbers

@@ -1,7 +1,5 @@
 """PDF text extraction and the character budget applied before sending text to the LLM."""
 
-from __future__ import annotations
-
 import io
 import logging
 import re

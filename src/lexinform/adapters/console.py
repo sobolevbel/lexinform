@@ -1,7 +1,5 @@
 """Publisher that prints rendered messages instead of sending them (dry runs, previews)."""
 
-from __future__ import annotations
-
 import sys
 from dataclasses import dataclass, field
 from datetime import date

@@ -1,7 +1,5 @@
 """The dry-run publisher prints what Telegram would get."""
 
-from __future__ import annotations
-
 import io
 from datetime import UTC, date, datetime
 

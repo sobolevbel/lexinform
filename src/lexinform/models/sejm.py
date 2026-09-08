@@ -1,13 +1,11 @@
 """What the Sejm API tells us: processes, prints, stages, votes, submissions, acts, MPs, and
 the pure helpers over them (URLs, stage fingerprints and diffs, the latest bill text)."""
 
-from __future__ import annotations
-
 import datetime as dt
 import hashlib
 import json
 from collections.abc import Iterable
-from typing import Literal
+from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict
 
@@ -132,7 +130,7 @@ class Stage(BaseModel):
     committee_name: str | None = (
         None  # Referral: resolved by us from /committees (not fingerprinted)
     )
-    children: tuple[Stage, ...] = ()
+    children: tuple["Stage", ...] = ()
 
     @property
     def carries_bill_text(self) -> bool:
@@ -318,7 +316,7 @@ class ProcessSummary(BaseModel):
         return is_pre_print_number(self.number)
 
     @classmethod
-    def from_submission(cls, sub: BillSubmission) -> ProcessSummary:
+    def from_submission(cls, sub: BillSubmission) -> Self:
         """A summary for a bill that has no legislative process yet (no print number)."""
         received = dt.datetime.combine(sub.date_of_receipt, dt.time(0, 0), tzinfo=dt.UTC)
         return cls(
@@ -374,7 +372,7 @@ class PrintInfo(BaseModel):
     delivery_date: dt.date | None = None
     change_date: dt.datetime | None = None
     attachments: tuple[Attachment, ...] = ()
-    additional_prints: tuple[PrintInfo, ...] = ()
+    additional_prints: tuple["PrintInfo", ...] = ()
 
     @property
     def web_url(self) -> str:

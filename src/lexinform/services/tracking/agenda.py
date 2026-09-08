@@ -6,8 +6,6 @@ that is not over yet. A bill's upcoming items are stored on the bill (so cards a
 say "II чтение — 15–18.09.2026") and every new (bill, sitting) pair is posted once.
 """
 
-from __future__ import annotations
-
 import datetime as dt
 import logging
 from zoneinfo import ZoneInfo

@@ -4,8 +4,6 @@ Split by area (`enums`, `sejm`, `analysis`, `bill`, `report`); everything is re-
 `from lexinform.models import Bill` keeps working.
 """
 
-from __future__ import annotations
-
 from lexinform.models.analysis import (
     Analysis,
     AnalysisRecord,

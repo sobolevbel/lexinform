@@ -13,8 +13,6 @@ Verified behaviour of the API (September 2026):
   enforced while streaming the `GET` instead.
 """
 
-from __future__ import annotations
-
 import logging
 import time
 from collections.abc import Callable, Iterator

@@ -4,8 +4,6 @@ A run-scoped cache keeps the extracted text so a print scanned by the prefilter 
 again a few seconds later by the analysis. Nothing is persisted: the state dump lives in git.
 """
 
-from __future__ import annotations
-
 import logging
 import threading
 

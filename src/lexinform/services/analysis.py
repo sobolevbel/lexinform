@@ -5,8 +5,6 @@ Also re-analyses a bill when a newer text appears (committee report with amendme
 changed.
 """
 
-from __future__ import annotations
-
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime

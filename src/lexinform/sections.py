@@ -12,8 +12,6 @@ parties, consultations).
 the beginning of the justification and windows of text around every keyword hit.
 """
 
-from __future__ import annotations
-
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass

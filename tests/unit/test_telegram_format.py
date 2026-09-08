@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import datetime as dt
 from datetime import UTC, datetime
 from html.parser import HTMLParser

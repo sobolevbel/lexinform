@@ -4,8 +4,6 @@ Telegram limit: 4096 characters per message. Everything derived from external da
 through html.escape; only our own markup is raw HTML.
 """
 
-from __future__ import annotations
-
 import datetime as dt
 import html
 from dataclasses import dataclass

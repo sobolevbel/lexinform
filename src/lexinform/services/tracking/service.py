@@ -5,8 +5,6 @@ When the text of the bill changed (committee report with amendments, text after 
 updated print) the bill is re-analysed first and the update also lists what changed.
 """
 
-from __future__ import annotations
-
 import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
