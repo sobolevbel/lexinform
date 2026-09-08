@@ -18,6 +18,7 @@ from lexinform.models import (
     RunReport,
     Stage,
     StatusChange,
+    TokenUsage,
     flatten_stages,
 )
 from tests.fakes import make_analysis
@@ -181,6 +182,10 @@ def test_run_report_renders_and_fits() -> None:
         errors=["1 publication(s) failed"],
         llm_input_tokens=50_000,
         llm_output_tokens=4_000,
+        llm_usage={
+            "claude-opus-5": TokenUsage(input=44_000, output=3_900, cache_read=2_000),
+            "claude-sonnet-5": TokenUsage(input=4_000, output=100),
+        },
         phase_seconds={"discovery": 4.1, "text prefilter": 60.0},
         rejected=[
             AnalysisVerdict(
@@ -198,6 +203,8 @@ def test_run_report_renders_and_fits() -> None:
     _check_html(text)
     assert text.startswith("<b>❌") and "discovered: 77" in text and "<pre>" in text
     assert "timing: discovery 4.1s · text prefilter 60.0s" in text
+    # 44k*5 + 2k*0.5 + 3.9k*25 + 4k*2 + 0.1k*10 = $0.3275
+    assert "tokens in/out: 50000/4000 · opus-5 46.0k/3.9k · sonnet-5 4.0k/100 · ≈ $0.33" in text
     assert "<b>analysed, not published</b>\n• druk 2695 · triage · Rządowy projekt" in text
     assert "• druk 2411 · score 2 · Poselski projekt" in text
     assert "…" in text and "<x>" not in text  # long title clipped, HTML escaped

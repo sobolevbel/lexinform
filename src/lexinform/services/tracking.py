@@ -7,7 +7,7 @@ updated print) the bill is re-analysed first and the update also lists what chan
 
 import hashlib
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from zoneinfo import ZoneInfo
 
 from lexinform.concurrency import fan_out
@@ -21,6 +21,8 @@ from lexinform.models import (
     PublicationStatus,
     Stage,
     StatusChange,
+    TokenUsage,
+    add_usage,
     aggregate_clubs,
     diff_stages,
     stage_fingerprint,
@@ -43,6 +45,7 @@ class TrackingResult:
     failed: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
+    usage: dict[str, TokenUsage] = field(default_factory=dict)  # per model
     fatal_error: str | None = None
 
 
@@ -245,6 +248,7 @@ class StatusTrackingService:
                 result.reanalyzed += 1
                 result.input_tokens += record.input_tokens or 0
                 result.output_tokens += record.output_tokens or 0
+                add_usage(result.usage, record)
                 content_changed = True
         fresh = self._repo.get(pre.term, print_number) or bill
         new_stages = [self._enrich(pre.term, st) for st in diff_stages((), detail.stages)]
@@ -327,6 +331,7 @@ class StatusTrackingService:
             result.reanalyzed += 1
             result.input_tokens += record.input_tokens or 0
             result.output_tokens += record.output_tokens or 0
+            add_usage(result.usage, record)
             content_changed = True
 
         if old_fp is None:

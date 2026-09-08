@@ -1004,6 +1004,7 @@ def test_triage_rejection_is_stored_as_a_non_relevant_analysis() -> None:
         and rejected.analysis.analysis.summary == "о бананах"
     )
     assert report.llm_input_tokens == 3 * 10 + 2 * 100  # type: ignore[attr-defined]
+    assert report.llm_usage["fake-triage"].input == 30 and report.llm_usage["fake"].input == 200  # type: ignore[attr-defined]
     # the excerpts are what the triage saw: keyword windows from the text, never the whole print
     ctx = w.llm.triage_contexts[0]
     assert "cudzoziem" in ctx.excerpts.lower() and ctx.text_chars > 0

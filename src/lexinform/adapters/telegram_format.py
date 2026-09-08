@@ -20,6 +20,7 @@ from lexinform.models import (
     StatusChange,
     VotingSummary,
 )
+from lexinform.pricing import cost_usd
 
 MESSAGE_LIMIT = 4096
 ELLIPSIS = "…"
@@ -368,7 +369,7 @@ class MessageFormatter:
                 f"updates: {report.updates} · re-analyzed: {report.reanalyzed} · "
                 f"linked: {report.linked}",
                 f"acts published: {report.acts_published} · in force: {report.in_force_posted}",
-                f"tokens in/out: {report.llm_input_tokens}/{report.llm_output_tokens}",
+                _tokens_line(report),
             ]
             + (
                 [
@@ -522,6 +523,24 @@ class MessageFormatter:
         # Order: header, meta, summary, changes, details, links, tags
         ordered = fixed[:2] + shrunk + fixed[2:]
         return "\n\n".join(b for b in ordered if b)
+
+
+def _tokens_line(report: RunReport) -> str:
+    """`tokens in/out: 12345/678 · opus-5 10.3k/0.6k · sonnet-5 5.8k/0.1k · ≈ $0.06`."""
+    parts = [f"tokens in/out: {report.llm_input_tokens}/{report.llm_output_tokens}"]
+    if len(report.llm_usage) > 1:
+        parts += [
+            f"{esc(model.removeprefix('claude-'))} {_k(u.input + u.cache_read)}/{_k(u.output)}"
+            for model, u in report.llm_usage.items()
+        ]
+    cost = cost_usd(report.llm_usage)
+    if cost is not None and report.llm_usage:
+        parts.append(f"≈ ${cost:.2f}" if cost >= 0.01 else f"≈ ${cost:.3f}")
+    return " · ".join(parts)
+
+
+def _k(tokens: int) -> str:
+    return f"{tokens / 1000:.1f}k" if tokens >= 1000 else str(tokens)
 
 
 def _clip(text: str, limit: int) -> str:

@@ -406,6 +406,37 @@ class Analysis(BaseModel):
     )
 
 
+class TokenUsage(BaseModel):
+    """Tokens of one or more requests to one model, in the API's own categories."""
+
+    input: int = 0  # uncached input
+    output: int = 0
+    cache_read: int = 0
+    cache_creation: int = 0
+
+    def plus(self, other: TokenUsage) -> TokenUsage:
+        return TokenUsage(
+            input=self.input + other.input,
+            output=self.output + other.output,
+            cache_read=self.cache_read + other.cache_read,
+            cache_creation=self.cache_creation + other.cache_creation,
+        )
+
+
+def usage_of(record: AnalysisRecord | TriageRecord) -> TokenUsage:
+    return TokenUsage(
+        input=record.input_tokens or 0,
+        output=record.output_tokens or 0,
+        cache_read=record.cache_read_input_tokens or 0,
+        cache_creation=record.cache_creation_input_tokens or 0,
+    )
+
+
+def add_usage(target: dict[str, TokenUsage], record: AnalysisRecord | TriageRecord) -> None:
+    """Accumulate a record's tokens under its model."""
+    target[record.model] = target.get(record.model, TokenUsage()).plus(usage_of(record))
+
+
 class AnalysisRecord(BaseModel):
     analysis: Analysis
     model: str
@@ -416,6 +447,8 @@ class AnalysisRecord(BaseModel):
     created_at: dt.datetime
     input_tokens: int | None = None
     output_tokens: int | None = None
+    cache_read_input_tokens: int | None = None
+    cache_creation_input_tokens: int | None = None
     source_url: str | None = None
     source_kind: SourceKind = "print"
     revision: int = 1
@@ -437,6 +470,8 @@ class TriageRecord(BaseModel):
     prompt_version: str
     input_tokens: int | None = None
     output_tokens: int | None = None
+    cache_read_input_tokens: int | None = None
+    cache_creation_input_tokens: int | None = None
 
     def rejects(self, *, min_confidence: float) -> bool:
         return not self.triage.affects_foreigners and self.triage.confidence >= min_confidence
@@ -577,6 +612,7 @@ class RunReport(BaseModel):
     errors: list[str] = Field(default_factory=list)
     llm_input_tokens: int = 0
     llm_output_tokens: int = 0
+    llm_usage: dict[str, TokenUsage] = Field(default_factory=dict)  # per model, for the cost line
     phase_seconds: dict[str, float] = Field(default_factory=dict)  # wall time per phase
 
     @property

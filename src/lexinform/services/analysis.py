@@ -30,8 +30,10 @@ from lexinform.models import (
     ProcessSummary,
     TextDocument,
     TextSource,
+    TokenUsage,
     TriageContext,
     TriageRecord,
+    add_usage,
     latest_text_document,
     stage_fingerprint,
 )
@@ -50,6 +52,7 @@ class AnalysisResult:
     verdicts: list[AnalysisVerdict] = field(default_factory=list)
     input_tokens: int = 0
     output_tokens: int = 0
+    usage: dict[str, TokenUsage] = field(default_factory=dict)  # per model
     fatal_error: str | None = None
 
 
@@ -142,9 +145,11 @@ class AnalysisService:
             )
             result.input_tokens += record.input_tokens or 0
             result.output_tokens += record.output_tokens or 0
+            add_usage(result.usage, record)
             if prepared.triage is not None:
                 result.input_tokens += prepared.triage.input_tokens or 0
                 result.output_tokens += prepared.triage.output_tokens or 0
+                add_usage(result.usage, prepared.triage)
         return result
 
     def analyze_bill(self, bill: Bill) -> AnalysisRecord:

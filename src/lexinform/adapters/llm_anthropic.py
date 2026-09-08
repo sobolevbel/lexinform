@@ -101,6 +101,8 @@ class AnthropicAnalyzer:
             created_at=self._clock(),
             input_tokens=_usage_int(usage, "input_tokens"),
             output_tokens=_usage_int(usage, "output_tokens"),
+            cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
+            cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
         )
 
     def triage(self, ctx: TriageContext) -> TriageRecord:
@@ -130,6 +132,8 @@ class AnthropicAnalyzer:
             prompt_version=PROMPT_VERSION,
             input_tokens=_usage_int(usage, "input_tokens"),
             output_tokens=_usage_int(usage, "output_tokens"),
+            cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
+            cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
         )
 
     def _parse(

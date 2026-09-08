@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.logging_setup import MemoryLogHandler
-from lexinform.models import RunReport
+from lexinform.models import RunReport, TokenUsage
 from lexinform.ports import BillRepository, Clock, RunNotifier
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.discovery import BillDiscoveryService
@@ -189,6 +189,7 @@ class DailyPipeline:
         ]
         report.llm_input_tokens += analysed.input_tokens
         report.llm_output_tokens += analysed.output_tokens
+        _merge_usage(report, analysed.usage)
         if analysed.fatal_error:
             report.errors.append(f"analysis: {analysed.fatal_error}")
 
@@ -212,6 +213,7 @@ class DailyPipeline:
         report.in_force_posted = tracked.in_force_posted
         report.llm_input_tokens += tracked.input_tokens
         report.llm_output_tokens += tracked.output_tokens
+        _merge_usage(report, tracked.usage)
         if tracked.fatal_error:
             report.errors.append(f"tracking: {tracked.fatal_error}")
         elif tracked.failed:
@@ -227,3 +229,8 @@ class DailyPipeline:
             self._notifier.notify(report, lines)
         except Exception as exc:  # the log channel must never break the run itself
             log.exception("run notification failed: %s", exc)
+
+
+def _merge_usage(report: RunReport, usage: dict[str, TokenUsage]) -> None:
+    for model, tokens in usage.items():
+        report.llm_usage[model] = report.llm_usage.get(model, TokenUsage()).plus(tokens)
