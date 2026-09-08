@@ -57,10 +57,7 @@ class ActWatcher:
         if not publish or self._poster.posted(bill, PublicationKind.ACT_PUBLISHED):
             return
         fresh = self._repo.get(bill.term, bill.number) or bill
-        if self._poster.one_off(fresh, PublicationKind.ACT_PUBLISHED):
-            result.acts_published += 1
-        else:
-            result.failed += 1
+        result.count_post(self._poster.act_published(fresh), "acts_published")
 
     def remind_in_force(self, term: int, result: TrackingResult) -> None:
         """One reply on the day the act enters into force (Warsaw time)."""
@@ -72,16 +69,13 @@ class ActWatcher:
             if act is None or act.entry_into_force is None:
                 continue
             if act.already_in_force_when_fetched:
-                # Discovered late: the publication notice already said "in force since ...".
+                # The publication notice already said "in force since …".
                 self._poster.record(bill, PublicationKind.IN_FORCE, PublicationStatus.SKIPPED)
                 continue
             if self._poster.posted(bill, PublicationKind.IN_FORCE):
                 continue
             try:
-                if self._poster.one_off(bill, PublicationKind.IN_FORCE):
-                    result.in_force_posted += 1
-                else:
-                    result.failed += 1
+                result.count_post(self._poster.in_force(bill), "in_force_posted")
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return

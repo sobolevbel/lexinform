@@ -9,7 +9,6 @@ import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
-from lexinform.adapters.pdf_text import TextBudget
 from lexinform.authors import MpDirectory, parse_cover_letter
 from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
@@ -35,8 +34,8 @@ from lexinform.models import (
     latest_text_document,
     stage_fingerprint,
 )
-from lexinform.ports import BillRepository, LlmAnalyzer, SejmGateway
-from lexinform.sections import excerpts, trim_print
+from lexinform.ports import BillRepository, Clock, LlmAnalyzer, SejmGateway
+from lexinform.sections import TextBudget, excerpts, trim_print
 from lexinform.services.documents import PdfTextLoader
 
 log = logging.getLogger(__name__)
@@ -76,6 +75,7 @@ class AnalysisService:
         repo: BillRepository,
         loader: PdfTextLoader,
         llm: LlmAnalyzer,
+        clock: Clock,
         *,
         text_budget: TextBudget,
         max_attempts: int = 3,
@@ -88,11 +88,11 @@ class AnalysisService:
         self._repo = repo
         self._loader = loader
         self._llm = llm
+        self._clock = clock
         self._budget = text_budget
         self._max_attempts = max_attempts
         self._workers = workers
-        # The triage needs the keyword patterns to cut excerpts around the hits; None disables it.
-        self._triage = triage
+        self._triage = triage  # the keyword patterns that cut the excerpts; None disables it
         self._triage_min_chars = triage_min_chars
         self._triage_min_confidence = triage_min_confidence
         self._mps: MpDirectory | None = None
@@ -283,14 +283,10 @@ class AnalysisService:
             input_chars=len(ctx.excerpts),
             truncated=True,
             text_source="excerpts",
-            created_at=self._now(),
+            created_at=self._clock.now(),
             input_tokens=verdict.input_tokens,
             output_tokens=verdict.output_tokens,
         )
-
-    @staticmethod
-    def _now() -> datetime:
-        return datetime.now(UTC)
 
     def _persist(self, prepared: _Prepared) -> AnalysisRecord:
         """Write one prepared analysis down (stages, authors, the record). Calling thread only."""

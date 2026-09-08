@@ -1,6 +1,8 @@
 """What the Sejm API tells us: processes, prints, stages, votes, submissions, acts, MPs, and
 the pure helpers over them (URLs, stage fingerprints and diffs, the latest bill text)."""
 
+from __future__ import annotations  # Stage and PrintInfo are trees: they refer to themselves
+
 import datetime as dt
 import hashlib
 import json
@@ -49,14 +51,9 @@ class VotingSummary(BaseModel):
     no: int
     abstain: int
     not_participating: int = 0
-    total_voted: int | None = None
-    majority_type: str | None = None
-    majority_votes: int | None = None
     sitting: int | None = None
     voting_number: int | None = None
     date: dt.datetime | None = None
-    description: str | None = None
-    topic: str | None = None
     pdf_url: str | None = None
     clubs: tuple[ClubVotes, ...] = ()
 
@@ -70,9 +67,8 @@ class Mp(BaseModel):
     first_name: str
     last_name: str
     second_name: str | None = None
-    accusative_name: str | None = None
+    accusative_name: str | None = None  # "Jana Kowalskiego": the form cover letters use
     club: str = "niez."
-    active: bool = True
 
     @property
     def first_last_name(self) -> str:
@@ -97,12 +93,13 @@ class BillAuthors(BaseModel):
 
 
 class Committee(BaseModel):
+    """A Sejm committee from GET /committees/{code}."""
+
     model_config = ConfigDict(frozen=True)
 
     term: int
     code: str
     name: str
-    name_genitive: str | None = None
 
     @property
     def web_url(self) -> str:
@@ -130,7 +127,7 @@ class Stage(BaseModel):
     committee_name: str | None = (
         None  # Referral: resolved by us from /committees (not fingerprinted)
     )
-    children: tuple["Stage", ...] = ()
+    children: tuple[Stage, ...] = ()
 
     @property
     def carries_bill_text(self) -> bool:
@@ -204,7 +201,6 @@ class CommitteeSitting(BaseModel):
     status: str = "PLANNED"  # PLANNED | FINISHED | ...
     agenda: str = ""  # HTML fragment, see `lexinform.agenda`
     video_url: str | None = None
-    joint_with: tuple[str, ...] = ()  # codes of committees sitting jointly
 
 
 class SejmSitting(BaseModel):
@@ -372,7 +368,7 @@ class PrintInfo(BaseModel):
     delivery_date: dt.date | None = None
     change_date: dt.datetime | None = None
     attachments: tuple[Attachment, ...] = ()
-    additional_prints: tuple["PrintInfo", ...] = ()
+    additional_prints: tuple[PrintInfo, ...] = ()
 
     @property
     def web_url(self) -> str:

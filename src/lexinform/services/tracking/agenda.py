@@ -205,7 +205,4 @@ class AgendaWatcher:
                 continue
             fresh = self._repo.get(bill.term, bill.number) or bill
             log.info("druk %s on the agenda: %s", bill.number, item.ref)
-            if self._poster.one_off(fresh, PublicationKind.AGENDA, agenda=item):
-                result.agenda_posted += 1
-            else:
-                result.failed += 1
+            result.count_post(self._poster.agenda(fresh, item), "agenda_posted")

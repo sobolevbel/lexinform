@@ -223,7 +223,7 @@ class DailyPipeline:
         report.acts_published = tracked.acts_published
         report.in_force_posted = tracked.in_force_posted
         report.consultation_reminders = tracked.consultation_reminders
-        report.consultation_results_posted = tracked.consultation_results
+        report.consultation_results_posted = tracked.consultation_results_posted
         report.agenda_posted = tracked.agenda_posted
         report.llm_input_tokens += tracked.input_tokens
         report.llm_output_tokens += tracked.output_tokens

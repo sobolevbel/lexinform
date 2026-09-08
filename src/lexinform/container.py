@@ -6,7 +6,7 @@ import anthropic
 
 from lexinform.adapters.console import ConsolePublisher, ConsoleRunNotifier
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
-from lexinform.adapters.pdf_text import PypdfTextExtractor, TextBudget
+from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.sejm_api import SejmApiClient
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.adapters.telegram import TelegramBotClient, TelegramPublisher, TelegramRunNotifier
@@ -14,6 +14,7 @@ from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
 from lexinform.ports import Publisher, RunNotifier
+from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.documents import PdfTextLoader
@@ -62,6 +63,7 @@ class Container:
             self.repo,
             self.pdf_loader(),
             self.analyzer(),
+            self.clock,
             text_budget=TextBudget(self.settings.text_budget_chars),
             max_attempts=self.settings.max_analysis_attempts,
             workers=self.settings.llm_concurrency,
@@ -193,8 +195,6 @@ def build_container(settings: Settings) -> Container:
         clock=SystemClock(),
         repo=repo,
         gateway=gateway,
-        formatter=MessageFormatter(
-            settings.output_language, api_base_url=settings.sejm_api_base_url
-        ),
+        formatter=MessageFormatter(settings.output_language),
         prefilter=KeywordPrefilter(),
     )

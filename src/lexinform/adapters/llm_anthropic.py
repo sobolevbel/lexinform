@@ -65,7 +65,6 @@ class AnthropicAnalyzer:
         self._client = client
         self._model = model
         self._triage_model = triage_model or model
-        self._language = output_language
         self._effort = effort
         self._max_tokens = max_tokens
         self._clock = clock

@@ -1,4 +1,5 @@
-from lexinform.adapters.pdf_text import PypdfTextExtractor, TextBudget
+from lexinform.adapters.pdf_text import PypdfTextExtractor
+from lexinform.sections import TextBudget
 from tests.conftest import FIXTURES
 
 

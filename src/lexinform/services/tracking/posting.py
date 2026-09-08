@@ -1,7 +1,7 @@
-"""Replies under a bill's card: status updates and one-off notices.
+"""Replies under a bill's card, recorded as `pending` before they are sent.
 
-Every post is recorded as `pending` before it is sent (see CLAUDE.md, "Pending-before-send"), a
-failure is recorded on the same row and retried on later runs up to `max_attempts`.
+A failure is recorded on the same row and retried on later runs up to `max_attempts`; an outage
+(`ServiceUnavailableError`) is recorded and re-raised so the phase stops.
 """
 
 import logging
@@ -21,8 +21,12 @@ from lexinform.ports import BillRepository, Clock, Publisher
 
 log = logging.getLogger(__name__)
 
+Send = Callable[[int | None], int]  # reply_to -> message id
+
 
 class Poster:
+    """Sends the replies of the tracking phase and keeps the `publications` bookkeeping."""
+
     def __init__(
         self,
         repo: BillRepository,
@@ -45,8 +49,7 @@ class Poster:
         )
 
     def posted(self, bill: Bill, kind: PublicationKind, *, ref: str | None = None) -> bool:
-        """True when a post of this kind (and sitting, for agenda posts) exists and must not be
-        attempted (again)."""
+        """True when this post exists and must not be attempted (again)."""
         pub = self._repo.get_publication(
             bill.term, bill.number, kind.value, self._channel_id, ref=ref
         )
@@ -64,6 +67,7 @@ class Poster:
         *,
         ref: str | None = None,
     ) -> int:
+        """Write the bookkeeping row without sending anything (e.g. `skipped`)."""
         return self._repo.create_publication(
             Publication(
                 term=bill.term,
@@ -90,57 +94,74 @@ class Poster:
                 created_at=self._clock.now(),
             )
         )
-        card = self.card(bill)
         fresh = self._repo.get(bill.term, bill.number) or bill
-        reply_to = card.message_id if card else None
         return self._send(
             pub_id,
             bill,
-            "status update",
-            lambda: self._publisher.publish_status_update(fresh, change, reply_to).message_id,
+            lambda reply_to: (
+                self._publisher.publish_status_update(fresh, change, reply_to).message_id
+            ),
         )
 
-    def one_off(
-        self,
-        bill: Bill,
-        kind: PublicationKind,
-        *,
-        today: date | None = None,
-        agenda: AgendaItem | None = None,
-    ) -> bool:
-        """Post a notice that happens once per bill (act, in force, consultation reminder or
-        results) or once per sitting (agenda, keyed by `agenda.ref`)."""
-        ref = agenda.ref if agenda is not None else None
-        pub_id = self.record(bill, kind, PublicationStatus.PENDING, ref=ref)
-        card = self.card(bill)
-        reply_to = card.message_id if card else None
+    def act_published(self, bill: Bill) -> bool:
+        return self._once(
+            bill,
+            PublicationKind.ACT_PUBLISHED,
+            lambda reply_to: self._publisher.publish_act_published(bill, reply_to).message_id,
+        )
 
-        def send() -> int:
-            if kind is PublicationKind.ACT_PUBLISHED:
-                return self._publisher.publish_act_published(bill, reply_to).message_id
-            if kind is PublicationKind.CONSULTATION_DEADLINE:
-                assert today is not None
-                return self._publisher.publish_consultation_deadline(
+    def in_force(self, bill: Bill) -> bool:
+        return self._once(
+            bill,
+            PublicationKind.IN_FORCE,
+            lambda reply_to: self._publisher.publish_in_force(bill, reply_to).message_id,
+        )
+
+    def consultation_deadline(self, bill: Bill, *, today: date) -> bool:
+        return self._once(
+            bill,
+            PublicationKind.CONSULTATION_DEADLINE,
+            lambda reply_to: (
+                self._publisher.publish_consultation_deadline(
                     bill, reply_to, today=today
                 ).message_id
-            if kind is PublicationKind.CONSULTATION_RESULTS:
-                return self._publisher.publish_consultation_results(bill, reply_to).message_id
-            if kind is PublicationKind.AGENDA:
-                assert agenda is not None
-                return self._publisher.publish_agenda(bill, agenda, reply_to).message_id
-            return self._publisher.publish_in_force(bill, reply_to).message_id
+            ),
+        )
 
-        return self._send(pub_id, bill, kind.value, send)
+    def consultation_results(self, bill: Bill) -> bool:
+        return self._once(
+            bill,
+            PublicationKind.CONSULTATION_RESULTS,
+            lambda reply_to: (
+                self._publisher.publish_consultation_results(bill, reply_to).message_id
+            ),
+        )
 
-    def _send(self, pub_id: int, bill: Bill, what: str, send: Callable[[], int]) -> bool:
-        """Run `send`, then mark the pending row sent or failed; outages propagate."""
+    def agenda(self, bill: Bill, item: AgendaItem) -> bool:
+        """One post per (bill, sitting): `item.ref` tells the sittings apart."""
+        return self._once(
+            bill,
+            PublicationKind.AGENDA,
+            lambda reply_to: self._publisher.publish_agenda(bill, item, reply_to).message_id,
+            ref=item.ref,
+        )
+
+    def _once(
+        self, bill: Bill, kind: PublicationKind, send: Send, *, ref: str | None = None
+    ) -> bool:
+        pub_id = self.record(bill, kind, PublicationStatus.PENDING, ref=ref)
+        return self._send(pub_id, bill, send)
+
+    def _send(self, pub_id: int, bill: Bill, send: Send) -> bool:
+        card = self.card(bill)
+        reply_to = card.message_id if card else None
         try:
-            message_id = send()
+            message_id = send(reply_to)
         except ServiceUnavailableError as exc:
             self._repo.mark_publication(pub_id, PublicationStatus.FAILED, error=exc.describe())
             raise
         except Exception as exc:
-            log.exception("%s for druk %s failed: %s", what, bill.number, exc)
+            log.exception("post for druk %s failed: %s", bill.number, exc)
             self._repo.mark_publication(
                 pub_id, PublicationStatus.FAILED, error=f"{type(exc).__name__}: {exc}"
             )

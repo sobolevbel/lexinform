@@ -9,7 +9,8 @@ them and keeps the bill, the justification and OSR points 1-5 (problem, solution
 parties, consultations).
 
 `excerpts` builds the short digest used for the cheap relevance triage: the beginning of the bill,
-the beginning of the justification and windows of text around every keyword hit.
+the beginning of the justification and windows of text around every keyword hit. `TextBudget` is
+the last safety cap before the model call.
 """
 
 import re
@@ -149,3 +150,36 @@ def excerpts(
         else:
             merged.append((start, end))
     return "\n[...]\n".join(text[start:end].strip() for start, end in merged)
+
+
+@dataclass(frozen=True)
+class BudgetedText:
+    text: str
+    truncated: bool
+
+
+class TextBudget:
+    """Safety cap on the characters sent to the model.
+
+    A text over the cap keeps its head (the act) and the start of the justification, which
+    explains the purpose in plain language; the cut is marked in Polish.
+    """
+
+    MARKER = "\n\n[... fragment pominięty ...]\n\n"
+
+    def __init__(self, max_chars: int, *, justification_share: float = 0.35) -> None:
+        if max_chars <= 0:
+            raise ValueError("max_chars must be positive")
+        self._max = max_chars
+        self._justification_share = justification_share
+
+    def apply(self, text: str) -> BudgetedText:
+        if len(text) <= self._max:
+            return BudgetedText(text=text, truncated=False)
+        match = _JUSTIFICATION_RE.search(text)
+        if match is None or match.start() < self._max:
+            return BudgetedText(text=text[: self._max], truncated=True)
+        justification_chars = int(self._max * self._justification_share)
+        head = text[: self._max - justification_chars]
+        justification = text[match.start() : match.start() + justification_chars]
+        return BudgetedText(text=head + self.MARKER + justification, truncated=True)

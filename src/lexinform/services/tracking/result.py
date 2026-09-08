@@ -2,34 +2,46 @@
 
 import logging
 from dataclasses import dataclass, field
+from typing import Literal
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import AnalysisRecord, TokenUsage, add_usage
 
 log = logging.getLogger(__name__)
 
+PostCounter = Literal[
+    "published",
+    "acts_published",
+    "in_force_posted",
+    "consultation_reminders",
+    "consultation_results_posted",
+    "agenda_posted",
+]
+
 
 @dataclass
 class TrackingResult:
+    """What the tracking phase did; copied into the run report by the pipeline."""
+
     checked: int = 0
     changed: int = 0
     linked: int = 0
+    published: int = 0  # status updates
     acts_published: int = 0
     in_force_posted: int = 0
     consultation_reminders: int = 0
-    consultation_results: int = 0
+    consultation_results_posted: int = 0
     agenda_posted: int = 0
     reanalyzed: int = 0
-    published: int = 0
     failed: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
     usage: dict[str, TokenUsage] = field(default_factory=dict)  # per model
     fatal_error: str | None = None
 
-    def count_post(self, ok: bool) -> None:
-        if ok:
-            self.published += 1
+    def count_post(self, sent: bool, counter: PostCounter = "published") -> None:
+        if sent:
+            setattr(self, counter, getattr(self, counter) + 1)
         else:
             self.failed += 1
 

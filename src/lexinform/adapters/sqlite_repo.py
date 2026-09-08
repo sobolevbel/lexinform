@@ -167,8 +167,13 @@ class SqliteBillRepository:
 
     # ------------------------------------------------------------------ schema / lifecycle
 
+    @property
+    def schema_version(self) -> int:
+        return int(self._conn.execute("PRAGMA user_version").fetchone()[0])
+
     def migrate(self) -> None:
-        current = int(self._conn.execute("PRAGMA user_version").fetchone()[0])
+        """Apply the migrations the database has not seen yet, each in its own transaction."""
+        current = self.schema_version
         for version, script in enumerate(MIGRATIONS[current:], start=current + 1):
             self._conn.executescript(f"BEGIN;{script}PRAGMA user_version = {version};COMMIT;")
 
@@ -176,14 +181,10 @@ class SqliteBillRepository:
         self._conn.close()
 
     def begin(self) -> None:
+        """Open the transaction a dry run rolls back at the end."""
         if not self._in_txn:
             self._conn.execute("BEGIN")
             self._in_txn = True
-
-    def commit(self) -> None:
-        if self._in_txn:
-            self._conn.execute("COMMIT")
-            self._in_txn = False
 
     def rollback(self) -> None:
         if self._in_txn:
@@ -191,8 +192,8 @@ class SqliteBillRepository:
             self._in_txn = False
 
     def dump(self) -> str:
-        version = int(self._conn.execute("PRAGMA user_version").fetchone()[0])
-        return "\n".join(self._conn.iterdump()) + f"\n{_VERSION_LINE}{version};\n"
+        """The whole database as SQL text, ending with the schema version `restore()` reads."""
+        return "\n".join(self._conn.iterdump()) + f"\n{_VERSION_LINE}{self.schema_version};\n"
 
     def restore(self, script: str) -> None:
         """Replace the current contents with a script produced by `dump()`."""
@@ -532,7 +533,12 @@ class SqliteBillRepository:
     # ------------------------------------------------------------------ publications
 
     def create_publication(self, publication: Publication) -> int:
-        cur = self._conn.execute(
+        """Insert the row or, when its unique key exists, reset that row to the given status.
+
+        Returns the row id, looked up by the natural key: `lastrowid` is unreliable after an
+        upsert that took the UPDATE path.
+        """
+        self._conn.execute(
             """
             INSERT INTO publications (term, number, kind, status, channel_id, ref, message_id,
                 document_message_ids, status_change_id, created_at, sent_at, error)
@@ -555,9 +561,6 @@ class SqliteBillRepository:
                 publication.error,
             ),
         )
-        # lastrowid is unreliable after an upsert that took the UPDATE path, so look the row up
-        # by its natural key instead.
-        del cur
         if publication.kind is PublicationKind.STATUS_UPDATE:
             row = self._conn.execute(
                 "SELECT id FROM publications WHERE status_change_id = ? AND channel_id = ?"
@@ -565,7 +568,6 @@ class SqliteBillRepository:
                 (publication.status_change_id, publication.channel_id),
             ).fetchone()
         else:
-            # Posts that recur per sitting (agenda) are told apart by `ref`.
             row = self._conn.execute(
                 "SELECT id FROM publications WHERE term = ? AND number = ? AND channel_id = ?"
                 " AND kind = ? AND ref IS ?",

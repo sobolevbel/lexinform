@@ -376,14 +376,9 @@ def parse_voting(item: dict[str, Any]) -> VotingSummary:
         no=_int(item.get("no")) or 0,
         abstain=_int(item.get("abstain")) or 0,
         not_participating=_int(item.get("notParticipating")) or 0,
-        total_voted=_int(item.get("totalVoted")),
-        majority_type=item.get("majorityType"),
-        majority_votes=_int(item.get("majorityVotes")),
         sitting=_int(item.get("sitting")),
         voting_number=_int(item.get("votingNumber")),
         date=_aware_datetime(item.get("date")),
-        description=item.get("description"),
-        topic=item.get("topic"),
         pdf_url=pdf,
     )
 
@@ -435,16 +430,12 @@ def parse_mp(item: dict[str, Any]) -> Mp:
         second_name=item.get("secondName") or None,
         accusative_name=item.get("accusativeName") or None,
         club=str(item.get("club") or "niez."),
-        active=bool(item.get("active", True)),
     )
 
 
 def parse_committee(item: dict[str, Any], *, term: int) -> Committee:
     return Committee(
-        term=term,
-        code=str(item["code"]),
-        name=str(item.get("name") or item["code"]).strip(),
-        name_genitive=item.get("nameGenitive"),
+        term=term, code=str(item["code"]), name=str(item.get("name") or item["code"]).strip()
     )
 
 
@@ -461,11 +452,6 @@ def parse_committee_sitting(item: dict[str, Any], *, code: str) -> CommitteeSitt
         status=str(item.get("status") or "PLANNED"),
         agenda=str(item.get("agenda") or ""),
         video_url=str(player) if player else None,
-        joint_with=tuple(
-            str(j["code"])
-            for j in item.get("jointWith") or ()
-            if isinstance(j, dict) and j.get("code")
-        ),
     )
 
 

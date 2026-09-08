@@ -16,6 +16,7 @@ from lexinform.logging_setup import configure_logging
 from lexinform.models import (
     Bill,
     BillStatus,
+    BillSubmission,
     ProcessSummary,
     PublicationKind,
     RunReport,
@@ -487,12 +488,7 @@ def _report_startup_failure(settings: Settings, message: str) -> None:
 
 
 def _show_pre_print(c: Container, number: str, local: Bill | None) -> None:
-    sub = local.submission if local and local.submission else None
-    if sub is None:
-        sub = next((b for b in c.gateway.iter_bills(c.settings.term) if b.number == number), None)
-    if sub is None:
-        typer.echo(f"{number}: not found in /bills", err=True)
-        raise typer.Exit(code=1)
+    sub = local.submission if local and local.submission else _find_submission(c, number)
     typer.echo(f"{sub.title}\n{sub.pdf_url}")
     typer.echo(
         f"received={sub.date_of_receipt} applicant={sub.applicant.value} status={sub.status}"
@@ -512,37 +508,36 @@ def _show_pre_print(c: Container, number: str, local: Bill | None) -> None:
 
 
 def _load_bill(c: Container, number: str) -> Bill:
+    """The bill from the database, fetched from the API and prefiltered on first sight."""
     bill = c.repo.get(c.settings.term, number)
-    if bill is None and is_pre_print_number(number):
-        sub = next((b for b in c.gateway.iter_bills(c.settings.term) if b.number == number), None)
-        if sub is None:
-            typer.echo(f"{number}: not found in /bills", err=True)
-            raise typer.Exit(code=1)
-        bill = c.repo.upsert_summary(ProcessSummary.from_submission(sub), now=c.clock.now())
+    if bill is not None:
+        return bill
+    if is_pre_print_number(number):
+        sub = _find_submission(c, number)
+        summary: ProcessSummary = ProcessSummary.from_submission(sub)
+        bill = c.repo.upsert_summary(summary, now=c.clock.now())
         c.repo.save_submission(bill.term, bill.number, sub)
-        hits = c.prefilter.match(sub.title, sub.description)
-        c.repo.set_status(
-            bill.term,
-            bill.number,
-            BillStatus.ANALYSIS_PENDING if hits else BillStatus.SKIPPED_PREFILTER,
-            prefilter_hits=hits,
-        )
-        bill = c.repo.get(c.settings.term, number)
-        assert bill is not None
-    if bill is None:
-        detail = c.gateway.get_process(c.settings.term, number)
-        bill = c.repo.upsert_summary(detail, now=c.clock.now())
-        hits = c.prefilter.match(detail.title, detail.description)
-        c.repo.set_status(
-            bill.term,
-            bill.number,
-            BillStatus.ANALYSIS_PENDING if hits else BillStatus.SKIPPED_PREFILTER,
-            prefilter_hits=hits,
-        )
-        bill = c.repo.get(c.settings.term, number)
-        assert bill is not None
-    assert isinstance(bill, Bill)
-    return bill
+    else:
+        summary = c.gateway.get_process(c.settings.term, number)
+        bill = c.repo.upsert_summary(summary, now=c.clock.now())
+    hits = c.prefilter.match(summary.title, summary.description)
+    c.repo.set_status(
+        bill.term,
+        bill.number,
+        BillStatus.ANALYSIS_PENDING if hits else BillStatus.SKIPPED_PREFILTER,
+        prefilter_hits=hits,
+    )
+    stored = c.repo.get(c.settings.term, number)
+    assert stored is not None
+    return stored
+
+
+def _find_submission(c: Container, number: str) -> BillSubmission:
+    sub = next((b for b in c.gateway.iter_bills(c.settings.term) if b.number == number), None)
+    if sub is None:
+        typer.echo(f"{number}: not found in /bills", err=True)
+        raise typer.Exit(code=1)
+    return sub
 
 
 def main() -> None:

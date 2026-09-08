@@ -4,7 +4,6 @@ import datetime as dt
 
 import pytest
 
-from lexinform.adapters.pdf_text import TextBudget
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.keywords import KeywordPrefilter
@@ -27,6 +26,7 @@ from lexinform.models import (
     Vote,
     VotingSummary,
 )
+from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.documents import PdfTextLoader
@@ -102,6 +102,7 @@ class World:
             self.repo,
             self.loader,
             self.llm,
+            self.clock,
             text_budget=TextBudget(10_000),
             workers=workers,
             triage=KeywordPrefilter() if triage else None,

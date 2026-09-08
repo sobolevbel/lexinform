@@ -108,11 +108,10 @@ def fit(text: str, limit: int) -> str:
 
 
 class MessageFormatter:
-    def __init__(
-        self, language: str = "ru", *, api_base_url: str = "https://api.sejm.gov.pl"
-    ) -> None:
+    """Renders every message kind in one output language; see `i18n.Labels`."""
+
+    def __init__(self, language: str = "ru") -> None:
         self._labels: Labels = labels_for(language)
-        self._api_base_url = api_base_url.rstrip("/")
 
     # ------------------------------------------------------------------ new bill card
 

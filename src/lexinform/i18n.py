@@ -45,7 +45,6 @@ class Labels:
     not_voting: str
     link_voting_pdf: str
     referred_to_committee: str
-    committee_hint: str
     no_print_yet: str
     received: str
     found_in_text: str
@@ -143,7 +142,6 @@ RU = Labels(
     not_voting="не голосовали",
     link_voting_pdf="протокол голосования (PDF)",
     referred_to_committee="Направлен в комиссию",
-    committee_hint="организации и граждане могут направить в комиссию своё мнение",
     no_print_yet="номер druku ещё не присвоен",
     received="Поступил в Сейм",
     found_in_text="Найден по тексту проекта: название об иностранцах не говорит.",
@@ -318,7 +316,6 @@ EN = Labels(
     not_voting="did not vote",
     link_voting_pdf="voting record (PDF)",
     referred_to_committee="Referred to committee",
-    committee_hint="organisations and citizens may send their opinion to the committee",
     no_print_yet="no print number yet",
     received="Received by the Sejm",
     found_in_text="Found by scanning the bill text: the title does not mention foreigners.",

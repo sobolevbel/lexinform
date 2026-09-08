@@ -39,12 +39,10 @@ class ConsultationReminder:
             return
         if not publish or self._poster.posted(bill, PublicationKind.CONSULTATION_RESULTS):
             return
-        if self._poster.one_off(bill, PublicationKind.CONSULTATION_RESULTS):
-            result.consultation_results += 1
-        else:
-            result.failed += 1
+        result.count_post(self._poster.consultation_results(bill), "consultation_results_posted")
 
     def remind(self, term: int, result: TrackingResult) -> None:
+        """One reply `days_before` days before a consultation closes (Warsaw time)."""
         today = self._clock.now().astimezone(self._local_tz).date()
         due = self._repo.list_due_consultations(
             term, self._channel_id, today=today, days_before=self._days_before
@@ -53,10 +51,8 @@ class ConsultationReminder:
             if self._poster.posted(bill, PublicationKind.CONSULTATION_DEADLINE):
                 continue
             try:
-                if self._poster.one_off(bill, PublicationKind.CONSULTATION_DEADLINE, today=today):
-                    result.consultation_reminders += 1
-                else:
-                    result.failed += 1
+                sent = self._poster.consultation_deadline(bill, today=today)
+                result.count_post(sent, "consultation_reminders")
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return
