@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     llm_effort: Effort = "medium"
     llm_max_tokens: int = 4000
     llm_concurrency: int = Field(default=2, ge=1)  # bills analysed at the same time
+    # Cheap first pass on excerpts before the full analysis of long prints; "" disables it.
+    llm_triage_model: str = "claude-sonnet-5"
+    triage_min_chars: int = 20_000  # shorter texts go straight to the full analysis
+    triage_min_confidence: float = Field(default=0.8, ge=0.0, le=1.0)
     output_language: str = "ru"
     # Safety cap only: Polish text is ~2 chars/token, so this is ~750k tokens and fits the
     # 1M context of the default model. Real prints (even 800k-char ones) go in whole.

@@ -61,9 +61,13 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
    submitted without a print number (`/bills`).
 2. **Prefilter** by Polish word stems on title and description; misses get their print PDF scanned
    with the same patterns (accepted on two distinct topics or three hits).
-3. **Analyse** the full bill text with Claude through a structured-output schema (relevance, score,
-   category, summary, key changes, affected groups, practical impact, effective date). Signatories
-   of deputies' bills are parsed from the print's cover letter and matched against `/MP`.
+3. **Analyse** the bill with Claude through a structured-output schema (relevance, score,
+   category, summary, key changes, affected groups, practical impact, effective date). The print
+   is trimmed first: the bill, its justification and the core of the regulatory impact assessment
+   go in; consultation reports, EU compliance tables and draft regulations (55–80% of a government
+   print) do not. Long prints first pass a cheap triage on excerpts around the keyword hits; a
+   confident "not about foreigners" ends there. Signatories of deputies' bills are parsed from
+   the print's cover letter and matched against `/MP`.
 4. **Publish** relevant bills with `score >= LEXINFORM_MIN_SCORE`. A publication row is written
    before sending, so a crash can never duplicate a post; failed posts are retried on later runs.
 5. **Track** published bills: the stage tree is fingerprinted, every change produces exactly one
@@ -121,6 +125,8 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_TERM` | `10` | Sejm term |
 | `LEXINFORM_DB_PATH` | `lexinform.db` | SQLite file |
 | `LEXINFORM_LLM_MODEL` / `_LLM_EFFORT` | `claude-opus-5` / `medium` | Model and effort |
+| `LEXINFORM_LLM_TRIAGE_MODEL` | `claude-sonnet-5` | Model for the cheap first pass on excerpts (`""` disables it) |
+| `LEXINFORM_TRIAGE_MIN_CHARS` / `_TRIAGE_MIN_CONFIDENCE` | `20000` / `0.8` | Texts shorter than this skip the triage; confidence a rejection needs |
 | `LEXINFORM_OUTPUT_LANGUAGE` | `ru` | `ru` or `en` (add more in `i18n.py`) |
 | `LEXINFORM_MIN_SCORE` | `3` | Minimum importance to publish |
 | `LEXINFORM_MAX_PUBLISH_PER_RUN` / `_MAX_ANALYZE_PER_RUN` | `10` / `40` | Flood and cost caps |

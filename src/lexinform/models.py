@@ -72,7 +72,7 @@ class PublicationStatus(StrEnum):
     UNKNOWN = "unknown"
 
 
-TextSource = Literal["pdf", "metadata_only"]
+TextSource = Literal["pdf", "excerpts", "metadata_only"]  # excerpts: rejected by the triage
 SourceKind = Literal["print", "committee_report", "text_after3", "metadata"]
 
 
@@ -421,6 +421,38 @@ class AnalysisRecord(BaseModel):
     revision: int = 1
 
 
+class Triage(BaseModel):
+    """Structured output of the cheap first pass: does the bill concern foreigners at all?"""
+
+    affects_foreigners: bool = Field(
+        description="True if the bill changes anything for non-citizens, or if in doubt."
+    )
+    confidence: float = Field(ge=0.0, le=1.0, description="How sure you are of the answer.")
+    rationale: str = Field(description="One sentence in the output language.")
+
+
+class TriageRecord(BaseModel):
+    triage: Triage
+    model: str
+    prompt_version: str
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+
+    def rejects(self, *, min_confidence: float) -> bool:
+        return not self.triage.affects_foreigners and self.triage.confidence >= min_confidence
+
+
+class TriageContext(BaseModel):
+    """What the triage model sees: metadata plus excerpts of the text, never the whole print."""
+
+    number: str
+    title: str
+    description: str | None
+    applicant_type: ApplicantType
+    excerpts: str
+    text_chars: int  # length of the full (trimmed) text the excerpts were taken from
+
+
 class BillContext(BaseModel):
     """Everything the LLM gets to see about one bill."""
 
@@ -519,6 +551,7 @@ class RunReport(BaseModel):
     acts_published: int = 0
     in_force_posted: int = 0
     analyzed: int = 0
+    triaged_out: int = 0  # rejected by the cheap first pass, no full analysis
     analysis_failures: int = 0
     published: int = 0
     updates: int = 0

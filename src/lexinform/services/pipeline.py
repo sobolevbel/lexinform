@@ -182,6 +182,7 @@ class DailyPipeline:
     def _analyse(self, opts: RunOptions, report: RunReport) -> None:
         analysed = self._analysis.analyze_pending(opts.term, limit=opts.max_analyze)
         report.analyzed = analysed.analyzed
+        report.triaged_out = analysed.triaged_out
         report.analysis_failures = analysed.failed
         report.llm_input_tokens += analysed.input_tokens
         report.llm_output_tokens += analysed.output_tokens

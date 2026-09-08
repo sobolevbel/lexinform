@@ -9,6 +9,8 @@ from dataclasses import dataclass
 
 from pypdf import PdfReader
 
+from lexinform.sections import PAGE_BREAK
+
 log = logging.getLogger(__name__)
 
 
@@ -23,8 +25,8 @@ class PypdfTextExtractor:
                 pages.append(page.extract_text() or "")
             except Exception as exc:  # pypdf raises a zoo of exceptions on odd PDFs
                 log.warning("pypdf failed on page %d: %s", index + 1, exc)
-        text = "\n".join(pages)
-        return _normalize_whitespace(text)
+        # Pages stay separated so `sections.trim_print` can recognise where appendices start.
+        return _normalize_whitespace(PAGE_BREAK.join(pages))
 
 
 _JUSTIFICATION_RE = re.compile(r"^\s*uzasadnienie\s*$", re.MULTILINE | re.IGNORECASE)

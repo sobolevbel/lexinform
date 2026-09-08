@@ -8,6 +8,7 @@ def test_extracts_text_from_real_print() -> None:
     text = PypdfTextExtractor().extract((FIXTURES / "print_3039.pdf").read_bytes())
     assert "Druk nr 3039" in text
     assert len(text) > 5000
+    assert text.count("\f") >= 5  # pages stay separated for the section trimmer
 
 
 def test_budget_passthrough_when_short() -> None:

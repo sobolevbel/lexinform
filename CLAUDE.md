@@ -100,9 +100,23 @@ There is no downgrade. To roll back, revert the code and restore the previous du
 - pypdf needs `pypdf[fonts]` (fontTools) for CFF fonts, otherwise it logs a warning per font per
   page; its logger is capped at ERROR. Extraction is CPU-bound (~1 s per 100 pages).
 
+## LLM cost model (Sept 2026)
+
+Opus 5 is $5/M input; output is ~1% of the bill. A government print is bill + uzasadnienie + OSR
+(13-point form) + appendices (consultation report, tabela zgodności, draft regulations with their
+own uzasadnienie/OSR), and the appendices are 55–80% of the text. `sections.trim_print` keeps the
+bill, uzasadnienie and OSR points 1–5 (pages are separated by `\f` by the extractor). Long texts
+(≥ `triage_min_chars`) first get a triage on `sections.excerpts` (heads + windows around keyword
+hits) by `llm_triage_model`; a confident "no" is stored as a non-relevant analysis with
+`text_source="excerpts"`. Real numbers: druk 2695 (564k chars, irrelevant) cost $1.45 in full,
+would cost ~$0.01 with the triage. The triage call runs without extended thinking (Haiku 4.5
+rejects `thinking: adaptive`; a classification does not need it).
+
 ## Product decisions already taken
 
-Default model `claude-opus-5`, full text sent, `min_score` 3, text prefilter threshold 2 distinct
-patterns or 3 hits, club breakdown on, Dz.U. notice as a separate reply, in-force reminder repeats
+Default model `claude-opus-5`, `min_score` 3, text prefilter threshold 2 distinct patterns or 3
+hits (weak patterns such as Straż Graniczna never decide alone), triage of texts ≥ 20k chars on
+`claude-sonnet-5` (all of Haiku 4.5 / Sonnet 5 / Opus 5 judged the four test bills correctly;
+Haiku ignored the output language, Sonnet costs ~1 cent per bill), club breakdown on, Dz.U. notice as a separate reply, in-force reminder repeats
 the summary. The owner does **not** want a "probability of passing" estimate. Open items are
 listed under "Still open" in `docs/roadmap.md`.

@@ -9,7 +9,7 @@ import pytest
 
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer, LlmError, LlmFatalError
 from lexinform.adapters.llm_prompts import PROMPT_VERSION, build_user_prompt, system_prompt
-from lexinform.models import Analysis, ApplicantType, BillContext
+from lexinform.models import Analysis, ApplicantType, BillContext, Triage, TriageContext
 from tests.fakes import make_analysis
 
 
@@ -70,6 +70,35 @@ def test_analyze_builds_request_and_record() -> None:
         and record.input_tokens == 1200
         and record.output_tokens == 300
     )
+
+
+def test_triage_uses_its_own_model_and_prompt() -> None:
+    response = SimpleNamespace(
+        parsed_output=Triage(affects_foreigners=False, confidence=0.95, rationale="о бананах"),
+        stop_reason="end_turn",
+        usage=SimpleNamespace(input_tokens=5000, output_tokens=60),
+    )
+    client = _client(response)
+    analyzer = AnthropicAnalyzer(client, model="claude-opus-5", triage_model="claude-sonnet-5")
+    record = analyzer.triage(
+        TriageContext(
+            number="2695",
+            title="Projekt ustawy o jakości handlowej",
+            description=None,
+            applicant_type=ApplicantType.GOVERNMENT,
+            excerpts="... Straż Graniczna ...",
+            text_chars=200_000,
+        )
+    )
+    call = client.messages.calls[0]
+    assert call["model"] == "claude-sonnet-5" and call["output_format"] is Triage
+    assert "thinking" not in call and "output_config" not in call
+    assert "gate" in call["system"][0]["text"]
+    assert "Pełny tekst: 200000 znaków" in call["messages"][0]["content"]
+    assert record.model == "claude-sonnet-5" and record.input_tokens == 5000
+    assert record.rejects(min_confidence=0.8) and not record.rejects(min_confidence=0.99)
+    # without a triage model the analysis model answers both passes
+    assert AnthropicAnalyzer(client, model="claude-opus-5")._triage_model == "claude-opus-5"
 
 
 def test_refusal_and_truncation_raise() -> None:

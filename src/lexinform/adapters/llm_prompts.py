@@ -3,9 +3,9 @@ prompt caching hits across all bills analysed in one run."""
 
 from __future__ import annotations
 
-from lexinform.models import BillContext
+from lexinform.models import BillContext, TriageContext
 
-PROMPT_VERSION = "2026-09-v2"
+PROMPT_VERSION = "2026-09-v3"
 
 _LANGUAGE_NAMES = {"ru": "Russian", "pl": "Polish", "en": "English", "uk": "Ukrainian"}
 
@@ -41,8 +41,48 @@ You receive the text of a bill (projekt ustawy) submitted to the Sejm. Decide wh
 """
 
 
+TRIAGE_SYSTEM_PROMPT_TEMPLATE = """You screen bills submitted to the Polish Sejm for a channel that informs foreigners living in Poland.
+
+You do NOT see the whole bill. You see its beginning, the beginning of its justification (uzasadnienie) and short windows of text around keyword hits (cudzoziemcy, pobyt, wiza, obywatelstwo, Straż Graniczna, granica, Schengen, ...). Decide whether the bill changes anything for non-citizens: their stay, work, rights, obligations, benefits, procedures, fees, documents.
+
+## Output fields
+
+- affects_foreigners: true if the bill changes anything for foreigners, directly or clearly indirectly. Also true when the visible fragments are inconclusive.
+- confidence: 0-1, how sure you are of your answer.
+- rationale: one sentence in {language} naming what the bill is about and why it does or does not concern foreigners.
+
+## Rules
+
+- A keyword hit alone is not relevance. Straż Graniczna, granica or Schengen named as an authority or place in a bill about customs, food inspections, policing or infrastructure do not make the bill relevant. Bills that mention foreigners only in passing (one clause in a large unrelated bill) are not relevant.
+- Provisions about visas, residence permits, citizenship, international protection, work of foreigners, aid to citizens of Ukraine, Karta Polaka, PESEL or benefits for foreigners ARE relevant even if short.
+- This is a gate: a wrong "false" loses the bill for the readers, a wrong "true" only costs one more request. When in doubt answer true with lower confidence.
+- Base the answer only on the provided fragments.
+"""
+
+
 def system_prompt(language: str) -> str:
     return SYSTEM_PROMPT_TEMPLATE.format(language=_LANGUAGE_NAMES.get(language.lower(), language))
+
+
+def triage_system_prompt(language: str) -> str:
+    return TRIAGE_SYSTEM_PROMPT_TEMPLATE.format(
+        language=_LANGUAGE_NAMES.get(language.lower(), language)
+    )
+
+
+def build_triage_prompt(ctx: TriageContext) -> str:
+    lines = [
+        f"Druk nr {ctx.number}",
+        f"Tytuł: {ctx.title}",
+        f"Wnioskodawca: {ctx.applicant_type.value}",
+    ]
+    if ctx.description:
+        lines.append(f"Opis: {ctx.description}")
+    lines.append(f"Pełny tekst: {ctx.text_chars} znaków; poniżej wybrane fragmenty.")
+    lines.append("")
+    lines.append("=== FRAGMENTY TEKSTU ===")
+    lines.append(ctx.excerpts)
+    return "\n".join(lines)
 
 
 def build_user_prompt(ctx: BillContext) -> str:

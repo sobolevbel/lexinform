@@ -23,6 +23,9 @@ from lexinform.models import (
     ProcessSummary,
     RunReport,
     StatusChange,
+    Triage,
+    TriageContext,
+    TriageRecord,
     Vote,
 )
 
@@ -132,11 +135,31 @@ def make_analysis(
 
 class FakeLlm:
     def __init__(
-        self, script: dict[str, Analysis | Exception] | None = None, default: Analysis | None = None
+        self,
+        script: dict[str, Analysis | Exception] | None = None,
+        default: Analysis | None = None,
+        triage_script: dict[str, Triage | Exception] | None = None,
     ) -> None:
         self.script = script or {}
         self.default = default or make_analysis()
+        self.triage_script = triage_script or {}
         self.contexts: list[BillContext] = []
+        self.triage_contexts: list[TriageContext] = []
+
+    def triage(self, ctx: TriageContext) -> TriageRecord:
+        self.triage_contexts.append(ctx)
+        outcome = self.triage_script.get(
+            ctx.number, Triage(affects_foreigners=True, confidence=0.9, rationale="касается")
+        )
+        if isinstance(outcome, Exception):
+            raise outcome
+        return TriageRecord(
+            triage=outcome,
+            model="fake-triage",
+            prompt_version=PROMPT_VERSION,
+            input_tokens=10,
+            output_tokens=5,
+        )
 
     def analyze(self, ctx: BillContext) -> AnalysisRecord:
         self.contexts.append(ctx)

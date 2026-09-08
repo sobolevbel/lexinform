@@ -15,20 +15,27 @@ from lexinform.adapters.pdf_text import TextBudget
 from lexinform.authors import MpDirectory, parse_cover_letter
 from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
+from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
+    Analysis,
     AnalysisRecord,
     ApplicantType,
     Bill,
     BillContext,
     BillStatus,
+    Category,
     PrintInfo,
     ProcessDetail,
+    ProcessSummary,
     TextDocument,
     TextSource,
+    TriageContext,
+    TriageRecord,
     latest_text_document,
     stage_fingerprint,
 )
 from lexinform.ports import BillRepository, LlmAnalyzer, SejmGateway
+from lexinform.sections import excerpts, trim_print
 from lexinform.services.documents import PdfTextLoader
 
 log = logging.getLogger(__name__)
@@ -37,6 +44,7 @@ log = logging.getLogger(__name__)
 @dataclass
 class AnalysisResult:
     analyzed: int = 0
+    triaged_out: int = 0
     failed: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
@@ -55,6 +63,7 @@ class _Prepared:
     source: TextSource
     record: AnalysisRecord
     first: bool  # first analysis seeds the stages; a re-analysis leaves them to tracking
+    triage: TriageRecord | None = None  # a triage the bill passed: its tokens count too
 
 
 class AnalysisService:
@@ -68,6 +77,9 @@ class AnalysisService:
         text_budget: TextBudget,
         max_attempts: int = 3,
         workers: int = 1,
+        triage: KeywordPrefilter | None = None,
+        triage_min_chars: int = 20_000,
+        triage_min_confidence: float = 0.8,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -76,6 +88,10 @@ class AnalysisService:
         self._budget = text_budget
         self._max_attempts = max_attempts
         self._workers = workers
+        # The triage needs the keyword patterns to cut excerpts around the hits; None disables it.
+        self._triage = triage
+        self._triage_min_chars = triage_min_chars
+        self._triage_min_confidence = triage_min_confidence
         self._mps: MpDirectory | None = None
 
     # ------------------------------------------------------------------ first analysis
@@ -95,7 +111,8 @@ class AnalysisService:
         for outcome in fan_out(candidates, self._prepare_first, workers=self._workers):
             bill = outcome.item
             try:
-                record = self._persist(outcome.result())
+                prepared = outcome.result()
+                record = self._persist(prepared)
             except ServiceUnavailableError as exc:
                 # Not the bill's fault: stop the phase without consuming its retry attempts.
                 result.fatal_error = exc.describe()
@@ -108,9 +125,15 @@ class AnalysisService:
                     bill.term, bill.number, f"{type(exc).__name__}: {exc}"
                 )
                 continue
-            result.analyzed += 1
+            if record.text_source == "excerpts":
+                result.triaged_out += 1
+            else:
+                result.analyzed += 1
             result.input_tokens += record.input_tokens or 0
             result.output_tokens += record.output_tokens or 0
+            if prepared.triage is not None:
+                result.input_tokens += prepared.triage.input_tokens or 0
+                result.output_tokens += prepared.triage.output_tokens or 0
         return result
 
     def analyze_bill(self, bill: Bill) -> AnalysisRecord:
@@ -170,6 +193,11 @@ class AnalysisService:
         """Load the text and ask the model. Network only: safe to run for several bills at once."""
         text, truncated, source = self._load_text(document)
         meta = detail or bill.summary
+        triage: TriageRecord | None = None
+        if previous is None and source == "pdf" and len(text) >= self._triage_min_chars:
+            triage, rejection = self._triage_verdict(bill, meta, text)
+            if rejection is not None:
+                return _Prepared(bill, detail, document, text, source, rejection, first=True)
         ctx = BillContext(
             number=bill.number,
             title=meta.title or bill.summary.title,
@@ -187,7 +215,68 @@ class AnalysisService:
         record.source_url = document.url if document else None
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
-        return _Prepared(bill, detail, document, text, source, record, first=previous is None)
+        return _Prepared(
+            bill, detail, document, text, source, record, first=previous is None, triage=triage
+        )
+
+    def _triage_verdict(
+        self, bill: Bill, meta: ProcessSummary, text: str
+    ) -> tuple[TriageRecord | None, AnalysisRecord | None]:
+        """Ask a cheap first question on excerpts; a confident "no" becomes the final record.
+
+        Long prints are where the money goes, and half of them turn out to be about something
+        else: the keyword prefilter is deliberately over-inclusive. A rejected bill is stored as a
+        regular, non-relevant analysis (model and text_source say how it was decided).
+        Returns the triage record and, when it rejects the bill, that final record.
+        """
+        if self._triage is None:
+            return None, None
+        ctx = TriageContext(
+            number=bill.number,
+            title=meta.title or bill.summary.title,
+            description=meta.description or bill.summary.description,
+            applicant_type=meta.applicant_type,
+            excerpts=excerpts(text, self._triage.spans(text)),
+            text_chars=len(text),
+        )
+        verdict = self._llm.triage(ctx)
+        if not verdict.rejects(min_confidence=self._triage_min_confidence):
+            log.info(
+                "druk %s passes triage (%s, %.2f): full analysis",
+                bill.number,
+                "relevant" if verdict.triage.affects_foreigners else "unsure",
+                verdict.triage.confidence,
+            )
+            return verdict, None
+        log.info(
+            "druk %s rejected by triage (%.2f): %s",
+            bill.number,
+            verdict.triage.confidence,
+            verdict.triage.rationale,
+        )
+        return verdict, AnalysisRecord(
+            analysis=Analysis(
+                relevant=False,
+                score=1,
+                category=Category.NONE,
+                summary=verdict.triage.rationale,
+                practical_impact="",
+                confidence=verdict.triage.confidence,
+                rationale=verdict.triage.rationale,
+            ),
+            model=verdict.model,
+            prompt_version=verdict.prompt_version,
+            input_chars=len(ctx.excerpts),
+            truncated=True,
+            text_source="excerpts",
+            created_at=self._now(),
+            input_tokens=verdict.input_tokens,
+            output_tokens=verdict.output_tokens,
+        )
+
+    @staticmethod
+    def _now() -> datetime:
+        return datetime.now(UTC)
 
     def _persist(self, prepared: _Prepared) -> AnalysisRecord:
         """Write one prepared analysis down (stages, authors, the record). Calling thread only."""
@@ -252,7 +341,16 @@ class AnalysisService:
             return "", False, "metadata_only"
         if text is None:
             return "", False, "metadata_only"
-        budgeted = self._budget.apply(text)
+        trimmed = trim_print(text)
+        if trimmed.dropped:
+            log.info(
+                "%s: %d chars, sending %d (dropped %s)",
+                document.url,
+                len(text),
+                len(trimmed.text),
+                ", ".join(f"{d.name} {d.chars}" for d in trimmed.dropped),
+            )
+        budgeted = self._budget.apply(trimmed.text)
         return budgeted.text, budgeted.truncated, "pdf"
 
 

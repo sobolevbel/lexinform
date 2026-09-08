@@ -24,6 +24,8 @@ from lexinform.models import (
     RunReport,
     Stage,
     StatusChange,
+    TriageContext,
+    TriageRecord,
     Vote,
 )
 
@@ -74,6 +76,8 @@ class TextExtractor(Protocol):
 
 class LlmAnalyzer(Protocol):
     def analyze(self, ctx: BillContext) -> AnalysisRecord: ...
+
+    def triage(self, ctx: TriageContext) -> TriageRecord: ...
 
 
 class PublishResult(Protocol):

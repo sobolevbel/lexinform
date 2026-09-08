@@ -85,12 +85,14 @@ class World:
         text_prefilter: bool = True,
         extractor=None,
         workers: int = 1,
+        triage: bool = False,
+        triage_script=None,
     ) -> None:
         self.clock = FixedClock()
         self.repo = SqliteBillRepository(":memory:")
         self.repo.migrate()
         self.gateway = FakeSejmGateway()
-        self.llm = FakeLlm(script=llm_script)
+        self.llm = FakeLlm(script=llm_script, triage_script=triage_script)
         self.publisher = FakePublisher(fail_on=fail_publish)
         self.notifier = FakeNotifier()
         self.extractor = extractor or FakeTextExtractor()
@@ -102,6 +104,8 @@ class World:
             self.llm,
             text_budget=TextBudget(10_000),
             workers=workers,
+            triage=KeywordPrefilter() if triage else None,
+            triage_min_chars=100,  # every fake PDF is "long" enough to be triaged
         )
         self.pipeline = DailyPipeline(
             self.repo,
@@ -956,3 +960,56 @@ def test_report_carries_phase_timings() -> None:
         "publishing",
         "tracking",
     }
+
+
+# --------------------------------------------------------------------------- triage
+
+
+def test_triage_rejection_is_stored_as_a_non_relevant_analysis() -> None:
+    from lexinform.models import Triage
+
+    w = World(
+        extractor=FakeTextExtractor(FOREIGNER_TEXT),
+        triage=True,
+        triage_script={
+            "4000": Triage(affects_foreigners=False, confidence=0.95, rationale="о бананах"),
+            "4001": Triage(affects_foreigners=False, confidence=0.5, rationale="не уверен"),
+        },
+    )
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")  # triage says relevant -> full analysis
+    w.add_bill("4000", "Rządowy projekt ustawy o jakości handlowej")  # confident no
+    w.add_bill("4001", "Rządowy projekt ustawy o zmianie niektórych ustaw")  # unsure -> full
+    report = w.run()
+    assert report.analyzed == 2 and report.triaged_out == 1 and report.published == 2  # type: ignore[attr-defined]
+    assert sorted(c.number for c in w.llm.triage_contexts) == ["3039", "4000", "4001"]
+    assert sorted(c.number for c in w.llm.contexts) == ["3039", "4001"]
+    rejected = w.repo.get(10, "4000")
+    assert rejected is not None and rejected.status is BillStatus.ANALYZED
+    assert rejected.analysis is not None
+    assert rejected.analysis.text_source == "excerpts" and rejected.analysis.model == "fake-triage"
+    assert (
+        not rejected.analysis.analysis.relevant
+        and rejected.analysis.analysis.summary == "о бананах"
+    )
+    assert report.llm_input_tokens == 3 * 10 + 2 * 100  # type: ignore[attr-defined]
+    # the excerpts are what the triage saw: keyword windows from the text, never the whole print
+    ctx = w.llm.triage_contexts[0]
+    assert "cudzoziem" in ctx.excerpts.lower() and ctx.text_chars > 0
+    # nothing is published for it and a second run leaves it alone
+    assert w.run().analyzed == 0  # type: ignore[attr-defined]
+
+
+def test_triage_failure_is_a_per_bill_failure() -> None:
+    w = World(triage=True, triage_script={"3039": RuntimeError("bad json")})
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    report = w.run()
+    assert report.analysis_failures == 1 and report.analyzed == 0  # type: ignore[attr-defined]
+    assert w.repo.get(10, "3039").analysis_attempts == 1  # type: ignore[union-attr]
+
+
+def test_short_texts_skip_the_triage() -> None:
+    w = World(triage=True)
+    w.pipeline._analysis._triage_min_chars = 10_000_000  # type: ignore[attr-defined]
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    assert w.run().analyzed == 1  # type: ignore[attr-defined]
+    assert w.llm.triage_contexts == []

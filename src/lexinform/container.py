@@ -51,6 +51,7 @@ class Container:
         return AnthropicAnalyzer(
             anthropic.Anthropic(api_key=self.settings.anthropic_api_key),
             model=self.settings.llm_model,
+            triage_model=self.settings.llm_triage_model or None,
             output_language=self.settings.output_language,
             effort=self.settings.llm_effort,
             max_tokens=self.settings.llm_max_tokens,
@@ -66,6 +67,9 @@ class Container:
             text_budget=TextBudget(self.settings.text_budget_chars),
             max_attempts=self.settings.max_analysis_attempts,
             workers=self.settings.llm_concurrency,
+            triage=self.prefilter if self.settings.llm_triage_model else None,
+            triage_min_chars=self.settings.triage_min_chars,
+            triage_min_confidence=self.settings.triage_min_confidence,
         )
 
     def discovery_service(self) -> BillDiscoveryService:

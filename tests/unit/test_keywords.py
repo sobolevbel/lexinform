@@ -77,6 +77,23 @@ def test_match_counts_and_acceptance_threshold() -> None:
     assert not accept_text_hits({}, min_distinct=1, min_occurrences=1)
 
 
+def test_weak_patterns_never_decide_alone() -> None:
+    # druk 2695 (food quality) named Straż Graniczna four times as an inspecting authority
+    assert not accept_text_hits({"straz_graniczna": 4}, min_distinct=2, min_occurrences=3)
+    assert not accept_text_hits(
+        {"straz_graniczna": 2, "schengen": 1}, min_distinct=2, min_occurrences=3
+    )
+    assert accept_text_hits(
+        {"straz_graniczna": 2, "cudzoziemcy": 1}, min_distinct=2, min_occurrences=3
+    )
+
+
+def test_spans_point_at_the_hits() -> None:
+    text = "Wniosek składa cudzoziemiec; Straż Graniczna kontroluje."
+    spans = KeywordPrefilter().spans(text)
+    assert [text[a:b] for a, b in spans] == ["cudzoziemiec", "Straż Graniczna"]
+
+
 def test_real_print_text_passes_the_text_prefilter(print_3039_pdf_text: str) -> None:
     counts = KeywordPrefilter().match_counts(print_3039_pdf_text)
     assert counts["cudzoziemcy"] > 3

@@ -362,7 +362,8 @@ class MessageFormatter:
                 f" number) · prefilter hits: {report.prefilter_hits}",
                 f"text prefilter: checked {report.text_prefilter_checked} · "
                 f"hits {report.text_prefilter_hits}",
-                f"analyzed: {report.analyzed} · failures: {report.analysis_failures}",
+                f"analyzed: {report.analyzed} · triaged out: {report.triaged_out} · "
+                f"failures: {report.analysis_failures}",
                 f"published: {report.published} · tracked: {report.tracked} · "
                 f"updates: {report.updates} · re-analyzed: {report.reanalyzed} · "
                 f"linked: {report.linked}",

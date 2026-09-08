@@ -9,9 +9,22 @@ from typing import Any, Protocol
 
 import anthropic
 
-from lexinform.adapters.llm_prompts import PROMPT_VERSION, build_user_prompt, system_prompt
+from lexinform.adapters.llm_prompts import (
+    PROMPT_VERSION,
+    build_triage_prompt,
+    build_user_prompt,
+    system_prompt,
+    triage_system_prompt,
+)
 from lexinform.errors import LlmUnavailableError
-from lexinform.models import Analysis, AnalysisRecord, BillContext
+from lexinform.models import (
+    Analysis,
+    AnalysisRecord,
+    BillContext,
+    Triage,
+    TriageContext,
+    TriageRecord,
+)
 from lexinform.settings import Effort
 
 log = logging.getLogger(__name__)
@@ -45,6 +58,7 @@ class AnthropicAnalyzer:
         client: anthropic.Anthropic,
         *,
         model: str = "claude-opus-5",
+        triage_model: str | None = None,
         output_language: str = "ru",
         effort: Effort = "medium",
         max_tokens: int = 4000,
@@ -52,25 +66,99 @@ class AnthropicAnalyzer:
     ) -> None:
         self._client = client
         self._model = model
+        self._triage_model = triage_model or model
         self._language = output_language
         self._effort = effort
         self._max_tokens = max_tokens
         self._clock = clock
         self._system = system_prompt(output_language)
+        self._triage_system = triage_system_prompt(output_language)
 
     def analyze(self, ctx: BillContext) -> AnalysisRecord:
-        user_prompt = build_user_prompt(ctx)
+        response = self._parse(
+            self._model, self._system, build_user_prompt(ctx), Analysis, thinking=True
+        )
+        analysis = response.parsed_output
+        if not isinstance(analysis, Analysis):
+            raise LlmError("model returned no parsable structured output")
+        usage = getattr(response, "usage", None)
+        log.info(
+            "LLM analysed druk %s: relevant=%s score=%d in=%s (cached %d) out=%s",
+            ctx.number,
+            analysis.relevant,
+            analysis.score,
+            _usage_int(usage, "input_tokens"),
+            _usage_int(usage, "cache_read_input_tokens") or 0,
+            _usage_int(usage, "output_tokens"),
+        )
+        return AnalysisRecord(
+            analysis=analysis,
+            model=self._model,
+            prompt_version=PROMPT_VERSION,
+            input_chars=len(ctx.text),
+            truncated=ctx.truncated,
+            text_source=ctx.text_source,
+            created_at=self._clock(),
+            input_tokens=_usage_int(usage, "input_tokens"),
+            output_tokens=_usage_int(usage, "output_tokens"),
+        )
+
+    def triage(self, ctx: TriageContext) -> TriageRecord:
+        """The cheap first pass on excerpts; may run on a smaller model than the analysis."""
+        response = self._parse(
+            self._triage_model,
+            self._triage_system,
+            build_triage_prompt(ctx),
+            Triage,
+            thinking=False,
+        )
+        triage = response.parsed_output
+        if not isinstance(triage, Triage):
+            raise LlmError("model returned no parsable structured output")
+        usage = getattr(response, "usage", None)
+        log.info(
+            "LLM triaged druk %s: affects_foreigners=%s confidence=%.2f in=%s out=%s",
+            ctx.number,
+            triage.affects_foreigners,
+            triage.confidence,
+            _usage_int(usage, "input_tokens"),
+            _usage_int(usage, "output_tokens"),
+        )
+        return TriageRecord(
+            triage=triage,
+            model=self._triage_model,
+            prompt_version=PROMPT_VERSION,
+            input_tokens=_usage_int(usage, "input_tokens"),
+            output_tokens=_usage_int(usage, "output_tokens"),
+        )
+
+    def _parse(
+        self,
+        model: str,
+        system: str,
+        user_prompt: str,
+        output_format: type[Any],
+        *,
+        thinking: bool,
+    ) -> _ParsedMessageLike:
+        """One structured-output request with the error classification shared by both passes.
+
+        The analysis thinks (adaptive thinking, configured effort); the triage is a short
+        classification and runs without it, which also keeps smaller models (Haiku 4.5) eligible.
+        """
+        reasoning: dict[str, Any] = (
+            {"thinking": {"type": "adaptive"}, "output_config": {"effort": self._effort}}
+            if thinking
+            else {}
+        )
         try:
             response: _ParsedMessageLike = self._client.messages.parse(
-                model=self._model,
+                model=model,
                 max_tokens=self._max_tokens,
-                system=[
-                    {"type": "text", "text": self._system, "cache_control": {"type": "ephemeral"}}
-                ],
-                thinking={"type": "adaptive"},
-                output_config={"effort": self._effort},
+                system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
                 messages=[{"role": "user", "content": user_prompt}],
-                output_format=Analysis,
+                output_format=output_format,
+                **reasoning,
             )
         except (
             anthropic.AuthenticationError,
@@ -96,33 +184,7 @@ class AnthropicAnalyzer:
             raise LlmError("model refused the request")
         if response.stop_reason == "max_tokens":
             raise LlmError("response truncated by max_tokens")
-        analysis = response.parsed_output
-        if not isinstance(analysis, Analysis):
-            raise LlmError("model returned no parsable structured output")
-
-        usage = getattr(response, "usage", None)
-        input_tokens = _usage_int(usage, "input_tokens")
-        cached = _usage_int(usage, "cache_read_input_tokens") or 0
-        log.info(
-            "LLM analysed druk %s: relevant=%s score=%d in=%s (cached %d) out=%s",
-            ctx.number,
-            analysis.relevant,
-            analysis.score,
-            input_tokens,
-            cached,
-            _usage_int(usage, "output_tokens"),
-        )
-        return AnalysisRecord(
-            analysis=analysis,
-            model=self._model,
-            prompt_version=PROMPT_VERSION,
-            input_chars=len(ctx.text),
-            truncated=ctx.truncated,
-            text_source=ctx.text_source,
-            created_at=self._clock(),
-            input_tokens=input_tokens,
-            output_tokens=_usage_int(usage, "output_tokens"),
-        )
+        return response
 
 
 def _usage_int(usage: Any, field: str) -> int | None:

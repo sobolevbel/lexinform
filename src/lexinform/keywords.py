@@ -55,6 +55,11 @@ KEYWORD_PATTERNS: tuple[KeywordPattern, ...] = (
 )
 # fmt: on
 
+# Authorities and places that turn up in bills about customs, policing or inspections without the
+# bill touching foreigners at all (a food-quality bill lists Straż Graniczna among inspectors).
+# Inside a full text they count only next to a strong pattern.
+WEAK_PATTERNS: frozenset[str] = frozenset({"straz_graniczna", "granica_panstwowa", "schengen"})
+
 
 _NBSP = " "
 
@@ -83,13 +88,20 @@ class KeywordPrefilter:
         counts = {p.name: len(p.regex.findall(haystack)) for p in self._patterns}
         return {name: n for name, n in counts.items() if n}
 
+    def spans(self, text: str) -> list[tuple[int, int]]:
+        """Character ranges of every hit in `text` (offsets are valid for the original text)."""
+        haystack = self._normalize(text)
+        return sorted(
+            (m.start(), m.end()) for p in self._patterns for m in p.regex.finditer(haystack)
+        )
+
 
 def accept_text_hits(counts: dict[str, int], *, min_distinct: int, min_occurrences: int) -> bool:
     """Whether keyword hits inside a full bill text justify an LLM analysis.
 
     One stray "cudzoziemiec" in a 200-page tax bill is noise; several distinct topics, or the same
-    topic repeated, is signal.
+    topic repeated, is signal. Weak patterns (border authorities) never carry the decision alone.
     """
-    if not counts:
+    if not counts or all(name in WEAK_PATTERNS for name in counts):
         return False
     return len(counts) >= min_distinct or sum(counts.values()) >= min_occurrences
