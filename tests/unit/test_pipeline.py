@@ -808,8 +808,7 @@ def test_act_publication_is_announced_once_and_reminded_on_entry_into_force() ->
     assert "Опубликован в Dziennik Ustaw — druk nr 3039" in rendered
     assert "Dz.U. 2026 poz. 1099 (опубликован 09.09.2026)" in rendered
     assert (
-        "Вступает в силу:</b> 20.09.2026" in rendered
-        and "#опубликован #kadencja10druk3039" in rendered
+        "Вступает в силу:</b> 20.09.2026" in rendered and "#закон #kadencja10druk3039" in rendered
     )
     assert text  # noqa: S101  (formatter reference)
 
@@ -1097,7 +1096,7 @@ def test_consultation_deadline_is_reminded_once_a_few_days_ahead() -> None:
     assert bill.number == RPW and reply_to == card_id and today == dt.date(2026, 9, 17)
     text = MessageFormatter("ru").consultation_deadline(bill, today=today).text
     assert "Консультации заканчиваются — RPW/29075/2026" in text
-    assert "до 20.09.2026 · осталось дней: 3" in text and "#консультации" in text
+    assert "до 20.09.2026 · осталось дней: 3" in text and "#консультации #RPW_29075_2026" in text
     assert (
         "сегодня последний день"
         in MessageFormatter("ru").consultation_deadline(bill, today=dt.date(2026, 9, 20)).text

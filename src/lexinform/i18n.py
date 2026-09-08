@@ -80,6 +80,8 @@ class Labels:
     consultation_last_day: str
     tag_consultations: str
     tag_term: str  # "#<tag_term><term number>": the Sejm term (kadencja) the bill belongs to
+    tag_ukraine: str  # bills about citizens of Ukraine: the channel's largest audience
+    event_tags: dict[str, str] = field(default_factory=dict)  # voting, senate, president, ...
     date_format: str = "%Y-%m-%d"
     stage_type_labels: dict[str, str] = field(default_factory=dict)
     senate_position_labels: dict[str, str] = field(default_factory=dict)
@@ -154,13 +156,22 @@ RU = Labels(
     act_summary="Суть закона",
     link_isap="ISAP",
     link_act_pdf="Текст закона (PDF)",
-    tag_published="опубликован",
+    tag_published="закон",
     tag_in_force="вступилвсилу",
     consultation_deadline_header="Консультации заканчиваются",
     consultation_days_left="осталось дней",
     consultation_last_day="сегодня последний день",
     tag_consultations="консультации",
     tag_term="каденция",
+    tag_ukraine="Украина",
+    event_tags={
+        "voting": "голосование",
+        "senate": "сенат",
+        "president": "президент",
+        "veto": "вето",
+        "amendments": "поправки",
+        "withdrawn": "отозван",
+    },
     date_format="%d.%m.%Y",
     stage_type_labels={
         "ToPresident": "Закон передан Президенту",
@@ -276,13 +287,22 @@ EN = Labels(
     act_summary="What the act does",
     link_isap="ISAP",
     link_act_pdf="Act text (PDF)",
-    tag_published="published",
+    tag_published="law",
     tag_in_force="inforce",
     consultation_deadline_header="Public consultation is closing",
     consultation_days_left="days left",
     consultation_last_day="today is the last day",
     tag_consultations="consultation",
     tag_term="term",
+    tag_ukraine="Ukraine",
+    event_tags={
+        "voting": "vote",
+        "senate": "senate",
+        "president": "president",
+        "veto": "veto",
+        "amendments": "amendments",
+        "withdrawn": "withdrawn",
+    },
     stage_type_labels={
         "ToPresident": "Sent to the President",
         "PresidentSignature": "✍️ Signed by the President",

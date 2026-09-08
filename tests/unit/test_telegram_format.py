@@ -80,7 +80,7 @@ def test_new_bill_card_contains_all_sections(process_3039, print_3039) -> None: 
     assert "О чём проект" in text and "Ключевые изменения" in text
     assert "PrzebiegProc.xsp?nr=3039" in text
     assert "prints/3039/3039.pdf" in text
-    assert "#важность5 #легализация #kadencja10druk3039 #каденция10" in text
+    assert "#kadencja10druk3039 #важность5 #легализация #каденция10" in text
     assert "Стадия:</b> Skierowanie" in text
 
 
@@ -347,3 +347,74 @@ def test_act_messages_render_in_both_languages(process_3039) -> None:  # type: i
     )
     with pytest.raises(ValueError):
         MessageFormatter("ru").in_force(no_date)
+
+
+def test_card_tags_open_consultations_and_ukraine(process_3039) -> None:  # type: ignore[no-untyped-def]
+    from lexinform.models import BillSubmission
+
+    bill = _bill(process_3039, make_analysis()).model_copy(
+        update={
+            "submission": BillSubmission(
+                term=10,
+                number="RPW/1/2026",
+                title="t",
+                date_of_receipt=dt.date(2026, 9, 1),
+                public_consultation=True,
+                consultation_end=dt.date(2026, 9, 20),
+            ),
+            "prefilter_hits": ["cudzoziemcy", "text:obywatele_ukrainy"],
+        }
+    )
+    tags = (
+        MessageFormatter("ru")
+        .new_bill(bill, None, today=dt.date(2026, 9, 10))
+        .text.splitlines()[-1]
+    )
+    assert tags == "#kadencja10druk3039 #важность5 #легализация #консультации #Украина #каденция10"
+    # consultation over: no tag; Ukraine also recognised from the title alone
+    late = bill.model_copy(update={"prefilter_hits": []})
+    late.summary = late.summary.model_copy(
+        update={"title": "Rządowy projekt ustawy o pomocy obywatelom Ukrainy"}
+    )
+    tags = (
+        MessageFormatter("ru")
+        .new_bill(late, None, today=dt.date(2026, 9, 21))
+        .text.splitlines()[-1]
+    )
+    assert tags == "#kadencja10druk3039 #важность5 #легализация #Украина #каденция10"
+
+
+def test_status_update_tags_name_the_event(process_1962) -> None:  # type: ignore[no-untyped-def]
+    bill = _bill(process_1962, make_analysis())
+    flat = flatten_stages(process_1962.stages)
+    voting = [st for st in flat if st.stage_type == "Voting"][:1] or [
+        st.model_copy(update={"stage_type": "Voting"}) for st in flat[:1]
+    ]
+    now = datetime(2026, 9, 7, tzinfo=UTC)
+    change = StatusChange(
+        term=10,
+        number="1962",
+        old_fingerprint="a",
+        new_fingerprint="b",
+        new_stages=voting + [flat[0].model_copy(update={"stage_type": "SenatePosition"})],
+        content_changed=True,
+        detected_at=now,
+    )
+    text = MessageFormatter("ru").status_update(bill, change).text
+    assert text.splitlines()[-1] == "#голосование #сенат #поправки #kadencja10druk1962"
+    plain = change.model_copy(
+        update={
+            "new_stages": [flat[0].model_copy(update={"stage_type": "Referral"})],
+            "content_changed": False,
+        }
+    )
+    assert (
+        MessageFormatter("ru").status_update(bill, plain).text.splitlines()[-1]
+        == "#kadencja10druk1962"
+    )
+    withdrawn = plain.model_copy(
+        update={"new_stages": [], "withdrawn": True, "closure_detected": True}
+    )
+    assert (
+        "#отозван #kadencja10druk1962" in MessageFormatter("ru").status_update(bill, withdrawn).text
+    )

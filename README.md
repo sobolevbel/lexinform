@@ -38,7 +38,7 @@ Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony na te
 ✍️ Инициатор: депутатский (подписали: Lewica 21 · представитель: Daria Gosek-Popiołek, Lewica)   📄 Дата druku: 03.08.2026
 
 🔗 Ход процесса в Сейме | PDF
-#важность5 #легализация #kadencja10druk3039 #каденция10
+#kadencja10druk3039 #важность5 #легализация #консультации #каденция10
 ```
 
 Replies cover: a reminder three days before a public consultation closes, new stages (committee

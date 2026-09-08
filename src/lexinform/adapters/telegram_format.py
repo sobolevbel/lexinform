@@ -11,6 +11,7 @@ import html
 from dataclasses import dataclass
 
 from lexinform.i18n import Labels, labels_for
+from lexinform.keywords import KEYWORD_PATTERNS
 from lexinform.models import (
     ActInfo,
     Bill,
@@ -19,6 +20,7 @@ from lexinform.models import (
     Stage,
     StatusChange,
     VotingSummary,
+    flatten_stages,
 )
 from lexinform.pricing import cost_usd
 
@@ -105,7 +107,10 @@ class MessageFormatter:
 
     # ------------------------------------------------------------------ new bill card
 
-    def new_bill(self, bill: Bill, print_info: PrintInfo | None) -> RenderedMessage:
+    def new_bill(
+        self, bill: Bill, print_info: PrintInfo | None, *, today: dt.date | None = None
+    ) -> RenderedMessage:
+        """The card. `today` decides whether the public consultation still counts as open."""
         if bill.analysis is None:
             raise ValueError(f"bill {bill.number} has no analysis")
         a = bill.analysis.analysis
@@ -190,11 +195,15 @@ class MessageFormatter:
             links.append(link(s.rcl_link, lb.link_rcl))
         links_block = f"{ICON['links']} " + " | ".join(links)
 
+        # Each tag answers one search: bills of the term, by importance, by topic, where an
+        # opinion can still be sent, about citizens of Ukraine, and this bill's whole thread.
         tags = " ".join(
             [
+                self._number_tag(bill),
                 f"#{lb.tag_importance}{a.score}",
                 f"#{lb.category_tags.get(a.category, a.category.value)}",
-                self._number_tag(bill),
+                *([f"#{lb.tag_consultations}"] if _consultation_open(bill, today) else []),
+                *([f"#{lb.tag_ukraine}"] if _about_ukraine(bill) else []),
                 self._term_tag(s.term),
             ]
         )
@@ -267,7 +276,11 @@ class MessageFormatter:
         elif bill.analysis and bill.analysis.source_url and change.content_changed:
             links.append(link(bill.analysis.source_url, lb.link_pdf))
         links_block = f"{ICON['links']} " + " | ".join(links)
-        tags = self._number_tag(bill)  # one Telegram search shows the bill's whole thread
+        # Event tags only when the reply carries the event a reader would search for.
+        tags = " ".join(
+            [f"#{lb.event_tags[key]}" for key in _event_keys(change) if key in lb.event_tags]
+            + [self._number_tag(bill)]
+        )
 
         fixed = [header, badge, closure, consultation, links_block, tags]
         text = self._assemble(fixed, flexible=[stages_block, changes_block, summary_block])
@@ -560,6 +573,48 @@ class MessageFormatter:
         # Order: header, meta, summary, changes, details, links, tags
         ordered = fixed[:2] + shrunk + fixed[2:]
         return "\n\n".join(b for b in ordered if b)
+
+
+_SENATE_STAGES = {"SenatePosition", "SenatePositionConsideration"}
+_PRESIDENT_STAGES = {"ToPresident", "PresidentSignature"}
+
+
+def _event_keys(change: StatusChange) -> list[str]:
+    """Which searchable events a status update carries, in display order."""
+    types = {stage.stage_type for stage in flatten_stages(tuple(change.new_stages))}
+    keys = []
+    if "Voting" in types or any(st.voting for st in change.new_stages):
+        keys.append("voting")
+    if types & _SENATE_STAGES:
+        keys.append("senate")
+    if types & _PRESIDENT_STAGES:
+        keys.append("president")
+    if "Veto" in types:
+        keys.append("veto")
+    if change.content_changed:
+        keys.append("amendments")
+    if change.withdrawn:
+        keys.append("withdrawn")
+    return keys
+
+
+def _consultation_open(bill: Bill, today: dt.date | None) -> bool:
+    sub = bill.submission
+    if sub is None or not sub.public_consultation or sub.consultation_end is None:
+        return False
+    return sub.consultation_end >= (today or dt.date.today())
+
+
+_UKRAINE = next(p.regex for p in KEYWORD_PATTERNS if p.name == "obywatele_ukrainy")
+
+
+def _about_ukraine(bill: Bill) -> bool:
+    """Prefilter hit on "obywatele Ukrainy" (title or text), or the title says so itself."""
+    hits = {hit.removeprefix("text:") for hit in bill.prefilter_hits}
+    if "obywatele_ukrainy" in hits:
+        return True
+    s = bill.summary
+    return bool(_UKRAINE.search(f"{s.title} {s.description or ''}"))
 
 
 def _tokens_line(report: RunReport) -> str:
