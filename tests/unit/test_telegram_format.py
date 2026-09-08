@@ -80,7 +80,7 @@ def test_new_bill_card_contains_all_sections(process_3039, print_3039) -> None: 
     assert "О чём проект" in text and "Ключевые изменения" in text
     assert "PrzebiegProc.xsp?nr=3039" in text
     assert "prints/3039/3039.pdf" in text
-    assert "#важность5 #легализация #druk3039 #каденция10" in text
+    assert "#важность5 #легализация #kadencja10druk3039 #каденция10" in text
     assert "Стадия:</b> Skierowanie" in text
 
 
@@ -107,7 +107,7 @@ def test_card_never_exceeds_limit(
     assert len(text) <= MESSAGE_LIMIT
     _check_html(text)
     # fixed parts survive trimming
-    assert "PrzebiegProc.xsp?nr=3039" in text and "#druk3039" in text
+    assert "PrzebiegProc.xsp?nr=3039" in text and "#kadencja10druk3039" in text
 
 
 def test_status_update(process_1962) -> None:  # type: ignore[no-untyped-def]
@@ -130,7 +130,7 @@ def test_status_update(process_1962) -> None:  # type: ignore[no-untyped-def]
     assert "Обновление — druk nr 1962" in text
     assert "Новые стадии" in text and "Uchwalono" in text
     assert "закон принят" in text
-    assert "#обновление #druk1962" in text
+    assert "#обновление #kadencja10druk1962" in text
     assert len(text) <= MESSAGE_LIMIT
 
 

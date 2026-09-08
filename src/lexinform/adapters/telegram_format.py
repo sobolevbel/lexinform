@@ -443,9 +443,11 @@ class MessageFormatter:
 
     @staticmethod
     def _number_tag(bill: Bill) -> str:
+        """One tag per bill, unique across terms: print numbers restart with every kadencja,
+        RPW numbers carry the year already."""
         if bill.is_pre_print:
             return "#" + _tag_safe(bill.number.replace("/", "_"))
-        return f"#druk{_tag_safe(bill.number)}"
+        return f"#kadencja{bill.term}druk{_tag_safe(bill.number)}"
 
     def _authors_suffix(self, bill: Bill) -> str:
         """ " (KO 17, Lewica 12 · представитель: Jan Kowalski, KO)" for deputies' bills."""

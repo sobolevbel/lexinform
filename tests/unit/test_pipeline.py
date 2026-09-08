@@ -807,7 +807,10 @@ def test_act_publication_is_announced_once_and_reminded_on_entry_into_force() ->
     rendered = MessageFormatter("ru").act_published(bill).text
     assert "Опубликован в Dziennik Ustaw — druk nr 3039" in rendered
     assert "Dz.U. 2026 poz. 1099 (опубликован 09.09.2026)" in rendered
-    assert "Вступает в силу:</b> 20.09.2026" in rendered and "#опубликован #druk3039" in rendered
+    assert (
+        "Вступает в силу:</b> 20.09.2026" in rendered
+        and "#опубликован #kadencja10druk3039" in rendered
+    )
     assert text  # noqa: S101  (formatter reference)
 
     w.clock.advance(days=1)
@@ -823,7 +826,7 @@ def test_act_publication_is_announced_once_and_reminded_on_entry_into_force() ->
     assert reply_to2 == card_id
     rendered2 = MessageFormatter("ru").in_force(bill2).text
     assert "С сегодняшнего дня действует — druk nr 3039" in rendered2
-    assert "Суть закона" in rendered2 and "#вступилвсилу #druk3039" in rendered2
+    assert "Суть закона" in rendered2 and "#вступилвсилу #kadencja10druk3039" in rendered2
     w.clock.advance(days=1)
     assert w.run().in_force_posted == 0 and len(w.publisher.in_force) == 1  # type: ignore[attr-defined]
 
