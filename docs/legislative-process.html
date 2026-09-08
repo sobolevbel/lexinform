@@ -1,0 +1,481 @@
+<title>Путь закона в Польше</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400&family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #f6f5f2;
+    --paper: #fdfcfa;
+    --ink: #1d1b1e;
+    --ink-2: #4a4548;
+    --ink-3: #7a7377;
+    --line: #dcd7d2;
+    --line-2: #ebe7e2;
+    --accent: #8a1c2c;
+    --accent-ink: #ffffff;
+    --accent-soft: #f3e3e5;
+    --gov: #2f5d7c;
+    --gov-soft: #e1ebf2;
+    --sejm: #8a1c2c;
+    --sejm-soft: #f3e3e5;
+    --senat: #6b5b95;
+    --senat-soft: #ebe6f3;
+    --prez: #8c6d1f;
+    --prez-soft: #f4ecd6;
+    --dzu: #2f6b4f;
+    --dzu-soft: #dfeee6;
+    --act: #b8860b;
+    --mono-bg: #efece7;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161418;
+      --paper: #1f1c21;
+      --ink: #ece8e4;
+      --ink-2: #bdb6b1;
+      --ink-3: #8e8681;
+      --line: #3a3539;
+      --line-2: #2c282c;
+      --accent: #e0596c;
+      --accent-ink: #1a1214;
+      --accent-soft: #3a2126;
+      --gov: #7fb0d1;
+      --gov-soft: #1f2e39;
+      --sejm: #e0596c;
+      --sejm-soft: #3a2126;
+      --senat: #b3a2dd;
+      --senat-soft: #2c2638;
+      --prez: #d2b04c;
+      --prez-soft: #342d1a;
+      --dzu: #7fbf9a;
+      --dzu-soft: #1d3128;
+      --act: #e2b74a;
+      --mono-bg: #2a2629;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161418;
+    --paper: #1f1c21;
+    --ink: #ece8e4;
+    --ink-2: #bdb6b1;
+    --ink-3: #8e8681;
+    --line: #3a3539;
+    --line-2: #2c282c;
+    --accent: #e0596c;
+    --accent-ink: #1a1214;
+    --accent-soft: #3a2126;
+    --gov: #7fb0d1;
+    --gov-soft: #1f2e39;
+    --sejm: #e0596c;
+    --sejm-soft: #3a2126;
+    --senat: #b3a2dd;
+    --senat-soft: #2c2638;
+    --prez: #d2b04c;
+    --prez-soft: #342d1a;
+    --dzu: #7fbf9a;
+    --dzu-soft: #1d3128;
+    --act: #e2b74a;
+    --mono-bg: #2a2629;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Golos Text", "Segoe UI", Roboto, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .page { max-width: 1040px; margin: 0 auto; padding: 40px 24px 96px; }
+  .prose { max-width: 68ch; }
+  h1, h2, h3 { font-family: "PT Serif", Georgia, "Times New Roman", serif; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(34px, 5vw, 52px); line-height: 1.08; font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 28px; line-height: 1.2; font-weight: 700; margin-top: 72px; margin-bottom: 8px; }
+  h3 { font-size: 19px; line-height: 1.3; font-weight: 700; margin-top: 28px; margin-bottom: 6px; }
+  p { margin: 0 0 14px; }
+  .lede { font-size: 19px; line-height: 1.5; color: var(--ink-2); max-width: 62ch; }
+  .eyebrow { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  .muted { color: var(--ink-3); }
+  .small { font-size: 14px; }
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.88em; }
+  code { background: var(--mono-bg); padding: 1px 5px; border-radius: 3px; }
+
+  header.top { display: grid; gap: 18px; padding-bottom: 28px; border-bottom: 1px solid var(--line); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--ink-2); }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; background: var(--c); }
+
+  /* ---------- the track ---------- */
+  .track { margin-top: 36px; display: grid; gap: 0; }
+  .lanes { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 720px) { .lanes { grid-template-columns: 1fr; } }
+  .lane { border: 1px solid var(--line); background: var(--paper); border-radius: 6px; padding: 18px 20px 6px; }
+  .lane-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .lane-title h3 { margin: 0; }
+  .owner { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c); }
+  .merge { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; margin: 18px 0; color: var(--ink-3); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+  .merge::before, .merge::after { content: ""; height: 1px; background: var(--line); }
+
+  .steps { display: grid; grid-template-columns: 170px 1fr; column-gap: 20px; }
+  @media (max-width: 720px) { .steps { grid-template-columns: 1fr; } }
+  .step { display: contents; }
+  .step > .when, .step > .what { padding: 14px 0 16px; border-top: 1px solid var(--line-2); }
+  .step:first-of-type > .when, .step:first-of-type > .what { border-top: 0; }
+  .when { font-size: 13px; color: var(--ink-3); line-height: 1.45; }
+  .when b { display: block; color: var(--ink); font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .what { border-left: 3px solid var(--c, var(--line)); padding-left: 16px !important; }
+  .what h4 { margin: 0 0 4px; font-family: "Golos Text", sans-serif; font-size: 16px; font-weight: 600; }
+  .what p { margin: 0 0 6px; color: var(--ink-2); font-size: 15px; }
+  .what p:last-child { margin-bottom: 0; }
+  .api { color: var(--ink-3); font-size: 12.5px; }
+  .win { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 3px 9px 3px 7px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-size: 12.5px; font-weight: 600; }
+  .win::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent-ink); opacity: 0.9; }
+  .win.faint { background: var(--accent-soft); color: var(--accent); }
+  .win.faint::before { background: var(--accent); }
+
+  /* ---------- tables ---------- */
+  .tablewrap { overflow-x: auto; margin: 18px 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-top: 1px solid var(--line-2); }
+  th { border-top: 0; background: var(--bg); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); font-weight: 600; }
+  td.num, th.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.pl { font-weight: 600; }
+  .yes { color: var(--dzu); font-weight: 600; }
+  .no { color: var(--ink-3); }
+
+  /* ---------- two windows ---------- */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 18px; }
+  @media (max-width: 720px) { .compare { grid-template-columns: 1fr; } }
+  .win-card { background: var(--paper); border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 6px; padding: 18px 20px; }
+  .win-card h3 { margin-top: 0; }
+  .win-card dl { margin: 12px 0 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 14.5px; }
+  .win-card dt { color: var(--ink-3); }
+  .win-card dd { margin: 0; }
+
+  .callout { border-left: 3px solid var(--accent); padding: 4px 0 4px 16px; margin: 20px 0; color: var(--ink-2); }
+
+  details { border: 1px solid var(--line); border-radius: 6px; background: var(--paper); padding: 0 18px; margin-top: 18px; }
+  summary { cursor: pointer; padding: 14px 0; font-weight: 600; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; font-family: "JetBrains Mono", monospace; color: var(--ink-3); }
+  details[open] summary::after { content: "–"; }
+  details > *:not(summary) { margin-bottom: 16px; }
+  pre { margin: 0; padding: 14px 16px; background: var(--mono-bg); border-radius: 4px; overflow-x: auto; font-family: "JetBrains Mono", monospace; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+
+  footer { margin-top: 72px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-3); max-width: 68ch; }
+  @media (prefers-reduced-motion: no-preference) { details summary { transition: color .15s; } }
+</style>
+
+<div class="page">
+  <header class="top">
+    <div class="eyebrow">lexinform · справочник</div>
+    <h1>Путь закона в Польше</h1>
+    <p class="lede">От записи в правительственном плане до Dziennik Ustaw: кто вносит законопроекты, какие сроки задают Конституция и регламенты, и в какие моменты организация или частное лицо ещё может повлиять на текст.</p>
+    <div class="legend">
+      <span style="--c: var(--gov)">Правительство и RCL</span>
+      <span style="--c: var(--sejm)">Сейм</span>
+      <span style="--c: var(--senat)">Сенат</span>
+      <span style="--c: var(--prez)">Президент</span>
+      <span style="--c: var(--dzu)">Публикация и вступление в силу</span>
+      <span class="win" style="margin:0">окно для мнений</span>
+    </div>
+  </header>
+
+  <!-- ============================ TRACK ============================ -->
+  <section class="track" aria-label="Схема процесса">
+    <div class="lanes">
+      <div class="lane">
+        <div class="lane-title">
+          <h3>Правительственный проект</h3>
+          <span class="owner" style="--c: var(--gov)">до Сейма · RCL</span>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="when">месяцы вперёд<b>план работ РМ</b></div>
+            <div class="what" style="--c: var(--gov)">
+              <h4>Wykaz prac legislacyjnych Rady Ministrów</h4>
+              <p>Первый публичный след будущего закона: номер <code>UD…</code> или <code>UC…</code> (внедрение права ЕС), министерство, суть изменений, плановый квартал принятия.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="when">≥ 21 дня<b>konsultacje publiczne</b></div>
+            <div class="what" style="--c: var(--gov)">
+              <h4>Публикация на legislacja.gov.pl и консультации</h4>
+              <p>Параллельно идут uzgodnienia (между министерствами), opiniowanie (профсоюзы, работодатели, самоуправление, суды) и konsultacje publiczne. Замечания принимает министерство по адресу из письма о консультациях, формы нет, язык польский. Потом публикуется raport z konsultacji с ответами.</p>
+              <span class="win">любой человек или организация</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="when">недели<b>комитеты РМ</b></div>
+            <div class="what" style="--c: var(--gov)">
+              <h4>Комитеты Совета министров, Komisja Prawnicza, принятие</h4>
+              <p>KRMC, KSRM, KERM, Постоянный комитет, юристы RCL, затем Rada Ministrów принимает проект и премьер направляет его Маршалу Сейма. Весь путь занимает от трёх месяцев до года.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lane">
+        <div class="lane-title">
+          <h3>Депутатский, президентский, сенатский, гражданский</h3>
+          <span class="owner" style="--c: var(--sejm)">до номера druku · Сейм</span>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <div class="when">день внесения<b>номер RPW</b></div>
+            <div class="what" style="--c: var(--sejm)">
+              <h4>Внесение Маршалу Сейма</h4>
+              <p>Не менее 15 депутатов или комиссия, Сенат, Президент, 100 000 граждан. Проект получает номер вида <code>RPW/29075/2026</code>, Маршал проверяет формальные требования и может запросить заключения.</p>
+              <p class="api">API: <code>/bills</code> · status, applicantType, print</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="when">30 дней<b>консультации Сейма</b></div>
+            <div class="what" style="--c: var(--sejm)">
+              <h4>Konsultacje społeczne на сайте Сейма</h4>
+              <p>Маршал направляет проект на консультации: мнение подаётся через форму на sejm.gov.pl, потом поданные мнения публикуются на той же странице. Правительственных проектов здесь не бывает, они уже прошли RCL.</p>
+              <span class="win">любой человек или организация · форма</span>
+              <p class="api">API: publicConsultationStart/EndDate, consultationResults</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="when">дни или месяцы<b>ожидание</b></div>
+            <div class="what" style="--c: var(--sejm)">
+              <h4>Присвоение номера druku</h4>
+              <p>Часть проектов месяцами лежит без номера («сеймовая морозилка»). Только с номером druku проект появляется в <code>/processes</code>.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="merge"><span></span><span>проект получил номер druku</span><span></span></div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="when">≥ 7 дней после раздачи druku<b>I czytanie</b></div>
+        <div class="what" style="--c: var(--sejm)">
+          <h4>Первое чтение</h4>
+          <p>В комиссии (обычно) или на заседании Сейма (обязательно для конституции, бюджета, налогов, избирательного права, кодексов, прав и свобод). На пленарном первом чтении Сейм может отклонить проект сразу.</p>
+          <p class="api">API: ReadingReferral → Referral (committeeCode) → Reading / SejmReading</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="when">недели или месяцы<b>praca w komisjach</b></div>
+        <div class="what" style="--c: var(--sejm)">
+          <h4>Работа в комиссии, sprawozdanie</h4>
+          <p>Подкомиссия, статья за статьёй, эксперты, Biuro Legislacyjne. Именно здесь текст меняется сильнее всего. Комиссия может назначить wysłuchanie publiczne: объявление за 14 дней, заявка на участие за 10 дней до слушаний.</p>
+          <p>Итог: sprawozdanie komisji с полным текстом проекта в редакции комиссии (его мы анализируем заново) или с предложением отклонить.</p>
+          <span class="win">мнение в секретариат комиссии до заседания</span>
+          <span class="win faint">заявка на публичные слушания</span>
+          <p class="api">API: CommitteeWork → CommitteeReport (proposal, reportFile) · PublicHearing · /committees/{code}/sittings</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="when">на заседании Сейма<b>II czytanie</b></div>
+        <div class="what" style="--c: var(--sejm)">
+          <h4>Второе чтение и поправки</h4>
+          <p>Доклад комиссии, дебаты, поправки (15 депутатов, комиссия, инициатор, Совет министров). Если поправки есть, проект возвращается в комиссию, и та выпускает дополнительный отчёт (druk с суффиксом <code>-A</code>: таблица поправок, не текст). Если поправок нет, обычно сразу третье чтение.</p>
+          <p class="api">API: SejmReading «II czytanie» · decision · /proceedings/{n} повестка</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="when">обычно то же заседание<b>III czytanie</b></div>
+        <div class="what" style="--c: var(--sejm)">
+          <h4>Третье чтение: голосование</h4>
+          <p>Сначала предложение отклонить проект целиком, потом поправки, потом проект в целом. Обычный закон принимается простым большинством при кворуме в половину депутатов. «Принят Сеймом» ещё не значит «действует».</p>
+          <p class="api">API: SejmReading «III czytanie» → Voting · closureDate = дата III чтения · passed=true · textAfter3</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="when"><b>30 дней</b>14 дней для срочного (pilny)</div>
+        <div class="what" style="--c: var(--senat)">
+          <h4>Сенат</h4>
+          <p>Принять без поправок, внести поправки или отклонить закон; молчание равно принятию. Поправки и отклонение возвращаются в Сейм, который может их отвергнуть абсолютным большинством. Не преодолённое отклонение хоронит закон. Комиссии Сената тоже принимают мнения.</p>
+          <span class="win faint">мнение в комиссию Сената</span>
+          <p class="api">API: SenatePosition (position) → CommitteeWork → SenatePositionConsideration (decision)</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="when"><b>21 день</b>7 дней для срочного и бюджета</div>
+        <div class="what" style="--c: var(--prez)">
+          <h4>Президент</h4>
+          <p>Подписать; направить в Конституционный трибунал до подписания; наложить вето. Вето Сейм преодолевает большинством 3/5 при кворуме в половину, после чего Президент обязан подписать за 7 дней и уже не может обратиться в трибунал.</p>
+          <p class="api">API: ToPresident → PresidentSignature / Veto / PresidentToTribunal → End</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="when">≈ 30–40 дней после голосования Сейма<b>Dziennik Ustaw</b></div>
+        <div class="what" style="--c: var(--dzu)">
+          <h4>Публикация</h4>
+          <p>Закон получает адрес вида «Dz.U. 2026 poz. 1099» и ELI <code>DU/2026/1099</code>. Это единственный надёжный признак того, что закон состоялся: у заветированных законов тоже стоит passed=true.</p>
+          <p class="api">API: /processes → ELI, displayAddress · /eli/acts/DU/{год}/{poz} → promulgation, entryIntoForce</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="when"><b>14 дней по умолчанию</b>часто дольше, по частям</div>
+        <div class="what" style="--c: var(--dzu)">
+          <h4>Вступление в силу (vacatio legis)</h4>
+          <p>Если закон не говорит иначе, он вступает в силу через 14 дней после публикации. Для законов, требующих подготовки, срок длиннее, а отдельные статьи часто вступают в силу в разные даты. ELI API отдаёт одну дату, поэтому в напоминании мы всегда пишем о возможных исключениях.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="when">после закона<b>rozporządzenia</b></div>
+        <div class="what" style="--c: var(--gov)">
+          <h4>Подзаконные акты</h4>
+          <p>Сборы, образцы заявлений, сроки для ведомств, списки документов задаются постановлениями министров. Они снова идут через RCL с собственными konsultacje publiczne и публикуются в Dz.U., минуя Сейм.</p>
+          <span class="win faint">konsultacje publiczne на RCL</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ TWO WINDOWS ============================ -->
+  <h2>Два разных окна консультаций</h2>
+  <p class="prose">У одного будущего закона окно для мнений бывает ровно одно, и где оно находится, зависит от автора проекта. Их легко перепутать: обе процедуры называются консультациями, но их проводят разные органы на разных этапах.</p>
+  <div class="compare">
+    <div class="win-card" style="--c: var(--gov)">
+      <div class="eyebrow">правительственные проекты</div>
+      <h3>Konsultacje publiczne на RCL</h3>
+      <dl>
+        <dt>Проводит</dt><dd>министерство‑автор проекта</dd>
+        <dt>Когда</dt><dd>до принятия правительством, за месяцы до внесения в Сейм</dd>
+        <dt>Основание</dt><dd>Regulamin pracy Rady Ministrów</dd>
+        <dt>Срок</dt><dd>не менее 21 дня для закона; короче с обоснованием</dd>
+        <dt>Как подать</dt><dd>e‑mail или ePUAP в министерство, адрес в письме о консультациях; формы нет</dd>
+        <dt>Кто может</dt><dd>любой: организации и частные лица, по‑польски</dd>
+        <dt>Результат</dt><dd>raport z konsultacji с ответами на замечания</dd>
+        <dt>В lexinform</dt><dd class="no">пока не отслеживается</dd>
+      </dl>
+    </div>
+    <div class="win-card" style="--c: var(--sejm)">
+      <div class="eyebrow">депутатские, президентские, сенатские, гражданские</div>
+      <h3>Konsultacje społeczne в Сейме</h3>
+      <dl>
+        <dt>Проводит</dt><dd>Маршал Сейма</dd>
+        <dt>Когда</dt><dd>после внесения, до присвоения номера druku</dd>
+        <dt>Основание</dt><dd>Regulamin Sejmu</dd>
+        <dt>Срок</dt><dd>30 дней (299 из 318 наблюдавшихся консультаций)</dd>
+        <dt>Как подать</dt><dd>форма на странице проекта на sejm.gov.pl</dd>
+        <dt>Кто может</dt><dd>любой</dd>
+        <dt>Результат</dt><dd>поданные мнения публикуются на той же странице</dd>
+        <dt>В lexinform</dt><dd class="yes">даты и ссылка на карточке, напоминание за 3 дня, пост о публикации мнений</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="callout prose">Из 1279 проектов X каденции в <code>/bills</code> 541 правительственный, и ни у одного из них нет сеймовых консультаций. Для важнейших законов об иностранцах, а это почти всегда правительственные проекты, единственное окно закрывается на RCL за месяцы до того, как проект становится виден в Сейме.</div>
+
+  <!-- ============================ TIMELINE ============================ -->
+  <h2>Сколько это длится</h2>
+  <p class="prose">Юридические пределы и то, что наблюдается на практике. Депутатские проекты идут быстрее до Сейма и медленнее внутри него; правительственные наоборот.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Этап</th><th>Предел по праву</th><th>На практике</th></tr></thead>
+      <tbody>
+        <tr><td>План работ РМ → проект на RCL</td><td>нет</td><td>недели или месяцы</td></tr>
+        <tr><td>Консультации на RCL</td><td class="num">≥ 21 дня</td><td>14–30 дней, иногда 7</td></tr>
+        <tr><td>RCL целиком, до внесения в Сейм</td><td>нет</td><td>3–12 месяцев</td></tr>
+        <tr><td>Консультации Сейма (RPW)</td><td>назначает Маршал</td><td class="num">30 дней</td></tr>
+        <tr><td>RPW → номер druku</td><td>нет</td><td>от дней до месяцев</td></tr>
+        <tr><td>Druk → первое чтение</td><td class="num">≥ 7 дней после раздачи</td><td>недели или месяцы</td></tr>
+        <tr><td>Работа в комиссии</td><td>нет</td><td>от дней (срочные) до года</td></tr>
+        <tr><td>II и III чтение</td><td>нет</td><td>часто одно заседание</td></tr>
+        <tr><td>Сенат</td><td class="num">30 дней (14 pilny)</td><td>1–4 недели</td></tr>
+        <tr><td>Президент</td><td class="num">21 день (7 pilny)</td><td>1–3 недели</td></tr>
+        <tr><td>Публикация в Dz.U.</td><td>«незамедлительно»</td><td>дни после подписи; ≈ 30–40 дней после голосования Сейма</td></tr>
+        <tr><td>Vacatio legis</td><td class="num">14 дней по умолчанию</td><td>от 14 дней до года и больше, по частям</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================ ACT ============================ -->
+  <h2>Где и как можно действовать</h2>
+  <p class="prose">Ни одна из процедур не требует гражданства. Везде рабочий язык польский. Чем раньше этап, тем больше шансов, что замечание попадёт в текст: комиссия меняет проект, Сенат чаще всего его лишь правит, Президент выбирает между подписью и вето.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Момент</th><th>Кто</th><th>Как</th><th>Что делает lexinform</th></tr></thead>
+      <tbody>
+        <tr><td>Konsultacje publiczne на RCL (правительственные законы и постановления)</td><td>любой</td><td>письмо в министерство по адресу из письма о консультациях; формально также zgłoszenie zainteresowania по закону о лоббинге</td><td class="no">не покрывает (в планах)</td></tr>
+        <tr><td>Консультации Сейма по проекту RPW</td><td>любой</td><td>форма на sejm.gov.pl, 30 дней</td><td class="yes">строка с датами и ссылкой, напоминание за 3 дня, пост о публикации мнений</td></tr>
+        <tr><td>Работа комиссии после первого чтения</td><td>любой; организации также через zgłoszenie zainteresowania</td><td>письмо в секретариат комиссии, лучше до заседания, где рассматривают проект</td><td class="yes">строка «что можно сделать сейчас» со ссылкой на комиссию, пост о заседании комиссии с датой и повесткой</td></tr>
+        <tr><td>Wysłuchanie publiczne</td><td>любой, кто подал заявку за 10 дней</td><td>заявка через систему Сейма</td><td class="yes">метка слушаний и призыв подать заявку</td></tr>
+        <tr><td>Комиссия Сената</td><td>любой</td><td>мнение в комиссию Сената</td><td class="no">только итог</td></tr>
+        <tr><td>Петиция, в любое время, в том числе после принятия</td><td>любой (ustawa o petycjach)</td><td>петиция в Сейм (Komisja do Spraw Petycji), Сенат или министерство</td><td class="no">не покрывает</td></tr>
+        <tr><td>После вступления в силу</td><td>—</td><td>изменить можно только новым законом</td><td class="yes">напоминание в день вступления в силу</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================ WHO ============================ -->
+  <h2>Кто вносит законопроекты</h2>
+  <div class="prose">
+    <p><b>Совет министров</b> (rządowy). Основная масса содержательных законов: закон об иностранцах, спецзакон по Украине, рынок труда, соцстрахование, внедрение права ЕС. Приходит с полной оценкой последствий (OSR) и отчётом о консультациях.</p>
+    <p><b>Депутаты</b> (poselski): не менее 15 депутатов или комиссия Сейма (komisyjny). Вносится быстро, обоснование часто тонкое. Иногда это способ провести правительственную идею мимо RCL, и тогда у проекта нет никаких консультаций до сеймовых.</p>
+    <p><b>Сенат</b>, <b>Президент</b>, <b>граждане</b> (100 000 подписей). Гражданский проект единственный переживает конец каденции: остальные незавершённые проекты с окончанием каденции прекращаются (zasada dyskontynuacji) и вносятся заново. Номера druków начинаются с 1 в каждой каденции, поэтому тег проекта в канале выглядит как <code>#kadencja10druk3039</code>.</p>
+  </div>
+
+  <!-- ============================ GLOSSARY ============================ -->
+  <h2>Словарь</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Польский</th><th>Русский</th><th>Что это</th></tr></thead>
+      <tbody>
+        <tr><td class="pl">projekt ustawy</td><td>законопроект</td><td>текст до принятия; после принятия Сеймом уже <i>ustawa</i></td></tr>
+        <tr><td class="pl">druk sejmowy</td><td>сеймовый документ с номером</td><td>проект, отчёт комиссии, позиция Сената: всё получает номер druku</td></tr>
+        <tr><td class="pl">uzasadnienie</td><td>обоснование</td><td>зачем нужен закон, последствия, источники финансирования, итоги консультаций</td></tr>
+        <tr><td class="pl">OSR, ocena skutków regulacji</td><td>оценка последствий регулирования</td><td>13‑пунктовая форма при правительственных проектах</td></tr>
+        <tr><td class="pl">konsultacje publiczne / społeczne</td><td>общественные консультации</td><td>на RCL у правительства / в Сейме у остальных, см. выше</td></tr>
+        <tr><td class="pl">uzgodnienia, opiniowanie</td><td>межведомственное согласование, обязательные мнения</td><td>параллельные консультациям этапы на RCL</td></tr>
+        <tr><td class="pl">czytanie</td><td>чтение</td><td>три чтения по Конституции; второе и третье часто в один день</td></tr>
+        <tr><td class="pl">skierowanie do komisji</td><td>направление в комиссию</td><td>код комиссии, например ASW: Komisja Administracji i Spraw Wewnętrznych</td></tr>
+        <tr><td class="pl">sprawozdanie komisji</td><td>отчёт комиссии</td><td>с полным текстом или с таблицей поправок (druk‑A)</td></tr>
+        <tr><td class="pl">poprawka, wniosek mniejszości</td><td>поправка, предложение меньшинства</td><td>голосуются в третьем чтении перед проектом в целом</td></tr>
+        <tr><td class="pl">wysłuchanie publiczne</td><td>публичные слушания</td><td>по решению комиссии; заявка за 10 дней</td></tr>
+        <tr><td class="pl">uchwalono / odrzucono</td><td>принят / отклонён</td><td>итог третьего чтения</td></tr>
+        <tr><td class="pl">stanowisko Senatu</td><td>позиция Сената</td><td>без поправок, с поправками, отклонение</td></tr>
+        <tr><td class="pl">weto</td><td>вето</td><td>формально wniosek o ponowne rozpatrzenie; преодолевается 3/5</td></tr>
+        <tr><td class="pl">Trybunał Konstytucyjny</td><td>Конституционный трибунал</td><td>Президент может направить закон туда до подписи</td></tr>
+        <tr><td class="pl">Dziennik Ustaw, Dz.U.</td><td>официальный вестник</td><td>публикация делает закон законом; адрес «Dz.U. 2026 poz. 1099»</td></tr>
+        <tr><td class="pl">vacatio legis</td><td>отсрочка вступления в силу</td><td>14 дней по умолчанию</td></tr>
+        <tr><td class="pl">tekst jednolity</td><td>консолидированный текст</td><td>переиздание действующего текста, ничего не меняет</td></tr>
+        <tr><td class="pl">rozporządzenie</td><td>постановление</td><td>подзаконный акт министра или Совета министров</td></tr>
+        <tr><td class="pl">pilny</td><td>срочный</td><td>Сенат 14 дней, Президент 7; не для налогов, выборов, кодексов</td></tr>
+        <tr><td class="pl">kadencja, dyskontynuacja</td><td>каденция, прекращение работ</td><td>четыре года; незавершённые проекты сгорают, кроме гражданских</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================ FOR THE BOT ============================ -->
+  <h2>Для бота: словарь стадий Sejm API</h2>
+  <p class="prose">Верхний уровень стадий в <code>/processes/{n}.stages</code>, дети с отступом. По последней верхней стадии <code>models.next_phase</code> выводит строку «Что дальше».</p>
+  <details open>
+    <summary>Стадии и их поля</summary>
+<pre>Start                        Projekt wpłynął do Sejmu                  printNumber
+ReadingReferral              Skierowano do I czytania w komisjach / na posiedzeniu Sejmu
+  Referral                   Skierowanie                                committeeCode ("Sejm" = пленарное)
+Reading                      I czytanie w komisjach
+SejmReading                  I/II/III czytanie na posiedzeniu Sejmu    sittingNum, decision
+  Referral                   после пленарного чтения или «skierowano ponownie»
+  Voting                     Głosowanie (III czytanie)                 voting{yes,no,abstain,…}
+CommitteeWork                Praca w komisjach po I/II czytaniu / nad stanowiskiem Senatu
+  CommitteeReport            Sprawozdanie komisji                      printNumber, reportFile, proposal
+PublicHearing                Wysłuchanie publiczne                     date
+SenatePosition               Stanowisko Senatu                         position, printNumber
+SenatePositionConsideration  Rozpatrywanie stanowiska Senatu           decision
+ToPresident                  Ustawę przekazano Prezydentowi do podpisu
+PresidentSignature           Prezydent podpisał ustawę
+Veto / PresidentToTribunal
+End                          Uchwalono</pre>
+    <p class="small muted"><code>passed</code> = принят Сеймом; <code>ELI</code> = опубликован; <code>entryIntoForce</code> из <code>/eli/acts</code> = действует. Даты в API в варшавском времени без зоны. Отчёты <code>-A</code> и «przyjąć poprawki» это таблицы поправок, не текст.</p>
+  </details>
+
+  <footer>
+    Источники: Конституция РП (ст. 118–123), Regulamin Sejmu, Regulamin Senatu, Regulamin pracy Rady Ministrów, ustawa o ogłaszaniu aktów normatywnych, ustawa o działalności lobbingowej, ustawa o petycjach; факты об API проверены в сентябре 2026. Полная версия для разработки: <code>docs/legislative-process.md</code> в репозитории.
+  </footer>
+</div>
