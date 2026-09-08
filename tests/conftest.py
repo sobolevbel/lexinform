@@ -35,6 +35,11 @@ def process_1962() -> ProcessDetail:
 
 
 @pytest.fixture
+def process_950() -> ProcessDetail:
+    return parse_process_detail(load_json("process_950.json"))
+
+
+@pytest.fixture
 def print_3039() -> PrintInfo:
     return parse_print(load_json("print_3039.json"), term=10)
 

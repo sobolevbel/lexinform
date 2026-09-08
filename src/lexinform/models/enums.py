@@ -55,6 +55,8 @@ class PublicationKind(StrEnum):
     ACT_PUBLISHED = "act_published"  # the act appeared in Dziennik Ustaw
     IN_FORCE = "in_force"  # reminder on the day the act enters into force
     CONSULTATION_DEADLINE = "consultation_deadline"  # public consultation ends in a few days
+    CONSULTATION_RESULTS = "consultation_results"  # the Sejm published the opinions received
+    AGENDA = "agenda"  # the bill is on the agenda of a committee or Sejm sitting (one per sitting)
 
 
 class PublicationStatus(StrEnum):

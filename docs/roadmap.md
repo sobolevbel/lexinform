@@ -20,10 +20,38 @@ Done the same day, see the commit history:
 - Authors of deputies' bills: signatories parsed from the print's cover letter, resolved to clubs
   via `/MP` (schema v5). Publish threshold raised to importance 3.
 
+Done on 2026-09-09 (schema v7):
+
+- **Medium tier of action signals**: committee sitting agendas (`/committees/{code}/sittings`, one
+  request per committee a followed bill was referred to) and the agenda of every Sejm sitting that
+  is not over (`/proceedings` + `/proceedings/{n}`) are matched against the followed bills by
+  "druk nr N" in the agenda text (`lexinform.agenda`). A new (bill, sitting) pair is one reply
+  (`agenda` publication, keyed by `ref` = `ASW/136/2026-09-17` or `sejm/65/2026-09-15`; a
+  rescheduled sitting is a new ref and a new post). The upcoming items are stored on the bill
+  (`agenda_json`) so cards and updates can date the next step.
+- **"What comes next" and "what you can do now"** on cards, updates and consultation posts:
+  `models.next_phase` derives the phase from the top-level stages, the submission and the act
+  (first reading in committee → committee work → second reading → third reading → Senate (30
+  days) → President (21 days) → publication → entry into force); the formatter adds the scheduled
+  sitting and the concrete action (consultation form until the deadline, opinion to the committee
+  before its sitting, public hearing).
+- **Consultation form link**: `agent.xsp?symbol=KONSULTOWANY_PROJEKT&NrProjektu=<RPW number>`
+  (browser only; the API carries no link). **Consultation results**: when `/bills` flips
+  `consultationResults`, one reply links the same page. Discovery no longer refreshes known
+  `/bills` rows (tracking does, comparing new with stored).
+
 Still open:
 
-- Medium tier of action signals: committee sitting agendas (`/committees/{code}/sittings`) and the
-  next Sejm sitting agenda (`/proceedings`) mentioning the bill.
+- **Government bills before the Sejm (RCL).** 541 of the 1279 entries in `/bills` of the 10th
+  term are government bills and none of them has a Sejm consultation: the government consults at
+  the RCL stage (legislacja.gov.pl, "Konsultacje publiczne", ≥ 21 days per the Regulamin pracy
+  Rady Ministrów), months before the print. No API, no RSS (`/rss` and `/api/*` answer "Request
+  Rejected"); the HTML project pages open (`/projekt/{id}`, list at `/lista?typeId=2` with
+  `pNumber`/`pSize`) and carry the stage list, dates and keywords. `/processes` gives `rclNum` and
+  `rclLink`, so an RCL project can be joined to its print later. Needs a scraper adapter and its
+  own discovery; the analysis path can be reused (uzasadnienie + OSR are on RCL too).
+- Senate amendments as text: the Senate's resolution print is not analysed (only the label
+  "Senate introduced amendments"); the "-A" committee reports are amendment tables, also skipped.
 - Ukrainian-language channel; weekly digest; static site from the state dump.
 
 The sections below are the original plan, kept for the rationale and the verified API facts.

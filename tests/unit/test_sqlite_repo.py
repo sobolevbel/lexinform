@@ -191,14 +191,17 @@ def test_restore_of_a_previous_schema_dump_applies_missing_migrations() -> None:
     assert int(repo._conn.execute("PRAGMA user_version").fetchone()[0]) == SCHEMA_VERSION
     columns = {r[1] for r in repo._conn.execute("PRAGMA table_info(publications)")}
     assert "attempts" in columns
+    assert "ref" in columns  # v7
     bill_columns = {r[1] for r in repo._conn.execute("PRAGMA table_info(bills)")}
     assert {"submission_json", "linked_number", "act_json", "entry_into_force"} <= bill_columns
+    assert "agenda_json" in bill_columns  # v7
     # the v2 backfill copies ok -> discovery_ok for old runs
     assert repo.last_discovery_started_at() is not None
     indexes = {
         r[0] for r in repo._conn.execute("SELECT name FROM sqlite_master WHERE type='index'")
     }
     assert {"ux_pub_once_per_kind", "ux_pub_consultation"} <= indexes  # v4, v6
+    assert {"ux_pub_consultation_results", "ux_pub_agenda"} <= indexes  # v7
 
 
 def test_failed_status_updates_are_listed_for_retry(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
@@ -498,3 +501,83 @@ def test_list_due_consultations_window_edges(repo, process_3039, now) -> None:  
     ] == ["2"]
     # another channel has its own reminders
     assert repo.list_due_consultations(10, "other", today=today, days_before=3) == []
+
+
+def test_agenda_posts_are_unique_per_sitting_and_items_roundtrip(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
+    from datetime import date, time
+
+    from lexinform.models import AgendaItem
+
+    repo.upsert_summary(process_3039, now=now)
+    item = AgendaItem(
+        kind="committee",
+        ref="ASW/136/2026-09-17",
+        date=date(2026, 9, 17),
+        start_time=time(9, 0),
+        committee_code="ASW",
+        committee_name="Komisja Administracji i Spraw Wewnętrznych",
+        sitting_number=136,
+        text="Pierwsze czytanie (druk nr 3039)",
+    )
+    plenary = AgendaItem(kind="sejm", ref="sejm/65/2026-09-15", date=date(2026, 9, 15), text="x")
+    repo.save_agenda(10, "3039", (plenary, item))
+    stored = repo.get(10, "3039")
+    assert stored is not None and stored.agenda == (plenary, item)
+    repo.save_agenda(10, "3039", ())
+    assert repo.get(10, "3039").agenda == ()  # type: ignore[union-attr]
+
+    def post(ref: str, status: PublicationStatus) -> int:
+        return repo.create_publication(
+            Publication(
+                term=10,
+                number="3039",
+                kind=PublicationKind.AGENDA,
+                status=status,
+                channel_id="chan",
+                ref=ref,
+                created_at=now,
+            )
+        )
+
+    first = post(item.ref, PublicationStatus.PENDING)
+    other = post(plenary.ref, PublicationStatus.PENDING)
+    assert first != other  # two sittings, two rows
+    assert post(item.ref, PublicationStatus.PENDING) == first  # same sitting: the same row
+    repo.mark_publication(first, PublicationStatus.SENT, message_id=7, sent_at=now)
+    by_ref = repo.get_publication(10, "3039", "agenda", "chan", ref=item.ref)
+    assert by_ref is not None and by_ref.message_id == 7 and by_ref.ref == item.ref
+    assert repo.get_publication(10, "3039", "agenda", "chan", ref="ASW/999/2026-10-01") is None
+    latest = repo.get_publication(10, "3039", "agenda", "chan")
+    assert latest is not None and latest.ref == plenary.ref  # without ref: the latest row
+
+
+def test_bills_awaiting_consultation_results(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
+    from datetime import date
+
+    from lexinform.models import BillSubmission
+
+    def bill(number: str, *, public: bool, results: bool, card: bool = True) -> None:
+        repo.upsert_summary(process_3039.model_copy(update={"number": number}), now=now)
+        if card:
+            _card_sent(repo, number, now)
+        repo.save_submission(
+            10,
+            number,
+            BillSubmission(
+                term=10,
+                number=f"RPW/{number}/2026",
+                title="t",
+                date_of_receipt=date(2026, 9, 1),
+                public_consultation=public,
+                consultation_end=date(2026, 9, 30) if public else None,
+                consultation_results=results,
+            ),
+        )
+
+    bill("1", public=True, results=False)  # awaiting
+    bill("2", public=True, results=True)  # already published
+    bill("3", public=False, results=False)  # no consultation
+    bill("4", public=True, results=False, card=False)  # never posted: nothing to reply under
+    repo.upsert_summary(process_3039.model_copy(update={"number": "5"}), now=now)  # no /bills row
+    assert [b.number for b in repo.list_awaiting_consultation_results(10, "chan")] == ["1"]
+    assert repo.list_awaiting_consultation_results(10, "other") == []

@@ -418,3 +418,186 @@ def test_status_update_tags_name_the_event(process_1962) -> None:  # type: ignor
     assert (
         "#отозван #kadencja10druk1962" in MessageFormatter("ru").status_update(bill, withdrawn).text
     )
+
+
+# --------------------------------------------------------------------------- next step / action
+
+
+def _consulted(process, *, end: dt.date = dt.date(2026, 9, 30), results: bool = False):  # type: ignore[no-untyped-def]
+    from lexinform.models import BillSubmission
+
+    return _bill(process, make_analysis()).model_copy(
+        update={
+            "submission": BillSubmission(
+                term=10,
+                number="RPW/29075/2026",
+                title="t",
+                date_of_receipt=dt.date(2026, 8, 31),
+                public_consultation=True,
+                consultation_start=dt.date(2026, 8, 31),
+                consultation_end=end,
+                consultation_results=results,
+            )
+        }
+    )
+
+
+def _sitting(**kw):  # type: ignore[no-untyped-def]
+    from lexinform.models import AgendaItem
+
+    base = dict(
+        kind="committee",
+        ref="ASW/136/2026-09-17",
+        date=dt.date(2026, 9, 17),
+        start_time=dt.time(9, 0),
+        committee_code="ASW",
+        committee_name="Komisja Administracji i Spraw Wewnętrznych",
+        sitting_number=136,
+        room="sala nr 412",
+        text="Pierwsze czytanie projektu (druk nr 3039) – uzasadnia poseł X.",
+        video_url="https://sejm.gov.pl/Sejm10.nsf/transmisje_arch.xsp?unid=1",
+    )
+    base.update(kw)
+    return AgendaItem(**base)  # type: ignore[arg-type]
+
+
+CONSULTATION_PAGE = (
+    "https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=KONSULTOWANY_PROJEKT"
+    "&amp;NrProjektu=RPW/29075/2026"
+)
+
+
+def test_card_links_the_consultation_form_and_names_the_next_step(process_3039) -> None:  # type: ignore[no-untyped-def]
+    bill = _consulted(process_3039)
+    text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 9, 9)).text
+    _check_html(text)
+    assert (
+        f'31.08.2026 — 30.09.2026 · <a href="{CONSULTATION_PAGE}">форма для мнений на сайте Сейма</a>'
+        in text
+    )
+    assert "⏭ <b>Что дальше:</b> I чтение в комиссии — ASW" in text  # name unknown: the code
+    action = next(line for line in text.splitlines() if line.startswith("👉"))
+    assert f'направить мнение через <a href="{CONSULTATION_PAGE}">' in action
+    assert "до 30.09.2026" in action
+    assert 'KodKom=ASW">ASW</a>' in action and "до заседания" not in action  # nothing scheduled
+    # consultation over: the form link stays on the consultation line, the action drops it
+    late = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 10, 1)).text
+    assert "форма для мнений" in late and "направить мнение через" not in late
+    assert "направить мнение в комиссию —" in late
+
+
+def test_next_step_carries_the_scheduled_sitting(process_3039) -> None:  # type: ignore[no-untyped-def]
+    bill = _bill(process_3039, make_analysis()).model_copy(update={"agenda": (_sitting(),)})
+    text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 9, 9)).text
+    assert (
+        "⏭ <b>Что дальше:</b> I чтение в комиссии — "
+        "Komisja Administracji i Spraw Wewnętrznych (ASW) · 17.09.2026, 09:00" in text
+    )
+    assert "до заседания 17.09.2026" in text
+    # a past sitting is ignored
+    stale = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 9, 18)).text
+    assert "· 17.09.2026" not in stale and "до заседания" not in stale
+    # a Sejm sitting is rendered as a span with the sitting number
+    plenary = _sitting(
+        kind="sejm",
+        ref="sejm/65/2026-09-15",
+        date=dt.date(2026, 9, 15),
+        end_date=dt.date(2026, 9, 18),
+        start_time=None,
+        committee_code=None,
+        committee_name=None,
+        sitting_number=65,
+    )
+    both = bill.model_copy(update={"agenda": (plenary, _sitting())})
+    text = MessageFormatter("ru").new_bill(both, None, today=dt.date(2026, 9, 9)).text
+    assert "· 17.09.2026, 09:00" in text  # the committee phase prefers the committee sitting
+    en = MessageFormatter("en").new_bill(both, None, today=dt.date(2026, 9, 9)).text
+    assert "⏭ <b>What comes next:</b> first reading in committee — Komisja" in en
+
+
+def test_next_step_for_late_phases_and_none_when_over(process_1962, process_3039) -> None:  # type: ignore[no-untyped-def]
+    fmt = MessageFormatter("ru")
+    bill = _bill(process_1962, make_analysis())
+    bill.summary = bill.summary.model_copy(update={"passed": True})
+    text = fmt.new_bill(bill, None, today=dt.date(2026, 9, 9)).text
+    assert "⏭ <b>Что дальше:</b> публикация в Dziennik Ustaw" in text and "👉" not in text
+    act = ActInfo(
+        eli="DU/2026/1",
+        display_address="Dz.U. 2026 poz. 1",
+        title="t",
+        entry_into_force=dt.date(2026, 11, 19),
+        fetched_at=datetime(2026, 9, 1, tzinfo=UTC),
+    )
+    published = bill.model_copy(update={"act": act})
+    assert (
+        "вступление в силу 19.11.2026"
+        in fmt.new_bill(published, None, today=dt.date(2026, 9, 9)).text
+    )
+    assert "Что дальше" not in fmt.new_bill(published, None, today=dt.date(2026, 11, 20)).text
+    # a withdrawn pre-print bill gets no "next step" in its closing update
+    change = StatusChange(
+        term=10,
+        number="3039",
+        old_fingerprint="a",
+        new_fingerprint="b",
+        new_stages=[],
+        withdrawn=True,
+        closure_detected=True,
+        detected_at=datetime(2026, 9, 7, tzinfo=UTC),
+    )
+    closing = fmt.status_update(_bill(process_3039, make_analysis()), change).text
+    assert "Что дальше" not in closing and "Проект отозван" in closing
+
+
+def test_agenda_messages_for_committee_and_sejm_sittings(process_3039) -> None:  # type: ignore[no-untyped-def]
+    bill = _consulted(process_3039).model_copy(update={"agenda": (_sitting(),)})
+    fmt = MessageFormatter("ru")
+    text = fmt.agenda(bill, _sitting(), today=dt.date(2026, 9, 9)).text
+    _check_html(text)
+    assert text.startswith("🗓 <b>Заседание комиссии — druk nr 3039</b>")
+    assert "📮 <b>Komisja Administracji i Spraw Wewnętrznych (ASW)</b>" in text
+    assert "📅 17.09.2026, 09:00 · sala nr 412" in text
+    assert "📝 <b>Пункт повестки:</b> Pierwsze czytanie projektu (druk nr 3039)" in text
+    assert "до заседания 17.09.2026" in text
+    assert 'transmisje_arch.xsp?unid=1">Трансляция</a>' in text
+    assert 'KodKom=ASW">Страница комиссии</a>' in text
+    assert text.splitlines()[-1] == "#заседаниекомиссии #kadencja10druk3039"
+    assert len(text) <= MESSAGE_LIMIT
+    plenary = _sitting(
+        kind="sejm",
+        ref="sejm/65/2026-09-15",
+        date=dt.date(2026, 9, 15),
+        end_date=dt.date(2026, 9, 18),
+        start_time=None,
+        committee_code=None,
+        committee_name=None,
+        sitting_number=65,
+        room=None,
+        video_url=None,
+        text="Sprawozdanie Komisji (druki nr 3039 i 3055) - sprawozdawca poseł Y.",
+    )
+    text = fmt.agenda(bill, plenary, today=dt.date(2026, 9, 9)).text
+    _check_html(text)
+    assert text.startswith("🗓 <b>В повестке заседания Сейма — druk nr 3039</b>")
+    assert "🏛 заседание Сейма № 65, 15–18.09.2026" in text
+    assert "Трансляция" not in text and "Страница комиссии" not in text
+    assert text.splitlines()[-1] == "#заседаниесейма #kadencja10druk3039"
+    en = MessageFormatter("en").agenda(bill, plenary, today=dt.date(2026, 9, 9)).text
+    assert "On the agenda of a Sejm sitting" in en and "Sejm sitting no. 65, 15–2026-09-18" in en
+
+
+def test_consultation_results_and_deadline_link_the_sejm_page(process_3039) -> None:  # type: ignore[no-untyped-def]
+    bill = _consulted(process_3039, results=True)
+    fmt = MessageFormatter("ru")
+    text = fmt.consultation_results(bill, today=dt.date(2026, 10, 5)).text
+    _check_html(text)
+    assert text.startswith("🗣 <b>Опубликованы мнения из консультаций — druk nr 3039</b>")
+    assert "📅 <b>Общественные консультации:</b> 31.08.2026 — 30.09.2026" in text
+    assert f'<a href="{CONSULTATION_PAGE}">мнения, поданные' in text
+    assert "⏭ <b>Что дальше:</b> I чтение в комиссии — ASW" in text
+    assert text.splitlines()[-1] == "#консультации #kadencja10druk3039"
+    reminder = fmt.consultation_deadline(bill, today=dt.date(2026, 9, 28)).text
+    assert f'👉 <a href="{CONSULTATION_PAGE}">мнение можно направить' in reminder
+    assert f'🔗 <a href="{CONSULTATION_PAGE}">форма для мнений на сайте Сейма</a> | ' in reminder
+    with pytest.raises(ValueError):
+        fmt.consultation_results(_bill(process_3039, make_analysis()))

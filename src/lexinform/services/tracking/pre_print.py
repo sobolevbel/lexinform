@@ -1,7 +1,9 @@
-"""Bills that were published before they had a print (druk) number.
+"""Bills that were published before they had a print (druk) number, and the /bills entry of
+every followed bill that had a public consultation.
 
 When the RPW entry gets its number the print inherits the card (same Telegram thread); when the
-entry is withdrawn the thread is closed with one last update.
+entry is withdrawn the thread is closed with one last update. The same listing tells when the Sejm
+publishes the opinions received in a consultation (`consultationResults`), which is announced once.
 """
 
 from __future__ import annotations
@@ -12,6 +14,7 @@ import logging
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
+    BillSubmission,
     Publication,
     PublicationKind,
     PublicationStatus,
@@ -21,6 +24,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.result import TrackingResult
 from lexinform.services.tracking.stages import StageEnricher, change_key, fetch_print
@@ -39,6 +43,7 @@ class PrePrintReconciler:
         *,
         channel_id: str,
         analysis: AnalysisService | None,
+        consultations: ConsultationReminder | None = None,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -47,14 +52,21 @@ class PrePrintReconciler:
         self._enricher = enricher
         self._channel_id = channel_id
         self._analysis = analysis
+        self._consultations = consultations
 
     def reconcile(self, term: int, result: TrackingResult, *, publish: bool) -> bool:
-        """Link RPW entries to their print, or notice withdrawal. False when the phase must stop."""
+        """Link RPW entries to their print, notice withdrawal, announce published consultation
+        opinions. False when the phase must stop."""
         pending = self._repo.list_pre_print(term)
-        if not pending:
+        awaiting = [
+            b
+            for b in self._repo.list_awaiting_consultation_results(term, self._channel_id)
+            if not b.is_pre_print
+        ]
+        if not pending and not awaiting:
             return True
         earliest = min(
-            (b.submission.date_of_receipt for b in pending if b.submission),
+            (b.submission.date_of_receipt for b in pending + awaiting if b.submission),
             default=self._clock.now().date(),
         )
         try:
@@ -64,16 +76,24 @@ class PrePrintReconciler:
         except ServiceUnavailableError as exc:
             result.abort(exc)
             return False
-        for bill in pending:
-            sub = latest.get(bill.number)
+        for bill in pending + awaiting:
+            key = bill.submission.number if bill.submission else bill.number
+            sub = latest.get(key)
             if sub is None:
                 continue
             try:
                 self._repo.save_submission(term, bill.number, sub)
-                if sub.print_number:
+                if bill.is_pre_print and sub.print_number:
                     self._link(bill, sub.print_number, result, publish=publish)
-                elif sub.is_closed and not self._repo.closure_announced(term, bill.number):
+                elif (
+                    bill.is_pre_print
+                    and sub.is_closed
+                    and not self._repo.closure_announced(term, bill.number)
+                ):
                     self._announce_withdrawal(bill, result, publish=publish)
+                elif self._results_appeared(bill, sub) and self._consultations is not None:
+                    fresh = self._repo.get(term, bill.number) or bill
+                    self._consultations.results_published(fresh, result, publish=publish)
             except ServiceUnavailableError as exc:
                 result.abort(exc)
                 return False
@@ -81,6 +101,11 @@ class PrePrintReconciler:
                 result.failed += 1
                 log.exception("reconciling %s failed: %s", bill.number, exc)
         return True
+
+    @staticmethod
+    def _results_appeared(bill: Bill, sub: BillSubmission) -> bool:
+        before = bill.submission
+        return sub.consultation_results and not (before is not None and before.consultation_results)
 
     def _link(self, pre: Bill, print_number: str, result: TrackingResult, *, publish: bool) -> None:
         """The RPW entry got a print number: continue under the print, in the same thread."""

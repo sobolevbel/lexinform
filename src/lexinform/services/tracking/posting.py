@@ -12,6 +12,7 @@ from datetime import date
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
+    AgendaItem,
     Bill,
     Publication,
     PublicationKind,
@@ -45,16 +46,26 @@ class Poster:
             bill.term, bill.number, PublicationKind.NEW_BILL.value, self._channel_id
         )
 
-    def posted(self, bill: Bill, kind: PublicationKind) -> bool:
-        """True when a post of this kind exists and must not be attempted (again)."""
-        pub = self._repo.get_publication(bill.term, bill.number, kind.value, self._channel_id)
+    def posted(self, bill: Bill, kind: PublicationKind, *, ref: str | None = None) -> bool:
+        """True when a post of this kind (and sitting, for agenda posts) exists and must not be
+        attempted (again)."""
+        pub = self._repo.get_publication(
+            bill.term, bill.number, kind.value, self._channel_id, ref=ref
+        )
         if pub is None:
             return False
         if pub.status is PublicationStatus.FAILED:
             return pub.attempts >= self._max_attempts
         return True
 
-    def record(self, bill: Bill, kind: PublicationKind, status: PublicationStatus) -> int:
+    def record(
+        self,
+        bill: Bill,
+        kind: PublicationKind,
+        status: PublicationStatus,
+        *,
+        ref: str | None = None,
+    ) -> int:
         return self._repo.create_publication(
             Publication(
                 term=bill.term,
@@ -62,6 +73,7 @@ class Poster:
                 kind=kind,
                 status=status,
                 channel_id=self._channel_id,
+                ref=ref,
                 created_at=self._clock.now(),
             )
         )
@@ -90,9 +102,18 @@ class Poster:
             lambda: self._publisher.publish_status_update(fresh, change, reply_to).message_id,
         )
 
-    def one_off(self, bill: Bill, kind: PublicationKind, *, today: date | None = None) -> bool:
-        """Post an act notice, an in-force reminder or a consultation reminder (once per bill)."""
-        pub_id = self.record(bill, kind, PublicationStatus.PENDING)
+    def one_off(
+        self,
+        bill: Bill,
+        kind: PublicationKind,
+        *,
+        today: date | None = None,
+        agenda: AgendaItem | None = None,
+    ) -> bool:
+        """Post a notice that happens once per bill (act, in force, consultation reminder or
+        results) or once per sitting (agenda, keyed by `agenda.ref`)."""
+        ref = agenda.ref if agenda is not None else None
+        pub_id = self.record(bill, kind, PublicationStatus.PENDING, ref=ref)
         card = self.card(bill)
         reply_to = card.message_id if card else None
 
@@ -104,6 +125,11 @@ class Poster:
                 return self._publisher.publish_consultation_deadline(
                     bill, reply_to, today=today
                 ).message_id
+            if kind is PublicationKind.CONSULTATION_RESULTS:
+                return self._publisher.publish_consultation_results(bill, reply_to).message_id
+            if kind is PublicationKind.AGENDA:
+                assert agenda is not None
+                return self._publisher.publish_agenda(bill, agenda, reply_to).message_id
             return self._publisher.publish_in_force(bill, reply_to).message_id
 
         return self._send(pub_id, bill, kind.value, send)

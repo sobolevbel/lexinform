@@ -97,7 +97,9 @@ class BillDiscoveryService:
             summary = ProcessSummary.from_submission(sub)
             if self._ingest(summary, result):
                 result.pre_print_new += 1
-            self._repo.save_submission(sub.term, sub.number, sub)
+                # Known entries are refreshed by tracking, which compares the new /bills row with
+                # the stored one (print number assigned, withdrawn, opinions published).
+                self._repo.save_submission(sub.term, sub.number, sub)
 
     def _ingest(self, summary: ProcessSummary, result: DiscoveryResult) -> bool:
         existing = self._repo.get(summary.term, summary.number)

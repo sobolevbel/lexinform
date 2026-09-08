@@ -81,7 +81,26 @@ class Labels:
     tag_consultations: str
     tag_term: str  # "#<tag_term><term number>": the Sejm term (kadencja) the bill belongs to
     tag_ukraine: str  # bills about citizens of Ukraine: the channel's largest audience
+    consultation_link: str  # text of the link to the Sejm page where opinions are submitted
+    action_now: str  # "What you can do now"
+    action_send_opinion: str  # "send an opinion via"
+    action_consultation_page: str  # link text: the bill's consultation page
+    action_committee: str  # "send an opinion to the committee —" (the committee name follows)
+    action_before_sitting: str  # "before the sitting of"
+    action_hearing: str  # "apply to take part in the public hearing"
+    next_step: str  # "What comes next"
+    agenda_committee_header: str
+    agenda_sejm_header: str
+    agenda_item: str
+    sejm_sitting: str  # "Sejm sitting no."
+    link_video: str
+    link_committee: str
+    tag_committee_sitting: str
+    tag_sejm_sitting: str
+    consultation_results_header: str
+    consultation_results_hint: str
     event_tags: dict[str, str] = field(default_factory=dict)  # voting, senate, president, ...
+    next_step_labels: dict[str, str] = field(default_factory=dict)  # by phase key, see models
     date_format: str = "%Y-%m-%d"
     stage_type_labels: dict[str, str] = field(default_factory=dict)
     senate_position_labels: dict[str, str] = field(default_factory=dict)
@@ -164,6 +183,26 @@ RU = Labels(
     tag_consultations="консультации",
     tag_term="каденция",
     tag_ukraine="Украина",
+    consultation_link="форма для мнений на сайте Сейма",
+    action_now="Что можно сделать сейчас",
+    action_send_opinion="направить мнение через",
+    action_consultation_page="страницу проекта на сайте Сейма",
+    action_committee="направить мнение в комиссию —",
+    action_before_sitting="до заседания",
+    action_hearing="подать заявку на участие в публичных слушаниях",
+    next_step="Что дальше",
+    agenda_committee_header="Заседание комиссии",
+    agenda_sejm_header="В повестке заседания Сейма",
+    agenda_item="Пункт повестки",
+    sejm_sitting="заседание Сейма №",
+    link_video="Трансляция",
+    link_committee="Страница комиссии",
+    tag_committee_sitting="заседаниекомиссии",
+    tag_sejm_sitting="заседаниесейма",
+    consultation_results_header="Опубликованы мнения из консультаций",
+    consultation_results_hint=(
+        "мнения, поданные в ходе общественных консультаций, доступны на странице проекта"
+    ),
     event_tags={
         "voting": "голосование",
         "senate": "сенат",
@@ -171,6 +210,28 @@ RU = Labels(
         "veto": "вето",
         "amendments": "поправки",
         "withdrawn": "отозван",
+    },
+    next_step_labels={
+        "pre_print": "присвоение номера druku, затем I чтение",
+        "pre_print_consultation": (
+            "консультации до {date}, затем присвоение номера druku и I чтение"
+        ),
+        "first_reading": "I чтение",
+        "first_reading_committee": "I чтение в комиссии — {committee}",
+        "first_reading_sitting": "I чтение на заседании Сейма",
+        "committee_work": (
+            "работа в комиссии — {committee} (sprawozdanie), затем II чтение на заседании Сейма"
+        ),
+        "second_reading": "II чтение на заседании Сейма",
+        "third_reading": "III чтение и голосование в Сейме",
+        "senate": "рассмотрение в Сенате (до 30 дней)",
+        "senate_amendments": "Сейм рассматривает поправки Сената",
+        "president": "подпись Президента (до 21 дня), затем публикация в Dziennik Ustaw",
+        "publication": "публикация в Dziennik Ustaw",
+        "in_force": "вступление в силу {date}",
+        "in_force_unknown": "вступление в силу (дата пока не указана)",
+        "veto": "Сейм может отклонить вето (3/5 голосов)",
+        "tribunal": "решение Конституционного трибунала",
     },
     date_format="%d.%m.%Y",
     stage_type_labels={
@@ -295,6 +356,26 @@ EN = Labels(
     tag_consultations="consultation",
     tag_term="term",
     tag_ukraine="Ukraine",
+    consultation_link="opinion form on the Sejm website",
+    action_now="What you can do now",
+    action_send_opinion="send an opinion via",
+    action_consultation_page="the bill's page on the Sejm website",
+    action_committee="send an opinion to the committee —",
+    action_before_sitting="before the sitting on",
+    action_hearing="apply to take part in the public hearing",
+    next_step="What comes next",
+    agenda_committee_header="Committee sitting",
+    agenda_sejm_header="On the agenda of a Sejm sitting",
+    agenda_item="Agenda item",
+    sejm_sitting="Sejm sitting no.",
+    link_video="Live stream",
+    link_committee="Committee page",
+    tag_committee_sitting="committeesitting",
+    tag_sejm_sitting="sejmsitting",
+    consultation_results_header="Consultation opinions published",
+    consultation_results_hint=(
+        "the opinions submitted during the public consultation are available on the bill's page"
+    ),
     event_tags={
         "voting": "vote",
         "senate": "senate",
@@ -302,6 +383,30 @@ EN = Labels(
         "veto": "veto",
         "amendments": "amendments",
         "withdrawn": "withdrawn",
+    },
+    next_step_labels={
+        "pre_print": "print number assignment, then the first reading",
+        "pre_print_consultation": (
+            "consultation until {date}, then print number assignment and the first reading"
+        ),
+        "first_reading": "first reading",
+        "first_reading_committee": "first reading in committee — {committee}",
+        "first_reading_sitting": "first reading at a Sejm sitting",
+        "committee_work": (
+            "committee work — {committee} (report), then the second reading at a Sejm sitting"
+        ),
+        "second_reading": "second reading at a Sejm sitting",
+        "third_reading": "third reading and the vote in the Sejm",
+        "senate": "consideration by the Senate (up to 30 days)",
+        "senate_amendments": "the Sejm considers the Senate's amendments",
+        "president": (
+            "the President's signature (up to 21 days), then publication in Dziennik Ustaw"
+        ),
+        "publication": "publication in Dziennik Ustaw",
+        "in_force": "entry into force on {date}",
+        "in_force_unknown": "entry into force (date not stated yet)",
+        "veto": "the Sejm may override the veto (3/5 majority)",
+        "tribunal": "ruling of the Constitutional Tribunal",
     },
     stage_type_labels={
         "ToPresident": "Sent to the President",

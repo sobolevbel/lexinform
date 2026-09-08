@@ -220,3 +220,38 @@ def test_process_carries_publication_fields_and_eli_act_is_parsed() -> None:
     assert act.text_pdf_url == "https://api.test/eli/acts/DU/2026/1099/text.pdf"
     assert act.isap_url and act.isap_url.endswith("WDU20260001099")
     assert client.get_act("DU/2026/999999") is None  # not indexed (yet): no error
+
+
+def test_committee_sittings_and_proceedings_are_parsed() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if path.endswith("/committees/ASW/sittings"):
+            return httpx.Response(
+                200, content=(FIXTURES / "committee_sittings_ASW.json").read_bytes()
+            )
+        if path.endswith("/proceedings"):
+            return httpx.Response(200, content=(FIXTURES / "proceedings.json").read_bytes())
+        if path.endswith("/proceedings/65"):
+            return httpx.Response(200, content=(FIXTURES / "proceeding_65.json").read_bytes())
+        return httpx.Response(404)
+
+    client = _client(handler)
+    sittings = client.list_committee_sittings(10, "ASW")
+    planned = [s for s in sittings if s.status == "PLANNED"]
+    assert [s.num for s in planned] == [135, 136]
+    last = planned[-1]
+    assert last.date == date(2026, 9, 17) and last.start_time is not None
+    assert last.start_time.strftime("%H:%M") == "09:00"
+    assert last.room is not None and last.room.startswith("sala im. Olgi Krzyżanowskiej")
+    assert "druk nr 3035" in last.agenda
+    assert last.video_url is not None and "transmisje_arch.xsp" in last.video_url
+    listed = client.list_sittings(10)
+    assert [s.number for s in listed if s.number] == [64, 65]
+    assert all(not s.agenda for s in listed)  # the listing carries no agenda
+    planned_only = [s for s in listed if s.number == 0]
+    assert planned_only and planned_only[0].first_date == date(2025, 4, 25)
+    full = client.get_sitting(10, 65)
+    assert full.first_date == date(2026, 9, 15) and full.last_date == date(2026, 9, 18)
+    assert "druki nr" in full.agenda and full.current
+    with pytest.raises(SejmApiError):
+        client.get_sitting(10, 66)

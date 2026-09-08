@@ -1,0 +1,54 @@
+[
+ {
+  "agenda": "<div class=\"agenda-indent-0\">Rozpatrzenie Informacji o realizacji w 2025 r. „Programu modernizacji Policji, Straży Granicznej, Państwowej Straży Pożarnej i Służby Ochrony Państwa w latach 2022-2025” (druk nr 2831)</div>\n<div class=\"agenda-indent-0\">– przedstawia Minister Spraw Wewnętrznych i Administracji. </div>\n<div class=\"agenda-indent-0\">Rozpatrzenie Informacji końcowej o realizacji „Programu modernizacji Policji, Straży Granicznej, Państwowej Straży Pożarnej i Służby Ochrony Państwa w latach 2022-2025” (druk nr 2832)</div>\n<div class=\"agenda-indent-0\">– przedstawia Minister Spraw Wewnętrznych i Administracji. </div>",
+  "closed": false,
+  "code": "ASW",
+  "date": "2026-09-15",
+  "num": 135,
+  "remote": false,
+  "room": "sala im. Henryka Wujca (nr 111, bud. U)",
+  "startDateTime": "2026-09-15T17:00:00",
+  "status": "PLANNED",
+  "video": [
+   {
+    "committee": "ASW",
+    "description": "Rozpatrzenie Informacji o realizacji w 2025 r. „Programu modernizacji Policji, Straży Granicznej, Państwowej Straży Pożarnej i Służby Ochrony Państwa w latach 2022-2025” (druk nr 2831)<br/>– przedstawia Minister Spraw Wewnętrznych i Administracji. <br/>Rozpatrzenie Informacji końcowej o realizacji „Programu modernizacji Policji, Straży Granicznej, Państwowej Straży Pożarnej i Służby Ochrony Państwa w latach 2022-2025” (druk nr 2832)<br/>– przedstawia Minister Spraw Wewnętrznych i Administracji. ",
+    "playerLink": "https://sejm.gov.pl/Sejm10.nsf/transmisje_arch.xsp?unid=55C39BF22A286666C1258E6C003307E0",
+    "playerLinkIFrame": "https://sejm.gov.pl/Sejm10.nsf/VideoFrame.xsp/55C39BF22A286666C1258E6C003307E0",
+    "room": "sala im. Henryka Wujca (nr 111, bud. U)",
+    "startDateTime": "2026-09-15T17:00:00",
+    "title": "Komisja Administracji i Spraw Wewnętrznych (ASW)",
+    "transcribe": false,
+    "type": "komisja",
+    "unid": "55C39BF22A286666C1258E6C003307E0",
+    "videoLink": "https://sejm.c.blueonline.tv/stream/ENC24/55C39BF22A286666C1258E6C003307E0/playlist.m3u8?start=1789484400000"
+   }
+  ]
+ },
+ {
+  "agenda": "<div class=\"agenda-indent-0\">Pierwsze czytanie poselskiego projektu ustawy o zmianie ustawy o Agencji Bezpieczeństwa Wewnętrznego oraz Agencji Wywiadu, ustawy o Centralnym Biurze Antykorupcyjnym, ustawy o Służbie Kontrwywiadu Wojskowego oraz niektórych innych ustaw (druk nr 3035)</div>\n<div class=\"agenda-indent-0\">– uzasadnia poseł Marek Biernacki. </div>",
+  "closed": false,
+  "code": "ASW",
+  "date": "2026-09-17",
+  "num": 136,
+  "remote": false,
+  "room": "sala im. Olgi Krzyżanowskiej (nr 412, bud. U)",
+  "startDateTime": "2026-09-17T09:00:00",
+  "status": "PLANNED",
+  "video": [
+   {
+    "committee": "ASW",
+    "description": "Pierwsze czytanie poselskiego projektu ustawy o zmianie ustawy o Agencji Bezpieczeństwa Wewnętrznego oraz Agencji Wywiadu, ustawy o Centralnym Biurze Antykorupcyjnym, ustawy o Służbie Kontrwywiadu Wojskowego oraz niektórych innych ustaw (druk nr 3035)<br/>– uzasadnia poseł Marek Biernacki. ",
+    "playerLink": "https://sejm.gov.pl/Sejm10.nsf/transmisje_arch.xsp?unid=9607A9CED5E020BCC1258E6C00332D38",
+    "playerLinkIFrame": "https://sejm.gov.pl/Sejm10.nsf/VideoFrame.xsp/9607A9CED5E020BCC1258E6C00332D38",
+    "room": "sala im. Olgi Krzyżanowskiej (nr 412, bud. U)",
+    "startDateTime": "2026-09-17T09:00:00",
+    "title": "Komisja Administracji i Spraw Wewnętrznych (ASW)",
+    "transcribe": false,
+    "type": "komisja",
+    "unid": "9607A9CED5E020BCC1258E6C00332D38",
+    "videoLink": "https://sejm.c.blueonline.tv/stream/ENC21/9607A9CED5E020BCC1258E6C00332D38/playlist.m3u8?start=1789628400000"
+   }
+  ]
+ }
+]

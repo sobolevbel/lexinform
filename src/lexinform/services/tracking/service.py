@@ -24,6 +24,7 @@ from lexinform.models import (
 from lexinform.ports import BillRepository, Clock, EliGateway, Publisher, SejmGateway
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.tracking.acts import ActWatcher
+from lexinform.services.tracking.agenda import AgendaWatcher
 from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.pre_print import PrePrintReconciler
@@ -50,6 +51,7 @@ class StatusTrackingService:
         club_breakdown: bool = True,
         in_force_reminders: bool = True,
         consultation_reminder_days: int | None = 3,
+        agenda_watch: bool = True,
         local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
         workers: int = 1,
     ) -> None:
@@ -66,24 +68,6 @@ class StatusTrackingService:
             repo, publisher, clock, channel_id=channel_id, max_attempts=max_publish_attempts
         )
         self._enricher = StageEnricher(gateway, club_breakdown=club_breakdown)
-        self._pre_print = PrePrintReconciler(
-            gateway,
-            repo,
-            clock,
-            self._poster,
-            self._enricher,
-            channel_id=channel_id,
-            analysis=analysis,
-        )
-        self._acts = ActWatcher(
-            eli,
-            repo,
-            clock,
-            self._poster,
-            channel_id=channel_id,
-            local_tz=local_tz,
-            in_force_reminders=in_force_reminders,
-        )
         self._consultations = (
             ConsultationReminder(
                 repo,
@@ -95,6 +79,38 @@ class StatusTrackingService:
             )
             if consultation_reminder_days is not None
             else None
+        )
+        self._pre_print = PrePrintReconciler(
+            gateway,
+            repo,
+            clock,
+            self._poster,
+            self._enricher,
+            channel_id=channel_id,
+            analysis=analysis,
+            consultations=self._consultations,
+        )
+        self._agenda = (
+            AgendaWatcher(
+                gateway,
+                repo,
+                clock,
+                self._poster,
+                self._enricher,
+                channel_id=channel_id,
+                local_tz=local_tz,
+            )
+            if agenda_watch
+            else None
+        )
+        self._acts = ActWatcher(
+            eli,
+            repo,
+            clock,
+            self._poster,
+            channel_id=channel_id,
+            local_tz=local_tz,
+            in_force_reminders=in_force_reminders,
         )
 
     def check_updates(
@@ -118,6 +134,22 @@ class StatusTrackingService:
             now=self._clock.now(),
             changed_since=changed_since,
         )
+        # Sitting agendas change without touching the process, so every followed bill is checked,
+        # before the stage loop so that an update posted below already carries the dates.
+        if self._agenda is not None:
+            everyone = (
+                tracked
+                if changed_since is None
+                else self._repo.list_tracked(
+                    term,
+                    self._channel_id,
+                    closed_grace_days=self._closed_grace_days,
+                    passed_max_days=self._passed_max_days,
+                    now=self._clock.now(),
+                )
+            )
+            if not self._agenda.check(term, everyone, result, publish=publish):
+                return result
         # Pre-print bills have no legislative process yet: the reconciler handles them.
         followed = [bill for bill in tracked if not bill.is_pre_print]
         # The API lookups run in parallel; detection and posting stay sequential, in order.
@@ -149,12 +181,13 @@ class StatusTrackingService:
             self._consultations.remind(term, result)
         scope = "all" if changed_since is None else f"changed since {changed_since:%F %R}"
         log.info(
-            "tracking (%s): checked=%d changed=%d reanalyzed=%d published=%d failed=%d",
+            "tracking (%s): checked=%d changed=%d reanalyzed=%d published=%d agenda=%d failed=%d",
             scope,
             result.checked,
             result.changed,
             result.reanalyzed,
             result.published,
+            result.agenda_posted,
             result.failed,
         )
         return result

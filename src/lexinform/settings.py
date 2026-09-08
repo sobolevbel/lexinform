@@ -69,6 +69,9 @@ class Settings(BaseSettings):
     in_force_reminders: bool = True  # post a reminder on the day the act enters into force
     consultation_reminders: bool = True  # remind before a public consultation closes ...
     consultation_reminder_days: int = Field(default=3, ge=0)  # ... this many days ahead
+    agenda_watch: bool = (
+        True  # post when a followed bill appears on a committee/Sejm sitting agenda
+    )
 
     # Logging
     log_level: str = "INFO"

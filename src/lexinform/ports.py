@@ -8,6 +8,7 @@ from typing import Protocol
 
 from lexinform.models import (
     ActInfo,
+    AgendaItem,
     AnalysisRecord,
     Bill,
     BillAuthors,
@@ -15,6 +16,7 @@ from lexinform.models import (
     BillStatus,
     BillSubmission,
     Committee,
+    CommitteeSitting,
     Mp,
     PrintInfo,
     ProcessDetail,
@@ -22,6 +24,7 @@ from lexinform.models import (
     Publication,
     PublicationStatus,
     RunReport,
+    SejmSitting,
     Stage,
     StatusChange,
     TriageContext,
@@ -56,6 +59,16 @@ class SejmGateway(Protocol):
     def get_voting(self, term: int, sitting: int, number: int) -> tuple[Vote, ...]: ...
 
     def get_committee(self, term: int, code: str) -> Committee: ...
+
+    def list_committee_sittings(self, term: int, code: str) -> tuple[CommitteeSitting, ...]: ...
+
+    def list_sittings(self, term: int) -> tuple[SejmSitting, ...]:
+        """GET /proceedings: past, current and planned Sejm sittings, without agendas."""
+        ...
+
+    def get_sitting(self, term: int, number: int) -> SejmSitting:
+        """GET /proceedings/{number}: one sitting with its agenda (HTML)."""
+        ...
 
     def list_mps(self, term: int) -> tuple[Mp, ...]: ...
 
@@ -101,6 +114,12 @@ class Publisher(Protocol):
 
     def publish_consultation_deadline(
         self, bill: Bill, reply_to: int | None, *, today: date
+    ) -> PublishResult: ...
+
+    def publish_consultation_results(self, bill: Bill, reply_to: int | None) -> PublishResult: ...
+
+    def publish_agenda(
+        self, bill: Bill, item: AgendaItem, reply_to: int | None
     ) -> PublishResult: ...
 
 
@@ -170,8 +189,10 @@ class BillRepository(Protocol):
     ) -> None: ...
 
     def get_publication(
-        self, term: int, number: str, kind: str, channel_id: str
-    ) -> Publication | None: ...
+        self, term: int, number: str, kind: str, channel_id: str, *, ref: str | None = None
+    ) -> Publication | None:
+        """The latest post of this kind for the bill; `ref` narrows to one sitting (agenda)."""
+        ...
 
     def delete_publication(self, term: int, number: str, kind: str, channel_id: str) -> int: ...
 
@@ -194,6 +215,13 @@ class BillRepository(Protocol):
 
     # authors
     def save_authors(self, term: int, number: str, authors: BillAuthors) -> None: ...
+
+    # agendas of upcoming sittings
+    def save_agenda(self, term: int, number: str, items: tuple[AgendaItem, ...]) -> None: ...
+
+    def list_awaiting_consultation_results(self, term: int, channel_id: str) -> list[Bill]:
+        """Published bills with a public consultation whose opinions are not published yet."""
+        ...
 
     def list_due_in_force(self, term: int, channel_id: str, *, today: date) -> list[Bill]: ...
 

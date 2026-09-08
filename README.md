@@ -32,7 +32,10 @@ Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony na te
 💡 Что это значит на практике: …
 👥 Кого касается: …
 📅 Вступление в силу: …
-🗣 Общественные консультации: 05.08.2026 — 04.09.2026 — мнение можно направить …
+🗣 Общественные консультации: 05.08.2026 — 04.09.2026 · форма для мнений на сайте Сейма
+
+⏭ Что дальше: I чтение в комиссии — Komisja Administracji i Spraw Wewnętrznych (ASW) · 17.09.2026, 09:00
+👉 Что можно сделать сейчас: направить мнение через страницу проекта на сайте Сейма до 04.09.2026; направить мнение в комиссию — Komisja … (ASW) до заседания 17.09.2026
 
 🏛 Стадия: Skierowano do I czytania w komisjach (03.09.2026)
 ✍️ Инициатор: депутатский (подписали: Lewica 21 · представитель: Daria Gosek-Popiołek, Lewica)   📄 Дата druku: 03.08.2026
@@ -41,11 +44,19 @@ Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony na te
 #kadencja10druk3039 #важность5 #легализация #консультации #каденция10
 ```
 
-Replies cover: a reminder three days before a public consultation closes, new stages (committee
-referral with the committee's name, readings, votes with the per-club breakdown, Senate position,
-President's signature or veto), a fresh analysis with "what changed" when the bill's text changes,
-"published in Dziennik Ustaw" with the entry-into-force date, and a reminder on the day the act
-enters into force.
+Every card and update ends with two lines that answer the reader's real questions: **what comes
+next** (the next step of the process, dated when a committee or Sejm sitting with the bill on its
+agenda is already scheduled) and **what you can do now** (send an opinion through the Sejm's
+consultation form until the deadline, write to the committee before its sitting, apply for a
+public hearing).
+
+Replies cover: a reminder three days before a public consultation closes, the notice that the
+opinions received were published, a committee sitting or a Sejm sitting whose agenda names the
+bill (date, time, room, agenda item, live stream), new stages (committee referral with the
+committee's name, readings, votes with the per-club breakdown, Senate position, President's
+signature or veto), a fresh analysis with "what changed" when the bill's text changes, "published
+in Dziennik Ustaw" with the entry-into-force date, and a reminder on the day the act enters into
+force.
 
 Bills that have no print (druk) number yet (`RPW/…`, the consultation stage) are covered too, from
 their official description; when the print number is assigned the thread continues under the same
@@ -74,7 +85,10 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
 5. **Track** published bills: only those the API lists as modified since the watermark (plus a
    full pass every Monday); the stage tree is fingerprinted, every change produces exactly one
    reply; a newer text triggers a re-analysis with the previous one as context; an ELI address
-   triggers the Dziennik Ustaw notice and, later, the entry-into-force reminder.
+   triggers the Dziennik Ustaw notice and, later, the entry-into-force reminder. Every followed
+   bill is also matched against the agendas of its committees' sittings and of the current Sejm
+   sitting (`/committees/{code}/sittings`, `/proceedings/{n}`): a new (bill, sitting) pair is one
+   reply, and the dates feed the "what comes next" line.
 6. **Report** to the technical channel when `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` is set.
 
 Each phase is isolated: an outage of the Sejm API, the LLM or Telegram stops that phase with a
@@ -143,6 +157,7 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_TRACK_FULL_WEEKDAY` | `0` (Monday) | Weekday on which every followed bill is checked, not only the changed ones |
 | `LEXINFORM_IN_FORCE_REMINDERS` | `true` | Reminder on the entry-into-force day |
 | `LEXINFORM_CONSULTATION_REMINDERS` / `_CONSULTATION_REMINDER_DAYS` | `true` / `3` | Reminder this many days before a public consultation closes |
+| `LEXINFORM_AGENDA_WATCH` | `true` | Post when a followed bill appears on the agenda of a committee or Sejm sitting |
 | `LEXINFORM_MAX_PUBLISH_ATTEMPTS` | `3` | Retries of a failed Telegram post |
 | `LEXINFORM_LOG_LEVEL` / `LEXINFORM_LOG_JSON` | `INFO` / `false` | Logging |
 

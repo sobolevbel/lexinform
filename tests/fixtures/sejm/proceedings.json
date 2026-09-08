@@ -1,0 +1,39 @@
+[
+ {
+  "current": false,
+  "dates": [
+   "2026-09-02",
+   "2026-09-03",
+   "2026-09-04"
+  ],
+  "number": 64,
+  "title": "64. Posiedzenie Sejmu RP w dniach 2, 3 i 4 września 2026 r."
+ },
+ {
+  "current": true,
+  "dates": [
+   "2026-09-15",
+   "2026-09-16",
+   "2026-09-17",
+   "2026-09-18"
+  ],
+  "number": 65,
+  "title": "65. Posiedzenie Sejmu RP w dniach 15, 16, 17 i 18 września 2026 r."
+ },
+ {
+  "current": false,
+  "dates": [
+   "2025-04-25"
+  ],
+  "number": 0,
+  "title": "Uroczyste Zgromadzenie Posłów i Senatorów w dniu 25 kwietnia 2025 r."
+ },
+ {
+  "current": false,
+  "dates": [
+   "2025-08-06"
+  ],
+  "number": 0,
+  "title": "Zgromadzenie Narodowe w dniu 6 sierpnia 2025 r."
+ }
+]

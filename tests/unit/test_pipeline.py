@@ -17,12 +17,14 @@ from lexinform.models import (
     BillSubmission,
     Category,
     Committee,
+    CommitteeSitting,
     DocumentType,
     Mp,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
     PublicationStatus,
+    SejmSitting,
     Stage,
     Vote,
     VotingSummary,
@@ -1128,3 +1130,201 @@ def test_consultation_reminder_failure_is_retried_next_run() -> None:
     w.publisher.fail_on = set()
     report = w.run()
     assert report.consultation_reminders == 1 and len(w.publisher.consultations) == 2  # type: ignore[attr-defined]
+
+
+# --------------------------------------------------------------------------- sitting agendas
+
+COMMITTEE_STAGES = START + (
+    Stage(
+        stage_name="Skierowano do I czytania w komisjach",
+        stage_type="ReadingReferral",
+        date=dt.date(2026, 9, 3),
+        children=(
+            Stage(
+                stage_name="Skierowanie",
+                stage_type="Referral",
+                date=dt.date(2026, 9, 3),
+                committee_code="ASW",
+            ),
+        ),
+    ),
+)
+ASW = Committee(term=10, code="ASW", name="Komisja Administracji i Spraw Wewnętrznych")
+FIRST_READING_AGENDA = (
+    '<div class="agenda-indent-0">Pierwsze czytanie projektu (druk nr 3039)</div>\n'
+    '<div class="agenda-indent-0">– uzasadnia poseł X.</div>'
+)
+
+
+def _committee_sitting(
+    num: int = 136,
+    date: dt.date = dt.date(2026, 9, 17),
+    *,
+    agenda: str = FIRST_READING_AGENDA,
+    status: str = "PLANNED",
+) -> CommitteeSitting:
+    return CommitteeSitting(
+        code="ASW",
+        num=num,
+        date=date,
+        start_time=dt.time(9, 0),
+        room="sala 412",
+        status=status,
+        agenda=agenda,
+        video_url="https://sejm.gov.pl/Sejm10.nsf/transmisje_arch.xsp?unid=1",
+    )
+
+
+def test_committee_sitting_naming_the_bill_is_posted_once_and_dates_the_next_step() -> None:
+    w = World()  # clock: 2026-09-07
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
+    w.gateway.committees["ASW"] = ASW
+    w.gateway.committee_sittings["ASW"] = (
+        _committee_sitting(130, dt.date(2026, 9, 2), status="FINISHED"),  # over: ignored
+        _committee_sitting(135, dt.date(2026, 9, 15), agenda="<div>Inne sprawy (druk nr 1)</div>"),
+        _committee_sitting(),
+    )
+    report = w.run()
+    assert report.published == 1 and report.agenda_posted == 1  # type: ignore[attr-defined]
+    bill, item, reply_to = w.publisher.agendas[0]
+    assert reply_to == 101 and bill.number == "3039"
+    assert item.ref == "ASW/136/2026-09-17" and item.kind == "committee"
+    assert item.committee_name == "Komisja Administracji i Spraw Wewnętrznych"
+    assert item.text == "Pierwsze czytanie projektu (druk nr 3039) – uzasadnia poseł X."
+    assert item.start_time == dt.time(9, 0) and item.room == "sala 412"
+    stored = w.repo.get(10, "3039")
+    assert stored is not None and [i.ref for i in stored.agenda] == ["ASW/136/2026-09-17"]
+
+    # the same sitting on the next run: nothing new; a stage update now carries the date
+    w.clock.advance(days=1)
+    reading = Stage(
+        stage_name="I czytanie w komisjach", stage_type="Reading", date=dt.date(2026, 9, 8)
+    )
+    w.gateway.details["3039"] = _detail(w.gateway.processes[0], COMMITTEE_STAGES + (reading,))
+    report = w.run()
+    assert report.agenda_posted == 0 and report.updates == 1  # type: ignore[attr-defined]
+    updated, change, _ = w.publisher.updates[0]
+    text = MessageFormatter("ru").status_update(updated, change, today=dt.date(2026, 9, 8)).text
+    assert "Komisja Administracji i Spraw Wewnętrznych (ASW) (sprawozdanie)" in text
+    assert "· 17.09.2026, 09:00" in text and "до заседания 17.09.2026" in text
+
+    # rescheduled: same sitting number, new date -> posted again, the old item is gone
+    w.gateway.committee_sittings["ASW"] = (_committee_sitting(136, dt.date(2026, 9, 24)),)
+    w.clock.advance(days=1)
+    assert w.run().agenda_posted == 1  # type: ignore[attr-defined]
+    assert [i.ref for i in w.repo.get(10, "3039").agenda] == ["ASW/136/2026-09-24"]  # type: ignore[union-attr]
+
+    # the sitting is over: the item is dropped, no post
+    w.clock.advance(days=20)
+    assert w.run().agenda_posted == 0  # type: ignore[attr-defined]
+    assert w.repo.get(10, "3039").agenda == ()  # type: ignore[union-attr]
+    assert len(w.publisher.agendas) == 2
+
+
+def test_sejm_sitting_agenda_naming_the_bill_is_posted() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
+    w.gateway.sittings = [
+        SejmSitting(
+            number=64,
+            dates=(dt.date(2026, 9, 2), dt.date(2026, 9, 4)),
+            agenda="<li>Stare (druk nr 3039)</li>",  # over: not fetched
+        ),
+        SejmSitting(
+            number=65,
+            dates=tuple(dt.date(2026, 9, d) for d in (15, 16, 17, 18)),
+            agenda=(
+                "<ol><li>Sprawozdanie Komisji (druki nr 3039 i 3055) - sprawozdawca poseł Y.</li>"
+                "<li>Inne (druk nr 1)</li></ol>"
+            ),
+        ),
+        SejmSitting(number=0, dates=(dt.date(2026, 10, 7),), title="planned"),  # no agenda yet
+    ]
+    report = w.run()
+    assert report.agenda_posted == 1  # type: ignore[attr-defined]
+    bill, item, _ = w.publisher.agendas[0]
+    assert item.kind == "sejm" and item.ref == "sejm/65/2026-09-15"
+    assert item.date == dt.date(2026, 9, 15) and item.end_date == dt.date(2026, 9, 18)
+    assert item.sitting_number == 65
+    assert item.text == "Sprawozdanie Komisji (druki nr 3039 i 3055) - sprawozdawca poseł Y."
+    fetched = [c for c in w.gateway.calls if c.startswith("get_sitting:")]
+    assert fetched == ["get_sitting:65"]
+    text = MessageFormatter("ru").agenda(bill, item, today=dt.date(2026, 9, 7)).text
+    assert "заседание Сейма № 65, 15–18.09.2026" in text
+    # no committee referral yet: the next step is the first reading, dated by the sitting
+    card = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 9, 7)).text
+    assert "Что дальше:</b> I чтение на заседании Сейма · заседание Сейма № 65" in card
+
+
+def test_agenda_check_keeps_known_items_when_one_listing_fails_and_aborts_on_an_outage() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
+    w.gateway.committees["ASW"] = ASW
+    w.gateway.committee_sittings["ASW"] = (_committee_sitting(),)
+    assert w.run().agenda_posted == 1  # type: ignore[attr-defined]
+
+    del w.gateway.committee_sittings["ASW"]  # a 4xx for this committee: per-item problem
+    w.clock.advance(days=1)
+    report = w.run()
+    assert report.agenda_posted == 0 and report.errors == []  # type: ignore[attr-defined]
+    assert [i.ref for i in w.repo.get(10, "3039").agenda] == ["ASW/136/2026-09-17"]  # type: ignore[union-attr]
+
+    w.gateway.outages.add("list_committee_sittings")
+    w.clock.advance(days=1)
+    report = w.run()
+    assert any(e.startswith("tracking: Sejm API unavailable") for e in report.errors)  # type: ignore[attr-defined]
+    assert [i.ref for i in w.repo.get(10, "3039").agenda] == ["ASW/136/2026-09-17"]  # type: ignore[union-attr]
+    assert len(w.publisher.agendas) == 1
+
+
+def test_agenda_items_are_stored_but_not_posted_without_publishing() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
+    w.gateway.committees["ASW"] = ASW
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (_committee_sitting(),)
+    w.clock.advance(days=1)
+    report = w.run(publish=False)
+    assert report.agenda_posted == 0 and w.publisher.agendas == []  # type: ignore[attr-defined]
+    assert [i.ref for i in w.repo.get(10, "3039").agenda] == ["ASW/136/2026-09-17"]  # type: ignore[union-attr]
+    w.clock.advance(days=1)
+    assert w.run().agenda_posted == 1  # type: ignore[attr-defined]
+
+
+# --------------------------------------------------------------------------- consultation results
+
+
+def test_published_consultation_opinions_are_announced_once() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.gateway.submissions.append(_submission(number="RPW/26666/2026", print_number="3039"))
+    report = w.run()
+    assert report.published == 1 and report.consultation_results_posted == 0  # type: ignore[attr-defined]
+
+    w.gateway.submissions[0] = _submission(
+        number="RPW/26666/2026", print_number="3039", consultation_results=True
+    )
+    w.clock.advance(days=1)
+    report = w.run()
+    assert report.consultation_results_posted == 1  # type: ignore[attr-defined]
+    bill, reply_to = w.publisher.consultation_results[0]
+    assert bill.number == "3039" and reply_to == 101
+    assert bill.submission is not None and bill.submission.consultation_results
+    text = MessageFormatter("ru").consultation_results(bill).text
+    assert "Опубликованы мнения из консультаций — druk nr 3039" in text
+    assert "NrProjektu=RPW/26666/2026" in text
+
+    w.clock.advance(days=1)
+    assert w.run().consultation_results_posted == 0  # type: ignore[attr-defined]
+    assert len(w.publisher.consultation_results) == 1
+
+    # a pre-print bill: no notice when discovered with the opinions already out, one when they appear
+    w.gateway.submissions.append(_submission(consultation_results=True))  # RPW/29075/2026
+    w.gateway.submissions.append(_submission(number="RPW/2/2026"))
+    w.clock.advance(days=1)
+    report = w.run()
+    assert report.published == 2 and report.consultation_results_posted == 0  # type: ignore[attr-defined]
+    w.gateway.submissions[-1] = _submission(number="RPW/2/2026", consultation_results=True)
+    w.clock.advance(days=1)
+    assert w.run().consultation_results_posted == 1  # type: ignore[attr-defined]
+    assert w.publisher.consultation_results[-1][0].number == "RPW/2/2026"

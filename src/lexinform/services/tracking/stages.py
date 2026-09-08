@@ -39,7 +39,7 @@ class StageEnricher:
                 voting = stage.voting.model_copy(update={"clubs": aggregate_clubs(votes)})
                 return stage.model_copy(update={"voting": voting})
             if stage.stage_type == "Referral" and stage.committee_code and not stage.committee_name:
-                name = self._committee_name(term, stage.committee_code)
+                name = self.committee_name(term, stage.committee_code)
                 return stage.model_copy(update={"committee_name": name})
         except ServiceUnavailableError:
             raise
@@ -47,7 +47,8 @@ class StageEnricher:
             log.warning("could not enrich stage %s: %s", stage.stage_name, exc)
         return stage
 
-    def _committee_name(self, term: int, code: str) -> str:
+    def committee_name(self, term: int, code: str) -> str:
+        """The committee's full name, fetched once per run."""
         if code not in self._committee_names:
             self._committee_names[code] = self._gateway.get_committee(term, code).name
         return self._committee_names[code]

@@ -8,7 +8,7 @@ from datetime import date
 from typing import TextIO
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import Bill, PrintInfo, RunReport, StatusChange
+from lexinform.models import AgendaItem, Bill, PrintInfo, RunReport, StatusChange
 
 
 @dataclass
@@ -61,6 +61,24 @@ class ConsolePublisher:
         rendered = self._formatter.consultation_deadline(bill, today=today)
         message_id = self._emit(
             f"CONSULTATION DEADLINE {bill.number} (reply to {reply_to})", rendered.text
+        )
+        return ConsolePublishResult(message_id=message_id)
+
+    def publish_consultation_results(
+        self, bill: Bill, reply_to: int | None
+    ) -> ConsolePublishResult:
+        rendered = self._formatter.consultation_results(bill)
+        message_id = self._emit(
+            f"CONSULTATION RESULTS {bill.number} (reply to {reply_to})", rendered.text
+        )
+        return ConsolePublishResult(message_id=message_id)
+
+    def publish_agenda(
+        self, bill: Bill, item: AgendaItem, reply_to: int | None
+    ) -> ConsolePublishResult:
+        rendered = self._formatter.agenda(bill, item)
+        message_id = self._emit(
+            f"AGENDA {item.ref} druk {bill.number} (reply to {reply_to})", rendered.text
         )
         return ConsolePublishResult(message_id=message_id)
 

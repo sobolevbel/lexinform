@@ -7,6 +7,7 @@ import datetime as dt
 import hashlib
 import json
 from collections.abc import Iterable
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -184,6 +185,75 @@ class BillSubmission(BaseModel):
     def pdf_url(self) -> str:
         return submission_pdf_url(self.term, self.number)
 
+    @property
+    def consultation_url(self) -> str | None:
+        """The Sejm page of a consulted bill: the form for opinions and, later, the opinions."""
+        if not self.public_consultation:
+            return None
+        return consultation_web_url(self.term, self.number)
+
+
+class CommitteeSitting(BaseModel):
+    """An item of GET /committees/{code}/sittings."""
+
+    model_config = ConfigDict(frozen=True)
+
+    code: str
+    num: int
+    date: dt.date
+    start_time: dt.time | None = None  # wall clock in Warsaw, as the API gives it
+    room: str | None = None
+    status: str = "PLANNED"  # PLANNED | FINISHED | ...
+    agenda: str = ""  # HTML fragment, see `lexinform.agenda`
+    video_url: str | None = None
+    joint_with: tuple[str, ...] = ()  # codes of committees sitting jointly
+
+
+class SejmSitting(BaseModel):
+    """An item of GET /proceedings; `agenda` comes from GET /proceedings/{number} only."""
+
+    model_config = ConfigDict(frozen=True)
+
+    number: int  # 0 for a sitting that is only planned (no agenda yet)
+    dates: tuple[dt.date, ...]
+    title: str = ""
+    current: bool = False
+    agenda: str = ""  # HTML fragment
+
+    @property
+    def first_date(self) -> dt.date | None:
+        return min(self.dates) if self.dates else None
+
+    @property
+    def last_date(self) -> dt.date | None:
+        return max(self.dates) if self.dates else None
+
+
+AgendaKind = Literal["committee", "sejm"]
+
+
+class AgendaItem(BaseModel):
+    """A future sitting whose agenda names the bill: the dated "what happens next"."""
+
+    model_config = ConfigDict(frozen=True)
+
+    kind: AgendaKind
+    ref: str  # dedupe key of the post: "ASW/136/2026-09-17" or "sejm/65/2026-09-15"
+    date: dt.date
+    end_date: dt.date | None = None  # Sejm sittings span several days
+    start_time: dt.time | None = None
+    committee_code: str | None = None
+    committee_name: str | None = None
+    sitting_number: int | None = None
+    room: str | None = None
+    text: str = ""  # the agenda item, plain text
+    video_url: str | None = None
+
+    @property
+    def first_reading(self) -> bool:
+        lowered = self.text.lower()
+        return "pierwsze czytanie" in lowered or "i czytanie" in lowered
+
 
 class ActInfo(BaseModel):
     """The published act, from the ELI API (GET /eli/acts/{publisher}/{year}/{pos})."""
@@ -335,6 +405,14 @@ def process_web_url(term: int, number: str) -> str:
     if is_pre_print_number(number):
         return submission_pdf_url(term, number)
     return f"https://www.sejm.gov.pl/Sejm{term}.nsf/PrzebiegProc.xsp?nr={number}"
+
+
+def consultation_web_url(term: int, number: str) -> str:
+    """The Sejm page of a bill under public consultation, keyed by the /bills number (RPW/…)."""
+    return (
+        f"https://www.sejm.gov.pl/Sejm{term}.nsf/agent.xsp?symbol=KONSULTOWANY_PROJEKT"
+        f"&NrProjektu={number}"
+    )
 
 
 def committee_web_url(term: int, code: str) -> str:

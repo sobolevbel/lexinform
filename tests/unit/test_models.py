@@ -144,3 +144,125 @@ def test_aggregate_clubs_counts_and_orders() -> None:
     assert [c.club for c in clubs] == ["KO", "Lewica", "niez.", "PiS"]
     assert clubs[0] == ClubVotes(club="KO", yes=2, absent=1)
     assert clubs[3].abstain == 1
+
+
+# --------------------------------------------------------------------------- next phase
+
+
+def _bill_with(process, stages, **kw):  # type: ignore[no-untyped-def]
+    from datetime import UTC, datetime
+
+    from lexinform.models import Bill, BillStatus
+
+    now = datetime(2026, 9, 9, tzinfo=UTC)
+    summary = process.model_copy(update={"closure_date": None, "passed": None})
+    return Bill(
+        summary=summary,
+        status=BillStatus.ANALYZED,
+        stages=stages,
+        first_seen_at=now,
+        last_checked_at=now,
+        **kw,
+    )
+
+
+def test_next_phase_walks_the_whole_process(process_1962, process_950) -> None:  # type: ignore[no-untyped-def]
+    import datetime as dt
+
+    from lexinform.models import next_phase
+
+    today = dt.date(2026, 9, 9)
+    expected_1962 = [
+        "first_reading",  # Start
+        "first_reading_committee",  # ReadingReferral -> SPC
+        "committee_work",  # Reading: I czytanie w komisjach
+        "second_reading",  # CommitteeWork with the report carrying the text
+        "third_reading",  # II czytanie, sent back to the committee
+        "third_reading",  # -A report answering amendments
+        "senate",  # III czytanie: uchwalono
+        "senate_amendments",  # Senate introduced amendments
+        "senate_amendments",  # committee work on the Senate position
+        "president",  # Sejm considered the Senate position
+    ]
+    keys = [
+        next_phase(_bill_with(process_1962, process_1962.stages[:i]), today=today)
+        for i in range(1, len(process_1962.stages))
+    ]
+    assert [k.key for k in keys if k] == expected_1962
+    assert keys[1].committees == ("SPC",)  # type: ignore[union-attr]
+    # first reading at a sitting (committeeCode "Sejm") is not a committee referral
+    at_sitting = next_phase(_bill_with(process_950, process_950.stages[:2]), today=today)
+    assert at_sitting is not None and at_sitting.key == "first_reading_sitting"
+    after_first = next_phase(_bill_with(process_950, process_950.stages[:3]), today=today)
+    assert after_first is not None and after_first.committees == ("NZC",)
+    # "nie wniósł poprawek" goes straight to the President
+    senate_ok = process_1962.stages[7].model_copy(update={"position": "nie wniósł poprawek"})
+    stages = process_1962.stages[:7] + (senate_ok,)
+    assert next_phase(_bill_with(process_1962, stages), today=today).key == "president"  # type: ignore[union-attr]
+    # the whole process: publication pending, then the act
+    done = _bill_with(process_1962, process_1962.stages)
+    done.summary = done.summary.model_copy(update={"passed": True})
+    assert next_phase(done, today=today).key == "publication"  # type: ignore[union-attr]
+
+
+def test_next_phase_for_acts_pre_prints_and_closed_processes(process_3039) -> None:  # type: ignore[no-untyped-def]
+    import datetime as dt
+    from datetime import UTC, datetime
+
+    from lexinform.models import ActInfo, BillSubmission, next_phase
+
+    today = dt.date(2026, 9, 9)
+    act = ActInfo(
+        eli="DU/2026/1",
+        display_address="Dz.U. 2026 poz. 1",
+        title="t",
+        entry_into_force=dt.date(2026, 11, 19),
+        fetched_at=datetime(2026, 9, 1, tzinfo=UTC),
+    )
+    bill = _bill_with(process_3039, process_3039.stages, act=act)
+    phase = next_phase(bill, today=today)
+    assert phase is not None and phase.key == "in_force" and phase.date == dt.date(2026, 11, 19)
+    assert next_phase(bill, today=dt.date(2026, 11, 19)) is None
+    unknown = bill.model_copy(update={"act": act.model_copy(update={"entry_into_force": None})})
+    assert next_phase(unknown, today=today).key == "in_force_unknown"  # type: ignore[union-attr]
+
+    sub = BillSubmission(
+        term=10,
+        number="RPW/1/2026",
+        title="t",
+        date_of_receipt=dt.date(2026, 9, 1),
+        public_consultation=True,
+        consultation_end=dt.date(2026, 9, 30),
+    )
+    pre = _bill_with(process_3039, (), submission=sub)
+    pre.summary = pre.summary.model_copy(update={"number": "RPW/1/2026"})
+    open_ = next_phase(pre, today=today)
+    assert open_ is not None and open_.key == "pre_print_consultation"
+    assert open_.date == dt.date(2026, 9, 30)
+    assert next_phase(pre, today=dt.date(2026, 10, 1)).key == "pre_print"  # type: ignore[union-attr]
+    withdrawn = pre.model_copy(
+        update={"summary": pre.summary.model_copy(update={"closure_date": dt.date(2026, 9, 5)})}
+    )
+    assert next_phase(withdrawn, today=today) is None
+
+    rejected = _bill_with(process_3039, process_3039.stages)
+    rejected.summary = rejected.summary.model_copy(
+        update={"closure_date": dt.date(2026, 9, 5), "passed": False}
+    )
+    assert next_phase(rejected, today=today) is None
+
+
+def test_consultation_url_only_for_consulted_submissions() -> None:
+    import datetime as dt
+
+    from lexinform.models import BillSubmission
+
+    sub = BillSubmission(
+        term=10, number="RPW/29075/2026", title="t", date_of_receipt=dt.date(2026, 8, 31)
+    )
+    assert sub.consultation_url is None
+    consulted = sub.model_copy(update={"public_consultation": True})
+    assert consulted.consultation_url == (
+        "https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=KONSULTOWANY_PROJEKT"
+        "&NrProjektu=RPW/29075/2026"
+    )

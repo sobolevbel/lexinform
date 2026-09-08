@@ -14,13 +14,18 @@ from lexinform.i18n import Labels, labels_for
 from lexinform.keywords import KEYWORD_PATTERNS
 from lexinform.models import (
     ActInfo,
+    AgendaItem,
     Bill,
+    BillSubmission,
+    Phase,
     PrintInfo,
     RunReport,
     Stage,
     StatusChange,
     VotingSummary,
+    committee_web_url,
     flatten_stages,
+    next_phase,
 )
 from lexinform.pricing import cost_usd
 
@@ -58,7 +63,13 @@ ICON = {
     "published": "📖",
     "journal": "📰",
     "in_force": "⚖️",
+    "next": "⏭",
+    "action": "👉",
+    "calendar": "🗓",
+    "agenda": "📝",
 }
+_COMMITTEE_PHASES = {"first_reading_committee", "committee_work", "senate_amendments"}
+_SITTING_PHASES = {"first_reading_sitting", "second_reading", "third_reading", "senate_amendments"}
 CLUBS_PER_SIDE = 4
 
 
@@ -151,6 +162,9 @@ class MessageFormatter:
         consultation = self._consultation_line(bill)
         if consultation:
             details.append(consultation)
+        steps = self._steps_block(bill, today or dt.date.today())
+        if steps:
+            details.append(steps)
 
         # Short one-line facts are grouped compactly; the paragraphs above are
         # separated by blank lines so they read as distinct blocks.
@@ -214,7 +228,9 @@ class MessageFormatter:
 
     # ------------------------------------------------------------------ status update
 
-    def status_update(self, bill: Bill, change: StatusChange) -> RenderedMessage:
+    def status_update(
+        self, bill: Bill, change: StatusChange, *, today: dt.date | None = None
+    ) -> RenderedMessage:
         lb = self._labels
         s = bill.summary
         analysis = bill.analysis.analysis if bill.analysis else None
@@ -251,6 +267,7 @@ class MessageFormatter:
             assigned = f"{ICON['print']} {esc(lb.print_assigned)}: <b>{esc(bill.number)}</b>"
             closure = f"{assigned}\n{closure}" if closure else assigned
         consultation = self._consultation_line(bill)
+        steps = "" if change.withdrawn else self._steps_block(bill, today or dt.date.today())
 
         summary_block = ""
         changes_block = ""
@@ -282,7 +299,7 @@ class MessageFormatter:
             + [self._number_tag(bill)]
         )
 
-        fixed = [header, badge, closure, consultation, links_block, tags]
+        fixed = [header, badge, closure, consultation, steps, links_block, tags]
         text = self._assemble(fixed, flexible=[stages_block, changes_block, summary_block])
         return RenderedMessage(text=text)
 
@@ -365,18 +382,98 @@ class MessageFormatter:
             if days_left <= 0
             else f"{esc(lb.consultation_days_left)}: {days_left}"
         )
+        form = sub.consultation_url
+        hint = link(form, lb.consultation_hint) if form else esc(lb.consultation_hint)
         facts = (
             f"{ICON['effective']} <b>{esc(lb.consultation)}:</b> {esc(lb.consultation_until)} "
             f"{self.fmt_date(sub.consultation_end)} · {countdown}\n"
-            f"{ICON['note']} {esc(lb.consultation_hint)}"
+            f"{ICON['action']} {hint}"
         )
+        next_step = self._next_step_line(bill, today)
         summary_block = ""
         if bill.analysis is not None:
             a = bill.analysis.analysis
             summary_block = f"{ICON['about']} <b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
-        links_block = f"{ICON['links']} " + link(bill.summary.web_url, lb.link_process)
+        links = [link(bill.summary.web_url, lb.link_process)]
+        if form:
+            links.insert(0, link(form, lb.consultation_link))
+        links_block = f"{ICON['links']} " + " | ".join(links)
         tags = f"#{lb.tag_consultations} {self._number_tag(bill)}"
-        fixed = [header, facts, links_block, tags]
+        fixed = [header, facts, next_step, links_block, tags]
+        return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block]))
+
+    def consultation_results(self, bill: Bill, *, today: dt.date | None = None) -> RenderedMessage:
+        """Reply under the card once the Sejm publishes the opinions received."""
+        lb = self._labels
+        sub = bill.submission
+        if sub is None or not sub.public_consultation:
+            raise ValueError(f"bill {bill.number} had no public consultation")
+        header = (
+            f"{ICON['consultation']} <b>{esc(lb.consultation_results_header)} — "
+            f"{self._number_label(bill)}</b>\n\n<b>{esc(bill.summary.title)}</b>"
+        )
+        page = sub.consultation_url
+        facts = f"{ICON['note']} " + (
+            link(page, lb.consultation_results_hint) if page else esc(lb.consultation_results_hint)
+        )
+        if sub.consultation_end:
+            facts = (
+                f"{ICON['effective']} <b>{esc(lb.consultation)}:</b> "
+                f"{self._consultation_period(sub)}\n{facts}"
+            )
+        steps = self._steps_block(bill, today or dt.date.today())
+        links = [link(bill.summary.web_url, lb.link_process)]
+        if page:
+            links.insert(0, link(page, lb.consultation_link))
+        links_block = f"{ICON['links']} " + " | ".join(links)
+        tags = f"#{lb.tag_consultations} {self._number_tag(bill)}"
+        return RenderedMessage(
+            text=self._assemble([header, facts, steps, links_block, tags], flexible=[])
+        )
+
+    # ------------------------------------------------------------------ sittings
+
+    def agenda(
+        self, bill: Bill, item: AgendaItem, *, today: dt.date | None = None
+    ) -> RenderedMessage:
+        """Reply under the card: the bill is on the agenda of a committee or Sejm sitting."""
+        lb = self._labels
+        s = bill.summary
+        is_committee = item.kind == "committee"
+        head_label = lb.agenda_committee_header if is_committee else lb.agenda_sejm_header
+        header = (
+            f"{ICON['calendar']} <b>{esc(head_label)} — {self._number_label(bill)}</b>\n\n"
+            f"<b>{esc(s.title)}</b>"
+        )
+        lines: list[str] = []
+        if is_committee:
+            name = self._committee_display(bill, item.committee_code or "", item.committee_name)
+            lines.append(f"{ICON['committee']} <b>{esc(name)}</b>")
+            when = f"{ICON['effective']} {self._agenda_when(item)}"
+            if item.room:
+                when += f" · {esc(item.room)}"
+            lines.append(when)
+        else:
+            lines.append(f"{ICON['stage']} {self._agenda_when(item)}")
+        if item.text:
+            lines.append(f"{ICON['agenda']} <b>{esc(lb.agenda_item)}:</b> {esc(item.text)}")
+        facts = "\n".join(lines)
+        action = self._action_line(bill, today or dt.date.today(), agenda_item=item)
+        links = [link(s.web_url, lb.link_process)]
+        if item.video_url:
+            links.append(link(item.video_url, lb.link_video))
+        if is_committee and item.committee_code:
+            links.append(link(committee_web_url(s.term, item.committee_code), lb.link_committee))
+        links_block = f"{ICON['links']} " + " | ".join(links)
+        tag = lb.tag_committee_sitting if is_committee else lb.tag_sejm_sitting
+        tags = f"#{tag} {self._number_tag(bill)}"
+        summary_block = ""
+        if bill.analysis is not None:
+            a = bill.analysis.analysis
+            summary_block = (
+                f"{ICON['about']} <b>{esc(lb.current_summary)}</b>\n{esc(a.summary.strip())}"
+            )
+        fixed = [header, facts, action, links_block, tags]
         return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block]))
 
     def _act_links(self, bill: Bill, act: ActInfo) -> list[str]:
@@ -412,7 +509,9 @@ class MessageFormatter:
                 f"updates: {report.updates} · re-analyzed: {report.reanalyzed} · "
                 f"linked: {report.linked}",
                 f"acts published: {report.acts_published} · in force: {report.in_force_posted}"
-                f" · consultation reminders: {report.consultation_reminders}",
+                f" · consultation reminders: {report.consultation_reminders}"
+                f" · results: {report.consultation_results_posted}"
+                f" · agenda: {report.agenda_posted}",
                 _tokens_line(report),
             ]
             + (
@@ -487,15 +586,136 @@ class MessageFormatter:
         if sub is None or not sub.public_consultation or sub.consultation_end is None:
             return ""
         lb = self._labels
-        period = f"{esc(lb.consultation_until)} {self.fmt_date(sub.consultation_end)}"
+        form = sub.consultation_url
+        where = link(form, lb.consultation_link) if form else esc(lb.consultation_hint)
+        return (
+            f"{ICON['consultation']} <b>{esc(lb.consultation)}:</b> "
+            f"{self._consultation_period(sub)} · {where}"
+        )
+
+    def _consultation_period(self, sub: BillSubmission) -> str:
+        lb = self._labels
+        assert sub.consultation_end is not None
         if sub.consultation_start:
-            period = (
+            return (
                 f"{self.fmt_date(sub.consultation_start)} — {self.fmt_date(sub.consultation_end)}"
             )
-        return (
-            f"{ICON['consultation']} <b>{esc(lb.consultation)}:</b> {period} — "
-            f"{esc(lb.consultation_hint)}"
-        )
+        return f"{esc(lb.consultation_until)} {self.fmt_date(sub.consultation_end)}"
+
+    # ------------------------------------------------------------------ next step / action
+
+    def _steps_block(self, bill: Bill, today: dt.date) -> str:
+        """ "What comes next" (with a date when a sitting is scheduled) and "what you can do"."""
+        lines = [self._next_step_line(bill, today), self._action_line(bill, today)]
+        return "\n".join(line for line in lines if line)
+
+    def _next_step_line(self, bill: Bill, today: dt.date) -> str:
+        lb = self._labels
+        phase = next_phase(bill, today=today)
+        if phase is None:
+            return ""
+        template = lb.next_step_labels.get(phase.key)
+        if template is None:
+            return ""
+        text = template.format(
+            date=self.fmt_date(phase.date) if phase.date else "",
+            committee=self._committee_names(bill, phase.committees),
+        ).strip()
+        upcoming = self._upcoming(bill, today, phase)
+        suffix = f" · {self._agenda_when(upcoming)}" if upcoming else ""
+        return f"{ICON['next']} <b>{esc(lb.next_step)}:</b> {esc(text)}{suffix}"
+
+    def _action_line(
+        self, bill: Bill, today: dt.date, *, agenda_item: AgendaItem | None = None
+    ) -> str:
+        lb = self._labels
+        actions: list[str] = []
+        sub = bill.submission
+        if _consultation_open(bill, today) and sub is not None and sub.consultation_end:
+            page = sub.consultation_url
+            where = (
+                link(page, lb.action_consultation_page)
+                if page
+                else esc(lb.action_consultation_page)
+            )
+            actions.append(
+                f"{esc(lb.action_send_opinion)} {where} {esc(lb.consultation_until)} "
+                f"{self.fmt_date(sub.consultation_end)}"
+            )
+        phase = next_phase(bill, today=today)
+        if phase is not None and phase.key in _COMMITTEE_PHASES:
+            codes = phase.committees or ((agenda_item.committee_code,) if agenda_item else ())
+            targets = [
+                link(committee_web_url(bill.term, code), self._committee_display(bill, code, None))
+                for code in codes
+                if code
+            ]
+            if targets:
+                text = f"{esc(lb.action_committee)} {', '.join(targets)}"
+                sitting = agenda_item if agenda_item and agenda_item.kind == "committee" else None
+                sitting = sitting or self._upcoming(bill, today, phase, kind="committee")
+                if sitting is not None:
+                    text += f" {esc(lb.action_before_sitting)} {self.fmt_date(sitting.date)}"
+                actions.append(text)
+            if _hearing_open(bill, today):
+                actions.append(esc(lb.action_hearing))
+        if not actions:
+            return ""
+        return f"{ICON['action']} <b>{esc(lb.action_now)}:</b> " + "; ".join(actions)
+
+    def _upcoming(
+        self, bill: Bill, today: dt.date, phase: Phase, *, kind: str | None = None
+    ) -> AgendaItem | None:
+        """The soonest future sitting naming the bill, preferring the venue the phase implies."""
+        future = sorted((i for i in bill.agenda if i.date >= today), key=lambda i: i.date)
+        if kind is not None:
+            return next((i for i in future if i.kind == kind), None)
+        preferred = []
+        if phase.key in _COMMITTEE_PHASES:
+            preferred.append("committee")
+        if phase.key in _SITTING_PHASES:
+            preferred.append("sejm")
+        for wanted in preferred:
+            item = next((i for i in future if i.kind == wanted), None)
+            if item is not None:
+                return item
+        return future[0] if future else None
+
+    def _agenda_when(self, item: AgendaItem) -> str:
+        lb = self._labels
+        if item.kind == "committee":
+            when = self.fmt_date(item.date)
+            if item.start_time:
+                when += f", {item.start_time.strftime('%H:%M')}"
+            return esc(when)
+        span = self.fmt_date(item.date)
+        if item.end_date and item.end_date != item.date:
+            span = f"{item.date.day:02d}–{self.fmt_date(item.end_date)}"
+        number = f"{lb.sejm_sitting} {item.sitting_number}, " if item.sitting_number else ""
+        return esc(f"{number}{span}")
+
+    def _committee_names(self, bill: Bill, codes: tuple[str, ...]) -> str:
+        return ", ".join(self._committee_display(bill, code, None) for code in codes)
+
+    def _committee_display(self, bill: Bill, code: str, name: str | None) -> str:
+        """ "Komisja … (ASW)" when a stage or an agenda item knows the name, else the code."""
+        if name is None:
+            name = next(
+                (
+                    st.committee_name
+                    for st in flatten_stages(bill.stages)
+                    if st.committee_code == code and st.committee_name
+                ),
+                None,
+            ) or next(
+                (
+                    i.committee_name
+                    for i in bill.agenda
+                    if i.committee_code == code and i.committee_name
+                ),
+                None,
+            )
+        return f"{name} ({code})" if name else code
 
     def _stage_line(self, stage: Stage) -> str:
         """One bullet of the "new stages" list; may span two lines (voting + club breakdown)."""
@@ -509,8 +729,7 @@ class MessageFormatter:
         if stage.stage_type == "Referral" and stage.committee_code:
             if stage.committee_name:
                 name = f"{stage.committee_name} ({stage.committee_code})"
-                head = f"{ICON['committee']} {esc(lb.referred_to_committee)}: {esc(name)}"
-                return f"{when}{head} — {esc(lb.committee_hint)}"
+                return f"{when}{ICON['committee']} {esc(lb.referred_to_committee)}: {esc(name)}"
             return f"{when}{esc(stage.stage_name)} [{esc(stage.committee_code)}]"
         label = lb.stage_type_labels.get(stage.stage_type)
         if label is not None:
@@ -603,6 +822,14 @@ def _consultation_open(bill: Bill, today: dt.date | None) -> bool:
     if sub is None or not sub.public_consultation or sub.consultation_end is None:
         return False
     return sub.consultation_end >= (today or dt.date.today())
+
+
+def _hearing_open(bill: Bill, today: dt.date) -> bool:
+    """A public hearing is announced and has not taken place yet."""
+    return any(
+        st.stage_type == "PublicHearing" and (st.date is None or st.date >= today)
+        for st in flatten_stages(bill.stages)
+    )
 
 
 _UKRAINE = next(p.regex for p in KEYWORD_PATTERNS if p.name == "obywatele_ukrainy")

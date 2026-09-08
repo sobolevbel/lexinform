@@ -33,11 +33,13 @@ from lexinform.models import (
     Attachment,
     BillSubmission,
     Committee,
+    CommitteeSitting,
     DocumentType,
     Mp,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
+    SejmSitting,
     Stage,
     Vote,
     VotingSummary,
@@ -185,6 +187,21 @@ class SejmApiClient:
     def get_committee(self, term: int, code: str) -> Committee:
         data = self._get_json(f"/sejm/term{term}/committees/{quote(code)}")
         return parse_committee(data, term=term)
+
+    def list_committee_sittings(self, term: int, code: str) -> tuple[CommitteeSitting, ...]:
+        data = self._get_json(f"/sejm/term{term}/committees/{quote(code)}/sittings")
+        if not isinstance(data, list):
+            raise SejmApiError(f"Unexpected /committees/{code}/sittings payload")
+        return tuple(parse_committee_sitting(item, code=code) for item in data)
+
+    def list_sittings(self, term: int) -> tuple[SejmSitting, ...]:
+        data = self._get_json(f"/sejm/term{term}/proceedings")
+        if not isinstance(data, list):
+            raise SejmApiError("Unexpected /proceedings payload")
+        return tuple(parse_sitting(item) for item in data)
+
+    def get_sitting(self, term: int, number: int) -> SejmSitting:
+        return parse_sitting(self._get_json(f"/sejm/term{term}/proceedings/{number}"))
 
     def download(self, url: str, *, max_bytes: int | None = None) -> bytes:
         """Stream the attachment; stop as soon as `max_bytes` is exceeded."""
@@ -430,6 +447,37 @@ def parse_committee(item: dict[str, Any], *, term: int) -> Committee:
         code=str(item["code"]),
         name=str(item.get("name") or item["code"]).strip(),
         name_genitive=item.get("nameGenitive"),
+    )
+
+
+def parse_committee_sitting(item: dict[str, Any], *, code: str) -> CommitteeSitting:
+    start = _datetime(item.get("startDateTime"))
+    video = item.get("video") or ()
+    player = next((v.get("playerLink") for v in video if v.get("playerLink")), None)
+    return CommitteeSitting(
+        code=str(item.get("code") or code),
+        num=_int(item.get("num")) or 0,
+        date=_date(item.get("date")) or (start.date() if start else date.min),
+        start_time=start.time() if start else None,
+        room=item.get("room") or None,
+        status=str(item.get("status") or "PLANNED"),
+        agenda=str(item.get("agenda") or ""),
+        video_url=str(player) if player else None,
+        joint_with=tuple(
+            str(j["code"])
+            for j in item.get("jointWith") or ()
+            if isinstance(j, dict) and j.get("code")
+        ),
+    )
+
+
+def parse_sitting(item: dict[str, Any]) -> SejmSitting:
+    return SejmSitting(
+        number=_int(item.get("number")) or 0,
+        dates=tuple(_date(d) for d in item.get("dates") or () if d),
+        title=str(item.get("title") or "").strip(),
+        current=bool(item.get("current", False)),
+        agenda=str(item.get("agenda") or ""),
     )
 
 

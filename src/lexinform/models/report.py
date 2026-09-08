@@ -40,6 +40,8 @@ class RunReport(BaseModel):
     acts_published: int = 0
     in_force_posted: int = 0
     consultation_reminders: int = 0
+    consultation_results_posted: int = 0
+    agenda_posted: int = 0  # "the bill is on the agenda of a sitting" notices
     analyzed: int = 0
     triaged_out: int = 0  # rejected by the cheap first pass, no full analysis
     analysis_failures: int = 0

@@ -15,6 +15,7 @@ from pathlib import Path
 from lexinform.models import (
     PRE_PRINT_PREFIX,
     ActInfo,
+    AgendaItem,
     AnalysisRecord,
     Bill,
     BillAuthors,
@@ -126,6 +127,16 @@ MIGRATIONS: tuple[str, ...] = (
     """
     CREATE UNIQUE INDEX ux_pub_consultation ON publications(term, number, kind, channel_id)
         WHERE kind = 'consultation_deadline';
+    """,
+    # v7: upcoming sittings per bill; posts that recur per sitting carry a `ref`; one
+    # consultation-results notice per bill and channel
+    """
+    ALTER TABLE bills ADD COLUMN agenda_json TEXT;
+    ALTER TABLE publications ADD COLUMN ref TEXT;
+    CREATE UNIQUE INDEX ux_pub_consultation_results
+        ON publications(term, number, kind, channel_id) WHERE kind = 'consultation_results';
+    CREATE UNIQUE INDEX ux_pub_agenda ON publications(term, number, kind, channel_id, ref)
+        WHERE kind = 'agenda';
     """,
 )
 
@@ -422,6 +433,28 @@ class SqliteBillRepository:
             (authors.model_dump_json(), term, number),
         )
 
+    def save_agenda(self, term: int, number: str, items: tuple[AgendaItem, ...]) -> None:
+        payload = json.dumps([i.model_dump(mode="json") for i in items], ensure_ascii=False)
+        self._conn.execute(
+            "UPDATE bills SET agenda_json = ? WHERE term = ? AND number = ?",
+            (payload if items else None, term, number),
+        )
+
+    def list_awaiting_consultation_results(self, term: int, channel_id: str) -> list[Bill]:
+        rows = self._conn.execute(
+            """
+            SELECT b.* FROM bills b
+            JOIN publications p ON p.term = b.term AND p.number = b.number
+            WHERE b.term = ? AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
+              AND b.status != ? AND b.submission_json IS NOT NULL
+              AND json_extract(b.submission_json, '$.public_consultation')
+              AND NOT json_extract(b.submission_json, '$.consultation_results')
+            ORDER BY b.number
+            """,
+            (term, channel_id, BillStatus.LINKED.value),
+        ).fetchall()
+        return [self._row_to_bill(r) for r in rows]
+
     def save_act(self, term: int, number: str, act: ActInfo) -> None:
         self._conn.execute(
             "UPDATE bills SET act_json = ?, entry_into_force = ? WHERE term = ? AND number = ?",
@@ -503,9 +536,9 @@ class SqliteBillRepository:
     def create_publication(self, publication: Publication) -> int:
         cur = self._conn.execute(
             """
-            INSERT INTO publications (term, number, kind, status, channel_id, message_id,
+            INSERT INTO publications (term, number, kind, status, channel_id, ref, message_id,
                 document_message_ids, status_change_id, created_at, sent_at, error)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT DO UPDATE SET status = excluded.status, created_at = excluded.created_at,
                                       error = NULL
             """,
@@ -515,6 +548,7 @@ class SqliteBillRepository:
                 publication.kind.value,
                 publication.status.value,
                 publication.channel_id,
+                publication.ref,
                 publication.message_id,
                 json.dumps(publication.document_message_ids),
                 publication.status_change_id,
@@ -533,14 +567,16 @@ class SqliteBillRepository:
                 (publication.status_change_id, publication.channel_id),
             ).fetchone()
         else:
+            # Posts that recur per sitting (agenda) are told apart by `ref`.
             row = self._conn.execute(
                 "SELECT id FROM publications WHERE term = ? AND number = ? AND channel_id = ?"
-                " AND kind = ?",
+                " AND kind = ? AND ref IS ?",
                 (
                     publication.term,
                     publication.number,
                     publication.channel_id,
                     publication.kind.value,
+                    publication.ref,
                 ),
             ).fetchone()
         assert row is not None
@@ -577,15 +613,17 @@ class SqliteBillRepository:
         )
 
     def get_publication(
-        self, term: int, number: str, kind: str, channel_id: str
+        self, term: int, number: str, kind: str, channel_id: str, *, ref: str | None = None
     ) -> Publication | None:
-        row = self._conn.execute(
-            """
-            SELECT * FROM publications WHERE term = ? AND number = ? AND kind = ? AND channel_id = ?
-            ORDER BY id DESC LIMIT 1
-            """,
-            (term, number, kind, channel_id),
-        ).fetchone()
+        sql = (
+            "SELECT * FROM publications"
+            " WHERE term = ? AND number = ? AND kind = ? AND channel_id = ?"
+        )
+        params: list[object] = [term, number, kind, channel_id]
+        if ref is not None:
+            sql += " AND ref = ?"
+            params.append(ref)
+        row = self._conn.execute(sql + " ORDER BY id DESC LIMIT 1", params).fetchone()
         return self._row_to_publication(row) if row else None
 
     def delete_publication(self, term: int, number: str, kind: str, channel_id: str) -> int:
@@ -723,6 +761,9 @@ class SqliteBillRepository:
                 if row["authors_json"]
                 else None
             ),
+            agenda=tuple(
+                AgendaItem.model_validate(i) for i in json.loads(row["agenda_json"] or "[]")
+            ),
             first_seen_at=datetime.fromisoformat(row["first_seen_at"]),
             last_checked_at=datetime.fromisoformat(row["last_checked_at"]),
         )
@@ -753,6 +794,7 @@ class SqliteBillRepository:
             attempts=int(row["attempts"]),
             status=PublicationStatus(row["status"]),
             channel_id=row["channel_id"],
+            ref=row["ref"],
             message_id=row["message_id"],
             document_message_ids=json.loads(row["document_message_ids"] or "[]"),
             status_change_id=row["status_change_id"],

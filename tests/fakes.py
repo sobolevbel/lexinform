@@ -7,9 +7,10 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
-from lexinform.errors import AttachmentTooLargeError
+from lexinform.errors import AttachmentTooLargeError, SejmApiUnavailableError
 from lexinform.models import (
     ActInfo,
+    AgendaItem,
     Analysis,
     AnalysisRecord,
     Bill,
@@ -17,11 +18,13 @@ from lexinform.models import (
     BillSubmission,
     Category,
     Committee,
+    CommitteeSitting,
     Mp,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
     RunReport,
+    SejmSitting,
     StatusChange,
     Triage,
     TriageContext,
@@ -52,7 +55,14 @@ class FakeSejmGateway:
     mps: tuple[Mp, ...] = ()
     submissions: list[BillSubmission] = field(default_factory=list)
     acts: dict[str, ActInfo] = field(default_factory=dict)
+    committee_sittings: dict[str, tuple[CommitteeSitting, ...]] = field(default_factory=dict)
+    sittings: list[SejmSitting] = field(default_factory=list)  # with agendas; list_sittings strips
+    outages: set[str] = field(default_factory=set)  # method names that raise "Sejm API down"
     calls: list[str] = field(default_factory=list)
+
+    def _maybe_down(self, method: str) -> None:
+        if method in self.outages:
+            raise SejmApiUnavailableError(f"{method}: connection refused")
 
     def get_act(self, eli: str) -> ActInfo | None:
         self.calls.append(f"get_act:{eli}")
@@ -95,6 +105,22 @@ class FakeSejmGateway:
     def get_committee(self, term: int, code: str) -> Committee:
         self.calls.append(f"get_committee:{code}")
         return self.committees[code]
+
+    def list_committee_sittings(self, term: int, code: str) -> tuple[CommitteeSitting, ...]:
+        self.calls.append(f"list_committee_sittings:{code}")
+        self._maybe_down("list_committee_sittings")
+        if code not in self.committee_sittings:
+            raise RuntimeError(f"no sittings for {code}")
+        return self.committee_sittings[code]
+
+    def list_sittings(self, term: int) -> tuple[SejmSitting, ...]:
+        self.calls.append("list_sittings")
+        self._maybe_down("list_sittings")
+        return tuple(s.model_copy(update={"agenda": ""}) for s in self.sittings)
+
+    def get_sitting(self, term: int, number: int) -> SejmSitting:
+        self.calls.append(f"get_sitting:{number}")
+        return next(s for s in self.sittings if s.number == number)
 
     def list_mps(self, term: int) -> tuple[Mp, ...]:
         self.calls.append("list_mps")
@@ -192,6 +218,8 @@ class FakePublisher:
         self.acts: list[tuple[Bill, int | None]] = []
         self.in_force: list[tuple[Bill, int | None]] = []
         self.consultations: list[tuple[Bill, int | None, date]] = []
+        self.consultation_results: list[tuple[Bill, int | None]] = []
+        self.agendas: list[tuple[Bill, AgendaItem, int | None]] = []
         self.fail_on = fail_on or set()
         self._next_id = 100
 
@@ -231,6 +259,20 @@ class FakePublisher:
         if bill.number in self.fail_on:
             raise RuntimeError("telegram down")
         self.consultations.append((bill, reply_to, today))
+        return FakePublishResult(message_id=self._id())
+
+    def publish_consultation_results(self, bill: Bill, reply_to: int | None) -> FakePublishResult:
+        if bill.number in self.fail_on:
+            raise RuntimeError("telegram down")
+        self.consultation_results.append((bill, reply_to))
+        return FakePublishResult(message_id=self._id())
+
+    def publish_agenda(
+        self, bill: Bill, item: AgendaItem, reply_to: int | None
+    ) -> FakePublishResult:
+        if bill.number in self.fail_on:
+            raise RuntimeError("telegram down")
+        self.agendas.append((bill, item, reply_to))
         return FakePublishResult(message_id=self._id())
 
 

@@ -19,6 +19,8 @@ class TrackingResult:
     acts_published: int = 0
     in_force_posted: int = 0
     consultation_reminders: int = 0
+    consultation_results: int = 0
+    agenda_posted: int = 0
     reanalyzed: int = 0
     published: int = 0
     failed: int = 0

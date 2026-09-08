@@ -19,19 +19,28 @@ Everything else in `README.md`; roadmap and verified API facts in `docs/roadmap.
 
 ## Architecture in one breath
 
-`models/` (pydantic + pure helpers; `enums`, `sejm`, `analysis`, `bill`, `report`, all re-exported
-from `lexinform.models`) → `ports.py` (Protocols) → `adapters/` (Sejm API, ELI, PDF, Anthropic,
-Telegram, SQLite) → `services/` (discovery, text_prefilter, analysis, publishing, `tracking/`
-(service, pre_print, acts, consultations, posting, stages), pipeline) → `container.py` (manual
-wiring) → `cli.py` (typer). Services import only ports/models (plus `TextBudget`, `PdfTextLoader`,
-`keywords`, `sections`, `concurrency`). Tests use fakes in `tests/fakes.py` and the
-`World` harness in `tests/unit/test_pipeline.py`; HTTP adapters use `httpx2.MockTransport`.
+`models/` (pydantic + pure helpers; `enums`, `sejm`, `analysis`, `bill` (incl. `next_phase`),
+`report`, all re-exported from `lexinform.models`) → `ports.py` (Protocols) → `adapters/` (Sejm
+API, ELI, PDF, Anthropic, Telegram, SQLite) → `services/` (discovery, text_prefilter, analysis,
+publishing, `tracking/` (service, pre_print, acts, consultations, agenda, posting, stages),
+pipeline) → `container.py` (manual wiring) → `cli.py` (typer). Services import only ports/models
+(plus `TextBudget`, `PdfTextLoader`, `keywords`, `sections`, `agenda`, `concurrency`). Tests use
+fakes in `tests/fakes.py` and the `World` harness in `tests/unit/test_pipeline.py`; HTTP adapters
+use `httpx2.MockTransport`.
 
 Invariants worth keeping:
 
 - **Pending-before-send.** Every Telegram post gets a `publications` row (`pending`) first, unique
-  per kind/bill/channel; failed posts are retried up to `max_publish_attempts`; `pending` left by a
-  crash becomes `unknown` and is never auto-resent.
+  per kind/bill/channel (agenda posts: per kind/bill/channel/`ref`, one per sitting); failed posts
+  are retried up to `max_publish_attempts`; `pending` left by a crash becomes `unknown` and is
+  never auto-resent.
+- **`/bills` rows are refreshed by tracking only.** Discovery saves a submission for new bills;
+  the reconciler (`tracking/pre_print.py`) re-reads `/bills` for pending RPW entries and for bills
+  awaiting consultation results and compares new with stored (print assigned, withdrawn,
+  `consultationResults` flipped). If discovery overwrote the row first, the flip would be lost.
+- **"What comes next" is derived, not stored.** `models.next_phase(bill, today)` reads the
+  top-level stages, submission and act; the formatter dates it from `bill.agenda` (upcoming
+  sittings, refreshed every run for every followed bill, not only the changed ones).
 - **Stage fingerprint** (`_stage_key`) drives updates. Fields added to `Stage` for rendering
   (`voting`, `position`, `committee_name`, `proposal`) must stay *out* of the key, or every tracked
   bill posts a spurious update after deploy.
@@ -51,7 +60,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v6 as of Sept 2026). `migrate()` reads `user_version` and
+`SCHEMA_VERSION = len(MIGRATIONS)` (v7 as of Sept 2026). `migrate()` reads `user_version` and
 runs every later script inside its own transaction, stamping the new version at the end, so a
 failed script leaves the database at the previous version.
 
@@ -82,7 +91,17 @@ There is no downgrade. To roll back, revert the code and restore the previous du
 
 - `/processes` only lists bills that already have a print number. Bills at the consultation
   stage live in `/bills` (`RPW/…`), with `publicConsultationStart/EndDate`, `applicantType`,
-  `status`, `print`. Their PDF on orka.sejm.gov.pl is behind Incapsula: not downloadable.
+  `status`, `print`, `consultationResults`. Their PDF on orka.sejm.gov.pl is behind Incapsula: not
+  downloadable. The API carries no link to the opinion form; the Sejm page is
+  `www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=KONSULTOWANY_PROJEKT&NrProjektu=RPW/29075/2026`
+  (browser only: www.sejm.gov.pl answers curl and fetchers with an F5 captcha). Only deputies',
+  president's, Senate, committee and citizens' bills have Sejm consultations; government bills
+  (541 of 1279 in term 10) were consulted on RCL before submission and never have them.
+- Sittings: `/committees/{code}/sittings` items have `num`, `date`, `startDateTime`, `room`,
+  `status` (PLANNED|FINISHED), `agenda` (HTML `<div class="agenda-indent-N">` lines, prints as
+  "druk nr 3035" / "druki nr 3010 i 3055"), `video[].playerLink`, `jointWith`. `/proceedings`
+  lists sittings (`number` 0 for planned ones without agenda); `/proceedings/{n}` adds `agenda`
+  (HTML `<li>` items with `PrzebiegProc.xsp?nr=` links that are not reliable: match the text).
 - `modifiedSince`/`changeDate` are naive **Europe/Warsaw** times; `Z` is rejected. `sort_by`,
   `passed` filters are ignored; paginate by `offset` until an empty page. `documentType` needs
   the Polish display string ("projekt ustawy"), the enum `BILL` does not filter.
@@ -122,5 +141,7 @@ hits (weak patterns such as Straż Graniczna never decide alone), triage of text
 Haiku ignored the output language, Sonnet costs ~1 cent per bill), club breakdown on, Dz.U. notice as a separate reply, in-force reminder repeats
 the summary. The owner does **not** want a "probability of passing" estimate. A new `PROMPT_VERSION` does
 **not** re-analyse or re-post bills already in the channel (decided 2026-09-08): old cards keep the
-analysis they were published with, only new texts trigger a re-analysis. Open items are
-listed under "Still open" in `docs/roadmap.md`.
+analysis they were published with, only new texts trigger a re-analysis. Every card and update
+carries "what comes next" (dated by scheduled sittings) and "what you can do now" (decided
+2026-09-09); a rescheduled sitting is announced again as a new post. Open items are listed under
+"Still open" in `docs/roadmap.md`; the biggest is RCL (government consultations before the Sejm).
