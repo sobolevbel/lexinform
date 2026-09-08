@@ -40,6 +40,10 @@ Invariants worth keeping:
   and bad request parameters are fatal, "prompt too long" is per-bill.
 - Pre-print bills (`RPW/…`) have no process: skip `get_process`/`get_print` for them; when the
   print appears, the print inherits the card (`new_bill` row aliased with the same `message_id`).
+- **Parallelism only around the network.** `concurrency.fan_out` runs one network step (download,
+  process lookup, model call) for many items; that step never touches the repository. Outcomes
+  are consumed in the calling thread, in input order, and that is where every DB write happens.
+  Services default to `workers=1` (tests); `workers=4` must give identical results.
 
 ## Database versioning and migrations
 
@@ -90,6 +94,11 @@ There is no downgrade. To roll back, revert the code and restore the previous du
 - `Voting` stage embeds totals; per-club breakdown needs `/votings/{sitting}/{n}` (per-MP votes).
   Signatories are not in the API: parse the print's cover letter and match against `/MP`.
 - Polish text is ~2 characters per token for Claude; the 1M context takes any print whole.
+- `HEAD` on a print attachment returns no `Content-Length` and takes 5–15 s on a file the
+  server has not rendered yet (the following `GET` is fast). Never probe sizes: stream the `GET`
+  and stop at the limit (`download(url, max_bytes=…)`).
+- pypdf needs `pypdf[fonts]` (fontTools) for CFF fonts, otherwise it logs a warning per font per
+  page; its logger is capped at ERROR. Extraction is CPU-bound (~1 s per 100 pages).
 
 ## Product decisions already taken
 

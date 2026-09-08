@@ -8,7 +8,9 @@ Verified behaviour of the API (September 2026):
 - All timestamps (`changeDate`, `modifiedSince`) are naive local time of the Sejm servers
   (Europe/Warsaw); `Z` or an offset suffix is rejected. `SEJM_TZ` converts both ways.
 - `/prints` ignores `limit`/`modifiedSince`, so we never list it; we only fetch single prints.
-- Attachments are served from `/prints/{number}/{attachment name}`.
+- Attachments are served from `/prints/{number}/{attachment name}`. `HEAD` on them returns no
+  `Content-Length` and takes 5-15 s on a file the server has not rendered yet, so sizes are
+  enforced while streaming the `GET` instead.
 """
 
 from __future__ import annotations
@@ -23,7 +25,7 @@ from zoneinfo import ZoneInfo
 
 import httpx2 as httpx
 
-from lexinform.errors import SejmApiUnavailableError
+from lexinform.errors import AttachmentTooLargeError, SejmApiUnavailableError
 from lexinform.models import (
     BILL_DOCUMENT_TYPE,
     ActInfo,
@@ -184,13 +186,20 @@ class SejmApiClient:
         data = self._get_json(f"/sejm/term{term}/committees/{quote(code)}")
         return parse_committee(data, term=term)
 
-    def attachment_size(self, url: str) -> int | None:
-        response = self._request("HEAD", url)
-        length = response.headers.get("content-length")
-        return int(length) if length and length.isdigit() else None
-
-    def download(self, url: str) -> bytes:
-        return self._request("GET", url).content
+    def download(self, url: str, *, max_bytes: int | None = None) -> bytes:
+        """Stream the attachment; stop as soon as `max_bytes` is exceeded."""
+        response = self._request("GET", url, stream=True)
+        try:
+            chunks: list[bytes] = []
+            received = 0
+            for chunk in response.iter_bytes():
+                received += len(chunk)
+                if max_bytes is not None and received > max_bytes:
+                    raise AttachmentTooLargeError(url, max_bytes)
+                chunks.append(chunk)
+            return b"".join(chunks)
+        finally:
+            response.close()
 
     def close(self) -> None:
         self._client.close()
@@ -207,12 +216,16 @@ class SejmApiClient:
         *,
         params: dict[str, str | int] | None = None,
         allow_404: bool = False,
+        stream: bool = False,
     ) -> httpx.Response:
+        """One request with retries; `stream=True` returns before the body is read (caller
+        closes the response)."""
         attempt = 0
         while True:
             attempt += 1
             try:
-                response = self._client.request(method, url, params=params)
+                request = self._client.build_request(method, url, params=params)
+                response = self._client.send(request, stream=stream)
             except httpx.TransportError as exc:
                 if attempt > self._max_retries:
                     raise SejmApiUnavailableError(
@@ -221,6 +234,7 @@ class SejmApiClient:
                 self._wait(attempt, f"{method} {url}: {exc}")
                 continue
             if response.status_code >= 500 or response.status_code == 429:
+                response.close()
                 if attempt <= self._max_retries:
                     self._wait(attempt, f"{method} {url}: HTTP {response.status_code}")
                     continue
@@ -230,6 +244,7 @@ class SejmApiClient:
             if response.status_code == 404 and allow_404:
                 return response
             if response.status_code >= 400:
+                response.close()
                 raise SejmApiError(f"{method} {url}: HTTP {response.status_code}")
             return response
 

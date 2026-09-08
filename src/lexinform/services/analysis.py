@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 
 from lexinform.adapters.pdf_text import TextBudget
 from lexinform.authors import MpDirectory, parse_cover_letter
+from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     AnalysisRecord,
@@ -42,6 +43,20 @@ class AnalysisResult:
     fatal_error: str | None = None
 
 
+@dataclass(frozen=True)
+class _Prepared:
+    """Everything an analysis needs to be written down: produced without touching the database,
+    so several bills can be prepared at the same time."""
+
+    bill: Bill
+    detail: ProcessDetail | None
+    document: TextDocument | None
+    text: str
+    source: TextSource
+    record: AnalysisRecord
+    first: bool  # first analysis seeds the stages; a re-analysis leaves them to tracking
+
+
 class AnalysisService:
     def __init__(
         self,
@@ -52,6 +67,7 @@ class AnalysisService:
         *,
         text_budget: TextBudget,
         max_attempts: int = 3,
+        workers: int = 1,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -59,6 +75,7 @@ class AnalysisService:
         self._llm = llm
         self._budget = text_budget
         self._max_attempts = max_attempts
+        self._workers = workers
         self._mps: MpDirectory | None = None
 
     # ------------------------------------------------------------------ first analysis
@@ -73,9 +90,12 @@ class AnalysisService:
             limit=limit,
             max_attempts=self._max_attempts,
         )
-        for bill in candidates:
+        # Fetching the print and waiting for the model happen in parallel; results are written
+        # here, one bill at a time, in the order they were listed.
+        for outcome in fan_out(candidates, self._prepare_first, workers=self._workers):
+            bill = outcome.item
             try:
-                record = self.analyze_bill(bill)
+                record = self._persist(outcome.result())
             except ServiceUnavailableError as exc:
                 # Not the bill's fault: stop the phase without consuming its retry attempts.
                 result.fatal_error = exc.describe()
@@ -95,17 +115,17 @@ class AnalysisService:
 
     def analyze_bill(self, bill: Bill) -> AnalysisRecord:
         """First analysis from the original print. Persists the result; raises on failure."""
+        return self._persist(self._prepare_first(bill))
+
+    def _prepare_first(self, bill: Bill) -> _Prepared:
         if bill.is_pre_print:
             # No process, no print, and the PDF sits behind the Sejm website's bot protection:
             # the official title and description are all we have at this stage.
-            return self._run(bill, None, None, previous=None)
+            return self._prepare(bill, None, None, previous=None)
         detail = self._gateway.get_process(bill.term, bill.number)
-        self._repo.save_stages(
-            bill.term, bill.number, detail.stages, stage_fingerprint(detail.stages)
-        )
         print_info = self._safe_print(bill)
         document = self._original_document(print_info)
-        return self._run(bill, detail, document, previous=None)
+        return self._prepare(bill, detail, document, previous=None)
 
     # ------------------------------------------------------------------ re-analysis
 
@@ -135,22 +155,21 @@ class AnalysisService:
     ) -> AnalysisRecord:
         """Analyse a newer text of an already analysed bill; the model also reports what changed."""
         assert bill.analysis is not None
-        return self._run(bill, detail, document, previous=bill.analysis)
+        return self._persist(self._prepare(bill, detail, document, previous=bill.analysis))
 
     # ------------------------------------------------------------------ internals
 
-    def _run(
+    def _prepare(
         self,
         bill: Bill,
         detail: ProcessDetail | None,
         document: TextDocument | None,
         *,
         previous: AnalysisRecord | None,
-    ) -> AnalysisRecord:
+    ) -> _Prepared:
+        """Load the text and ask the model. Network only: safe to run for several bills at once."""
         text, truncated, source = self._load_text(document)
         meta = detail or bill.summary
-        if source == "pdf" and document is not None and document.kind == "print":
-            self._save_authors(bill, meta.applicant_type, text)
         ctx = BillContext(
             number=bill.number,
             title=meta.title or bill.summary.title,
@@ -168,8 +187,19 @@ class AnalysisService:
         record.source_url = document.url if document else None
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
-        self._repo.save_analysis(bill.term, bill.number, record)
-        return record
+        return _Prepared(bill, detail, document, text, source, record, first=previous is None)
+
+    def _persist(self, prepared: _Prepared) -> AnalysisRecord:
+        """Write one prepared analysis down (stages, authors, the record). Calling thread only."""
+        bill, detail, document = prepared.bill, prepared.detail, prepared.document
+        if prepared.first and detail is not None:
+            self._repo.save_stages(
+                bill.term, bill.number, detail.stages, stage_fingerprint(detail.stages)
+            )
+        if prepared.source == "pdf" and document is not None and document.kind == "print":
+            self._save_authors(bill, (detail or bill.summary).applicant_type, prepared.text)
+        self._repo.save_analysis(bill.term, bill.number, prepared.record)
+        return prepared.record
 
     def _save_authors(self, bill: Bill, applicant: ApplicantType, text: str) -> None:
         """Signatories (deputies' bills) or the representative (committee bills) from the cover

@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
+from lexinform.errors import AttachmentTooLargeError
 from lexinform.models import (
     ActInfo,
     Analysis,
@@ -43,7 +44,6 @@ class FakeSejmGateway:
     details: dict[str, ProcessDetail] = field(default_factory=dict)
     prints: dict[str, PrintInfo] = field(default_factory=dict)
     files: dict[str, bytes] = field(default_factory=dict)
-    sizes: dict[str, int] = field(default_factory=dict)
     votings: dict[tuple[int, int], tuple[Vote, ...]] = field(default_factory=dict)
     committees: dict[str, Committee] = field(default_factory=dict)
     mps: tuple[Mp, ...] = ()
@@ -97,12 +97,12 @@ class FakeSejmGateway:
         self.calls.append("list_mps")
         return self.mps
 
-    def attachment_size(self, url: str) -> int | None:
-        return self.sizes.get(url)
-
-    def download(self, url: str) -> bytes:
+    def download(self, url: str, *, max_bytes: int | None = None) -> bytes:
         self.calls.append(f"download:{url}")
-        return self.files[url]
+        data = self.files[url]
+        if max_bytes is not None and len(data) > max_bytes:
+            raise AttachmentTooLargeError(url, max_bytes)
+        return data
 
 
 class FakeTextExtractor:

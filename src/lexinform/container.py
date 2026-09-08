@@ -65,6 +65,7 @@ class Container:
             self.analyzer(),
             text_budget=TextBudget(self.settings.text_budget_chars),
             max_attempts=self.settings.max_analysis_attempts,
+            workers=self.settings.llm_concurrency,
         )
 
     def discovery_service(self) -> BillDiscoveryService:
@@ -86,6 +87,7 @@ class Container:
             self.prefilter,
             min_distinct=self.settings.text_prefilter_min_distinct,
             min_occurrences=self.settings.text_prefilter_min_occurrences,
+            workers=self.settings.sejm_concurrency,
         )
 
     def telegram_client(self) -> TelegramBotClient:
@@ -149,6 +151,7 @@ class Container:
                 in_force_reminders=self.settings.in_force_reminders,
                 max_publish_attempts=self.settings.max_publish_attempts,
                 club_breakdown=self.settings.voting_club_breakdown,
+                workers=self.settings.sejm_concurrency,
             ),
             self.clock,
             notifier=self.run_notifier(dry_run=dry_run),

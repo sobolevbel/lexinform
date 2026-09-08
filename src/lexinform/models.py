@@ -527,6 +527,7 @@ class RunReport(BaseModel):
     errors: list[str] = Field(default_factory=list)
     llm_input_tokens: int = 0
     llm_output_tokens: int = 0
+    phase_seconds: dict[str, float] = Field(default_factory=dict)  # wall time per phase
 
     @property
     def ok(self) -> bool:

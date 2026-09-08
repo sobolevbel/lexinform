@@ -7,7 +7,9 @@ again a few seconds later by the analysis. Nothing is persisted: the state dump 
 from __future__ import annotations
 
 import logging
+import threading
 
+from lexinform.errors import AttachmentTooLargeError
 from lexinform.ports import SejmGateway, TextExtractor
 
 log = logging.getLogger(__name__)
@@ -29,6 +31,7 @@ class PdfTextLoader:
         self._max_bytes = max_bytes
         self._cache: dict[str, str | None] = {}
         self._cache_size = cache_size
+        self._lock = threading.Lock()  # loads run in parallel during the text prefilter
 
     def load(self, url: str) -> str | None:
         """Extracted text of the PDF at `url`, or None when it is too big or has no text layer.
@@ -36,22 +39,21 @@ class PdfTextLoader:
         Raises `ServiceUnavailableError` when the Sejm API is down; other problems (404, broken
         PDF) propagate as ordinary exceptions for the caller to classify.
         """
-        if url in self._cache:
-            return self._cache[url]
+        with self._lock:
+            if url in self._cache:
+                return self._cache[url]
         text = self._fetch(url)
-        if len(self._cache) >= self._cache_size:
-            self._cache.pop(next(iter(self._cache)))
-        self._cache[url] = text
+        with self._lock:
+            if len(self._cache) >= self._cache_size:
+                self._cache.pop(next(iter(self._cache)))
+            self._cache[url] = text
         return text
 
     def _fetch(self, url: str) -> str | None:
-        size = self._gateway.attachment_size(url)
-        if size is not None and size > self._max_bytes:
-            log.warning("%s is %d bytes, over limit; skipping text", url, size)
-            return None
-        data = self._gateway.download(url)
-        if len(data) > self._max_bytes:
-            log.warning("%s is %d bytes, over limit; skipping text", url, len(data))
+        try:
+            data = self._gateway.download(url, max_bytes=self._max_bytes)
+        except AttachmentTooLargeError as exc:
+            log.warning("%s; skipping text", exc)
             return None
         text = self._extractor.extract(data)
         if len(text.strip()) < MIN_TEXT_CHARS:

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     sejm_api_base_url: str = "https://api.sejm.gov.pl"
     sejm_page_size: int = 100
     sejm_timeout_seconds: float = 30.0
+    sejm_concurrency: int = Field(default=4, ge=1)  # parallel PDF downloads / process lookups
 
     # Storage
     db_path: Path = Path("lexinform.db")
@@ -31,6 +32,7 @@ class Settings(BaseSettings):
     llm_model: str = "claude-opus-5"
     llm_effort: Effort = "medium"
     llm_max_tokens: int = 4000
+    llm_concurrency: int = Field(default=2, ge=1)  # bills analysed at the same time
     output_language: str = "ru"
     # Safety cap only: Polish text is ~2 chars/token, so this is ~750k tokens and fits the
     # 1M context of the default model. Real prints (even 800k-char ones) go in whole.

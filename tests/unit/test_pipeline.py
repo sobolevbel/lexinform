@@ -84,6 +84,7 @@ class World:
         llm_script=None,
         text_prefilter: bool = True,
         extractor=None,
+        workers: int = 1,
     ) -> None:
         self.clock = FixedClock()
         self.repo = SqliteBillRepository(":memory:")
@@ -100,6 +101,7 @@ class World:
             self.loader,
             self.llm,
             text_budget=TextBudget(10_000),
+            workers=workers,
         )
         self.pipeline = DailyPipeline(
             self.repo,
@@ -122,11 +124,14 @@ class World:
                 channel_id=CHANNEL,
                 analysis=analysis,
                 eli=self.gateway,
+                workers=workers,
             ),
             self.clock,
             notifier=self.notifier,
             text_prefilter=(
-                TextPrefilterService(self.gateway, self.repo, self.loader, KeywordPrefilter())
+                TextPrefilterService(
+                    self.gateway, self.repo, self.loader, KeywordPrefilter(), workers=workers
+                )
                 if text_prefilter
                 else None
             ),
@@ -704,7 +709,7 @@ def test_text_prefilter_outage_leaves_bills_pending() -> None:
     from lexinform.errors import SejmApiUnavailableError
 
     class _DownOnDownload(FakeSejmGateway):
-        def download(self, url: str) -> bytes:
+        def download(self, url: str, *, max_bytes: int | None = None) -> bytes:
             raise SejmApiUnavailableError("GET pdf: connection refused")
 
     w = World()
@@ -885,3 +890,69 @@ def test_government_bill_does_not_fetch_the_mp_directory() -> None:
     w.run()
     assert "list_mps" not in w.gateway.calls
     assert w.repo.get(10, "4201").authors is None  # type: ignore[union-attr]
+
+
+# --------------------------------------------------------------------------- parallel fetching
+
+
+def _counters(report) -> dict[str, int]:  # type: ignore[no-untyped-def]
+    return {
+        k: getattr(report, k)
+        for k in (
+            "discovered",
+            "prefilter_hits",
+            "text_prefilter_checked",
+            "text_prefilter_hits",
+            "analyzed",
+            "analysis_failures",
+            "published",
+            "tracked",
+            "updates",
+        )
+    }
+
+
+def test_parallel_workers_produce_the_same_result_as_a_plain_loop() -> None:
+    """Downloads, analyses and process lookups may run side by side; every decision and every
+    database write still happens in order, so the outcome cannot depend on the worker count."""
+    runs = []
+    for workers in (1, 4):
+        w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT), workers=workers)
+        w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+        w.add_bill("3040", "Projekt ustawy o obywatelstwie polskim")
+        w.add_bill("4000", "Rządowy projekt ustawy o podatku VAT")  # caught by the PDF text
+        w.add_bill("4001", "Rządowy projekt ustawy o zmianie niektórych ustaw")
+        first = _counters(w.run())
+        for number in ("3039", "3040", "4000", "4001"):
+            detail = w.gateway.details[number]
+            w.gateway.details[number] = detail.model_copy(update={"stages": REFERRED})
+        second = _counters(w.run())
+        runs.append((first, second, sorted(b.number for b, _ in w.publisher.new_bills)))
+    assert runs[0] == runs[1]
+    first, second, published = runs[1]
+    assert first["analyzed"] == 4 and first["published"] == 4 and first["text_prefilter_hits"] == 2
+    assert second["tracked"] == 4 and second["updates"] == 4
+    assert published == ["3039", "3040", "4000", "4001"]
+
+
+def test_oversized_pdf_is_analysed_from_metadata() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    url = "https://api.test/sejm/term10/prints/3039/3039.pdf"
+    w.gateway.files[url] = b"%" * (10_000_000 + 1)  # one byte over the loader's limit
+    report = w.run()
+    assert report.analyzed == 1 and report.published == 1  # type: ignore[attr-defined]
+    assert w.llm.contexts[0].text_source == "metadata_only"
+
+
+def test_report_carries_phase_timings() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    report = w.run()
+    assert set(report.phase_seconds) == {  # type: ignore[attr-defined]
+        "discovery",
+        "text prefilter",
+        "analysis",
+        "publishing",
+        "tracking",
+    }

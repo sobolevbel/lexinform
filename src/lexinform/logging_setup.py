@@ -36,6 +36,8 @@ def configure_logging(level: str = "INFO", *, json_output: bool = False) -> None
     # Third-party noise
     for noisy in ("httpx2", "httpcore", "anthropic"):
         logging.getLogger(noisy).setLevel(max(logging.WARNING, root.level))
+    # pypdf warns per font per page on unusual PDFs; the loader logs unreadable files itself.
+    logging.getLogger("pypdf").setLevel(logging.ERROR)
 
 
 class MemoryLogHandler(logging.Handler):

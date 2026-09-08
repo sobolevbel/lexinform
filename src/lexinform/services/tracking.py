@@ -10,6 +10,7 @@ import logging
 from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
+from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
@@ -62,6 +63,7 @@ class StatusTrackingService:
         club_breakdown: bool = True,
         in_force_reminders: bool = True,
         local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
+        workers: int = 1,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -76,6 +78,7 @@ class StatusTrackingService:
         self._local_tz = local_tz
         self._max_publish_attempts = max_publish_attempts
         self._club_breakdown = club_breakdown
+        self._workers = workers
         self._committee_names: dict[str, str] = {}
 
     def check_updates(self, term: int, *, publish: bool = True) -> TrackingResult:
@@ -92,13 +95,15 @@ class StatusTrackingService:
             passed_max_days=self._passed_max_days,
             now=now,
         )
-        for bill in tracked:
-            if bill.is_pre_print:
-                continue  # no legislative process yet; handled by _reconcile_pre_print
+        # Pre-print bills have no legislative process yet: _reconcile_pre_print handles them.
+        followed = [bill for bill in tracked if not bill.is_pre_print]
+        # The API lookups run in parallel; detection and posting stay sequential, in order.
+        for outcome in fan_out(followed, self._fetch, workers=self._workers):
+            bill = outcome.item
             result.checked += 1
             try:
-                detail = self._gateway.get_process(bill.term, bill.number)
-                change = self._detect(bill, detail, result)
+                detail, print_info = outcome.result()
+                change = self._detect(bill, detail, print_info, result)
             except ServiceUnavailableError as exc:
                 result.fatal_error = exc.describe()
                 log.error("aborting tracking phase: %s", result.fatal_error)
@@ -292,10 +297,17 @@ class StatusTrackingService:
 
     # ------------------------------------------------------------------ detection
 
+    def _fetch(self, bill: Bill) -> tuple[ProcessDetail, PrintInfo | None]:
+        """What detection needs from the API for one bill (no database access)."""
+        return self._gateway.get_process(bill.term, bill.number), self._safe_print(bill)
+
     def _detect(
-        self, bill: Bill, detail: ProcessDetail, result: TrackingResult
+        self,
+        bill: Bill,
+        detail: ProcessDetail,
+        print_info: PrintInfo | None,
+        result: TrackingResult,
     ) -> StatusChange | None:
-        print_info = self._safe_print(bill)
         now = self._clock.now()
 
         new_fp = stage_fingerprint(detail.stages)

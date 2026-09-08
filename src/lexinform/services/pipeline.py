@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from collections.abc import Callable
 from datetime import datetime, timedelta
 
@@ -147,6 +148,7 @@ class DailyPipeline:
     def _phase(report: RunReport, name: str, action: Callable[[], None]) -> None:
         """Run one phase; an external outage or a bug ends the phase, not the run."""
         # `in_report` keeps these out of the captured warnings: they are listed as errors already.
+        started = time.perf_counter()
         try:
             action()
         except ServiceUnavailableError as exc:
@@ -157,6 +159,10 @@ class DailyPipeline:
             message = f"{name} failed: {type(exc).__name__}: {exc}"
             log.exception(message, extra={"in_report": True})
             report.errors.append(message)
+        finally:
+            elapsed = time.perf_counter() - started
+            report.phase_seconds[name] = round(elapsed, 1)
+            log.info("%s took %.1fs", name, elapsed)
 
     def _discover(self, opts: RunOptions, since: datetime, report: RunReport) -> None:
         discovered = self._discovery.discover(opts.term, since, pre_print=self._pre_print)

@@ -180,11 +180,13 @@ def test_run_report_renders_and_fits() -> None:
         errors=["1 publication(s) failed"],
         llm_input_tokens=50_000,
         llm_output_tokens=4_000,
+        phase_seconds={"discovery": 4.1, "text prefilter": 60.0},
     )
     lines = [f"WARNING lexinform.x: line {i} " + "x" * 200 for i in range(100)]
     text = MessageFormatter("ru").run_report(report, lines).text
     _check_html(text)
     assert text.startswith("<b>❌") and "discovered: 77" in text and "<pre>" in text
+    assert "timing: discovery 4.1s · text prefilter 60.0s" in text
     assert len(text) <= MESSAGE_LIMIT
     ok_text = MessageFormatter("ru").run_report(report.model_copy(update={"errors": []}), []).text
     assert ok_text.startswith("<b>✅") and "<pre>" not in ok_text

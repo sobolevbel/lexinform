@@ -369,6 +369,16 @@ class MessageFormatter:
                 f"acts published: {report.acts_published} · in force: {report.in_force_posted}",
                 f"tokens in/out: {report.llm_input_tokens}/{report.llm_output_tokens}",
             ]
+            + (
+                [
+                    "timing: "
+                    + " · ".join(
+                        f"{esc(name)} {secs:.1f}s" for name, secs in report.phase_seconds.items()
+                    )
+                ]
+                if report.phase_seconds
+                else []
+            )
         )
         errors = ""
         if report.errors:

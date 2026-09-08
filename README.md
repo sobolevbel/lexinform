@@ -74,6 +74,8 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
 Each phase is isolated: an outage of the Sejm API, the LLM or Telegram stops that phase with a
 clear error in the report, the others still run, and no per-bill retry budget is consumed. The
 process exits with code 1 on errors so the workflow shows red, but the state is saved regardless.
+Within a phase the network calls (PDF downloads, process lookups, model calls) run a few at a
+time; decisions and database writes stay sequential, so the outcome never depends on timing.
 
 ## Quick start
 
@@ -124,6 +126,7 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_MAX_PUBLISH_PER_RUN` / `_MAX_ANALYZE_PER_RUN` | `10` / `40` | Flood and cost caps |
 | `LEXINFORM_TEXT_BUDGET_CHARS` | `1500000` | Safety cap on text sent to the LLM (prints go in full) |
 | `LEXINFORM_MAX_PDF_DOWNLOAD_MB` | `25` | Bigger PDFs are analysed from metadata |
+| `LEXINFORM_SEJM_CONCURRENCY` / `_LLM_CONCURRENCY` | `4` / `2` | Parallel PDF downloads and process lookups / bills analysed at once |
 | `LEXINFORM_TEXT_PREFILTER_ENABLED` | `true` | Scan the PDF when the title says nothing |
 | `LEXINFORM_TEXT_PREFILTER_MIN_DISTINCT` / `_MIN_OCCURRENCES` | `2` / `3` | Text-hit threshold |
 | `LEXINFORM_PRE_PRINT_ENABLED` | `true` | Watch `/bills` for bills without a print number |

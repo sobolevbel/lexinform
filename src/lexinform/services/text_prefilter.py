@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
+from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
 from lexinform.keywords import KeywordPrefilter, accept_text_hits
 from lexinform.models import Bill, BillStatus
@@ -39,6 +40,7 @@ class TextPrefilterService:
         *,
         min_distinct: int = 2,
         min_occurrences: int = 3,
+        workers: int = 1,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -46,17 +48,20 @@ class TextPrefilterService:
         self._prefilter = prefilter
         self._min_distinct = min_distinct
         self._min_occurrences = min_occurrences
+        self._workers = workers
 
     def run(self, term: int, *, limit: int) -> TextPrefilterResult:
         result = TextPrefilterResult()
         if limit <= 0:
             return result
-        for bill in self._repo.list_by_status(
-            term, [BillStatus.TEXT_PREFILTER_PENDING], limit=limit
-        ):
+        pending = self._repo.list_by_status(term, [BillStatus.TEXT_PREFILTER_PENDING], limit=limit)
+        # Downloads and text extraction run side by side; every decision and database write
+        # below happens here, in order.
+        for outcome in fan_out(pending, self._load, workers=self._workers):
+            bill = outcome.item
             result.checked += 1
             try:
-                if self.check(bill):
+                if self._decide(bill, outcome.result()):
                     result.hits += 1
             except ServiceUnavailableError as exc:
                 # Bills stay pending and are checked on the next run.
@@ -79,7 +84,9 @@ class TextPrefilterService:
 
     def check(self, bill: Bill) -> bool:
         """Scan the main print PDF; True when the bill is sent on to analysis."""
-        text = self._load(bill)
+        return self._decide(bill, self._load(bill))
+
+    def _decide(self, bill: Bill, text: str | None) -> bool:
         counts = self._prefilter.match_counts(text) if text else {}
         accepted = accept_text_hits(
             counts, min_distinct=self._min_distinct, min_occurrences=self._min_occurrences

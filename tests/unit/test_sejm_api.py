@@ -8,6 +8,7 @@ import httpx2 as httpx
 import pytest
 
 from lexinform.adapters.sejm_api import SejmApiClient, SejmApiError
+from lexinform.errors import AttachmentTooLargeError
 from lexinform.models import ApplicantType, DocumentType
 from tests.conftest import FIXTURES
 
@@ -87,12 +88,17 @@ def test_4xx_raises_without_retry() -> None:
     assert calls["n"] == 1
 
 
-def test_attachment_size_uses_head() -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
-        assert request.method == "HEAD"
-        return httpx.Response(200, headers={"content-length": "12345"})
+def test_download_stops_once_the_limit_is_exceeded() -> None:
+    body = b"x" * 1000
 
-    assert _client(handler).attachment_size("https://api.test/a.pdf") == 12345
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "GET"  # no HEAD: the Sejm API sends no Content-Length anyway
+        return httpx.Response(200, content=body)
+
+    client = _client(handler)
+    assert client.download("https://api.test/a.pdf", max_bytes=1000) == body
+    with pytest.raises(AttachmentTooLargeError):
+        client.download("https://api.test/a.pdf", max_bytes=999)
 
 
 def test_pagination_stops_on_empty_page_and_on_repeated_page() -> None:
