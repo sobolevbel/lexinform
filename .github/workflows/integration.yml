@@ -14,3 +14,14 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --frozen
       - run: uv run pytest -m integration -q
+      - name: Tell the log channel when the live API changed under us
+        if: failure() && env.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID != ''
+        env:
+          LEXINFORM_TELEGRAM_BOT_TOKEN: ${{ secrets.LEXINFORM_TELEGRAM_BOT_TOKEN }}
+          LEXINFORM_TELEGRAM_LOG_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -sS -o /dev/null -X POST \
+            "https://api.telegram.org/bot${LEXINFORM_TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${LEXINFORM_TELEGRAM_LOG_CHANNEL_ID}" \
+            --data-urlencode "text=❌ lexinform: live Sejm API checks failed: ${RUN_URL}"

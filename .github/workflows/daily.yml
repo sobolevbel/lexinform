@@ -3,7 +3,12 @@ name: Daily run
 
 on:
   schedule:
-    - cron: "0 5 * * *"  # 05:00 UTC every day (07:00 in Warsaw during summer time)
+    # Three times a day: prints and agendas appear during Warsaw working hours, and a reader
+    # who wants to act on a consultation deadline should not wait until tomorrow morning.
+    # GitHub may delay scheduled runs by up to an hour.
+    - cron: "0 5 * * *"   # 07:00 Warsaw (summer time)
+    - cron: "0 11 * * *"  # 13:00
+    - cron: "0 17 * * *"  # 19:00
   workflow_dispatch:
     inputs:
       since:

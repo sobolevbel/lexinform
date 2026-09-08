@@ -13,7 +13,7 @@ Everything else in `README.md`; roadmap and verified API facts in `docs/roadmap.
 - `.env` holds real secrets and is untracked; never print values. `.env.example` mirrors keys.
 - Messages to readers are Russian (labels in `i18n.py`, RU + EN); Polish law titles stay Polish.
 - Prod state = SQLite dump in the `state` branch, written by `.github/workflows/daily.yml`
-  (05:00 UTC). To test against real data: `git show origin/state:lexinform.sql > /tmp/s.sql`,
+  (05:00, 11:00, 17:00 UTC). To test against real data: `git show origin/state:lexinform.sql > /tmp/s.sql`,
   `LEXINFORM_DB_PATH=/tmp/t.db uv run lexinform db init && … db restore /tmp/s.sql`, then
   `lexinform run --dry-run --since YYYY-MM-DD` (real LLM calls, DB rolled back, prints to stdout).
 
@@ -118,5 +118,7 @@ Default model `claude-opus-5`, `min_score` 3, text prefilter threshold 2 distinc
 hits (weak patterns such as Straż Graniczna never decide alone), triage of texts ≥ 20k chars on
 `claude-sonnet-5` (all of Haiku 4.5 / Sonnet 5 / Opus 5 judged the four test bills correctly;
 Haiku ignored the output language, Sonnet costs ~1 cent per bill), club breakdown on, Dz.U. notice as a separate reply, in-force reminder repeats
-the summary. The owner does **not** want a "probability of passing" estimate. Open items are
+the summary. The owner does **not** want a "probability of passing" estimate. A new `PROMPT_VERSION` does
+**not** re-analyse or re-post bills already in the channel (decided 2026-09-08): old cards keep the
+analysis they were published with, only new texts trigger a re-analysis. Open items are
 listed under "Still open" in `docs/roadmap.md`.
