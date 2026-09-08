@@ -19,10 +19,12 @@ Everything else in `README.md`; roadmap and verified API facts in `docs/roadmap.
 
 ## Architecture in one breath
 
-`models.py` (pydantic, pure helpers) → `ports.py` (Protocols) → `adapters/` (Sejm API, ELI, PDF,
-Anthropic, Telegram, SQLite) → `services/` (discovery, text_prefilter, analysis, publishing,
-tracking, pipeline) → `container.py` (manual wiring) → `cli.py` (typer). Services import only
-ports/models (plus `TextBudget`, `PdfTextLoader`). Tests use fakes in `tests/fakes.py` and the
+`models/` (pydantic + pure helpers; `enums`, `sejm`, `analysis`, `bill`, `report`, all re-exported
+from `lexinform.models`) → `ports.py` (Protocols) → `adapters/` (Sejm API, ELI, PDF, Anthropic,
+Telegram, SQLite) → `services/` (discovery, text_prefilter, analysis, publishing, `tracking/`
+(service, pre_print, acts, consultations, posting, stages), pipeline) → `container.py` (manual
+wiring) → `cli.py` (typer). Services import only ports/models (plus `TextBudget`, `PdfTextLoader`,
+`keywords`, `sections`, `concurrency`). Tests use fakes in `tests/fakes.py` and the
 `World` harness in `tests/unit/test_pipeline.py`; HTTP adapters use `httpx2.MockTransport`.
 
 Invariants worth keeping:

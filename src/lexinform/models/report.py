@@ -1,0 +1,65 @@
+"""What one run reports to the log channel and stores in the `runs` table."""
+
+from __future__ import annotations
+
+import datetime as dt
+
+from pydantic import BaseModel, Field
+
+from lexinform.models.analysis import TokenUsage
+
+
+class AnalysisVerdict(BaseModel):
+    """What the model said about one bill this run; the report lists the ones not published."""
+
+    number: str
+    title: str
+    relevant: bool
+    score: int
+    triaged: bool = False  # rejected by the cheap first pass on excerpts
+
+    @property
+    def reason(self) -> str:
+        if self.triaged:
+            return "triage"
+        return f"score {self.score}" if self.relevant else "not relevant"
+
+
+class RunReport(BaseModel):
+    started_at: dt.datetime
+    finished_at: dt.datetime | None = None
+    since: dt.datetime
+    mode: str
+    discovery_ok: bool = False  # discovery finished: the watermark may advance past `started_at`
+    discovered: int = 0
+    pre_print_discovered: int = 0
+    linked: int = 0
+    prefilter_hits: int = 0
+    text_prefilter_checked: int = 0
+    text_prefilter_hits: int = 0
+    acts_published: int = 0
+    in_force_posted: int = 0
+    consultation_reminders: int = 0
+    analyzed: int = 0
+    triaged_out: int = 0  # rejected by the cheap first pass, no full analysis
+    analysis_failures: int = 0
+    rejected: list[AnalysisVerdict] = Field(default_factory=list)  # analysed, not published
+    published: int = 0
+    updates: int = 0
+    reanalyzed: int = 0
+    tracked: int = 0
+    errors: list[str] = Field(default_factory=list)
+    llm_input_tokens: int = 0
+    llm_output_tokens: int = 0
+    llm_usage: dict[str, TokenUsage] = Field(default_factory=dict)  # per model, for the cost line
+    phase_seconds: dict[str, float] = Field(default_factory=dict)  # wall time per phase
+
+    @property
+    def ok(self) -> bool:
+        return not self.errors
+
+    @property
+    def duration_seconds(self) -> int | None:
+        if self.finished_at is None:
+            return None
+        return int((self.finished_at - self.started_at).total_seconds())

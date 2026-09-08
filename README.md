@@ -177,12 +177,15 @@ The rubric is in `src/lexinform/adapters/llm_prompts.py`; `PROMPT_VERSION` is st
 
 ```
 src/lexinform/
-  models.py, ports.py        domain models, pure helpers, Protocols
+  models/, ports.py          domain models (enums, sejm, analysis, bill, report), Protocols
   keywords.py, authors.py    keyword prefilter, cover-letter parsing
+  sections.py, pricing.py    print structure (trimming, excerpts), model list prices
+  concurrency.py             fan_out: parallel network steps, sequential writes
   i18n.py, settings.py       labels per language, pydantic-settings
   adapters/                  sejm_api (+ ELI), pdf_text, llm_anthropic (+ llm_prompts),
                              telegram (+ telegram_format), sqlite_repo, console
-  services/                  discovery, text_prefilter, analysis, publishing, tracking, pipeline
+  services/                  discovery, text_prefilter, analysis, publishing, pipeline,
+                             tracking/ (stages, pre-print links, acts, reminders, posting)
   container.py, cli.py       composition root, typer commands
 tests/                       unit tests on fakes + recorded API fixtures; `-m integration` hits the live API
 ```
