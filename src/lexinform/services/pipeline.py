@@ -184,6 +184,9 @@ class DailyPipeline:
         report.analyzed = analysed.analyzed
         report.triaged_out = analysed.triaged_out
         report.analysis_failures = analysed.failed
+        report.rejected = [
+            v for v in analysed.verdicts if not v.relevant or v.score < opts.min_score
+        ]
         report.llm_input_tokens += analysed.input_tokens
         report.llm_output_tokens += analysed.output_tokens
         if analysed.fatal_error:

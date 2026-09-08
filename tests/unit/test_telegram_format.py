@@ -11,6 +11,7 @@ from lexinform.adapters.telegram_format import MESSAGE_LIMIT, MessageFormatter, 
 from lexinform.models import (
     ActInfo,
     AnalysisRecord,
+    AnalysisVerdict,
     Bill,
     BillStatus,
     ClubVotes,
@@ -181,12 +182,25 @@ def test_run_report_renders_and_fits() -> None:
         llm_input_tokens=50_000,
         llm_output_tokens=4_000,
         phase_seconds={"discovery": 4.1, "text prefilter": 60.0},
+        rejected=[
+            AnalysisVerdict(
+                number="2695",
+                title="Rządowy projekt ustawy o zmianie ustawy o jakości handlowej artykułów rolno-spożywczych oraz niektórych innych ustaw <x>",
+                relevant=False,
+                score=1,
+                triaged=True,
+            ),
+            AnalysisVerdict(number="2411", title="Poselski projekt", relevant=True, score=2),
+        ],
     )
     lines = [f"WARNING lexinform.x: line {i} " + "x" * 200 for i in range(100)]
     text = MessageFormatter("ru").run_report(report, lines).text
     _check_html(text)
     assert text.startswith("<b>❌") and "discovered: 77" in text and "<pre>" in text
     assert "timing: discovery 4.1s · text prefilter 60.0s" in text
+    assert "<b>analysed, not published</b>\n• druk 2695 · triage · Rządowy projekt" in text
+    assert "• druk 2411 · score 2 · Poselski projekt" in text
+    assert "…" in text and "<x>" not in text  # long title clipped, HTML escaped
     assert len(text) <= MESSAGE_LIMIT
     ok_text = MessageFormatter("ru").run_report(report.model_copy(update={"errors": []}), []).text
     assert ok_text.startswith("<b>✅") and "<pre>" not in ok_text

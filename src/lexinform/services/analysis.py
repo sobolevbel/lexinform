@@ -8,7 +8,7 @@ changed.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from lexinform.adapters.pdf_text import TextBudget
@@ -19,6 +19,7 @@ from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
     Analysis,
     AnalysisRecord,
+    AnalysisVerdict,
     ApplicantType,
     Bill,
     BillContext,
@@ -46,6 +47,7 @@ class AnalysisResult:
     analyzed: int = 0
     triaged_out: int = 0
     failed: int = 0
+    verdicts: list[AnalysisVerdict] = field(default_factory=list)
     input_tokens: int = 0
     output_tokens: int = 0
     fatal_error: str | None = None
@@ -129,6 +131,15 @@ class AnalysisService:
                 result.triaged_out += 1
             else:
                 result.analyzed += 1
+            result.verdicts.append(
+                AnalysisVerdict(
+                    number=bill.number,
+                    title=bill.summary.title,
+                    relevant=record.analysis.relevant,
+                    score=record.analysis.score,
+                    triaged=record.text_source == "excerpts",
+                )
+            )
             result.input_tokens += record.input_tokens or 0
             result.output_tokens += record.output_tokens or 0
             if prepared.triage is not None:

@@ -536,6 +536,22 @@ class StatusChange(BaseModel):
     detected_at: dt.datetime
 
 
+class AnalysisVerdict(BaseModel):
+    """What the model said about one bill this run; the report lists the ones not published."""
+
+    number: str
+    title: str
+    relevant: bool
+    score: int
+    triaged: bool = False  # rejected by the cheap first pass on excerpts
+
+    @property
+    def reason(self) -> str:
+        if self.triaged:
+            return "triage"
+        return f"score {self.score}" if self.relevant else "not relevant"
+
+
 class RunReport(BaseModel):
     started_at: dt.datetime
     finished_at: dt.datetime | None = None
@@ -553,6 +569,7 @@ class RunReport(BaseModel):
     analyzed: int = 0
     triaged_out: int = 0  # rejected by the cheap first pass, no full analysis
     analysis_failures: int = 0
+    rejected: list[AnalysisVerdict] = Field(default_factory=list)  # analysed, not published
     published: int = 0
     updates: int = 0
     reanalyzed: int = 0

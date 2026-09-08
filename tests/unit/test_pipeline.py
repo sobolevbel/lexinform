@@ -192,6 +192,16 @@ def test_irrelevant_analysis_is_not_published() -> None:
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     report = w.run()
     assert report.analyzed == 1 and report.published == 0  # type: ignore[attr-defined]
+    assert [(v.number, v.reason) for v in report.rejected] == [("3039", "not relevant")]  # type: ignore[attr-defined]
+
+
+def test_low_score_bills_are_listed_as_not_published() -> None:
+    w = World(llm_script={"3039": make_analysis(score=2, category=Category.INDIRECT)})
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.add_bill("3040", "Projekt ustawy o obywatelstwie polskim")  # default fake analysis: score 5
+    report = w.run(min_score=3)
+    assert report.published == 1  # type: ignore[attr-defined]
+    assert [(v.number, v.reason) for v in report.rejected] == [("3039", "score 2")]  # type: ignore[attr-defined]
 
 
 def test_min_score_filters_publication() -> None:
@@ -981,6 +991,8 @@ def test_triage_rejection_is_stored_as_a_non_relevant_analysis() -> None:
     w.add_bill("4001", "Rządowy projekt ustawy o zmianie niektórych ustaw")  # unsure -> full
     report = w.run()
     assert report.analyzed == 2 and report.triaged_out == 1 and report.published == 2  # type: ignore[attr-defined]
+    assert [(v.number, v.reason) for v in report.rejected] == [("4000", "triage")]  # type: ignore[attr-defined]
+    assert report.rejected[0].title == "Rządowy projekt ustawy o jakości handlowej"  # type: ignore[attr-defined]
     assert sorted(c.number for c in w.llm.triage_contexts) == ["3039", "4000", "4001"]
     assert sorted(c.number for c in w.llm.contexts) == ["3039", "4001"]
     rejected = w.repo.get(10, "4000")

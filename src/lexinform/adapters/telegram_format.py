@@ -384,10 +384,16 @@ class MessageFormatter:
         errors = ""
         if report.errors:
             errors = "<b>errors</b>\n" + "\n".join(f"• {esc(e)}" for e in report.errors)
+        rejected = ""
+        if report.rejected:
+            rejected = "<b>analysed, not published</b>\n" + "\n".join(
+                f"• druk {esc(v.number)} · {esc(v.reason)} · {esc(_clip(v.title, 110))}"
+                for v in report.rejected
+            )
         logs = ""
         if log_lines:
             logs = "<b>warnings</b>\n<pre>" + esc("\n".join(log_lines)) + "</pre>"
-        text = self._assemble([head, counters, errors], flexible=[logs])
+        text = self._assemble([head, counters, errors], flexible=[rejected, logs])
         return RenderedMessage(text=text)
 
     # ------------------------------------------------------------------ helpers
@@ -516,6 +522,10 @@ class MessageFormatter:
         # Order: header, meta, summary, changes, details, links, tags
         ordered = fixed[:2] + shrunk + fixed[2:]
         return "\n\n".join(b for b in ordered if b)
+
+
+def _clip(text: str, limit: int) -> str:
+    return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
 
 
 def _tag_safe(number: str) -> str:
