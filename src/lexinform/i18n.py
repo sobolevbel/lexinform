@@ -40,7 +40,6 @@ class Labels:
     reanalyzed_note: str
     run_report_title: str
     tag_importance: str
-    tag_update: str
     voting: str
     votes_for: str
     votes_against: str
@@ -118,7 +117,6 @@ RU = Labels(
     reanalyzed_note="Текст проекта обновился, анализ выполнен заново.",
     run_report_title="Отчёт о запуске lexinform",
     tag_importance="важность",
-    tag_update="обновление",
     voting="Голосование",
     votes_for="за",
     votes_against="против",
@@ -243,7 +241,6 @@ EN = Labels(
     reanalyzed_note="The bill text was updated; the analysis was redone.",
     run_report_title="lexinform run report",
     tag_importance="importance",
-    tag_update="update",
     voting="Vote",
     votes_for="for",
     votes_against="against",

@@ -130,7 +130,7 @@ def test_status_update(process_1962) -> None:  # type: ignore[no-untyped-def]
     assert "Обновление — druk nr 1962" in text
     assert "Новые стадии" in text and "Uchwalono" in text
     assert "закон принят" in text
-    assert "#обновление #kadencja10druk1962" in text
+    assert "#kadencja10druk1962" in text
     assert len(text) <= MESSAGE_LIMIT
 
 
