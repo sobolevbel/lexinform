@@ -70,7 +70,8 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
    the print's cover letter and matched against `/MP`.
 4. **Publish** relevant bills with `score >= LEXINFORM_MIN_SCORE`. A publication row is written
    before sending, so a crash can never duplicate a post; failed posts are retried on later runs.
-5. **Track** published bills: the stage tree is fingerprinted, every change produces exactly one
+5. **Track** published bills: only those the API lists as modified since the watermark (plus a
+   full pass every Monday); the stage tree is fingerprinted, every change produces exactly one
    reply; a newer text triggers a re-analysis with the previous one as context; an ELI address
    triggers the Dziennik Ustaw notice and, later, the entry-into-force reminder.
 6. **Report** to the technical channel when `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` is set.
@@ -138,6 +139,7 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_PRE_PRINT_ENABLED` | `true` | Watch `/bills` for bills without a print number |
 | `LEXINFORM_VOTING_CLUB_BREAKDOWN` | `true` | Show how each club voted |
 | `LEXINFORM_TRACK_CLOSED_GRACE_DAYS` / `_TRACK_PASSED_MAX_DAYS` | `90` / `180` | How long closed / passed-but-unpublished bills are followed |
+| `LEXINFORM_TRACK_FULL_WEEKDAY` | `0` (Monday) | Weekday on which every followed bill is checked, not only the changed ones |
 | `LEXINFORM_IN_FORCE_REMINDERS` | `true` | Reminder on the entry-into-force day |
 | `LEXINFORM_MAX_PUBLISH_ATTEMPTS` | `3` | Retries of a failed Telegram post |
 | `LEXINFORM_LOG_LEVEL` / `LEXINFORM_LOG_JSON` | `INFO` / `false` | Logging |

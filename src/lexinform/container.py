@@ -163,6 +163,7 @@ class Container:
             first_run_lookback_days=self.settings.first_run_lookback_days,
             rerun_overlap_days=self.settings.rerun_overlap_days,
             pre_print=self.settings.pre_print_enabled,
+            full_track_weekday=self.settings.track_full_weekday,
         )
 
     def close(self) -> None:

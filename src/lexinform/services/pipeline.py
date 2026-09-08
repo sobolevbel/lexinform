@@ -33,6 +33,7 @@ class RunOptions(BaseModel):
     max_analyze: int = 40
     max_text_prefilter: int = 20
     min_score: int = 3
+    full_track: bool = False  # check every followed bill, not only those the API lists as changed
     mode: str = "run"
 
 
@@ -51,6 +52,7 @@ class DailyPipeline:
         first_run_lookback_days: int = 1,
         rerun_overlap_days: int = 1,
         pre_print: bool = True,
+        full_track_weekday: int | None = 0,
     ) -> None:
         self._repo = repo
         self._discovery = discovery
@@ -63,6 +65,7 @@ class DailyPipeline:
         self._first_run_lookback = timedelta(days=first_run_lookback_days)
         self._overlap = timedelta(days=rerun_overlap_days)
         self._pre_print = pre_print
+        self._full_track_weekday = full_track_weekday  # Monday by default; None = never
 
     def resolve_since(self, requested: datetime | None) -> datetime:
         """Discovery watermark: the start of the last run that completed discovery, minus overlap.
@@ -204,7 +207,17 @@ class DailyPipeline:
             report.errors.append(f"{published.failed} publication(s) failed")
 
     def _track(self, opts: RunOptions, report: RunReport) -> None:
-        tracked = self._tracking.check_updates(opts.term, publish=opts.publish)
+        # Bills the API did not list as modified since the watermark have nothing new, so the
+        # daily check touches only the changed ones; once a week every followed bill is fetched
+        # in case something moved without a visible change (or discovery was skipped/failed).
+        weekly = (
+            self._full_track_weekday is not None
+            and self._clock.now().weekday() == self._full_track_weekday
+        )
+        full = opts.full_track or not opts.discover or not report.discovery_ok or weekly
+        tracked = self._tracking.check_updates(
+            opts.term, publish=opts.publish, changed_since=None if full else report.since
+        )
         report.tracked = tracked.checked
         report.updates = tracked.published if opts.publish else tracked.changed
         report.reanalyzed = tracked.reanalyzed

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from lexinform.models import (
@@ -366,27 +366,39 @@ class SqliteBillRepository:
         closed_grace_days: int,
         passed_max_days: int,
         now: datetime,
+        changed_since: datetime | None = None,
     ) -> list[Bill]:
         """Published bills still worth polling.
 
         Closed bills are followed for `closed_grace_days`; bills passed by the Sejm whose act has
         not appeared in Dziennik Ustaw yet are followed longer (`passed_max_days`), because the
         Senate, the President and publication take weeks.
+
+        With `changed_since`, only bills whose `change_date` (refreshed by discovery from the
+        API's `modifiedSince` listing) is at least that recent are returned, plus bills passed
+        by the Sejm that still wait for their act: the ELI address may appear without a visible
+        change of the process.
         """
         cutoff = (now - timedelta(days=closed_grace_days)).date().isoformat()
         passed_cutoff = (now - timedelta(days=passed_max_days)).date().isoformat()
-        rows = self._conn.execute(
-            """
+        sql = """
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
             WHERE b.term = ? AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
               AND b.status != ?
               AND (b.closure_date IS NULL OR b.closure_date >= ?
                    OR (b.passed = 1 AND b.act_json IS NULL AND b.closure_date >= ?))
-            ORDER BY b.number
-            """,
-            (term, channel_id, BillStatus.LINKED.value, cutoff, passed_cutoff),
-        ).fetchall()
+            """
+        params: list[object] = [term, channel_id, BillStatus.LINKED.value, cutoff, passed_cutoff]
+        if changed_since is not None:
+            # Timestamps are stored as ISO text in UTC; compare to the second.
+            sql += """
+              AND (substr(b.change_date, 1, 19) >= substr(?, 1, 19)
+                   OR (b.passed = 1 AND b.act_json IS NULL))
+            """
+            since = changed_since if changed_since.tzinfo is None else changed_since.astimezone(UTC)
+            params.append(since.replace(tzinfo=None).isoformat())
+        rows = self._conn.execute(sql + " ORDER BY b.number", params).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
     # ------------------------------------------------------------------ published acts

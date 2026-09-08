@@ -65,6 +65,7 @@ class Settings(BaseSettings):
     rerun_overlap_days: int = 1
     track_closed_grace_days: int = 90  # Dz.U. publication follows ~30-40 days after closure
     track_passed_max_days: int = 180  # follow passed bills without a published act this long
+    track_full_weekday: int = Field(default=0, ge=0, le=6)  # weekday of the full check (0 = Monday)
     in_force_reminders: bool = True  # post a reminder on the day the act enters into force
 
     # Logging

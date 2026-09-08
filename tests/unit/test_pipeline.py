@@ -160,8 +160,8 @@ class World:
             self.gateway.files[url] = b"%PDF"
 
     def run(self, **kw) -> object:  # type: ignore[no-untyped-def]
-        opts = RunOptions(term=10, since=dt.datetime(2026, 9, 1, tzinfo=dt.UTC), **kw)
-        return self.pipeline.run(opts)
+        kw.setdefault("since", dt.datetime(2026, 9, 1, tzinfo=dt.UTC))
+        return self.pipeline.run(RunOptions(term=10, **kw))
 
 
 def test_happy_path_publishes_relevant_bill_once() -> None:
@@ -1026,3 +1026,52 @@ def test_short_texts_skip_the_triage() -> None:
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     assert w.run().analyzed == 1  # type: ignore[attr-defined]
     assert w.llm.triage_contexts == []
+
+
+# --------------------------------------------------------------------------- tracking scope
+
+
+def test_daily_tracking_checks_only_bills_the_api_listed_as_changed() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.add_bill("3040", "Projekt ustawy o obywatelstwie polskim")
+    w.run()  # FixedClock starts on Monday 2026-09-07: a full check, both published
+    assert len(w.publisher.new_bills) == 2
+
+    w.clock.advance(days=1)  # Tuesday: only what changed
+    w.gateway.processes = [
+        p.model_copy(update={"change_date": dt.datetime(2026, 9, 8, 9, 0)})
+        if p.number == "3040"
+        else p
+        for p in w.gateway.processes
+    ]
+    w.gateway.details["3040"] = w.gateway.details["3040"].model_copy(
+        update={"stages": REFERRED, "change_date": dt.datetime(2026, 9, 8, 9, 0)}
+    )
+    w.gateway.calls.clear()
+    report = w.run(since=dt.datetime(2026, 9, 7, tzinfo=dt.UTC))
+    assert report.tracked == 1 and report.updates == 1  # type: ignore[attr-defined]
+    assert "get_process:3040" in w.gateway.calls and "get_process:3039" not in w.gateway.calls
+
+    w.gateway.calls.clear()
+    report = w.run(since=dt.datetime(2026, 9, 7, tzinfo=dt.UTC), full_track=True)
+    assert report.tracked == 2 and report.updates == 0  # type: ignore[attr-defined]
+    assert "get_process:3039" in w.gateway.calls
+
+    w.clock.advance(days=6)  # next Monday: the weekly full check needs no flag
+    w.gateway.calls.clear()
+    assert w.run(since=dt.datetime(2026, 9, 14, tzinfo=dt.UTC)).tracked == 2  # type: ignore[attr-defined]
+
+
+def test_passed_bills_waiting_for_their_act_are_always_checked() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.gateway.details["3039"] = w.gateway.details["3039"].model_copy(
+        update={"passed": True, "closure_date": dt.date(2026, 9, 7)}
+    )
+    w.run()  # Monday: full check stores passed=True
+    w.clock.advance(days=1)
+    w.gateway.calls.clear()
+    report = w.run(since=dt.datetime(2026, 9, 8, tzinfo=dt.UTC))  # nothing listed as changed
+    assert report.tracked == 1 and "get_process:3039" in w.gateway.calls  # type: ignore[attr-defined]

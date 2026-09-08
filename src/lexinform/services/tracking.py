@@ -8,6 +8,7 @@ updated print) the bill is re-analysed first and the update also lists what chan
 import hashlib
 import logging
 from dataclasses import dataclass, field
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from lexinform.concurrency import fan_out
@@ -84,7 +85,14 @@ class StatusTrackingService:
         self._workers = workers
         self._committee_names: dict[str, str] = {}
 
-    def check_updates(self, term: int, *, publish: bool = True) -> TrackingResult:
+    def check_updates(
+        self, term: int, *, publish: bool = True, changed_since: datetime | None = None
+    ) -> TrackingResult:
+        """Look for news on published bills.
+
+        `changed_since` limits the check to bills the Sejm API reported as modified since then
+        (discovery refreshes their `change_date`); None checks every followed bill.
+        """
         result = TrackingResult()
         now = self._clock.now()
         if publish and not self._retry_failed(term, result):
@@ -97,6 +105,7 @@ class StatusTrackingService:
             closed_grace_days=self._closed_grace_days,
             passed_max_days=self._passed_max_days,
             now=now,
+            changed_since=changed_since,
         )
         # Pre-print bills have no legislative process yet: _reconcile_pre_print handles them.
         followed = [bill for bill in tracked if not bill.is_pre_print]
@@ -129,7 +138,10 @@ class StatusTrackingService:
         if result.fatal_error is None and publish and self._in_force_reminders:
             self._remind_in_force(term, result)
         log.info(
-            "tracking: checked=%d changed=%d reanalyzed=%d published=%d failed=%d",
+            "tracking (%s): checked=%d changed=%d reanalyzed=%d published=%d failed=%d",
+            "all followed bills"
+            if changed_since is None
+            else f"changed since {changed_since:%F %R}",
             result.checked,
             result.changed,
             result.reanalyzed,

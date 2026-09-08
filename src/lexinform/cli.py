@@ -86,6 +86,12 @@ def run(
         bool, typer.Option("--no-publish", help="Analyse but mark candidates as skipped.")
     ] = False,
     no_track: Annotated[bool, typer.Option("--no-track", help="Skip status tracking.")] = False,
+    full_track: Annotated[
+        bool,
+        typer.Option(
+            "--full-track", help="Check every followed bill, not only those modified since."
+        ),
+    ] = False,
     max_publish: Annotated[int | None, typer.Option(help="Cap on new posts per run.")] = None,
     max_analyze: Annotated[int | None, typer.Option(help="Cap on LLM analyses per run.")] = None,
     min_score: Annotated[
@@ -112,6 +118,7 @@ def run(
                 dry_run=dry_run,
                 publish=not no_publish,
                 track=not no_track,
+                full_track=full_track,
                 max_publish=s.max_publish_per_run if max_publish is None else max_publish,
                 max_analyze=s.max_analyze_per_run if max_analyze is None else max_analyze,
                 min_score=s.min_score if min_score is None else min_score,
