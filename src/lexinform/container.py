@@ -153,6 +153,11 @@ class Container:
                 closed_grace_days=self.settings.track_closed_grace_days,
                 passed_max_days=self.settings.track_passed_max_days,
                 in_force_reminders=self.settings.in_force_reminders,
+                consultation_reminder_days=(
+                    self.settings.consultation_reminder_days
+                    if self.settings.consultation_reminders
+                    else None
+                ),
                 max_publish_attempts=self.settings.max_publish_attempts,
                 club_breakdown=self.settings.voting_club_breakdown,
                 workers=self.settings.sejm_concurrency,

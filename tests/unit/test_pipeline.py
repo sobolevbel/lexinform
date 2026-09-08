@@ -1075,3 +1075,54 @@ def test_passed_bills_waiting_for_their_act_are_always_checked() -> None:
     w.gateway.calls.clear()
     report = w.run(since=dt.datetime(2026, 9, 8, tzinfo=dt.UTC))  # nothing listed as changed
     assert report.tracked == 1 and "get_process:3039" in w.gateway.calls  # type: ignore[attr-defined]
+
+
+# --------------------------------------------------------------------------- consultation reminder
+
+
+def test_consultation_deadline_is_reminded_once_a_few_days_ahead() -> None:
+    w = World()  # clock: 2026-09-07
+    w.gateway.submissions.append(_submission(consultation_end=dt.date(2026, 9, 20)))
+    report = w.run()
+    assert report.published == 1 and report.consultation_reminders == 0  # type: ignore[attr-defined]
+    card_id = w.repo.get_publication(10, RPW, "new_bill", CHANNEL).message_id  # type: ignore[union-attr]
+
+    w.clock.advance(days=10)  # 2026-09-17: three days left
+    report = w.run()
+    assert report.consultation_reminders == 1  # type: ignore[attr-defined]
+    bill, reply_to, today = w.publisher.consultations[0]
+    assert bill.number == RPW and reply_to == card_id and today == dt.date(2026, 9, 17)
+    text = MessageFormatter("ru").consultation_deadline(bill, today=today).text
+    assert "Консультации заканчиваются — RPW/29075/2026" in text
+    assert "до 20.09.2026 · осталось дней: 3" in text and "#консультации" in text
+    assert (
+        "сегодня последний день"
+        in MessageFormatter("ru").consultation_deadline(bill, today=dt.date(2026, 9, 20)).text
+    )
+
+    w.clock.advance(days=1)
+    assert w.run().consultation_reminders == 0  # type: ignore[attr-defined]
+    assert len(w.publisher.consultations) == 1
+
+    w.clock.advance(days=5)  # 2026-09-23: over, never reminded late
+    w.gateway.submissions.append(
+        _submission(number="RPW/1/2026", consultation_end=dt.date(2026, 9, 21))
+    )
+    assert w.run().consultation_reminders == 0  # type: ignore[attr-defined]
+
+
+def test_consultation_reminder_failure_is_retried_next_run() -> None:
+    w = World()
+    w.gateway.submissions.append(_submission(consultation_end=dt.date(2026, 9, 9)))
+    w.publisher.fail_on = {RPW}
+    w.run()  # card fails too: nothing to remind under
+    w.publisher.fail_on = set()
+    report = w.run()
+    assert report.published == 1 and report.consultation_reminders == 1  # type: ignore[attr-defined]
+    w.publisher.fail_on = {RPW}
+    w.gateway.submissions.append(
+        _submission(number="RPW/2/2026", consultation_end=dt.date(2026, 9, 8))
+    )
+    w.publisher.fail_on = set()
+    report = w.run()
+    assert report.consultation_reminders == 1 and len(w.publisher.consultations) == 2  # type: ignore[attr-defined]

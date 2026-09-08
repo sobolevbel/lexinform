@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass, field
+from datetime import date
 from typing import TextIO
 
 from lexinform.adapters.telegram_format import MessageFormatter
@@ -52,6 +53,15 @@ class ConsolePublisher:
     def publish_in_force(self, bill: Bill, reply_to: int | None) -> ConsolePublishResult:
         rendered = self._formatter.in_force(bill)
         message_id = self._emit(f"IN FORCE druk {bill.number} (reply to {reply_to})", rendered.text)
+        return ConsolePublishResult(message_id=message_id)
+
+    def publish_consultation_deadline(
+        self, bill: Bill, reply_to: int | None, *, today: date
+    ) -> ConsolePublishResult:
+        rendered = self._formatter.consultation_deadline(bill, today=today)
+        message_id = self._emit(
+            f"CONSULTATION DEADLINE {bill.number} (reply to {reply_to})", rendered.text
+        )
         return ConsolePublishResult(message_id=message_id)
 
 

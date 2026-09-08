@@ -336,6 +336,36 @@ class MessageFormatter:
         fixed = [header, facts, links_block, tags]
         return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block, practical]))
 
+    def consultation_deadline(self, bill: Bill, *, today: dt.date) -> RenderedMessage:
+        """Reply under the card a few days before the public consultation closes."""
+        lb = self._labels
+        sub = bill.submission
+        if sub is None or sub.consultation_end is None:
+            raise ValueError(f"bill {bill.number} has no consultation end date")
+        days_left = (sub.consultation_end - today).days
+        header = (
+            f"{ICON['consultation']} <b>{esc(lb.consultation_deadline_header)} — "
+            f"{self._number_label(bill)}</b>\n\n<b>{esc(bill.summary.title)}</b>"
+        )
+        countdown = (
+            esc(lb.consultation_last_day)
+            if days_left <= 0
+            else f"{esc(lb.consultation_days_left)}: {days_left}"
+        )
+        facts = (
+            f"{ICON['effective']} <b>{esc(lb.consultation)}:</b> {esc(lb.consultation_until)} "
+            f"{self.fmt_date(sub.consultation_end)} · {countdown}\n"
+            f"{ICON['note']} {esc(lb.consultation_hint)}"
+        )
+        summary_block = ""
+        if bill.analysis is not None:
+            a = bill.analysis.analysis
+            summary_block = f"{ICON['about']} <b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
+        links_block = f"{ICON['links']} " + link(bill.summary.web_url, lb.link_process)
+        tags = f"#{lb.tag_consultations} {self._number_tag(bill)} #Sejm{bill.term}"
+        fixed = [header, facts, links_block, tags]
+        return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block]))
+
     def _act_links(self, bill: Bill, act: ActInfo) -> list[str]:
         lb = self._labels
         links = [link(bill.summary.web_url, lb.link_process)]
@@ -368,7 +398,8 @@ class MessageFormatter:
                 f"published: {report.published} · tracked: {report.tracked} · "
                 f"updates: {report.updates} · re-analyzed: {report.reanalyzed} · "
                 f"linked: {report.linked}",
-                f"acts published: {report.acts_published} · in force: {report.in_force_posted}",
+                f"acts published: {report.acts_published} · in force: {report.in_force_posted}"
+                f" · consultation reminders: {report.consultation_reminders}",
                 _tokens_line(report),
             ]
             + (

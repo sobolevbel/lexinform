@@ -99,6 +99,10 @@ class Publisher(Protocol):
 
     def publish_in_force(self, bill: Bill, reply_to: int | None) -> PublishResult: ...
 
+    def publish_consultation_deadline(
+        self, bill: Bill, reply_to: int | None, *, today: date
+    ) -> PublishResult: ...
+
 
 class RunNotifier(Protocol):
     def notify(self, report: RunReport, log_lines: list[str]) -> None: ...
@@ -188,6 +192,10 @@ class BillRepository(Protocol):
     def save_authors(self, term: int, number: str, authors: BillAuthors) -> None: ...
 
     def list_due_in_force(self, term: int, channel_id: str, *, today: date) -> list[Bill]: ...
+
+    def list_due_consultations(
+        self, term: int, channel_id: str, *, today: date, days_before: int
+    ) -> list[Bill]: ...
 
     def list_failed_status_changes(
         self, term: int, channel_id: str, *, max_attempts: int

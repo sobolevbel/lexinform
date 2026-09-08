@@ -76,6 +76,10 @@ class Labels:
     link_act_pdf: str
     tag_published: str
     tag_in_force: str
+    consultation_deadline_header: str
+    consultation_days_left: str
+    consultation_last_day: str
+    tag_consultations: str
     date_format: str = "%Y-%m-%d"
     stage_type_labels: dict[str, str] = field(default_factory=dict)
     senate_position_labels: dict[str, str] = field(default_factory=dict)
@@ -153,6 +157,10 @@ RU = Labels(
     link_act_pdf="Текст закона (PDF)",
     tag_published="опубликован",
     tag_in_force="вступилвсилу",
+    consultation_deadline_header="Консультации заканчиваются",
+    consultation_days_left="осталось дней",
+    consultation_last_day="сегодня последний день",
+    tag_consultations="консультации",
     date_format="%d.%m.%Y",
     stage_type_labels={
         "ToPresident": "Закон передан Президенту",
@@ -271,6 +279,10 @@ EN = Labels(
     link_act_pdf="Act text (PDF)",
     tag_published="published",
     tag_in_force="inforce",
+    consultation_deadline_header="Public consultation is closing",
+    consultation_days_left="days left",
+    consultation_last_day="today is the last day",
+    tag_consultations="consultation",
     stage_type_labels={
         "ToPresident": "Sent to the President",
         "PresidentSignature": "✍️ Signed by the President",

@@ -41,10 +41,11 @@ Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony na te
 #важность5 #легализация #druk3039 #Sejm10
 ```
 
-Replies cover: new stages (committee referral with the committee's name, readings, votes with the
-per-club breakdown, Senate position, President's signature or veto), a fresh analysis with "what
-changed" when the bill's text changes, "published in Dziennik Ustaw" with the entry-into-force date,
-and a reminder on the day the act enters into force.
+Replies cover: a reminder three days before a public consultation closes, new stages (committee
+referral with the committee's name, readings, votes with the per-club breakdown, Senate position,
+President's signature or veto), a fresh analysis with "what changed" when the bill's text changes,
+"published in Dziennik Ustaw" with the entry-into-force date, and a reminder on the day the act
+enters into force.
 
 Bills that have no print (druk) number yet (`RPW/…`, the consultation stage) are covered too, from
 their official description; when the print number is assigned the thread continues under the same
@@ -141,6 +142,7 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_TRACK_CLOSED_GRACE_DAYS` / `_TRACK_PASSED_MAX_DAYS` | `90` / `180` | How long closed / passed-but-unpublished bills are followed |
 | `LEXINFORM_TRACK_FULL_WEEKDAY` | `0` (Monday) | Weekday on which every followed bill is checked, not only the changed ones |
 | `LEXINFORM_IN_FORCE_REMINDERS` | `true` | Reminder on the entry-into-force day |
+| `LEXINFORM_CONSULTATION_REMINDERS` / `_CONSULTATION_REMINDER_DAYS` | `true` / `3` | Reminder this many days before a public consultation closes |
 | `LEXINFORM_MAX_PUBLISH_ATTEMPTS` | `3` | Retries of a failed Telegram post |
 | `LEXINFORM_LOG_LEVEL` / `LEXINFORM_LOG_JSON` | `INFO` / `false` | Logging |
 

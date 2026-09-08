@@ -22,7 +22,6 @@ Done the same day, see the commit history:
 
 Still open:
 
-- Consultation deadline reminder (e.g. 3 days before `publicConsultationEndDate`).
 - Medium tier of action signals: committee sitting agendas (`/committees/{code}/sittings`) and the
   next Sejm sitting agenda (`/proceedings`) mentioning the bill.
 - Ukrainian-language channel; weekly digest; static site from the state dump.

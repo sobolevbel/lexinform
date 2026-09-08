@@ -62,6 +62,7 @@ class PublicationKind(StrEnum):
     STATUS_UPDATE = "status_update"
     ACT_PUBLISHED = "act_published"  # the act appeared in Dziennik Ustaw
     IN_FORCE = "in_force"  # reminder on the day the act enters into force
+    CONSULTATION_DEADLINE = "consultation_deadline"  # public consultation ends in a few days
 
 
 class PublicationStatus(StrEnum):
@@ -601,6 +602,7 @@ class RunReport(BaseModel):
     text_prefilter_hits: int = 0
     acts_published: int = 0
     in_force_posted: int = 0
+    consultation_reminders: int = 0
     analyzed: int = 0
     triaged_out: int = 0  # rejected by the cheap first pass, no full analysis
     analysis_failures: int = 0

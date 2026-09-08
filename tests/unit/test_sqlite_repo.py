@@ -195,6 +195,10 @@ def test_restore_of_a_previous_schema_dump_applies_missing_migrations() -> None:
     assert {"submission_json", "linked_number", "act_json", "entry_into_force"} <= bill_columns
     # the v2 backfill copies ok -> discovery_ok for old runs
     assert repo.last_discovery_started_at() is not None
+    indexes = {
+        r[0] for r in repo._conn.execute("SELECT name FROM sqlite_master WHERE type='index'")
+    }
+    assert {"ux_pub_once_per_kind", "ux_pub_consultation"} <= indexes  # v4, v6
 
 
 def test_failed_status_updates_are_listed_for_retry(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]

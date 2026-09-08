@@ -191,6 +191,7 @@ class FakePublisher:
         self.updates: list[tuple[Bill, StatusChange, int | None]] = []
         self.acts: list[tuple[Bill, int | None]] = []
         self.in_force: list[tuple[Bill, int | None]] = []
+        self.consultations: list[tuple[Bill, int | None, date]] = []
         self.fail_on = fail_on or set()
         self._next_id = 100
 
@@ -222,6 +223,14 @@ class FakePublisher:
         if bill.number in self.fail_on:
             raise RuntimeError("telegram down")
         self.in_force.append((bill, reply_to))
+        return FakePublishResult(message_id=self._id())
+
+    def publish_consultation_deadline(
+        self, bill: Bill, reply_to: int | None, *, today: date
+    ) -> FakePublishResult:
+        if bill.number in self.fail_on:
+            raise RuntimeError("telegram down")
+        self.consultations.append((bill, reply_to, today))
         return FakePublishResult(message_id=self._id())
 
 

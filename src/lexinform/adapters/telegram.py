@@ -6,6 +6,7 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Any
 
 import httpx2 as httpx
@@ -140,6 +141,13 @@ class TelegramPublisher:
 
     def publish_in_force(self, bill: Bill, reply_to: int | None) -> TelegramPublishResult:
         rendered = self._formatter.in_force(bill)
+        message_id = self._client.send_message(self._channel_id, rendered.text, reply_to=reply_to)
+        return TelegramPublishResult(message_id=message_id)
+
+    def publish_consultation_deadline(
+        self, bill: Bill, reply_to: int | None, *, today: date
+    ) -> TelegramPublishResult:
+        rendered = self._formatter.consultation_deadline(bill, today=today)
         message_id = self._client.send_message(self._channel_id, rendered.text, reply_to=reply_to)
         return TelegramPublishResult(message_id=message_id)
 

@@ -67,6 +67,8 @@ class Settings(BaseSettings):
     track_passed_max_days: int = 180  # follow passed bills without a published act this long
     track_full_weekday: int = Field(default=0, ge=0, le=6)  # weekday of the full check (0 = Monday)
     in_force_reminders: bool = True  # post a reminder on the day the act enters into force
+    consultation_reminders: bool = True  # remind before a public consultation closes ...
+    consultation_reminder_days: int = Field(default=3, ge=0)  # ... this many days ahead
 
     # Logging
     log_level: str = "INFO"

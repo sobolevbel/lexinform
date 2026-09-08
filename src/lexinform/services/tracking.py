@@ -8,7 +8,7 @@ updated print) the bill is re-analysed first and the update also lists what chan
 import hashlib
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 from lexinform.concurrency import fan_out
@@ -41,6 +41,7 @@ class TrackingResult:
     linked: int = 0
     acts_published: int = 0
     in_force_posted: int = 0
+    consultation_reminders: int = 0
     reanalyzed: int = 0
     published: int = 0
     failed: int = 0
@@ -66,6 +67,7 @@ class StatusTrackingService:
         max_publish_attempts: int = 3,
         club_breakdown: bool = True,
         in_force_reminders: bool = True,
+        consultation_reminder_days: int | None = 3,
         local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
         workers: int = 1,
     ) -> None:
@@ -79,6 +81,7 @@ class StatusTrackingService:
         self._closed_grace_days = closed_grace_days
         self._passed_max_days = passed_max_days
         self._in_force_reminders = in_force_reminders
+        self._consultation_days = consultation_reminder_days  # None disables the reminder
         self._local_tz = local_tz
         self._max_publish_attempts = max_publish_attempts
         self._club_breakdown = club_breakdown
@@ -137,6 +140,8 @@ class StatusTrackingService:
                 break
         if result.fatal_error is None and publish and self._in_force_reminders:
             self._remind_in_force(term, result)
+        if result.fatal_error is None and publish and self._consultation_days is not None:
+            self._remind_consultations(term, result)
         log.info(
             "tracking (%s): checked=%d changed=%d reanalyzed=%d published=%d failed=%d",
             "all followed bills"
@@ -486,6 +491,28 @@ class StatusTrackingService:
                 log.error("aborting tracking phase: %s", result.fatal_error)
                 return
 
+    def _remind_consultations(self, term: int, result: TrackingResult) -> None:
+        """A reply under the card when the public consultation closes within a few days: the
+        moment readers can still send an opinion."""
+        assert self._consultation_days is not None
+        today = self._clock.now().astimezone(self._local_tz).date()
+        due = self._repo.list_due_consultations(
+            term, self._channel_id, today=today, days_before=self._consultation_days
+        )
+        for bill in due:
+            if self._posted(bill, PublicationKind.CONSULTATION_DEADLINE):
+                continue
+            try:
+                if self._publish_kind(bill, PublicationKind.CONSULTATION_DEADLINE, today=today):
+                    result.consultation_reminders += 1
+                else:
+                    result.failed += 1
+            except ServiceUnavailableError as exc:
+                result.failed += 1
+                result.fatal_error = exc.describe()
+                log.error("aborting tracking phase: %s", result.fatal_error)
+                return
+
     def _posted(self, bill: Bill, kind: PublicationKind) -> bool:
         """True when a post of this kind exists and must not be attempted (again)."""
         pub = self._repo.get_publication(bill.term, bill.number, kind.value, self._channel_id)
@@ -507,8 +534,11 @@ class StatusTrackingService:
             )
         )
 
-    def _publish_kind(self, bill: Bill, kind: PublicationKind) -> bool:
-        """Post an act notice or an in-force reminder as a reply to the card (pending first)."""
+    def _publish_kind(
+        self, bill: Bill, kind: PublicationKind, *, today: date | None = None
+    ) -> bool:
+        """Post a one-off reply to the card (act notice, in-force or consultation reminder),
+        recording it as pending first."""
         pub_id = self._record(bill, kind, PublicationStatus.PENDING)
         card = self._repo.get_publication(
             bill.term, bill.number, PublicationKind.NEW_BILL.value, self._channel_id
@@ -517,6 +547,9 @@ class StatusTrackingService:
         try:
             if kind is PublicationKind.ACT_PUBLISHED:
                 sent = self._publisher.publish_act_published(bill, reply_to)
+            elif kind is PublicationKind.CONSULTATION_DEADLINE:
+                assert today is not None
+                sent = self._publisher.publish_consultation_deadline(bill, reply_to, today=today)
             else:
                 sent = self._publisher.publish_in_force(bill, reply_to)
         except ServiceUnavailableError as exc:
