@@ -169,6 +169,8 @@ The rubric is in `src/lexinform/adapters/llm_prompts.py`; `PROMPT_VERSION` is st
 | `lexinform preview NUMBER [--to CHAT]` | Render or send the card |
 | `lexinform track [--dry-run]` | Only the tracking phase |
 | `lexinform show NUMBER` | API data and local status (`RPW/…` numbers show the submission) |
+| `lexinform republish NUMBER [-y]` | Post a bill's card again after a failed or lost post |
+| `lexinform reset NUMBER [--to STATUS] [-y]` | Put a bill back into a status with a clean retry budget |
 | `lexinform db init / dump FILE / restore FILE [--missing-ok]` | Database maintenance |
 
 ## Code layout

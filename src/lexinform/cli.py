@@ -19,6 +19,7 @@ from lexinform.models import (
     Bill,
     BillStatus,
     ProcessSummary,
+    PublicationKind,
     RunReport,
     flatten_stages,
     is_pre_print_number,
@@ -351,6 +352,75 @@ def show(
             else "not in database"
         )
     )
+
+
+YesOpt = Annotated[bool, typer.Option("--yes", "-y", help="Do not ask for confirmation.")]
+
+
+@app.command()
+def republish(
+    number: Annotated[str, typer.Argument(help="Print (druk) or RPW number.")],
+    yes: YesOpt = False,
+) -> None:
+    """Post the card of a bill again (after a failed, unknown or accidentally deleted post).
+
+    Forgets the channel's `new_bill` publication row and sends the card through the normal
+    path, so the pending-before-send protocol and the retry bookkeeping still apply. Updates,
+    act notices and reminders keep replying to the new card from now on.
+    """
+    c = _container()
+    try:
+        bill = _load_bill(c, number)
+        if bill.analysis is None or not bill.analysis.analysis.relevant:
+            typer.echo(f"{number} has no relevant analysis; nothing to publish", err=True)
+            raise typer.Exit(code=2)
+        channel = c.channel_id()
+        existing = c.repo.get_publication(
+            bill.term, bill.number, PublicationKind.NEW_BILL.value, channel
+        )
+        state = f"{existing.status.value} (message {existing.message_id})" if existing else "none"
+        typer.echo(f"{number}: current card in {channel}: {state}")
+        if not yes and not typer.confirm("Send the card again?"):
+            raise typer.Exit(code=1)
+        kind = PublicationKind.NEW_BILL.value
+        c.repo.delete_publication(bill.term, bill.number, kind, channel)
+        ok = c.publishing_service(dry_run=False).publish_bill(bill)
+        fresh = c.repo.get_publication(
+            bill.term, bill.number, PublicationKind.NEW_BILL.value, channel
+        )
+        typer.echo(
+            f"sent message {fresh.message_id}" if ok and fresh else "sending failed, see the log"
+        )
+        raise typer.Exit(code=0 if ok else 1)
+    finally:
+        c.close()
+
+
+@app.command()
+def reset(
+    number: Annotated[str, typer.Argument(help="Print (druk) or RPW number.")],
+    to: Annotated[
+        BillStatus, typer.Option("--to", help="Status to put the bill into.")
+    ] = BillStatus.ANALYSIS_PENDING,
+    yes: YesOpt = False,
+) -> None:
+    """Put a bill back into a status with a clean retry budget (e.g. re-run a failed analysis).
+
+    `--to analysis_pending` re-analyses the bill on the next run; `--to skipped_prefilter`
+    silences a false positive. Existing analyses and posts are left untouched.
+    """
+    c = _container()
+    try:
+        bill = _load_bill(c, number)
+        typer.echo(
+            f"{number}: {bill.status.value} (attempts {bill.analysis_attempts}) -> {to.value}"
+        )
+        if not yes and not typer.confirm("Apply?"):
+            raise typer.Exit(code=1)
+        c.repo.reset_bill(bill.term, bill.number, to)
+        typer.echo("done")
+    finally:
+        c.close()
 
 
 @db_app.command("init")

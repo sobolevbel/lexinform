@@ -376,3 +376,30 @@ def test_in_force_reminders_are_due_once(repo, process_3039, now) -> None:  # ty
     )
     assert first == again  # one reminder per bill and channel, enforced by the schema
     assert repo.list_due_in_force(10, "chan", today=date(2026, 12, 1)) == []
+
+
+def test_operator_actions_reset_bill_and_forget_publication(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
+    repo.upsert_summary(process_3039, now=now)
+    repo.record_analysis_failure(10, "3039", "boom")
+    repo.record_analysis_failure(10, "3039", "boom again")
+    assert repo.get(10, "3039").analysis_attempts == 2  # type: ignore[union-attr]
+    repo.reset_bill(10, "3039", BillStatus.ANALYSIS_PENDING)
+    bill = repo.get(10, "3039")
+    assert bill is not None and bill.status is BillStatus.ANALYSIS_PENDING
+    assert bill.analysis_attempts == 0 and bill.last_error is None
+
+    pub_id = repo.create_publication(
+        Publication(
+            term=10,
+            number="3039",
+            kind=PublicationKind.NEW_BILL,
+            status=PublicationStatus.SENT,
+            channel_id="chan",
+            message_id=7,
+            created_at=now,
+        )
+    )
+    assert pub_id and repo.get_publication(10, "3039", "new_bill", "chan") is not None
+    assert repo.delete_publication(10, "3039", "new_bill", "chan") == 1
+    assert repo.get_publication(10, "3039", "new_bill", "chan") is None
+    assert repo.delete_publication(10, "3039", "new_bill", "chan") == 0

@@ -305,6 +305,14 @@ class SqliteBillRepository:
             (BillStatus.ANALYSIS_FAILED.value, error[:2000], term, number),
         )
 
+    def reset_bill(self, term: int, number: str, status: BillStatus) -> None:
+        """Operator action: put a bill back into `status` with a clean retry budget."""
+        self._conn.execute(
+            "UPDATE bills SET status = ?, analysis_attempts = 0, last_error = NULL"
+            " WHERE term = ? AND number = ?",
+            (status.value, term, number),
+        )
+
     def list_by_status(
         self,
         term: int,
@@ -579,6 +587,16 @@ class SqliteBillRepository:
             (term, number, kind, channel_id),
         ).fetchone()
         return self._row_to_publication(row) if row else None
+
+    def delete_publication(self, term: int, number: str, kind: str, channel_id: str) -> int:
+        """Operator action: forget a post so the normal path can send it again. Returns the
+        number of rows removed (0 or 1)."""
+        cur = self._conn.execute(
+            "DELETE FROM publications"
+            " WHERE term = ? AND number = ? AND kind = ? AND channel_id = ?",
+            (term, number, kind, channel_id),
+        )
+        return int(cur.rowcount)
 
     def mark_stale_pending_as_unknown(self, *, now: datetime) -> int:
         cur = self._conn.execute(

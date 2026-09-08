@@ -129,6 +129,8 @@ class BillRepository(Protocol):
 
     def record_analysis_failure(self, term: int, number: str, error: str) -> None: ...
 
+    def reset_bill(self, term: int, number: str, status: BillStatus) -> None: ...
+
     def list_by_status(
         self,
         term: int,
@@ -170,6 +172,8 @@ class BillRepository(Protocol):
     def get_publication(
         self, term: int, number: str, kind: str, channel_id: str
     ) -> Publication | None: ...
+
+    def delete_publication(self, term: int, number: str, kind: str, channel_id: str) -> int: ...
 
     def mark_stale_pending_as_unknown(self, *, now: datetime) -> int: ...
 

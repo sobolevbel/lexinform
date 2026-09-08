@@ -126,6 +126,16 @@ class Container:
     def channel_id(self) -> str:
         return self.settings.telegram_channel_id or "console"
 
+    def publishing_service(self, *, dry_run: bool) -> PublishingService:
+        return PublishingService(
+            self.gateway,
+            self.repo,
+            self.publisher(dry_run=dry_run),
+            self.clock,
+            channel_id=self.channel_id(),
+            max_attempts=self.settings.max_publish_attempts,
+        )
+
     def pipeline(self, *, dry_run: bool) -> DailyPipeline:
         publisher = self.publisher(dry_run=dry_run)
         channel = self.channel_id()
@@ -134,14 +144,7 @@ class Container:
             self.repo,
             self.discovery_service(),
             analysis,
-            PublishingService(
-                self.gateway,
-                self.repo,
-                publisher,
-                self.clock,
-                channel_id=channel,
-                max_attempts=self.settings.max_publish_attempts,
-            ),
+            self.publishing_service(dry_run=dry_run),
             StatusTrackingService(
                 self.gateway,
                 self.repo,
