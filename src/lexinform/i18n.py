@@ -80,6 +80,7 @@ class Labels:
     consultation_days_left: str
     consultation_last_day: str
     tag_consultations: str
+    tag_term: str  # "#<tag_term><term number>": the Sejm term (kadencja) the bill belongs to
     date_format: str = "%Y-%m-%d"
     stage_type_labels: dict[str, str] = field(default_factory=dict)
     senate_position_labels: dict[str, str] = field(default_factory=dict)
@@ -161,6 +162,7 @@ RU = Labels(
     consultation_days_left="осталось дней",
     consultation_last_day="сегодня последний день",
     tag_consultations="консультации",
+    tag_term="каденция",
     date_format="%d.%m.%Y",
     stage_type_labels={
         "ToPresident": "Закон передан Президенту",
@@ -283,6 +285,7 @@ EN = Labels(
     consultation_days_left="days left",
     consultation_last_day="today is the last day",
     tag_consultations="consultation",
+    tag_term="term",
     stage_type_labels={
         "ToPresident": "Sent to the President",
         "PresidentSignature": "✍️ Signed by the President",

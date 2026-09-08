@@ -195,7 +195,7 @@ class MessageFormatter:
                 f"#{lb.tag_importance}{a.score}",
                 f"#{lb.category_tags.get(a.category, a.category.value)}",
                 self._number_tag(bill),
-                f"#Sejm{s.term}",
+                self._term_tag(s.term),
             ]
         )
 
@@ -267,7 +267,7 @@ class MessageFormatter:
         elif bill.analysis and bill.analysis.source_url and change.content_changed:
             links.append(link(bill.analysis.source_url, lb.link_pdf))
         links_block = f"{ICON['links']} " + " | ".join(links)
-        tags = f"#{lb.tag_update} {self._number_tag(bill)} #Sejm{s.term}"
+        tags = f"#{lb.tag_update} {self._number_tag(bill)} {self._term_tag(s.term)}"
 
         fixed = [header, badge, closure, consultation, links_block, tags]
         text = self._assemble(fixed, flexible=[stages_block, changes_block, summary_block])
@@ -302,7 +302,7 @@ class MessageFormatter:
         lines.append(f"{ICON['note']} <i>{esc(lb.partial_vacatio_note)}</i>")
         facts = "\n".join(lines)
         links_block = f"{ICON['links']} " + " | ".join(self._act_links(bill, act))
-        tags = f"#{lb.tag_published} {self._number_tag(bill)} #Sejm{bill.term}"
+        tags = f"#{lb.tag_published} {self._number_tag(bill)} {self._term_tag(bill.term)}"
         return RenderedMessage(text=self._assemble([header, facts, links_block, tags], flexible=[]))
 
     def in_force(self, bill: Bill) -> RenderedMessage:
@@ -332,7 +332,7 @@ class MessageFormatter:
                     f"{esc(a.practical_impact.strip())}"
                 )
         links_block = f"{ICON['links']} " + " | ".join(self._act_links(bill, act))
-        tags = f"#{lb.tag_in_force} {self._number_tag(bill)} #Sejm{bill.term}"
+        tags = f"#{lb.tag_in_force} {self._number_tag(bill)} {self._term_tag(bill.term)}"
         fixed = [header, facts, links_block, tags]
         return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block, practical]))
 
@@ -362,7 +362,7 @@ class MessageFormatter:
             a = bill.analysis.analysis
             summary_block = f"{ICON['about']} <b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
         links_block = f"{ICON['links']} " + link(bill.summary.web_url, lb.link_process)
-        tags = f"#{lb.tag_consultations} {self._number_tag(bill)} #Sejm{bill.term}"
+        tags = f"#{lb.tag_consultations} {self._number_tag(bill)} {self._term_tag(bill.term)}"
         fixed = [header, facts, links_block, tags]
         return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block]))
 
@@ -437,6 +437,9 @@ class MessageFormatter:
         if bill.is_pre_print:
             return f"{esc(bill.number)} ({esc(self._labels.no_print_yet)})"
         return f"druk nr {esc(bill.number)}"
+
+    def _term_tag(self, term: int) -> str:
+        return f"#{self._labels.tag_term}{term}"
 
     @staticmethod
     def _number_tag(bill: Bill) -> str:

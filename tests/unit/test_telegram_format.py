@@ -80,7 +80,7 @@ def test_new_bill_card_contains_all_sections(process_3039, print_3039) -> None: 
     assert "О чём проект" in text and "Ключевые изменения" in text
     assert "PrzebiegProc.xsp?nr=3039" in text
     assert "prints/3039/3039.pdf" in text
-    assert "#важность5 #легализация #druk3039 #Sejm10" in text
+    assert "#важность5 #легализация #druk3039 #каденция10" in text
     assert "Стадия:</b> Skierowanie" in text
 
 
