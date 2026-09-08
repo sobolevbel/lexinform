@@ -3,7 +3,9 @@
 Daily bot: finds Polish Sejm bills that affect foreigners, scores them 1–5 with an LLM, posts
 Russian cards to a Telegram channel and follows each bill until the act is in force. The point is
 not a chronicle but *timely action*: consultations, committee referrals, hearings, deadlines.
-Everything else in `README.md`; roadmap and verified API facts in `docs/roadmap.md`.
+Everything else in `README.md`; roadmap and verified API facts in `docs/roadmap.md`; the whole
+legislative process (RCL → Sejm → Senate → President → Dz.U.), its deadlines, the public's
+windows and the API stage vocabulary in `docs/legislative-process.md`.
 
 ## Working rules
 

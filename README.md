@@ -206,7 +206,9 @@ tests/                       unit tests on fakes + recorded API fixtures; `-m in
 ```
 
 Services depend only on `ports.py`, so swapping the LLM, the database or the messenger means one
-adapter. Roadmap and verified API facts: `docs/roadmap.md`. Contributing: `CONTRIBUTING.md`.
+adapter. Roadmap and verified API facts: `docs/roadmap.md`. How a Polish law is made, with the
+deadlines, the public's windows and the API stage vocabulary: `docs/legislative-process.md`.
+Contributing: `CONTRIBUTING.md`.
 
 ## License
 
