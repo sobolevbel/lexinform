@@ -7,6 +7,7 @@ failure is recorded on the same row and retried on later runs up to `max_attempt
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from datetime import date
 
 from lexinform.errors import ServiceUnavailableError
@@ -81,13 +82,12 @@ class Poster:
         )
         card = self.card(bill)
         fresh = self._repo.get(bill.term, bill.number) or bill
+        reply_to = card.message_id if card else None
         return self._send(
             pub_id,
             bill,
             "status update",
-            lambda: self._publisher.publish_status_update(
-                fresh, change, card.message_id if card else None
-            ),
+            lambda: self._publisher.publish_status_update(fresh, change, reply_to).message_id,
         )
 
     def one_off(self, bill: Bill, kind: PublicationKind, *, today: date | None = None) -> bool:
@@ -108,9 +108,10 @@ class Poster:
 
         return self._send(pub_id, bill, kind.value, send)
 
-    def _send(self, pub_id: int, bill: Bill, what: str, send: object) -> bool:
+    def _send(self, pub_id: int, bill: Bill, what: str, send: Callable[[], int]) -> bool:
+        """Run `send`, then mark the pending row sent or failed; outages propagate."""
         try:
-            message_id = self._message_id(send())  # type: ignore[operator]
+            message_id = send()
         except ServiceUnavailableError as exc:
             self._repo.mark_publication(pub_id, PublicationStatus.FAILED, error=exc.describe())
             raise
@@ -124,7 +125,3 @@ class Poster:
             pub_id, PublicationStatus.SENT, message_id=message_id, sent_at=self._clock.now()
         )
         return True
-
-    @staticmethod
-    def _message_id(sent: object) -> int:
-        return sent if isinstance(sent, int) else int(getattr(sent, "message_id"))  # noqa: B009

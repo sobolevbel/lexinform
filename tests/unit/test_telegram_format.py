@@ -205,6 +205,13 @@ def test_run_report_renders_and_fits() -> None:
     assert "timing: discovery 4.1s · text prefilter 60.0s" in text
     # 44k*5 + 2k*0.5 + 3.9k*25 + 4k*2 + 0.1k*10 = $0.3275
     assert "tokens in/out: 50000/4000 · opus-5 46.0k/3.9k · sonnet-5 4.0k/100 · ≈ $0.33" in text
+    one_model = report.model_copy(
+        update={"llm_usage": {"claude-sonnet-5": TokenUsage(input=1_000, output=100)}}
+    )
+    line = MessageFormatter("ru").run_report(one_model, []).text
+    assert "tokens in/out: 50000/4000 · ≈ $0.003" in line and "sonnet-5 1.0k" not in line
+    unknown = report.model_copy(update={"llm_usage": {"fake": TokenUsage(input=1)}})
+    assert "$" not in MessageFormatter("ru").run_report(unknown, []).text
     assert "<b>analysed, not published</b>\n• druk 2695 · triage · Rządowy projekt" in text
     assert "• druk 2411 · score 2 · Poselski projekt" in text
     assert "…" in text and "<x>" not in text  # long title clipped, HTML escaped

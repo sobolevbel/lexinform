@@ -403,3 +403,98 @@ def test_operator_actions_reset_bill_and_forget_publication(repo, process_3039, 
     assert repo.delete_publication(10, "3039", "new_bill", "chan") == 1
     assert repo.get_publication(10, "3039", "new_bill", "chan") is None
     assert repo.delete_publication(10, "3039", "new_bill", "chan") == 0
+
+
+def _card_sent(repo, number: str, now) -> None:  # type: ignore[no-untyped-def]
+    repo.create_publication(
+        Publication(
+            term=10,
+            number=number,
+            kind=PublicationKind.NEW_BILL,
+            status=PublicationStatus.SENT,
+            channel_id="chan",
+            message_id=1,
+            created_at=now,
+        )
+    )
+
+
+def test_list_tracked_filters_by_change_date_and_keeps_passed_bills(
+    repo, process_3039, now
+) -> None:  # type: ignore[no-untyped-def]
+    from datetime import UTC, datetime
+
+    stale = process_3039.model_copy(update={"change_date": datetime(2026, 9, 1, 10, tzinfo=UTC)})
+    fresh = process_3039.model_copy(
+        update={"number": "3040", "change_date": datetime(2026, 9, 6, 10, tzinfo=UTC)}
+    )
+    passed = process_3039.model_copy(
+        update={
+            "number": "3041",
+            "change_date": datetime(2026, 9, 1, 10, tzinfo=UTC),
+            "passed": True,
+            "closure_date": datetime(2026, 9, 1, tzinfo=UTC).date(),
+        }
+    )
+    for summary in (stale, fresh, passed):
+        repo.upsert_summary(summary, now=now)
+        _card_sent(repo, summary.number, now)
+    kwargs = dict(closed_grace_days=90, passed_max_days=180, now=now)
+    assert [b.number for b in repo.list_tracked(10, "chan", **kwargs)] == ["3039", "3040", "3041"]
+    since = datetime(2026, 9, 5, tzinfo=UTC)
+    assert [b.number for b in repo.list_tracked(10, "chan", changed_since=since, **kwargs)] == [
+        "3040",
+        "3041",  # passed without an act: always checked
+    ]
+    # a naive watermark (as stored by the fakes) is compared the same way
+    assert [
+        b.number
+        for b in repo.list_tracked(10, "chan", changed_since=datetime(2026, 9, 5), **kwargs)
+    ] == ["3040", "3041"]
+
+
+def test_list_due_consultations_window_edges(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
+    from datetime import date
+
+    from lexinform.models import BillSubmission
+
+    def bill(number: str, end: date | None, *, public: bool = True) -> None:
+        repo.upsert_summary(process_3039.model_copy(update={"number": number}), now=now)
+        _card_sent(repo, number, now)
+        repo.save_submission(
+            10,
+            number,
+            BillSubmission(
+                term=10,
+                number=f"RPW/{number}/2026",
+                title="t",
+                date_of_receipt=date(2026, 9, 1),
+                public_consultation=public,
+                consultation_end=end,
+            ),
+        )
+
+    today = date(2026, 9, 10)
+    bill("1", date(2026, 9, 10))  # last day: due
+    bill("2", date(2026, 9, 13))  # exactly days_before ahead: due
+    bill("3", date(2026, 9, 14))  # one day too early
+    bill("4", date(2026, 9, 9))  # already over
+    bill("5", date(2026, 9, 11), public=False)  # no public consultation
+    bill("6", None)
+    due = repo.list_due_consultations(10, "chan", today=today, days_before=3)
+    assert [b.number for b in due] == ["1", "2"]
+    repo.create_publication(
+        Publication(
+            term=10,
+            number="1",
+            kind=PublicationKind.CONSULTATION_DEADLINE,
+            status=PublicationStatus.SENT,
+            channel_id="chan",
+            created_at=now,
+        )
+    )
+    assert [
+        b.number for b in repo.list_due_consultations(10, "chan", today=today, days_before=3)
+    ] == ["2"]
+    # another channel has its own reminders
+    assert repo.list_due_consultations(10, "other", today=today, days_before=3) == []
