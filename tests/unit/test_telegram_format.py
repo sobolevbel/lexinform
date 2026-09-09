@@ -881,7 +881,9 @@ def test_run_report_lists_counters_costs_rejections_and_warnings() -> None:
 
     assert_telegram_html(text)
     assert text.startswith("<b>❌")
-    assert "\n\n🔎 <b>discovery</b>\nSejm: 77 new (+0 without print number) · prefilter" in text
+    assert "\n\n🔎 <b>discovery</b>\nSejm: 77 new · prefilter hits: 3\n\n" in text
+    assert "\n🤖 <b>analysis</b>\nanalyzed: 2 · failures: 1\ntokens" in text
+    assert "\n📣 <b>posts</b>\nnew cards: 2 · updates: 1\n\n" in text
     assert "\n\n⏱ <b>timing</b>\ndiscovery 4.1s · text prefilter 60.0s" in text
     assert "\n\n❌ <b>errors</b>\n• 1 publication(s) failed" in text
     # 44k*5 + 2k*0.5 + 3.9k*25 + 4k*2 + 0.1k*10 = $0.3275
@@ -897,6 +899,31 @@ def test_run_report_lists_counters_costs_rejections_and_warnings() -> None:
     assert f"• {rcl} · not relevant · Karta Nauczyciela" in text
     assert "…" in text and "<x>" not in text  # long title clipped, HTML escaped
     assert "<pre>" in text  # the warnings, trimmed to fit
+
+
+def test_run_report_of_a_quiet_run_says_so_instead_of_listing_zeros() -> None:
+    quiet = _report(
+        discovered=0,
+        prefilter_hits=0,
+        analyzed=0,
+        analysis_failures=0,
+        published=0,
+        updates=0,
+        errors=[],
+        llm_input_tokens=0,
+        llm_output_tokens=0,
+        llm_usage={},
+        phase_seconds={"discovery": 0.2, "analysis": 0.0, "publishing": 0.04, "tracking": 4.6},
+        rejected=[],
+    )
+
+    text = MessageFormatter("ru").run_report(quiet, []).text
+
+    assert "🔎 <b>discovery</b>\nnothing new\n\n" in text
+    assert "🤖 <b>analysis</b>\nnothing analyzed\n\n" in text
+    assert "📣 <b>posts</b>\nnothing posted\n\n" in text
+    assert "⏱ <b>timing</b>\ndiscovery 0.2s · tracking 4.6s" in text
+    assert ": 0" not in text and "tokens" not in text
 
 
 def test_run_report_shows_cache_reads_apart_from_the_uncached_input() -> None:

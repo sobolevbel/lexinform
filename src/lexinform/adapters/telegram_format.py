@@ -646,63 +646,73 @@ class MessageFormatter:
             + (f" · term {report.term}" if report.term is not None else "")
             + (f" · {duration}s" if duration is not None else "")
         )
+        # Zero counters say nothing: a section lists what happened, or that nothing did.
         sections = [
             _section(
                 "🔎",
                 "discovery",
-                f"Sejm: {report.discovered} new (+{report.pre_print_discovered} without print"
-                f" number) · prefilter hits: {report.prefilter_hits}",
-                f"RCL: {report.rcl_discovered} new · prefilter hits: {report.rcl_prefilter_hits}",
-                f"text prefilter: checked {report.text_prefilter_checked} · "
-                f"hits {report.text_prefilter_hits}"
-                + (
-                    f" · unreadable {report.text_prefilter_unreadable}"
-                    if report.text_prefilter_unreadable
-                    else ""
+                _counters(
+                    ("Sejm: {} new", report.discovered),
+                    ("+{} without print number", report.pre_print_discovered),
+                    ("prefilter hits: {}", report.prefilter_hits),
                 ),
+                _counters(
+                    ("RCL: {} new", report.rcl_discovered),
+                    ("prefilter hits: {}", report.rcl_prefilter_hits),
+                ),
+                _counters(
+                    ("text prefilter: checked {}", report.text_prefilter_checked),
+                    ("hits {}", report.text_prefilter_hits),
+                    ("unreadable {}", report.text_prefilter_unreadable),
+                ),
+                empty="nothing new",
             ),
             _section(
                 "🤖",
                 "analysis",
-                f"analyzed: {report.analyzed} · triaged out: {report.triaged_out} · "
-                f"failures: {report.analysis_failures}"
-                + (
-                    f" · over the cost limit: {report.analysis_skipped_cost}"
-                    if report.analysis_skipped_cost
-                    else ""
+                _counters(
+                    ("analyzed: {}", report.analyzed),
+                    ("triaged out: {}", report.triaged_out),
+                    ("failures: {}", report.analysis_failures),
+                    ("over the cost limit: {}", report.analysis_skipped_cost),
                 ),
                 _tokens_line(report),
+                empty="nothing analyzed",
             ),
             _section(
                 "📣",
                 "posts",
-                f"new cards: {report.published} · alternatives: {report.joint_published} · "
-                f"updates: {report.updates} · "
-                f"held: {report.held} · re-analyzed: {report.reanalyzed} · "
-                f"linked: {report.linked} · tracked: {report.tracked}",
-                f"acts: {report.acts_published} · in force: {report.in_force_posted}"
-                f" · consultation reminders: {report.consultation_reminders}"
-                f" · results: {report.consultation_results_posted}"
-                f" · agenda: {report.agenda_posted}"
-                f" · hearings: {report.hearing_reminders}",
-                (
-                    f"end of term: {report.discontinued} bill(s) lapsed · "
-                    f"{report.rcl_rehomed} RCL project(s) carried over"
-                    if report.discontinued or report.rcl_rehomed
-                    else ""
+                _counters(
+                    ("new cards: {}", report.published),
+                    ("alternatives: {}", report.joint_published),
+                    ("updates: {}", report.updates),
+                    ("held: {}", report.held),
+                    ("re-analyzed: {}", report.reanalyzed),
+                    ("linked: {}", report.linked),
+                    ("tracked: {}", report.tracked),
                 ),
+                _counters(
+                    ("acts: {}", report.acts_published),
+                    ("in force: {}", report.in_force_posted),
+                    ("consultation reminders: {}", report.consultation_reminders),
+                    ("results: {}", report.consultation_results_posted),
+                    ("agenda: {}", report.agenda_posted),
+                    ("hearings: {}", report.hearing_reminders),
+                ),
+                _counters(
+                    ("end of term: {} bill(s) lapsed", report.discontinued),
+                    ("{} RCL project(s) carried over", report.rcl_rehomed),
+                ),
+                empty="nothing posted",
             ),
         ]
-        if report.phase_seconds:
-            sections.append(
-                _section(
-                    "⏱",
-                    "timing",
-                    " · ".join(
-                        f"{esc(name)} {secs:.1f}s" for name, secs in report.phase_seconds.items()
-                    ),
-                )
-            )
+        timing = " · ".join(
+            f"{esc(name)} {secs:.1f}s"
+            for name, secs in report.phase_seconds.items()
+            if f"{secs:.1f}" != "0.0"  # a phase that had nothing to do
+        )
+        if timing:
+            sections.append(_section("⏱", "timing", timing))
         if report.errors:
             sections.append(_section("❌", "errors", *(f"• {esc(e)}" for e in report.errors)))
         if report.notes:
@@ -1275,7 +1285,9 @@ def _translate(value: str | None, labels: dict[str, str]) -> str | None:
 def _tokens_line(report: RunReport) -> str:
     """`tokens in/out: 12345/678 · cache read 4.0k · opus-5 10.3k/0.6k · sonnet-5 5.8k/0.1k ·
     ≈ $0.06`. Cache reads are shown apart from the uncached input: whether the prompt cache
-    ever hits is otherwise invisible."""
+    ever hits is otherwise invisible. Empty when the model was never called."""
+    if not (report.llm_input_tokens or report.llm_output_tokens or report.llm_usage):
+        return ""
     parts = [f"tokens in/out: {report.llm_input_tokens}/{report.llm_output_tokens}"]
     cached = sum(u.cache_read for u in report.llm_usage.values())
     if cached:
@@ -1295,9 +1307,17 @@ def _k(tokens: int) -> str:
     return f"{tokens / 1000:.1f}k" if tokens >= 1000 else str(tokens)
 
 
-def _section(icon: str, title: str, *lines: str) -> str:
-    """`🔎 <b>title</b>` followed by the non-empty lines, one per row."""
-    return "\n".join([f"{icon} <b>{esc(title)}</b>", *(line for line in lines if line)])
+def _section(icon: str, title: str, *lines: str, empty: str = "") -> str:
+    """`🔎 <b>title</b>` followed by the non-empty lines, one per row; `empty` is the row shown
+    when there are none."""
+    rows = [line for line in lines if line] or ([empty] if empty else [])
+    return "\n".join([f"{icon} <b>{esc(title)}</b>", *rows])
+
+
+def _counters(*items: tuple[str, int]) -> str:
+    """`Sejm: 3 new · prefilter hits: 1`: the templates whose counter is not zero, filled in and
+    joined; empty when every counter is zero."""
+    return " · ".join(template.format(value) for template, value in items if value)
 
 
 def _verdict_ref(verdict: AnalysisVerdict) -> str:

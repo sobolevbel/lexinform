@@ -80,7 +80,8 @@ class BillDiscoveryService:
             if self._ingest(summary, result):
                 result.new += 1
         if result.seen == 0:
-            log.warning("Sejm API returned no bills modified since %s", since.isoformat())
+            # A quiet interval is the normal case three times a day, not a warning for the channel.
+            log.info("Sejm API returned no bills modified since %s", since.isoformat())
 
     def _miss_status(self, summary: ProcessSummary) -> BillStatus:
         """A title miss goes on to the text stage, unless there is no print to read."""
