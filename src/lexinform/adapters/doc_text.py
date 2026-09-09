@@ -68,16 +68,34 @@ def _extract(data: bytes) -> str:
         if not ole.exists("WordDocument"):
             raise DocFormatError("no WordDocument stream")
         word = ole.openstream("WordDocument").read()
-        flags = struct.unpack_from("<H", word, 0x0A)[0]
-        table_name = "1Table" if flags & _F_WHICH_TBL_STM else "0Table"
+        table_name = table_stream_name(word)
         if not ole.exists(table_name):
             raise DocFormatError(f"no {table_name} stream")
         table = ole.openstream(table_name).read()
+    return word_text(word, table)
+
+
+def table_stream_name(word_document: bytes) -> str:
+    """Which of the two table streams the FIB says holds the piece table."""
+    if len(word_document) < 0x0C:
+        raise DocFormatError("WordDocument stream too short for a FIB")
+    flags = struct.unpack_from("<H", word_document, 0x0A)[0]
+    return "1Table" if flags & _F_WHICH_TBL_STM else "0Table"
+
+
+def word_text(word_document: bytes, table: bytes) -> str:
+    """The text of a Word 97-2003 file from its two streams: main document and footnotes, in
+    reading order, cleaned of field codes and Word's control characters. Raises
+    `DocFormatError` for what the parser cannot read (older versions, encryption, damage)."""
+    word = word_document
+    if len(word) < _FIB_FC_CLX + 8:
+        raise DocFormatError("WordDocument stream too short for a FIB")
     if struct.unpack_from("<H", word, 0)[0] != 0xA5EC:
         raise DocFormatError("not a Word binary file")
     nfib = struct.unpack_from("<H", word, 2)[0]
     if nfib < _WORD97_NFIB:
         raise DocFormatError(f"Word 6/95 file (nFib 0x{nfib:04X}) is not supported")
+    flags = struct.unpack_from("<H", word, 0x0A)[0]
     if flags & _F_ENCRYPTED:
         raise DocFormatError("encrypted document")
     ccp_text, ccp_ftn = struct.unpack_from("<II", word, _FIB_CCP_TEXT)
@@ -131,13 +149,19 @@ def _read_pieces(word: bytes, pieces: list[tuple[int, int, int, bool]], *, limit
 def _clean(raw: str) -> str:
     """Drop field codes, map Word's control characters, tidy whitespace around page breaks."""
     out: list[str] = []
-    in_code = 0  # nesting depth of field codes (between 0x13 and 0x14)
+    # One entry per open field, True while in its code part (between 0x13 and 0x14): the code is
+    # dropped, the result (between 0x14 and 0x15) kept, a field without a result vanishes.
+    in_code: list[bool] = []
     for ch in raw:
         if ch == _FIELD_BEGIN:
-            in_code += 1
+            in_code.append(True)
         elif ch == _FIELD_SEPARATOR:
-            in_code = max(in_code - 1, 0)
-        elif ch == _FIELD_END or in_code:
+            if in_code:
+                in_code[-1] = False
+        elif ch == _FIELD_END:
+            if in_code:
+                in_code.pop()
+        elif any(in_code):
             continue
         else:
             out.append(_CONTROL.get(ch, ch))

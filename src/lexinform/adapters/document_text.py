@@ -163,6 +163,13 @@ class DocumentTextExtractor:
         return ""
 
     def _zip(self, data: bytes, *, depth: int) -> str:
+        try:
+            return self._zip_members(data, depth=depth)
+        except zipfile.BadZipFile as exc:
+            log.warning("zip container not read (%s); no text", exc)
+            return ""
+
+    def _zip_members(self, data: bytes, *, depth: int) -> str:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             names = set(archive.namelist())
             if "word/document.xml" in names:

@@ -123,6 +123,29 @@ def test_zip_reads_one_level_of_nesting_and_gives_up_on_junk() -> None:
     assert _router().extract(_zip({"uwagi.xlsx": b"x", "notes.txt": b"y"})) == ""
 
 
+def test_zip_members_in_folders_and_of_every_format_are_routed() -> None:
+    package = _zip(
+        {
+            "pakiet/projekt ustawy.doc": b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1 legacy word",
+            "pakiet/uzasadnienie.docx": _docx("<w:p><w:r><w:t>UZASADNIENIE</w:t></w:r></w:p>"),
+            "pakiet/osr.pdf": b"%PDF-1.7 osr",
+        }
+    )
+
+    assert _router().extract(package) == f"from doc{PAGE_BREAK}UZASADNIENIE{PAGE_BREAK}from pdf"
+
+
+def test_a_zip_whose_stored_member_starts_with_pdf_is_still_a_zip() -> None:
+    # The PDF-behind-a-preamble heuristic must not fire on the stored bytes of a member.
+    package = _zip({"a.pdf": b"%PDF-1.7 " + b"x" * 10, "b.pdf": b"%PDF-1.7 y"})
+
+    assert _router().extract(package) == f"from pdf{PAGE_BREAK}from pdf"
+
+
+def test_a_corrupt_zip_yields_no_text_instead_of_an_error() -> None:
+    assert _router().extract(b"PK\x03\x04" + b"\0" * 200) == ""
+
+
 def test_odt_paragraphs_headings_and_tables_become_plain_text() -> None:
     data = _odt(
         "<text:h>USTAWA</text:h>"
@@ -137,6 +160,24 @@ def test_odt_paragraphs_headings_and_tables_become_plain_text() -> None:
         f"USTAWA\nArt. 1.\tCudzoziemiec  x\ny\nLp.\tPodmiot\nstrona 1{PAGE_BREAK}strona 2"
     )
     assert _router().extract(data).startswith("USTAWA\n")  # routed by the mimetype entry
+
+
+def test_odt_lists_and_sections_are_flattened_and_an_empty_body_gives_nothing() -> None:
+    nested = _odt(
+        "<text:section><text:p>w sekcji</text:p></text:section>"
+        "<text:list><text:list-item><text:p>punkt 1</text:p></text:list-item>"
+        "<text:list-item><text:p>punkt 2</text:p></text:list-item></text:list>"
+    )
+    empty = _zip(
+        {
+            "mimetype": b"application/vnd.oasis.opendocument.text",
+            "content.xml": b'<?xml version="1.0"?><office:document-content '
+            b'xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"/>',
+        }
+    )
+
+    assert OdtTextExtractor().extract(nested) == "w sekcji\npunkt 1\npunkt 2"
+    assert OdtTextExtractor().extract(empty) == ""
 
 
 # --------------------------------------------------------------------------- legacy .doc
