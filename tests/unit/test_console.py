@@ -84,8 +84,9 @@ def test_every_kind_is_printed_with_an_increasing_message_id() -> None:
     assert "NEW BILL druk RPW/1/2026" in out
     assert "JOINT BILL druk RPW/1/2026 under druk RPW/1/2026 (reply to 1)" in out
     assert "STATUS UPDATE druk RPW/1/2026 (reply to 1)" in out
-    assert "CONSULTATION DEADLINE RPW/1/2026 (reply to 1)" in out and "осталось дней: 3" in out
-    assert "CONSULTATION RESULTS RPW/1/2026" in out
-    assert "AGENDA ASW/1/2026-09-17 druk RPW/1/2026" in out
+    assert "CONSULTATION DEADLINE druk RPW/1/2026 (reply to 1)" in out
+    assert "осталось дней: 3" in out
+    assert "CONSULTATION RESULTS druk RPW/1/2026" in out
+    assert "AGENDA druk RPW/1/2026 ASW/1/2026-09-17 (reply to 1)" in out
     assert "ACT PUBLISHED druk RPW/1/2026" in out
     assert "IN FORCE druk RPW/1/2026" in out and "С сегодняшнего дня действует" in out
