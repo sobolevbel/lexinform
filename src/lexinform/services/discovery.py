@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.keywords import KeywordPrefilter
+from lexinform.keywords import KeywordPrefilter, accept_title_hits
 from lexinform.models import (
     BILL_DOCUMENT_TYPE,
     Bill,
@@ -177,9 +177,10 @@ class BillDiscoveryService:
         )
         if needs_prefilter:
             hits = self._prefilter.match(summary.title, summary.description)
-            status = BillStatus.ANALYSIS_PENDING if hits else self._miss_status(summary)
+            candidate = accept_title_hits(hits)  # a weak hit alone goes to the text stage
+            status = BillStatus.ANALYSIS_PENDING if candidate else self._miss_status(summary)
             self._repo.set_status(bill.term, bill.number, status, prefilter_hits=hits)
-            if hits:
+            if candidate:
                 result.prefilter_hits += 1
                 log.info("candidate druk %s (%s): %s", bill.number, ", ".join(hits), summary.title)
         return is_new

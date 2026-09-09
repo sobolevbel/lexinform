@@ -106,6 +106,19 @@ def test_title_miss_is_caught_by_the_text_prefilter() -> None:
     assert any(h.startswith("text:") for h in w.bill(RCL).prefilter_hits)
 
 
+def test_weak_title_hit_of_a_project_reads_its_text_not_its_catalogs() -> None:
+    fuel_quality = "Art. 1. Straż Graniczna kontroluje jakość paliw na przejściach. " * 20
+    w = World(extractor=FakeTextExtractor(fuel_quality))
+    w.add_rcl_project(
+        rcl_project(title="Projekt ustawy o zmianie ustawy o Straży Granicznej", keywords=())
+    )
+
+    report = w.run()
+
+    assert (report.rcl_prefilter_hits, report.text_prefilter_checked, report.analyzed) == (0, 1, 0)
+    assert w.bill(RCL).status is BillStatus.SKIPPED_TEXT_PREFILTER
+
+
 def test_title_miss_without_documents_is_skipped_for_good() -> None:
     w = World()
     project = rcl_project(

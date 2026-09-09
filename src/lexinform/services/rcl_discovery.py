@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
-from lexinform.keywords import KeywordPrefilter
+from lexinform.keywords import KeywordPrefilter, accept_title_hits
 from lexinform.models import (
     BillStatus,
     RclProject,
@@ -100,7 +100,7 @@ class RclDiscoveryService:
     def _read(self, row: RclProjectSummary) -> RclProject:
         """Network only: as much of the project as its prefilter verdict needs."""
         project = self._reader.timeline(row.id)
-        if self._hits(project, term=0):
+        if accept_title_hits(self._hits(project, term=0)):
             log.info("RCL %s (%s): candidate, reading its catalogs", row.id, row.wykaz_number)
             return self._reader.complete(project)
         if self._text_prefilter:
@@ -118,7 +118,7 @@ class RclDiscoveryService:
         self._repo.save_rcl(term, bill.number, project)
         self._repo.save_stages(term, bill.number, rcl_stages(project), rcl_fingerprint(project))
         hits = self._hits(project, term=term)
-        if hits:
+        if accept_title_hits(hits):
             status = BillStatus.ANALYSIS_PENDING
             result.prefilter_hits += 1
             log.info("candidate %s (%s): %s", bill.number, ", ".join(hits), summary.title)

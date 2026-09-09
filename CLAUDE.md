@@ -271,7 +271,12 @@ rejects `thinking: adaptive`; a classification does not need it).
 ## Product decisions already taken
 
 Default model `claude-opus-5`, `min_score` 3, text prefilter threshold 2 distinct patterns or 3
-hits (weak patterns such as Straż Graniczna or "legalizacja" never decide alone), triage of texts ≥ 20k chars on
+hits (weak patterns such as Straż Graniczna, "legalizacja" or "nierezydent" never decide alone:
+in a text they count next to a strong pattern, in a title they send the bill to the text stage,
+not to the model; everyone's registers and benefits (PESEL, mObywatel, NFZ, 800+, prawo jazdy,
+Kodeks wyborczy) are deliberately no patterns: measured on the 1500 processes of term 10 each
+would cost 4–14 full analyses of unrelated bills, while a bill changing them for foreigners names
+the foreigners and the text stage catches it), triage of texts ≥ 20k chars on
 `claude-sonnet-5` (all of Haiku 4.5 / Sonnet 5 / Opus 5 judged the four test bills correctly;
 Haiku ignored the output language, Sonnet costs ~1 cent per bill), club breakdown on, Dz.U. notice as a separate reply, in-force reminder repeats
 the summary. The owner does **not** want a "probability of passing" estimate. A new `PROMPT_VERSION` does

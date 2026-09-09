@@ -30,6 +30,20 @@ def test_bill_with_a_neutral_title_is_caught_by_its_text() -> None:
     ]
 
 
+def test_weak_title_hit_alone_goes_to_the_text_stage_not_to_the_model() -> None:
+    fuel_quality = "Art. 1. Straż Graniczna kontroluje jakość paliw na przejściach. " * 20
+    w = World(extractor=FakeTextExtractor(fuel_quality))
+    w.add_bill("4100", "Rządowy projekt ustawy o zmianie ustawy o Straży Granicznej")
+
+    report = w.run()
+
+    assert (report.prefilter_hits, report.text_prefilter_checked) == (0, 1)
+    assert report.analyzed == 0 and w.llm.contexts == []
+    bill = w.bill("4100")
+    assert bill.status is BillStatus.SKIPPED_TEXT_PREFILTER
+    assert bill.prefilter_hits == ["text:straz_graniczna"]  # the title's weak hit, kept for tuning
+
+
 def test_card_says_the_bill_was_found_by_its_text() -> None:
     w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT))
     w.add_bill("4100", "Rządowy projekt ustawy o zmianie niektórych ustaw")

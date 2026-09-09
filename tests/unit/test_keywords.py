@@ -1,6 +1,6 @@
 import pytest
 
-from lexinform.keywords import KeywordPrefilter, accept_text_hits
+from lexinform.keywords import KeywordPrefilter, accept_text_hits, accept_title_hits
 
 prefilter = KeywordPrefilter()
 
@@ -16,13 +16,19 @@ POSITIVE = [
     "Rządowy projekt ustawy o udziale Rzeczypospolitej Polskiej w Systemie Wjazdu/Wyjazdu",
     "Rządowy projekt ustawy o udziale Rzeczypospolitej Polskiej w systemie Eurodac",
     "Poselski projekt ustawy o czasowym zakazie wjazdu obywateli państw trzecich na terytorium RP w związku z presją migracyjną",
-    "Rządowy projekt ustawy o zmianie ustawy o Straży Granicznej",
     "Obywatelski projekt ustawy w związku z realizacją polityki migracyjnej",
     "zezwolenia na pobyt czasowy i pobyt stały",
     "Rządowy projekt ustawy o zmianie ustawy o nabywaniu nieruchomości przez cudzoziemców",
     "ustawa o świadczeniu przez prawników zagranicznych pomocy prawnej",
     "azylu dla osób prześladowanych",
     "status uchodźcy",
+    # druk 1812 as the API titles it: no "cudzoziemiec", no "migracja"
+    "Poselski projekt ustawy o czasowym zakazie wjazdu obywateli państw trzecich na terytorium Rzeczypospolitej Polskiej",
+    "prawa wyborcze obywateli Unii Europejskiej niebędących obywatelami polskimi",
+    "zasady unieważniania wiz i odmowy ich wydania",
+    "zezwolenie na pracę sezonową oraz oświadczenie o powierzeniu wykonywania pracy",
+    "Rządowy projekt ustawy o zmianie ustawy o zawodach pielęgniarki i położnej (uznawanie kwalifikacji)",
+    "stypendia dla studentów zagranicznych",
 ]
 
 # Known accepted false positive (the LLM rejects it): "ustawa o Centralnym Azylu dla Zwierząt".
@@ -35,12 +41,38 @@ NEGATIVE = [
     "telewizja publiczna",
     "granice działek budowlanych",
     "",
+    # Everyone's registers and benefits: a bill changing them for foreigners names them (measured
+    # on the 1500 processes of term 10, these titles hit 4–14 unrelated bills each).
+    "Rządowy projekt ustawy o zmianie ustawy o świadczeniach opieki zdrowotnej finansowanych ze środków publicznych",
+    "Poselski projekt ustawy o zmianie ustawy - Kodeks wyborczy",
+    "Rządowy projekt ustawy o zmianie ustawy o aplikacji mObywatel oraz niektórych innych ustaw",
+    "Rządowy projekt ustawy o zmianie ustawy - Prawo o szkolnictwie wyższym i nauce",
+    "ewidencja ludności i numer PESEL",
+    "wysokość świadczenia wychowawczego",
+]
+
+# Weak hits: worth counting inside a text next to a strong pattern, not a verdict on their own.
+WEAK_TITLES = [
+    "Rządowy projekt ustawy o zmianie ustawy o Straży Granicznej",
+    "opodatkowanie dochodów nierezydentów i certyfikat rezydencji podatkowej",
+    "kontrola przekraczania granicy w ruchu towarowym",
 ]
 
 
 @pytest.mark.parametrize("title", POSITIVE)
 def test_positive_titles_are_candidates(title: str) -> None:
-    assert prefilter.match(title), title
+    assert accept_title_hits(prefilter.match(title)), title
+
+
+@pytest.mark.parametrize("title", WEAK_TITLES)
+def test_weak_titles_are_read_but_do_not_decide(title: str) -> None:
+    hits = prefilter.match(title)
+    assert hits and not accept_title_hits(hits), title
+
+
+def test_the_bare_genitive_of_wiza_is_matched_but_not_wizja() -> None:
+    assert prefilter.match("wydawanie wiz") == ["wizy"]
+    assert not prefilter.match("wizja i telewizja")
 
 
 @pytest.mark.parametrize("title", NEGATIVE)
