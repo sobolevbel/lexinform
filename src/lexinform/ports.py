@@ -83,6 +83,8 @@ class SejmGateway(Protocol):
 
     def list_mps(self, term: int) -> tuple[Mp, ...]: ...
 
+    def close(self) -> None: ...
+
     def download(self, url: str, *, max_bytes: int | None = None) -> bytes:
         """The attachment body; raises `AttachmentTooLargeError` once `max_bytes` is exceeded."""
         ...
@@ -109,6 +111,8 @@ class RclGateway(Protocol):
 
     def download(self, url: str, *, max_bytes: int | None = None) -> bytes: ...
 
+    def close(self) -> None: ...
+
 
 class ProjectResolver(Protocol):
     """The one question the Sejm discovery asks RCL: which project is behind a `rclNum`."""
@@ -120,6 +124,10 @@ class EliGateway(Protocol):
     """The ELI (European Legislation Identifier) API of the Sejm: published acts."""
 
     def get_act(self, eli: str) -> ActInfo | None: ...
+
+
+class SejmApi(SejmGateway, EliGateway, Protocol):
+    """The Sejm API as one client: the legislative process and the published acts (ELI)."""
 
 
 class Downloader(Protocol):
@@ -216,6 +224,16 @@ class BillRepository(Protocol):
 
     # schema
     def migrate(self) -> None: ...
+
+    def close(self) -> None: ...
+
+    def dump(self) -> str:
+        """The whole database as SQL, the schema version included (the state branch)."""
+        ...
+
+    def restore(self, script: str) -> None:
+        """Replace the contents with a dump; an older dump is migrated."""
+        ...
 
     # bills
     def get(self, term: int, number: str) -> Bill | None: ...

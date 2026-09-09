@@ -89,6 +89,9 @@ class FakeSejmGateway:
         if method in self.outages:
             raise SejmApiUnavailableError(f"{method}: connection refused")
 
+    def close(self) -> None:
+        pass
+
     def list_terms(self) -> tuple[SejmTerm, ...]:
         self._called("list_terms")
         return tuple(self.terms)
@@ -208,6 +211,9 @@ class FakeRclGateway:
     rm_numbers: dict[str, int] = field(default_factory=dict)
     outages: set[str] = field(default_factory=set)
     calls: list[str] = field(default_factory=list)
+
+    def close(self) -> None:
+        pass
 
     def _called(self, method: str, detail: str = "") -> None:
         self.calls.append(f"{method}:{detail}" if detail else method)

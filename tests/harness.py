@@ -9,6 +9,8 @@ import datetime as dt
 from typing import Any
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
+from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.container import Container
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
     ActInfo,
@@ -34,19 +36,9 @@ from lexinform.models import (
 )
 from lexinform.models.rcl import StageState
 from lexinform.ports import TextExtractor
-from lexinform.sections import TextBudget
-from lexinform.services.analysis import AnalysisService
-from lexinform.services.discovery import BillDiscoveryService
-from lexinform.services.documents import TextLoader
-from lexinform.services.pipeline import DailyPipeline, RunOptions
-from lexinform.services.publishing import PublishingService
-from lexinform.services.rcl_discovery import RclDiscoveryService
-from lexinform.services.rcl_projects import RclProjectReader
-from lexinform.services.signatories import SejmAuthorsResolver
-from lexinform.services.sources import RclTextSource, SejmTextSource, TextSources
+from lexinform.services.pipeline import RunOptions
 from lexinform.services.terms import TermResolver
-from lexinform.services.text_prefilter import TextPrefilterService
-from lexinform.services.tracking import StatusTrackingService
+from lexinform.settings import Settings
 from tests.fakes import (
     FakeLlm,
     FakeNotifier,
@@ -61,7 +53,8 @@ CHANNEL = "@test"
 TERM = 10
 RPW = "RPW/29075/2026"
 ELI = "DU/2026/1099"
-MAX_PDF_BYTES = 10_000_000
+MAX_PDF_MB = 9  # a fake file of 10 000 001 bytes is over the limit
+MAX_PDF_BYTES = MAX_PDF_MB * 1024 * 1024
 FILE_HOST = "api.test"  # the fake gateway serves every file the loader asks for from here
 SINCE = dt.datetime(2026, 9, 1, tzinfo=dt.UTC)
 
@@ -275,75 +268,50 @@ class World:
         self.notifier = FakeNotifier()
         self.extractor = extractor or FakeTextExtractor()
         self.rcl = FakeRclGateway()
-        loader = TextLoader(
-            {FILE_HOST: self.gateway.download, RCL_HOST: self.rcl.download},
-            self.extractor,
-            max_bytes=MAX_PDF_BYTES,
-        )
-        texts = TextSources(SejmTextSource(self.gateway), rcl=RclTextSource())
-        rcl_reader = RclProjectReader(self.rcl, loader)
-        self.discovery = BillDiscoveryService(
-            self.gateway,
-            self.repo,
-            KeywordPrefilter(),
-            self.clock,
-            text_prefilter=text_prefilter,
-            projects=self.rcl,
-        )
-        self.rcl_discovery = RclDiscoveryService(
-            self.rcl,
-            self.repo,
-            rcl_reader,
-            KeywordPrefilter(),
-            self.clock,
-            text_prefilter=text_prefilter,
-            workers=workers,
-        )
-        self.analysis = AnalysisService(
-            self.repo,
-            texts,
-            loader,
-            self.llm,
-            self.clock,
-            text_budget=TextBudget(10_000),
-            authors=SejmAuthorsResolver(self.gateway),
-            workers=workers,
-            input_price_usd_per_mtok=5.0,  # Opus 5
-            max_bill_cost_usd=max_bill_cost_usd,
-            max_run_cost_usd=max_run_cost_usd,
-            triage=KeywordPrefilter() if triage else None,
+        # The production wiring over the fakes: the settings name the fake hosts (downloads are
+        # routed by host), every tuning value is the daily run's unless a test says otherwise,
+        # and nothing is read from the environment or a .env file.
+        settings = Settings(
+            _env_file=None,
+            term=None,
+            sejm_api_base_url=f"https://{FILE_HOST}",
+            rcl_base_url=f"https://{RCL_HOST}",
+            rcl_enabled=True,
+            telegram_channel_id=CHANNEL,
+            llm_model="claude-opus-5",  # priced: the cost estimates use $5 per million tokens
+            llm_triage_model="fake-triage" if triage else "",
             triage_min_chars=triage_min_chars,
+            text_budget_chars=10_000,
+            max_pdf_download_mb=MAX_PDF_MB,
+            max_analysis_cost_usd=max_bill_cost_usd,
+            max_run_cost_usd=max_run_cost_usd,
+            text_prefilter_enabled=text_prefilter,
+            pre_print_enabled=True,
+            agenda_watch=True,
+            in_force_reminders=True,
+            consultation_reminders=True,
+            sejm_concurrency=workers,
+            rcl_concurrency=workers,
+            llm_concurrency=workers,
         )
-        self.tracking = StatusTrackingService(
-            self.gateway,
-            self.repo,
-            self.publisher,
-            self.clock,
-            channel_id=CHANNEL,
-            analysis=self.analysis,
-            eli=self.gateway,
-            rcl_reader=rcl_reader,
-            text_prefilter=text_prefilter,
-            workers=workers,
-        )
-        self.pipeline = DailyPipeline(
-            self.repo,
-            self.discovery,
-            self.analysis,
-            PublishingService(
-                self.gateway, self.repo, self.publisher, self.clock, channel_id=CHANNEL
-            ),
-            self.tracking,
-            self.clock,
+        self.container = Container(
+            settings=settings,
+            clock=self.clock,
+            repo=self.repo,
+            gateway=self.gateway,
+            formatter=MessageFormatter("ru", today=lambda: self.clock.now().date()),
+            prefilter=KeywordPrefilter(),
             terms=TermResolver(self.gateway, self.repo),
-            notifier=self.notifier,
-            text_prefilter=(
-                TextPrefilterService(self.repo, texts, loader, KeywordPrefilter(), workers=workers)
-                if text_prefilter
-                else None
-            ),
-            rcl_discovery=self.rcl_discovery,
+            rcl=self.rcl,
+            llm=self.llm,
+            extractor=self.extractor,
+            publisher_override=self.publisher,
+            notifier_override=self.notifier,
         )
+        self.discovery = self.container.discovery_service()
+        self.analysis = self.container.analysis_service()
+        self.tracking = self.container.tracking_service(dry_run=False)
+        self.pipeline = self.container.pipeline(dry_run=False)
 
     # ------------------------------------------------------------------ arrange
 

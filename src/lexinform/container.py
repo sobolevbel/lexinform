@@ -1,6 +1,11 @@
-"""Composition root: builds adapters and services from Settings. No DI framework."""
+"""Manual wiring of adapters and services; the CLI and the tests build a `Container` and ask it
+for the pipeline or for single services. Every collaborator is typed on its port, so the test
+harness builds the same container from fakes and the wiring the daily run uses is what the
+tests exercise."""
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import cast
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
@@ -19,7 +24,17 @@ from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import Bill
-from lexinform.ports import Downloader, Publisher, RunNotifier
+from lexinform.ports import (
+    BillRepository,
+    Clock,
+    Downloader,
+    LlmAnalyzer,
+    Publisher,
+    RclGateway,
+    RunNotifier,
+    SejmApi,
+    TextExtractor,
+)
 from lexinform.pricing import price_of
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisService
@@ -41,16 +56,25 @@ LOCAL_TZ = ZoneInfo("Europe/Warsaw")  # the readers' and the Sejm's day, whateve
 
 @dataclass
 class Container:
+    """The wiring. Services are built once and shared (`discovery_service()` and the pipeline's
+    discovery are the same object), so a test can hold a service and run the pipeline."""
+
     settings: Settings
-    clock: SystemClock
-    repo: SqliteBillRepository
-    gateway: SejmApiClient
+    clock: Clock
+    repo: BillRepository
+    gateway: SejmApi
     formatter: MessageFormatter
     prefilter: KeywordPrefilter
     terms: TermResolver
-    rcl: RclClient | None = None  # None when LEXINFORM_RCL_ENABLED is off
+    rcl: RclGateway | None = None  # None when LEXINFORM_RCL_ENABLED is off
+    # Collaborators a test (or a dry run) supplies instead of the real adapters.
+    llm: LlmAnalyzer | None = None
+    extractor: TextExtractor | None = None
+    publisher_override: Publisher | None = None
+    notifier_override: RunNotifier | None = None
     _telegram: TelegramBotClient | None = field(default=None, init=False, repr=False)
     _loader: TextLoader | None = field(default=None, init=False, repr=False)
+    _services: dict[str, object] = field(default_factory=dict, init=False, repr=False)
 
     def term(self) -> int:
         """The Sejm term operator commands work in: `LEXINFORM_TERM` when set, else the current
@@ -72,6 +96,12 @@ class Container:
         """The RCL row behind a wykaz number (UC164), whichever term it sits in."""
         return self.repo.find_by_wykaz_number(wykaz_number)
 
+    def _once[T](self, key: str, factory: Callable[[], T]) -> T:
+        """One instance per service (and per dry-run flag where it matters)."""
+        if key not in self._services:
+            self._services[key] = factory()
+        return cast(T, self._services[key])
+
     def text_loader(self) -> TextLoader:
         """One loader (and text cache) per process, shared by the text prefilter and analysis.
         Downloads are routed by host to the client of that system."""
@@ -82,16 +112,13 @@ class Container:
             if self.rcl is not None:
                 downloaders[_host(self.settings.rcl_base_url)] = self.rcl.download
             max_bytes = self.settings.max_pdf_download_mb * 1024 * 1024
-            self._loader = TextLoader(
-                downloaders,
-                DocumentTextExtractor(
-                    PypdfTextExtractor(),
-                    DocxTextExtractor(),
-                    DocTextExtractor(),
-                    max_member_bytes=max_bytes,
-                ),
-                max_bytes=max_bytes,
+            extractor = self.extractor or DocumentTextExtractor(
+                PypdfTextExtractor(),
+                DocxTextExtractor(),
+                DocTextExtractor(),
+                max_member_bytes=max_bytes,
             )
+            self._loader = TextLoader(downloaders, extractor, max_bytes=max_bytes)
         return self._loader
 
     def text_sources(self) -> TextSources:
@@ -106,17 +133,23 @@ class Container:
     def rcl_discovery_service(self) -> RclDiscoveryService | None:
         if self.rcl is None:
             return None
-        return RclDiscoveryService(
-            self.rcl,
-            self.repo,
-            self.rcl_reader(),
-            self.prefilter,
-            self.clock,
-            text_prefilter=self.settings.text_prefilter_enabled,
-            workers=self.settings.rcl_concurrency,
+        rcl = self.rcl
+        return self._once(
+            "rcl_discovery",
+            lambda: RclDiscoveryService(
+                rcl,
+                self.repo,
+                self.rcl_reader(),
+                self.prefilter,
+                self.clock,
+                text_prefilter=self.settings.text_prefilter_enabled,
+                workers=self.settings.rcl_concurrency,
+            ),
         )
 
-    def analyzer(self) -> AnthropicAnalyzer:
+    def analyzer(self) -> LlmAnalyzer:
+        if self.llm is not None:
+            return self.llm
         return AnthropicAnalyzer(
             anthropic.Anthropic(api_key=self.settings.anthropic_api_key),
             model=self.settings.llm_model,
@@ -128,6 +161,9 @@ class Container:
         )
 
     def analysis_service(self) -> AnalysisService:
+        return self._once("analysis", self._build_analysis_service)
+
+    def _build_analysis_service(self) -> AnalysisService:
         price = price_of(self.settings.llm_model)  # None: unknown model, no cost estimates
         return AnalysisService(
             self.repo,
@@ -148,26 +184,32 @@ class Container:
         )
 
     def discovery_service(self) -> BillDiscoveryService:
-        return BillDiscoveryService(
-            self.gateway,
-            self.repo,
-            self.prefilter,
-            self.clock,
-            text_prefilter=self.settings.text_prefilter_enabled,
-            projects=self.rcl,
+        return self._once(
+            "discovery",
+            lambda: BillDiscoveryService(
+                self.gateway,
+                self.repo,
+                self.prefilter,
+                self.clock,
+                text_prefilter=self.settings.text_prefilter_enabled,
+                projects=self.rcl,
+            ),
         )
 
     def text_prefilter_service(self) -> TextPrefilterService | None:
         if not self.settings.text_prefilter_enabled:
             return None
-        return TextPrefilterService(
-            self.repo,
-            self.text_sources(),
-            self.text_loader(),
-            self.prefilter,
-            min_distinct=self.settings.text_prefilter_min_distinct,
-            min_occurrences=self.settings.text_prefilter_min_occurrences,
-            workers=self.settings.sejm_concurrency,
+        return self._once(
+            "text_prefilter",
+            lambda: TextPrefilterService(
+                self.repo,
+                self.text_sources(),
+                self.text_loader(),
+                self.prefilter,
+                min_distinct=self.settings.text_prefilter_min_distinct,
+                min_occurrences=self.settings.text_prefilter_min_occurrences,
+                workers=self.settings.sejm_concurrency,
+            ),
         )
 
     def telegram_client(self) -> TelegramBotClient:
@@ -186,11 +228,15 @@ class Container:
         )
 
     def publisher(self, *, dry_run: bool) -> Publisher:
+        if self.publisher_override is not None:
+            return self.publisher_override
         if dry_run:
-            return ConsolePublisher(self.formatter)
-        return self.telegram_publisher()
+            return self._once("console_publisher", lambda: ConsolePublisher(self.formatter))
+        return self._once("telegram_publisher", self.telegram_publisher)
 
     def run_notifier(self, *, dry_run: bool) -> RunNotifier | None:
+        if self.notifier_override is not None:
+            return self.notifier_override
         if dry_run:
             return ConsoleRunNotifier(self.formatter)
         if not self.settings.telegram_log_channel_id:
@@ -203,31 +249,28 @@ class Container:
         return self.settings.telegram_channel_id or "console"
 
     def publishing_service(self, *, dry_run: bool) -> PublishingService:
-        return PublishingService(
-            self.gateway,
-            self.repo,
-            self.publisher(dry_run=dry_run),
-            self.clock,
-            channel_id=self.channel_id(),
-            max_attempts=self.settings.max_publish_attempts,
-        )
-
-    def pipeline(self, *, dry_run: bool) -> DailyPipeline:
-        publisher = self.publisher(dry_run=dry_run)
-        channel = self.channel_id()
-        analysis = self.analysis_service()
-        return DailyPipeline(
-            self.repo,
-            self.discovery_service(),
-            analysis,
-            self.publishing_service(dry_run=dry_run),
-            StatusTrackingService(
+        return self._once(
+            f"publishing:{dry_run}",
+            lambda: PublishingService(
                 self.gateway,
                 self.repo,
-                publisher,
+                self.publisher(dry_run=dry_run),
                 self.clock,
-                channel_id=channel,
-                analysis=analysis,
+                channel_id=self.channel_id(),
+                max_attempts=self.settings.max_publish_attempts,
+            ),
+        )
+
+    def tracking_service(self, *, dry_run: bool) -> StatusTrackingService:
+        return self._once(
+            f"tracking:{dry_run}",
+            lambda: StatusTrackingService(
+                self.gateway,
+                self.repo,
+                self.publisher(dry_run=dry_run),
+                self.clock,
+                channel_id=self.channel_id(),
+                analysis=self.analysis_service(),
                 eli=self.gateway,
                 closed_grace_days=self.settings.track_closed_grace_days,
                 passed_max_days=self.settings.track_passed_max_days,
@@ -241,19 +284,32 @@ class Container:
                 rcl_reader=self.rcl_reader() if self.rcl is not None else None,
                 max_publish_attempts=self.settings.max_publish_attempts,
                 club_breakdown=self.settings.voting_club_breakdown,
+                local_tz=LOCAL_TZ,
                 text_prefilter=self.settings.text_prefilter_enabled,
                 workers=self.settings.sejm_concurrency,
             ),
-            self.clock,
-            terms=self.terms,
-            notifier=self.run_notifier(dry_run=dry_run),
-            text_prefilter=self.text_prefilter_service(),
-            rcl_discovery=self.rcl_discovery_service(),
-            first_run_lookback_days=self.settings.first_run_lookback_days,
-            rerun_overlap_days=self.settings.rerun_overlap_days,
-            runs_retention_days=self.settings.runs_retention_days,
-            pre_print=self.settings.pre_print_enabled,
-            full_track_weekday=self.settings.track_full_weekday,
+        )
+
+    def pipeline(self, *, dry_run: bool) -> DailyPipeline:
+        return self._once(
+            f"pipeline:{dry_run}",
+            lambda: DailyPipeline(
+                self.repo,
+                self.discovery_service(),
+                self.analysis_service(),
+                self.publishing_service(dry_run=dry_run),
+                self.tracking_service(dry_run=dry_run),
+                self.clock,
+                terms=self.terms,
+                notifier=self.run_notifier(dry_run=dry_run),
+                text_prefilter=self.text_prefilter_service(),
+                rcl_discovery=self.rcl_discovery_service(),
+                first_run_lookback_days=self.settings.first_run_lookback_days,
+                rerun_overlap_days=self.settings.rerun_overlap_days,
+                runs_retention_days=self.settings.runs_retention_days,
+                pre_print=self.settings.pre_print_enabled,
+                full_track_weekday=self.settings.track_full_weekday,
+            ),
         )
 
     def close(self) -> None:
