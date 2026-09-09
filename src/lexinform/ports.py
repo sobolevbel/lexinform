@@ -21,6 +21,9 @@ from lexinform.models import (
     ProcessSummary,
     Publication,
     PublicationStatus,
+    RclProject,
+    RclProjectSummary,
+    RclStage,
     RunReport,
     SejmSitting,
     Stage,
@@ -75,6 +78,28 @@ class SejmGateway(Protocol):
     def download(self, url: str, *, max_bytes: int | None = None) -> bytes:
         """The attachment body; raises `AttachmentTooLargeError` once `max_bytes` is exceeded."""
         ...
+
+
+class RclGateway(Protocol):
+    """legislacja.rcl.gov.pl (HTML, no API); `RclUnavailableError` when it is down or blocks us."""
+
+    def list_projects(self, *, modified_since: date) -> Iterator[RclProjectSummary]:
+        """Bills (typeId=2) modified on or after the date, newest change first."""
+        ...
+
+    def get_project(self, project_id: int) -> RclProject:
+        """The project page: metadata and the timeline, folders not read yet."""
+        ...
+
+    def get_stage(self, project_id: int, stage_id: int) -> RclStage:
+        """One stage with its folders and documents (the catalog page)."""
+        ...
+
+    def resolve_project_id(self, rm_number: str) -> int | None:
+        """The RCL project behind a Sejm `rclNum` (`RM-0610-139-26`), if RCL knows it."""
+        ...
+
+    def download(self, url: str, *, max_bytes: int | None = None) -> bytes: ...
 
 
 class EliGateway(Protocol):

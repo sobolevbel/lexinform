@@ -13,6 +13,7 @@ from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import PrintInfo, ProcessDetail, ProcessSummary
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sejm"
+RCL_FIXTURES = Path(__file__).parent / "fixtures" / "rcl"
 
 
 def load_json(name: str) -> Any:

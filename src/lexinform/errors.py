@@ -17,6 +17,12 @@ class SejmApiUnavailableError(ServiceUnavailableError):
     system = "Sejm API"
 
 
+class RclUnavailableError(ServiceUnavailableError):
+    """legislacja.rcl.gov.pl is down, or its WAF answered "Request Rejected" to our request."""
+
+    system = "RCL"
+
+
 class AttachmentTooLargeError(RuntimeError):
     """A download was stopped because the body exceeded the caller's limit (per-item problem)."""
 

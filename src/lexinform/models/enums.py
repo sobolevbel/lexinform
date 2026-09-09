@@ -22,6 +22,7 @@ class BillStatus(StrEnum):
 
 
 PRE_PRINT_PREFIX = "RPW/"  # numbers of bills that have not been assigned a print (druk) number yet
+RCL_PREFIX = "RCL/"  # government projects on legislacja.rcl.gov.pl, keyed by the RCL project id
 
 
 class Category(StrEnum):
