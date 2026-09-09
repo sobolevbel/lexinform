@@ -970,6 +970,26 @@ class SqliteBillRepository:
             ),
         )
 
+    def list_runs(self, *, since: datetime) -> list[RunReport]:
+        rows = self._conn.execute(
+            "SELECT report_json FROM runs WHERE started_at >= ? AND report_json IS NOT NULL"
+            " ORDER BY started_at DESC",
+            (since.isoformat(),),
+        ).fetchall()
+        return [RunReport.model_validate_json(r[0]) for r in rows]
+
+    def most_expensive_analyses(self, *, limit: int) -> list[Bill]:
+        rows = self._conn.execute(
+            """
+            SELECT * FROM bills
+            WHERE json_extract(analysis_json, '$.input_tokens') IS NOT NULL
+            ORDER BY json_extract(analysis_json, '$.input_tokens') DESC, term, number
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+        return [self._row_to_bill(r) for r in rows]
+
     # ------------------------------------------------------------------ row mapping
 
     @staticmethod

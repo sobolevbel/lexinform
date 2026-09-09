@@ -3,7 +3,7 @@
 import logging
 import re
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated
 
@@ -22,6 +22,7 @@ from lexinform.models import (
     PublicationKind,
     RclProject,
     RunReport,
+    TokenUsage,
     flatten_stages,
     is_pre_print_number,
     is_rcl_number,
@@ -31,7 +32,9 @@ from lexinform.models import (
     rcl_project_id,
     rcl_stages,
     stage_fingerprint,
+    usage_of,
 )
+from lexinform.pricing import cost_usd
 from lexinform.services.pipeline import RunOptions
 from lexinform.settings import Settings
 
@@ -389,6 +392,87 @@ def show(
             else "not in database"
         )
     )
+
+
+DaysOpt = Annotated[int, typer.Option("--days", min=1, help="How many days back to look.")]
+
+
+@app.command()
+def runs(days: DaysOpt = 30) -> None:
+    """List the recorded runs of the last days: what each found, posted and cost."""
+    c = _container()
+    try:
+        reports = c.repo.list_runs(since=c.clock.now() - timedelta(days=days))
+    finally:
+        c.close()
+    if not reports:
+        typer.echo(f"no runs recorded in the last {days} days")
+        return
+    typer.echo(
+        "started (UTC)     mode      ok   disc  anal  publ  upd  errs  tokens in/out       cost"
+    )
+    for r in reports:
+        typer.echo(
+            f"{r.started_at:%Y-%m-%d %H:%M}  {r.mode:<8}  {'ok ' if r.ok else 'ERR'}  "
+            f"{r.discovered:>4}  {r.analyzed:>4}  {r.published:>4}  {r.updates:>3}  "
+            f"{len(r.errors):>4}  {_k(r.llm_input_tokens) + '/' + _k(r.llm_output_tokens):<18}"
+            f"{_money(cost_usd(r.llm_usage))}"
+        )
+
+
+@app.command()
+def cost(
+    days: DaysOpt = 30,
+    top: Annotated[int, typer.Option("--top", min=0, help="Most expensive analyses.")] = 5,
+) -> None:
+    """LLM spend of the last days: per model, per run, and the most expensive analyses."""
+    c = _container()
+    try:
+        reports = c.repo.list_runs(since=c.clock.now() - timedelta(days=days))
+        priciest = c.repo.most_expensive_analyses(limit=top)
+    finally:
+        c.close()
+    usage: dict[str, TokenUsage] = {}
+    for r in reports:
+        for model, u in r.llm_usage.items():
+            usage[model] = usage.get(model, TokenUsage()).plus(u)
+    total = cost_usd(usage)
+    per_run = total / len(reports) if total is not None and reports else None
+    typer.echo(
+        f"{len(reports)} run(s) in the last {days} days: {_money(total)} total, "
+        f"{_money(per_run)} per run"
+    )
+    for model, u in sorted(usage.items()):
+        typer.echo(
+            f"  {model}: in {_k(u.input)} · cache read {_k(u.cache_read)} · "
+            f"cache write {_k(u.cache_creation)} · out {_k(u.output)} · "
+            f"{_money(cost_usd({model: u}))}"
+        )
+    if reports:
+        dearest = max(reports, key=lambda r: cost_usd(r.llm_usage) or 0.0)
+        typer.echo(
+            f"most expensive run: {dearest.started_at:%Y-%m-%d %H:%M} "
+            f"({_money(cost_usd(dearest.llm_usage))}, {dearest.analyzed} analysed)"
+        )
+    if priciest:
+        typer.echo("most expensive analyses (input tokens of the stored analysis):")
+    for bill in priciest:
+        record = bill.analysis
+        assert record is not None
+        typer.echo(
+            f"  {bill.number}: {_k(record.input_tokens or 0)} in ({record.model}) "
+            f"{_money(cost_usd({record.model: usage_of(record)}))}  {bill.summary.title[:70]}"
+        )
+
+
+def _k(tokens: int) -> str:
+    return f"{tokens / 1000:.1f}k" if tokens >= 1000 else str(tokens)
+
+
+def _money(usd: float | None) -> str:
+    if usd is None:
+        return "$?"  # a model missing from the price list
+    return f"${usd:.2f}" if usd >= 0.01 or usd == 0 else f"${usd:.3f}"
 
 
 YesOpt = Annotated[bool, typer.Option("--yes", "-y", help="Do not ask for confirmation.")]

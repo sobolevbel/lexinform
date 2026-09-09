@@ -407,6 +407,14 @@ class BillRepository(Protocol):
 
     def finish_run(self, run_id: int, report: RunReport) -> None: ...
 
+    def list_runs(self, *, since: datetime) -> list[RunReport]:
+        """Reports of the finished runs started at `since` or later, newest first."""
+        ...
+
+    def most_expensive_analyses(self, *, limit: int) -> list[Bill]:
+        """Analysed bills by the input tokens of their analysis, largest first."""
+        ...
+
     # the transaction a dry run rolls back
     def begin(self) -> None: ...
 

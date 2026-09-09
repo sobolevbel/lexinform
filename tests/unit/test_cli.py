@@ -1,6 +1,6 @@
 """Operator commands through typer, against a temporary database (no network, no Telegram)."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -8,7 +8,7 @@ from typer.testing import CliRunner
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.cli import app
-from lexinform.models import AnalysisRecord, BillStatus, ProcessDetail
+from lexinform.models import AnalysisRecord, BillStatus, ProcessDetail, RunReport, TokenUsage
 from tests.fakes import make_analysis
 
 runner = CliRunner()
@@ -56,6 +56,49 @@ def _status(db: Path) -> tuple[BillStatus, int, str | None]:
     repo.close()
     assert bill is not None
     return bill.status, bill.analysis_attempts, bill.last_error
+
+
+def _record_run(db: Path, started: datetime, *, analyzed: int, input_tokens: int) -> None:
+    repo = SqliteBillRepository(db)
+    report = RunReport(
+        started_at=started,
+        since=started,
+        mode="run",
+        analyzed=analyzed,
+        published=1,
+        llm_input_tokens=input_tokens,
+        llm_output_tokens=500,
+        llm_usage={"claude-opus-5": TokenUsage(input=input_tokens, output=500)},
+    )
+    run_id = repo.start_run(report)
+    report.finished_at = started + timedelta(minutes=3)
+    repo.finish_run(run_id, report)
+    repo.close()
+
+
+def test_runs_lists_the_recorded_runs_newest_first(db: Path) -> None:
+    _record_run(db, datetime(2026, 9, 8, 4, 23, tzinfo=UTC), analyzed=2, input_tokens=100_000)
+    _record_run(db, datetime(2026, 9, 9, 4, 23, tzinfo=UTC), analyzed=1, input_tokens=20_000)
+
+    result = runner.invoke(app, ["runs", "--days", "3650"], env=_env(db))
+
+    assert result.exit_code == 0, result.output
+    lines = [line for line in result.output.splitlines() if line.startswith("2026-")]
+    assert lines[0].startswith("2026-09-09 04:23") and "$0.11" in lines[0]
+    assert lines[1].startswith("2026-09-08 04:23") and "$0.51" in lines[1]
+
+
+def test_cost_sums_the_runs_and_names_the_dearest_analyses(db: Path) -> None:
+    _record_run(db, datetime(2026, 9, 8, 4, 23, tzinfo=UTC), analyzed=2, input_tokens=100_000)
+    _record_run(db, datetime(2026, 9, 9, 4, 23, tzinfo=UTC), analyzed=1, input_tokens=20_000)
+
+    result = runner.invoke(app, ["cost", "--days", "3650"], env=_env(db))
+
+    assert result.exit_code == 0, result.output
+    assert "2 run(s) in the last 3650 days: $0.62 total, $0.31 per run" in result.output
+    assert "claude-opus-5: in 120.0k" in result.output
+    assert "most expensive run: 2026-09-08 04:23 ($0.51, 2 analysed)" in result.output
+    assert "3039" not in result.output  # the fixture's analysis has no token counts to rank
 
 
 def test_reset_puts_the_bill_back_with_a_clean_budget(db: Path) -> None:
