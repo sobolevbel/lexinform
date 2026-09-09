@@ -56,6 +56,7 @@ class PublicationKind(StrEnum):
     CONSULTATION_DEADLINE = "consultation_deadline"  # public consultation ends in a few days
     CONSULTATION_RESULTS = "consultation_results"  # the Sejm published the opinions received
     AGENDA = "agenda"  # the bill is on the agenda of a committee or Sejm sitting (one per sitting)
+    HEARING_DEADLINE = "hearing_deadline"  # applications to a public hearing close in a few days
 
 
 class PublicationStatus(StrEnum):

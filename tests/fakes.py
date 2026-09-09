@@ -38,6 +38,7 @@ from lexinform.models import (
     RunReport,
     SejmSitting,
     SejmTerm,
+    Stage,
     StatusChange,
     Triage,
     TriageContext,
@@ -349,6 +350,7 @@ class FakePublisher:
         self.consultations: list[tuple[Bill, int | None, date]] = []
         self.consultation_results: list[tuple[Bill, int | None]] = []
         self.agendas: list[tuple[Bill, AgendaItem, int | None]] = []
+        self.hearings: list[tuple[Bill, Stage, int | None, date]] = []
         self.fail_on = fail_on or set()  # bill numbers whose post fails (per-bill error)
         self.outage_on = outage_on or set()  # bill numbers whose post finds Telegram down
         self._next_id = 100
@@ -404,6 +406,13 @@ class FakePublisher:
     ) -> FakePublishResult:
         result = self._send(bill)
         self.agendas.append((bill, item, reply_to))
+        return result
+
+    def publish_hearing_deadline(
+        self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date
+    ) -> FakePublishResult:
+        result = self._send(bill)
+        self.hearings.append((bill, hearing, reply_to, today))
         return result
 
 

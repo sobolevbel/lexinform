@@ -42,6 +42,8 @@ class RunReport(BaseModel):
     acts_published: int = 0
     in_force_posted: int = 0
     consultation_reminders: int = 0
+    hearing_reminders: int = 0
+    held: int = 0  # stage changes held for the next post (service stages only)
     consultation_results_posted: int = 0
     agenda_posted: int = 0  # "the bill is on the agenda of a sitting" notices
     discontinued: int = 0  # bills that lapsed with the end of a term, announced under their card

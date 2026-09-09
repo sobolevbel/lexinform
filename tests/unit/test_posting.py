@@ -13,6 +13,8 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    Stage,
+    StatusChange,
 )
 from lexinform.services.tracking.posting import Poster
 from tests.fakes import FakePublisher, FixedClock
@@ -101,6 +103,42 @@ def test_agenda_posts_are_tracked_per_sitting(repo: SqliteBillRepository, bill: 
 
     assert poster.posted(bill, PublicationKind.AGENDA, ref=SITTING.ref)
     assert not poster.posted(bill, PublicationKind.AGENDA, ref=other.ref)
+
+
+def test_held_changes_go_out_with_the_next_update_and_are_released(
+    repo: SqliteBillRepository, bill: Bill, now: dt.datetime
+) -> None:
+    publisher = FakePublisher()
+    poster = _poster(repo, publisher)
+    reading = Stage(stage_name="I czytanie w komisjach", stage_type="Reading")
+    report = Stage(stage_name="Sprawozdanie komisji", stage_type="CommitteeReport")
+    first = _change(bill, [reading], "fp1", now)
+    second = _change(bill, [report], "fp2", now)
+    first.id = repo.add_status_change(first)
+    second.id = repo.add_status_change(second)
+
+    poster.hold(bill, first)
+    held_before = repo.list_held_status_changes(10, "3039", CHANNEL)
+    sent = poster.status_update(bill, second)
+
+    assert [c.id for c in held_before] == [first.id]
+    assert sent and len(publisher.updates) == 1
+    _, posted, _ = publisher.updates[0]
+    assert [st.stage_type for st in posted.new_stages] == ["Reading", "CommitteeReport"]
+    assert repo.list_held_status_changes(10, "3039", CHANNEL) == []
+    update = repo.get_publication(10, "3039", PublicationKind.STATUS_UPDATE.value, CHANNEL)
+    assert update is not None and update.status is PublicationStatus.SENT
+
+
+def _change(bill: Bill, stages: list[Stage], fingerprint: str, now: dt.datetime) -> StatusChange:
+    return StatusChange(
+        term=bill.term,
+        number=bill.number,
+        old_fingerprint="a",
+        new_fingerprint=fingerprint,
+        new_stages=stages,
+        detected_at=now,
+    )
 
 
 def test_recorded_skip_counts_as_posted(repo: SqliteBillRepository, bill: Bill) -> None:

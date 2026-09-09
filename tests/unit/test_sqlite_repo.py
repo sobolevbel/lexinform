@@ -643,7 +643,11 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "ux_pub_consultation",
         "ux_pub_consultation_results",
         "ux_pub_agenda",
+        "ux_pub_hearing",
     } <= indexes
+    with sqlite3.connect(tmp_path / "current.db") as conn:
+        changes = {r[1] for r in conn.execute("PRAGMA table_info(status_changes)")}
+    assert "amendments_json" in changes  # v11
     # v9: the flag is stored, so a retried post renders the same message
     when = datetime(2026, 9, 7, 6, 0, tzinfo=UTC)
     assert repo.add_status_change(_change("1", when, discontinued=True)) is not None

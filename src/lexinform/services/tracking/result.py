@@ -16,6 +16,7 @@ PostCounter = Literal[
     "consultation_reminders",
     "consultation_results_posted",
     "agenda_posted",
+    "hearing_reminders",
 ]
 
 
@@ -32,6 +33,8 @@ class TrackingResult:
     consultation_reminders: int = 0
     consultation_results_posted: int = 0
     agenda_posted: int = 0
+    hearing_reminders: int = 0
+    held: int = 0  # service-stage changes kept for the next post
     discontinued: int = 0  # bills that lapsed with the end of the term, announced under the card
     rcl_rehomed: int = 0  # RCL projects carried over to the new term
     reanalyzed: int = 0

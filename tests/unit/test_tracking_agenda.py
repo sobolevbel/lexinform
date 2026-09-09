@@ -77,14 +77,22 @@ def test_stage_update_carries_the_scheduled_sitting() -> None:
     reading = Stage(
         stage_name="I czytanie w komisjach", stage_type="Reading", date=dt.date(2026, 9, 8)
     )
+    hearing = Stage(
+        stage_name="Wysłuchanie publiczne", stage_type="PublicHearing", date=dt.date(2026, 9, 30)
+    )
     w.set_stages("3039", COMMITTEE_STAGES + (reading,))
+    w.clock.advance(days=1)
+    held = w.run()  # the first reading alone is a service stage: kept for the next post
+    w.set_stages("3039", COMMITTEE_STAGES + (reading, hearing))
     w.clock.advance(days=1)
 
     report = w.run()
 
-    assert report.updates == 1
+    assert (held.updates, held.held, report.updates) == (0, 1, 1)
     bill, change, _ = w.publisher.updates[0]
-    text = MessageFormatter("ru").status_update(bill, change, today=dt.date(2026, 9, 8)).text
+    assert [st.stage_type for st in change.new_stages] == ["Reading", "PublicHearing"]
+    text = MessageFormatter("ru").status_update(bill, change, today=dt.date(2026, 9, 9)).text
+    assert "• 08.09.2026: I чтение в комиссиях" in text  # the held stage, told now
     assert "Komisja Administracji i Spraw Wewnętrznych (ASW) (sprawozdanie)" in text
     assert "· 17.09.2026, 09:00" in text and "до заседания 17.09.2026" in text
 

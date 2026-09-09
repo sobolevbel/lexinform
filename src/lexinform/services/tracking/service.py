@@ -17,6 +17,7 @@ from lexinform.models import (
     ProcessDetail,
     StatusChange,
     diff_stages,
+    has_news,
     stage_fingerprint,
 )
 from lexinform.ports import BillRepository, Clock, EliGateway, Publisher, SejmGateway
@@ -26,6 +27,7 @@ from lexinform.services.sources import SejmTextSource, fetch_print
 from lexinform.services.tracking.acts import ActWatcher
 from lexinform.services.tracking.agenda import AgendaWatcher
 from lexinform.services.tracking.consultations import ConsultationReminder
+from lexinform.services.tracking.hearings import HearingReminder
 from lexinform.services.tracking.linking import Linker
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.pre_print import PrePrintReconciler
@@ -89,6 +91,13 @@ class StatusTrackingService:
                 channel_id=channel_id,
                 local_tz=local_tz,
                 days_before=consultation_reminder_days,
+            )
+            if consultation_reminder_days is not None
+            else None
+        )
+        self._hearings = (
+            HearingReminder(
+                clock, self._poster, local_tz=local_tz, days_before=consultation_reminder_days
             )
             if consultation_reminder_days is not None
             else None
@@ -171,12 +180,11 @@ class StatusTrackingService:
         if not self._pre_print.reconcile(result, publish=publish):
             return result
         tracked = self._list_tracked(changed_since)
+        everyone = tracked if changed_since is None else self._list_tracked()
         # Agendas change without touching the process: every followed bill is checked, and before
         # the stage loop, so that an update posted below already carries the sitting dates.
-        if self._agenda is not None:
-            everyone = tracked if changed_since is None else self._list_tracked()
-            if not self._agenda.check(everyone, result, publish=publish):
-                return result
+        if self._agenda is not None and not self._agenda.check(everyone, result, publish=publish):
+            return result
         if self._rcl is not None and not self._rcl.check(tracked, result, publish=publish):
             return result
         followed = [bill for bill in tracked if bill.has_process]
@@ -197,7 +205,13 @@ class StatusTrackingService:
                 result.changed += 1
             try:
                 if change is not None and publish:
-                    result.count_post(self._poster.status_update(bill, change))
+                    # Service stages wait for the next event worth a post; a closure that comes
+                    # with the act in Dziennik Ustaw is told by the publication notice below.
+                    if has_news(change, act_published=bool(detail.eli)):
+                        result.count_post(self._poster.status_update(bill, change))
+                    else:
+                        self._poster.hold(bill, change)
+                        result.held += 1
                 self._acts.check(bill, detail, result, publish=publish)
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
@@ -206,6 +220,8 @@ class StatusTrackingService:
             self._acts.remind_in_force(result)
         if result.fatal_error is None and publish and self._consultations is not None:
             self._consultations.remind(result)
+        if result.fatal_error is None and publish and self._hearings is not None:
+            self._hearings.remind(everyone, result)
         scope = "all" if changed_since is None else f"changed since {changed_since:%F %R}"
         log.info(
             "tracking (%s): checked=%d changed=%d reanalyzed=%d published=%d agenda=%d failed=%d",

@@ -2,6 +2,10 @@
 
 A failure is recorded on the same row and retried on later runs up to `max_attempts`; an outage
 (`ServiceUnavailableError`) is recorded and re-raised so the phase stops.
+
+A status change made of service stages only (see `models.has_news`) is *held*: its row gets a
+`skipped` update publication and nothing is sent; the next update of the bill lists the held
+stages before its own and releases them (their rows become `sent` with its message id).
 """
 
 import logging
@@ -15,6 +19,7 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    Stage,
     StatusChange,
 )
 from lexinform.ports import BillRepository, Clock, Publisher
@@ -95,27 +100,58 @@ class Poster:
         log.info("card of %s re-rendered with the tags of its druk", bill.number)
         return True
 
+    def hold(self, bill: Bill, change: StatusChange) -> None:
+        """Keep a service-stage change for the next post instead of sending it now."""
+        assert change.id is not None
+        self._repo.create_publication(self._update_row(bill, change.id, PublicationStatus.SKIPPED))
+        log.info(
+            "druk %s: %s held for the next update",
+            bill.number,
+            "; ".join(st.stage_name for st in change.new_stages) or "closure",
+        )
+
     def status_update(self, bill: Bill, change: StatusChange) -> bool:
-        """Post a detected change as a reply to the card; True on success."""
+        """Post a detected change as a reply to the card; True on success. Stages held since the
+        previous post are listed first and released with it."""
         assert change.id is not None
         pub_id = self._repo.create_publication(
-            Publication(
-                term=bill.term,
-                number=bill.number,
-                kind=PublicationKind.STATUS_UPDATE,
-                status=PublicationStatus.PENDING,
-                channel_id=self._channel_id,
-                status_change_id=change.id,
-                created_at=self._clock.now(),
-            )
+            self._update_row(bill, change.id, PublicationStatus.PENDING)
         )
+        held = self._repo.list_held_status_changes(bill.term, bill.number, self._channel_id)
+        if held:
+            stages: list[Stage] = [st for earlier in held for st in earlier.new_stages]
+            change = change.model_copy(update={"new_stages": stages + list(change.new_stages)})
         fresh = self._repo.get(bill.term, bill.number) or bill
-        return self._send(
+        sent = self._send(
             pub_id,
             bill,
             lambda reply_to: (
                 self._publisher.publish_status_update(fresh, change, reply_to).message_id
             ),
+        )
+        if sent and held:
+            posted = self._repo.get_publication(
+                bill.term, bill.number, PublicationKind.STATUS_UPDATE.value, self._channel_id
+            )
+            if posted is not None and posted.message_id is not None:
+                self._repo.release_held_status_changes(
+                    bill.term,
+                    bill.number,
+                    self._channel_id,
+                    message_id=posted.message_id,
+                    sent_at=self._clock.now(),
+                )
+        return sent
+
+    def _update_row(self, bill: Bill, change_id: int, status: PublicationStatus) -> Publication:
+        return Publication(
+            term=bill.term,
+            number=bill.number,
+            kind=PublicationKind.STATUS_UPDATE,
+            status=status,
+            channel_id=self._channel_id,
+            status_change_id=change_id,
+            created_at=self._clock.now(),
         )
 
     def act_published(self, bill: Bill) -> bool:
@@ -159,6 +195,20 @@ class Poster:
             PublicationKind.AGENDA,
             lambda reply_to: self._publisher.publish_agenda(bill, item, reply_to).message_id,
             ref=item.ref,
+        )
+
+    def hearing_deadline(self, bill: Bill, hearing: Stage, *, today: date) -> bool:
+        """One reminder per (bill, hearing): the hearing date is the `ref`."""
+        assert hearing.date is not None
+        return self._once(
+            bill,
+            PublicationKind.HEARING_DEADLINE,
+            lambda reply_to: (
+                self._publisher.publish_hearing_deadline(
+                    bill, hearing, reply_to, today=today
+                ).message_id
+            ),
+            ref=hearing.date.isoformat(),
         )
 
     def _once(

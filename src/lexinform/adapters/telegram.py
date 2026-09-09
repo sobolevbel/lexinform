@@ -11,7 +11,7 @@ import httpx2 as httpx
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import TelegramUnavailableError
-from lexinform.models import AgendaItem, Bill, PrintInfo, RunReport, StatusChange
+from lexinform.models import AgendaItem, Bill, PrintInfo, RunReport, Stage, StatusChange
 
 log = logging.getLogger(__name__)
 
@@ -181,6 +181,13 @@ class TelegramPublisher:
         self, bill: Bill, item: AgendaItem, reply_to: int | None
     ) -> TelegramPublishResult:
         rendered = self._formatter.agenda(bill, item)
+        message_id = self._client.send_message(self._channel_id, rendered.text, reply_to=reply_to)
+        return TelegramPublishResult(message_id=message_id)
+
+    def publish_hearing_deadline(
+        self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date
+    ) -> TelegramPublishResult:
+        rendered = self._formatter.hearing_deadline(bill, hearing, today=today)
         message_id = self._client.send_message(self._channel_id, rendered.text, reply_to=reply_to)
         return TelegramPublishResult(message_id=message_id)
 

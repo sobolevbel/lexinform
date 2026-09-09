@@ -152,6 +152,13 @@ MIGRATIONS: tuple[str, ...] = (
     """
     ALTER TABLE bills ADD COLUMN linked_wykaz_number TEXT;
     """,
+    # v11: one hearing reminder per bill, channel and hearing (`ref` = the hearing date); the
+    # summary of amendments (Senate, "-A" report) a status change carries
+    """
+    CREATE UNIQUE INDEX ux_pub_hearing ON publications(term, number, kind, channel_id, ref)
+        WHERE kind = 'hearing_deadline';
+    ALTER TABLE status_changes ADD COLUMN amendments_json TEXT;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -851,6 +858,36 @@ class SqliteBillRepository:
             (term, number),
         ).fetchone()
         return row is not None
+
+    def list_held_status_changes(
+        self, term: int, number: str, channel_id: str
+    ) -> list[StatusChange]:
+        """Changes of the bill held back as service stages (a `skipped` update row), oldest
+        first: the next post of the bill lists their stages too."""
+        rows = self._conn.execute(
+            """
+            SELECT c.* FROM status_changes c
+            JOIN publications p ON p.status_change_id = c.id AND p.kind = 'status_update'
+            WHERE c.term = ? AND c.number = ? AND p.channel_id = ? AND p.status = 'skipped'
+            ORDER BY c.id
+            """,
+            (term, number, channel_id),
+        ).fetchall()
+        return [self._row_to_status_change(r) for r in rows]
+
+    def release_held_status_changes(
+        self, term: int, number: str, channel_id: str, *, message_id: int, sent_at: datetime
+    ) -> int:
+        """The held changes of the bill went out inside the post `message_id`."""
+        cur = self._conn.execute(
+            """
+            UPDATE publications SET status = 'sent', message_id = ?, sent_at = ?
+            WHERE kind = 'status_update' AND status = 'skipped'
+              AND term = ? AND number = ? AND channel_id = ?
+            """,
+            (message_id, sent_at.isoformat(), term, number, channel_id),
+        )
+        return int(cur.rowcount or 0)
 
     def list_failed_status_changes(
         self, channel_id: str, *, max_attempts: int

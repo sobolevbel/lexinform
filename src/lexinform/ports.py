@@ -187,6 +187,12 @@ class Publisher(Protocol):
         self, bill: Bill, item: AgendaItem, reply_to: int | None
     ) -> PublishResult: ...
 
+    def publish_hearing_deadline(
+        self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date
+    ) -> PublishResult:
+        """Applications to the public hearing `hearing` close in a few days."""
+        ...
+
 
 class RunNotifier(Protocol):
     def notify(self, report: RunReport, log_lines: list[str]) -> None: ...
@@ -346,6 +352,18 @@ class BillRepository(Protocol):
     def list_failed_status_changes(
         self, channel_id: str, *, max_attempts: int
     ) -> list[StatusChange]: ...
+
+    def list_held_status_changes(
+        self, term: int, number: str, channel_id: str
+    ) -> list[StatusChange]:
+        """Changes held back as service stages (their update row is `skipped`), oldest first."""
+        ...
+
+    def release_held_status_changes(
+        self, term: int, number: str, channel_id: str, *, message_id: int, sent_at: datetime
+    ) -> int:
+        """Mark the bill's held changes as sent inside `message_id`; returns how many."""
+        ...
 
     # runs
     def last_discovery_started_at(self) -> datetime | None: ...

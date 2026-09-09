@@ -4,7 +4,7 @@ import datetime as dt
 
 from lexinform.models import Committee, Stage, Vote, VotingSummary
 from tests.fakes import make_analysis
-from tests.harness import REFERRED, START, World, print_url
+from tests.harness import COMMITTEE_STAGES, ELI, REFERRED, START, World, act, print_url
 
 # --------------------------------------------------------------------------- stage updates
 
@@ -22,7 +22,7 @@ def test_new_stage_is_posted_exactly_once_as_a_reply_to_the_card() -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
-    w.set_stages("3039", REFERRED)
+    w.set_stages("3039", COMMITTEE_STAGES)
     w.clock.advance(days=1)
 
     report = w.run()
@@ -31,9 +31,49 @@ def test_new_stage_is_posted_exactly_once_as_a_reply_to_the_card() -> None:
 
     assert report.updates == 1
     bill, change, reply_to = w.publisher.updates[0]
-    assert [st.stage_name for st in change.new_stages] == ["Skierowano do I czytania"]
+    assert [st.stage_type for st in change.new_stages] == ["ReadingReferral", "Referral"]
     assert reply_to == w.card_id("3039")
     assert again.updates == 0 and len(w.publisher.updates) == 1
+
+
+def test_service_stages_are_held_and_told_with_the_next_substantive_one() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
+    w.run()
+    reading = Stage(
+        stage_name="I czytanie w komisjach", stage_type="Reading", date=dt.date(2026, 9, 6)
+    )
+    w.set_stages("3039", REFERRED + (reading,))
+    w.clock.advance(days=1)
+    held = w.run()
+    w.set_stages("3039", REFERRED + (reading,) + WITH_REPORT[len(REFERRED) :])
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (held.updates, held.held) == (0, 1)
+    assert len(w.publisher.updates) == 1 and report.updates == 1
+    _, change, _ = w.publisher.updates[0]
+    assert [st.stage_name for st in change.new_stages] == [
+        "I czytanie w komisjach",
+        "Praca w komisjach po I czytaniu",
+        "Sprawozdanie komisji",
+    ]
+    assert w.repo.list_held_status_changes(10, "3039", "@test") == []  # released with the post
+
+
+def test_closure_that_arrives_with_the_act_is_told_by_the_publication_notice_only() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.gateway.acts[ELI] = act()
+    w.publish_act("3039")  # closure date, passed and the ELI address appear together
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.updates, report.held, report.acts_published) == (0, 1, 1)
+    assert w.publisher.updates == [] and len(w.publisher.acts) == 1
 
 
 def test_removed_stage_does_not_post_an_empty_update() -> None:
@@ -53,7 +93,7 @@ def test_failed_update_is_retried_on_the_next_run() -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
-    w.set_stages("3039", REFERRED)
+    w.set_stages("3039", COMMITTEE_STAGES)
     w.publisher.fail_on = {"3039"}
     w.clock.advance(days=1)
 
@@ -68,7 +108,7 @@ def test_failed_update_is_retried_on_the_next_run() -> None:
     assert failed.updates == 0 and failed.errors and posted_while_failing == []
     assert retried.updates == 1 and not retried.errors
     _, change, reply_to = w.publisher.updates[0]
-    assert [st.stage_name for st in change.new_stages] == ["Skierowano do I czytania"]
+    assert [st.stage_type for st in change.new_stages] == ["ReadingReferral", "Referral"]
     assert reply_to == w.card_id("3039")
     assert settled.updates == 0
 
@@ -250,7 +290,7 @@ def test_daily_tracking_checks_only_bills_the_api_listed_as_changed() -> None:
     w.run()  # Monday: a full check, both published
     w.clock.advance(days=1)  # Tuesday
     w.touch("3040", dt.datetime(2026, 9, 8, 9, 0))
-    w.set_stages("3040", REFERRED)
+    w.set_stages("3040", COMMITTEE_STAGES)
     w.gateway.calls.clear()
 
     report = w.run(since=dt.datetime(2026, 9, 7, tzinfo=dt.UTC))

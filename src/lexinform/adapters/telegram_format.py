@@ -628,12 +628,13 @@ class MessageFormatter:
                 "📣",
                 "posts",
                 f"new cards: {report.published} · updates: {report.updates} · "
-                f"re-analyzed: {report.reanalyzed} · linked: {report.linked} · "
-                f"tracked: {report.tracked}",
+                f"held: {report.held} · re-analyzed: {report.reanalyzed} · "
+                f"linked: {report.linked} · tracked: {report.tracked}",
                 f"acts: {report.acts_published} · in force: {report.in_force_posted}"
                 f" · consultation reminders: {report.consultation_reminders}"
                 f" · results: {report.consultation_results_posted}"
-                f" · agenda: {report.agenda_posted}",
+                f" · agenda: {report.agenda_posted}"
+                f" · hearings: {report.hearing_reminders}",
                 (
                     f"end of term: {report.discontinued} bill(s) lapsed · "
                     f"{report.rcl_rehomed} RCL project(s) carried over"

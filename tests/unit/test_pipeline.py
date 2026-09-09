@@ -6,7 +6,7 @@ import pytest
 
 from lexinform.models import BillStatus, Category, DocumentType, PublicationStatus
 from tests.fakes import FakeTextExtractor, make_analysis
-from tests.harness import REFERRED, World, summary
+from tests.harness import COMMITTEE_STAGES, World, summary
 
 # --------------------------------------------------------------------------- happy path
 
@@ -261,7 +261,7 @@ def _two_runs(workers: int) -> tuple[dict[str, int], dict[str, int], list[str]]:
     w.add_bill("4001", "Rządowy projekt ustawy o zmianie niektórych ustaw")
     first = w.run()
     for number in numbers:
-        w.set_stages(number, REFERRED)
+        w.set_stages(number, COMMITTEE_STAGES)
     second = w.run()
     counters = [{k: getattr(r, k) for k in COUNTERS} for r in (first, second)]
     return counters[0], counters[1], sorted(b.number for b, _ in w.publisher.new_bills)
