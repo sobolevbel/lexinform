@@ -34,21 +34,24 @@ Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony na te
 📅 Вступление в силу: …
 🗣 Общественные консультации: 05.08.2026 — 04.09.2026 · форма для мнений на сайте Сейма
 
+🗺 Путь: Сейм ✓ → комиссии ● → II и III чтение → Сенат → Президент → Dz.U. → в силе
 ⏭ Что дальше: I чтение в комиссии — Komisja Administracji i Spraw Wewnętrznych (ASW) · 17.09.2026, 09:00
 👉 Что можно сделать сейчас: направить мнение через страницу проекта на сайте Сейма до 04.09.2026; направить мнение в комиссию — Komisja … (ASW) до заседания 17.09.2026
 
-🏛 Стадия: Skierowano do I czytania w komisjach (03.09.2026)
+🏛 Стадия: направлен в комиссию Komisja Administracji i Spraw Wewnętrznych (ASW) (03.09.2026)
 ✍️ Инициатор: депутатский (подписали: Lewica 21 · представитель: Daria Gosek-Popiołek, Lewica)   📄 Дата druku: 03.08.2026
 
 🔗 Ход процесса в Сейме | PDF
 #kadencja10druk3039 #важность5 #легализация #консультации #каденция10
 ```
 
-Every card and update ends with two lines that answer the reader's real questions: **what comes
-next** (the next step of the process, dated when a committee or Sejm sitting with the bill on its
-agenda is already scheduled) and **what you can do now** (send an opinion through the Sejm's
-consultation form until the deadline, write to the committee before its sitting, apply for a
-public hearing).
+Every card and update carries three lines that answer the reader's real questions: **the path**
+(RCL → Sejm → committees → readings → Senate → President → Dz.U. → in force, with the current
+step marked), **what comes next** (the next step of the process, dated when a committee or Sejm
+sitting with the bill on its agenda is already scheduled, otherwise with the usual duration) and
+**what you can do now** (send an opinion through the Sejm's consultation form until the deadline,
+write to the committee before its sitting, apply for a public hearing, send an opinion to the
+Senate committee; when there is nothing to do, the line says so and names the next window).
 
 Replies cover: a reminder three days before a public consultation closes, the notice that the
 opinions received were published, a committee sitting or a Sejm sitting whose agenda names the

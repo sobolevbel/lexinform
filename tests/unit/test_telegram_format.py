@@ -168,7 +168,7 @@ def test_card_contains_every_section(process_3039: ProcessDetail, print_3039: Pr
     )
     assert "🔴 <b>Важность:</b> ●●●●● 5/5" in text
     assert "О чём проект" in text and "Ключевые изменения" in text
-    assert "Стадия:</b> Skierowanie" in text
+    assert "Стадия:</b> направлен в комиссию ASW" in text  # translated, the body stays Polish
     assert "PrzebiegProc.xsp?nr=3039" in text and "prints/3039/3039.pdf" in text
     assert "#kadencja10druk3039 #важность5 #легализация #каденция10" in text
 
@@ -467,10 +467,57 @@ def test_late_phases_name_what_follows(process_1962: ProcessDetail) -> None:
     awaiting_force = fmt.new_bill(bill_of(passed, act=ACT), None, today=TODAY).text
     in_force = fmt.new_bill(bill_of(passed, act=ACT), None, today=dt.date(2026, 11, 20)).text
 
-    assert "⏭ <b>Что дальше:</b> публикация в Dziennik Ustaw" in awaiting_publication
-    assert "👉" not in awaiting_publication  # nothing a reader can do
+    assert (
+        "⏭ <b>Что дальше:</b> публикация в Dziennik Ustaw · обычно 1–4 недели после подписи"
+        in awaiting_publication
+    )
+    # Nothing a reader can do: the card says so instead of staying silent.
+    assert (
+        "👉 <b>Что можно сделать сейчас:</b> пока ничего — ждём публикации" in awaiting_publication
+    )
+    # A committee bill: no RCL step on its path.
+    assert "Путь:</b> Сейм ✓ → комиссии ✓ → II и III чтение ✓ → Сенат ✓ → Президент ✓" in (
+        awaiting_publication
+    )
+    assert "→ Dz.U. ● → в силе" in awaiting_publication
     assert "вступление в силу 19.11.2026" in awaiting_force
+    assert "→ Dz.U. ✓ → в силе ●" in awaiting_force
     assert "Что дальше" not in in_force
+    assert "→ Dz.U. ✓ → в силе ✓" in in_force  # the whole path is done
+
+
+def test_path_and_usual_duration_for_a_deputies_bill_in_committee(
+    process_3039: ProcessDetail,
+) -> None:
+    text = MessageFormatter("ru").new_bill(bill_of(process_3039), None, today=TODAY).text
+    en = MessageFormatter("en").new_bill(bill_of(process_3039), None, today=TODAY).text
+
+    # No RCL step: a deputies' bill never went through the government.
+    assert (
+        "🗺 <b>Путь:</b> Сейм ✓ → комиссии ● → II и III чтение → Сенат → Президент → Dz.U." in text
+    )
+    assert "Что дальше:</b> I чтение в комиссии — ASW · обычно 2–6 недель после поступления" in text
+    assert "<b>Path:</b> Sejm ✓ → committees ● → 2nd and 3rd reading" in en
+
+
+def test_senate_stage_invites_an_opinion_to_the_senate_committee(
+    process_1962: ProcessDetail,
+) -> None:
+    # process_1962 already carries the Senate position; cut the stages back to the third reading.
+    third_reading = next(
+        i
+        for i, st in enumerate(process_1962.stages)
+        if st.stage_type == "SejmReading" and "III" in st.stage_name
+    )
+    in_senate = process_1962.model_copy(
+        update={"stages": process_1962.stages[: third_reading + 1], "passed": True}
+    )
+
+    text = MessageFormatter("ru").new_bill(bill_of(in_senate), None, today=TODAY).text
+
+    assert "Что дальше:</b> рассмотрение в Сенате (до 30 дней)" in text
+    assert "Что можно сделать сейчас:</b> направить мнение в профильную комиссию Сената" in text
+    assert "→ Сенат ● → Президент" in text
 
 
 def test_withdrawn_bill_gets_no_next_step(process_3039: ProcessDetail) -> None:

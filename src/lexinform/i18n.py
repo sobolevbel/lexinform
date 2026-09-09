@@ -83,6 +83,8 @@ class Labels:
     tag_ukraine: str  # bills about citizens of Ukraine: the channel's largest audience
     consultation_link: str  # text of the link to the Sejm page where opinions are submitted
     action_now: str  # "What you can do now"
+    action_senate: str  # "send an opinion to the Senate committee" (while the Senate has the bill)
+    path: str  # "Path": the one-line map of the process with the current step marked
     action_send_opinion: str  # "send an opinion via"
     action_consultation_page: str  # link text: the bill's consultation page
     action_committee: str  # "send an opinion to the committee —" (the committee name follows)
@@ -123,6 +125,17 @@ class Labels:
     tag_rcl: str
     event_tags: dict[str, str] = field(default_factory=dict)  # voting, senate, president, ...
     next_step_labels: dict[str, str] = field(default_factory=dict)  # by phase key, see models
+    # By phase key: how long the step usually takes, shown when no sitting is scheduled yet.
+    typical_durations: dict[str, str] = field(default_factory=dict)
+    # By phase key: what to say when the public has no move right now (and what comes next).
+    no_action_labels: dict[str, str] = field(default_factory=dict)
+    # The steps of the "path" line, in order: rcl, sejm, committee, readings, senate, president,
+    # journal, in_force.
+    path_steps: dict[str, str] = field(default_factory=dict)
+    # The card's "stage" line: by Sejm stage type (`Stage.stage_type`) ...
+    stage_labels: dict[str, str] = field(default_factory=dict)
+    # ... and by a fragment of an RCL stage name (lower case), first match wins.
+    rcl_stage_labels: dict[str, str] = field(default_factory=dict)
     date_format: str = "%Y-%m-%d"
     stage_type_labels: dict[str, str] = field(default_factory=dict)
     senate_position_labels: dict[str, str] = field(default_factory=dict)
@@ -215,6 +228,8 @@ RU = Labels(
     tag_ukraine="Украина",
     consultation_link="форма для мнений на сайте Сейма",
     action_now="Что можно сделать сейчас",
+    action_senate="направить мнение в профильную комиссию Сената (senat.gov.pl)",
+    path="Путь",
     action_send_opinion="направить мнение через",
     action_consultation_page="страницу проекта на сайте Сейма",
     action_committee="направить мнение в комиссию —",
@@ -304,6 +319,81 @@ RU = Labels(
         "rcl_to_sejm": "присвоение номера druku в Сейме, затем I чтение",
     },
     date_format="%d.%m.%Y",
+    typical_durations={
+        "pre_print": "обычно от нескольких дней до нескольких месяцев",
+        "first_reading": "обычно 2–6 недель после поступления",
+        "first_reading_committee": "обычно 2–6 недель после поступления",
+        "first_reading_sitting": "обычно 2–6 недель после поступления",
+        "committee_work": "от нескольких недель до года",
+        "second_reading": "часто на одном заседании с III чтением",
+        "third_reading": "часто на одном заседании со II чтением",
+        "senate_amendments": "обычно на ближайшем заседании Сейма",
+        "publication": "обычно 1–4 недели после подписи",
+        "rcl_committees": "обычно 1–3 месяца",
+        "rcl_council": "обычно несколько недель",
+        "rcl_to_sejm": "обычно несколько дней",
+    },
+    no_action_labels={
+        "pre_print": "пока ничего — следующая возможность: замечания в комиссию после I чтения",
+        "pre_print_consultation": (
+            "пока ничего — следующая возможность: замечания в комиссию после I чтения"
+        ),
+        "first_reading": "пока ничего — следующая возможность: замечания в комиссию после I чтения",
+        "first_reading_committee": (
+            "пока ничего — следующая возможность: замечания в комиссию после I чтения"
+        ),
+        "first_reading_sitting": (
+            "пока ничего — следующая возможность: замечания в комиссию после I чтения"
+        ),
+        "committee_work": "пока ничего — замечания принимает комиссия, которая ведёт проект",
+        "second_reading": (
+            "пока ничего — после голосования в Сейме мнение можно направить в комиссию Сената"
+        ),
+        "third_reading": (
+            "пока ничего — после голосования в Сейме мнение можно направить в комиссию Сената"
+        ),
+        "senate_amendments": "пока ничего — Сейм решает по поправкам Сената",
+        "president": "пока ничего — закон у Президента",
+        "publication": "пока ничего — ждём публикации в Dziennik Ustaw",
+        "in_force": "пока ничего — закон принят, остаётся подготовиться к вступлению в силу",
+        "in_force_unknown": "пока ничего — закон принят, дата вступления в силу ещё не известна",
+        "veto": "пока ничего — решение за Сеймом",
+        "tribunal": "пока ничего — решение за Конституционным трибуналом",
+        "rcl_to_sejm": "пока ничего — ждём номер druku, затем I чтение и комиссия",
+    },
+    path_steps={
+        "rcl": "RCL",
+        "sejm": "Сейм",
+        "committee": "комиссии",
+        "readings": "II и III чтение",
+        "senate": "Сенат",
+        "president": "Президент",
+        "journal": "Dz.U.",
+        "in_force": "в силе",
+    },
+    stage_labels={
+        "Start": "проект поступил в Сейм",
+        "ReadingReferral": "направлен на I чтение",
+        "Referral": "направлен в комиссию",
+        "Reading": "I чтение",
+        "CommitteeWork": "работа в комиссии",
+        "CommitteeReport": "отчёт комиссии (sprawozdanie)",
+        "Voting": "голосование в Сейме",
+        "SenatePosition": "позиция Сената",
+        "End": "процесс в Сейме завершён",
+    },
+    rcl_stage_labels={
+        "zgłoszenia lobbingowe": "лоббистские заявления",
+        "uzgodnienia": "межведомственные согласования",
+        "konsultacje publiczne": "общественные консультации",
+        "opiniowanie": "сбор мнений министерств и партнёров",
+        "komisja prawnicza": "Юридическая комиссия правительства",
+        "stały komitet": "Постоянный комитет Совета министров",
+        "komitet": "комитет Совета министров",
+        "notyfikacja": "нотификация в Европейской комиссии",
+        "rada ministrów": "Совет министров",
+        "do sejmu": "направлен в Сейм",
+    },
     stage_type_labels={
         "ToPresident": "Закон передан Президенту",
         "PresidentSignature": "✍️ Президент подписал закон",
@@ -436,6 +526,8 @@ EN = Labels(
     tag_ukraine="Ukraine",
     consultation_link="opinion form on the Sejm website",
     action_now="What you can do now",
+    action_senate="send an opinion to the competent Senate committee (senat.gov.pl)",
+    path="Path",
     action_send_opinion="send an opinion via",
     action_consultation_page="the bill's page on the Sejm website",
     action_committee="send an opinion to the committee —",
@@ -524,6 +616,85 @@ EN = Labels(
         ),
         "rcl_council": "adoption by the Council of Ministers, then the Sejm and a print number",
         "rcl_to_sejm": "print number assignment in the Sejm, then the first reading",
+    },
+    typical_durations={
+        "pre_print": "usually days to months",
+        "first_reading": "usually 2–6 weeks after submission",
+        "first_reading_committee": "usually 2–6 weeks after submission",
+        "first_reading_sitting": "usually 2–6 weeks after submission",
+        "committee_work": "weeks to a year",
+        "second_reading": "often at the same sitting as the third reading",
+        "third_reading": "often at the same sitting as the second reading",
+        "senate_amendments": "usually at the next Sejm sitting",
+        "publication": "usually 1–4 weeks after the signature",
+        "rcl_committees": "usually 1–3 months",
+        "rcl_council": "usually a few weeks",
+        "rcl_to_sejm": "usually a few days",
+    },
+    no_action_labels={
+        "pre_print": "nothing yet — next chance: comments to the committee after the first reading",
+        "pre_print_consultation": (
+            "nothing yet — next chance: comments to the committee after the first reading"
+        ),
+        "first_reading": (
+            "nothing yet — next chance: comments to the committee after the first reading"
+        ),
+        "first_reading_committee": (
+            "nothing yet — next chance: comments to the committee after the first reading"
+        ),
+        "first_reading_sitting": (
+            "nothing yet — next chance: comments to the committee after the first reading"
+        ),
+        "committee_work": "nothing yet — the committee handling the bill takes comments",
+        "second_reading": (
+            "nothing yet — after the Sejm vote an opinion can go to the Senate committee"
+        ),
+        "third_reading": (
+            "nothing yet — after the Sejm vote an opinion can go to the Senate committee"
+        ),
+        "senate_amendments": "nothing yet — the Sejm decides on the Senate's amendments",
+        "president": "nothing yet — the act is with the President",
+        "publication": "nothing yet — waiting for publication in Dziennik Ustaw",
+        "in_force": "nothing yet — the act is passed, prepare for its entry into force",
+        "in_force_unknown": "nothing yet — the act is passed, the entry-into-force date is unknown",
+        "veto": "nothing yet — the Sejm decides",
+        "tribunal": "nothing yet — the Constitutional Tribunal decides",
+        "rcl_to_sejm": (
+            "nothing yet — waiting for the print number, then first reading and committee"
+        ),
+    },
+    path_steps={
+        "rcl": "RCL",
+        "sejm": "Sejm",
+        "committee": "committees",
+        "readings": "2nd and 3rd reading",
+        "senate": "Senate",
+        "president": "President",
+        "journal": "Dz.U.",
+        "in_force": "in force",
+    },
+    stage_labels={
+        "Start": "submitted to the Sejm",
+        "ReadingReferral": "referred to the first reading",
+        "Referral": "referred to committee",
+        "Reading": "first reading",
+        "CommitteeWork": "committee work",
+        "CommitteeReport": "committee report (sprawozdanie)",
+        "Voting": "vote in the Sejm",
+        "SenatePosition": "Senate position",
+        "End": "Sejm process closed",
+    },
+    rcl_stage_labels={
+        "zgłoszenia lobbingowe": "lobbying declarations",
+        "uzgodnienia": "inter-ministerial agreement",
+        "konsultacje publiczne": "public consultation",
+        "opiniowanie": "opinions of ministries and partners",
+        "komisja prawnicza": "the government's Legal Commission",
+        "stały komitet": "Standing Committee of the Council of Ministers",
+        "komitet": "committee of the Council of Ministers",
+        "notyfikacja": "notification to the European Commission",
+        "rada ministrów": "Council of Ministers",
+        "do sejmu": "sent to the Sejm",
     },
     stage_type_labels={
         "ToPresident": "Sent to the President",

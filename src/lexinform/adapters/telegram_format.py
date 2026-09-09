@@ -6,6 +6,7 @@ through html.escape; only our own markup is raw HTML.
 
 import datetime as dt
 import html
+import re
 from dataclasses import dataclass
 
 from lexinform.i18n import Labels, labels_for
@@ -52,6 +53,7 @@ ICON = {
     "doc_date": "📄",
     "links": "🔗",
     "new_stages": "🧭",
+    "path": "🗺",
     "changed": "🆕",
     "passed": "✅",
     "closed": "🏁",
@@ -71,6 +73,31 @@ ICON = {
 }
 _COMMITTEE_PHASES = {"first_reading_committee", "committee_work", "senate_amendments"}
 _SITTING_PHASES = {"first_reading_sitting", "second_reading", "third_reading", "senate_amendments"}
+
+# The "path" line: the steps of the process in order, and which step each phase sits on. RCL
+# phases (except the hand-over) sit on "rcl"; the step is skipped for bills that never went
+# through the government.
+_PATH_STEPS = ("rcl", "sejm", "committee", "readings", "senate", "president", "journal", "in_force")
+_PHASE_STEP = {
+    "rcl_to_sejm": "sejm",
+    "pre_print": "sejm",
+    "pre_print_consultation": "sejm",
+    "first_reading": "sejm",
+    "first_reading_sitting": "sejm",
+    "first_reading_committee": "committee",
+    "committee_work": "committee",
+    "second_reading": "readings",
+    "third_reading": "readings",
+    "senate": "senate",
+    "senate_amendments": "senate",
+    "president": "president",
+    "veto": "president",
+    "tribunal": "president",
+    "publication": "journal",
+    "in_force": "in_force",
+    "in_force_unknown": "in_force",
+}
+_READING_NUMERAL = re.compile(r"^\s*(I{1,3})\s+czytanie", re.IGNORECASE)
 CLUBS_PER_SIDE = 4
 
 
@@ -174,7 +201,7 @@ class MessageFormatter:
         if last is not None:
             when = f" ({self.fmt_date(last.date)})" if last.date else ""
             meta_lines.append(
-                f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {esc(last.stage_name)}{when}"
+                f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {self._stage_label(bill, last)}{when}"
             )
         elif bill.rcl is not None:
             meta_lines.append(f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {esc(lb.rcl_no_stage)}")
@@ -722,9 +749,44 @@ class MessageFormatter:
     # ------------------------------------------------------------------ next step / action
 
     def _steps_block(self, bill: Bill, today: dt.date) -> str:
-        """ "What comes next" (with a date when a sitting is scheduled) and "what you can do"."""
-        lines = [self._next_step_line(bill, today), self._action_line(bill, today)]
+        """Where the bill is on its path, "what comes next" (dated when a sitting is scheduled,
+        else with the usual duration) and "what you can do" (or why nothing, for now)."""
+        lines = [
+            self._path_line(bill, today),
+            self._next_step_line(bill, today),
+            self._action_line(bill, today),
+        ]
         return "\n".join(line for line in lines if line)
+
+    def _path_line(self, bill: Bill, today: dt.date) -> str:
+        """ "RCL ✓ → Сейм ✓ → комиссии ● → II и III чтение → Сенат → Президент → Dz.U. → в силе"."""
+        lb = self._labels
+        phase = next_phase(bill, today=today)
+        current: str | None
+        if phase is None:
+            act = bill.act
+            if act is None or act.entry_into_force is None or act.entry_into_force > today:
+                return ""  # over without an act (withdrawn, rejected, lapsed): see the closure line
+            current = None  # in force: every step done
+        elif phase.key.startswith("rcl_") and phase.key != "rcl_to_sejm":
+            current = "rcl"
+        else:
+            current = _PHASE_STEP.get(phase.key)
+            if current is None:
+                return ""
+        steps = [s for s in _PATH_STEPS if s != "rcl" or _government_path(bill)]
+        parts: list[str] = []
+        before = current is not None
+        for step in steps:
+            label = lb.path_steps[step]
+            if step == current:
+                parts.append(f"{label} ●")
+                before = False
+            elif before or current is None:
+                parts.append(f"{label} ✓")
+            else:
+                parts.append(label)
+        return f"{ICON['path']} <b>{esc(lb.path)}:</b> {esc(' → '.join(parts))}"
 
     def _next_step_line(self, bill: Bill, today: dt.date) -> str:
         lb = self._labels
@@ -739,8 +801,30 @@ class MessageFormatter:
             committee=self._committee_names(bill, phase.committees),
         ).strip()
         upcoming = self._upcoming(bill, today, phase)
-        suffix = f" · {self._agenda_when(upcoming)}" if upcoming else ""
+        if upcoming is not None:
+            suffix = f" · {self._agenda_when(upcoming)}"
+        else:
+            usual = lb.typical_durations.get(phase.key)
+            suffix = f" · {esc(usual)}" if usual else ""
         return f"{ICON['next']} <b>{esc(lb.next_step)}:</b> {esc(text)}{suffix}"
+
+    def _stage_label(self, bill: Bill, stage: Stage) -> str:
+        """The card's stage in the reader's language; Polish stays only where it names a body
+        (a committee) or, for RCL, as the numbered original after the translation."""
+        lb = self._labels
+        if stage.stage_type == RCL_STAGE_TYPE:
+            name = stage.stage_name.lower()
+            label = next((t for part, t in lb.rcl_stage_labels.items() if part in name), None)
+            return f"{esc(label)} ({esc(stage.stage_name)})" if label else esc(stage.stage_name)
+        if stage.stage_type == "Referral" and stage.committee_code:
+            committee = self._committee_display(bill, stage.committee_code, stage.committee_name)
+            return f"{esc(lb.stage_labels['Referral'])} {esc(committee)}"
+        if stage.stage_type == "SejmReading":
+            match = _READING_NUMERAL.match(stage.stage_name)
+            if match:
+                return esc(lb.next_step_labels["second_reading"].replace("II", match.group(1)))
+        label = lb.stage_labels.get(stage.stage_type) or lb.stage_type_labels.get(stage.stage_type)
+        return esc(label) if label else esc(stage.stage_name)
 
     def _action_line(
         self, bill: Bill, today: dt.date, *, agenda_item: AgendaItem | None = None
@@ -778,8 +862,14 @@ class MessageFormatter:
                 actions.append(text)
             if _hearing_open(bill, today):
                 actions.append(esc(lb.action_hearing))
+        if phase is not None and phase.key == "senate":
+            actions.append(esc(lb.action_senate))
         if not actions:
-            return ""
+            # Say so, and name the next window, rather than leave the reader guessing.
+            nothing = lb.no_action_labels.get(phase.key) if phase is not None else None
+            return (
+                f"{ICON['action']} <b>{esc(lb.action_now)}:</b> {esc(nothing)}" if nothing else ""
+            )
         return f"{ICON['action']} <b>{esc(lb.action_now)}:</b> " + "; ".join(actions)
 
     def _rcl_actions(
@@ -955,6 +1045,15 @@ def _event_keys(change: StatusChange) -> list[str]:
     if change.discontinued:
         keys.append("discontinued")
     return keys
+
+
+def _government_path(bill: Bill) -> bool:
+    """Government bills start on RCL; the path line shows that step only for them."""
+    return (
+        bill.rcl is not None
+        or bool(bill.summary.rcl_num)
+        or bill.summary.applicant_type is ApplicantType.GOVERNMENT
+    )
 
 
 def _consultation_open(bill: Bill, today: dt.date | None) -> bool:

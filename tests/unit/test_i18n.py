@@ -10,6 +10,11 @@ from lexinform.i18n import EN, LABELS, RU, labels_for
     [
         "event_tags",
         "next_step_labels",
+        "typical_durations",
+        "no_action_labels",
+        "path_steps",
+        "stage_labels",
+        "rcl_stage_labels",
         "stage_type_labels",
         "senate_position_labels",
         "score_labels",
