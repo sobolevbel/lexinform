@@ -92,13 +92,13 @@ def test_publishing_resumes_without_duplicates_when_telegram_is_back() -> None:
     assert len(w.publisher.new_bills) == 2
 
 
-def test_unexpected_bug_in_a_phase_is_reported() -> None:
+def test_unexpected_bug_in_a_phase_is_reported(monkeypatch: pytest.MonkeyPatch) -> None:
     w = World()
 
     def bug(term: int, since: datetime, *, pre_print: bool = True) -> None:
         raise KeyError("oops")
 
-    w.discovery.discover = bug  # type: ignore[method-assign, assignment]
+    monkeypatch.setattr(w.discovery, "discover", bug)
 
     report = w.run()
 

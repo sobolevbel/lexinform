@@ -74,8 +74,8 @@ def test_assigned_print_number_continues_the_thread_under_the_new_number() -> No
     assert "Проекту присвоен номер druku: <b>3100</b>" in text
     pre = w.bill(RPW)
     assert (pre.status, pre.linked_number) == (BillStatus.LINKED, "3100")
-    assert w.bill("3100").analysis is not None
-    assert w.bill("3100").analysis.revision == 2  # type: ignore[union-attr]
+    analysis = w.bill("3100").analysis
+    assert analysis is not None and analysis.revision == 2
 
 
 def test_after_linking_only_the_print_is_tracked() -> None:

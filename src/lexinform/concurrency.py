@@ -8,6 +8,7 @@ calling thread, in input order, and that is where every database write happens. 
 from collections.abc import Callable, Iterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from typing import cast
 
 
 @dataclass(frozen=True)
@@ -22,7 +23,7 @@ class Outcome[T, R]:
         """The value, or re-raise the step's exception so the caller classifies it as usual."""
         if self.error is not None:
             raise self.error
-        return self.value  # type: ignore[return-value]
+        return cast(R, self.value)  # a step that returned None has value=None and no error
 
 
 def fan_out[T, R](

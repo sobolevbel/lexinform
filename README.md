@@ -202,7 +202,8 @@ src/lexinform/
   services/                  discovery, text_prefilter, analysis, publishing, pipeline,
                              tracking/ (stages, pre-print links, acts, reminders, posting)
   container.py, cli.py       composition root, typer commands
-tests/                       unit tests on fakes + recorded API fixtures; `-m integration` hits the live API
+tests/                       fakes.py (ports in memory), harness.py (the pipeline on fakes),
+                             unit/ on fakes + recorded API fixtures; `-m integration` hits the live API
 ```
 
 Services depend only on `ports.py`, so swapping the LLM, the database or the messenger means one

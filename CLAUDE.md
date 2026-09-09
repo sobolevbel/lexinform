@@ -9,8 +9,10 @@ windows and the API stage vocabulary in `docs/legislative-process.md`.
 
 ## Working rules
 
-- Python 3.12, `uv`. Check with `uv run pytest -q && uv run mypy src && uv run ruff check src tests`
-  and `uv run ruff format src tests`. All three must be clean before a commit.
+- Python 3.12, `uv`. Check with `uv run pytest -q && uv run mypy && uv run ruff check src tests`
+  and `uv run ruff format src tests`. All three must be clean before a commit. mypy is strict over
+  `src` and `tests`: no `type: ignore`, no local imports, tests fully typed.
+- Developer guide (setup, tests, migrations, where a change goes): `CONTRIBUTING.md`.
 - Commit after each finished part. Do not push unless asked. No `Co-Authored-By` trailers.
 - `.env` holds real secrets and is untracked; never print values. `.env.example` mirrors keys.
 - Messages to readers are Russian (labels in `i18n.py`, RU + EN); Polish law titles stay Polish.
@@ -25,17 +27,20 @@ windows and the API stage vocabulary in `docs/legislative-process.md`.
 `report`, all re-exported from `lexinform.models`) → `ports.py` (Protocols) → `adapters/` (Sejm
 API, ELI, PDF, Anthropic, Telegram, SQLite) → `services/` (discovery, text_prefilter, analysis,
 publishing, `tracking/` (service, pre_print, acts, consultations, agenda, posting, stages),
-pipeline) → `container.py` (manual wiring) → `cli.py` (typer). Services import only ports/models
-(plus `TextBudget`, `PdfTextLoader`, `keywords`, `sections`, `agenda`, `concurrency`). Tests use
-fakes in `tests/fakes.py` and the `World` harness in `tests/unit/test_pipeline.py`; HTTP adapters
-use `httpx2.MockTransport`.
+pipeline) → `container.py` (manual wiring) → `cli.py` (typer). Services import only ports, models
+and the pure modules (`keywords`, `sections` incl. `TextBudget`, `agenda`, `authors`,
+`concurrency`), never adapters. Tests use fakes in `tests/fakes.py` and the `World` harness in
+`tests/harness.py` (arrange with `add_bill`/`set_stages`/`touch`, act with `run`, assert on the
+report, the publisher's records and `bill`/`publication`); HTTP adapters use
+`httpx2.MockTransport`. Tests follow arrange-act-assert and never touch private attributes.
 
 Invariants worth keeping:
 
 - **Pending-before-send.** Every Telegram post gets a `publications` row (`pending`) first, unique
   per kind/bill/channel (agenda posts: per kind/bill/channel/`ref`, one per sitting); failed posts
   are retried up to `max_publish_attempts`; `pending` left by a crash becomes `unknown` and is
-  never auto-resent.
+  never auto-resent. The "due" queries (`list_due_in_force`, `list_due_consultations`) must keep
+  listing a bill whose post `failed`, otherwise the retry never happens (`Poster.posted` decides).
 - **`/bills` rows are refreshed by tracking only.** Discovery saves a submission for new bills;
   the reconciler (`tracking/pre_print.py`) re-reads `/bills` for pending RPW entries and for bills
   awaiting consultation results and compares new with stored (print assigned, withdrawn,

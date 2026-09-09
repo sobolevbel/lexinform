@@ -5,8 +5,8 @@ import datetime as dt
 import pytest
 
 from lexinform.models import BillStatus, Category, DocumentType, PublicationStatus
-from tests.fakes import make_analysis
-from tests.harness import World, summary
+from tests.fakes import FakeTextExtractor, make_analysis
+from tests.harness import REFERRED, World, summary
 
 # --------------------------------------------------------------------------- happy path
 
@@ -86,8 +86,8 @@ def test_no_publish_marks_the_card_skipped_forever() -> None:
     later = w.run()
 
     assert w.publisher.new_bills == []
-    assert w.publication("3039") is not None
-    assert w.publication("3039").status is PublicationStatus.SKIPPED  # type: ignore[union-attr]
+    card = w.publication("3039")
+    assert card is not None and card.status is PublicationStatus.SKIPPED
     assert later.published == 0
 
 
@@ -159,16 +159,17 @@ def test_failed_post_is_recorded_and_retried() -> None:
 
     assert failed.published == 0 and failed.errors
     assert retried.published == 1
-    assert w.publication("3039").status is PublicationStatus.SENT  # type: ignore[union-attr]
+    card = w.publication("3039")
+    assert card is not None and card.status is PublicationStatus.SENT
 
 
-def test_migration_failure_is_reported_not_raised() -> None:
+def test_migration_failure_is_reported_not_raised(monkeypatch: pytest.MonkeyPatch) -> None:
     w = World()
 
     def boom() -> None:
         raise RuntimeError("database is locked")
 
-    w.repo.migrate = boom  # type: ignore[method-assign]
+    monkeypatch.setattr(w.repo, "migrate", boom)
 
     report = w.run()
 
@@ -251,9 +252,6 @@ FOREIGNER_TEXT = (
 
 
 def _two_runs(workers: int) -> tuple[dict[str, int], dict[str, int], list[str]]:
-    from tests.fakes import FakeTextExtractor
-    from tests.harness import REFERRED
-
     w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT), workers=workers)
     numbers = ("3039", "3040", "4000", "4001")
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
