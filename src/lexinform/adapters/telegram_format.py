@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from lexinform.i18n import Labels, labels_for
 from lexinform.keywords import KEYWORD_PATTERNS
 from lexinform.models import (
+    RCL_PREFIX,
     RCL_STAGE_TYPE,
     ActInfo,
     AgendaItem,
@@ -242,7 +243,7 @@ class MessageFormatter:
         # Sejm, and this bill's whole thread.
         tags = " ".join(
             [
-                self._number_tag(bill),
+                self._thread_tags(bill),
                 f"#{lb.tag_importance}{a.score}",
                 f"#{lb.category_tags.get(a.category, a.category.value)}",
                 *([f"#{lb.tag_consultations}"] if _consultation_open(bill, today) else []),
@@ -330,7 +331,7 @@ class MessageFormatter:
         # Event tags only when the reply carries the event a reader would search for.
         tags = " ".join(
             [f"#{lb.event_tags[key]}" for key in _event_keys(change) if key in lb.event_tags]
-            + [self._number_tag(bill)]
+            + [self._thread_tags(bill)]
         )
 
         fixed = [header, badge, closure, consultation, steps, links_block, tags]
@@ -366,7 +367,7 @@ class MessageFormatter:
         lines.append(f"{ICON['note']} <i>{esc(lb.partial_vacatio_note)}</i>")
         facts = "\n".join(lines)
         links_block = f"{ICON['links']} " + " | ".join(self._act_links(bill, act))
-        tags = f"#{lb.tag_published} {self._number_tag(bill)}"
+        tags = f"#{lb.tag_published} {self._thread_tags(bill)}"
         return RenderedMessage(text=self._assemble([header, facts, links_block, tags], flexible=[]))
 
     def in_force(self, bill: Bill) -> RenderedMessage:
@@ -396,7 +397,7 @@ class MessageFormatter:
                     f"{esc(a.practical_impact.strip())}"
                 )
         links_block = f"{ICON['links']} " + " | ".join(self._act_links(bill, act))
-        tags = f"#{lb.tag_in_force} {self._number_tag(bill)}"
+        tags = f"#{lb.tag_in_force} {self._thread_tags(bill)}"
         fixed = [header, facts, links_block, tags]
         return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block, practical]))
 
@@ -428,7 +429,7 @@ class MessageFormatter:
             a = bill.analysis.analysis
             summary_block = f"{ICON['about']} <b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
         links_block = f"{ICON['links']} " + " | ".join(self._consultation_links(bill, window))
-        tags = f"#{lb.tag_consultations} {self._number_tag(bill)}"
+        tags = f"#{lb.tag_consultations} {self._thread_tags(bill)}"
         fixed = [header, facts, next_step, links_block, tags]
         return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block]))
 
@@ -458,7 +459,7 @@ class MessageFormatter:
             )
         steps = self._steps_block(bill, today or dt.date.today())
         links_block = f"{ICON['links']} " + " | ".join(self._consultation_links(bill, window))
-        tags = f"#{lb.tag_consultations} {self._number_tag(bill)}"
+        tags = f"#{lb.tag_consultations} {self._thread_tags(bill)}"
         return RenderedMessage(
             text=self._assemble([header, facts, steps, links_block, tags], flexible=[])
         )
@@ -498,7 +499,7 @@ class MessageFormatter:
             links.append(link(committee_web_url(s.term, item.committee_code), lb.link_committee))
         links_block = f"{ICON['links']} " + " | ".join(links)
         tag = lb.tag_committee_sitting if is_committee else lb.tag_sejm_sitting
-        tags = f"#{tag} {self._number_tag(bill)}"
+        tags = f"#{tag} {self._thread_tags(bill)}"
         summary_block = ""
         if bill.analysis is not None:
             a = bill.analysis.analysis
@@ -613,11 +614,17 @@ class MessageFormatter:
     def _number_tag(bill: Bill) -> str:
         """One tag per bill, unique across terms: print numbers restart with every kadencja,
         RPW numbers carry the year already, wykaz numbers (UC164) are unique per government."""
-        if bill.rcl is not None:
-            return "#RCL_" + _tag_safe(bill.rcl.wykaz_number or str(bill.rcl.id))
-        if bill.is_pre_print:
-            return "#" + _tag_safe(bill.number.replace("/", "_"))
-        return f"#kadencja{bill.term}druk{_tag_safe(bill.number)}"
+        wykaz = bill.rcl.wykaz_number if bill.rcl is not None else None
+        return _number_tag(bill.term, bill.number, wykaz)
+
+    @staticmethod
+    def _thread_tags(bill: Bill) -> str:
+        """The bill's tag and, once an RCL/RPW entry and its druk are linked, the other one's:
+        a search for either tag then finds the whole thread, card and replies alike."""
+        tags = [MessageFormatter._number_tag(bill)]
+        if bill.linked_number:
+            tags.append(_number_tag(bill.term, bill.linked_number, bill.linked_wykaz_number))
+        return " ".join(tags)
 
     def _authors_suffix(self, bill: Bill) -> str:
         """ " (KO 17, Lewica 12 · представитель: Jan Kowalski, KO)" for deputies' bills."""
@@ -1144,6 +1151,16 @@ def _clip(text: str, limit: int) -> str:
 
 def _tag_safe(number: str) -> str:
     return "".join(ch for ch in number if ch.isalnum() or ch == "_")
+
+
+def _number_tag(term: int, number: str, wykaz_number: str | None) -> str:
+    """`#RCL_UC104` (the project id when the wykaz number is unknown), `#RPW_29075_2026`,
+    `#kadencja10druk3039`."""
+    if is_rcl_number(number):
+        return "#RCL_" + _tag_safe(wykaz_number or number.removeprefix(RCL_PREFIX))
+    if is_pre_print_number(number):
+        return "#" + _tag_safe(number.replace("/", "_"))
+    return f"#kadencja{term}druk{_tag_safe(number)}"
 
 
 def shrink_block(block: str, allowed: int) -> str:

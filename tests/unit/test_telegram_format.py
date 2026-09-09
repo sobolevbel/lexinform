@@ -323,6 +323,23 @@ def test_status_update_tags_name_the_events(process_1962: ProcessDetail) -> None
     assert "#отозван #kadencja10druk1962" in withdrawn.text
 
 
+def test_replies_of_a_linked_print_carry_the_tag_of_the_card_they_continue(
+    process_1962: ProcessDetail,
+) -> None:
+    fmt = MessageFormatter("ru")
+    referral = flatten_stages(process_1962.stages)[0].model_copy(update={"stage_type": "Referral"})
+    change = change_of("1962", [referral])
+    from_rcl = bill_of(process_1962, linked_number="RCL/12414100", linked_wykaz_number="UC164")
+    from_rcl_unnumbered = bill_of(process_1962, linked_number="RCL/12414100")
+    from_rpw = bill_of(process_1962, linked_number="RPW/29075/2026")
+
+    assert fmt.status_update(from_rcl, change).text.endswith("#kadencja10druk1962 #RCL_UC164")
+    assert fmt.status_update(from_rcl_unnumbered, change).text.endswith("#RCL_12414100")
+    assert fmt.act_published(from_rpw.model_copy(update={"act": ACT})).text.endswith(
+        "#kadencja10druk1962 #RPW_29075_2026"
+    )
+
+
 def test_senate_position_is_rendered_from_its_position_field(process_1962: ProcessDetail) -> None:
     senate = next(
         s for s in flatten_stages(process_1962.stages) if s.stage_type == "SenatePosition"

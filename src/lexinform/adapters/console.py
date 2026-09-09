@@ -32,6 +32,10 @@ class ConsolePublisher:
         message_id = self._emit(f"NEW BILL druk {bill.number}", rendered.text)
         return ConsolePublishResult(message_id=message_id)
 
+    def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:
+        rendered = self._formatter.new_bill(bill, print_info)
+        self._emit(f"EDIT CARD druk {bill.number} (message #{message_id})", rendered.text)
+
     def publish_status_update(
         self, bill: Bill, change: StatusChange, reply_to: int | None
     ) -> ConsolePublishResult:

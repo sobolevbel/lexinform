@@ -342,6 +342,7 @@ class FakePublisher:
         self, fail_on: set[str] | None = None, *, outage_on: set[str] | None = None
     ) -> None:
         self.new_bills: list[tuple[Bill, PrintInfo | None]] = []
+        self.edits: list[tuple[Bill, int]] = []  # cards re-rendered in place (bill, message id)
         self.updates: list[tuple[Bill, StatusChange, int | None]] = []
         self.acts: list[tuple[Bill, int | None]] = []
         self.in_force: list[tuple[Bill, int | None]] = []
@@ -364,6 +365,10 @@ class FakePublisher:
         result = self._send(bill)
         self.new_bills.append((bill, print_info))
         return result
+
+    def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:
+        self._send(bill)
+        self.edits.append((bill, message_id))
 
     def publish_status_update(
         self, bill: Bill, change: StatusChange, reply_to: int | None

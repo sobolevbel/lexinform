@@ -147,6 +147,11 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE bills ADD COLUMN discontinued_at TEXT;
     ALTER TABLE status_changes ADD COLUMN discontinued INTEGER NOT NULL DEFAULT 0;
     """,
+    # v10: a print that continues an RCL project's thread keeps the project's wykaz number, so
+    # its replies carry the card's tag (#RCL_UC104) next to their own
+    """
+    ALTER TABLE bills ADD COLUMN linked_wykaz_number TEXT;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -672,14 +677,22 @@ class SqliteBillRepository:
         )
         return int(cur.rowcount or 0)
 
-    def link_bills(self, term: int, pre_print_number: str, print_number: str) -> None:
+    def link_bills(
+        self,
+        term: int,
+        pre_print_number: str,
+        print_number: str,
+        *,
+        wykaz_number: str | None = None,
+    ) -> None:
         self._conn.execute(
             "UPDATE bills SET linked_number = ?, status = ? WHERE term = ? AND number = ?",
             (print_number, BillStatus.LINKED.value, term, pre_print_number),
         )
         self._conn.execute(
-            "UPDATE bills SET linked_number = ? WHERE term = ? AND number = ?",
-            (pre_print_number, term, print_number),
+            "UPDATE bills SET linked_number = ?, linked_wykaz_number = ?"
+            " WHERE term = ? AND number = ?",
+            (pre_print_number, wykaz_number, term, print_number),
         )
 
     # ------------------------------------------------------------------ publications
@@ -914,6 +927,7 @@ class SqliteBillRepository:
                 else None
             ),
             linked_number=row["linked_number"],
+            linked_wykaz_number=row["linked_wykaz_number"],
             act=ActInfo.model_validate_json(row["act_json"]) if row["act_json"] else None,
             authors=(
                 BillAuthors.model_validate_json(row["authors_json"])

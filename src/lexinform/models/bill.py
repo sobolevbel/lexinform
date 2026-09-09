@@ -55,7 +55,9 @@ class Bill(BaseModel):
     analysis_attempts: int = 0
     last_error: str | None = None
     submission: BillSubmission | None = None  # the /bills entry (consultation dates, RPW number)
-    linked_number: str | None = None  # RPW <-> print number once the print is assigned
+    linked_number: str | None = None  # RPW/RCL <-> print number once the print is assigned
+    # Wykaz number (UC104) of the RCL project a print continues: its card is tagged with it.
+    linked_wykaz_number: str | None = None
     act: ActInfo | None = None  # the published act, once it appears in Dziennik Ustaw
     authors: BillAuthors | None = None  # signatories of a deputies' bill, by club
     agenda: tuple[AgendaItem, ...] = ()  # upcoming sittings that name the bill, soonest first

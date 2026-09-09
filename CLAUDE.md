@@ -110,10 +110,11 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v9 as of Sept 2026). `migrate()` reads `user_version` and
+`SCHEMA_VERSION = len(MIGRATIONS)` (v10 as of Sept 2026). `migrate()` reads `user_version` and
 runs every later script inside its own transaction, stamping the new version at the end, so a
 failed script leaves the database at the previous version. v8 (Sept 2026) added `rcl_json`, v9
-`bills.discontinued_at` and `status_changes.discontinued` (end of a Sejm term).
+`bills.discontinued_at` and `status_changes.discontinued` (end of a Sejm term), v10
+`bills.linked_wykaz_number` (the print continuing an RCL thread keeps the wykaz number for the tag).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) →
 `db restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing

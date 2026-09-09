@@ -636,6 +636,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "agenda_json",
         "rcl_json",
         "discontinued_at",
+        "linked_wykaz_number",
     } <= bills
     assert {
         "ux_pub_once_per_kind",

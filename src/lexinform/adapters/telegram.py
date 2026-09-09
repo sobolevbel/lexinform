@@ -57,6 +57,21 @@ class TelegramBotClient:
         result = self._call("sendMessage", json=payload)
         return int(result["message_id"])
 
+    def edit_message(self, chat_id: str, message_id: int, html: str) -> None:
+        """Replace the text of a message the bot posted; an identical text is not an error."""
+        payload: dict[str, Any] = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": html,
+            "parse_mode": "HTML",
+            "link_preview_options": {"is_disabled": True},
+        }
+        try:
+            self._call("editMessageText", json=payload)
+        except TelegramError as exc:
+            if "message is not modified" not in exc.description.lower():
+                raise
+
     def close(self) -> None:
         self._client.close()
 
@@ -126,6 +141,10 @@ class TelegramPublisher:
         rendered = self._formatter.new_bill(bill, print_info)
         message_id = self._client.send_message(self._channel_id, rendered.text)
         return TelegramPublishResult(message_id=message_id)
+
+    def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:
+        rendered = self._formatter.new_bill(bill, print_info)
+        self._client.edit_message(self._channel_id, message_id, rendered.text)
 
     def publish_status_update(
         self, bill: Bill, change: StatusChange, reply_to: int | None

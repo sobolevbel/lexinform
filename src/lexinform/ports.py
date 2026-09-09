@@ -164,6 +164,11 @@ class Publisher(Protocol):
 
     def publish_new_bill(self, bill: Bill, print_info: PrintInfo | None) -> PublishResult: ...
 
+    def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:
+        """Replace the card `message_id` with the bill's card as it renders now (used to add
+        the print's tag to an RCL/RPW card once the druk exists)."""
+        ...
+
     def publish_status_update(
         self, bill: Bill, change: StatusChange, reply_to: int | None
     ) -> PublishResult: ...
@@ -274,7 +279,17 @@ class BillRepository(Protocol):
 
     def list_pre_print(self) -> list[Bill]: ...
 
-    def link_bills(self, term: int, pre_print_number: str, print_number: str) -> None: ...
+    def link_bills(
+        self,
+        term: int,
+        pre_print_number: str,
+        print_number: str,
+        *,
+        wykaz_number: str | None = None,
+    ) -> None:
+        """Point the two rows at each other; `wykaz_number` is the RCL project's, kept on the
+        print so its replies carry the card's tag."""
+        ...
 
     # RCL projects
     def save_rcl(self, term: int, number: str, project: RclProject) -> None: ...

@@ -207,12 +207,17 @@ def test_hand_over_to_the_sejm_then_the_druk_continues_the_thread() -> None:
     assert len(w.publisher.new_bills) == 1  # no second card for the druk
     bill, change, reply_to = w.publisher.updates[1]
     assert (bill.number, bill.linked_number, reply_to) == ("3100", RCL, card_id)
-    assert "Проекту присвоен номер druku: <b>3100</b>" in (
-        MessageFormatter("ru").status_update(bill, change).text
-    )
+    update_text = MessageFormatter("ru").status_update(bill, change).text
+    assert "Проекту присвоен номер druku: <b>3100</b>" in update_text
+    assert "#kadencja10druk3100 #RCL_UC164" in update_text  # both tags find the thread
     assert w.bill(RCL).status is BillStatus.LINKED
     stored = w.bill("3100")
     assert stored.analysis is not None and stored.rcl is None
+    assert stored.linked_wykaz_number == "UC164"
+    # The card is re-rendered in place with the druk's tag next to its own.
+    edited, edited_message = w.publisher.edits[0]
+    assert (edited.number, edited_message) == (RCL, card_id)
+    assert "#RCL_UC164 #kadencja10druk3100" in MessageFormatter("ru").new_bill(edited, None).text
 
 
 def test_druk_of_a_skipped_project_goes_the_normal_way() -> None:

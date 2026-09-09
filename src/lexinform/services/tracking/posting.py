@@ -80,6 +80,21 @@ class Poster:
             )
         )
 
+    def retag_card(self, bill: Bill, card: Publication) -> bool:
+        """Re-render the card in place so it carries the tags of the whole thread; one attempt,
+        a refusal is logged and not retried (the replies carry both tags anyway)."""
+        if card.message_id is None:
+            return False
+        try:
+            self._publisher.edit_new_bill(bill, None, message_id=card.message_id)
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("card of %s not re-tagged: %s: %s", bill.number, type(exc).__name__, exc)
+            return False
+        log.info("card of %s re-rendered with the tags of its druk", bill.number)
+        return True
+
     def status_update(self, bill: Bill, change: StatusChange) -> bool:
         """Post a detected change as a reply to the card; True on success."""
         assert change.id is not None

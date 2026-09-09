@@ -63,6 +63,31 @@ def test_rate_limit_is_waited_out_once() -> None:
     assert (message_id, sleeps) == (1, [3.0])
 
 
+def test_edit_message_replaces_the_text_and_tolerates_an_unchanged_one() -> None:
+    bodies: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/botTOKEN/editMessageText"
+        bodies.append(json.loads(request.content))
+        if len(bodies) == 2:
+            return httpx.Response(
+                400,
+                json={
+                    "ok": False,
+                    "error_code": 400,
+                    "description": "Bad Request: message is not modified: ...",
+                },
+            )
+        return _ok(12)
+
+    client = _client(handler)
+    client.edit_message("@chan", 12, "<b>x</b> #tag")
+    client.edit_message("@chan", 12, "<b>x</b> #tag")  # same text again: not an error
+
+    assert bodies[0]["message_id"] == 12 and bodies[0]["text"] == "<b>x</b> #tag"
+    assert bodies[0]["parse_mode"] == "HTML" and len(bodies) == 2
+
+
 def test_api_error_carries_the_code() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(

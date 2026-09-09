@@ -60,7 +60,12 @@ class Linker:
             self._repo.save_analysis(pre.term, print_number, pre.analysis)
         if pre.submission is not None:
             self._repo.save_submission(pre.term, print_number, pre.submission)
-        self._repo.link_bills(pre.term, pre.number, print_number)
+        self._repo.link_bills(
+            pre.term,
+            pre.number,
+            print_number,
+            wykaz_number=pre.rcl.wykaz_number if pre.rcl is not None else None,
+        )
         result.linked += 1
         log.info("%s became druk %s", pre.number, print_number)
 
@@ -68,6 +73,10 @@ class Linker:
         if card is None or card.status is not PublicationStatus.SENT:
             return  # never posted: the print goes through the normal publishing path
         # The card stays the thread root: the print inherits it instead of getting a second card.
+        # Re-rendered first, so it shows the druk's tag next to its own.
+        linked_pre = self._repo.get(pre.term, pre.number)
+        if publish and linked_pre is not None:
+            self._poster.retag_card(linked_pre, card)
         pub_id = self._repo.create_publication(
             Publication(
                 term=pre.term,
