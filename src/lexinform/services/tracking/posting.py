@@ -64,6 +64,17 @@ class Poster:
             return pub.attempts >= self._max_attempts
         return True
 
+    def retry_due(self, bill: Bill, kind: PublicationKind, *, ref: str | None = None) -> bool:
+        """True when this post was attempted, failed, and still has attempts left."""
+        pub = self._repo.get_publication(
+            bill.term, bill.number, kind.value, self._channel_id, ref=ref
+        )
+        return (
+            pub is not None
+            and pub.status is PublicationStatus.FAILED
+            and pub.attempts < self._max_attempts
+        )
+
     def record(
         self,
         bill: Bill,

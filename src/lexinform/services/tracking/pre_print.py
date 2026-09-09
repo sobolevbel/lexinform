@@ -74,18 +74,25 @@ class PrePrintReconciler:
             if sub is None:
                 continue
             try:
-                self._repo.save_submission(bill.term, bill.number, sub)
                 if bill.is_pre_print and sub.print_number:
+                    self._repo.save_submission(bill.term, bill.number, sub)
                     self._linker.link(bill, sub.print_number, result, publish=publish)
                 elif (
                     bill.is_pre_print
                     and sub.is_closed
                     and not self._repo.closure_announced(bill.term, bill.number)
                 ):
+                    self._repo.save_submission(bill.term, bill.number, sub)
                     self._announce_withdrawal(bill, result, publish=publish)
                 elif self._results_appeared(bill, sub) and self._consultations is not None:
-                    fresh = self._repo.get(bill.term, bill.number) or bill
-                    self._consultations.results_published(fresh, result, publish=publish)
+                    news = bill.model_copy(update={"submission": sub})
+                    if not self._consultations.results_published(news, result, publish=publish):
+                        # The post failed: the stored copy stays as it is, so the flip is seen
+                        # again on the next run and the post retried.
+                        continue
+                    self._repo.save_submission(bill.term, bill.number, sub)
+                else:
+                    self._repo.save_submission(bill.term, bill.number, sub)
             except ServiceUnavailableError as exc:
                 result.abort(exc)
                 return False

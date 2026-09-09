@@ -3,6 +3,7 @@
 import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.models import PublicationKind, PublicationStatus
 from tests.harness import RPW, World, submission
 
 # --------------------------------------------------------------------------- deadline reminder
@@ -97,6 +98,28 @@ def test_published_opinions_of_a_numbered_print_are_announced_once() -> None:
     assert (bill.number, reply_to) == ("3039", w.card_id("3039"))
     assert bill.submission is not None and bill.submission.consultation_results
     assert again.consultation_results_posted == 0 and len(w.publisher.consultation_results) == 1
+
+
+def test_failed_results_notice_is_retried_on_the_next_run() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.gateway.submissions.append(submission(number="RPW/26666/2026", print_number="3039"))
+    w.run()
+    w.gateway.submissions[0] = submission(
+        number="RPW/26666/2026", print_number="3039", consultation_results=True
+    )
+    w.publisher.fail_on = {"3039"}
+    w.clock.advance(days=1)
+    failed = w.run()
+    w.publisher.fail_on = set()
+    w.clock.advance(days=1)
+
+    retried = w.run()
+
+    assert (failed.consultation_results_posted, retried.consultation_results_posted) == (0, 1)
+    assert len(w.publisher.consultation_results) == 1
+    pub = w.publication("3039", PublicationKind.CONSULTATION_RESULTS)
+    assert pub is not None and (pub.status, pub.attempts) == (PublicationStatus.SENT, 1)
 
 
 def test_results_notice_links_the_consultation_page() -> None:

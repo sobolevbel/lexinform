@@ -115,6 +115,40 @@ def test_deadline_reminder_uses_the_letter_and_is_sent_once() -> None:
     assert pub is not None and pub.message_id is not None
 
 
+def test_failed_opinions_notice_is_retried_on_the_next_run() -> None:
+    w = World()
+    project = _followed(w)
+    with_positions = tuple(
+        rcl_folder(f.id, f.name, rcl_document(900, "uwagi.pdf", created=dt.date(2026, 9, 8)))
+        if f.kind == "positions"
+        else f
+        for f in CONSULTATION_FOLDERS
+    )
+    w.add_rcl_project(
+        _moved(
+            project,
+            *project.stages[:2],
+            rcl_stage(
+                3, "Konsultacje publiczne", "reached", *with_positions, modified=dt.date(2026, 9, 8)
+            ),
+            *project.stages[3:],
+            modified=dt.date(2026, 9, 8),
+        )
+    )
+    w.publisher.fail_on = {RCL}
+    failed = w.run()
+    w.publisher.fail_on = set()
+    w.clock.advance(days=1)
+
+    retried = w.run()
+
+    assert (failed.consultation_results_posted, retried.consultation_results_posted) == (0, 1)
+    assert len(w.publisher.consultation_results) == 1
+    stored = w.bill(RCL).rcl
+    assert stored is not None and stored.consultation is not None
+    assert stored.consultation.positions == 1
+
+
 def test_published_opinions_are_announced_once() -> None:
     w = World()
     project = _followed(w)

@@ -34,14 +34,24 @@ class ConsultationReminder:
         self._local_tz = local_tz
         self._days_before = days_before
 
-    def results_published(self, bill: Bill, result: TrackingResult, *, publish: bool) -> None:
-        """The /bills entry now says `consultationResults`: one reply under the card."""
+    def results_published(self, bill: Bill, result: TrackingResult, *, publish: bool) -> bool:
+        """The entry now says the opinions are published: one reply under the card.
+
+        False only when the post was attempted and failed: the caller then keeps its stored copy
+        of the entry, so that the flip is detected again on the next run and the post retried
+        (a `failed` row alone would not do: the trigger is the difference to the stored copy)."""
         card = self._poster.card(bill)
         if card is None or card.status is not PublicationStatus.SENT:
-            return
-        if not publish or self._poster.posted(bill, PublicationKind.CONSULTATION_RESULTS):
-            return
-        result.count_post(self._poster.consultation_results(bill), "consultation_results_posted")
+            return True
+        if self._poster.posted(bill, PublicationKind.CONSULTATION_RESULTS):
+            return True
+        if not publish:
+            kind = PublicationKind.CONSULTATION_RESULTS
+            self._poster.record(bill, kind, PublicationStatus.SKIPPED)
+            return True
+        sent = self._poster.consultation_results(bill)
+        result.count_post(sent, "consultation_results_posted")
+        return sent
 
     def remind(self, result: TrackingResult) -> None:
         """One reply `days_before` days before a consultation closes (Warsaw time)."""

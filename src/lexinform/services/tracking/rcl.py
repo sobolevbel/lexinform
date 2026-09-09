@@ -10,7 +10,9 @@ from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
+    PublicationKind,
     RclProject,
+    Stage,
     StatusChange,
     diff_stages,
     process_summary,
@@ -64,6 +66,7 @@ class RclWatcher:
             result.checked += 1
             try:
                 project = outcome.result()
+                results_due = self._results_due(bill, project)
                 change = self._detect(bill, project, result)
             except ServiceUnavailableError as exc:
                 result.partial_errors.append(f"RCL: {exc.describe()}")
@@ -79,7 +82,7 @@ class RclWatcher:
                     result.changed += 1
                     if publish:
                         result.count_post(self._poster.status_update(fresh, change))
-                if self._results_appeared(bill, project) and self._consultations is not None:
+                if results_due and self._consultations is not None:
                     self._consultations.results_published(fresh, result, publish=publish)
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
@@ -108,15 +111,28 @@ class RclWatcher:
     def _detect(
         self, bill: Bill, project: RclProject, result: TrackingResult
     ) -> StatusChange | None:
+        new_fp = rcl_fingerprint(project)
+        stages = rcl_stages(project)
+        change = self._detect_change(bill, project, stages, new_fp, result)
+        if new_fp != bill.stages_fingerprint:
+            # Written last: a failure above (an LLM outage during the re-analysis) leaves the
+            # old fingerprint in place, so the next run sees the same new stages and tells them.
+            self._repo.save_stages(bill.term, bill.number, stages, new_fp)
+        return change
+
+    def _detect_change(
+        self,
+        bill: Bill,
+        project: RclProject,
+        stages: tuple[Stage, ...],
+        new_fp: str,
+        result: TrackingResult,
+    ) -> StatusChange | None:
         now = self._clock.now()
         stored = bill.rcl
         assert stored is not None
-        new_fp = rcl_fingerprint(project)
-        stages = rcl_stages(project)
         self._repo.save_rcl(bill.term, bill.number, project)
         self._repo.upsert_summary(process_summary(project, term=bill.term), now=now)
-        if new_fp != bill.stages_fingerprint:
-            self._repo.save_stages(bill.term, bill.number, stages, new_fp)
 
         content_changed = False
         document = self._texts.locate(bill.model_copy(update={"rcl": project})).document
@@ -166,13 +182,14 @@ class RclWatcher:
         )
         return change
 
-    @staticmethod
-    def _results_appeared(bill: Bill, project: RclProject) -> bool:
-        """Opinions (stanowiska) or the ministry's answer appeared since the stored copy."""
-        before = bill.rcl.consultation if bill.rcl else None
+    def _results_due(self, bill: Bill, project: RclProject) -> bool:
+        """The "opinions published" notice is due: opinions (stanowiska) or the ministry's answer
+        appeared since the stored copy, or they were seen before and the notice failed to post
+        (the stored copy is refreshed before the post, so the failed row is the only trace)."""
         now = project.consultation
-        return (
-            now is not None
-            and now.results_published
-            and not (before is not None and before.results_published)
-        )
+        if now is None or not now.results_published:
+            return False
+        before = bill.rcl.consultation if bill.rcl else None
+        if before is None or not before.results_published:
+            return True
+        return self._poster.retry_due(bill, PublicationKind.CONSULTATION_RESULTS)
