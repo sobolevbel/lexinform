@@ -885,7 +885,11 @@ def test_run_report_lists_counters_costs_rejections_and_warnings() -> None:
     assert "\n\n⏱ <b>timing</b>\ndiscovery 4.1s · text prefilter 60.0s" in text
     assert "\n\n❌ <b>errors</b>\n• 1 publication(s) failed" in text
     # 44k*5 + 2k*0.5 + 3.9k*25 + 4k*2 + 0.1k*10 = $0.3275
-    assert "tokens in/out: 50000/4000 · opus-5 46.0k/3.9k · sonnet-5 4.0k/100 · ≈ $0.33" in text
+    assert (
+        "tokens in/out: 50000/4000 · cache read 2.0k · opus-5 46.0k/3.9k · sonnet-5 4.0k/100 · "
+        "≈ $0.33"
+    ) in text
+
     druk = '<a href="https://www.sejm.gov.pl/Sejm10.nsf/PrzebiegProc.xsp?nr=2695">druk 2695</a>'
     assert f"<b>analysed, not published</b>\n• {druk} · triage · Rządowy projekt" in text
     assert "• druk 2411 · score 2 · Poselski projekt" in text  # no term stored: no link
@@ -893,6 +897,14 @@ def test_run_report_lists_counters_costs_rejections_and_warnings() -> None:
     assert f"• {rcl} · not relevant · Karta Nauczyciela" in text
     assert "…" in text and "<x>" not in text  # long title clipped, HTML escaped
     assert "<pre>" in text  # the warnings, trimmed to fit
+
+
+def test_run_report_shows_cache_reads_apart_from_the_uncached_input() -> None:
+    usage = {"claude-opus-5": TokenUsage(input=1_000, cache_read=4_000, output=100)}
+
+    text = MessageFormatter("ru").run_report(_report(llm_usage=usage), []).text
+
+    assert "cache read 4.0k" in text
 
 
 def test_run_report_cost_line_adapts_to_the_models_used() -> None:

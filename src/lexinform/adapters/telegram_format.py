@@ -1347,8 +1347,13 @@ def _about_ukraine(bill: Bill) -> bool:
 
 
 def _tokens_line(report: RunReport) -> str:
-    """`tokens in/out: 12345/678 · opus-5 10.3k/0.6k · sonnet-5 5.8k/0.1k · ≈ $0.06`."""
+    """`tokens in/out: 12345/678 · cache read 4.0k · opus-5 10.3k/0.6k · sonnet-5 5.8k/0.1k ·
+    ≈ $0.06`. Cache reads are shown apart from the uncached input: whether the prompt cache
+    ever hits is otherwise invisible."""
     parts = [f"tokens in/out: {report.llm_input_tokens}/{report.llm_output_tokens}"]
+    cached = sum(u.cache_read for u in report.llm_usage.values())
+    if cached:
+        parts.append(f"cache read {_k(cached)}")
     if len(report.llm_usage) > 1:
         parts += [
             f"{esc(model.removeprefix('claude-'))} {_k(u.input + u.cache_read)}/{_k(u.output)}"

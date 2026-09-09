@@ -266,7 +266,11 @@ bill, uzasadnienie and OSR points 1–5 (pages are separated by `\f` by the extr
 hits) by `llm_triage_model`; a confident "no" is stored as a non-relevant analysis with
 `text_source="excerpts"`. Real numbers: druk 2695 (564k chars, irrelevant) cost $1.45 in full,
 would cost ~$0.01 with the triage. The triage call runs without extended thinking (Haiku 4.5
-rejects `thinking: adaptive`; a classification does not need it).
+rejects `thinking: adaptive`; a classification does not need it). The system prompts carry
+`cache_control`, but the analysis prompt is ~850 tokens (triage ~390, amendments ~440), under the
+1024-token minimum a cache entry needs on Opus/Sonnet: the marker is ignored, nothing is cached and
+nothing is charged for it (measured 2026-09-09). The run report's "cache read" figure and
+`lexinform cost` show whether that changes; `lexinform runs` lists the recorded runs.
 
 ## Product decisions already taken
 
