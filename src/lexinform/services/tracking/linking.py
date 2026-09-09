@@ -137,3 +137,5 @@ class Linker:
         result.changed += 1
         if publish:
             result.count_post(self._poster.status_update(fresh, change))
+        else:
+            self._poster.hold(fresh, change)  # told with the next update of the print

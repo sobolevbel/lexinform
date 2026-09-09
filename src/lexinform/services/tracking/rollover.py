@@ -91,5 +91,8 @@ class TermRollover:
             result.count_post(sent)
             result.discontinued += int(sent)
         else:
+            # Bookkeeping even without a post: the change row alone would make the next
+            # publishing run believe the announcement was made.
+            self._poster.hold(bill, change)
             result.discontinued += 1
         return True

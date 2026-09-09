@@ -128,3 +128,5 @@ class PrePrintReconciler:
         log.info("%s withdrawn before getting a print number", bill.number)
         if publish:
             result.count_post(self._poster.status_update(bill, change))
+        else:
+            self._poster.hold(bill, change)  # bookkeeping: the change row alone looks announced

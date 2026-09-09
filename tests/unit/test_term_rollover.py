@@ -4,7 +4,13 @@ of the old one lapse (zasada dyskontynuacji), passed bills and RCL projects stay
 import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import ApplicantType, SejmTerm, next_phase
+from lexinform.models import (
+    ApplicantType,
+    PublicationKind,
+    PublicationStatus,
+    SejmTerm,
+    next_phase,
+)
 from tests.harness import (
     CHANNEL,
     COMMITTEE_STAGES,
@@ -98,6 +104,23 @@ def test_unfinished_bills_lapse_with_the_term_and_passed_ones_stay_followed() ->
     assert (again.discontinued, again.updates) == (0, 0)
     assert "get_process:3040" in w.gateway.calls  # passed, waiting for the act
     assert "get_process:3039" not in w.gateway.calls  # lapsed: not polled any more
+
+
+def test_rollover_without_publishing_records_the_lapse_as_skipped() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
+    w.run()
+    _sejm_moves_on(w)
+
+    silent = w.run(term=None, publish=False)
+    w.clock.advance(days=1)
+    again = w.run(term=None)
+
+    assert silent.discontinued == 1 and w.publisher.updates == []
+    assert w.bill("3039").discontinued_at is not None
+    row = w.publication("3039", PublicationKind.STATUS_UPDATE)
+    assert row is not None and row.status is PublicationStatus.SKIPPED  # decided, not lost
+    assert (again.discontinued, again.updates) == (0, 0) and w.publisher.updates == []
 
 
 def test_a_citizens_bill_is_taken_over_by_the_new_sejm() -> None:
