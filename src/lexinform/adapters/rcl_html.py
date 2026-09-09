@@ -64,12 +64,18 @@ class RclClient:
         *,
         page_size: int = 100,
         timeout: float = 60.0,
+        probe_timeout: float = 20.0,
         max_retries: int = 3,
         backoff_seconds: float = 1.0,
         transport: httpx.BaseTransport | None = None,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         self._base_url = base_url.rstrip("/")
+        # The first list page of a run is a probe: RCL answers it in well under a second when it
+        # is up, so a site that does not answer is declared down after one short attempt instead
+        # of `max_retries` full timeouts (4 minutes with the defaults). Project pages, which take
+        # ~10 s each, keep the long timeout and the retries.
+        self._probe_timeout = probe_timeout
         self._client = httpx.Client(
             base_url=self._base_url,
             timeout=timeout,
@@ -99,7 +105,7 @@ class RclClient:
                 "pSize": self._page_size,
                 "pNumber": page,
             }
-            listing = parse_list_page(self._get_text("/lista", params=params))
+            listing = parse_list_page(self._get_text("/lista", params=params, probe=page == 1))
             rows = listing.rows
             if not rows and listing.total and page == 1:
                 raise RclPageError(f"list page shows {listing.total} projects but no rows parsed")
@@ -154,8 +160,10 @@ class RclClient:
 
     # ------------------------------------------------------------------ internals
 
-    def _get_text(self, path: str, params: dict[str, str | int] | None = None) -> str:
-        response = self._request("GET", path, params=params)
+    def _get_text(
+        self, path: str, params: dict[str, str | int] | None = None, *, probe: bool = False
+    ) -> str:
+        response = self._request("GET", path, params=params, probe=probe)
         text = response.text
         if _is_rejected_html(text.encode("utf-8", "ignore")):
             raise RclUnavailableError(f"GET {path}: request rejected by the WAF")
@@ -169,23 +177,27 @@ class RclClient:
         params: dict[str, str | int] | None = None,
         allow_404: bool = False,
         stream: bool = False,
+        probe: bool = False,
     ) -> httpx.Response:
+        """One request with retries; a `probe` gets one attempt with the short timeout."""
+        retries = 0 if probe else self._max_retries
+        timeout = self._probe_timeout if probe else self._client.timeout
         attempt = 0
         while True:
             attempt += 1
             try:
-                request = self._client.build_request(method, url, params=params)
+                request = self._client.build_request(method, url, params=params, timeout=timeout)
                 response = self._client.send(request, stream=stream)
             except httpx.TransportError as exc:
-                if attempt > self._max_retries:
+                if attempt > retries:
                     raise RclUnavailableError(
-                        f"{method} {url} failed after {attempt} attempts: {exc}"
+                        f"{method} {url} failed after {attempt} attempt(s): {exc}"
                     ) from exc
                 self._wait(attempt, f"{method} {url}: {exc}")
                 continue
             if response.status_code >= 500 or response.status_code == 429:
                 response.close()
-                if attempt <= self._max_retries:
+                if attempt <= retries:
                     self._wait(attempt, f"{method} {url}: HTTP {response.status_code}")
                     continue
                 raise RclUnavailableError(

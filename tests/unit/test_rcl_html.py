@@ -237,6 +237,32 @@ def test_server_errors_are_retried_then_reported_as_an_outage() -> None:
     assert calls == 3
 
 
+def test_first_list_page_is_a_single_short_probe_project_pages_keep_their_retries() -> None:
+    calls: list[tuple[str, float | None]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        timeout = request.extensions.get("timeout", {}).get("read")
+        calls.append((request.url.path, timeout))
+        raise httpx.ConnectTimeout("timed out", request=request)
+
+    client = RclClient(
+        "https://rcl.test",
+        timeout=60.0,
+        probe_timeout=5.0,
+        max_retries=2,
+        transport=httpx.MockTransport(handler),
+        sleep=lambda s: None,
+    )
+
+    with pytest.raises(RclUnavailableError, match="after 1 attempt"):
+        list(client.list_projects(modified_since=date(2026, 9, 1)))
+    with pytest.raises(RclUnavailableError, match="after 3 attempt"):
+        client.get_project(1)
+
+    assert calls[0] == ("/lista", 5.0)
+    assert [c for c in calls[1:]] == [("/projekt/1", 60.0)] * 3
+
+
 def test_missing_project_is_a_page_error_not_an_outage() -> None:
     client = _client(lambda request: httpx.Response(404))
 

@@ -1,0 +1,46 @@
+# Diagnostic, run by hand: can a GitHub runner reach legislacja.rcl.gov.pl at all, and how fast?
+# The daily run of 2026-09-09 saw the list page time out four times (60 s each) while the same
+# page answers in 0.4 s from a home connection; this shows where the request stalls (DNS, TCP,
+# TLS, first byte) and whether a browser-like User-Agent or a plain project page fares better.
+name: RCL probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Runner egress address
+        run: curl -sS --max-time 10 https://api.ipify.org || true
+
+      - name: DNS
+        run: |
+          getent hosts legislacja.rcl.gov.pl || true
+          dig +short legislacja.rcl.gov.pl A || true
+
+      - name: Timings per phase, several user agents
+        env:
+          LIST: "https://legislacja.rcl.gov.pl/lista?typeId=2&sKey=modifiedDate&sOrder=desc&pSize=10&pNumber=1"
+          FMT: "http=%{http_code} dns=%{time_namelookup}s tcp=%{time_connect}s tls=%{time_appconnect}s ttfb=%{time_starttransfer}s total=%{time_total}s bytes=%{size_download}\n"
+        run: |
+          set +e
+          probe() {
+            echo "--- $1 | UA: $2"
+            curl -sS -o /tmp/body.html -w "$FMT" --max-time 45 -A "$2" "$1"
+            echo "title: $(grep -o '<title>[^<]*' /tmp/body.html | head -1)"
+          }
+          probe "$LIST" "lexinform (+github)"
+          probe "$LIST" "curl/8.5.0"
+          probe "$LIST" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36"
+          probe "https://legislacja.rcl.gov.pl/" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36"
+          probe "https://legislacja.rcl.gov.pl/projekt/12414100" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36"
+
+      - name: Verbose handshake of one request
+        run: |
+          curl -v -sS -o /dev/null --max-time 45 -A "lexinform (+github)" \
+            "https://legislacja.rcl.gov.pl/lista?typeId=2&pSize=10&pNumber=1" 2>&1 | sed 's/^/  /' | head -60 || true
+
+      - name: Control, the Sejm API from the same runner
+        run: curl -sS -o /dev/null -w "sejm api http=%{http_code} total=%{time_total}s\n" --max-time 30 https://api.sejm.gov.pl/sejm/term
