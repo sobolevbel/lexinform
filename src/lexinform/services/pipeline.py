@@ -264,6 +264,7 @@ class DailyPipeline:
             min_score=opts.min_score, limit=opts.max_publish, publish=opts.publish
         )
         report.published = published.published
+        report.joint_published = published.joined
         if published.fatal_error:
             report.errors.append(f"publishing: {published.fatal_error}")
         elif published.failed:

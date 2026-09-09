@@ -76,11 +76,13 @@ def test_every_kind_is_printed_with_an_increasing_message_id() -> None:
         publisher.publish_agenda(BILL, SITTING, 1).message_id,
         publisher.publish_act_published(BILL, 1).message_id,
         publisher.publish_in_force(BILL, 1).message_id,
+        publisher.publish_joint_bill(BILL, BILL, None, 1).message_id,
     ]
 
     out = stream.getvalue()
-    assert ids == [1, 2, 3, 4, 5, 6, 7]
+    assert ids == [1, 2, 3, 4, 5, 6, 7, 8]
     assert "NEW BILL druk RPW/1/2026" in out
+    assert "JOINT BILL druk RPW/1/2026 under druk RPW/1/2026 (reply to 1)" in out
     assert "STATUS UPDATE druk RPW/1/2026 (reply to 1)" in out
     assert "CONSULTATION DEADLINE RPW/1/2026 (reply to 1)" in out and "осталось дней: 3" in out
     assert "CONSULTATION RESULTS RPW/1/2026" in out

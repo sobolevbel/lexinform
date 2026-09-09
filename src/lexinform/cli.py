@@ -419,11 +419,18 @@ def republish(
         typer.echo(f"{number}: current card in {channel}: {state}")
         if not yes and not typer.confirm("Send the card again?"):
             raise typer.Exit(code=1)
-        kind = PublicationKind.NEW_BILL.value
-        c.repo.delete_publication(bill.term, bill.number, kind, channel)
+        # A bill considered jointly with one that has a card gets its "alternative bill" reply
+        # again instead of a card; both rows are forgotten so the normal path decides.
+        for kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
+            c.repo.delete_publication(bill.term, bill.number, kind.value, channel)
         ok = c.publishing_service(dry_run=False).publish_bill(bill)
-        fresh = c.repo.get_publication(
-            bill.term, bill.number, PublicationKind.NEW_BILL.value, channel
+        fresh = next(
+            (
+                pub
+                for kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL)
+                if (pub := c.repo.get_publication(bill.term, bill.number, kind.value, channel))
+            ),
+            None,
         )
         typer.echo(
             f"sent message {fresh.message_id}" if ok and fresh else "sending failed, see the log"

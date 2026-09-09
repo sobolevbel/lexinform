@@ -175,6 +175,13 @@ class Publisher(Protocol):
         the print's tag to an RCL/RPW card once the druk exists)."""
         ...
 
+    def publish_joint_bill(
+        self, bill: Bill, primary: Bill, print_info: PrintInfo | None, reply_to: int | None
+    ) -> PublishResult:
+        """`bill` is considered jointly with `primary`, whose card is `reply_to`: a short reply
+        there instead of a second card."""
+        ...
+
     def publish_status_update(
         self, bill: Bill, change: StatusChange, reply_to: int | None
     ) -> PublishResult: ...

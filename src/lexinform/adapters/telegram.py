@@ -146,6 +146,13 @@ class TelegramPublisher:
         rendered = self._formatter.new_bill(bill, print_info)
         self._client.edit_message(self._channel_id, message_id, rendered.text)
 
+    def publish_joint_bill(
+        self, bill: Bill, primary: Bill, print_info: PrintInfo | None, reply_to: int | None
+    ) -> TelegramPublishResult:
+        rendered = self._formatter.joint_bill(bill, primary, print_info)
+        message_id = self._client.send_message(self._channel_id, rendered.text, reply_to=reply_to)
+        return TelegramPublishResult(message_id=message_id)
+
     def publish_status_update(
         self, bill: Bill, change: StatusChange, reply_to: int | None
     ) -> TelegramPublishResult:

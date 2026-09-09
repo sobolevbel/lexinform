@@ -33,6 +33,10 @@ class Labels:
     link_rcl: str
     link_text_after3: str
     joint_prints: str
+    # A bill considered jointly with one that already has a card: header of the reply under that
+    # card and the note that the group is followed there ("{numbers}" = the other prints)
+    joint_bill_header: str
+    joint_bill_note: str
     current_summary: str
     changes_since_previous: str
     reanalyzed_note: str
@@ -189,6 +193,11 @@ RU = Labels(
     link_rcl="RCL",
     link_text_after3="Текст после III чтения",
     joint_prints="Рассматривается совместно с druk",
+    joint_bill_header="Альтернативный проект того же закона",
+    joint_bill_note=(
+        "Рассматривается совместно с druk {numbers}: комиссия готовит один общий текст, "
+        "дальнейший ход дела — в этой ветке."
+    ),
     current_summary="Суть проекта",
     changes_since_previous="Что изменилось с прошлого раза",
     reanalyzed_note="Текст проекта обновился, анализ выполнен заново.",
@@ -558,6 +567,11 @@ EN = Labels(
     link_rcl="RCL",
     link_text_after3="Text after 3rd reading",
     joint_prints="Considered jointly with print",
+    joint_bill_header="Alternative bill on the same subject",
+    joint_bill_note=(
+        "Considered jointly with print {numbers}: the committee prepares one joint text; "
+        "what happens next is posted in this thread."
+    ),
     current_summary="Summary",
     changes_since_previous="What changed since the previous version",
     reanalyzed_note="The bill text was updated; the analysis was redone.",

@@ -36,6 +36,16 @@ class ConsolePublisher:
         rendered = self._formatter.new_bill(bill, print_info)
         self._emit(f"EDIT CARD druk {bill.number} (message #{message_id})", rendered.text)
 
+    def publish_joint_bill(
+        self, bill: Bill, primary: Bill, print_info: PrintInfo | None, reply_to: int | None
+    ) -> ConsolePublishResult:
+        rendered = self._formatter.joint_bill(bill, primary, print_info)
+        message_id = self._emit(
+            f"JOINT BILL druk {bill.number} under druk {primary.number} (reply to {reply_to})",
+            rendered.text,
+        )
+        return ConsolePublishResult(message_id=message_id)
+
     def publish_status_update(
         self, bill: Bill, change: StatusChange, reply_to: int | None
     ) -> ConsolePublishResult:

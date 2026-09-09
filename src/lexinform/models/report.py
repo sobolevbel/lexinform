@@ -53,6 +53,7 @@ class RunReport(BaseModel):
     analysis_failures: int = 0
     rejected: list[AnalysisVerdict] = Field(default_factory=list)  # analysed, not published
     published: int = 0
+    joint_published: int = 0  # "alternative bill" replies under the card of a joint print
     updates: int = 0
     reanalyzed: int = 0
     tracked: int = 0

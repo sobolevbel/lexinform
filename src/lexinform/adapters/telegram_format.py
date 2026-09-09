@@ -65,6 +65,7 @@ ICON = {
     "passed": "✅",
     "closed": "🏁",
     "note": "ℹ️",
+    "joint": "🔀",
     "voting": "🗳",
     "committee": "📮",
     "consultation": "🗣",
@@ -297,6 +298,32 @@ class MessageFormatter:
         fixed = [header, meta, details_block, links_block, tags]
         text = self._assemble(fixed, flexible=[summary_block, changes_block])
         return RenderedMessage(text=text)
+
+    def joint_bill(
+        self, bill: Bill, primary: Bill, print_info: PrintInfo | None
+    ) -> RenderedMessage:
+        """Reply under `primary`'s card: `bill` is considered jointly with it and gets no card of
+        its own. Title, who submitted it and when, links; the analysis stays the card's, which
+        is re-done when the committee's joint text appears."""
+        lb = self._labels
+        s = bill.summary
+        header = (
+            f"{ICON['joint']} <b>{esc(lb.joint_bill_header)} — {self._number_label(bill)}</b>"
+            f"\n\n<b>{esc(s.title)}</b>"
+        )
+        others = [primary.number, *(n for n in s.prints_considered_jointly if n != primary.number)]
+        note = f"{ICON['note']} {esc(lb.joint_bill_note.format(numbers=', '.join(others)))}"
+        facts = f"{note}\n{self._applicant_line(bill)}"
+        links = [link(s.web_url, lb.link_process)]
+        pdf = print_info.main_pdf if print_info else None
+        if pdf is not None:
+            links.append(link(pdf.url, lb.link_pdf))
+        if s.rcl_link:
+            links.append(link(s.rcl_link, lb.link_rcl))
+        links_block = f"{ICON['links']} " + " | ".join(links)
+        # Its own tag and the thread's: a search for either finds the reply.
+        tags = f"{self._number_tag(bill)} {self._thread_tags(primary)}"
+        return RenderedMessage(text=self._assemble([header, facts, links_block, tags], flexible=[]))
 
     # ------------------------------------------------------------------ status update
 
@@ -649,7 +676,8 @@ class MessageFormatter:
             _section(
                 "📣",
                 "posts",
-                f"new cards: {report.published} · updates: {report.updates} · "
+                f"new cards: {report.published} · alternatives: {report.joint_published} · "
+                f"updates: {report.updates} · "
                 f"held: {report.held} · re-analyzed: {report.reanalyzed} · "
                 f"linked: {report.linked} · tracked: {report.tracked}",
                 f"acts: {report.acts_published} · in force: {report.in_force_posted}"

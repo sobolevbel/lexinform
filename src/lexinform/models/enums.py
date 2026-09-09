@@ -57,6 +57,9 @@ class PublicationKind(StrEnum):
     CONSULTATION_RESULTS = "consultation_results"  # the Sejm published the opinions received
     AGENDA = "agenda"  # the bill is on the agenda of a committee or Sejm sitting (one per sitting)
     HEARING_DEADLINE = "hearing_deadline"  # applications to a public hearing close in a few days
+    # A bill considered jointly with one that already has a card: a short reply under that card
+    # instead of a card of its own (the group is followed through the card's bill)
+    JOINT_BILL = "joint_bill"
 
 
 class PublicationStatus(StrEnum):

@@ -14,7 +14,10 @@ publication in Dziennik Ustaw, so readers learn about changes while they can sti
 
 ## What readers get
 
-A card per relevant bill, and replies under that card as the bill moves:
+A card per relevant bill, and replies under that card as the bill moves. Bills the Sejm
+considers jointly (a deputies' and a government print on the same subject, one committee report
+for both) share one card: the later print is announced as a short "alternative bill" reply under
+it and the group is followed there.
 
 ```
 📜 Новый законопроект — druk nr 3039

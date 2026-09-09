@@ -65,6 +65,18 @@ Invariants worth keeping:
   are retried up to `max_publish_attempts`; `pending` left by a crash becomes `unknown` and is
   never auto-resent. The "due" queries (`list_due_in_force`, `list_due_consultations`) must keep
   listing a bill whose post `failed`, otherwise the retry never happens (`Poster.posted` decides).
+- **Jointly considered prints share one thread.** `ProcessSummary.prints_considered_jointly`
+  names the other prints on the same subject (one committee report for all of them; their stages
+  coincide from the joint referral on). `PublishingService` gives the group one card: a candidate
+  whose partner already has a `sent` card that is still followed (not discontinued, not
+  withdrawn/rejected) gets a `joint_bill` reply under that card instead (`Publisher.publish_joint_bill`,
+  `MessageFormatter.joint_bill`: title, applicant, date, links, both tags; no analysis), recorded
+  pending-before-send and unique per bill/channel (v12), and settles the bill like a card would
+  (`list_publish_candidates` excludes both kinds). Within one run the government's print goes
+  first (`government_first`): its text is usually the one the committee works on. The reply's bill
+  has no `new_bill` row, so every tracker (they all join on a `sent` card) ignores it: the group's
+  events come from the card's process, the card's analysis is redone when the joint text appears.
+  `republish` forgets both rows and lets the normal path decide again.
 - **`/bills` rows are refreshed by tracking only.** Discovery saves a submission for new bills;
   the reconciler (`tracking/pre_print.py`) re-reads `/bills` for pending RPW entries and for bills
   awaiting consultation results and compares new with stored (print assigned, withdrawn,
@@ -127,13 +139,14 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v11 as of Sept 2026). `migrate()` reads `user_version` and
+`SCHEMA_VERSION = len(MIGRATIONS)` (v12 as of Sept 2026). `migrate()` reads `user_version` and
 runs every later script inside its own transaction, stamping the new version at the end, so a
 failed script leaves the database at the previous version. v8 (Sept 2026) added `rcl_json`, v9
 `bills.discontinued_at` and `status_changes.discontinued` (end of a Sejm term), v10
 `bills.linked_wykaz_number` (the print continuing an RCL thread keeps the wykaz number for the tag),
 v11 the unique index of hearing reminders (per bill, channel and hearing date) and
-`status_changes.amendments_json` (the model's summary of the Senate's or a committee's amendments).
+`status_changes.amendments_json` (the model's summary of the Senate's or a committee's amendments),
+v12 the unique index of `joint_bill` replies (per bill and channel).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) →
 `db restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing
@@ -258,5 +271,8 @@ carries "what comes next" (dated by scheduled sittings) and "what you can do now
 2026-09-09); a rescheduled sitting is announced again as a new post. RCL (decided 2026-09-09):
 every relevant government project is followed, not only those with an open consultation; the
 consultation deadline and e-mail are parsed from the letter deterministically, no LLM; RCL cards
-tell readers to write in Polish and quote the wykaz number. Open items are listed under "Still
-open" in `docs/roadmap.md`.
+tell readers to write in Polish and quote the wykaz number. Prints considered jointly (decided
+2026-09-10, after druki 1929/1933 got two near-identical cards): one card per group, the later
+prints are short "alternative bill" replies under it, the government's print is preferred for the
+card. Abbreviations (MSWiA, UdSC, ZUS, PESEL) stay Polish in the analysis, never МВД. Open items
+are listed under "Still open" in `docs/roadmap.md`.

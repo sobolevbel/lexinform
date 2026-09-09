@@ -173,6 +173,32 @@ def test_card_contains_every_section(process_3039: ProcessDetail, print_3039: Pr
     assert "#kadencja10druk3039 #важность5 #легализация #каденция10" in text
 
 
+def test_joint_bill_reply_names_the_thread_and_carries_both_tags(
+    process_3039: ProcessDetail, print_3039: PrintInfo
+) -> None:
+    primary = bill_of(process_3039)
+    other = process_3039.model_copy(
+        update={
+            "number": "3050",
+            "title": "Rządowy projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony",
+            "prints_considered_jointly": ("3039", "3051"),
+            "document_date": dt.date(2026, 9, 2),
+        }
+    )
+
+    text = MessageFormatter("ru").joint_bill(bill_of(other), primary, print_3039).text
+
+    assert_telegram_html(text)
+    assert text.startswith(
+        "🔀 <b>Альтернативный проект того же закона — druk nr 3050</b>\n\n<b>Rządowy projekt"
+    )
+    assert "Рассматривается совместно с druk 3039, 3051:" in text  # the card's print first
+    assert "Инициатор:</b> правительственный\n📄 <b>Дата druku:</b> 02.09.2026" in text
+    assert "О чём проект" not in text  # the analysis stays on the card
+    assert "PrzebiegProc.xsp?nr=3050" in text
+    assert text.endswith("#kadencja10druk3050 #kadencja10druk3039")
+
+
 def test_card_escapes_model_output_and_notes_partial_text(
     process_3039: ProcessDetail, print_3039: PrintInfo
 ) -> None:

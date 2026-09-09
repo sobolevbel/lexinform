@@ -160,6 +160,12 @@ MIGRATIONS: tuple[str, ...] = (
         WHERE kind = 'hearing_deadline';
     ALTER TABLE status_changes ADD COLUMN amendments_json TEXT;
     """,
+    # v12: one "alternative bill" reply per bill and channel (a bill considered jointly with one
+    # that already has a card joins that card's thread instead of getting its own)
+    """
+    CREATE UNIQUE INDEX ux_pub_joint ON publications(term, number, kind, channel_id)
+        WHERE kind = 'joint_bill';
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -396,6 +402,8 @@ class SqliteBillRepository:
     def list_publish_candidates(
         self, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
     ) -> list[Bill]:
+        # A card or an "alternative bill" reply settles the bill; a failed one leaves it listed
+        # until the attempts are used up.
         rows = self._conn.execute(
             """
             SELECT b.* FROM bills b
@@ -403,7 +411,8 @@ class SqliteBillRepository:
               AND b.discontinued_at IS NULL
               AND NOT EXISTS (
                   SELECT 1 FROM publications p
-                  WHERE p.term = b.term AND p.number = b.number AND p.kind = 'new_bill'
+                  WHERE p.term = b.term AND p.number = b.number
+                    AND p.kind IN ('new_bill', 'joint_bill')
                     AND p.channel_id = ?
                     AND (p.status IN ('sent', 'skipped', 'pending', 'unknown')
                          OR (p.status = 'failed' AND p.attempts >= ?))
