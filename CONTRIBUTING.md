@@ -119,7 +119,9 @@ Layout:
   fail on demand: `gateway.outages.add("get_process")` (API down), `publisher.fail_on={"3039"}`
   (one post rejected), `publisher.outage_on={...}` (Telegram down),
   `FakeTextExtractor(error=...)`, `FakeLlm(script={"3039": RuntimeError()})`.
-- `tests/harness.py`: `World`, the whole pipeline on fakes and an in-memory SQLite, plus builders
+- `tests/harness.py`: `World`, the production `Container` built over the fakes and an in-memory
+  SQLite (a `Settings` names the fake hosts; `llm`, `extractor`, `publisher_override` and
+  `notifier_override` are the container's injection points), plus builders
   (`summary`, `detail`, `submission`, `act`, stage tuples). A scenario test arranges the Sejm
   (`w.add_bill`, `w.set_stages`, `w.touch`, `w.gateway.submissions`), acts (`w.run(...)`) and
   asserts on the `RunReport`, the publisher's records and the database (`w.bill`,

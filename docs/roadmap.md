@@ -73,6 +73,28 @@ Still open:
 - Committee e-mail addresses in "what you can do now" (the Sejm API has none; the committee page
   is linked instead) and the Senate committee that received the act (the Senate API is not used).
 
+Done on 2026-09-10, after a review of the code base (no schema change):
+
+- Bugs against the invariants: a Sejm outage between the pending row and the post no longer
+  loses the card; a Telegram outage no longer counts as an attempt of the post; a new text that
+  cannot be read keeps the previous analysis; the stage fingerprint is saved after the change
+  row; a failed "opinions published" notice is retried; held stages are released against the
+  message just sent; message assembly names its head and tail blocks and cuts whole lines as a
+  last resort; `run --no-publish` records skipped rows for the tracking announcements; the
+  formatter dates from the run's clock in Warsaw time; `daily.yml` re-dumps on the fetched tip
+  instead of rebasing, tolerates a missing dump only on the run that creates the branch and
+  alerts the log channel when the job fails around the run.
+- Keywords: citizens named by citizenship (EU, third countries: druk 1812 was invisible), work
+  permits, seasonal work, employer declarations, recognised qualifications, foreign students, the
+  bare genitive "wiz"; `nierezydent` and border crossing as weak patterns; a weak title hit alone
+  goes to the text stage. Measured on the 1500 processes of term 10; PESEL, mObywatel, NFZ, 800+,
+  prawo jazdy and Kodeks wyborczy deliberately stay out (4–14 unrelated titles each).
+- The text prefilter records why it skipped a bill (`last_error`); the report counts unreadable
+  texts and shows cache reads; `lexinform runs` / `cost`; cost guard rails per bill and per run.
+- Refactoring: one `Publisher` implementation (`adapters/publisher_base.py`), formatter helpers
+  and one stage translation, domain predicates in `models/`, the container typed on the ports and
+  the test harness building the real container.
+
 Done on 2026-09-10 (schema v11), after a reader's-eye review of the update posts:
 
 - Updates are named after their event (header from `models.update_event`), list the new stages in

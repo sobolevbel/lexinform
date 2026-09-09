@@ -185,6 +185,7 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_MIN_SCORE` | `3` | Minimum importance to publish |
 | `LEXINFORM_MAX_PUBLISH_PER_RUN` / `_MAX_ANALYZE_PER_RUN` | `10` / `40` | Flood and cost caps |
 | `LEXINFORM_TEXT_BUDGET_CHARS` | `1500000` | Safety cap on text sent to the LLM (prints go in full) |
+| `LEXINFORM_MAX_ANALYSIS_COST_USD` / `_MAX_RUN_COST_USD` | `2.0` / `15.0` | Cost guard rails (0 disables): a first analysis estimated above the per-bill limit is skipped (`skipped_cost`, revive with `reset`); the analysis phase stops for the run at the per-run limit |
 | `LEXINFORM_MAX_PDF_DOWNLOAD_MB` | `200` | Safety valve for memory; bigger files are analysed from metadata |
 | `LEXINFORM_SEJM_CONCURRENCY` / `_LLM_CONCURRENCY` | `4` / `2` | Parallel PDF downloads and process lookups / bills analysed at once |
 | `LEXINFORM_TEXT_PREFILTER_ENABLED` | `true` | Scan the PDF when the title says nothing |
@@ -227,6 +228,8 @@ The rubric is in `src/lexinform/adapters/llm_prompts.py`; `PROMPT_VERSION` is st
 | `lexinform show NUMBER` | API data and local status (`RPW/…` numbers show the submission) |
 | `lexinform republish NUMBER [-y]` | Post a bill's card again after a failed or lost post |
 | `lexinform reset NUMBER [--to STATUS] [-y]` | Put a bill back into a status with a clean retry budget |
+| `lexinform runs [--days N]` | The recorded runs of the last days: counters, errors, tokens, cost |
+| `lexinform cost [--days N] [--top N]` | LLM spend per model and per run, the dearest run and analyses |
 | `lexinform db init / dump FILE / restore FILE [--missing-ok]` | Database maintenance |
 
 ## Code layout
@@ -247,7 +250,7 @@ src/lexinform/
                              signatories, publishing, pipeline, tracking/ (stages, pre-print and
                              RCL links, rcl watcher, acts, reminders, agenda, posting)
   container.py, cli.py       composition root, typer commands
-tests/                       fakes.py (ports in memory), harness.py (the pipeline on fakes),
+tests/                       fakes.py (ports in memory), harness.py (the real Container over the fakes),
                              unit/ on fakes + recorded API fixtures; `-m integration` hits the live API
 ```
 

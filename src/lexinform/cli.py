@@ -412,11 +412,14 @@ def runs(days: DaysOpt = 30) -> None:
         "started (UTC)     mode      ok   disc  anal  publ  upd  errs  tokens in/out       cost"
     )
     for r in reports:
+        # Reports stored before the per-model breakdown existed carry tokens but no usage:
+        # their cost is unknown, not zero.
+        cost = cost_usd(r.llm_usage) if r.llm_usage or not r.llm_input_tokens else None
         typer.echo(
             f"{r.started_at:%Y-%m-%d %H:%M}  {r.mode:<8}  {'ok ' if r.ok else 'ERR'}  "
             f"{r.discovered:>4}  {r.analyzed:>4}  {r.published:>4}  {r.updates:>3}  "
             f"{len(r.errors):>4}  {_k(r.llm_input_tokens) + '/' + _k(r.llm_output_tokens):<18}"
-            f"{_money(cost_usd(r.llm_usage))}"
+            f"{_money(cost)}"
         )
 
 

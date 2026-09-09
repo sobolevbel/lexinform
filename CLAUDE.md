@@ -27,7 +27,8 @@ windows and the API stage vocabulary in `docs/legislative-process.md`.
 `models/` (pydantic + pure helpers; `enums`, `sejm`, `rcl`, `analysis`, `bill` (incl.
 `next_phase`, `ConsultationWindow`), `report`, all re-exported from `lexinform.models`) →
 `ports.py` (Protocols) → `adapters/` (Sejm API, ELI, RCL scraper `rcl_html`, PDF, Word +
-format sniffing `document_text`, Anthropic, Telegram, SQLite) → `services/` (discovery,
+format sniffing `document_text`, Anthropic, `publisher_base` (the `Publisher` port rendered once;
+Telegram and the console only deliver), Telegram, SQLite) → `services/` (discovery,
 rcl_discovery + rcl_projects, sources (`TextSources` routes a bill to `SejmTextSource`,
 `RclTextSource` or `MetadataOnlySource`), documents (`TextLoader`, downloads routed by host),
 text_prefilter, analysis, signatories, publishing, `tracking/` (service, pre_print, rcl, linking,
@@ -36,7 +37,10 @@ acts, consultations, agenda, posting, stages), pipeline) → `container.py` (man
 incl. `TextBudget`, `agenda`, `authors`, `rcl_letters`, `concurrency`), never adapters; the
 generic services (analysis, text prefilter, formatter, `next_phase`) never branch on the source:
 they read `Bill.has_process`, `Bill.consultation`, `Bill.rcl` and the `TextSource` port. Tests
-use fakes in `tests/fakes.py` and the `World` harness in `tests/harness.py` (arrange with
+use fakes in `tests/fakes.py` and the `World` harness in `tests/harness.py`, which builds the real
+`Container` from a `Settings` naming the fake hosts, so the wiring under test is the daily run's
+(`container.py` is typed on the ports and builds each service once; `llm`, `extractor`,
+`publisher_override`, `notifier_override` are the injection points) (arrange with
 `add_bill`/`add_rcl_project`/`set_stages`/`touch`, act with `run`, assert on the report, the
 publisher's records and `bill`/`publication`); HTTP adapters use `httpx2.MockTransport`. The fake
 Sejm gateway answers per term like the API (a process, print or `/bills` entry exists only under
@@ -267,10 +271,11 @@ hits) by `llm_triage_model`; a confident "no" is stored as a non-relevant analys
 `text_source="excerpts"`. Real numbers: druk 2695 (564k chars, irrelevant) cost $1.45 in full,
 would cost ~$0.01 with the triage. The triage call runs without extended thinking (Haiku 4.5
 rejects `thinking: adaptive`; a classification does not need it). The system prompts carry
-`cache_control`, but the analysis prompt is ~850 tokens (triage ~390, amendments ~440), under the
-1024-token minimum a cache entry needs on Opus/Sonnet: the marker is ignored, nothing is cached and
-nothing is charged for it (measured 2026-09-09). The run report's "cache read" figure and
-`lexinform cost` show whether that changes; `lexinform runs` lists the recorded runs. Guard rails
+`cache_control`; the analysis prompt alone is ~850 tokens, under the 1024-token minimum of a cache
+entry, but the structured-output schema is part of the cached prefix, so the entry is ~2k tokens
+and does get read (the state dump of 2026-09-09: 23k cache-read tokens over 11 analyses). The run
+report's "cache read" figure and `lexinform cost` show it; `lexinform runs` lists the recorded
+runs. Guard rails
 (`LEXINFORM_MAX_ANALYSIS_COST_USD`, default $2 per first analysis, estimated from the text length
 at 2 chars/token before the call; `LEXINFORM_MAX_RUN_COST_USD`, default $15 per run): a text
 over the per-bill limit gets `skipped_cost` with the reason in `last_error` (`lexinform reset
