@@ -15,6 +15,7 @@ from lexinform.models import (
     ProcessDetail,
     TextDocument,
     latest_text_document,
+    third_reading_kept_the_text,
 )
 from lexinform.ports import SejmGateway, TextSource
 
@@ -58,13 +59,21 @@ class SejmTextSource:
         candidate = latest_text_document(detail.stages) or original_document(print_info)
         if candidate is None:
             return None
+        if candidate.kind == "text_after3" and third_reading_kept_the_text(detail.stages):
+            # The Sejm adopted the text it was given without amendments or minority motions:
+            # the text after the 3rd reading is that text again, no need to read it.
+            voted = latest_text_document(detail.stages, before_third_reading=True)
+            voted = voted or original_document(print_info)
+            if voted is not None and voted.url == record.source_url:
+                return None
         if candidate.url != record.source_url:
             return candidate
+        checked = record.source_checked_at or record.created_at
         if (
             candidate.kind == "print"
             and print_info is not None
             and print_info.change_date is not None
-            and _as_utc(print_info.change_date) > _as_utc(record.created_at)
+            and _as_utc(print_info.change_date) > _as_utc(checked)
         ):
             return candidate
         return None

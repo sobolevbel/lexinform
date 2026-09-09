@@ -22,6 +22,7 @@ from lexinform.models import (
     latest_text_document,
     next_phase,
     stage_fingerprint,
+    third_reading_kept_the_text,
 )
 
 NOW = dt.datetime(2026, 9, 9, tzinfo=dt.UTC)
@@ -123,6 +124,39 @@ def test_fixture_process_parses_into_the_stage_tree(process_1962: ProcessDetail)
     assert process_1962.last_stage is not None
     assert process_1962.last_stage.stage_name == "Uchwalono"
     assert len(flatten_stages(process_1962.stages)) == 18
+    reports = [
+        st for st in flatten_stages(process_1962.stages) if st.stage_type == "CommitteeReport"
+    ]
+    assert [r.minority_motions for r in reports] == [0, 0, 0]
+
+
+def test_third_reading_keeps_the_text_only_without_amendments_or_minority_motions(
+    process_1962: ProcessDetail,
+) -> None:
+    # 1962: amendments at the 2nd reading ("-A" report): the text after the 3rd reading differs.
+    assert not third_reading_kept_the_text(process_1962.stages)
+    report = _report("2689", proposal="załączony projekt ustawy", minority_motions=0)
+    work = Stage(stage_name="Praca w komisjach", stage_type="CommitteeWork", children=(report,))
+    straight = Stage(
+        stage_name="II czytanie na posiedzeniu Sejmu",
+        stage_type="SejmReading",
+        decision="niezwłocznie przystąpiono do III czytania",
+    )
+    sent_back = straight.model_copy(update={"decision": "skierowano ponownie do komisji"})
+    third = Stage(stage_name="III czytanie", stage_type="SejmReading", decision="uchwalono")
+
+    assert third_reading_kept_the_text([work, straight, third])
+    assert not third_reading_kept_the_text([work, sent_back, third])
+    assert not third_reading_kept_the_text([work, third])  # no 2nd reading seen: may differ
+    with_motions = work.model_copy(
+        update={"children": (report.model_copy(update={"minority_motions": 1}),)}
+    )
+    assert not third_reading_kept_the_text([with_motions, straight, third])
+    unknown = work.model_copy(
+        update={"children": (report.model_copy(update={"minority_motions": None}),)}
+    )
+    assert not third_reading_kept_the_text([unknown, straight, third])
+    assert latest_text_document([work, straight, third], before_third_reading=True) is not None
 
 
 # --------------------------------------------------------------------------- applicants

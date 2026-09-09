@@ -176,6 +176,43 @@ def test_new_text_version_is_re_analysed_and_the_update_lists_the_changes() -> N
     assert w.llm.contexts[-1].previous_summary is not None
 
 
+def test_republished_identical_text_is_not_analysed_again() -> None:
+    w = World()
+    project = _followed(w)
+    analysed = w.bill(RCL).analysis
+    assert analysed is not None
+    consulted = next(f for st in project.stages for f in st.folders if f.kind == "project")
+    # Komisja Prawnicza republishes the same three files (projekt, uzasadnienie, OSR) in its
+    # own folder: new URLs, same text.
+    same_files = rcl_folder(
+        777,
+        "Projekt",
+        *(
+            rcl_document(900 + i, doc.name, created=dt.date(2026, 9, 8))
+            for i, doc in enumerate(consulted.documents)
+        ),
+    )
+    w.add_rcl_project(
+        _moved(
+            project,
+            *project.stages[:4],
+            rcl_stage(9, "Stały Komitet Rady Ministrów", "reached", modified=dt.date(2026, 9, 8)),
+            rcl_stage(10, "Komisja Prawnicza", "active", same_files, modified=dt.date(2026, 9, 8)),
+            *project.stages[5:],
+            modified=dt.date(2026, 9, 8),
+        )
+    )
+
+    report = w.run()
+
+    assert (report.updates, report.reanalyzed) == (1, 0)  # the stage is news, the text is not
+    bill, change, _ = w.publisher.updates[0]
+    assert not change.content_changed
+    assert bill.analysis is not None and bill.analysis.revision == analysed.revision
+    assert bill.analysis.source_url == same_files.documents[0].url  # repointed, not re-read
+    assert len(w.llm.contexts) == 1
+
+
 def test_hand_over_to_the_sejm_then_the_druk_continues_the_thread() -> None:
     w = World()
     project = _followed(w)

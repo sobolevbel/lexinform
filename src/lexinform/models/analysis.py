@@ -65,6 +65,12 @@ class AnalysisRecord(BaseModel):
     source_url: str | None = None
     source_kind: SourceKind = "print"
     revision: int = 1
+    # Digest of the (trimmed, budgeted, whitespace-normalised) text the model saw: a document
+    # published under a new URL with the same text is not analysed again.
+    text_sha256: str | None = None
+    # When the source was last found unchanged (a print re-dated by an attachment, a republished
+    # RCL file); the print's `changeDate` is compared with this, not with `created_at`.
+    source_checked_at: dt.datetime | None = None
 
 
 class Triage(BaseModel):

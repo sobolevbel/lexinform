@@ -86,6 +86,13 @@ Done on 2026-09-10 (schema v11), after a reader's-eye review of the update posts
   status change and rendered as "Что меняют поправки Сената".
 - Public hearings: the application deadline (10 days before) on the stage line and in "what you
   can do now"; a reminder reply before applications close. Senate and President deadlines as dates.
+- Cost: a re-analysis needs a changed text. The analysed text is hashed (`text_sha256`); a
+  republished RCL file or a print re-dated by an attachment is recognised and not sent to the
+  model. The text after the 3rd reading is skipped when the Sejm adopted the committee's text as
+  it was (no 2nd-reading amendments, no minority motions). Measured on the state dump (Sept
+  2026): the single biggest analysis was a government project of 338k chars, 171k input tokens
+  (~$0.85), and every RCL stage republishes that package; without the hash each republication
+  would cost the same again.
 
 The sections below are the original plan, kept for the rationale and the verified API facts.
 

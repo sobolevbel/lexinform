@@ -145,6 +145,8 @@ class Stage(BaseModel):
     position: str | None = None  # SenatePosition: what the Senate did (not part of the fingerprint)
     proposal: str | None = None  # CommitteeReport: what the committee proposes
     sub_committee: bool = False  # CommitteeReport: a sub-committee report, not the final one
+    # CommitteeReport: minority motions attached (voted at the 3rd reading); None when unknown
+    minority_motions: int | None = None
     voting: VotingSummary | None = None  # Voting: results (not part of the fingerprint)
     committee_name: str | None = (
         None  # Referral: resolved by us from /committees (not fingerprinted)
@@ -561,10 +563,13 @@ class TextDocument(BaseModel):
     extra_urls: tuple[str, ...] = ()
 
 
-def latest_text_document(stages: tuple[Stage, ...] | list[Stage]) -> TextDocument | None:
+def latest_text_document(
+    stages: tuple[Stage, ...] | list[Stage], *, before_third_reading: bool = False
+) -> TextDocument | None:
     """The most recent stage document that contains an (amended) bill text, if any.
 
     Text after the 3rd reading beats committee reports, which beat the original print (None here).
+    `before_third_reading` ignores the text after the 3rd reading: the text the Sejm voted on.
     """
     text_after3: str | None = None
     report: str | None = None
@@ -573,8 +578,28 @@ def latest_text_document(stages: tuple[Stage, ...] | list[Stage]) -> TextDocumen
             text_after3 = stage.text_after3
         if stage.carries_bill_text:
             report = stage.report_file
-    if text_after3:
+    if text_after3 and not before_third_reading:
         return TextDocument(url=text_after3, kind="text_after3")
     if report:
         return TextDocument(url=report, kind="committee_report")
     return None
+
+
+def third_reading_kept_the_text(stages: tuple[Stage, ...] | list[Stage]) -> bool:
+    """True when the text after the 3rd reading cannot differ from the text the committee (or
+    the print) put before the Sejm: no amendments were tabled at the 2nd reading (the Sejm went
+    straight on to the 3rd), so no additional report exists, and the report carried no minority
+    motions to vote on. Unknown facts (no 2nd reading, motions not parsed) count as "may differ"."""
+    top = list(stages)
+    second = [
+        st
+        for st in top
+        if st.stage_type == "SejmReading" and st.stage_name.strip().upper().startswith("II ")
+    ]
+    if not second or "niezwłocznie" not in (second[-1].decision or "").lower():
+        return False
+    reports = [st for st in flatten_stages(top) if st.stage_type == "CommitteeReport"]
+    if any(r.print_number and r.print_number.upper().endswith("-A") for r in reports):
+        return False
+    final = [r for r in reports if not r.sub_committee]
+    return all(r.minority_motions == 0 for r in final)

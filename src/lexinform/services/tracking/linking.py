@@ -114,10 +114,10 @@ class Linker:
             print_info = fetch_print(self._gateway, bill)
             document = self._texts.newer(bill, detail, print_info)
             if document is not None:
-                result.count_reanalysis(
-                    self._analysis.reanalyze_bill(bill, document, summary=detail)
-                )
-                content_changed = True
+                record = self._analysis.reanalyze_bill(bill, document, summary=detail)
+                if record is not None:
+                    result.count_reanalysis(record)
+                    content_changed = True
         fresh = self._repo.get(pre.term, print_number) or bill
         new_stages = [self._enricher.enrich(pre.term, st) for st in diff_stages((), detail.stages)]
         change = StatusChange(

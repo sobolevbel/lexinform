@@ -106,6 +106,7 @@ from lexinform.models.sejm import (
     process_web_url,
     stage_fingerprint,
     submission_pdf_url,
+    third_reading_kept_the_text,
 )
 
 __all__ = [
@@ -196,6 +197,7 @@ __all__ = [
     "rcl_stages",
     "stage_fingerprint",
     "submission_pdf_url",
+    "third_reading_kept_the_text",
     "update_event",
     "usage_of",
 ]

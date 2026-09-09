@@ -2,6 +2,7 @@
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import BillStatus, Mp, Triage
+from lexinform.services.analysis import text_digest
 from tests.fakes import FakeTextExtractor
 from tests.harness import World, print_url
 
@@ -10,6 +11,18 @@ FOREIGNER_TEXT = (
     "Art. 2. Zezwolenie na pobyt czasowy wydaje wojewoda. "
     "Art. 3. Cudzoziemiec składa wniosek osobiście. " * 3
 )
+
+# --------------------------------------------------------------------------- text identity
+
+
+def test_text_digest_ignores_layout_but_not_words() -> None:
+    printed = "USTAWA\nz dnia 1 lipca 2026 r.\n\n– 1 –\nArt. 1.  Cudzoziemiec   składa wniosek.\n"
+    reflowed = "USTAWA z dnia 1 lipca 2026 r. Art. 1. Cudzoziemiec składa wniosek.\n- 2 -\n"
+    amended = "USTAWA z dnia 1 lipca 2026 r. Art. 1. Cudzoziemiec składa wniosek osobiście."
+
+    assert text_digest(printed) == text_digest(reflowed)
+    assert text_digest(printed) != text_digest(amended)
+
 
 # --------------------------------------------------------------------------- text sources
 

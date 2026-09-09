@@ -127,8 +127,10 @@ class RclWatcher:
             and document.url != bill.analysis.source_url
         ):
             log.info("%s: new text version on RCL, re-analysing", bill.number)
-            result.count_reanalysis(self._analysis.reanalyze_bill(bill, document))
-            content_changed = True
+            record = self._analysis.reanalyze_bill(bill, document)
+            if record is not None:
+                result.count_reanalysis(record)
+                content_changed = True
 
         closure = (
             not project.is_open

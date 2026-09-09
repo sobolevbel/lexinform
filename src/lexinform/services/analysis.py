@@ -5,7 +5,9 @@ Also re-analyses a bill when a newer text appears (committee report with amendme
 the model so it can say what changed. Where the text comes from is the `TextSource`'s business.
 """
 
+import hashlib
 import logging
+import re
 from dataclasses import dataclass, field
 
 from lexinform.concurrency import fan_out
@@ -67,6 +69,20 @@ class _Prepared:
     record: AnalysisRecord
     first: bool  # first analysis seeds the stages; a re-analysis leaves them to tracking
     triage: TriageRecord | None = None  # a triage the bill passed: its tokens count too
+    # A re-analysis that found the same text under a new URL: `record` is the previous one
+    # pointing at the new source, the model was not asked.
+    unchanged: bool = False
+
+
+_PAGE_NUMBER_LINE = re.compile(r"^\s*[–\-—]?\s*\d{1,4}\s*[–\-—]?\s*$", re.MULTILINE)
+_WHITESPACE = re.compile(r"\s+")
+
+
+def text_digest(text: str) -> str:
+    """SHA-256 of the text with page numbers and whitespace differences ignored, so the same
+    bill text rendered by another layout (a republished file, a re-dated print) hashes alike."""
+    normalised = _WHITESPACE.sub(" ", _PAGE_NUMBER_LINE.sub("", text)).strip()
+    return hashlib.sha256(normalised.encode("utf-8")).hexdigest()
 
 
 class AnalysisService:
@@ -164,12 +180,21 @@ class AnalysisService:
 
     def reanalyze_bill(
         self, bill: Bill, document: TextDocument, *, summary: ProcessSummary | None = None
-    ) -> AnalysisRecord:
+    ) -> AnalysisRecord | None:
         """Analyse a newer text of an already analysed bill; the model also reports what changed.
-        `summary` is fresher metadata than the stored one, when the caller has it."""
+        `summary` is fresher metadata than the stored one, when the caller has it.
+
+        None when the document turns out to carry the text already analysed (a file republished
+        on RCL, a print re-dated by an attachment): the stored analysis then points at the new
+        source and nothing else happens."""
         assert bill.analysis is not None
         located = LocatedText(summary=summary, document=document)
-        return self._persist(self._prepare(bill, located, previous=bill.analysis))
+        prepared = self._prepare(bill, located, previous=bill.analysis)
+        if prepared.unchanged:
+            log.info("%s: %s carries the analysed text; not re-analysed", bill.number, document.url)
+            self._repo.save_analysis(bill.term, bill.number, prepared.record)
+            return None
+        return self._persist(prepared)
 
     # ------------------------------------------------------------------ amendments
 
@@ -206,6 +231,17 @@ class AnalysisService:
         """Load the text and ask the model. Network only: safe to run for several bills at once."""
         document = located.document
         text, truncated, source = self._load_text(document)
+        digest = text_digest(text) if source in FULL_TEXT_SOURCES else None
+        if previous is not None and digest is not None and digest == previous.text_sha256:
+            assert document is not None
+            pointer = previous.model_copy(
+                update={
+                    "source_url": document.url,
+                    "source_kind": document.kind,
+                    "source_checked_at": self._clock.now(),
+                }
+            )
+            return _Prepared(bill, located, text, source, pointer, first=False, unchanged=True)
         meta = located.summary or bill.summary
         triage: TriageRecord | None = None
         if previous is None and source in FULL_TEXT_SOURCES and len(text) >= self._triage_min_chars:
@@ -229,6 +265,7 @@ class AnalysisService:
         record.source_url = document.url if document else None
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
+        record.text_sha256 = digest
         return _Prepared(bill, located, text, source, record, first=previous is None, triage=triage)
 
     def _triage_verdict(

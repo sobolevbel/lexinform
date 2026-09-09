@@ -372,6 +372,9 @@ def parse_stage(item: dict[str, Any]) -> Stage:
         text_after3=item.get("textAfter3"),
         proposal=item.get("proposal"),
         sub_committee=bool(item.get("subCommittee", False)),
+        minority_motions=(
+            int(item["minorityMotions"]) if isinstance(item.get("minorityMotions"), int) else None
+        ),
         voting=parse_voting(voting) if isinstance(voting := item.get("voting"), dict) else None,
         children=tuple(parse_stage(c) for c in item.get("children") or ()),
     )

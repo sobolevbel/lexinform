@@ -345,8 +345,10 @@ class StatusTrackingService:
         content_changed = False
         if document is not None and self._analysis is not None:
             log.info("druk %s: new text (%s), re-analysing", bill.number, document.kind)
-            result.count_reanalysis(self._analysis.reanalyze_bill(bill, document, summary=detail))
-            content_changed = True
+            record = self._analysis.reanalyze_bill(bill, document, summary=detail)
+            if record is not None:
+                result.count_reanalysis(record)
+                content_changed = True
 
         if old_fp is None:
             return None  # first sight of the stages: seed silently

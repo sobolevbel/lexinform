@@ -153,8 +153,11 @@ WITH_REPORT = REFERRED + (
 )
 
 
+REPORT_TEXT = "Art. 1. Tekst po poprawkach komisji. " * 50
+
+
 def test_committee_report_with_a_new_text_triggers_a_re_analysis_with_context() -> None:
-    w = World()
+    w = World(extractor=FakeTextExtractor(by_content={b"%PDF-report": REPORT_TEXT}))
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
     updated = make_analysis(score=4)
@@ -196,20 +199,127 @@ def test_same_document_is_not_analysed_twice() -> None:
 
 
 def test_updated_print_triggers_a_re_analysis_without_a_stage_change() -> None:
-    w = World()
+    autopoprawka = "Art. 1. Tekst po autopoprawce. " * 50
+    w = World(extractor=FakeTextExtractor(by_content={b"%PDF-v2": autopoprawka}))
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
     w.clock.advance(days=2)
+    # The autopoprawka is published as a new file of the same print.
+    revised = print_url("3039").replace("3039.pdf", "3039_autopoprawka.pdf")
     w.gateway.prints["3039"] = w.gateway.prints["3039"].model_copy(
-        update={"change_date": w.clock.now().replace(tzinfo=None)}
+        update={
+            "change_date": w.clock.now().replace(tzinfo=None),
+            "attachments": (
+                Attachment(print_number="3039", name="3039_autopoprawka.pdf", url=revised),
+            ),
+        }
     )
+    w.gateway.files[revised] = b"%PDF-v2"
 
     report = w.run()
 
     assert (report.reanalyzed, report.updates) == (1, 1)
     _, change, _ = w.publisher.updates[-1]
     assert change.content_changed and change.new_stages == []
-    assert w.gateway.files[print_url("3039")]  # the original print was re-read
+    assert w.llm.contexts[-1].text.startswith("Art. 1. Tekst po autopoprawce.")
+
+
+def test_print_re_dated_with_the_same_text_is_not_analysed_again() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.clock.advance(days=2)
+    w.gateway.prints["3039"] = w.gateway.prints["3039"].model_copy(
+        update={"change_date": w.clock.now().replace(tzinfo=None)}
+    )  # an attachment (stanowisko rządu, opinia) re-dated the print; the PDF is the same
+
+    report = w.run()
+    w.clock.advance(days=1)
+    again = w.run()
+
+    assert (report.reanalyzed, report.updates, again.reanalyzed) == (0, 0, 0)
+    assert len(w.llm.contexts) == 1  # the first analysis only
+    analysis = w.bill("3039").analysis
+    assert analysis is not None and analysis.revision == 1
+    assert analysis.source_checked_at is not None and analysis.text_sha256
+
+
+AFTER3_URL = "https://api.test/sejm/term10/processes/3039/attachment/3039_u3.pdf"
+FULL_REPORT = WITH_REPORT[:-1] + (
+    WITH_REPORT[-1].model_copy(
+        update={
+            "children": (
+                WITH_REPORT[-1]
+                .children[0]
+                .model_copy(update={"proposal": "załączony projekt ustawy", "minority_motions": 0}),
+            )
+        }
+    ),
+)
+ADOPTED_AS_REPORTED = FULL_REPORT + (
+    Stage(
+        stage_name="II czytanie na posiedzeniu Sejmu",
+        stage_type="SejmReading",
+        date=dt.date(2026, 9, 9),
+        decision="niezwłocznie przystąpiono do III czytania",
+    ),
+    Stage(
+        stage_name="III czytanie na posiedzeniu Sejmu",
+        stage_type="SejmReading",
+        date=dt.date(2026, 9, 10),
+        decision="uchwalono",
+        text_after3=AFTER3_URL,
+    ),
+)
+
+
+def test_text_after_third_reading_is_not_read_when_the_sejm_adopted_the_report_as_is() -> None:
+    w = World(extractor=FakeTextExtractor(by_content={b"%PDF-report": REPORT_TEXT}))
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=FULL_REPORT)
+    w.gateway.files[REPORT_URL] = b"%PDF-report"
+    w.run()  # card from the print, then the report's text is analysed
+    w.set_stages("3039", ADOPTED_AS_REPORTED)
+    w.gateway.files[AFTER3_URL] = b"%PDF-after3"
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.reanalyzed, report.updates) == (0, 1)
+    _, change, _ = w.publisher.updates[-1]
+    assert not change.content_changed
+    assert f"download:{AFTER3_URL}" not in w.gateway.calls  # not even downloaded
+    analysis = w.bill("3039").analysis
+    assert analysis is not None and analysis.source_url == REPORT_URL
+
+
+def test_text_after_third_reading_is_read_when_minority_motions_were_voted() -> None:
+    after3 = "Art. 1. Tekst po III czytaniu z wnioskiem mniejszości. " * 50
+    w = World(
+        extractor=FakeTextExtractor(
+            by_content={b"%PDF-report": REPORT_TEXT, b"%PDF-after3": after3}
+        )
+    )
+    contested = FULL_REPORT[:-1] + (
+        FULL_REPORT[-1].model_copy(
+            update={
+                "children": (
+                    FULL_REPORT[-1].children[0].model_copy(update={"minority_motions": 2}),
+                )
+            }
+        ),
+    )
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=contested)
+    w.gateway.files[REPORT_URL] = b"%PDF-report"
+    w.run()
+    w.set_stages("3039", contested + ADOPTED_AS_REPORTED[len(FULL_REPORT) :])
+    w.gateway.files[AFTER3_URL] = b"%PDF-after3"
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.reanalyzed, report.updates) == (1, 1)
+    analysis = w.bill("3039").analysis
+    assert analysis is not None and analysis.source_url == AFTER3_URL
 
 
 # --------------------------------------------------------------------------- amendments

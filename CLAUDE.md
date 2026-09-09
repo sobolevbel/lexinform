@@ -98,6 +98,16 @@ Invariants worth keeping:
   already says it. Amendments (Senate resolution print, a committee report whose proposal is about
   poprawki) are summarised by a third model call (`AnalysisService.summarize_amendments`) after
   the change row exists and stored on it (`amendments_json`); a failure degrades to the bare event.
+- **A re-analysis needs a new text, not a new URL.** `AnalysisRecord.text_sha256` is the digest
+  of the normalised text the model saw (`services/analysis.py::text_digest`: page numbers and
+  whitespace ignored). `reanalyze_bill` returns None and only repoints `source_url` /
+  `source_checked_at` when the new document hashes alike (a file republished on RCL under every
+  stage, a print re-dated by an attachment such as stanowisko rządu). `SejmTextSource.newer`
+  compares the print's `changeDate` with `source_checked_at`, and does not even download the
+  text after the 3rd reading when `models.third_reading_kept_the_text` holds (2nd reading went
+  straight to the 3rd, no "-A" report, `minorityMotions == 0` on the report): the Sejm adopted
+  the analysed text verbatim. Unknown facts (motions not parsed, no 2nd reading) mean "may
+  differ" and the text is read.
 - **Stage fingerprint** (`_stage_key`) drives updates. Fields added to `Stage` for rendering
   (`voting`, `position`, `committee_name`, `proposal`) must stay *out* of the key, or every tracked
   bill posts a spurious update after deploy.
