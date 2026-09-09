@@ -15,6 +15,7 @@ import logging
 import re
 import time
 from collections.abc import Callable, Iterator
+from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any
 from urllib.parse import parse_qs, urljoin, urlparse
@@ -33,7 +34,15 @@ from lexinform.models import (
 )
 from lexinform.models.rcl import RCL_BASE_URL, StageState, parse_stage_label
 
-__all__ = ["RclClient", "RclPageError", "parse_list", "parse_project", "parse_stage_catalog"]
+__all__ = [
+    "ListPage",
+    "RclClient",
+    "RclPageError",
+    "parse_list",
+    "parse_list_page",
+    "parse_project",
+    "parse_stage_catalog",
+]
 
 log = logging.getLogger(__name__)
 
@@ -41,6 +50,7 @@ BILLS_TYPE_ID = 2
 _REJECTED_TITLE = "request rejected"
 _DOCUMENT_ID = re.compile(r"dokument(\d+)\.", re.IGNORECASE)
 _PROJECT_ID = re.compile(r"/projekt/(\d+)")
+_LIST_TOTAL = re.compile(r"Lista projektów według wybranych kryteriów:\s*(\d+)")
 
 
 class RclPageError(RuntimeError):
@@ -89,7 +99,10 @@ class RclClient:
                 "pSize": self._page_size,
                 "pNumber": page,
             }
-            rows = parse_list(self._get_text("/lista", params=params), base_url=self._base_url)
+            listing = parse_list_page(self._get_text("/lista", params=params))
+            rows = listing.rows
+            if not rows and listing.total and page == 1:
+                raise RclPageError(f"list page shows {listing.total} projects but no rows parsed")
             if not rows or rows[0].id == previous_first:
                 return
             previous_first = rows[0].id
@@ -199,9 +212,28 @@ def _is_rejected_html(body: bytes) -> bool:
 # ---------------------------------------------------------------------- parsers
 
 
+@dataclass(frozen=True)
+class ListPage:
+    """One page of `/lista`: its rows, the total the page announces, its number."""
+
+    rows: list[RclProjectSummary]
+    total: int | None
+    number: int
+
+
 def parse_list(html: str, *, base_url: str = RCL_BASE_URL) -> list[RclProjectSummary]:
     """Rows of `/lista`: id, title, applicant, wykaz number, created and modified dates."""
+    return parse_list_page(html).rows
+
+
+def parse_list_page(html: str) -> ListPage:
     soup = _soup(html)
+    total_match = _LIST_TOTAL.search(soup.get_text(" "))
+    current = soup.select_one("div.text-right span.text-lightgrey")
+    number = 1
+    if current is not None and current.parent is not None:
+        digits = [t for t in current.parent.stripped_strings if t.isdigit()]
+        number = int(digits[0]) if digits else 1
     rows: list[RclProjectSummary] = []
     for tr in soup.select("table#table tbody tr"):
         cells = tr.find_all("td", recursive=False)
@@ -223,7 +255,7 @@ def parse_list(html: str, *, base_url: str = RCL_BASE_URL) -> list[RclProjectSum
                 modified=_parse_date(_text(cells[4])) or date.min,
             )
         )
-    return rows
+    return ListPage(rows, int(total_match.group(1)) if total_match else None, number)
 
 
 def parse_project(html: str, project_id: int, *, base_url: str = RCL_BASE_URL) -> RclProject:
@@ -235,7 +267,9 @@ def parse_project(html: str, project_id: int, *, base_url: str = RCL_BASE_URL) -
         raise RclPageError(f"project {project_id}: no title or info block on the page")
     fields = _info_fields(info)
     wykaz = fields.get("Numer z wykazu")
-    stages = tuple(_parse_timeline(soup, base_url=base_url))
+    stages = tuple(_parse_timeline(soup))
+    if not stages:
+        raise RclPageError(f"project {project_id}: no stage timeline on the page (markup changed?)")
     sejm_url, rm_number = _sejm_reference(soup)
     created = _parse_date(_text(fields["Data utworzenia"])) if "Data utworzenia" in fields else None
     if created is None:
@@ -296,12 +330,17 @@ def _soup(html: str) -> BeautifulSoup:
     return soup
 
 
-def _parse_timeline(soup: BeautifulSoup, *, base_url: str) -> Iterator[RclStage]:
-    for node in soup.select("ul.cbp_tmtimeline > li[id]"):
+def _parse_timeline(soup: BeautifulSoup) -> Iterator[RclStage]:
+    nodes = soup.select("ul.cbp_tmtimeline > li[id]")
+    skipped = 0
+    for node in nodes:
         try:
             yield _parse_stage_node(node)
-        except ValueError:
-            continue  # a decorative node without a "N. name" label
+        except ValueError as exc:
+            skipped += 1
+            log.warning("stage node %s skipped: %s", node.get("id"), exc)
+    if nodes and skipped == len(nodes):
+        raise RclPageError("no stage node could be read (markup changed?)")
 
 
 def _parse_stage_node(node: Tag) -> RclStage:

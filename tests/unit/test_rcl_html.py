@@ -139,6 +139,35 @@ def test_a_page_without_the_project_block_is_a_page_error() -> None:
         parse_project("<html><head><title>Projekty</title></head><body></body></html>", 1)
 
 
+def test_a_project_page_whose_timeline_vanished_is_a_page_error() -> None:
+    page = _page("projekt_12414100.html").replace("cbp_tmtimeline", "cbp_renamed")
+
+    with pytest.raises(RclPageError, match="markup changed"):
+        parse_project(page, 12414100)
+
+
+def test_a_stage_node_without_a_label_is_skipped_but_not_all_of_them() -> None:
+    page = _page("projekt_12414100.html")
+    one_broken = page.replace(" 1. Zgłoszenia lobbingowe", "Zgłoszenia lobbingowe", 1)
+    all_broken = page.replace("cbp_tmlabel", "cbp_other")
+
+    project = parse_project(one_broken, 12414100)
+
+    assert len(project.stages) == 13
+    with pytest.raises(RclPageError, match="no stage node"):
+        parse_project(all_broken, 12414100)
+
+
+def test_a_list_page_that_announces_rows_but_shows_none_is_a_page_error() -> None:
+    page = _page("lista.html").replace('id="table"', 'id="renamed"')
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=page)
+
+    with pytest.raises(RclPageError, match="2619 projects but no rows"):
+        list(_client(handler).list_projects(modified_since=date(2026, 9, 1)))
+
+
 # --------------------------------------------------------------------------- stage catalog
 
 

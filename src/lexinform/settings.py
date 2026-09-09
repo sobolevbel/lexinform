@@ -24,8 +24,8 @@ class Settings(BaseSettings):
     # RCL (legislacja.rcl.gov.pl): government projects before they reach the Sejm
     rcl_enabled: bool = True
     rcl_base_url: str = "https://legislacja.rcl.gov.pl"
-    rcl_timeout_seconds: float = 60.0  # a project page takes 5-10 s to render
-    rcl_concurrency: int = Field(default=2, ge=1)  # be gentle: the site is slow and has a WAF
+    rcl_timeout_seconds: float = 60.0  # a project page takes ~10 s to render
+    rcl_concurrency: int = Field(default=6, ge=1)  # projects read at once (pages are slow)
 
     # Storage
     db_path: Path = Path("lexinform.db")

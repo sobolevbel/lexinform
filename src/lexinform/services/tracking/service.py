@@ -21,12 +21,15 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, EliGateway, Publisher, SejmGateway
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.sources import SejmTextSource, fetch_print
 from lexinform.services.tracking.acts import ActWatcher
 from lexinform.services.tracking.agenda import AgendaWatcher
 from lexinform.services.tracking.consultations import ConsultationReminder
+from lexinform.services.tracking.linking import Linker
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.pre_print import PrePrintReconciler
+from lexinform.services.tracking.rcl import RclWatcher
 from lexinform.services.tracking.result import TrackingResult
 from lexinform.services.tracking.stages import StageEnricher, change_key
 
@@ -58,6 +61,7 @@ class StatusTrackingService:
         in_force_reminders: bool = True,
         consultation_reminder_days: int | None = 3,
         agenda_watch: bool = True,
+        rcl_reader: RclProjectReader | None = None,
         local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
         workers: int = 1,
     ) -> None:
@@ -87,7 +91,7 @@ class StatusTrackingService:
             if consultation_reminder_days is not None
             else None
         )
-        self._pre_print = PrePrintReconciler(
+        linker = Linker(
             gateway,
             repo,
             clock,
@@ -95,7 +99,29 @@ class StatusTrackingService:
             self._enricher,
             channel_id=channel_id,
             analysis=analysis,
+        )
+        self._pre_print = PrePrintReconciler(
+            gateway,
+            repo,
+            clock,
+            self._poster,
+            linker,
+            channel_id=channel_id,
             consultations=self._consultations,
+        )
+        self._rcl = (
+            RclWatcher(
+                rcl_reader,
+                repo,
+                clock,
+                self._poster,
+                linker,
+                analysis=analysis,
+                consultations=self._consultations,
+                workers=workers,
+            )
+            if rcl_reader is not None
+            else None
         )
         self._agenda = (
             AgendaWatcher(
@@ -140,6 +166,8 @@ class StatusTrackingService:
             everyone = tracked if changed_since is None else self._list_tracked(term)
             if not self._agenda.check(term, everyone, result, publish=publish):
                 return result
+        if self._rcl is not None and not self._rcl.check(term, tracked, result, publish=publish):
+            return result
         followed = [bill for bill in tracked if bill.has_process]
         for outcome in fan_out(followed, self._fetch, workers=self._workers):
             bill = outcome.item

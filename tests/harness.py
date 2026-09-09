@@ -184,7 +184,13 @@ RCL_CONSULTED = (
     rcl_stage(1, "Zgłoszenia lobbingowe", "not_started", modified=None),
     rcl_stage(2, "Uzgodnienia"),
     rcl_stage(3, "Konsultacje publiczne", "reached", *CONSULTATION_FOLDERS),
-    rcl_stage(4, "Opiniowanie", "active"),
+    # Every stage republishes the current text in its own "Projekt" folder, as on the live site.
+    rcl_stage(
+        4,
+        "Opiniowanie",
+        "active",
+        rcl_folder(13223875, "Projekt", *CONSULTATION_FOLDERS[0].documents),
+    ),
     rcl_stage(9, "Stały Komitet Rady Ministrów", "not_started", modified=None),
     rcl_stage(12, "Rada Ministrów", "not_started", modified=None),
     rcl_stage(14, "Skierowanie projektu ustawy do Sejmu", "not_started", modified=None),
@@ -272,13 +278,19 @@ class World:
             max_bytes=MAX_PDF_BYTES,
         )
         texts = TextSources(SejmTextSource(self.gateway), rcl=RclTextSource())
+        rcl_reader = RclProjectReader(self.rcl, loader)
         self.discovery = BillDiscoveryService(
-            self.gateway, self.repo, KeywordPrefilter(), self.clock, text_prefilter=text_prefilter
+            self.gateway,
+            self.repo,
+            KeywordPrefilter(),
+            self.clock,
+            text_prefilter=text_prefilter,
+            projects=self.rcl,
         )
         self.rcl_discovery = RclDiscoveryService(
             self.rcl,
             self.repo,
-            RclProjectReader(self.rcl, loader),
+            rcl_reader,
             KeywordPrefilter(),
             self.clock,
             text_prefilter=text_prefilter,
@@ -304,6 +316,7 @@ class World:
             channel_id=CHANNEL,
             analysis=self.analysis,
             eli=self.gateway,
+            rcl_reader=rcl_reader,
             workers=workers,
         )
         self.pipeline = DailyPipeline(

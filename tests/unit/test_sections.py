@@ -55,6 +55,18 @@ def test_appendices_are_dropped_and_the_core_is_kept() -> None:
     assert PAGE_BREAK not in result.text
 
 
+def test_rcl_osr_form_is_cut_at_point_6_even_without_the_number() -> None:
+    # RCL publishes the OSR as a Word file: the form starts with "Nazwa projektu" and Word keeps
+    # the point numbers as list formatting, so the text has no "6." before the heading.
+    osr = "Nazwa projektu\nUstawa o ...\nMinisterstwo wiodące\n" + "z" * 300
+    tail = "Wpływ na sektor finansów publicznych\n(ceny stałe z 2026 r.)\n" + "0" * 400
+
+    result = trim_print(_print(BILL, osr + "\n" + tail))
+
+    assert "z" * 300 in result.text and "0" * 50 not in result.text
+    assert [d.name for d in result.dropped] == ["OSR pkt 6-13"]
+
+
 def test_unknown_layout_passes_unchanged() -> None:
     text = _print("SPRAWOZDANIE KOMISJI\n" + "a" * 100, "Art. 1. " + "b" * 100)
     result = trim_print(text)

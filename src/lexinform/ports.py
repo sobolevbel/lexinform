@@ -103,6 +103,12 @@ class RclGateway(Protocol):
     def download(self, url: str, *, max_bytes: int | None = None) -> bytes: ...
 
 
+class ProjectResolver(Protocol):
+    """The one question the Sejm discovery asks RCL: which project is behind a `rclNum`."""
+
+    def resolve_project_id(self, rm_number: str) -> int | None: ...
+
+
 class EliGateway(Protocol):
     """The ELI (European Legislation Identifier) API of the Sejm: published acts."""
 
@@ -263,6 +269,10 @@ class BillRepository(Protocol):
 
     # RCL projects
     def save_rcl(self, term: int, number: str, project: RclProject) -> None: ...
+
+    def list_rcl_awaiting_link(self, term: int) -> list[Bill]:
+        """RCL rows whose project knows its druk number but that are not linked to it yet."""
+        ...
 
     def find_by_rm_number(self, term: int, rm_number: str) -> Bill | None:
         """The RCL row whose project shows this `RM-…` number (set once it went to the Sejm)."""

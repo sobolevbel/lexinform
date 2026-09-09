@@ -8,14 +8,20 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
     BILL_DOCUMENT_TYPE,
+    Bill,
     BillStatus,
     BillSubmission,
     DocumentType,
     ProcessSummary,
+    rcl_number,
 )
-from lexinform.ports import BillRepository, Clock, SejmGateway
+from lexinform.ports import BillRepository, Clock, ProjectResolver, SejmGateway
 
 log = logging.getLogger(__name__)
+
+_NOT_ANALYSED = frozenset(
+    {BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER, BillStatus.LINKED}
+)
 
 
 @dataclass
@@ -40,12 +46,14 @@ class BillDiscoveryService:
         clock: Clock,
         *,
         text_prefilter: bool = True,
+        projects: ProjectResolver | None = None,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
         self._prefilter = prefilter
         self._clock = clock
         self._text_prefilter = text_prefilter
+        self._projects = projects  # resolves a government print's rclNum to its RCL project
 
     def discover(self, term: int, since: datetime, *, pre_print: bool = True) -> DiscoveryResult:
         result = DiscoveryResult()
@@ -80,6 +88,28 @@ class BillDiscoveryService:
             return BillStatus.TEXT_PREFILTER_PENDING
         return BillStatus.SKIPPED_PREFILTER
 
+    def _rcl_project_of(self, summary: ProcessSummary) -> Bill | None:
+        """The RCL row a government print continues, if we follow one and it was analysed
+        (a project the prefilter skipped leaves the print to the normal path)."""
+        rm_number = summary.rcl_num
+        if not rm_number:
+            return None
+        bill = self._repo.find_by_rm_number(summary.term, rm_number)
+        if bill is None and self._projects is not None:
+            try:
+                project_id = self._projects.resolve_project_id(rm_number)
+            except ServiceUnavailableError as exc:
+                log.warning("RCL lookup of %s skipped: %s", rm_number, exc.describe())
+                return None
+            except Exception as exc:
+                log.warning("RCL lookup of %s failed: %s", rm_number, exc)
+                return None
+            if project_id is not None:
+                bill = self._repo.get(summary.term, rcl_number(project_id))
+        if bill is None or bill.rcl is None or bill.status in _NOT_ANALYSED:
+            return None
+        return bill
+
     def _find_submission(self, summary: ProcessSummary) -> BillSubmission | None:
         """The /bills entry of a numbered print: consultation dates, applicant, RPW number."""
         try:
@@ -109,7 +139,7 @@ class BillDiscoveryService:
         existing = self._repo.get(summary.term, summary.number)
         now = self._clock.now()
         submission = None
-        if existing is None and not summary.is_pre_print:
+        if existing is None and summary.has_process:
             submission = self._find_submission(summary)
             if submission is not None:
                 if self._repo.get(summary.term, submission.number) is not None:
@@ -122,6 +152,19 @@ class BillDiscoveryService:
                     )
                     return False
                 summary = summary.model_copy(update={"applicant": submission.applicant})
+            project = self._rcl_project_of(summary)
+            if project is not None:
+                # Same for a government print whose project we follow on RCL.
+                assert project.rcl is not None
+                self._repo.save_rcl(
+                    project.term,
+                    project.number,
+                    project.rcl.model_copy(
+                        update={"print_number": summary.number, "rm_number": summary.rcl_num}
+                    ),
+                )
+                log.info("druk %s continues %s; linked by tracking", summary.number, project.number)
+                return False
         bill = self._repo.upsert_summary(summary, now=now)
         if submission is not None:
             self._repo.save_submission(bill.term, bill.number, submission)

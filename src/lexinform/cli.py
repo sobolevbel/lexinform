@@ -20,6 +20,7 @@ from lexinform.models import (
     BillSubmission,
     ProcessSummary,
     PublicationKind,
+    RclProject,
     RunReport,
     flatten_stages,
     is_pre_print_number,
@@ -530,7 +531,7 @@ def _show_pre_print(c: Container, number: str, local: Bill | None) -> None:
 
 
 def _show_rcl(c: Container, number: str, local: Bill | None) -> None:
-    project = local.rcl if local and local.rcl else c.rcl_reader().read(rcl_project_id(number))
+    project = local.rcl if local and local.rcl else _read_rcl_project(c, number)
     typer.echo(f"{project.title}\n{project.web_url}")
     typer.echo(
         f"applicant={project.applicant} wykaz={project.wykaz_number} status={project.status}"
@@ -565,6 +566,12 @@ def _show_rcl(c: Container, number: str, local: Bill | None) -> None:
     )
 
 
+def _read_rcl_project(c: Container, number: str) -> RclProject:
+    """The whole project from RCL: timeline, every reached stage's catalog, the letter."""
+    reader = c.rcl_reader()
+    return reader.complete(reader.timeline(rcl_project_id(number)))
+
+
 _WYKAZ_NUMBER = re.compile(r"^U[A-Z]*\s?\d+$", re.IGNORECASE)
 
 
@@ -587,7 +594,7 @@ def _load_bill(c: Container, number: str) -> Bill:
     if bill is not None:
         return bill
     if is_rcl_number(number):
-        project = c.rcl_reader().read(rcl_project_id(number))
+        project = _read_rcl_project(c, number)
         summary: ProcessSummary = process_summary(project, term=c.settings.term)
         bill = c.repo.upsert_summary(summary, now=c.clock.now())
         c.repo.save_rcl(bill.term, bill.number, project)

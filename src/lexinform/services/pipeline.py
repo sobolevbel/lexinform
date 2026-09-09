@@ -248,6 +248,7 @@ class DailyPipeline:
         report.llm_input_tokens += tracked.input_tokens
         report.llm_output_tokens += tracked.output_tokens
         _merge_usage(report, tracked.usage)
+        report.errors.extend(f"tracking: {error}" for error in tracked.partial_errors)
         if tracked.fatal_error:
             report.errors.append(f"tracking: {tracked.fatal_error}")
         elif tracked.failed:

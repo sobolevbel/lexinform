@@ -116,4 +116,4 @@ class TextPrefilterService:
         if located.document is None:
             log.info("%s has no readable text; text prefilter skipped", bill.number)
             return None
-        return self._loader.load_document(located.document)
+        return self._loader.load(located.document.url)  # the bill text alone decides

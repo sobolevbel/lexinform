@@ -1,8 +1,10 @@
 """Finds new and changed government projects on RCL and prefilters the new ones.
 
-The list page sorted by modification date is read once per run; new projects are fetched in full
-(timeline, catalogs, consultation letter) and prefiltered on title, hasła and działy; known
-projects only get their `change_date` refreshed, so that tracking looks at them.
+The list page sorted by modification date is read once per run. A new project costs one page:
+the keyword prefilter runs on title, hasła and działy of the timeline page; only a candidate gets
+its catalogs and consultation letter read, a title miss gets the one catalog with the newest text
+for the text prefilter. Known projects only get their `change_date` refreshed, so that tracking
+looks at them.
 """
 
 import datetime as dt
@@ -94,14 +96,26 @@ class RclDiscoveryService:
         return result
 
     def _read(self, row: RclProjectSummary) -> RclProject:
-        return self._reader.read(row.id)
+        """Network only: as much of the project as its prefilter verdict needs."""
+        project = self._reader.timeline(row.id)
+        if self._hits(project, term=0):
+            log.info("RCL %s (%s): candidate, reading its catalogs", row.id, row.wykaz_number)
+            return self._reader.complete(project)
+        if self._text_prefilter:
+            log.info("RCL %s (%s): title miss, reading its newest text", row.id, row.wykaz_number)
+            return self._reader.with_text(project)
+        return project
+
+    def _hits(self, project: RclProject, *, term: int) -> list[str]:
+        summary = process_summary(project, term=term)
+        return self._prefilter.match(summary.title, summary.description)
 
     def _ingest(self, term: int, project: RclProject, result: RclDiscoveryResult) -> None:
         summary = process_summary(project, term=term)
         bill = self._repo.upsert_summary(summary, now=self._clock.now())
         self._repo.save_rcl(term, bill.number, project)
         self._repo.save_stages(term, bill.number, rcl_stages(project), rcl_fingerprint(project))
-        hits = self._prefilter.match(summary.title, summary.description)
+        hits = self._hits(project, term=term)
         if hits:
             status = BillStatus.ANALYSIS_PENDING
             result.prefilter_hits += 1

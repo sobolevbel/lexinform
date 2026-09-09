@@ -116,6 +116,7 @@ class Container:
             self.prefilter,
             self.clock,
             text_prefilter=self.settings.text_prefilter_enabled,
+            projects=self.rcl,
         )
 
     def text_prefilter_service(self) -> TextPrefilterService | None:
@@ -199,6 +200,7 @@ class Container:
                     else None
                 ),
                 agenda_watch=self.settings.agenda_watch,
+                rcl_reader=self.rcl_reader() if self.rcl is not None else None,
                 max_publish_attempts=self.settings.max_publish_attempts,
                 club_breakdown=self.settings.voting_club_breakdown,
                 workers=self.settings.sejm_concurrency,

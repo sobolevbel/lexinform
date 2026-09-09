@@ -41,6 +41,27 @@ def test_new_project_is_analysed_from_its_documents_and_published() -> None:
     assert bill.stages[-1].stage_name == "4. Opiniowanie"
 
 
+def test_a_new_project_costs_one_page_and_catalogs_only_where_needed() -> None:
+    w = World()
+    candidate = w.add_rcl_project()
+    miss = w.add_rcl_project(
+        rcl_project(
+            id=2,
+            title="Projekt ustawy o zmianie niektórych ustaw",
+            keywords=(),
+            stages=candidate.stages,
+        )
+    )
+
+    w.run(track=False)  # tracking would read the fresh candidate once more
+
+    reads = [c for c in w.rcl.calls if c.startswith(("get_project", "get_stage"))]
+    assert reads.count(f"get_project:{candidate.id}") == 1
+    assert sum(1 for c in reads if c.startswith(f"get_stage:{candidate.id}/")) == 3  # reached
+    assert reads.count(f"get_project:{miss.id}") == 1
+    assert sum(1 for c in reads if c.startswith(f"get_stage:{miss.id}/")) == 1  # newest text
+
+
 def test_card_of_an_rcl_project_offers_the_e_mail_and_the_comment_form() -> None:
     w = World()
     w.add_rcl_project()
@@ -105,7 +126,7 @@ def test_title_miss_without_documents_is_skipped_for_good() -> None:
     assert not any(c.startswith("download") for c in w.rcl.calls)
 
 
-def test_known_project_is_not_read_again_only_its_change_date_moves() -> None:
+def test_known_project_is_not_discovered_again_only_its_change_date_moves() -> None:
     w = World()
     project = w.add_rcl_project()
     w.run()
@@ -113,10 +134,10 @@ def test_known_project_is_not_read_again_only_its_change_date_moves() -> None:
     w.rcl.put(project.model_copy(update={"modified": dt.date(2026, 9, 9)}))
     w.clock.advance(days=2)
 
-    report = w.run()
+    report = w.run(track=False)
 
     assert (report.rcl_discovered, report.published) == (0, 0)
-    assert w.rcl.calls.count(f"get_project:{project.id}") == reads_before
+    assert w.rcl.calls.count(f"get_project:{project.id}") == reads_before  # tracking reads it
     assert w.bill(RCL).summary.change_date == dt.datetime(2026, 9, 9, tzinfo=dt.UTC)
 
 

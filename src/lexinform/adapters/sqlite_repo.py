@@ -12,6 +12,7 @@ from pathlib import Path
 
 from lexinform.models import (
     PRE_PRINT_PREFIX,
+    RCL_PREFIX,
     ActInfo,
     AgendaItem,
     AnalysisRecord,
@@ -552,6 +553,14 @@ class SqliteBillRepository:
             "UPDATE bills SET rcl_json = ? WHERE term = ? AND number = ?",
             (project.model_dump_json(), term, number),
         )
+
+    def list_rcl_awaiting_link(self, term: int) -> list[Bill]:
+        rows = self._conn.execute(
+            "SELECT * FROM bills WHERE term = ? AND number LIKE ? AND status != ?"
+            " AND json_extract(rcl_json, '$.print_number') IS NOT NULL ORDER BY number",
+            (term, f"{RCL_PREFIX}%", BillStatus.LINKED.value),
+        ).fetchall()
+        return [self._row_to_bill(r) for r in rows]
 
     def find_by_rm_number(self, term: int, rm_number: str) -> Bill | None:
         return self._find_rcl(term, "$.rm_number", rm_number)

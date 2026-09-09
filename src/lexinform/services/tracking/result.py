@@ -38,6 +38,7 @@ class TrackingResult:
     output_tokens: int = 0
     usage: dict[str, TokenUsage] = field(default_factory=dict)  # per model
     fatal_error: str | None = None
+    partial_errors: list[str] = field(default_factory=list)  # a side system down; the rest ran
 
     def count_post(self, sent: bool, counter: PostCounter = "published") -> None:
         if sent:

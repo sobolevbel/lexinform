@@ -25,7 +25,8 @@ _JUSTIFICATION_RE = re.compile(
     r"^\s*u\s?z\s?a\s?s\s?a\s?d\s?n\s?i\s?e\s?n\s?i\s?e\s*$", re.IGNORECASE | re.MULTILINE
 )
 _OSR_RE = re.compile(r"^\s*Nazwa projektu\b", re.MULTILINE)
-_OSR_CUT_RE = re.compile(r"^\s*6\.\s*Wpływ na sektor finans", re.MULTILINE)
+# Point 6 of the OSR form; RCL's Word files carry the number as list formatting, not as text.
+_OSR_CUT_RE = re.compile(r"^\s*(?:6\.\s*)?Wpływ na sektor finans", re.MULTILINE)
 _REGULATION_RE = re.compile(
     r"^\s*R\s?O\s?Z\s?P\s?O\s?R\s?Z\s?Ą\s?D\s?Z\s?E\s?N\s?I\s?E\s*$", re.MULTILINE
 )

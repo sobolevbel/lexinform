@@ -1,6 +1,8 @@
-"""Reading a whole RCL project: timeline, the catalogs of reached stages, the consultation letter.
+"""Reading an RCL project: timeline, the catalogs of its stages, the consultation letter.
 
 Shared by RCL discovery (first sight) and RCL tracking (refresh). Network only, no repository.
+Every page takes seconds to render, so callers read only what they need: the timeline to decide
+whether a project matters, the catalogs of a candidate, the newest text of a title miss.
 """
 
 import logging
@@ -13,24 +15,37 @@ from lexinform.services.documents import TextLoader
 
 log = logging.getLogger(__name__)
 
+# Catalogs read, newest first, when looking for the bill text of a title miss. Every stage
+# republishes the current text in its own "Projekt" folder, so the newest one is enough.
+TEXT_STAGE_ATTEMPTS = 1
+
 
 class RclProjectReader:
-    """Fetches a project with the folders of its reached stages and reads the consultation letter
-    for the deadline and the address for comments."""
-
     def __init__(self, rcl: RclGateway, loader: TextLoader) -> None:
         self._rcl = rcl
         self._loader = loader
 
-    def read(self, project_id: int) -> RclProject:
-        project = self._rcl.get_project(project_id)
+    def timeline(self, project_id: int) -> RclProject:
+        """The project page alone: metadata and stage states, no folders."""
+        return self._rcl.get_project(project_id)
+
+    def complete(self, project: RclProject) -> RclProject:
+        """Every reached stage's catalog and the consultation letter."""
         for stage in project.reached_stages:
-            project = project.with_stage(self._rcl.get_stage(project_id, stage.id))
+            project = project.with_stage(self._rcl.get_stage(project.id, stage.id))
         return project.model_copy(update={"consultation": self.consultation(project)})
 
+    def with_text(self, project: RclProject) -> RclProject:
+        """The newest stage that carries the bill text, reading at most a couple of catalogs."""
+        for stage in list(reversed(project.reached_stages))[:TEXT_STAGE_ATTEMPTS]:
+            read = self._rcl.get_stage(project.id, stage.id)
+            project = project.with_stage(read)
+            if any(d.readable for d in read.documents("project")):
+                break
+        return project
+
     def refresh(self, stored: RclProject) -> RclProject:
-        """Re-read the timeline and only the catalogs whose stage changed since `stored`
-        (every project page takes seconds; most stages do not move between runs)."""
+        """The timeline again, and only the catalogs whose stage changed since `stored`."""
         project = self._rcl.get_project(stored.id)
         known = {st.id: st for st in stored.stages}
         for stage in project.reached_stages:
