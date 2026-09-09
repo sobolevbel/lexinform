@@ -247,6 +247,12 @@ class RclProject(BaseModel):
         stages = tuple(stage if st.id == stage.id else st for st in self.stages)
         return self.model_copy(update={"stages": stages})
 
+    def without_documents(self) -> "RclProject":
+        """The skeleton kept for a project the pipeline gave up on: timeline, metadata and the
+        consultation, but no folders or documents (most of the bytes, never read again)."""
+        stages = tuple(st.model_copy(update={"folders": ()}) for st in self.stages)
+        return self.model_copy(update={"stages": stages})
+
     def text_documents(self) -> dict[TextRole, RclDocument]:
         """The newest readable bill text with its uzasadnienie and OSR.
 

@@ -88,7 +88,11 @@ Invariants worth keeping:
   ostatniej modyfikacji" moved, and `rcl_fingerprint` (stages reached, folders that got their
   first files, the newest text, status, hand-over) decides whether there is an update. Folder
   uploads alone are not news; published opinions are a separate `consultation_results` reply.
-  A page takes ~10 s: never add a request per project without a reason.
+  A page takes ~10 s: never add a request per project without a reason. A project the prefilter
+  skipped keeps only its skeleton (`RclProject.without_documents()`, applied by
+  `set_status` on a skipped status): the documents are most of the row and are never read again;
+  `lexinform reset … --to analysis_pending` re-reads them. Run records older than
+  `LEXINFORM_RUNS_RETENTION_DAYS` (90) are deleted at the start of a run.
 - **RCL markup is parsed, not matched.** `adapters/rcl_html.py` uses CSS selectors; a missing
   detail (date, folder, link) is tolerated, a missing structural element (timeline, table with
   rows announced, every stage label) raises `RclPageError`, which the run report shows. The WAF's

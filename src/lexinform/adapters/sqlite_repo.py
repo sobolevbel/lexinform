@@ -286,6 +286,8 @@ class SqliteBillRepository:
         assert bill is not None
         return bill
 
+    _SKIPPED = frozenset({BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER})
+
     def set_status(
         self, term: int, number: str, status: BillStatus, *, prefilter_hits: list[str] | None = None
     ) -> None:
@@ -299,6 +301,19 @@ class SqliteBillRepository:
                 "UPDATE bills SET status = ?, prefilter_hits = ? WHERE term = ? AND number = ?",
                 (status.value, json.dumps(prefilter_hits, ensure_ascii=False), term, number),
             )
+        if status in self._SKIPPED:
+            self._drop_rcl_documents(term, number)
+
+    def _drop_rcl_documents(self, term: int, number: str) -> None:
+        """A skipped RCL project keeps its skeleton only: the documents are most of the row and
+        are never read again (`reset` re-reads the project before an analysis)."""
+        row = self._conn.execute(
+            "SELECT rcl_json FROM bills WHERE term = ? AND number = ? AND rcl_json IS NOT NULL",
+            (term, number),
+        ).fetchone()
+        if row is not None:
+            project = RclProject.model_validate_json(row[0])
+            self.save_rcl(term, number, project.without_documents())
 
     def save_stages(
         self, term: int, number: str, stages: tuple[Stage, ...], fingerprint: str
@@ -842,6 +857,11 @@ class SqliteBillRepository:
             " ORDER BY started_at DESC LIMIT 1"
         ).fetchone()
         return datetime.fromisoformat(row[0]) if row else None
+
+    def prune_runs(self, *, before: datetime) -> int:
+        """Forget run records started before `before`; their reports are in the log channel."""
+        cur = self._conn.execute("DELETE FROM runs WHERE started_at < ?", (before.isoformat(),))
+        return int(cur.rowcount or 0)
 
     def start_run(self, report: RunReport) -> int:
         cur = self._conn.execute(

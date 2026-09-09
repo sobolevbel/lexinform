@@ -72,6 +72,17 @@ def test_the_latest_stage_with_a_project_folder_wins() -> None:
     assert project.text_documents()["bill"].id == 2
 
 
+def test_skeleton_keeps_the_timeline_and_drops_the_folders() -> None:
+    folder = RclFolder(id=10, name="Projekt", documents=(_doc(1, "projekt.pdf"),))
+    project = _project(_stage(3, "Konsultacje publiczne", "reached", folder))
+
+    skeleton = project.without_documents()
+
+    assert [st.name for st in skeleton.stages] == [st.name for st in project.stages]
+    assert skeleton.text_documents() == {} and project.text_documents() != {}
+    assert len(skeleton.model_dump_json()) < len(project.model_dump_json())
+
+
 def test_no_readable_document_means_no_text() -> None:
     folder = RclFolder(id=10, name="Projekt", documents=(_doc(1, "projekt.rtf"),))
 

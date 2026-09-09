@@ -649,6 +649,39 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert repo.add_status_change(_change("1", when, discontinued=True)) is not None
 
 
+# --------------------------------------------------------------------------- growth
+
+
+def test_a_skipped_rcl_project_keeps_only_its_skeleton(
+    repo: SqliteBillRepository, now: datetime
+) -> None:
+    kept = _rcl_row(repo, now)
+    skipped = _rcl_row(repo, now, id=RCL_ID + 1)
+
+    repo.set_status(10, kept, BillStatus.ANALYSIS_PENDING, prefilter_hits=["cudzoziemcy"])
+    repo.set_status(10, skipped, BillStatus.SKIPPED_TEXT_PREFILTER, prefilter_hits=[])
+
+    full, slim = repo.get(10, kept), repo.get(10, skipped)
+    assert full is not None and full.rcl is not None and full.rcl.text_documents() != {}
+    assert slim is not None and slim.rcl is not None and slim.rcl.text_documents() == {}
+    assert len(slim.rcl.stages) == len(full.rcl.stages)  # the timeline stays
+    assert slim.rcl.consultation == full.rcl.consultation
+
+
+def test_old_run_records_are_pruned_and_the_watermark_survives(
+    repo: SqliteBillRepository, now: datetime
+) -> None:
+    for days_ago in (120, 100, 5):
+        started = now - timedelta(days=days_ago)
+        report = RunReport(started_at=started, since=started, mode="run", discovery_ok=True)
+        repo.finish_run(repo.start_run(report), report)
+
+    pruned = repo.prune_runs(before=now - timedelta(days=90))
+
+    assert pruned == 2
+    assert repo.last_discovery_started_at() == now - timedelta(days=5)
+
+
 # --------------------------------------------------------------------------- end of a term
 
 

@@ -64,6 +64,7 @@ class DailyPipeline:
         rcl_discovery: RclDiscoveryService | None = None,
         first_run_lookback_days: int = 1,
         rerun_overlap_days: int = 1,
+        runs_retention_days: int | None = 90,
         pre_print: bool = True,
         full_track_weekday: int | None = 0,
     ) -> None:
@@ -79,6 +80,9 @@ class DailyPipeline:
         self._rcl_discovery = rcl_discovery
         self._first_run_lookback = timedelta(days=first_run_lookback_days)
         self._overlap = timedelta(days=rerun_overlap_days)
+        self._runs_retention = (
+            timedelta(days=runs_retention_days) if runs_retention_days is not None else None
+        )
         self._pre_print = pre_print
         self._full_track_weekday = full_track_weekday  # Monday by default; None = never
 
@@ -168,6 +172,10 @@ class DailyPipeline:
             msg = f"{stale} publication(s) were left pending by a previous run; marked unknown"
             log.error(msg, extra={"in_report": True})
             report.errors.append(msg)
+        if self._runs_retention is not None:
+            pruned = self._repo.prune_runs(before=self._clock.now() - self._runs_retention)
+            if pruned:
+                log.info("%d run record(s) older than %s removed", pruned, self._runs_retention)
 
         # New bills come from the current Sejm; everything else covers the older terms too.
         terms = sorted(set(self._repo.known_terms()) | {current})

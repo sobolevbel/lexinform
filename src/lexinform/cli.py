@@ -438,6 +438,14 @@ def reset(
         if not yes and not typer.confirm("Apply?"):
             raise typer.Exit(code=1)
         c.repo.reset_bill(bill.term, bill.number, to)
+        if (
+            to is BillStatus.ANALYSIS_PENDING
+            and bill.rcl is not None
+            and not bill.rcl.text_documents()
+        ):
+            # A skipped RCL row keeps only the project's skeleton: fetch the documents again.
+            c.repo.save_rcl(bill.term, bill.number, _read_rcl_project(c, bill.number))
+            typer.echo("project documents re-read from RCL")
         typer.echo("done")
     finally:
         c.close()

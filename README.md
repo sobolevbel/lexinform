@@ -183,6 +183,7 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_CONSULTATION_REMINDERS` / `_CONSULTATION_REMINDER_DAYS` | `true` / `3` | Reminder this many days before a public consultation closes |
 | `LEXINFORM_AGENDA_WATCH` | `true` | Post when a followed bill appears on the agenda of a committee or Sejm sitting |
 | `LEXINFORM_MAX_PUBLISH_ATTEMPTS` | `3` | Retries of a failed Telegram post |
+| `LEXINFORM_RUNS_RETENTION_DAYS` | `90` | Run records (with their reports) older than this are deleted from the database |
 | `LEXINFORM_LOG_LEVEL` / `LEXINFORM_LOG_JSON` | `INFO` / `false` | Logging |
 
 ## Scoring rubric
