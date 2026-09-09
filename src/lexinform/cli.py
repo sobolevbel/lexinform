@@ -183,7 +183,9 @@ def reprefilter(
         typer.Option("--include-text-skipped", help="Also re-scan bills already rejected by text."),
     ] = False,
 ) -> None:
-    """Scan the print PDFs of bills the title prefilter skipped.
+    """Scan the texts of bills the title prefilter skipped: print PDFs, and for RCL projects the
+    newest text on legislacja.rcl.gov.pl (a skipped project keeps no documents, they are read
+    again).
 
     Bills that pass become analysis candidates for the next `run` (use `run --no-publish` after a
     large backfill to avoid flooding the channel).
@@ -197,18 +199,35 @@ def reprefilter(
         statuses = [BillStatus.SKIPPED_PREFILTER]
         if include_text_skipped:
             statuses.append(BillStatus.SKIPPED_TEXT_PREFILTER)
-        skipped = [b for b in c.repo.list_by_status(statuses, limit=limit) if b.has_process]
+        skipped = [
+            b
+            for b in c.repo.list_by_status(statuses, limit=limit)
+            if b.has_process or (b.is_rcl and c.rcl is not None)
+        ]
         accepted = 0
         for bill in skipped:
+            if bill.is_rcl:
+                bill = _with_rcl_text(c, bill)
             ok = service.check(bill)
             accepted += int(ok)
+            if ok and bill.is_rcl:
+                # The analysis wants every catalog and the consultation letter, not just the text.
+                c.repo.save_rcl(bill.term, bill.number, _read_rcl_project(c, bill.number))
             fresh = c.repo.get(bill.term, bill.number)
             hits = ", ".join(fresh.prefilter_hits) if fresh else ""
             verdict = "PASS" if ok else "skip"
-            typer.echo(f"  {verdict}  druk {bill.number:>6}  [{hits}]  {bill.summary.title}")
+            typer.echo(f"  {verdict}  {bill.number:>14}  [{hits}]  {bill.summary.title}")
     finally:
         c.close()
     typer.echo(f"scanned={len(skipped)} accepted={accepted}")
+
+
+def _with_rcl_text(c: Container, bill: Bill) -> Bill:
+    """A skipped RCL row keeps only the project's skeleton: read its newest text again."""
+    reader = c.rcl_reader()
+    project = reader.with_text(reader.timeline(rcl_project_id(bill.number)))
+    c.repo.save_rcl(bill.term, bill.number, project)
+    return c.repo.get(bill.term, bill.number) or bill
 
 
 @app.command()

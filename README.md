@@ -206,7 +206,7 @@ The rubric is in `src/lexinform/adapters/llm_prompts.py`; `PROMPT_VERSION` is st
 |---|---|
 | `lexinform run [--since D] [--dry-run] [--no-publish] [--no-track] [--max-publish N] [--max-analyze N] [--min-score N]` | The daily job |
 | `lexinform scan [--since D]` | Discovery + prefilters, prints candidates |
-| `lexinform reprefilter [--limit N] [--include-text-skipped]` | Scan PDFs of bills the title prefilter skipped |
+| `lexinform reprefilter [--limit N] [--include-text-skipped]` | Scan the texts of bills the title prefilter skipped (print PDFs; RCL projects are read again) |
 | `lexinform analyze NUMBER [--force] [--json]` | Analyse one bill |
 | `lexinform preview NUMBER [--to CHAT]` | Render or send the card |
 | `lexinform track [--dry-run]` | Only the tracking phase |

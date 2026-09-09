@@ -20,6 +20,10 @@ on:
         description: "Dry run: print messages, do not post, do not persist"
         type: boolean
         default: false
+      reprefilter_limit:
+        description: "Before the run, scan the texts of up to N bills the title prefilter skipped (0 = off)"
+        required: false
+        default: "0"
 
 # One run at a time so two runs never race on the state branch.
 concurrency:
@@ -63,6 +67,15 @@ jobs:
       - name: Restore database from state branch
         id: restore
         run: uv run --frozen --no-dev lexinform db restore "$STATE_FILE" --missing-ok
+
+      # Backfill: bills skipped by title before the text prefilter existed (or while a file type
+      # was unreadable) get their text scanned; the run below analyses and posts the hits.
+      - name: Re-run the text prefilter on skipped bills
+        if: ${{ inputs.reprefilter_limit != '' && inputs.reprefilter_limit != '0' }}
+        env:
+          LEXINFORM_RCL_PROXY_URL: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
+          LEXINFORM_LOG_LEVEL: INFO
+        run: uv run --frozen --no-dev lexinform reprefilter --limit "${{ inputs.reprefilter_limit }}"
 
       # The run exits 1 when it had errors, but whatever it did publish is recorded in the
       # database, so the state must be saved anyway (otherwise the next run would post duplicates).
