@@ -352,6 +352,7 @@ class MessageFormatter:
 
         summary_block = ""
         changes_block = ""
+        amendments_block = self._amendments_block(change)
         if analysis is not None:
             # The card carries the whole summary; a reply repeats one sentence of it, the whole
             # text only when the analysis itself changed.
@@ -373,6 +374,8 @@ class MessageFormatter:
             links.append(link(text_after3, lb.link_text_after3))
         elif bill.analysis and bill.analysis.source_url and change.content_changed:
             links.append(link(bill.analysis.source_url, lb.link_pdf))
+        if change.amendments is not None and change.amendments.source_url:
+            links.append(link(change.amendments.source_url, lb.link_amendments))
         links_block = f"{ICON['links']} " + " | ".join(links)
         # Event tags only when the reply carries the event a reader would search for.
         tags = " ".join(
@@ -381,8 +384,27 @@ class MessageFormatter:
         )
 
         fixed = [header, badge, closure, consultation, steps, links_block, tags]
-        text = self._assemble(fixed, flexible=[stages_block, changes_block, summary_block])
+        text = self._assemble(
+            fixed, flexible=[stages_block, amendments_block, changes_block, summary_block]
+        )
         return RenderedMessage(text=text)
+
+    def _amendments_block(self, change: StatusChange) -> str:
+        """`🆕 Что меняют поправки Сената` with the model's summary and bullets."""
+        record = change.amendments
+        if record is None:
+            return ""
+        lb = self._labels
+        label = (
+            lb.amendments_senate
+            if record.source_kind == "senate_amendments"
+            else lb.amendments_committee
+        )
+        lines = [f"{ICON['changed']} <b>{esc(label)}</b>"]
+        if record.amendments.summary.strip():
+            lines.append(esc(record.amendments.summary.strip()))
+        lines.extend(f"• {esc(c.strip())}" for c in record.amendments.changes if c.strip())
+        return "\n".join(lines)
 
     # ------------------------------------------------------------------ published act
 
@@ -1192,7 +1214,7 @@ def _event_keys(change: StatusChange) -> list[str]:
         keys.append("president")
     if "Veto" in types:
         keys.append("veto")
-    if change.content_changed:
+    if change.content_changed or change.amendments is not None:
         keys.append("amendments")
     if change.withdrawn:
         keys.append("withdrawn")

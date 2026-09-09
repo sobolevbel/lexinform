@@ -135,6 +135,10 @@ class Labels:
     hearing_apply_until: str  # "applications until" (date follows)
     hearing_hint: str  # how to apply
     tag_hearing: str
+    # Amendments summarised from their document (Senate resolution, committee "-A" report)
+    amendments_senate: str  # "What the Senate's amendments change"
+    amendments_committee: str  # "Amendments tabled at the 2nd reading" (committee's report)
+    link_amendments: str  # link text: the amendments document
     update_headers: dict[str, str] = field(default_factory=dict)  # by event key
     # Fragments (lower case) of a `SejmReading.decision` and a `CommitteeReport.proposal`;
     # first match wins, an unknown value passes through in Polish.
@@ -303,6 +307,9 @@ RU = Labels(
         " каждый заявитель получает слово"
     ),
     tag_hearing="слушания",
+    amendments_senate="Что меняют поправки Сената",
+    amendments_committee="Что меняют поправки (по отчёту комиссии)",
+    link_amendments="Текст поправок (PDF)",
     update_headers={
         "update": "Обновление",
         "print_assigned": "Присвоен номер druku",
@@ -666,6 +673,9 @@ EN = Labels(
         " every applicant gets to speak"
     ),
     tag_hearing="hearing",
+    amendments_senate="What the Senate's amendments change",
+    amendments_committee="What the amendments change (per the committee's report)",
+    link_amendments="Amendments (PDF)",
     update_headers={
         "update": "Update",
         "print_assigned": "Print number assigned",

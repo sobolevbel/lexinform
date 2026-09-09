@@ -7,6 +7,8 @@ from typing import Protocol
 from lexinform.models import (
     ActInfo,
     AgendaItem,
+    AmendmentsContext,
+    AmendmentsRecord,
     AnalysisRecord,
     Bill,
     BillAuthors,
@@ -150,6 +152,10 @@ class LlmAnalyzer(Protocol):
 
     def triage(self, ctx: TriageContext) -> TriageRecord: ...
 
+    def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:
+        """What a set of amendments (Senate, "-A" report) changes in the bill as described."""
+        ...
+
 
 class PublishResult(Protocol):
     @property
@@ -279,6 +285,10 @@ class BillRepository(Protocol):
     def add_status_change(self, change: StatusChange) -> int | None: ...
 
     def closure_announced(self, term: int, number: str) -> bool: ...
+
+    def save_status_change_amendments(self, change_id: int, record: AmendmentsRecord) -> None:
+        """Attach the amendments summary to a recorded change (made after the row exists)."""
+        ...
 
     # pre-print bills
     def save_submission(self, term: int, number: str, submission: BillSubmission) -> None: ...

@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from lexinform.models.analysis import AnalysisRecord
+from lexinform.models.analysis import AmendmentsRecord, AnalysisRecord
 from lexinform.models.enums import BillStatus, PublicationKind, PublicationStatus
 from lexinform.models.rcl import RclProject
 from lexinform.models.sejm import (
@@ -303,4 +303,7 @@ class StatusChange(BaseModel):
     content_changed: bool = False
     withdrawn: bool = False  # pre-print bill withdrawn before getting a print number
     discontinued: bool = False  # the term ended before the Sejm finished with the bill
+    # What the amendments announced by this change do (Senate resolution, "-A" report), when
+    # their document could be read and summarised.
+    amendments: AmendmentsRecord | None = None
     detected_at: dt.datetime

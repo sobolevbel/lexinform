@@ -96,7 +96,7 @@ def _stage_event(stage: Stage) -> str | None:
         if stage.sub_committee:
             return "subcommittee_report"
         proposal = (stage.proposal or "").lower()
-        if "odrzuc" in proposal and "poprawk" not in proposal:
+        if "odrzuc" in proposal and "popraw" not in proposal:
             return "committee_rejects"
         return "committee_report"
     if kind == "SenatePosition":
@@ -105,7 +105,7 @@ def _stage_event(stage: Stage) -> str | None:
             return "senate_no_amendments"
         if "odrzuci" in position:
             return "senate_rejected"
-        if "poprawk" in position:
+        if "popraw" in position:
             return "senate_amendments"
         return "senate"
     return {
@@ -125,6 +125,22 @@ def _reading_numeral(stage: Stage) -> str:
         if name.startswith(numeral + " "):
             return numeral
     return ""
+
+
+def amendments_stage(stages: list[Stage]) -> Stage | None:
+    """The newest of the new stages that carries amendments as a document: the Senate's
+    position with its resolution print, or a committee report that answers amendments (the
+    "-A" print after the 2nd reading, the report on the Senate's position) rather than
+    attaching a new bill text."""
+    for stage in reversed(stages):
+        senate = stage.stage_type == "SenatePosition" and bool(stage.print_number)
+        position = (stage.position or "").lower()
+        if senate and "popraw" in position and "nie wniósł" not in position:
+            return stage
+        report = stage.stage_type == "CommitteeReport" and bool(stage.report_file)
+        if report and not stage.carries_bill_text and "popraw" in (stage.proposal or "").lower():
+            return stage
+    return None
 
 
 def hearing_application_deadline(stage: Stage) -> dt.date | None:

@@ -9,6 +9,7 @@ from lexinform.models import (
     ProcessDetail,
     Stage,
     StatusChange,
+    amendments_stage,
     flatten_stages,
     has_news,
     hearing_application_deadline,
@@ -110,6 +111,23 @@ def test_update_event_is_the_newest_stage_or_the_flag(process_1962: ProcessDetai
     linked = _bill(process_1962, linked_number="RPW/1/2026")
     assigned = _change([by_type["Start"]]).model_copy(update={"old_fingerprint": "RPW/1/2026"})
     assert update_event(assigned, linked) == "print_assigned"
+
+
+def test_amendments_stage_is_the_senate_print_or_a_report_on_amendments(
+    process_1962: ProcessDetail,
+) -> None:
+    flat = flatten_stages(process_1962.stages)
+    senate = next(st for st in flat if st.stage_type == "SenatePosition")
+    reports = [st for st in flat if st.stage_type == "CommitteeReport"]
+    full_text, a_report, on_senate = reports  # załączony projekt / przyjąć poprawki / część
+    no_amendments = senate.model_copy(update={"position": "nie wniósł poprawek"})
+
+    assert amendments_stage([senate]) is senate
+    assert amendments_stage([full_text]) is None  # a new bill text: re-analysed instead
+    assert amendments_stage([a_report]) is a_report
+    assert amendments_stage([senate, on_senate]) is on_senate  # the newest wins
+    assert amendments_stage([no_amendments]) is None
+    assert amendments_stage([]) is None
 
 
 def test_hearing_application_deadline_is_ten_days_before() -> None:

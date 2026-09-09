@@ -11,8 +11,16 @@ import pytest
 
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer, LlmError, LlmFatalError
 from lexinform.adapters.llm_prompts import PROMPT_VERSION, build_user_prompt, system_prompt
-from lexinform.models import Analysis, ApplicantType, BillContext, Triage, TriageContext
-from tests.fakes import make_analysis
+from lexinform.models import (
+    Amendments,
+    AmendmentsContext,
+    Analysis,
+    ApplicantType,
+    BillContext,
+    Triage,
+    TriageContext,
+)
+from tests.fakes import make_amendments, make_analysis
 
 
 @dataclass
@@ -93,6 +101,42 @@ def test_analysis_request_thinks_caches_the_system_prompt_and_records_usage() ->
         300,
         1000,
     )
+
+
+def test_amendments_request_uses_the_analysis_model_with_thinking() -> None:
+    client = _client(_response(make_amendments(), input_tokens=800, output_tokens=120))
+    analyzer = AnthropicAnalyzer(
+        client,
+        model="claude-opus-5",
+        triage_model="claude-sonnet-5",
+        output_language="ru",
+        clock=lambda: datetime(2026, 9, 7, tzinfo=UTC),
+    )
+    ctx = AmendmentsContext(
+        number="3039",
+        title="Projekt",
+        source_kind="senate_amendments",
+        text="Poprawka 1. W art. 5 ...",
+        truncated=False,
+        previous_summary="Проект меняет правила.",
+        previous_key_changes=["Изменение 1"],
+    )
+
+    record = analyzer.summarize_amendments(ctx)
+
+    call = client.messages.calls[0]
+    assert call["model"] == "claude-opus-5" and call["output_format"] is Amendments
+    assert call["thinking"] == {"type": "adaptive"}
+    assert "amendments" in call["system"][0]["text"] and "Russian" in call["system"][0]["text"]
+    prompt = call["messages"][0]["content"]
+    assert "uchwała Senatu z poprawkami" in prompt and "Проект меняет правила." in prompt
+    assert "- Изменение 1" in prompt and "Poprawka 1." in prompt
+    assert (record.source_kind, record.input_tokens, record.output_tokens) == (
+        "senate_amendments",
+        800,
+        120,
+    )
+    assert record.amendments.changes and record.prompt_version == PROMPT_VERSION
 
 
 @pytest.mark.parametrize("reason", ["refusal", "max_tokens"])

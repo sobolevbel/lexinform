@@ -12,7 +12,10 @@ from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
+    AMENDMENT_SOURCES,
     FULL_TEXT_SOURCES,
+    AmendmentsContext,
+    AmendmentsRecord,
     Analysis,
     AnalysisRecord,
     AnalysisVerdict,
@@ -168,6 +171,33 @@ class AnalysisService:
         located = LocatedText(summary=summary, document=document)
         return self._persist(self._prepare(bill, located, previous=bill.analysis))
 
+    # ------------------------------------------------------------------ amendments
+
+    def summarize_amendments(
+        self, bill: Bill, document: TextDocument, *, proposal: str | None = None
+    ) -> AmendmentsRecord | None:
+        """What the amendments in `document` change, against the bill's current analysis.
+        None when the document has no readable text (a scan): the update then only names the
+        event. Only an outage propagates."""
+        assert bill.analysis is not None
+        assert document.kind in AMENDMENT_SOURCES
+        text, truncated, source = self._load_text(document, trim=False)
+        if source == "metadata_only" or not text.strip():
+            return None
+        ctx = AmendmentsContext(
+            number=bill.number,
+            title=bill.summary.title,
+            source_kind=document.kind,
+            text=text,
+            truncated=truncated,
+            previous_summary=bill.analysis.analysis.summary,
+            previous_key_changes=list(bill.analysis.analysis.key_changes),
+            proposal=proposal,
+        )
+        record = self._llm.summarize_amendments(ctx)
+        record.source_url = document.url
+        return record
+
     # ------------------------------------------------------------------ internals
 
     def _prepare(
@@ -279,11 +309,15 @@ class AnalysisService:
         self._repo.save_analysis(bill.term, bill.number, prepared.record)
         return prepared.record
 
-    def _load_text(self, document: TextDocument | None) -> tuple[str, bool, TextSource]:
+    def _load_text(
+        self, document: TextDocument | None, *, trim: bool = True
+    ) -> tuple[str, bool, TextSource]:
         """Trimmed, budgeted text of the document; metadata-only when it cannot be fetched or read.
 
         Only an outage of the document's host propagates: a missing or broken file falls back to
-        the metadata instead of costing the bill an analysis attempt.
+        the metadata instead of costing the bill an analysis attempt. `trim=False` keeps the
+        whole text (an amendments document has no appendices to drop, and its uzasadnienie
+        explains the amendments).
         """
         if document is None:
             return "", False, "metadata_only"
@@ -301,6 +335,9 @@ class AnalysisService:
             return "", False, "metadata_only"
         if text is None:
             return "", False, "metadata_only"
+        if not trim:
+            budgeted = self._budget.apply(text)
+            return budgeted.text, budgeted.truncated, "pdf"
         trimmed = trim_print(text)
         if trimmed.dropped:
             log.info(

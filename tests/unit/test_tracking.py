@@ -2,8 +2,9 @@
 
 import datetime as dt
 
-from lexinform.models import Committee, Stage, Vote, VotingSummary
-from tests.fakes import make_analysis
+from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.models import Attachment, Committee, PrintInfo, Stage, Vote, VotingSummary
+from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import COMMITTEE_STAGES, ELI, REFERRED, START, World, act, print_url
 
 # --------------------------------------------------------------------------- stage updates
@@ -209,6 +210,113 @@ def test_updated_print_triggers_a_re_analysis_without_a_stage_change() -> None:
     _, change, _ = w.publisher.updates[-1]
     assert change.content_changed and change.new_stages == []
     assert w.gateway.files[print_url("3039")]  # the original print was re-read
+
+
+# --------------------------------------------------------------------------- amendments
+
+SENATE_PRINT_URL = "https://api.test/sejm/term10/prints/2994/2994.pdf"
+SENATE_AMENDED = REFERRED + (
+    Stage(
+        stage_name="III czytanie na posiedzeniu Sejmu",
+        stage_type="SejmReading",
+        date=dt.date(2026, 9, 10),
+        decision="uchwalono",
+    ),
+    Stage(
+        stage_name="Stanowisko Senatu",
+        stage_type="SenatePosition",
+        date=dt.date(2026, 9, 20),
+        position="wniósł poprawki",
+        print_number="2994",
+    ),
+)
+A_REPORT_URL = "https://api.test/sejm/term10/prints/2689-A/2689-A.pdf"
+WITH_A_REPORT = WITH_REPORT + (
+    Stage(
+        stage_name="Praca w komisjach po II czytaniu",
+        stage_type="CommitteeWork",
+        date=dt.date(2026, 9, 8),
+        children=(
+            Stage(
+                stage_name="Sprawozdanie komisji",
+                stage_type="CommitteeReport",
+                date=dt.date(2026, 9, 8),
+                print_number="2689-A",
+                proposal="przyjąć poprawki",
+                report_file=A_REPORT_URL,
+            ),
+        ),
+    ),
+)
+
+
+def test_senate_amendments_are_summarised_from_the_senate_print() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
+    w.run()
+    w.gateway.prints["2994"] = PrintInfo(
+        term=10,
+        number="2994",
+        title="Uchwała Senatu",
+        attachments=(Attachment(print_number="2994", name="2994.pdf", url=SENATE_PRINT_URL),),
+    )
+    w.gateway.files[SENATE_PRINT_URL] = b"%PDF-senat"
+    w.set_stages("3039", SENATE_AMENDED)
+    w.clock.advance(days=1)
+
+    report = w.run()
+    w.clock.advance(days=1)
+    again = w.run()
+
+    assert report.updates == 1 and again.updates == 0
+    _, change, _ = w.publisher.updates[0]
+    assert change.amendments is not None
+    assert change.amendments.source_kind == "senate_amendments"
+    assert change.amendments.source_url == SENATE_PRINT_URL
+    assert change.amendments.amendments.changes[0].startswith("Срок подачи заявления продлён")
+    ctx = w.llm.amendment_contexts[-1]
+    assert ctx.previous_summary and ctx.source_kind == "senate_amendments"
+    assert len(w.llm.amendment_contexts) == 1  # not summarised again
+    text = MessageFormatter("ru").status_update(*w.publisher.updates[0][:2]).text
+    assert text.startswith("📋 <b>Сенат внёс поправки — druk nr 3039</b>")
+    assert "🆕 <b>Что меняют поправки Сената</b>\nСенат смягчил проект" in text
+    assert "• Убран сбор за дубликат" in text and 'href="' + SENATE_PRINT_URL in text
+    assert "#сенат #поправки #kadencja10druk3039" in text
+
+
+def test_additional_committee_report_is_summarised_with_its_proposal() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=WITH_REPORT)
+    w.gateway.files[REPORT_URL] = b"%PDF-report"
+    w.run()
+    w.gateway.files[A_REPORT_URL] = b"%PDF-A"
+    w.set_stages("3039", WITH_A_REPORT)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.updates, report.reanalyzed) == (1, 0)  # a table of amendments, not a text
+    _, change, _ = w.publisher.updates[-1]
+    assert change.amendments is not None and change.amendments.source_url == A_REPORT_URL
+    assert w.llm.amendment_contexts[-1].proposal == "przyjąć poprawki"
+    text = MessageFormatter("ru").status_update(*w.publisher.updates[-1][:2]).text
+    assert "отчёт комиссии (sprawozdanie) (druk 2689-A): предлагает принять поправки" in text
+    assert "Что меняют поправки (по отчёту комиссии)" in text
+
+
+def test_unreadable_amendments_document_leaves_the_bare_event() -> None:
+    w = World(extractor=FakeTextExtractor(error=RuntimeError("no text layer")))
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=WITH_REPORT, with_pdf=False)
+    w.run()
+    w.gateway.files[A_REPORT_URL] = b"%PDF-A"
+    w.set_stages("3039", WITH_A_REPORT)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.updates == 1 and not report.errors
+    _, change, _ = w.publisher.updates[-1]
+    assert change.amendments is None and w.llm.amendment_contexts == []
 
 
 # --------------------------------------------------------------------------- enrichment

@@ -93,7 +93,53 @@ class TriageRecord(BaseModel):
         return not self.triage.affects_foreigners and self.triage.confidence >= min_confidence
 
 
-def usage_of(record: AnalysisRecord | TriageRecord) -> TokenUsage:
+class Amendments(BaseModel):
+    """Structured output about a set of amendments (the Senate's, or those tabled at the 2nd
+    reading as answered by the committee): what they change, not a new analysis of the bill."""
+
+    summary: str = Field(description="1-2 plain sentences: what the amendments do overall.")
+    changes: list[str] = Field(
+        default_factory=list, description="Up to 6 concrete changes, one per bullet."
+    )
+    affects_foreigners: bool = Field(
+        description="True if any amendment changes something for non-citizens."
+    )
+    confidence: float = Field(ge=0.0, le=1.0)
+
+
+class AmendmentsRecord(BaseModel):
+    """A stored amendments summary: the answer plus its provenance; lives on the status change
+    that announced the amendments."""
+
+    amendments: Amendments
+    model: str
+    prompt_version: str
+    source_url: str
+    source_kind: SourceKind
+    created_at: dt.datetime
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    cache_read_input_tokens: int | None = None
+    cache_creation_input_tokens: int | None = None
+
+
+class AmendmentsContext(BaseModel):
+    """What the model sees to summarise amendments: the current analysis and the document."""
+
+    number: str
+    title: str
+    source_kind: SourceKind  # senate_amendments | committee_amendments
+    text: str
+    truncated: bool
+    previous_summary: str
+    previous_key_changes: list[str] = Field(default_factory=list)
+    proposal: str | None = None  # the committee's proposal on the amendments, when it is one
+
+
+UsageRecord = AnalysisRecord | TriageRecord | AmendmentsRecord
+
+
+def usage_of(record: UsageRecord) -> TokenUsage:
     return TokenUsage(
         input=record.input_tokens or 0,
         output=record.output_tokens or 0,
@@ -102,7 +148,7 @@ def usage_of(record: AnalysisRecord | TriageRecord) -> TokenUsage:
     )
 
 
-def add_usage(target: dict[str, TokenUsage], record: AnalysisRecord | TriageRecord) -> None:
+def add_usage(target: dict[str, TokenUsage], record: UsageRecord) -> None:
     """Accumulate a record's tokens under its model."""
     target[record.model] = target.get(record.model, TokenUsage()).plus(usage_of(record))
 

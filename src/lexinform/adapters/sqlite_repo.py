@@ -15,6 +15,7 @@ from lexinform.models import (
     RCL_PREFIX,
     ActInfo,
     AgendaItem,
+    AmendmentsRecord,
     AnalysisRecord,
     Bill,
     BillAuthors,
@@ -828,8 +829,8 @@ class SqliteBillRepository:
                 INSERT INTO status_changes (term, number, old_fingerprint, new_fingerprint,
                                             new_stages_json, closure_detected, passed,
                                             content_changed, withdrawn, discontinued,
-                                            detected_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                            amendments_json, detected_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     change.term,
@@ -844,12 +845,23 @@ class SqliteBillRepository:
                     int(change.content_changed),
                     int(change.withdrawn),
                     int(change.discontinued),
+                    (
+                        change.amendments.model_dump_json()
+                        if change.amendments is not None
+                        else None
+                    ),
                     change.detected_at.isoformat(),
                 ),
             )
         except sqlite3.IntegrityError:
             return None
         return int(cur.lastrowid or 0)
+
+    def save_status_change_amendments(self, change_id: int, record: AmendmentsRecord) -> None:
+        self._conn.execute(
+            "UPDATE status_changes SET amendments_json = ? WHERE id = ?",
+            (record.model_dump_json(), change_id),
+        )
 
     def closure_announced(self, term: int, number: str) -> bool:
         row = self._conn.execute(
@@ -996,6 +1008,11 @@ class SqliteBillRepository:
             content_changed=bool(row["content_changed"]),
             withdrawn=bool(row["withdrawn"]),
             discontinued=bool(row["discontinued"]),
+            amendments=(
+                AmendmentsRecord.model_validate_json(row["amendments_json"])
+                if row["amendments_json"]
+                else None
+            ),
             detected_at=datetime.fromisoformat(row["detected_at"]),
         )
 

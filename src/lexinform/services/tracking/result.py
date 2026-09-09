@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import AnalysisRecord, TokenUsage, add_usage
+from lexinform.models import AnalysisRecord, TokenUsage, UsageRecord, add_usage
 
 log = logging.getLogger(__name__)
 
@@ -53,6 +53,10 @@ class TrackingResult:
 
     def count_reanalysis(self, record: AnalysisRecord) -> None:
         self.reanalyzed += 1
+        self.count_usage(record)
+
+    def count_usage(self, record: UsageRecord) -> None:
+        """Tokens of one model call (a re-analysis, an amendments summary)."""
         self.input_tokens += record.input_tokens or 0
         self.output_tokens += record.output_tokens or 0
         add_usage(self.usage, record)

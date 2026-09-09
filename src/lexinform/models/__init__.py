@@ -5,6 +5,9 @@ Split by area (`enums`, `sejm`, `analysis`, `bill`, `report`); everything is re-
 """
 
 from lexinform.models.analysis import (
+    Amendments,
+    AmendmentsContext,
+    AmendmentsRecord,
     Analysis,
     AnalysisRecord,
     BillContext,
@@ -12,6 +15,7 @@ from lexinform.models.analysis import (
     Triage,
     TriageContext,
     TriageRecord,
+    UsageRecord,
     add_usage,
     usage_of,
 )
@@ -25,6 +29,7 @@ from lexinform.models.bill import (
     next_phase,
 )
 from lexinform.models.enums import (
+    AMENDMENT_SOURCES,
     BILL_DOCUMENT_TYPE,
     FULL_TEXT_SOURCES,
     PRE_PRINT_PREFIX,
@@ -41,6 +46,7 @@ from lexinform.models.enums import (
 from lexinform.models.events import (
     HEARING_APPLICATION_DAYS,
     SERVICE_STAGE_TYPES,
+    amendments_stage,
     has_news,
     hearing_application_deadline,
     is_substantive,
@@ -103,9 +109,13 @@ from lexinform.models.sejm import (
 )
 
 __all__ = [
+    "AMENDMENT_SOURCES",
     "ActInfo",
     "AgendaItem",
     "AgendaKind",
+    "Amendments",
+    "AmendmentsContext",
+    "AmendmentsRecord",
     "Analysis",
     "AnalysisRecord",
     "AnalysisVerdict",
@@ -156,10 +166,12 @@ __all__ = [
     "Triage",
     "TriageContext",
     "TriageRecord",
+    "UsageRecord",
     "Vote",
     "VotingSummary",
     "add_usage",
     "aggregate_clubs",
+    "amendments_stage",
     "applicant_from_title",
     "committee_web_url",
     "consultation_web_url",

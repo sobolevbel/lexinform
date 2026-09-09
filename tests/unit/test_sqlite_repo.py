@@ -9,6 +9,7 @@ from lexinform.adapters.sqlite_repo import MIGRATIONS, SCHEMA_VERSION, SqliteBil
 from lexinform.models import (
     ActInfo,
     AgendaItem,
+    AmendmentsRecord,
     ApplicantType,
     BillContext,
     BillStatus,
@@ -23,7 +24,7 @@ from lexinform.models import (
     process_summary,
     stage_fingerprint,
 )
-from tests.fakes import FakeLlm
+from tests.fakes import FakeLlm, make_amendments
 from tests.harness import RCL, RCL_CONSULTATION, RCL_ID, rcl_project
 
 CHANNEL = "chan"
@@ -325,6 +326,45 @@ def test_status_change_is_stored_once_per_fingerprint(
 
     assert first is not None
     assert second is None
+
+
+def test_amendments_summary_is_stored_with_its_status_change(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)
+    change_id = repo.add_status_change(_change("3039", now))
+    assert change_id is not None
+    record = AmendmentsRecord(
+        amendments=make_amendments(),
+        model="m",
+        prompt_version="v",
+        source_url="https://api.test/prints/2994/2994.pdf",
+        source_kind="senate_amendments",
+        created_at=now,
+        input_tokens=40,
+    )
+    repo.create_publication(
+        _publication(
+            "3039",
+            PublicationKind.STATUS_UPDATE,
+            now,
+            status=PublicationStatus.SKIPPED,
+            message_id=None,
+            status_change_id=change_id,
+        )
+    )
+
+    repo.save_status_change_amendments(change_id, record)
+    held = repo.list_held_status_changes(10, "3039", CHANNEL)
+
+    assert len(held) == 1 and held[0].amendments == record
+    released = repo.release_held_status_changes(10, "3039", CHANNEL, message_id=7, sent_at=now)
+    assert released == 1 and repo.list_held_status_changes(10, "3039", CHANNEL) == []
+    update = repo.get_publication(10, "3039", PublicationKind.STATUS_UPDATE.value, CHANNEL)
+    assert update is not None and (update.status, update.message_id) == (
+        PublicationStatus.SENT,
+        7,
+    )
 
 
 def test_failed_status_updates_are_listed_for_retry_until_the_attempts_run_out(

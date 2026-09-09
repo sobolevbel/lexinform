@@ -20,6 +20,9 @@ from lexinform.errors import (
 from lexinform.models import (
     ActInfo,
     AgendaItem,
+    Amendments,
+    AmendmentsContext,
+    AmendmentsRecord,
     Analysis,
     AnalysisRecord,
     Bill,
@@ -260,6 +263,17 @@ class FakeRclGateway:
         self.listing = [r for r in self.listing if r.id != project.id] + [row]
 
 
+def make_amendments(**overrides: object) -> Amendments:
+    fields: dict[str, object] = dict(
+        summary="Сенат смягчил проект: срок подачи заявления продлён.",
+        changes=["Срок подачи заявления продлён с 14 до 30 дней", "Убран сбор за дубликат"],
+        affects_foreigners=True,
+        confidence=0.85,
+    )
+    fields.update(overrides)
+    return Amendments.model_validate(fields)
+
+
 def make_analysis(
     *, relevant: bool = True, score: int = 5, category: Category = Category.LEGAL_STAY
 ) -> Analysis:
@@ -284,18 +298,22 @@ class FakeLlm:
     MODEL = "fake"
     TRIAGE_TOKENS = (10, 5)
     ANALYSIS_TOKENS = (100, 50)
+    AMENDMENTS_TOKENS = (40, 20)
 
     def __init__(
         self,
         script: dict[str, Analysis | Exception] | None = None,
         default: Analysis | None = None,
         triage_script: dict[str, Triage | Exception] | None = None,
+        amendments_script: dict[str, Amendments | Exception] | None = None,
     ) -> None:
         self.script = script or {}
         self.default = default or make_analysis()
         self.triage_script = triage_script or {}
+        self.amendments_script = amendments_script or {}
         self.contexts: list[BillContext] = []
         self.triage_contexts: list[TriageContext] = []
+        self.amendment_contexts: list[AmendmentsContext] = []
 
     def triage(self, ctx: TriageContext) -> TriageRecord:
         self.triage_contexts.append(ctx)
@@ -327,6 +345,22 @@ class FakeLlm:
             created_at=datetime(2026, 9, 7, tzinfo=UTC),
             input_tokens=self.ANALYSIS_TOKENS[0],
             output_tokens=self.ANALYSIS_TOKENS[1],
+        )
+
+    def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:
+        self.amendment_contexts.append(ctx)
+        outcome = self.amendments_script.get(ctx.number, make_amendments())
+        if isinstance(outcome, Exception):
+            raise outcome
+        return AmendmentsRecord(
+            amendments=outcome,
+            model=self.MODEL,
+            prompt_version=PROMPT_VERSION,
+            source_url="",
+            source_kind=ctx.source_kind,
+            created_at=datetime(2026, 9, 7, tzinfo=UTC),
+            input_tokens=self.AMENDMENTS_TOKENS[0],
+            output_tokens=self.AMENDMENTS_TOKENS[1],
         )
 
 

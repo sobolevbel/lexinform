@@ -1,7 +1,7 @@
 """Prompt text for the bill analyzer. Keep the system prompt stable within a PROMPT_VERSION so
 prompt caching hits across all bills analysed in one run."""
 
-from lexinform.models import BillContext, TriageContext
+from lexinform.models import AmendmentsContext, BillContext, TriageContext
 
 PROMPT_VERSION = "2026-09-v3"
 
@@ -58,6 +58,26 @@ You do NOT see the whole bill. You see its beginning, the beginning of its justi
 """
 
 
+AMENDMENTS_SYSTEM_PROMPT_TEMPLATE = """You are a legal analyst for a channel that informs foreigners living in Poland about Polish legislation.
+
+A bill the channel follows has received amendments: either the Senate's resolution (uchwała Senatu) with its amendments and justification, or a Sejm committee's additional report (sprawozdanie) that lists the amendments tabled at the second reading, or on the Senate's position, with the committee's recommendation for each. You receive that document together with the channel's current description of the bill. Explain what the amendments change.
+
+## Output fields
+
+- summary: 1-2 plain sentences in {language}: what the amendments do overall (what is added, removed, tightened, postponed) and whether the committee, when it is a committee report, recommends accepting or rejecting them.
+- changes: up to 6 bullets in {language}, each one concrete change in at most ~120 characters; amendments that only fix wording or numbering are summarised in one bullet or left out.
+- affects_foreigners: true if any amendment changes something for non-citizens (their stay, work, rights, benefits, procedures, fees, documents).
+- confidence: 0-1; lower it when the document is truncated or the amendments refer to provisions you cannot see.
+
+## Rules
+
+- Base every statement only on the provided document. Never invent article numbers, dates or amounts.
+- Amendments are stated relative to the bill as it is now: say what changes for the reader compared with the current description.
+- Keep Polish names of statutes in the original, with a short translation in parentheses on first use.
+- Do not address the reader; write neutral informational prose.
+"""
+
+
 def system_prompt(language: str) -> str:
     return SYSTEM_PROMPT_TEMPLATE.format(language=_LANGUAGE_NAMES.get(language.lower(), language))
 
@@ -66,6 +86,35 @@ def triage_system_prompt(language: str) -> str:
     return TRIAGE_SYSTEM_PROMPT_TEMPLATE.format(
         language=_LANGUAGE_NAMES.get(language.lower(), language)
     )
+
+
+def amendments_system_prompt(language: str) -> str:
+    return AMENDMENTS_SYSTEM_PROMPT_TEMPLATE.format(
+        language=_LANGUAGE_NAMES.get(language.lower(), language)
+    )
+
+
+def build_amendments_prompt(ctx: AmendmentsContext) -> str:
+    kind = (
+        "uchwała Senatu z poprawkami"
+        if ctx.source_kind == "senate_amendments"
+        else "sprawozdanie komisji o poprawkach"
+    )
+    lines = [f"Druk nr {ctx.number}", f"Tytuł: {ctx.title}", f"Dokument: {kind}"]
+    if ctx.proposal:
+        lines.append(f"Wniosek komisji: {ctx.proposal}")
+    lines.append("")
+    lines.append("=== AKTUALNY OPIS PROJEKTU (przed poprawkami) ===")
+    lines.append(ctx.previous_summary)
+    for change in ctx.previous_key_changes:
+        lines.append(f"- {change}")
+    lines.append("")
+    lines.append("=== TEKST DOKUMENTU Z POPRAWKAMI ===")
+    lines.append(ctx.text)
+    if ctx.truncated:
+        lines.append("")
+        lines.append("[TEKST OBCIĘTY: pokazano tylko część dokumentu]")
+    return "\n".join(lines)
 
 
 def build_triage_prompt(ctx: TriageContext) -> str:

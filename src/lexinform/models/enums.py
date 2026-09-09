@@ -71,4 +71,15 @@ class PublicationStatus(StrEnum):
 # projekt + uzasadnienie + OSR), keyword excerpts (rejected by the triage), or metadata only.
 TextSource = Literal["pdf", "documents", "excerpts", "metadata_only"]
 FULL_TEXT_SOURCES: frozenset[str] = frozenset({"pdf", "documents"})
-SourceKind = Literal["print", "committee_report", "text_after3", "rcl", "metadata"]
+SourceKind = Literal[
+    "print",
+    "committee_report",
+    "text_after3",
+    "rcl",
+    "metadata",
+    # Amendments only, not a bill text: the Senate's resolution print, the additional ("-A")
+    # committee report on 2nd-reading amendments, the report on the Senate's position.
+    "senate_amendments",
+    "committee_amendments",
+]
+AMENDMENT_SOURCES: frozenset[str] = frozenset({"senate_amendments", "committee_amendments"})

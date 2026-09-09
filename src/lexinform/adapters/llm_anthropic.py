@@ -9,6 +9,8 @@ import anthropic
 
 from lexinform.adapters.llm_prompts import (
     PROMPT_VERSION,
+    amendments_system_prompt,
+    build_amendments_prompt,
     build_triage_prompt,
     build_user_prompt,
     system_prompt,
@@ -16,6 +18,9 @@ from lexinform.adapters.llm_prompts import (
 )
 from lexinform.errors import LlmUnavailableError
 from lexinform.models import (
+    Amendments,
+    AmendmentsContext,
+    AmendmentsRecord,
     Analysis,
     AnalysisRecord,
     BillContext,
@@ -70,6 +75,7 @@ class AnthropicAnalyzer:
         self._clock = clock
         self._system = system_prompt(output_language)
         self._triage_system = triage_system_prompt(output_language)
+        self._amendments_system = amendments_system_prompt(output_language)
 
     def analyze(self, ctx: BillContext) -> AnalysisRecord:
         response = self._parse(
@@ -127,6 +133,41 @@ class AnthropicAnalyzer:
             triage=triage,
             model=self._triage_model,
             prompt_version=PROMPT_VERSION,
+            input_tokens=_usage_int(usage, "input_tokens"),
+            output_tokens=_usage_int(usage, "output_tokens"),
+            cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
+            cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
+        )
+
+    def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:
+        """What a set of amendments changes; runs on the analysis model, with thinking."""
+        response = self._parse(
+            self._model,
+            self._amendments_system,
+            build_amendments_prompt(ctx),
+            Amendments,
+            thinking=True,
+        )
+        amendments = response.parsed_output
+        if not isinstance(amendments, Amendments):
+            raise LlmError("model returned no parsable structured output")
+        usage = getattr(response, "usage", None)
+        log.info(
+            "LLM summarised amendments of druk %s (%s): %d change(s), affects=%s in=%s out=%s",
+            ctx.number,
+            ctx.source_kind,
+            len(amendments.changes),
+            amendments.affects_foreigners,
+            _usage_int(usage, "input_tokens"),
+            _usage_int(usage, "output_tokens"),
+        )
+        return AmendmentsRecord(
+            amendments=amendments,
+            model=self._model,
+            prompt_version=PROMPT_VERSION,
+            source_url="",  # the caller knows the document
+            source_kind=ctx.source_kind,
+            created_at=self._clock(),
             input_tokens=_usage_int(usage, "input_tokens"),
             output_tokens=_usage_int(usage, "output_tokens"),
             cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),

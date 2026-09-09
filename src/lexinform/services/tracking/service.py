@@ -6,16 +6,20 @@ re-analysed first and the update also lists what changed.
 """
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
+    AmendmentsRecord,
     Bill,
     PrintInfo,
     ProcessDetail,
     StatusChange,
+    TextDocument,
+    amendments_stage,
     diff_stages,
     has_news,
     stage_fingerprint,
@@ -37,6 +41,14 @@ from lexinform.services.tracking.rollover import TermRollover
 from lexinform.services.tracking.stages import StageEnricher, change_key
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class _Amendments:
+    """An amendments document found among the new stages, with the committee's proposal."""
+
+    document: TextDocument
+    proposal: str | None
 
 
 class StatusTrackingService:
@@ -192,8 +204,8 @@ class StatusTrackingService:
             bill = outcome.item
             result.checked += 1
             try:
-                detail, print_info = outcome.result()
-                change = self._detect(bill, detail, print_info, result)
+                detail, print_info, amendments = outcome.result()
+                change = self._detect(bill, detail, print_info, result, amendments)
             except ServiceUnavailableError as exc:
                 result.abort(exc)
                 break
@@ -262,9 +274,55 @@ class StatusTrackingService:
 
     # ------------------------------------------------------------------ detection
 
-    def _fetch(self, bill: Bill) -> tuple[ProcessDetail, PrintInfo | None]:
-        """What detection needs from the API for one bill (no database access)."""
-        return self._gateway.get_process(bill.term, bill.number), fetch_print(self._gateway, bill)
+    def _fetch(self, bill: Bill) -> tuple[ProcessDetail, PrintInfo | None, _Amendments | None]:
+        """What detection needs from the API for one bill (no database access): the process,
+        the print and, when a new stage brings amendments, their document."""
+        detail = self._gateway.get_process(bill.term, bill.number)
+        return detail, fetch_print(self._gateway, bill), self._amendments_document(bill, detail)
+
+    def _amendments_document(self, bill: Bill, detail: ProcessDetail) -> _Amendments | None:
+        """The Senate's resolution print or the committee's report on amendments, if one of
+        the stages new since the stored tree carries amendments (network: the Senate print)."""
+        if self._analysis is None or bill.analysis is None or bill.stages_fingerprint is None:
+            return None
+        stage = amendments_stage(diff_stages(bill.stages, detail.stages))
+        if stage is None:
+            return None
+        if stage.stage_type == "SenatePosition":
+            assert stage.print_number is not None
+            try:
+                senate_print = self._gateway.get_print(bill.term, stage.print_number)
+            except ServiceUnavailableError:
+                raise
+            except Exception as exc:
+                log.warning("Senate print %s unavailable: %s", stage.print_number, exc)
+                return None
+            pdf = senate_print.main_pdf
+            if pdf is None:
+                return None
+            return _Amendments(TextDocument(url=pdf.url, kind="senate_amendments"), None)
+        assert stage.report_file is not None
+        document = TextDocument(url=stage.report_file, kind="committee_amendments")
+        return _Amendments(document, stage.proposal)
+
+    def _summarize_amendments(
+        self, bill: Bill, found: _Amendments, result: TrackingResult
+    ) -> AmendmentsRecord | None:
+        """Best effort: a failure degrades the update to the bare event; outages propagate."""
+        assert self._analysis is not None
+        try:
+            record = self._analysis.summarize_amendments(
+                bill, found.document, proposal=found.proposal
+            )
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("druk %s: amendments not summarised: %s", bill.number, exc)
+            return None
+        if record is not None:
+            result.count_usage(record)
+            log.info("druk %s: amendments summarised from %s", bill.number, found.document.url)
+        return record
 
     def _detect(
         self,
@@ -272,6 +330,7 @@ class StatusTrackingService:
         detail: ProcessDetail,
         print_info: PrintInfo | None,
         result: TrackingResult,
+        amendments: _Amendments | None = None,
     ) -> StatusChange | None:
         now = self._clock.now()
 
@@ -317,11 +376,18 @@ class StatusTrackingService:
         if change_id is None:
             return None  # already recorded by an earlier run
         change.id = change_id
+        if amendments is not None:
+            # After the row exists: a change recorded by an earlier run never pays for a second
+            # model call, and the summary is stored with the change it belongs to.
+            change.amendments = self._summarize_amendments(bill, amendments, result)
+            if change.amendments is not None:
+                self._repo.save_status_change_amendments(change_id, change.amendments)
         log.info(
-            "druk %s: %d new stage(s)%s: %s",
+            "druk %s: %d new stage(s)%s%s: %s",
             bill.number,
             len(change.new_stages),
             " + new text" if content_changed else "",
+            " + amendments" if change.amendments is not None else "",
             "; ".join(s.stage_name for s in change.new_stages) or "-",
         )
         return change
