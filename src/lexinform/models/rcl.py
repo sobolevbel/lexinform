@@ -14,8 +14,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from lexinform.models.enums import RCL_PREFIX
-from lexinform.models.sejm import Stage
+from lexinform.models.enums import BILL_DOCUMENT_TYPE, RCL_PREFIX, ApplicantType, DocumentType
+from lexinform.models.sejm import ProcessSummary, Stage
 
 RCL_BASE_URL = "https://legislacja.rcl.gov.pl"
 RCL_STAGE_TYPE = "RclStage"  # `Stage.stage_type` of an RCL stage stored in `Bill.stages`
@@ -25,6 +25,9 @@ OPEN_STATUS = "otwarty"
 StageState = Literal["not_started", "reached", "active"]
 FolderKind = Literal["project", "letters", "positions", "response", "conference", "other"]
 TextRole = Literal["bill", "justification", "osr"]
+# Where in the government path a stage sits: consultations and opinions, the committees of the
+# Council of Ministers (incl. Komisja Prawnicza), the Council itself, the hand-over to the Sejm.
+StageGroup = Literal["opinions", "committees", "council", "sejm"]
 
 _STAGE_NAME = re.compile(r"^\s*(\d+)\.\s*(.+?)\s*$")
 
@@ -122,6 +125,17 @@ class RclStage(BaseModel):
     @property
     def is_sejm(self) -> bool:
         return "do sejmu" in self.name.lower()
+
+    @property
+    def group(self) -> StageGroup:
+        name = self.name.lower()
+        if self.is_sejm:
+            return "sejm"
+        if "rada ministrów" in name or "notyfikacja" in name:
+            return "council"
+        if "komitet" in name or "komisja prawnicza" in name:
+            return "committees"
+        return "opinions"
 
     def folder(self, kind: FolderKind) -> RclFolder | None:
         return next((f for f in self.folders if f.kind == kind), None)
@@ -286,6 +300,35 @@ def rcl_stages(project: RclProject) -> tuple[Stage, ...]:
     return tuple(
         Stage(stage_name=f"{st.number}. {st.name}", stage_type=RCL_STAGE_TYPE, date=st.started)
         for st in project.reached_stages
+    )
+
+
+def process_summary(project: RclProject, *, term: int) -> ProcessSummary:
+    """The `bills` row summary of an RCL project (no Sejm process exists yet).
+
+    `change_date` is the project's last modification at midnight UTC: discovery refreshes it from
+    the list, and tracking picks up bills changed since the last run by it.
+    """
+    documents = project.text_documents()
+    dated = [d.created for d in documents.values() if d.created]
+    about = "; ".join([*project.keywords, *project.departments])
+    if project.eu_note:
+        about = f"{about}. {project.eu_note}" if about else project.eu_note
+    return ProcessSummary(
+        term=term,
+        number=project.number,
+        title=project.title,
+        description=about or None,
+        document_type=BILL_DOCUMENT_TYPE,
+        document_type_enum=DocumentType.BILL,
+        process_start_date=project.created,
+        document_date=max(dated) if dated else project.created,
+        change_date=dt.datetime.combine(project.modified, dt.time(0, 0), tzinfo=dt.UTC),
+        closure_date=None if project.is_open or project.sent_to_sejm else project.modified,
+        eu_related=project.eu_note is not None or (project.wykaz_number or "").startswith("UC"),
+        rcl_num=project.rm_number,
+        rcl_link=project.web_url,
+        applicant=ApplicantType.GOVERNMENT,
     )
 
 

@@ -23,10 +23,16 @@ from lexinform.models import (
     ProcessSummary,
     Publication,
     PublicationKind,
+    RclConsultation,
+    RclDocument,
+    RclFolder,
+    RclProject,
+    RclStage,
     RunReport,
     Stage,
     Triage,
 )
+from lexinform.models.rcl import StageState
 from lexinform.ports import TextExtractor
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisService
@@ -118,6 +124,97 @@ def submission(**overrides: Any) -> BillSubmission:
     )
     fields.update(overrides)
     return BillSubmission(**fields)
+
+
+RCL_ID = 12414100
+RCL = f"RCL/{RCL_ID}"
+RCL_HOST = "rcl.test"  # the fake RCL gateway serves documents from here
+
+
+def rcl_document(doc_id: int, name: str, *, created: dt.date = dt.date(2026, 9, 1)) -> RclDocument:
+    extension = name.rsplit(".", 1)[-1]
+    return RclDocument(
+        id=doc_id,
+        name=name,
+        url=f"https://{RCL_HOST}/docs//2/{RCL_ID}/1/1/dokument{doc_id}.{extension}",
+        created=created,
+        author="Minister Spraw Wewnętrznych i Administracji",
+    )
+
+
+def rcl_folder(folder_id: int, name: str, *documents: RclDocument) -> RclFolder:
+    modified = max((d.created for d in documents if d.created), default=None)
+    return RclFolder(id=folder_id, name=name, modified=modified, documents=documents)
+
+
+def rcl_stage(
+    number: int,
+    name: str,
+    state: StageState = "reached",
+    *folders: RclFolder,
+    modified: dt.date | None = dt.date(2026, 9, 1),
+) -> RclStage:
+    return RclStage(
+        id=13223800 + number,
+        number=number,
+        name=name,
+        state=state,
+        modified=modified,
+        folders=folders,
+    )
+
+
+CONSULTATION_LETTER = rcl_document(794894, "konsultacje_publiczne.DOCX")
+CONSULTATION_FOLDERS = (
+    rcl_folder(
+        13223896,
+        "Projekt",
+        rcl_document(794885, "projekt_ustawy_o_udziale_RP_w_SIS_i_VIS.DOCX"),
+        rcl_document(794886, "uzasadnienie.doc"),
+        rcl_document(794887, "OSR.DOCX"),
+    ),
+    rcl_folder(13223897, "Pisma kierujące projekt do konsultacji publicznych", CONSULTATION_LETTER),
+    rcl_folder(13223898, "Stanowiska zgłoszone w ramach konsultacji publicznych"),
+    rcl_folder(13223899, "Odniesienie się wnioskodawcy do uwag"),
+)
+RCL_CONSULTED = (
+    rcl_stage(1, "Zgłoszenia lobbingowe", "not_started", modified=None),
+    rcl_stage(2, "Uzgodnienia"),
+    rcl_stage(3, "Konsultacje publiczne", "reached", *CONSULTATION_FOLDERS),
+    rcl_stage(4, "Opiniowanie", "active"),
+    rcl_stage(9, "Stały Komitet Rady Ministrów", "not_started", modified=None),
+    rcl_stage(12, "Rada Ministrów", "not_started", modified=None),
+    rcl_stage(14, "Skierowanie projektu ustawy do Sejmu", "not_started", modified=None),
+)
+RCL_CONSULTATION = RclConsultation(
+    letter_url=CONSULTATION_LETTER.url,
+    days=7,
+    deadline=dt.date(2026, 9, 8),
+    email="dep.prawny@mswia.gov.pl",
+)
+
+
+def rcl_project(**overrides: Any) -> RclProject:
+    """A government bill under public consultation on RCL (the UC164 Schengen project)."""
+    fields: dict[str, Any] = dict(
+        id=RCL_ID,
+        title=(
+            "Projekt ustawy o zmianie ustawy o udziale Rzeczypospolitej Polskiej w Systemie"
+            " Informacyjnym Schengen oraz Wizowym Systemie Informacyjnym"
+        ),
+        applicant="Minister Spraw Wewnętrznych i Administracji",
+        wykaz_number="UC164",
+        wykaz_url="https://www.gov.pl/web/premier/wplip-rm",
+        created=dt.date(2026, 8, 31),
+        modified=dt.date(2026, 9, 1),
+        departments=("sprawy wewnętrzne",),
+        keywords=("CUDZOZIEMCY", "SYSTEM INFORMACYJNY SCHENGEN"),
+        term_label="X",
+        stages=RCL_CONSULTED,
+        consultation=RCL_CONSULTATION,
+    )
+    fields.update(overrides)
+    return RclProject(**fields)
 
 
 def act(**overrides: Any) -> ActInfo:

@@ -23,6 +23,7 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    RclProject,
     RunReport,
     Stage,
     StatusChange,
@@ -135,6 +136,10 @@ MIGRATIONS: tuple[str, ...] = (
         ON publications(term, number, kind, channel_id) WHERE kind = 'consultation_results';
     CREATE UNIQUE INDEX ux_pub_agenda ON publications(term, number, kind, channel_id, ref)
         WHERE kind = 'agenda';
+    """,
+    # v8: government projects followed on RCL before the Sejm (`RCL/{id}` rows)
+    """
+    ALTER TABLE bills ADD COLUMN rcl_json TEXT;
     """,
 )
 
@@ -464,6 +469,15 @@ class SqliteBillRepository:
 
     # A one-off post blocks its bill once it is sent, skipped, pending or unknown; a failed one
     # leaves the bill listed so the poster can retry it within the attempt budget.
+    # The last day of the public consultation, whoever runs it: the Sejm (/bills entry) or the
+    # government (RCL consultation letter). NULL when the bill has none.
+    _CONSULTATION_END = """
+        COALESCE(
+            CASE WHEN json_extract(b.submission_json, '$.public_consultation')
+                 THEN json_extract(b.submission_json, '$.consultation_end') END,
+            json_extract(b.rcl_json, '$.consultation.deadline')
+        )
+    """
     _NO_SETTLED_POST = """
         AND NOT EXISTS (
             SELECT 1 FROM publications r
@@ -498,11 +512,10 @@ class SqliteBillRepository:
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
             WHERE b.term = ? AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
-              AND b.status != ? AND b.submission_json IS NOT NULL
-              AND json_extract(b.submission_json, '$.public_consultation')
-              AND json_extract(b.submission_json, '$.consultation_end') BETWEEN ? AND ?
+              AND b.status != ?
+              AND {self._CONSULTATION_END} BETWEEN ? AND ?
               {self._NO_SETTLED_POST}
-            ORDER BY json_extract(b.submission_json, '$.consultation_end'), b.number
+            ORDER BY {self._CONSULTATION_END}, b.number
             """,
             (
                 term,
@@ -531,6 +544,28 @@ class SqliteBillRepository:
             (term, f"{PRE_PRINT_PREFIX}%", BillStatus.LINKED.value),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
+
+    # ------------------------------------------------------------------ RCL projects
+
+    def save_rcl(self, term: int, number: str, project: RclProject) -> None:
+        self._conn.execute(
+            "UPDATE bills SET rcl_json = ? WHERE term = ? AND number = ?",
+            (project.model_dump_json(), term, number),
+        )
+
+    def find_by_rm_number(self, term: int, rm_number: str) -> Bill | None:
+        return self._find_rcl(term, "$.rm_number", rm_number)
+
+    def find_by_wykaz_number(self, term: int, wykaz_number: str) -> Bill | None:
+        return self._find_rcl(term, "$.wykaz_number", wykaz_number)
+
+    def _find_rcl(self, term: int, path: str, value: str) -> Bill | None:
+        row = self._conn.execute(
+            f"SELECT * FROM bills WHERE term = ? AND json_extract(rcl_json, '{path}') = ?"
+            " ORDER BY number LIMIT 1",
+            (term, value),
+        ).fetchone()
+        return self._row_to_bill(row) if row else None
 
     def link_bills(self, term: int, pre_print_number: str, print_number: str) -> None:
         self._conn.execute(
@@ -776,6 +811,7 @@ class SqliteBillRepository:
             agenda=tuple(
                 AgendaItem.model_validate(i) for i in json.loads(row["agenda_json"] or "[]")
             ),
+            rcl=RclProject.model_validate_json(row["rcl_json"]) if row["rcl_json"] else None,
             first_seen_at=datetime.fromisoformat(row["first_seen_at"]),
             last_checked_at=datetime.fromisoformat(row["last_checked_at"]),
         )

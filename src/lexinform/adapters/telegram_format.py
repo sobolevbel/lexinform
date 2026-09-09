@@ -11,12 +11,14 @@ from dataclasses import dataclass
 from lexinform.i18n import Labels, labels_for
 from lexinform.keywords import KEYWORD_PATTERNS
 from lexinform.models import (
+    RCL_STAGE_TYPE,
     ActInfo,
     AgendaItem,
     Bill,
     ConsultationWindow,
     Phase,
     PrintInfo,
+    RclProject,
     RunReport,
     Stage,
     StatusChange,
@@ -125,8 +127,9 @@ class MessageFormatter:
         lb = self._labels
         s = bill.summary
 
+        head_label = lb.rcl_header if bill.rcl is not None else lb.new_bill_header
         header = (
-            f"{ICON['new_bill']} <b>{esc(lb.new_bill_header)} — {self._number_label(bill)}</b>\n\n"
+            f"{ICON['new_bill']} <b>{esc(head_label)} — {self._number_label(bill)}</b>\n\n"
             f"<b>{esc(s.title)}</b>"
         )
         meta = (
@@ -172,42 +175,39 @@ class MessageFormatter:
             meta_lines.append(
                 f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {esc(last.stage_name)}{when}"
             )
+        elif bill.rcl is not None:
+            meta_lines.append(f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {esc(lb.rcl_no_stage)}")
         elif bill.is_pre_print:
             meta_lines.append(f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {esc(lb.pre_print_stage)}")
-        applicant = lb.applicant_labels.get(s.applicant_type, s.applicant_type.value)
-        doc_date = self.fmt_date(s.document_date) if s.document_date else "—"
-        date_label = lb.received if bill.is_pre_print else lb.document_date
-        meta_lines.append(
-            f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {esc(applicant)}"
-            f"{self._authors_suffix(bill)}   "
-            f"{ICON['doc_date']} <b>{esc(date_label)}:</b> {esc(doc_date)}"
-        )
+        meta_lines.append(self._applicant_line(bill))
         if s.prints_considered_jointly:
             meta_lines.append(
                 f"{esc(lb.joint_prints)} {esc(', '.join(s.prints_considered_jointly))}"
             )
         if any(h.startswith("text:") for h in bill.prefilter_hits):
             meta_lines.append(f"{ICON['search']} <i>{esc(lb.found_in_text)}</i>")
-        if bill.is_pre_print and bill.analysis.text_source == "metadata_only":
-            meta_lines.append(f"{ICON['note']} <i>{esc(lb.pre_print_note)}</i>")
-        elif bill.analysis.truncated or bill.analysis.text_source == "metadata_only":
-            meta_lines.append(f"{ICON['note']} <i>{esc(lb.partial_text_note)}</i>")
+        note = self._text_note(bill)
+        if note:
+            meta_lines.append(f"{ICON['note']} <i>{esc(note)}</i>")
         details.append("\n".join(meta_lines))
         details_block = "\n\n".join(details)
 
-        if bill.is_pre_print:
+        if bill.rcl is not None:
+            links = self._rcl_links(bill.rcl)
+        elif bill.is_pre_print:
             links = [link(s.web_url, lb.link_submission_pdf)]
         else:
             links = [link(s.web_url, lb.link_process)]
-        pdf = print_info.main_pdf if print_info else None
-        if pdf is not None:
-            links.append(link(pdf.url, lb.link_pdf))
-        if s.rcl_link:
-            links.append(link(s.rcl_link, lb.link_rcl))
+            pdf = print_info.main_pdf if print_info else None
+            if pdf is not None:
+                links.append(link(pdf.url, lb.link_pdf))
+            if s.rcl_link:
+                links.append(link(s.rcl_link, lb.link_rcl))
         links_block = f"{ICON['links']} " + " | ".join(links)
 
         # Each tag answers one search: bills of the term, by importance, by topic, where an
-        # opinion can still be sent, about citizens of Ukraine, and this bill's whole thread.
+        # opinion can still be sent, about citizens of Ukraine, government projects before the
+        # Sejm, and this bill's whole thread.
         tags = " ".join(
             [
                 self._number_tag(bill),
@@ -215,6 +215,7 @@ class MessageFormatter:
                 f"#{lb.category_tags.get(a.category, a.category.value)}",
                 *([f"#{lb.tag_consultations}"] if _consultation_open(bill, today) else []),
                 *([f"#{lb.tag_ukraine}"] if _about_ukraine(bill) else []),
+                *([f"#{lb.tag_rcl}"] if bill.rcl is not None else []),
                 self._term_tag(s.term),
             ]
         )
@@ -256,13 +257,11 @@ class MessageFormatter:
         elif change.closure_detected:
             icon = ICON["passed"] if change.passed else ICON["closed"]
             closure = f"{icon} {esc(lb.process_passed if change.passed else lb.process_closed)}"
-        if (
-            bill.linked_number
-            and not bill.is_pre_print
-            and change.old_fingerprint == bill.linked_number
-        ):
+        if bill.linked_number and bill.has_process and change.old_fingerprint == bill.linked_number:
             assigned = f"{ICON['print']} {esc(lb.print_assigned)}: <b>{esc(bill.number)}</b>"
             closure = f"{assigned}\n{closure}" if closure else assigned
+        elif bill.rcl is not None and bill.rcl.sent_to_sejm and _reaches_sejm(change):
+            closure = f"{ICON['print']} {esc(lb.rcl_sent_to_sejm)}"
         consultation = self._consultation_line(bill)
         steps = "" if change.withdrawn else self._steps_block(bill, today or dt.date.today())
 
@@ -283,7 +282,7 @@ class MessageFormatter:
                 else:
                     changes_block = f"{ICON['note']} <i>{esc(lb.reanalyzed_note)}</i>"
 
-        links = [link(s.web_url, lb.link_process)]
+        links = [link(s.web_url, lb.link_rcl_project if bill.rcl is not None else lb.link_process)]
         text_after3 = next((st.text_after3 for st in change.new_stages if st.text_after3), None)
         if text_after3:
             links.append(link(text_after3, lb.link_text_after3))
@@ -379,22 +378,18 @@ class MessageFormatter:
             if days_left <= 0
             else f"{esc(lb.consultation_days_left)}: {days_left}"
         )
-        form = window.form_url
-        hint = link(form, lb.consultation_hint) if form else esc(lb.consultation_hint)
+        where = self._consultation_where(bill, window, sejm_label=lb.consultation_hint)
         facts = (
             f"{ICON['effective']} <b>{esc(lb.consultation)}:</b> {esc(lb.consultation_until)} "
             f"{self.fmt_date(window.end)} · {countdown}\n"
-            f"{ICON['action']} {hint}"
+            f"{ICON['action']} {where}"
         )
         next_step = self._next_step_line(bill, today)
         summary_block = ""
         if bill.analysis is not None:
             a = bill.analysis.analysis
             summary_block = f"{ICON['about']} <b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
-        links = [link(bill.summary.web_url, lb.link_process)]
-        if form:
-            links.insert(0, link(form, lb.consultation_link))
-        links_block = f"{ICON['links']} " + " | ".join(links)
+        links_block = f"{ICON['links']} " + " | ".join(self._consultation_links(bill, window))
         tags = f"#{lb.tag_consultations} {self._number_tag(bill)}"
         fixed = [header, facts, next_step, links_block, tags]
         return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block]))
@@ -410,19 +405,21 @@ class MessageFormatter:
             f"{self._number_label(bill)}</b>\n\n<b>{esc(bill.summary.title)}</b>"
         )
         page = window.form_url
-        facts = f"{ICON['note']} " + (
-            link(page, lb.consultation_results_hint) if page else esc(lb.consultation_results_hint)
-        )
+        if bill.rcl is not None:
+            facts = f"{ICON['note']} {link(bill.rcl.web_url, lb.rcl_results_hint)}"
+        else:
+            facts = f"{ICON['note']} " + (
+                link(page, lb.consultation_results_hint)
+                if page
+                else esc(lb.consultation_results_hint)
+            )
         if window.end:
             facts = (
                 f"{ICON['effective']} <b>{esc(lb.consultation)}:</b> "
                 f"{self._consultation_period(window)}\n{facts}"
             )
         steps = self._steps_block(bill, today or dt.date.today())
-        links = [link(bill.summary.web_url, lb.link_process)]
-        if page:
-            links.insert(0, link(page, lb.consultation_link))
-        links_block = f"{ICON['links']} " + " | ".join(links)
+        links_block = f"{ICON['links']} " + " | ".join(self._consultation_links(bill, window))
         tags = f"#{lb.tag_consultations} {self._number_tag(bill)}"
         return RenderedMessage(
             text=self._assemble([header, facts, steps, links_block, tags], flexible=[])
@@ -543,6 +540,8 @@ class MessageFormatter:
         return value.strftime(self._labels.date_format)
 
     def _number_label(self, bill: Bill) -> str:
+        if bill.rcl is not None:
+            return esc(bill.rcl.wykaz_number or bill.number)
         if bill.is_pre_print:
             return f"{esc(bill.number)} ({esc(self._labels.no_print_yet)})"
         return f"druk nr {esc(bill.number)}"
@@ -554,7 +553,9 @@ class MessageFormatter:
     @staticmethod
     def _number_tag(bill: Bill) -> str:
         """One tag per bill, unique across terms: print numbers restart with every kadencja,
-        RPW numbers carry the year already."""
+        RPW numbers carry the year already, wykaz numbers (UC164) are unique per government."""
+        if bill.rcl is not None:
+            return "#RCL_" + _tag_safe(bill.rcl.wykaz_number or str(bill.rcl.id))
         if bill.is_pre_print:
             return "#" + _tag_safe(bill.number.replace("/", "_"))
         return f"#kadencja{bill.term}druk{_tag_safe(bill.number)}"
@@ -578,17 +579,113 @@ class MessageFormatter:
             parts.append(f"{esc(lb.representative)}: {rep}")
         return f" ({' · '.join(parts)})" if parts else ""
 
+    def _applicant_line(self, bill: Bill) -> str:
+        """ "Инициатор: правительственный — Minister … · номер в wykazie: UC164   Опубликован на
+        RCL: 31.08.2026" for RCL projects; applicant, signatories and document date otherwise."""
+        lb = self._labels
+        s = bill.summary
+        applicant = esc(lb.applicant_labels.get(s.applicant_type, s.applicant_type.value))
+        if bill.rcl is not None:
+            project = bill.rcl
+            who = f"{applicant} — {esc(project.applicant)}"
+            if project.wykaz_number:
+                who += f" · {esc(lb.rcl_wykaz)}: {esc(project.wykaz_number)}"
+            when = f"{ICON['doc_date']} <b>{esc(lb.rcl_published)}:</b> "
+            return f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {who}   {when}" + esc(
+                self.fmt_date(project.created)
+            )
+        doc_date = self.fmt_date(s.document_date) if s.document_date else "—"
+        date_label = lb.received if bill.is_pre_print else lb.document_date
+        return (
+            f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {applicant}"
+            f"{self._authors_suffix(bill)}   "
+            f"{ICON['doc_date']} <b>{esc(date_label)}:</b> {esc(doc_date)}"
+        )
+
+    def _text_note(self, bill: Bill) -> str:
+        """Why the analysis saw less than the whole text, if it did."""
+        lb = self._labels
+        record = bill.analysis
+        if record is None:
+            return ""
+        if record.text_source == "metadata_only":
+            if bill.rcl is not None:
+                return lb.rcl_metadata_note
+            return lb.pre_print_note if bill.is_pre_print else lb.partial_text_note
+        return lb.partial_text_note if record.truncated else ""
+
+    def _rcl_links(self, project: RclProject) -> list[str]:
+        lb = self._labels
+        links = [link(project.web_url, lb.link_rcl_project)]
+        documents = project.text_documents()
+        if "bill" in documents:
+            doc = documents["bill"]
+            links.append(link(doc.url, f"{lb.link_bill_text} ({doc.extension.upper()})"))
+        if "justification" in documents:
+            links.append(link(documents["justification"].url, lb.link_justification))
+        if "osr" in documents:
+            links.append(link(documents["osr"].url, lb.link_osr))
+        if project.wykaz_url:
+            links.append(link(project.wykaz_url, lb.link_wykaz))
+        return links
+
     def _consultation_line(self, bill: Bill) -> str:
         window = bill.consultation
-        if window is None or window.end is None:
+        if window is None:
             return ""
         lb = self._labels
-        form = window.form_url
-        where = link(form, lb.consultation_link) if form else esc(lb.consultation_hint)
+        if window.source == "rcl":
+            when = (
+                self._rcl_deadline(bill, window)
+                if window.end is not None
+                else esc(lb.consultation_deadline_in_letter)
+            )
+        elif window.end is not None:
+            when = self._consultation_period(window)
+        else:
+            return ""
         return (
-            f"{ICON['consultation']} <b>{esc(lb.consultation)}:</b> "
-            f"{self._consultation_period(window)} · {where}"
+            f"{ICON['consultation']} <b>{esc(lb.consultation)}:</b> {when} · "
+            f"{self._consultation_where(bill, window)}"
         )
+
+    def _rcl_deadline(self, bill: Bill, window: ConsultationWindow) -> str:
+        """ "до 08.09.2026 (7 дней с даты письма)"."""
+        lb = self._labels
+        assert window.end is not None
+        text = f"{esc(lb.consultation_until)} {self.fmt_date(window.end)}"
+        days = bill.rcl.consultation.days if bill.rcl and bill.rcl.consultation else None
+        if days is not None:
+            text += f" ({esc(lb.consultation_days_from_letter.format(days=days))})"
+        return text
+
+    def _consultation_where(
+        self, bill: Bill, window: ConsultationWindow, *, sejm_label: str | None = None
+    ) -> str:
+        """Where an opinion goes: the Sejm form, or the ministry's e-mail and the letter (RCL)."""
+        lb = self._labels
+        if window.source == "sejm":
+            form = window.form_url
+            label = sejm_label or lb.consultation_link
+            return link(form, label) if form else esc(lb.consultation_hint)
+        parts: list[str] = []
+        if window.email:
+            parts.append(f"{esc(lb.consultation_email)} {esc(window.email)}")
+        if window.letter_url:
+            parts.append(link(window.letter_url, lb.consultation_letter))
+        return " · ".join(parts) if parts else esc(lb.consultation_deadline_in_letter)
+
+    def _consultation_links(self, bill: Bill, window: ConsultationWindow) -> list[str]:
+        lb = self._labels
+        if bill.rcl is not None:
+            links = [link(bill.rcl.web_url, lb.link_rcl_project)]
+            if window.letter_url:
+                links.insert(0, link(window.letter_url, lb.consultation_letter))
+            return links
+        links = [link(bill.summary.web_url, lb.link_process)]
+        if window.form_url:
+            links.insert(0, link(window.form_url, lb.consultation_link))
+        return links
 
     def _consultation_period(self, window: ConsultationWindow) -> str:
         lb = self._labels
@@ -626,7 +723,9 @@ class MessageFormatter:
         lb = self._labels
         actions: list[str] = []
         window = bill.consultation
-        if window is not None and window.is_open(today) and window.end is not None:
+        if bill.rcl is not None:
+            actions.extend(self._rcl_actions(bill.rcl, window, today))
+        elif window is not None and window.is_open(today) and window.end is not None:
             page = window.form_url
             where = (
                 link(page, lb.action_consultation_page)
@@ -657,6 +756,25 @@ class MessageFormatter:
         if not actions:
             return ""
         return f"{ICON['action']} <b>{esc(lb.action_now)}:</b> " + "; ".join(actions)
+
+    def _rcl_actions(
+        self, project: RclProject, window: ConsultationWindow | None, today: dt.date
+    ) -> list[str]:
+        """E-mail to the ministry while the consultation is open (or its deadline unknown), and
+        the RCL comment form for as long as the project is with the government."""
+        lb = self._labels
+        actions: list[str] = []
+        polish = lb.action_in_polish.format(wykaz=project.wykaz_number or project.number)
+        if window is not None and window.email and (window.end is None or window.is_open(today)):
+            text = esc(lb.action_email_ministry.format(email=window.email))
+            if window.end is not None:
+                text += f" {esc(lb.consultation_until)} {self.fmt_date(window.end)}"
+            else:
+                text += f" ({esc(lb.consultation_deadline_in_letter)})"
+            actions.append(f"{text} {esc(polish)}")
+        if project.is_open and not project.sent_to_sejm:
+            actions.append(link(project.comment_url, lb.action_rcl_comment))
+        return actions
 
     def _upcoming(
         self, bill: Bill, today: dt.date, phase: Phase, *, kind: str | None = None
@@ -815,6 +933,14 @@ def _event_keys(change: StatusChange) -> list[str]:
 def _consultation_open(bill: Bill, today: dt.date | None) -> bool:
     window = bill.consultation
     return window is not None and window.is_open(today or dt.date.today())
+
+
+def _reaches_sejm(change: StatusChange) -> bool:
+    """The update carries the RCL stage "Skierowanie projektu ustawy do Sejmu"."""
+    return any(
+        st.stage_type == RCL_STAGE_TYPE and "sejm" in st.stage_name.lower()
+        for st in change.new_stages
+    )
 
 
 def _hearing_open(bill: Bill, today: dt.date) -> bool:

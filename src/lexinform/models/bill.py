@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.models.analysis import AnalysisRecord
 from lexinform.models.enums import BillStatus, PublicationKind, PublicationStatus
+from lexinform.models.rcl import RclProject
 from lexinform.models.sejm import (
     ActInfo,
     AgendaItem,
@@ -58,6 +59,7 @@ class Bill(BaseModel):
     act: ActInfo | None = None  # the published act, once it appears in Dziennik Ustaw
     authors: BillAuthors | None = None  # signatories of a deputies' bill, by club
     agenda: tuple[AgendaItem, ...] = ()  # upcoming sittings that name the bill, soonest first
+    rcl: RclProject | None = None  # the RCL project of a government bill followed before the Sejm
     first_seen_at: dt.datetime
     last_checked_at: dt.datetime
 
@@ -74,6 +76,10 @@ class Bill(BaseModel):
         return self.summary.is_pre_print
 
     @property
+    def is_rcl(self) -> bool:
+        return self.summary.is_rcl
+
+    @property
     def has_process(self) -> bool:
         return self.summary.has_process
 
@@ -85,6 +91,18 @@ class Bill(BaseModel):
     @property
     def consultation(self) -> ConsultationWindow | None:
         """The public consultation, if the bill has (or had) one."""
+        if self.rcl is not None:
+            rcl = self.rcl.consultation
+            if rcl is None:
+                return None
+            return ConsultationWindow(
+                source="rcl",
+                start=rcl.letter_date,
+                end=rcl.deadline,
+                email=rcl.email,
+                letter_url=rcl.letter_url,
+                results_published=rcl.results_published,
+            )
         sub = self.submission
         if sub is None or not sub.public_consultation or sub.consultation_end is None:
             return None
@@ -125,9 +143,11 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
     """The next step of the process, derived from the top-level stages, the submission and the
     act; None when the process is over (in force, rejected, withdrawn) or unknown.
 
-    Keys: pre_print, pre_print_consultation, first_reading, first_reading_committee,
-    first_reading_sitting, committee_work, second_reading, third_reading, senate,
-    senate_amendments, president, publication, in_force, in_force_unknown, veto, tribunal.
+    Keys: rcl_consultation, rcl_opinions, rcl_committees, rcl_council, rcl_to_sejm (government
+    projects before the Sejm), pre_print, pre_print_consultation, first_reading,
+    first_reading_committee, first_reading_sitting, committee_work, second_reading,
+    third_reading, senate, senate_amendments, president, publication, in_force,
+    in_force_unknown, veto, tribunal.
     """
     summary = bill.summary
     act = bill.act
@@ -137,6 +157,8 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
         if act.entry_into_force > today:
             return Phase(key="in_force", date=act.entry_into_force)
         return None
+    if bill.rcl is not None:
+        return _rcl_phase(bill, today)
     if bill.is_pre_print or not bill.stages:
         if summary.closure_date is not None:
             return None  # withdrawn before getting a print number
@@ -192,6 +214,23 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
     if kind == "Start":
         return Phase(key="first_reading")
     return None
+
+
+def _rcl_phase(bill: Bill, today: dt.date) -> Phase | None:
+    """The government path: consultations and opinions, the committees of the Council of
+    Ministers, the Council, the hand-over to the Sejm (then the print number)."""
+    project = bill.rcl
+    assert project is not None
+    if project.sent_to_sejm:
+        return Phase(key="rcl_to_sejm")
+    if not project.is_open:
+        return None  # closed on RCL without reaching the Sejm
+    window = bill.consultation
+    if window is not None and window.is_open(today):
+        return Phase(key="rcl_consultation", date=window.end)
+    current = project.current_stage
+    group = current.group if current else "opinions"
+    return Phase(key=f"rcl_{group}")
 
 
 def _committee_codes(stage: Stage) -> tuple[str, ...]:

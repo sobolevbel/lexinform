@@ -96,6 +96,28 @@ class Labels:
     tag_sejm_sitting: str
     consultation_results_header: str
     consultation_results_hint: str
+    # Government projects on RCL (before the Sejm)
+    rcl_header: str  # card header: "Government bill (RCL)"
+    rcl_ministry: str  # "ministry" (the applicant's name follows)
+    rcl_wykaz: str  # "number in the wykaz prac legislacyjnych RM"
+    rcl_published: str  # "published on RCL" (date follows)
+    rcl_no_stage: str  # stage line when no stage has been reached yet
+    rcl_metadata_note: str  # the text could not be read (e.g. legacy .doc): metadata only
+    consultation_letter: str  # link text: the consultation letter
+    consultation_days_from_letter: str  # "{days} days from the letter"
+    consultation_deadline_in_letter: str  # deadline could not be read: "see the letter"
+    consultation_email: str  # "comments by e-mail to"
+    action_email_ministry: str  # "send comments to {email}"
+    action_in_polish: str  # "(in Polish, quoting {wykaz})"
+    action_rcl_comment: str  # link text: the comment form on RCL
+    rcl_results_hint: str  # opinions and the ministry's answer are on the project page
+    rcl_sent_to_sejm: str  # update line: the project went to the Sejm
+    link_rcl_project: str
+    link_bill_text: str  # "Bill text" (the format follows in brackets)
+    link_justification: str
+    link_osr: str
+    link_wykaz: str
+    tag_rcl: str
     event_tags: dict[str, str] = field(default_factory=dict)  # voting, senate, president, ...
     next_step_labels: dict[str, str] = field(default_factory=dict)  # by phase key, see models
     date_format: str = "%Y-%m-%d"
@@ -199,6 +221,31 @@ RU = Labels(
     consultation_results_hint=(
         "мнения, поданные в ходе общественных консультаций, доступны на странице проекта"
     ),
+    rcl_header="Правительственный проект (RCL)",
+    rcl_ministry="министерство",
+    rcl_wykaz="номер в wykazie prac RM",
+    rcl_published="Опубликован на RCL",
+    rcl_no_stage="проект опубликован на RCL, работа над ним ещё не началась",
+    rcl_metadata_note=(
+        "Текст проекта на RCL не удалось прочитать (формат .doc) — анализ по названию и описанию."
+    ),
+    consultation_letter="письмо о консультациях",
+    consultation_days_from_letter="{days} дней с даты письма",
+    consultation_deadline_in_letter="срок указан в письме",
+    consultation_email="замечания на e-mail",
+    action_email_ministry="направить замечания на {email}",
+    action_in_polish="(на польском, с номером {wykaz})",
+    action_rcl_comment="оставить комментарий через форму на RCL",
+    rcl_results_hint=(
+        "поданные мнения (stanowiska) и ответ министерства опубликованы на странице проекта на RCL"
+    ),
+    rcl_sent_to_sejm="Проект направлен в Сейм — ждём номер druku",
+    link_rcl_project="Проект на RCL",
+    link_bill_text="Текст проекта",
+    link_justification="Uzasadnienie",
+    link_osr="OSR",
+    link_wykaz="Wykaz prac RM",
+    tag_rcl="RCL",
     event_tags={
         "voting": "голосование",
         "senate": "сенат",
@@ -228,6 +275,20 @@ RU = Labels(
         "in_force_unknown": "вступление в силу (дата пока не указана)",
         "veto": "Сейм может отклонить вето (3/5 голосов)",
         "tribunal": "решение Конституционного трибунала",
+        "rcl_consultation": (
+            "консультации публичные до {date}, затем opiniowanie, комитеты Совета министров,"
+            " Rada Ministrów и направление в Сейм"
+        ),
+        "rcl_opinions": (
+            "uzgodnienia и opiniowanie, затем комитеты Совета министров, Rada Ministrów и"
+            " направление в Сейм (обычно 3–12 месяцев)"
+        ),
+        "rcl_committees": (
+            "комитеты Совета министров и Komisja Prawnicza, затем Rada Ministrów и направление"
+            " в Сейм"
+        ),
+        "rcl_council": "принятие Радой министров, затем направление в Сейм и номер druku",
+        "rcl_to_sejm": "присвоение номера druku в Сейме, затем I чтение",
     },
     date_format="%d.%m.%Y",
     stage_type_labels={
@@ -371,6 +432,32 @@ EN = Labels(
     consultation_results_hint=(
         "the opinions submitted during the public consultation are available on the bill's page"
     ),
+    rcl_header="Government bill (RCL)",
+    rcl_ministry="ministry",
+    rcl_wykaz="wykaz prac RM number",
+    rcl_published="Published on RCL",
+    rcl_no_stage="published on RCL, work has not started yet",
+    rcl_metadata_note=(
+        "The text on RCL could not be read (.doc format) — analysed from title and description."
+    ),
+    consultation_letter="consultation letter",
+    consultation_days_from_letter="{days} days from the letter",
+    consultation_deadline_in_letter="deadline stated in the letter",
+    consultation_email="comments by e-mail to",
+    action_email_ministry="send comments to {email}",
+    action_in_polish="(in Polish, quoting {wykaz})",
+    action_rcl_comment="leave a comment through the RCL form",
+    rcl_results_hint=(
+        "the opinions submitted (stanowiska) and the ministry's answer are on the project page"
+        " on RCL"
+    ),
+    rcl_sent_to_sejm="The bill went to the Sejm — waiting for the print number",
+    link_rcl_project="Project on RCL",
+    link_bill_text="Bill text",
+    link_justification="Uzasadnienie",
+    link_osr="OSR",
+    link_wykaz="Wykaz prac RM",
+    tag_rcl="RCL",
     event_tags={
         "voting": "vote",
         "senate": "senate",
@@ -402,6 +489,20 @@ EN = Labels(
         "in_force_unknown": "entry into force (date not stated yet)",
         "veto": "the Sejm may override the veto (3/5 majority)",
         "tribunal": "ruling of the Constitutional Tribunal",
+        "rcl_consultation": (
+            "public consultation until {date}, then opinions, the committees of the Council of"
+            " Ministers, the Council and submission to the Sejm"
+        ),
+        "rcl_opinions": (
+            "inter-ministerial agreement and opinions, then the committees of the Council of"
+            " Ministers, the Council and submission to the Sejm (usually 3–12 months)"
+        ),
+        "rcl_committees": (
+            "committees of the Council of Ministers and Komisja Prawnicza, then the Council and"
+            " submission to the Sejm"
+        ),
+        "rcl_council": "adoption by the Council of Ministers, then the Sejm and a print number",
+        "rcl_to_sejm": "print number assignment in the Sejm, then the first reading",
     },
     stage_type_labels={
         "ToPresident": "Sent to the President",

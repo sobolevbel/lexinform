@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict
 from lexinform.models.enums import (
     BILL_DOCUMENT_TYPE,
     PRE_PRINT_PREFIX,
+    RCL_PREFIX,
     ApplicantType,
     DocumentType,
     SourceKind,
@@ -306,9 +307,14 @@ class ProcessSummary(BaseModel):
         return is_pre_print_number(self.number)
 
     @property
+    def is_rcl(self) -> bool:
+        """A government project followed on RCL, before it is sent to the Sejm."""
+        return is_rcl_number(self.number)
+
+    @property
     def has_process(self) -> bool:
         """True when the Sejm API has a legislative process (`/processes/{number}`) for it."""
-        return not is_pre_print_number(self.number)
+        return has_process(self.number)
 
     @classmethod
     def from_submission(cls, sub: BillSubmission) -> Self:
@@ -388,6 +394,15 @@ def is_pre_print_number(number: str) -> bool:
     return number.startswith(PRE_PRINT_PREFIX)
 
 
+def is_rcl_number(number: str) -> bool:
+    return number.startswith(RCL_PREFIX)
+
+
+def has_process(number: str) -> bool:
+    """False for the numbers we invent for bills the Sejm API has no process for (RPW, RCL)."""
+    return not (is_pre_print_number(number) or is_rcl_number(number))
+
+
 def submission_pdf_url(term: int, number: str) -> str:
     """Where the Sejm site serves the text of a bill without a print number (browser only)."""
     slug = f"{term}-{number.replace('/', '-')}"
@@ -397,6 +412,8 @@ def submission_pdf_url(term: int, number: str) -> str:
 def process_web_url(term: int, number: str) -> str:
     if is_pre_print_number(number):
         return submission_pdf_url(term, number)
+    if is_rcl_number(number):
+        return f"https://legislacja.rcl.gov.pl/projekt/{number.removeprefix(RCL_PREFIX)}"
     return f"https://www.sejm.gov.pl/Sejm{term}.nsf/PrzebiegProc.xsp?nr={number}"
 
 

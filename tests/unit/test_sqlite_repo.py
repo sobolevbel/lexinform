@@ -1,7 +1,7 @@
 """The SQLite repository: queries, uniqueness rules, dump/restore and migrations."""
 
 import sqlite3
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -20,9 +20,11 @@ from lexinform.models import (
     PublicationStatus,
     RunReport,
     StatusChange,
+    process_summary,
     stage_fingerprint,
 )
 from tests.fakes import FakeLlm
+from tests.harness import RCL, RCL_CONSULTATION, rcl_project
 
 CHANNEL = "chan"
 
@@ -471,6 +473,12 @@ def test_consultation_reminders_are_due_inside_the_window_only(
     bill("4", date(2026, 9, 9))  # already over
     bill("5", date(2026, 9, 11), public=False)  # no public consultation
     bill("6", None)
+    project = rcl_project(
+        consultation=RCL_CONSULTATION.model_copy(update={"deadline": today_plus(2)})
+    )
+    repo.upsert_summary(process_summary(project, term=10), now=now)
+    _card_sent(repo, RCL, now)
+    repo.save_rcl(10, RCL, project)  # a government project consulted on RCL: due as well
     today = date(2026, 9, 10)
 
     due = repo.list_due_consultations(10, CHANNEL, today=today, days_before=3)
@@ -478,9 +486,33 @@ def test_consultation_reminders_are_due_inside_the_window_only(
     after_reminder = repo.list_due_consultations(10, CHANNEL, today=today, days_before=3)
     other_channel = repo.list_due_consultations(10, "other", today=today, days_before=3)
 
-    assert [b.number for b in due] == ["1", "2"]
-    assert [b.number for b in after_reminder] == ["2"]
+    assert [b.number for b in due] == ["1", RCL, "2"]
+    assert [b.number for b in after_reminder] == [RCL, "2"]
     assert other_channel == []
+
+
+def today_plus(days: int) -> date:
+    return date(2026, 9, 10) + timedelta(days=days)
+
+
+def test_rcl_project_round_trips_and_is_found_by_its_numbers(
+    repo: SqliteBillRepository, now: datetime
+) -> None:
+    project = rcl_project(rm_number="RM-0610-139-26")
+    repo.upsert_summary(process_summary(project, term=10), now=now)
+
+    repo.save_rcl(10, RCL, project)
+
+    stored = repo.get(10, RCL)
+    assert stored is not None and stored.rcl == project and stored.is_rcl
+    assert (
+        stored.consultation is not None and stored.consultation.email == "dep.prawny@mswia.gov.pl"
+    )
+    by_rm = repo.find_by_rm_number(10, "RM-0610-139-26")
+    by_wykaz = repo.find_by_wykaz_number(10, "UC164")
+    assert by_rm is not None and by_rm.number == RCL
+    assert by_wykaz is not None and by_wykaz.number == RCL
+    assert repo.find_by_rm_number(10, "RM-0610-1-26") is None
 
 
 def test_bills_awaiting_consultation_results(
@@ -603,6 +635,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "act_json",
         "entry_into_force",
         "agenda_json",
+        "rcl_json",
     } <= bills
     assert {
         "ux_pub_once_per_kind",
