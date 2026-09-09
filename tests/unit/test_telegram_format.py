@@ -301,6 +301,33 @@ def test_closed_consultation_loses_its_tag_and_ukraine_is_read_from_the_title(
 # --------------------------------------------------------------------------- status updates
 
 
+def test_status_update_without_an_analysis_keeps_the_stages_before_the_closure(
+    process_1962: ProcessDetail,
+) -> None:
+    bill = bill_of(process_1962).model_copy(update={"analysis": None})  # no importance badge
+    change = change_of(
+        "1962", flatten_stages(process_1962.stages)[-3:], closure_detected=True, passed=True
+    )
+
+    text = MessageFormatter("ru").status_update(bill, change).text
+
+    assert_telegram_html(text)
+    assert text.index("• 03.09.2026: отчёт комиссии") < text.index("Сейм принял закон.")
+
+
+def test_fixed_blocks_alone_over_the_limit_are_cut_at_a_line_boundary(
+    process_3039: ProcessDetail,
+) -> None:
+    long_title = " ".join(["Ustawa o zmianie ustawy o cudzoziemcach"] * 120)
+    summary = process_3039.model_copy(update={"title": long_title})
+    bill = bill_of(summary, make_analysis(score=4))
+
+    text = MessageFormatter("ru").new_bill(bill, None).text
+
+    assert len(text) <= MESSAGE_LIMIT
+    assert_telegram_html(text)
+
+
 def test_status_update_lists_new_stages_and_the_closure(process_1962: ProcessDetail) -> None:
     bill = bill_of(process_1962, make_analysis(score=3))
     change = change_of(

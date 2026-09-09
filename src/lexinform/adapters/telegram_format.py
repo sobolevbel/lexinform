@@ -7,6 +7,7 @@ through html.escape; only our own markup is raw HTML.
 import datetime as dt
 import html
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from lexinform.i18n import Labels, labels_for
@@ -295,8 +296,11 @@ class MessageFormatter:
             ]
         )
 
-        fixed = [header, meta, details_block, links_block, tags]
-        text = self._assemble(fixed, flexible=[summary_block, changes_block])
+        text = self._assemble(
+            [header, meta],
+            flexible=[summary_block, changes_block],
+            tail=[details_block, links_block, tags],
+        )
         return RenderedMessage(text=text)
 
     def joint_bill(
@@ -323,7 +327,7 @@ class MessageFormatter:
         links_block = f"{ICON['links']} " + " | ".join(links)
         # Its own tag and the thread's: a search for either finds the reply.
         tags = f"{self._number_tag(bill)} {self._thread_tags(primary)}"
-        return RenderedMessage(text=self._assemble([header, facts, links_block, tags], flexible=[]))
+        return RenderedMessage(text=self._assemble([header, facts, links_block, tags]))
 
     # ------------------------------------------------------------------ status update
 
@@ -410,9 +414,10 @@ class MessageFormatter:
             + [self._thread_tags(bill)]
         )
 
-        fixed = [header, badge, closure, consultation, steps, links_block, tags]
         text = self._assemble(
-            fixed, flexible=[stages_block, amendments_block, changes_block, summary_block]
+            [header, badge],
+            flexible=[stages_block, amendments_block, changes_block, summary_block],
+            tail=[closure, consultation, steps, links_block, tags],
         )
         return RenderedMessage(text=text)
 
@@ -463,7 +468,7 @@ class MessageFormatter:
         facts = "\n".join(lines)
         links_block = f"{ICON['links']} " + " | ".join(self._act_links(bill, act))
         tags = f"#{lb.tag_published} {self._thread_tags(bill)}"
-        return RenderedMessage(text=self._assemble([header, facts, links_block, tags], flexible=[]))
+        return RenderedMessage(text=self._assemble([header, facts, links_block, tags]))
 
     def in_force(self, bill: Bill) -> RenderedMessage:
         lb = self._labels
@@ -493,8 +498,10 @@ class MessageFormatter:
                 )
         links_block = f"{ICON['links']} " + " | ".join(self._act_links(bill, act))
         tags = f"#{lb.tag_in_force} {self._thread_tags(bill)}"
-        fixed = [header, facts, links_block, tags]
-        return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block, practical]))
+        text = self._assemble(
+            [header, facts], flexible=[summary_block, practical], tail=[links_block, tags]
+        )
+        return RenderedMessage(text=text)
 
     def consultation_deadline(self, bill: Bill, *, today: dt.date) -> RenderedMessage:
         """Reply under the card a few days before the public consultation closes."""
@@ -525,8 +532,10 @@ class MessageFormatter:
             summary_block = f"{ICON['about']} <b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
         links_block = f"{ICON['links']} " + " | ".join(self._consultation_links(bill, window))
         tags = f"#{lb.tag_consultations} {self._thread_tags(bill)}"
-        fixed = [header, facts, next_step, links_block, tags]
-        return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block]))
+        text = self._assemble(
+            [header, facts], flexible=[summary_block], tail=[next_step, links_block, tags]
+        )
+        return RenderedMessage(text=text)
 
     def consultation_results(self, bill: Bill, *, today: dt.date | None = None) -> RenderedMessage:
         """Reply under the card once the Sejm publishes the opinions received."""
@@ -555,9 +564,7 @@ class MessageFormatter:
         steps = self._steps_block(bill, today or dt.date.today())
         links_block = f"{ICON['links']} " + " | ".join(self._consultation_links(bill, window))
         tags = f"#{lb.tag_consultations} {self._thread_tags(bill)}"
-        return RenderedMessage(
-            text=self._assemble([header, facts, steps, links_block, tags], flexible=[])
-        )
+        return RenderedMessage(text=self._assemble([header, facts, steps, links_block, tags]))
 
     # ------------------------------------------------------------------ sittings
 
@@ -598,8 +605,10 @@ class MessageFormatter:
         summary_block = ""
         if bill.analysis is not None:
             summary_block = self._summary_reminder(bill.analysis.analysis.summary, full=False)
-        fixed = [header, facts, action, links_block, tags]
-        return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block]))
+        text = self._assemble(
+            [header, facts], flexible=[summary_block], tail=[action, links_block, tags]
+        )
+        return RenderedMessage(text=text)
 
     def hearing_deadline(self, bill: Bill, hearing: Stage, *, today: dt.date) -> RenderedMessage:
         """Reply under the card a few days before applications to a public hearing close."""
@@ -631,8 +640,8 @@ class MessageFormatter:
         summary_block = ""
         if bill.analysis is not None:
             summary_block = self._summary_reminder(bill.analysis.analysis.summary, full=False)
-        fixed = [header, facts, links_block, tags]
-        return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block]))
+        text = self._assemble([header, facts], flexible=[summary_block], tail=[links_block, tags])
+        return RenderedMessage(text=text)
 
     def _act_links(self, bill: Bill, act: ActInfo) -> list[str]:
         lb = self._labels
@@ -1210,22 +1219,27 @@ class MessageFormatter:
         return totals + "\n  " + " · ".join(rendered)
 
     @staticmethod
-    def _assemble(fixed: list[str], *, flexible: list[str]) -> str:
-        """Join blocks with blank lines; shrink flexible blocks (in order) until under the limit."""
-        fixed = [b for b in fixed if b]
-        flexible = [b for b in flexible if b]
-        budget = MESSAGE_LIMIT - sum(len(b) + 2 for b in fixed)
+    def _assemble(
+        head: Sequence[str], *, flexible: Sequence[str] = (), tail: Sequence[str] = ()
+    ) -> str:
+        """Join blocks with blank lines: `head`, then the `flexible` blocks, then `tail`; empty
+        blocks are dropped. The flexible blocks are shrunk (in order) until the message is under
+        the limit; the head and tail blocks (header, facts, links, tags) are never cut, except
+        as a last resort when they alone exceed the limit: then whole lines go from the end."""
+        kept_head = [b for b in head if b]
+        kept_tail = [b for b in tail if b]
+        pending = [b for b in flexible if b]
+        budget = MESSAGE_LIMIT - sum(len(b) + 2 for b in kept_head + kept_tail)
         shrunk: list[str] = []
-        for block in flexible:
-            allowed = max(0, budget - 2 * (len(flexible) - len(shrunk)))
+        for block in pending:
+            allowed = max(0, budget - 2 * (len(pending) - len(shrunk)))
             if len(block) > allowed:
                 block = shrink_block(block, allowed) if allowed > 40 else ""
             if block:
                 shrunk.append(block)
                 budget -= len(block) + 2
-        # Order: header, meta, summary, changes, details, links, tags
-        ordered = fixed[:2] + shrunk + fixed[2:]
-        return "\n\n".join(b for b in ordered if b)
+        text = "\n\n".join(kept_head + shrunk + kept_tail)
+        return text if len(text) <= MESSAGE_LIMIT else _cut_lines(text, MESSAGE_LIMIT)
 
 
 _SENATE_STAGES = {"SenatePosition", "SenatePositionConsideration"}
@@ -1367,6 +1381,14 @@ def _number_tag(term: int, number: str, wykaz_number: str | None) -> str:
     if is_pre_print_number(number):
         return "#" + _tag_safe(number.replace("/", "_"))
     return f"#kadencja{term}druk{_tag_safe(number)}"
+
+
+def _cut_lines(text: str, limit: int) -> str:
+    """Drop whole lines from the end until `text` fits `limit` (every line of a message is
+    HTML-balanced on its own, so no tag is split). Better a card without its last lines than
+    Telegram's 400 and a lost post; a message without a single fitting line is left alone."""
+    cut = text.rfind("\n", 0, limit)
+    return text[:cut].rstrip() if cut > 0 else text
 
 
 def shrink_block(block: str, allowed: int) -> str:
