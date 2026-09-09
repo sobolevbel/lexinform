@@ -85,6 +85,7 @@ def test_unfinished_bills_lapse_with_the_term_and_passed_ones_stay_followed() ->
     again = w.run(term=None, full_track=True)
 
     assert (report.term, report.discontinued, report.updates) == (NEW_TERM, 2, 2)
+    assert report.discovered == 0  # the prints of the old term are not listed under the new one
     lapsed = {bill.number: change for bill, change, _ in w.publisher.updates[-2:]}
     assert set(lapsed) == {"3039", RPW}
     assert all(c.discontinued and c.closure_detected for c in lapsed.values())

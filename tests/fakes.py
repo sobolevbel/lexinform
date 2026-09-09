@@ -89,35 +89,49 @@ class FakeSejmGateway:
         self._called("list_terms")
         return tuple(self.terms)
 
+    # Like the API, the fake answers per term: a process, print or /bills entry of another term
+    # does not exist under this one (print numbers restart with every kadencja).
+
     def iter_processes(
         self, term: int, *, modified_since: datetime | None = None, document_type: str | None = None
     ) -> Iterator[ProcessSummary]:
         self._called("iter_processes", str(term))
         for p in self.processes:
+            if p.term != term:
+                continue
             if modified_since is None or p.change_date >= modified_since.replace(tzinfo=None):
                 yield p
 
     def iter_bills(
         self, term: int, *, received_from: date | None = None
     ) -> Iterator[BillSubmission]:
-        self._called("iter_bills")
+        self._called("iter_bills", str(term))
         for sub in self.submissions:
+            if sub.term != term:
+                continue
             if received_from is None or sub.date_of_receipt >= received_from:
                 yield sub
 
     def find_submission(self, term: int, print_number: str) -> BillSubmission | None:
         self._called("find_submission", print_number)
-        return next((s for s in self.submissions if s.print_number == print_number), None)
+        return next(
+            (s for s in self.submissions if s.term == term and s.print_number == print_number),
+            None,
+        )
 
     def get_process(self, term: int, number: str) -> ProcessDetail:
         self._called("get_process", number)
-        return self.details[number]
+        detail = self.details.get(number)
+        if detail is None or detail.term != term:
+            raise RuntimeError(f"no process {number} in term {term}")
+        return detail
 
     def get_print(self, term: int, number: str) -> PrintInfo:
         self._called("get_print", number)
-        if number not in self.prints:
-            raise RuntimeError(f"no print {number}")
-        return self.prints[number]
+        info = self.prints.get(number)
+        if info is None or info.term != term:
+            raise RuntimeError(f"no print {number} in term {term}")
+        return info
 
     def get_act(self, eli: str) -> ActInfo | None:
         self._called("get_act", eli)

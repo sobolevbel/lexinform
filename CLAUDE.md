@@ -38,8 +38,10 @@ generic services (analysis, text prefilter, formatter, `next_phase`) never branc
 they read `Bill.has_process`, `Bill.consultation`, `Bill.rcl` and the `TextSource` port. Tests
 use fakes in `tests/fakes.py` and the `World` harness in `tests/harness.py` (arrange with
 `add_bill`/`add_rcl_project`/`set_stages`/`touch`, act with `run`, assert on the report, the
-publisher's records and `bill`/`publication`); HTTP adapters use `httpx2.MockTransport`. Tests
-follow arrange-act-assert and never touch private attributes.
+publisher's records and `bill`/`publication`); HTTP adapters use `httpx2.MockTransport`. The fake
+Sejm gateway answers per term like the API (a process, print or `/bills` entry exists only under
+its own term) and records the term in `calls`. Tests follow arrange-act-assert and never touch
+private attributes.
 
 Invariants worth keeping:
 
