@@ -43,6 +43,19 @@ follow arrange-act-assert and never touch private attributes.
 
 Invariants worth keeping:
 
+- **The term comes from the API, the old term is drained, not dropped.** `LEXINFORM_TERM` is
+  empty by default: `services/terms.py::TermResolver` takes the term flagged `current` in
+  `/sejm/term` (newest term in the DB when the API is down; nothing known → the run stops with
+  the reason). Discovery runs in the current term only; the queues and tracking loop over every
+  term in `bills` (`repo.known_terms()`), so acts of the old term still get their Dz.U. and
+  in-force posts. The first run in a new term (`tracking/rollover.py`, its own phase *before*
+  discovery) posts one "lapsed" update under every published, unfinished Sejm bill of the old
+  term and sets `discontinued_at` on all unfinished rows (every listing filters on it); passed
+  bills stay followed; RCL rows still waiting for their druk move to the new term (`bills`,
+  `publications`, `status_changes`, `summary_json.term`), because the druk appears in the new
+  Sejm and RCL discovery/joins look the project up by its term-less id. Idempotent, repeats
+  every run. Citizens' bills get a different wording (they are taken over, and return as a new
+  druk with a new card).
 - **Pending-before-send.** Every Telegram post gets a `publications` row (`pending`) first, unique
   per kind/bill/channel (agenda posts: per kind/bill/channel/`ref`, one per sitting); failed posts
   are retried up to `max_publish_attempts`; `pending` left by a crash becomes `unknown` and is
@@ -89,9 +102,10 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v8 as of Sept 2026). `migrate()` reads `user_version` and
+`SCHEMA_VERSION = len(MIGRATIONS)` (v9 as of Sept 2026). `migrate()` reads `user_version` and
 runs every later script inside its own transaction, stamping the new version at the end, so a
-failed script leaves the database at the previous version. v8 (Sept 2026) added `rcl_json`.
+failed script leaves the database at the previous version. v8 (Sept 2026) added `rcl_json`, v9
+`bills.discontinued_at` and `status_changes.discontinued` (end of a Sejm term).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) →
 `db restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing
@@ -118,6 +132,9 @@ There is no downgrade. To roll back, revert the code and restore the previous du
 
 ## Sejm API lessons (verified live, Sept 2026)
 
+- `/sejm/term` lists every term: `num`, `from`, `to` (absent for the running one), `current`
+  (true for exactly one), `prints.count/lastChanged`. Term 10 started 2023-11-13; the flag is the
+  signal for the switch, print numbers restart at 1 in the new term.
 - `/processes` only lists bills that already have a print number. Bills at the consultation
   stage live in `/bills` (`RPW/…`), with `publicConsultationStart/EndDate`, `applicantType`,
   `status`, `print`, `consultationResults`. Their PDF on orka.sejm.gov.pl is behind Incapsula: not

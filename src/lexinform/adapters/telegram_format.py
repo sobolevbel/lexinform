@@ -14,6 +14,7 @@ from lexinform.models import (
     RCL_STAGE_TYPE,
     ActInfo,
     AgendaItem,
+    ApplicantType,
     Bill,
     ConsultationWindow,
     Phase,
@@ -252,7 +253,12 @@ class MessageFormatter:
             else ""
         )
         closure = ""
-        if change.withdrawn:
+        if change.discontinued:
+            carried = s.applicant_type is ApplicantType.CITIZENS
+            closure = f"{ICON['closed']} " + esc(
+                lb.process_carried_over if carried else lb.process_discontinued
+            )
+        elif change.withdrawn:
             closure = f"{ICON['closed']} {esc(lb.process_withdrawn)}"
         elif change.closure_detected:
             icon = ICON["passed"] if change.passed else ICON["closed"]
@@ -263,7 +269,8 @@ class MessageFormatter:
         elif bill.rcl is not None and bill.rcl.sent_to_sejm and _reaches_sejm(change):
             closure = f"{ICON['print']} {esc(lb.rcl_sent_to_sejm)}"
         consultation = self._consultation_line(bill)
-        steps = "" if change.withdrawn else self._steps_block(bill, today or dt.date.today())
+        over = change.withdrawn or change.discontinued
+        steps = "" if over else self._steps_block(bill, today or dt.date.today())
 
         summary_block = ""
         changes_block = ""
@@ -489,6 +496,7 @@ class MessageFormatter:
         head = (
             f"<b>{status} {esc(lb.run_report_title)}</b>\n"
             f"mode: {esc(report.mode)} · since: {esc(report.since.strftime('%Y-%m-%d %H:%M'))}"
+            + (f" · term {report.term}" if report.term is not None else "")
             + (f" · {duration}s" if duration is not None else "")
         )
         counters = "\n".join(
@@ -509,6 +517,14 @@ class MessageFormatter:
                 f" · agenda: {report.agenda_posted}",
                 _tokens_line(report),
             ]
+            + (
+                [
+                    f"end of term: {report.discontinued} bill(s) lapsed · "
+                    f"{report.rcl_rehomed} RCL project(s) carried over"
+                ]
+                if report.discontinued or report.rcl_rehomed
+                else []
+            )
             + (
                 [
                     "timing: "
@@ -928,6 +944,8 @@ def _event_keys(change: StatusChange) -> list[str]:
         keys.append("amendments")
     if change.withdrawn:
         keys.append("withdrawn")
+    if change.discontinued:
+        keys.append("discontinued")
     return keys
 
 

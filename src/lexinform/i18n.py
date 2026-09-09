@@ -57,6 +57,8 @@ class Labels:
     consultation_hint: str
     print_assigned: str
     process_withdrawn: str
+    process_discontinued: str  # the term ended with the bill unfinished: it lapsed
+    process_carried_over: str  # same, for a citizens' bill: the next Sejm takes it over
     link_submission_pdf: str
     act_published_header: str
     journal: str
@@ -178,6 +180,14 @@ RU = Labels(
     consultation_hint="мнение можно направить через страницу проекта на сайте Сейма",
     print_assigned="Проекту присвоен номер druku",
     process_withdrawn="Проект отозван до присвоения номера druku.",
+    process_discontinued=(
+        "Каденция Сейма закончилась, проект не был рассмотрен до конца и прекращён"
+        " (zasada dyskontynuacji). Чтобы вернуться к нему, проект нужно внести заново в новый Сейм."
+    ),
+    process_carried_over=(
+        "Каденция Сейма закончилась. Гражданский проект переходит к Сейму новой каденции"
+        " и получит новый номер druku."
+    ),
     link_submission_pdf="PDF проекта (сайт Сейма)",
     act_published_header="Опубликован в Dziennik Ustaw",
     journal="Публикация",
@@ -253,6 +263,7 @@ RU = Labels(
         "veto": "вето",
         "amendments": "поправки",
         "withdrawn": "отозван",
+        "discontinued": "прекращён",
     },
     next_step_labels={
         "pre_print": "присвоение номера druku, затем I чтение",
@@ -391,6 +402,14 @@ EN = Labels(
     consultation_hint="opinions can be submitted via the bill's page on the Sejm website",
     print_assigned="Print number assigned",
     process_withdrawn="The bill was withdrawn before receiving a print number.",
+    process_discontinued=(
+        "The Sejm term ended before the bill was finished: it lapsed (zasada dyskontynuacji)."
+        " To come back, it must be submitted to the new Sejm again."
+    ),
+    process_carried_over=(
+        "The Sejm term ended. As a citizens' bill it is taken over by the new Sejm"
+        " and will receive a new print number."
+    ),
     link_submission_pdf="Bill PDF (Sejm website)",
     act_published_header="Published in Dziennik Ustaw",
     journal="Publication",
@@ -465,6 +484,7 @@ EN = Labels(
         "veto": "veto",
         "amendments": "amendments",
         "withdrawn": "withdrawn",
+        "discontinued": "lapsed",
     },
     next_step_labels={
         "pre_print": "print number assignment, then the first reading",

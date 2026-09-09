@@ -41,8 +41,13 @@ def db(tmp_path: Path, process_3039: ProcessDetail) -> Path:
     return path
 
 
-def _env(db: Path) -> dict[str, str]:
-    return {"LEXINFORM_DB_PATH": str(db), "LEXINFORM_TELEGRAM_CHANNEL_ID": "@test"}
+def _env(db: Path, term: str = "10") -> dict[str, str]:
+    # The term is pinned so that no command asks the live API which term is running.
+    return {
+        "LEXINFORM_DB_PATH": str(db),
+        "LEXINFORM_TELEGRAM_CHANNEL_ID": "@test",
+        "LEXINFORM_TERM": term,
+    }
 
 
 def _status(db: Path) -> tuple[BillStatus, int, str | None]:
@@ -59,6 +64,16 @@ def test_reset_puts_the_bill_back_with_a_clean_budget(db: Path) -> None:
     assert result.exit_code == 0, result.output
     assert "analyzed (attempts 2) -> analysis_pending" in result.output
     assert _status(db) == (BillStatus.ANALYSIS_PENDING, 0, None)
+
+
+def test_a_bill_of_an_older_term_is_still_found_after_the_sejm_moved_on(db: Path) -> None:
+    # The Sejm is in term 11 now; druk 3039 of term 10 is still in the database.
+    result = runner.invoke(
+        app, ["reset", "3039", "--to", "analysis_pending", "-y"], env=_env(db, term="11")
+    )
+
+    assert result.exit_code == 0, result.output
+    assert _status(db)[0] is BillStatus.ANALYSIS_PENDING
 
 
 def test_reset_asks_before_changing_anything(db: Path) -> None:

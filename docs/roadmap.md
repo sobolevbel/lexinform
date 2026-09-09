@@ -78,6 +78,11 @@ The sections below are the original plan, kept for the rationale and the verifie
 
 Verified API facts used below (curl, 2026-09-07):
 
+- `GET /sejm/term` (2026-09-09): one item per term with `num`, `from`, `to` (absent for the
+  running term), `current` (true for exactly one) and `prints.count/lastChanged`. This is what
+  `services/terms.py` reads instead of `LEXINFORM_TERM`; the end of a term is handled by
+  `services/tracking/rollover.py` (decided 2026-09-09: lapsed bills get one last update and are
+  dropped from tracking, passed bills and RCL projects are followed on).
 - `GET /sejm/term10/processes/{n}` carries `address` ("WDU20260001099"), `displayAddress`
   ("Dz.U. 2026 poz. 1099"), `ELI` ("DU/2026/1099") and `links[]` (rel `isap`, `eli`, `eli-api`).
   For druk 2699 `closureDate` = 2026-07-17 (3rd reading) and promulgation = 2026-08-18: 32 days

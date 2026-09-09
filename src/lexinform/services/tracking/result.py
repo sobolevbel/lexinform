@@ -32,6 +32,8 @@ class TrackingResult:
     consultation_reminders: int = 0
     consultation_results_posted: int = 0
     agenda_posted: int = 0
+    discontinued: int = 0  # bills that lapsed with the end of the term, announced under the card
+    rcl_rehomed: int = 0  # RCL projects carried over to the new term
     reanalyzed: int = 0
     failed: int = 0
     input_tokens: int = 0

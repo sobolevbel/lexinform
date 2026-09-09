@@ -24,7 +24,7 @@ from lexinform.models import (
     stage_fingerprint,
 )
 from tests.fakes import FakeLlm
-from tests.harness import RCL, RCL_CONSULTATION, rcl_project
+from tests.harness import RCL, RCL_CONSULTATION, RCL_ID, rcl_project
 
 CHANNEL = "chan"
 
@@ -636,6 +636,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "entry_into_force",
         "agenda_json",
         "rcl_json",
+        "discontinued_at",
     } <= bills
     assert {
         "ux_pub_once_per_kind",
@@ -643,3 +644,73 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "ux_pub_consultation_results",
         "ux_pub_agenda",
     } <= indexes
+    # v9: the flag is stored, so a retried post renders the same message
+    when = datetime(2026, 9, 7, 6, 0, tzinfo=UTC)
+    assert repo.add_status_change(_change("1", when, discontinued=True)) is not None
+
+
+# --------------------------------------------------------------------------- end of a term
+
+
+def _rcl_row(repo: SqliteBillRepository, now: datetime, **fields: Any) -> str:
+    project = rcl_project(**fields)
+    number = repo.upsert_summary(process_summary(project, term=10), now=now).number
+    repo.save_rcl(10, number, project)
+    return number
+
+
+def test_known_terms_lists_every_term_with_bills(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    assert repo.known_terms() == []
+
+    repo.upsert_summary(process_3039.model_copy(update={"term": 11}), now=now)
+    repo.upsert_summary(process_3039, now=now)
+
+    assert repo.known_terms() == [10, 11]
+
+
+def test_rcl_projects_waiting_for_their_druk_move_to_the_new_term_with_their_posts(
+    repo: SqliteBillRepository, now: datetime
+) -> None:
+    waiting = _rcl_row(repo, now)
+    _card_sent(repo, waiting, now)
+    repo.add_status_change(_change(waiting, now, closure_detected=True))
+    joined = _rcl_row(repo, now, id=RCL_ID + 1, print_number="3100")
+
+    moved = repo.move_rcl_projects(10, 11)
+
+    assert moved == 1
+    carried = repo.get(11, waiting)
+    assert repo.get(10, waiting) is None and carried is not None
+    assert (carried.term, carried.summary.term, carried.rcl is not None) == (11, 11, True)
+    assert repo.get_publication(11, waiting, "new_bill", CHANNEL) is not None
+    assert repo.closure_announced(11, waiting) and not repo.closure_announced(10, waiting)
+    assert repo.get(10, joined) is not None  # already joined to its druk: stays with it
+    assert repo.move_rcl_projects(10, 11) == 0
+
+
+def test_unfinished_bills_of_a_term_lapse_and_leave_every_listing(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)  # in committee, published
+    _card_sent(repo, "3039", now)
+    passed = process_3039.model_copy(
+        update={"number": "3040", "closure_date": now.date(), "passed": True}
+    )
+    repo.upsert_summary(passed, now=now)  # passed by the Sejm, waiting for the act
+    _card_sent(repo, "3040", now)
+    repo.upsert_summary(process_3039.model_copy(update={"number": "3050"}), now=now)
+    repo.set_status(10, "3050", BillStatus.ANALYSIS_PENDING)  # never published
+
+    unfinished = repo.list_unfinished_published(10, CHANNEL)
+    marked = repo.discontinue_unfinished(10, at=now)
+    lapsed = repo.get(10, "3039")
+
+    assert [b.number for b in unfinished] == ["3039"]
+    assert marked == 2  # 3039 and the unpublished 3050; the passed 3040 goes on
+    assert lapsed is not None and lapsed.discontinued_at == now
+    assert _tracked(repo, now) == ["3040"]
+    assert repo.list_by_status(10, [BillStatus.ANALYSIS_PENDING], limit=10) == []
+    assert repo.list_unfinished_published(10, CHANNEL) == []
+    assert repo.discontinue_unfinished(10, at=now) == 0

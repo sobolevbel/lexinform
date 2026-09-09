@@ -14,8 +14,9 @@ class Settings(BaseSettings):
         env_prefix="LEXINFORM_", env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    # Sejm
-    term: int = 10
+    # Sejm. The term is normally taken from the API (`/sejm/term`, the one flagged current), so
+    # the bot moves to a new kadencja by itself; set it only to pin an older term.
+    term: int | None = None
     sejm_api_base_url: str = "https://api.sejm.gov.pl"
     sejm_page_size: int = 100
     sejm_timeout_seconds: float = 30.0

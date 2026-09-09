@@ -11,10 +11,12 @@ from lexinform.models import (
     BillSubmission,
     ClubVotes,
     ProcessDetail,
+    SejmTerm,
     Stage,
     Vote,
     aggregate_clubs,
     applicant_from_title,
+    current_term,
     diff_stages,
     flatten_stages,
     latest_text_document,
@@ -320,3 +322,23 @@ def test_closed_processes_have_no_next_phase(process_3039: ProcessDetail) -> Non
 
     assert next_phase(withdrawn, today=TODAY) is None
     assert next_phase(rejected, today=TODAY) is None
+
+
+def test_next_phase_is_none_for_a_bill_that_lapsed_with_the_term(
+    process_3039: ProcessDetail,
+) -> None:
+    lapsed = _bill(process_3039, process_3039.stages, discontinued_at=NOW)
+
+    assert next_phase(lapsed, today=TODAY) is None
+
+
+# --------------------------------------------------------------------------- terms
+
+
+def test_current_term_is_the_flagged_one_else_the_highest_number() -> None:
+    flagged = (SejmTerm(num=9), SejmTerm(num=10, current=True), SejmTerm(num=11))
+    unflagged = (SejmTerm(num=9), SejmTerm(num=10))
+
+    assert current_term(flagged) == 10
+    assert current_term(unflagged) == 10
+    assert current_term(()) is None

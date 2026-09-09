@@ -1,0 +1,22 @@
+[
+  {
+    "current": false,
+    "from": "2015-11-12",
+    "num": 8,
+    "prints": {"count": 4362, "lastChanged": "2026-07-16T15:00:45", "link": "/term8/prints"},
+    "to": "2019-11-11"
+  },
+  {
+    "current": false,
+    "from": "2019-11-12",
+    "num": 9,
+    "prints": {"count": 4142, "lastChanged": "2026-02-20T09:23:07", "link": "/term9/prints"},
+    "to": "2023-11-12"
+  },
+  {
+    "current": true,
+    "from": "2023-11-13",
+    "num": 10,
+    "prints": {"count": 3278, "lastChanged": "2026-09-09T04:00:37", "link": "/term10/prints"}
+  }
+]

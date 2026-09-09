@@ -93,6 +93,27 @@ class BillAuthors(BaseModel):
     unresolved: int = 0
 
 
+class SejmTerm(BaseModel):
+    """One item of GET /sejm/term: a term (kadencja) of the Sejm."""
+
+    model_config = ConfigDict(frozen=True)
+
+    num: int
+    start: dt.date | None = None
+    end: dt.date | None = None  # missing for the running term
+    current: bool = False
+
+
+def current_term(terms: Iterable[SejmTerm]) -> int | None:
+    """The running term: the one the API flags `current`, else the highest number; None when
+    the listing is empty."""
+    listed = list(terms)
+    for term in listed:
+        if term.current:
+            return term.num
+    return max((term.num for term in listed), default=None)
+
+
 class Committee(BaseModel):
     """A Sejm committee from GET /committees/{code}."""
 

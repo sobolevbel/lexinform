@@ -38,6 +38,7 @@ from lexinform.models import (
     ProcessDetail,
     ProcessSummary,
     SejmSitting,
+    SejmTerm,
     Stage,
     Vote,
     VotingSummary,
@@ -94,6 +95,13 @@ class SejmApiClient:
         self._sleep = sleep
 
     # ------------------------------------------------------------------ public API
+
+    def list_terms(self) -> tuple[SejmTerm, ...]:
+        """GET /sejm/term: every term of the Sejm; the running one is flagged `current`."""
+        data = self._get_json("/sejm/term")
+        if not isinstance(data, list):
+            raise SejmApiError(f"Unexpected /sejm/term payload: {type(data).__name__}")
+        return tuple(parse_term(item) for item in data)
 
     def iter_processes(
         self,
@@ -339,6 +347,15 @@ def _link(links: Any, rel: str) -> str | None:
 
 def parse_process_summary(item: dict[str, Any]) -> ProcessSummary:
     return ProcessSummary(**_summary_fields(item))
+
+
+def parse_term(item: dict[str, Any]) -> SejmTerm:
+    return SejmTerm(
+        num=int(item["num"]),
+        start=_date(item.get("from")),
+        end=_date(item.get("to")),
+        current=bool(item.get("current", False)),
+    )
 
 
 def parse_stage(item: dict[str, Any]) -> Stage:

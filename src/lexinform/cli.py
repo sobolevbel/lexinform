@@ -149,23 +149,24 @@ def scan(since: SinceOpt = None) -> None:
     try:
         pipeline = c.pipeline(dry_run=True)
         effective = pipeline.resolve_since(_utc(since))
-        result = c.discovery_service().discover(c.settings.term, effective)
+        term = c.term()
+        result = c.discovery_service().discover(term, effective)
         rcl_service = c.rcl_discovery_service()
         rcl_new = rcl_hits = 0
         if rcl_service is not None:
-            rcl_result = rcl_service.discover(c.settings.term, effective)
+            rcl_result = rcl_service.discover(term, effective)
             rcl_new, rcl_hits = rcl_result.new, rcl_result.prefilter_hits
         text_service = c.text_prefilter_service()
         text_hits = (
-            text_service.run(c.settings.term, limit=c.settings.text_prefilter_max_per_run).hits
+            text_service.run(term, limit=c.settings.text_prefilter_max_per_run).hits
             if text_service
             else 0
         )
-        pending = c.repo.list_by_status(c.settings.term, [BillStatus.ANALYSIS_PENDING], limit=500)
+        pending = c.repo.list_by_status(term, [BillStatus.ANALYSIS_PENDING], limit=500)
     finally:
         c.close()
     typer.echo(
-        f"since={effective.isoformat()} seen={result.seen} new={result.new} "
+        f"term={term} since={effective.isoformat()} seen={result.seen} new={result.new} "
         f"pre_print={result.pre_print_new} title_hits={result.prefilter_hits} "
         f"rcl_new={rcl_new} rcl_hits={rcl_hits} text_hits={text_hits}"
     )
@@ -197,9 +198,7 @@ def reprefilter(
         if include_text_skipped:
             statuses.append(BillStatus.SKIPPED_TEXT_PREFILTER)
         skipped = [
-            b
-            for b in c.repo.list_by_status(c.settings.term, statuses, limit=limit)
-            if b.has_process
+            b for b in c.repo.list_by_status(c.term(), statuses, limit=limit) if b.has_process
         ]
         accepted = 0
         for bill in skipped:
@@ -328,15 +327,16 @@ def show(
     c = _container()
     try:
         number = _resolve_number(c, number)
-        local = c.repo.get(c.settings.term, number)
+        local = c.find_bill(number)
         if is_rcl_number(number):
             _show_rcl(c, number, local)
             return
         if is_pre_print_number(number):
             _show_pre_print(c, number, local)
             return
-        detail = c.gateway.get_process(c.settings.term, number)
-        print_info = c.gateway.get_print(c.settings.term, number)
+        term = local.term if local is not None else c.term()
+        detail = c.gateway.get_process(term, number)
+        print_info = c.gateway.get_print(term, number)
     finally:
         c.close()
     typer.echo(f"{detail.title}\n{detail.web_url}")
@@ -578,7 +578,7 @@ def _resolve_number(c: Container, number: str) -> str:
     if not _WYKAZ_NUMBER.match(number):
         return number
     wykaz = normalize_wykaz_number(number) or number
-    bill = c.repo.find_by_wykaz_number(c.settings.term, wykaz)
+    bill = c.find_rcl_by_wykaz(wykaz)
     if bill is None:
         typer.echo(f"{wykaz}: no RCL project with this number in the database", err=True)
         raise typer.Exit(code=1)
@@ -588,12 +588,13 @@ def _resolve_number(c: Container, number: str) -> str:
 def _load_bill(c: Container, number: str) -> Bill:
     """The bill from the database, fetched from the API (or RCL) and prefiltered on first sight."""
     number = _resolve_number(c, number)
-    bill = c.repo.get(c.settings.term, number)
+    bill = c.find_bill(number)
     if bill is not None:
         return bill
+    term = c.term()
     if is_rcl_number(number):
         project = _read_rcl_project(c, number)
-        summary: ProcessSummary = process_summary(project, term=c.settings.term)
+        summary: ProcessSummary = process_summary(project, term=term)
         bill = c.repo.upsert_summary(summary, now=c.clock.now())
         c.repo.save_rcl(bill.term, bill.number, project)
         c.repo.save_stages(bill.term, bill.number, rcl_stages(project), rcl_fingerprint(project))
@@ -603,7 +604,7 @@ def _load_bill(c: Container, number: str) -> Bill:
         bill = c.repo.upsert_summary(summary, now=c.clock.now())
         c.repo.save_submission(bill.term, bill.number, sub)
     else:
-        summary = c.gateway.get_process(c.settings.term, number)
+        summary = c.gateway.get_process(term, number)
         bill = c.repo.upsert_summary(summary, now=c.clock.now())
     hits = c.prefilter.match(summary.title, summary.description)
     c.repo.set_status(
@@ -612,13 +613,13 @@ def _load_bill(c: Container, number: str) -> Bill:
         BillStatus.ANALYSIS_PENDING if hits else BillStatus.SKIPPED_PREFILTER,
         prefilter_hits=hits,
     )
-    stored = c.repo.get(c.settings.term, number)
+    stored = c.repo.get(term, number)
     assert stored is not None
     return stored
 
 
 def _find_submission(c: Container, number: str) -> BillSubmission:
-    sub = next((b for b in c.gateway.iter_bills(c.settings.term) if b.number == number), None)
+    sub = next((b for b in c.gateway.iter_bills(c.term()) if b.number == number), None)
     if sub is None:
         typer.echo(f"{number}: not found in /bills", err=True)
         raise typer.Exit(code=1)

@@ -44,6 +44,7 @@ from lexinform.services.rcl_discovery import RclDiscoveryService
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.signatories import SejmAuthorsResolver
 from lexinform.services.sources import RclTextSource, SejmTextSource, TextSources
+from lexinform.services.terms import TermResolver
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
 from tests.fakes import (
@@ -328,6 +329,7 @@ class World:
             ),
             self.tracking,
             self.clock,
+            terms=TermResolver(self.gateway, self.repo),
             notifier=self.notifier,
             text_prefilter=(
                 TextPrefilterService(self.repo, texts, loader, KeywordPrefilter(), workers=workers)
@@ -401,8 +403,10 @@ class World:
     # ------------------------------------------------------------------ act
 
     def run(self, **options: Any) -> RunReport:
+        """One pipeline run pinned to `TERM`; `term=None` resolves it from the fake API."""
         options.setdefault("since", SINCE)
-        return self.pipeline.run(RunOptions(term=TERM, **options))
+        options.setdefault("term", TERM)
+        return self.pipeline.run(RunOptions(**options))
 
     # ------------------------------------------------------------------ assert
 

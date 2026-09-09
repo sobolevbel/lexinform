@@ -64,9 +64,15 @@ class RclDiscoveryService:
         """Projects modified since `since`; an RCL outage propagates (the phase is over)."""
         result = RclDiscoveryResult()
         new_rows: list[RclProjectSummary] = []
+        # RCL ids are not bound to a Sejm term: a project joined to a druk of the previous term
+        # stays stored under that term and must not come back as new.
+        terms = [term, *(t for t in reversed(self._repo.known_terms()) if t != term)]
         for row in self._rcl.list_projects(modified_since=since.date()):
             result.seen += 1
-            existing = self._repo.get(term, rcl_number(row.id))
+            existing = next(
+                (b for t in terms if (b := self._repo.get(t, rcl_number(row.id))) is not None),
+                None,
+            )
             if existing is None:
                 new_rows.append(row)
                 continue

@@ -27,6 +27,7 @@ from lexinform.models import (
     RclStage,
     RunReport,
     SejmSitting,
+    SejmTerm,
     Stage,
     StatusChange,
     TriageContext,
@@ -41,6 +42,10 @@ class Clock(Protocol):
 
 class SejmGateway(Protocol):
     """The Sejm REST API (api.sejm.gov.pl); `ServiceUnavailableError` when it is down."""
+
+    def list_terms(self) -> tuple[SejmTerm, ...]:
+        """GET /sejm/term: every term of the Sejm, the running one flagged `current`."""
+        ...
 
     def iter_processes(
         self,
@@ -191,6 +196,10 @@ class BillRepository(Protocol):
     # bills
     def get(self, term: int, number: str) -> Bill | None: ...
 
+    def known_terms(self) -> list[int]:
+        """Every Sejm term the database holds bills of, ascending."""
+        ...
+
     def upsert_summary(self, summary: ProcessSummary, *, now: datetime) -> Bill: ...
 
     def set_status(
@@ -279,6 +288,22 @@ class BillRepository(Protocol):
         ...
 
     def find_by_wykaz_number(self, term: int, wykaz_number: str) -> Bill | None: ...
+
+    def move_rcl_projects(self, from_term: int, to_term: int) -> int:
+        """Carry the RCL rows still waiting for their druk over to a new term (with their posts
+        and status changes); a project already joined to a druk stays. Returns the count."""
+        ...
+
+    # end of a term (zasada dyskontynuacji)
+    def list_unfinished_published(self, term: int, channel_id: str) -> list[Bill]:
+        """Bills of the term with a card in the channel that the Sejm never finished with: no
+        closure, not passed, not an RCL project, not yet marked discontinued."""
+        ...
+
+    def discontinue_unfinished(self, term: int, *, at: datetime) -> int:
+        """Mark every unfinished Sejm bill of the term (published or not) as lapsed, so that no
+        phase looks at it again. Returns how many rows were marked."""
+        ...
 
     # published acts
     def save_act(self, term: int, number: str, act: ActInfo) -> None: ...

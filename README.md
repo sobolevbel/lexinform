@@ -102,6 +102,14 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
    whose `rclNum` names a followed project inherits its card.
 6. **Report** to the technical channel when `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` is set.
 
+The Sejm term (kadencja) is read from the API on every run (`/sejm/term`), so a new Sejm is
+picked up without any change of configuration. Discovery works in the current term; everything
+else covers the earlier terms too, because acts of the old Sejm still reach Dziennik Ustaw and
+enter into force months later. On the first run of a new term the bot posts one last update
+under every followed bill the old Sejm never finished with (zasada dyskontynuacji: the bill
+lapsed and must be submitted again; a citizens' bill is taken over by the new Sejm), stops
+following them, and carries the RCL projects still waiting for their druk over to the new term.
+
 Each phase is isolated: an outage of the Sejm API, the LLM or Telegram stops that phase with a
 clear error in the report, the others still run, and no per-bill retry budget is consumed. The
 process exits with code 1 on errors so the workflow shows red, but the state is saved regardless.
@@ -149,7 +157,7 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 |---|---|---|
 | `LEXINFORM_TELEGRAM_BOT_TOKEN` / `_CHANNEL_ID` | — | Required to post |
 | `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` | — | Technical channel for run reports |
-| `LEXINFORM_TERM` | `10` | Sejm term |
+| `LEXINFORM_TERM` | — | Sejm term; empty = the current one from `/sejm/term` (a new kadencja is picked up by itself), a number pins an older term |
 | `LEXINFORM_DB_PATH` | `lexinform.db` | SQLite file |
 | `LEXINFORM_LLM_MODEL` / `_LLM_EFFORT` | `claude-opus-5` / `medium` | Model and effort |
 | `LEXINFORM_LLM_TRIAGE_MODEL` | `claude-sonnet-5` | Model for the cheap first pass on excerpts (`""` disables it) |

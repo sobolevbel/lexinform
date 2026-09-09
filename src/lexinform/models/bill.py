@@ -60,6 +60,9 @@ class Bill(BaseModel):
     authors: BillAuthors | None = None  # signatories of a deputies' bill, by club
     agenda: tuple[AgendaItem, ...] = ()  # upcoming sittings that name the bill, soonest first
     rcl: RclProject | None = None  # the RCL project of a government bill followed before the Sejm
+    # Set when the Sejm term ended with the bill unfinished (zasada dyskontynuacji): nothing
+    # more will happen to it under this number, so it is not tracked or analysed any more.
+    discontinued_at: dt.datetime | None = None
     first_seen_at: dt.datetime
     last_checked_at: dt.datetime
 
@@ -157,6 +160,8 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
         if act.entry_into_force > today:
             return Phase(key="in_force", date=act.entry_into_force)
         return None
+    if bill.discontinued_at is not None:
+        return None  # lapsed with the end of the term: a new Sejm must receive it again
     if bill.rcl is not None:
         return _rcl_phase(bill, today)
     if bill.is_pre_print or not bill.stages:
@@ -282,4 +287,5 @@ class StatusChange(BaseModel):
     passed: bool | None = None
     content_changed: bool = False
     withdrawn: bool = False  # pre-print bill withdrawn before getting a print number
+    discontinued: bool = False  # the term ended before the Sejm finished with the bill
     detected_at: dt.datetime

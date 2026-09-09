@@ -31,6 +31,7 @@ from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.pre_print import PrePrintReconciler
 from lexinform.services.tracking.rcl import RclWatcher
 from lexinform.services.tracking.result import TrackingResult
+from lexinform.services.tracking.rollover import TermRollover
 from lexinform.services.tracking.stages import StageEnricher, change_key
 
 log = logging.getLogger(__name__)
@@ -145,6 +146,14 @@ class StatusTrackingService:
             local_tz=local_tz,
             in_force_reminders=in_force_reminders,
         )
+        self._rollover = TermRollover(repo, clock, self._poster, channel_id=channel_id)
+
+    def close_term(self, previous: int, current: int, *, publish: bool = True) -> TrackingResult:
+        """The Sejm moved on to `current`: announce the lapsed bills of `previous` and carry its
+        RCL projects over (see `TermRollover`). Cheap and idempotent once done."""
+        result = TrackingResult()
+        self._rollover.close_term(previous, current, result, publish=publish)
+        return result
 
     def check_updates(
         self, term: int, *, publish: bool = True, changed_since: datetime | None = None

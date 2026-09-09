@@ -16,6 +16,7 @@ from lexinform.adapters.telegram import TelegramBotClient, TelegramPublisher, Te
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
+from lexinform.models import Bill
 from lexinform.ports import Downloader, Publisher, RunNotifier
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisService
@@ -27,6 +28,7 @@ from lexinform.services.rcl_discovery import RclDiscoveryService
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.signatories import SejmAuthorsResolver
 from lexinform.services.sources import RclTextSource, SejmTextSource, TextSources
+from lexinform.services.terms import TermResolver
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
 from lexinform.settings import Settings
@@ -40,9 +42,34 @@ class Container:
     gateway: SejmApiClient
     formatter: MessageFormatter
     prefilter: KeywordPrefilter
+    terms: TermResolver
     rcl: RclClient | None = None  # None when LEXINFORM_RCL_ENABLED is off
     _telegram: TelegramBotClient | None = field(default=None, init=False, repr=False)
     _loader: TextLoader | None = field(default=None, init=False, repr=False)
+
+    def term(self) -> int:
+        """The Sejm term operator commands work in: `LEXINFORM_TERM` when set, else the current
+        one as the API reports it (the newest one in the database when the API is down)."""
+        return self.terms.current()
+
+    def find_bill(self, number: str) -> Bill | None:
+        """The stored row for a number: the working term first, then older terms (print numbers
+        restart with every kadencja, RPW and RCL numbers do not)."""
+        current = self.term()
+        older = [t for t in reversed(self.repo.known_terms()) if t != current]
+        for term in (current, *older):
+            bill = self.repo.get(term, number)
+            if bill is not None:
+                return bill
+        return None
+
+    def find_rcl_by_wykaz(self, wykaz_number: str) -> Bill | None:
+        """The RCL row behind a wykaz number (UC164), whichever term it sits in."""
+        for term in reversed(self.repo.known_terms()):
+            bill = self.repo.find_by_wykaz_number(term, wykaz_number)
+            if bill is not None:
+                return bill
+        return None
 
     def text_loader(self) -> TextLoader:
         """One loader (and text cache) per process, shared by the text prefilter and analysis.
@@ -206,6 +233,7 @@ class Container:
                 workers=self.settings.sejm_concurrency,
             ),
             self.clock,
+            terms=self.terms,
             notifier=self.run_notifier(dry_run=dry_run),
             text_prefilter=self.text_prefilter_service(),
             rcl_discovery=self.rcl_discovery_service(),
@@ -248,5 +276,6 @@ def build_container(settings: Settings) -> Container:
         gateway=gateway,
         formatter=MessageFormatter(settings.output_language),
         prefilter=KeywordPrefilter(),
+        terms=TermResolver(gateway, repo, pinned=settings.term),
         rcl=rcl,
     )

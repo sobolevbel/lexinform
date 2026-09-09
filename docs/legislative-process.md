@@ -234,6 +234,15 @@ A Sejm term (kadencja) lasts four years; print numbers restart at 1 with every t
 why our bill tag is `#kadencja10druk3039`. **Zasada dyskontynuacji**: bills not finished by the
 end of the term lapse and must be re-submitted; the exception by statute is the citizens' bill,
 which is taken over by the next Sejm. `/bills` marks lapsed entries as NOT_PROCEEDED/OBSOLETE.
+Bills the Sejm has already passed are not affected: the Senate, the President and Dziennik Ustaw
+go on regardless of the term. Government projects on RCL are not bound to a term either; the
+druk simply appears in the new Sejm.
+
+`GET /sejm/term` lists the terms with `from`, `to` and a `current` flag; the flag flips when the
+new Sejm convenes (first sitting, within 30 days of the election). The bot reads it on every run:
+discovery moves to the new term, the unfinished bills of the old one get one last update ("the
+bill lapsed" / "the citizens' bill is taken over") and are not followed any more, passed bills and
+RCL projects are followed on (see the README).
 
 ## 10. Typical timeline
 

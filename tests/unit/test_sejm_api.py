@@ -11,7 +11,7 @@ import pytest
 
 from lexinform.adapters.sejm_api import SejmApiClient, SejmApiError
 from lexinform.errors import AttachmentTooLargeError
-from lexinform.models import ApplicantType, DocumentType
+from lexinform.models import ApplicantType, DocumentType, current_term
 from tests.conftest import FIXTURES
 
 Handler = Callable[[httpx.Request], httpx.Response]
@@ -296,3 +296,17 @@ def test_download_streams_and_stops_once_the_limit_is_exceeded() -> None:
 
     assert within == body
     assert methods == ["GET", "GET"]  # no HEAD: the Sejm API sends no Content-Length anyway
+
+
+# --------------------------------------------------------------------------- terms
+
+
+def test_terms_are_listed_with_the_running_one_flagged_current() -> None:
+    client = _client(_by_path({"/sejm/term": "terms.json"}))
+
+    terms = client.list_terms()
+
+    assert [(t.num, t.current) for t in terms] == [(8, False), (9, False), (10, True)]
+    assert (terms[1].start, terms[1].end) == (date(2019, 11, 12), date(2023, 11, 12))
+    assert terms[2].end is None  # the running term has no end yet
+    assert current_term(terms) == 10

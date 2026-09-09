@@ -37,6 +37,7 @@ from lexinform.models import (
     RclStage,
     RunReport,
     SejmSitting,
+    SejmTerm,
     StatusChange,
     Triage,
     TriageContext,
@@ -73,6 +74,9 @@ class FakeSejmGateway:
     acts: dict[str, ActInfo] = field(default_factory=dict)
     committee_sittings: dict[str, tuple[CommitteeSitting, ...]] = field(default_factory=dict)
     sittings: list[SejmSitting] = field(default_factory=list)  # with agendas
+    terms: list[SejmTerm] = field(
+        default_factory=lambda: [SejmTerm(num=10, start=date(2023, 11, 13), current=True)]
+    )
     outages: set[str] = field(default_factory=set)  # method names that behave as "API down"
     calls: list[str] = field(default_factory=list)
 
@@ -81,10 +85,14 @@ class FakeSejmGateway:
         if method in self.outages:
             raise SejmApiUnavailableError(f"{method}: connection refused")
 
+    def list_terms(self) -> tuple[SejmTerm, ...]:
+        self._called("list_terms")
+        return tuple(self.terms)
+
     def iter_processes(
         self, term: int, *, modified_since: datetime | None = None, document_type: str | None = None
     ) -> Iterator[ProcessSummary]:
-        self._called("iter_processes")
+        self._called("iter_processes", str(term))
         for p in self.processes:
             if modified_since is None or p.change_date >= modified_since.replace(tzinfo=None):
                 yield p
