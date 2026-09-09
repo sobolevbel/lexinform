@@ -170,7 +170,14 @@ There is no downgrade. To roll back, revert the code and restore the previous du
 ## RCL lessons (verified live, Sept 2026)
 
 - `legislacja.rcl.gov.pl` has no API/RSS; unknown query params (`pSize=all`, `modifiedDateFrom`)
-  and blocked clients get HTTP 200 with `<title>Request Rejected</title>`. Plain `curl` works.
+  and blocked clients get HTTP 200 with `<title>Request Rejected</title>`. Plain `curl` works
+  from Poland. **GitHub-hosted runners cannot reach it at all** (verified 2026-09-09 with
+  `.github/workflows/rcl-probe.yml`): DNS resolves to 157.25.193.140, the TCP SYN to :443 is
+  dropped (45 s connect timeout, no SYN-ACK), for every User-Agent and every path, while
+  api.sejm.gov.pl answers in 1.7 s from the same runner (Azure northcentralus, US). A network
+  level block of the IP range or the country, not the WAF. The first list request is therefore a
+  20 s single-attempt probe (`RclClient(probe_timeout=…)`), so a blocked run loses seconds, not
+  four minutes. Reaching RCL from CI needs an EU egress (proxy or self-hosted runner).
 - List: `/lista?typeId=2&sKey=modifiedDate&sOrder=desc&pSize=100&pNumber=N` (2619 bills;
   `pSize` 10/50/100); wykaz numbers come as `UC164`, `UD424`, `UD 247`, `UDER66`, `UPRO6`.
 - Project page: `div.rcl-title`, `div.info` rows (Wnioskodawca, Data utworzenia, Działy, Hasła,
