@@ -7,7 +7,7 @@ through html.escape; only our own markup is raw HTML.
 import datetime as dt
 import html
 import re
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from lexinform.i18n import Labels, labels_for
@@ -188,8 +188,14 @@ def fit(text: str, limit: int) -> str:
 class MessageFormatter:
     """Renders every message kind in one output language; see `i18n.Labels`."""
 
-    def __init__(self, language: str = "ru") -> None:
+    def __init__(
+        self, language: str = "ru", *, today: Callable[[], dt.date] = dt.date.today
+    ) -> None:
+        """`today` dates "what comes next", the countdowns and the consultation tag when a
+        message method is not given the day explicitly: production passes the run's clock in
+        Warsaw time, so a post never depends on the machine's zone."""
         self._labels: Labels = labels_for(language)
+        self._today = today
 
     # ------------------------------------------------------------------ new bill card
 
@@ -235,10 +241,10 @@ class MessageFormatter:
             f"{ICON['effective']} <b>{esc(lb.effective_date)}:</b> "
             f"{esc(a.effective_date.strip() if a.effective_date else lb.effective_date_unknown)}"
         )
-        consultation = self._consultation_line(bill, today or dt.date.today())
+        consultation = self._consultation_line(bill, today or self._today())
         if consultation:
             details.append(consultation)
-        steps = self._steps_block(bill, today or dt.date.today())
+        steps = self._steps_block(bill, today or self._today())
         if steps:
             details.append(steps)
 
@@ -289,7 +295,11 @@ class MessageFormatter:
                 self._thread_tags(bill),
                 f"#{lb.tag_importance}{a.score}",
                 f"#{lb.category_tags.get(a.category, a.category.value)}",
-                *([f"#{lb.tag_consultations}"] if _consultation_open(bill, today) else []),
+                *(
+                    [f"#{lb.tag_consultations}"]
+                    if _consultation_open(bill, today or self._today())
+                    else []
+                ),
                 *([f"#{lb.tag_ukraine}"] if _about_ukraine(bill) else []),
                 *([f"#{lb.tag_rcl}"] if bill.rcl is not None else []),
                 self._term_tag(s.term),
@@ -377,9 +387,9 @@ class MessageFormatter:
             closure = f"{assigned}\n{closure}" if closure else assigned
         elif bill.rcl is not None and bill.rcl.sent_to_sejm and _reaches_sejm(change):
             closure = f"{ICON['print']} {esc(lb.rcl_sent_to_sejm)}"
-        consultation = self._consultation_line(bill, today or dt.date.today())
+        consultation = self._consultation_line(bill, today or self._today())
         over = change.withdrawn or change.discontinued
-        steps = "" if over else self._steps_block(bill, today or dt.date.today())
+        steps = "" if over else self._steps_block(bill, today or self._today())
 
         summary_block = ""
         changes_block = ""
@@ -561,7 +571,7 @@ class MessageFormatter:
                 f"{ICON['effective']} <b>{esc(lb.consultation)}:</b> "
                 f"{self._consultation_period(window)}\n{facts}"
             )
-        steps = self._steps_block(bill, today or dt.date.today())
+        steps = self._steps_block(bill, today or self._today())
         links_block = f"{ICON['links']} " + " | ".join(self._consultation_links(bill, window))
         tags = f"#{lb.tag_consultations} {self._thread_tags(bill)}"
         return RenderedMessage(text=self._assemble([header, facts, steps, links_block, tags]))
@@ -593,7 +603,7 @@ class MessageFormatter:
         if item.text:
             lines.append(f"{ICON['agenda']} <b>{esc(lb.agenda_item)}:</b> {esc(item.text)}")
         facts = "\n".join(lines)
-        action = self._action_line(bill, today or dt.date.today(), agenda_item=item)
+        action = self._action_line(bill, today or self._today(), agenda_item=item)
         links = [link(s.web_url, lb.link_process)]
         if item.video_url:
             links.append(link(item.video_url, lb.link_video))
@@ -1276,9 +1286,9 @@ def _government_path(bill: Bill) -> bool:
     )
 
 
-def _consultation_open(bill: Bill, today: dt.date | None) -> bool:
+def _consultation_open(bill: Bill, today: dt.date) -> bool:
     window = bill.consultation
-    return window is not None and window.is_open(today or dt.date.today())
+    return window is not None and window.is_open(today)
 
 
 def _reaches_sejm(change: StatusChange) -> bool:

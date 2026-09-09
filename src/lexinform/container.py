@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo
 
 import anthropic
 
@@ -33,6 +34,8 @@ from lexinform.services.terms import TermResolver
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
 from lexinform.settings import Settings
+
+LOCAL_TZ = ZoneInfo("Europe/Warsaw")  # the readers' and the Sejm's day, whatever the runner's zone
 
 
 @dataclass
@@ -278,12 +281,15 @@ def build_container(settings: Settings) -> Container:
         if settings.rcl_enabled
         else None
     )
+    clock = SystemClock()
     return Container(
         settings=settings,
-        clock=SystemClock(),
+        clock=clock,
         repo=repo,
         gateway=gateway,
-        formatter=MessageFormatter(settings.output_language),
+        formatter=MessageFormatter(
+            settings.output_language, today=lambda: clock.now().astimezone(LOCAL_TZ).date()
+        ),
         prefilter=KeywordPrefilter(),
         terms=TermResolver(gateway, repo, pinned=settings.term),
         rcl=rcl,

@@ -263,6 +263,22 @@ def test_labels_and_date_format_follow_the_language(
     assert "Print date:</b> 2026-08-03" in en
 
 
+def test_formatter_dates_from_its_own_clock_when_no_day_is_given(
+    process_3039: ProcessDetail,
+) -> None:
+    bill = bill_of(
+        process_3039,
+        submission=consulted(number="RPW/1/2026", consultation_end=dt.date(2026, 9, 20)),
+    )
+    during = MessageFormatter("ru", today=lambda: dt.date(2026, 9, 10))
+    after = MessageFormatter("ru", today=lambda: dt.date(2026, 10, 1))
+
+    open_tags = during.new_bill(bill, None).text.splitlines()[-1]
+    closed_tags = after.new_bill(bill, None).text.splitlines()[-1]
+
+    assert "#консультации" in open_tags and "#консультации" not in closed_tags
+
+
 def test_card_tags_open_consultations_and_ukraine(process_3039: ProcessDetail) -> None:
     bill = bill_of(
         process_3039,
