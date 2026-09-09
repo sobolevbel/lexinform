@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     rcl_base_url: str = "https://legislacja.rcl.gov.pl"
     rcl_timeout_seconds: float = 60.0  # a project page takes ~10 s to render
     rcl_concurrency: int = Field(default=6, ge=1)  # projects read at once (pages are slow)
+    # RCL drops connections from outside the EU (GitHub runners included): an HTTP forward proxy
+    # with an EU address, `http://user:password@host:port`; "" connects directly.
+    rcl_proxy_url: str = ""
 
     # Storage
     db_path: Path = Path("lexinform.db")

@@ -67,6 +67,7 @@ class RclClient:
         probe_timeout: float = 20.0,
         max_retries: int = 3,
         backoff_seconds: float = 1.0,
+        proxy: str | None = None,  # HTTP forward proxy with an EU address (see Settings)
         transport: httpx.BaseTransport | None = None,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
@@ -84,6 +85,7 @@ class RclClient:
                 "Accept-Language": "pl-PL,pl;q=0.9",
                 "User-Agent": "lexinform (+github)",
             },
+            proxy=proxy,
             transport=transport,
             follow_redirects=False,
         )

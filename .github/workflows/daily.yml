@@ -74,6 +74,8 @@ jobs:
           LEXINFORM_TELEGRAM_BOT_TOKEN: ${{ secrets.LEXINFORM_TELEGRAM_BOT_TOKEN }}
           LEXINFORM_TELEGRAM_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_CHANNEL_ID }}
           LEXINFORM_TELEGRAM_LOG_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID }}
+          # legislacja.rcl.gov.pl drops connections from GitHub's runners: go through an EU proxy.
+          LEXINFORM_RCL_PROXY_URL: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
           LEXINFORM_LOG_LEVEL: INFO
           INPUT_SINCE: ${{ inputs.since }}
           INPUT_DRY_RUN: ${{ inputs.dry_run }}

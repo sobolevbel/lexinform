@@ -265,7 +265,11 @@ def build_container(settings: Settings) -> Container:
         timeout=settings.sejm_timeout_seconds,
     )
     rcl = (
-        RclClient(settings.rcl_base_url, timeout=settings.rcl_timeout_seconds)
+        RclClient(
+            settings.rcl_base_url,
+            timeout=settings.rcl_timeout_seconds,
+            proxy=settings.rcl_proxy_url or None,
+        )
         if settings.rcl_enabled
         else None
     )

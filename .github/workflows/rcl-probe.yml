@@ -44,3 +44,16 @@ jobs:
 
       - name: Control, the Sejm API from the same runner
         run: curl -sS -o /dev/null -w "sejm api http=%{http_code} total=%{time_total}s\n" --max-time 30 https://api.sejm.gov.pl/sejm/term
+
+      - name: Through the EU proxy (LEXINFORM_RCL_PROXY_URL), when configured
+        if: env.PROXY != ''
+        env:
+          PROXY: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
+          LIST: "https://legislacja.rcl.gov.pl/lista?typeId=2&sKey=modifiedDate&sOrder=desc&pSize=10&pNumber=1"
+        run: |
+          set +e
+          curl -sS -o /tmp/p.html -w "via proxy: http=%{http_code} ttfb=%{time_starttransfer}s total=%{time_total}s bytes=%{size_download}\n" \
+            --max-time 60 -x "$PROXY" -A "lexinform (+github)" "$LIST"
+          echo "title: $(grep -o '<title>[^<]*' /tmp/p.html | head -1)"
+          curl -sS -o /dev/null -w "other host via proxy (should be denied): http=%{http_code}\n" \
+            --max-time 30 -x "$PROXY" https://api.sejm.gov.pl/sejm/term
