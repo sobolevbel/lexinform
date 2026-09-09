@@ -133,26 +133,24 @@ class Poster:
             stages: list[Stage] = [st for earlier in held for st in earlier.new_stages]
             change = change.model_copy(update={"new_stages": stages + list(change.new_stages)})
         fresh = self._repo.get(bill.term, bill.number) or bill
-        sent = self._send(
+        message_id = self._send(
             pub_id,
             bill,
             lambda reply_to: (
                 self._publisher.publish_status_update(fresh, change, reply_to).message_id
             ),
         )
-        if sent and held:
-            posted = self._repo.get_publication(
-                bill.term, bill.number, PublicationKind.STATUS_UPDATE.value, self._channel_id
+        if message_id is not None and held:
+            # Released against the message just sent, not "the newest update row": a retried
+            # update keeps its old row id, so a later held row would be the newest one.
+            self._repo.release_held_status_changes(
+                bill.term,
+                bill.number,
+                self._channel_id,
+                message_id=message_id,
+                sent_at=self._clock.now(),
             )
-            if posted is not None and posted.message_id is not None:
-                self._repo.release_held_status_changes(
-                    bill.term,
-                    bill.number,
-                    self._channel_id,
-                    message_id=posted.message_id,
-                    sent_at=self._clock.now(),
-                )
-        return sent
+        return message_id is not None
 
     def _update_row(self, bill: Bill, change_id: int, status: PublicationStatus) -> Publication:
         return Publication(
@@ -226,9 +224,11 @@ class Poster:
         self, bill: Bill, kind: PublicationKind, send: Send, *, ref: str | None = None
     ) -> bool:
         pub_id = self.record(bill, kind, PublicationStatus.PENDING, ref=ref)
-        return self._send(pub_id, bill, send)
+        return self._send(pub_id, bill, send) is not None
 
-    def _send(self, pub_id: int, bill: Bill, send: Send) -> bool:
+    def _send(self, pub_id: int, bill: Bill, send: Send) -> int | None:
+        """Send and record the outcome; the message id on success, None on a per-bill failure
+        (an outage of the channel propagates)."""
         card = self.card(bill)
         reply_to = card.message_id if card else None
         try:
@@ -244,8 +244,8 @@ class Poster:
             self._repo.mark_publication(
                 pub_id, PublicationStatus.FAILED, error=f"{type(exc).__name__}: {exc}"
             )
-            return False
+            return None
         self._repo.mark_publication(
             pub_id, PublicationStatus.SENT, message_id=message_id, sent_at=self._clock.now()
         )
-        return True
+        return message_id

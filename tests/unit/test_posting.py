@@ -130,6 +130,29 @@ def test_held_changes_go_out_with_the_next_update_and_are_released(
     assert update is not None and update.status is PublicationStatus.SENT
 
 
+def test_held_changes_are_released_when_a_failed_update_is_retried(
+    repo: SqliteBillRepository, bill: Bill, now: dt.datetime
+) -> None:
+    publisher = FakePublisher(fail_on={"3039"})
+    poster = _poster(repo, publisher)
+    report = Stage(stage_name="Sprawozdanie komisji", stage_type="CommitteeReport")
+    reading = Stage(stage_name="II czytanie", stage_type="Reading")
+    first = _change(bill, [report], "fp1", now)
+    later = _change(bill, [reading], "fp2", now)
+    first.id = repo.add_status_change(first)
+    later.id = repo.add_status_change(later)
+    assert not poster.status_update(bill, first)  # Telegram rejected it: the row is `failed`
+    poster.hold(bill, later)  # a later run holds a service stage: a newer row than the failed one
+    publisher.fail_on = set()
+
+    sent = poster.status_update(bill, first)  # the retry keeps the old row
+
+    assert sent
+    _, posted, _ = publisher.updates[0]
+    assert [st.stage_type for st in posted.new_stages] == ["Reading", "CommitteeReport"]
+    assert repo.list_held_status_changes(10, "3039", CHANNEL) == []  # released, not re-told
+
+
 def _change(bill: Bill, stages: list[Stage], fingerprint: str, now: dt.datetime) -> StatusChange:
     return StatusChange(
         term=bill.term,
