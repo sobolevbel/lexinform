@@ -73,6 +73,7 @@ def test_single_stray_mention_is_rejected_but_kept_for_tuning() -> None:
     bill = w.bill("4100")
     assert bill.status is BillStatus.SKIPPED_TEXT_PREFILTER
     assert bill.prefilter_hits == ["text:cudzoziemcy"]
+    assert bill.last_error == "text prefilter: weak hits only (cudzoziemcy×1)"
 
 
 def test_missing_or_broken_pdf_skips_the_bill_quietly() -> None:
@@ -83,8 +84,12 @@ def test_missing_or_broken_pdf_skips_the_bill_quietly() -> None:
     report = w.run()
 
     assert report.text_prefilter_checked == 2 and not report.errors
-    assert w.bill("4100").status is BillStatus.SKIPPED_TEXT_PREFILTER
-    assert w.bill("4101").status is BillStatus.SKIPPED_TEXT_PREFILTER
+    assert report.text_prefilter_unreadable == 2
+    broken, missing = w.bill("4100"), w.bill("4101")
+    assert broken.status is missing.status is BillStatus.SKIPPED_TEXT_PREFILTER
+    # The reason is on record: a skip for lack of a text is not a keyword miss.
+    assert broken.last_error == "text prefilter failed: ValueError: not a PDF"
+    assert missing.last_error == "text prefilter: no document to read"
 
 
 def test_sejm_api_outage_leaves_bills_pending() -> None:

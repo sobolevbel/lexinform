@@ -242,6 +242,7 @@ class DailyPipeline:
         checked = self._text_prefilter.run(limit=opts.max_text_prefilter)
         report.text_prefilter_checked = checked.checked
         report.text_prefilter_hits = checked.hits
+        report.text_prefilter_unreadable = checked.unreadable
         if checked.fatal_error:
             report.errors.append(f"text prefilter: {checked.fatal_error}")
 

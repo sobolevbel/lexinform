@@ -683,7 +683,12 @@ class MessageFormatter:
                 f" number) · prefilter hits: {report.prefilter_hits}",
                 f"RCL: {report.rcl_discovered} new · prefilter hits: {report.rcl_prefilter_hits}",
                 f"text prefilter: checked {report.text_prefilter_checked} · "
-                f"hits {report.text_prefilter_hits}",
+                f"hits {report.text_prefilter_hits}"
+                + (
+                    f" · unreadable {report.text_prefilter_unreadable}"
+                    if report.text_prefilter_unreadable
+                    else ""
+                ),
             ),
             _section(
                 "🤖",

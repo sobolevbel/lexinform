@@ -227,8 +227,17 @@ class BillRepository(Protocol):
     def upsert_summary(self, summary: ProcessSummary, *, now: datetime) -> Bill: ...
 
     def set_status(
-        self, term: int, number: str, status: BillStatus, *, prefilter_hits: list[str] | None = None
-    ) -> None: ...
+        self,
+        term: int,
+        number: str,
+        status: BillStatus,
+        *,
+        prefilter_hits: list[str] | None = None,
+        reason: str | None = None,
+    ) -> None:
+        """Move the bill to `status`; `prefilter_hits` and `reason` (kept in `last_error`: why a
+        bill was skipped, readable from the state dump) are left as they are when None."""
+        ...
 
     def save_stages(
         self, term: int, number: str, stages: tuple[Stage, ...], fingerprint: str

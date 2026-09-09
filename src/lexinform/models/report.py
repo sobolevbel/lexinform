@@ -39,6 +39,7 @@ class RunReport(BaseModel):
     prefilter_hits: int = 0
     text_prefilter_checked: int = 0
     text_prefilter_hits: int = 0
+    text_prefilter_unreadable: int = 0  # skipped without a text: no file, no text layer, failed
     acts_published: int = 0
     in_force_posted: int = 0
     consultation_reminders: int = 0

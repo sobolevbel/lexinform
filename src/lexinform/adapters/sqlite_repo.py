@@ -308,18 +308,26 @@ class SqliteBillRepository:
     _SKIPPED = frozenset({BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER})
 
     def set_status(
-        self, term: int, number: str, status: BillStatus, *, prefilter_hits: list[str] | None = None
+        self,
+        term: int,
+        number: str,
+        status: BillStatus,
+        *,
+        prefilter_hits: list[str] | None = None,
+        reason: str | None = None,
     ) -> None:
-        if prefilter_hits is None:
-            self._conn.execute(
-                "UPDATE bills SET status = ? WHERE term = ? AND number = ?",
-                (status.value, term, number),
-            )
-        else:
-            self._conn.execute(
-                "UPDATE bills SET status = ?, prefilter_hits = ? WHERE term = ? AND number = ?",
-                (status.value, json.dumps(prefilter_hits, ensure_ascii=False), term, number),
-            )
+        hits = None
+        if prefilter_hits is not None:
+            hits = json.dumps(prefilter_hits, ensure_ascii=False)
+        self._conn.execute(
+            """
+            UPDATE bills SET status = ?,
+                prefilter_hits = COALESCE(?, prefilter_hits),
+                last_error = COALESCE(?, last_error)
+            WHERE term = ? AND number = ?
+            """,
+            (status.value, hits, reason, term, number),
+        )
         if status in self._SKIPPED:
             self._drop_rcl_documents(term, number)
 
