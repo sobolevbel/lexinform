@@ -15,6 +15,7 @@ class BillStatus(StrEnum):
     SKIPPED_PREFILTER = "skipped_prefilter"  # title/description miss, text never checked
     TEXT_PREFILTER_PENDING = "text_prefilter_pending"  # title miss; the print text is next
     SKIPPED_TEXT_PREFILTER = "skipped_text_prefilter"  # title and text miss
+    SKIPPED_COST = "skipped_cost"  # text too long for the per-bill cost limit (see `reset`)
     ANALYSIS_PENDING = "analysis_pending"
     ANALYSIS_FAILED = "analysis_failed"
     ANALYZED = "analyzed"

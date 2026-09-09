@@ -192,3 +192,36 @@ def test_government_bill_does_not_fetch_the_mp_directory() -> None:
 
     assert "list_mps" not in w.gateway.calls
     assert w.bill("4201").authors is None
+
+
+# --------------------------------------------------------------------------- cost guard rails
+
+
+def test_text_over_the_per_bill_cost_limit_is_skipped_without_a_model_call() -> None:
+    # 9.8k chars ≈ 4.9k tokens ≈ $0.025 of Opus input, over a $0.01 limit
+    w = World(extractor=FakeTextExtractor("Tekst ustawy. " * 700), max_bill_cost_usd=0.01)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+
+    report = w.run()
+
+    assert (report.analyzed, report.analysis_skipped_cost) == (0, 1)
+    assert w.llm.contexts == []
+    bill = w.bill("3039")
+    assert bill.status is BillStatus.SKIPPED_COST
+    assert bill.last_error is not None and "exceeds the $0.01 limit" in bill.last_error
+
+
+def test_run_cost_limit_stops_the_phase_and_leaves_the_rest_pending() -> None:
+    w = World(max_run_cost_usd=0.001)
+    w.llm.MODEL = "claude-opus-5"  # priced: 100 in + 50 out per analysis ≈ $0.002
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.add_bill("3040", "Projekt ustawy o obywatelstwie polskim")
+
+    report = w.run()
+
+    assert (report.analyzed, report.published) == (1, 1) and not report.errors
+    assert report.notes == [
+        "analysis: run cost limit reached (≈$0.002 ≥ $0.001); "
+        "the remaining candidates wait for the next run"
+    ]
+    assert w.bill("3040").status is BillStatus.ANALYSIS_PENDING

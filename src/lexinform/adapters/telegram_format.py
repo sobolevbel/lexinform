@@ -694,7 +694,12 @@ class MessageFormatter:
                 "🤖",
                 "analysis",
                 f"analyzed: {report.analyzed} · triaged out: {report.triaged_out} · "
-                f"failures: {report.analysis_failures}",
+                f"failures: {report.analysis_failures}"
+                + (
+                    f" · over the cost limit: {report.analysis_skipped_cost}"
+                    if report.analysis_skipped_cost
+                    else ""
+                ),
                 _tokens_line(report),
             ),
             _section(
@@ -729,6 +734,8 @@ class MessageFormatter:
             )
         if report.errors:
             sections.append(_section("❌", "errors", *(f"• {esc(e)}" for e in report.errors)))
+        if report.notes:
+            sections.append(_section("ℹ️", "notes", *(f"• {esc(n)}" for n in report.notes)))
         rejected = ""
         if report.rejected:
             rejected = _section(

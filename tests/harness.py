@@ -263,6 +263,8 @@ class World:
         text_prefilter: bool = True,
         extractor: TextExtractor | None = None,
         workers: int = 1,
+        max_bill_cost_usd: float = 0.0,  # the cost guard rails are off unless a test turns them on
+        max_run_cost_usd: float = 0.0,
     ) -> None:
         self.clock = FixedClock()
         self.repo = SqliteBillRepository(":memory:")
@@ -306,6 +308,9 @@ class World:
             text_budget=TextBudget(10_000),
             authors=SejmAuthorsResolver(self.gateway),
             workers=workers,
+            input_price_usd_per_mtok=5.0,  # Opus 5
+            max_bill_cost_usd=max_bill_cost_usd,
+            max_run_cost_usd=max_run_cost_usd,
             triage=KeywordPrefilter() if triage else None,
             triage_min_chars=triage_min_chars,
         )

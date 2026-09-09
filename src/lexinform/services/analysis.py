@@ -37,6 +37,7 @@ from lexinform.models import (
 )
 from lexinform.ports import AuthorsResolver, BillRepository, Clock, LlmAnalyzer
 from lexinform.ports import TextSource as TextSourcePort
+from lexinform.pricing import cost_usd, estimate_input_cost
 from lexinform.sections import TextBudget, excerpts, trim_print
 from lexinform.services.documents import TextLoader
 
@@ -49,12 +50,28 @@ class AnalysisResult:
 
     analyzed: int = 0
     triaged_out: int = 0
+    skipped_cost: int = 0  # texts over the per-bill cost limit: not sent to the model
     failed: int = 0
     verdicts: list[AnalysisVerdict] = field(default_factory=list)
     input_tokens: int = 0
     output_tokens: int = 0
     usage: dict[str, TokenUsage] = field(default_factory=dict)  # per model
     fatal_error: str | None = None
+    stopped: str | None = None  # the phase ended early on the per-run cost limit (not an error)
+
+
+class TooExpensiveError(Exception):
+    """A first analysis whose input alone would cost more than the per-bill limit allows."""
+
+    def __init__(self, estimate: float, limit: float, chars: int) -> None:
+        super().__init__(
+            f"~${_usd(estimate)} of input for {chars} chars exceeds the ${_usd(limit)} limit"
+        )
+        self.estimate = estimate
+
+
+def _usd(amount: float) -> str:
+    return f"{amount:.2f}" if amount >= 0.01 else f"{amount:.3f}"
 
 
 @dataclass(frozen=True)
@@ -103,6 +120,9 @@ class AnalysisService:
         authors: AuthorsResolver | None = None,
         max_attempts: int = 3,
         workers: int = 1,
+        input_price_usd_per_mtok: float | None = None,
+        max_bill_cost_usd: float = 0.0,
+        max_run_cost_usd: float = 0.0,
         triage: KeywordPrefilter | None = None,
         triage_min_chars: int = 20_000,
         triage_min_confidence: float = 0.8,
@@ -116,6 +136,10 @@ class AnalysisService:
         self._authors = authors
         self._max_attempts = max_attempts
         self._workers = workers
+        # Guard rails (0 disables): the estimate needs the model's input price.
+        self._input_price = input_price_usd_per_mtok
+        self._max_bill_cost = max_bill_cost_usd
+        self._max_run_cost = max_run_cost_usd
         self._triage = triage  # the keyword patterns that cut the excerpts; None disables it
         self._triage_min_chars = triage_min_chars
         self._triage_min_confidence = triage_min_confidence
@@ -142,6 +166,16 @@ class AnalysisService:
                 result.fatal_error = exc.describe()
                 log.error("aborting analysis phase: %s", result.fatal_error)
                 break
+            except TooExpensiveError as exc:
+                result.skipped_cost += 1
+                log.warning("analysis of %s skipped: %s", bill.number, exc)
+                self._repo.set_status(
+                    bill.term,
+                    bill.number,
+                    BillStatus.SKIPPED_COST,
+                    reason=f"analysis skipped: {exc} (lexinform reset --to analysis_pending)",
+                )
+                continue
             except Exception as exc:
                 result.failed += 1
                 log.exception("analysis failed for %s: %s", bill.number, exc)
@@ -170,6 +204,15 @@ class AnalysisService:
                 result.input_tokens += prepared.triage.input_tokens or 0
                 result.output_tokens += prepared.triage.output_tokens or 0
                 add_usage(result.usage, prepared.triage)
+            spent = cost_usd(result.usage)
+            if self._max_run_cost and spent is not None and spent >= self._max_run_cost:
+                # The remaining candidates keep their status and wait for the next run.
+                result.stopped = (
+                    f"run cost limit reached (≈${_usd(spent)} ≥ ${_usd(self._max_run_cost)}); "
+                    "the remaining candidates wait for the next run"
+                )
+                log.warning("analysis phase stopped: %s", result.stopped)
+                break
         return result
 
     def analyze_bill(self, bill: Bill) -> AnalysisRecord:
@@ -260,6 +303,12 @@ class AnalysisService:
             triage, rejection = self._triage_verdict(bill, meta, text)
             if rejection is not None:
                 return _Prepared(bill, located, text, source, rejection, first=True)
+        if previous is None and self._max_bill_cost and self._input_price is not None:
+            # First analyses only: a re-analysis reads a new version of a text that already
+            # passed, and skipping it would leave the card's analysis behind the bill.
+            estimate = estimate_input_cost(len(text), self._input_price)
+            if estimate > self._max_bill_cost:
+                raise TooExpensiveError(estimate, self._max_bill_cost, len(text))
         ctx = BillContext(
             number=bill.number,
             title=meta.title or bill.summary.title,

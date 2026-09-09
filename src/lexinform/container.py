@@ -20,6 +20,7 @@ from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import Bill
 from lexinform.ports import Downloader, Publisher, RunNotifier
+from lexinform.pricing import price_of
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.discovery import BillDiscoveryService
@@ -127,6 +128,7 @@ class Container:
         )
 
     def analysis_service(self) -> AnalysisService:
+        price = price_of(self.settings.llm_model)  # None: unknown model, no cost estimates
         return AnalysisService(
             self.repo,
             self.text_sources(),
@@ -137,6 +139,9 @@ class Container:
             authors=SejmAuthorsResolver(self.gateway),
             max_attempts=self.settings.max_analysis_attempts,
             workers=self.settings.llm_concurrency,
+            input_price_usd_per_mtok=price[0] if price is not None else None,
+            max_bill_cost_usd=self.settings.max_analysis_cost_usd,
+            max_run_cost_usd=self.settings.max_run_cost_usd,
             triage=self.prefilter if self.settings.llm_triage_model else None,
             triage_min_chars=self.settings.triage_min_chars,
             triage_min_confidence=self.settings.triage_min_confidence,

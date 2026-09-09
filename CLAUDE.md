@@ -270,7 +270,14 @@ rejects `thinking: adaptive`; a classification does not need it). The system pro
 `cache_control`, but the analysis prompt is ~850 tokens (triage ~390, amendments ~440), under the
 1024-token minimum a cache entry needs on Opus/Sonnet: the marker is ignored, nothing is cached and
 nothing is charged for it (measured 2026-09-09). The run report's "cache read" figure and
-`lexinform cost` show whether that changes; `lexinform runs` lists the recorded runs.
+`lexinform cost` show whether that changes; `lexinform runs` lists the recorded runs. Guard rails
+(`LEXINFORM_MAX_ANALYSIS_COST_USD`, default $2 per first analysis, estimated from the text length
+at 2 chars/token before the call; `LEXINFORM_MAX_RUN_COST_USD`, default $15 per run): a text
+over the per-bill limit gets `skipped_cost` with the reason in `last_error` (`lexinform reset
+--to analysis_pending` revives it), the analysis phase stops for the run once its spend reaches
+the per-run limit (a note in the report, not an error; the rest waits for the next run).
+Re-analyses are not estimated: a new version of a text that already passed must not leave the
+card behind.
 
 ## Product decisions already taken
 

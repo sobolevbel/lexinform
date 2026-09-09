@@ -21,6 +21,12 @@ PRICES: dict[str, tuple[float, float]] = {
 
 CACHE_READ_FACTOR = 0.1
 CACHE_WRITE_FACTOR = 1.25
+CHARS_PER_TOKEN = 2.0  # Polish legal text on Claude's tokenizer (measured, see CLAUDE.md)
+
+
+def estimate_input_cost(chars: int, input_price_per_mtok: float) -> float:
+    """What sending `chars` of Polish text costs in input tokens, before the call is made."""
+    return chars / CHARS_PER_TOKEN / 1_000_000 * input_price_per_mtok
 
 
 def price_of(model: str) -> tuple[float, float] | None:

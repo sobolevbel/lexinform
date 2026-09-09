@@ -251,6 +251,9 @@ class DailyPipeline:
         report.analyzed = analysed.analyzed
         report.triaged_out = analysed.triaged_out
         report.analysis_failures = analysed.failed
+        report.analysis_skipped_cost = analysed.skipped_cost
+        if analysed.stopped:
+            report.notes.append(f"analysis: {analysed.stopped}")
         report.rejected = [
             v for v in analysed.verdicts if not v.relevant or v.score < opts.min_score
         ]

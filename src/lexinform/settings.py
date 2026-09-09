@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     llm_triage_model: str = "claude-sonnet-5"
     triage_min_chars: int = 20_000  # shorter texts go straight to the full analysis
     triage_min_confidence: float = Field(default=0.8, ge=0.0, le=1.0)
+    # Cost guard rails (0 disables): a first analysis whose input alone is estimated above the
+    # per-bill limit is skipped (`skipped_cost`, revived with `lexinform reset`); the analysis
+    # phase stops for the run once the run's model spend reaches the per-run limit.
+    max_analysis_cost_usd: float = Field(default=2.0, ge=0.0)
+    max_run_cost_usd: float = Field(default=15.0, ge=0.0)
     output_language: str = "ru"
     # Safety cap only: Polish text is ~2 chars/token, so this is ~750k tokens and fits the
     # 1M context of the default model. Real prints (even 800k-char ones) go in whole.

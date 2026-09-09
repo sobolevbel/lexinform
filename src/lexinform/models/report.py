@@ -52,6 +52,8 @@ class RunReport(BaseModel):
     analyzed: int = 0
     triaged_out: int = 0  # rejected by the cheap first pass, no full analysis
     analysis_failures: int = 0
+    analysis_skipped_cost: int = 0  # texts over the per-bill cost limit, not sent to the model
+    notes: list[str] = Field(default_factory=list)  # worth telling, not an error (a budget stop)
     rejected: list[AnalysisVerdict] = Field(default_factory=list)  # analysed, not published
     published: int = 0
     joint_published: int = 0  # "alternative bill" replies under the card of a joint print

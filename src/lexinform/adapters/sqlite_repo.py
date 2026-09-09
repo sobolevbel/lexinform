@@ -305,7 +305,9 @@ class SqliteBillRepository:
         assert bill is not None
         return bill
 
-    _SKIPPED = frozenset({BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER})
+    _SKIPPED = frozenset(
+        {BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER, BillStatus.SKIPPED_COST}
+    )
 
     def set_status(
         self,
