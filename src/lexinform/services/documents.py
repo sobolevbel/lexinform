@@ -7,6 +7,7 @@ in git. Downloads are routed by host to the client of that system, so its outage
 
 import logging
 import threading
+import time
 from collections.abc import Mapping
 from urllib.parse import urlparse
 
@@ -78,12 +79,22 @@ class TextLoader:
         download = self._downloaders.get(host)
         if download is None:
             raise ValueError(f"no downloader for host {host!r} ({url})")
+        started = time.perf_counter()
         try:
             data = download(url, max_bytes=self._max_bytes)
         except AttachmentTooLargeError as exc:
             log.warning("%s; skipping text", exc)
             return None
+        downloaded = time.perf_counter()
         text = self._extractor.extract(data)
+        log.info(
+            "%s: %d KB downloaded in %.1fs, %d chars extracted in %.1fs",
+            url,
+            len(data) // 1024,
+            downloaded - started,
+            len(text),
+            time.perf_counter() - downloaded,
+        )
         if len(text.strip()) < MIN_TEXT_CHARS:
             log.warning("%s yielded almost no text (%d chars)", url, len(text))
             return None

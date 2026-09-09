@@ -138,6 +138,7 @@ class AnalysisService:
                     relevant=record.analysis.relevant,
                     score=record.analysis.score,
                     triaged=record.text_source == "excerpts",
+                    term=bill.term,
                 )
             )
             result.input_tokens += record.input_tokens or 0

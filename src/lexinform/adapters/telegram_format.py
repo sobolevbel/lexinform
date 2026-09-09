@@ -15,6 +15,7 @@ from lexinform.models import (
     RCL_STAGE_TYPE,
     ActInfo,
     AgendaItem,
+    AnalysisVerdict,
     ApplicantType,
     Bill,
     ConsultationWindow,
@@ -27,7 +28,10 @@ from lexinform.models import (
     VotingSummary,
     committee_web_url,
     flatten_stages,
+    is_pre_print_number,
+    is_rcl_number,
     next_phase,
+    process_web_url,
 )
 from lexinform.pricing import cost_usd
 
@@ -526,56 +530,67 @@ class MessageFormatter:
             + (f" · term {report.term}" if report.term is not None else "")
             + (f" · {duration}s" if duration is not None else "")
         )
-        counters = "\n".join(
-            [
-                f"discovered: {report.discovered} (+{report.pre_print_discovered} without print"
-                f" number) · prefilter hits: {report.prefilter_hits} · RCL: "
-                f"{report.rcl_discovered} (hits {report.rcl_prefilter_hits})",
+        sections = [
+            _section(
+                "🔎",
+                "discovery",
+                f"Sejm: {report.discovered} new (+{report.pre_print_discovered} without print"
+                f" number) · prefilter hits: {report.prefilter_hits}",
+                f"RCL: {report.rcl_discovered} new · prefilter hits: {report.rcl_prefilter_hits}",
                 f"text prefilter: checked {report.text_prefilter_checked} · "
                 f"hits {report.text_prefilter_hits}",
+            ),
+            _section(
+                "🤖",
+                "analysis",
                 f"analyzed: {report.analyzed} · triaged out: {report.triaged_out} · "
                 f"failures: {report.analysis_failures}",
-                f"published: {report.published} · tracked: {report.tracked} · "
-                f"updates: {report.updates} · re-analyzed: {report.reanalyzed} · "
-                f"linked: {report.linked}",
-                f"acts published: {report.acts_published} · in force: {report.in_force_posted}"
+                _tokens_line(report),
+            ),
+            _section(
+                "📣",
+                "posts",
+                f"new cards: {report.published} · updates: {report.updates} · "
+                f"re-analyzed: {report.reanalyzed} · linked: {report.linked} · "
+                f"tracked: {report.tracked}",
+                f"acts: {report.acts_published} · in force: {report.in_force_posted}"
                 f" · consultation reminders: {report.consultation_reminders}"
                 f" · results: {report.consultation_results_posted}"
                 f" · agenda: {report.agenda_posted}",
-                _tokens_line(report),
-            ]
-            + (
-                [
+                (
                     f"end of term: {report.discontinued} bill(s) lapsed · "
                     f"{report.rcl_rehomed} RCL project(s) carried over"
-                ]
-                if report.discontinued or report.rcl_rehomed
-                else []
-            )
-            + (
-                [
-                    "timing: "
-                    + " · ".join(
+                    if report.discontinued or report.rcl_rehomed
+                    else ""
+                ),
+            ),
+        ]
+        if report.phase_seconds:
+            sections.append(
+                _section(
+                    "⏱",
+                    "timing",
+                    " · ".join(
                         f"{esc(name)} {secs:.1f}s" for name, secs in report.phase_seconds.items()
-                    )
-                ]
-                if report.phase_seconds
-                else []
+                    ),
+                )
             )
-        )
-        errors = ""
         if report.errors:
-            errors = "<b>errors</b>\n" + "\n".join(f"• {esc(e)}" for e in report.errors)
+            sections.append(_section("❌", "errors", *(f"• {esc(e)}" for e in report.errors)))
         rejected = ""
         if report.rejected:
-            rejected = "<b>analysed, not published</b>\n" + "\n".join(
-                f"• druk {esc(v.number)} · {esc(v.reason)} · {esc(_clip(v.title, 110))}"
-                for v in report.rejected
+            rejected = _section(
+                "🗂",
+                "analysed, not published",
+                *(
+                    f"• {_verdict_ref(v)} · {esc(v.reason)} · {esc(_clip(v.title, 110))}"
+                    for v in report.rejected
+                ),
             )
         logs = ""
         if log_lines:
-            logs = "<b>warnings</b>\n<pre>" + esc("\n".join(log_lines)) + "</pre>"
-        text = self._assemble([head, counters, errors], flexible=[rejected, logs])
+            logs = "⚠️ <b>warnings</b>\n<pre>" + esc("\n".join(log_lines)) + "</pre>"
+        text = self._assemble([head, "\n\n".join(sections)], flexible=[rejected, logs])
         return RenderedMessage(text=text)
 
     # ------------------------------------------------------------------ helpers
@@ -1105,6 +1120,22 @@ def _tokens_line(report: RunReport) -> str:
 
 def _k(tokens: int) -> str:
     return f"{tokens / 1000:.1f}k" if tokens >= 1000 else str(tokens)
+
+
+def _section(icon: str, title: str, *lines: str) -> str:
+    """`🔎 <b>title</b>` followed by the non-empty lines, one per row."""
+    return "\n".join([f"{icon} <b>{esc(title)}</b>", *(line for line in lines if line)])
+
+
+def _verdict_ref(verdict: AnalysisVerdict) -> str:
+    """`druk 2695` / `RCL/12414402` / `RPW/29075/2026`, linked to the process page when the term
+    is known (reports stored before the field existed have none)."""
+    number = verdict.number
+    plain = is_rcl_number(number) or is_pre_print_number(number)
+    label = esc(number) if plain else f"druk {esc(number)}"
+    if verdict.term is None:
+        return label
+    return link(process_web_url(verdict.term, number), label)
 
 
 def _clip(text: str, limit: int) -> str:

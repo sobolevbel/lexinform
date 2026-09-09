@@ -15,6 +15,7 @@ class AnalysisVerdict(BaseModel):
     relevant: bool
     score: int
     triaged: bool = False  # rejected by the cheap first pass on excerpts
+    term: int | None = None  # for the link to the process page (None in reports stored before)
 
     @property
     def reason(self) -> str:

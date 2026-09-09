@@ -674,8 +674,12 @@ def _report(**overrides: Any) -> RunReport:
                 relevant=False,
                 score=1,
                 triaged=True,
+                term=10,
             ),
             AnalysisVerdict(number="2411", title="Poselski projekt", relevant=True, score=2),
+            AnalysisVerdict(
+                number="RCL/12414402", title="Karta Nauczyciela", relevant=False, score=1, term=10
+            ),
         ],
     )
     fields.update(overrides)
@@ -688,12 +692,17 @@ def test_run_report_lists_counters_costs_rejections_and_warnings() -> None:
     text = MessageFormatter("ru").run_report(_report(), warnings).text
 
     assert_telegram_html(text)
-    assert text.startswith("<b>❌") and "discovered: 77" in text
-    assert "timing: discovery 4.1s · text prefilter 60.0s" in text
+    assert text.startswith("<b>❌")
+    assert "\n\n🔎 <b>discovery</b>\nSejm: 77 new (+0 without print number) · prefilter" in text
+    assert "\n\n⏱ <b>timing</b>\ndiscovery 4.1s · text prefilter 60.0s" in text
+    assert "\n\n❌ <b>errors</b>\n• 1 publication(s) failed" in text
     # 44k*5 + 2k*0.5 + 3.9k*25 + 4k*2 + 0.1k*10 = $0.3275
     assert "tokens in/out: 50000/4000 · opus-5 46.0k/3.9k · sonnet-5 4.0k/100 · ≈ $0.33" in text
-    assert "<b>analysed, not published</b>\n• druk 2695 · triage · Rządowy projekt" in text
-    assert "• druk 2411 · score 2 · Poselski projekt" in text
+    druk = '<a href="https://www.sejm.gov.pl/Sejm10.nsf/PrzebiegProc.xsp?nr=2695">druk 2695</a>'
+    assert f"<b>analysed, not published</b>\n• {druk} · triage · Rządowy projekt" in text
+    assert "• druk 2411 · score 2 · Poselski projekt" in text  # no term stored: no link
+    rcl = '<a href="https://legislacja.rcl.gov.pl/projekt/12414402">RCL/12414402</a>'
+    assert f"• {rcl} · not relevant · Karta Nauczyciela" in text
     assert "…" in text and "<x>" not in text  # long title clipped, HTML escaped
     assert "<pre>" in text  # the warnings, trimmed to fit
 
