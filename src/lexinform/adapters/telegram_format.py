@@ -494,7 +494,8 @@ class MessageFormatter:
         counters = "\n".join(
             [
                 f"discovered: {report.discovered} (+{report.pre_print_discovered} without print"
-                f" number) · prefilter hits: {report.prefilter_hits}",
+                f" number) · prefilter hits: {report.prefilter_hits} · RCL: "
+                f"{report.rcl_discovered} (hits {report.rcl_prefilter_hits})",
                 f"text prefilter: checked {report.text_prefilter_checked} · "
                 f"hits {report.text_prefilter_hits}",
                 f"analyzed: {report.analyzed} · triaged out: {report.triaged_out} · "

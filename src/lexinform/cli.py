@@ -1,6 +1,7 @@
 """Command-line interface."""
 
 import logging
+import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -22,6 +23,12 @@ from lexinform.models import (
     RunReport,
     flatten_stages,
     is_pre_print_number,
+    is_rcl_number,
+    normalize_wykaz_number,
+    process_summary,
+    rcl_fingerprint,
+    rcl_project_id,
+    rcl_stages,
     stage_fingerprint,
 )
 from lexinform.services.pipeline import RunOptions
@@ -86,6 +93,9 @@ def run(
         bool, typer.Option("--no-publish", help="Analyse but mark candidates as skipped.")
     ] = False,
     no_track: Annotated[bool, typer.Option("--no-track", help="Skip status tracking.")] = False,
+    no_rcl: Annotated[
+        bool, typer.Option("--no-rcl", help="Skip legislacja.rcl.gov.pl (government projects).")
+    ] = False,
     full_track: Annotated[
         bool,
         typer.Option(
@@ -118,6 +128,7 @@ def run(
                 dry_run=dry_run,
                 publish=not no_publish,
                 track=not no_track,
+                rcl=not no_rcl,
                 full_track=full_track,
                 max_publish=s.max_publish_per_run if max_publish is None else max_publish,
                 max_analyze=s.max_analyze_per_run if max_analyze is None else max_analyze,
@@ -138,6 +149,11 @@ def scan(since: SinceOpt = None) -> None:
         pipeline = c.pipeline(dry_run=True)
         effective = pipeline.resolve_since(_utc(since))
         result = c.discovery_service().discover(c.settings.term, effective)
+        rcl_service = c.rcl_discovery_service()
+        rcl_new = rcl_hits = 0
+        if rcl_service is not None:
+            rcl_result = rcl_service.discover(c.settings.term, effective)
+            rcl_new, rcl_hits = rcl_result.new, rcl_result.prefilter_hits
         text_service = c.text_prefilter_service()
         text_hits = (
             text_service.run(c.settings.term, limit=c.settings.text_prefilter_max_per_run).hits
@@ -150,12 +166,11 @@ def scan(since: SinceOpt = None) -> None:
     typer.echo(
         f"since={effective.isoformat()} seen={result.seen} new={result.new} "
         f"pre_print={result.pre_print_new} title_hits={result.prefilter_hits} "
-        f"text_hits={text_hits}"
+        f"rcl_new={rcl_new} rcl_hits={rcl_hits} text_hits={text_hits}"
     )
     for bill in pending:
-        typer.echo(
-            f"  druk {bill.number:>6}  [{', '.join(bill.prefilter_hits)}]  {bill.summary.title}"
-        )
+        label = bill.number if not bill.has_process else f"druk {bill.number}"
+        typer.echo(f"  {label:>14}  [{', '.join(bill.prefilter_hits)}]  {bill.summary.title}")
 
 
 @app.command()
@@ -305,12 +320,19 @@ def track(
 
 @app.command()
 def show(
-    number: Annotated[str, typer.Argument(help="Print (druk) number, or RPW/… before one.")],
+    number: Annotated[
+        str,
+        typer.Argument(help="Print (druk) number, RPW/… before one, or RCL/{id} / UC164 on RCL."),
+    ],
 ) -> None:
-    """Show what the Sejm API and the local database know about a bill."""
+    """Show what the Sejm API (or RCL) and the local database know about a bill."""
     c = _container()
     try:
+        number = _resolve_number(c, number)
         local = c.repo.get(c.settings.term, number)
+        if is_rcl_number(number):
+            _show_rcl(c, number, local)
+            return
         if is_pre_print_number(number):
             _show_pre_print(c, number, local)
             return
@@ -507,14 +529,72 @@ def _show_pre_print(c: Container, number: str, local: Bill | None) -> None:
     )
 
 
+def _show_rcl(c: Container, number: str, local: Bill | None) -> None:
+    project = local.rcl if local and local.rcl else c.rcl_reader().read(rcl_project_id(number))
+    typer.echo(f"{project.title}\n{project.web_url}")
+    typer.echo(
+        f"applicant={project.applicant} wykaz={project.wykaz_number} status={project.status}"
+        f" created={project.created} modified={project.modified}"
+        f" rm={project.rm_number or '-'} print={project.print_number or '-'}"
+    )
+    typer.echo(f"keywords: {', '.join(project.keywords)}; działy: {', '.join(project.departments)}")
+    typer.echo("\nstages:")
+    for stage in project.stages:
+        folders = ", ".join(f"{f.kind} {len(f.documents)}" for f in stage.folders if f.documents)
+        typer.echo(
+            f"  {stage.modified or '          '}  {stage.state:<11} {stage.number:>2}. {stage.name}"
+            + (f"  [{folders}]" if folders else "")
+        )
+    consultation = project.consultation
+    if consultation is not None:
+        typer.echo(
+            f"\nconsultation: deadline={consultation.deadline} ({consultation.days} days from"
+            f" {consultation.letter_date or 'the letter on RCL'}) email={consultation.email}"
+            f" positions={consultation.positions} letter={consultation.letter_url}"
+        )
+    typer.echo("\ntext documents:")
+    for role, doc in project.text_documents().items():
+        typer.echo(f"  {role:<14} {doc.name}  {doc.url}")
+    typer.echo(
+        "\nlocal: "
+        + (
+            f"status={local.status.value} hits={local.prefilter_hits} linked={local.linked_number}"
+            if local
+            else "not in database"
+        )
+    )
+
+
+_WYKAZ_NUMBER = re.compile(r"^U[A-Z]*\s?\d+$", re.IGNORECASE)
+
+
+def _resolve_number(c: Container, number: str) -> str:
+    """A wykaz number (UC164) names the RCL row it belongs to; anything else is passed on."""
+    if not _WYKAZ_NUMBER.match(number):
+        return number
+    wykaz = normalize_wykaz_number(number) or number
+    bill = c.repo.find_by_wykaz_number(c.settings.term, wykaz)
+    if bill is None:
+        typer.echo(f"{wykaz}: no RCL project with this number in the database", err=True)
+        raise typer.Exit(code=1)
+    return bill.number
+
+
 def _load_bill(c: Container, number: str) -> Bill:
-    """The bill from the database, fetched from the API and prefiltered on first sight."""
+    """The bill from the database, fetched from the API (or RCL) and prefiltered on first sight."""
+    number = _resolve_number(c, number)
     bill = c.repo.get(c.settings.term, number)
     if bill is not None:
         return bill
-    if is_pre_print_number(number):
+    if is_rcl_number(number):
+        project = c.rcl_reader().read(rcl_project_id(number))
+        summary: ProcessSummary = process_summary(project, term=c.settings.term)
+        bill = c.repo.upsert_summary(summary, now=c.clock.now())
+        c.repo.save_rcl(bill.term, bill.number, project)
+        c.repo.save_stages(bill.term, bill.number, rcl_stages(project), rcl_fingerprint(project))
+    elif is_pre_print_number(number):
         sub = _find_submission(c, number)
-        summary: ProcessSummary = ProcessSummary.from_submission(sub)
+        summary = ProcessSummary.from_submission(sub)
         bill = c.repo.upsert_summary(summary, now=c.clock.now())
         c.repo.save_submission(bill.term, bill.number, sub)
     else:

@@ -156,6 +156,7 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_TRACK_CLOSED_GRACE_DAYS` / `_TRACK_PASSED_MAX_DAYS` | `90` / `180` | How long closed / passed-but-unpublished bills are followed |
 | `LEXINFORM_TRACK_FULL_WEEKDAY` | `0` (Monday) | Weekday on which every followed bill is checked, not only the changed ones |
 | `LEXINFORM_IN_FORCE_REMINDERS` | `true` | Reminder on the entry-into-force day |
+| `LEXINFORM_RCL_ENABLED` / `_RCL_CONCURRENCY` | `true` / `2` | Follow government projects on legislacja.rcl.gov.pl before they reach the Sejm; parallel page reads |
 | `LEXINFORM_CONSULTATION_REMINDERS` / `_CONSULTATION_REMINDER_DAYS` | `true` / `3` | Reminder this many days before a public consultation closes |
 | `LEXINFORM_AGENDA_WATCH` | `true` | Post when a followed bill appears on the agenda of a committee or Sejm sitting |
 | `LEXINFORM_MAX_PUBLISH_ATTEMPTS` | `3` | Retries of a failed Telegram post |

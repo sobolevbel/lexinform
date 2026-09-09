@@ -77,14 +77,42 @@ class MetadataOnlySource:
         return LocatedText()
 
 
+class RclTextSource:
+    """Government projects on RCL: the newest bill text with its uzasadnienie and OSR, as
+    separate files (no network: the project page was read by discovery or tracking)."""
+
+    def locate(self, bill: Bill) -> LocatedText:
+        project = bill.rcl
+        if project is None:
+            return LocatedText()
+        documents = project.text_documents()
+        if "bill" not in documents:
+            return LocatedText()  # nothing readable (legacy .doc only): metadata
+        extras = tuple(
+            documents[role].url for role in ("justification", "osr") if role in documents
+        )
+        return LocatedText(
+            document=TextDocument(url=documents["bill"].url, kind="rcl", extra_urls=extras)
+        )
+
+
 class TextSources:
     """Routes a bill to the source of its text."""
 
-    def __init__(self, sejm: TextSource, *, metadata: TextSource | None = None) -> None:
+    def __init__(
+        self,
+        sejm: TextSource,
+        *,
+        rcl: TextSource | None = None,
+        metadata: TextSource | None = None,
+    ) -> None:
         self._sejm = sejm
         self._metadata = metadata or MetadataOnlySource()
+        self._rcl = rcl or self._metadata
 
     def locate(self, bill: Bill) -> LocatedText:
+        if bill.is_rcl:
+            return self._rcl.locate(bill)
         source = self._sejm if bill.has_process else self._metadata
         return source.locate(bill)
 

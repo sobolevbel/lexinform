@@ -13,6 +13,7 @@ from datetime import UTC, date, datetime, timedelta
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
 from lexinform.errors import (
     AttachmentTooLargeError,
+    RclUnavailableError,
     SejmApiUnavailableError,
     TelegramUnavailableError,
 )
@@ -31,6 +32,9 @@ from lexinform.models import (
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
+    RclProject,
+    RclProjectSummary,
+    RclStage,
     RunReport,
     SejmSitting,
     StatusChange,
@@ -146,18 +150,91 @@ class FakeSejmGateway:
 
 
 class FakeTextExtractor:
-    """Returns one fixed text for every PDF, or raises when told to."""
+    """Returns one fixed text for every file (or a text chosen by the file's bytes), or raises
+    when told to."""
 
     def __init__(
-        self, text: str = "Art. 1. Tekst ustawy. " * 50, *, error: Exception | None = None
+        self,
+        text: str = "Art. 1. Tekst ustawy. " * 50,
+        *,
+        error: Exception | None = None,
+        by_content: dict[bytes, str] | None = None,
     ) -> None:
         self.text = text
         self.error = error
+        self.by_content = by_content or {}
 
     def extract(self, data: bytes) -> str:
         if self.error is not None:
             raise self.error
-        return self.text
+        return self.by_content.get(data, self.text)
+
+
+@dataclass
+class FakeRclGateway:
+    """`RclGateway` over dictionaries: the list rows, projects (timelines), stage catalogs, files
+    and the RM-number redirects. Missing entries raise per-item errors."""
+
+    listing: list[RclProjectSummary] = field(default_factory=list)
+    projects: dict[int, RclProject] = field(default_factory=dict)  # timelines (no folders)
+    stages: dict[int, RclStage] = field(default_factory=dict)  # by stage id, with folders
+    files: dict[str, bytes] = field(default_factory=dict)
+    rm_numbers: dict[str, int] = field(default_factory=dict)
+    outages: set[str] = field(default_factory=set)
+    calls: list[str] = field(default_factory=list)
+
+    def _called(self, method: str, detail: str = "") -> None:
+        self.calls.append(f"{method}:{detail}" if detail else method)
+        if method in self.outages:
+            raise RclUnavailableError(f"{method}: request rejected")
+
+    def list_projects(self, *, modified_since: date) -> Iterator[RclProjectSummary]:
+        self._called("list_projects")
+        rows = sorted(self.listing, key=lambda r: r.modified, reverse=True)
+        for row in rows:
+            if row.modified >= modified_since:
+                yield row
+
+    def get_project(self, project_id: int) -> RclProject:
+        self._called("get_project", str(project_id))
+        project = self.projects[project_id]
+        # The page shows the timeline only; folders come from the catalog pages.
+        return project.model_copy(
+            update={
+                "stages": tuple(st.model_copy(update={"folders": ()}) for st in project.stages),
+                "consultation": None,
+            }
+        )
+
+    def get_stage(self, project_id: int, stage_id: int) -> RclStage:
+        self._called("get_stage", f"{project_id}/{stage_id}")
+        return self.stages[stage_id]
+
+    def resolve_project_id(self, rm_number: str) -> int | None:
+        self._called("resolve_project_id", rm_number)
+        return self.rm_numbers.get(rm_number)
+
+    def download(self, url: str, *, max_bytes: int | None = None) -> bytes:
+        self._called("download", url)
+        data = self.files[url]
+        if max_bytes is not None and len(data) > max_bytes:
+            raise AttachmentTooLargeError(url, max_bytes)
+        return data
+
+    def put(self, project: RclProject) -> None:
+        """Make the fake RCL show this project (list row, timeline, catalogs)."""
+        self.projects[project.id] = project
+        for stage in project.stages:
+            self.stages[stage.id] = stage
+        row = RclProjectSummary(
+            id=project.id,
+            title=project.title,
+            applicant=project.applicant,
+            wykaz_number=project.wykaz_number,
+            created=project.created,
+            modified=project.modified,
+        )
+        self.listing = [r for r in self.listing if r.id != project.id] + [row]
 
 
 def make_analysis(

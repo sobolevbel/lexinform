@@ -31,6 +31,8 @@ class RunReport(BaseModel):
     discovery_ok: bool = False  # discovery finished: the watermark may advance past `started_at`
     discovered: int = 0
     pre_print_discovered: int = 0
+    rcl_discovered: int = 0  # government projects first seen on RCL
+    rcl_prefilter_hits: int = 0
     linked: int = 0
     prefilter_hits: int = 0
     text_prefilter_checked: int = 0

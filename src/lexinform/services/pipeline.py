@@ -14,6 +14,7 @@ from lexinform.ports import BillRepository, Clock, RunNotifier
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.publishing import PublishingService
+from lexinform.services.rcl_discovery import RclDiscoveryService
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
 
@@ -27,6 +28,7 @@ class RunOptions(BaseModel):
     since: datetime | None = None
     dry_run: bool = False
     discover: bool = True
+    rcl: bool = True  # also look at legislacja.rcl.gov.pl (when the pipeline has the service)
     publish: bool = True
     track: bool = True
     max_publish: int = 10
@@ -51,6 +53,7 @@ class DailyPipeline:
         *,
         notifier: RunNotifier | None = None,
         text_prefilter: TextPrefilterService | None = None,
+        rcl_discovery: RclDiscoveryService | None = None,
         first_run_lookback_days: int = 1,
         rerun_overlap_days: int = 1,
         pre_print: bool = True,
@@ -64,6 +67,7 @@ class DailyPipeline:
         self._clock = clock
         self._notifier = notifier
         self._text_prefilter = text_prefilter
+        self._rcl_discovery = rcl_discovery
         self._first_run_lookback = timedelta(days=first_run_lookback_days)
         self._overlap = timedelta(days=rerun_overlap_days)
         self._pre_print = pre_print
@@ -142,6 +146,9 @@ class DailyPipeline:
 
         if opts.discover:
             self._phase(report, "discovery", lambda: self._discover(opts, since, report))
+        if opts.discover and opts.rcl and self._rcl_discovery is not None:
+            # Its own phase: an RCL outage must not cost the Sejm discovery.
+            self._phase(report, "rcl discovery", lambda: self._discover_rcl(opts, since, report))
         if self._text_prefilter is not None:
             self._phase(report, "text prefilter", lambda: self._prefilter_text(opts, report))
         self._phase(report, "analysis", lambda: self._analyse(opts, report))
@@ -177,6 +184,14 @@ class DailyPipeline:
         report.discovered = discovered.new
         report.pre_print_discovered = discovered.pre_print_new
         report.prefilter_hits = discovered.prefilter_hits
+
+    def _discover_rcl(self, opts: RunOptions, since: datetime, report: RunReport) -> None:
+        assert self._rcl_discovery is not None
+        discovered = self._rcl_discovery.discover(opts.term, since)
+        report.rcl_discovered = discovered.new
+        report.rcl_prefilter_hits = discovered.prefilter_hits
+        if discovered.failed:
+            report.errors.append(f"{discovered.failed} RCL project(s) could not be read")
 
     def _prefilter_text(self, opts: RunOptions, report: RunReport) -> None:
         assert self._text_prefilter is not None

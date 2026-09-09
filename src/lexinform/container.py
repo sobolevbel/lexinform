@@ -9,21 +9,24 @@ from lexinform.adapters.console import ConsolePublisher, ConsoleRunNotifier
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.pdf_text import PypdfTextExtractor
+from lexinform.adapters.rcl_html import RclClient
 from lexinform.adapters.sejm_api import SejmApiClient
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.adapters.telegram import TelegramBotClient, TelegramPublisher, TelegramRunNotifier
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
-from lexinform.ports import Publisher, RunNotifier
+from lexinform.ports import Downloader, Publisher, RunNotifier
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.documents import TextLoader
 from lexinform.services.pipeline import DailyPipeline
 from lexinform.services.publishing import PublishingService
+from lexinform.services.rcl_discovery import RclDiscoveryService
+from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.signatories import SejmAuthorsResolver
-from lexinform.services.sources import SejmTextSource, TextSources
+from lexinform.services.sources import RclTextSource, SejmTextSource, TextSources
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
 from lexinform.settings import Settings
@@ -37,6 +40,7 @@ class Container:
     gateway: SejmApiClient
     formatter: MessageFormatter
     prefilter: KeywordPrefilter
+    rcl: RclClient | None = None  # None when LEXINFORM_RCL_ENABLED is off
     _telegram: TelegramBotClient | None = field(default=None, init=False, repr=False)
     _loader: TextLoader | None = field(default=None, init=False, repr=False)
 
@@ -44,16 +48,39 @@ class Container:
         """One loader (and text cache) per process, shared by the text prefilter and analysis.
         Downloads are routed by host to the client of that system."""
         if self._loader is None:
-            sejm_host = urlparse(self.settings.sejm_api_base_url).hostname or ""
+            downloaders: dict[str, Downloader] = {
+                _host(self.settings.sejm_api_base_url): self.gateway.download
+            }
+            if self.rcl is not None:
+                downloaders[_host(self.settings.rcl_base_url)] = self.rcl.download
             self._loader = TextLoader(
-                {sejm_host: self.gateway.download},
+                downloaders,
                 DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor()),
                 max_bytes=self.settings.max_pdf_download_mb * 1024 * 1024,
             )
         return self._loader
 
     def text_sources(self) -> TextSources:
-        return TextSources(SejmTextSource(self.gateway))
+        rcl = RclTextSource() if self.rcl is not None else None
+        return TextSources(SejmTextSource(self.gateway), rcl=rcl)
+
+    def rcl_reader(self) -> RclProjectReader:
+        if self.rcl is None:
+            raise RuntimeError("RCL is disabled (LEXINFORM_RCL_ENABLED=false)")
+        return RclProjectReader(self.rcl, self.text_loader())
+
+    def rcl_discovery_service(self) -> RclDiscoveryService | None:
+        if self.rcl is None:
+            return None
+        return RclDiscoveryService(
+            self.rcl,
+            self.repo,
+            self.rcl_reader(),
+            self.prefilter,
+            self.clock,
+            text_prefilter=self.settings.text_prefilter_enabled,
+            workers=self.settings.rcl_concurrency,
+        )
 
     def analyzer(self) -> AnthropicAnalyzer:
         return AnthropicAnalyzer(
@@ -179,6 +206,7 @@ class Container:
             self.clock,
             notifier=self.run_notifier(dry_run=dry_run),
             text_prefilter=self.text_prefilter_service(),
+            rcl_discovery=self.rcl_discovery_service(),
             first_run_lookback_days=self.settings.first_run_lookback_days,
             rerun_overlap_days=self.settings.rerun_overlap_days,
             pre_print=self.settings.pre_print_enabled,
@@ -187,9 +215,15 @@ class Container:
 
     def close(self) -> None:
         self.gateway.close()
+        if self.rcl is not None:
+            self.rcl.close()
         self.repo.close()
         if self._telegram is not None:
             self._telegram.close()
+
+
+def _host(url: str) -> str:
+    return urlparse(url).hostname or ""
 
 
 def build_container(settings: Settings) -> Container:
@@ -200,6 +234,11 @@ def build_container(settings: Settings) -> Container:
         page_size=settings.sejm_page_size,
         timeout=settings.sejm_timeout_seconds,
     )
+    rcl = (
+        RclClient(settings.rcl_base_url, timeout=settings.rcl_timeout_seconds)
+        if settings.rcl_enabled
+        else None
+    )
     return Container(
         settings=settings,
         clock=SystemClock(),
@@ -207,4 +246,5 @@ def build_container(settings: Settings) -> Container:
         gateway=gateway,
         formatter=MessageFormatter(settings.output_language),
         prefilter=KeywordPrefilter(),
+        rcl=rcl,
     )

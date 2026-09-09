@@ -40,14 +40,17 @@ from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.documents import TextLoader
 from lexinform.services.pipeline import DailyPipeline, RunOptions
 from lexinform.services.publishing import PublishingService
+from lexinform.services.rcl_discovery import RclDiscoveryService
+from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.signatories import SejmAuthorsResolver
-from lexinform.services.sources import SejmTextSource, TextSources
+from lexinform.services.sources import RclTextSource, SejmTextSource, TextSources
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
 from tests.fakes import (
     FakeLlm,
     FakeNotifier,
     FakePublisher,
+    FakeRclGateway,
     FakeSejmGateway,
     FakeTextExtractor,
     FixedClock,
@@ -194,6 +197,14 @@ RCL_CONSULTATION = RclConsultation(
 )
 
 
+LETTER_BYTES = b"PK\x03\x04 letter"  # what the fake RCL serves for the consultation letter
+LETTER_TEXT = (
+    "Warszawa /elektroniczny znacznik czasu/ Szanowni Państwo, przekazuję projekt ustawy (UC164)."
+    " Zwracam się z prośbą o zajęcie stanowiska w terminie 7 dni od dnia otrzymania niniejszego"
+    " pisma, a w przypadku uwag przekazanie ich na adres: dep.prawny@mswia.gov.pl."
+)
+
+
 def rcl_project(**overrides: Any) -> RclProject:
     """A government bill under public consultation on RCL (the UC164 Schengen project)."""
     fields: dict[str, Any] = dict(
@@ -254,12 +265,24 @@ class World:
         self.publisher = FakePublisher(fail_on=fail_publish)
         self.notifier = FakeNotifier()
         self.extractor = extractor or FakeTextExtractor()
+        self.rcl = FakeRclGateway()
         loader = TextLoader(
-            {FILE_HOST: self.gateway.download}, self.extractor, max_bytes=MAX_PDF_BYTES
+            {FILE_HOST: self.gateway.download, RCL_HOST: self.rcl.download},
+            self.extractor,
+            max_bytes=MAX_PDF_BYTES,
         )
-        texts = TextSources(SejmTextSource(self.gateway))
+        texts = TextSources(SejmTextSource(self.gateway), rcl=RclTextSource())
         self.discovery = BillDiscoveryService(
             self.gateway, self.repo, KeywordPrefilter(), self.clock, text_prefilter=text_prefilter
+        )
+        self.rcl_discovery = RclDiscoveryService(
+            self.rcl,
+            self.repo,
+            RclProjectReader(self.rcl, loader),
+            KeywordPrefilter(),
+            self.clock,
+            text_prefilter=text_prefilter,
+            workers=workers,
         )
         self.analysis = AnalysisService(
             self.repo,
@@ -298,6 +321,7 @@ class World:
                 if text_prefilter
                 else None
             ),
+            rcl_discovery=self.rcl_discovery,
         )
 
     # ------------------------------------------------------------------ arrange
@@ -319,6 +343,21 @@ class World:
                 ),
             )
             self.gateway.files[print_url(number)] = b"%PDF"
+
+    def add_rcl_project(
+        self, project: RclProject | None = None, *, letter: str = LETTER_TEXT
+    ) -> RclProject:
+        """A government project on RCL with its documents; the consultation letter reads as
+        `letter`, every other file as the extractor's default text."""
+        project = project or rcl_project(consultation=None)
+        self.rcl.put(project)
+        for stage in project.stages:
+            for folder in stage.folders:
+                for doc in folder.documents:
+                    self.rcl.files[doc.url] = LETTER_BYTES if folder.kind == "letters" else b"%PDF"
+        if isinstance(self.extractor, FakeTextExtractor):
+            self.extractor.by_content[LETTER_BYTES] = letter
+        return project
 
     def set_stages(self, number: str, stages: tuple[Stage, ...]) -> None:
         """The Sejm added or changed stages of a followed bill."""
