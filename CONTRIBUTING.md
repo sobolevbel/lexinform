@@ -201,7 +201,7 @@ history of the `state` branch.
 | Add an API endpoint | `SejmGateway` port, `adapters/sejm_api.py` (+ parser), `tests/fakes.py`, a fixture and a test in `test_sejm_api.py`. |
 | Read something new from an RCL page | `adapters/rcl_html.py` (a parser per page; CSS selectors, no regexes on markup; raise `RclPageError` when a structural element is missing, tolerate missing details), the model in `models/rcl.py`, a saved page in `tests/fixtures/rcl/`, a test in `test_rcl_html.py`. |
 | Change what an RCL event posts | `services/tracking/rcl.py` (detection), `models/rcl.py::rcl_fingerprint` (what counts as a change), `telegram_format.py` + `i18n.py` (words), `test_tracking_rcl.py` and `test_telegram_format_rcl.py`. |
-| Add a text format | `adapters/document_text.py` (`DocumentTextExtractor` picks by magic bytes; PDF, .docx and legacy .doc via `doc_text.py` exist), a test in `test_document_text.py`; `models/rcl.py::READABLE_EXTENSIONS` if RCL publishes it. |
+| Add a text format | `adapters/document_text.py` (`DocumentTextExtractor` picks by magic bytes; PDF, .docx/.docm, .odt, zip packages and legacy .doc via `doc_text.py` exist), a test in `test_document_text.py`; `models/rcl.py::READABLE_EXTENSIONS` and `_format_rank` if RCL publishes it. |
 
 ## Deploy and operations
 

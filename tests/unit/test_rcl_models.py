@@ -72,6 +72,19 @@ def test_the_latest_stage_with_a_project_folder_wins() -> None:
     assert project.text_documents()["bill"].id == 2
 
 
+def test_a_zip_package_counts_as_text_only_when_nothing_better_is_published() -> None:
+    only_zip = RclFolder(id=10, name="Projekt", documents=(_doc(1, "Projekt ustawy.zip"),))
+    with_docx = RclFolder(
+        id=11, name="Projekt", documents=(_doc(2, "Projekt ustawy.zip"), _doc(3, "projekt.docx"))
+    )
+
+    zipped = _project(_stage(3, "Uzgodnienia", "reached", only_zip)).text_documents()
+    mixed = _project(_stage(3, "Uzgodnienia", "reached", with_docx)).text_documents()
+
+    assert zipped["bill"].id == 1
+    assert mixed["bill"].id == 3
+
+
 def test_skeleton_keeps_the_timeline_and_drops_the_folders() -> None:
     folder = RclFolder(id=10, name="Projekt", documents=(_doc(1, "projekt.pdf"),))
     project = _project(_stage(3, "Konsultacje publiczne", "reached", folder))

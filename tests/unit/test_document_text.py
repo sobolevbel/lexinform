@@ -4,7 +4,11 @@ import io
 import zipfile
 
 from lexinform.adapters.doc_text import DocTextExtractor
-from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.adapters.document_text import (
+    DocumentTextExtractor,
+    DocxTextExtractor,
+    OdtTextExtractor,
+)
 from lexinform.sections import PAGE_BREAK
 from tests.conftest import RCL_FIXTURES
 from tests.fakes import FakeTextExtractor
@@ -46,16 +50,93 @@ def test_rendered_page_break_markers_separate_pages() -> None:
     assert DocxTextExtractor().extract(data) == f"strona 1{PAGE_BREAK}strona 2"
 
 
+def _zip(members: dict[str, bytes]) -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        for name, data in members.items():
+            archive.writestr(name, data)
+    return buffer.getvalue()
+
+
+def _odt(content_xml: str) -> bytes:
+    return _zip(
+        {
+            "mimetype": b"application/vnd.oasis.opendocument.text",
+            "content.xml": (
+                '<?xml version="1.0"?><office:document-content'
+                ' xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"'
+                ' xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"'
+                ' xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0">'
+                f"<office:body><office:text>{content_xml}</office:text></office:body>"
+                "</office:document-content>"
+            ).encode(),
+        }
+    )
+
+
+def _router() -> DocumentTextExtractor:
+    return DocumentTextExtractor(
+        FakeTextExtractor("from pdf"), DocxTextExtractor(), FakeTextExtractor("from doc")
+    )
+
+
 def test_extractor_is_chosen_by_the_magic_bytes() -> None:
     extractor = DocumentTextExtractor(
         FakeTextExtractor("from pdf"), FakeTextExtractor("from docx"), FakeTextExtractor("from doc")
     )
+    docx = _docx("<w:p><w:r><w:t>x</w:t></w:r></w:p>")
 
     assert extractor.extract(b"%PDF-1.7 ...") == "from pdf"
     assert extractor.extract(b"\n\n%PDF-1.4 with a preamble") == "from pdf"
-    assert extractor.extract(b"PK\x03\x04 zip") == "from docx"
+    assert extractor.extract(docx) == "from docx"
     assert extractor.extract(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1 OLE container") == "from doc"
     assert extractor.extract(b"{\\rtf1 not supported}") == ""
+
+
+# --------------------------------------------------------------------------- zip and odt
+
+
+def test_zip_package_is_read_member_by_member_bill_first() -> None:
+    package = _zip(
+        {
+            "__MACOSX/._projekt.pdf": b"junk",
+            "OSR do projektu.docx": _docx("<w:p><w:r><w:t>Nazwa projektu</w:t></w:r></w:p>"),
+            "tabela zgodnosci.xlsx": b"PK\x03\x04 not a document",
+            "Uzasadnienie.docx": _docx("<w:p><w:r><w:t>UZASADNIENIE</w:t></w:r></w:p>"),
+            "Projekt ustawy.pdf": b"%PDF-1.7 bill",
+        }
+    )
+
+    text = _router().extract(package)
+
+    assert text == f"from pdf{PAGE_BREAK}UZASADNIENIE{PAGE_BREAK}Nazwa projektu"
+
+
+def test_zip_reads_one_level_of_nesting_and_gives_up_on_junk() -> None:
+    # As published on RCL: a cover letter next to a zip that holds the bill itself.
+    inner = _zip({"projekt ustawy.pdf": b"%PDF-1.7 bill"})
+    package = _zip({"pismo.pdf": b"%PDF-1.7 letter", "projekt na RM.zip": inner})
+    deeper = _zip({"outer.zip": _zip({"middle.zip": inner})})
+
+    assert _router().extract(package) == f"from pdf{PAGE_BREAK}from pdf"
+    assert _router().extract(deeper) == ""  # two levels down is too deep
+    assert _router().extract(_zip({"uwagi.xlsx": b"x", "notes.txt": b"y"})) == ""
+
+
+def test_odt_paragraphs_headings_and_tables_become_plain_text() -> None:
+    data = _odt(
+        "<text:h>USTAWA</text:h>"
+        "<text:p>Art. 1.<text:tab/>Cudzoziemiec<text:s text:c='2'/>x<text:line-break/>y</text:p>"
+        "<table:table><table:table-row><table:table-cell><text:p>Lp.</text:p></table:table-cell>"
+        "<table:table-cell><text:p>Podmiot</text:p></table:table-cell></table:table-row>"
+        "</table:table>"
+        "<text:p>strona 1<text:soft-page-break/>strona 2</text:p>"
+    )
+
+    assert OdtTextExtractor().extract(data) == (
+        f"USTAWA\nArt. 1.\tCudzoziemiec  x\ny\nLp.\tPodmiot\nstrona 1{PAGE_BREAK}strona 2"
+    )
+    assert _router().extract(data).startswith("USTAWA\n")  # routed by the mimetype entry
 
 
 # --------------------------------------------------------------------------- legacy .doc

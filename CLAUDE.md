@@ -197,9 +197,12 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   "Projekt" folder. ~10 s per page.
 - Stage catalog `/projekt/{id}/katalog/{stageId}`: `div.clearbox > ul > li.childdir` folders
   ("Projekt", "Pisma kierujące…", "Stanowiska zgłoszone…", "Odniesienie się wnioskodawcy…"),
-  `li.doc > a[href=/docs//…/dokumentN.ext]`. Files: DOCX/DOCM ~55%, PDF ~35%, legacy DOC ~10%
-  (read by `adapters/doc_text.py`, an [MS-DOC] piece-table parser over `olefile`; unknown or
-  damaged files fall back to metadata-only analysis). RCL's OSR is a separate Word form starting with "Nazwa
+  `li.doc > a[href=/docs//…/dokumentN.ext]`. Files in "Projekt" folders (40 projects, Sept
+  2026): PDF 40%, DOCX/DOCM 43%, ZIP 7% (the package in one archive, read member by member, bill
+  first), legacy DOC 6% (`adapters/doc_text.py`, an [MS-DOC] piece-table parser over `olefile`),
+  ODT rare; XLSX/MSG/XADES/RTF are tables of comments, e-mails, signatures and reports, not bill
+  texts. Display names often lack the extension; the URL carries it. Unknown or damaged files
+  fall back to metadata-only analysis. RCL's OSR is a separate Word form starting with "Nazwa
   projektu"; point numbers are list formatting, so `sections._OSR_CUT_RE` accepts the heading
   without "6.".
 - Consultation letters give a relative deadline ("w terminie 7/14 dni od dnia otrzymania

@@ -19,7 +19,7 @@ from lexinform.models.sejm import ProcessSummary, Stage
 
 RCL_BASE_URL = "https://legislacja.rcl.gov.pl"
 RCL_STAGE_TYPE = "RclStage"  # `Stage.stage_type` of an RCL stage stored in `Bill.stages`
-READABLE_EXTENSIONS = frozenset({"pdf", "docx", "docm", "doc"})
+READABLE_EXTENSIONS = frozenset({"pdf", "docx", "docm", "doc", "odt", "zip"})
 OPEN_STATUS = "otwarty"
 
 StageState = Literal["not_started", "reached", "active"]
@@ -288,7 +288,8 @@ def _role_of(document: RclDocument) -> TextRole | None:
 
 
 def _format_rank(document: RclDocument) -> int:
-    return {"pdf": 0, "docx": 1, "docm": 2}.get(document.extension, 9)
+    """PDF first, then the Word formats, then ODT; a zip package only when nothing else is there."""
+    return {"pdf": 0, "docx": 1, "docm": 2, "doc": 3, "odt": 4, "zip": 8}.get(document.extension, 9)
 
 
 def parse_stage_label(text: str) -> tuple[int, str]:
