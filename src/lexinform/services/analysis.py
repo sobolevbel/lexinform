@@ -72,6 +72,9 @@ class _Prepared:
     # A re-analysis that found the same text under a new URL: `record` is the previous one
     # pointing at the new source, the model was not asked.
     unchanged: bool = False
+    # A re-analysis whose new document could not be read: `record` is the previous one, kept as
+    # it is; the model was not asked (an analysis of the metadata must never replace one of a text).
+    unreadable: bool = False
 
 
 _PAGE_NUMBER_LINE = re.compile(r"^\s*[–\-—]?\s*\d{1,4}\s*[–\-—]?\s*$", re.MULTILINE)
@@ -190,6 +193,13 @@ class AnalysisService:
         assert bill.analysis is not None
         located = LocatedText(summary=summary, document=document)
         prepared = self._prepare(bill, located, previous=bill.analysis)
+        if prepared.unreadable:
+            log.warning(
+                "%s: %s cannot be read; the analysis of the previous text is kept",
+                bill.number,
+                document.url,
+            )
+            return None
         if prepared.unchanged:
             log.info("%s: %s carries the analysed text; not re-analysed", bill.number, document.url)
             self._repo.save_analysis(bill.term, bill.number, prepared.record)
@@ -231,6 +241,8 @@ class AnalysisService:
         """Load the text and ask the model. Network only: safe to run for several bills at once."""
         document = located.document
         text, truncated, source = self._load_text(document)
+        if previous is not None and source not in FULL_TEXT_SOURCES:
+            return _Prepared(bill, located, text, source, previous, first=False, unreadable=True)
         digest = text_digest(text) if source in FULL_TEXT_SOURCES else None
         if previous is not None and digest is not None and digest == previous.text_sha256:
             assert document is not None

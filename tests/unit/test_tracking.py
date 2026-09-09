@@ -198,6 +198,23 @@ def test_same_document_is_not_analysed_twice() -> None:
     assert (report.reanalyzed, report.updates) == (0, 0)
 
 
+def test_unreadable_new_text_keeps_the_previous_analysis() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.set_stages("3039", WITH_REPORT)  # the report's file is announced but not downloadable
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.reanalyzed, report.updates) == (0, 1)
+    assert len(w.llm.contexts) == 1  # the model was not asked about an empty text
+    stored = w.bill("3039").analysis
+    assert stored is not None and (stored.revision, stored.source_url) == (1, print_url("3039"))
+    _, change, _ = w.publisher.updates[-1]
+    assert not change.content_changed and len(change.new_stages) == 3
+
+
 def test_updated_print_triggers_a_re_analysis_without_a_stage_change() -> None:
     autopoprawka = "Art. 1. Tekst po autopoprawce. " * 50
     w = World(extractor=FakeTextExtractor(by_content={b"%PDF-v2": autopoprawka}))
