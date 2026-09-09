@@ -265,7 +265,7 @@ def analyze(
 
 @app.command()
 def preview(
-    number: Annotated[str, typer.Argument(help="Print (druk) number.")],
+    number: Annotated[str, typer.Argument(help="Print (druk) number, RPW/…, RCL/{id} or UC164.")],
     to: Annotated[
         str | None, typer.Option("--to", help="Send to this chat id instead of printing.")
     ] = None,
@@ -275,11 +275,9 @@ def preview(
     try:
         bill = _load_bill(c, number)
         if bill.analysis is None:
-            typer.echo(
-                f"druk {number} is not analysed yet; run `lexinform analyze {number}`", err=True
-            )
+            typer.echo(f"{number} is not analysed yet; run `lexinform analyze {number}`", err=True)
             raise typer.Exit(code=2)
-        print_info = c.gateway.get_print(c.settings.term, number)
+        print_info = c.gateway.get_print(bill.term, bill.number) if bill.has_process else None
         if to:
             result = c.telegram_publisher(channel_id=to).publish_new_bill(bill, print_info)
             typer.echo(f"sent message {result.message_id}")

@@ -230,7 +230,7 @@ RU = Labels(
         "Текст проекта на RCL не удалось прочитать (формат .doc) — анализ по названию и описанию."
     ),
     consultation_letter="письмо о консультациях",
-    consultation_days_from_letter="{days} дней с даты письма",
+    consultation_days_from_letter="{days} дн. с даты письма",
     consultation_deadline_in_letter="срок указан в письме",
     consultation_email="замечания на e-mail",
     action_email_ministry="направить замечания на {email}",

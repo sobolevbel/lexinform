@@ -651,7 +651,7 @@ class MessageFormatter:
         )
 
     def _rcl_deadline(self, bill: Bill, window: ConsultationWindow) -> str:
-        """ "до 08.09.2026 (7 дней с даты письма)"."""
+        """ "до 08.09.2026 (7 дн. с даты письма)"."""
         lb = self._labels
         assert window.end is not None
         text = f"{esc(lb.consultation_until)} {self.fmt_date(window.end)}"
