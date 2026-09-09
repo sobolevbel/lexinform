@@ -54,6 +54,7 @@ class Labels:
     pre_print_note: str
     consultation: str
     consultation_until: str
+    consultation_closed_on: str  # "closed on <date>": a deadline that has passed
     consultation_hint: str
     print_assigned: str
     process_withdrawn: str
@@ -177,6 +178,7 @@ RU = Labels(
     ),
     consultation="Общественные консультации",
     consultation_until="до",
+    consultation_closed_on="завершились",
     consultation_hint="мнение можно направить через страницу проекта на сайте Сейма",
     print_assigned="Проекту присвоен номер druku",
     process_withdrawn="Проект отозван до присвоения номера druku.",
@@ -399,6 +401,7 @@ EN = Labels(
     ),
     consultation="Public consultation",
     consultation_until="until",
+    consultation_closed_on="closed on",
     consultation_hint="opinions can be submitted via the bill's page on the Sejm website",
     print_assigned="Print number assigned",
     process_withdrawn="The bill was withdrawn before receiving a print number.",

@@ -160,7 +160,7 @@ class MessageFormatter:
             f"{ICON['effective']} <b>{esc(lb.effective_date)}:</b> "
             f"{esc(a.effective_date.strip() if a.effective_date else lb.effective_date_unknown)}"
         )
-        consultation = self._consultation_line(bill)
+        consultation = self._consultation_line(bill, today or dt.date.today())
         if consultation:
             details.append(consultation)
         steps = self._steps_block(bill, today or dt.date.today())
@@ -268,7 +268,7 @@ class MessageFormatter:
             closure = f"{assigned}\n{closure}" if closure else assigned
         elif bill.rcl is not None and bill.rcl.sent_to_sejm and _reaches_sejm(change):
             closure = f"{ICON['print']} {esc(lb.rcl_sent_to_sejm)}"
-        consultation = self._consultation_line(bill)
+        consultation = self._consultation_line(bill, today or dt.date.today())
         over = change.withdrawn or change.discontinued
         steps = "" if over else self._steps_block(bill, today or dt.date.today())
 
@@ -646,11 +646,19 @@ class MessageFormatter:
             links.append(link(project.wykaz_url, lb.link_wykaz))
         return links
 
-    def _consultation_line(self, bill: Bill) -> str:
+    def _consultation_line(self, bill: Bill, today: dt.date) -> str:
         window = bill.consultation
         if window is None:
             return ""
         lb = self._labels
+        if window.end is not None and not window.is_open(today) and not window.start:
+            # A bare "until <date>" reads as an open deadline; a closed one says so and drops the
+            # ways to send an opinion (the letter stays: it names the ministry and its e-mail).
+            closed = f"{esc(lb.consultation_closed_on)} {self.fmt_date(window.end)}"
+            letter = link(window.letter_url, lb.consultation_letter) if window.letter_url else ""
+            return f"{ICON['consultation']} <b>{esc(lb.consultation)}:</b> {closed}" + (
+                f" · {letter}" if letter else ""
+            )
         if window.source == "rcl":
             when = (
                 self._rcl_deadline(bill, window)

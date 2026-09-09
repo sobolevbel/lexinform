@@ -80,7 +80,12 @@ def test_card_after_the_deadline_keeps_only_the_comment_form_and_says_what_follo
 
     text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 9, 20)).text
 
-    assert "Общественные консультации:</b> до 08.09.2026" in text
+    # A closed deadline says so; the e-mail goes, the letter stays (it names the ministry).
+    assert (
+        "Общественные консультации:</b> завершились 08.09.2026 · "
+        f'<a href="{CONSULTATION_LETTER.url}">письмо о консультациях</a>\n' in text
+    )
+    assert "dep.prawny@mswia.gov.pl" not in text
     assert "направить замечания" not in text
     assert f'Что можно сделать сейчас:</b> <a href="{COMMENT_FORM}">оставить комментарий' in text
     assert "Что дальше:</b> uzgodnienia и opiniowanie, затем комитеты" in text
