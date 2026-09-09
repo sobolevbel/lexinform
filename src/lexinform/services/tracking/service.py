@@ -332,13 +332,27 @@ class StatusTrackingService:
         result: TrackingResult,
         amendments: _Amendments | None = None,
     ) -> StatusChange | None:
-        now = self._clock.now()
-
         new_fp = stage_fingerprint(detail.stages)
+        change = self._detect_change(bill, detail, new_fp, print_info, result, amendments)
+        if new_fp != bill.stages_fingerprint:
+            # Written last: a failure above (an LLM outage during the re-analysis) leaves the
+            # old fingerprint in place, so the next run sees the same new stages and tells them
+            # instead of a bare "text changed".
+            self._repo.save_stages(bill.term, bill.number, detail.stages, new_fp)
+        return change
+
+    def _detect_change(
+        self,
+        bill: Bill,
+        detail: ProcessDetail,
+        new_fp: str,
+        print_info: PrintInfo | None,
+        result: TrackingResult,
+        amendments: _Amendments | None,
+    ) -> StatusChange | None:
+        now = self._clock.now()
         old_fp = bill.stages_fingerprint
         stages_changed = new_fp != old_fp
-        if stages_changed:
-            self._repo.save_stages(bill.term, bill.number, detail.stages, new_fp)
         self._repo.upsert_summary(detail, now=now)
 
         document = self._texts.newer(bill, detail, print_info) if self._analysis else None

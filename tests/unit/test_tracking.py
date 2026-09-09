@@ -3,6 +3,7 @@
 import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.errors import LlmUnavailableError
 from lexinform.models import Attachment, Committee, PrintInfo, Stage, Vote, VotingSummary
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import COMMITTEE_STAGES, ELI, REFERRED, START, World, act, print_url
@@ -196,6 +197,31 @@ def test_same_document_is_not_analysed_twice() -> None:
     report = w.run()
 
     assert (report.reanalyzed, report.updates) == (0, 0)
+
+
+def test_llm_outage_during_the_re_analysis_does_not_lose_the_new_stages() -> None:
+    w = World(extractor=FakeTextExtractor(by_content={b"%PDF-report": REPORT_TEXT}))
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.set_stages("3039", WITH_REPORT)
+    w.gateway.files[REPORT_URL] = b"%PDF-report"
+    w.clock.advance(days=1)
+    w.llm.script = {"3039": LlmUnavailableError("RateLimitError: 429")}
+    outage = w.run()
+    w.llm.script = {"3039": make_analysis(score=4)}
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert any("LLM API unavailable" in e for e in outage.errors) and outage.updates == 0
+    assert (report.reanalyzed, report.updates) == (1, 1)
+    _, change, _ = w.publisher.updates[-1]
+    assert change.content_changed
+    assert [s.stage_type for s in change.new_stages] == [
+        "ReadingReferral",
+        "CommitteeWork",
+        "CommitteeReport",
+    ]
 
 
 def test_unreadable_new_text_keeps_the_previous_analysis() -> None:
