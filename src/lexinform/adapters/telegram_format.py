@@ -207,18 +207,19 @@ class MessageFormatter:
             raise ValueError(f"bill {bill.number} has no analysis")
         a = bill.analysis.analysis
         lb = self._labels
-        s = bill.summary
+        today = today or self._today()
 
-        head_label = lb.rcl_header if bill.rcl is not None else lb.new_bill_header
-        header = (
-            f"{ICON['new_bill']} <b>{esc(head_label)} — {self._number_label(bill)}</b>\n\n"
-            f"<b>{esc(s.title)}</b>"
+        header = self._header(
+            ICON["new_bill"], lb.rcl_header if bill.rcl is not None else lb.new_bill_header, bill
         )
         meta = (
             f"{score_icon(a.score)} <b>{esc(lb.importance)}:</b> {importance_bar(a.score)} "
             f"{a.score}/5 — {esc(lb.score_labels.get(a.score, ''))}\n"
-            f"{ICON['category']} <b>{esc(lb.category)}:</b> "
-            f"{esc(lb.category_labels.get(a.category, a.category.value))}"
+            + self._field(
+                ICON["category"],
+                lb.category,
+                esc(lb.category_labels.get(a.category, a.category.value)),
+            )
         )
         summary_block = f"{ICON['about']} <b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
         changes_block = ""
@@ -226,25 +227,38 @@ class MessageFormatter:
             bullets = "\n".join(f"• {esc(c.strip())}" for c in a.key_changes if c.strip())
             changes_block = f"{ICON['key_changes']} <b>{esc(lb.key_changes)}</b>\n{bullets}"
 
+        text = self._assemble(
+            [header, meta],
+            flexible=[summary_block, changes_block],
+            tail=[
+                self._card_details(bill, today),
+                self._links(self._card_links(bill, print_info)),
+                self._card_tags(bill, today),
+            ],
+        )
+        return RenderedMessage(text=text)
+
+    def _card_details(self, bill: Bill, today: dt.date) -> str:
+        """The card's second half: the analysis' practical facts, the consultation, what comes
+        next, then the compact one-line facts (stage, applicant, joint prints, notes)."""
+        assert bill.analysis is not None
+        a = bill.analysis.analysis
+        lb = self._labels
+        s = bill.summary
         details: list[str] = []
         if a.practical_impact.strip():
             details.append(
-                f"{ICON['practical']} <b>{esc(lb.practical_impact)}:</b> "
-                f"{esc(a.practical_impact.strip())}"
+                self._field(ICON["practical"], lb.practical_impact, esc(a.practical_impact.strip()))
             )
         if a.affected_groups:
-            details.append(
-                f"{ICON['affected']} <b>{esc(lb.affected)}:</b> "
-                f"{esc(', '.join(g.strip() for g in a.affected_groups))}"
-            )
-        details.append(
-            f"{ICON['effective']} <b>{esc(lb.effective_date)}:</b> "
-            f"{esc(a.effective_date.strip() if a.effective_date else lb.effective_date_unknown)}"
-        )
-        consultation = self._consultation_line(bill, today or self._today())
+            groups = ", ".join(g.strip() for g in a.affected_groups)
+            details.append(self._field(ICON["affected"], lb.affected, esc(groups)))
+        effective = a.effective_date.strip() if a.effective_date else lb.effective_date_unknown
+        details.append(self._field(ICON["effective"], lb.effective_date, esc(effective)))
+        consultation = self._consultation_line(bill, today)
         if consultation:
             details.append(consultation)
-        steps = self._steps_block(bill, today or self._today())
+        steps = self._steps_block(bill, today)
         if steps:
             details.append(steps)
 
@@ -254,13 +268,12 @@ class MessageFormatter:
         last = bill.last_stage
         if last is not None:
             when = f" ({self.fmt_date(last.date)})" if last.date else ""
-            meta_lines.append(
-                f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {self._stage_label(bill, last)}{when}"
-            )
+            stage = f"{self._stage_label(bill, last)}{when}"
+            meta_lines.append(self._field(ICON["stage"], lb.stage, stage))
         elif bill.rcl is not None:
-            meta_lines.append(f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {esc(lb.rcl_no_stage)}")
+            meta_lines.append(self._field(ICON["stage"], lb.stage, esc(lb.rcl_no_stage)))
         elif bill.is_pre_print:
-            meta_lines.append(f"{ICON['stage']} <b>{esc(lb.stage)}:</b> {esc(lb.pre_print_stage)}")
+            meta_lines.append(self._field(ICON["stage"], lb.stage, esc(lb.pre_print_stage)))
         meta_lines.append(self._applicant_line(bill))
         if s.prints_considered_jointly:
             meta_lines.append(
@@ -272,46 +285,43 @@ class MessageFormatter:
         if note:
             meta_lines.append(f"{ICON['note']} <i>{esc(note)}</i>")
         details.append("\n".join(meta_lines))
-        details_block = "\n\n".join(details)
+        return "\n\n".join(details)
 
+    def _card_links(self, bill: Bill, print_info: PrintInfo | None) -> list[str]:
+        """Where the card points: the RCL project, the Sejm submission, or the process page
+        with the print's PDF (and the RCL project a government print came from)."""
+        lb = self._labels
+        s = bill.summary
         if bill.rcl is not None:
-            links = self._rcl_links(bill.rcl)
-        elif bill.is_pre_print:
-            links = [link(s.web_url, lb.link_submission_pdf)]
-        else:
-            links = [link(s.web_url, lb.link_process)]
-            pdf = print_info.main_pdf if print_info else None
-            if pdf is not None:
-                links.append(link(pdf.url, lb.link_pdf))
-            if s.rcl_link:
-                links.append(link(s.rcl_link, lb.link_rcl))
-        links_block = f"{ICON['links']} " + " | ".join(links)
+            return self._rcl_links(bill.rcl)
+        if bill.is_pre_print:
+            return [link(s.web_url, lb.link_submission_pdf)]
+        links = [link(s.web_url, lb.link_process)]
+        pdf = print_info.main_pdf if print_info else None
+        if pdf is not None:
+            links.append(link(pdf.url, lb.link_pdf))
+        if s.rcl_link:
+            links.append(link(s.rcl_link, lb.link_rcl))
+        return links
 
-        # Each tag answers one search: bills of the term, by importance, by topic, where an
-        # opinion can still be sent, about citizens of Ukraine, government projects before the
-        # Sejm, and this bill's whole thread.
-        tags = " ".join(
+    def _card_tags(self, bill: Bill, today: dt.date) -> str:
+        """Each tag answers one search: this bill's whole thread, by importance, by topic, where
+        an opinion can still be sent, about citizens of Ukraine, government projects before the
+        Sejm, and the bills of the term."""
+        assert bill.analysis is not None
+        a = bill.analysis.analysis
+        lb = self._labels
+        return " ".join(
             [
                 self._thread_tags(bill),
                 f"#{lb.tag_importance}{a.score}",
                 f"#{lb.category_tags.get(a.category, a.category.value)}",
-                *(
-                    [f"#{lb.tag_consultations}"]
-                    if _consultation_open(bill, today or self._today())
-                    else []
-                ),
+                *([f"#{lb.tag_consultations}"] if _consultation_open(bill, today) else []),
                 *([f"#{lb.tag_ukraine}"] if _about_ukraine(bill) else []),
                 *([f"#{lb.tag_rcl}"] if bill.rcl is not None else []),
-                self._term_tag(s.term),
+                self._term_tag(bill.summary.term),
             ]
         )
-
-        text = self._assemble(
-            [header, meta],
-            flexible=[summary_block, changes_block],
-            tail=[details_block, links_block, tags],
-        )
-        return RenderedMessage(text=text)
 
     def joint_bill(
         self, bill: Bill, primary: Bill, print_info: PrintInfo | None
@@ -321,20 +331,11 @@ class MessageFormatter:
         is re-done when the committee's joint text appears."""
         lb = self._labels
         s = bill.summary
-        header = (
-            f"{ICON['joint']} <b>{esc(lb.joint_bill_header)} — {self._number_label(bill)}</b>"
-            f"\n\n<b>{esc(s.title)}</b>"
-        )
+        header = self._header(ICON["joint"], lb.joint_bill_header, bill)
         others = [primary.number, *(n for n in s.prints_considered_jointly if n != primary.number)]
         note = f"{ICON['note']} {esc(lb.joint_bill_note.format(numbers=', '.join(others)))}"
         facts = f"{note}\n{self._applicant_line(bill)}"
-        links = [link(s.web_url, lb.link_process)]
-        pdf = print_info.main_pdf if print_info else None
-        if pdf is not None:
-            links.append(link(pdf.url, lb.link_pdf))
-        if s.rcl_link:
-            links.append(link(s.rcl_link, lb.link_rcl))
-        links_block = f"{ICON['links']} " + " | ".join(links)
+        links_block = self._links(self._card_links(bill, print_info))
         # Its own tag and the thread's: a search for either finds the reply.
         tags = f"{self._number_tag(bill)} {self._thread_tags(primary)}"
         return RenderedMessage(text=self._assemble([header, facts, links_block, tags]))
@@ -345,13 +346,12 @@ class MessageFormatter:
         self, bill: Bill, change: StatusChange, *, today: dt.date | None = None
     ) -> RenderedMessage:
         lb = self._labels
-        s = bill.summary
         analysis = bill.analysis.analysis if bill.analysis else None
         event = update_event(change, bill)
+        today = today or self._today()
 
-        header = (
-            f"{EVENT_ICON.get(event, ICON['update'])} <b>{self._event_header(change, event)} — "
-            f"{self._number_label(bill)}</b>\n\n<b>{esc(s.title)}</b>"
+        header = self._header(
+            EVENT_ICON.get(event, ICON["update"]), self._event_header(change, event), bill
         )
         badge = ""
         if analysis is not None:
@@ -367,29 +367,10 @@ class MessageFormatter:
             if stage_lines
             else ""
         )
-        # The closure line explains what the header only names; when the header already says
-        # "the Sejm passed/rejected the bill" the line would repeat it.
-        closure = ""
-        if change.discontinued:
-            carried = s.applicant_type is ApplicantType.CITIZENS
-            closure = f"{ICON['closed']} " + esc(
-                lb.process_carried_over if carried else lb.process_discontinued
-            )
-        elif change.withdrawn:
-            closure = f"{ICON['closed']} {esc(lb.process_withdrawn)}"
-        elif change.closure_detected and bill.rcl is not None:
-            closure = f"{ICON['closed']} {esc(lb.rcl_process_closed)}"
-        elif change.closure_detected and event not in ("passed", "rejected", "rcl_closed"):
-            icon = ICON["passed"] if change.passed else ICON["closed"]
-            closure = f"{icon} {esc(lb.process_passed if change.passed else lb.process_closed)}"
-        if event == "print_assigned":
-            assigned = f"{ICON['print']} {esc(lb.print_assigned)}: <b>{esc(bill.number)}</b>"
-            closure = f"{assigned}\n{closure}" if closure else assigned
-        elif bill.rcl is not None and bill.rcl.sent_to_sejm and _reaches_sejm(change):
-            closure = f"{ICON['print']} {esc(lb.rcl_sent_to_sejm)}"
-        consultation = self._consultation_line(bill, today or self._today())
+        closure = self._closure_line(bill, change, event)
+        consultation = self._consultation_line(bill, today)
         over = change.withdrawn or change.discontinued
-        steps = "" if over else self._steps_block(bill, today or self._today())
+        steps = "" if over else self._steps_block(bill, today)
 
         summary_block = ""
         changes_block = ""
@@ -409,15 +390,6 @@ class MessageFormatter:
                 else:
                     changes_block = f"{ICON['note']} <i>{esc(lb.reanalyzed_note)}</i>"
 
-        links = [link(s.web_url, lb.link_rcl_project if bill.rcl is not None else lb.link_process)]
-        text_after3 = next((st.text_after3 for st in change.new_stages if st.text_after3), None)
-        if text_after3:
-            links.append(link(text_after3, lb.link_text_after3))
-        elif bill.analysis and bill.analysis.source_url and change.content_changed:
-            links.append(link(bill.analysis.source_url, lb.link_pdf))
-        if change.amendments is not None and change.amendments.source_url:
-            links.append(link(change.amendments.source_url, lb.link_amendments))
-        links_block = f"{ICON['links']} " + " | ".join(links)
         # Event tags only when the reply carries the event a reader would search for.
         tags = " ".join(
             [f"#{lb.event_tags[key]}" for key in _event_keys(change) if key in lb.event_tags]
@@ -427,9 +399,54 @@ class MessageFormatter:
         text = self._assemble(
             [header, badge],
             flexible=[stages_block, amendments_block, changes_block, summary_block],
-            tail=[closure, consultation, steps, links_block, tags],
+            tail=[
+                closure,
+                consultation,
+                steps,
+                self._links(self._update_links(bill, change)),
+                tags,
+            ],
         )
         return RenderedMessage(text=text)
+
+    def _closure_line(self, bill: Bill, change: StatusChange, event: str) -> str:
+        """What ended or moved on: the closure line explains what the header only names; when
+        the header already says "the Sejm passed/rejected the bill" the line would repeat it.
+        A print assigned to an RPW/RCL entry is announced here too."""
+        lb = self._labels
+        closure = ""
+        if change.discontinued:
+            carried = bill.summary.applicant_type is ApplicantType.CITIZENS
+            closure = f"{ICON['closed']} " + esc(
+                lb.process_carried_over if carried else lb.process_discontinued
+            )
+        elif change.withdrawn:
+            closure = f"{ICON['closed']} {esc(lb.process_withdrawn)}"
+        elif change.closure_detected and bill.rcl is not None:
+            closure = f"{ICON['closed']} {esc(lb.rcl_process_closed)}"
+        elif change.closure_detected and event not in ("passed", "rejected", "rcl_closed"):
+            icon = ICON["passed"] if change.passed else ICON["closed"]
+            closure = f"{icon} {esc(lb.process_passed if change.passed else lb.process_closed)}"
+        if event == "print_assigned":
+            assigned = f"{ICON['print']} {esc(lb.print_assigned)}: <b>{esc(bill.number)}</b>"
+            closure = f"{assigned}\n{closure}" if closure else assigned
+        elif bill.rcl is not None and bill.rcl.sent_to_sejm and _reaches_sejm(change):
+            closure = f"{ICON['print']} {esc(lb.rcl_sent_to_sejm)}"
+        return closure
+
+    def _update_links(self, bill: Bill, change: StatusChange) -> list[str]:
+        """The process (or RCL project) page, the text the update is about, the amendments."""
+        lb = self._labels
+        s = bill.summary
+        links = [link(s.web_url, lb.link_rcl_project if bill.rcl is not None else lb.link_process)]
+        text_after3 = next((st.text_after3 for st in change.new_stages if st.text_after3), None)
+        if text_after3:
+            links.append(link(text_after3, lb.link_text_after3))
+        elif bill.analysis and bill.analysis.source_url and change.content_changed:
+            links.append(link(bill.analysis.source_url, lb.link_pdf))
+        if change.amendments is not None and change.amendments.source_url:
+            links.append(link(change.amendments.source_url, lb.link_amendments))
+        return links
 
     def _amendments_block(self, change: StatusChange) -> str:
         """`🆕 Что меняют поправки Сената` with the model's summary and bullets."""
@@ -455,11 +472,8 @@ class MessageFormatter:
         act = bill.act
         if act is None:
             raise ValueError(f"bill {bill.number} has no act")
-        header = (
-            f"{ICON['published']} <b>{esc(lb.act_published_header)} — "
-            f"{self._number_label(bill)}</b>\n\n<b>{esc(act.title or bill.summary.title)}</b>"
-        )
-        lines = [f"{ICON['journal']} <b>{esc(lb.journal)}:</b> {esc(act.display_address)}"]
+        header = self._header(ICON["published"], lb.act_published_header, bill, act.title)
+        lines = [self._field(ICON["journal"], lb.journal, esc(act.display_address))]
         if act.promulgation_date:
             lines[0] += f" ({esc(lb.published_on)} {self.fmt_date(act.promulgation_date)})"
         if act.entry_into_force is None:
@@ -471,13 +485,14 @@ class MessageFormatter:
             )
         else:
             lines.append(
-                f"{ICON['effective']} <b>{esc(lb.enters_into_force)}:</b> "
-                f"{self.fmt_date(act.entry_into_force)}"
+                self._field(
+                    ICON["effective"], lb.enters_into_force, self.fmt_date(act.entry_into_force)
+                )
             )
         lines.append(f"{ICON['note']} <i>{esc(lb.partial_vacatio_note)}</i>")
         facts = "\n".join(lines)
-        links_block = f"{ICON['links']} " + " | ".join(self._act_links(bill, act))
-        tags = f"#{lb.tag_published} {self._thread_tags(bill)}"
+        links_block = self._links(self._act_links(bill, act))
+        tags = self._tag_line(lb.tag_published, bill)
         return RenderedMessage(text=self._assemble([header, facts, links_block, tags]))
 
     def in_force(self, bill: Bill) -> RenderedMessage:
@@ -485,10 +500,7 @@ class MessageFormatter:
         act = bill.act
         if act is None or act.entry_into_force is None:
             raise ValueError(f"bill {bill.number} has no entry-into-force date")
-        header = (
-            f"{ICON['in_force']} <b>{esc(lb.in_force_header)} — {self._number_label(bill)}</b>\n\n"
-            f"<b>{esc(act.title or bill.summary.title)}</b>"
-        )
+        header = self._header(ICON["in_force"], lb.in_force_header, bill, act.title)
         facts = (
             f"{ICON['journal']} {esc(act.display_address)} · {esc(lb.in_force_since)} "
             f"{self.fmt_date(act.entry_into_force)}\n"
@@ -502,12 +514,11 @@ class MessageFormatter:
                 f"{ICON['about']} <b>{esc(lb.act_summary)}</b>\n{esc(a.summary.strip())}"
             )
             if a.practical_impact.strip():
-                practical = (
-                    f"{ICON['practical']} <b>{esc(lb.practical_impact)}:</b> "
-                    f"{esc(a.practical_impact.strip())}"
+                practical = self._field(
+                    ICON["practical"], lb.practical_impact, esc(a.practical_impact.strip())
                 )
-        links_block = f"{ICON['links']} " + " | ".join(self._act_links(bill, act))
-        tags = f"#{lb.tag_in_force} {self._thread_tags(bill)}"
+        links_block = self._links(self._act_links(bill, act))
+        tags = self._tag_line(lb.tag_in_force, bill)
         text = self._assemble(
             [header, facts], flexible=[summary_block, practical], tail=[links_block, tags]
         )
@@ -519,29 +530,22 @@ class MessageFormatter:
         window = bill.consultation
         if window is None or window.end is None:
             raise ValueError(f"bill {bill.number} has no consultation end date")
-        days_left = (window.end - today).days
-        header = (
-            f"{ICON['consultation']} <b>{esc(lb.consultation_deadline_header)} — "
-            f"{self._number_label(bill)}</b>\n\n<b>{esc(bill.summary.title)}</b>"
-        )
-        countdown = (
-            esc(lb.consultation_last_day)
-            if days_left <= 0
-            else f"{esc(lb.consultation_days_left)}: {days_left}"
-        )
+        header = self._header(ICON["consultation"], lb.consultation_deadline_header, bill)
         where = self._consultation_where(bill, window, sejm_label=lb.consultation_hint)
+        until = (
+            f"{esc(lb.consultation_until)} {self.fmt_date(window.end)} · "
+            f"{self._countdown((window.end - today).days)}"
+        )
         facts = (
-            f"{ICON['effective']} <b>{esc(lb.consultation)}:</b> {esc(lb.consultation_until)} "
-            f"{self.fmt_date(window.end)} · {countdown}\n"
-            f"{ICON['action']} {where}"
+            f"{self._field(ICON['effective'], lb.consultation, until)}\n{ICON['action']} {where}"
         )
         next_step = self._next_step_line(bill, today)
         summary_block = ""
         if bill.analysis is not None:
             a = bill.analysis.analysis
             summary_block = f"{ICON['about']} <b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
-        links_block = f"{ICON['links']} " + " | ".join(self._consultation_links(bill, window))
-        tags = f"#{lb.tag_consultations} {self._thread_tags(bill)}"
+        links_block = self._links(self._consultation_links(bill, window))
+        tags = self._tag_line(lb.tag_consultations, bill)
         text = self._assemble(
             [header, facts], flexible=[summary_block], tail=[next_step, links_block, tags]
         )
@@ -553,10 +557,7 @@ class MessageFormatter:
         window = bill.consultation
         if window is None:
             raise ValueError(f"bill {bill.number} had no public consultation")
-        header = (
-            f"{ICON['consultation']} <b>{esc(lb.consultation_results_header)} — "
-            f"{self._number_label(bill)}</b>\n\n<b>{esc(bill.summary.title)}</b>"
-        )
+        header = self._header(ICON["consultation"], lb.consultation_results_header, bill)
         page = window.form_url
         if bill.rcl is not None:
             facts = f"{ICON['note']} {link(bill.rcl.web_url, lb.rcl_results_hint)}"
@@ -567,13 +568,11 @@ class MessageFormatter:
                 else esc(lb.consultation_results_hint)
             )
         if window.end:
-            facts = (
-                f"{ICON['effective']} <b>{esc(lb.consultation)}:</b> "
-                f"{self._consultation_period(window)}\n{facts}"
-            )
+            period = self._consultation_period(window)
+            facts = f"{self._field(ICON['effective'], lb.consultation, period)}\n{facts}"
         steps = self._steps_block(bill, today or self._today())
-        links_block = f"{ICON['links']} " + " | ".join(self._consultation_links(bill, window))
-        tags = f"#{lb.tag_consultations} {self._thread_tags(bill)}"
+        links_block = self._links(self._consultation_links(bill, window))
+        tags = self._tag_line(lb.tag_consultations, bill)
         return RenderedMessage(text=self._assemble([header, facts, steps, links_block, tags]))
 
     # ------------------------------------------------------------------ sittings
@@ -586,10 +585,7 @@ class MessageFormatter:
         s = bill.summary
         is_committee = item.kind == "committee"
         head_label = lb.agenda_committee_header if is_committee else lb.agenda_sejm_header
-        header = (
-            f"{ICON['calendar']} <b>{esc(head_label)} — {self._number_label(bill)}</b>\n\n"
-            f"<b>{esc(s.title)}</b>"
-        )
+        header = self._header(ICON["calendar"], head_label, bill)
         lines: list[str] = []
         if is_committee:
             name = self._committee_display(bill, item.committee_code or "", item.committee_name)
@@ -601,7 +597,7 @@ class MessageFormatter:
         else:
             lines.append(f"{ICON['stage']} {self._agenda_when(item)}")
         if item.text:
-            lines.append(f"{ICON['agenda']} <b>{esc(lb.agenda_item)}:</b> {esc(item.text)}")
+            lines.append(self._field(ICON["agenda"], lb.agenda_item, esc(item.text)))
         facts = "\n".join(lines)
         action = self._action_line(bill, today or self._today(), agenda_item=item)
         links = [link(s.web_url, lb.link_process)]
@@ -609,9 +605,10 @@ class MessageFormatter:
             links.append(link(item.video_url, lb.link_video))
         if is_committee and item.committee_code:
             links.append(link(committee_web_url(s.term, item.committee_code), lb.link_committee))
-        links_block = f"{ICON['links']} " + " | ".join(links)
-        tag = lb.tag_committee_sitting if is_committee else lb.tag_sejm_sitting
-        tags = f"#{tag} {self._thread_tags(bill)}"
+        links_block = self._links(links)
+        tags = self._tag_line(
+            lb.tag_committee_sitting if is_committee else lb.tag_sejm_sitting, bill
+        )
         summary_block = ""
         if bill.analysis is not None:
             summary_block = self._summary_reminder(bill.analysis.analysis.summary, full=False)
@@ -626,27 +623,19 @@ class MessageFormatter:
         deadline = hearing_application_deadline(hearing)
         if deadline is None or hearing.date is None:
             raise ValueError(f"bill {bill.number}: the hearing has no date")
-        header = (
-            f"{ICON['hearing']} <b>{esc(lb.hearing_deadline_header)} — "
-            f"{self._number_label(bill)}</b>\n\n<b>{esc(bill.summary.title)}</b>"
-        )
-        days_left = (deadline - today).days
-        countdown = (
-            esc(lb.consultation_last_day)
-            if days_left <= 0
-            else f"{esc(lb.consultation_days_left)}: {days_left}"
-        )
+        header = self._header(ICON["hearing"], lb.hearing_deadline_header, bill)
         facts = (
             f"{ICON['effective']} <b>{esc(lb.hearing_on)}</b> {self.fmt_date(hearing.date)} · "
-            f"{esc(lb.hearing_apply_until)} <b>{self.fmt_date(deadline)}</b> · {countdown}\n"
+            f"{esc(lb.hearing_apply_until)} <b>{self.fmt_date(deadline)}</b> · "
+            f"{self._countdown((deadline - today).days)}\n"
             f"{ICON['action']} {esc(lb.hearing_hint)}"
         )
         links = [link(bill.summary.web_url, lb.link_process)]
         phase = next_phase(bill, today=today)
         for code in phase.committees if phase else ():
             links.append(link(committee_web_url(bill.term, code), lb.link_committee))
-        links_block = f"{ICON['links']} " + " | ".join(links)
-        tags = f"#{lb.tag_hearing} {self._thread_tags(bill)}"
+        links_block = self._links(links)
+        tags = self._tag_line(lb.tag_hearing, bill)
         summary_block = ""
         if bill.analysis is not None:
             summary_block = self._summary_reminder(bill.analysis.analysis.summary, full=False)
@@ -757,6 +746,35 @@ class MessageFormatter:
     def fmt_date(self, value: dt.date) -> str:
         return value.strftime(self._labels.date_format)
 
+    # The building blocks every message is made of: the header naming the kind and the bill,
+    # a labelled fact, the links line, the tag line, a countdown.
+
+    def _header(self, icon: str, label: str, bill: Bill, title: str | None = None) -> str:
+        """`📜 <b>Label — druk nr 3039</b>` and the bill's title on its own line."""
+        return (
+            f"{icon} <b>{esc(label)} — {self._number_label(bill)}</b>\n\n"
+            f"<b>{esc(title or bill.summary.title)}</b>"
+        )
+
+    @staticmethod
+    def _field(icon: str, label: str, value: str) -> str:
+        """`🏷 <b>Label:</b> value`; `value` is HTML already."""
+        return f"{icon} <b>{esc(label)}:</b> {value}"
+
+    @staticmethod
+    def _links(links: list[str]) -> str:
+        return f"{ICON['links']} " + " | ".join(links)
+
+    def _tag_line(self, tag: str, bill: Bill) -> str:
+        """The message kind's tag and the thread's."""
+        return f"#{tag} {self._thread_tags(bill)}"
+
+    def _countdown(self, days_left: int) -> str:
+        lb = self._labels
+        if days_left <= 0:
+            return esc(lb.consultation_last_day)
+        return f"{esc(lb.consultation_days_left)}: {days_left}"
+
     def _event_header(self, change: StatusChange, event: str) -> str:
         """The header names the event; an RCL stage is named after the stage itself."""
         lb = self._labels
@@ -764,12 +782,10 @@ class MessageFormatter:
             stage = next(
                 (st for st in reversed(change.new_stages) if st.stage_type == RCL_STAGE_TYPE), None
             )
-            if stage is not None:
-                name = stage.stage_name.lower()
-                label = next((t for part, t in lb.rcl_stage_labels.items() if part in name), None)
-                if label:
-                    return esc(label[0].upper() + label[1:])
-        return esc(lb.update_headers.get(event) or lb.update_header)
+            label = self._translate_stage(stage) if stage is not None else None
+            if label:
+                return label[0].upper() + label[1:]
+        return lb.update_headers.get(event) or lb.update_header
 
     def _summary_reminder(self, summary: str, *, full: bool) -> str:
         """`📝 Суть проекта: <first sentence>` or, after a re-analysis, the whole summary."""
@@ -1016,23 +1032,33 @@ class MessageFormatter:
             suffix = f" · {esc(usual)}" if usual else ""
         return f"{ICON['next']} <b>{esc(lb.next_step)}:</b> {esc(text)}{suffix}"
 
-    def _stage_label(self, bill: Bill, stage: Stage) -> str:
-        """The card's stage in the reader's language; Polish stays only where it names a body
-        (a committee) or, for RCL, as the numbered original after the translation."""
+    def _translate_stage(self, stage: Stage) -> str | None:
+        """The stage in the reader's language, or None when the labels have nothing for it: an
+        RCL stage by the part of its name the labels know, a Sejm reading by its numeral, the
+        rest by type. The one place a stage is translated (header, card, update bullets)."""
         lb = self._labels
         if stage.stage_type == RCL_STAGE_TYPE:
             name = stage.stage_name.lower()
-            label = next((t for part, t in lb.rcl_stage_labels.items() if part in name), None)
-            return f"{esc(label)} ({esc(stage.stage_name)})" if label else esc(stage.stage_name)
-        if stage.stage_type == "Referral" and stage.committee_code:
-            committee = self._committee_display(bill, stage.committee_code, stage.committee_name)
-            return f"{esc(lb.stage_labels['Referral'])} {esc(committee)}"
+            return next((t for part, t in lb.rcl_stage_labels.items() if part in name), None)
         if stage.stage_type == "SejmReading":
             match = _READING_NUMERAL.match(stage.stage_name)
             if match:
-                return esc(lb.next_step_labels["second_reading"].replace("II", match.group(1)))
-        label = lb.stage_labels.get(stage.stage_type) or lb.stage_type_labels.get(stage.stage_type)
-        return esc(label) if label else esc(stage.stage_name)
+                return lb.next_step_labels["second_reading"].replace("II", match.group(1))
+            return None
+        return lb.stage_labels.get(stage.stage_type) or lb.stage_type_labels.get(stage.stage_type)
+
+    def _stage_label(self, bill: Bill, stage: Stage) -> str:
+        """The card's stage in the reader's language; Polish stays only where it names a body
+        (a committee) or, for RCL, as the numbered original after the translation."""
+        if stage.stage_type == "Referral" and stage.committee_code:
+            committee = self._committee_display(bill, stage.committee_code, stage.committee_name)
+            return f"{esc(self._labels.stage_labels['Referral'])} {esc(committee)}"
+        label = self._translate_stage(stage)
+        if label is None:
+            return esc(stage.stage_name)
+        if stage.stage_type == RCL_STAGE_TYPE:
+            return f"{esc(label)} ({esc(stage.stage_name)})"
+        return esc(label)
 
     def _action_line(
         self, bill: Bill, today: dt.date, *, agenda_item: AgendaItem | None = None
@@ -1185,7 +1211,9 @@ class MessageFormatter:
             if deadline is not None:
                 line += f" {esc(lb.consultation_until)} {self.fmt_date(deadline)}"
             return line
-        translated = self._sejm_stage_label(stage)
+        # An RCL stage's bullet keeps the numbered original: the header names it in the
+        # reader's language already, and the number is what the RCL page shows.
+        translated = None if stage.stage_type == RCL_STAGE_TYPE else self._translate_stage(stage)
         if translated is not None:
             line = when + esc(translated)
             decision = _translate(stage.decision, lb.decision_labels) or stage.decision
@@ -1197,16 +1225,6 @@ class MessageFormatter:
         if outcome:
             parts.append(f"— {outcome}")
         return when + esc(" ".join(parts)) + self._print_suffix(stage)
-
-    def _sejm_stage_label(self, stage: Stage) -> str | None:
-        """The stage in the reader's language: readings by their numeral, the rest by type."""
-        lb = self._labels
-        if stage.stage_type == "SejmReading":
-            match = _READING_NUMERAL.match(stage.stage_name)
-            if match:
-                return lb.next_step_labels["second_reading"].replace("II", match.group(1))
-            return None
-        return lb.stage_type_labels.get(stage.stage_type) or lb.stage_labels.get(stage.stage_type)
 
     @staticmethod
     def _print_suffix(stage: Stage) -> str:
