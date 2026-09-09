@@ -11,10 +11,13 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from lexinform.i18n import Labels, labels_for
-from lexinform.keywords import KEYWORD_PATTERNS
 from lexinform.models import (
+    COMMITTEE_PHASES,
+    PATH_STEPS,
+    PHASE_STEP,
     RCL_PREFIX,
     RCL_STAGE_TYPE,
+    SITTING_PHASES,
     ActInfo,
     AgendaItem,
     AnalysisVerdict,
@@ -28,13 +31,20 @@ from lexinform.models import (
     Stage,
     StatusChange,
     VotingSummary,
+    about_ukraine,
     committee_web_url,
+    consultation_open,
+    event_keys,
     flatten_stages,
+    government_path,
     hearing_application_deadline,
     is_pre_print_number,
     is_rcl_number,
     next_phase,
+    open_hearing,
     process_web_url,
+    reaches_sejm,
+    told_stages,
     update_event,
 )
 from lexinform.pricing import cost_usd
@@ -110,35 +120,7 @@ EVENT_ICON = {
     "rcl_to_sejm": "🔢",
     "rcl_closed": "🏁",
 }
-# A parent node whose children are in the same update says nothing the children do not.
-_FRAME_STAGE_TYPES = {"ReadingReferral", "CommitteeWork"}
 _SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
-_COMMITTEE_PHASES = {"first_reading_committee", "committee_work", "senate_amendments"}
-_SITTING_PHASES = {"first_reading_sitting", "second_reading", "third_reading", "senate_amendments"}
-
-# The "path" line: the steps of the process in order, and which step each phase sits on. RCL
-# phases (except the hand-over) sit on "rcl"; the step is skipped for bills that never went
-# through the government.
-_PATH_STEPS = ("rcl", "sejm", "committee", "readings", "senate", "president", "journal", "in_force")
-_PHASE_STEP = {
-    "rcl_to_sejm": "sejm",
-    "pre_print": "sejm",
-    "pre_print_consultation": "sejm",
-    "first_reading": "sejm",
-    "first_reading_sitting": "sejm",
-    "first_reading_committee": "committee",
-    "committee_work": "committee",
-    "second_reading": "readings",
-    "third_reading": "readings",
-    "senate": "senate",
-    "senate_amendments": "senate",
-    "president": "president",
-    "veto": "president",
-    "tribunal": "president",
-    "publication": "journal",
-    "in_force": "in_force",
-    "in_force_unknown": "in_force",
-}
 _READING_NUMERAL = re.compile(r"^\s*(I{1,3})\s+czytanie", re.IGNORECASE)
 CLUBS_PER_SIDE = 4
 
@@ -316,8 +298,8 @@ class MessageFormatter:
                 self._thread_tags(bill),
                 f"#{lb.tag_importance}{a.score}",
                 f"#{lb.category_tags.get(a.category, a.category.value)}",
-                *([f"#{lb.tag_consultations}"] if _consultation_open(bill, today) else []),
-                *([f"#{lb.tag_ukraine}"] if _about_ukraine(bill) else []),
+                *([f"#{lb.tag_consultations}"] if consultation_open(bill, today) else []),
+                *([f"#{lb.tag_ukraine}"] if about_ukraine(bill) else []),
                 *([f"#{lb.tag_rcl}"] if bill.rcl is not None else []),
                 self._term_tag(bill.summary.term),
             ]
@@ -361,7 +343,7 @@ class MessageFormatter:
                 f"{esc(lb.category_labels.get(analysis.category, analysis.category.value))}"
             )
 
-        stage_lines = [f"• {self._stage_line(st)}" for st in _told_stages(change.new_stages)]
+        stage_lines = [f"• {self._stage_line(st)}" for st in told_stages(change.new_stages)]
         stages_block = (
             f"{ICON['new_stages']} <b>{esc(lb.new_stages)}</b>\n" + "\n".join(stage_lines)
             if stage_lines
@@ -392,7 +374,7 @@ class MessageFormatter:
 
         # Event tags only when the reply carries the event a reader would search for.
         tags = " ".join(
-            [f"#{lb.event_tags[key]}" for key in _event_keys(change) if key in lb.event_tags]
+            [f"#{lb.event_tags[key]}" for key in event_keys(change) if key in lb.event_tags]
             + [self._thread_tags(bill)]
         )
 
@@ -430,7 +412,7 @@ class MessageFormatter:
         if event == "print_assigned":
             assigned = f"{ICON['print']} {esc(lb.print_assigned)}: <b>{esc(bill.number)}</b>"
             closure = f"{assigned}\n{closure}" if closure else assigned
-        elif bill.rcl is not None and bill.rcl.sent_to_sejm and _reaches_sejm(change):
+        elif bill.rcl is not None and bill.rcl.sent_to_sejm and reaches_sejm(change):
             closure = f"{ICON['print']} {esc(lb.rcl_sent_to_sejm)}"
         return closure
 
@@ -993,10 +975,10 @@ class MessageFormatter:
         elif phase.key.startswith("rcl_") and phase.key != "rcl_to_sejm":
             current = "rcl"
         else:
-            current = _PHASE_STEP.get(phase.key)
+            current = PHASE_STEP.get(phase.key)
             if current is None:
                 return ""
-        steps = [s for s in _PATH_STEPS if s != "rcl" or _government_path(bill)]
+        steps = [s for s in PATH_STEPS if s != "rcl" or government_path(bill)]
         parts: list[str] = []
         before = current is not None
         for step in steps:
@@ -1080,7 +1062,7 @@ class MessageFormatter:
                 f"{self.fmt_date(window.end)}"
             )
         phase = next_phase(bill, today=today)
-        if phase is not None and phase.key in _COMMITTEE_PHASES:
+        if phase is not None and phase.key in COMMITTEE_PHASES:
             codes = phase.committees or ((agenda_item.committee_code,) if agenda_item else ())
             targets = [
                 link(committee_web_url(bill.term, code), self._committee_display(bill, code, None))
@@ -1094,7 +1076,7 @@ class MessageFormatter:
                 if sitting is not None:
                     text += f" {esc(lb.action_before_sitting)} {self.fmt_date(sitting.date)}"
                 actions.append(text)
-            hearing = _open_hearing(bill, today)
+            hearing = open_hearing(bill, today)
             if hearing is not None:
                 text = esc(lb.action_hearing)
                 deadline = hearing_application_deadline(hearing)
@@ -1138,9 +1120,9 @@ class MessageFormatter:
         if kind is not None:
             return next((i for i in future if i.kind == kind), None)
         preferred = []
-        if phase.key in _COMMITTEE_PHASES:
+        if phase.key in COMMITTEE_PHASES:
             preferred.append("committee")
-        if phase.key in _SITTING_PHASES:
+        if phase.key in SITTING_PHASES:
             preferred.append("sejm")
         for wanted in preferred:
             item = next((i for i in future if i.kind == wanted), None)
@@ -1282,93 +1264,12 @@ class MessageFormatter:
         return text if len(text) <= MESSAGE_LIMIT else _cut_lines(text, MESSAGE_LIMIT)
 
 
-_SENATE_STAGES = {"SenatePosition", "SenatePositionConsideration"}
-_PRESIDENT_STAGES = {"ToPresident", "PresidentSignature"}
-
-
-def _event_keys(change: StatusChange) -> list[str]:
-    """Which searchable events a status update carries, in display order."""
-    types = {stage.stage_type for stage in flatten_stages(tuple(change.new_stages))}
-    keys = []
-    if "Voting" in types or any(st.voting for st in change.new_stages):
-        keys.append("voting")
-    if types & _SENATE_STAGES:
-        keys.append("senate")
-    if types & _PRESIDENT_STAGES:
-        keys.append("president")
-    if "Veto" in types:
-        keys.append("veto")
-    if change.content_changed or change.amendments is not None:
-        keys.append("amendments")
-    if change.withdrawn:
-        keys.append("withdrawn")
-    if change.discontinued:
-        keys.append("discontinued")
-    return keys
-
-
-def _government_path(bill: Bill) -> bool:
-    """Government bills start on RCL; the path line shows that step only for them."""
-    return (
-        bill.rcl is not None
-        or bool(bill.summary.rcl_num)
-        or bill.summary.applicant_type is ApplicantType.GOVERNMENT
-    )
-
-
-def _consultation_open(bill: Bill, today: dt.date) -> bool:
-    window = bill.consultation
-    return window is not None and window.is_open(today)
-
-
-def _reaches_sejm(change: StatusChange) -> bool:
-    """The update carries the RCL stage "Skierowanie projektu ustawy do Sejmu"."""
-    return any(
-        st.stage_type == RCL_STAGE_TYPE and "sejm" in st.stage_name.lower()
-        for st in change.new_stages
-    )
-
-
-def _open_hearing(bill: Bill, today: dt.date) -> Stage | None:
-    """A public hearing that is announced and has not taken place yet."""
-    return next(
-        (
-            st
-            for st in flatten_stages(bill.stages)
-            if st.stage_type == "PublicHearing" and (st.date is None or st.date >= today)
-        ),
-        None,
-    )
-
-
 def _translate(value: str | None, labels: dict[str, str]) -> str | None:
     """The label of the first fragment found in `value` (lower case); None when nothing matches."""
     if not value:
         return None
     lowered = value.lower()
     return next((label for part, label in labels.items() if part in lowered), None)
-
-
-def _told_stages(stages: list[Stage]) -> list[Stage]:
-    """The stages worth a bullet: a frame node ("Skierowano do I czytania", "Praca w
-    komisjach") is dropped when its children are listed anyway."""
-    return [
-        st
-        for st in stages
-        if not (st.stage_type in _FRAME_STAGE_TYPES and any(c in stages for c in st.children))
-    ]
-
-
-_UKRAINE = next(p.regex for p in KEYWORD_PATTERNS if p.name == "obywatele_ukrainy")
-
-
-def _about_ukraine(bill: Bill) -> bool:
-    """Prefilter hit on "obywatele Ukrainy" (title or text), or the title says so itself."""
-    hits = {hit.removeprefix("text:") for hit in bill.prefilter_hits}
-    if "obywatele_ukrainy" in hits:
-        return True
-    s = bill.summary
-    return bool(_UKRAINE.search(f"{s.title} {s.description or ''}"))
 
 
 def _tokens_line(report: RunReport) -> str:

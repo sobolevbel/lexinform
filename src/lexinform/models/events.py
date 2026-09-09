@@ -12,7 +12,7 @@ import datetime as dt
 
 from lexinform.models.bill import Bill, StatusChange
 from lexinform.models.rcl import RCL_STAGE_TYPE
-from lexinform.models.sejm import Stage
+from lexinform.models.sejm import Stage, flatten_stages
 
 # Nodes that only frame other events. A `SejmReading` is decided case by case (see below).
 SERVICE_STAGE_TYPES = frozenset(
@@ -141,6 +141,73 @@ def amendments_stage(stages: list[Stage]) -> Stage | None:
         if report and not stage.carries_bill_text and "popraw" in (stage.proposal or "").lower():
             return stage
     return None
+
+
+_SENATE_STAGES = frozenset({"SenatePosition", "SenatePositionConsideration"})
+_PRESIDENT_STAGES = frozenset({"ToPresident", "PresidentSignature"})
+# A parent node whose children are in the same update says nothing the children do not.
+FRAME_STAGE_TYPES = frozenset({"ReadingReferral", "CommitteeWork"})
+
+
+def event_keys(change: StatusChange) -> list[str]:
+    """Which searchable events a status update carries, in display order (the tags)."""
+    types = {stage.stage_type for stage in flatten_stages(tuple(change.new_stages))}
+    keys = []
+    if "Voting" in types or any(st.voting for st in change.new_stages):
+        keys.append("voting")
+    if types & _SENATE_STAGES:
+        keys.append("senate")
+    if types & _PRESIDENT_STAGES:
+        keys.append("president")
+    if "Veto" in types:
+        keys.append("veto")
+    if change.content_changed or change.amendments is not None:
+        keys.append("amendments")
+    if change.withdrawn:
+        keys.append("withdrawn")
+    if change.discontinued:
+        keys.append("discontinued")
+    return keys
+
+
+def reaches_sejm(change: StatusChange) -> bool:
+    """The update carries the RCL stage "Skierowanie projektu ustawy do Sejmu"."""
+    return any(
+        st.stage_type == RCL_STAGE_TYPE and "sejm" in st.stage_name.lower()
+        for st in change.new_stages
+    )
+
+
+def told_stages(stages: list[Stage]) -> list[Stage]:
+    """The stages worth telling on their own: a frame node ("Skierowano do I czytania", "Praca
+    w komisjach") is dropped when its children are listed anyway."""
+    return [
+        st
+        for st in stages
+        if not (st.stage_type in FRAME_STAGE_TYPES and any(c in stages for c in st.children))
+    ]
+
+
+def open_hearing(bill: Bill, today: dt.date) -> Stage | None:
+    """A public hearing that is announced and has not taken place yet."""
+    return next(
+        (
+            st
+            for st in flatten_stages(bill.stages)
+            if st.stage_type == "PublicHearing" and (st.date is None or st.date >= today)
+        ),
+        None,
+    )
+
+
+def hearings_due(bill: Bill, today: dt.date, *, days_before: int) -> list[Stage]:
+    """Public hearings whose application deadline falls within the next `days_before` days."""
+    due: list[Stage] = []
+    for stage in flatten_stages(bill.stages):
+        deadline = hearing_application_deadline(stage)
+        if deadline is not None and 0 <= (deadline - today).days <= days_before:
+            due.append(stage)
+    return due
 
 
 def hearing_application_deadline(stage: Stage) -> dt.date | None:

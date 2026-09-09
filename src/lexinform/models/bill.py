@@ -6,8 +6,9 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from lexinform.keywords import KEYWORD_PATTERNS
 from lexinform.models.analysis import AmendmentsRecord, AnalysisRecord
-from lexinform.models.enums import BillStatus, PublicationKind, PublicationStatus
+from lexinform.models.enums import ApplicantType, BillStatus, PublicationKind, PublicationStatus
 from lexinform.models.rcl import RclProject
 from lexinform.models.sejm import (
     ActInfo,
@@ -148,6 +149,60 @@ class Phase(BaseModel):
 _PRESIDENT_NEXT = {"ToPresident", "SenatePositionConsideration"}
 SENATE_DAYS, SENATE_DAYS_URGENT = 30, 14
 PRESIDENT_DAYS, PRESIDENT_DAYS_URGENT = 21, 7
+
+
+# The "path" of a bill as a reader sees it, and which step each phase sits on. RCL phases
+# (except the hand-over) sit on "rcl"; the step is skipped for bills that never went through
+# the government.
+PATH_STEPS = ("rcl", "sejm", "committee", "readings", "senate", "president", "journal", "in_force")
+PHASE_STEP = {
+    "rcl_to_sejm": "sejm",
+    "pre_print": "sejm",
+    "pre_print_consultation": "sejm",
+    "first_reading": "sejm",
+    "first_reading_sitting": "sejm",
+    "first_reading_committee": "committee",
+    "committee_work": "committee",
+    "second_reading": "readings",
+    "third_reading": "readings",
+    "senate": "senate",
+    "senate_amendments": "senate",
+    "president": "president",
+    "veto": "president",
+    "tribunal": "president",
+    "publication": "journal",
+    "in_force": "in_force",
+    "in_force_unknown": "in_force",
+}
+# Phases during which a reader can address a committee, or watch a sitting.
+COMMITTEE_PHASES = frozenset({"first_reading_committee", "committee_work", "senate_amendments"})
+SITTING_PHASES = frozenset(
+    {"first_reading_sitting", "second_reading", "third_reading", "senate_amendments"}
+)
+_UKRAINE = next(p.regex for p in KEYWORD_PATTERNS if p.name == "obywatele_ukrainy")
+
+
+def government_path(bill: Bill) -> bool:
+    """Government bills start on RCL; the path shows that step only for them."""
+    return (
+        bill.rcl is not None
+        or bool(bill.summary.rcl_num)
+        or bill.summary.applicant_type is ApplicantType.GOVERNMENT
+    )
+
+
+def consultation_open(bill: Bill, today: dt.date) -> bool:
+    window = bill.consultation
+    return window is not None and window.is_open(today)
+
+
+def about_ukraine(bill: Bill) -> bool:
+    """Prefilter hit on "obywatele Ukrainy" (title or text), or the title says so itself."""
+    hits = {hit.removeprefix("text:") for hit in bill.prefilter_hits}
+    if "obywatele_ukrainy" in hits:
+        return True
+    s = bill.summary
+    return bool(_UKRAINE.search(f"{s.title} {s.description or ''}"))
 
 
 def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
