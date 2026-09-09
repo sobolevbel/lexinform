@@ -183,7 +183,7 @@ def reprefilter(
         skipped = [
             b
             for b in c.repo.list_by_status(c.settings.term, statuses, limit=limit)
-            if not b.is_pre_print
+            if b.has_process
         ]
         accepted = 0
         for bill in skipped:

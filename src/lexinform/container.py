@@ -1,6 +1,7 @@
 """Composition root: builds adapters and services from Settings. No DI framework."""
 
 from dataclasses import dataclass, field
+from urllib.parse import urlparse
 
 import anthropic
 
@@ -17,9 +18,11 @@ from lexinform.ports import Publisher, RunNotifier
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.discovery import BillDiscoveryService
-from lexinform.services.documents import PdfTextLoader
+from lexinform.services.documents import TextLoader
 from lexinform.services.pipeline import DailyPipeline
 from lexinform.services.publishing import PublishingService
+from lexinform.services.signatories import SejmAuthorsResolver
+from lexinform.services.sources import SejmTextSource, TextSources
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
 from lexinform.settings import Settings
@@ -34,17 +37,22 @@ class Container:
     formatter: MessageFormatter
     prefilter: KeywordPrefilter
     _telegram: TelegramBotClient | None = field(default=None, init=False, repr=False)
-    _loader: PdfTextLoader | None = field(default=None, init=False, repr=False)
+    _loader: TextLoader | None = field(default=None, init=False, repr=False)
 
-    def pdf_loader(self) -> PdfTextLoader:
-        """One loader (and text cache) per process, shared by the text prefilter and analysis."""
+    def text_loader(self) -> TextLoader:
+        """One loader (and text cache) per process, shared by the text prefilter and analysis.
+        Downloads are routed by host to the client of that system."""
         if self._loader is None:
-            self._loader = PdfTextLoader(
-                self.gateway,
+            sejm_host = urlparse(self.settings.sejm_api_base_url).hostname or ""
+            self._loader = TextLoader(
+                {sejm_host: self.gateway.download},
                 PypdfTextExtractor(),
                 max_bytes=self.settings.max_pdf_download_mb * 1024 * 1024,
             )
         return self._loader
+
+    def text_sources(self) -> TextSources:
+        return TextSources(SejmTextSource(self.gateway))
 
     def analyzer(self) -> AnthropicAnalyzer:
         return AnthropicAnalyzer(
@@ -59,12 +67,13 @@ class Container:
 
     def analysis_service(self) -> AnalysisService:
         return AnalysisService(
-            self.gateway,
             self.repo,
-            self.pdf_loader(),
+            self.text_sources(),
+            self.text_loader(),
             self.analyzer(),
             self.clock,
             text_budget=TextBudget(self.settings.text_budget_chars),
+            authors=SejmAuthorsResolver(self.gateway),
             max_attempts=self.settings.max_analysis_attempts,
             workers=self.settings.llm_concurrency,
             triage=self.prefilter if self.settings.llm_triage_model else None,
@@ -85,9 +94,9 @@ class Container:
         if not self.settings.text_prefilter_enabled:
             return None
         return TextPrefilterService(
-            self.gateway,
             self.repo,
-            self.pdf_loader(),
+            self.text_sources(),
+            self.text_loader(),
             self.prefilter,
             min_distinct=self.settings.text_prefilter_min_distinct,
             min_occurrences=self.settings.text_prefilter_min_occurrences,

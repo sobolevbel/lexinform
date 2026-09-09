@@ -4,7 +4,7 @@ import hashlib
 import logging
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import Bill, PrintInfo, Stage, aggregate_clubs
+from lexinform.models import Bill, Stage, aggregate_clubs
 from lexinform.ports import SejmGateway
 
 log = logging.getLogger(__name__)
@@ -58,12 +58,3 @@ def change_key(stage_fp: str, bill: Bill, *, closed: bool) -> str:
     source = bill.analysis.source_url if bill.analysis else ""
     key = f"{stage_fp}|{revision}|{source}" + ("|closed" if closed else "")
     return hashlib.sha256(key.encode()).hexdigest()
-
-
-def fetch_print(gateway: SejmGateway, bill: Bill) -> PrintInfo | None:
-    """The print, or None when the API has none for this number (a warning, not a failure)."""
-    try:
-        return gateway.get_print(bill.term, bill.number)
-    except Exception as exc:
-        log.warning("print %s unavailable: %s", bill.number, exc)
-        return None

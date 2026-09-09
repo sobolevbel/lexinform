@@ -213,7 +213,7 @@ def test_notifier_receives_the_report_and_the_captured_warnings() -> None:
 
     report, lines = w.notifier.calls[-1]
     assert report.analysis_failures == 1
-    assert any("analysis failed for druk 3039" in line for line in lines)
+    assert any("analysis failed for 3039" in line for line in lines)
 
 
 def test_report_carries_phase_timings() -> None:

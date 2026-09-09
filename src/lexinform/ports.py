@@ -15,6 +15,7 @@ from lexinform.models import (
     BillSubmission,
     Committee,
     CommitteeSitting,
+    LocatedText,
     Mp,
     PrintInfo,
     ProcessDetail,
@@ -106,6 +107,27 @@ class EliGateway(Protocol):
     """The ELI (European Legislation Identifier) API of the Sejm: published acts."""
 
     def get_act(self, eli: str) -> ActInfo | None: ...
+
+
+class Downloader(Protocol):
+    """Fetches one URL of a given host; `AttachmentTooLargeError` once `max_bytes` is exceeded,
+    a `ServiceUnavailableError` subclass when the host is down."""
+
+    def __call__(self, url: str, *, max_bytes: int | None = None) -> bytes: ...
+
+
+class TextSource(Protocol):
+    """Where a bill's text and fresh metadata come from. Network only: never touches the
+    repository, so several bills can be located at once."""
+
+    def locate(self, bill: Bill) -> LocatedText: ...
+
+
+class AuthorsResolver(Protocol):
+    """Who signed a bill, read from its text (deputies' and committee bills). Best effort:
+    None when the text names nobody; only outages propagate."""
+
+    def resolve(self, bill: Bill, text: str) -> BillAuthors | None: ...
 
 
 class TextExtractor(Protocol):

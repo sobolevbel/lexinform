@@ -66,5 +66,8 @@ class PublicationStatus(StrEnum):
     UNKNOWN = "unknown"
 
 
-TextSource = Literal["pdf", "excerpts", "metadata_only"]  # excerpts: rejected by the triage
-SourceKind = Literal["print", "committee_report", "text_after3", "metadata"]
+# How an analysis was made: the full text of one PDF, the full text of a set of documents (RCL:
+# projekt + uzasadnienie + OSR), keyword excerpts (rejected by the triage), or metadata only.
+TextSource = Literal["pdf", "documents", "excerpts", "metadata_only"]
+FULL_TEXT_SOURCES: frozenset[str] = frozenset({"pdf", "documents"})
+SourceKind = Literal["print", "committee_report", "text_after3", "rcl", "metadata"]

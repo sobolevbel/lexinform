@@ -76,7 +76,7 @@ class BillDiscoveryService:
 
     def _miss_status(self, summary: ProcessSummary) -> BillStatus:
         """A title miss goes on to the text stage, unless there is no print to read."""
-        if self._text_prefilter and not summary.is_pre_print:
+        if self._text_prefilter and summary.has_process:
             return BillStatus.TEXT_PREFILTER_PENDING
         return BillStatus.SKIPPED_PREFILTER
 

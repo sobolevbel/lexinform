@@ -21,13 +21,14 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, EliGateway, Publisher, SejmGateway
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.sources import SejmTextSource, fetch_print
 from lexinform.services.tracking.acts import ActWatcher
 from lexinform.services.tracking.agenda import AgendaWatcher
 from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.pre_print import PrePrintReconciler
 from lexinform.services.tracking.result import TrackingResult
-from lexinform.services.tracking.stages import StageEnricher, change_key, fetch_print
+from lexinform.services.tracking.stages import StageEnricher, change_key
 
 log = logging.getLogger(__name__)
 
@@ -73,6 +74,7 @@ class StatusTrackingService:
             repo, publisher, clock, channel_id=channel_id, max_attempts=max_publish_attempts
         )
         self._enricher = StageEnricher(gateway, club_breakdown=club_breakdown)
+        self._texts = SejmTextSource(gateway)
         self._consultations = (
             ConsultationReminder(
                 repo,
@@ -138,7 +140,7 @@ class StatusTrackingService:
             everyone = tracked if changed_since is None else self._list_tracked(term)
             if not self._agenda.check(term, everyone, result, publish=publish):
                 return result
-        followed = [bill for bill in tracked if not bill.is_pre_print]  # RPW: no process yet
+        followed = [bill for bill in tracked if bill.has_process]
         for outcome in fan_out(followed, self._fetch, workers=self._workers):
             bill = outcome.item
             result.checked += 1
@@ -226,13 +228,11 @@ class StatusTrackingService:
             self._repo.save_stages(bill.term, bill.number, detail.stages, new_fp)
         self._repo.upsert_summary(detail, now=now)
 
-        document = (
-            self._analysis.newer_document(bill, detail, print_info) if self._analysis else None
-        )
+        document = self._texts.newer(bill, detail, print_info) if self._analysis else None
         content_changed = False
         if document is not None and self._analysis is not None:
             log.info("druk %s: new text (%s), re-analysing", bill.number, document.kind)
-            result.count_reanalysis(self._analysis.reanalyze_bill(bill, detail, document))
+            result.count_reanalysis(self._analysis.reanalyze_bill(bill, document, summary=detail))
             content_changed = True
 
         if old_fp is None:

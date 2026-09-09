@@ -14,7 +14,7 @@ from lexinform.models import (
     ActInfo,
     AgendaItem,
     Bill,
-    BillSubmission,
+    ConsultationWindow,
     Phase,
     PrintInfo,
     RunReport,
@@ -366,10 +366,10 @@ class MessageFormatter:
     def consultation_deadline(self, bill: Bill, *, today: dt.date) -> RenderedMessage:
         """Reply under the card a few days before the public consultation closes."""
         lb = self._labels
-        sub = bill.submission
-        if sub is None or sub.consultation_end is None:
+        window = bill.consultation
+        if window is None or window.end is None:
             raise ValueError(f"bill {bill.number} has no consultation end date")
-        days_left = (sub.consultation_end - today).days
+        days_left = (window.end - today).days
         header = (
             f"{ICON['consultation']} <b>{esc(lb.consultation_deadline_header)} — "
             f"{self._number_label(bill)}</b>\n\n<b>{esc(bill.summary.title)}</b>"
@@ -379,11 +379,11 @@ class MessageFormatter:
             if days_left <= 0
             else f"{esc(lb.consultation_days_left)}: {days_left}"
         )
-        form = sub.consultation_url
+        form = window.form_url
         hint = link(form, lb.consultation_hint) if form else esc(lb.consultation_hint)
         facts = (
             f"{ICON['effective']} <b>{esc(lb.consultation)}:</b> {esc(lb.consultation_until)} "
-            f"{self.fmt_date(sub.consultation_end)} · {countdown}\n"
+            f"{self.fmt_date(window.end)} · {countdown}\n"
             f"{ICON['action']} {hint}"
         )
         next_step = self._next_step_line(bill, today)
@@ -402,21 +402,21 @@ class MessageFormatter:
     def consultation_results(self, bill: Bill, *, today: dt.date | None = None) -> RenderedMessage:
         """Reply under the card once the Sejm publishes the opinions received."""
         lb = self._labels
-        sub = bill.submission
-        if sub is None or not sub.public_consultation:
+        window = bill.consultation
+        if window is None:
             raise ValueError(f"bill {bill.number} had no public consultation")
         header = (
             f"{ICON['consultation']} <b>{esc(lb.consultation_results_header)} — "
             f"{self._number_label(bill)}</b>\n\n<b>{esc(bill.summary.title)}</b>"
         )
-        page = sub.consultation_url
+        page = window.form_url
         facts = f"{ICON['note']} " + (
             link(page, lb.consultation_results_hint) if page else esc(lb.consultation_results_hint)
         )
-        if sub.consultation_end:
+        if window.end:
             facts = (
                 f"{ICON['effective']} <b>{esc(lb.consultation)}:</b> "
-                f"{self._consultation_period(sub)}\n{facts}"
+                f"{self._consultation_period(window)}\n{facts}"
             )
         steps = self._steps_block(bill, today or dt.date.today())
         links = [link(bill.summary.web_url, lb.link_process)]
@@ -579,25 +579,23 @@ class MessageFormatter:
         return f" ({' · '.join(parts)})" if parts else ""
 
     def _consultation_line(self, bill: Bill) -> str:
-        sub = bill.submission
-        if sub is None or not sub.public_consultation or sub.consultation_end is None:
+        window = bill.consultation
+        if window is None or window.end is None:
             return ""
         lb = self._labels
-        form = sub.consultation_url
+        form = window.form_url
         where = link(form, lb.consultation_link) if form else esc(lb.consultation_hint)
         return (
             f"{ICON['consultation']} <b>{esc(lb.consultation)}:</b> "
-            f"{self._consultation_period(sub)} · {where}"
+            f"{self._consultation_period(window)} · {where}"
         )
 
-    def _consultation_period(self, sub: BillSubmission) -> str:
+    def _consultation_period(self, window: ConsultationWindow) -> str:
         lb = self._labels
-        assert sub.consultation_end is not None
-        if sub.consultation_start:
-            return (
-                f"{self.fmt_date(sub.consultation_start)} — {self.fmt_date(sub.consultation_end)}"
-            )
-        return f"{esc(lb.consultation_until)} {self.fmt_date(sub.consultation_end)}"
+        assert window.end is not None
+        if window.start:
+            return f"{self.fmt_date(window.start)} — {self.fmt_date(window.end)}"
+        return f"{esc(lb.consultation_until)} {self.fmt_date(window.end)}"
 
     # ------------------------------------------------------------------ next step / action
 
@@ -627,9 +625,9 @@ class MessageFormatter:
     ) -> str:
         lb = self._labels
         actions: list[str] = []
-        sub = bill.submission
-        if _consultation_open(bill, today) and sub is not None and sub.consultation_end:
-            page = sub.consultation_url
+        window = bill.consultation
+        if window is not None and window.is_open(today) and window.end is not None:
+            page = window.form_url
             where = (
                 link(page, lb.action_consultation_page)
                 if page
@@ -637,7 +635,7 @@ class MessageFormatter:
             )
             actions.append(
                 f"{esc(lb.action_send_opinion)} {where} {esc(lb.consultation_until)} "
-                f"{self.fmt_date(sub.consultation_end)}"
+                f"{self.fmt_date(window.end)}"
             )
         phase = next_phase(bill, today=today)
         if phase is not None and phase.key in _COMMITTEE_PHASES:
@@ -815,10 +813,8 @@ def _event_keys(change: StatusChange) -> list[str]:
 
 
 def _consultation_open(bill: Bill, today: dt.date | None) -> bool:
-    sub = bill.submission
-    if sub is None or not sub.public_consultation or sub.consultation_end is None:
-        return False
-    return sub.consultation_end >= (today or dt.date.today())
+    window = bill.consultation
+    return window is not None and window.is_open(today or dt.date.today())
 
 
 def _hearing_open(bill: Bill, today: dt.date) -> bool:

@@ -2,6 +2,7 @@
 act and authors, plus the two bookkeeping rows (publications and detected status changes)."""
 
 import datetime as dt
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -14,8 +15,31 @@ from lexinform.models.sejm import (
     BillSubmission,
     ProcessSummary,
     Stage,
+    TextDocument,
     flatten_stages,
 )
+
+
+class ConsultationWindow(BaseModel):
+    """The public consultation of a bill, whoever runs it.
+
+    The Sejm consults deputies', Senate, presidential and citizens' bills through a web form
+    (`form_url`); the government consults its own on RCL, by e-mail to the ministry named in the
+    consultation letter (`email`, `letter_url`).
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    source: Literal["sejm", "rcl"]
+    start: dt.date | None = None
+    end: dt.date | None = None
+    form_url: str | None = None
+    email: str | None = None
+    letter_url: str | None = None
+    results_published: bool = False
+
+    def is_open(self, today: dt.date) -> bool:
+        return self.end is not None and self.end >= today
 
 
 class Bill(BaseModel):
@@ -50,9 +74,38 @@ class Bill(BaseModel):
         return self.summary.is_pre_print
 
     @property
+    def has_process(self) -> bool:
+        return self.summary.has_process
+
+    @property
     def last_stage(self) -> Stage | None:
         flat = flatten_stages(self.stages)
         return flat[-1] if flat else None
+
+    @property
+    def consultation(self) -> ConsultationWindow | None:
+        """The public consultation, if the bill has (or had) one."""
+        sub = self.submission
+        if sub is None or not sub.public_consultation or sub.consultation_end is None:
+            return None
+        return ConsultationWindow(
+            source="sejm",
+            start=sub.consultation_start,
+            end=sub.consultation_end,
+            form_url=sub.consultation_url,
+            results_published=sub.consultation_results,
+        )
+
+
+class LocatedText(BaseModel):
+    """What a text source found for a bill: fresh metadata, the stage tree (when the source has
+    one) and the document to read. Any part may be missing."""
+
+    model_config = ConfigDict(frozen=True)
+
+    summary: ProcessSummary | None = None
+    stages: tuple[Stage, ...] | None = None
+    document: TextDocument | None = None
 
 
 class Phase(BaseModel):
@@ -87,14 +140,9 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
     if bill.is_pre_print or not bill.stages:
         if summary.closure_date is not None:
             return None  # withdrawn before getting a print number
-        sub = bill.submission
-        if (
-            sub is not None
-            and sub.public_consultation
-            and sub.consultation_end is not None
-            and sub.consultation_end >= today
-        ):
-            return Phase(key="pre_print_consultation", date=sub.consultation_end)
+        window = bill.consultation
+        if window is not None and window.is_open(today):
+            return Phase(key="pre_print_consultation", date=window.end)
         return Phase(key="pre_print")
     if summary.closure_date is not None and summary.passed is False:
         return None  # rejected or withdrawn

@@ -88,7 +88,7 @@ class PublishingService:
                 created_at=now,
             )
         )
-        print_info = None if bill.is_pre_print else self._safe_print(bill)
+        print_info = self._safe_print(bill) if bill.has_process else None
         bill = self._with_submission(bill)
         try:
             sent = self._publisher.publish_new_bill(bill, print_info)
@@ -126,7 +126,7 @@ class PublishingService:
 
     def _with_submission(self, bill: Bill) -> Bill:
         """Attach the /bills entry (public consultation dates) to a numbered print, best effort."""
-        if bill.submission is not None or bill.is_pre_print:
+        if bill.submission is not None or not bill.has_process:
             return bill
         try:
             sub = self._gateway.find_submission(bill.term, bill.number)

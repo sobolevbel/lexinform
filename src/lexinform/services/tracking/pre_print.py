@@ -22,10 +22,11 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.sources import SejmTextSource, fetch_print
 from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.result import TrackingResult
-from lexinform.services.tracking.stages import StageEnricher, change_key, fetch_print
+from lexinform.services.tracking.stages import StageEnricher, change_key
 
 log = logging.getLogger(__name__)
 
@@ -148,9 +149,11 @@ class PrePrintReconciler:
         content_changed = False
         if self._analysis is not None and bill.analysis is not None:
             print_info = fetch_print(self._gateway, bill)
-            document = self._analysis.newer_document(bill, detail, print_info)
+            document = SejmTextSource(self._gateway).newer(bill, detail, print_info)
             if document is not None:
-                result.count_reanalysis(self._analysis.reanalyze_bill(bill, detail, document))
+                result.count_reanalysis(
+                    self._analysis.reanalyze_bill(bill, document, summary=detail)
+                )
                 content_changed = True
         fresh = self._repo.get(pre.term, print_number) or bill
         new_stages = [self._enricher.enrich(pre.term, st) for st in diff_stages((), detail.stages)]

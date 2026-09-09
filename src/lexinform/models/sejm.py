@@ -302,7 +302,13 @@ class ProcessSummary(BaseModel):
 
     @property
     def is_pre_print(self) -> bool:
+        """A /bills entry (RPW number) that has not been assigned a print number yet."""
         return is_pre_print_number(self.number)
+
+    @property
+    def has_process(self) -> bool:
+        """True when the Sejm API has a legislative process (`/processes/{number}`) for it."""
+        return not is_pre_print_number(self.number)
 
     @classmethod
     def from_submission(cls, sub: BillSubmission) -> Self:
@@ -504,12 +510,17 @@ def diff_stages(
 
 
 class TextDocument(BaseModel):
-    """A document carrying the bill text at some point of the process."""
+    """A document carrying the bill text at some point of the process.
+
+    `extra_urls` are read after the main one and appended (an RCL project publishes the bill,
+    its uzasadnienie and the OSR as separate files; a Sejm print has them in one PDF).
+    """
 
     model_config = ConfigDict(frozen=True)
 
     url: str
     kind: SourceKind
+    extra_urls: tuple[str, ...] = ()
 
 
 def latest_text_document(stages: tuple[Stage, ...] | list[Stage]) -> TextDocument | None:

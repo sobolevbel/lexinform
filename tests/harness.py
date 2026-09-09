@@ -31,9 +31,11 @@ from lexinform.ports import TextExtractor
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.discovery import BillDiscoveryService
-from lexinform.services.documents import PdfTextLoader
+from lexinform.services.documents import TextLoader
 from lexinform.services.pipeline import DailyPipeline, RunOptions
 from lexinform.services.publishing import PublishingService
+from lexinform.services.signatories import SejmAuthorsResolver
+from lexinform.services.sources import SejmTextSource, TextSources
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
 from tests.fakes import (
@@ -50,6 +52,7 @@ TERM = 10
 RPW = "RPW/29075/2026"
 ELI = "DU/2026/1099"
 MAX_PDF_BYTES = 10_000_000
+FILE_HOST = "api.test"  # the fake gateway serves every file the loader asks for from here
 SINCE = dt.datetime(2026, 9, 1, tzinfo=dt.UTC)
 
 START = (
@@ -97,7 +100,7 @@ def detail(process: ProcessSummary, stages: tuple[Stage, ...]) -> ProcessDetail:
 
 
 def print_url(number: str) -> str:
-    return f"https://api.test/sejm/term{TERM}/prints/{number}/{number}.pdf"
+    return f"https://{FILE_HOST}/sejm/term{TERM}/prints/{number}/{number}.pdf"
 
 
 def submission(**overrides: Any) -> BillSubmission:
@@ -154,17 +157,21 @@ class World:
         self.publisher = FakePublisher(fail_on=fail_publish)
         self.notifier = FakeNotifier()
         self.extractor = extractor or FakeTextExtractor()
-        loader = PdfTextLoader(self.gateway, self.extractor, max_bytes=MAX_PDF_BYTES)
+        loader = TextLoader(
+            {FILE_HOST: self.gateway.download}, self.extractor, max_bytes=MAX_PDF_BYTES
+        )
+        texts = TextSources(SejmTextSource(self.gateway))
         self.discovery = BillDiscoveryService(
             self.gateway, self.repo, KeywordPrefilter(), self.clock, text_prefilter=text_prefilter
         )
         self.analysis = AnalysisService(
-            self.gateway,
             self.repo,
+            texts,
             loader,
             self.llm,
             self.clock,
             text_budget=TextBudget(10_000),
+            authors=SejmAuthorsResolver(self.gateway),
             workers=workers,
             triage=KeywordPrefilter() if triage else None,
             triage_min_chars=triage_min_chars,
@@ -190,9 +197,7 @@ class World:
             self.clock,
             notifier=self.notifier,
             text_prefilter=(
-                TextPrefilterService(
-                    self.gateway, self.repo, loader, KeywordPrefilter(), workers=workers
-                )
+                TextPrefilterService(self.repo, texts, loader, KeywordPrefilter(), workers=workers)
                 if text_prefilter
                 else None
             ),

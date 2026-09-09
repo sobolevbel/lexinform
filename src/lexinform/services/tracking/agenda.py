@@ -54,7 +54,7 @@ class AgendaWatcher:
 
     def check(self, term: int, bills: list[Bill], result: TrackingResult, *, publish: bool) -> bool:
         """Refresh the upcoming sittings of every bill and post the new ones. False on an outage."""
-        followed = [b for b in bills if not b.is_pre_print]
+        followed = [b for b in bills if b.has_process]
         if not followed:
             return True
         today = self._clock.now().astimezone(self._local_tz).date()

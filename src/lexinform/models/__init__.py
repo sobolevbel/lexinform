@@ -17,6 +17,8 @@ from lexinform.models.analysis import (
 )
 from lexinform.models.bill import (
     Bill,
+    ConsultationWindow,
+    LocatedText,
     Phase,
     Publication,
     StatusChange,
@@ -24,6 +26,7 @@ from lexinform.models.bill import (
 )
 from lexinform.models.enums import (
     BILL_DOCUMENT_TYPE,
+    FULL_TEXT_SOURCES,
     PRE_PRINT_PREFIX,
     RCL_PREFIX,
     ApplicantType,
@@ -105,7 +108,10 @@ __all__ = [
     "ClubVotes",
     "Committee",
     "CommitteeSitting",
+    "ConsultationWindow",
     "DocumentType",
+    "FULL_TEXT_SOURCES",
+    "LocatedText",
     "Mp",
     "PRE_PRINT_PREFIX",
     "Phase",

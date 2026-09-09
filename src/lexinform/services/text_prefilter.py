@@ -12,8 +12,8 @@ from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
 from lexinform.keywords import KeywordPrefilter, accept_text_hits
 from lexinform.models import Bill, BillStatus
-from lexinform.ports import BillRepository, SejmGateway
-from lexinform.services.documents import PdfTextLoader
+from lexinform.ports import BillRepository, TextSource
+from lexinform.services.documents import TextLoader
 
 log = logging.getLogger(__name__)
 
@@ -35,17 +35,17 @@ class TextPrefilterService:
 
     def __init__(
         self,
-        gateway: SejmGateway,
         repo: BillRepository,
-        loader: PdfTextLoader,
+        texts: TextSource,
+        loader: TextLoader,
         prefilter: KeywordPrefilter,
         *,
         min_distinct: int = 2,
         min_occurrences: int = 3,
         workers: int = 1,
     ) -> None:
-        self._gateway = gateway
         self._repo = repo
+        self._texts = texts
         self._loader = loader
         self._prefilter = prefilter
         self._min_distinct = min_distinct
@@ -82,7 +82,7 @@ class TextPrefilterService:
         return result
 
     def check(self, bill: Bill) -> bool:
-        """Scan the main print PDF; True when the bill is sent on to analysis."""
+        """Scan the bill text; True when the bill is sent on to analysis."""
         return self._decide(bill, self._load(bill))
 
     def _decide(self, bill: Bill, text: str | None) -> bool:
@@ -107,14 +107,13 @@ class TextPrefilterService:
 
     def _load(self, bill: Bill) -> str | None:
         try:
-            print_info = self._gateway.get_print(bill.term, bill.number)
+            located = self._texts.locate(bill)
         except ServiceUnavailableError:
             raise
         except Exception as exc:
-            log.warning("print %s unavailable for text prefilter: %s", bill.number, exc)
+            log.warning("text of %s unavailable for the prefilter: %s", bill.number, exc)
             return None
-        pdf = print_info.main_pdf
-        if pdf is None:
-            log.info("druk %s has no PDF attachment; text prefilter skipped", bill.number)
+        if located.document is None:
+            log.info("%s has no readable text; text prefilter skipped", bill.number)
             return None
-        return self._loader.load(pdf.url)
+        return self._loader.load_document(located.document)
