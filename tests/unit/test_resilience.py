@@ -78,6 +78,20 @@ def test_telegram_down_marks_the_post_failed_and_stops_publishing() -> None:
     assert w.publication("3040") is None  # not even attempted
 
 
+def test_sejm_api_down_while_completing_the_card_leaves_no_pending_row() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run(max_publish=0)  # discovered and analysed, the card still to be sent
+    w.gateway.outages.add("find_submission")  # the consultation dates are read just before the post
+
+    report = w.run()
+
+    assert any(e.startswith("publishing: Sejm API unavailable") for e in report.errors)
+    assert w.publication("3039") is None  # no pending row that would turn into `unknown`
+    w.gateway.outages.clear()
+    assert w.run().published == 1
+
+
 def test_publishing_resumes_without_duplicates_when_telegram_is_back() -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")

@@ -113,7 +113,11 @@ class PublishingService:
         primary = self._primary_of(bill)
         if primary is not None:
             return self._publish_joint(bill, primary, result)
-        now = self._clock.now()
+        # Everything the card needs from the Sejm API is fetched before the pending row exists:
+        # an outage here must leave no row behind (a stale pending row becomes `unknown` and is
+        # never sent), so that the bill is simply a candidate again on the next run.
+        print_info = self._safe_print(bill) if bill.has_process else None
+        bill = self._with_submission(bill)
         pub_id = self._repo.create_publication(
             Publication(
                 term=bill.term,
@@ -121,11 +125,9 @@ class PublishingService:
                 kind=PublicationKind.NEW_BILL,
                 status=PublicationStatus.PENDING,
                 channel_id=self._channel_id,
-                created_at=now,
+                created_at=self._clock.now(),
             )
         )
-        print_info = self._safe_print(bill) if bill.has_process else None
-        bill = self._with_submission(bill)
         if not self._send(pub_id, bill, lambda: self._publisher.publish_new_bill(bill, print_info)):
             return False
         result.published += 1
@@ -135,6 +137,7 @@ class PublishingService:
         self, bill: Bill, primary: tuple[Bill, int], result: PublishingResult
     ) -> bool:
         card_bill, card_message_id = primary
+        print_info = self._safe_print(bill)  # before the pending row, as in `publish_bill`
         pub_id = self._repo.create_publication(
             Publication(
                 term=bill.term,
@@ -145,7 +148,6 @@ class PublishingService:
                 created_at=self._clock.now(),
             )
         )
-        print_info = self._safe_print(bill)
         sent = self._send(
             pub_id,
             bill,
