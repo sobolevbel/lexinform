@@ -210,8 +210,6 @@ class SejmSitting(BaseModel):
 
     number: int  # 0 for a sitting that is only planned (no agenda yet)
     dates: tuple[dt.date, ...]
-    title: str = ""
-    current: bool = False
     agenda: str = ""  # HTML fragment
 
     @property
@@ -242,11 +240,6 @@ class AgendaItem(BaseModel):
     room: str | None = None
     text: str = ""  # the agenda item, plain text
     video_url: str | None = None
-
-    @property
-    def first_reading(self) -> bool:
-        lowered = self.text.lower()
-        return "pierwsze czytanie" in lowered or "i czytanie" in lowered
 
 
 class ActInfo(BaseModel):

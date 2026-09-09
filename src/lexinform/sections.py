@@ -57,10 +57,6 @@ class TrimmedText:
     text: str
     dropped: tuple[DroppedSection, ...] = ()
 
-    @property
-    def dropped_chars(self) -> int:
-        return sum(d.chars for d in self.dropped)
-
 
 def _section_start(page: str, current: str) -> str:
     """The section a page opens, or the one it continues."""

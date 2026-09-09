@@ -24,6 +24,8 @@ class TelegramError(RuntimeError):
 
 
 class TelegramBotClient:
+    """`sendMessage` with retries; auth and membership problems are `TelegramUnavailableError`."""
+
     def __init__(
         self,
         token: str,
@@ -103,11 +105,11 @@ class TelegramBotClient:
 @dataclass
 class TelegramPublishResult:
     message_id: int
-    document_message_ids: list[int] = field(default_factory=list)
+    document_message_ids: list[int] = field(default_factory=list)  # none: the PDF is linked
 
 
 class TelegramPublisher:
-    """Publishes the card message; the PDF is linked from the card, not attached."""
+    """Renders each message kind with the formatter and sends it to the channel."""
 
     def __init__(
         self,

@@ -1,11 +1,8 @@
-"""Running one I/O-bound step for many items at once, while the service around it stays
-sequential.
+"""One I/O-bound step for many items at once; the service around it stays sequential.
 
-The rule for using `fan_out`: the function it runs may talk to the network (Sejm API, PDF
-downloads, the LLM) but never to the repository. Outcomes are consumed in the calling thread, in
-input order, and that is where every database write happens: SQLite sees a single thread, the
-`--dry-run` transaction stays intact, and log lines keep their order per bill. With `workers=1`
-nothing is threaded at all, so a plain loop and the parallel version behave identically.
+The step may talk to the network but never to the repository: outcomes are consumed in the
+calling thread, in input order, and that is where every database write happens. With
+`workers=1` nothing is threaded, so both modes behave identically.
 """
 
 from collections.abc import Callable, Iterable, Iterator

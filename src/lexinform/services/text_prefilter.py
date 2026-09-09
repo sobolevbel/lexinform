@@ -22,6 +22,8 @@ TEXT_HIT_PREFIX = "text:"
 
 @dataclass
 class TextPrefilterResult:
+    """Counters of one text-prefilter phase."""
+
     checked: int = 0
     hits: int = 0
     failed: int = 0
@@ -29,6 +31,8 @@ class TextPrefilterResult:
 
 
 class TextPrefilterService:
+    """Scans the print PDF of title misses and promotes strong keyword hits to analysis."""
+
     def __init__(
         self,
         gateway: SejmGateway,
@@ -53,16 +57,13 @@ class TextPrefilterService:
         if limit <= 0:
             return result
         pending = self._repo.list_by_status(term, [BillStatus.TEXT_PREFILTER_PENDING], limit=limit)
-        # Downloads and text extraction run side by side; every decision and database write
-        # below happens here, in order.
         for outcome in fan_out(pending, self._load, workers=self._workers):
             bill = outcome.item
             result.checked += 1
             try:
                 if self._decide(bill, outcome.result()):
                     result.hits += 1
-            except ServiceUnavailableError as exc:
-                # Bills stay pending and are checked on the next run.
+            except ServiceUnavailableError as exc:  # bills stay pending for the next run
                 result.fatal_error = exc.describe()
                 log.error("aborting text prefilter phase: %s", result.fatal_error)
                 break
@@ -85,6 +86,7 @@ class TextPrefilterService:
         return self._decide(bill, self._load(bill))
 
     def _decide(self, bill: Bill, text: str | None) -> bool:
+        """Store the hits (weak ones too, for tuning) and set the bill's next status."""
         counts = self._prefilter.match_counts(text) if text else {}
         accepted = accept_text_hits(
             counts, min_distinct=self._min_distinct, min_occurrences=self._min_occurrences

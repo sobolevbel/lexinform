@@ -21,6 +21,8 @@ log = logging.getLogger(__name__)
 
 
 class RunOptions(BaseModel):
+    """What one run should do; built by the CLI from settings and flags."""
+
     term: int
     since: datetime | None = None
     dry_run: bool = False
@@ -36,6 +38,8 @@ class RunOptions(BaseModel):
 
 
 class DailyPipeline:
+    """Runs the phases in order, isolates their failures and produces the run report."""
+
     def __init__(
         self,
         repo: BillRepository,
@@ -147,8 +151,10 @@ class DailyPipeline:
 
     @staticmethod
     def _phase(report: RunReport, name: str, action: Callable[[], None]) -> None:
-        """Run one phase; an external outage or a bug ends the phase, not the run."""
-        # `in_report` keeps these out of the captured warnings: they are listed as errors already.
+        """Run one phase; an outage or a bug ends the phase, not the run.
+
+        `in_report` keeps these log lines out of the captured warnings: they are errors already.
+        """
         started = time.perf_counter()
         try:
             action()
@@ -205,9 +211,8 @@ class DailyPipeline:
             report.errors.append(f"{published.failed} publication(s) failed")
 
     def _track(self, opts: RunOptions, report: RunReport) -> None:
-        # Bills the API did not list as modified since the watermark have nothing new, so the
-        # daily check touches only the changed ones; once a week every followed bill is fetched
-        # in case something moved without a visible change (or discovery was skipped/failed).
+        # Daily: only bills the API listed as modified. Weekly (or when discovery did not run):
+        # every followed bill, in case something moved without a visible change.
         weekly = (
             self._full_track_weekday is not None
             and self._clock.now().weekday() == self._full_track_weekday

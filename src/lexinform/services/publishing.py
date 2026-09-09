@@ -18,6 +18,8 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class PublishingResult:
+    """Counters of one publishing phase."""
+
     published: int = 0
     skipped: int = 0
     failed: int = 0
@@ -25,6 +27,8 @@ class PublishingResult:
 
 
 class PublishingService:
+    """Posts the card of every relevant, analysed bill once per channel."""
+
     def __init__(
         self,
         gateway: SejmGateway,

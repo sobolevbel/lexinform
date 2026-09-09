@@ -13,6 +13,8 @@ log = logging.getLogger(__name__)
 
 
 class ActWatcher:
+    """Announces the Dziennik Ustaw publication once and reminds on the entry-into-force day."""
+
     def __init__(
         self,
         eli: EliGateway | None,

@@ -43,6 +43,8 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class AnalysisResult:
+    """Counters and verdicts of one analysis phase."""
+
     analyzed: int = 0
     triaged_out: int = 0
     failed: int = 0
@@ -69,6 +71,8 @@ class _Prepared:
 
 
 class AnalysisService:
+    """First analyses of candidates and re-analyses of bills whose text changed."""
+
     def __init__(
         self,
         gateway: SejmGateway,
@@ -100,6 +104,8 @@ class AnalysisService:
     # ------------------------------------------------------------------ first analysis
 
     def analyze_pending(self, term: int, *, limit: int) -> AnalysisResult:
+        """Analyse up to `limit` candidates; an outage stops the phase, a bill's own error
+        costs it one attempt."""
         result = AnalysisResult()
         if limit <= 0:
             return result
@@ -109,19 +115,16 @@ class AnalysisService:
             limit=limit,
             max_attempts=self._max_attempts,
         )
-        # Fetching the print and waiting for the model happen in parallel; results are written
-        # here, one bill at a time, in the order they were listed.
         for outcome in fan_out(candidates, self._prepare_first, workers=self._workers):
             bill = outcome.item
             try:
                 prepared = outcome.result()
                 record = self._persist(prepared)
             except ServiceUnavailableError as exc:
-                # Not the bill's fault: stop the phase without consuming its retry attempts.
                 result.fatal_error = exc.describe()
                 log.error("aborting analysis phase: %s", result.fatal_error)
                 break
-            except Exception as exc:  # per-bill isolation: one failure must not block the rest
+            except Exception as exc:
                 result.failed += 1
                 log.exception("analysis failed for druk %s: %s", bill.number, exc)
                 self._repo.record_analysis_failure(
@@ -156,8 +159,7 @@ class AnalysisService:
 
     def _prepare_first(self, bill: Bill) -> _Prepared:
         if bill.is_pre_print:
-            # No process, no print, and the PDF sits behind the Sejm website's bot protection:
-            # the official title and description are all we have at this stage.
+            # No process yet and the PDF is behind a bot wall: title and description only.
             return self._prepare(bill, None, None, previous=None)
         detail = self._gateway.get_process(bill.term, bill.number)
         print_info = self._safe_print(bill)
@@ -236,12 +238,10 @@ class AnalysisService:
     def _triage_verdict(
         self, bill: Bill, meta: ProcessSummary, text: str
     ) -> tuple[TriageRecord | None, AnalysisRecord | None]:
-        """Ask a cheap first question on excerpts; a confident "no" becomes the final record.
+        """Ask the cheap model about excerpts; a confident "no" becomes the final record.
 
-        Long prints are where the money goes, and half of them turn out to be about something
-        else: the keyword prefilter is deliberately over-inclusive. A rejected bill is stored as a
-        regular, non-relevant analysis (model and text_source say how it was decided).
-        Returns the triage record and, when it rejects the bill, that final record.
+        Returns the triage record and, when it rejects the bill, a non-relevant analysis record
+        (its `text_source="excerpts"` says how it was decided).
         """
         if self._triage is None:
             return None, None
@@ -330,10 +330,10 @@ class AnalysisService:
             return None
 
     def _load_text(self, document: TextDocument | None) -> tuple[str, bool, TextSource]:
-        """Text of the document, or metadata-only when it cannot be fetched or read.
+        """Trimmed, budgeted text of the document; metadata-only when it cannot be fetched or read.
 
-        Only an outage of the Sejm API propagates; a missing file or a broken PDF is not a reason to
-        burn one of the bill's analysis attempts, the designed fallback is analysing the metadata.
+        Only a Sejm API outage propagates: a missing or broken PDF falls back to the metadata
+        instead of costing the bill an analysis attempt.
         """
         if document is None:
             return "", False, "metadata_only"

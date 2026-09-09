@@ -1,8 +1,8 @@
 """The tracking phase: which bills to look at, what changed, and the resulting posts.
 
-Every update is posted as a reply to the original card and always restates the current summary.
-When the text of the bill changed (committee report with amendments, text after the 3rd reading,
-updated print) the bill is re-analysed first and the update also lists what changed.
+Every update is a reply to the original card and restates the current summary. When the bill's
+text changed (committee report, text after the 3rd reading, updated print) the bill is
+re-analysed first and the update also lists what changed.
 """
 
 import logging
@@ -33,6 +33,13 @@ log = logging.getLogger(__name__)
 
 
 class StatusTrackingService:
+    """Follows published bills: stage changes, new texts, sittings, acts, consultations.
+
+    The work is split by concern into the sibling modules; this class owns the loop and the
+    stage/text detection. Network calls for many bills run in parallel, every decision and
+    database write happens here, in order.
+    """
+
     def __init__(
         self,
         gateway: SejmGateway,
@@ -124,33 +131,14 @@ class StatusTrackingService:
             return result
         if not self._pre_print.reconcile(term, result, publish=publish):
             return result
-        tracked = self._repo.list_tracked(
-            term,
-            self._channel_id,
-            closed_grace_days=self._closed_grace_days,
-            passed_max_days=self._passed_max_days,
-            now=self._clock.now(),
-            changed_since=changed_since,
-        )
-        # Sitting agendas change without touching the process, so every followed bill is checked,
-        # before the stage loop so that an update posted below already carries the dates.
+        tracked = self._list_tracked(term, changed_since)
+        # Agendas change without touching the process: every followed bill is checked, and before
+        # the stage loop, so that an update posted below already carries the sitting dates.
         if self._agenda is not None:
-            everyone = (
-                tracked
-                if changed_since is None
-                else self._repo.list_tracked(
-                    term,
-                    self._channel_id,
-                    closed_grace_days=self._closed_grace_days,
-                    passed_max_days=self._passed_max_days,
-                    now=self._clock.now(),
-                )
-            )
+            everyone = tracked if changed_since is None else self._list_tracked(term)
             if not self._agenda.check(term, everyone, result, publish=publish):
                 return result
-        # Pre-print bills have no legislative process yet: the reconciler handles them.
-        followed = [bill for bill in tracked if not bill.is_pre_print]
-        # The API lookups run in parallel; detection and posting stay sequential, in order.
+        followed = [bill for bill in tracked if not bill.is_pre_print]  # RPW: no process yet
         for outcome in fan_out(followed, self._fetch, workers=self._workers):
             bill = outcome.item
             result.checked += 1
@@ -189,6 +177,16 @@ class StatusTrackingService:
             result.failed,
         )
         return result
+
+    def _list_tracked(self, term: int, changed_since: datetime | None = None) -> list[Bill]:
+        return self._repo.list_tracked(
+            term,
+            self._channel_id,
+            closed_grace_days=self._closed_grace_days,
+            passed_max_days=self._passed_max_days,
+            now=self._clock.now(),
+            changed_since=changed_since,
+        )
 
     def _retry_failed(self, term: int, result: TrackingResult) -> bool:
         """Re-send status updates whose post failed earlier. False if Telegram is down."""
@@ -238,15 +236,15 @@ class StatusTrackingService:
             content_changed = True
 
         if old_fp is None:
-            return None  # first time we see stages for this bill: seed silently
-        # Discovery refreshes the summary (and its closure date) before tracking runs, so closure
-        # is detected against what was already announced, not against the stored summary.
+            return None  # first sight of the stages: seed silently
+        # Discovery refreshes the stored summary before tracking runs, so closure is detected
+        # against what was announced, not against the stored closure date.
         closure_detected = detail.closure_date is not None and not self._repo.closure_announced(
             bill.term, bill.number
         )
         new_stages = diff_stages(bill.stages, detail.stages) if stages_changed else []
         if not (new_stages or content_changed or closure_detected):
-            return None  # nothing worth a post (e.g. a stage was edited or removed upstream)
+            return None  # a stage was edited or removed upstream: nothing to tell
         new_stages = [self._enricher.enrich(bill.term, st) for st in new_stages]
 
         fresh = self._repo.get(bill.term, bill.number) or bill

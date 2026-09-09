@@ -154,11 +154,13 @@ def _dump_version(script: str) -> int:
 
 
 class SqliteBillRepository:
+    """`BillRepository` on one sqlite3 connection; JSON columns hold pydantic dumps."""
+
     def __init__(self, path: Path | str) -> None:
         self._path = str(path)
         if self._path != ":memory:":
             Path(self._path).parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(self._path, isolation_level=None)  # autocommit; explicit txns
+        self._conn = sqlite3.connect(self._path, isolation_level=None)  # autocommit, see begin()
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA foreign_keys = ON")
         if self._path != ":memory:":

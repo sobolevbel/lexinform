@@ -31,6 +31,8 @@ log = logging.getLogger(__name__)
 
 
 class PrePrintReconciler:
+    """Re-reads `/bills` for the entries we follow and reacts to what changed there."""
+
     def __init__(
         self,
         gateway: SejmGateway,
@@ -102,6 +104,7 @@ class PrePrintReconciler:
 
     @staticmethod
     def _results_appeared(bill: Bill, sub: BillSubmission) -> bool:
+        """`consultationResults` flipped to true since the stored copy of the entry."""
         before = bill.submission
         return sub.consultation_results and not (before is not None and before.consultation_results)
 
@@ -170,6 +173,7 @@ class PrePrintReconciler:
             result.count_post(self._poster.status_update(fresh, change))
 
     def _announce_withdrawal(self, bill: Bill, result: TrackingResult, *, publish: bool) -> None:
+        """Close the thread of an RPW entry that was withdrawn before getting a print number."""
         change = StatusChange(
             term=bill.term,
             number=bill.number,

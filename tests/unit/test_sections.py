@@ -51,7 +51,6 @@ def test_appendices_are_dropped_and_the_core_is_kept() -> None:
     assert result.dropped[3].chars == len(REGULATION) + len(REGULATION_JUSTIFICATION)
     assert result.text.count("[pominięto:") == 4
     assert PAGE_BREAK not in result.text
-    assert result.dropped_chars == sum(d.chars for d in result.dropped)
 
 
 def test_unknown_layout_passes_unchanged() -> None:

@@ -31,6 +31,8 @@ NO_COMMITTEE = "Sejm"  # `committeeCode` of a referral to a reading at a sitting
 
 
 class AgendaWatcher:
+    """Matches followed bills against the agendas of upcoming committee and Sejm sittings."""
+
     def __init__(
         self,
         gateway: SejmGateway,
@@ -91,6 +93,7 @@ class AgendaWatcher:
     def _committee_sittings(
         self, term: int, bills: list[Bill], today: dt.date
     ) -> tuple[dict[str, list[CommitteeSitting]], set[str]]:
+        """Upcoming sittings per committee the bills were referred to, and the codes that failed."""
         codes = sorted(
             {
                 st.committee_code
@@ -116,6 +119,7 @@ class AgendaWatcher:
         return upcoming, failed
 
     def _sejm_sittings(self, term: int, today: dt.date) -> list[SejmSitting]:
+        """Sejm sittings that are not over yet, with their agendas (one request each)."""
         current = [
             s
             for s in self._gateway.list_sittings(term)
@@ -145,6 +149,7 @@ class AgendaWatcher:
         committee_sittings: dict[str, list[CommitteeSitting]],
         sejm_sittings: list[SejmSitting],
     ) -> tuple[AgendaItem, ...]:
+        """Agenda items naming the bill (or a print considered jointly with it)."""
         numbers = {bill.number, *bill.summary.prints_considered_jointly}
         items: list[AgendaItem] = []
         codes = {

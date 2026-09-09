@@ -20,6 +20,8 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class DiscoveryResult:
+    """Counters of one discovery phase."""
+
     seen: int = 0
     new: int = 0
     pre_print_seen: int = 0
@@ -28,6 +30,8 @@ class DiscoveryResult:
 
 
 class BillDiscoveryService:
+    """Stores every bill the API lists as new or changed and prefilters the new ones by title."""
+
     def __init__(
         self,
         gateway: SejmGateway,
@@ -100,6 +104,8 @@ class BillDiscoveryService:
                 self._repo.save_submission(sub.term, sub.number, sub)
 
     def _ingest(self, summary: ProcessSummary, result: DiscoveryResult) -> bool:
+        """Upsert the summary; prefilter new bills (and re-prefilter skipped ones whose title
+        changed). True when the bill is new."""
         existing = self._repo.get(summary.term, summary.number)
         now = self._clock.now()
         submission = None
@@ -107,8 +113,8 @@ class BillDiscoveryService:
             submission = self._find_submission(summary)
             if submission is not None:
                 if self._repo.get(summary.term, submission.number) is not None:
-                    # We already follow this bill under its RPW number: tracking links the two and
-                    # keeps the Telegram thread; a second card here would duplicate it.
+                    # Already followed under its RPW number: tracking links the two and keeps
+                    # the Telegram thread; a second card here would duplicate it.
                     log.info(
                         "druk %s continues %s; linked by tracking",
                         summary.number,

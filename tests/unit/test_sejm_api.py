@@ -250,6 +250,6 @@ def test_committee_sittings_and_proceedings_are_parsed() -> None:
     assert planned_only and planned_only[0].first_date == date(2025, 4, 25)
     full = client.get_sitting(10, 65)
     assert full.first_date == date(2026, 9, 15) and full.last_date == date(2026, 9, 18)
-    assert "druki nr" in full.agenda and full.current
+    assert "druki nr" in full.agenda
     with pytest.raises(SejmApiError):
         client.get_sitting(10, 66)

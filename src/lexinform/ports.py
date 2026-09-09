@@ -36,6 +36,8 @@ class Clock(Protocol):
 
 
 class SejmGateway(Protocol):
+    """The Sejm REST API (api.sejm.gov.pl); `ServiceUnavailableError` when it is down."""
+
     def iter_processes(
         self,
         term: int,
@@ -100,6 +102,8 @@ class PublishResult(Protocol):
 
 
 class Publisher(Protocol):
+    """Where the messages go: Telegram in production, stdout in a dry run."""
+
     def publish_new_bill(self, bill: Bill, print_info: PrintInfo | None) -> PublishResult: ...
 
     def publish_status_update(
@@ -126,6 +130,8 @@ class RunNotifier(Protocol):
 
 
 class BillRepository(Protocol):
+    """Persistence of bills, publications, status changes and runs (SQLite in production)."""
+
     # schema
     def migrate(self) -> None: ...
 

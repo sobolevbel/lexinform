@@ -19,6 +19,8 @@ from lexinform.models.sejm import (
 
 
 class Bill(BaseModel):
+    """One row of the `bills` table: everything we know and decided about a bill."""
+
     summary: ProcessSummary
     status: BillStatus
     prefilter_hits: list[str] = Field(default_factory=list)
@@ -162,6 +164,8 @@ def _latest_committees(top: list[Stage]) -> tuple[str, ...]:
 
 
 class Publication(BaseModel):
+    """One Telegram post (or the decision not to send one), written before sending."""
+
     id: int | None = None
     term: int
     number: str
@@ -179,6 +183,8 @@ class Publication(BaseModel):
 
 
 class StatusChange(BaseModel):
+    """A detected change worth one update post; unique per (bill, new_fingerprint)."""
+
     id: int | None = None
     term: int
     number: str

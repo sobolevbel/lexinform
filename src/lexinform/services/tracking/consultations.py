@@ -15,6 +15,8 @@ log = logging.getLogger(__name__)
 
 
 class ConsultationReminder:
+    """The two consultation replies: the deadline reminder and the "opinions published" notice."""
+
     def __init__(
         self,
         repo: BillRepository,

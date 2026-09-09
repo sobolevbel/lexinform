@@ -459,8 +459,6 @@ def parse_sitting(item: dict[str, Any]) -> SejmSitting:
     return SejmSitting(
         number=_int(item.get("number")) or 0,
         dates=tuple(_date(d) for d in item.get("dates") or () if d),
-        title=str(item.get("title") or "").strip(),
-        current=bool(item.get("current", False)),
         agenda=str(item.get("agenda") or ""),
     )
 
