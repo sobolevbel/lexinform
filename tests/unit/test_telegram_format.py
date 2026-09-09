@@ -232,7 +232,7 @@ def test_labels_and_date_format_follow_the_language(
     ru = MessageFormatter("ru").new_bill(bill_of(process_3039), print_3039).text
     en = MessageFormatter("en").new_bill(bill_of(process_3039), print_3039).text
 
-    assert "Дата druku:</b> 03.08.2026" in ru
+    assert "\n📄 <b>Дата druku:</b> 03.08.2026" in ru  # the date has its own line
     assert "New bill" in en and "#importance5" in en
     assert "Print date:</b> 2026-08-03" in en
 

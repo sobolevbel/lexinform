@@ -3,7 +3,7 @@ prompt caching hits across all bills analysed in one run."""
 
 from lexinform.models import AmendmentsContext, BillContext, TriageContext
 
-PROMPT_VERSION = "2026-09-v3"
+PROMPT_VERSION = "2026-09-v4"
 
 _LANGUAGE_NAMES = {"ru": "Russian", "pl": "Polish", "en": "English", "uk": "Ukrainian"}
 
@@ -34,6 +34,7 @@ You receive the text of a bill (projekt ustawy) submitted to the Sejm. Decide wh
 
 - Base every statement only on the provided text. Never invent article numbers, dates or amounts.
 - Keep Polish names of statutes in the original, with a short translation in parentheses on first use.
+- Keep Polish abbreviations and acronyms as they are, never translate or transliterate them: ministries (MSWiA, MRPiPS, MSZ, MEN), offices and institutions (UdSC, ZUS, NFZ, PFRON, KRUS, FGŚP, BIP), documents and registers (PESEL, KRS, CEIDG). Readers look them up and meet them on forms in this spelling. On first use, a short explanation in {language} may follow in parentheses.
 - If the text is marked as truncated or metadata-only, say so implicitly via confidence and avoid details you cannot see.
 - Do not address the reader; write neutral informational prose.
 """
@@ -74,6 +75,7 @@ A bill the channel follows has received amendments: either the Senate's resoluti
 - Base every statement only on the provided document. Never invent article numbers, dates or amounts.
 - Amendments are stated relative to the bill as it is now: say what changes for the reader compared with the current description.
 - Keep Polish names of statutes in the original, with a short translation in parentheses on first use.
+- Keep Polish abbreviations and acronyms (MSWiA, UdSC, ZUS, NFZ, PESEL, …) as they are; never translate or transliterate them.
 - Do not address the reader; write neutral informational prose.
 """
 

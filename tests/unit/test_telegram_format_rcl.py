@@ -57,7 +57,7 @@ def test_card_names_the_ministry_the_letter_deadline_and_both_ways_to_react() ->
     assert "Путь:</b> RCL ● → Сейм → комиссии → II и III чтение → Сенат → Президент" in text
     assert (
         "Инициатор:</b> правительственный — Minister Spraw Wewnętrznych i Administracji"
-        " · номер в wykazie prac RM: UC164   📄 <b>Опубликован на RCL:</b> 31.08.2026" in text
+        " · номер в wykazie prac RM: UC164\n📄 <b>Опубликован на RCL:</b> 31.08.2026" in text
     )
     assert (
         "Общественные консультации:</b> до 08.09.2026 (7 дн. с даты письма) · "

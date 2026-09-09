@@ -769,8 +769,10 @@ class MessageFormatter:
         return f" ({' · '.join(parts)})" if parts else ""
 
     def _applicant_line(self, bill: Bill) -> str:
-        """ "Инициатор: правительственный — Minister … · номер в wykazie: UC164   Опубликован на
-        RCL: 31.08.2026" for RCL projects; applicant, signatories and document date otherwise."""
+        """Two lines: "Инициатор: правительственный — Minister … · номер в wykazie: UC164" and
+        "Опубликован на RCL: 31.08.2026" for RCL projects; applicant with signatories, then the
+        document date otherwise. The date has its own line: the applicant line with signatories
+        is long and the date was lost at its end."""
         lb = self._labels
         s = bill.summary
         applicant = esc(lb.applicant_labels.get(s.applicant_type, s.applicant_type.value))
@@ -780,14 +782,14 @@ class MessageFormatter:
             if project.wykaz_number:
                 who += f" · {esc(lb.rcl_wykaz)}: {esc(project.wykaz_number)}"
             when = f"{ICON['doc_date']} <b>{esc(lb.rcl_published)}:</b> "
-            return f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {who}   {when}" + esc(
+            return f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {who}\n{when}" + esc(
                 self.fmt_date(project.created)
             )
         doc_date = self.fmt_date(s.document_date) if s.document_date else "—"
         date_label = lb.received if bill.is_pre_print else lb.document_date
         return (
             f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {applicant}"
-            f"{self._authors_suffix(bill)}   "
+            f"{self._authors_suffix(bill)}\n"
             f"{ICON['doc_date']} <b>{esc(date_label)}:</b> {esc(doc_date)}"
         )
 

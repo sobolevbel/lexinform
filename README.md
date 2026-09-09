@@ -39,7 +39,8 @@ Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony na te
 👉 Что можно сделать сейчас: направить мнение через страницу проекта на сайте Сейма до 04.09.2026; направить мнение в комиссию — Komisja … (ASW) до заседания 17.09.2026
 
 🏛 Стадия: направлен в комиссию Komisja Administracji i Spraw Wewnętrznych (ASW) (03.09.2026)
-✍️ Инициатор: депутатский (подписали: Lewica 21 · представитель: Daria Gosek-Popiołek, Lewica)   📄 Дата druku: 03.08.2026
+✍️ Инициатор: депутатский (подписали: Lewica 21 · представитель: Daria Gosek-Popiołek, Lewica)
+📄 Дата druku: 03.08.2026
 
 🔗 Ход процесса в Сейме | PDF
 #kadencja10druk3039 #важность5 #легализация #консультации #каденция10
