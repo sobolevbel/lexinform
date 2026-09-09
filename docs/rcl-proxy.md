@@ -10,19 +10,20 @@ Telegram connect directly.
 
 ## The proxy host
 
-Anything in the EU with one open TCP port works. Used so far: a free Mikrus FROG server
-(Alpine in an unprivileged LXC, Hetzner Helsinki, shared IPv4 with three forwarded ports
-`frog01.mikr.us:2xxxx/3xxxx/4xxxx`, `sudo` without password). A FROG server is deleted after
-three months without an SSH login; the paid Mikrus 1.0 (35 zł a year, same location) has no such
-rule.
+Anything in the EU with one open TCP port works. In use: a Mikrus 1.0 (Ubuntu 24.04 in an LXC,
+Hetzner Helsinki, `root` by SSH key on port `10000+ID`, shared IPv4 with the forwarded TCP ports
+`20000+ID` and `30000+ID`, 35 zł a year). A free Mikrus FROG server (Alpine, `sudo` without a
+password, ports `2xxxx/3xxxx/4xxxx`) served for the first test; FROG servers are deleted after
+three months without an SSH login, so not for production.
 
 ## tinyproxy, restricted to RCL
 
 Install and configure as root (replace `PORT` with one of the forwarded ports and `PASSWORD` with
-`openssl rand -hex 16`):
+`openssl rand -hex 16`; on Alpine use `apk add tinyproxy` and `rc-update add tinyproxy default`,
+`rc-service tinyproxy restart` instead of apt and systemctl):
 
 ```sh
-sudo apk add tinyproxy
+sudo apt-get install -y tinyproxy
 sudo tee /etc/tinyproxy/tinyproxy.conf >/dev/null <<'EOF'
 User tinyproxy
 Group tinyproxy
@@ -45,8 +46,7 @@ EOF
 printf '^legislacja\\.rcl\\.gov\\.pl$\n' | sudo tee /etc/tinyproxy/filter >/dev/null
 sudo mkdir -p /var/log/tinyproxy /run/tinyproxy
 sudo chown tinyproxy:tinyproxy /var/log/tinyproxy /run/tinyproxy
-sudo rc-update add tinyproxy default
-sudo rc-service tinyproxy restart
+sudo systemctl enable tinyproxy && sudo systemctl restart tinyproxy
 ss -ltn | grep PORT
 ```
 
