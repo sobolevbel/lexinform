@@ -1,8 +1,12 @@
-from dataclasses import dataclass
+"""The Anthropic adapter: request shape, record fields and error classification, on a stub client."""
+
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any
 
+import anthropic
+import httpx2 as httpx
 import pytest
 
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer, LlmError, LlmFatalError
@@ -13,20 +17,31 @@ from tests.fakes import make_analysis
 
 @dataclass
 class _StubMessages:
-    response: Any
-    calls: list[dict[str, Any]]
+    """Stands in for `client.messages`: returns one response or raises one exception."""
+
+    response: Any = None
+    error: Exception | None = None
+    calls: list[dict[str, Any]] = field(default_factory=list)
 
     def parse(self, **kwargs: Any) -> Any:
         self.calls.append(kwargs)
+        if self.error is not None:
+            raise self.error
         return self.response
 
 
-def _client(response: Any) -> Any:
-    return SimpleNamespace(messages=_StubMessages(response=response, calls=[]))
+def _client(response: Any = None, *, error: Exception | None = None) -> Any:
+    return SimpleNamespace(messages=_StubMessages(response=response, error=error))
 
 
-def _ctx(**kw: Any) -> BillContext:
-    base = dict(
+def _response(parsed: Any, *, stop_reason: str = "end_turn", **usage: int) -> Any:
+    return SimpleNamespace(
+        parsed_output=parsed, stop_reason=stop_reason, usage=SimpleNamespace(**usage)
+    )
+
+
+def _ctx(**overrides: Any) -> BillContext:
+    fields: dict[str, Any] = dict(
         number="3039",
         title="Projekt",
         description="opis",
@@ -36,17 +51,24 @@ def _ctx(**kw: Any) -> BillContext:
         truncated=False,
         text_source="pdf",
     )
-    base.update(kw)
-    return BillContext(**base)  # type: ignore[arg-type]
+    fields.update(overrides)
+    return BillContext(**fields)
 
 
-def test_analyze_builds_request_and_record() -> None:
-    response = SimpleNamespace(
-        parsed_output=make_analysis(),
-        stop_reason="end_turn",
-        usage=SimpleNamespace(input_tokens=1200, output_tokens=300, cache_read_input_tokens=1000),
+def _api_error(cls: type[anthropic.APIStatusError], message: str) -> Exception:
+    response = httpx.Response(400, request=httpx.Request("POST", "https://api.test/v1/messages"))
+    return cls(message, response=response, body=None)
+
+
+# --------------------------------------------------------------------------- analysis
+
+
+def test_analysis_request_thinks_caches_the_system_prompt_and_records_usage() -> None:
+    client = _client(
+        _response(
+            make_analysis(), input_tokens=1200, output_tokens=300, cache_read_input_tokens=1000
+        )
     )
-    client = _client(response)
     analyzer = AnthropicAnalyzer(
         client,
         model="claude-opus-5",
@@ -54,56 +76,78 @@ def test_analyze_builds_request_and_record() -> None:
         effort="medium",
         clock=lambda: datetime(2026, 9, 7, tzinfo=UTC),
     )
+
     record = analyzer.analyze(_ctx())
+
     call = client.messages.calls[0]
-    assert call["model"] == "claude-opus-5"
-    assert call["output_format"] is Analysis
-    assert call["thinking"] == {"type": "adaptive"}
-    assert call["output_config"] == {"effort": "medium"}
+    assert call["model"] == "claude-opus-5" and call["output_format"] is Analysis
+    assert call["thinking"] == {"type": "adaptive"} and call["output_config"] == {
+        "effort": "medium"
+    }
     assert call["system"][0]["cache_control"] == {"type": "ephemeral"}
     assert "Russian" in call["system"][0]["text"]
     assert "Druk nr 3039" in call["messages"][0]["content"]
-    assert (
-        record.prompt_version == PROMPT_VERSION
-        and record.input_tokens == 1200
-        and record.output_tokens == 300
+    assert record.prompt_version == PROMPT_VERSION
+    assert (record.input_tokens, record.output_tokens, record.cache_read_input_tokens) == (
+        1200,
+        300,
+        1000,
     )
 
 
-def test_triage_uses_its_own_model_and_prompt() -> None:
-    response = SimpleNamespace(
-        parsed_output=Triage(affects_foreigners=False, confidence=0.95, rationale="о бананах"),
-        stop_reason="end_turn",
-        usage=SimpleNamespace(input_tokens=5000, output_tokens=60),
-    )
-    client = _client(response)
+@pytest.mark.parametrize("reason", ["refusal", "max_tokens"])
+def test_refusal_and_truncation_are_per_bill_errors(reason: str) -> None:
+    analyzer = AnthropicAnalyzer(_client(_response(None, stop_reason=reason)))
+
+    with pytest.raises(LlmError):
+        analyzer.analyze(_ctx())
+
+
+def test_unparsable_output_is_a_per_bill_error() -> None:
+    analyzer = AnthropicAnalyzer(_client(_response({"not": "an analysis"})))
+
+    with pytest.raises(LlmError, match="no parsable"):
+        analyzer.analyze(_ctx())
+
+
+# --------------------------------------------------------------------------- triage
+
+TRIAGE_CTX = TriageContext(
+    number="2695",
+    title="Projekt ustawy o jakości handlowej",
+    description=None,
+    applicant_type=ApplicantType.GOVERNMENT,
+    excerpts="... Straż Graniczna ...",
+    text_chars=200_000,
+)
+
+
+def test_triage_runs_on_its_own_model_without_thinking() -> None:
+    verdict = Triage(affects_foreigners=False, confidence=0.95, rationale="о бананах")
+    client = _client(_response(verdict, input_tokens=5000, output_tokens=60))
     analyzer = AnthropicAnalyzer(client, model="claude-opus-5", triage_model="claude-sonnet-5")
-    record = analyzer.triage(
-        TriageContext(
-            number="2695",
-            title="Projekt ustawy o jakości handlowej",
-            description=None,
-            applicant_type=ApplicantType.GOVERNMENT,
-            excerpts="... Straż Graniczna ...",
-            text_chars=200_000,
-        )
-    )
+
+    record = analyzer.triage(TRIAGE_CTX)
+
     call = client.messages.calls[0]
     assert call["model"] == "claude-sonnet-5" and call["output_format"] is Triage
     assert "thinking" not in call and "output_config" not in call
     assert "gate" in call["system"][0]["text"]
     assert "Pełny tekst: 200000 znaków" in call["messages"][0]["content"]
-    assert record.model == "claude-sonnet-5" and record.input_tokens == 5000
+    assert (record.model, record.input_tokens) == ("claude-sonnet-5", 5000)
     assert record.rejects(min_confidence=0.8) and not record.rejects(min_confidence=0.99)
-    # without a triage model the analysis model answers both passes
-    assert AnthropicAnalyzer(client, model="claude-opus-5")._triage_model == "claude-opus-5"
 
 
-def test_refusal_and_truncation_raise() -> None:
-    for reason in ("refusal", "max_tokens"):
-        client = _client(SimpleNamespace(parsed_output=None, stop_reason=reason, usage=None))
-        with pytest.raises(LlmError):
-            AnthropicAnalyzer(client).analyze(_ctx())
+def test_triage_falls_back_to_the_analysis_model() -> None:
+    verdict = Triage(affects_foreigners=True, confidence=0.5, rationale="x")
+    client = _client(_response(verdict))
+
+    AnthropicAnalyzer(client, model="claude-opus-5").triage(TRIAGE_CTX)
+
+    assert client.messages.calls[0]["model"] == "claude-opus-5"
+
+
+# --------------------------------------------------------------------------- prompts
 
 
 def test_prompts_mention_truncation_and_metadata_only() -> None:
@@ -113,47 +157,28 @@ def test_prompts_mention_truncation_and_metadata_only() -> None:
     assert "legalization" in system_prompt("en")
 
 
-def test_missing_credentials_is_fatal() -> None:
-    class _Broken:
-        def parse(self, **kwargs: Any) -> Any:
-            raise TypeError("Could not resolve authentication method")
-
-    client = SimpleNamespace(messages=_Broken())
-    with pytest.raises(LlmFatalError):
-        AnthropicAnalyzer(client).analyze(_ctx())
+# --------------------------------------------------------------------------- error classes
 
 
-class _Raising:
-    def __init__(self, exc: Exception) -> None:
-        self.exc = exc
-
-    def parse(self, **kwargs: Any) -> Any:
-        raise self.exc
-
-
-def _api_error(cls: type, message: str) -> Exception:
-    import httpx2 as httpx
-
-    response = httpx.Response(400, request=httpx.Request("POST", "https://api.test/v1/messages"))
-    return cls(message, response=response, body=None)
-
-
-def test_unknown_model_and_bad_parameters_are_fatal_but_oversized_input_is_per_bill() -> None:
-    import anthropic
+@pytest.mark.parametrize(
+    "error",
+    [
+        TypeError("Could not resolve authentication method"),
+        _api_error(anthropic.NotFoundError, "model: x"),  # unknown model id
+        _api_error(anthropic.BadRequestError, "thinking: unsupported"),  # bad parameters
+    ],
+)
+def test_configuration_problems_are_fatal(error: Exception) -> None:
+    analyzer = AnthropicAnalyzer(_client(error=error))
 
     with pytest.raises(LlmFatalError):
-        AnthropicAnalyzer(
-            SimpleNamespace(messages=_Raising(_api_error(anthropic.NotFoundError, "model: x")))
-        ).analyze(_ctx())
-    with pytest.raises(LlmFatalError):
-        AnthropicAnalyzer(
-            SimpleNamespace(
-                messages=_Raising(_api_error(anthropic.BadRequestError, "thinking: unsupported"))
-            )
-        ).analyze(_ctx())
+        analyzer.analyze(_ctx())
+
+
+def test_oversized_input_is_a_per_bill_error() -> None:
+    analyzer = AnthropicAnalyzer(
+        _client(error=_api_error(anthropic.BadRequestError, "prompt is too long"))
+    )
+
     with pytest.raises(LlmError):
-        AnthropicAnalyzer(
-            SimpleNamespace(
-                messages=_Raising(_api_error(anthropic.BadRequestError, "prompt is too long"))
-            )
-        ).analyze(_ctx())
+        analyzer.analyze(_ctx())

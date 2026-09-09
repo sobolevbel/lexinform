@@ -1,11 +1,21 @@
-"""In-memory fakes for the ports. Used by unit tests of services and the pipeline."""
+"""In-memory fakes for the ports, used by the service and pipeline tests.
+
+Every fake records what was asked of it (`calls`, `contexts`, `new_bills`, …) so tests assert on
+observable behaviour, and can be told to fail like the real system would: `outages` on the
+gateway and `outage_on` on the publisher raise the phase-fatal `ServiceUnavailableError`,
+`fail_on` raises an ordinary per-bill error.
+"""
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
-from lexinform.errors import AttachmentTooLargeError, SejmApiUnavailableError
+from lexinform.errors import (
+    AttachmentTooLargeError,
+    SejmApiUnavailableError,
+    TelegramUnavailableError,
+)
 from lexinform.models import (
     ActInfo,
     AgendaItem,
@@ -32,8 +42,10 @@ from lexinform.models import (
 
 
 class FixedClock:
+    """A clock that moves only when a test tells it to."""
+
     def __init__(self, start: datetime | None = None) -> None:
-        self.current = start or datetime(2026, 9, 7, 6, 0, tzinfo=UTC)
+        self.current = start or datetime(2026, 9, 7, 6, 0, tzinfo=UTC)  # a Monday
 
     def now(self) -> datetime:
         return self.current
@@ -44,6 +56,8 @@ class FixedClock:
 
 @dataclass
 class FakeSejmGateway:
+    """`SejmGateway` and `EliGateway` over dictionaries; missing entries raise per-item errors."""
+
     processes: list[ProcessSummary] = field(default_factory=list)
     details: dict[str, ProcessDetail] = field(default_factory=dict)
     prints: dict[str, PrintInfo] = field(default_factory=dict)
@@ -54,78 +68,77 @@ class FakeSejmGateway:
     submissions: list[BillSubmission] = field(default_factory=list)
     acts: dict[str, ActInfo] = field(default_factory=dict)
     committee_sittings: dict[str, tuple[CommitteeSitting, ...]] = field(default_factory=dict)
-    sittings: list[SejmSitting] = field(default_factory=list)  # with agendas; list_sittings strips
-    outages: set[str] = field(default_factory=set)  # method names that raise "Sejm API down"
+    sittings: list[SejmSitting] = field(default_factory=list)  # with agendas
+    outages: set[str] = field(default_factory=set)  # method names that behave as "API down"
     calls: list[str] = field(default_factory=list)
 
-    def _maybe_down(self, method: str) -> None:
+    def _called(self, method: str, detail: str = "") -> None:
+        self.calls.append(f"{method}:{detail}" if detail else method)
         if method in self.outages:
             raise SejmApiUnavailableError(f"{method}: connection refused")
 
-    def get_act(self, eli: str) -> ActInfo | None:
-        self.calls.append(f"get_act:{eli}")
-        return self.acts.get(eli)
+    def iter_processes(
+        self, term: int, *, modified_since: datetime | None = None, document_type: str | None = None
+    ) -> Iterator[ProcessSummary]:
+        self._called("iter_processes")
+        for p in self.processes:
+            if modified_since is None or p.change_date >= modified_since.replace(tzinfo=None):
+                yield p
 
     def iter_bills(
         self, term: int, *, received_from: date | None = None
     ) -> Iterator[BillSubmission]:
-        self.calls.append("iter_bills")
+        self._called("iter_bills")
         for sub in self.submissions:
             if received_from is None or sub.date_of_receipt >= received_from:
                 yield sub
 
     def find_submission(self, term: int, print_number: str) -> BillSubmission | None:
-        self.calls.append(f"find_submission:{print_number}")
+        self._called("find_submission", print_number)
         return next((s for s in self.submissions if s.print_number == print_number), None)
 
-    def iter_processes(
-        self, term: int, *, modified_since: datetime | None = None, document_type: str | None = None
-    ) -> Iterator[ProcessSummary]:
-        self.calls.append("iter_processes")
-        for p in self.processes:
-            if modified_since is None or p.change_date >= modified_since.replace(tzinfo=None):
-                yield p
-
     def get_process(self, term: int, number: str) -> ProcessDetail:
-        self.calls.append(f"get_process:{number}")
+        self._called("get_process", number)
         return self.details[number]
 
     def get_print(self, term: int, number: str) -> PrintInfo:
-        self.calls.append(f"get_print:{number}")
+        self._called("get_print", number)
         if number not in self.prints:
             raise RuntimeError(f"no print {number}")
         return self.prints[number]
 
+    def get_act(self, eli: str) -> ActInfo | None:
+        self._called("get_act", eli)
+        return self.acts.get(eli)
+
     def get_voting(self, term: int, sitting: int, number: int) -> tuple[Vote, ...]:
-        self.calls.append(f"get_voting:{sitting}/{number}")
+        self._called("get_voting", f"{sitting}/{number}")
         return self.votings[(sitting, number)]
 
     def get_committee(self, term: int, code: str) -> Committee:
-        self.calls.append(f"get_committee:{code}")
+        self._called("get_committee", code)
         return self.committees[code]
 
     def list_committee_sittings(self, term: int, code: str) -> tuple[CommitteeSitting, ...]:
-        self.calls.append(f"list_committee_sittings:{code}")
-        self._maybe_down("list_committee_sittings")
+        self._called("list_committee_sittings", code)
         if code not in self.committee_sittings:
             raise RuntimeError(f"no sittings for {code}")
         return self.committee_sittings[code]
 
     def list_sittings(self, term: int) -> tuple[SejmSitting, ...]:
-        self.calls.append("list_sittings")
-        self._maybe_down("list_sittings")
+        self._called("list_sittings")
         return tuple(s.model_copy(update={"agenda": ""}) for s in self.sittings)
 
     def get_sitting(self, term: int, number: int) -> SejmSitting:
-        self.calls.append(f"get_sitting:{number}")
+        self._called("get_sitting", str(number))
         return next(s for s in self.sittings if s.number == number)
 
     def list_mps(self, term: int) -> tuple[Mp, ...]:
-        self.calls.append("list_mps")
+        self._called("list_mps")
         return self.mps
 
     def download(self, url: str, *, max_bytes: int | None = None) -> bytes:
-        self.calls.append(f"download:{url}")
+        self._called("download", url)
         data = self.files[url]
         if max_bytes is not None and len(data) > max_bytes:
             raise AttachmentTooLargeError(url, max_bytes)
@@ -133,10 +146,17 @@ class FakeSejmGateway:
 
 
 class FakeTextExtractor:
-    def __init__(self, text: str = "Art. 1. Tekst ustawy. " * 50) -> None:
+    """Returns one fixed text for every PDF, or raises when told to."""
+
+    def __init__(
+        self, text: str = "Art. 1. Tekst ustawy. " * 50, *, error: Exception | None = None
+    ) -> None:
         self.text = text
+        self.error = error
 
     def extract(self, data: bytes) -> str:
+        if self.error is not None:
+            raise self.error
         return self.text
 
 
@@ -158,6 +178,13 @@ def make_analysis(
 
 
 class FakeLlm:
+    """Answers from a script keyed by bill number; an Exception in the script is raised."""
+
+    TRIAGE_MODEL = "fake-triage"
+    MODEL = "fake"
+    TRIAGE_TOKENS = (10, 5)
+    ANALYSIS_TOKENS = (100, 50)
+
     def __init__(
         self,
         script: dict[str, Analysis | Exception] | None = None,
@@ -179,10 +206,10 @@ class FakeLlm:
             raise outcome
         return TriageRecord(
             triage=outcome,
-            model="fake-triage",
+            model=self.TRIAGE_MODEL,
             prompt_version=PROMPT_VERSION,
-            input_tokens=10,
-            output_tokens=5,
+            input_tokens=self.TRIAGE_TOKENS[0],
+            output_tokens=self.TRIAGE_TOKENS[1],
         )
 
     def analyze(self, ctx: BillContext) -> AnalysisRecord:
@@ -192,14 +219,14 @@ class FakeLlm:
             raise outcome
         return AnalysisRecord(
             analysis=outcome,
-            model="fake",
+            model=self.MODEL,
             prompt_version=PROMPT_VERSION,
             input_chars=len(ctx.text),
             truncated=ctx.truncated,
             text_source=ctx.text_source,
             created_at=datetime(2026, 9, 7, tzinfo=UTC),
-            input_tokens=100,
-            output_tokens=50,
+            input_tokens=self.ANALYSIS_TOKENS[0],
+            output_tokens=self.ANALYSIS_TOKENS[1],
         )
 
 
@@ -210,7 +237,11 @@ class FakePublishResult:
 
 
 class FakePublisher:
-    def __init__(self, fail_on: set[str] | None = None) -> None:
+    """Records every post; message ids start at 101 and grow by one per post."""
+
+    def __init__(
+        self, fail_on: set[str] | None = None, *, outage_on: set[str] | None = None
+    ) -> None:
         self.new_bills: list[tuple[Bill, PrintInfo | None]] = []
         self.updates: list[tuple[Bill, StatusChange, int | None]] = []
         self.acts: list[tuple[Bill, int | None]] = []
@@ -218,60 +249,58 @@ class FakePublisher:
         self.consultations: list[tuple[Bill, int | None, date]] = []
         self.consultation_results: list[tuple[Bill, int | None]] = []
         self.agendas: list[tuple[Bill, AgendaItem, int | None]] = []
-        self.fail_on = fail_on or set()
+        self.fail_on = fail_on or set()  # bill numbers whose post fails (per-bill error)
+        self.outage_on = outage_on or set()  # bill numbers whose post finds Telegram down
         self._next_id = 100
 
-    def _id(self) -> int:
+    def _send(self, bill: Bill) -> FakePublishResult:
+        if bill.number in self.outage_on:
+            raise TelegramUnavailableError("sendMessage: ConnectError after 3 attempts")
+        if bill.number in self.fail_on:
+            raise RuntimeError("telegram rejected the message")
         self._next_id += 1
-        return self._next_id
+        return FakePublishResult(message_id=self._next_id)
 
     def publish_new_bill(self, bill: Bill, print_info: PrintInfo | None) -> FakePublishResult:
-        if bill.number in self.fail_on:
-            raise RuntimeError("telegram down")
+        result = self._send(bill)
         self.new_bills.append((bill, print_info))
-        return FakePublishResult(message_id=self._id(), document_message_ids=[self._id()])
+        return result
 
     def publish_status_update(
         self, bill: Bill, change: StatusChange, reply_to: int | None
     ) -> FakePublishResult:
-        if bill.number in self.fail_on:
-            raise RuntimeError("telegram down")
+        result = self._send(bill)
         self.updates.append((bill, change, reply_to))
-        return FakePublishResult(message_id=self._id())
+        return result
 
     def publish_act_published(self, bill: Bill, reply_to: int | None) -> FakePublishResult:
-        if bill.number in self.fail_on:
-            raise RuntimeError("telegram down")
+        result = self._send(bill)
         self.acts.append((bill, reply_to))
-        return FakePublishResult(message_id=self._id())
+        return result
 
     def publish_in_force(self, bill: Bill, reply_to: int | None) -> FakePublishResult:
-        if bill.number in self.fail_on:
-            raise RuntimeError("telegram down")
+        result = self._send(bill)
         self.in_force.append((bill, reply_to))
-        return FakePublishResult(message_id=self._id())
+        return result
 
     def publish_consultation_deadline(
         self, bill: Bill, reply_to: int | None, *, today: date
     ) -> FakePublishResult:
-        if bill.number in self.fail_on:
-            raise RuntimeError("telegram down")
+        result = self._send(bill)
         self.consultations.append((bill, reply_to, today))
-        return FakePublishResult(message_id=self._id())
+        return result
 
     def publish_consultation_results(self, bill: Bill, reply_to: int | None) -> FakePublishResult:
-        if bill.number in self.fail_on:
-            raise RuntimeError("telegram down")
+        result = self._send(bill)
         self.consultation_results.append((bill, reply_to))
-        return FakePublishResult(message_id=self._id())
+        return result
 
     def publish_agenda(
         self, bill: Bill, item: AgendaItem, reply_to: int | None
     ) -> FakePublishResult:
-        if bill.number in self.fail_on:
-            raise RuntimeError("telegram down")
+        result = self._send(bill)
         self.agendas.append((bill, item, reply_to))
-        return FakePublishResult(message_id=self._id())
+        return result
 
 
 class FakeNotifier:

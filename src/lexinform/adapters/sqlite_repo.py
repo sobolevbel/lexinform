@@ -462,22 +462,28 @@ class SqliteBillRepository:
             (act.model_dump_json(), _iso_date(act.entry_into_force), term, number),
         )
 
+    # A one-off post blocks its bill once it is sent, skipped, pending or unknown; a failed one
+    # leaves the bill listed so the poster can retry it within the attempt budget.
+    _NO_SETTLED_POST = """
+        AND NOT EXISTS (
+            SELECT 1 FROM publications r
+            WHERE r.term = b.term AND r.number = b.number AND r.kind = ? AND r.channel_id = ?
+              AND r.status IN ('sent', 'skipped', 'pending', 'unknown')
+        )
+    """
+
     def list_due_in_force(self, term: int, channel_id: str, *, today: date) -> list[Bill]:
         """Published bills whose act enters into force today or earlier, not yet reminded."""
         rows = self._conn.execute(
-            """
+            f"""
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
             WHERE b.term = ? AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
               AND b.entry_into_force IS NOT NULL AND b.entry_into_force <= ?
-              AND NOT EXISTS (
-                  SELECT 1 FROM publications r
-                  WHERE r.term = b.term AND r.number = b.number AND r.kind = 'in_force'
-                    AND r.channel_id = ?
-              )
+              {self._NO_SETTLED_POST}
             ORDER BY b.entry_into_force, b.number
             """,
-            (term, channel_id, today.isoformat(), channel_id),
+            (term, channel_id, today.isoformat(), PublicationKind.IN_FORCE.value, channel_id),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
@@ -488,21 +494,25 @@ class SqliteBillRepository:
         included) and that have not been reminded yet."""
         last_day = (today + timedelta(days=days_before)).isoformat()
         rows = self._conn.execute(
-            """
+            f"""
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
             WHERE b.term = ? AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
               AND b.status != ? AND b.submission_json IS NOT NULL
               AND json_extract(b.submission_json, '$.public_consultation')
               AND json_extract(b.submission_json, '$.consultation_end') BETWEEN ? AND ?
-              AND NOT EXISTS (
-                  SELECT 1 FROM publications r
-                  WHERE r.term = b.term AND r.number = b.number
-                    AND r.kind = 'consultation_deadline' AND r.channel_id = ?
-              )
+              {self._NO_SETTLED_POST}
             ORDER BY json_extract(b.submission_json, '$.consultation_end'), b.number
             """,
-            (term, channel_id, BillStatus.LINKED.value, today.isoformat(), last_day, channel_id),
+            (
+                term,
+                channel_id,
+                BillStatus.LINKED.value,
+                today.isoformat(),
+                last_day,
+                PublicationKind.CONSULTATION_DEADLINE.value,
+                channel_id,
+            ),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 

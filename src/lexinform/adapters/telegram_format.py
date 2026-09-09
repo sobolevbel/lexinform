@@ -782,7 +782,7 @@ class MessageFormatter:
         for block in flexible:
             allowed = max(0, budget - 2 * (len(flexible) - len(shrunk)))
             if len(block) > allowed:
-                block = _shrink_block(block, allowed) if allowed > 40 else ""
+                block = shrink_block(block, allowed) if allowed > 40 else ""
             if block:
                 shrunk.append(block)
                 budget -= len(block) + 2
@@ -867,7 +867,7 @@ def _tag_safe(number: str) -> str:
     return "".join(ch for ch in number if ch.isalnum() or ch == "_")
 
 
-def _shrink_block(block: str, allowed: int) -> str:
+def shrink_block(block: str, allowed: int) -> str:
     """Trim a block to `allowed` chars keeping its HTML well-formed.
 
     Blocks are "<b>header</b>\n<escaped body>"; cutting is only allowed inside the body, at a line

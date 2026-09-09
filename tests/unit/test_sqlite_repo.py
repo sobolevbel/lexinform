@@ -1,9 +1,20 @@
+"""The SQLite repository: queries, uniqueness rules, dump/restore and migrations."""
+
+import sqlite3
 from datetime import UTC, date, datetime
+from pathlib import Path
+from typing import Any
 
 from lexinform.adapters.sqlite_repo import MIGRATIONS, SCHEMA_VERSION, SqliteBillRepository
 from lexinform.models import (
     ActInfo,
+    AgendaItem,
+    ApplicantType,
+    BillContext,
     BillStatus,
+    BillSubmission,
+    ProcessDetail,
+    ProcessSummary,
     Publication,
     PublicationKind,
     PublicationStatus,
@@ -13,31 +24,121 @@ from lexinform.models import (
 )
 from tests.fakes import FakeLlm
 
+CHANNEL = "chan"
+
+
+def _tracked(repo: SqliteBillRepository, now: datetime) -> list[str]:
+    bills = repo.list_tracked(10, CHANNEL, closed_grace_days=30, passed_max_days=180, now=now)
+    return [b.number for b in bills]
+
+
+def _publication(
+    number: str, kind: PublicationKind, now: datetime, **overrides: Any
+) -> Publication:
+    fields: dict[str, Any] = dict(
+        term=10,
+        number=number,
+        kind=kind,
+        status=PublicationStatus.SENT,
+        channel_id=CHANNEL,
+        message_id=1,
+        created_at=now,
+    )
+    fields.update(overrides)
+    return Publication(**fields)
+
+
+def _card_sent(repo: SqliteBillRepository, number: str, now: datetime) -> None:
+    repo.create_publication(_publication(number, PublicationKind.NEW_BILL, now))
+
+
+def _change(number: str, now: datetime, **overrides: Any) -> StatusChange:
+    fields: dict[str, Any] = dict(
+        term=10,
+        number=number,
+        old_fingerprint="a",
+        new_fingerprint="b",
+        new_stages=[],
+        detected_at=now,
+    )
+    fields.update(overrides)
+    return StatusChange(**fields)
+
+
+def _submission(number: str, **overrides: Any) -> BillSubmission:
+    fields: dict[str, Any] = dict(
+        term=10,
+        number=f"RPW/{number}/2026",
+        title="t",
+        date_of_receipt=date(2026, 9, 1),
+        public_consultation=True,
+        consultation_end=date(2026, 9, 30),
+    )
+    fields.update(overrides)
+    return BillSubmission(**fields)
+
+
+def _act(**overrides: Any) -> ActInfo:
+    fields: dict[str, Any] = dict(
+        eli="DU/2026/1099",
+        display_address="Dz.U. 2026 poz. 1099",
+        title="Ustawa z dnia 17 lipca 2026 r.",
+        promulgation_date=date(2026, 8, 18),
+        entry_into_force=date(2026, 11, 19),
+        fetched_at=datetime(2026, 8, 20, tzinfo=UTC),
+    )
+    fields.update(overrides)
+    return ActInfo(**fields)
+
+
+# --------------------------------------------------------------------------- bills
+
 
 def test_migrate_is_idempotent(repo: SqliteBillRepository) -> None:
     repo.migrate()
     repo.migrate()
+
+    assert repo.schema_version == SCHEMA_VERSION
     assert repo.get(10, "1") is None
 
 
-def test_upsert_and_status_roundtrip(repo, processes_page, now) -> None:  # type: ignore[no-untyped-def]
-    summary = processes_page[0]
-    bill = repo.upsert_summary(summary, now=now)
-    assert bill.status is BillStatus.DISCOVERED
-    repo.set_status(10, summary.number, BillStatus.ANALYSIS_PENDING, prefilter_hits=["cudzoziemcy"])
-    again = repo.upsert_summary(summary, now=now)  # update path keeps status/hits
+def test_upsert_keeps_status_and_hits_of_a_known_bill(
+    repo: SqliteBillRepository, processes_page: list[ProcessSummary], now: datetime
+) -> None:
+    process = processes_page[0]
+    first = repo.upsert_summary(process, now=now)
+    repo.set_status(10, process.number, BillStatus.ANALYSIS_PENDING, prefilter_hits=["cudzoziemcy"])
+
+    again = repo.upsert_summary(process, now=now)
+
+    assert first.status is BillStatus.DISCOVERED
     assert again.status is BillStatus.ANALYSIS_PENDING
     assert again.prefilter_hits == ["cudzoziemcy"]
 
 
-def test_analysis_and_candidates(repo, processes_page, now) -> None:  # type: ignore[no-untyped-def]
-    llm = FakeLlm()
-    for s in processes_page[:3]:
-        repo.upsert_summary(s, now=now)
-    from lexinform.models import ApplicantType, BillContext
+def test_analysed_bill_is_a_publish_candidate_until_its_channel_has_a_row(
+    repo: SqliteBillRepository, processes_page: list[ProcessSummary], now: datetime
+) -> None:
+    for process in processes_page[:3]:
+        repo.upsert_summary(process, now=now)
+    number = processes_page[0].number
+    repo.save_analysis(10, number, FakeLlm().analyze(_context(number)))
 
-    ctx = BillContext(
-        number="x",
+    before = repo.list_publish_candidates(10, CHANNEL, min_score=2, limit=10)
+    repo.create_publication(
+        _publication(number, PublicationKind.NEW_BILL, now, status=PublicationStatus.SKIPPED)
+    )
+    after = repo.list_publish_candidates(10, CHANNEL, min_score=2, limit=10)
+    other_channel = repo.list_publish_candidates(10, "other", min_score=2, limit=10)
+
+    assert [c.number for c in before] == [number]
+    assert after == []
+    assert len(other_channel) == 1
+
+
+def _context(number: str) -> BillContext:
+    return BillContext(
+        number=number,
         title="t",
         description=None,
         document_date=None,
@@ -46,385 +147,261 @@ def test_analysis_and_candidates(repo, processes_page, now) -> None:  # type: ig
         truncated=False,
         text_source="pdf",
     )
-    repo.save_analysis(10, processes_page[0].number, llm.analyze(ctx))
-    candidates = repo.list_publish_candidates(10, "chan", min_score=2, limit=10)
-    assert [c.number for c in candidates] == [processes_page[0].number]
-    # a skipped publication removes it from the candidates
-    repo.create_publication(
-        Publication(
-            term=10,
-            number=processes_page[0].number,
-            kind=PublicationKind.NEW_BILL,
-            status=PublicationStatus.SKIPPED,
-            channel_id="chan",
-            created_at=now,
-        )
-    )
-    assert repo.list_publish_candidates(10, "chan", min_score=2, limit=10) == []
-    # ...but only for that channel
-    assert len(repo.list_publish_candidates(10, "other", min_score=2, limit=10)) == 1
 
 
-def test_failure_counter(repo, processes_page, now) -> None:  # type: ignore[no-untyped-def]
-    s = processes_page[0]
-    repo.upsert_summary(s, now=now)
-    repo.record_analysis_failure(10, s.number, "boom")
-    repo.record_analysis_failure(10, s.number, "boom again")
-    bill = repo.get(10, s.number)
-    assert (
-        bill is not None
-        and bill.analysis_attempts == 2
-        and bill.status is BillStatus.ANALYSIS_FAILED
-    )
+def test_analysis_failures_are_counted_and_the_last_error_kept(
+    repo: SqliteBillRepository, processes_page: list[ProcessSummary], now: datetime
+) -> None:
+    number = processes_page[0].number
+    repo.upsert_summary(processes_page[0], now=now)
+
+    repo.record_analysis_failure(10, number, "boom")
+    repo.record_analysis_failure(10, number, "boom again")
+
+    bill = repo.get(10, number)
+    assert bill is not None
+    assert (bill.analysis_attempts, bill.status) == (2, BillStatus.ANALYSIS_FAILED)
     assert bill.last_error == "boom again"
 
 
-def test_publication_unique_per_bill_and_channel(repo, processes_page, now) -> None:  # type: ignore[no-untyped-def]
-    s = processes_page[0]
-    repo.upsert_summary(s, now=now)
-    pub = Publication(
-        term=10,
-        number=s.number,
-        kind=PublicationKind.NEW_BILL,
-        status=PublicationStatus.FAILED,
-        channel_id="chan",
-        created_at=now,
-    )
-    first = repo.create_publication(pub)
-    second = repo.create_publication(pub.model_copy(update={"status": PublicationStatus.PENDING}))
-    assert first == second
-    repo.mark_publication(
-        first, PublicationStatus.SENT, message_id=42, document_message_ids=[43], sent_at=now
-    )
-    stored = repo.get_publication(10, s.number, "new_bill", "chan")
-    assert (
-        stored is not None and stored.status is PublicationStatus.SENT and stored.message_id == 42
-    )
-    assert stored.document_message_ids == [43]
-
-
-def test_stale_pending_marked_unknown(repo, processes_page, now) -> None:  # type: ignore[no-untyped-def]
-    s = processes_page[0]
-    repo.upsert_summary(s, now=now)
-    repo.create_publication(
-        Publication(
-            term=10,
-            number=s.number,
-            kind=PublicationKind.NEW_BILL,
-            status=PublicationStatus.PENDING,
-            channel_id="chan",
-            created_at=now,
-        )
-    )
-    assert repo.mark_stale_pending_as_unknown(now=now) == 1
-    stored = repo.get_publication(10, s.number, "new_bill", "chan")
-    assert stored is not None and stored.status is PublicationStatus.UNKNOWN
-
-
-def test_tracked_and_status_change_dedup(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
-    repo.upsert_summary(process_3039, now=now)
-    repo.save_stages(10, "3039", process_3039.stages, stage_fingerprint(process_3039.stages))
-    assert repo.list_tracked(10, "chan", closed_grace_days=30, passed_max_days=180, now=now) == []
-    pid = repo.create_publication(
-        Publication(
-            term=10,
-            number="3039",
-            kind=PublicationKind.NEW_BILL,
-            status=PublicationStatus.SENT,
-            channel_id="chan",
-            created_at=now,
-            message_id=1,
-        )
-    )
-    assert pid
-    tracked = repo.list_tracked(10, "chan", closed_grace_days=30, passed_max_days=180, now=now)
-    assert [b.number for b in tracked] == ["3039"]
-    assert tracked[0].stages_fingerprint == stage_fingerprint(process_3039.stages)
-    change = StatusChange(
-        term=10,
-        number="3039",
-        old_fingerprint="a",
-        new_fingerprint="b",
-        new_stages=list(process_3039.stages[1:]),
-        detected_at=now,
-    )
-    assert repo.add_status_change(change) is not None
-    assert repo.add_status_change(change) is None
-
-
-def test_runs_and_dump_restore(repo, now) -> None:  # type: ignore[no-untyped-def]
-    report = RunReport(started_at=now, since=now, mode="run")
-    run_id = repo.start_run(report)
-    assert repo.last_discovery_started_at() is None
-    report.finished_at = now
-    report.errors.append("publishing: 1 publication(s) failed")
-    repo.finish_run(run_id, report)
-    # errors after discovery do not hold the watermark back
-    assert repo.last_discovery_started_at() is None
-    report.discovery_ok = True
-    repo.finish_run(run_id, report)
-    assert repo.last_discovery_started_at() == now
-    script = repo.dump()
-    assert script.rstrip().endswith(f"PRAGMA user_version = {SCHEMA_VERSION};")
-    other = SqliteBillRepository(":memory:")
-    other.restore(script)
-    other.migrate()
-    assert other.last_discovery_started_at() == now
-
-
-def test_restore_of_a_previous_schema_dump_applies_missing_migrations() -> None:
-    """A dump from an older release (v1, no version line) must be migrated, not stamped current."""
-    old = SqliteBillRepository(":memory:")
-    old._conn.executescript(f"BEGIN;{MIGRATIONS[0]}PRAGMA user_version = 1;COMMIT;")
-    old._conn.execute(
-        "INSERT INTO runs (started_at, since, mode, ok) VALUES ('2026-09-01T05:00:00+00:00',"
-        " '2026-08-31T05:00:00+00:00', 'run', 1)"
-    )
-    legacy_dump = "\n".join(old._conn.iterdump()) + "\n"  # what the v1 release wrote
-    assert "user_version" not in legacy_dump
-
-    repo = SqliteBillRepository(":memory:")
-    repo.migrate()  # fresh schema at the current version, as in the daily workflow
-    repo.restore(legacy_dump)
-    assert int(repo._conn.execute("PRAGMA user_version").fetchone()[0]) == SCHEMA_VERSION
-    columns = {r[1] for r in repo._conn.execute("PRAGMA table_info(publications)")}
-    assert "attempts" in columns
-    assert "ref" in columns  # v7
-    bill_columns = {r[1] for r in repo._conn.execute("PRAGMA table_info(bills)")}
-    assert {"submission_json", "linked_number", "act_json", "entry_into_force"} <= bill_columns
-    assert "agenda_json" in bill_columns  # v7
-    # the v2 backfill copies ok -> discovery_ok for old runs
-    assert repo.last_discovery_started_at() is not None
-    indexes = {
-        r[0] for r in repo._conn.execute("SELECT name FROM sqlite_master WHERE type='index'")
-    }
-    assert {"ux_pub_once_per_kind", "ux_pub_consultation"} <= indexes  # v4, v6
-    assert {"ux_pub_consultation_results", "ux_pub_agenda"} <= indexes  # v7
-
-
-def test_failed_status_updates_are_listed_for_retry(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
-    repo.upsert_summary(process_3039, now=now)
-    change_id = repo.add_status_change(
-        StatusChange(
-            term=10,
-            number="3039",
-            old_fingerprint="a",
-            new_fingerprint="b",
-            new_stages=[],
-            content_changed=True,
-            detected_at=now,
-        )
-    )
-    pub_id = repo.create_publication(
-        Publication(
-            term=10,
-            number="3039",
-            kind=PublicationKind.STATUS_UPDATE,
-            status=PublicationStatus.PENDING,
-            channel_id="chan",
-            status_change_id=change_id,
-            created_at=now,
-        )
-    )
-    repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
-    [change] = repo.list_failed_status_changes(10, "chan", max_attempts=3)
-    assert change.id == change_id and change.content_changed is True
-    repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
-    repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
-    assert repo.list_failed_status_changes(10, "chan", max_attempts=3) == []
-    assert repo.closure_announced(10, "3039") is False
-
-
-def test_dry_run_transaction_rolls_back(repo, processes_page, now) -> None:  # type: ignore[no-untyped-def]
-    repo.begin()
-    repo.upsert_summary(processes_page[0], now=now)
-    repo.rollback()
-    assert repo.get(10, processes_page[0].number) is None
-    assert now.tzinfo is UTC and isinstance(datetime.now(UTC), datetime)
-
-
-def test_dump_restore_with_publications_and_status_changes(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
-    repo.upsert_summary(process_3039, now=now)
-    change_id = repo.add_status_change(
-        StatusChange(
-            term=10,
-            number="3039",
-            old_fingerprint="a",
-            new_fingerprint="b",
-            new_stages=[],
-            detected_at=now,
-        )
-    )
-    repo.create_publication(
-        Publication(
-            term=10,
-            number="3039",
-            kind=PublicationKind.NEW_BILL,
-            status=PublicationStatus.SENT,
-            channel_id="chan",
-            created_at=now,
-            message_id=1,
-        )
-    )
-    repo.create_publication(
-        Publication(
-            term=10,
-            number="3039",
-            kind=PublicationKind.STATUS_UPDATE,
-            status=PublicationStatus.SENT,
-            channel_id="chan",
-            status_change_id=change_id,
-            created_at=now,
-            message_id=2,
-        )
-    )
-    script = repo.dump()
-
-    fresh = SqliteBillRepository(":memory:")
-    fresh.migrate()  # a pre-existing schema must be replaced, not merged
-    fresh.restore(script)
-    fresh.migrate()
-    assert fresh.get(10, "3039") is not None
-    assert fresh.get_publication(10, "3039", "new_bill", "chan").message_id == 1  # type: ignore[union-attr]
-    assert fresh.get_publication(10, "3039", "status_update", "chan").status_change_id == change_id  # type: ignore[union-attr]
-    assert (
-        fresh.add_status_change(
-            StatusChange(
-                term=10,
-                number="3039",
-                old_fingerprint="a",
-                new_fingerprint="b",
-                new_stages=[],
-                detected_at=now,
-            )
-        )
-        is None
-    )  # unique index restored too
-
-
-def _act(**kw: object) -> ActInfo:
-    base: dict[str, object] = dict(
-        eli="DU/2026/1099",
-        display_address="Dz.U. 2026 poz. 1099",
-        title="Ustawa z dnia 17 lipca 2026 r.",
-        promulgation_date=date(2026, 8, 18),
-        entry_into_force=date(2026, 11, 19),
-        fetched_at=datetime(2026, 8, 20, tzinfo=UTC),
-    )
-    base.update(kw)
-    return ActInfo(**base)  # type: ignore[arg-type]
-
-
-def _sent_card(repo: SqliteBillRepository, number: str, now: datetime) -> None:
-    repo.create_publication(
-        Publication(
-            term=10,
-            number=number,
-            kind=PublicationKind.NEW_BILL,
-            status=PublicationStatus.SENT,
-            channel_id="chan",
-            created_at=now,
-            message_id=1,
-        )
-    )
-
-
-def test_passed_bills_stay_tracked_until_their_act_is_published(repo, process_3039) -> None:  # type: ignore[no-untyped-def]
-    closed = process_3039.model_copy(update={"closure_date": date(2026, 7, 17), "passed": True})
-    now = datetime(2026, 8, 25, tzinfo=UTC)  # 39 days after closure
-    repo.upsert_summary(closed, now=now)
-    _sent_card(repo, "3039", now)
-
-    def tracked() -> list[str]:
-        bills = repo.list_tracked(10, "chan", closed_grace_days=30, passed_max_days=180, now=now)
-        return [b.number for b in bills]
-
-    assert tracked() == ["3039"]  # past the 30-day grace, but passed and not published yet
-    repo.save_act(10, "3039", _act())
-    assert tracked() == []  # published: the reminder query takes over
-    now = datetime(2027, 3, 1, tzinfo=UTC)
-    repo.upsert_summary(closed, now=now)
-    repo._conn.execute("UPDATE bills SET act_json = NULL")
-    assert tracked() == []  # 200+ days without publication (veto, Tribunal): dropped
-
-
-def test_in_force_reminders_are_due_once(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
-    repo.upsert_summary(process_3039, now=now)
-    _sent_card(repo, "3039", now)
-    repo.save_act(10, "3039", _act())
-    assert repo.list_due_in_force(10, "chan", today=date(2026, 11, 18)) == []
-    due = repo.list_due_in_force(10, "chan", today=date(2026, 11, 19))
-    assert [b.number for b in due] == ["3039"] and due[0].act is not None
-    first = repo.create_publication(
-        Publication(
-            term=10,
-            number="3039",
-            kind=PublicationKind.IN_FORCE,
-            status=PublicationStatus.SENT,
-            channel_id="chan",
-            created_at=now,
-        )
-    )
-    again = repo.create_publication(
-        Publication(
-            term=10,
-            number="3039",
-            kind=PublicationKind.IN_FORCE,
-            status=PublicationStatus.PENDING,
-            channel_id="chan",
-            created_at=now,
-        )
-    )
-    assert first == again  # one reminder per bill and channel, enforced by the schema
-    assert repo.list_due_in_force(10, "chan", today=date(2026, 12, 1)) == []
-
-
-def test_operator_actions_reset_bill_and_forget_publication(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
+def test_reset_puts_the_bill_back_with_a_clean_budget(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
     repo.upsert_summary(process_3039, now=now)
     repo.record_analysis_failure(10, "3039", "boom")
     repo.record_analysis_failure(10, "3039", "boom again")
-    assert repo.get(10, "3039").analysis_attempts == 2  # type: ignore[union-attr]
+
     repo.reset_bill(10, "3039", BillStatus.ANALYSIS_PENDING)
+
     bill = repo.get(10, "3039")
-    assert bill is not None and bill.status is BillStatus.ANALYSIS_PENDING
-    assert bill.analysis_attempts == 0 and bill.last_error is None
-
-    pub_id = repo.create_publication(
-        Publication(
-            term=10,
-            number="3039",
-            kind=PublicationKind.NEW_BILL,
-            status=PublicationStatus.SENT,
-            channel_id="chan",
-            message_id=7,
-            created_at=now,
-        )
+    assert bill is not None
+    assert (bill.status, bill.analysis_attempts, bill.last_error) == (
+        BillStatus.ANALYSIS_PENDING,
+        0,
+        None,
     )
-    assert pub_id and repo.get_publication(10, "3039", "new_bill", "chan") is not None
-    assert repo.delete_publication(10, "3039", "new_bill", "chan") == 1
-    assert repo.get_publication(10, "3039", "new_bill", "chan") is None
-    assert repo.delete_publication(10, "3039", "new_bill", "chan") == 0
 
 
-def _card_sent(repo, number: str, now) -> None:  # type: ignore[no-untyped-def]
+# --------------------------------------------------------------------------- publications
+
+
+def test_card_row_is_unique_per_bill_and_channel(
+    repo: SqliteBillRepository, processes_page: list[ProcessSummary], now: datetime
+) -> None:
+    number = processes_page[0].number
+    repo.upsert_summary(processes_page[0], now=now)
+    failed = _publication(
+        number, PublicationKind.NEW_BILL, now, status=PublicationStatus.FAILED, message_id=None
+    )
+
+    first = repo.create_publication(failed)
+    second = repo.create_publication(
+        failed.model_copy(update={"status": PublicationStatus.PENDING})
+    )
+    repo.mark_publication(
+        first, PublicationStatus.SENT, message_id=42, document_message_ids=[43], sent_at=now
+    )
+
+    assert first == second
+    stored = repo.get_publication(10, number, "new_bill", CHANNEL)
+    assert stored is not None
+    assert (stored.status, stored.message_id, stored.document_message_ids) == (
+        PublicationStatus.SENT,
+        42,
+        [43],
+    )
+
+
+def test_pending_rows_of_a_crashed_run_become_unknown(
+    repo: SqliteBillRepository, processes_page: list[ProcessSummary], now: datetime
+) -> None:
+    number = processes_page[0].number
+    repo.upsert_summary(processes_page[0], now=now)
     repo.create_publication(
-        Publication(
-            term=10,
-            number=number,
-            kind=PublicationKind.NEW_BILL,
-            status=PublicationStatus.SENT,
-            channel_id="chan",
-            message_id=1,
-            created_at=now,
+        _publication(number, PublicationKind.NEW_BILL, now, status=PublicationStatus.PENDING)
+    )
+
+    marked = repo.mark_stale_pending_as_unknown(now=now)
+
+    stored = repo.get_publication(10, number, "new_bill", CHANNEL)
+    assert marked == 1
+    assert stored is not None and stored.status is PublicationStatus.UNKNOWN
+
+
+def test_forgetting_a_card_lets_it_be_sent_again(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)
+    _card_sent(repo, "3039", now)
+
+    deleted = repo.delete_publication(10, "3039", "new_bill", CHANNEL)
+    deleted_again = repo.delete_publication(10, "3039", "new_bill", CHANNEL)
+
+    assert (deleted, deleted_again) == (1, 0)
+    assert repo.get_publication(10, "3039", "new_bill", CHANNEL) is None
+
+
+def test_agenda_posts_are_unique_per_sitting(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)
+
+    def post(ref: str) -> int:
+        return repo.create_publication(
+            _publication(
+                "3039",
+                PublicationKind.AGENDA,
+                now,
+                status=PublicationStatus.PENDING,
+                message_id=None,
+                ref=ref,
+            )
+        )
+
+    committee = post("ASW/136/2026-09-17")
+    plenary = post("sejm/65/2026-09-15")
+    committee_again = post("ASW/136/2026-09-17")
+    repo.mark_publication(committee, PublicationStatus.SENT, message_id=7, sent_at=now)
+
+    assert committee != plenary
+    assert committee_again == committee
+    by_ref = repo.get_publication(10, "3039", "agenda", CHANNEL, ref="ASW/136/2026-09-17")
+    assert by_ref is not None and (by_ref.message_id, by_ref.ref) == (7, "ASW/136/2026-09-17")
+    assert repo.get_publication(10, "3039", "agenda", CHANNEL, ref="ASW/999/2026-10-01") is None
+    latest = repo.get_publication(10, "3039", "agenda", CHANNEL)
+    assert latest is not None and latest.ref == "sejm/65/2026-09-15"
+
+
+def test_agenda_items_round_trip(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)
+    items = (
+        AgendaItem(kind="sejm", ref="sejm/65/2026-09-15", date=date(2026, 9, 15), text="x"),
+        AgendaItem(
+            kind="committee",
+            ref="ASW/136/2026-09-17",
+            date=date(2026, 9, 17),
+            committee_code="ASW",
+            text="Pierwsze czytanie (druk nr 3039)",
+        ),
+    )
+
+    repo.save_agenda(10, "3039", items)
+    stored = repo.get(10, "3039")
+    repo.save_agenda(10, "3039", ())
+    cleared = repo.get(10, "3039")
+
+    assert stored is not None and stored.agenda == items
+    assert cleared is not None and cleared.agenda == ()
+
+
+def test_in_force_reminder_row_is_unique_per_bill_and_channel(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)
+
+    first = repo.create_publication(_publication("3039", PublicationKind.IN_FORCE, now))
+    again = repo.create_publication(
+        _publication("3039", PublicationKind.IN_FORCE, now, status=PublicationStatus.PENDING)
+    )
+
+    assert first == again
+
+
+# --------------------------------------------------------------------------- status changes
+
+
+def test_status_change_is_stored_once_per_fingerprint(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)
+    change = _change("3039", now, new_stages=list(process_3039.stages[1:]))
+
+    first = repo.add_status_change(change)
+    second = repo.add_status_change(change)
+
+    assert first is not None
+    assert second is None
+
+
+def test_failed_status_updates_are_listed_for_retry_until_the_attempts_run_out(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)
+    change_id = repo.add_status_change(_change("3039", now, content_changed=True))
+    pub_id = repo.create_publication(
+        _publication(
+            "3039",
+            PublicationKind.STATUS_UPDATE,
+            now,
+            status=PublicationStatus.PENDING,
+            message_id=None,
+            status_change_id=change_id,
         )
     )
 
+    repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
+    listed = repo.list_failed_status_changes(10, CHANNEL, max_attempts=3)
+    repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
+    repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
+    exhausted = repo.list_failed_status_changes(10, CHANNEL, max_attempts=3)
 
-def test_list_tracked_filters_by_change_date_and_keeps_passed_bills(
-    repo, process_3039, now
-) -> None:  # type: ignore[no-untyped-def]
-    from datetime import UTC, datetime
+    assert [c.id for c in listed] == [change_id]
+    assert listed[0].content_changed is True
+    assert exhausted == []
+    assert repo.closure_announced(10, "3039") is False
 
+
+# --------------------------------------------------------------------------- tracking queries
+
+
+def test_only_bills_with_a_sent_card_are_tracked(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)
+    fingerprint = stage_fingerprint(process_3039.stages)
+    repo.save_stages(10, "3039", process_3039.stages, fingerprint)
+
+    before = _tracked(repo, now)
+    _card_sent(repo, "3039", now)
+    after = repo.list_tracked(10, CHANNEL, closed_grace_days=30, passed_max_days=180, now=now)
+
+    assert before == []
+    assert [b.number for b in after] == ["3039"]
+    assert after[0].stages_fingerprint == fingerprint
+
+
+def test_passed_bills_stay_tracked_until_their_act_is_published(
+    repo: SqliteBillRepository, process_3039: ProcessDetail
+) -> None:
+    closed = process_3039.model_copy(update={"closure_date": date(2026, 7, 17), "passed": True})
+    now = datetime(2026, 8, 25, tzinfo=UTC)  # 39 days after closure: past the 30-day grace
+    repo.upsert_summary(closed, now=now)
+    _card_sent(repo, "3039", now)
+
+    waiting = _tracked(repo, now)
+    repo.save_act(10, "3039", _act())
+    published = _tracked(repo, now)
+
+    assert waiting == ["3039"]
+    assert published == []  # the reminder query takes over
+
+
+def test_passed_bill_without_an_act_is_dropped_after_passed_max_days(
+    repo: SqliteBillRepository, process_3039: ProcessDetail
+) -> None:
+    closed = process_3039.model_copy(update={"closure_date": date(2026, 7, 17), "passed": True})
+    now = datetime(2027, 3, 1, tzinfo=UTC)  # 200+ days: vetoed or in the Tribunal
+    repo.upsert_summary(closed, now=now)
+    _card_sent(repo, "3039", now)
+
+    assert _tracked(repo, now) == []
+
+
+def test_list_tracked_filters_by_change_date_but_keeps_passed_bills(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
     stale = process_3039.model_copy(update={"change_date": datetime(2026, 9, 1, 10, tzinfo=UTC)})
     fresh = process_3039.model_copy(
         update={"number": "3040", "change_date": datetime(2026, 9, 6, 10, tzinfo=UTC)}
@@ -434,126 +411,81 @@ def test_list_tracked_filters_by_change_date_and_keeps_passed_bills(
             "number": "3041",
             "change_date": datetime(2026, 9, 1, 10, tzinfo=UTC),
             "passed": True,
-            "closure_date": datetime(2026, 9, 1, tzinfo=UTC).date(),
+            "closure_date": date(2026, 9, 1),
         }
     )
-    for summary in (stale, fresh, passed):
-        repo.upsert_summary(summary, now=now)
-        _card_sent(repo, summary.number, now)
-    kwargs = dict(closed_grace_days=90, passed_max_days=180, now=now)
-    assert [b.number for b in repo.list_tracked(10, "chan", **kwargs)] == ["3039", "3040", "3041"]
-    since = datetime(2026, 9, 5, tzinfo=UTC)
-    assert [b.number for b in repo.list_tracked(10, "chan", changed_since=since, **kwargs)] == [
-        "3040",
-        "3041",  # passed without an act: always checked
-    ]
-    # a naive watermark (as stored by the fakes) is compared the same way
-    assert [
-        b.number
-        for b in repo.list_tracked(10, "chan", changed_since=datetime(2026, 9, 5), **kwargs)
-    ] == ["3040", "3041"]
+    for process in (stale, fresh, passed):
+        repo.upsert_summary(process, now=now)
+        _card_sent(repo, process.number, now)
+
+    def tracked(changed_since: datetime | None) -> list[str]:
+        bills = repo.list_tracked(
+            10,
+            CHANNEL,
+            closed_grace_days=90,
+            passed_max_days=180,
+            now=now,
+            changed_since=changed_since,
+        )
+        return [b.number for b in bills]
+
+    everyone = tracked(None)
+    aware = tracked(datetime(2026, 9, 5, tzinfo=UTC))
+    naive = tracked(datetime(2026, 9, 5))
+
+    assert everyone == ["3039", "3040", "3041"]
+    assert aware == ["3040", "3041"]  # passed without an act: always
+    assert naive == ["3040", "3041"]
 
 
-def test_list_due_consultations_window_edges(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
-    from datetime import date
+def test_in_force_reminders_are_due_from_the_day_on_until_reminded(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)
+    _card_sent(repo, "3039", now)
+    repo.save_act(10, "3039", _act())  # in force 2026-11-19
 
-    from lexinform.models import BillSubmission
+    eve = repo.list_due_in_force(10, CHANNEL, today=date(2026, 11, 18))
+    day = repo.list_due_in_force(10, CHANNEL, today=date(2026, 11, 19))
+    repo.create_publication(_publication("3039", PublicationKind.IN_FORCE, now))
+    reminded = repo.list_due_in_force(10, CHANNEL, today=date(2026, 12, 1))
 
+    assert eve == []
+    assert [b.number for b in day] == ["3039"] and day[0].act is not None
+    assert reminded == []
+
+
+def test_consultation_reminders_are_due_inside_the_window_only(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
     def bill(number: str, end: date | None, *, public: bool = True) -> None:
         repo.upsert_summary(process_3039.model_copy(update={"number": number}), now=now)
         _card_sent(repo, number, now)
         repo.save_submission(
-            10,
-            number,
-            BillSubmission(
-                term=10,
-                number=f"RPW/{number}/2026",
-                title="t",
-                date_of_receipt=date(2026, 9, 1),
-                public_consultation=public,
-                consultation_end=end,
-            ),
+            10, number, _submission(number, public_consultation=public, consultation_end=end)
         )
 
-    today = date(2026, 9, 10)
     bill("1", date(2026, 9, 10))  # last day: due
     bill("2", date(2026, 9, 13))  # exactly days_before ahead: due
     bill("3", date(2026, 9, 14))  # one day too early
     bill("4", date(2026, 9, 9))  # already over
     bill("5", date(2026, 9, 11), public=False)  # no public consultation
     bill("6", None)
-    due = repo.list_due_consultations(10, "chan", today=today, days_before=3)
+    today = date(2026, 9, 10)
+
+    due = repo.list_due_consultations(10, CHANNEL, today=today, days_before=3)
+    repo.create_publication(_publication("1", PublicationKind.CONSULTATION_DEADLINE, now))
+    after_reminder = repo.list_due_consultations(10, CHANNEL, today=today, days_before=3)
+    other_channel = repo.list_due_consultations(10, "other", today=today, days_before=3)
+
     assert [b.number for b in due] == ["1", "2"]
-    repo.create_publication(
-        Publication(
-            term=10,
-            number="1",
-            kind=PublicationKind.CONSULTATION_DEADLINE,
-            status=PublicationStatus.SENT,
-            channel_id="chan",
-            created_at=now,
-        )
-    )
-    assert [
-        b.number for b in repo.list_due_consultations(10, "chan", today=today, days_before=3)
-    ] == ["2"]
-    # another channel has its own reminders
-    assert repo.list_due_consultations(10, "other", today=today, days_before=3) == []
+    assert [b.number for b in after_reminder] == ["2"]
+    assert other_channel == []
 
 
-def test_agenda_posts_are_unique_per_sitting_and_items_roundtrip(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
-    from datetime import date, time
-
-    from lexinform.models import AgendaItem
-
-    repo.upsert_summary(process_3039, now=now)
-    item = AgendaItem(
-        kind="committee",
-        ref="ASW/136/2026-09-17",
-        date=date(2026, 9, 17),
-        start_time=time(9, 0),
-        committee_code="ASW",
-        committee_name="Komisja Administracji i Spraw Wewnętrznych",
-        sitting_number=136,
-        text="Pierwsze czytanie (druk nr 3039)",
-    )
-    plenary = AgendaItem(kind="sejm", ref="sejm/65/2026-09-15", date=date(2026, 9, 15), text="x")
-    repo.save_agenda(10, "3039", (plenary, item))
-    stored = repo.get(10, "3039")
-    assert stored is not None and stored.agenda == (plenary, item)
-    repo.save_agenda(10, "3039", ())
-    assert repo.get(10, "3039").agenda == ()  # type: ignore[union-attr]
-
-    def post(ref: str, status: PublicationStatus) -> int:
-        return repo.create_publication(
-            Publication(
-                term=10,
-                number="3039",
-                kind=PublicationKind.AGENDA,
-                status=status,
-                channel_id="chan",
-                ref=ref,
-                created_at=now,
-            )
-        )
-
-    first = post(item.ref, PublicationStatus.PENDING)
-    other = post(plenary.ref, PublicationStatus.PENDING)
-    assert first != other  # two sittings, two rows
-    assert post(item.ref, PublicationStatus.PENDING) == first  # same sitting: the same row
-    repo.mark_publication(first, PublicationStatus.SENT, message_id=7, sent_at=now)
-    by_ref = repo.get_publication(10, "3039", "agenda", "chan", ref=item.ref)
-    assert by_ref is not None and by_ref.message_id == 7 and by_ref.ref == item.ref
-    assert repo.get_publication(10, "3039", "agenda", "chan", ref="ASW/999/2026-10-01") is None
-    latest = repo.get_publication(10, "3039", "agenda", "chan")
-    assert latest is not None and latest.ref == plenary.ref  # without ref: the latest row
-
-
-def test_bills_awaiting_consultation_results(repo, process_3039, now) -> None:  # type: ignore[no-untyped-def]
-    from datetime import date
-
-    from lexinform.models import BillSubmission
-
+def test_bills_awaiting_consultation_results(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
     def bill(number: str, *, public: bool, results: bool, card: bool = True) -> None:
         repo.upsert_summary(process_3039.model_copy(update={"number": number}), now=now)
         if card:
@@ -561,11 +493,8 @@ def test_bills_awaiting_consultation_results(repo, process_3039, now) -> None:  
         repo.save_submission(
             10,
             number,
-            BillSubmission(
-                term=10,
-                number=f"RPW/{number}/2026",
-                title="t",
-                date_of_receipt=date(2026, 9, 1),
+            _submission(
+                number,
                 public_consultation=public,
                 consultation_end=date(2026, 9, 30) if public else None,
                 consultation_results=results,
@@ -577,5 +506,107 @@ def test_bills_awaiting_consultation_results(repo, process_3039, now) -> None:  
     bill("3", public=False, results=False)  # no consultation
     bill("4", public=True, results=False, card=False)  # never posted: nothing to reply under
     repo.upsert_summary(process_3039.model_copy(update={"number": "5"}), now=now)  # no /bills row
-    assert [b.number for b in repo.list_awaiting_consultation_results(10, "chan")] == ["1"]
-    assert repo.list_awaiting_consultation_results(10, "other") == []
+
+    awaiting = repo.list_awaiting_consultation_results(10, CHANNEL)
+    other_channel = repo.list_awaiting_consultation_results(10, "other")
+
+    assert [b.number for b in awaiting] == ["1"]
+    assert other_channel == []
+
+
+# --------------------------------------------------------------------------- runs, dump, restore
+
+
+def test_watermark_is_the_last_run_whose_discovery_completed(
+    repo: SqliteBillRepository, now: datetime
+) -> None:
+    report = RunReport(started_at=now, since=now, mode="run", finished_at=now)
+    run_id = repo.start_run(report)
+
+    report.errors.append("publishing: 1 publication(s) failed")
+    repo.finish_run(run_id, report)
+    before_discovery_ok = repo.last_discovery_started_at()
+    report.discovery_ok = True
+    repo.finish_run(run_id, report)
+    after = repo.last_discovery_started_at()
+
+    assert before_discovery_ok is None  # errors after discovery do not hold the watermark back
+    assert after == now
+
+
+def test_dry_run_transaction_rolls_back(
+    repo: SqliteBillRepository, processes_page: list[ProcessSummary], now: datetime
+) -> None:
+    repo.begin()
+    repo.upsert_summary(processes_page[0], now=now)
+
+    repo.rollback()
+
+    assert repo.get(10, processes_page[0].number) is None
+
+
+def test_dump_restores_rows_indexes_and_the_schema_version(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)
+    change_id = repo.add_status_change(_change("3039", now))
+    _card_sent(repo, "3039", now)
+    repo.create_publication(
+        _publication(
+            "3039", PublicationKind.STATUS_UPDATE, now, message_id=2, status_change_id=change_id
+        )
+    )
+    report = RunReport(started_at=now, since=now, mode="run", finished_at=now, discovery_ok=True)
+    repo.finish_run(repo.start_run(report), report)
+
+    script = repo.dump()
+    fresh = SqliteBillRepository(":memory:")
+    fresh.migrate()  # a pre-existing schema must be replaced, not merged
+    fresh.restore(script)
+
+    assert script.rstrip().endswith(f"PRAGMA user_version = {SCHEMA_VERSION};")
+    assert fresh.schema_version == SCHEMA_VERSION
+    assert fresh.get(10, "3039") is not None
+    assert fresh.last_discovery_started_at() == now
+    card = fresh.get_publication(10, "3039", "new_bill", CHANNEL)
+    update = fresh.get_publication(10, "3039", "status_update", CHANNEL)
+    assert card is not None and card.message_id == 1
+    assert update is not None and update.status_change_id == change_id
+    assert fresh.add_status_change(_change("3039", now)) is None  # unique index restored too
+
+
+def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> None:
+    legacy = sqlite3.connect(tmp_path / "v1.db")
+    legacy.executescript(f"BEGIN;{MIGRATIONS[0]}PRAGMA user_version = 1;COMMIT;")
+    legacy.execute(
+        "INSERT INTO runs (started_at, since, mode, ok) VALUES ('2026-09-01T05:00:00+00:00',"
+        " '2026-08-31T05:00:00+00:00', 'run', 1)"
+    )
+    legacy_dump = "\n".join(legacy.iterdump()) + "\n"  # the v1 release wrote no version line
+    legacy.close()
+    repo = SqliteBillRepository(tmp_path / "current.db")
+    repo.migrate()
+
+    repo.restore(legacy_dump)
+
+    assert "user_version" not in legacy_dump
+    assert repo.schema_version == SCHEMA_VERSION
+    assert repo.last_discovery_started_at() is not None  # v2 backfill: ok -> discovery_ok
+    with sqlite3.connect(tmp_path / "current.db") as conn:
+        publications = {r[1] for r in conn.execute("PRAGMA table_info(publications)")}
+        bills = {r[1] for r in conn.execute("PRAGMA table_info(bills)")}
+        indexes = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")}
+    assert {"attempts", "ref"} <= publications
+    assert {
+        "submission_json",
+        "linked_number",
+        "act_json",
+        "entry_into_force",
+        "agenda_json",
+    } <= bills
+    assert {
+        "ux_pub_once_per_kind",
+        "ux_pub_consultation",
+        "ux_pub_consultation_results",
+        "ux_pub_agenda",
+    } <= indexes

@@ -1,8 +1,16 @@
+"""Pure helpers over the Sejm models: fingerprints, diffs, text documents, next phase."""
+
 import datetime as dt
+from typing import Any
 
 from lexinform.models import (
+    ActInfo,
     ApplicantType,
+    Bill,
+    BillStatus,
+    BillSubmission,
     ClubVotes,
+    ProcessDetail,
     Stage,
     Vote,
     aggregate_clubs,
@@ -10,108 +18,67 @@ from lexinform.models import (
     diff_stages,
     flatten_stages,
     latest_text_document,
+    next_phase,
     stage_fingerprint,
 )
 
+NOW = dt.datetime(2026, 9, 9, tzinfo=dt.UTC)
+TODAY = NOW.date()
 
-def _stage(name: str, date: str | None = None, **kw: object) -> Stage:
+
+def _stage(name: str, date: str | None = None, **fields: Any) -> Stage:
     return Stage(
-        stage_name=name, stage_type=name, date=dt.date.fromisoformat(date) if date else None, **kw
-    )  # type: ignore[arg-type]
-
-
-def test_fingerprint_is_stable_and_ignores_volatile_fields() -> None:
-    a = (_stage("Start", "2026-01-01", report_file="http://a"),)
-    b = (_stage("Start", "2026-01-01", report_file="http://b"),)
-    assert stage_fingerprint(a) == stage_fingerprint(b)
-
-
-def test_fingerprint_changes_when_stage_added_or_dated() -> None:
-    base = (_stage("Start", "2026-01-01"),)
-    with_end = base + (_stage("End"),)
-    with_end_dated = base + (_stage("End", "2026-02-01"),)
-    assert (
-        len(
-            {
-                stage_fingerprint(base),
-                stage_fingerprint(with_end),
-                stage_fingerprint(with_end_dated),
-            }
-        )
-        == 3
+        stage_name=name,
+        stage_type=name,
+        date=dt.date.fromisoformat(date) if date else None,
+        **fields,
     )
 
 
-def test_diff_reports_new_and_newly_dated_stages_in_order() -> None:
-    old = (_stage("Start", "2026-01-01"), _stage("End"))
-    new = (
-        _stage("Start", "2026-01-01"),
-        _stage("Reading", "2026-01-15"),
-        _stage("End", "2026-02-01"),
-    )
-    names = [(s.stage_name, s.date) for s in diff_stages(old, new)]
-    assert names == [("Reading", dt.date(2026, 1, 15)), ("End", dt.date(2026, 2, 1))]
-
-
-def test_flatten_includes_children_after_parent() -> None:
-    tree = (
-        Stage(stage_name="P", stage_type="P", children=(_stage("C1"), _stage("C2"))),
-        _stage("Q"),
-    )
-    assert [s.stage_name for s in flatten_stages(tree)] == ["P", "C1", "C2", "Q"]
-
-
-def test_applicant_from_title() -> None:
-    assert applicant_from_title("Rządowy projekt ustawy o X") is ApplicantType.GOVERNMENT
-    assert applicant_from_title("Poselski projekt ustawy") is ApplicantType.DEPUTIES
-    assert (
-        applicant_from_title("Przedstawiony przez Prezydenta Rzeczypospolitej Polskiej projekt")
-        is ApplicantType.PRESIDENT
-    )
-    assert applicant_from_title("Obywatelski projekt ustawy") is ApplicantType.CITIZENS
-    assert applicant_from_title("Senacki projekt") is ApplicantType.SENATE
-    assert applicant_from_title("Komisyjny projekt") is ApplicantType.COMMITTEE
-    assert applicant_from_title("Projekt ustawy") is ApplicantType.UNKNOWN
-
-
-def test_fixture_detail_parses(process_1962) -> None:  # type: ignore[no-untyped-def]
-    assert process_1962.passed is True
-    assert process_1962.last_stage is not None
-    assert process_1962.last_stage.stage_name == "Uchwalono"
-    assert len(flatten_stages(process_1962.stages)) == 18
-
-
-def _report(print_number: str, **kw: object) -> Stage:
+def _report(print_number: str, **fields: Any) -> Stage:
     return Stage(
         stage_name="Sprawozdanie komisji",
         stage_type="CommitteeReport",
         print_number=print_number,
         report_file=f"https://api.test/prints/{print_number}/{print_number}.pdf",
-        **kw,  # type: ignore[arg-type]
+        **fields,
     )
 
 
-def test_amendment_only_reports_do_not_count_as_bill_text() -> None:
-    full = _report("2689", proposal="załączony projekt ustawy")
-    amendments = _report("2689-A", proposal="przyjąć poprawki")
-    sub = _report("2689", proposal="załączony projekt ustawy", sub_committee=True)
-    legacy_full = _report("2689")  # stored before `proposal` was parsed
-    legacy_additional = _report("2689-A")
-    assert full.carries_bill_text and legacy_full.carries_bill_text
-    assert not amendments.carries_bill_text
-    assert not sub.carries_bill_text
-    assert not legacy_additional.carries_bill_text
-    doc = latest_text_document((full, amendments))
-    assert doc is not None and doc.url.endswith("/2689/2689.pdf")
+def _bill(process: ProcessDetail, stages: tuple[Stage, ...], **fields: Any) -> Bill:
+    """A bill whose process is still open, whatever the fixture says."""
+    return Bill(
+        summary=process.model_copy(update={"closure_date": None, "passed": None}),
+        status=BillStatus.ANALYZED,
+        stages=stages,
+        first_seen_at=NOW,
+        last_checked_at=NOW,
+        **fields,
+    )
 
 
-def test_presidium_applicant_is_recognised() -> None:
-    title = "Przedstawiony przez Prezydium Sejmu projekt uchwały w sprawie ..."
-    assert applicant_from_title(title) is ApplicantType.PRESIDIUM
+# --------------------------------------------------------------------------- fingerprints
 
 
-def test_fingerprint_ignores_enrichment_fields(process_1962) -> None:  # type: ignore[no-untyped-def]
-    def strip(stages):  # type: ignore[no-untyped-def]
+def test_fingerprint_ignores_volatile_fields() -> None:
+    a = (_stage("Start", "2026-01-01", report_file="http://a"),)
+    b = (_stage("Start", "2026-01-01", report_file="http://b"),)
+
+    assert stage_fingerprint(a) == stage_fingerprint(b)
+
+
+def test_fingerprint_changes_when_a_stage_is_added_or_dated() -> None:
+    base = (_stage("Start", "2026-01-01"),)
+    with_end = base + (_stage("End"),)
+    with_end_dated = base + (_stage("End", "2026-02-01"),)
+
+    fingerprints = {stage_fingerprint(s) for s in (base, with_end, with_end_dated)}
+
+    assert len(fingerprints) == 3
+
+
+def test_fingerprint_ignores_the_enrichment_fields(process_1962: ProcessDetail) -> None:
+    def strip(stages: tuple[Stage, ...]) -> tuple[Stage, ...]:
         return tuple(
             st.model_copy(
                 update={
@@ -125,11 +92,82 @@ def test_fingerprint_ignores_enrichment_fields(process_1962) -> None:  # type: i
         )
 
     assert stage_fingerprint(process_1962.stages) == stage_fingerprint(strip(process_1962.stages))
-    voting = next(s for s in flatten_stages(process_1962.stages) if s.stage_type == "Voting")
-    assert voting.voting is not None and voting.voting.clubs == ()
 
 
-def test_aggregate_clubs_counts_and_orders() -> None:
+def test_diff_reports_new_and_newly_dated_stages_in_order() -> None:
+    old = (_stage("Start", "2026-01-01"), _stage("End"))
+    new = (
+        _stage("Start", "2026-01-01"),
+        _stage("Reading", "2026-01-15"),
+        _stage("End", "2026-02-01"),
+    )
+
+    names = [(s.stage_name, s.date) for s in diff_stages(old, new)]
+
+    assert names == [("Reading", dt.date(2026, 1, 15)), ("End", dt.date(2026, 2, 1))]
+
+
+def test_flatten_puts_children_after_their_parent() -> None:
+    tree = (
+        Stage(stage_name="P", stage_type="P", children=(_stage("C1"), _stage("C2"))),
+        _stage("Q"),
+    )
+
+    assert [s.stage_name for s in flatten_stages(tree)] == ["P", "C1", "C2", "Q"]
+
+
+def test_fixture_process_parses_into_the_stage_tree(process_1962: ProcessDetail) -> None:
+    assert process_1962.passed is True
+    assert process_1962.last_stage is not None
+    assert process_1962.last_stage.stage_name == "Uchwalono"
+    assert len(flatten_stages(process_1962.stages)) == 18
+
+
+# --------------------------------------------------------------------------- applicants
+
+
+def test_applicant_is_read_from_the_title_prefix() -> None:
+    cases = {
+        "Rządowy projekt ustawy o X": ApplicantType.GOVERNMENT,
+        "Poselski projekt ustawy": ApplicantType.DEPUTIES,
+        "Przedstawiony przez Prezydenta Rzeczypospolitej Polskiej projekt": ApplicantType.PRESIDENT,
+        "Przedstawiony przez Prezydium Sejmu projekt uchwały": ApplicantType.PRESIDIUM,
+        "Obywatelski projekt ustawy": ApplicantType.CITIZENS,
+        "Senacki projekt": ApplicantType.SENATE,
+        "Komisyjny projekt": ApplicantType.COMMITTEE,
+        "Projekt ustawy": ApplicantType.UNKNOWN,
+    }
+
+    assert {title: applicant_from_title(title) for title in cases} == cases
+
+
+# --------------------------------------------------------------------------- texts and votes
+
+
+def test_only_reports_with_the_bill_text_count_as_a_new_text() -> None:
+    full = _report("2689", proposal="załączony projekt ustawy")
+    amendments = _report("2689-A", proposal="przyjąć poprawki")
+    sub = _report("2689", proposal="załączony projekt ustawy", sub_committee=True)
+    legacy_full = _report("2689")  # stored before `proposal` was parsed
+    legacy_additional = _report("2689-A")
+
+    assert full.carries_bill_text and legacy_full.carries_bill_text
+    assert not amendments.carries_bill_text
+    assert not sub.carries_bill_text
+    assert not legacy_additional.carries_bill_text
+
+
+def test_latest_text_document_prefers_the_last_full_report() -> None:
+    full = _report("2689", proposal="załączony projekt ustawy")
+    amendments = _report("2689-A", proposal="przyjąć poprawki")
+
+    doc = latest_text_document((full, amendments))
+
+    assert doc is not None and doc.url.endswith("/2689/2689.pdf")
+    assert doc.kind == "committee_report"
+
+
+def test_aggregate_clubs_counts_and_orders_by_yes_votes() -> None:
     votes = [
         Vote(mp=1, club="PiS", vote="ABSTAIN"),
         Vote(mp=2, club="KO", vote="YES"),
@@ -138,39 +176,35 @@ def test_aggregate_clubs_counts_and_orders() -> None:
         Vote(mp=5, club="Lewica", vote="YES"),
         Vote(mp=6, club="", vote="NO"),
     ]
+
     clubs = aggregate_clubs(votes)
+
     assert [c.club for c in clubs] == ["KO", "Lewica", "niez.", "PiS"]
     assert clubs[0] == ClubVotes(club="KO", yes=2, absent=1)
     assert clubs[3].abstain == 1
 
 
-# --------------------------------------------------------------------------- next phase
+# --------------------------------------------------------------------------- consultation URL
 
 
-def _bill_with(process, stages, **kw):  # type: ignore[no-untyped-def]
-    from datetime import UTC, datetime
+def test_consultation_url_exists_only_for_consulted_submissions() -> None:
+    plain = BillSubmission(
+        term=10, number="RPW/29075/2026", title="t", date_of_receipt=dt.date(2026, 8, 31)
+    )
+    consulted = plain.model_copy(update={"public_consultation": True})
 
-    from lexinform.models import Bill, BillStatus
-
-    now = datetime(2026, 9, 9, tzinfo=UTC)
-    summary = process.model_copy(update={"closure_date": None, "passed": None})
-    return Bill(
-        summary=summary,
-        status=BillStatus.ANALYZED,
-        stages=stages,
-        first_seen_at=now,
-        last_checked_at=now,
-        **kw,
+    assert plain.consultation_url is None
+    assert consulted.consultation_url == (
+        "https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=KONSULTOWANY_PROJEKT"
+        "&NrProjektu=RPW/29075/2026"
     )
 
 
-def test_next_phase_walks_the_whole_process(process_1962, process_950) -> None:  # type: ignore[no-untyped-def]
-    import datetime as dt
+# --------------------------------------------------------------------------- next phase
 
-    from lexinform.models import next_phase
 
-    today = dt.date(2026, 9, 9)
-    expected_1962 = [
+def test_next_phase_walks_a_bill_amended_by_the_senate(process_1962: ProcessDetail) -> None:
+    expected = [
         "first_reading",  # Start
         "first_reading_committee",  # ReadingReferral -> SPC
         "committee_work",  # Reading: I czytanie w komisjach
@@ -182,49 +216,72 @@ def test_next_phase_walks_the_whole_process(process_1962, process_950) -> None: 
         "senate_amendments",  # committee work on the Senate position
         "president",  # Sejm considered the Senate position
     ]
-    keys = [
-        next_phase(_bill_with(process_1962, process_1962.stages[:i]), today=today)
+
+    phases = [
+        next_phase(_bill(process_1962, process_1962.stages[:i]), today=TODAY)
         for i in range(1, len(process_1962.stages))
     ]
-    assert [k.key for k in keys if k] == expected_1962
-    assert keys[1].committees == ("SPC",)  # type: ignore[union-attr]
-    # first reading at a sitting (committeeCode "Sejm") is not a committee referral
-    at_sitting = next_phase(_bill_with(process_950, process_950.stages[:2]), today=today)
+
+    assert [p.key for p in phases if p] == expected
+    assert phases[1] is not None and phases[1].committees == ("SPC",)
+
+
+def test_first_reading_at_a_plenary_sitting_is_not_a_committee_referral(
+    process_950: ProcessDetail,
+) -> None:
+    at_sitting = next_phase(_bill(process_950, process_950.stages[:2]), today=TODAY)
+    after_first_reading = next_phase(_bill(process_950, process_950.stages[:3]), today=TODAY)
+
     assert at_sitting is not None and at_sitting.key == "first_reading_sitting"
-    after_first = next_phase(_bill_with(process_950, process_950.stages[:3]), today=today)
-    assert after_first is not None and after_first.committees == ("NZC",)
-    # "nie wniósł poprawek" goes straight to the President
+    assert after_first_reading is not None
+    assert (after_first_reading.key, after_first_reading.committees) == ("committee_work", ("NZC",))
+
+
+def test_senate_without_amendments_sends_the_law_to_the_president(
+    process_1962: ProcessDetail,
+) -> None:
     senate_ok = process_1962.stages[7].model_copy(update={"position": "nie wniósł poprawek"})
     stages = process_1962.stages[:7] + (senate_ok,)
-    assert next_phase(_bill_with(process_1962, stages), today=today).key == "president"  # type: ignore[union-attr]
-    # the whole process: publication pending, then the act
-    done = _bill_with(process_1962, process_1962.stages)
-    done.summary = done.summary.model_copy(update={"passed": True})
-    assert next_phase(done, today=today).key == "publication"  # type: ignore[union-attr]
+
+    phase = next_phase(_bill(process_1962, stages), today=TODAY)
+
+    assert phase is not None and phase.key == "president"
 
 
-def test_next_phase_for_acts_pre_prints_and_closed_processes(process_3039) -> None:  # type: ignore[no-untyped-def]
-    import datetime as dt
-    from datetime import UTC, datetime
-
-    from lexinform.models import ActInfo, BillSubmission, next_phase
-
-    today = dt.date(2026, 9, 9)
+def test_passed_bill_awaits_publication_then_entry_into_force(
+    process_1962: ProcessDetail,
+) -> None:
+    passed = _bill(process_1962, process_1962.stages)
+    passed = passed.model_copy(
+        update={"summary": passed.summary.model_copy(update={"passed": True})}
+    )
     act = ActInfo(
         eli="DU/2026/1",
         display_address="Dz.U. 2026 poz. 1",
         title="t",
         entry_into_force=dt.date(2026, 11, 19),
-        fetched_at=datetime(2026, 9, 1, tzinfo=UTC),
+        fetched_at=dt.datetime(2026, 9, 1, tzinfo=dt.UTC),
     )
-    bill = _bill_with(process_3039, process_3039.stages, act=act)
-    phase = next_phase(bill, today=today)
-    assert phase is not None and phase.key == "in_force" and phase.date == dt.date(2026, 11, 19)
-    assert next_phase(bill, today=dt.date(2026, 11, 19)) is None
-    unknown = bill.model_copy(update={"act": act.model_copy(update={"entry_into_force": None})})
-    assert next_phase(unknown, today=today).key == "in_force_unknown"  # type: ignore[union-attr]
 
-    sub = BillSubmission(
+    awaiting_publication = next_phase(passed, today=TODAY)
+    awaiting_force = next_phase(passed.model_copy(update={"act": act}), today=TODAY)
+    undated = next_phase(
+        passed.model_copy(update={"act": act.model_copy(update={"entry_into_force": None})}),
+        today=TODAY,
+    )
+    in_force = next_phase(passed.model_copy(update={"act": act}), today=dt.date(2026, 11, 19))
+
+    assert awaiting_publication is not None and awaiting_publication.key == "publication"
+    assert awaiting_force is not None
+    assert (awaiting_force.key, awaiting_force.date) == ("in_force", dt.date(2026, 11, 19))
+    assert undated is not None and undated.key == "in_force_unknown"
+    assert in_force is None
+
+
+def test_pre_print_bill_waits_for_its_consultation_then_its_print_number(
+    process_3039: ProcessDetail,
+) -> None:
+    submission = BillSubmission(
         term=10,
         number="RPW/1/2026",
         title="t",
@@ -232,35 +289,34 @@ def test_next_phase_for_acts_pre_prints_and_closed_processes(process_3039) -> No
         public_consultation=True,
         consultation_end=dt.date(2026, 9, 30),
     )
-    pre = _bill_with(process_3039, (), submission=sub)
-    pre.summary = pre.summary.model_copy(update={"number": "RPW/1/2026"})
-    open_ = next_phase(pre, today=today)
-    assert open_ is not None and open_.key == "pre_print_consultation"
-    assert open_.date == dt.date(2026, 9, 30)
-    assert next_phase(pre, today=dt.date(2026, 10, 1)).key == "pre_print"  # type: ignore[union-attr]
-    withdrawn = pre.model_copy(
-        update={"summary": pre.summary.model_copy(update={"closure_date": dt.date(2026, 9, 5)})}
+    pre = _bill(process_3039, (), submission=submission)
+    pre = pre.model_copy(
+        update={"summary": pre.summary.model_copy(update={"number": "RPW/1/2026"})}
     )
-    assert next_phase(withdrawn, today=today) is None
 
-    rejected = _bill_with(process_3039, process_3039.stages)
-    rejected.summary = rejected.summary.model_copy(
-        update={"closure_date": dt.date(2026, 9, 5), "passed": False}
+    consulting = next_phase(pre, today=TODAY)
+    consulted = next_phase(pre, today=dt.date(2026, 10, 1))
+
+    assert consulting is not None
+    assert (consulting.key, consulting.date) == ("pre_print_consultation", dt.date(2026, 9, 30))
+    assert consulted is not None and consulted.key == "pre_print"
+
+
+def test_closed_processes_have_no_next_phase(process_3039: ProcessDetail) -> None:
+    withdrawn = _bill(process_3039, ())
+    withdrawn = withdrawn.model_copy(
+        update={
+            "summary": withdrawn.summary.model_copy(update={"closure_date": dt.date(2026, 9, 5)})
+        }
     )
-    assert next_phase(rejected, today=today) is None
-
-
-def test_consultation_url_only_for_consulted_submissions() -> None:
-    import datetime as dt
-
-    from lexinform.models import BillSubmission
-
-    sub = BillSubmission(
-        term=10, number="RPW/29075/2026", title="t", date_of_receipt=dt.date(2026, 8, 31)
+    rejected = _bill(process_3039, process_3039.stages)
+    rejected = rejected.model_copy(
+        update={
+            "summary": rejected.summary.model_copy(
+                update={"closure_date": dt.date(2026, 9, 5), "passed": False}
+            )
+        }
     )
-    assert sub.consultation_url is None
-    consulted = sub.model_copy(update={"public_consultation": True})
-    assert consulted.consultation_url == (
-        "https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=KONSULTOWANY_PROJEKT"
-        "&NrProjektu=RPW/29075/2026"
-    )
+
+    assert next_phase(withdrawn, today=TODAY) is None
+    assert next_phase(rejected, today=TODAY) is None

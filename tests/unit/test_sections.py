@@ -1,8 +1,10 @@
 """Section trimming and excerpt building for Sejm prints."""
 
+import pytest
+
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.keywords import KeywordPrefilter
-from lexinform.sections import PAGE_BREAK, excerpts, trim_print
+from lexinform.sections import PAGE_BREAK, TextBudget, excerpts, trim_print
 from tests.conftest import FIXTURES
 
 BILL = "Projekt\nU S T AWA\nz dnia ... o zmianie ustawy o cudzoziemcach\nArt. 1. " + "x" * 500
@@ -92,6 +94,40 @@ def test_excerpts_take_heads_and_keyword_windows_in_order() -> None:
 def test_excerpts_respect_the_budget_but_always_keep_the_heads() -> None:
     text = "start " * 100 + " cudzoziemiec " * 200
     spans = KeywordPrefilter().spans(text)
+
     digest = excerpts(text, spans, head_chars=50, window=10, max_chars=60)
+
     assert digest.startswith("start start")
     assert len(digest) < 200
+
+
+# --------------------------------------------------------------------------- text budget
+
+
+def test_budget_passes_short_texts_through() -> None:
+    result = TextBudget(100).apply("short")
+
+    assert (result.text, result.truncated) == ("short", False)
+
+
+def test_budget_keeps_the_head_and_the_start_of_the_justification() -> None:
+    act = "Art. 1. " * 500
+    justification = "\nUzasadnienie\n" + "Projekt ma na celu. " * 500
+
+    result = TextBudget(2000).apply(act + justification)
+
+    assert result.truncated
+    assert result.text.startswith("Art. 1.")
+    assert "Uzasadnienie" in result.text and TextBudget.MARKER in result.text
+    assert len(result.text) <= 2000 + len(TextBudget.MARKER)
+
+
+def test_budget_cuts_the_head_when_there_is_no_justification() -> None:
+    result = TextBudget(50).apply("x" * 500)
+
+    assert result.truncated and len(result.text) == 50
+
+
+def test_budget_rejects_a_non_positive_cap() -> None:
+    with pytest.raises(ValueError):
+        TextBudget(0)
