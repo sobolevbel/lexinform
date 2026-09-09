@@ -276,7 +276,12 @@ class BillRepository(Protocol):
         document_message_ids: list[int] | None = None,
         error: str | None = None,
         sent_at: datetime | None = None,
-    ) -> None: ...
+        count_attempt: bool = True,
+    ) -> None:
+        """Record the outcome of a send. A `FAILED` mark counts one attempt against the post's
+        retry budget unless `count_attempt` is false: an outage of the channel is not the post's
+        fault and must not use up its retries."""
+        ...
 
     def get_publication(
         self, term: int, number: str, kind: str, channel_id: str, *, ref: str | None = None

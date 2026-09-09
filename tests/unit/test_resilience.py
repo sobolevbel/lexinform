@@ -92,6 +92,21 @@ def test_sejm_api_down_while_completing_the_card_leaves_no_pending_row() -> None
     assert w.run().published == 1
 
 
+def test_telegram_outages_do_not_use_up_the_retries_of_a_post() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.publisher.outage_on = {"3039"}
+    for _ in range(3):  # a day of the bot being kicked out: three runs, three outages
+        w.run()
+    w.publisher.outage_on = set()
+
+    report = w.run()
+
+    assert report.published == 1
+    card = w.publication("3039")
+    assert card is not None and (card.status, card.attempts) == (PublicationStatus.SENT, 0)
+
+
 def test_publishing_resumes_without_duplicates_when_telegram_is_back() -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")

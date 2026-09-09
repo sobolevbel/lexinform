@@ -385,12 +385,16 @@ def test_failed_status_updates_are_listed_for_retry_until_the_attempts_run_out(
 
     repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
     listed = repo.list_failed_status_changes(CHANNEL, max_attempts=3)
+    repo.mark_publication(pub_id, PublicationStatus.FAILED, error="down", count_attempt=False)
+    repo.mark_publication(pub_id, PublicationStatus.FAILED, error="down", count_attempt=False)
+    after_outages = repo.list_failed_status_changes(CHANNEL, max_attempts=3)
     repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
     repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
     exhausted = repo.list_failed_status_changes(CHANNEL, max_attempts=3)
 
     assert [c.id for c in listed] == [change_id]
     assert listed[0].content_changed is True
+    assert [c.id for c in after_outages] == [change_id]  # outages are not the post's attempts
     assert exhausted == []
     assert repo.closure_announced(10, "3039") is False
 

@@ -773,6 +773,7 @@ class SqliteBillRepository:
         document_message_ids: list[int] | None = None,
         error: str | None = None,
         sent_at: datetime | None = None,
+        count_attempt: bool = True,
     ) -> None:
         self._conn.execute(
             """
@@ -789,7 +790,7 @@ class SqliteBillRepository:
                 json.dumps(document_message_ids) if document_message_ids is not None else None,
                 error[:2000] if error else None,
                 _iso(sent_at),
-                int(status is PublicationStatus.FAILED),
+                int(status is PublicationStatus.FAILED and count_attempt),
                 publication_id,
             ),
         )

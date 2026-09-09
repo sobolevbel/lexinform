@@ -182,7 +182,10 @@ class PublishingService:
         try:
             sent = send()
         except ServiceUnavailableError as exc:
-            self._repo.mark_publication(pub_id, PublicationStatus.FAILED, error=exc.describe())
+            # The channel is down, not the post: keep its retry budget.
+            self._repo.mark_publication(
+                pub_id, PublicationStatus.FAILED, error=exc.describe(), count_attempt=False
+            )
             raise
         except Exception as exc:
             log.exception("publishing druk %s failed: %s", bill.number, exc)
