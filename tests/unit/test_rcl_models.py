@@ -60,6 +60,25 @@ def test_text_documents_prefer_pdf_and_skip_tables_letters_and_legacy_doc() -> N
     assert {role: d.id for role, d in picked.items()} == {"bill": 2, "justification": 3, "osr": 5}
 
 
+def test_a_file_that_calls_itself_the_bill_beats_a_nameless_pdf() -> None:
+    # A note or an information sheet next to the bill must not win on its format alone; the OSR
+    # is recognised with an underscore after it, not only a space.
+    folder = RclFolder(
+        id=10,
+        name="Projekt",
+        documents=(
+            _doc(1, "Informacja.pdf"),
+            _doc(2, "projekt_ustawy_o_cudzoziemcach.docx"),
+            _doc(3, "OSR_do_projektu.docx"),
+        ),
+    )
+    project = _project(_stage(3, "Konsultacje publiczne", "reached", folder))
+
+    picked = project.text_documents()
+
+    assert {role: d.id for role, d in picked.items()} == {"bill": 2, "osr": 3}
+
+
 def test_the_latest_stage_with_a_project_folder_wins() -> None:
     early = RclFolder(id=10, name="Projekt", documents=(_doc(1, "projekt.pdf"),))
     late = RclFolder(id=20, name="Projekt", documents=(_doc(2, "projekt_po_KP.pdf"),))

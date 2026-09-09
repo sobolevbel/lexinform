@@ -175,5 +175,20 @@ def test_damaged_structures_are_refused_not_misread() -> None:
         word_text(word, table[:16] + b"\x07" + table[17:])  # the Pcdt marker is gone
 
 
+def test_a_negative_property_modifier_length_is_refused_instead_of_looping_forever() -> None:
+    # A Prc whose length is -3 would leave the parser at the same position for ever.
+    word, table = word_streams([("tekst", True)], prc=b"\x01" + struct.pack("<h", -3))
+
+    with pytest.raises(DocFormatError, match="negative"):
+        word_text(word, table)
+
+
+def test_a_piece_pointing_past_the_stream_is_refused_instead_of_read_short() -> None:
+    word, table = word_streams([("Art. 1. Cudzoziemiec składa wniosek.", False)])
+
+    with pytest.raises(DocFormatError, match="past the end"):
+        word_text(word[:-10], table)  # the WordDocument stream lost its tail
+
+
 def test_the_extractor_turns_refusals_into_empty_text() -> None:
     assert DocTextExtractor().extract(b"not an OLE file at all") == ""

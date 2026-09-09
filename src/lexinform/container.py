@@ -77,12 +77,16 @@ class Container:
             }
             if self.rcl is not None:
                 downloaders[_host(self.settings.rcl_base_url)] = self.rcl.download
+            max_bytes = self.settings.max_pdf_download_mb * 1024 * 1024
             self._loader = TextLoader(
                 downloaders,
                 DocumentTextExtractor(
-                    PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor()
+                    PypdfTextExtractor(),
+                    DocxTextExtractor(),
+                    DocTextExtractor(),
+                    max_member_bytes=max_bytes,
                 ),
-                max_bytes=self.settings.max_pdf_download_mb * 1024 * 1024,
+                max_bytes=max_bytes,
             )
         return self._loader
 

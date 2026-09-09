@@ -113,6 +113,8 @@ def _piece_table(clx: bytes) -> list[tuple[int, int, int, bool]]:
     pos = 0
     while pos < len(clx) and clx[pos] == 0x01:
         (cb,) = struct.unpack_from("<h", clx, pos + 1)
+        if cb < 0:  # a damaged file; without the check the loop would never end
+            raise DocFormatError("negative property modifier length")
         pos += 3 + cb
     if pos >= len(clx) or clx[pos] != 0x02:
         raise DocFormatError("piece table (Pcdt) not found")
@@ -137,12 +139,11 @@ def _read_pieces(word: bytes, pieces: list[tuple[int, int, int, bool]], *, limit
         if cp_start >= limit:
             break
         length = min(cp_end, limit) - cp_start
-        if compressed:
-            chunk = word[offset : offset + length]
-            parts.append(chunk.decode("cp1252", errors="replace"))
-        else:
-            chunk = word[offset : offset + 2 * length]
-            parts.append(chunk.decode("utf-16-le", errors="replace"))
+        end = offset + (length if compressed else 2 * length)
+        if end > len(word):  # a silent short read would hand the model a truncated text
+            raise DocFormatError("piece points past the end of the WordDocument stream")
+        chunk = word[offset:end]
+        parts.append(chunk.decode("cp1252" if compressed else "utf-16-le", errors="replace"))
     return "".join(parts)
 
 

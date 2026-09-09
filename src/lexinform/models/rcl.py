@@ -270,21 +270,39 @@ class RclProject(BaseModel):
 def _classify(documents: list[RclDocument]) -> dict[TextRole, RclDocument]:
     picked: dict[TextRole, RclDocument] = {}
     for role in ("justification", "osr", "bill"):
-        candidates = [d for d in documents if _role_of(d) == role]
-        if candidates:
+        candidates = [d for d in documents if text_role(d.name) == role]
+        if not candidates:
+            continue
+        if role == "bill":
+            picked[role] = min(candidates, key=lambda d: (_name_rank(d), _format_rank(d)))
+        else:
             picked[role] = min(candidates, key=_format_rank)
     return picked
 
 
-def _role_of(document: RclDocument) -> TextRole | None:
-    name = document.name.lower()
-    if "uzasad" in name:
+_OSR_RE = re.compile(r"(?:^|[^a-ząćęłńóśźż])osr(?:$|[^a-ząćęłńóśźż])|ocena skutk")
+_NOT_A_TEXT_RE = re.compile(r"tabel|zgodno|załącznik|zalacznik|pismo|rozdzielnik")
+_BILL_RE = re.compile(r"projekt|ustaw")
+
+
+def text_role(name: str) -> TextRole | None:
+    """What a file of a "Projekt" folder (or of a zip package) is, by its name: the bill, its
+    uzasadnienie, the OSR, or None for what is not a bill text (compliance tables, letters,
+    appendices). A name that says nothing is taken for the bill."""
+    lowered = name.lower()
+    if "uzasad" in lowered:
         return "justification"
-    if re.search(r"\bosr\b|ocena skutk", name):
+    if _OSR_RE.search(lowered):
         return "osr"
-    if re.search(r"tabel|zgodno|załącznik|zalacznik|pismo|rozdzielnik", name):
+    if _NOT_A_TEXT_RE.search(lowered):
         return None
     return "bill"
+
+
+def _name_rank(document: RclDocument) -> int:
+    """A file that calls itself the bill ("projekt ustawy") beats one that only fails to say
+    what it is (a note, an information sheet) whatever their formats."""
+    return 0 if _BILL_RE.search(document.name.lower()) else 1
 
 
 def _format_rank(document: RclDocument) -> int:

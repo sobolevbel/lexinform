@@ -50,6 +50,63 @@ def test_rendered_page_break_markers_separate_pages() -> None:
     assert DocxTextExtractor().extract(data) == f"strona 1{PAGE_BREAK}strona 2"
 
 
+def test_a_table_nested_in_a_cell_is_read_once_as_part_of_the_cell() -> None:
+    # The OSR form is a table; some ministries put a table of affected parties inside a cell.
+    data = _docx(
+        "<w:tbl><w:tr><w:tc><w:p><w:r><w:t>Podmioty</w:t></w:r></w:p>"
+        "<w:tbl><w:tr><w:tc><w:p><w:r><w:t>cudzoziemcy</w:t></w:r></w:p></w:tc>"
+        "<w:tc><w:p><w:r><w:t>2 mln</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:tc>"
+        "<w:tc><w:p><w:r><w:t>Wpływ</w:t></w:r></w:p></w:tc></w:tr></w:tbl>"
+    )
+
+    assert DocxTextExtractor().extract(data) == "Podmioty cudzoziemcy\t2 mln\tWpływ"
+
+
+def test_a_text_box_is_read_once_although_word_stores_it_twice() -> None:
+    # Word writes every drawing as mc:AlternateContent with a Choice (new Word) and a Fallback
+    # (old Word) that carry the same text.
+    mc = (
+        'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" '
+        'xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape"'
+    )
+    data = _docx(
+        f"<w:p {mc}><w:r><w:t>Ramka: </w:t></w:r><w:r><mc:AlternateContent>"
+        '<mc:Choice Requires="wps"><w:drawing><wps:txbx><w:txbxContent>'
+        "<w:p><w:r><w:t>tekst ramki</w:t></w:r></w:p></w:txbxContent></wps:txbx></w:drawing>"
+        "</mc:Choice><mc:Fallback><w:pict><w:txbxContent>"
+        "<w:p><w:r><w:t>tekst ramki</w:t></w:r></w:p></w:txbxContent></w:pict></mc:Fallback>"
+        "</mc:AlternateContent></w:r></w:p>"
+    )
+
+    assert DocxTextExtractor().extract(data) == "Ramka: tekst ramki"
+
+
+def test_deleted_text_of_tracked_changes_is_not_read() -> None:
+    data = _docx(
+        "<w:p><w:del><w:r><w:delText>stare</w:delText></w:r></w:del>"
+        "<w:ins><w:r><w:t>nowe</w:t></w:r></w:ins></w:p>"
+    )
+
+    assert DocxTextExtractor().extract(data) == "nowe"
+
+
+def test_strict_open_xml_uses_another_namespace_and_is_read_too() -> None:
+    strict = 'xmlns:w="http://purl.oclc.org/ooxml/wordprocessingml/main"'
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr(
+            "word/document.xml",
+            f"<w:document {strict}><w:body><w:p><w:r><w:t>Art. 1.</w:t></w:r>"
+            '<w:r><w:br w:type="page"/><w:t>Art. 2.</w:t></w:r></w:p></w:body></w:document>',
+        )
+    foreign = io.BytesIO()
+    with zipfile.ZipFile(foreign, "w") as archive:
+        archive.writestr("word/document.xml", '<x:doc xmlns:x="urn:x"><x:body/></x:doc>')
+
+    assert DocxTextExtractor().extract(buffer.getvalue()) == f"Art. 1.{PAGE_BREAK}Art. 2."
+    assert DocxTextExtractor().extract(foreign.getvalue()) == ""
+
+
 def _zip(members: dict[str, bytes]) -> bytes:
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w") as archive:
@@ -113,14 +170,34 @@ def test_zip_package_is_read_member_by_member_bill_first() -> None:
 
 
 def test_zip_reads_one_level_of_nesting_and_gives_up_on_junk() -> None:
-    # As published on RCL: a cover letter next to a zip that holds the bill itself.
+    # As published on RCL: a cover letter next to a zip that holds the bill itself. The letter
+    # and the compliance table are not bill text and stay out, as they do in a "Projekt" folder.
     inner = _zip({"projekt ustawy.pdf": b"%PDF-1.7 bill"})
-    package = _zip({"pismo.pdf": b"%PDF-1.7 letter", "projekt na RM.zip": inner})
+    package = _zip(
+        {
+            "pismo.pdf": b"%PDF-1.7 letter",
+            "tabela zgodności.docx": _docx("<w:p><w:r><w:t>TYTUŁ PROJEKTU</w:t></w:r></w:p>"),
+            "projekt na RM.zip": inner,
+        }
+    )
     deeper = _zip({"outer.zip": _zip({"middle.zip": inner})})
 
-    assert _router().extract(package) == f"from pdf{PAGE_BREAK}from pdf"
+    assert _router().extract(package) == "from pdf"
     assert _router().extract(deeper) == ""  # two levels down is too deep
     assert _router().extract(_zip({"uwagi.xlsx": b"x", "notes.txt": b"y"})) == ""
+
+
+def test_an_archive_member_over_the_unpacked_size_limit_is_skipped() -> None:
+    small = _docx("<w:p><w:r><w:t>UZASADNIENIE</w:t></w:r></w:p>")
+    package = _zip({"projekt.pdf": b"%PDF-1.7 " + b"x" * 500, "uzasadnienie.docx": small})
+    extractor = DocumentTextExtractor(
+        FakeTextExtractor("from pdf"),
+        DocxTextExtractor(),
+        FakeTextExtractor("from doc"),
+        max_member_bytes=500,  # the small .docx unpacks to ~430 bytes, the PDF to 509
+    )
+
+    assert extractor.extract(package) == "UZASADNIENIE"
 
 
 def test_zip_members_in_folders_and_of_every_format_are_routed() -> None:
@@ -178,6 +255,25 @@ def test_odt_lists_and_sections_are_flattened_and_an_empty_body_gives_nothing() 
 
     assert OdtTextExtractor().extract(nested) == "w sekcji\npunkt 1\npunkt 2"
     assert OdtTextExtractor().extract(empty) == ""
+
+
+def test_odt_text_keeps_its_order_around_spans_and_nested_tables_are_read_once() -> None:
+    data = _odt(
+        "<text:p>Art. <text:span>1<text:span>. </text:span>Cudzo<text:tab/>x</text:span>"
+        "ziemiec</text:p>"
+        "<table:table><table:table-header-rows><table:table-row>"
+        "<table:table-cell><text:p>Lp.</text:p></table:table-cell>"
+        "<table:table-cell><text:p>Podmiot</text:p></table:table-cell>"
+        "</table:table-row></table:table-header-rows>"
+        "<table:table-row><table:table-cell><text:p>1</text:p></table:table-cell>"
+        "<table:table-cell><text:p>zewn.</text:p><table:table><table:table-row>"
+        "<table:table-cell><text:p>wewn.</text:p></table:table-cell>"
+        "</table:table-row></table:table></table:table-cell></table:table-row></table:table>"
+    )
+
+    assert OdtTextExtractor().extract(data) == (
+        "Art. 1. Cudzo\txziemiec\nLp.\tPodmiot\n1\tzewn. wewn."
+    )
 
 
 # --------------------------------------------------------------------------- legacy .doc
