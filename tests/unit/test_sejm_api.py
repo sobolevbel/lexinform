@@ -95,7 +95,8 @@ def test_process_and_print_parse_from_fixtures() -> None:
     assert detail.number == "3039"
     assert detail.stages[1].children[0].committee_code
     assert info.main_pdf is not None
-    assert info.main_pdf.url == "https://api.sejm.gov.pl/sejm/term10/prints/3039/3039.pdf"
+    # Attachments are downloaded from the client's own host (a proxy or a mock included).
+    assert info.main_pdf.url == "https://api.test/sejm/term10/prints/3039/3039.pdf"
     assert info.additional_prints[0].number == "3039-001"
 
 

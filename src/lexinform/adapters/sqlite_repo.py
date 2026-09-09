@@ -541,6 +541,7 @@ class SqliteBillRepository:
             JOIN publications p ON p.term = b.term AND p.number = b.number
             WHERE p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
               AND b.entry_into_force IS NOT NULL AND b.entry_into_force <= ?
+              AND b.status != 'linked' AND b.discontinued_at IS NULL
               {self._NO_SETTLED_POST}
             ORDER BY b.entry_into_force, b.number
             """,

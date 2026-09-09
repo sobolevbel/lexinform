@@ -173,7 +173,7 @@ class SejmApiClient:
 
     def get_print(self, term: int, number: str) -> PrintInfo:
         data = self._get_json(f"/sejm/term{term}/prints/{quote(number)}")
-        return parse_print(data, term=term)
+        return parse_print(data, term=term, base_url=self._base_url)
 
     def get_act(self, eli: str) -> ActInfo | None:
         """The published act from the ELI API; None when the act is not (yet) indexed there."""
