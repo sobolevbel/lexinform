@@ -284,10 +284,85 @@ def test_status_update_lists_new_stages_and_the_closure(process_1962: ProcessDet
     text = MessageFormatter("ru").status_update(bill, change).text
 
     assert_telegram_html(text)
-    assert "Обновление — druk nr 1962" in text
-    assert "Новые стадии" in text and "Uchwalono" in text
-    assert "закон принят" in text
+    # The header names the newest event; the stages are bullets in the reader's language.
+    assert "🏛 <b>Сейм рассмотрел поправки Сената — druk nr 1962</b>" in text
+    assert (
+        "• 03.09.2026: отчёт комиссии (sprawozdanie) (druk 3014): предлагает принять часть" in text
+    )
+    assert "• 04.09.2026: Сейм рассмотрел позицию Сената — часть поправок Сената принята" in text
+    assert "• процесс в Сейме завершён" in text and "Uchwalono" not in text
+    assert "Сейм принял закон." in text
     assert "#kadencja10druk1962" in text
+
+
+def test_update_header_names_the_event_and_the_closure_line_is_not_repeated(
+    process_1962: ProcessDetail,
+) -> None:
+    flat = flatten_stages(process_1962.stages)
+    third = next(st for st in flat if st.stage_type == "SejmReading" and "III" in st.stage_name)
+    voting = next(st for st in flat if st.stage_type == "Voting")
+    referral = next(st for st in flat if st.stage_type == "Referral")
+    report = next(st for st in flat if st.stage_type == "CommitteeReport")
+    rejecting = report.model_copy(update={"proposal": "odrzucić projekt ustawy"})
+    bill = bill_of(process_1962)
+    fmt = MessageFormatter("ru")
+
+    passed = fmt.status_update(
+        bill, change_of("1962", [third, voting], closure_detected=True, passed=True)
+    ).text
+    rejected = fmt.status_update(
+        bill, change_of("1962", [], closure_detected=True, passed=False)
+    ).text
+    referred = fmt.status_update(bill, change_of("1962", [referral])).text
+    reported = fmt.status_update(bill, change_of("1962", [rejecting])).text
+
+    assert passed.startswith("✅ <b>Сейм принял закон — druk nr 1962</b>")
+    assert "• 17.07.2026: III чтение на заседании Сейма — закон принят" in passed
+    assert "Сейм принял закон." not in passed  # the header said it
+    assert rejected.startswith("❌ <b>Сейм отклонил проект — druk nr 1962</b>")
+    assert referred.startswith("📮 <b>Направлен в комиссию — druk nr 1962</b>")
+    assert reported.startswith("❌ <b>Комиссия предлагает отклонить проект — druk nr 1962</b>")
+    assert "предлагает отклонить проект" in reported
+
+
+def test_update_repeats_one_sentence_of_the_summary_unless_the_analysis_changed(
+    process_1962: ProcessDetail,
+) -> None:
+    analysis = make_analysis()
+    analysis.summary = "Первое предложение о сути. Второе предложение с деталями."
+    referral = next(st for st in flatten_stages(process_1962.stages) if st.stage_type == "Referral")
+    bill = bill_of(process_1962, analysis)
+    fmt = MessageFormatter("ru")
+
+    plain = fmt.status_update(bill, change_of("1962", [referral])).text
+    reanalysed = fmt.status_update(bill, change_of("1962", [], content_changed=True)).text
+
+    assert "📝 <b>Суть проекта:</b> Первое предложение о сути." in plain
+    assert "Второе предложение" not in plain
+    assert "📝 <b>Суть проекта</b>\nПервое предложение о сути. Второе предложение" in reanalysed
+
+
+def test_frame_stages_are_dropped_when_their_children_are_listed(
+    process_1962: ProcessDetail,
+) -> None:
+    referral_parent = process_1962.stages[1]  # "Skierowano do I czytania w komisjach" + child
+    committee_work = process_1962.stages[3]  # "Praca w komisjach po I czytaniu" + report
+    bill = bill_of(process_1962)
+    fmt = MessageFormatter("ru")
+
+    with_children = fmt.status_update(
+        bill,
+        change_of(
+            "1962",
+            [referral_parent, *referral_parent.children, committee_work, *committee_work.children],
+        ),
+    ).text
+    alone = fmt.status_update(bill, change_of("1962", [referral_parent])).text
+
+    assert "Skierowano" not in with_children and "Praca w komisjach" not in with_children
+    assert "• 17.11.2025: 📮 Направлен в комиссию: SPC" in with_children
+    assert "предлагает принять проект в новой редакции (текст приложен)" in with_children
+    assert "• 17.11.2025: направлен на I чтение" in alone
 
 
 def test_status_update_after_a_re_analysis_shows_the_diff(process_3039: ProcessDetail) -> None:
@@ -406,7 +481,7 @@ def test_president_stages_and_committee_referrals_have_labels(process_3039: Proc
     assert "• 13.08.2026: ✍️ Президент подписал закон" in text
     assert "• ⛔ Президент наложил вето (druk 2863)" in text
     assert "• 📮 Направлен в комиссию: Komisja Administracji i Spraw Wewnętrznych (ASW)" in text
-    assert "• Skierowanie [ASW]" in text
+    assert "• 📮 Направлен в комиссию: ASW" in text
 
 
 # --------------------------------------------------------------------------- next step and action
@@ -532,9 +607,36 @@ def test_senate_stage_invites_an_opinion_to_the_senate_committee(
 
     text = MessageFormatter("ru").new_bill(bill_of(in_senate), None, today=TODAY).text
 
-    assert "Что дальше:</b> рассмотрение в Сенате (до 30 дней)" in text
+    # The 30 days count from the third reading (17.07.2026): the date, not only the rule.
+    assert "Что дальше:</b> рассмотрение в Сенате (до 30 дней) · срок до 16.08.2026" in text
     assert "Что можно сделать сейчас:</b> направить мнение в профильную комиссию Сената" in text
     assert "→ Сенат ● → Президент" in text
+
+
+def test_public_hearing_names_the_application_deadline(process_3039: ProcessDetail) -> None:
+    hearing = Stage(
+        stage_name="Wysłuchanie publiczne",
+        stage_type="PublicHearing",
+        date=dt.date(2026, 9, 30),
+    )
+    stages = (*process_3039.stages, hearing)
+    bill = bill_of(process_3039.model_copy(update={"stages": stages}))
+    fmt = MessageFormatter("ru")
+
+    update = fmt.status_update(bill, change_of("3039", [hearing]), today=TODAY).text
+    reminder = fmt.hearing_deadline(bill, hearing, today=dt.date(2026, 9, 18)).text
+
+    assert update.startswith("📢 <b>Назначены публичные слушания — druk nr 3039</b>")
+    assert "• 30.09.2026: 📢 Публичные слушания (wysłuchanie publiczne)" in update
+    assert "можно подать заявку на участие до 20.09.2026" in update
+    assert "подать заявку на участие в публичных слушаниях до 20.09.2026" in update
+    assert_telegram_html(reminder)
+    assert "📢 <b>Заявки на публичные слушания — druk nr 3039</b>" in reminder
+    assert (
+        "слушания</b> 30.09.2026 · заявки на участие до <b>20.09.2026</b> · осталось дней: 2"
+        in (reminder)
+    )
+    assert "#слушания #kadencja10druk3039" in reminder
 
 
 def test_withdrawn_bill_gets_no_next_step(process_3039: ProcessDetail) -> None:

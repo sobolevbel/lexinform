@@ -38,6 +38,14 @@ from lexinform.models.enums import (
     SourceKind,
     TextSource,
 )
+from lexinform.models.events import (
+    HEARING_APPLICATION_DAYS,
+    SERVICE_STAGE_TYPES,
+    has_news,
+    hearing_application_deadline,
+    is_substantive,
+    update_event,
+)
 from lexinform.models.rcl import (
     RCL_STAGE_TYPE,
     RclConsultation,
@@ -116,6 +124,7 @@ __all__ = [
     "ConsultationWindow",
     "DocumentType",
     "FULL_TEXT_SOURCES",
+    "HEARING_APPLICATION_DAYS",
     "LocatedText",
     "Mp",
     "PRE_PRINT_PREFIX",
@@ -135,6 +144,7 @@ __all__ = [
     "RclProjectSummary",
     "RclStage",
     "RunReport",
+    "SERVICE_STAGE_TYPES",
     "SejmSitting",
     "SejmTerm",
     "SourceKind",
@@ -156,9 +166,12 @@ __all__ = [
     "current_term",
     "diff_stages",
     "flatten_stages",
+    "has_news",
     "has_process",
+    "hearing_application_deadline",
     "is_pre_print_number",
     "is_rcl_number",
+    "is_substantive",
     "latest_text_document",
     "next_phase",
     "normalize_wykaz_number",
@@ -171,5 +184,6 @@ __all__ = [
     "rcl_stages",
     "stage_fingerprint",
     "submission_pdf_url",
+    "update_event",
     "usage_of",
 ]

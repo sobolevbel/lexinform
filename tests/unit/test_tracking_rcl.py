@@ -59,7 +59,9 @@ def test_reached_stage_is_posted_once() -> None:
     assert (bill.number, reply_to) == (RCL, w.card_id(RCL))
     assert [st.stage_name for st in change.new_stages] == ["9. Stały Komitet Rady Ministrów"]
     text = MessageFormatter("ru").status_update(bill, change).text
-    assert "Обновление — UC164" in text and "• 9. Stały Komitet Rady Ministrów" in text
+    # The header names the stage in the reader's language; the bullet keeps the original.
+    assert "<b>Постоянный комитет Совета министров — UC164</b>" in text
+    assert "• 9. Stały Komitet Rady Ministrów" in text
     assert "Что дальше:</b> комитеты Совета министров и Komisja Prawnicza" in text
 
 

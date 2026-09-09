@@ -71,7 +71,7 @@ def test_assigned_print_number_continues_the_thread_under_the_new_number() -> No
     assert change.content_changed  # the real print text replaced the metadata analysis
     assert [st.stage_type for st in change.new_stages] == ["Start"]
     text = MessageFormatter("ru").status_update(bill, change).text
-    assert "Обновление — druk nr 3100" in text
+    assert "🔢 <b>Присвоен номер druku — druk nr 3100</b>" in text
     assert "Проекту присвоен номер druku: <b>3100</b>" in text
     assert "#kadencja10druk3100 #RPW_29075_2026" in text  # either tag finds the thread
     pre = w.bill(RPW)

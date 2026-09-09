@@ -123,6 +123,23 @@ class Labels:
     link_osr: str
     link_wykaz: str
     tag_rcl: str
+    # Status updates named after their event (see `models.update_event`)
+    rcl_process_closed: str  # the project was closed on RCL without reaching the Sejm
+    committee_report: str  # "committee report (sprawozdanie)"
+    subcommittee_report: str
+    proposes: str  # "proposes:" (the committee's proposal follows)
+    deadline_until: str  # "deadline" (a computed statutory deadline follows)
+    # Public hearings: the reminder before applications close
+    hearing_deadline_header: str
+    hearing_on: str  # "hearing on" (date follows)
+    hearing_apply_until: str  # "applications until" (date follows)
+    hearing_hint: str  # how to apply
+    tag_hearing: str
+    update_headers: dict[str, str] = field(default_factory=dict)  # by event key
+    # Fragments (lower case) of a `SejmReading.decision` and a `CommitteeReport.proposal`;
+    # first match wins, an unknown value passes through in Polish.
+    decision_labels: dict[str, str] = field(default_factory=dict)
+    proposal_labels: dict[str, str] = field(default_factory=dict)
     event_tags: dict[str, str] = field(default_factory=dict)  # voting, senate, president, ...
     next_step_labels: dict[str, str] = field(default_factory=dict)  # by phase key, see models
     # By phase key: how long the step usually takes, shown when no sitting is scheduled yet.
@@ -161,8 +178,8 @@ RU = Labels(
     document_date="Дата druku",
     partial_text_note="Анализ основан на неполном тексте документа.",
     new_stages="Новые стадии",
-    process_closed="Процесс завершён.",
-    process_passed="Процесс завершён: закон принят Сеймом.",
+    process_closed="Сейм отклонил проект, процесс завершён.",
+    process_passed="Сейм принял закон.",
     link_process="Ход процесса в Сейме",
     link_pdf="PDF",
     link_rcl="RCL",
@@ -273,6 +290,72 @@ RU = Labels(
     link_osr="OSR",
     link_wykaz="Wykaz prac RM",
     tag_rcl="RCL",
+    rcl_process_closed="Проект закрыт на RCL, в Сейм не направлен.",
+    committee_report="отчёт комиссии (sprawozdanie)",
+    subcommittee_report="отчёт подкомиссии",
+    proposes="предлагает",
+    deadline_until="срок до",
+    hearing_deadline_header="Заявки на публичные слушания",
+    hearing_on="слушания",
+    hearing_apply_until="заявки на участие до",
+    hearing_hint=(
+        "заявку подаёт любой желающий через систему Сейма (формуляр на странице комиссии);"
+        " каждый заявитель получает слово"
+    ),
+    tag_hearing="слушания",
+    update_headers={
+        "update": "Обновление",
+        "print_assigned": "Присвоен номер druku",
+        "start": "Проект поступил в Сейм",
+        "first_reading_referral": "Направлен на I чтение",
+        "referral": "Направлен в комиссию",
+        "referrals": "Направлен в комиссии",
+        "referral_plenary": "I чтение пройдёт на заседании Сейма",
+        "first_reading": "I чтение прошло",
+        "committee_work": "Работа в комиссии началась",
+        "committee_report": "Отчёт комиссии",
+        "subcommittee_report": "Отчёт подкомиссии",
+        "committee_rejects": "Комиссия предлагает отклонить проект",
+        "hearing": "Назначены публичные слушания",
+        "second_reading": "II чтение прошло",
+        "second_reading_amendments": "Поправки во II чтении: проект вернулся в комиссию",
+        "third_reading": "III чтение",
+        "passed": "Сейм принял закон",
+        "rejected": "Сейм отклонил проект",
+        "senate": "Позиция Сената",
+        "senate_no_amendments": "Сенат принял закон без поправок",
+        "senate_amendments": "Сенат внёс поправки",
+        "senate_rejected": "Сенат отклонил закон",
+        "senate_considered": "Сейм рассмотрел поправки Сената",
+        "to_president": "Закон передан Президенту",
+        "signed": "Президент подписал закон",
+        "veto": "Президент наложил вето",
+        "tribunal": "Закон направлен в Конституционный трибунал",
+        "text_changed": "Новая версия текста",
+        "withdrawn": "Проект отозван",
+        "discontinued": "Проект прекращён с концом каденции",
+        "rcl_stage": "Новая стадия на RCL",
+        "rcl_to_sejm": "Проект направлен в Сейм",
+        "rcl_closed": "Проект закрыт на RCL",
+    },
+    decision_labels={
+        "niezwłocznie przystąpiono do iii": "сразу перешли к III чтению",
+        "skierowano ponownie do komisji": "возвращён в комиссию для рассмотрения поправок",
+        "skierowano do komisji": "направлен в комиссию",
+        "przyjęto część poprawek": "часть поправок Сената принята",
+        "przyjęto poprawki": "поправки Сената приняты",
+        "odrzucono poprawki": "поправки Сената отклонены",
+        "uchwalono": "закон принят",
+        "odrzucono": "проект отклонён",
+    },
+    proposal_labels={
+        "załączony projekt": "принять проект в новой редакции (текст приложен)",
+        "przyjąć bez poprawek": "принять без поправок",
+        "przyjąć część poprawek": "принять часть поправок",
+        "odrzucić poprawki": "отклонить поправки",
+        "przyjąć poprawki": "принять поправки",
+        "odrzucić": "отклонить проект",
+    },
     event_tags={
         "voting": "голосование",
         "senate": "сенат",
@@ -375,7 +458,7 @@ RU = Labels(
         "Start": "проект поступил в Сейм",
         "ReadingReferral": "направлен на I чтение",
         "Referral": "направлен в комиссию",
-        "Reading": "I чтение",
+        "Reading": "I чтение в комиссиях",
         "CommitteeWork": "работа в комиссии",
         "CommitteeReport": "отчёт комиссии (sprawozdanie)",
         "Voting": "голосование в Сейме",
@@ -461,8 +544,8 @@ EN = Labels(
     document_date="Print date",
     partial_text_note="The analysis is based on a partial text of the document.",
     new_stages="New stages",
-    process_closed="Process closed.",
-    process_passed="Process closed: the bill was passed by the Sejm.",
+    process_closed="The Sejm rejected the bill; the process is over.",
+    process_passed="The Sejm passed the bill.",
     link_process="Legislative process",
     link_pdf="Print PDF",
     link_rcl="RCL",
@@ -570,6 +653,72 @@ EN = Labels(
     link_osr="OSR",
     link_wykaz="Wykaz prac RM",
     tag_rcl="RCL",
+    rcl_process_closed="The project was closed on RCL without reaching the Sejm.",
+    committee_report="committee report (sprawozdanie)",
+    subcommittee_report="sub-committee report",
+    proposes="proposes to",
+    deadline_until="deadline",
+    hearing_deadline_header="Public hearing: applications close",
+    hearing_on="hearing on",
+    hearing_apply_until="applications until",
+    hearing_hint=(
+        "anyone may apply through the Sejm's system (form on the committee page);"
+        " every applicant gets to speak"
+    ),
+    tag_hearing="hearing",
+    update_headers={
+        "update": "Update",
+        "print_assigned": "Print number assigned",
+        "start": "Bill received by the Sejm",
+        "first_reading_referral": "Referred to the first reading",
+        "referral": "Referred to a committee",
+        "referrals": "Referred to committees",
+        "referral_plenary": "First reading at a Sejm sitting",
+        "first_reading": "First reading held",
+        "committee_work": "Committee work started",
+        "committee_report": "Committee report",
+        "subcommittee_report": "Sub-committee report",
+        "committee_rejects": "The committee proposes to reject the bill",
+        "hearing": "Public hearing announced",
+        "second_reading": "Second reading held",
+        "second_reading_amendments": "Amendments at the 2nd reading: back to the committee",
+        "third_reading": "Third reading",
+        "passed": "The Sejm passed the bill",
+        "rejected": "The Sejm rejected the bill",
+        "senate": "Senate position",
+        "senate_no_amendments": "The Senate passed the act without amendments",
+        "senate_amendments": "The Senate introduced amendments",
+        "senate_rejected": "The Senate rejected the act",
+        "senate_considered": "The Sejm considered the Senate's amendments",
+        "to_president": "Sent to the President",
+        "signed": "The President signed the act",
+        "veto": "The President vetoed the act",
+        "tribunal": "Referred to the Constitutional Tribunal",
+        "text_changed": "New version of the text",
+        "withdrawn": "Bill withdrawn",
+        "discontinued": "Bill lapsed with the end of the term",
+        "rcl_stage": "New stage on RCL",
+        "rcl_to_sejm": "Sent to the Sejm",
+        "rcl_closed": "Project closed on RCL",
+    },
+    decision_labels={
+        "niezwłocznie przystąpiono do iii": "moved straight on to the 3rd reading",
+        "skierowano ponownie do komisji": "sent back to the committee to consider amendments",
+        "skierowano do komisji": "referred to a committee",
+        "przyjęto część poprawek": "some of the Senate's amendments accepted",
+        "przyjęto poprawki": "the Senate's amendments accepted",
+        "odrzucono poprawki": "the Senate's amendments rejected",
+        "uchwalono": "passed",
+        "odrzucono": "rejected",
+    },
+    proposal_labels={
+        "załączony projekt": "adopt the bill as amended (text attached)",
+        "przyjąć bez poprawek": "adopt without amendments",
+        "przyjąć część poprawek": "accept some of the amendments",
+        "odrzucić poprawki": "reject the amendments",
+        "przyjąć poprawki": "accept the amendments",
+        "odrzucić": "reject the bill",
+    },
     event_tags={
         "voting": "vote",
         "senate": "senate",
@@ -677,7 +826,7 @@ EN = Labels(
         "Start": "submitted to the Sejm",
         "ReadingReferral": "referred to the first reading",
         "Referral": "referred to committee",
-        "Reading": "first reading",
+        "Reading": "first reading in committee",
         "CommitteeWork": "committee work",
         "CommitteeReport": "committee report (sprawozdanie)",
         "Voting": "vote in the Sejm",

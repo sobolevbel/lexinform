@@ -139,9 +139,15 @@ class Phase(BaseModel):
     key: str
     committees: tuple[str, ...] = ()  # codes of the committees the bill sits in, if any
     date: dt.date | None = None  # consultation end or entry into force, when the key needs one
+    # The constitutional deadline of the step, when the process gives one: the Senate has 30
+    # days from receiving the act (art. 121), the President 21 from receiving it (art. 122);
+    # 14 and 7 for an urgent bill (art. 123). Counted from the dates the Sejm API shows.
+    deadline: dt.date | None = None
 
 
 _PRESIDENT_NEXT = {"ToPresident", "SenatePositionConsideration"}
+SENATE_DAYS, SENATE_DAYS_URGENT = 30, 14
+PRESIDENT_DAYS, PRESIDENT_DAYS_URGENT = 21, 7
 
 
 def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
@@ -186,8 +192,10 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
         return Phase(key="veto")
     if kind == "PresidentToTribunal":
         return Phase(key="tribunal")
+    urgent = bool(summary.urgency_status) and summary.urgency_status != "NORMAL"
     if kind in _PRESIDENT_NEXT:
-        return Phase(key="president")
+        days = PRESIDENT_DAYS_URGENT if urgent else PRESIDENT_DAYS
+        return Phase(key="president", deadline=_days_after(last.date, days))
     if kind == "SenatePosition":
         if "nie wniósł" in (last.position or "").lower():
             return Phase(key="president")
@@ -199,7 +207,8 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
         if "iii czytanie" in name:
             decided = (last.decision or "").lower()
             if decided.startswith("uchwal") or summary.passed:
-                return Phase(key="senate")
+                days = SENATE_DAYS_URGENT if urgent else SENATE_DAYS
+                return Phase(key="senate", deadline=_days_after(last.date, days))
             return None if decided else Phase(key="third_reading")
         if "ii czytanie" in name:
             return Phase(key="third_reading")
@@ -238,6 +247,10 @@ def _rcl_phase(bill: Bill, today: dt.date) -> Phase | None:
     current = project.current_stage
     group = current.group if current else "opinions"
     return Phase(key=f"rcl_{group}")
+
+
+def _days_after(start: dt.date | None, days: int) -> dt.date | None:
+    return start + dt.timedelta(days=days) if start is not None else None
 
 
 def _committee_codes(stage: Stage) -> tuple[str, ...]:

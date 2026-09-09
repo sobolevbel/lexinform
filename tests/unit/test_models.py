@@ -228,6 +228,36 @@ def test_next_phase_walks_a_bill_amended_by_the_senate(process_1962: ProcessDeta
     assert phases[1] is not None and phases[1].committees == ("SPC",)
 
 
+def test_senate_and_president_phases_carry_their_constitutional_deadline(
+    process_1962: ProcessDetail,
+) -> None:
+    third = next(
+        i
+        for i, st in enumerate(process_1962.stages)
+        if st.stage_type == "SejmReading" and "III" in st.stage_name
+    )
+    in_senate = _bill(process_1962, process_1962.stages[: third + 1])  # passed 2026-07-17
+    urgent = _bill(
+        process_1962.model_copy(update={"urgency_status": "URGENT"}),
+        process_1962.stages[: third + 1],
+    )
+    to_president = Stage(
+        stage_name="Ustawę przekazano Prezydentowi do podpisu",
+        stage_type="ToPresident",
+        date=dt.date(2026, 9, 7),
+    )
+    with_president = _bill(process_1962, (*process_1962.stages[:-1], to_president))
+
+    senate = next_phase(in_senate, today=TODAY)
+    senate_urgent = next_phase(urgent, today=TODAY)
+    president = next_phase(with_president, today=TODAY)
+
+    assert senate is not None and (senate.key, senate.deadline) == ("senate", dt.date(2026, 8, 16))
+    assert senate_urgent is not None and senate_urgent.deadline == dt.date(2026, 7, 31)
+    assert president is not None
+    assert (president.key, president.deadline) == ("president", dt.date(2026, 9, 28))
+
+
 def test_first_reading_at_a_plenary_sitting_is_not_a_committee_referral(
     process_950: ProcessDetail,
 ) -> None:

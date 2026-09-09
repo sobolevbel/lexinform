@@ -29,10 +29,12 @@ from lexinform.models import (
     VotingSummary,
     committee_web_url,
     flatten_stages,
+    hearing_application_deadline,
     is_pre_print_number,
     is_rcl_number,
     next_phase,
     process_web_url,
+    update_event,
 )
 from lexinform.pricing import cost_usd
 
@@ -75,7 +77,40 @@ ICON = {
     "action": "👉",
     "calendar": "🗓",
     "agenda": "📝",
+    "hearing": "📢",
 }
+# The header icon of a status update, by event (see `models.update_event`); 🔄 otherwise.
+EVENT_ICON = {
+    "print_assigned": "🔢",
+    "referral": "📮",
+    "referrals": "📮",
+    "referral_plenary": "🏛",
+    "committee_report": "📋",
+    "subcommittee_report": "📋",
+    "committee_rejects": "❌",
+    "hearing": "📢",
+    "second_reading_amendments": "📋",
+    "third_reading": "🗳",
+    "passed": "✅",
+    "rejected": "❌",
+    "senate": "🏛",
+    "senate_no_amendments": "✅",
+    "senate_amendments": "📋",
+    "senate_rejected": "❌",
+    "senate_considered": "🏛",
+    "to_president": "🏛",
+    "signed": "✍️",
+    "veto": "⛔",
+    "tribunal": "⚖️",
+    "text_changed": "🆕",
+    "withdrawn": "🏁",
+    "discontinued": "🏁",
+    "rcl_to_sejm": "🔢",
+    "rcl_closed": "🏁",
+}
+# A parent node whose children are in the same update says nothing the children do not.
+_FRAME_STAGE_TYPES = {"ReadingReferral", "CommitteeWork"}
+_SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
 _COMMITTEE_PHASES = {"first_reading_committee", "committee_work", "senate_amendments"}
 _SITTING_PHASES = {"first_reading_sitting", "second_reading", "third_reading", "senate_amendments"}
 
@@ -126,6 +161,12 @@ def esc(value: object) -> str:
 
 def link(url: str, text: str) -> str:
     return f'<a href="{html.escape(url, quote=True)}">{esc(text)}</a>'
+
+
+def lead(text: str) -> str:
+    """The first sentence: what an update repeats of the summary the card already carries."""
+    first = _SENTENCE_END.split(text.strip(), maxsplit=1)[0]
+    return first.strip()
 
 
 def fit(text: str, limit: int) -> str:
@@ -265,10 +306,11 @@ class MessageFormatter:
         lb = self._labels
         s = bill.summary
         analysis = bill.analysis.analysis if bill.analysis else None
+        event = update_event(change, bill)
 
         header = (
-            f"{ICON['update']} <b>{esc(lb.update_header)} — {self._number_label(bill)}</b>\n\n"
-            f"<b>{esc(s.title)}</b>"
+            f"{EVENT_ICON.get(event, ICON['update'])} <b>{self._event_header(change, event)} — "
+            f"{self._number_label(bill)}</b>\n\n<b>{esc(s.title)}</b>"
         )
         badge = ""
         if analysis is not None:
@@ -278,12 +320,14 @@ class MessageFormatter:
                 f"{esc(lb.category_labels.get(analysis.category, analysis.category.value))}"
             )
 
-        stage_lines = [f"• {self._stage_line(st)}" for st in change.new_stages]
+        stage_lines = [f"• {self._stage_line(st)}" for st in _told_stages(change.new_stages)]
         stages_block = (
             f"{ICON['new_stages']} <b>{esc(lb.new_stages)}</b>\n" + "\n".join(stage_lines)
             if stage_lines
             else ""
         )
+        # The closure line explains what the header only names; when the header already says
+        # "the Sejm passed/rejected the bill" the line would repeat it.
         closure = ""
         if change.discontinued:
             carried = s.applicant_type is ApplicantType.CITIZENS
@@ -292,10 +336,12 @@ class MessageFormatter:
             )
         elif change.withdrawn:
             closure = f"{ICON['closed']} {esc(lb.process_withdrawn)}"
-        elif change.closure_detected:
+        elif change.closure_detected and bill.rcl is not None:
+            closure = f"{ICON['closed']} {esc(lb.rcl_process_closed)}"
+        elif change.closure_detected and event not in ("passed", "rejected", "rcl_closed"):
             icon = ICON["passed"] if change.passed else ICON["closed"]
             closure = f"{icon} {esc(lb.process_passed if change.passed else lb.process_closed)}"
-        if bill.linked_number and bill.has_process and change.old_fingerprint == bill.linked_number:
+        if event == "print_assigned":
             assigned = f"{ICON['print']} {esc(lb.print_assigned)}: <b>{esc(bill.number)}</b>"
             closure = f"{assigned}\n{closure}" if closure else assigned
         elif bill.rcl is not None and bill.rcl.sent_to_sejm and _reaches_sejm(change):
@@ -307,9 +353,9 @@ class MessageFormatter:
         summary_block = ""
         changes_block = ""
         if analysis is not None:
-            summary_block = (
-                f"{ICON['about']} <b>{esc(lb.current_summary)}</b>\n{esc(analysis.summary.strip())}"
-            )
+            # The card carries the whole summary; a reply repeats one sentence of it, the whole
+            # text only when the analysis itself changed.
+            summary_block = self._summary_reminder(analysis.summary, full=change.content_changed)
             if change.content_changed:
                 bullets = "\n".join(
                     f"• {esc(c.strip())}" for c in analysis.changes_since_previous if c.strip()
@@ -502,11 +548,41 @@ class MessageFormatter:
         tags = f"#{tag} {self._thread_tags(bill)}"
         summary_block = ""
         if bill.analysis is not None:
-            a = bill.analysis.analysis
-            summary_block = (
-                f"{ICON['about']} <b>{esc(lb.current_summary)}</b>\n{esc(a.summary.strip())}"
-            )
+            summary_block = self._summary_reminder(bill.analysis.analysis.summary, full=False)
         fixed = [header, facts, action, links_block, tags]
+        return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block]))
+
+    def hearing_deadline(self, bill: Bill, hearing: Stage, *, today: dt.date) -> RenderedMessage:
+        """Reply under the card a few days before applications to a public hearing close."""
+        lb = self._labels
+        deadline = hearing_application_deadline(hearing)
+        if deadline is None or hearing.date is None:
+            raise ValueError(f"bill {bill.number}: the hearing has no date")
+        header = (
+            f"{ICON['hearing']} <b>{esc(lb.hearing_deadline_header)} — "
+            f"{self._number_label(bill)}</b>\n\n<b>{esc(bill.summary.title)}</b>"
+        )
+        days_left = (deadline - today).days
+        countdown = (
+            esc(lb.consultation_last_day)
+            if days_left <= 0
+            else f"{esc(lb.consultation_days_left)}: {days_left}"
+        )
+        facts = (
+            f"{ICON['effective']} <b>{esc(lb.hearing_on)}</b> {self.fmt_date(hearing.date)} · "
+            f"{esc(lb.hearing_apply_until)} <b>{self.fmt_date(deadline)}</b> · {countdown}\n"
+            f"{ICON['action']} {esc(lb.hearing_hint)}"
+        )
+        links = [link(bill.summary.web_url, lb.link_process)]
+        phase = next_phase(bill, today=today)
+        for code in phase.committees if phase else ():
+            links.append(link(committee_web_url(bill.term, code), lb.link_committee))
+        links_block = f"{ICON['links']} " + " | ".join(links)
+        tags = f"#{lb.tag_hearing} {self._thread_tags(bill)}"
+        summary_block = ""
+        if bill.analysis is not None:
+            summary_block = self._summary_reminder(bill.analysis.analysis.summary, full=False)
+        fixed = [header, facts, links_block, tags]
         return RenderedMessage(text=self._assemble(fixed, flexible=[summary_block]))
 
     def _act_links(self, bill: Bill, act: ActInfo) -> list[str]:
@@ -598,6 +674,30 @@ class MessageFormatter:
 
     def fmt_date(self, value: dt.date) -> str:
         return value.strftime(self._labels.date_format)
+
+    def _event_header(self, change: StatusChange, event: str) -> str:
+        """The header names the event; an RCL stage is named after the stage itself."""
+        lb = self._labels
+        if event == "rcl_stage":
+            stage = next(
+                (st for st in reversed(change.new_stages) if st.stage_type == RCL_STAGE_TYPE), None
+            )
+            if stage is not None:
+                name = stage.stage_name.lower()
+                label = next((t for part, t in lb.rcl_stage_labels.items() if part in name), None)
+                if label:
+                    return esc(label[0].upper() + label[1:])
+        return esc(lb.update_headers.get(event) or lb.update_header)
+
+    def _summary_reminder(self, summary: str, *, full: bool) -> str:
+        """`📝 Суть проекта: <first sentence>` or, after a re-analysis, the whole summary."""
+        lb = self._labels
+        text = summary.strip()
+        if not text:
+            return ""
+        if full:
+            return f"{ICON['about']} <b>{esc(lb.current_summary)}</b>\n{esc(text)}"
+        return f"{ICON['about']} <b>{esc(lb.current_summary)}:</b> {esc(lead(text))}"
 
     def _number_label(self, bill: Bill) -> str:
         if bill.rcl is not None:
@@ -825,6 +925,8 @@ class MessageFormatter:
         upcoming = self._upcoming(bill, today, phase)
         if upcoming is not None:
             suffix = f" · {self._agenda_when(upcoming)}"
+        elif phase.deadline is not None:
+            suffix = f" · {esc(lb.deadline_until)} {self.fmt_date(phase.deadline)}"
         else:
             usual = lb.typical_durations.get(phase.key)
             suffix = f" · {esc(usual)}" if usual else ""
@@ -882,8 +984,13 @@ class MessageFormatter:
                 if sitting is not None:
                     text += f" {esc(lb.action_before_sitting)} {self.fmt_date(sitting.date)}"
                 actions.append(text)
-            if _hearing_open(bill, today):
-                actions.append(esc(lb.action_hearing))
+            hearing = _open_hearing(bill, today)
+            if hearing is not None:
+                text = esc(lb.action_hearing)
+                deadline = hearing_application_deadline(hearing)
+                if deadline is not None:
+                    text += f" {esc(lb.consultation_until)} {self.fmt_date(deadline)}"
+                actions.append(text)
         if phase is not None and phase.key == "senate":
             actions.append(esc(lb.action_senate))
         if not actions:
@@ -977,21 +1084,45 @@ class MessageFormatter:
             text = lb.senate_position_labels.get(stage.position.strip().lower(), stage.position)
             return when + esc(text) + self._print_suffix(stage)
         if stage.stage_type == "Referral" and stage.committee_code:
+            name = stage.committee_code
             if stage.committee_name:
                 name = f"{stage.committee_name} ({stage.committee_code})"
-                return f"{when}{ICON['committee']} {esc(lb.referred_to_committee)}: {esc(name)}"
-            return f"{when}{esc(stage.stage_name)} [{esc(stage.committee_code)}]"
-        label = lb.stage_type_labels.get(stage.stage_type)
-        if label is not None:
-            line = when + esc(label)
-            if stage.decision:
-                line += f" — {esc(stage.decision)}"
+            return f"{when}{ICON['committee']} {esc(lb.referred_to_committee)}: {esc(name)}"
+        if stage.stage_type == "CommitteeReport":
+            label = lb.subcommittee_report if stage.sub_committee else lb.committee_report
+            line = when + esc(label) + self._print_suffix(stage)
+            proposal = _translate(stage.proposal, lb.proposal_labels) or stage.proposal
+            if proposal:
+                line += f": {esc(lb.proposes)} {esc(proposal)}"
+            return line
+        if stage.stage_type == "PublicHearing":
+            line = when + esc(lb.stage_type_labels["PublicHearing"])
+            deadline = hearing_application_deadline(stage)
+            if deadline is not None:
+                line += f" {esc(lb.consultation_until)} {self.fmt_date(deadline)}"
+            return line
+        translated = self._sejm_stage_label(stage)
+        if translated is not None:
+            line = when + esc(translated)
+            decision = _translate(stage.decision, lb.decision_labels) or stage.decision
+            if decision:
+                line += f" — {esc(decision)}"
             return line + self._print_suffix(stage)
         parts = [stage.stage_name]
         outcome = stage.decision or stage.position
         if outcome:
             parts.append(f"— {outcome}")
         return when + esc(" ".join(parts)) + self._print_suffix(stage)
+
+    def _sejm_stage_label(self, stage: Stage) -> str | None:
+        """The stage in the reader's language: readings by their numeral, the rest by type."""
+        lb = self._labels
+        if stage.stage_type == "SejmReading":
+            match = _READING_NUMERAL.match(stage.stage_name)
+            if match:
+                return lb.next_step_labels["second_reading"].replace("II", match.group(1))
+            return None
+        return lb.stage_type_labels.get(stage.stage_type) or lb.stage_labels.get(stage.stage_type)
 
     @staticmethod
     def _print_suffix(stage: Stage) -> str:
@@ -1091,12 +1222,34 @@ def _reaches_sejm(change: StatusChange) -> bool:
     )
 
 
-def _hearing_open(bill: Bill, today: dt.date) -> bool:
-    """A public hearing is announced and has not taken place yet."""
-    return any(
-        st.stage_type == "PublicHearing" and (st.date is None or st.date >= today)
-        for st in flatten_stages(bill.stages)
+def _open_hearing(bill: Bill, today: dt.date) -> Stage | None:
+    """A public hearing that is announced and has not taken place yet."""
+    return next(
+        (
+            st
+            for st in flatten_stages(bill.stages)
+            if st.stage_type == "PublicHearing" and (st.date is None or st.date >= today)
+        ),
+        None,
     )
+
+
+def _translate(value: str | None, labels: dict[str, str]) -> str | None:
+    """The label of the first fragment found in `value` (lower case); None when nothing matches."""
+    if not value:
+        return None
+    lowered = value.lower()
+    return next((label for part, label in labels.items() if part in lowered), None)
+
+
+def _told_stages(stages: list[Stage]) -> list[Stage]:
+    """The stages worth a bullet: a frame node ("Skierowano do I czytania", "Praca w
+    komisjach") is dropped when its children are listed anyway."""
+    return [
+        st
+        for st in stages
+        if not (st.stage_type in _FRAME_STAGE_TYPES and any(c in stages for c in st.children))
+    ]
 
 
 _UKRAINE = next(p.regex for p in KEYWORD_PATTERNS if p.name == "obywatele_ukrainy")
