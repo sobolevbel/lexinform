@@ -53,7 +53,7 @@ jobs:
         run: |
           set +e
           curl -sS -o /tmp/p.html -w "via proxy: http=%{http_code} ttfb=%{time_starttransfer}s total=%{time_total}s bytes=%{size_download}\n" \
-            --max-time 60 -x "$PROXY" -A "lexinform (+github)" "$LIST"
+            --max-time 60 -x "$PROXY" -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36" "$LIST"
           echo "title: $(grep -o '<title>[^<]*' /tmp/p.html | head -1)"
           curl -sS -o /dev/null -w "other host via proxy (should be denied): http=%{http_code}\n" \
             --max-time 30 -x "$PROXY" https://api.sejm.gov.pl/sejm/term

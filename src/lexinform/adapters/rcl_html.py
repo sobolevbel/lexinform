@@ -53,6 +53,12 @@ _PROJECT_ID = re.compile(r"/projekt/(\d+)")
 _LIST_TOTAL = re.compile(r"Lista projektów według wybranych kryteriów:\s*(\d+)")
 
 
+BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
+    " Chrome/128.0.0.0 Safari/537.36"
+)
+
+
 class RclPageError(RuntimeError):
     """A page that does not look like what we expect (missing project, changed markup)."""
 
@@ -83,7 +89,8 @@ class RclClient:
             headers={
                 "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
                 "Accept-Language": "pl-PL,pl;q=0.9",
-                "User-Agent": "lexinform (+github)",
+                # A browser's identity: the site is built for browsers and its WAF judges clients.
+                "User-Agent": BROWSER_USER_AGENT,
             },
             proxy=proxy,
             transport=transport,
