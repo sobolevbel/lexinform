@@ -171,7 +171,7 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_MIN_SCORE` | `3` | Minimum importance to publish |
 | `LEXINFORM_MAX_PUBLISH_PER_RUN` / `_MAX_ANALYZE_PER_RUN` | `10` / `40` | Flood and cost caps |
 | `LEXINFORM_TEXT_BUDGET_CHARS` | `1500000` | Safety cap on text sent to the LLM (prints go in full) |
-| `LEXINFORM_MAX_PDF_DOWNLOAD_MB` | `25` | Bigger PDFs are analysed from metadata |
+| `LEXINFORM_MAX_PDF_DOWNLOAD_MB` | `200` | Safety valve for memory; bigger files are analysed from metadata |
 | `LEXINFORM_SEJM_CONCURRENCY` / `_LLM_CONCURRENCY` | `4` / `2` | Parallel PDF downloads and process lookups / bills analysed at once |
 | `LEXINFORM_TEXT_PREFILTER_ENABLED` | `true` | Scan the PDF when the title says nothing |
 | `LEXINFORM_TEXT_PREFILTER_MIN_DISTINCT` / `_MIN_OCCURRENCES` | `2` / `3` | Text-hit threshold |

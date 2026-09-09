@@ -49,7 +49,10 @@ class Settings(BaseSettings):
     # Safety cap only: Polish text is ~2 chars/token, so this is ~750k tokens and fits the
     # 1M context of the default model. Real prints (even 800k-char ones) go in whole.
     text_budget_chars: int = 1_500_000
-    max_pdf_download_mb: int = 25
+    # Safety valve only, not a relevance rule: the body is buffered in memory and unpacked zip
+    # members are capped by the same number. Real prints reach 40 MB (druk 2865: 346 pages,
+    # text layer); a 25 MB cap silently skipped them in the text prefilter.
+    max_pdf_download_mb: int = 200
 
     # Telegram
     telegram_bot_token: str = ""
