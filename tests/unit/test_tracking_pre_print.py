@@ -4,6 +4,7 @@ import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import ApplicantType, BillStatus
+from tests.fakes import FakeTextExtractor
 from tests.harness import RPW, World, submission
 
 
@@ -143,3 +144,54 @@ def test_numbered_closed_and_non_bill_submissions_are_not_pre_print_bills() -> N
     report = w.run()
 
     assert (report.pre_print_discovered, report.discovered) == (0, 0)
+
+
+NEUTRAL_TITLE = "Poselski projekt ustawy o zmianie ustawy o podatku"
+FOREIGNER_TEXT = (
+    "Art. 1. W ustawie o cudzoziemcach wprowadza się zmiany. "
+    "Art. 2. Zezwolenie na pobyt czasowy wydaje wojewoda. " * 3
+)
+
+
+def test_print_of_a_title_miss_entry_goes_through_the_text_prefilter() -> None:
+    # The RPW entry has no PDF, so a title miss ends there; the print has one and must be scanned
+    # instead of inheriting the skip.
+    w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT))
+    w.gateway.submissions.append(submission(title=NEUTRAL_TITLE, description="zmiany podatkowe"))
+    w.run()
+    assert w.bill(RPW).status is BillStatus.SKIPPED_PREFILTER
+    w.gateway.submissions[0] = submission(
+        title=NEUTRAL_TITLE, description="zmiany podatkowe", print_number="3100"
+    )
+    w.add_bill("3100", NEUTRAL_TITLE)
+    w.touch("3100", dt.datetime(2026, 9, 8, 9, 0))
+    w.clock.advance(days=1)
+
+    linked = w.run()
+    after_link = w.bill("3100").status
+    w.clock.advance(days=1)
+    scanned = w.run()
+
+    assert (linked.linked, after_link) == (1, BillStatus.TEXT_PREFILTER_PENDING)
+    assert (scanned.text_prefilter_checked, scanned.analyzed, scanned.published) == (1, 1, 1)
+    bill, print_info = w.publisher.new_bills[0]
+    assert (bill.number, bill.status) == ("3100", BillStatus.ANALYZED)
+    assert print_info is not None and "text:cudzoziemcy" in bill.prefilter_hits
+    assert w.bill(RPW).status is BillStatus.LINKED
+
+
+def test_print_of_a_title_miss_entry_stays_skipped_without_the_text_prefilter() -> None:
+    w = World(text_prefilter=False, extractor=FakeTextExtractor(FOREIGNER_TEXT))
+    w.gateway.submissions.append(submission(title=NEUTRAL_TITLE, description="zmiany podatkowe"))
+    w.run()
+    w.gateway.submissions[0] = submission(
+        title=NEUTRAL_TITLE, description="zmiany podatkowe", print_number="3100"
+    )
+    w.add_bill("3100", NEUTRAL_TITLE)
+    w.touch("3100", dt.datetime(2026, 9, 8, 9, 0))
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.linked, w.bill("3100").status) == (1, BillStatus.SKIPPED_PREFILTER)
+    assert not any(c.startswith("download:") for c in w.gateway.calls)

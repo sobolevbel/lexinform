@@ -64,6 +64,7 @@ class StatusTrackingService:
         agenda_watch: bool = True,
         rcl_reader: RclProjectReader | None = None,
         local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
+        text_prefilter: bool = True,
         workers: int = 1,
     ) -> None:
         self._gateway = gateway
@@ -100,6 +101,7 @@ class StatusTrackingService:
             self._enricher,
             channel_id=channel_id,
             analysis=analysis,
+            text_prefilter=text_prefilter,
         )
         self._pre_print = PrePrintReconciler(
             gateway,

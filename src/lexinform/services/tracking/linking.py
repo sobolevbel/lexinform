@@ -9,6 +9,7 @@ import logging
 
 from lexinform.models import (
     Bill,
+    BillStatus,
     Publication,
     PublicationKind,
     PublicationStatus,
@@ -37,6 +38,7 @@ class Linker:
         *,
         channel_id: str,
         analysis: AnalysisService | None,
+        text_prefilter: bool = True,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -45,7 +47,16 @@ class Linker:
         self._enricher = enricher
         self._channel_id = channel_id
         self._analysis = analysis
+        self._text_prefilter = text_prefilter
         self._texts = SejmTextSource(gateway)
+
+    def _status_of_print(self, pre: Bill) -> BillStatus:
+        """The print copies the entry's status, except a title miss: an RPW entry has no text
+        to scan, the print has, so it goes through the text prefilter instead of inheriting
+        the skip."""
+        if pre.status is BillStatus.SKIPPED_PREFILTER and self._text_prefilter:
+            return BillStatus.TEXT_PREFILTER_PENDING
+        return pre.status
 
     def link(self, pre: Bill, print_number: str, result: TrackingResult, *, publish: bool) -> None:
         """Continue `pre` under the print, in the same thread."""
@@ -55,7 +66,12 @@ class Linker:
         self._repo.save_stages(
             pre.term, print_number, detail.stages, stage_fingerprint(detail.stages)
         )
-        self._repo.set_status(pre.term, print_number, pre.status, prefilter_hits=pre.prefilter_hits)
+        status = self._status_of_print(pre)
+        self._repo.set_status(pre.term, print_number, status, prefilter_hits=pre.prefilter_hits)
+        if status is not pre.status:
+            log.info(
+                "druk %s: %s was a title miss; its text is scanned next", print_number, pre.number
+            )
         if pre.analysis is not None:
             self._repo.save_analysis(pre.term, print_number, pre.analysis)
         if pre.submission is not None:

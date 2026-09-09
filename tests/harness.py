@@ -318,6 +318,7 @@ class World:
             analysis=self.analysis,
             eli=self.gateway,
             rcl_reader=rcl_reader,
+            text_prefilter=text_prefilter,
             workers=workers,
         )
         self.pipeline = DailyPipeline(

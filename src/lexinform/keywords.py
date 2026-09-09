@@ -54,9 +54,13 @@ KEYWORD_PATTERNS: tuple[KeywordPattern, ...] = (
 # fmt: on
 
 # Authorities and places that turn up in bills about customs, policing or inspections without the
-# bill touching foreigners at all (a food-quality bill lists Straż Graniczna among inspectors).
-# Inside a full text they count only next to a strong pattern.
-WEAK_PATTERNS: frozenset[str] = frozenset({"straz_graniczna", "granica_panstwowa", "schengen"})
+# bill touching foreigners at all (a food-quality bill lists Straż Graniczna among inspectors),
+# and "legalizacja", which in Polish law mostly means excise stamps, metrology or unpermitted
+# buildings (an excise bill said it 140 times); a bill legalising someone's stay says
+# "cudzoziemiec" too. Inside a full text they count only next to a strong pattern.
+WEAK_PATTERNS: frozenset[str] = frozenset(
+    {"straz_graniczna", "granica_panstwowa", "schengen", "legalizacja"}
+)
 
 
 _NBSP = " "

@@ -84,6 +84,13 @@ def test_weak_patterns_never_decide_alone() -> None:
     assert accept_text_hits(
         {"straz_graniczna": 2, "cudzoziemcy": 1}, min_distinct=2, min_occurrences=3
     )
+    # druk 2839 (excise) said "legalizacja" 140 times about excise stamps; crypto-asset bills
+    # combine it with Straż Graniczna. A stay is legalised for a "cudzoziemiec", named as well.
+    assert not accept_text_hits({"legalizacja": 140}, min_distinct=2, min_occurrences=3)
+    assert not accept_text_hits(
+        {"legalizacja": 3, "straz_graniczna": 2}, min_distinct=2, min_occurrences=3
+    )
+    assert accept_text_hits({"legalizacja": 2, "cudzoziemcy": 1}, min_distinct=2, min_occurrences=3)
 
 
 def test_spans_point_at_the_hits() -> None:

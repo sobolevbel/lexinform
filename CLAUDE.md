@@ -83,7 +83,10 @@ Invariants worth keeping:
 - Pre-print bills (`RPW/…`) and RCL projects (`RCL/{id}`) have no Sejm process
   (`Bill.has_process` is false): skip `get_process`/`get_print` for them; when the print appears,
   the print inherits the card (`tracking/linking.py::Linker`: `new_bill` row aliased with the same
-  `message_id`). The RPW reconciler finds the print in `/bills`; for RCL, Sejm discovery notices a
+  `message_id`). The print copies the entry's status, except `skipped_prefilter`: an RPW entry has
+  no text to scan, so its print goes to `text_prefilter_pending` instead of inheriting the skip
+  (otherwise every non-government bill with a neutral title would bypass the text stage). The RPW
+  reconciler finds the print in `/bills`; for RCL, Sejm discovery notices a
   druk whose `rclNum` names a followed project (stored RM number, else
   `getIdFromLegislacja?number=…`), stores the druk number on the RCL row and the RCL watcher links.
 - **RCL rows are refreshed by the RCL watcher only.** RCL discovery reads a project once (timeline
@@ -229,7 +232,7 @@ rejects `thinking: adaptive`; a classification does not need it).
 ## Product decisions already taken
 
 Default model `claude-opus-5`, `min_score` 3, text prefilter threshold 2 distinct patterns or 3
-hits (weak patterns such as Straż Graniczna never decide alone), triage of texts ≥ 20k chars on
+hits (weak patterns such as Straż Graniczna or "legalizacja" never decide alone), triage of texts ≥ 20k chars on
 `claude-sonnet-5` (all of Haiku 4.5 / Sonnet 5 / Opus 5 judged the four test bills correctly;
 Haiku ignored the output language, Sonnet costs ~1 cent per bill), club breakdown on, Dz.U. notice as a separate reply, in-force reminder repeats
 the summary. The owner does **not** want a "probability of passing" estimate. A new `PROMPT_VERSION` does

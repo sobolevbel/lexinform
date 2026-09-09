@@ -233,6 +233,7 @@ class Container:
                 rcl_reader=self.rcl_reader() if self.rcl is not None else None,
                 max_publish_attempts=self.settings.max_publish_attempts,
                 club_breakdown=self.settings.voting_club_breakdown,
+                text_prefilter=self.settings.text_prefilter_enabled,
                 workers=self.settings.sejm_concurrency,
             ),
             self.clock,
