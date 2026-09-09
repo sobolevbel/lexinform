@@ -57,3 +57,4 @@ jobs:
           echo "title: $(grep -o '<title>[^<]*' /tmp/p.html | head -1)"
           curl -sS -o /dev/null -w "other host via proxy (should be denied): http=%{http_code}\n" \
             --max-time 30 -x "$PROXY" https://api.sejm.gov.pl/sejm/term
+          true  # the denied CONNECT above makes curl exit 56 by design; the step is informational
