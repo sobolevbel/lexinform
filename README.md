@@ -55,11 +55,21 @@ Senate committee; when there is nothing to do, the line says so and names the ne
 
 Replies cover: a reminder three days before a public consultation closes, the notice that the
 opinions received were published, a committee sitting or a Sejm sitting whose agenda names the
-bill (date, time, room, agenda item, live stream), new stages (committee referral with the
-committee's name, readings, votes with the per-club breakdown, Senate position, President's
-signature or veto), a fresh analysis with "what changed" when the bill's text changes, "published
-in Dziennik Ustaw" with the entry-into-force date, and a reminder on the day the act enters into
-force.
+bill (date, time, room, agenda item, live stream), a reminder before applications to a public
+hearing close, new stages (committee referral with the committee's name, the committee's report
+with its proposal, votes with the per-club breakdown, Senate position, President's signature or
+veto), a fresh analysis with "what changed" when the bill's text changes, a summary of what the
+Senate's or the second reading's amendments change (read from the Senate's resolution print or
+the committee's report on them), "published in Dziennik Ustaw" with the entry-into-force date,
+and a reminder on the day the act enters into force.
+
+Every update is named after its event ("Сейм принял закон", "Направлен в комиссии", "Сенат внёс
+поправки"), lists the new stages in the reader's language and repeats one sentence of the
+summary (the whole text only when the analysis changed). Stages that only frame an event
+("Skierowano do I czytania", "Praca w komisjach", the first reading itself, the hand-over to the
+President, the final "Uchwalono") get no post of their own: they are held and listed with the
+next substantive update. A closure that arrives together with the act in Dziennik Ustaw is told
+by the publication notice alone.
 
 Bills that have no print (druk) number yet (`RPW/…`, the consultation stage) are covered too, from
 their official description; when the print number is assigned the thread continues under the same

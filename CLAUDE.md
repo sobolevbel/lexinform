@@ -71,7 +71,21 @@ Invariants worth keeping:
   `consultationResults` flipped). If discovery overwrote the row first, the flip would be lost.
 - **"What comes next" is derived, not stored.** `models.next_phase(bill, today)` reads the
   top-level stages, submission and act; the formatter dates it from `bill.agenda` (upcoming
-  sittings, refreshed every run for every followed bill, not only the changed ones).
+  sittings, refreshed every run for every followed bill, not only the changed ones) or from the
+  constitutional deadline (`Phase.deadline`: Senate 30 days from the 3rd reading, President 21
+  from receiving the act; 14/7 for urgent bills).
+- **Not every stage is a post.** `models/events.py`: `is_substantive` separates the events a
+  reader cares about (referral, committee report, vote, Senate, President, hearing, a decided
+  reading) from the frame nodes (`Start`, `ReadingReferral`, `Reading`, `CommitteeWork`,
+  `ToPresident`, `End`); `has_news` decides whether a detected change is posted now. A change of
+  frame nodes only is *held*: its `status_changes` row exists (dedupe) with a `skipped`
+  `status_update` publication, and `Poster.status_update` prepends the held stages to the next
+  post and marks their rows `sent` with its message id. A closure detected in the same run as the
+  act's ELI is held too: the Dziennik Ustaw notice tells it. `update_event` names the header
+  after the newest stage (`Labels.update_headers`); the closure line is dropped when the header
+  already says it. Amendments (Senate resolution print, a committee report whose proposal is about
+  poprawki) are summarised by a third model call (`AnalysisService.summarize_amendments`) after
+  the change row exists and stored on it (`amendments_json`); a failure degrades to the bare event.
 - **Stage fingerprint** (`_stage_key`) drives updates. Fields added to `Stage` for rendering
   (`voting`, `position`, `committee_name`, `proposal`) must stay *out* of the key, or every tracked
   bill posts a spurious update after deploy.
@@ -113,11 +127,13 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v10 as of Sept 2026). `migrate()` reads `user_version` and
+`SCHEMA_VERSION = len(MIGRATIONS)` (v11 as of Sept 2026). `migrate()` reads `user_version` and
 runs every later script inside its own transaction, stamping the new version at the end, so a
 failed script leaves the database at the previous version. v8 (Sept 2026) added `rcl_json`, v9
 `bills.discontinued_at` and `status_changes.discontinued` (end of a Sejm term), v10
-`bills.linked_wykaz_number` (the print continuing an RCL thread keeps the wykaz number for the tag).
+`bills.linked_wykaz_number` (the print continuing an RCL thread keeps the wykaz number for the tag),
+v11 the unique index of hearing reminders (per bill, channel and hearing date) and
+`status_changes.amendments_json` (the model's summary of the Senate's or a committee's amendments).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) →
 `db restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing

@@ -273,8 +273,8 @@ practice.
 | RCL konsultacje publiczne (government bills, regulations) | anyone, in Polish | e-mail/ePUAP to the ministry, address in the consultation letter; lobbying declaration | not covered (roadmap) |
 | Sejm consultation of an RPW bill (non-government) | anyone | web form on sejm.gov.pl, 30 days | consultation line + link, reminder 3 days before, notice when opinions are published |
 | Committee work after the first reading | anyone; organisations formally via lobbying declaration | letter/e-mail to the committee secretariat, ideally before the sitting that handles the bill | "what you can do now" with the committee link; committee sitting agenda posts |
-| Wysłuchanie publiczne | anyone who applies ≥ 10 days before | application via the Sejm's system | `PublicHearing` label + action line |
-| Senate committee stage | anyone | opinion to the Senate committee | "what you can do now" names it while the Senate has the bill (no committee link: the Senate API is not used) |
+| Wysłuchanie publiczne | anyone who applies ≥ 10 days before | application via the Sejm's system | `PublicHearing` stage line and action line with the application deadline; reminder reply before it |
+| Senate committee stage | anyone | opinion to the Senate committee | "what you can do now" names it while the Senate has the bill, with the 30-day deadline as a date (no committee link: the Senate API is not used); the Senate's amendments are summarised from its resolution print |
 | Petition (any time, incl. after the act) | anyone (ustawa o petycjach), no citizenship requirement | petition to the Sejm (Komisja do Spraw Petycji), Senate or a ministry | not covered |
 | After entry into force | — | compliance; a new bill is needed to change it | in-force reminder |
 

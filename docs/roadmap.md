@@ -69,9 +69,23 @@ Still open:
   consultations of draft regulations (rozporządzenia, `typeId=10`), zgłoszenia lobbingowe.
   (Legacy `.doc` files are read since 2026-09-09 by `adapters/doc_text.py`, a piece-table
   parser over `olefile`, checked against four real RCL files.)
-- Senate amendments as text: the Senate's resolution print is not analysed (only the label
-  "Senate introduced amendments"); the "-A" committee reports are amendment tables, also skipped.
 - Ukrainian-language channel; weekly digest; static site from the state dump.
+- Committee e-mail addresses in "what you can do now" (the Sejm API has none; the committee page
+  is linked instead) and the Senate committee that received the act (the Senate API is not used).
+
+Done on 2026-09-10 (schema v11), after a reader's-eye review of the update posts:
+
+- Updates are named after their event (header from `models.update_event`), list the new stages in
+  the reader's language with the committee's proposal, and repeat one sentence of the summary
+  unless the analysis changed. Frame stages ("Skierowano", "Praca w komisjach", the first reading,
+  hand-over to the President, "Uchwalono") are held and told with the next substantive update; a
+  closure that comes with the act is left to the Dziennik Ustaw notice.
+- Amendments are read: the Senate's resolution print (`SenatePosition.printNumber`) and the
+  committee reports whose proposal is about poprawki ("-A", the report on the Senate's position)
+  get a model summary (`Amendments`: what changes, whether it touches foreigners), stored on the
+  status change and rendered as "Что меняют поправки Сената".
+- Public hearings: the application deadline (10 days before) on the stage line and in "what you
+  can do now"; a reminder reply before applications close. Senate and President deadlines as dates.
 
 The sections below are the original plan, kept for the rationale and the verified API facts.
 
