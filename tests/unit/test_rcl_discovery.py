@@ -30,7 +30,7 @@ def test_new_project_is_analysed_from_its_documents_and_published() -> None:
     assert (report.analyzed, report.published, report.discovered) == (1, 1, 0)
     ctx = w.llm.contexts[0]
     assert (ctx.number, ctx.text_source, ctx.source_kind) == (RCL, "documents", "rcl")
-    assert ctx.text.count("Art. 1.") >= 2  # bill + OSR (the uzasadnienie is a legacy .doc)
+    assert ctx.text.count("Art. 1.") >= 3  # bill + uzasadnienie (legacy .doc) + OSR
     bill, print_info = w.publisher.new_bills[0]
     assert bill.is_rcl and print_info is None
     assert bill.rcl is not None and bill.rcl.consultation is not None
@@ -83,7 +83,7 @@ def test_project_without_readable_text_is_analysed_from_its_description() -> Non
                 2,
                 "Uzgodnienia",
                 "active",
-                rcl_folder(1, "Projekt", rcl_document(1, "projekt.doc")),
+                rcl_folder(1, "Projekt", rcl_document(1, "projekt.rtf")),
             ),
         ),
     )
@@ -93,10 +93,7 @@ def test_project_without_readable_text_is_analysed_from_its_description() -> Non
 
     assert (report.analyzed, report.published) == (1, 1)
     assert w.llm.contexts[0].text_source == "metadata_only"
-    assert (
-        "не удалось прочитать (формат .doc)"
-        in MessageFormatter("ru").new_bill(w.bill(RCL), None).text
-    )
+    assert "не удалось прочитать —" in MessageFormatter("ru").new_bill(w.bill(RCL), None).text
 
 
 def test_title_miss_is_caught_by_the_text_prefilter() -> None:

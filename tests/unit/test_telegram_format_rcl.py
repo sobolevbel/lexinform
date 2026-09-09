@@ -71,7 +71,8 @@ def test_card_names_the_ministry_the_letter_deadline_and_both_ways_to_react() ->
     assert "Что дальше:</b> консультации публичные до 08.09.2026, затем opiniowanie" in text
     assert '">Проект на RCL</a> | <a href="' in text
     assert ">Текст проекта (DOCX)</a> | <a href=" in text and ">OSR</a> | <a href=" in text
-    assert ">Wykaz prac RM</a>" in text and "Uzasadnienie" not in text  # the .doc is unreadable
+    assert ">Uzasadnienie</a> | <a href=" in text  # the legacy .doc is readable too
+    assert ">Wykaz prac RM</a>" in text
     assert "#RCL_UC164" in text and "#RCL" in text and "#консультации" in text
 
 
@@ -110,7 +111,7 @@ def test_card_from_metadata_only_explains_the_unreadable_text() -> None:
         MessageFormatter("ru").new_bill(rcl_bill(project, text_source="metadata_only"), None).text
     )
 
-    assert "Текст проекта на RCL не удалось прочитать (формат .doc)" in text
+    assert "Текст проекта на RCL не удалось прочитать — анализ по названию" in text
     assert "Текст проекта" not in text.split("🔗")[1]  # no document links without documents
 
 

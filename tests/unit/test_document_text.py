@@ -1,10 +1,12 @@
-"""Word documents and the format-sniffing extractor."""
+"""Word documents (.docx and legacy .doc) and the format-sniffing extractor."""
 
 import io
 import zipfile
 
+from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.sections import PAGE_BREAK
+from tests.conftest import RCL_FIXTURES
 from tests.fakes import FakeTextExtractor
 
 _NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
@@ -45,9 +47,39 @@ def test_rendered_page_break_markers_separate_pages() -> None:
 
 
 def test_extractor_is_chosen_by_the_magic_bytes() -> None:
-    extractor = DocumentTextExtractor(FakeTextExtractor("from pdf"), FakeTextExtractor("from docx"))
+    extractor = DocumentTextExtractor(
+        FakeTextExtractor("from pdf"), FakeTextExtractor("from docx"), FakeTextExtractor("from doc")
+    )
 
     assert extractor.extract(b"%PDF-1.7 ...") == "from pdf"
     assert extractor.extract(b"\n\n%PDF-1.4 with a preamble") == "from pdf"
     assert extractor.extract(b"PK\x03\x04 zip") == "from docx"
-    assert extractor.extract(b"\xd0\xcf\x11\xe0 legacy .doc") == ""
+    assert extractor.extract(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1 OLE container") == "from doc"
+    assert extractor.extract(b"{\\rtf1 not supported}") == ""
+
+
+# --------------------------------------------------------------------------- legacy .doc
+
+
+def test_legacy_doc_yields_its_paragraphs_in_order_with_polish_letters_intact() -> None:
+    # The uzasadnienie of project UC164 as published on RCL (Word 97-2003, mixed 8-bit and
+    # UTF-16 pieces in the piece table).
+    data = (RCL_FIXTURES / "uzasadnienie_uc164.doc").read_bytes()
+
+    text = DocTextExtractor().extract(data)
+
+    assert text.startswith("UZASADNIENIE\n\n1. Potrzeba i cel wydania projektowanej ustawy\n")
+    assert "Systemie Informacyjnym Schengen oraz Wizowym Systemie Informacyjnym" in text
+    assert "zwanej dalej „ustawą o SIS i VIS”" in text  # UTF-16 piece: Polish letters and quotes
+    assert text.endswith("Regulamin pracy Rady Ministrów.")
+    assert 25_000 < len(text) < 30_000
+    assert not any(ord(ch) < 32 and ch not in "\n\t\f" for ch in text)  # no Word control chars
+    assert "�" not in text
+
+
+def test_damaged_or_foreign_ole_files_yield_no_text_instead_of_an_error() -> None:
+    data = (RCL_FIXTURES / "uzasadnienie_uc164.doc").read_bytes()
+
+    assert DocTextExtractor().extract(data[:4096]) == ""  # truncated: streams missing
+    assert DocTextExtractor().extract(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\0" * 600) == ""
+    assert DocTextExtractor().extract(b"not even an OLE file") == ""

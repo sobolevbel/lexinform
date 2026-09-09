@@ -1,7 +1,7 @@
 """Text of Word documents, and the extractor that picks PDF or Word by the file's magic bytes.
 
-RCL publishes bills as .docx/.docm about as often as PDF (and sometimes as legacy .doc, which
-has no extractor here and yields nothing).
+RCL publishes bills as .docx/.docm about as often as PDF, and about a tenth of its files as
+legacy .doc (see `doc_text.py`).
 """
 
 import io
@@ -65,12 +65,17 @@ def _paragraph(p: ET.Element) -> str:
     return "".join(parts)
 
 
-class DocumentTextExtractor:
-    """Routes a file to the PDF or the Word extractor by its magic bytes; anything else is empty."""
+_OLE_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"  # OLE2 container: legacy .doc (also .xls, .ppt)
 
-    def __init__(self, pdf: TextExtractor, docx: TextExtractor) -> None:
+
+class DocumentTextExtractor:
+    """Routes a file to the PDF, the Word (.docx) or the legacy Word (.doc) extractor by its magic
+    bytes; anything else is empty."""
+
+    def __init__(self, pdf: TextExtractor, docx: TextExtractor, doc: TextExtractor) -> None:
         self._pdf = pdf
         self._docx = docx
+        self._doc = doc
 
     def extract(self, data: bytes) -> str:
         head = data[:1024]
@@ -78,5 +83,7 @@ class DocumentTextExtractor:
             return self._pdf.extract(data)
         if head.startswith(b"PK\x03\x04"):
             return self._docx.extract(data)
+        if head.startswith(_OLE_MAGIC):
+            return self._doc.extract(data)
         log.warning("document of unknown format (starts with %r); no text", data[:8])
         return ""

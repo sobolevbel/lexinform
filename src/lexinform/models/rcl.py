@@ -19,7 +19,7 @@ from lexinform.models.sejm import ProcessSummary, Stage
 
 RCL_BASE_URL = "https://legislacja.rcl.gov.pl"
 RCL_STAGE_TYPE = "RclStage"  # `Stage.stage_type` of an RCL stage stored in `Bill.stages`
-READABLE_EXTENSIONS = frozenset({"pdf", "docx", "docm"})  # legacy .doc has no extractor
+READABLE_EXTENSIONS = frozenset({"pdf", "docx", "docm", "doc"})
 OPEN_STATUS = "otwarty"
 
 StageState = Literal["not_started", "reached", "active"]

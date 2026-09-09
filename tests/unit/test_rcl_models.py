@@ -73,7 +73,7 @@ def test_the_latest_stage_with_a_project_folder_wins() -> None:
 
 
 def test_no_readable_document_means_no_text() -> None:
-    folder = RclFolder(id=10, name="Projekt", documents=(_doc(1, "projekt.doc"),))
+    folder = RclFolder(id=10, name="Projekt", documents=(_doc(1, "projekt.rtf"),))
 
     assert _project(_stage(3, "Konsultacje publiczne", "reached", folder)).text_documents() == {}
 

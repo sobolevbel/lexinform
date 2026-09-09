@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 import anthropic
 
 from lexinform.adapters.console import ConsolePublisher, ConsoleRunNotifier
+from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.pdf_text import PypdfTextExtractor
@@ -82,7 +83,9 @@ class Container:
                 downloaders[_host(self.settings.rcl_base_url)] = self.rcl.download
             self._loader = TextLoader(
                 downloaders,
-                DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor()),
+                DocumentTextExtractor(
+                    PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor()
+                ),
                 max_bytes=self.settings.max_pdf_download_mb * 1024 * 1024,
             )
         return self._loader

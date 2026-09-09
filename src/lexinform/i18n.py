@@ -105,7 +105,7 @@ class Labels:
     rcl_wykaz: str  # "number in the wykaz prac legislacyjnych RM"
     rcl_published: str  # "published on RCL" (date follows)
     rcl_no_stage: str  # stage line when no stage has been reached yet
-    rcl_metadata_note: str  # the text could not be read (e.g. legacy .doc): metadata only
+    rcl_metadata_note: str  # the text could not be read (bad file): metadata only
     consultation_letter: str  # link text: the consultation letter
     consultation_days_from_letter: str  # "{days} days from the letter"
     consultation_deadline_in_letter: str  # deadline could not be read: "see the letter"
@@ -239,7 +239,7 @@ RU = Labels(
     rcl_published="Опубликован на RCL",
     rcl_no_stage="проект опубликован на RCL, работа над ним ещё не началась",
     rcl_metadata_note=(
-        "Текст проекта на RCL не удалось прочитать (формат .doc) — анализ по названию и описанию."
+        "Текст проекта на RCL не удалось прочитать — анализ по названию и описанию."
     ),
     consultation_letter="письмо о консультациях",
     consultation_days_from_letter="{days} дн. с даты письма",
@@ -459,9 +459,7 @@ EN = Labels(
     rcl_wykaz="wykaz prac RM number",
     rcl_published="Published on RCL",
     rcl_no_stage="published on RCL, work has not started yet",
-    rcl_metadata_note=(
-        "The text on RCL could not be read (.doc format) — analysed from title and description."
-    ),
+    rcl_metadata_note=("The text on RCL could not be read — analysed from title and description."),
     consultation_letter="consultation letter",
     consultation_days_from_letter="{days} days from the letter",
     consultation_deadline_in_letter="deadline stated in the letter",

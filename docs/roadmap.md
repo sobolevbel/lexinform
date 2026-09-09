@@ -65,9 +65,10 @@ Done on 2026-09-09/10 (schema v8):
 
 Still open:
 
-- RCL leftovers: text of legacy `.doc` files (needs an external converter), the wykaz prac
-  legislacyjnych on gov.pl as an even earlier signal, consultations of draft regulations
-  (rozporządzenia, `typeId=10`), zgłoszenia lobbingowe.
+- RCL leftovers: the wykaz prac legislacyjnych on gov.pl as an even earlier signal,
+  consultations of draft regulations (rozporządzenia, `typeId=10`), zgłoszenia lobbingowe.
+  (Legacy `.doc` files are read since 2026-09-09 by `adapters/doc_text.py`, a piece-table
+  parser over `olefile`, checked against four real RCL files.)
 - Senate amendments as text: the Senate's resolution print is not analysed (only the label
   "Senate introduced amendments"); the "-A" committee reports are amendment tables, also skipped.
 - Ukrainian-language channel; weekly digest; static site from the state dump.
