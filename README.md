@@ -60,19 +60,27 @@ force.
 
 Bills that have no print (druk) number yet (`RPW/…`, the consultation stage) are covered too, from
 their official description; when the print number is assigned the thread continues under the same
-card. A second, technical channel can receive a report after every run (counters, tokens, errors).
+card. Government bills are caught even earlier, on legislacja.rcl.gov.pl (Rządowy Proces
+Legislacyjny), where the ministry consults them months before the Sejm: the card names the
+deadline and the e-mail from the consultation letter, the RCL comment form, and follows the project
+through the committees of the Council of Ministers until the druk appears and takes over the
+thread. A second, technical channel can receive a report after every run (counters, tokens,
+errors).
 
 ## How it works
 
 ```
-/processes + /bills ─► keyword prefilter (title, then PDF text) ─► LLM (structured output) ─► SQLite
+/processes + /bills + RCL ─► keyword prefilter (title, then text) ─► LLM (structured output) ─► SQLite
 Telegram ◄── cards (once per bill) ◄── publish ◄──┘        └─► track: stage diff, votes, ELI act
 ```
 
-1. **Discover** bills modified since the last run (`/processes`, with one day of overlap) and bills
-   submitted without a print number (`/bills`).
-2. **Prefilter** by Polish word stems on title and description; misses get their print PDF scanned
-   with the same patterns (accepted on two distinct topics or three hits).
+1. **Discover** bills modified since the last run (`/processes`, with one day of overlap), bills
+   submitted without a print number (`/bills`) and government projects modified on RCL (the HTML
+   list sorted by modification date; one project page per new project, its stage catalogs only
+   for candidates).
+2. **Prefilter** by Polish word stems on title and description (for RCL: title, hasła and
+   działy); misses get their text scanned with the same patterns (accepted on two distinct topics
+   or three hits).
 3. **Analyse** the bill with Claude through a structured-output schema (relevance, score,
    category, summary, key changes, affected groups, practical impact, effective date). The print
    is trimmed first: the bill, its justification and the core of the regulatory impact assessment
@@ -88,7 +96,10 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
    triggers the Dziennik Ustaw notice and, later, the entry-into-force reminder. Every followed
    bill is also matched against the agendas of its committees' sittings and of the current Sejm
    sitting (`/committees/{code}/sittings`, `/proceedings/{n}`): a new (bill, sitting) pair is one
-   reply, and the dates feed the "what comes next" line.
+   reply, and the dates feed the "what comes next" line. Followed RCL projects are re-read when
+   the list says they changed: a reached stage, a consultation that opened, published opinions, a
+   new text version (re-analysed) and the hand-over to the Sejm each make one reply; the druk
+   whose `rclNum` names a followed project inherits its card.
 6. **Report** to the technical channel when `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` is set.
 
 Each phase is isolated: an outage of the Sejm API, the LLM or Telegram stops that phase with a
@@ -193,15 +204,19 @@ The rubric is in `src/lexinform/adapters/llm_prompts.py`; `PROMPT_VERSION` is st
 
 ```
 src/lexinform/
-  models/, ports.py          domain models (enums, sejm, analysis, bill, report), Protocols
+  models/, ports.py          domain models (enums, sejm, rcl, analysis, bill, report), Protocols
   keywords.py, authors.py    keyword prefilter, cover-letter parsing
+  rcl_letters.py             deadline and e-mail out of an RCL consultation letter
   sections.py, pricing.py    print structure (trimming, excerpts), model list prices
   concurrency.py             fan_out: parallel network steps, sequential writes
   i18n.py, settings.py       labels per language, pydantic-settings
-  adapters/                  sejm_api (+ ELI), pdf_text, llm_anthropic (+ llm_prompts),
-                             telegram (+ telegram_format), sqlite_repo, console
-  services/                  discovery, text_prefilter, analysis, publishing, pipeline,
-                             tracking/ (stages, pre-print links, acts, reminders, posting)
+  adapters/                  sejm_api (+ ELI), rcl_html (scraper), pdf_text, document_text (Word,
+                             format sniffing), llm_anthropic (+ llm_prompts), telegram
+                             (+ telegram_format), sqlite_repo, console
+  services/                  discovery, rcl_discovery (+ rcl_projects), sources (where a bill's
+                             text comes from), documents (loader), text_prefilter, analysis,
+                             signatories, publishing, pipeline, tracking/ (stages, pre-print and
+                             RCL links, rcl watcher, acts, reminders, agenda, posting)
   container.py, cli.py       composition root, typer commands
 tests/                       fakes.py (ports in memory), harness.py (the pipeline on fakes),
                              unit/ on fakes + recorded API fixtures; `-m integration` hits the live API

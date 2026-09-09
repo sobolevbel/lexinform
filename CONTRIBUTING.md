@@ -53,8 +53,14 @@ git show origin/state:lexinform.sql > /tmp/state.sql
 export LEXINFORM_DB_PATH=/tmp/state.db
 uv run lexinform db init && uv run lexinform db restore /tmp/state.sql
 uv run lexinform show 2699                       # sanity check: migrated, data readable
+uv run lexinform show RCL/12414100               # an RCL project: stages, letter deadline, texts
 uv run lexinform run --dry-run --since 2026-09-08 --max-analyze 0 --full-track
 ```
+
+An RCL page takes ~10 s to render. A run reads one page per new project (plus its catalogs for a
+candidate, one catalog for a title miss) and only the changed catalogs of followed projects, six
+at a time: a normal run spends seconds on RCL, a backlog of a few days about two minutes. Pass
+`--no-rcl` to leave RCL out of a run.
 
 The dump is upgraded to the current schema on restore, so this is also how a migration is tested
 against real rows before it ships.
@@ -67,15 +73,20 @@ models/  → ports.py → adapters/ → services/ → container.py → cli.py
 
 - `models/`: pydantic models and pure helpers (`next_phase`, `stage_fingerprint`,
   `latest_text_document`, URL builders). No I/O.
-- `ports.py`: the Protocols services depend on (`SejmGateway`, `EliGateway`, `LlmAnalyzer`,
-  `Publisher`, `BillRepository`, `Clock`, `TextExtractor`, `RunNotifier`).
+- `ports.py`: the Protocols services depend on (`SejmGateway`, `RclGateway`, `ProjectResolver`,
+  `EliGateway`, `LlmAnalyzer`, `Publisher`, `BillRepository`, `Clock`, `TextExtractor`,
+  `Downloader`, `TextSource`, `AuthorsResolver`, `RunNotifier`).
 - `adapters/`: one implementation per external system: `sejm_api` (also the ELI API),
-  `pdf_text`, `llm_anthropic` + `llm_prompts`, `telegram` + `telegram_format`, `sqlite_repo`,
-  `console` (the dry-run publisher).
-- `services/`: the phases (`discovery`, `text_prefilter`, `analysis`, `publishing`, `pipeline`)
-  and `tracking/` (`service` loop, `pre_print`, `acts`, `consultations`, `agenda`, `posting`,
+  `rcl_html` (the legislacja.rcl.gov.pl scraper, BeautifulSoup), `pdf_text`, `document_text`
+  (Word files, format sniffing), `llm_anthropic` + `llm_prompts`, `telegram` +
+  `telegram_format`, `sqlite_repo`, `console` (the dry-run publisher).
+- `services/`: the phases (`discovery`, `rcl_discovery` + `rcl_projects`, `text_prefilter`,
+  `analysis`, `publishing`, `pipeline`), the seams between sources and the generic services
+  (`sources`: `SejmTextSource`, `RclTextSource`, `MetadataOnlySource` behind `TextSources`;
+  `documents`: `TextLoader` routing downloads by host; `signatories`), and `tracking/`
+  (`service` loop, `pre_print`, `rcl`, `linking`, `acts`, `consultations`, `agenda`, `posting`,
   `stages`). Services import ports, models and the pure modules (`keywords`, `sections`,
-  `agenda`, `authors`, `concurrency`), never adapters.
+  `agenda`, `authors`, `rcl_letters`, `concurrency`), never adapters.
 - `container.py` wires adapters into services from `Settings`; `cli.py` is typer.
 
 Rules that keep this honest:
@@ -88,6 +99,10 @@ Rules that keep this honest:
   subclass when the whole system is down; anything else costs the bill one attempt.
 - **Pending before send.** Every Telegram post has a `publications` row first (see `Poster`).
 - **Time comes from the `Clock`.** No `datetime.now()` in services; tests use `FixedClock`.
+- **A source stays behind its seam.** The analysis and the text prefilter ask a `TextSource`
+  where a bill's text is; the formatter and `next_phase` read `Bill.consultation` and `Bill.rcl`,
+  never `submission.*` for consultation dates. Skip logic uses `Bill.has_process` (false for
+  `RPW/` and `RCL/` rows); `is_pre_print` means the RPW entry only, `is_rcl` the RCL project.
 
 ## Tests
 
@@ -136,6 +151,16 @@ curl -s 'https://api.sejm.gov.pl/sejm/term10/committees/ASW/sittings' | python3 
 curl -s 'https://api.sejm.gov.pl/sejm/term10/proceedings/65' -o proceeding_65.json
 ```
 
+RCL pages (`tests/fixtures/rcl/`) are saved HTML with the `<script>` blocks removed; the list is
+trimmed to three rows and the pager. The letters are the extracted text of two real pisma:
+
+```bash
+cd tests/fixtures/rcl
+curl -s 'https://legislacja.rcl.gov.pl/projekt/12414100' | sed -E 's#<script.*</script>##g' > projekt_12414100.html
+curl -s 'https://legislacja.rcl.gov.pl/projekt/12414100/katalog/13223895' > katalog_13223895.html
+curl -s 'https://legislacja.rcl.gov.pl/projekt/12414050' > projekt_12414050.html   # stage 14, RM number
+```
+
 ## Database schema and migrations
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
@@ -173,6 +198,9 @@ history of the `state` branch.
 | React to a new Sejm stage type | `stage_type_labels` in `i18n.py` for the label; `models/bill.py::next_phase` if it changes what comes next; keep `_stage_key` in `models/sejm.py` unchanged unless every followed bill should post an update. |
 | Add a setting | `settings.py` (with the `LEXINFORM_` prefix), `container.py`, the table in `README.md`, `.env.example` if users should see it. |
 | Add an API endpoint | `SejmGateway` port, `adapters/sejm_api.py` (+ parser), `tests/fakes.py`, a fixture and a test in `test_sejm_api.py`. |
+| Read something new from an RCL page | `adapters/rcl_html.py` (a parser per page; CSS selectors, no regexes on markup; raise `RclPageError` when a structural element is missing, tolerate missing details), the model in `models/rcl.py`, a saved page in `tests/fixtures/rcl/`, a test in `test_rcl_html.py`. |
+| Change what an RCL event posts | `services/tracking/rcl.py` (detection), `models/rcl.py::rcl_fingerprint` (what counts as a change), `telegram_format.py` + `i18n.py` (words), `test_tracking_rcl.py` and `test_telegram_format_rcl.py`. |
+| Add a text format | `adapters/document_text.py` (`DocumentTextExtractor` picks by magic bytes), a test in `test_document_text.py`; `models/rcl.py::READABLE_EXTENSIONS` if RCL publishes it. |
 
 ## Deploy and operations
 

@@ -75,9 +75,12 @@ for large codifications.
    Samorządu Terytorialnego, KRS, Sąd Najwyższy, GIODO/UODO, NBP, RCL itself…) and
    **konsultacje publiczne** run in parallel. The consultation letter (pismo kierujące do
    konsultacji publicznych) names the deadline and the address for comments; RCL's procedure
-   description gives 21 days as the minimum for a bill, shorter terms need a justification.
-   Anyone may comment: organisations and individuals alike, in Polish, by e-mail/ePUAP to the
-   ministry. There is no form on RCL.
+   description gives 21 days as the minimum for a bill, shorter terms need a justification; the
+   letters observed in 2026 give 7–14 days "od dnia otrzymania niniejszego pisma" (30 for the
+   social partners), i.e. relative to the letter, whose date may be replaced by an electronic
+   time stamp. Anyone may comment: organisations and individuals alike, in Polish, by e-mail to
+   the address in the letter (also in the OSR). Every project page also has a comment form
+   (`/projekt/{id}/komentarz`, name, e-mail, text, captcha) that forwards to the ministry.
 4. **Raport z konsultacji**: the ministry lists the comments and says what it accepted and why
    not. Separately, anyone may file a **zgłoszenie zainteresowania pracami nad projektem** under
    the lobbying act; these are published on the project page ("zgłoszenia lobbingowe").
@@ -86,9 +89,12 @@ for large codifications.
    quality); for technical regulations an EU notification; adoption by the **Rada Ministrów**.
 6. The Prime Minister sends the bill to the Marszałek Sejmu. From here it is a Sejm process.
 
-Data: RCL has no API or RSS (both answer "Request Rejected"); the HTML list
-(`/lista?typeId=2`, params `pNumber`, `pSize`) and project pages are readable. `/processes` gives
-`rclNum` and `rclLink`, so a Sejm print can be joined to its RCL project after the fact.
+Data: RCL has no API or RSS (both answer "Request Rejected", as does any unknown query
+parameter); the HTML list (`/lista?typeId=2`, sortable by `modifiedDate`, params `pNumber`,
+`pSize` 10/50/100), the project pages and the stage catalogs are readable by a script, at ~10 s
+per page. Documents come as DOCX/DOCM, PDF and sometimes legacy DOC. `/processes` gives `rclNum`
+(`RM-0610-139-26`) and `rclLink` (`getIdFromLegislacja?number=…`, a redirect to the project), so
+a Sejm print is joined to its RCL project; lexinform follows government projects from RCL on.
 Regulations (rozporządzenia) follow the same RCL path and never reach the Sejm (§8).
 
 ## 3. Submission to the Sejm and the print number

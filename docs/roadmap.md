@@ -40,16 +40,34 @@ Done on 2026-09-09 (schema v7):
   `consultationResults`, one reply links the same page. Discovery no longer refreshes known
   `/bills` rows (tracking does, comparing new with stored).
 
-Still open:
+Done on 2026-09-09/10 (schema v8):
 
 - **Government bills before the Sejm (RCL).** 541 of the 1279 entries in `/bills` of the 10th
   term are government bills and none of them has a Sejm consultation: the government consults at
-  the RCL stage (legislacja.gov.pl, "Konsultacje publiczne", ≥ 21 days per the Regulamin pracy
-  Rady Ministrów), months before the print. No API, no RSS (`/rss` and `/api/*` answer "Request
-  Rejected"); the HTML project pages open (`/projekt/{id}`, list at `/lista?typeId=2` with
-  `pNumber`/`pSize`) and carry the stage list, dates and keywords. `/processes` gives `rclNum` and
-  `rclLink`, so an RCL project can be joined to its print later. Needs a scraper adapter and its
-  own discovery; the analysis path can be reused (uzasadnienie + OSR are on RCL too).
+  the RCL stage, months before the print. `legislacja.rcl.gov.pl` has no API or RSS, so
+  `adapters/rcl_html.py` scrapes it (BeautifulSoup): the list of bills sorted by modification date
+  (`/lista?typeId=2&sKey=modifiedDate&sOrder=desc&pSize=100&pNumber=N`), the project page
+  (timeline of up to 14 stages with states, metadata, hasła, działy, the `RM-…` number once the
+  bill went to the Sejm) and the stage catalogs (`/projekt/{id}/katalog/{stageId}`: folders
+  "Projekt", "Pisma kierujące…", "Stanowiska zgłoszone…", "Odniesienie się wnioskodawcy…" with
+  their files). Projects are `bills` rows `RCL/{id}` with the project in `rcl_json`; the card
+  analyses projekt + uzasadnienie + OSR (Word or PDF; legacy `.doc` cannot be read), names the
+  ministry, the wykaz number, the consultation deadline and e-mail read out of the letter
+  (`rcl_letters.py`: "w terminie N dni od dnia otrzymania", counted from the letter date or its
+  publication on RCL) and the RCL comment form; updates follow the stages, a consultation that
+  opened later, published opinions, new text versions (re-analysed) and the hand-over to the
+  Sejm. A druk whose `rclNum` names a followed project (looked up by the stored RM number or via
+  `getIdFromLegislacja?number=…`, which redirects to the project) inherits the card. Decided with
+  the owner: every relevant government project is followed, not only those with an open
+  consultation; the deadline is parsed deterministically, no LLM. Request budget: one page per
+  new project, catalogs only for candidates, one catalog for a title miss, changed catalogs only
+  when tracking; six projects at a time (a page takes ~10 s).
+
+Still open:
+
+- RCL leftovers: text of legacy `.doc` files (needs an external converter), the wykaz prac
+  legislacyjnych on gov.pl as an even earlier signal, consultations of draft regulations
+  (rozporządzenia, `typeId=10`), zgłoszenia lobbingowe.
 - Senate amendments as text: the Senate's resolution print is not analysed (only the label
   "Senate introduced amendments"); the "-A" committee reports are amendment tables, also skipped.
 - Ukrainian-language channel; weekly digest; static site from the state dump.

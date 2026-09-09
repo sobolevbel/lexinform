@@ -1,8 +1,9 @@
 # lexinform — notes for Claude Code
 
-Daily bot: finds Polish Sejm bills that affect foreigners, scores them 1–5 with an LLM, posts
-Russian cards to a Telegram channel and follows each bill until the act is in force. The point is
-not a chronicle but *timely action*: consultations, committee referrals, hearings, deadlines.
+Daily bot: finds Polish bills that affect foreigners (Sejm API, and legislacja.rcl.gov.pl for
+government projects still with the ministries), scores them 1–5 with an LLM, posts Russian cards
+to a Telegram channel and follows each bill until the act is in force. The point is not a
+chronicle but *timely action*: consultations, committee referrals, hearings, deadlines.
 Everything else in `README.md`; roadmap and verified API facts in `docs/roadmap.md`; the whole
 legislative process (RCL → Sejm → Senate → President → Dz.U.), its deadlines, the public's
 windows and the API stage vocabulary in `docs/legislative-process.md`.
@@ -23,16 +24,22 @@ windows and the API stage vocabulary in `docs/legislative-process.md`.
 
 ## Architecture in one breath
 
-`models/` (pydantic + pure helpers; `enums`, `sejm`, `analysis`, `bill` (incl. `next_phase`),
-`report`, all re-exported from `lexinform.models`) → `ports.py` (Protocols) → `adapters/` (Sejm
-API, ELI, PDF, Anthropic, Telegram, SQLite) → `services/` (discovery, text_prefilter, analysis,
-publishing, `tracking/` (service, pre_print, acts, consultations, agenda, posting, stages),
-pipeline) → `container.py` (manual wiring) → `cli.py` (typer). Services import only ports, models
-and the pure modules (`keywords`, `sections` incl. `TextBudget`, `agenda`, `authors`,
-`concurrency`), never adapters. Tests use fakes in `tests/fakes.py` and the `World` harness in
-`tests/harness.py` (arrange with `add_bill`/`set_stages`/`touch`, act with `run`, assert on the
-report, the publisher's records and `bill`/`publication`); HTTP adapters use
-`httpx2.MockTransport`. Tests follow arrange-act-assert and never touch private attributes.
+`models/` (pydantic + pure helpers; `enums`, `sejm`, `rcl`, `analysis`, `bill` (incl.
+`next_phase`, `ConsultationWindow`), `report`, all re-exported from `lexinform.models`) →
+`ports.py` (Protocols) → `adapters/` (Sejm API, ELI, RCL scraper `rcl_html`, PDF, Word +
+format sniffing `document_text`, Anthropic, Telegram, SQLite) → `services/` (discovery,
+rcl_discovery + rcl_projects, sources (`TextSources` routes a bill to `SejmTextSource`,
+`RclTextSource` or `MetadataOnlySource`), documents (`TextLoader`, downloads routed by host),
+text_prefilter, analysis, signatories, publishing, `tracking/` (service, pre_print, rcl, linking,
+acts, consultations, agenda, posting, stages), pipeline) → `container.py` (manual wiring) →
+`cli.py` (typer). Services import only ports, models and the pure modules (`keywords`, `sections`
+incl. `TextBudget`, `agenda`, `authors`, `rcl_letters`, `concurrency`), never adapters; the
+generic services (analysis, text prefilter, formatter, `next_phase`) never branch on the source:
+they read `Bill.has_process`, `Bill.consultation`, `Bill.rcl` and the `TextSource` port. Tests
+use fakes in `tests/fakes.py` and the `World` harness in `tests/harness.py` (arrange with
+`add_bill`/`add_rcl_project`/`set_stages`/`touch`, act with `run`, assert on the report, the
+publisher's records and `bill`/`publication`); HTTP adapters use `httpx2.MockTransport`. Tests
+follow arrange-act-assert and never touch private attributes.
 
 Invariants worth keeping:
 
@@ -56,8 +63,23 @@ Invariants worth keeping:
 - **Outages never burn per-bill attempts.** `ServiceUnavailableError` subclasses abort a phase
   and go to the log channel; everything else is a per-bill failure (3 attempts). Unknown model id
   and bad request parameters are fatal, "prompt too long" is per-bill.
-- Pre-print bills (`RPW/…`) have no process: skip `get_process`/`get_print` for them; when the
-  print appears, the print inherits the card (`new_bill` row aliased with the same `message_id`).
+- Pre-print bills (`RPW/…`) and RCL projects (`RCL/{id}`) have no Sejm process
+  (`Bill.has_process` is false): skip `get_process`/`get_print` for them; when the print appears,
+  the print inherits the card (`tracking/linking.py::Linker`: `new_bill` row aliased with the same
+  `message_id`). The RPW reconciler finds the print in `/bills`; for RCL, Sejm discovery notices a
+  druk whose `rclNum` names a followed project (stored RM number, else
+  `getIdFromLegislacja?number=…`), stores the druk number on the RCL row and the RCL watcher links.
+- **RCL rows are refreshed by the RCL watcher only.** RCL discovery reads a project once (timeline
+  + catalogs for a candidate, one catalog for a title miss) and afterwards only bumps
+  `change_date` from the list; `RclWatcher` re-reads the timeline and the catalogs whose "Data
+  ostatniej modyfikacji" moved, and `rcl_fingerprint` (stages reached, folders that got their
+  first files, the newest text, status, hand-over) decides whether there is an update. Folder
+  uploads alone are not news; published opinions are a separate `consultation_results` reply.
+  A page takes ~10 s: never add a request per project without a reason.
+- **RCL markup is parsed, not matched.** `adapters/rcl_html.py` uses CSS selectors; a missing
+  detail (date, folder, link) is tolerated, a missing structural element (timeline, table with
+  rows announced, every stage label) raises `RclPageError`, which the run report shows. The WAF's
+  "Request Rejected" page (HTTP 200) is `RclUnavailableError`.
 - **Parallelism only around the network.** `concurrency.fan_out` runs one network step (download,
   process lookup, model call) for many items; that step never touches the repository. Outcomes
   are consumed in the calling thread, in input order, and that is where every DB write happens.
@@ -67,9 +89,9 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v7 as of Sept 2026). `migrate()` reads `user_version` and
+`SCHEMA_VERSION = len(MIGRATIONS)` (v8 as of Sept 2026). `migrate()` reads `user_version` and
 runs every later script inside its own transaction, stamping the new version at the end, so a
-failed script leaves the database at the previous version.
+failed script leaves the database at the previous version. v8 (Sept 2026) added `rcl_json`.
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) →
 `db restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing
@@ -128,6 +150,33 @@ There is no downgrade. To roll back, revert the code and restore the previous du
 - pypdf needs `pypdf[fonts]` (fontTools) for CFF fonts, otherwise it logs a warning per font per
   page; its logger is capped at ERROR. Extraction is CPU-bound (~1 s per 100 pages).
 
+## RCL lessons (verified live, Sept 2026)
+
+- `legislacja.rcl.gov.pl` has no API/RSS; unknown query params (`pSize=all`, `modifiedDateFrom`)
+  and blocked clients get HTTP 200 with `<title>Request Rejected</title>`. Plain `curl` works.
+- List: `/lista?typeId=2&sKey=modifiedDate&sOrder=desc&pSize=100&pNumber=N` (2619 bills;
+  `pSize` 10/50/100); wykaz numbers come as `UC164`, `UD424`, `UD 247`, `UDER66`, `UPRO6`.
+- Project page: `div.rcl-title`, `div.info` rows (Wnioskodawca, Data utworzenia, Działy, Hasła,
+  Status `otwarty`, Numer z wykazu, EU note, Kadencja `X`), timeline `ul.cbp_tmtimeline li[id]`
+  with icon classes `cbp_tmicon_notstart` / `cbp_tmicon` (reached) / `cbp_tmicon_active`,
+  "Data ostatniej modyfikacji", optional "rozpoczęcie"/"zakończenie" (unreliable). Stage 14 links
+  `sejm.gov.pl/…?symbol=RPL&Id=RM-0610-139-26`. A quarter of the projects skip "Konsultacje
+  publiczne" (only uzgodnienia + opiniowanie); every stage republishes the text in its own
+  "Projekt" folder. ~10 s per page.
+- Stage catalog `/projekt/{id}/katalog/{stageId}`: `div.clearbox > ul > li.childdir` folders
+  ("Projekt", "Pisma kierujące…", "Stanowiska zgłoszone…", "Odniesienie się wnioskodawcy…"),
+  `li.doc > a[href=/docs//…/dokumentN.ext]`. Files: DOCX/DOCM ~55%, PDF ~35%, legacy DOC ~10%
+  (unreadable → metadata-only analysis). RCL's OSR is a separate Word form starting with "Nazwa
+  projektu"; point numbers are list formatting, so `sections._OSR_CUT_RE` accepts the heading
+  without "6.".
+- Consultation letters give a relative deadline ("w terminie 7/14 dni od dnia otrzymania
+  niniejszego pisma", 30 for social partners), often no date (electronic time stamp) and the
+  e-mail for comments ("na adres: …"). `rcl_letters.parse_letter` reads them; the deadline counts
+  from the letter date or the day the letter appeared on RCL. Every project also has a comment
+  form `/projekt/{id}/komentarz` (captcha).
+- Join: `/processes` `rclNum="RM-0610-81-26"`, `rclLink=…/getIdFromLegislacja?number=…` →
+  302 to `/projekt/{id}`.
+
 ## LLM cost model (Sept 2026)
 
 Opus 5 is $5/M input; output is ~1% of the bill. A government print is bill + uzasadnienie + OSR
@@ -150,5 +199,8 @@ the summary. The owner does **not** want a "probability of passing" estimate. A 
 **not** re-analyse or re-post bills already in the channel (decided 2026-09-08): old cards keep the
 analysis they were published with, only new texts trigger a re-analysis. Every card and update
 carries "what comes next" (dated by scheduled sittings) and "what you can do now" (decided
-2026-09-09); a rescheduled sitting is announced again as a new post. Open items are listed under
-"Still open" in `docs/roadmap.md`; the biggest is RCL (government consultations before the Sejm).
+2026-09-09); a rescheduled sitting is announced again as a new post. RCL (decided 2026-09-09):
+every relevant government project is followed, not only those with an open consultation; the
+consultation deadline and e-mail are parsed from the letter deterministically, no LLM; RCL cards
+tell readers to write in Polish and quote the wykaz number. Open items are listed under "Still
+open" in `docs/roadmap.md`.
