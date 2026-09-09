@@ -52,11 +52,11 @@ class TextPrefilterService:
         self._min_occurrences = min_occurrences
         self._workers = workers
 
-    def run(self, term: int, *, limit: int) -> TextPrefilterResult:
+    def run(self, *, limit: int) -> TextPrefilterResult:
         result = TextPrefilterResult()
         if limit <= 0:
             return result
-        pending = self._repo.list_by_status(term, [BillStatus.TEXT_PREFILTER_PENDING], limit=limit)
+        pending = self._repo.list_by_status([BillStatus.TEXT_PREFILTER_PENDING], limit=limit)
         for outcome in fan_out(pending, self._load, workers=self._workers):
             bill = outcome.item
             result.checked += 1

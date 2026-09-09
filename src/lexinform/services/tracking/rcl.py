@@ -53,10 +53,10 @@ class RclWatcher:
         self._texts = RclTextSource()
         self._workers = workers
 
-    def check(self, term: int, bills: list[Bill], result: TrackingResult, *, publish: bool) -> bool:
+    def check(self, bills: list[Bill], result: TrackingResult, *, publish: bool) -> bool:
         """Refresh the followed RCL projects among `bills` and post what changed; link the ones
         whose druk appeared. False when Telegram is down (RCL being down is only reported)."""
-        if not self._link_pending(term, result, publish=publish):
+        if not self._link_pending(result, publish=publish):
             return False
         followed = [b for b in bills if b.rcl is not None]
         for outcome in fan_out(followed, self._refresh, workers=self._workers):
@@ -86,9 +86,9 @@ class RclWatcher:
                 return False
         return True
 
-    def _link_pending(self, term: int, result: TrackingResult, *, publish: bool) -> bool:
+    def _link_pending(self, result: TrackingResult, *, publish: bool) -> bool:
         """Projects whose druk the Sejm discovery has seen: the print takes over the thread."""
-        for bill in self._repo.list_rcl_awaiting_link(term):
+        for bill in self._repo.list_rcl_awaiting_link():
             assert bill.rcl is not None and bill.rcl.print_number is not None
             try:
                 self._linker.link(bill, bill.rcl.print_number, result, publish=publish)

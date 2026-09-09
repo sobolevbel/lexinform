@@ -61,12 +61,12 @@ class ActWatcher:
         fresh = self._repo.get(bill.term, bill.number) or bill
         result.count_post(self._poster.act_published(fresh), "acts_published")
 
-    def remind_in_force(self, term: int, result: TrackingResult) -> None:
+    def remind_in_force(self, result: TrackingResult) -> None:
         """One reply on the day the act enters into force (Warsaw time)."""
         if not self._in_force_reminders:
             return
         today = self._clock.now().astimezone(self._local_tz).date()
-        for bill in self._repo.list_due_in_force(term, self._channel_id, today=today):
+        for bill in self._repo.list_due_in_force(self._channel_id, today=today):
             act = bill.act
             if act is None or act.entry_into_force is None:
                 continue

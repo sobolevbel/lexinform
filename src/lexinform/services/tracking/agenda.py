@@ -52,21 +52,45 @@ class AgendaWatcher:
         self._channel_id = channel_id
         self._local_tz = local_tz
 
-    def check(self, term: int, bills: list[Bill], result: TrackingResult, *, publish: bool) -> bool:
-        """Refresh the upcoming sittings of every bill and post the new ones. False on an outage."""
+    def check(self, bills: list[Bill], result: TrackingResult, *, publish: bool) -> bool:
+        """Refresh the upcoming sittings of every bill and post the new ones. False on an outage.
+        Sittings are listed once per term the bills belong to."""
         followed = [b for b in bills if b.has_process]
-        if not followed:
-            return True
         today = self._clock.now().astimezone(self._local_tz).date()
-        try:
-            committee_sittings, failed_codes = self._committee_sittings(term, followed, today)
-            sejm_sittings = self._sejm_sittings(term, today)
-        except ServiceUnavailableError as exc:
-            result.abort(exc)
-            return False
-        for bill in followed:
+        for term in sorted({b.term for b in followed}):
+            of_term = [b for b in followed if b.term == term]
             try:
-                items = self._items_for(term, bill, committee_sittings, sejm_sittings)
+                committee_sittings, failed_codes = self._committee_sittings(term, of_term, today)
+                sejm_sittings = self._sejm_sittings(term, today)
+            except ServiceUnavailableError as exc:
+                result.abort(exc)
+                return False
+            if not self._check_term(
+                of_term,
+                committee_sittings,
+                failed_codes,
+                sejm_sittings,
+                result,
+                today,
+                publish=publish,
+            ):
+                return False
+        return True
+
+    def _check_term(
+        self,
+        bills: list[Bill],
+        committee_sittings: dict[str, list[CommitteeSitting]],
+        failed_codes: set[str],
+        sejm_sittings: list[SejmSitting],
+        result: TrackingResult,
+        today: dt.date,
+        *,
+        publish: bool,
+    ) -> bool:
+        for bill in bills:
+            try:
+                items = self._items_for(bill.term, bill, committee_sittings, sejm_sittings)
                 # A committee whose listing failed keeps what we knew about it.
                 items += tuple(
                     old

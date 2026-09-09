@@ -46,12 +46,9 @@ class PublishingService:
         self._channel_id = channel_id
         self._max_attempts = max_attempts
 
-    def publish_new(
-        self, term: int, *, min_score: int, limit: int, publish: bool = True
-    ) -> PublishingResult:
+    def publish_new(self, *, min_score: int, limit: int, publish: bool = True) -> PublishingResult:
         result = PublishingResult()
         for bill in self._repo.list_publish_candidates(
-            term,
             self._channel_id,
             min_score=min_score,
             limit=limit,

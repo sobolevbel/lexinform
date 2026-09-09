@@ -158,11 +158,11 @@ def scan(since: SinceOpt = None) -> None:
             rcl_new, rcl_hits = rcl_result.new, rcl_result.prefilter_hits
         text_service = c.text_prefilter_service()
         text_hits = (
-            text_service.run(term, limit=c.settings.text_prefilter_max_per_run).hits
+            text_service.run(limit=c.settings.text_prefilter_max_per_run).hits
             if text_service
             else 0
         )
-        pending = c.repo.list_by_status(term, [BillStatus.ANALYSIS_PENDING], limit=500)
+        pending = c.repo.list_by_status([BillStatus.ANALYSIS_PENDING], limit=500)
     finally:
         c.close()
     typer.echo(
@@ -197,9 +197,7 @@ def reprefilter(
         statuses = [BillStatus.SKIPPED_PREFILTER]
         if include_text_skipped:
             statuses.append(BillStatus.SKIPPED_TEXT_PREFILTER)
-        skipped = [
-            b for b in c.repo.list_by_status(c.term(), statuses, limit=limit) if b.has_process
-        ]
+        skipped = [b for b in c.repo.list_by_status(statuses, limit=limit) if b.has_process]
         accepted = 0
         for bill in skipped:
             ok = service.check(bill)

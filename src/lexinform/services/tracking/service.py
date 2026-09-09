@@ -156,26 +156,26 @@ class StatusTrackingService:
         return result
 
     def check_updates(
-        self, term: int, *, publish: bool = True, changed_since: datetime | None = None
+        self, *, publish: bool = True, changed_since: datetime | None = None
     ) -> TrackingResult:
-        """Look for news on published bills.
+        """Look for news on published bills, whichever term they belong to.
 
         `changed_since` limits the check to bills the Sejm API reported as modified since then
         (discovery refreshes their `change_date`); None checks every followed bill.
         """
         result = TrackingResult()
-        if publish and not self._retry_failed(term, result):
+        if publish and not self._retry_failed(result):
             return result
-        if not self._pre_print.reconcile(term, result, publish=publish):
+        if not self._pre_print.reconcile(result, publish=publish):
             return result
-        tracked = self._list_tracked(term, changed_since)
+        tracked = self._list_tracked(changed_since)
         # Agendas change without touching the process: every followed bill is checked, and before
         # the stage loop, so that an update posted below already carries the sitting dates.
         if self._agenda is not None:
-            everyone = tracked if changed_since is None else self._list_tracked(term)
-            if not self._agenda.check(term, everyone, result, publish=publish):
+            everyone = tracked if changed_since is None else self._list_tracked()
+            if not self._agenda.check(everyone, result, publish=publish):
                 return result
-        if self._rcl is not None and not self._rcl.check(term, tracked, result, publish=publish):
+        if self._rcl is not None and not self._rcl.check(tracked, result, publish=publish):
             return result
         followed = [bill for bill in tracked if bill.has_process]
         for outcome in fan_out(followed, self._fetch, workers=self._workers):
@@ -201,9 +201,9 @@ class StatusTrackingService:
                 result.abort(exc, failed=True)
                 break
         if result.fatal_error is None and publish:
-            self._acts.remind_in_force(term, result)
+            self._acts.remind_in_force(result)
         if result.fatal_error is None and publish and self._consultations is not None:
-            self._consultations.remind(term, result)
+            self._consultations.remind(result)
         scope = "all" if changed_since is None else f"changed since {changed_since:%F %R}"
         log.info(
             "tracking (%s): checked=%d changed=%d reanalyzed=%d published=%d agenda=%d failed=%d",
@@ -217,9 +217,8 @@ class StatusTrackingService:
         )
         return result
 
-    def _list_tracked(self, term: int, changed_since: datetime | None = None) -> list[Bill]:
+    def _list_tracked(self, changed_since: datetime | None = None) -> list[Bill]:
         return self._repo.list_tracked(
-            term,
             self._channel_id,
             closed_grace_days=self._closed_grace_days,
             passed_max_days=self._passed_max_days,
@@ -227,10 +226,10 @@ class StatusTrackingService:
             changed_since=changed_since,
         )
 
-    def _retry_failed(self, term: int, result: TrackingResult) -> bool:
+    def _retry_failed(self, result: TrackingResult) -> bool:
         """Re-send status updates whose post failed earlier. False if Telegram is down."""
         for change in self._repo.list_failed_status_changes(
-            term, self._channel_id, max_attempts=self._max_publish_attempts
+            self._channel_id, max_attempts=self._max_publish_attempts
         ):
             bill = self._repo.get(change.term, change.number)
             if bill is None:

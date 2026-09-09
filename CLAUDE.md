@@ -46,9 +46,11 @@ Invariants worth keeping:
 - **The term comes from the API, the old term is drained, not dropped.** `LEXINFORM_TERM` is
   empty by default: `services/terms.py::TermResolver` takes the term flagged `current` in
   `/sejm/term` (newest term in the DB when the API is down; nothing known → the run stops with
-  the reason). Discovery runs in the current term only; the queues and tracking loop over every
-  term in `bills` (`repo.known_terms()`), so acts of the old term still get their Dz.U. and
-  in-force posts. The first run in a new term (`tracking/rollover.py`, its own phase *before*
+  the reason). Discovery runs in the current term only; the repository listings (`list_by_status`,
+  `list_tracked`, the due queries, `find_rcl`, …) are not scoped to a term: every `Bill` carries
+  its own, and the trackers group by `bill.term` where an API path needs one (`/bills` in the
+  reconciler, sittings in the agenda watcher), so acts of the old term still get their Dz.U. and
+  in-force posts. Only the end-of-term methods take a term. The first run in a new term (`tracking/rollover.py`, its own phase *before*
   discovery) posts one "lapsed" update under every published, unfinished Sejm bill of the old
   term and sets `discontinued_at` on all unfinished rows (every listing filters on it); passed
   bills stay followed; RCL rows still waiting for their druk move to the new term (`bills`,

@@ -43,11 +43,11 @@ class ConsultationReminder:
             return
         result.count_post(self._poster.consultation_results(bill), "consultation_results_posted")
 
-    def remind(self, term: int, result: TrackingResult) -> None:
+    def remind(self, result: TrackingResult) -> None:
         """One reply `days_before` days before a consultation closes (Warsaw time)."""
         today = self._clock.now().astimezone(self._local_tz).date()
         due = self._repo.list_due_consultations(
-            term, self._channel_id, today=today, days_before=self._days_before
+            self._channel_id, today=today, days_before=self._days_before
         )
         for bill in due:
             if self._poster.posted(bill, PublicationKind.CONSULTATION_DEADLINE):

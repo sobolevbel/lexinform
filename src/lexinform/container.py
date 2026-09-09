@@ -66,11 +66,7 @@ class Container:
 
     def find_rcl_by_wykaz(self, wykaz_number: str) -> Bill | None:
         """The RCL row behind a wykaz number (UC164), whichever term it sits in."""
-        for term in reversed(self.repo.known_terms()):
-            bill = self.repo.find_by_wykaz_number(term, wykaz_number)
-            if bill is not None:
-                return bill
-        return None
+        return self.repo.find_by_wykaz_number(wykaz_number)
 
     def text_loader(self) -> TextLoader:
         """One loader (and text cache) per process, shared by the text prefilter and analysis.

@@ -357,7 +357,6 @@ class SqliteBillRepository:
 
     def list_by_status(
         self,
-        term: int,
         statuses: list[BillStatus],
         *,
         limit: int,
@@ -367,13 +366,13 @@ class SqliteBillRepository:
             return []
         placeholders = ",".join("?" for _ in statuses)
         attempts_clause = "AND analysis_attempts < ?" if max_attempts is not None else ""
-        params: list[object] = [term, *[s.value for s in statuses]]
+        params: list[object] = [s.value for s in statuses]
         if max_attempts is not None:
             params.append(max_attempts)
         params.append(limit)
         rows = self._conn.execute(
             f"""
-            SELECT * FROM bills WHERE term = ? AND status IN ({placeholders}) {attempts_clause}
+            SELECT * FROM bills WHERE status IN ({placeholders}) {attempts_clause}
               AND discontinued_at IS NULL
             ORDER BY change_date DESC LIMIT ?
             """,
@@ -382,12 +381,12 @@ class SqliteBillRepository:
         return [self._row_to_bill(r) for r in rows]
 
     def list_publish_candidates(
-        self, term: int, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
+        self, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
     ) -> list[Bill]:
         rows = self._conn.execute(
             """
             SELECT b.* FROM bills b
-            WHERE b.term = ? AND b.status = ? AND b.analysis_json IS NOT NULL
+            WHERE b.status = ? AND b.analysis_json IS NOT NULL
               AND b.discontinued_at IS NULL
               AND NOT EXISTS (
                   SELECT 1 FROM publications p
@@ -397,7 +396,7 @@ class SqliteBillRepository:
                          OR (p.status = 'failed' AND p.attempts >= ?))
               )
             """,
-            (term, BillStatus.ANALYZED.value, channel_id, max_attempts),
+            (BillStatus.ANALYZED.value, channel_id, max_attempts),
         ).fetchall()
         bills = [self._row_to_bill(r) for r in rows]
         eligible = [
@@ -417,7 +416,6 @@ class SqliteBillRepository:
 
     def list_tracked(
         self,
-        term: int,
         channel_id: str,
         *,
         closed_grace_days: int,
@@ -425,7 +423,7 @@ class SqliteBillRepository:
         now: datetime,
         changed_since: datetime | None = None,
     ) -> list[Bill]:
-        """Published bills still worth polling.
+        """Published bills still worth polling, whichever term they belong to.
 
         Closed bills are followed for `closed_grace_days`; bills passed by the Sejm whose act has
         not appeared in Dziennik Ustaw yet are followed longer (`passed_max_days`), because the
@@ -441,12 +439,12 @@ class SqliteBillRepository:
         sql = """
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
-            WHERE b.term = ? AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
+            WHERE p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
               AND b.status != ? AND b.discontinued_at IS NULL
               AND (b.closure_date IS NULL OR b.closure_date >= ?
                    OR (b.passed = 1 AND b.act_json IS NULL AND b.closure_date >= ?))
             """
-        params: list[object] = [term, channel_id, BillStatus.LINKED.value, cutoff, passed_cutoff]
+        params: list[object] = [channel_id, BillStatus.LINKED.value, cutoff, passed_cutoff]
         if changed_since is not None:
             # Timestamps are stored as ISO text in UTC; compare to the second.
             sql += """
@@ -455,7 +453,7 @@ class SqliteBillRepository:
             """
             since = changed_since if changed_since.tzinfo is None else changed_since.astimezone(UTC)
             params.append(since.replace(tzinfo=None).isoformat())
-        rows = self._conn.execute(sql + " ORDER BY b.number", params).fetchall()
+        rows = self._conn.execute(sql + " ORDER BY b.term, b.number", params).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
     # ------------------------------------------------------------------ published acts
@@ -473,18 +471,18 @@ class SqliteBillRepository:
             (payload if items else None, term, number),
         )
 
-    def list_awaiting_consultation_results(self, term: int, channel_id: str) -> list[Bill]:
+    def list_awaiting_consultation_results(self, channel_id: str) -> list[Bill]:
         rows = self._conn.execute(
             """
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
-            WHERE b.term = ? AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
+            WHERE p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
               AND b.status != ? AND b.discontinued_at IS NULL AND b.submission_json IS NOT NULL
               AND json_extract(b.submission_json, '$.public_consultation')
               AND NOT json_extract(b.submission_json, '$.consultation_results')
-            ORDER BY b.number
+            ORDER BY b.term, b.number
             """,
-            (term, channel_id, BillStatus.LINKED.value),
+            (channel_id, BillStatus.LINKED.value),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
@@ -513,23 +511,23 @@ class SqliteBillRepository:
         )
     """
 
-    def list_due_in_force(self, term: int, channel_id: str, *, today: date) -> list[Bill]:
+    def list_due_in_force(self, channel_id: str, *, today: date) -> list[Bill]:
         """Published bills whose act enters into force today or earlier, not yet reminded."""
         rows = self._conn.execute(
             f"""
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
-            WHERE b.term = ? AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
+            WHERE p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
               AND b.entry_into_force IS NOT NULL AND b.entry_into_force <= ?
               {self._NO_SETTLED_POST}
             ORDER BY b.entry_into_force, b.number
             """,
-            (term, channel_id, today.isoformat(), PublicationKind.IN_FORCE.value, channel_id),
+            (channel_id, today.isoformat(), PublicationKind.IN_FORCE.value, channel_id),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
     def list_due_consultations(
-        self, term: int, channel_id: str, *, today: date, days_before: int
+        self, channel_id: str, *, today: date, days_before: int
     ) -> list[Bill]:
         """Published bills whose public consultation ends within `days_before` days (today
         included) and that have not been reminded yet."""
@@ -538,14 +536,13 @@ class SqliteBillRepository:
             f"""
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
-            WHERE b.term = ? AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
+            WHERE p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
               AND b.status != ? AND b.discontinued_at IS NULL
               AND {self._CONSULTATION_END} BETWEEN ? AND ?
               {self._NO_SETTLED_POST}
             ORDER BY {self._CONSULTATION_END}, b.number
             """,
             (
-                term,
                 channel_id,
                 BillStatus.LINKED.value,
                 today.isoformat(),
@@ -564,11 +561,11 @@ class SqliteBillRepository:
             (submission.model_dump_json(), term, number),
         )
 
-    def list_pre_print(self, term: int) -> list[Bill]:
+    def list_pre_print(self) -> list[Bill]:
         rows = self._conn.execute(
-            "SELECT * FROM bills WHERE term = ? AND number LIKE ? AND status != ?"
+            "SELECT * FROM bills WHERE number LIKE ? AND status != ?"
             " AND discontinued_at IS NULL ORDER BY change_date",
-            (term, f"{PRE_PRINT_PREFIX}%", BillStatus.LINKED.value),
+            (f"{PRE_PRINT_PREFIX}%", BillStatus.LINKED.value),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
@@ -580,25 +577,34 @@ class SqliteBillRepository:
             (project.model_dump_json(), term, number),
         )
 
-    def list_rcl_awaiting_link(self, term: int) -> list[Bill]:
+    def list_rcl_awaiting_link(self) -> list[Bill]:
         rows = self._conn.execute(
-            "SELECT * FROM bills WHERE term = ? AND number LIKE ? AND status != ?"
-            " AND json_extract(rcl_json, '$.print_number') IS NOT NULL ORDER BY number",
-            (term, f"{RCL_PREFIX}%", BillStatus.LINKED.value),
+            "SELECT * FROM bills WHERE number LIKE ? AND status != ?"
+            " AND json_extract(rcl_json, '$.print_number') IS NOT NULL ORDER BY term, number",
+            (f"{RCL_PREFIX}%", BillStatus.LINKED.value),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
-    def find_by_rm_number(self, term: int, rm_number: str) -> Bill | None:
-        return self._find_rcl(term, "$.rm_number", rm_number)
-
-    def find_by_wykaz_number(self, term: int, wykaz_number: str) -> Bill | None:
-        return self._find_rcl(term, "$.wykaz_number", wykaz_number)
-
-    def _find_rcl(self, term: int, path: str, value: str) -> Bill | None:
+    def find_rcl(self, number: str) -> Bill | None:
+        # RCL ids never repeat, and a project row lives in one term at a time (see
+        # `move_rcl_projects`), so the number alone identifies the row.
         row = self._conn.execute(
-            f"SELECT * FROM bills WHERE term = ? AND json_extract(rcl_json, '{path}') = ?"
-            " ORDER BY number LIMIT 1",
-            (term, value),
+            "SELECT * FROM bills WHERE number = ? AND number LIKE ? ORDER BY term DESC LIMIT 1",
+            (number, f"{RCL_PREFIX}%"),
+        ).fetchone()
+        return self._row_to_bill(row) if row else None
+
+    def find_by_rm_number(self, rm_number: str) -> Bill | None:
+        return self._find_rcl("$.rm_number", rm_number)
+
+    def find_by_wykaz_number(self, wykaz_number: str) -> Bill | None:
+        return self._find_rcl("$.wykaz_number", wykaz_number)
+
+    def _find_rcl(self, path: str, value: str) -> Bill | None:
+        row = self._conn.execute(
+            f"SELECT * FROM bills WHERE json_extract(rcl_json, '{path}') = ?"
+            " ORDER BY term DESC, number LIMIT 1",
+            (value,),
         ).fetchone()
         return self._row_to_bill(row) if row else None
 
@@ -834,17 +840,17 @@ class SqliteBillRepository:
         return row is not None
 
     def list_failed_status_changes(
-        self, term: int, channel_id: str, *, max_attempts: int
+        self, channel_id: str, *, max_attempts: int
     ) -> list[StatusChange]:
         """Status changes whose update post failed and may be retried."""
         rows = self._conn.execute(
             """
             SELECT c.* FROM status_changes c
             JOIN publications p ON p.status_change_id = c.id AND p.kind = 'status_update'
-            WHERE c.term = ? AND p.channel_id = ? AND p.status = 'failed' AND p.attempts < ?
+            WHERE p.channel_id = ? AND p.status = 'failed' AND p.attempts < ?
             ORDER BY c.id
             """,
-            (term, channel_id, max_attempts),
+            (channel_id, max_attempts),
         ).fetchall()
         return [self._row_to_status_change(r) for r in rows]
 

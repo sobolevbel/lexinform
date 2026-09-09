@@ -43,45 +43,48 @@ class PrePrintReconciler:
         self._channel_id = channel_id
         self._consultations = consultations
 
-    def reconcile(self, term: int, result: TrackingResult, *, publish: bool) -> bool:
+    def reconcile(self, result: TrackingResult, *, publish: bool) -> bool:
         """Link RPW entries to their print, notice withdrawal, announce published consultation
         opinions. False when the phase must stop."""
-        pending = self._repo.list_pre_print(term)
+        pending = self._repo.list_pre_print()
         awaiting = [
             b
-            for b in self._repo.list_awaiting_consultation_results(term, self._channel_id)
+            for b in self._repo.list_awaiting_consultation_results(self._channel_id)
             if not b.is_pre_print
         ]
         if not pending and not awaiting:
             return True
-        earliest = min(
-            (b.submission.date_of_receipt for b in pending + awaiting if b.submission),
-            default=self._clock.now().date(),
-        )
-        try:
-            latest = {
-                sub.number: sub for sub in self._gateway.iter_bills(term, received_from=earliest)
-            }
-        except ServiceUnavailableError as exc:
-            result.abort(exc)
-            return False
+        # One /bills listing per term the followed entries belong to.
+        latest: dict[tuple[int, str], BillSubmission] = {}
+        for term in sorted({b.term for b in pending + awaiting}):
+            of_term = [b for b in pending + awaiting if b.term == term]
+            earliest = min(
+                (b.submission.date_of_receipt for b in of_term if b.submission),
+                default=self._clock.now().date(),
+            )
+            try:
+                for listed in self._gateway.iter_bills(term, received_from=earliest):
+                    latest[(term, listed.number)] = listed
+            except ServiceUnavailableError as exc:
+                result.abort(exc)
+                return False
         for bill in pending + awaiting:
             key = bill.submission.number if bill.submission else bill.number
-            sub = latest.get(key)
+            sub = latest.get((bill.term, key))
             if sub is None:
                 continue
             try:
-                self._repo.save_submission(term, bill.number, sub)
+                self._repo.save_submission(bill.term, bill.number, sub)
                 if bill.is_pre_print and sub.print_number:
                     self._linker.link(bill, sub.print_number, result, publish=publish)
                 elif (
                     bill.is_pre_print
                     and sub.is_closed
-                    and not self._repo.closure_announced(term, bill.number)
+                    and not self._repo.closure_announced(bill.term, bill.number)
                 ):
                     self._announce_withdrawal(bill, result, publish=publish)
                 elif self._results_appeared(bill, sub) and self._consultations is not None:
-                    fresh = self._repo.get(term, bill.number) or bill
+                    fresh = self._repo.get(bill.term, bill.number) or bill
                     self._consultations.results_published(fresh, result, publish=publish)
             except ServiceUnavailableError as exc:
                 result.abort(exc)

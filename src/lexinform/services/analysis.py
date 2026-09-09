@@ -100,14 +100,13 @@ class AnalysisService:
 
     # ------------------------------------------------------------------ first analysis
 
-    def analyze_pending(self, term: int, *, limit: int) -> AnalysisResult:
+    def analyze_pending(self, *, limit: int) -> AnalysisResult:
         """Analyse up to `limit` candidates; an outage stops the phase, a bill's own error
         costs it one attempt."""
         result = AnalysisResult()
         if limit <= 0:
             return result
         candidates = self._repo.list_by_status(
-            term,
             [BillStatus.ANALYSIS_PENDING, BillStatus.ANALYSIS_FAILED],
             limit=limit,
             max_attempts=self._max_attempts,

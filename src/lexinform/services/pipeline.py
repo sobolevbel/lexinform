@@ -1,8 +1,9 @@
 """The daily run: discover -> prefilter -> analyse -> publish -> track -> report.
 
-Discovery works in the current Sejm term (see `TermResolver`); the queues and the tracking cover
-every term the database knows, so that the bills of the previous kadencja that still matter (acts
-on their way to Dziennik Ustaw, reminders, failed posts) are not forgotten when the Sejm moves on.
+Discovery works in the current Sejm term (see `TermResolver`); the queues and the tracking are
+not scoped to a term (every row carries its own), so that the bills of the previous kadencja that
+still matter (acts on their way to Dziennik Ustaw, reminders, failed posts) are not forgotten when
+the Sejm moves on.
 """
 
 import logging
@@ -177,14 +178,15 @@ class DailyPipeline:
             if pruned:
                 log.info("%d run record(s) older than %s removed", pruned, self._runs_retention)
 
-        # New bills come from the current Sejm; everything else covers the older terms too.
-        terms = sorted(set(self._repo.known_terms()) | {current})
-        if any(term < current for term in terms):
+        # New bills come from the current Sejm; the queues and the tracking are not scoped to a
+        # term (every row carries its own).
+        previous = [term for term in self._repo.known_terms() if term < current]
+        if previous:
             # First thing in a new term, before discovery sees the old rows: the unfinished bills
             # of the older terms lapsed (announced once), the RCL projects follow the Sejm.
             # Nothing to do once done, so it runs every time.
             self._phase(
-                report, "end of term", lambda: self._close_terms(terms, current, opts, report)
+                report, "end of term", lambda: self._close_terms(previous, current, opts, report)
             )
         if opts.discover:
             self._phase(report, "discovery", lambda: self._discover(current, since, report))
@@ -192,11 +194,11 @@ class DailyPipeline:
             # Its own phase: an RCL outage must not cost the Sejm discovery.
             self._phase(report, "rcl discovery", lambda: self._discover_rcl(current, since, report))
         if self._text_prefilter is not None:
-            self._phase(report, "text prefilter", lambda: self._prefilter_text(terms, opts, report))
-        self._phase(report, "analysis", lambda: self._analyse(terms, opts, report))
-        self._phase(report, "publishing", lambda: self._publish(terms, opts, report))
+            self._phase(report, "text prefilter", lambda: self._prefilter_text(opts, report))
+        self._phase(report, "analysis", lambda: self._analyse(opts, report))
+        self._phase(report, "publishing", lambda: self._publish(opts, report))
         if opts.track:
-            self._phase(report, "tracking", lambda: self._track(terms, opts, report))
+            self._phase(report, "tracking", lambda: self._track(opts, report))
 
     @staticmethod
     def _phase(report: RunReport, name: str, action: Callable[[], None]) -> None:
@@ -235,64 +237,44 @@ class DailyPipeline:
         if discovered.failed:
             report.errors.append(f"{discovered.failed} RCL project(s) could not be read")
 
-    def _prefilter_text(self, terms: Sequence[int], opts: RunOptions, report: RunReport) -> None:
+    def _prefilter_text(self, opts: RunOptions, report: RunReport) -> None:
         assert self._text_prefilter is not None
-        remaining = opts.max_text_prefilter
-        for term in terms:
-            if remaining <= 0:
-                break
-            checked = self._text_prefilter.run(term, limit=remaining)
-            remaining -= checked.checked
-            report.text_prefilter_checked += checked.checked
-            report.text_prefilter_hits += checked.hits
-            if checked.fatal_error:
-                report.errors.append(f"text prefilter: {checked.fatal_error}")
-                break
+        checked = self._text_prefilter.run(limit=opts.max_text_prefilter)
+        report.text_prefilter_checked = checked.checked
+        report.text_prefilter_hits = checked.hits
+        if checked.fatal_error:
+            report.errors.append(f"text prefilter: {checked.fatal_error}")
 
-    def _analyse(self, terms: Sequence[int], opts: RunOptions, report: RunReport) -> None:
-        remaining = opts.max_analyze
-        for term in terms:
-            if remaining <= 0:
-                break
-            analysed = self._analysis.analyze_pending(term, limit=remaining)
-            remaining -= analysed.analyzed + analysed.triaged_out + analysed.failed
-            report.analyzed += analysed.analyzed
-            report.triaged_out += analysed.triaged_out
-            report.analysis_failures += analysed.failed
-            report.rejected.extend(
-                v for v in analysed.verdicts if not v.relevant or v.score < opts.min_score
-            )
-            report.llm_input_tokens += analysed.input_tokens
-            report.llm_output_tokens += analysed.output_tokens
-            _merge_usage(report, analysed.usage)
-            if analysed.fatal_error:
-                report.errors.append(f"analysis: {analysed.fatal_error}")
-                break
+    def _analyse(self, opts: RunOptions, report: RunReport) -> None:
+        analysed = self._analysis.analyze_pending(limit=opts.max_analyze)
+        report.analyzed = analysed.analyzed
+        report.triaged_out = analysed.triaged_out
+        report.analysis_failures = analysed.failed
+        report.rejected = [
+            v for v in analysed.verdicts if not v.relevant or v.score < opts.min_score
+        ]
+        report.llm_input_tokens += analysed.input_tokens
+        report.llm_output_tokens += analysed.output_tokens
+        _merge_usage(report, analysed.usage)
+        if analysed.fatal_error:
+            report.errors.append(f"analysis: {analysed.fatal_error}")
 
-    def _publish(self, terms: Sequence[int], opts: RunOptions, report: RunReport) -> None:
-        remaining = opts.max_publish
-        failed = 0
-        for term in terms:
-            if remaining <= 0:
-                break
-            published = self._publishing.publish_new(
-                term, min_score=opts.min_score, limit=remaining, publish=opts.publish
-            )
-            remaining -= published.published + published.failed
-            report.published += published.published
-            failed += published.failed
-            if published.fatal_error:
-                report.errors.append(f"publishing: {published.fatal_error}")
-                return  # an outage: the failed posts are its consequence, not a second error
-        if failed:
-            report.errors.append(f"{failed} publication(s) failed")
+    def _publish(self, opts: RunOptions, report: RunReport) -> None:
+        published = self._publishing.publish_new(
+            min_score=opts.min_score, limit=opts.max_publish, publish=opts.publish
+        )
+        report.published = published.published
+        if published.fatal_error:
+            report.errors.append(f"publishing: {published.fatal_error}")
+        elif published.failed:
+            report.errors.append(f"{published.failed} publication(s) failed")
 
     def _close_terms(
-        self, terms: Sequence[int], current: int, opts: RunOptions, report: RunReport
+        self, previous: Sequence[int], current: int, opts: RunOptions, report: RunReport
     ) -> None:
         failed = 0
-        for previous in (term for term in terms if term < current):
-            closed = self._tracking.close_term(previous, current, publish=opts.publish)
+        for term in previous:
+            closed = self._tracking.close_term(term, current, publish=opts.publish)
             failed += self._merge_tracking(report, closed, opts)
             if closed.fatal_error is not None:
                 report.errors.append(f"end of term: {closed.fatal_error}")
@@ -300,7 +282,7 @@ class DailyPipeline:
         if failed:
             report.errors.append(f"{failed} end-of-term update(s) failed")
 
-    def _track(self, terms: Sequence[int], opts: RunOptions, report: RunReport) -> None:
+    def _track(self, opts: RunOptions, report: RunReport) -> None:
         # Daily: only bills the API listed as modified. Weekly (or when discovery did not run):
         # every followed bill, in case something moved without a visible change.
         weekly = (
@@ -308,16 +290,13 @@ class DailyPipeline:
             and self._clock.now().weekday() == self._full_track_weekday
         )
         full = opts.full_track or not opts.discover or not report.discovery_ok or weekly
-        failed = 0
-        for term in terms:
-            tracked = self._tracking.check_updates(
-                term, publish=opts.publish, changed_since=None if full else report.since
-            )
-            failed += self._merge_tracking(report, tracked, opts)
-            if tracked.fatal_error is not None:
-                report.errors.append(f"tracking: {tracked.fatal_error}")
-                return
-        if failed:
+        tracked = self._tracking.check_updates(
+            publish=opts.publish, changed_since=None if full else report.since
+        )
+        failed = self._merge_tracking(report, tracked, opts)
+        if tracked.fatal_error is not None:
+            report.errors.append(f"tracking: {tracked.fatal_error}")
+        elif failed:
             report.errors.append(f"{failed} status update(s) failed")
 
     @staticmethod

@@ -94,7 +94,7 @@ class BillDiscoveryService:
         rm_number = summary.rcl_num
         if not rm_number:
             return None
-        bill = self._repo.find_by_rm_number(summary.term, rm_number)
+        bill = self._repo.find_by_rm_number(rm_number)
         if bill is None and self._projects is not None:
             try:
                 project_id = self._projects.resolve_project_id(rm_number)
@@ -105,7 +105,7 @@ class BillDiscoveryService:
                 log.warning("RCL lookup of %s failed: %s", rm_number, exc)
                 return None
             if project_id is not None:
-                bill = self._repo.get(summary.term, rcl_number(project_id))
+                bill = self._repo.find_rcl(rcl_number(project_id))
         if bill is None or bill.rcl is None or bill.status in _NOT_ANALYSED:
             return None
         return bill

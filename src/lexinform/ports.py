@@ -216,9 +216,10 @@ class BillRepository(Protocol):
 
     def reset_bill(self, term: int, number: str, status: BillStatus) -> None: ...
 
+    # Listings span every term: a `Bill` carries its own, and the services group by `bill.term`
+    # where an API path needs one. Only the end-of-term methods below are scoped to a term.
     def list_by_status(
         self,
-        term: int,
         statuses: list[BillStatus],
         *,
         limit: int,
@@ -226,12 +227,11 @@ class BillRepository(Protocol):
     ) -> list[Bill]: ...
 
     def list_publish_candidates(
-        self, term: int, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
+        self, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
     ) -> list[Bill]: ...
 
     def list_tracked(
         self,
-        term: int,
         channel_id: str,
         *,
         closed_grace_days: int,
@@ -272,22 +272,26 @@ class BillRepository(Protocol):
     # pre-print bills
     def save_submission(self, term: int, number: str, submission: BillSubmission) -> None: ...
 
-    def list_pre_print(self, term: int) -> list[Bill]: ...
+    def list_pre_print(self) -> list[Bill]: ...
 
     def link_bills(self, term: int, pre_print_number: str, print_number: str) -> None: ...
 
     # RCL projects
     def save_rcl(self, term: int, number: str, project: RclProject) -> None: ...
 
-    def list_rcl_awaiting_link(self, term: int) -> list[Bill]:
+    def list_rcl_awaiting_link(self) -> list[Bill]:
         """RCL rows whose project knows its druk number but that are not linked to it yet."""
         ...
 
-    def find_by_rm_number(self, term: int, rm_number: str) -> Bill | None:
+    def find_rcl(self, number: str) -> Bill | None:
+        """The row of an RCL project by its `RCL/{id}` number (ids never repeat across terms)."""
+        ...
+
+    def find_by_rm_number(self, rm_number: str) -> Bill | None:
         """The RCL row whose project shows this `RM-…` number (set once it went to the Sejm)."""
         ...
 
-    def find_by_wykaz_number(self, term: int, wykaz_number: str) -> Bill | None: ...
+    def find_by_wykaz_number(self, wykaz_number: str) -> Bill | None: ...
 
     def move_rcl_projects(self, from_term: int, to_term: int) -> int:
         """Carry the RCL rows still waiting for their druk over to a new term (with their posts
@@ -314,18 +318,18 @@ class BillRepository(Protocol):
     # agendas of upcoming sittings
     def save_agenda(self, term: int, number: str, items: tuple[AgendaItem, ...]) -> None: ...
 
-    def list_awaiting_consultation_results(self, term: int, channel_id: str) -> list[Bill]:
+    def list_awaiting_consultation_results(self, channel_id: str) -> list[Bill]:
         """Published bills with a public consultation whose opinions are not published yet."""
         ...
 
-    def list_due_in_force(self, term: int, channel_id: str, *, today: date) -> list[Bill]: ...
+    def list_due_in_force(self, channel_id: str, *, today: date) -> list[Bill]: ...
 
     def list_due_consultations(
-        self, term: int, channel_id: str, *, today: date, days_before: int
+        self, channel_id: str, *, today: date, days_before: int
     ) -> list[Bill]: ...
 
     def list_failed_status_changes(
-        self, term: int, channel_id: str, *, max_attempts: int
+        self, channel_id: str, *, max_attempts: int
     ) -> list[StatusChange]: ...
 
     # runs

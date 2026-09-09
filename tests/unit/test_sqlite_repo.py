@@ -30,7 +30,7 @@ CHANNEL = "chan"
 
 
 def _tracked(repo: SqliteBillRepository, now: datetime) -> list[str]:
-    bills = repo.list_tracked(10, CHANNEL, closed_grace_days=30, passed_max_days=180, now=now)
+    bills = repo.list_tracked(CHANNEL, closed_grace_days=30, passed_max_days=180, now=now)
     return [b.number for b in bills]
 
 
@@ -126,12 +126,12 @@ def test_analysed_bill_is_a_publish_candidate_until_its_channel_has_a_row(
     number = processes_page[0].number
     repo.save_analysis(10, number, FakeLlm().analyze(_context(number)))
 
-    before = repo.list_publish_candidates(10, CHANNEL, min_score=2, limit=10)
+    before = repo.list_publish_candidates(CHANNEL, min_score=2, limit=10)
     repo.create_publication(
         _publication(number, PublicationKind.NEW_BILL, now, status=PublicationStatus.SKIPPED)
     )
-    after = repo.list_publish_candidates(10, CHANNEL, min_score=2, limit=10)
-    other_channel = repo.list_publish_candidates(10, "other", min_score=2, limit=10)
+    after = repo.list_publish_candidates(CHANNEL, min_score=2, limit=10)
+    other_channel = repo.list_publish_candidates("other", min_score=2, limit=10)
 
     assert [c.number for c in before] == [number]
     assert after == []
@@ -344,10 +344,10 @@ def test_failed_status_updates_are_listed_for_retry_until_the_attempts_run_out(
     )
 
     repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
-    listed = repo.list_failed_status_changes(10, CHANNEL, max_attempts=3)
+    listed = repo.list_failed_status_changes(CHANNEL, max_attempts=3)
     repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
     repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
-    exhausted = repo.list_failed_status_changes(10, CHANNEL, max_attempts=3)
+    exhausted = repo.list_failed_status_changes(CHANNEL, max_attempts=3)
 
     assert [c.id for c in listed] == [change_id]
     assert listed[0].content_changed is True
@@ -367,7 +367,7 @@ def test_only_bills_with_a_sent_card_are_tracked(
 
     before = _tracked(repo, now)
     _card_sent(repo, "3039", now)
-    after = repo.list_tracked(10, CHANNEL, closed_grace_days=30, passed_max_days=180, now=now)
+    after = repo.list_tracked(CHANNEL, closed_grace_days=30, passed_max_days=180, now=now)
 
     assert before == []
     assert [b.number for b in after] == ["3039"]
@@ -422,7 +422,6 @@ def test_list_tracked_filters_by_change_date_but_keeps_passed_bills(
 
     def tracked(changed_since: datetime | None) -> list[str]:
         bills = repo.list_tracked(
-            10,
             CHANNEL,
             closed_grace_days=90,
             passed_max_days=180,
@@ -447,10 +446,10 @@ def test_in_force_reminders_are_due_from_the_day_on_until_reminded(
     _card_sent(repo, "3039", now)
     repo.save_act(10, "3039", _act())  # in force 2026-11-19
 
-    eve = repo.list_due_in_force(10, CHANNEL, today=date(2026, 11, 18))
-    day = repo.list_due_in_force(10, CHANNEL, today=date(2026, 11, 19))
+    eve = repo.list_due_in_force(CHANNEL, today=date(2026, 11, 18))
+    day = repo.list_due_in_force(CHANNEL, today=date(2026, 11, 19))
     repo.create_publication(_publication("3039", PublicationKind.IN_FORCE, now))
-    reminded = repo.list_due_in_force(10, CHANNEL, today=date(2026, 12, 1))
+    reminded = repo.list_due_in_force(CHANNEL, today=date(2026, 12, 1))
 
     assert eve == []
     assert [b.number for b in day] == ["3039"] and day[0].act is not None
@@ -481,10 +480,10 @@ def test_consultation_reminders_are_due_inside_the_window_only(
     repo.save_rcl(10, RCL, project)  # a government project consulted on RCL: due as well
     today = date(2026, 9, 10)
 
-    due = repo.list_due_consultations(10, CHANNEL, today=today, days_before=3)
+    due = repo.list_due_consultations(CHANNEL, today=today, days_before=3)
     repo.create_publication(_publication("1", PublicationKind.CONSULTATION_DEADLINE, now))
-    after_reminder = repo.list_due_consultations(10, CHANNEL, today=today, days_before=3)
-    other_channel = repo.list_due_consultations(10, "other", today=today, days_before=3)
+    after_reminder = repo.list_due_consultations(CHANNEL, today=today, days_before=3)
+    other_channel = repo.list_due_consultations("other", today=today, days_before=3)
 
     assert [b.number for b in due] == ["1", RCL, "2"]
     assert [b.number for b in after_reminder] == [RCL, "2"]
@@ -508,11 +507,11 @@ def test_rcl_project_round_trips_and_is_found_by_its_numbers(
     assert (
         stored.consultation is not None and stored.consultation.email == "dep.prawny@mswia.gov.pl"
     )
-    by_rm = repo.find_by_rm_number(10, "RM-0610-139-26")
-    by_wykaz = repo.find_by_wykaz_number(10, "UC164")
+    by_rm = repo.find_by_rm_number("RM-0610-139-26")
+    by_wykaz = repo.find_by_wykaz_number("UC164")
     assert by_rm is not None and by_rm.number == RCL
     assert by_wykaz is not None and by_wykaz.number == RCL
-    assert repo.find_by_rm_number(10, "RM-0610-1-26") is None
+    assert repo.find_by_rm_number("RM-0610-1-26") is None
 
 
 def test_bills_awaiting_consultation_results(
@@ -539,8 +538,8 @@ def test_bills_awaiting_consultation_results(
     bill("4", public=True, results=False, card=False)  # never posted: nothing to reply under
     repo.upsert_summary(process_3039.model_copy(update={"number": "5"}), now=now)  # no /bills row
 
-    awaiting = repo.list_awaiting_consultation_results(10, CHANNEL)
-    other_channel = repo.list_awaiting_consultation_results(10, "other")
+    awaiting = repo.list_awaiting_consultation_results(CHANNEL)
+    other_channel = repo.list_awaiting_consultation_results("other")
 
     assert [b.number for b in awaiting] == ["1"]
     assert other_channel == []
@@ -744,6 +743,6 @@ def test_unfinished_bills_of_a_term_lapse_and_leave_every_listing(
     assert marked == 2  # 3039 and the unpublished 3050; the passed 3040 goes on
     assert lapsed is not None and lapsed.discontinued_at == now
     assert _tracked(repo, now) == ["3040"]
-    assert repo.list_by_status(10, [BillStatus.ANALYSIS_PENDING], limit=10) == []
+    assert repo.list_by_status([BillStatus.ANALYSIS_PENDING], limit=10) == []
     assert repo.list_unfinished_published(10, CHANNEL) == []
     assert repo.discontinue_unfinished(10, at=now) == 0
