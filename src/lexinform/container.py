@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 import anthropic
 
 from lexinform.adapters.console import ConsolePublisher, ConsoleRunNotifier
+from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.sejm_api import SejmApiClient
@@ -46,7 +47,7 @@ class Container:
             sejm_host = urlparse(self.settings.sejm_api_base_url).hostname or ""
             self._loader = TextLoader(
                 {sejm_host: self.gateway.download},
-                PypdfTextExtractor(),
+                DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor()),
                 max_bytes=self.settings.max_pdf_download_mb * 1024 * 1024,
             )
         return self._loader
