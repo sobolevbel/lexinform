@@ -18,7 +18,7 @@ windows and the API stage vocabulary in `docs/legislative-process.md`.
 - `.env` holds real secrets and is untracked; never print values. `.env.example` mirrors keys.
 - Messages to readers are Russian (labels in `i18n.py`, RU + EN); Polish law titles stay Polish.
 - Prod state = SQLite dump in the `state` branch, written by `.github/workflows/daily.yml`
-  (04:23, 10:23, 16:23 UTC; full-hour crons were delayed by 4+ hours). To test against real data: `git show origin/state:lexinform.sql > /tmp/s.sql`,
+  (weekdays, 05:23 and 16:23 UTC = 07:23 and 18:23 Warsaw in summer; full-hour crons were delayed by 4+ hours). To test against real data: `git show origin/state:lexinform.sql > /tmp/s.sql`,
   `LEXINFORM_DB_PATH=/tmp/t.db uv run lexinform db init && … db restore /tmp/s.sql`, then
   `lexinform run --dry-run --since YYYY-MM-DD` (real LLM calls, DB rolled back, prints to stdout).
 

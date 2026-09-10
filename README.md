@@ -9,7 +9,7 @@ publication in Dziennik Ustaw, so readers learn about changes while they can sti
 - Importance 1–5, where **5 = legalization of stay** (ustawa o cudzoziemcach, residence permits,
   visas, citizenship, international protection).
 - Posts in Russian (Polish statute names kept in the original); English labels built in.
-- Runs three times a day in GitHub Actions; state is a SQLite dump in the `state` branch. Zero infra.
+- Runs twice a day on weekdays in GitHub Actions; state is a SQLite dump in the `state` branch. Zero infra.
 - Python 3.12+, `uv`, `pydantic`, `anthropic` SDK, `httpx2`, `pypdf`, SQLite.
 
 ## What readers get
@@ -155,8 +155,8 @@ last 24 hours). `--since YYYY-MM-DD` starts earlier; `--no-publish` seeds the da
 
 ## Deploy with GitHub Actions
 
-`.github/workflows/daily.yml` runs the bot at 04:23, 10:23 and 16:23 UTC (odd minutes: GitHub
-delays full-hour crons by hours) and keeps its state in the `state` branch as a plain-text SQL dump.
+`.github/workflows/daily.yml` runs the bot on weekdays at 05:23 and 16:23 UTC (07:23 and 18:23
+Warsaw in summer; odd minutes: GitHub delays full-hour crons by hours) and keeps its state in the `state` branch as a plain-text SQL dump.
 
 1. Create a bot with [@BotFather](https://t.me/BotFather); create the channel and add the bot as an
    administrator (channel id: `@name` or `-100…`).
