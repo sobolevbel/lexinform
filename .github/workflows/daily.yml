@@ -3,20 +3,25 @@ name: Daily run
 
 on:
   schedule:
-    # Twice a day on weekdays. The Sejm, the Senate, the ministries and RCL publish during Warsaw
-    # working hours, Monday to Friday; Saturday and Sunday runs found nothing to post.
+    # Twice a day on weekdays, once at midday on the weekend. The Sejm, the Senate, the
+    # ministries and RCL publish during Warsaw working hours, Monday to Friday.
     #   morning (07:23 Warsaw in summer, 06:23 in winter): the previous evening's votes, agendas
     #     and late prints reach the reader before the working day, when a consultation deadline
     #     or a hearing still leaves the day to act;
     #   evening (18:23 Warsaw in summer, 17:23 in winter): the day's referrals, reports, Dz.U.
     #     publications and tomorrow's committee agendas, after the offices have posted them and
-    #     before the reader's evening.
-    # Monday's morning run covers the weekend: the discovery watermark is the previous run's
-    # start, so nothing is skipped by the gap.
-    # Off the full hour on purpose: GitHub queues ":00" crons behind everyone else's (the 05:00
-    # run of 2026-09-08 started at 09:25); odd minutes are picked up far sooner.
+    #     before the reader's evening;
+    #   weekend midday (12:23 Warsaw in summer, 11:23 in winter): the offices post nothing, but
+    #     the calendar moves on: consultation deadlines and in-force dates falling on a Saturday
+    #     or Sunday, reminders of Monday's hearings, a late Friday upload on RCL.
+    # Nothing is skipped by a gap: the discovery watermark is the previous run's start.
+    # GitHub runs schedules late in this repository, 3–4.5 hours after the cron time whatever the
+    # minute (2026-09-08: 05:00 → 09:25; 2026-09-09: 04:23 → 08:59, 10:23 → 14:39, 16:23 → 19:19),
+    # and a changed schedule may skip its first occurrence (2026-09-08 17:00, 2026-09-10 05:23).
+    # Off the full hour anyway: ":00" is the most crowded minute of the queue.
     - cron: "23 5 * * 1-5"   # 07:23 Warsaw (summer time)
     - cron: "23 16 * * 1-5"  # 18:23
+    - cron: "23 10 * * 0,6"  # 12:23, Saturday and Sunday
   workflow_dispatch:
     inputs:
       since:

@@ -45,7 +45,7 @@ uv run lexinform run                       # for real, into the DB at LEXINFORM_
 ### Against production data
 
 Production state is a SQL dump in the `state` branch, written by `.github/workflows/daily.yml`
-after every run (weekdays, 05:23 and 16:23 UTC). To reproduce a run on it:
+after every run (weekdays 05:23 and 16:23 UTC, weekend 10:23 UTC). To reproduce a run on it:
 
 ```bash
 git fetch origin state
@@ -207,7 +207,7 @@ history of the `state` branch.
 
 ## Deploy and operations
 
-- `.github/workflows/daily.yml` runs the bot twice a day on weekdays and pushes the dump to `state`.
+- `.github/workflows/daily.yml` runs the bot twice a day on weekdays, once on weekend days, and pushes the dump to `state`.
   Secrets: `ANTHROPIC_API_KEY`, `LEXINFORM_TELEGRAM_BOT_TOKEN`, `LEXINFORM_TELEGRAM_CHANNEL_ID`,
   optionally `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID`. Do not protect the `state` branch.
 - `.github/workflows/integration.yml` runs the live API checks weekly and pings the log channel
