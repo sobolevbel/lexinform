@@ -18,3 +18,8 @@ htmlcov/
 *.db-shm
 state/
 tmp/
+
+# Claude Code: worktrees it creates for isolated tasks and per-user settings; skills and shared
+# settings under .claude/ stay tracked.
+.claude/worktrees/
+.claude/settings.local.json
