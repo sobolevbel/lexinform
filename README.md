@@ -271,7 +271,8 @@ Services depend only on `ports.py`, so swapping the LLM, the database or the mes
 adapter. Roadmap and verified API facts: `docs/roadmap.md`. How a Polish law is made, with the
 deadlines, the public's windows and the API stage vocabulary: `docs/legislative-process.md`
 (a Russian one-page version for readers: `docs/legislative-process.html`, open it in a browser).
-Contributing: `CONTRIBUTING.md`.
+The database — tables, relations, indexes and the migration ledger on one page:
+`docs/database.html`. Contributing: `CONTRIBUTING.md`.
 
 ## License
 

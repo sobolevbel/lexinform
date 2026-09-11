@@ -174,6 +174,9 @@ curl -s 'https://legislacja.rcl.gov.pl/projekt/12414050' > projekt_12414050.html
 
 ## Database schema and migrations
 
+The tables, their columns, every index and the whole migration ledger, drawn and explained on one
+page: `docs/database.html` (Russian, open it in a browser). The source of truth stays the code.
+
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py` (script `i` brings the database to version `i + 1`,
 `SCHEMA_VERSION = len(MIGRATIONS)`). `migrate()` runs every later script in its own transaction.

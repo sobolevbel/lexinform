@@ -1,0 +1,735 @@
+<title>Схема базы lexinform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:wght@500;600&display=swap">
+<style>
+  :root {
+    --paper: #f5f7fa;
+    --surface: #ffffff;
+    --surface-2: #eaeff5;
+    --ink: #15181e;
+    --ink-2: #4c5563;
+    --ink-3: #78818f;
+    --line: #d7dee7;
+    --line-strong: #b6c1cf;
+    --accent: #2c4f86;
+    --accent-soft: #e3ebf7;
+    --ochre: #85672a;
+    --ochre-soft: #f2ead8;
+    --green: #2c6a4d;
+    --red: #96382c;
+    --radius: 5px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #101318;
+      --surface: #171b22;
+      --surface-2: #1e242e;
+      --ink: #e6eaf1;
+      --ink-2: #9aa4b3;
+      --ink-3: #79838f;
+      --line: #2a313c;
+      --line-strong: #3a4350;
+      --accent: #89b0e8;
+      --accent-soft: #1b2634;
+      --ochre: #c8a662;
+      --ochre-soft: #2a2519;
+      --green: #74c398;
+      --red: #e08a7b;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #101318;
+    --surface: #171b22;
+    --surface-2: #1e242e;
+    --ink: #e6eaf1;
+    --ink-2: #9aa4b3;
+    --ink-3: #79838f;
+    --line: #2a313c;
+    --line-strong: #3a4350;
+    --accent: #89b0e8;
+    --accent-soft: #1b2634;
+    --ochre: #c8a662;
+    --ochre-soft: #2a2519;
+    --green: #74c398;
+    --red: #e08a7b;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 40px 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 52px;
+  }
+  h1, h2, h3 {
+    font-family: Spectral, Georgia, "Times New Roman", serif;
+    font-weight: 600;
+    text-wrap: balance;
+    margin: 0;
+    line-height: 1.2;
+  }
+  h1 { font-size: clamp(30px, 5vw, 44px); letter-spacing: -0.01em; }
+  h2 { font-size: 25px; }
+  h3 { font-size: 18px; }
+  p { margin: 0; max-width: 68ch; }
+  code, .mono { font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace; }
+  code {
+    font-size: 0.88em;
+    background: var(--surface-2);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  a { color: var(--accent); }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  /* ---- header ---- */
+  .lede {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 26px;
+  }
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+  .facts b { color: var(--ink); font-weight: 600; }
+
+  /* ---- state pipeline ---- */
+  .pipeline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .step {
+    flex: 1 1 150px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+  .step .mono { font-size: 13px; font-weight: 500; display: block; }
+  .step span.note { font-size: 12.5px; color: var(--ink-2); }
+
+  /* ---- diagram ---- */
+  .scroller {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+  }
+  .scroller svg { display: block; min-width: 760px; width: 100%; height: auto; }
+
+  /* ---- table cards ---- */
+  .tables { display: flex; flex-direction: column; gap: 28px; }
+  .tcard {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .tcard > header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 14px;
+    padding: 13px 18px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .tcard > header .name {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .tcard > header .role { font-size: 13.5px; color: var(--ink-2); flex: 1 1 220px; }
+  .tcard > header .count {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .cols { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .cols th {
+    text-align: left;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding: 9px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  .cols td { padding: 7px 18px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .cols tr:last-child td { border-bottom: none; }
+  .cols td:first-child {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+  .cols td:nth-child(2) {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    color: var(--ink-3);
+    white-space: nowrap;
+  }
+  .cols td:last-child { color: var(--ink-2); }
+  .cols tr.json td:first-child { color: var(--ochre); }
+  .cols tr.group td {
+    background: var(--surface-2);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-family: "IBM Plex Sans", sans-serif;
+  }
+  .tag {
+    display: inline-block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    padding: 1px 5px;
+    border-radius: 3px;
+    vertical-align: 1px;
+    margin-left: 6px;
+  }
+  .tag.pk { background: var(--accent-soft); color: var(--accent); }
+  .tag.idx { background: var(--surface-2); color: var(--ink-2); }
+  .tag.fk { background: var(--surface-2); color: var(--green); }
+
+  /* ---- index table ---- */
+  .wide { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .wide th {
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 500;
+    padding: 9px 14px 9px 0;
+    border-bottom: 1.5px solid var(--line-strong);
+  }
+  .wide td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .wide td:first-child, .wide td:nth-child(2) {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+  }
+  .wide td:nth-child(2) { color: var(--ink-2); }
+  .wide td:last-child { color: var(--ink-2); }
+  .wide tr.unique td:first-child { color: var(--accent); }
+
+  /* ---- notes ---- */
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+  .note-card {
+    border-top: 2px solid var(--line-strong);
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .note-card h3 { font-size: 16px; }
+  .note-card p { font-size: 13.5px; color: var(--ink-2); }
+  .note-card.keyed { border-top-color: var(--accent); }
+
+  /* ---- migrations ---- */
+  .ledger { display: flex; flex-direction: column; gap: 0; }
+  .mig {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 16px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line);
+    align-items: baseline;
+  }
+  .mig:last-child { border-bottom: none; }
+  .mig .v {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12.5px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .mig .what { font-size: 13.5px; color: var(--ink-2); }
+  .mig .what b { color: var(--ink); font-weight: 500; font-family: "IBM Plex Mono", monospace; font-size: 12.5px; }
+
+  /* ---- snapshot ---- */
+  .snapshot {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .snapshot div { background: var(--surface); padding: 14px 16px; }
+  .snapshot .n {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 22px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    display: block;
+  }
+  .snapshot .l { font-size: 12px; color: var(--ink-2); font-family: "IBM Plex Mono", monospace; }
+
+  .section { display: flex; flex-direction: column; gap: 18px; }
+  .section > .head { display: flex; flex-direction: column; gap: 8px; }
+</style>
+
+<div class="page">
+
+  <header class="lede">
+    <span class="eyebrow">lexinform · sqlite · PRAGMA user_version = 14</span>
+    <h1>Схема базы lexinform</h1>
+    <p>Один файл SQLite на весь бот: что известно о законопроекте, что в нём изменилось, что и куда
+    уже отправлено, какие прогоны были и какие команды пришли от оператора. Пять таблиц, один
+    настоящий внешний ключ, двенадцать индексов — из них девять частичных уникальных, и именно они
+    держат главный инвариант: один пост одного вида на законопроект и канал.</p>
+    <div class="facts">
+      <span><b>5</b> таблиц</span>
+      <span><b>14</b> миграций, только вперёд</span>
+      <span><b>WAL</b>, autocommit + явный <code>BEGIN</code> для dry-run</span>
+      <span>источник правды — <b>MIGRATIONS</b> в <code>adapters/sqlite_repo.py</code></span>
+    </div>
+  </header>
+
+  <section class="section">
+    <div class="head">
+      <span class="eyebrow">как состояние переживает прогон</span>
+      <h2>База живёт в ветке, а не на диске</h2>
+      <p>Раннер GitHub Actions одноразовый, поэтому каждый прогон собирает базу заново из SQL-дампа
+      в ветке <code>state</code> и кладёт её туда обратно. Дамп старого релиза доезжает сам:
+      <code>restore()</code> читает последнюю строку <code>PRAGMA user_version</code> и догоняет
+      недостающие миграции.</p>
+    </div>
+    <div class="pipeline">
+      <div class="step"><span class="mono">db init</span><span class="note">пустая схема текущей версии</span></div>
+      <div class="step"><span class="mono">db restore</span><span class="note">DROP всех таблиц, проигрывание дампа с <code>foreign_keys = OFF</code>, затем <code>migrate()</code></span></div>
+      <div class="step"><span class="mono">run</span><span class="note">открытия, анализ, публикации, трекинг</span></div>
+      <div class="step"><span class="mono">db dump</span><span class="note"><code>iterdump()</code> + строка версии, коммит в <code>state</code></span></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="head">
+      <span class="eyebrow">связи</span>
+      <h2>Одна сущность в центре, три журнала вокруг</h2>
+      <p><code>bills</code> — единственная таблица-сущность; всё остальное журналы, растущие вставками.
+      Связь с ней идёт по составному ключу <code>(term, number)</code>, но объявлена
+      <code>FOREIGN KEY</code> лишь одна: <code>publications.status_change_id</code>. Так задумано —
+      дамп <code>iterdump()</code> создаёт таблицы в произвольном порядке, и жёсткие ссылки ломали бы
+      восстановление.</p>
+    </div>
+    <div class="scroller">
+      <svg viewBox="0 0 920 560" role="img" aria-label="ER-диаграмма: bills в центре, status_changes и publications справа, runs и commands отдельно">
+        <defs>
+          <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--line-strong)"/>
+          </marker>
+          <marker id="arwa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <g font-family="IBM Plex Mono, monospace" font-size="12">
+
+          <!-- self reference -->
+          <path d="M110,110 V80 H240 V110" fill="none" stroke="var(--line-strong)" stroke-width="1.2" marker-end="url(#arw)"/>
+          <text x="175" y="72" text-anchor="middle" font-size="11" fill="var(--ink-3)">linked_number → number</text>
+
+          <!-- bills -->
+          <rect x="30" y="110" width="290" height="232" rx="5" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.4"/>
+          <rect x="30" y="110" width="290" height="32" rx="5" fill="var(--accent-soft)"/>
+          <rect x="30" y="136" width="290" height="6" fill="var(--accent-soft)"/>
+          <text x="44" y="131" font-size="13.5" font-weight="600" fill="var(--accent)">bills</text>
+          <text x="306" y="131" font-size="10.5" text-anchor="end" fill="var(--ink-3)">1 строка = 1 законопроект</text>
+          <text x="44" y="163" fill="var(--ink)">term, number</text>
+          <text x="306" y="163" text-anchor="end" font-size="10.5" fill="var(--accent)">PRIMARY KEY</text>
+          <text x="44" y="182" fill="var(--ink-2)">status</text>
+          <text x="306" y="182" text-anchor="end" font-size="10.5" fill="var(--ink-3)">idx</text>
+          <text x="44" y="201" fill="var(--ink-2)">change_date</text>
+          <text x="306" y="201" text-anchor="end" font-size="10.5" fill="var(--ink-3)">idx</text>
+          <text x="44" y="220" fill="var(--ink-2)">entry_into_force</text>
+          <text x="306" y="220" text-anchor="end" font-size="10.5" fill="var(--ink-3)">idx</text>
+          <text x="44" y="239" fill="var(--ink-2)">closure_date, passed</text>
+          <text x="44" y="258" fill="var(--ink-2)">discontinued_at</text>
+          <text x="44" y="277" fill="var(--ink-2)">linked_number, linked_wykaz_number</text>
+          <line x1="44" y1="290" x2="306" y2="290" stroke="var(--line)" stroke-width="1"/>
+          <text x="44" y="310" fill="var(--ochre)">9 JSON-колонок</text>
+          <text x="44" y="329" font-size="10.5" fill="var(--ink-3)">summary · stages · analysis · submission · act</text>
+          <text x="44" y="343" font-size="10.5" fill="var(--ink-3)">· authors · agenda · rcl · prefilter_hits</text>
+
+          <!-- status_changes -->
+          <rect x="430" y="40" width="290" height="180" rx="5" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.4"/>
+          <rect x="430" y="40" width="290" height="32" rx="5" fill="var(--surface-2)"/>
+          <rect x="430" y="66" width="290" height="6" fill="var(--surface-2)"/>
+          <text x="444" y="61" font-size="13.5" font-weight="600" fill="var(--ink)">status_changes</text>
+          <text x="706" y="61" font-size="10.5" text-anchor="end" fill="var(--ink-3)">журнал изменений</text>
+          <text x="444" y="93" fill="var(--ink)">id</text>
+          <text x="706" y="93" text-anchor="end" font-size="10.5" fill="var(--accent)">PK</text>
+          <text x="444" y="112" fill="var(--ink-2)">term, number</text>
+          <text x="444" y="131" fill="var(--ink-2)">old_fingerprint, new_fingerprint</text>
+          <text x="706" y="131" text-anchor="end" font-size="10.5" fill="var(--accent)">UNIQUE</text>
+          <text x="444" y="150" fill="var(--ink-2)">closure_detected, passed, withdrawn</text>
+          <text x="444" y="169" fill="var(--ink-2)">content_changed, discontinued</text>
+          <text x="444" y="188" fill="var(--ochre)">new_stages_json, amendments_json</text>
+          <text x="444" y="207" fill="var(--ink-2)">detected_at</text>
+
+          <!-- publications -->
+          <rect x="430" y="300" width="290" height="200" rx="5" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.4"/>
+          <rect x="430" y="300" width="290" height="32" rx="5" fill="var(--surface-2)"/>
+          <rect x="430" y="326" width="290" height="6" fill="var(--surface-2)"/>
+          <text x="444" y="321" font-size="13.5" font-weight="600" fill="var(--ink)">publications</text>
+          <text x="706" y="321" font-size="10.5" text-anchor="end" fill="var(--ink-3)">журнал постов</text>
+          <text x="444" y="353" fill="var(--ink)">id</text>
+          <text x="706" y="353" text-anchor="end" font-size="10.5" fill="var(--accent)">PK</text>
+          <text x="444" y="372" fill="var(--ink-2)">term, number</text>
+          <text x="444" y="391" fill="var(--ink-2)">kind, ref, channel_id</text>
+          <text x="706" y="391" text-anchor="end" font-size="10.5" fill="var(--accent)">9 × UNIQUE</text>
+          <text x="444" y="410" fill="var(--ink-2)">status</text>
+          <text x="706" y="410" text-anchor="end" font-size="10.5" fill="var(--ink-3)">idx</text>
+          <text x="444" y="429" fill="var(--ink-2)">status_change_id</text>
+          <text x="706" y="429" text-anchor="end" font-size="10.5" fill="var(--green)">FK</text>
+          <text x="444" y="448" fill="var(--ink-2)">message_id, document_message_ids</text>
+          <text x="444" y="467" fill="var(--ink-2)">attempts, error</text>
+          <text x="444" y="486" fill="var(--ink-2)">created_at, sent_at</text>
+
+          <!-- edges -->
+          <path d="M320,150 H430" fill="none" stroke="var(--line-strong)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#arw)"/>
+          <text x="375" y="142" text-anchor="middle" font-size="10.5" fill="var(--ink-3)">(term, number)</text>
+          <text x="328" y="164" font-size="11" fill="var(--ink-3)">1</text>
+          <text x="422" y="164" font-size="11" text-anchor="end" fill="var(--ink-3)">N</text>
+
+          <path d="M320,330 H430" fill="none" stroke="var(--line-strong)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#arw)"/>
+          <text x="375" y="322" text-anchor="middle" font-size="10.5" fill="var(--ink-3)">(term, number)</text>
+          <text x="328" y="344" font-size="11" fill="var(--ink-3)">1</text>
+          <text x="422" y="344" font-size="11" text-anchor="end" fill="var(--ink-3)">N</text>
+
+          <path d="M560,220 V300" fill="none" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#arwa)"/>
+          <text x="572" y="252" font-size="10.5" fill="var(--accent)">status_change_id</text>
+          <text x="572" y="266" font-size="10.5" fill="var(--ink-3)">единственный FOREIGN KEY</text>
+          <text x="552" y="238" font-size="11" text-anchor="end" fill="var(--ink-3)">1</text>
+          <text x="552" y="294" font-size="11" text-anchor="end" fill="var(--ink-3)">0..1</text>
+
+          <!-- runs / commands -->
+          <rect x="30" y="382" width="140" height="120" rx="5" fill="var(--surface)" stroke="var(--line)" stroke-width="1.2"/>
+          <text x="44" y="404" font-size="13" font-weight="600" fill="var(--ink)">runs</text>
+          <text x="44" y="426" font-size="11" fill="var(--ink-2)">id, started_at</text>
+          <text x="44" y="443" font-size="11" fill="var(--ink-2)">since, mode</text>
+          <text x="44" y="460" font-size="11" fill="var(--ink-2)">ok, discovery_ok</text>
+          <text x="44" y="477" font-size="11" fill="var(--ochre)">report_json</text>
+          <text x="44" y="494" font-size="10" fill="var(--ink-3)">чистится через 90 дней</text>
+
+          <rect x="190" y="382" width="140" height="120" rx="5" fill="var(--surface)" stroke="var(--line)" stroke-width="1.2"/>
+          <text x="204" y="404" font-size="13" font-weight="600" fill="var(--ink)">commands</text>
+          <text x="204" y="426" font-size="11" fill="var(--ink-2)">update_id</text>
+          <text x="316" y="426" font-size="10" text-anchor="end" fill="var(--accent)">PK</text>
+          <text x="204" y="443" font-size="11" fill="var(--ink-2)">chat_id, text</text>
+          <text x="204" y="460" font-size="11" fill="var(--ink-2)">received_at</text>
+          <text x="204" y="477" font-size="11" fill="var(--ink-2)">executed_at</text>
+          <text x="204" y="494" font-size="11" fill="var(--ink-2)">handled_at, reply</text>
+
+          <text x="30" y="528" font-size="11" fill="var(--ink-3)">runs и commands ни с чем не связаны: журнал прогонов и журнал команд оператора, ключ второго — update_id из Telegram.</text>
+
+          <!-- stamp -->
+          <g transform="rotate(-7 830 130)">
+            <rect x="748" y="96" width="164" height="68" rx="4" fill="none" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="3 3" opacity="0.85"/>
+            <text x="830" y="122" text-anchor="middle" font-size="10.5" letter-spacing="1.5" fill="var(--accent)">SCHEMA VERSION</text>
+            <text x="830" y="148" text-anchor="middle" font-size="21" font-weight="600" fill="var(--accent)">v14</text>
+          </g>
+          <text x="830" y="200" text-anchor="middle" font-size="10.5" fill="var(--ink-3)">= len(MIGRATIONS)</text>
+
+          <!-- legend -->
+          <path d="M752,392 H792" fill="none" stroke="var(--accent)" stroke-width="1.4" marker-end="url(#arwa)"/>
+          <text x="800" y="396" font-size="10.5" fill="var(--ink-2)">FOREIGN KEY</text>
+          <path d="M752,420 H792" fill="none" stroke="var(--line-strong)" stroke-width="1.2" stroke-dasharray="5 4" marker-end="url(#arw)"/>
+          <text x="800" y="424" font-size="10.5" fill="var(--ink-2)">связь по ключу</text>
+          <text x="752" y="452" font-size="10.5" fill="var(--ochre)">жёлтым</text>
+          <text x="800" y="452" font-size="10.5" fill="var(--ink-2)">— JSON-дампы pydantic</text>
+        </g>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="head">
+      <span class="eyebrow">таблицы и колонки</span>
+      <h2>Пять таблиц</h2>
+      <p>Скалярные колонки — то, по чему фильтруют и сортируют; всё остальное лежит в JSON-дампах
+      моделей pydantic. Такое разделение позволяет добавлять поля в модель без миграции: новое поле
+      с дефолтом просто читается из старой строки.</p>
+    </div>
+
+    <div class="tables">
+
+      <article class="tcard">
+        <header>
+          <span class="name">bills</span>
+          <span class="role">Всё, что известно и решено о законопроекте: и друк Сейма, и запись <code>RPW/…</code> до номера, и проект RCL.</span>
+          <span class="count">PK (term, number)</span>
+        </header>
+        <table class="cols">
+          <thead><tr><th>колонка</th><th>тип</th><th>что значит</th></tr></thead>
+          <tbody>
+            <tr><td>term<span class="tag pk">PK</span></td><td>INTEGER</td><td>Каденция Сейма. Каждая строка носит свою: листинги по терму не фильтруются, старый терм дорабатывается, а не отбрасывается.</td></tr>
+            <tr><td>number<span class="tag pk">PK</span></td><td>TEXT</td><td>Номер друка (<code>2699</code>), либо <code>RPW/29075/2026</code> до его присвоения, либо <code>RCL/12401251</code> для проекта на legislacja.rcl.gov.pl.</td></tr>
+            <tr><td>title</td><td>TEXT</td><td>Заголовок, продублированный из <code>summary_json</code> ради человекочитаемого дампа и ручных SQL-запросов; модель читает JSON.</td></tr>
+            <tr><td>change_date<span class="tag idx">idx</span></td><td>TEXT</td><td>Момент изменения по данным API. По нему сортируются очереди и отсекается <code>changed_since</code> в трекинге.</td></tr>
+            <tr><td>closure_date</td><td>TEXT</td><td>Дата закрытия процесса. Закрытые ведутся ещё <code>closed_grace_days</code>, принятые — дольше, пока не выйдет акт.</td></tr>
+            <tr><td>passed</td><td>INTEGER</td><td>Принят парламентом (не «вступил в силу»): у ветированных тоже 1.</td></tr>
+            <tr><td>status<span class="tag idx">idx</span></td><td>TEXT</td><td><code>BillStatus</code>: discovered → skipped_prefilter / text_prefilter_pending → analysis_pending → analyzed, плюс analysis_failed, skipped_cost, linked.</td></tr>
+            <tr><td>entry_into_force<span class="tag idx">idx</span></td><td>TEXT</td><td>Дата вступления акта в силу, вынутая из <code>act_json</code> ради запроса «кому сегодня напомнить».</td></tr>
+            <tr><td>discontinued_at</td><td>TEXT</td><td>Проставляется при смене каденции (принцип дисконтинуации). Фильтр <code>discontinued_at IS NULL</code> стоит во всех листингах.</td></tr>
+            <tr><td>linked_number</td><td>TEXT</td><td>Ссылка на себя же: запись RPW или RCL указывает на появившийся друк, который наследует карточку.</td></tr>
+            <tr><td>linked_wykaz_number</td><td>TEXT</td><td>Номер из перечня (<code>UC104</code>) проекта RCL, продолжением которого стал друк: тег карточки сохраняется.</td></tr>
+            <tr><td>analysis_attempts</td><td>INTEGER</td><td>Счётчик неудач анализа, 3 попытки на законопроект. Сбои сервисов его не тратят.</td></tr>
+            <tr><td>last_error</td><td>TEXT</td><td>Причина последней неудачи, в том числе «текст дороже лимита» для <code>skipped_cost</code>.</td></tr>
+            <tr><td>first_seen_at, last_checked_at</td><td>TEXT</td><td>Когда строка появилась и когда её последний раз трогали.</td></tr>
+            <tr class="group"><td colspan="3">JSON-дампы pydantic</td></tr>
+            <tr class="json"><td>summary_json</td><td>TEXT NOT NULL</td><td><code>ProcessSummary</code> — единственная обязательная: из неё строится модель <code>Bill</code>, включая term, number и заголовок.</td></tr>
+            <tr class="json"><td>stages_json + stages_fingerprint</td><td>TEXT</td><td>Дерево стадий процесса и его отпечаток. Отпечаток и решает, было ли изменение; поля, добавленные в <code>Stage</code> ради рендеринга, в него не входят.</td></tr>
+            <tr class="json"><td>analysis_json</td><td>TEXT</td><td><code>AnalysisRecord</code>: вердикт модели, оценка, категория, токены и <code>text_sha256</code> — по нему решается, нужен ли повторный анализ.</td></tr>
+            <tr class="json"><td>submission_json</td><td>TEXT</td><td>Запись из <code>/bills</code>: даты консультаций, тип заявителя, флаг <code>consultationResults</code>. Обновляется только трекингом.</td></tr>
+            <tr class="json"><td>act_json</td><td>TEXT</td><td><code>ActInfo</code>: адрес ELI, дата Dz.U., дата вступления в силу.</td></tr>
+            <tr class="json"><td>authors_json</td><td>TEXT</td><td>Подписанты депутатского проекта по клубам — в API их нет, разбирается сопроводительное письмо.</td></tr>
+            <tr class="json"><td>agenda_json</td><td>TEXT</td><td>Предстоящие заседания, называющие законопроект. Обновляется каждый прогон для всех отслеживаемых, не только изменившихся.</td></tr>
+            <tr class="json"><td>rcl_json</td><td>TEXT</td><td><code>RclProject</code>: таймлайн, каталоги, письмо с дедлайном, номер друка. У пропущенных префильтром остаётся только скелет без документов.</td></tr>
+            <tr class="json"><td>prefilter_hits</td><td>TEXT NOT NULL '[]'</td><td>Какие именно паттерны сработали — видно в карточке и в отладке порогов.</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="tcard">
+        <header>
+          <span class="name">status_changes</span>
+          <span class="role">Одна строка — одно замеченное изменение процесса. Только вставки; дедупликация уникальным ключом.</span>
+          <span class="count">UNIQUE (term, number, new_fingerprint)</span>
+        </header>
+        <table class="cols">
+          <thead><tr><th>колонка</th><th>тип</th><th>что значит</th></tr></thead>
+          <tbody>
+            <tr><td>id<span class="tag pk">PK</span></td><td>INTEGER</td><td>На него ссылается пост-обновление.</td></tr>
+            <tr><td>term, number</td><td>INTEGER, TEXT</td><td>Чей это законопроект. FK нет: связь держит код.</td></tr>
+            <tr><td>old_fingerprint → new_fingerprint</td><td>TEXT</td><td>Отпечаток стадий до и после. Уникальность по <code>(term, number, new_fingerprint)</code> — это и есть защита от повторного объявления: <code>IntegrityError</code> превращается в «изменения нет».</td></tr>
+            <tr><td>closure_detected</td><td>INTEGER</td><td>В этом изменении процесс закрылся. Если в том же прогоне появился ELI акта, объявление придерживается — расскажет уведомление о Dz.U.</td></tr>
+            <tr><td>passed, withdrawn, discontinued</td><td>INTEGER</td><td>Принят / снят / прекращён с концом каденции — влияет на формулировку поста.</td></tr>
+            <tr><td>content_changed</td><td>INTEGER</td><td>Появился новый текст, значит нужен повторный анализ.</td></tr>
+            <tr class="json"><td>new_stages_json</td><td>TEXT NOT NULL</td><td>Стадии, которых раньше не было: из них рендерится сам пост.</td></tr>
+            <tr class="json"><td>amendments_json</td><td>TEXT</td><td>Пересказ поправок Сената или комиссии отдельным вызовом модели; сбой деградирует до сухого события.</td></tr>
+            <tr><td>detected_at</td><td>TEXT</td><td>Когда прогон это заметил.</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="tcard">
+        <header>
+          <span class="name">publications</span>
+          <span class="role">Что уже отправлено в канал — и что только собирались отправить. Строка создаётся до вызова Telegram.</span>
+          <span class="count">9 частичных уникальных индексов</span>
+        </header>
+        <table class="cols">
+          <thead><tr><th>колонка</th><th>тип</th><th>что значит</th></tr></thead>
+          <tbody>
+            <tr><td>id<span class="tag pk">PK</span></td><td>INTEGER</td><td>—</td></tr>
+            <tr><td>term, number</td><td>INTEGER, TEXT</td><td>Законопроект, под которым идёт пост.</td></tr>
+            <tr><td>kind</td><td>TEXT</td><td><code>PublicationKind</code>: new_bill, status_update, act_published, in_force, consultation_deadline, consultation_results, agenda, hearing_deadline, joint_bill.</td></tr>
+            <tr><td>ref</td><td>TEXT</td><td>Ключ повторяющегося события: заседание для <code>agenda</code>, дата слушания для <code>hearing_deadline</code>. Входит в уникальный индекс, поэтому каждое заседание объявляется ровно раз.</td></tr>
+            <tr><td>status<span class="tag idx">idx</span></td><td>TEXT</td><td>pending → sent / failed / skipped, плюс unknown — так помечают <code>pending</code>, оставшийся от упавшего прогона; повторно его не шлют.</td></tr>
+            <tr><td>channel_id</td><td>TEXT</td><td>Канал: те же посты в другом канале — другие строки, поэтому канал есть в каждом уникальном ключе.</td></tr>
+            <tr><td>status_change_id<span class="tag fk">FK</span></td><td>INTEGER</td><td>→ <code>status_changes(id)</code>. Единственный настоящий внешний ключ схемы.</td></tr>
+            <tr><td>message_id</td><td>INTEGER</td><td>Идентификатор сообщения Telegram: к нему цепляются ответы в треде.</td></tr>
+            <tr><td>document_message_ids</td><td>TEXT '[]'</td><td>Сообщения с приложенными файлами.</td></tr>
+            <tr><td>attempts</td><td>INTEGER</td><td>Сколько раз пробовали отправить; <code>failed</code> повторяют до <code>max_publish_attempts</code>.</td></tr>
+            <tr><td>created_at, sent_at, error</td><td>TEXT</td><td>Когда создали, когда ушло, чем закончилось.</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="tcard">
+        <header>
+          <span class="name">runs</span>
+          <span class="role">Журнал прогонов: отчёт, стоимость, водяной знак для инкрементального поиска.</span>
+          <span class="count">чистится старше 90 дней</span>
+        </header>
+        <table class="cols">
+          <thead><tr><th>колонка</th><th>тип</th><th>что значит</th></tr></thead>
+          <tbody>
+            <tr><td>id<span class="tag pk">PK</span></td><td>INTEGER</td><td>—</td></tr>
+            <tr><td>started_at, finished_at</td><td>TEXT</td><td>Незаполненный <code>finished_at</code> — прогон умер на середине.</td></tr>
+            <tr><td>since</td><td>TEXT</td><td>С какой даты просили искать.</td></tr>
+            <tr><td>mode</td><td>TEXT</td><td><code>RunMode</code>: run, track, commands, dry_run.</td></tr>
+            <tr><td>ok, discovery_ok</td><td>INTEGER</td><td>Водяной знак: следующий поиск стартует от <code>started_at</code> последнего прогона с <code>discovery_ok = 1</code>, а не от последнего успешного целиком.</td></tr>
+            <tr class="json"><td>report_json</td><td>TEXT</td><td><code>RunReport</code> — то, что показывают <code>lexinform runs</code> и <code>lexinform cost</code>.</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="tcard">
+        <header>
+          <span class="name">commands</span>
+          <span class="role">Команды оператора из технического канала — записываются до выполнения, а не после.</span>
+          <span class="count">PK = update_id из Telegram</span>
+        </header>
+        <table class="cols">
+          <thead><tr><th>колонка</th><th>тип</th><th>что значит</th></tr></thead>
+          <tbody>
+            <tr><td>update_id<span class="tag pk">PK</span></td><td>INTEGER</td><td>Идентификатор апдейта Telegram: он же ключ файла в ветке <code>inbox</code>, поэтому повторно прочитанный файл узнаётся сразу.</td></tr>
+            <tr><td>chat_id, message_id</td><td>TEXT, INTEGER</td><td>Куда и под какое сообщение отвечать.</td></tr>
+            <tr><td>text</td><td>TEXT</td><td>Сама команда: <code>/analyze</code>, <code>/show</code>, <code>/skip</code>, <code>/republish</code>.</td></tr>
+            <tr><td>received_at</td><td>TEXT</td><td>Когда команда попала в базу — до выполнения.</td></tr>
+            <tr><td>executed_at</td><td>TEXT</td><td>Когда побочные эффекты сделаны. Заполнено, а <code>handled_at</code> пусто — значит канал лежал: ответ повторяют, команду не выполняют заново.</td></tr>
+            <tr><td>handled_at, reply</td><td>TEXT</td><td>Когда ответили и что именно ответили — этот же текст уйдёт повторно, если понадобится.</td></tr>
+          </tbody>
+        </table>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="head">
+      <span class="eyebrow">индексы</span>
+      <h2>Три обычных и девять уникальных</h2>
+      <p>Обычные индексы обслуживают очереди прогона. Уникальные — не оптимизация, а бизнес-правило:
+      частичное условие <code>WHERE kind = …</code> задаёт, что именно считается «тем же самым постом».
+      <code>create_publication</code> вставляет с <code>ON CONFLICT DO UPDATE</code>, и повторная попытка
+      не плодит строку, а переводит существующую обратно в <code>pending</code>.</p>
+    </div>
+    <div class="scroller" style="border:none;background:none;">
+      <table class="wide" style="min-width:640px;">
+        <thead><tr><th>индекс</th><th>колонки</th><th>условие</th><th>зачем</th></tr></thead>
+        <tbody>
+          <tr><td>ix_bills_status</td><td>bills(status)</td><td>—</td><td>Очереди фаз: «кому нужен текстовый префильтр», «кого анализировать», «кого публиковать».</td></tr>
+          <tr><td>ix_bills_change_date</td><td>bills(change_date)</td><td>—</td><td>Сортировка очередей: свежее — первым.</td></tr>
+          <tr><td>ix_bills_entry_into_force</td><td>bills(entry_into_force)</td><td>—</td><td>«Что вступает в силу сегодня» — напоминание в день вступления.</td></tr>
+          <tr><td>ix_pub_status</td><td>publications(status)</td><td>—</td><td>Поиск зависших <code>pending</code> и повторяемых <code>failed</code>.</td></tr>
+          <tr class="unique"><td>ux_pub_new</td><td>(term, number, channel_id)</td><td>kind = 'new_bill'</td><td>Одна карточка на законопроект и канал. Основа всего трекинга: каждый наблюдатель джойнится именно по отправленной карточке.</td></tr>
+          <tr class="unique"><td>ux_pub_change</td><td>(status_change_id, channel_id)</td><td>kind = 'status_update'</td><td>Одно изменение — один пост, независимо от того, сколько раз прогон его увидел.</td></tr>
+          <tr class="unique"><td>ux_pub_once_per_kind</td><td>(term, number, kind, channel_id)</td><td>kind IN ('act_published', 'in_force')</td><td>Уведомление о Dz.U. и напоминание о вступлении в силу — по одному на законопроект.</td></tr>
+          <tr class="unique"><td>ux_pub_consultation</td><td>(term, number, kind, channel_id)</td><td>kind = 'consultation_deadline'</td><td>Одно напоминание о конце консультаций.</td></tr>
+          <tr class="unique"><td>ux_pub_consultation_results</td><td>(term, number, kind, channel_id)</td><td>kind = 'consultation_results'</td><td>Одно уведомление о публикации полученных мнений.</td></tr>
+          <tr class="unique"><td>ux_pub_agenda</td><td>(term, number, kind, channel_id, ref)</td><td>kind = 'agenda'</td><td>По одному посту на заседание: перенесённое заседание — это другой <code>ref</code>, то есть новый пост.</td></tr>
+          <tr class="unique"><td>ux_pub_hearing</td><td>(term, number, kind, channel_id, ref)</td><td>kind = 'hearing_deadline'</td><td>По одному напоминанию на каждое публичное слушание (<code>ref</code> = его дата).</td></tr>
+          <tr class="unique"><td>ux_pub_joint</td><td>(term, number, kind, channel_id)</td><td>kind = 'joint_bill'</td><td>Один ответ «альтернативный проект» под карточкой группы совместно рассматриваемых друков.</td></tr>
+          <tr class="unique"><td>sqlite_autoindex</td><td>status_changes(term, number, new_fingerprint)</td><td>UNIQUE в CREATE TABLE</td><td>Дедупликация изменений. <code>add_status_change</code> ловит <code>IntegrityError</code> и возвращает None.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="head">
+      <span class="eyebrow">почему схема такая</span>
+      <h2>Решения, которые видны в колонках</h2>
+    </div>
+    <div class="notes">
+      <div class="note-card keyed">
+        <h3>Строка до отправки</h3>
+        <p>Любой пост сначала получает строку <code>pending</code>, и только потом уходит вызов Telegram.
+        Упавший прогон оставляет <code>pending</code>, который следующий помечает <code>unknown</code> и
+        никогда не шлёт заново: дубль в канале дороже пропуска.</p>
+      </div>
+      <div class="note-card keyed">
+        <h3>Очередь «к отправке» считается через NOT EXISTS</h3>
+        <p>Отдельного флага «опубликован» у законопроекта нет. Кандидаты — те, у кого нет
+        урегулировавшей строки в <code>publications</code>; <code>failed</code> с непотраченными
+        попытками не считается урегулировавшей, поэтому повтор случается сам.</p>
+      </div>
+      <div class="note-card">
+        <h3>Композитный ключ вместо суррогатного</h3>
+        <p><code>(term, number)</code> — естественный ключ: номер друка уникален внутри каденции и
+        начинается заново в новой. Поэтому JOIN-ы идут по двум колонкам, а не по <code>bill_id</code>.</p>
+      </div>
+      <div class="note-card">
+        <h3>Одна денормализация — намеренная</h3>
+        <p><code>title</code>, <code>change_date</code>, <code>closure_date</code>, <code>passed</code> и
+        <code>entry_into_force</code> дублируют то, что уже есть в JSON: по ним фильтруют и сортируют,
+        а <code>json_extract</code> в WHERE индекс не использует.</p>
+      </div>
+      <div class="note-card">
+        <h3>Удерживаемые обновления</h3>
+        <p>Изменение из одних «рамочных» стадий не публикуется, но строка в
+        <code>status_changes</code> создаётся — иначе оно объявится позже как новость. Её пост помечают
+        <code>skipped</code>, а следующий настоящий пост подбирает удержанные стадии и проставляет им
+        свой <code>message_id</code>.</p>
+      </div>
+      <div class="note-card">
+        <h3>Никаких удалений</h3>
+        <p>Конец каденции не чистит строки, а проставляет <code>discontinued_at</code>; повторная
+        публикация не удаляет пост, а забывает строку через <code>delete_publication</code>. Из
+        удалений в схеме — только чистка <code>runs</code> старше 90 дней.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="head">
+      <span class="eyebrow">миграции · только append</span>
+      <h2>Лента версий</h2>
+      <p>Скрипт с индексом <code>i</code> приводит базу к версии <code>i + 1</code>;
+      <code>SCHEMA_VERSION = len(MIGRATIONS)</code>. Каждый скрипт выполняется в собственной
+      транзакции, версия проставляется в конце — упавший скрипт оставляет базу на предыдущей версии.
+      Редактировать или переставлять прошлые записи нельзя: в развёрнутых дампах записана их версия.
+      Отката нет — откатываются кодом и дампом из истории ветки <code>state</code>.</p>
+    </div>
+    <div class="ledger">
+      <div class="mig"><span class="v">v1</span><span class="what">Схема целиком: <b>bills</b>, <b>status_changes</b>, <b>publications</b>, <b>runs</b> и первые уникальные индексы постов.</span></div>
+      <div class="mig"><span class="v">v2</span><span class="what"><b>publications.attempts</b>, <b>status_changes.content_changed</b>, <b>runs.discovery_ok</b> — повторы постов, повторный анализ, водяной знак.</span></div>
+      <div class="mig"><span class="v">v3</span><span class="what"><b>submission_json</b>, <b>linked_number</b>, <b>withdrawn</b> — законопроекты до присвоения номера (RPW) и их связь с будущим друком.</span></div>
+      <div class="mig"><span class="v">v4</span><span class="what"><b>act_json</b>, <b>entry_into_force</b> + индекс, <b>ux_pub_once_per_kind</b> — Dziennik Ustaw и вступление в силу.</span></div>
+      <div class="mig"><span class="v">v5</span><span class="what"><b>authors_json</b> — подписанты депутатских проектов по клубам.</span></div>
+      <div class="mig"><span class="v">v6</span><span class="what"><b>ux_pub_consultation</b> — одно напоминание о дедлайне консультаций на канал.</span></div>
+      <div class="mig"><span class="v">v7</span><span class="what"><b>agenda_json</b>, <b>publications.ref</b>, индексы <b>agenda</b> и <b>consultation_results</b> — повторяющиеся посты получают ключ события.</span></div>
+      <div class="mig"><span class="v">v8</span><span class="what"><b>rcl_json</b> — правительственные проекты на RCL, до Сейма.</span></div>
+      <div class="mig"><span class="v">v9</span><span class="what"><b>discontinued_at</b>, <b>status_changes.discontinued</b> — конец каденции, принцип дисконтинуации.</span></div>
+      <div class="mig"><span class="v">v10</span><span class="what"><b>linked_wykaz_number</b> — друк, продолжающий тред RCL, сохраняет номер из перечня для тега.</span></div>
+      <div class="mig"><span class="v">v11</span><span class="what"><b>ux_pub_hearing</b>, <b>amendments_json</b> — напоминания о слушаниях и пересказ поправок.</span></div>
+      <div class="mig"><span class="v">v12</span><span class="what"><b>ux_pub_joint</b> — совместно рассматриваемые друки делят одну карточку.</span></div>
+      <div class="mig"><span class="v">v13</span><span class="what"><b>commands</b> — команды оператора по <code>update_id</code> Telegram, записанные до выполнения.</span></div>
+      <div class="mig"><span class="v">v14</span><span class="what"><b>commands.executed_at</b> — команда, чей ответ не дошёл, отвечается повторно, а не выполняется повторно.</span></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="head">
+      <span class="eyebrow">дамп ветки state · 12 сентября 2026</span>
+      <h2>Сколько там строк на самом деле</h2>
+      <p>База намеренно маленькая: в ней только то, что бот действительно ведёт, а не зеркало API.
+      Двух строк в <code>status_changes</code> хватает — изменения пишутся лишь для опубликованных
+      законопроектов.</p>
+    </div>
+    <div class="snapshot">
+      <div><span class="n">139</span><span class="l">bills</span></div>
+      <div><span class="n">22</span><span class="l">publications</span></div>
+      <div><span class="n">2</span><span class="l">status_changes</span></div>
+      <div><span class="n">24</span><span class="l">commands</span></div>
+      <div><span class="n">31</span><span class="l">runs</span></div>
+    </div>
+  </section>
+
+</div>
