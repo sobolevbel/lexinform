@@ -26,6 +26,7 @@ from lexinform.services.terms import TermResolver
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
 from lexinform.services.tracking.result import TrackingResult
+from lexinform.services.wykaz_discovery import WykazDiscoveryService
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class RunOptions(BaseModel):
     dry_run: bool = False
     discover: bool = True
     rcl: bool = True  # also look at legislacja.rcl.gov.pl (when the pipeline has the service)
+    wykaz: bool = True  # also look at the wykaz prac legislacyjnych RM on gov.pl
     publish: bool = True
     track: bool = True
     max_publish: int = 10
@@ -65,6 +67,7 @@ class DailyPipeline:
         notifier: RunNotifier | None = None,
         text_prefilter: TextPrefilterService | None = None,
         rcl_discovery: RclDiscoveryService | None = None,
+        wykaz_discovery: WykazDiscoveryService | None = None,
         commands: CommandService | None = None,
         first_run_lookback_days: int = 1,
         rerun_overlap_days: int = 1,
@@ -82,6 +85,7 @@ class DailyPipeline:
         self._notifier = notifier
         self._text_prefilter = text_prefilter
         self._rcl_discovery = rcl_discovery
+        self._wykaz_discovery = wykaz_discovery
         self._commands = commands  # None: no inbox configured
         self._first_run_lookback = timedelta(days=first_run_lookback_days)
         self._overlap = timedelta(days=rerun_overlap_days)
@@ -197,6 +201,11 @@ class DailyPipeline:
             self._phase(report, "commands", lambda: self._handle_commands(opts, report))
         if opts.discover:
             self._phase(report, "discovery", lambda: self._discover(current, since, report))
+        if opts.discover and opts.wykaz and self._wykaz_discovery is not None:
+            # Before RCL, so that a project published today joins the thread of its own plan.
+            self._phase(
+                report, "wykaz discovery", lambda: self._discover_wykaz(current, since, report)
+            )
         if opts.discover and opts.rcl and self._rcl_discovery is not None:
             # Its own phase: an RCL outage must not cost the Sejm discovery.
             self._phase(report, "rcl discovery", lambda: self._discover_rcl(current, since, report))
@@ -260,6 +269,12 @@ class DailyPipeline:
         report.rcl_prefilter_hits = discovered.prefilter_hits
         if discovered.failed:
             report.errors.append(f"{discovered.failed} RCL project(s) could not be read")
+
+    def _discover_wykaz(self, term: int, since: datetime, report: RunReport) -> None:
+        assert self._wykaz_discovery is not None
+        discovered = self._wykaz_discovery.discover(term, since)
+        report.wykaz_discovered = discovered.new
+        report.wykaz_backlog = discovered.backlog
 
     def _prefilter_text(self, opts: RunOptions, report: RunReport) -> None:
         assert self._text_prefilter is not None

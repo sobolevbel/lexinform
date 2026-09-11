@@ -16,6 +16,7 @@ from lexinform.errors import (
     RclUnavailableError,
     SejmApiUnavailableError,
     TelegramUnavailableError,
+    WykazUnavailableError,
 )
 from lexinform.models import (
     ActInfo,
@@ -50,6 +51,7 @@ from lexinform.models import (
     TriageContext,
     TriageRecord,
     Vote,
+    WykazEntry,
 )
 
 
@@ -285,6 +287,33 @@ class FakeRclGateway:
             modified=project.modified,
         )
         self.listing = [r for r in self.listing if r.id != project.id] + [row]
+
+
+@dataclass
+class FakeWykazGateway:
+    """`WykazGateway` over a list of entries: the register as one download."""
+
+    entries_by_number: dict[str, WykazEntry] = field(default_factory=dict)
+    outage: bool = False
+    calls: int = 0
+
+    def entries(self) -> tuple[WykazEntry, ...]:
+        self.calls += 1
+        if self.outage:
+            raise WykazUnavailableError("gov.pl does not answer")
+        return tuple(
+            sorted(self.entries_by_number.values(), key=lambda e: e.published_at, reverse=True)
+        )
+
+    def find(self, number: str) -> WykazEntry | None:
+        return self.entries_by_number.get(number)
+
+    def close(self) -> None:
+        pass
+
+    def put(self, entry: WykazEntry) -> None:
+        """Make the register show this entry."""
+        self.entries_by_number[entry.number] = entry
 
 
 def make_amendments(**overrides: object) -> Amendments:

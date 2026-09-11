@@ -29,6 +29,7 @@ from lexinform.adapters.telegram import (
     TelegramRunNotifier,
 )
 from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.adapters.wykaz_csv import WykazClient
 from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
 from lexinform.ports import (
@@ -43,6 +44,7 @@ from lexinform.ports import (
     RunNotifier,
     SejmApi,
     TextExtractor,
+    WykazGateway,
 )
 from lexinform.pricing import price_of
 from lexinform.sections import TextBudget
@@ -61,6 +63,7 @@ from lexinform.services.sources import RclTextSource, SejmTextSource, TextSource
 from lexinform.services.terms import TermResolver
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
+from lexinform.services.wykaz_discovery import WykazDiscoveryService
 from lexinform.settings import Settings
 
 LOCAL_TZ = ZoneInfo("Europe/Warsaw")  # the readers' and the Sejm's day, whatever the runner's zone
@@ -79,6 +82,7 @@ class Container:
     prefilter: KeywordPrefilter
     terms: TermResolver
     rcl: RclGateway | None = None  # None when LEXINFORM_RCL_ENABLED is off
+    wykaz: WykazGateway | None = None  # None when LEXINFORM_WYKAZ_ENABLED is off
     # Collaborators a test (or a dry run) supplies instead of the real adapters.
     llm: LlmAnalyzer | None = None
     extractor: TextExtractor | None = None
@@ -160,6 +164,15 @@ class Container:
                 text_prefilter=self.settings.text_prefilter_enabled,
                 workers=self.settings.rcl_concurrency,
             ),
+        )
+
+    def wykaz_discovery_service(self) -> WykazDiscoveryService | None:
+        if self.wykaz is None:
+            return None
+        wykaz = self.wykaz
+        return self._once(
+            "wykaz_discovery",
+            lambda: WykazDiscoveryService(wykaz, self.repo, self.prefilter, self.clock),
         )
 
     def analyzer(self) -> LlmAnalyzer:
@@ -377,6 +390,7 @@ class Container:
                 notifier=self.run_notifier(dry_run=dry_run),
                 text_prefilter=self.text_prefilter_service(),
                 rcl_discovery=self.rcl_discovery_service(),
+                wykaz_discovery=self.wykaz_discovery_service(),
                 commands=self.command_service(dry_run=dry_run),
                 first_run_lookback_days=self.settings.first_run_lookback_days,
                 rerun_overlap_days=self.settings.rerun_overlap_days,
@@ -390,6 +404,8 @@ class Container:
         self.gateway.close()
         if self.rcl is not None:
             self.rcl.close()
+        if self.wykaz is not None:
+            self.wykaz.close()
         self.repo.close()
         if self._telegram is not None:
             self._telegram.close()
@@ -416,6 +432,15 @@ def build_container(settings: Settings) -> Container:
         if settings.rcl_enabled
         else None
     )
+    wykaz = (
+        WykazClient(
+            settings.wykaz_base_url,
+            timeout=settings.wykaz_timeout_seconds,
+            proxy=settings.wykaz_proxy_url or None,
+        )
+        if settings.wykaz_enabled
+        else None
+    )
     clock = SystemClock()
     return Container(
         settings=settings,
@@ -428,4 +453,5 @@ def build_container(settings: Settings) -> Container:
         prefilter=KeywordPrefilter(),
         terms=TermResolver(gateway, repo, pinned=settings.term),
         rcl=rcl,
+        wykaz=wykaz,
     )

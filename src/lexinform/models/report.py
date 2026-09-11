@@ -36,6 +36,8 @@ class RunReport(BaseModel):
     pre_print_discovered: int = 0
     rcl_discovered: int = 0  # government projects first seen on RCL
     rcl_prefilter_hits: int = 0
+    wykaz_discovered: int = 0  # bills first seen as a plan in the wykaz prac RM
+    wykaz_backlog: int = 0  # older entries that match the keywords and were left unfollowed
     linked: int = 0
     prefilter_hits: int = 0
     text_prefilter_checked: int = 0

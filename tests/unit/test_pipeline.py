@@ -211,6 +211,7 @@ def test_report_carries_phase_timings() -> None:
     assert set(report.phase_seconds) == {
         "commands",
         "discovery",
+        "wykaz discovery",
         "rcl discovery",
         "text prefilter",
         "analysis",

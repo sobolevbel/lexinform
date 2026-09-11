@@ -51,6 +51,7 @@ from tests.fakes import (
     FakeReplier,
     FakeSejmGateway,
     FakeTextExtractor,
+    FakeWykazGateway,
     FixedClock,
 )
 
@@ -300,6 +301,7 @@ class World:
         self.replier = FakeReplier()
         self.extractor = extractor or FakeTextExtractor()
         self.rcl = FakeRclGateway()
+        self.wykaz = FakeWykazGateway()
         # The production wiring over the fakes: the settings name the fake hosts (downloads are
         # routed by host), every tuning value is the daily run's unless a test says otherwise,
         # and nothing is read from the environment or a .env file.
@@ -309,6 +311,7 @@ class World:
             sejm_api_base_url=f"https://{FILE_HOST}",
             rcl_base_url=f"https://{RCL_HOST}",
             rcl_enabled=True,
+            wykaz_enabled=True,
             telegram_channel_id=CHANNEL,
             llm_model="claude-opus-5",  # priced: the cost estimates use $5 per million tokens
             llm_triage_model="fake-triage" if triage else "",
@@ -335,6 +338,7 @@ class World:
             prefilter=KeywordPrefilter(),
             terms=TermResolver(self.gateway, self.repo),
             rcl=self.rcl,
+            wykaz=self.wykaz,
             llm=self.llm,
             extractor=self.extractor,
             publisher_override=self.publisher,
@@ -364,6 +368,12 @@ class World:
                 ),
             )
             self.gateway.files[print_url(number)] = b"%PDF"
+
+    def add_wykaz_entry(self, entry: WykazEntry | None = None, **overrides: Any) -> WykazEntry:
+        """A bill the government has announced in the wykaz prac legislacyjnych RM."""
+        entry = entry or wykaz_entry(**overrides)
+        self.wykaz.put(entry)
+        return entry
 
     def add_rcl_project(
         self, project: RclProject | None = None, *, letter: str = LETTER_TEXT

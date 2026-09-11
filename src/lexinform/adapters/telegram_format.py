@@ -669,6 +669,10 @@ class MessageFormatter:
                     ("prefilter hits: {}", report.rcl_prefilter_hits),
                 ),
                 _counters(
+                    ("wykaz prac RM: {} new", report.wykaz_discovered),
+                    ("{} older entries match, not followed", report.wykaz_backlog),
+                ),
+                _counters(
                     ("text prefilter: checked {}", report.text_prefilter_checked),
                     ("hits {}", report.text_prefilter_hits),
                     ("unreadable {}", report.text_prefilter_unreadable),
