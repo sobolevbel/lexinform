@@ -311,3 +311,97 @@ def test_terms_are_listed_with_the_running_one_flagged_current() -> None:
     assert (terms[1].start, terms[1].end) == (date(2019, 11, 12), date(2023, 11, 12))
     assert terms[2].end is None  # the running term has no end yet
     assert current_term(terms) == 10
+
+
+def test_find_process_by_rcl_num_reads_details_only_around_the_handover() -> None:
+    """rclNum is not in the listing, so details are read one by one — oldest first among the
+    bills dated on or after the hand-over, which keeps it to a few requests."""
+    listing = [
+        {
+            "term": 10,
+            "number": "2100",
+            "title": "old",
+            "changeDate": "2025-06-01T10:00:00",
+            "documentDate": "2025-06-01",
+        },
+        {
+            "term": 10,
+            "number": "2171",
+            "title": "other",
+            "changeDate": "2026-01-19T10:00:00",
+            "documentDate": "2026-01-19",
+        },
+        {
+            "term": 10,
+            "number": "2172",
+            "title": "ours",
+            "changeDate": "2026-01-20T10:00:00",
+            "documentDate": "2026-01-20",
+        },
+    ]
+    details = {
+        "2171": {
+            "term": 10,
+            "number": "2171",
+            "title": "other",
+            "changeDate": "2026-01-19T10:00:00",
+            "stages": [],
+        },
+        "2172": {
+            "term": 10,
+            "number": "2172",
+            "title": "ours",
+            "changeDate": "2026-01-20T10:00:00",
+            "rclNum": "RM-0610-7-26",
+            "stages": [],
+        },
+    }
+    calls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        calls.append(path)
+        if path.endswith("/processes"):
+            offset = int(request.url.params.get("offset", 0))
+            return httpx.Response(200, json=listing if offset == 0 else [])
+        return httpx.Response(200, json=details[path.rsplit("/", 1)[-1]])
+
+    found = _client(handler).find_process_by_rcl_num(10, "rm-0610-7-26 ", since=date(2026, 1, 20))
+
+    assert found is not None and found.number == "2172"
+    read = [c.rsplit("/", 1)[-1] for c in calls if "/processes/" in c]
+    assert read == ["2171", "2172"]  # the 2025 bill is out of the window, never read
+
+
+def test_find_process_by_rcl_num_gives_up_after_the_cap() -> None:
+    listing = [
+        {
+            "term": 10,
+            "number": str(2100 + i),
+            "title": "x",
+            "changeDate": "2026-01-20T10:00:00",
+            "documentDate": "2026-01-20",
+        }
+        for i in range(SejmApiClient.MAX_RCL_LOOKUPS + 5)
+    ]
+    details = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal details
+        if request.url.path.endswith("/processes"):
+            offset = int(request.url.params.get("offset", 0))
+            return httpx.Response(200, json=listing if offset == 0 else [])
+        details += 1
+        return httpx.Response(
+            200,
+            json={
+                "term": 10,
+                "number": "x",
+                "title": "x",
+                "changeDate": "2026-01-20T10:00:00",
+                "stages": [],
+            },
+        )
+
+    assert _client(handler).find_process_by_rcl_num(10, "RM-1-1-26") is None
+    assert details == SejmApiClient.MAX_RCL_LOOKUPS

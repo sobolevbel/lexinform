@@ -129,6 +129,21 @@ class FakeSejmGateway:
             None,
         )
 
+    def find_process_by_rcl_num(
+        self, term: int, rcl_num: str, *, since: date | None = None
+    ) -> ProcessSummary | None:
+        self._called("find_process_by_rcl_num", rcl_num)
+        return next(
+            (
+                p
+                for p in self.processes
+                if p.term == term
+                and p.rcl_num == rcl_num
+                and (since is None or (p.document_date or since) >= since - timedelta(days=7))
+            ),
+            None,
+        )
+
     def get_process(self, term: int, number: str) -> ProcessDetail:
         self._called("get_process", number)
         detail = self.details.get(number)

@@ -1,12 +1,13 @@
 """Operator commands from the technical channel, end to end on the World harness: a command
 waits in the inbox, the run executes it, answers under it and takes it out."""
 
+import datetime as dt
 from typing import Any
 
 from lexinform.errors import LlmUnavailableError
 from lexinform.models import BillStatus, OutcomeStatus, PublicationKind, RunReport
 from tests.fakes import FakeLlm, FakeTextExtractor, make_analysis
-from tests.harness import RCL, RCL_ID, World
+from tests.harness import RCL, RCL_ID, World, rcl_project
 
 TITLE = "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach"
 PLAIN = "Rządowy projekt ustawy o podatku VAT"  # says nothing about foreigners
@@ -314,3 +315,42 @@ def test_the_reply_carries_the_run_time_and_what_the_analysis_cost() -> None:
     assert analysed.usage["fake"].input == FakeLlm.ANALYSIS_TOKENS[0]
     assert analysed.usage["fake-triage"].input == FakeLlm.TRIAGE_TOKENS[0]
     assert shown.usage == {}  # /show never calls the model
+
+
+# --------------------------------------------------------------------------- RCL already in Sejm
+
+
+def test_a_project_that_already_reached_the_sejm_leads_to_its_druk() -> None:
+    """UD345: the project went to the Sejm months ago and the act is in force, but a command
+    on the RCL number used to publish a card promising a druk number any day now."""
+    w = World()
+    project = w.add_rcl_project(rcl_project(rm_number="RM-0610-7-26", consultation=None))
+    w.add_bill("2172", TITLE)
+    w.gateway.processes = [
+        p.model_copy(update={"rcl_num": "RM-0610-7-26"}) if p.number == "2172" else p
+        for p in w.gateway.processes
+    ]
+    w.command(f"/analyze RCL/{project.id}")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.bill is not None and outcome.bill.number == "2172"  # the druk, not the project
+    assert [b.number for b, _ in w.publisher.new_bills] == ["2172"]
+    assert w.bill(RCL).status is BillStatus.LINKED  # the project joins the druk's thread
+    assert w.bill(RCL).linked_number == "2172"
+    assert w.bill("2172").linked_wykaz_number == "UC164"
+
+
+def test_a_bill_the_sejm_has_finished_with_gets_a_verdict_but_no_card() -> None:
+    w = World()
+    w.add_bill("2172", TITLE)
+    w.touch("2172", dt.datetime(2026, 1, 23), closure_date=dt.date(2026, 1, 23), passed=True)
+    w.command("/analyze 2172")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.ANALYSED and outcome.message_id is None
+    assert outcome.note == "the process ended on 2026-01-23 (passed): not posted"
+    assert w.publisher.new_bills == []

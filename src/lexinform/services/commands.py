@@ -218,6 +218,15 @@ class CommandService:
                 bill=bill,
                 note="lapsed with the end of its Sejm term: not posted",
             )
+        if bill.summary.closure_date is not None:
+            # The Sejm is done with it (adopted, rejected, withdrawn). A card is an invitation
+            # to act, and there is nothing left to act on; the verdict above says what it was.
+            outcome = "passed" if bill.summary.passed else "closed"
+            return CommandOutcome(
+                status=OutcomeStatus.ANALYSED,
+                bill=bill,
+                note=f"the process ended on {bill.summary.closure_date} ({outcome}): not posted",
+            )
         if verdict.score < min_score and not command.publish:
             return CommandOutcome(
                 status=OutcomeStatus.ANALYSED,

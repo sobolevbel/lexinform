@@ -16,7 +16,7 @@ Verified behaviour of the API (September 2026):
 import logging
 import time
 from collections.abc import Callable, Iterator
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
@@ -167,6 +167,34 @@ class SejmApiClient:
         )
         return parse_submission(items[0], term=term) if items else None
 
+    MAX_RCL_LOOKUPS = 60
+
+    def find_process_by_rcl_num(
+        self, term: int, rcl_num: str, *, since: date | None = None
+    ) -> ProcessSummary | None:
+        """The print an RCL project became. `rclNum` is only in a process's detail, never in the
+        listing, so the listing is walked once (cheap) and details are read one by one, oldest
+        first among the bills dated on or after `since` (the hand-over to the Sejm; a print
+        follows it within days). At most `MAX_RCL_LOOKUPS` details, then None."""
+        wanted = _rcl_key(rcl_num)
+        if not wanted:
+            return None
+        start = since - timedelta(days=7) if since is not None else None
+        candidates = [
+            s
+            for s in self.iter_processes(term, document_type=BILL_DOCUMENT_TYPE)
+            if start is None or (s.document_date or s.change_date.date()) >= start
+        ]
+        candidates.sort(key=lambda s: s.document_date or s.change_date.date())
+        for summary in candidates[: self.MAX_RCL_LOOKUPS]:
+            try:
+                detail = self.get_process(term, summary.number)
+            except SejmApiError:  # a print the API cannot render must not stop the search
+                continue
+            if _rcl_key(detail.rcl_num) == wanted:
+                return detail
+        return None
+
     def get_process(self, term: int, number: str) -> ProcessDetail:
         data = self._get_json(f"/sejm/term{term}/processes/{quote(number)}")
         return parse_process_detail(data)
@@ -278,6 +306,11 @@ class SejmApiClient:
 
 
 # ---------------------------------------------------------------------- parsing helpers
+
+
+def _rcl_key(value: str | None) -> str:
+    """`RM-0610-7-26` written with other spacing or case still names the same project."""
+    return "".join((value or "").split()).upper()
 
 
 def _date(value: Any) -> Any:

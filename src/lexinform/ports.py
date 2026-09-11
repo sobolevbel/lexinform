@@ -66,6 +66,15 @@ class SejmGateway(Protocol):
 
     def find_submission(self, term: int, print_number: str) -> BillSubmission | None: ...
 
+    def find_process_by_rcl_num(
+        self, term: int, rcl_num: str, *, since: date | None = None
+    ) -> ProcessSummary | None:
+        """The process whose `rclNum` names this RCL project (`RM-0610-7-26`), the other way
+        round from `ProjectResolver`; None when the project has no print in this term. `rclNum`
+        lives only in a process's detail, never in the listing, so an implementation reads
+        details one by one and `since` (the hand-over to the Sejm) keeps that bounded."""
+        ...
+
     def get_process(self, term: int, number: str) -> ProcessDetail: ...
 
     def get_print(self, term: int, number: str) -> PrintInfo: ...

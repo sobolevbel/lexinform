@@ -133,7 +133,12 @@ Invariants worth keeping:
 - Pre-print bills (`RPW/…`) and RCL projects (`RCL/{id}`) have no Sejm process
   (`Bill.has_process` is false): skip `get_process`/`get_print` for them; when the print appears,
   the print inherits the card (`tracking/linking.py::Linker`: `new_bill` row aliased with the same
-  `message_id`). The print copies the entry's status, except `skipped_prefilter`: an RPW entry has
+  `message_id`). The other direction matters for commands: an RCL project fetched on request may
+  already be in the Sejm, so `BillLookup` asks `find_process_by_rcl_num` (the term's listing
+  walked once) for the print its `rm_number` names, links the rows and returns the print — a
+  project whose act is already in force must never get a card promising a druk number. A command
+  posts no card at all for a bill whose `closure_date` is set: a card invites action, and the
+  process is over. The print copies the entry's status, except `skipped_prefilter`: an RPW entry has
   no text to scan, so its print goes to `text_prefilter_pending` instead of inheriting the skip
   (otherwise every non-government bill with a neutral title would bypass the text stage). The RPW
   reconciler finds the print in `/bills`; for RCL, Sejm discovery notices a
@@ -239,6 +244,10 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   signalled by `ELI`/`displayAddress`; details from `/eli/acts/DU/{year}/{pos}`: `promulgation`
   = Dz.U. date, `entryIntoForce`, `announcementDate` = date in the act's title. Publication
   follows the Sejm vote by ~30–40 days.
+- `rclNum` and `rclLink` exist only in a process's **detail**, never in the `/processes` or
+  `/bills` listing (verified 2026-09-11): finding the print an RCL project became means reading
+  details one by one, so `find_process_by_rcl_num` narrows by the hand-over date and caps the
+  number of lookups. The other direction is one request (`getIdFromLegislacja`).
 - Committee reports with print `…-A` (proposal "przyjąć poprawki") are amendment tables, not
   bill text; only `proposal` containing "projekt" carries the text. `SenatePosition` reports via
   `position`, not `decision`. `UE` enum is NO|ADAPTATION|ENFORCEMENT.

@@ -8,6 +8,7 @@ run has discovered.
 
 import logging
 
+from lexinform.errors import ServiceUnavailableError
 from lexinform.keywords import KeywordPrefilter, accept_title_hits
 from lexinform.models import (
     Bill,
@@ -133,6 +134,7 @@ class BillLookup:
         return sub
 
     def _fetch(self, term: int, number: str) -> Bill:
+        project: RclProject | None = None
         if is_rcl_number(number):
             project = self.read_rcl_project(number)
             summary: ProcessSummary = process_summary(project, term=term)
@@ -160,7 +162,38 @@ class BillLookup:
         else:
             status = BillStatus.SKIPPED_PREFILTER
         self._repo.set_status(bill.term, bill.number, status, prefilter_hits=hits)
+        log.info("%s fetched on request: %s (%s)", number, summary.title, status.value)
+        if project is not None:
+            print_number = self._print_of(project, term)
+            if print_number is not None:
+                # The project already reached the Sejm: the print is the bill to work with, and
+                # the RCL row joins its thread. Without this the project would get a card of its
+                # own saying "waiting for a druk number", possibly for something already in force.
+                printed = self._fetch(term, print_number)
+                self._repo.link_bills(
+                    term, bill.number, printed.number, wykaz_number=project.wykaz_number
+                )
+                log.info("%s is druk %s in the Sejm; linked", bill.number, printed.number)
+                return self._repo.get(printed.term, printed.number) or printed
         stored = self._repo.get(bill.term, bill.number)
         assert stored is not None
-        log.info("%s fetched on request: %s (%s)", number, summary.title, status.value)
         return stored
+
+    def _print_of(self, project: RclProject, term: int) -> str | None:
+        """The print number of a project that already went to the Sejm; None while it has not.
+        The RM number the hand-over stage carries names the process (`ProcessSummary.rcl_num`)."""
+        if project.print_number:
+            return project.print_number
+        if not project.rm_number:
+            return None
+        try:
+            handover = next(
+                (st.modified for st in reversed(project.stages) if st.is_sejm and st.reached), None
+            )
+            found = self._gateway.find_process_by_rcl_num(term, project.rm_number, since=handover)
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:  # the project is still worth having without its print
+            log.warning("looking up the print of %s failed: %s", project.rm_number, exc)
+            return None
+        return found.number if found is not None else None
