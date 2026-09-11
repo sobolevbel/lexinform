@@ -1,7 +1,10 @@
 """The relay: which posts become inbox files, what is acknowledged, what is confirmed."""
 
+import pytest
+
 from lexinform.services.listener import CommandListener
 from tests.fakes import FakeAcknowledger, FakeInboxWriter, FakeUpdates, channel_post
+from tests.harness import World
 
 CHANNEL = "-1001"
 
@@ -81,3 +84,18 @@ def test_run_forever_survives_an_outage_and_stops_when_told() -> None:
     listener.run_forever(stop=lambda: next(checks) >= 3)
 
     assert len(updates.offsets) == 3  # three polls, each an outage, none fatal
+
+
+def test_the_container_builds_the_relay_from_the_bot_token_and_the_log_channel_alone() -> None:
+    """The relay lives in the log channel: the reader channel id (needed to post) is not."""
+    w = World()
+    w.container.settings.telegram_bot_token = "TOKEN"
+    w.container.settings.telegram_channel_id = ""
+    w.container.settings.telegram_log_channel_id = "-1001"
+
+    listener = w.container.command_listener(dry_run=True)
+
+    assert listener.offset is None
+    w.container.settings.telegram_log_channel_id = ""
+    with pytest.raises(ValueError, match="LEXINFORM_TELEGRAM_LOG_CHANNEL_ID"):
+        w.container.command_listener(dry_run=True)

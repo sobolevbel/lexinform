@@ -227,9 +227,14 @@ class Container:
             ),
         )
 
-    def telegram_client(self) -> TelegramBotClient:
+    def telegram_client(self, *, for_channel: bool = True) -> TelegramBotClient:
+        """The bot; `for_channel` also demands the reader channel id (posting), which the relay
+        does not need (it lives in the log channel)."""
         if self._telegram is None:
-            self.settings.require_telegram()
+            if for_channel:
+                self.settings.require_telegram()
+            elif not self.settings.telegram_bot_token:
+                raise ValueError("Missing required settings: LEXINFORM_TELEGRAM_BOT_TOKEN")
             self._telegram = TelegramBotClient(
                 self.settings.telegram_bot_token, base_url=self.settings.telegram_api_base_url
             )
@@ -284,7 +289,7 @@ class Container:
         s = self.settings
         if not s.telegram_log_channel_id:
             raise ValueError("Missing required settings: LEXINFORM_TELEGRAM_LOG_CHANNEL_ID")
-        client = self.telegram_client()
+        client = self.telegram_client(for_channel=False)
         writer = None
         acknowledger = None
         if not dry_run:
