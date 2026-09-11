@@ -101,8 +101,6 @@ class RclClient:
         self._backoff = backoff_seconds
         self._sleep = sleep
 
-    # ------------------------------------------------------------------ public API
-
     def list_projects(self, *, modified_since: date) -> Iterator[RclProjectSummary]:
         page = 1
         previous_first: int | None = None
@@ -167,8 +165,6 @@ class RclClient:
     def close(self) -> None:
         self._client.close()
 
-    # ------------------------------------------------------------------ internals
-
     def _get_text(
         self, path: str, params: dict[str, str | int] | None = None, *, probe: bool = False
     ) -> str:
@@ -228,9 +224,6 @@ class RclClient:
 def _is_rejected_html(body: bytes) -> bool:
     head = body[:2048].lower()
     return b"<title>" in head and _REJECTED_TITLE.encode() in head
-
-
-# ---------------------------------------------------------------------- parsers
 
 
 @dataclass(frozen=True)
@@ -338,9 +331,6 @@ def parse_stage_catalog(html: str, stage_id: int, *, base_url: str = RCL_BASE_UR
         )
         folders.append(RclFolder(id=folder_id, name=name, modified=modified, documents=documents))
     return stage.model_copy(update={"folders": tuple(folders)})
-
-
-# ---------------------------------------------------------------------- pieces
 
 
 def _soup(html: str) -> BeautifulSoup:

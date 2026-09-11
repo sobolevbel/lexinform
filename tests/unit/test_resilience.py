@@ -18,8 +18,6 @@ from tests.harness import World
 
 Handler = Callable[[httpx.Request], httpx.Response]
 
-# --------------------------------------------------------------------------- phases
-
 
 def test_sejm_api_down_during_discovery_is_reported_not_raised() -> None:
     w = World()
@@ -132,9 +130,6 @@ def test_unexpected_bug_in_a_phase_is_reported(monkeypatch: pytest.MonkeyPatch) 
     report = w.run()
 
     assert report.errors == ["discovery failed: KeyError: 'oops'"]
-
-
-# --------------------------------------------------------------------------- clients
 
 
 def _sejm(handler: Handler) -> SejmApiClient:

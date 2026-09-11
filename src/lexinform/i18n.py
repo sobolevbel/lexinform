@@ -58,7 +58,7 @@ class Labels:
     pre_print_note: str
     consultation: str
     consultation_until: str
-    consultation_closed_on: str  # "closed on <date>": a deadline that has passed
+    consultation_closed_on: str
     consultation_hint: str
     print_assigned: str
     process_withdrawn: str
@@ -87,19 +87,19 @@ class Labels:
     tag_ukraine: str  # bills about citizens of Ukraine: the channel's largest audience
     consultation_link: str  # text of the link to the Sejm page where opinions are submitted
     consultation_page: str  # the same page, named neutrally: the consultation is over
-    action_now: str  # "What you can do now"
-    action_senate: str  # "send an opinion to the Senate committee" (while the Senate has the bill)
-    path: str  # "Path": the one-line map of the process with the current step marked
-    action_send_opinion: str  # "send an opinion via"
-    action_consultation_page: str  # link text: the bill's consultation page
-    action_committee: str  # "send an opinion to the committee —" (the committee name follows)
-    action_before_sitting: str  # "before the sitting of"
-    action_hearing: str  # "apply to take part in the public hearing"
-    next_step: str  # "What comes next"
+    action_now: str
+    action_senate: str
+    path: str  # the one-line map of the process with the current step marked
+    action_send_opinion: str
+    action_consultation_page: str
+    action_committee: str
+    action_before_sitting: str
+    action_hearing: str
+    next_step: str
     agenda_committee_header: str
     agenda_sejm_header: str
     agenda_item: str
-    sejm_sitting: str  # "Sejm sitting no."
+    sejm_sitting: str
     link_video: str
     link_committee: str
     tag_committee_sitting: str
@@ -107,21 +107,21 @@ class Labels:
     consultation_results_header: str
     consultation_results_hint: str
     # Government projects on RCL (before the Sejm)
-    rcl_header: str  # card header: "Government bill (RCL)"
-    rcl_ministry: str  # "ministry" (the applicant's name follows)
+    rcl_header: str
+    rcl_ministry: str
     rcl_wykaz: str  # "number in the wykaz prac legislacyjnych RM"
-    rcl_published: str  # "published on RCL" (date follows)
-    rcl_no_stage: str  # stage line when no stage has been reached yet
+    rcl_published: str
+    rcl_no_stage: str
     rcl_metadata_note: str  # the text could not be read (bad file): metadata only
-    consultation_letter: str  # link text: the consultation letter
-    consultation_days_from_letter: str  # "{days} days from the letter"
+    consultation_letter: str
+    consultation_days_from_letter: str
     consultation_deadline_in_letter: str  # deadline could not be read: "see the letter"
-    consultation_email: str  # "comments by e-mail to"
-    action_email_ministry: str  # "send comments to {email}"
-    action_in_polish: str  # "(in Polish, quoting {wykaz})"
-    action_rcl_comment: str  # link text: the comment form on RCL
-    rcl_results_hint: str  # opinions and the ministry's answer are on the project page
-    rcl_sent_to_sejm: str  # update line: the project went to the Sejm
+    consultation_email: str
+    action_email_ministry: str
+    action_in_polish: str
+    action_rcl_comment: str
+    rcl_results_hint: str
+    rcl_sent_to_sejm: str
     link_rcl_project: str
     link_bill_text: str  # "Bill text" (the format follows in brackets)
     link_justification: str
@@ -130,20 +130,20 @@ class Labels:
     tag_rcl: str
     # Status updates named after their event (see `models.update_event`)
     rcl_process_closed: str  # the project was closed on RCL without reaching the Sejm
-    committee_report: str  # "committee report (sprawozdanie)"
+    committee_report: str
     subcommittee_report: str
-    proposes: str  # "proposes:" (the committee's proposal follows)
+    proposes: str
     deadline_until: str  # "deadline" (a computed statutory deadline follows)
     # Public hearings: the reminder before applications close
     hearing_deadline_header: str
-    hearing_on: str  # "hearing on" (date follows)
-    hearing_apply_until: str  # "applications until" (date follows)
-    hearing_hint: str  # how to apply
+    hearing_on: str
+    hearing_apply_until: str
+    hearing_hint: str
     tag_hearing: str
     # Amendments summarised from their document (Senate resolution, committee "-A" report)
-    amendments_senate: str  # "What the Senate's amendments change"
-    amendments_committee: str  # "Amendments tabled at the 2nd reading" (committee's report)
-    link_amendments: str  # link text: the amendments document
+    amendments_senate: str
+    amendments_committee: str
+    link_amendments: str
     update_headers: dict[str, str] = field(default_factory=dict)  # by event key
     # Fragments (lower case) of a `SejmReading.decision` and a `CommitteeReport.proposal`;
     # first match wins, an unknown value passes through in Polish.

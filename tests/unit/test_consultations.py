@@ -6,8 +6,6 @@ from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import PublicationKind, PublicationStatus
 from tests.harness import RPW, World, submission
 
-# --------------------------------------------------------------------------- deadline reminder
-
 
 def test_reminder_is_posted_three_days_before_the_deadline() -> None:
     w = World()  # clock: 2026-09-07
@@ -73,9 +71,6 @@ def test_failed_reminder_is_retried_next_run() -> None:
     assert failed.consultation_reminders == 0 and failed.errors
     assert retried.consultation_reminders == 1
     assert len(w.publisher.consultations) == 1
-
-
-# --------------------------------------------------------------------------- published opinions
 
 
 def test_published_opinions_of_a_numbered_print_are_announced_once() -> None:

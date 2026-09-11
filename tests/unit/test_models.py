@@ -60,9 +60,6 @@ def _bill(process: ProcessDetail, stages: tuple[Stage, ...], **fields: Any) -> B
     )
 
 
-# --------------------------------------------------------------------------- fingerprints
-
-
 def test_fingerprint_ignores_volatile_fields() -> None:
     a = (_stage("Start", "2026-01-01", report_file="http://a"),)
     b = (_stage("Start", "2026-01-01", report_file="http://b"),)
@@ -159,9 +156,6 @@ def test_third_reading_keeps_the_text_only_without_amendments_or_minority_motion
     assert latest_text_document([work, straight, third], before_third_reading=True) is not None
 
 
-# --------------------------------------------------------------------------- applicants
-
-
 def test_applicant_is_read_from_the_title_prefix() -> None:
     cases = {
         "Rządowy projekt ustawy o X": ApplicantType.GOVERNMENT,
@@ -175,9 +169,6 @@ def test_applicant_is_read_from_the_title_prefix() -> None:
     }
 
     assert {title: applicant_from_title(title) for title in cases} == cases
-
-
-# --------------------------------------------------------------------------- texts and votes
 
 
 def test_only_reports_with_the_bill_text_count_as_a_new_text() -> None:
@@ -220,9 +211,6 @@ def test_aggregate_clubs_counts_and_orders_by_yes_votes() -> None:
     assert clubs[3].abstain == 1
 
 
-# --------------------------------------------------------------------------- consultation URL
-
-
 def test_consultation_url_exists_only_for_consulted_submissions() -> None:
     plain = BillSubmission(
         term=10, number="RPW/29075/2026", title="t", date_of_receipt=dt.date(2026, 8, 31)
@@ -234,9 +222,6 @@ def test_consultation_url_exists_only_for_consulted_submissions() -> None:
         "https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=KONSULTOWANY_PROJEKT"
         "&NrProjektu=RPW/29075/2026"
     )
-
-
-# --------------------------------------------------------------------------- next phase
 
 
 def test_next_phase_walks_a_bill_amended_by_the_senate(process_1962: ProcessDetail) -> None:
@@ -394,9 +379,6 @@ def test_next_phase_is_none_for_a_bill_that_lapsed_with_the_term(
     lapsed = _bill(process_3039, process_3039.stages, discontinued_at=NOW)
 
     assert next_phase(lapsed, today=TODAY) is None
-
-
-# --------------------------------------------------------------------------- terms
 
 
 def test_current_term_is_the_flagged_one_else_the_highest_number() -> None:

@@ -12,8 +12,6 @@ FOREIGNER_TEXT = (
     "Art. 3. Cudzoziemiec składa wniosek osobiście. " * 3
 )
 
-# --------------------------------------------------------------------------- text identity
-
 
 def test_text_digest_ignores_layout_but_not_words() -> None:
     printed = "USTAWA\nz dnia 1 lipca 2026 r.\n\n– 1 –\nArt. 1.  Cudzoziemiec   składa wniosek.\n"
@@ -22,9 +20,6 @@ def test_text_digest_ignores_layout_but_not_words() -> None:
 
     assert text_digest(printed) == text_digest(reflowed)
     assert text_digest(printed) != text_digest(amended)
-
-
-# --------------------------------------------------------------------------- text sources
 
 
 def test_missing_pdf_falls_back_to_metadata() -> None:
@@ -57,9 +52,6 @@ def test_oversized_pdf_is_analysed_from_metadata() -> None:
 
     assert (report.analyzed, report.published) == (1, 1)
     assert w.llm.contexts[0].text_source == "metadata_only"
-
-
-# --------------------------------------------------------------------------- triage
 
 
 def test_confident_triage_rejection_is_stored_as_a_non_relevant_analysis() -> None:
@@ -139,8 +131,6 @@ def test_short_texts_skip_the_triage() -> None:
     assert w.llm.triage_contexts == []
 
 
-# --------------------------------------------------------------------------- authors
-
 DEPUTIES_LETTER = (
     "Druk nr 4200\nniżej podpisani posłowie wnoszą projekt ustawy:\n"
     "- o zmianie ustawy o cudzoziemcach.\n"
@@ -192,9 +182,6 @@ def test_government_bill_does_not_fetch_the_mp_directory() -> None:
 
     assert "list_mps" not in w.gateway.calls
     assert w.bill("4201").authors is None
-
-
-# --------------------------------------------------------------------------- cost guard rails
 
 
 def test_text_over_the_per_bill_cost_limit_is_skipped_without_a_model_call() -> None:

@@ -61,9 +61,6 @@ def word_streams(
     return bytes(fib) + bytes(body), table
 
 
-# --------------------------------------------------------------------------- pieces
-
-
 def test_pieces_are_concatenated_in_cp_order_whatever_their_encoding() -> None:
     word, table = word_streams(
         [("Art. 1. ", True), ("Cudzoziemiec składa wniosek", False), (" o zezwolenie.", True)]
@@ -86,9 +83,6 @@ def test_property_modifiers_before_the_piece_table_are_skipped() -> None:
     word, table = word_streams([("tekst", True)], prc=prc * 2)
 
     assert word_text(word, table) == "tekst"
-
-
-# --------------------------------------------------------------------------- cleaning
 
 
 def test_control_characters_become_paragraphs_tabs_page_breaks_and_hyphens() -> None:
@@ -120,9 +114,6 @@ def test_anchors_and_reference_marks_vanish_and_blank_runs_shrink() -> None:
     assert word_text(word, table) == "obraz przypis rysunek\n\ndalej"
 
 
-# --------------------------------------------------------------------------- what is read
-
-
 def test_main_text_and_footnotes_are_read_headers_and_comments_are_not() -> None:
     main, footnote, header = "Ustawa.\r", "1) Dz. U. poz. 1.\r", "Nagłówek strony\r"
     word, table = word_streams(
@@ -140,9 +131,6 @@ def test_the_fib_names_the_table_stream() -> None:
 
     assert table_stream_name(word_1) == "1Table"
     assert table_stream_name(word_0) == "0Table"
-
-
-# --------------------------------------------------------------------------- refusals
 
 
 @pytest.mark.parametrize(

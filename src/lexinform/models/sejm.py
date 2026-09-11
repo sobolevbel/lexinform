@@ -148,9 +148,8 @@ class Stage(BaseModel):
     # CommitteeReport: minority motions attached (voted at the 3rd reading); None when unknown
     minority_motions: int | None = None
     voting: VotingSummary | None = None  # Voting: results (not part of the fingerprint)
-    committee_name: str | None = (
-        None  # Referral: resolved by us from /committees (not fingerprinted)
-    )
+    # Referral: resolved by us from /committees (not fingerprinted)
+    committee_name: str | None = None
     children: tuple[Stage, ...] = ()
 
     @property

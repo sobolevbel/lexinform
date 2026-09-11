@@ -159,8 +159,6 @@ ACT = ActInfo(
     fetched_at=dt.datetime(2026, 8, 20, tzinfo=dt.UTC),
 )
 
-# --------------------------------------------------------------------------- the card
-
 
 def test_card_contains_every_section(process_3039: ProcessDetail, print_3039: PrintInfo) -> None:
     text = MessageFormatter("ru").new_bill(bill_of(process_3039), print_3039).text
@@ -341,9 +339,6 @@ def test_a_consultation_that_is_over_says_so_and_stops_inviting_opinions(
     assert "страница консультаций" in once_closed  # the page stays, the invitation goes
     assert "форма для мнений" not in once_closed
     assert "24.01.2025" not in once_closed  # the end date is the fact that matters
-
-
-# --------------------------------------------------------------------------- status updates
 
 
 def test_status_update_without_an_analysis_keeps_the_stages_before_the_closure(
@@ -582,9 +577,6 @@ def test_president_stages_and_committee_referrals_have_labels(process_3039: Proc
     assert "• 📮 Направлен в комиссию: ASW" in text
 
 
-# --------------------------------------------------------------------------- next step and action
-
-
 def test_card_links_the_consultation_form_and_names_the_next_step(
     process_3039: ProcessDetail,
 ) -> None:
@@ -746,9 +738,6 @@ def test_withdrawn_bill_gets_no_next_step(process_3039: ProcessDetail) -> None:
     assert "Что дальше" not in text and "Проект отозван" in text
 
 
-# --------------------------------------------------------------------------- sittings
-
-
 def test_committee_sitting_message(process_3039: ProcessDetail) -> None:
     bill = bill_of(process_3039, submission=consulted(), agenda=(sitting(),))
 
@@ -777,9 +766,6 @@ def test_sejm_sitting_message(process_3039: ProcessDetail) -> None:
     assert "Трансляция" not in ru and "Страница комиссии" not in ru
     assert ru.splitlines()[-1] == "#заседаниесейма #kadencja10druk3039"
     assert "On the agenda of a Sejm sitting" in en and "Sejm sitting no. 65, 15–2026-09-18" in en
-
-
-# --------------------------------------------------------------------------- consultations
 
 
 def test_consultation_deadline_reminder(process_3039: ProcessDetail) -> None:
@@ -819,9 +805,6 @@ def test_consultation_messages_need_a_consultation(process_3039: ProcessDetail) 
         MessageFormatter("ru").consultation_deadline(bill, today=TODAY)
 
 
-# --------------------------------------------------------------------------- acts
-
-
 @pytest.mark.parametrize("language", ["ru", "en"])
 def test_act_messages_link_the_texts_in_both_languages(
     process_3039: ProcessDetail, language: str
@@ -859,9 +842,6 @@ def test_in_force_reminder_needs_a_date(process_3039: ProcessDetail) -> None:
 
     with pytest.raises(ValueError):
         MessageFormatter("ru").in_force(undated)
-
-
-# --------------------------------------------------------------------------- run report
 
 
 def _report(**overrides: Any) -> RunReport:
@@ -978,9 +958,6 @@ def test_run_report_cost_line_adapts_to_the_models_used() -> None:
     assert clean.startswith("<b>✅") and "<pre>" not in clean
 
 
-# --------------------------------------------------------------------------- text helpers
-
-
 def test_fit_trims_at_a_word_boundary_and_marks_the_cut() -> None:
     assert fit("abc", 10) == "abc"
     trimmed = fit("word " * 100, 50)
@@ -998,9 +975,6 @@ def test_shrink_block_keeps_the_header_and_well_formed_html(budget: int) -> None
         assert_telegram_html(out)
         assert out.startswith("🔑 <b>Ключевые изменения</b>\n")
         assert "&" not in out.replace("&amp;", "").replace("&lt;", "").replace("&gt;", "")
-
-
-# --------------------------------------------------------------------------- operator commands
 
 
 def _incoming(text: str) -> IncomingCommand:

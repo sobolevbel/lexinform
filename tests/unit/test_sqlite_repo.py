@@ -95,9 +95,6 @@ def _act(**overrides: Any) -> ActInfo:
     return ActInfo(**fields)
 
 
-# --------------------------------------------------------------------------- bills
-
-
 def test_migrate_is_idempotent(repo: SqliteBillRepository) -> None:
     repo.migrate()
     repo.migrate()
@@ -184,9 +181,6 @@ def test_reset_puts_the_bill_back_with_a_clean_budget(
         0,
         None,
     )
-
-
-# --------------------------------------------------------------------------- publications
 
 
 def test_card_row_is_unique_per_bill_and_channel(
@@ -313,9 +307,6 @@ def test_in_force_reminder_row_is_unique_per_bill_and_channel(
     assert first == again
 
 
-# --------------------------------------------------------------------------- status changes
-
-
 def test_status_change_is_stored_once_per_fingerprint(
     repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
 ) -> None:
@@ -398,9 +389,6 @@ def test_failed_status_updates_are_listed_for_retry_until_the_attempts_run_out(
     assert [c.id for c in after_outages] == [change_id]  # outages are not the post's attempts
     assert exhausted == []
     assert repo.closure_announced(10, "3039") is False
-
-
-# --------------------------------------------------------------------------- tracking queries
 
 
 def test_only_bills_with_a_sent_card_are_tracked(
@@ -590,9 +578,6 @@ def test_bills_awaiting_consultation_results(
     assert other_channel == []
 
 
-# --------------------------------------------------------------------------- runs, dump, restore
-
-
 def test_watermark_is_the_last_run_whose_discovery_completed(
     repo: SqliteBillRepository, now: datetime
 ) -> None:
@@ -701,9 +686,6 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert repo.add_status_change(_change("1", when, discontinued=True)) is not None
 
 
-# --------------------------------------------------------------------------- growth
-
-
 def test_a_skipped_rcl_project_keeps_only_its_skeleton(
     repo: SqliteBillRepository, now: datetime
 ) -> None:
@@ -732,9 +714,6 @@ def test_old_run_records_are_pruned_and_the_watermark_survives(
 
     assert pruned == 2
     assert repo.last_discovery_started_at() == now - timedelta(days=5)
-
-
-# --------------------------------------------------------------------------- end of a term
 
 
 def _rcl_row(repo: SqliteBillRepository, now: datetime, **fields: Any) -> str:
@@ -799,9 +778,6 @@ def test_unfinished_bills_of_a_term_lapse_and_leave_every_listing(
     assert repo.list_by_status([BillStatus.ANALYSIS_PENDING], limit=10) == []
     assert repo.list_unfinished_published(10, CHANNEL) == []
     assert repo.discontinue_unfinished(10, at=now) == 0
-
-
-# --------------------------------------------------------------------------- operator commands
 
 
 def _command(update_id: int, now: datetime, text: str = "/analyze 3039") -> IncomingCommand:

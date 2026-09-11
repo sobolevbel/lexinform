@@ -59,8 +59,6 @@ class BillLookup:
         self._projects = projects
         self._text_prefilter = text_prefilter
 
-    # ------------------------------------------------------------------ database only
-
     def find(self, number: str) -> Bill | None:
         """The stored row for a number: the working term first, then older terms (print numbers
         restart with every kadencja, RPW and RCL numbers do not)."""
@@ -92,8 +90,6 @@ class BillLookup:
         if bill is None:
             raise BillNotFoundError(f"{wykaz}: no RCL project with this number in the database")
         return bill.number
-
-    # ------------------------------------------------------------------ with the source system
 
     def load(self, number: str) -> Bill:
         """The bill from the database, fetched from the API (or RCL) and prefiltered on first

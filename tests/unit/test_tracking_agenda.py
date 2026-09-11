@@ -44,9 +44,6 @@ def _refs(w: World, number: str = "3039") -> list[str]:
     return [item.ref for item in w.bill(number).agenda]
 
 
-# --------------------------------------------------------------------------- committee sittings
-
-
 def test_committee_sitting_naming_the_bill_is_posted_once() -> None:
     w = _referred_bill()
     w.gateway.committee_sittings["ASW"] = (
@@ -165,9 +162,6 @@ def test_items_are_stored_but_not_posted_without_publishing() -> None:
     assert silent.agenda_posted == 0 and posted_silently == []
     assert stored_silently == [SITTING_REF]
     assert loud.agenda_posted == 1
-
-
-# --------------------------------------------------------------------------- Sejm sittings
 
 
 def test_sejm_sitting_agenda_naming_the_bill_is_posted() -> None:

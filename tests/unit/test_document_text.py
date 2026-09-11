@@ -150,9 +150,6 @@ def test_extractor_is_chosen_by_the_magic_bytes() -> None:
     assert extractor.extract(b"{\\rtf1 not supported}") == ""
 
 
-# --------------------------------------------------------------------------- zip and odt
-
-
 def test_zip_package_is_read_member_by_member_bill_first() -> None:
     package = _zip(
         {
@@ -274,9 +271,6 @@ def test_odt_text_keeps_its_order_around_spans_and_nested_tables_are_read_once()
     assert OdtTextExtractor().extract(data) == (
         "Art. 1. Cudzo\txziemiec\nLp.\tPodmiot\n1\tzewn. wewn."
     )
-
-
-# --------------------------------------------------------------------------- legacy .doc
 
 
 def test_legacy_doc_yields_its_paragraphs_in_order_with_polish_letters_intact() -> None:

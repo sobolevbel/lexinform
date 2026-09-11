@@ -8,8 +8,6 @@ from lexinform.models import Attachment, Committee, PrintInfo, Stage, Vote, Voti
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import COMMITTEE_STAGES, ELI, REFERRED, START, World, act, print_url
 
-# --------------------------------------------------------------------------- stage updates
-
 
 def test_first_sight_of_the_stages_posts_nothing() -> None:
     w = World()
@@ -132,8 +130,6 @@ def test_closure_is_announced_once_although_discovery_refreshes_the_summary() ->
     assert change.closure_detected and change.passed
     assert again.updates == 0
 
-
-# --------------------------------------------------------------------------- new texts
 
 REPORT_URL = "https://api.test/sejm/term10/prints/2689/2689.pdf"
 WITH_REPORT = REFERRED + (
@@ -365,8 +361,6 @@ def test_text_after_third_reading_is_read_when_minority_motions_were_voted() -> 
     assert analysis is not None and analysis.source_url == AFTER3_URL
 
 
-# --------------------------------------------------------------------------- amendments
-
 SENATE_PRINT_URL = "https://api.test/sejm/term10/prints/2994/2994.pdf"
 SENATE_AMENDED = REFERRED + (
     Stage(
@@ -472,8 +466,6 @@ def test_unreadable_amendments_document_leaves_the_bare_event() -> None:
     assert change.amendments is None and w.llm.amendment_contexts == []
 
 
-# --------------------------------------------------------------------------- enrichment
-
 VOTED = REFERRED + (
     Stage(
         stage_name="III czytanie na posiedzeniu Sejmu",
@@ -539,9 +531,6 @@ def test_vote_detail_failure_degrades_to_totals_only() -> None:
     voting = next(s for s in change.new_stages if s.stage_type == "Voting")
     assert voting.voting is not None
     assert (voting.voting.clubs, voting.voting.yes) == ((), 261)
-
-
-# --------------------------------------------------------------------------- scope
 
 
 def test_daily_tracking_checks_only_bills_the_api_listed_as_changed() -> None:

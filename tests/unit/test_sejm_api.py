@@ -39,9 +39,6 @@ def _by_path(routes: dict[str, str]) -> Handler:
     return handler
 
 
-# --------------------------------------------------------------------------- processes
-
-
 def test_processes_are_paginated_by_offset_with_filters_in_warsaw_time() -> None:
     page = json.loads((FIXTURES / "processes_page.json").read_text())
     seen: list[dict[str, str]] = []
@@ -138,9 +135,6 @@ def test_process_carries_publication_fields_and_the_eli_act_is_parsed() -> None:
     assert missing is None  # not indexed (yet): no error
 
 
-# --------------------------------------------------------------------------- bills
-
-
 BILLS = [
     {
         "applicantType": "DEPUTIES",
@@ -206,9 +200,6 @@ def test_submission_lookup_by_print_number() -> None:
     assert missing is None
 
 
-# --------------------------------------------------------------------------- sittings
-
-
 def test_committee_sittings_and_sejm_sittings_are_parsed() -> None:
     client = _client(
         _by_path(
@@ -238,9 +229,6 @@ def test_committee_sittings_and_sejm_sittings_are_parsed() -> None:
     assert "druki nr" in full.agenda
     with pytest.raises(SejmApiError):
         client.get_sitting(10, 66)
-
-
-# --------------------------------------------------------------------------- transport
 
 
 def test_server_errors_are_retried_then_the_request_succeeds() -> None:
@@ -297,9 +285,6 @@ def test_download_streams_and_stops_once_the_limit_is_exceeded() -> None:
 
     assert within == body
     assert methods == ["GET", "GET"]  # no HEAD: the Sejm API sends no Content-Length anyway
-
-
-# --------------------------------------------------------------------------- terms
 
 
 def test_terms_are_listed_with_the_running_one_flagged_current() -> None:

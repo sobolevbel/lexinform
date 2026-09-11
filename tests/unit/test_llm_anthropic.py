@@ -68,9 +68,6 @@ def _api_error(cls: type[anthropic.APIStatusError], message: str) -> Exception:
     return cls(message, response=response, body=None)
 
 
-# --------------------------------------------------------------------------- analysis
-
-
 def test_analysis_request_thinks_caches_the_system_prompt_and_records_usage() -> None:
     client = _client(
         _response(
@@ -154,8 +151,6 @@ def test_unparsable_output_is_a_per_bill_error() -> None:
         analyzer.analyze(_ctx())
 
 
-# --------------------------------------------------------------------------- triage
-
 TRIAGE_CTX = TriageContext(
     number="2695",
     title="Projekt ustawy o jakości handlowej",
@@ -191,17 +186,11 @@ def test_triage_falls_back_to_the_analysis_model() -> None:
     assert client.messages.calls[0]["model"] == "claude-opus-5"
 
 
-# --------------------------------------------------------------------------- prompts
-
-
 def test_prompts_mention_truncation_and_metadata_only() -> None:
     assert "[TEKST OBCIĘTY" in build_user_prompt(_ctx(truncated=True))
     assert "NIEDOSTĘPNY" in build_user_prompt(_ctx(text="", text_source="metadata_only"))
     assert system_prompt("ru") == system_prompt("RU")
     assert "legalization" in system_prompt("en")
-
-
-# --------------------------------------------------------------------------- error classes
 
 
 @pytest.mark.parametrize(

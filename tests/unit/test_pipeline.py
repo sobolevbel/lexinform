@@ -8,8 +8,6 @@ from lexinform.models import BillStatus, Category, DocumentType, PublicationStat
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import COMMITTEE_STAGES, World, summary
 
-# --------------------------------------------------------------------------- happy path
-
 
 def test_relevant_bill_is_analysed_and_published_once() -> None:
     w = World()
@@ -52,9 +50,6 @@ def test_non_bills_are_ignored(bad_type: DocumentType) -> None:
     report = w.run()
 
     assert report.discovered == 0
-
-
-# --------------------------------------------------------------------------- publish rules
 
 
 def test_irrelevant_analysis_is_not_published_and_listed_as_rejected() -> None:
@@ -110,9 +105,6 @@ def test_max_analyze_zero_skips_the_model() -> None:
 
     assert (report.analyzed, report.analysis_failures) == (0, 0)
     assert w.llm.contexts == []
-
-
-# --------------------------------------------------------------------------- failures and retries
 
 
 def test_llm_failure_is_isolated_and_retried_on_the_next_run() -> None:
@@ -177,9 +169,6 @@ def test_migration_failure_is_reported_not_raised(monkeypatch: pytest.MonkeyPatc
     assert w.notifier.calls  # the log channel still gets the report
 
 
-# --------------------------------------------------------------------------- watermark
-
-
 def test_since_defaults_to_the_last_run_minus_one_day_of_overlap() -> None:
     w = World()
     assert w.pipeline.resolve_since(None) == w.clock.now() - dt.timedelta(days=1)
@@ -200,9 +189,6 @@ def test_watermark_advances_after_a_run_with_publishing_errors() -> None:
 
     assert report.errors
     assert w.pipeline.resolve_since(None) == first_start - dt.timedelta(days=1)
-
-
-# --------------------------------------------------------------------------- report
 
 
 def test_notifier_receives_the_report_and_the_captured_warnings() -> None:
@@ -232,8 +218,6 @@ def test_report_carries_phase_timings() -> None:
         "tracking",
     }
 
-
-# --------------------------------------------------------------------------- parallelism
 
 COUNTERS = (
     "discovered",

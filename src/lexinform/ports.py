@@ -249,9 +249,6 @@ class OperatorReplier(Protocol):
     def reply(self, command: IncomingCommand, outcome: CommandOutcome) -> None: ...
 
 
-# The relay (`lexinform listen`): what it reads, where it files commands, how it acknowledges.
-
-
 class UpdatesSource(Protocol):
     """Telegram's `getUpdates`: the posts the bot has not confirmed yet; `offset` confirms
     every update below it. `TelegramUnavailableError` when Telegram is down."""
@@ -275,7 +272,6 @@ class CommandAcknowledger(Protocol):
 class BillRepository(Protocol):
     """Persistence of bills, publications, status changes and runs (SQLite in production)."""
 
-    # schema
     def migrate(self) -> None: ...
 
     def close(self) -> None: ...
@@ -288,7 +284,6 @@ class BillRepository(Protocol):
         """Replace the contents with a dump; an older dump is migrated."""
         ...
 
-    # bills
     def get(self, term: int, number: str) -> Bill | None: ...
 
     def known_terms(self) -> list[int]:
@@ -344,7 +339,6 @@ class BillRepository(Protocol):
         changed_since: datetime | None = None,
     ) -> list[Bill]: ...
 
-    # publications
     def create_publication(self, publication: Publication) -> int: ...
 
     def mark_publication(
@@ -373,7 +367,6 @@ class BillRepository(Protocol):
 
     def mark_stale_pending_as_unknown(self, *, now: datetime) -> int: ...
 
-    # status changes
     def add_status_change(self, change: StatusChange) -> int | None: ...
 
     def closure_announced(self, term: int, number: str) -> bool: ...
@@ -382,7 +375,6 @@ class BillRepository(Protocol):
         """Attach the amendments summary to a recorded change (made after the row exists)."""
         ...
 
-    # pre-print bills
     def save_submission(self, term: int, number: str, submission: BillSubmission) -> None: ...
 
     def list_pre_print(self) -> list[Bill]: ...
@@ -399,7 +391,6 @@ class BillRepository(Protocol):
         print so its replies carry the card's tag."""
         ...
 
-    # RCL projects
     def save_rcl(self, term: int, number: str, project: RclProject) -> None: ...
 
     def list_rcl_awaiting_link(self) -> list[Bill]:
@@ -432,13 +423,10 @@ class BillRepository(Protocol):
         phase looks at it again. Returns how many rows were marked."""
         ...
 
-    # published acts
     def save_act(self, term: int, number: str, act: ActInfo) -> None: ...
 
-    # authors
     def save_authors(self, term: int, number: str, authors: BillAuthors) -> None: ...
 
-    # agendas of upcoming sittings
     def save_agenda(self, term: int, number: str, items: tuple[AgendaItem, ...]) -> None: ...
 
     def list_awaiting_consultation_results(self, channel_id: str) -> list[Bill]:
@@ -467,7 +455,6 @@ class BillRepository(Protocol):
         """Mark the bill's held changes as sent inside `message_id`; returns how many."""
         ...
 
-    # runs
     def last_discovery_started_at(self) -> datetime | None: ...
 
     def prune_runs(self, *, before: datetime) -> int:
@@ -486,7 +473,7 @@ class BillRepository(Protocol):
         """Analysed bills by the input tokens of their analysis, largest first."""
         ...
 
-    # operator commands (one row per Telegram update)
+    # One row per Telegram update.
     def record_command(self, command: IncomingCommand) -> bool:
         """Remember the command before it runs; False when the update was recorded already."""
         ...

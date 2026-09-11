@@ -107,9 +107,8 @@ class Settings(BaseSettings):
     # close, this many days ahead.
     consultation_reminders: bool = True
     consultation_reminder_days: int = Field(default=3, ge=0)
-    agenda_watch: bool = (
-        True  # post when a followed bill appears on a committee/Sejm sitting agenda
-    )
+    # Post when a followed bill appears on a committee or Sejm sitting agenda.
+    agenda_watch: bool = True
 
     # Logging
     log_level: str = "INFO"

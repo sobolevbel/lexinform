@@ -161,8 +161,6 @@ class AnalysisService:
         self._triage_min_chars = triage_min_chars
         self._triage_min_confidence = triage_min_confidence
 
-    # ------------------------------------------------------------------ first analysis
-
     def analyze_pending(self, *, limit: int) -> AnalysisResult:
         """Analyse up to `limit` candidates; an outage stops the phase, a bill's own error
         costs it one attempt."""
@@ -242,8 +240,6 @@ class AnalysisService:
     def _prepare_first(self, bill: Bill, *, cost_guard: bool = True) -> _Prepared:
         return self._prepare(bill, self._texts.locate(bill), previous=None, cost_guard=cost_guard)
 
-    # ------------------------------------------------------------------ re-analysis
-
     def reanalyze_bill(
         self, bill: Bill, document: TextDocument, *, summary: ProcessSummary | None = None
     ) -> AnalysisRecord | None:
@@ -269,8 +265,6 @@ class AnalysisService:
             return None
         return self._persist(prepared)
 
-    # ------------------------------------------------------------------ amendments
-
     def summarize_amendments(
         self, bill: Bill, document: TextDocument, *, proposal: str | None = None
     ) -> AmendmentsRecord | None:
@@ -295,8 +289,6 @@ class AnalysisService:
         record = self._llm.summarize_amendments(ctx)
         record.source_url = document.url
         return record
-
-    # ------------------------------------------------------------------ internals
 
     def _prepare(
         self,

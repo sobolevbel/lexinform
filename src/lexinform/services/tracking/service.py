@@ -272,8 +272,6 @@ class StatusTrackingService:
                 return False
         return True
 
-    # ------------------------------------------------------------------ detection
-
     def _fetch(self, bill: Bill) -> tuple[ProcessDetail, PrintInfo | None, _Amendments | None]:
         """What detection needs from the API for one bill (no database access): the process,
         the print and, when a new stage brings amendments, their document."""

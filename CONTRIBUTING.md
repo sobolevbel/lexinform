@@ -28,6 +28,11 @@ uv run pytest                 # unit tests, ~2 s, offline
 All three must be clean. CI (`.github/workflows/ci.yml`) runs the same on Python 3.12 and 3.13.
 Commit after each finished part; do not push unless asked.
 
+Comments carry what the code cannot: a fact from outside the repo (an API quirk, a legal deadline,
+a measured number), an invariant a later edit would silently break, or why the obvious way was not
+taken. Not a restatement of the next line, not a divider, not a label over a group of fields or
+methods. What needs a paragraph becomes a function with a good name and a docstring.
+
 ## Running the bot locally
 
 ```bash

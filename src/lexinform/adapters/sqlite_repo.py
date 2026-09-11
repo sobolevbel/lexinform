@@ -211,8 +211,6 @@ class SqliteBillRepository:
             self._conn.execute("PRAGMA journal_mode = WAL")
         self._in_txn = False
 
-    # ------------------------------------------------------------------ schema / lifecycle
-
     @property
     def schema_version(self) -> int:
         return int(self._conn.execute("PRAGMA user_version").fetchone()[0])
@@ -262,8 +260,6 @@ class SqliteBillRepository:
         # release lacks the line and is at most v1. migrate() then applies what is missing.
         self._conn.execute(f"PRAGMA user_version = {_dump_version(script)}")
         self.migrate()
-
-    # ------------------------------------------------------------------ bills
 
     def get(self, term: int, number: str) -> Bill | None:
         row = self._conn.execute(
@@ -426,8 +422,8 @@ class SqliteBillRepository:
     def list_publish_candidates(
         self, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
     ) -> list[Bill]:
-        # A card or an "alternative bill" reply settles the bill; a failed one leaves it listed
-        # until the attempts are used up.
+        """Analysed bills that still need a post. A card or an "alternative bill" reply settles
+        the bill; a failed one leaves it listed until the attempts are used up."""
         rows = self._conn.execute(
             """
             SELECT b.* FROM bills b
@@ -502,8 +498,6 @@ class SqliteBillRepository:
         rows = self._conn.execute(sql + " ORDER BY b.term, b.number", params).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
-    # ------------------------------------------------------------------ published acts
-
     def save_authors(self, term: int, number: str, authors: BillAuthors) -> None:
         self._conn.execute(
             "UPDATE bills SET authors_json = ? WHERE term = ? AND number = ?",
@@ -538,8 +532,6 @@ class SqliteBillRepository:
             (act.model_dump_json(), _iso_date(act.entry_into_force), term, number),
         )
 
-    # A one-off post blocks its bill once it is sent, skipped, pending or unknown; a failed one
-    # leaves the bill listed so the poster can retry it within the attempt budget.
     # The last day of the public consultation, whoever runs it: the Sejm (/bills entry) or the
     # government (RCL consultation letter). NULL when the bill has none.
     _CONSULTATION_END = """
@@ -549,6 +541,8 @@ class SqliteBillRepository:
             json_extract(b.rcl_json, '$.consultation.deadline')
         )
     """
+    # A one-off post blocks its bill once it is sent, skipped, pending or unknown; a failed one
+    # leaves the bill listed so the poster can retry it within the attempt budget.
     _NO_SETTLED_POST = """
         AND NOT EXISTS (
             SELECT 1 FROM publications r
@@ -600,8 +594,6 @@ class SqliteBillRepository:
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
-    # ------------------------------------------------------------------ pre-print bills
-
     def save_submission(self, term: int, number: str, submission: BillSubmission) -> None:
         self._conn.execute(
             "UPDATE bills SET submission_json = ? WHERE term = ? AND number = ?",
@@ -615,8 +607,6 @@ class SqliteBillRepository:
             (f"{PRE_PRINT_PREFIX}%", BillStatus.LINKED.value),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
-
-    # ------------------------------------------------------------------ RCL projects
 
     def save_rcl(self, term: int, number: str, project: RclProject) -> None:
         self._conn.execute(
@@ -687,8 +677,6 @@ class SqliteBillRepository:
         self._conn.execute("RELEASE rehome")
         return len(numbers)
 
-    # ------------------------------------------------------------------ end of a term
-
     # Sejm rows the chamber never finished with: no closure, not passed. RCL projects are not
     # bound to a term, linked rows live on under their print number.
     _UNFINISHED = (
@@ -736,8 +724,6 @@ class SqliteBillRepository:
             " WHERE term = ? AND number = ?",
             (pre_print_number, wykaz_number, term, print_number),
         )
-
-    # ------------------------------------------------------------------ publications
 
     def create_publication(self, publication: Publication) -> int:
         """Insert the row or, when its unique key exists, reset that row to the given status.
@@ -855,8 +841,6 @@ class SqliteBillRepository:
         )
         return int(cur.rowcount or 0)
 
-    # ------------------------------------------------------------------ status changes
-
     def add_status_change(self, change: StatusChange) -> int | None:
         try:
             cur = self._conn.execute(
@@ -951,8 +935,6 @@ class SqliteBillRepository:
         ).fetchall()
         return [self._row_to_status_change(r) for r in rows]
 
-    # ------------------------------------------------------------------ runs
-
     def last_discovery_started_at(self) -> datetime | None:
         """Start of the last full run whose discovery phase completed (the watermark)."""
         row = self._conn.execute(
@@ -1006,8 +988,6 @@ class SqliteBillRepository:
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
-    # ------------------------------------------------------------------ operator commands
-
     def record_command(self, command: IncomingCommand) -> bool:
         """Remember the command before it runs; False when the update was recorded already."""
         cur = self._conn.execute(
@@ -1034,8 +1014,6 @@ class SqliteBillRepository:
             "UPDATE commands SET handled_at = ?, reply = ? WHERE update_id = ?",
             (at.isoformat(), reply, update_id),
         )
-
-    # ------------------------------------------------------------------ row mapping
 
     @staticmethod
     def _row_to_bill(row: sqlite3.Row) -> Bill:

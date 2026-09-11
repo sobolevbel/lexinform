@@ -138,8 +138,6 @@ class CommandService:
         if not self._dry_run:
             self._inbox.done(incoming)
 
-    # ------------------------------------------------------------------ the commands
-
     def _execute(
         self,
         incoming: IncomingCommand,
@@ -272,8 +270,6 @@ class CommandService:
             )
         note = "" if posted.kind is PublicationKind.NEW_BILL else "as a reply under the joint print"
         return CommandOutcome(status=status, bill=bill, message_id=posted.message_id, note=note)
-
-    # ------------------------------------------------------------------ helpers
 
     def _reload(self, bill: Bill) -> Bill:
         fresh = self._repo.get(bill.term, bill.number)

@@ -113,9 +113,6 @@ def test_excerpts_respect_the_budget_but_always_keep_the_heads() -> None:
     assert len(digest) < 200
 
 
-# --------------------------------------------------------------------------- text budget
-
-
 def test_budget_passes_short_texts_through() -> None:
     result = TextBudget(100).apply("short")
 

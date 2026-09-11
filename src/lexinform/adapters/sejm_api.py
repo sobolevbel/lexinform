@@ -94,8 +94,6 @@ class SejmApiClient:
         self._backoff = backoff_seconds
         self._sleep = sleep
 
-    # ------------------------------------------------------------------ public API
-
     def list_terms(self) -> tuple[SejmTerm, ...]:
         """GET /sejm/term: every term of the Sejm; the running one is flagged `current`."""
         data = self._get_json("/sejm/term")
@@ -255,8 +253,6 @@ class SejmApiClient:
     def close(self) -> None:
         self._client.close()
 
-    # ------------------------------------------------------------------ internals
-
     def _get_json(self, path: str, params: dict[str, str | int] | None = None) -> Any:
         return self._request("GET", path, params=params).json()
 
@@ -303,9 +299,6 @@ class SejmApiClient:
         delay = self._backoff * (2 ** (attempt - 1))
         log.warning("Sejm API retry %d in %.1fs (%s)", attempt, delay, reason)
         self._sleep(delay)
-
-
-# ---------------------------------------------------------------------- parsing helpers
 
 
 def _rcl_key(value: str | None) -> str:

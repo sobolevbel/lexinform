@@ -197,8 +197,6 @@ class MessageFormatter:
         self._labels: Labels = labels_for(language)
         self._today = today
 
-    # ------------------------------------------------------------------ new bill card
-
     def new_bill(
         self, bill: Bill, print_info: PrintInfo | None, *, today: dt.date | None = None
     ) -> RenderedMessage:
@@ -340,8 +338,6 @@ class MessageFormatter:
         tags = f"{self._number_tag(bill)} {self._thread_tags(primary)}"
         return RenderedMessage(text=self._assemble([header, facts, links_block, tags]))
 
-    # ------------------------------------------------------------------ status update
-
     def status_update(
         self, bill: Bill, change: StatusChange, *, today: dt.date | None = None
     ) -> RenderedMessage:
@@ -465,8 +461,6 @@ class MessageFormatter:
         lines.extend(f"• {esc(c.strip())}" for c in record.amendments.changes if c.strip())
         return "\n".join(lines)
 
-    # ------------------------------------------------------------------ published act
-
     def act_published(self, bill: Bill) -> RenderedMessage:
         lb = self._labels
         act = bill.act
@@ -575,8 +569,6 @@ class MessageFormatter:
         tags = self._tag_line(lb.tag_consultations, bill)
         return RenderedMessage(text=self._assemble([header, facts, steps, links_block, tags]))
 
-    # ------------------------------------------------------------------ sittings
-
     def agenda(
         self, bill: Bill, item: AgendaItem, *, today: dt.date | None = None
     ) -> RenderedMessage:
@@ -651,8 +643,6 @@ class MessageFormatter:
         if act.text_pdf_url:
             links.append(link(act.text_pdf_url, lb.link_act_pdf))
         return links
-
-    # ------------------------------------------------------------------ run report
 
     def run_report(self, report: RunReport, log_lines: list[str]) -> RenderedMessage:
         lb = self._labels
@@ -753,8 +743,6 @@ class MessageFormatter:
         text = self._assemble([head, "\n\n".join(sections)], flexible=[rejected, logs])
         return RenderedMessage(text=text)
 
-    # ------------------------------------------------------------------ operator commands
-
     def command_reply(self, command: IncomingCommand, outcome: CommandOutcome) -> RenderedMessage:
         """The answer to an operator command, English like the run report: what the bot knows
         about the bill, the verdict, and what happened to the card."""
@@ -813,13 +801,8 @@ class MessageFormatter:
                 lines.append(f"<i>{esc(lead(a.summary))}</i>")
         return "\n".join(lines)
 
-    # ------------------------------------------------------------------ helpers
-
     def fmt_date(self, value: dt.date) -> str:
         return value.strftime(self._labels.date_format)
-
-    # The building blocks every message is made of: the header naming the kind and the bill,
-    # a labelled fact, the links line, the tag line, a countdown.
 
     def _header(self, icon: str, label: str, bill: Bill, title: str | None = None) -> str:
         """`📜 <b>Label — druk nr 3039</b>` and the bill's title on its own line."""
@@ -1046,8 +1029,6 @@ class MessageFormatter:
         if window.start:
             return f"{self.fmt_date(window.start)} — {self.fmt_date(window.end)}"
         return f"{esc(lb.consultation_until)} {self.fmt_date(window.end)}"
-
-    # ------------------------------------------------------------------ next step / action
 
     def _steps_block(self, bill: Bill, today: dt.date) -> str:
         """Where the bill is on its path, "what comes next" (dated when a sitting is scheduled,

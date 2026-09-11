@@ -36,9 +36,6 @@ def _sejm_moves_on(w: World) -> None:
     w.clock.advance(days=1)
 
 
-# --------------------------------------------------------------------------- which term
-
-
 def test_the_term_comes_from_the_api_when_not_pinned() -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
@@ -70,9 +67,6 @@ def test_an_unknown_term_ends_the_run_with_a_clear_error() -> None:
     assert report.term is None
     assert report.errors == ["term: Sejm API unavailable: list_terms: connection refused"]
     assert not any(call.startswith("iter_processes") for call in w.gateway.calls)
-
-
-# --------------------------------------------------------------------------- the switch
 
 
 def test_unfinished_bills_lapse_with_the_term_and_passed_ones_stay_followed() -> None:

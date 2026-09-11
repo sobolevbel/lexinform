@@ -320,8 +320,6 @@ class World:
         self.tracking = self.container.tracking_service(dry_run=False)
         self.pipeline = self.container.pipeline(dry_run=False)
 
-    # ------------------------------------------------------------------ arrange
-
     def add_bill(
         self, number: str, title: str, *, stages: tuple[Stage, ...] = START, with_pdf: bool = True
     ) -> None:
@@ -385,15 +383,11 @@ class World:
         """An operator posted `text` in the technical channel (the relay filed it)."""
         return self.inbox.put(text, update_id=update_id)
 
-    # ------------------------------------------------------------------ act
-
     def run(self, **options: Any) -> RunReport:
         """One pipeline run pinned to `TERM`; `term=None` resolves it from the fake API."""
         options.setdefault("since", SINCE)
         options.setdefault("term", TERM)
         return self.pipeline.run(RunOptions(**options))
-
-    # ------------------------------------------------------------------ assert
 
     def bill(self, number: str) -> Bill:
         stored = self.repo.get(TERM, number)

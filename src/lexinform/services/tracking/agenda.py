@@ -112,8 +112,6 @@ class AgendaWatcher:
                 log.exception("agenda check for druk %s failed: %s", bill.number, exc)
         return True
 
-    # ------------------------------------------------------------------ network
-
     def _committee_sittings(
         self, term: int, bills: list[Bill], today: dt.date
     ) -> tuple[dict[str, list[CommitteeSitting]], set[str]]:
@@ -163,8 +161,6 @@ class AgendaWatcher:
                     full if full.dates else full.model_copy(update={"dates": sitting.dates})
                 )
         return detailed
-
-    # ------------------------------------------------------------------ matching
 
     def _items_for(
         self,
@@ -225,8 +221,6 @@ class AgendaWatcher:
         except Exception as exc:
             log.warning("name of committee %s unavailable: %s", code, exc)
             return None
-
-    # ------------------------------------------------------------------ posting
 
     def _post_new(self, bill: Bill, items: tuple[AgendaItem, ...], result: TrackingResult) -> None:
         for item in items:

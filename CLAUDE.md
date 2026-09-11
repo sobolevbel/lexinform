@@ -13,6 +13,13 @@ windows and the API stage vocabulary in `docs/legislative-process.md`.
 - Python 3.12, `uv`. Check with `uv run pytest -q && uv run mypy && uv run ruff check src tests`
   and `uv run ruff format src tests`. All three must be clean before a commit. mypy is strict over
   `src` and `tests`: no `type: ignore`, no local imports, tests fully typed.
+- A comment earns its place only where the code cannot speak: a fact from outside the repo (an
+  API quirk, a legal deadline, a measured number), an invariant a later edit would silently break,
+  or why the obvious way was not taken. Never a restatement of the line below it, a divider
+  (`# ---- helpers`) or a label over a group of fields or methods — names and docstrings do that
+  work. What needs a paragraph is a function with a good name and a docstring, not a block with a
+  comment over it; a comment that opens a function body and says what the function does is a
+  docstring written in the wrong place.
 - Developer guide (setup, tests, migrations, where a change goes): `CONTRIBUTING.md`.
 - Commit after each finished part. Do not push unless asked. No `Co-Authored-By` trailers.
   A push of `main` deploys everything: the bot (every `daily.yml` run checks out `main`) and,

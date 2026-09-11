@@ -21,9 +21,6 @@ def _commands_only(w: World, **options: Any) -> RunReport:
     )
 
 
-# --------------------------------------------------------------------------- /analyze
-
-
 def test_analyze_fetches_an_unknown_bill_posts_its_card_and_follows_it() -> None:
     w = World()
     w.add_bill("3039", TITLE)
@@ -123,9 +120,6 @@ def test_a_bill_nobody_knows_is_an_error_answered_under_the_command() -> None:
     assert w.inbox.commands == []  # answered: not tried again
 
 
-# --------------------------------------------------------------------------- RCL references
-
-
 def test_an_rcl_project_by_link_is_read_analysed_and_posted() -> None:
     w = World()
     w.add_rcl_project()
@@ -152,9 +146,6 @@ def test_wykaz_and_rm_numbers_name_the_project() -> None:
     assert analysed.status is OutcomeStatus.ANALYSED and analysed.message_id == 101
     assert shown.status is OutcomeStatus.SHOWN
     assert shown.bill is not None and shown.bill.number == RCL
-
-
-# --------------------------------------------------------------------------- /show /skip /republish
 
 
 def test_show_reads_the_database_only() -> None:
@@ -200,9 +191,6 @@ def test_republish_refuses_a_bill_without_a_relevant_analysis() -> None:
     assert w.publisher.new_bills == []
 
 
-# --------------------------------------------------------------------------- help and mistakes
-
-
 def test_help_unknown_commands_and_missing_references_get_the_command_list() -> None:
     w = World()
     w.command("/help")
@@ -222,9 +210,6 @@ def test_help_unknown_commands_and_missing_references_get_the_command_list() -> 
         "not a command",
     ]
     assert report.commands_failed == 0
-
-
-# --------------------------------------------------------------------------- bookkeeping
 
 
 def test_a_command_file_read_again_is_not_executed_twice() -> None:
@@ -315,9 +300,6 @@ def test_the_reply_carries_the_run_time_and_what_the_analysis_cost() -> None:
     assert analysed.usage["fake"].input == FakeLlm.ANALYSIS_TOKENS[0]
     assert analysed.usage["fake-triage"].input == FakeLlm.TRIAGE_TOKENS[0]
     assert shown.usage == {}  # /show never calls the model
-
-
-# --------------------------------------------------------------------------- RCL already in Sejm
 
 
 def test_a_project_that_already_reached_the_sejm_leads_to_its_druk() -> None:

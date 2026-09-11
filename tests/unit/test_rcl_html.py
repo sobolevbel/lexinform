@@ -35,9 +35,6 @@ def _client(handler: Handler, *, page_size: int = 100, max_retries: int = 3) -> 
     )
 
 
-# --------------------------------------------------------------------------- list
-
-
 def test_list_rows_carry_id_title_applicant_wykaz_number_and_dates() -> None:
     rows = parse_list(_page("lista.html"))
 
@@ -79,9 +76,6 @@ def test_listing_stops_when_a_page_is_shorter_than_the_page_size() -> None:
     rows = list(_client(handler, page_size=100).list_projects(modified_since=date(2026, 1, 1)))
 
     assert (len(rows), calls) == (3, 1)
-
-
-# --------------------------------------------------------------------------- project page
 
 
 def test_project_page_gives_metadata_and_the_timeline() -> None:
@@ -168,9 +162,6 @@ def test_a_list_page_that_announces_rows_but_shows_none_is_a_page_error() -> Non
         list(_client(handler).list_projects(modified_since=date(2026, 9, 1)))
 
 
-# --------------------------------------------------------------------------- stage catalog
-
-
 def test_stage_catalog_lists_folders_and_documents() -> None:
     stage = parse_stage_catalog(_page("katalog_13223895.html"), 13223895)
 
@@ -211,9 +202,6 @@ def test_stage_catalog_lists_folders_and_documents() -> None:
 def test_stage_catalog_of_an_unknown_stage_is_a_page_error() -> None:
     with pytest.raises(RclPageError):
         parse_stage_catalog(_page("katalog_13223895.html"), 1)
-
-
-# --------------------------------------------------------------------------- client
 
 
 def test_request_rejected_page_means_the_site_is_unavailable() -> None:
