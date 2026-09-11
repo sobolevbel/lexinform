@@ -134,6 +134,9 @@ class PublishingService:
         primary = self._primary_of(bill)
         if primary is not None:
             return self._publish_joint(bill, primary, result)
+        inherited = self._inherited_card(bill)
+        if inherited is not None:
+            return self._inherit_card(bill, inherited)
         # Everything the card needs from the Sejm API is fetched before the pending row exists:
         # an outage here must leave no row behind (a stale pending row becomes `unknown` and is
         # never sent), so that the bill is simply a candidate again on the next run.
@@ -181,6 +184,60 @@ class PublishingService:
         result.joined += 1
         log.info("druk %s joined the thread of druk %s", bill.number, card_bill.number)
         return True
+
+    def _inherited_card(self, bill: Bill) -> Publication | None:
+        """The sent card of the row this print continues (its RPW entry or its RCL project).
+        `Linker` hands the card over when tracking sees the print appear; this catches the print
+        that was linked outside tracking — fetched by an operator command before the run did it."""
+        if bill.linked_number is None:
+            return None
+        card = self._repo.get_publication(
+            bill.term, bill.linked_number, PublicationKind.NEW_BILL, self._channel_id
+        )
+        if card is None or card.status is not PublicationStatus.SENT or card.message_id is None:
+            return None
+        return card
+
+    def _inherit_card(self, bill: Bill, card: Publication) -> bool:
+        """The print joins the thread of the entry it continues: the card is already in the
+        channel, only the record of it is missing (every tracker joins on the print's own row)."""
+        assert bill.linked_number is not None
+        pub_id = self._repo.create_publication(
+            Publication(
+                term=bill.term,
+                number=bill.number,
+                kind=PublicationKind.NEW_BILL,
+                status=PublicationStatus.SENT,
+                channel_id=self._channel_id,
+                message_id=card.message_id,
+                created_at=self._clock.now(),
+                sent_at=card.sent_at,
+            )
+        )
+        self._repo.mark_publication(
+            pub_id, PublicationStatus.SENT, message_id=card.message_id, sent_at=card.sent_at
+        )
+        log.info(
+            "druk %s continues %s: its card is message %s",
+            bill.number,
+            bill.linked_number,
+            card.message_id,
+        )
+        pre = self._repo.get(bill.term, bill.linked_number)
+        if pre is not None:
+            self._retag(pre, card)
+        return True
+
+    def _retag(self, pre: Bill, card: Publication) -> None:
+        """The card heads a thread that has a druk number now: re-render it in place so that it
+        carries both tags. One attempt; a refusal is logged, the replies carry both tags anyway."""
+        assert card.message_id is not None
+        try:
+            self._publisher.edit_new_bill(pre, None, message_id=card.message_id)
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("card of %s not re-tagged: %s: %s", pre.number, type(exc).__name__, exc)
 
     def _primary_of(self, bill: Bill) -> tuple[Bill, int] | None:
         """The bill `bill` is considered jointly with that already has a card in this channel

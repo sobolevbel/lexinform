@@ -57,10 +57,12 @@ technical channel ──getUpdates──► lexinform listen (VPS) ──Content
    group, and a pending run replaced by a newer one is harmless because every run drains the
    whole inbox.
 
-`/analyze` of an RCL project that already reached the Sejm answers about its druk instead: the
-rows are linked and the print carries the thread, so a project whose act is in force cannot get
-a card that promises a druk number any day now. No card is posted for a bill the Sejm has
-finished with (adopted, rejected, withdrawn) — the reply gives the verdict and says so.
+`/analyze` of an RCL project or an `RPW/…` entry that already reached the Sejm answers about its
+druk instead: the rows are linked and the print carries the thread, so an entry whose act is in
+force cannot get a card that promises a druk number any day now. Named the other way round — the
+druk of an entry already in the channel — the print joins that card instead of getting a second
+one, exactly as the next run's tracking would have linked them. No card is posted for a bill the
+Sejm has finished with (adopted, rejected, withdrawn) — the reply gives the verdict and says so.
 
 Every reply ends with what the command took: when the run that answered it started, how long
 the command itself ran, and the model tokens and dollars it spent — the triage included, since

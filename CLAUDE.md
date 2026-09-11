@@ -140,12 +140,17 @@ Invariants worth keeping:
 - Pre-print bills (`RPW/…`) and RCL projects (`RCL/{id}`) have no Sejm process
   (`Bill.has_process` is false): skip `get_process`/`get_print` for them; when the print appears,
   the print inherits the card (`tracking/linking.py::Linker`: `new_bill` row aliased with the same
-  `message_id`). The other direction matters for commands: an RCL project fetched on request may
-  already be in the Sejm, so `BillLookup` asks `find_process_by_rcl_num` (the term's listing
-  walked once) for the print its `rm_number` names, links the rows and returns the print — a
-  project whose act is already in force must never get a card promising a druk number. A command
-  posts no card at all for a bill whose `closure_date` is set: a card invites action, and the
-  process is over. The print copies the entry's status, except `skipped_prefilter`: an RPW entry has
+  `message_id`). **A bill fetched on request is linked in whichever direction it is named**, and
+  the druk is what comes back: it is the bill with the text. `BillLookup._fetch` splits per kind
+  — an RCL project asks `find_process_by_rcl_num` (the term's listing walked once) for the print
+  its `rm_number` names; an RPW entry already carries `print` in its `/bills` row; a druk asks
+  `/bills?print=N` (one request, the applicant and consultation dates come with it) for the entry
+  it continues and links when that row is followed. An entry whose act is already in force must
+  never get a card promising a druk number, and a druk must not get a second card next to the
+  entry's: a print linked outside tracking inherits the entry's card in `PublishingService`
+  (`_inherited_card`, the same alias `Linker` makes, and the card is re-rendered with both tags).
+  A command posts no card at all for a bill whose `closure_date` is set: a card invites action,
+  and the process is over. The print copies the entry's status, except `skipped_prefilter`: an RPW entry has
   no text to scan, so its print goes to `text_prefilter_pending` instead of inheriting the skip
   (otherwise every non-government bill with a neutral title would bypass the text stage). The RPW
   reconciler finds the print in `/bills`; for RCL, Sejm discovery notices a

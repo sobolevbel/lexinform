@@ -8,7 +8,7 @@ from lexinform.errors import LlmUnavailableError
 from lexinform.models import BillStatus, OutcomeStatus, PublicationKind, RunMode, RunReport
 from lexinform.services.commands import FORCE_HINT
 from tests.fakes import FakeLlm, FakeTextExtractor, make_analysis
-from tests.harness import RCL, RCL_ID, World, rcl_project
+from tests.harness import RCL, RCL_ID, RPW, World, rcl_project, submission
 
 TITLE = "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach"
 PLAIN = "Rządowy projekt ustawy o podatku VAT"  # says nothing about foreigners
@@ -394,6 +394,48 @@ def test_a_project_that_already_reached_the_sejm_leads_to_its_druk() -> None:
     assert w.bill(RCL).status is BillStatus.LINKED  # the project joins the druk's thread
     assert w.bill(RCL).linked_number == "2172"
     assert w.bill("2172").linked_wykaz_number == "UC164"
+
+
+def test_an_entry_that_already_has_its_druk_leads_to_the_druk() -> None:
+    """The same the other way round: the operator names an RPW number nobody followed, and the
+    Sejm gave it a druk in the meantime. The druk has the text; the entry has a promise."""
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.gateway.submissions.append(submission(print_number="3039"))
+    w.command(f"/analyze {RPW}")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.bill is not None and outcome.bill.number == "3039"  # the druk, not the entry
+    assert [b.number for b, _ in w.publisher.new_bills] == ["3039"]
+    assert (w.bill(RPW).status, w.bill(RPW).linked_number) == (BillStatus.LINKED, "3039")
+    assert w.bill("3039").linked_number == RPW
+    assert w.bill("3039").submission is not None  # the entry's consultation dates travel along
+
+
+def test_a_druk_that_continues_a_followed_entry_joins_its_card() -> None:
+    """The entry is in the channel already: its druk inherits the card instead of getting a
+    second one, exactly as tracking would have linked the two on the next run."""
+    w = World()
+    w.gateway.submissions.append(submission())
+    w.run()
+    card_id = w.card_id(RPW)
+    w.gateway.submissions[0] = submission(print_number="3100")
+    w.add_bill("3100", TITLE)
+    w.command("/analyze 3100")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.message_id == card_id  # the entry's card, not a second one
+    assert len(w.publisher.new_bills) == 1
+    assert (w.bill(RPW).status, w.bill(RPW).linked_number) == (BillStatus.LINKED, "3100")
+    assert w.bill("3100").linked_number == RPW
+    card = w.publication("3100")
+    assert card is not None and card.message_id == card_id
+    edited, edited_message = w.publisher.edits[0]  # the card carries the druk's tag now
+    assert (edited.number, edited_message) == (RPW, card_id)
 
 
 def test_a_bill_the_sejm_has_finished_with_gets_a_verdict_but_no_card() -> None:
