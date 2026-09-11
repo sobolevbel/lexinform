@@ -21,7 +21,18 @@ if [ -n "$wanted" ] && [ "$after" != "$wanted" ]; then
   echo "note: CI passed $wanted, origin/main is $after (deploying the latter)"
 fi
 
-if [ "$before" = "$after" ] && systemctl is-active --quiet "$SERVICE"; then
+# The unit lives in /etc, outside the checkout: without this a change to it would never reach
+# the server (it did not, until 2026-09-11).
+UNIT=/etc/systemd/system/$SERVICE.service
+unit_changed=0
+if ! cmp -s "deploy/$SERVICE.service" "$UNIT"; then
+  cp "deploy/$SERVICE.service" "$UNIT"
+  systemctl daemon-reload
+  unit_changed=1
+  echo "unit file updated"
+fi
+
+if [ "$before" = "$after" ] && [ "$unit_changed" = 0 ] && systemctl is-active --quiet "$SERVICE"; then
   echo "already at ${after:0:12}, $SERVICE running"
   exit 0
 fi

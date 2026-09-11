@@ -13,7 +13,9 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=/opt/lexinform
 # Secrets live in /opt/lexinform/.env (bot token, log channel id, GitHub repo and token).
-ExecStart=/root/.local/bin/uv run --frozen --no-dev lexinform listen
+# The venv's entry point directly, not `uv run`: the wrapper would stay alive as the parent
+# process for nothing, costing ~25 MB on a 384 MB box. deploy/update.sh keeps the venv in sync.
+ExecStart=/opt/lexinform/.venv/bin/lexinform listen
 Restart=always
 RestartSec=30
 # A long poll is 50 s; give a graceful stop time to finish the one in flight.
