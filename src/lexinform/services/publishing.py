@@ -27,6 +27,10 @@ log = logging.getLogger(__name__)
 
 Send = Callable[[], PublishResult]
 
+# The two ways a bill can be in the channel: its own card, or the "alternative bill" reply it
+# got under the card of a print it is considered jointly with. One of them, never both.
+CARD_KINDS = (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL)
+
 
 @dataclass
 class PublishingResult:
@@ -105,6 +109,23 @@ class PublishingService:
                 result.failed += 1
         return result
 
+    def card_of(self, bill: Bill) -> Publication | None:
+        """How the bill is in this channel: its card, or its reply under a joint print's card.
+        A sent row wins over a failed or forgotten attempt of the other kind."""
+        rows = [
+            pub
+            for kind in CARD_KINDS
+            if (pub := self._repo.get_publication(bill.term, bill.number, kind, self._channel_id))
+        ]
+        sent = next((pub for pub in rows if pub.status is PublicationStatus.SENT), None)
+        return sent or next(iter(rows), None)
+
+    def forget_card(self, bill: Bill) -> None:
+        """Drop what the channel remembers of the bill's card, both kinds, so that the next
+        `publish_bill` decides again (the operator's `/republish`)."""
+        for kind in CARD_KINDS:
+            self._repo.delete_publication(bill.term, bill.number, kind, self._channel_id)
+
     def publish_bill(self, bill: Bill, result: PublishingResult | None = None) -> bool:
         """Send one bill: a card, or a reply under the card of a print it is considered jointly
         with. Records a pending publication before sending so a crash cannot cause a duplicate
@@ -166,7 +187,7 @@ class PublishingService:
         and is still followed, with the card's message id; None when `bill` gets its own card."""
         for number in bill.summary.prints_considered_jointly:
             card = self._repo.get_publication(
-                bill.term, number, PublicationKind.NEW_BILL.value, self._channel_id
+                bill.term, number, PublicationKind.NEW_BILL, self._channel_id
             )
             if card is None or card.status is not PublicationStatus.SENT or card.message_id is None:
                 continue

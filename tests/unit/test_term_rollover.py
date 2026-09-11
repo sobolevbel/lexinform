@@ -151,7 +151,7 @@ def test_rcl_project_follows_the_sejm_and_its_druk_in_the_new_term_takes_over() 
     assert moved.rcl_rehomed == 1 and w.repo.get(TERM, RCL) is None
     carried = w.repo.get(NEW_TERM, RCL)
     assert carried is not None and carried.rcl is not None and carried.analysis is not None
-    card = w.repo.get_publication(NEW_TERM, RCL, "new_bill", CHANNEL)
+    card = w.repo.get_publication(NEW_TERM, RCL, PublicationKind.NEW_BILL, CHANNEL)
     assert card is not None and card.message_id == card_id
     assert (linked.published, linked.linked) == (0, 1)  # no second card for the druk
     bill, _, reply_to = w.publisher.updates[-1]

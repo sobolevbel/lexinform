@@ -1,12 +1,15 @@
 """Operator commands from the technical channel, executed by a run.
 
-Every command in the inbox gets a `commands` row before anything runs (an inbox file the
-workflow could not delete is not executed twice), is executed, answered under its own message
-in the technical channel, marked handled and taken out of the inbox. An outage of a source
-system ends the phase and leaves the command for the next run; any other failure is the
-command's own and is answered as such.
+Every command in the inbox gets a `commands` row before anything runs, is executed, marked
+executed, answered under its own message in the technical channel, marked handled and taken
+out of the inbox. The two marks are what a re-read inbox file is measured against: answered
+means the file is only dropped, executed but unanswered means the answer is repeated and the
+command is *not* run again (a second `/republish` would post a second card). An outage of a
+source system or of the channel ends the phase and leaves the command for the next run; any
+other failure is the command's own and is answered as such.
 """
 
+import datetime as dt
 import logging
 import time
 from dataclasses import dataclass, field
@@ -18,16 +21,16 @@ from lexinform.models import (
     Command,
     CommandName,
     CommandOutcome,
+    CommandState,
     IncomingCommand,
     OutcomeStatus,
-    Publication,
     PublicationKind,
     PublicationStatus,
     TokenUsage,
     parse_command,
 )
 from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier
-from lexinform.services.analysis import AnalysisService
+from lexinform.services.analysis import AnalysisService, TooExpensiveError
 from lexinform.services.lookup import BillLookup, BillNotFoundError
 from lexinform.services.publishing import PublishingService
 from lexinform.services.text_prefilter import TextPrefilterService
@@ -62,7 +65,6 @@ class CommandService:
         publishing: PublishingService,
         clock: Clock,
         *,
-        channel_id: str,
         text_prefilter: TextPrefilterService | None = None,
     ) -> None:
         self._repo = repo
@@ -72,37 +74,47 @@ class CommandService:
         self._analysis = analysis
         self._publishing = publishing
         self._clock = clock
-        self._channel_id = channel_id
         self._text_prefilter = text_prefilter
-        self._dry_run = False
 
     def handle_pending(
-        self, *, min_score: int, publish: bool = True, dry_run: bool = False
+        self,
+        *,
+        min_score: int,
+        run_started_at: dt.datetime,
+        publish: bool = True,
+        dry_run: bool = False,
     ) -> CommandsResult:
-        """Answer every waiting command. In a dry run the inbox is left as it is: the files
-        belong to a real run (the database is rolled back with them)."""
-        self._dry_run = dry_run
-        run_started_at = self._clock.now()
+        """Answer every waiting command; `run_started_at` is the run's own start, which every
+        reply names. `dry_run` is the run's option, not the service's: the inbox is then left
+        as it is, because its files belong to a real run (the database is rolled back with
+        them)."""
         result = CommandsResult()
         for incoming in self._inbox.pending():
-            if not self._repo.record_command(incoming) and self._repo.command_handled(
-                incoming.update_id
-            ):
-                log.info("command %d handled before; inbox file dropped", incoming.update_id)
-                self._done(incoming)
+            earlier = self._earlier_state(incoming)
+            if earlier is not None and earlier.handled_at is not None:
+                log.info("command %d answered before; inbox file dropped", incoming.update_id)
+                self._done(incoming, dry_run=dry_run)
                 continue
             started = time.perf_counter()
             spent: dict[str, TokenUsage] = {}
-            try:
-                outcome = self._execute(incoming, spent, min_score=min_score, publish=publish)
-            except ServiceUnavailableError as exc:
-                result.fatal_error = exc.describe()
-                log.error("aborting commands phase: %s", result.fatal_error)
-                break
-            except Exception as exc:
-                log.exception("command %d failed: %s", incoming.update_id, exc)
-                outcome = CommandOutcome(
-                    status=OutcomeStatus.ERROR, note=f"{type(exc).__name__}: {exc}"
+            if earlier is not None and earlier.executed_at is not None:
+                outcome = self._answer_of_an_earlier_run(earlier)
+            else:
+                try:
+                    # `spent` is filled as the command goes, not returned: a command that raises
+                    # halfway has still spent what it spent, and the report must say so.
+                    outcome = self._execute(incoming, spent, min_score=min_score, publish=publish)
+                except ServiceUnavailableError as exc:
+                    result.fatal_error = exc.describe()
+                    log.error("aborting commands phase: %s", result.fatal_error)
+                    break
+                except Exception as exc:
+                    log.exception("command %d failed: %s", incoming.update_id, exc)
+                    outcome = CommandOutcome(
+                        status=OutcomeStatus.ERROR, note=f"{type(exc).__name__}: {exc}"
+                    )
+                self._repo.mark_command_executed(
+                    incoming.update_id, outcome=outcome.line(), at=self._clock.now()
                 )
             # What this one command took, so the reply can say it (the run report sums them up).
             outcome = outcome.model_copy(
@@ -116,26 +128,51 @@ class CommandService:
                 result.usage[model] = result.usage.get(model, TokenUsage()).plus(tokens)
                 result.input_tokens += tokens.input + tokens.cache_read
                 result.output_tokens += tokens.output
-            self._answer(incoming, outcome)
+            try:
+                self._answer(incoming, outcome, dry_run=dry_run)
+            except ServiceUnavailableError as exc:
+                # The command ran; only its answer did not reach the channel. It stays in the
+                # inbox, marked executed, and the next run repeats the answer alone.
+                result.fatal_error = exc.describe()
+                log.error("aborting commands phase, %d unanswered: %s", incoming.update_id, exc)
+                break
             result.handled += 1
             result.failed += int(not outcome.ok)
             result.lines.append(f"{incoming.text} → {outcome.line()}")
         return result
 
-    def _answer(self, incoming: IncomingCommand, outcome: CommandOutcome) -> None:
+    def _earlier_state(self, incoming: IncomingCommand) -> CommandState | None:
+        """What earlier runs did with this command, recording it when it is new. None means
+        nobody has run it: the inbox file is its only trace."""
+        if self._repo.record_command(incoming):
+            return None
+        return self._repo.command_state(incoming.update_id)
+
+    @staticmethod
+    def _answer_of_an_earlier_run(earlier: CommandState) -> CommandOutcome:
+        """A command an earlier run executed but could not answer. Running it again could post
+        a second card, so its recorded outcome is repeated instead."""
+        when = earlier.executed_at.date() if earlier.executed_at is not None else None
+        ran = f"the run of {when} " if when is not None else ""
+        return CommandOutcome(
+            status=OutcomeStatus.EXECUTED_EARLIER,
+            note=f"{ran}ran this command but could not answer: {earlier.reply or 'no record'}",
+        )
+
+    def _answer(self, incoming: IncomingCommand, outcome: CommandOutcome, *, dry_run: bool) -> None:
         line = outcome.line()
         try:
             self._replier.reply(incoming, outcome)
         except ServiceUnavailableError:
-            raise
+            raise  # the channel is down: the phase ends, the answer is repeated next run
         except Exception as exc:  # the answer failed, the command did not: do not run it again
             log.exception("reply to command %d failed: %s", incoming.update_id, exc)
             line += f" (reply failed: {exc})"
         self._repo.mark_command_handled(incoming.update_id, reply=line, at=self._clock.now())
-        self._done(incoming)
+        self._done(incoming, dry_run=dry_run)
 
-    def _done(self, incoming: IncomingCommand) -> None:
-        if not self._dry_run:
+    def _done(self, incoming: IncomingCommand, *, dry_run: bool) -> None:
+        if not dry_run:
             self._inbox.done(incoming)
 
     def _execute(
@@ -194,7 +231,22 @@ class CommandService:
                         status=OutcomeStatus.SKIPPED, bill=bill, note=f"{reason}; {FORCE_HINT}"
                     )
         if command.force or bill.analysis is None or bill.status is not BillStatus.ANALYZED:
-            analysed = self._analysis.analyze_bill(bill, ignore_cost_limit=command.force)
+            try:
+                analysed = self._analysis.analyze_bill(bill, ignore_cost_limit=command.force)
+            except TooExpensiveError as exc:
+                # The same answer the analysis phase gives a text over the per-bill limit, so
+                # that the queue looks the same whoever hit the guard.
+                self._repo.set_status(
+                    bill.term,
+                    bill.number,
+                    BillStatus.SKIPPED_COST,
+                    reason=f"analysis skipped: {exc}",
+                )
+                return CommandOutcome(
+                    status=OutcomeStatus.SKIPPED,
+                    bill=self._reload(bill),
+                    note=f"{exc}; {FORCE_HINT}",
+                )
             spent.update(analysed.usage)  # the triage counts too: the operator pays for both
             bill = self._reload(bill)
         assert bill.analysis is not None
@@ -239,7 +291,12 @@ class CommandService:
         return self._post(bill, OutcomeStatus.ANALYSED)
 
     def _skip(self, bill: Bill) -> CommandOutcome:
-        self._repo.reset_bill(bill.term, bill.number, BillStatus.SKIPPED_PREFILTER)
+        self._repo.reset_bill(
+            bill.term,
+            bill.number,
+            BillStatus.SKIPPED_PREFILTER,
+            reason="silenced by the operator (/skip)",
+        )
         card = self._card(bill)
         note = "silenced: it will not be analysed or posted"
         if card is not None:
@@ -255,15 +312,14 @@ class CommandService:
             return CommandOutcome(
                 status=OutcomeStatus.ERROR, bill=bill, note="publishing is off in this run"
             )
-        for kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
-            self._repo.delete_publication(bill.term, bill.number, kind.value, self._channel_id)
+        self._publishing.forget_card(bill)
         return self._post(bill, OutcomeStatus.REPUBLISHED)
 
     def _post(self, bill: Bill, status: OutcomeStatus) -> CommandOutcome:
         """Send the card through the normal path (pending row first, joint prints share a
         thread) and tell which message it became."""
         ok = self._publishing.publish_bill(bill)
-        posted = self._publication(bill)
+        posted = self._publishing.card_of(bill)
         if not ok or posted is None or posted.message_id is None:
             return CommandOutcome(
                 status=OutcomeStatus.ERROR, bill=bill, note="posting the card failed, see the log"
@@ -275,16 +331,9 @@ class CommandService:
         fresh = self._repo.get(bill.term, bill.number)
         return fresh if fresh is not None else bill
 
-    def _publication(self, bill: Bill) -> Publication | None:
-        for kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
-            pub = self._repo.get_publication(bill.term, bill.number, kind.value, self._channel_id)
-            if pub is not None:
-                return pub
-        return None
-
     def _card(self, bill: Bill) -> str | None:
         """`message 123` when the bill's card (or its reply under a joint print) is sent."""
-        pub = self._publication(bill)
+        pub = self._publishing.card_of(bill)
         if pub is None or pub.status is not PublicationStatus.SENT:
             return None
         return f"message {pub.message_id}"

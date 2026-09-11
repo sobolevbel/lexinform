@@ -18,7 +18,6 @@ from lexinform.models import (
     Bill,
     BillStatus,
     BillSubmission,
-    PublicationKind,
     RclProject,
     RunReport,
     TokenUsage,
@@ -574,27 +573,17 @@ def republish(
         if bill.analysis is None or not bill.analysis.analysis.relevant:
             typer.echo(f"{number} has no relevant analysis; nothing to publish", err=True)
             raise typer.Exit(code=2)
-        channel = c.channel_id()
-        existing = c.repo.get_publication(
-            bill.term, bill.number, PublicationKind.NEW_BILL.value, channel
-        )
+        publishing = c.publishing_service(dry_run=False)
+        existing = publishing.card_of(bill)
         state = f"{existing.status.value} (message {existing.message_id})" if existing else "none"
-        typer.echo(f"{number}: current card in {channel}: {state}")
+        typer.echo(f"{number}: current card in {c.channel_id()}: {state}")
         if not yes and not typer.confirm("Send the card again?"):
             raise typer.Exit(code=1)
         # A bill considered jointly with one that has a card gets its "alternative bill" reply
         # again instead of a card; both rows are forgotten so the normal path decides.
-        for kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
-            c.repo.delete_publication(bill.term, bill.number, kind.value, channel)
-        ok = c.publishing_service(dry_run=False).publish_bill(bill)
-        fresh = next(
-            (
-                pub
-                for kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL)
-                if (pub := c.repo.get_publication(bill.term, bill.number, kind.value, channel))
-            ),
-            None,
-        )
+        publishing.forget_card(bill)
+        ok = publishing.publish_bill(bill)
+        fresh = publishing.card_of(bill)
         typer.echo(
             f"sent message {fresh.message_id}" if ok and fresh else "sending failed, see the log"
         )

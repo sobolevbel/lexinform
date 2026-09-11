@@ -397,7 +397,7 @@ class World:
     def publication(
         self, number: str, kind: PublicationKind = PublicationKind.NEW_BILL
     ) -> Publication | None:
-        return self.repo.get_publication(TERM, number, kind.value, CHANNEL)
+        return self.repo.get_publication(TERM, number, kind, CHANNEL)
 
     def card_id(self, number: str) -> int:
         card = self.publication(number)

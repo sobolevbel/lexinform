@@ -12,20 +12,22 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.keywords import KeywordPrefilter, accept_title_hits
 from lexinform.models import (
     Bill,
+    BillRef,
     BillStatus,
     BillSubmission,
     ProcessSummary,
     RclProject,
+    RefKind,
     is_pre_print_number,
     is_rcl_number,
     normalize_wykaz_number,
+    parse_reference,
     process_summary,
     rcl_fingerprint,
     rcl_number,
     rcl_project_id,
     rcl_stages,
 )
-from lexinform.models.commands import BillRef, RefKind, parse_reference
 from lexinform.ports import BillRepository, Clock, ProjectResolver, SejmGateway
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.terms import TermResolver

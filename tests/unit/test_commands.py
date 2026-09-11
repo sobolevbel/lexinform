@@ -6,6 +6,7 @@ from typing import Any
 
 from lexinform.errors import LlmUnavailableError
 from lexinform.models import BillStatus, OutcomeStatus, PublicationKind, RunReport
+from lexinform.services.commands import FORCE_HINT
 from tests.fakes import FakeLlm, FakeTextExtractor, make_analysis
 from tests.harness import RCL, RCL_ID, World, rcl_project
 
@@ -241,6 +242,77 @@ def test_an_outage_leaves_the_command_for_the_next_run() -> None:
     assert failed.commands_handled == 0 and unanswered == 0
     assert recovered.commands_handled == 1 and recovered.ok
     assert len(w.replier.replies) == 1 and w.inbox.commands == []
+
+
+def test_a_command_whose_answer_did_not_arrive_is_answered_again_not_run_again() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()  # the card is in the channel
+    w.command("/republish 3039")
+    w.replier.outage = True
+
+    unanswered = _commands_only(w)
+    left_in_the_inbox = [c.text for c in w.inbox.commands]
+    w.replier.outage = False
+    repeated = _commands_only(w)
+
+    assert unanswered.errors == [
+        "commands: Telegram API unavailable: sendMessage: ConnectError after 3 attempts"
+    ]
+    assert unanswered.commands_handled == 0 and left_in_the_inbox == ["/republish 3039"]
+    assert repeated.commands_handled == 1 and repeated.ok
+    assert len(w.publisher.new_bills) == 2  # the first card and one republication, not two
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.EXECUTED_EARLIER
+    assert "republished (message 102)" in outcome.note  # what that run did, from the record
+    assert w.inbox.commands == []
+
+
+def test_a_channel_that_falls_over_mid_phase_keeps_what_the_earlier_commands_reported() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.add_bill("4001", TITLE)
+    first = w.command("/analyze 3039")
+    second = w.command("/analyze 4001")
+    w.replier.outage_after = 1
+
+    report = _commands_only(w)
+
+    assert report.commands_handled == 1
+    assert report.commands == ["/analyze 3039 → 3039 analysed (message 101)"]
+    assert report.llm_input_tokens > 0  # the accounting of the answered command survived
+    assert [c.update_id for c in w.inbox.commands] == [second.update_id]
+    assert w.inbox.done_ids == [first.update_id]
+
+
+def test_a_text_over_the_cost_limit_is_answered_with_the_reason_and_force_pays_for_it() -> None:
+    w = World(max_bill_cost_usd=0.0001)
+    w.add_bill("3039", TITLE)
+    w.command("/analyze 3039")
+    w.command("/analyze 3039 force")
+
+    _commands_only(w)
+
+    (_, guarded), (_, forced) = w.replier.replies
+    assert guarded.status is OutcomeStatus.SKIPPED
+    assert "exceeds the $0.000 limit" in guarded.note and FORCE_HINT in guarded.note
+    assert guarded.bill is not None and guarded.bill.status is BillStatus.SKIPPED_COST
+    assert forced.status is OutcomeStatus.ANALYSED and forced.message_id == 101
+
+
+def test_a_bill_silenced_by_the_operator_says_so_instead_of_blaming_the_prefilter() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    w.command("/skip 3039")
+    w.command("/analyze 3039")
+
+    _commands_only(w)
+
+    (_, _silenced), (_, refused) = w.replier.replies
+    assert refused.status is OutcomeStatus.SKIPPED
+    assert refused.note == f"silenced by the operator (/skip); {FORCE_HINT}"
+    assert len(w.publisher.new_bills) == 1  # the card of the first run, nothing new
 
 
 def test_a_dry_run_answers_but_keeps_the_inbox_and_the_database() -> None:

@@ -520,14 +520,18 @@ class FakeInbox:
 
 
 class FakeReplier:
-    """Records the answer to every command; `outage` makes the channel unreachable."""
+    """Records the answer to every command; `outage` makes the channel unreachable, and
+    `outage_after` lets it fall over in the middle of a phase (after N answers)."""
 
-    def __init__(self, *, outage: bool = False) -> None:
+    def __init__(self, *, outage: bool = False, outage_after: int | None = None) -> None:
         self.replies: list[tuple[IncomingCommand, CommandOutcome]] = []
         self.outage = outage
+        self.outage_after = outage_after
 
     def reply(self, command: IncomingCommand, outcome: CommandOutcome) -> None:
-        if self.outage:
+        if self.outage or (
+            self.outage_after is not None and len(self.replies) >= self.outage_after
+        ):
             raise TelegramUnavailableError("sendMessage: ConnectError after 3 attempts")
         self.replies.append((command, outcome))
 

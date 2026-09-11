@@ -201,7 +201,7 @@ def test_card_row_is_unique_per_bill_and_channel(
     )
 
     assert first == second
-    stored = repo.get_publication(10, number, "new_bill", CHANNEL)
+    stored = repo.get_publication(10, number, PublicationKind.NEW_BILL, CHANNEL)
     assert stored is not None
     assert (stored.status, stored.message_id, stored.document_message_ids) == (
         PublicationStatus.SENT,
@@ -221,7 +221,7 @@ def test_pending_rows_of_a_crashed_run_become_unknown(
 
     marked = repo.mark_stale_pending_as_unknown(now=now)
 
-    stored = repo.get_publication(10, number, "new_bill", CHANNEL)
+    stored = repo.get_publication(10, number, PublicationKind.NEW_BILL, CHANNEL)
     assert marked == 1
     assert stored is not None and stored.status is PublicationStatus.UNKNOWN
 
@@ -232,11 +232,11 @@ def test_forgetting_a_card_lets_it_be_sent_again(
     repo.upsert_summary(process_3039, now=now)
     _card_sent(repo, "3039", now)
 
-    deleted = repo.delete_publication(10, "3039", "new_bill", CHANNEL)
-    deleted_again = repo.delete_publication(10, "3039", "new_bill", CHANNEL)
+    deleted = repo.delete_publication(10, "3039", PublicationKind.NEW_BILL, CHANNEL)
+    deleted_again = repo.delete_publication(10, "3039", PublicationKind.NEW_BILL, CHANNEL)
 
     assert (deleted, deleted_again) == (1, 0)
-    assert repo.get_publication(10, "3039", "new_bill", CHANNEL) is None
+    assert repo.get_publication(10, "3039", PublicationKind.NEW_BILL, CHANNEL) is None
 
 
 def test_agenda_posts_are_unique_per_sitting(
@@ -263,10 +263,11 @@ def test_agenda_posts_are_unique_per_sitting(
 
     assert committee != plenary
     assert committee_again == committee
-    by_ref = repo.get_publication(10, "3039", "agenda", CHANNEL, ref="ASW/136/2026-09-17")
+    agenda = PublicationKind.AGENDA
+    by_ref = repo.get_publication(10, "3039", agenda, CHANNEL, ref="ASW/136/2026-09-17")
     assert by_ref is not None and (by_ref.message_id, by_ref.ref) == (7, "ASW/136/2026-09-17")
-    assert repo.get_publication(10, "3039", "agenda", CHANNEL, ref="ASW/999/2026-10-01") is None
-    latest = repo.get_publication(10, "3039", "agenda", CHANNEL)
+    assert repo.get_publication(10, "3039", agenda, CHANNEL, ref="ASW/999/2026-10-01") is None
+    latest = repo.get_publication(10, "3039", agenda, CHANNEL)
     assert latest is not None and latest.ref == "sejm/65/2026-09-15"
 
 
@@ -352,7 +353,7 @@ def test_amendments_summary_is_stored_with_its_status_change(
     assert len(held) == 1 and held[0].amendments == record
     released = repo.release_held_status_changes(10, "3039", CHANNEL, message_id=7, sent_at=now)
     assert released == 1 and repo.list_held_status_changes(10, "3039", CHANNEL) == []
-    update = repo.get_publication(10, "3039", PublicationKind.STATUS_UPDATE.value, CHANNEL)
+    update = repo.get_publication(10, "3039", PublicationKind.STATUS_UPDATE, CHANNEL)
     assert update is not None and (update.status, update.message_id) == (
         PublicationStatus.SENT,
         7,
@@ -629,8 +630,8 @@ def test_dump_restores_rows_indexes_and_the_schema_version(
     assert fresh.schema_version == SCHEMA_VERSION
     assert fresh.get(10, "3039") is not None
     assert fresh.last_discovery_started_at() == now
-    card = fresh.get_publication(10, "3039", "new_bill", CHANNEL)
-    update = fresh.get_publication(10, "3039", "status_update", CHANNEL)
+    card = fresh.get_publication(10, "3039", PublicationKind.NEW_BILL, CHANNEL)
+    update = fresh.get_publication(10, "3039", PublicationKind.STATUS_UPDATE, CHANNEL)
     assert card is not None and card.message_id == 1
     assert update is not None and update.status_change_id == change_id
     assert fresh.add_status_change(_change("3039", now)) is None  # unique index restored too
@@ -679,8 +680,10 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     with sqlite3.connect(tmp_path / "current.db") as conn:
         changes = {r[1] for r in conn.execute("PRAGMA table_info(status_changes)")}
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        commands = {r[1] for r in conn.execute("PRAGMA table_info(commands)")}
     assert "amendments_json" in changes  # v11
     assert "commands" in tables  # v13
+    assert "executed_at" in commands  # v14
     # v9: the flag is stored, so a retried post renders the same message
     when = datetime(2026, 9, 7, 6, 0, tzinfo=UTC)
     assert repo.add_status_change(_change("1", when, discontinued=True)) is not None
@@ -748,7 +751,7 @@ def test_rcl_projects_waiting_for_their_druk_move_to_the_new_term_with_their_pos
     carried = repo.get(11, waiting)
     assert repo.get(10, waiting) is None and carried is not None
     assert (carried.term, carried.summary.term, carried.rcl is not None) == (11, 11, True)
-    assert repo.get_publication(11, waiting, "new_bill", CHANNEL) is not None
+    assert repo.get_publication(11, waiting, PublicationKind.NEW_BILL, CHANNEL) is not None
     assert repo.closure_announced(11, waiting) and not repo.closure_announced(10, waiting)
     assert repo.get(10, joined) is not None  # already joined to its druk: stays with it
     assert repo.move_rcl_projects(10, 11) == 0
@@ -786,15 +789,20 @@ def _command(update_id: int, now: datetime, text: str = "/analyze 3039") -> Inco
     )
 
 
-def test_a_command_is_recorded_once_and_marked_handled(
+def test_a_command_is_recorded_once_and_marked_executed_then_handled(
     repo: SqliteBillRepository, now: datetime
 ) -> None:
     first = repo.record_command(_command(5, now))
-    pending = repo.command_handled(5)
-    repo.mark_command_handled(5, reply="druk 3039: relevant", at=now)
+    recorded = repo.command_state(5)
+    repo.mark_command_executed(5, outcome="3039 analysed (message 101)", at=now)
+    executed = repo.command_state(5)
+    repo.mark_command_handled(5, reply="3039 analysed (message 101)", at=now)
     again = repo.record_command(_command(5, now))
 
-    assert first and not pending
-    assert repo.command_handled(5)
-    assert not again  # the same Telegram update is never a second command
-    assert not repo.command_handled(6)  # unknown updates are not "handled" either
+    assert first and not again  # the same Telegram update is never a second command
+    assert recorded is not None and (recorded.executed_at, recorded.handled_at) == (None, None)
+    assert executed is not None and executed.executed_at == now and executed.handled_at is None
+    assert executed.reply == "3039 analysed (message 101)"  # what an unanswered command did
+    handled = repo.command_state(5)
+    assert handled is not None and handled.handled_at == now
+    assert repo.command_state(6) is None  # unknown updates have no state

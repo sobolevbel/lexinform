@@ -317,7 +317,6 @@ class Container:
                 self.analysis_service(),
                 self.publishing_service(dry_run=dry_run),
                 self.clock,
-                channel_id=self.channel_id(),
                 text_prefilter=self.text_prefilter_service(),
             ),
         )

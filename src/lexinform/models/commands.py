@@ -25,10 +25,26 @@ class IncomingCommand(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     update_id: int
+    # Where the command was posted. The run answers in the technical channel it is configured
+    # with (one relay, one channel), so this is provenance, not an address.
     chat_id: str
     message_id: int
     text: str
     received_at: dt.datetime
+
+
+class CommandState(BaseModel):
+    """What earlier runs did with a recorded command: ran it, answered it, and with what.
+
+    Two marks, not one: a command whose answer never reached the channel must not be run a
+    second time (`/republish` would post a second card), only answered again.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    executed_at: dt.datetime | None = None
+    handled_at: dt.datetime | None = None
+    reply: str | None = None
 
 
 class ChannelPost(BaseModel):
@@ -117,12 +133,15 @@ class OutcomeStatus(StrEnum):
     SILENCED = "silenced"  # /skip: the bill will not be analysed or posted
     REPUBLISHED = "republished"
     HELP = "help"
+    EXECUTED_EARLIER = "executed earlier"  # ran in a previous run whose answer did not arrive
     NOT_FOUND = "not_found"
     ERROR = "error"
 
 
 class CommandOutcome(BaseModel):
     """What happened to a command; the replier renders it under the command's message."""
+
+    model_config = ConfigDict(frozen=True)
 
     status: OutcomeStatus
     bill: Bill | None = None

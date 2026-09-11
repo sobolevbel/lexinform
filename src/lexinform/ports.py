@@ -17,6 +17,7 @@ from lexinform.models import (
     BillSubmission,
     ChannelPost,
     CommandOutcome,
+    CommandState,
     Committee,
     CommitteeSitting,
     IncomingCommand,
@@ -26,6 +27,7 @@ from lexinform.models import (
     ProcessDetail,
     ProcessSummary,
     Publication,
+    PublicationKind,
     PublicationStatus,
     RclProject,
     RclProjectSummary,
@@ -313,7 +315,12 @@ class BillRepository(Protocol):
 
     def record_analysis_failure(self, term: int, number: str, error: str) -> None: ...
 
-    def reset_bill(self, term: int, number: str, status: BillStatus) -> None: ...
+    def reset_bill(
+        self, term: int, number: str, status: BillStatus, *, reason: str | None = None
+    ) -> None:
+        """Put a bill back into `status` with a clean retry budget; `reason` is kept as the
+        bill's last error, so that a later answer can say who put it there."""
+        ...
 
     # Listings span every term: a `Bill` carries its own, and the services group by `bill.term`
     # where an API path needs one. Only the end-of-term methods below are scoped to a term.
@@ -358,12 +365,20 @@ class BillRepository(Protocol):
         ...
 
     def get_publication(
-        self, term: int, number: str, kind: str, channel_id: str, *, ref: str | None = None
+        self,
+        term: int,
+        number: str,
+        kind: PublicationKind,
+        channel_id: str,
+        *,
+        ref: str | None = None,
     ) -> Publication | None:
         """The latest post of this kind for the bill; `ref` narrows to one sitting (agenda)."""
         ...
 
-    def delete_publication(self, term: int, number: str, kind: str, channel_id: str) -> int: ...
+    def delete_publication(
+        self, term: int, number: str, kind: PublicationKind, channel_id: str
+    ) -> int: ...
 
     def mark_stale_pending_as_unknown(self, *, now: datetime) -> int: ...
 
@@ -478,7 +493,13 @@ class BillRepository(Protocol):
         """Remember the command before it runs; False when the update was recorded already."""
         ...
 
-    def command_handled(self, update_id: int) -> bool: ...
+    def command_state(self, update_id: int) -> CommandState | None:
+        """What earlier runs did with the command; None when the update is unknown."""
+        ...
+
+    def mark_command_executed(self, update_id: int, *, outcome: str, at: datetime) -> None:
+        """The command ran and its side effects are in the database; the answer may still fail."""
+        ...
 
     def mark_command_handled(self, update_id: int, *, reply: str, at: datetime) -> None: ...
 

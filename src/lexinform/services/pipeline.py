@@ -232,7 +232,10 @@ class DailyPipeline:
     def _handle_commands(self, opts: RunOptions, report: RunReport) -> None:
         assert self._commands is not None
         handled = self._commands.handle_pending(
-            min_score=opts.min_score, publish=opts.publish, dry_run=opts.dry_run
+            min_score=opts.min_score,
+            run_started_at=report.started_at,
+            publish=opts.publish,
+            dry_run=opts.dry_run,
         )
         report.commands_handled = handled.handled
         report.commands_failed = handled.failed

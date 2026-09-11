@@ -21,6 +21,7 @@ from lexinform.models import (
     BillAuthors,
     BillStatus,
     BillSubmission,
+    CommandState,
     IncomingCommand,
     ProcessSummary,
     Publication,
@@ -180,6 +181,12 @@ MIGRATIONS: tuple[str, ...] = (
         reply TEXT
     );
     """,
+    # v14: the moment a command's side effects were done, separate from the moment it was
+    # answered. A run that could not answer must repeat the answer, not the command.
+    """
+    ALTER TABLE commands ADD COLUMN executed_at TEXT;
+    UPDATE commands SET executed_at = handled_at WHERE handled_at IS NOT NULL;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -188,6 +195,10 @@ _VERSION_LINE = "PRAGMA user_version = "
 
 def _iso(value: datetime | None) -> str | None:
     return value.isoformat() if value else None
+
+
+def _parse_dt(value: str | None) -> datetime | None:
+    return datetime.fromisoformat(value) if value else None
 
 
 def _dump_version(script: str) -> int:
@@ -386,12 +397,16 @@ class SqliteBillRepository:
             (BillStatus.ANALYSIS_FAILED.value, error[:2000], term, number),
         )
 
-    def reset_bill(self, term: int, number: str, status: BillStatus) -> None:
-        """Operator action: put a bill back into `status` with a clean retry budget."""
+    def reset_bill(
+        self, term: int, number: str, status: BillStatus, *, reason: str | None = None
+    ) -> None:
+        """Operator action: put a bill back into `status` with a clean retry budget. `reason`
+        replaces the last error (a bill silenced by `/skip` says so instead of keeping the
+        prefilter's silence, which reads as a keyword miss)."""
         self._conn.execute(
-            "UPDATE bills SET status = ?, analysis_attempts = 0, last_error = NULL"
+            "UPDATE bills SET status = ?, analysis_attempts = 0, last_error = ?"
             " WHERE term = ? AND number = ?",
-            (status.value, term, number),
+            (status.value, reason, term, number),
         )
 
     def list_by_status(
@@ -807,26 +822,34 @@ class SqliteBillRepository:
         )
 
     def get_publication(
-        self, term: int, number: str, kind: str, channel_id: str, *, ref: str | None = None
+        self,
+        term: int,
+        number: str,
+        kind: PublicationKind,
+        channel_id: str,
+        *,
+        ref: str | None = None,
     ) -> Publication | None:
         sql = (
             "SELECT * FROM publications"
             " WHERE term = ? AND number = ? AND kind = ? AND channel_id = ?"
         )
-        params: list[object] = [term, number, kind, channel_id]
+        params: list[object] = [term, number, kind.value, channel_id]
         if ref is not None:
             sql += " AND ref = ?"
             params.append(ref)
         row = self._conn.execute(sql + " ORDER BY id DESC LIMIT 1", params).fetchone()
         return self._row_to_publication(row) if row else None
 
-    def delete_publication(self, term: int, number: str, kind: str, channel_id: str) -> int:
+    def delete_publication(
+        self, term: int, number: str, kind: PublicationKind, channel_id: str
+    ) -> int:
         """Operator action: forget a post so the normal path can send it again. Returns the
         number of rows removed (0 or 1)."""
         cur = self._conn.execute(
             "DELETE FROM publications"
             " WHERE term = ? AND number = ? AND kind = ? AND channel_id = ?",
-            (term, number, kind, channel_id),
+            (term, number, kind.value, channel_id),
         )
         return int(cur.rowcount)
 
@@ -1003,11 +1026,24 @@ class SqliteBillRepository:
         )
         return bool(cur.rowcount)
 
-    def command_handled(self, update_id: int) -> bool:
+    def command_state(self, update_id: int) -> CommandState | None:
         row = self._conn.execute(
-            "SELECT handled_at FROM commands WHERE update_id = ?", (update_id,)
+            "SELECT executed_at, handled_at, reply FROM commands WHERE update_id = ?",
+            (update_id,),
         ).fetchone()
-        return row is not None and row[0] is not None
+        if row is None:
+            return None
+        return CommandState(
+            executed_at=_parse_dt(row["executed_at"]),
+            handled_at=_parse_dt(row["handled_at"]),
+            reply=row["reply"],
+        )
+
+    def mark_command_executed(self, update_id: int, *, outcome: str, at: datetime) -> None:
+        self._conn.execute(
+            "UPDATE commands SET executed_at = ?, reply = ? WHERE update_id = ?",
+            (at.isoformat(), outcome, update_id),
+        )
 
     def mark_command_handled(self, update_id: int, *, reply: str, at: datetime) -> None:
         self._conn.execute(

@@ -48,7 +48,7 @@ def test_failed_reminder_is_retried_next_run() -> None:
     w.run()  # card posted, reminder attempted in the same run
     assert len(w.publisher.hearings) == 1
     w.publisher.hearings.clear()
-    w.repo.delete_publication(10, "3039", PublicationKind.HEARING_DEADLINE.value, "@test")
+    w.repo.delete_publication(10, "3039", PublicationKind.HEARING_DEADLINE, "@test")
     w.publisher.fail_on = {"3039"}
     w.clock.advance(days=1)
 

@@ -753,6 +753,7 @@ class MessageFormatter:
             OutcomeStatus.SILENCED: "🔇",
             OutcomeStatus.REPUBLISHED: "📣",
             OutcomeStatus.HELP: "🛠",
+            OutcomeStatus.EXECUTED_EARLIER: "🕗",
         }.get(outcome.status, "❌")
         head = f"{icon} <b>{esc(outcome.status.value)}</b> · <code>{esc(command.text)}</code>"
         if outcome.status is OutcomeStatus.HELP:

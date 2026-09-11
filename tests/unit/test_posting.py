@@ -55,7 +55,7 @@ def test_successful_post_replies_to_the_card_and_is_recorded_as_sent(
 
     assert sent
     assert publisher.acts == [(bill, 42)]
-    row = repo.get_publication(10, "3039", "act_published", CHANNEL)
+    row = repo.get_publication(10, "3039", PublicationKind.ACT_PUBLISHED, CHANNEL)
     assert row is not None and (row.status, row.message_id) == (PublicationStatus.SENT, 101)
 
 
@@ -67,7 +67,7 @@ def test_failed_post_is_recorded_with_the_error_and_counted_as_an_attempt(
     sent = poster.in_force(bill)
 
     assert not sent
-    row = repo.get_publication(10, "3039", "in_force", CHANNEL)
+    row = repo.get_publication(10, "3039", PublicationKind.IN_FORCE, CHANNEL)
     assert row is not None and (row.status, row.attempts) == (PublicationStatus.FAILED, 1)
     assert row.error is not None and "rejected" in row.error
     assert not poster.posted(bill, PublicationKind.IN_FORCE)  # still worth retrying
@@ -90,7 +90,7 @@ def test_outage_marks_the_row_failed_and_propagates(repo: SqliteBillRepository, 
     with pytest.raises(TelegramUnavailableError):
         poster.consultation_deadline(bill, today=dt.date(2026, 9, 27))
 
-    row = repo.get_publication(10, "3039", "consultation_deadline", CHANNEL)
+    row = repo.get_publication(10, "3039", PublicationKind.CONSULTATION_DEADLINE, CHANNEL)
     assert row is not None and row.status is PublicationStatus.FAILED
     assert row.error is not None and "Telegram API unavailable" in row.error
 
@@ -126,7 +126,7 @@ def test_held_changes_go_out_with_the_next_update_and_are_released(
     _, posted, _ = publisher.updates[0]
     assert [st.stage_type for st in posted.new_stages] == ["Reading", "CommitteeReport"]
     assert repo.list_held_status_changes(10, "3039", CHANNEL) == []
-    update = repo.get_publication(10, "3039", PublicationKind.STATUS_UPDATE.value, CHANNEL)
+    update = repo.get_publication(10, "3039", PublicationKind.STATUS_UPDATE, CHANNEL)
     assert update is not None and update.status is PublicationStatus.SENT
 
 

@@ -171,11 +171,15 @@ Invariants worth keeping:
   `{update_id}.json` files in the `inbox` branch (checked out by `daily.yml`, `LEXINFORM_INBOX_DIR`);
   the relay's event runs `lexinform commands` (the commands phase alone), every scheduled run
   does the phase first. `CommandService` inserts the `commands` row (v13, keyed by the
-  Telegram update id) before executing, answers under the command's message
-  (`OperatorReplier`), marks it handled and deletes the file; a file read again (the deletion
-  not pushed) is only deleted. `/analyze` is idempotent by construction (an analysed bill is
-  not sent to the model again), `/republish` is not: the row is what keeps a second card away.
-  An outage ends the phase and leaves the file. The relay (`lexinform listen`, one `getUpdates`
+  Telegram update id) before executing, marks it executed (v14 `executed_at`) as soon as the
+  side effects are done, answers under the command's message (`OperatorReplier`), marks it
+  handled and deletes the file. A file read again is measured against those two marks: handled
+  → only deleted; executed but unanswered (the channel was down, the job died after the post)
+  → the recorded outcome is answered again and the command is **not** run a second time.
+  `/analyze` is idempotent by construction (an analysed bill is not sent to the model again),
+  `/republish` is not: the marks are what keep a second card away.
+  An outage of a source system *or of the channel* ends the phase and leaves the file, with the
+  counters of the commands already answered intact. The relay (`lexinform listen`, one `getUpdates`
   consumer per bot, never a webhook) files a command through the GitHub Contents API, answers
   "queued" and only then moves the offset; a dry run (`--dry-run`) confirms nothing. The run is
   started by a `repository_dispatch` the writer sends after the file (a push of the inbox branch
@@ -193,7 +197,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v13 as of Sept 2026). `migrate()` reads `user_version` and
+`SCHEMA_VERSION = len(MIGRATIONS)` (v14 as of Sept 2026). `migrate()` reads `user_version` and
 runs every later script inside its own transaction, stamping the new version at the end, so a
 failed script leaves the database at the previous version. v8 (Sept 2026) added `rcl_json`, v9
 `bills.discontinued_at` and `status_changes.discontinued` (end of a Sejm term), v10
@@ -201,7 +205,8 @@ failed script leaves the database at the previous version. v8 (Sept 2026) added 
 v11 the unique index of hearing reminders (per bill, channel and hearing date) and
 `status_changes.amendments_json` (the model's summary of the Senate's or a committee's amendments),
 v12 the unique index of `joint_bill` replies (per bill and channel), v13 (Sept 2026) the
-`commands` table (operator commands by Telegram update id).
+`commands` table (operator commands by Telegram update id), v14 `commands.executed_at` (a
+command whose answer never arrived is answered again, not executed again).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) →
 `db restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing

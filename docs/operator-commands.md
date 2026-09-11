@@ -48,11 +48,14 @@ technical channel ──getUpdates──► lexinform listen (VPS) ──Content
 2. `.github/workflows/daily.yml` checks out `state` and `inbox`, restores the database and runs
    `lexinform commands`: the commands phase alone. Every scheduled run does the same phase first,
    so a command whose event was lost is answered by the next scheduled run.
-3. The run records the command in the `commands` table before executing it (a file it could not
-   delete is not executed twice), executes it, answers under the command's message, marks it
-   handled and deletes the file; the workflow commits the deletions. Runs never race: one
-   concurrency group, and a pending run replaced by a newer one is harmless because every run
-   drains the whole inbox.
+3. The run records the command in the `commands` table before executing it, executes it, marks
+   it executed, answers under the command's message, marks it handled and deletes the file; the
+   workflow commits the deletions. A file that comes back (the deletion was not pushed, the job
+   died after the post) is measured against those two marks: answered means it is only deleted,
+   executed but unanswered means the answer is repeated and the command is *not* run a second
+   time — a repeated `/republish` would post a second card. Runs never race: one concurrency
+   group, and a pending run replaced by a newer one is harmless because every run drains the
+   whole inbox.
 
 `/analyze` of an RCL project that already reached the Sejm answers about its druk instead: the
 rows are linked and the print carries the thread, so a project whose act is in force cannot get
@@ -65,7 +68,10 @@ it is part of the same bill. A command that never calls the model (`/show`, a bi
 verdict is already stored) shows the time alone.
 
 An outage of the Sejm API, RCL, the model or Telegram ends the phase and leaves the command for
-the next run; a mistake in the command (unknown bill, bad link) is answered as such.
+the next run; a mistake in the command (unknown bill, bad link) is answered as such. A text
+whose first analysis would cost more than the per-bill guard allows is answered with the
+estimate and the hint to add `force`, and the bill is left in `skipped_cost` exactly as the
+daily run's analysis phase leaves it.
 
 ## Setup
 
