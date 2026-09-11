@@ -13,11 +13,13 @@ from dataclasses import dataclass
 from lexinform.i18n import Labels, labels_for
 from lexinform.models import (
     COMMITTEE_PHASES,
+    GOVERNMENT_STEPS,
     PATH_STEPS,
     PHASE_STEP,
     RCL_PREFIX,
     RCL_STAGE_TYPE,
     SITTING_PHASES,
+    WYKAZ_REGISTER_URL,
     ActInfo,
     AgendaItem,
     AnalysisVerdict,
@@ -34,6 +36,7 @@ from lexinform.models import (
     Stage,
     StatusChange,
     VotingSummary,
+    WykazEntry,
     about_ukraine,
     committee_web_url,
     consultation_open,
@@ -43,17 +46,20 @@ from lexinform.models import (
     hearing_application_deadline,
     is_pre_print_number,
     is_rcl_number,
+    is_wykaz_number,
     next_phase,
     open_hearing,
     process_web_url,
     reaches_sejm,
     told_stages,
     update_event,
+    wykaz_entry_number,
 )
 from lexinform.pricing import cost_usd
 
 MESSAGE_LIMIT = 4096
 ELLIPSIS = "…"
+QUARTERS = {1: "I", 2: "II", 3: "III", 4: "IV"}
 
 # What the technical channel accepts (English, like the run report; the operator's language).
 COMMAND_HELP = (
@@ -108,6 +114,7 @@ ICON = {
     "calendar": "🗓",
     "agenda": "📝",
     "hearing": "📢",
+    "wykaz": "⏳",
 }
 # The header icon of a status update, by event (see `models.update_event`); 🔄 otherwise.
 EVENT_ICON = {
@@ -137,6 +144,8 @@ EVENT_ICON = {
     "discontinued": "🏁",
     "rcl_to_sejm": "🔢",
     "rcl_closed": "🏁",
+    "rcl_started": "📄",
+    "wykaz_withdrawn": "🚫",
 }
 _SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
 _READING_NUMERAL = re.compile(r"^\s*(I{1,3})\s+czytanie", re.IGNORECASE)
@@ -207,9 +216,7 @@ class MessageFormatter:
         lb = self._labels
         today = today or self._today()
 
-        header = self._header(
-            ICON["new_bill"], lb.rcl_header if bill.rcl is not None else lb.new_bill_header, bill
-        )
+        header = self._header(ICON["new_bill"], self._card_header(bill), bill)
         meta = (
             f"{score_icon(a.score)} <b>{esc(lb.importance)}:</b> {importance_bar(a.score)} "
             f"{a.score}/5 — {esc(lb.score_labels.get(a.score, ''))}\n"
@@ -226,7 +233,7 @@ class MessageFormatter:
             changes_block = f"{ICON['key_changes']} <b>{esc(lb.key_changes)}</b>\n{bullets}"
 
         text = self._assemble(
-            [header, meta],
+            [header, meta, self._intention_note(bill)],
             flexible=[summary_block, changes_block],
             tail=[
                 self._card_details(bill, today),
@@ -235,6 +242,21 @@ class MessageFormatter:
             ],
         )
         return RenderedMessage(text=text)
+
+    def _card_header(self, bill: Bill) -> str:
+        lb = self._labels
+        if bill.wykaz is not None:
+            return lb.wykaz_header
+        return lb.rcl_header if bill.rcl is not None else lb.new_bill_header
+
+    def _intention_note(self, bill: Bill) -> str:
+        """The card of a planned bill says so above everything the model wrote: there is no text
+        yet, and a reader must not take the analysis of an intention for one of a bill."""
+        entry = bill.wykaz
+        if entry is None:
+            return ""
+        note = self._labels.wykaz_intention.format(date=self.fmt_date(entry.published_at.date()))
+        return f"{ICON['wykaz']} <i>{esc(note)}</i>"
 
     def _card_details(self, bill: Bill, today: dt.date) -> str:
         """The card's second half: the analysis' practical facts, the consultation, what comes
@@ -268,6 +290,8 @@ class MessageFormatter:
             when = f" ({self.fmt_date(last.date)})" if last.date else ""
             stage = f"{self._stage_label(bill, last)}{when}"
             meta_lines.append(self._field(ICON["stage"], lb.stage, stage))
+        elif bill.wykaz is not None:
+            meta_lines.append(self._field(ICON["stage"], lb.stage, esc(lb.wykaz_stage)))
         elif bill.rcl is not None:
             meta_lines.append(self._field(ICON["stage"], lb.stage, esc(lb.rcl_no_stage)))
         elif bill.is_pre_print:
@@ -290,6 +314,11 @@ class MessageFormatter:
         with the print's PDF (and the RCL project a government print came from)."""
         lb = self._labels
         s = bill.summary
+        if bill.wykaz is not None:
+            return [
+                link(bill.wykaz.web_url, lb.link_wykaz_entry),
+                link(WYKAZ_REGISTER_URL, lb.link_wykaz),
+            ]
         if bill.rcl is not None:
             return self._rcl_links(bill.rcl)
         if bill.is_pre_print:
@@ -317,6 +346,7 @@ class MessageFormatter:
                 *([f"#{lb.tag_consultations}"] if consultation_open(bill, today) else []),
                 *([f"#{lb.tag_ukraine}"] if about_ukraine(bill) else []),
                 *([f"#{lb.tag_rcl}"] if bill.rcl is not None else []),
+                *([f"#{lb.tag_wykaz}"] if bill.wykaz is not None else []),
                 self._term_tag(bill.summary.term),
             ]
         )
@@ -418,9 +448,16 @@ class MessageFormatter:
             )
         elif change.withdrawn:
             closure = f"{ICON['closed']} {esc(lb.process_withdrawn)}"
+        elif change.closure_detected and bill.wykaz is not None:
+            closure = f"{ICON['closed']} {esc(lb.wykaz_process_closed)}"
         elif change.closure_detected and bill.rcl is not None:
             closure = f"{ICON['closed']} {esc(lb.rcl_process_closed)}"
-        elif change.closure_detected and event not in ("passed", "rejected", "rcl_closed"):
+        elif change.closure_detected and event not in (
+            "passed",
+            "rejected",
+            "rcl_closed",
+            "wykaz_withdrawn",
+        ):
             icon = ICON["passed"] if change.passed else ICON["closed"]
             closure = f"{icon} {esc(lb.process_passed if change.passed else lb.process_closed)}"
         if event == "print_assigned":
@@ -434,7 +471,11 @@ class MessageFormatter:
         """The process (or RCL project) page, the text the update is about, the amendments."""
         lb = self._labels
         s = bill.summary
-        links = [link(s.web_url, lb.link_rcl_project if bill.rcl is not None else lb.link_process)]
+        if bill.wykaz is not None:
+            links = [link(bill.wykaz.web_url, lb.link_wykaz_entry)]
+        else:
+            label = lb.link_rcl_project if bill.rcl is not None else lb.link_process
+            links = [link(s.web_url, label)]
         text_after3 = next((st.text_after3 for st in change.new_stages if st.text_after3), None)
         if text_after3:
             links.append(link(text_after3, lb.link_text_after3))
@@ -858,6 +899,8 @@ class MessageFormatter:
         return f"{ICON['about']} <b>{esc(lb.current_summary)}:</b> {esc(lead(text))}"
 
     def _number_label(self, bill: Bill) -> str:
+        if bill.wykaz is not None:
+            return esc(bill.wykaz.number)
         if bill.rcl is not None:
             return esc(bill.rcl.wykaz_number or bill.number)
         if bill.is_pre_print:
@@ -920,6 +963,17 @@ class MessageFormatter:
             return f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {who}\n{when}" + esc(
                 self.fmt_date(project.created)
             )
+        if bill.wykaz is not None:
+            entry = bill.wykaz
+            who = applicant
+            if entry.organ:
+                who += f" — {esc(entry.organ)}"
+            who += f" · {esc(lb.rcl_wykaz)}: {esc(entry.number)}"
+            when = esc(self.fmt_date(entry.published_at.date()))
+            return (
+                f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {who}\n"
+                f"{ICON['doc_date']} <b>{esc(lb.wykaz_published)}:</b> {when}"
+            )
         doc_date = self.fmt_date(s.document_date) if s.document_date else "—"
         date_label = lb.received if bill.is_pre_print else lb.document_date
         return (
@@ -935,6 +989,8 @@ class MessageFormatter:
         if record is None:
             return ""
         if record.text_source == "metadata_only":
+            if bill.wykaz is not None:
+                return lb.wykaz_metadata_note
             if bill.rcl is not None:
                 return lb.rcl_metadata_note
             return lb.pre_print_note if bill.is_pre_print else lb.partial_text_note
@@ -1045,6 +1101,17 @@ class MessageFormatter:
         ]
         return "\n".join(line for line in lines if line)
 
+    def _planned_adoption(self, bill: Bill) -> str | None:
+        """The quarter in which the register says the Council of Ministers means to adopt the
+        bill. The field it comes from is free text and often carries the adoption note as well,
+        so only the quarter is shown."""
+        entry = bill.wykaz
+        quarter = entry.planned_quarter if entry is not None else None
+        if quarter is None:
+            return None
+        year, number = quarter
+        return esc(self._labels.wykaz_planned.format(quarter=QUARTERS[number], year=year))
+
     def _path_line(self, bill: Bill, today: dt.date) -> str:
         """ "RCL ✓ → Сейм ✓ → комиссии ● → II и III чтение → Сенат → Президент → Dz.U. → в силе"."""
         lb = self._labels
@@ -1061,7 +1128,7 @@ class MessageFormatter:
             current = PHASE_STEP.get(phase.key)
             if current is None:
                 return ""
-        steps = [s for s in PATH_STEPS if s != "rcl" or government_path(bill)]
+        steps = [s for s in PATH_STEPS if s not in GOVERNMENT_STEPS or government_path(bill)]
         parts: list[str] = []
         before = current is not None
         for step in steps:
@@ -1092,6 +1159,8 @@ class MessageFormatter:
             suffix = f" · {self._agenda_when(upcoming)}"
         elif phase.deadline is not None:
             suffix = f" · {esc(lb.deadline_until)} {self.fmt_date(phase.deadline)}"
+        elif (planned := self._planned_adoption(bill)) is not None:
+            suffix = f" · {planned}"
         else:
             usual = lb.typical_durations.get(phase.key)
             suffix = f" · {esc(usual)}" if usual else ""
@@ -1131,7 +1200,9 @@ class MessageFormatter:
         lb = self._labels
         actions: list[str] = []
         window = bill.consultation
-        if bill.rcl is not None:
+        if bill.wykaz is not None:
+            actions.extend(self._wykaz_actions(bill.wykaz))
+        elif bill.rcl is not None:
             actions.extend(self._rcl_actions(bill.rcl, window, today))
         elif window is not None and window.is_open(today) and window.end is not None:
             page = window.form_url
@@ -1175,6 +1246,16 @@ class MessageFormatter:
                 f"{ICON['action']} <b>{esc(lb.action_now)}:</b> {esc(nothing)}" if nothing else ""
             )
         return f"{ICON['action']} <b>{esc(lb.action_now)}:</b> " + "; ".join(actions)
+
+    def _wykaz_actions(self, entry: WykazEntry) -> list[str]:
+        """What a reader can do about a plan: art. 7 of the lobbying act lets anyone file a
+        zgłoszenie zainteresowania with the ministry from the moment the entry is published, and
+        art. 8 ust. 2 makes that the ticket to the Sejm's public hearing of the bill."""
+        if not entry.is_open:
+            return []
+        lb = self._labels
+        organ = entry.organ or lb.wykaz_organ_unknown
+        return [esc(lb.action_wykaz_interest.format(organ=organ))]
 
     def _rcl_actions(
         self, project: RclProject, window: ConsultationWindow | None, today: dt.date
@@ -1438,7 +1519,12 @@ def _tag_safe(number: str) -> str:
 
 def _number_tag(term: int, number: str, wykaz_number: str | None) -> str:
     """`#RCL_UC104` (the project id when the wykaz number is unknown), `#RPW_29075_2026`,
-    `#kadencja10druk3039`."""
+    `#kadencja10druk3039`.
+
+    A planned bill takes the same `#RCL_UD408`: the wykaz number is the government project's
+    identity from the plan through RCL to the druk, and one search finds the whole thread."""
+    if is_wykaz_number(number):
+        return "#RCL_" + _tag_safe(wykaz_entry_number(number))
     if is_rcl_number(number):
         return "#RCL_" + _tag_safe(wykaz_number or number.removeprefix(RCL_PREFIX))
     if is_pre_print_number(number):

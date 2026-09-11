@@ -52,8 +52,9 @@ def update_event(change: StatusChange, bill: Bill) -> str:
         return "discontinued"
     if change.withdrawn:
         return "withdrawn"
-    if bill.linked_number and bill.has_process and change.old_fingerprint == bill.linked_number:
-        return "print_assigned"
+    if bill.linked_number and change.old_fingerprint == bill.linked_number:
+        # The successor row's first update: the druk of an entry, or the project of a plan.
+        return "print_assigned" if bill.has_process else "rcl_started"
     referrals = sum(1 for st in change.new_stages if st.stage_type == "Referral")
     for stage in reversed(change.new_stages):  # the newest stage names the post
         key = _stage_event(stage)
@@ -62,6 +63,8 @@ def update_event(change: StatusChange, bill: Bill) -> str:
         if key is not None:
             return key
     if change.closure_detected:
+        if bill.wykaz is not None:
+            return "wykaz_withdrawn"
         if bill.rcl is not None:
             return "rcl_closed"
         return "passed" if change.passed else "rejected"

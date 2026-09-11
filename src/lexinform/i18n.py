@@ -128,8 +128,20 @@ class Labels:
     link_osr: str
     link_wykaz: str
     tag_rcl: str
+    # Bills the government has only announced (wykaz prac legislacyjnych RM)
+    wykaz_header: str
+    wykaz_intention: str  # "no text yet", above everything the model wrote
+    wykaz_stage: str
+    wykaz_published: str
+    wykaz_planned: str  # the quarter the Council of Ministers means to adopt it in
+    wykaz_metadata_note: str
+    wykaz_organ_unknown: str
+    action_wykaz_interest: str  # art. 7 of the lobbying act: anyone may file a zgłoszenie
+    link_wykaz_entry: str
+    tag_wykaz: str
     # Status updates named after their event (see `models.update_event`)
     rcl_process_closed: str  # the project was closed on RCL without reaching the Sejm
+    wykaz_process_closed: str  # the government took the project off its plan
     committee_report: str
     subcommittee_report: str
     proposes: str
@@ -305,7 +317,28 @@ RU = Labels(
     link_osr="OSR",
     link_wykaz="Wykaz prac RM",
     tag_rcl="RCL",
+    wykaz_header="План правительства",
+    wykaz_intention=(
+        "Это пока только намерение: текста проекта ещё нет. Запись в плане работ"
+        " правительства от {date}. Разбор текста придёт отдельной карточкой, когда проект"
+        " опубликуют на RCL и начнутся публичные консультации."
+    ),
+    wykaz_stage="проект внесён в план работ правительства, текста ещё нет",
+    wykaz_published="Внесён в план работ",
+    wykaz_planned="принятие правительством: {quarter} кв. {year}",
+    wykaz_metadata_note=(
+        "Оценка по описанию из плана работ правительства: текста проекта ещё не существует."
+    ),
+    wykaz_organ_unknown="профильное министерство",
+    action_wykaz_interest=(
+        "подать zgłoszenie zainteresowania pracami nad projektem в {organ} — это может сделать"
+        " любой, в том числе физлицо от своего имени (ст. 7 закона о лоббировании); подавший"
+        " получает право участвовать в публичном слушании проекта в Сейме"
+    ),
+    link_wykaz_entry="Запись в плане работ",
+    tag_wykaz="планРМ",
     rcl_process_closed="Проект закрыт на RCL, в Сейм не направлен.",
+    wykaz_process_closed="Проект снят с плана работ правительства.",
     committee_report="отчёт комиссии (sprawozdanie)",
     subcommittee_report="отчёт подкомиссии",
     proposes="предлагает",
@@ -355,6 +388,8 @@ RU = Labels(
         "rcl_stage": "Новая стадия на RCL",
         "rcl_to_sejm": "Проект направлен в Сейм",
         "rcl_closed": "Проект закрыт на RCL",
+        "rcl_started": "Проект опубликован на RCL",
+        "wykaz_withdrawn": "Правительство отказалось от проекта",
     },
     decision_labels={
         "niezwłocznie przystąpiono do iii": "сразу перешли к III чтению",
@@ -404,6 +439,11 @@ RU = Labels(
         "in_force_unknown": "вступление в силу (дата пока не указана)",
         "veto": "Сейм может отклонить вето (3/5 голосов)",
         "tribunal": "решение Конституционного трибунала",
+        "wykaz": (
+            "публикация проекта на RCL и публичные консультации, затем комитеты Совета министров,"
+            " Rada Ministrów и направление в Сейм"
+        ),
+        "wykaz_to_rcl": "публикация проекта на RCL и публичные консультации",
         "rcl_consultation": (
             "консультации публичные до {date}, затем opiniowanie, комитеты Совета министров,"
             " Rada Ministrów и направление в Сейм"
@@ -430,6 +470,8 @@ RU = Labels(
         "third_reading": "часто на одном заседании со II чтением",
         "senate_amendments": "обычно на ближайшем заседании Сейма",
         "publication": "обычно 1–4 недели после подписи",
+        "wykaz": "обычно 1–6 месяцев до публикации проекта",
+        "wykaz_to_rcl": "обычно несколько недель",
         "rcl_committees": "обычно 1–3 месяца",
         "rcl_council": "обычно несколько недель",
         "rcl_to_sejm": "обычно несколько дней",
@@ -460,9 +502,13 @@ RU = Labels(
         "in_force_unknown": "пока ничего — закон принят, дата вступления в силу ещё не известна",
         "veto": "пока ничего — решение за Сеймом",
         "tribunal": "пока ничего — решение за Конституционным трибуналом",
+        "wykaz_to_rcl": (
+            "пока ничего — ждём публикации проекта на RCL, тогда откроются консультации"
+        ),
         "rcl_to_sejm": "пока ничего — ждём номер druku, затем I чтение и комиссия",
     },
     path_steps={
+        "wykaz": "план",
         "rcl": "RCL",
         "sejm": "Сейм",
         "committee": "комиссии",
@@ -677,7 +723,26 @@ EN = Labels(
     link_osr="OSR",
     link_wykaz="Wykaz prac RM",
     tag_rcl="RCL",
+    wykaz_header="Government plan",
+    wykaz_intention=(
+        "An intention so far: there is no draft text yet. Entered in the government's"
+        " legislative plan on {date}. The text will be analysed in a separate card once the"
+        " project is published on RCL and the public consultation starts."
+    ),
+    wykaz_stage="entered in the government's legislative plan, no text yet",
+    wykaz_published="Entered in the plan",
+    wykaz_planned="adoption by the government: Q{quarter} {year}",
+    wykaz_metadata_note=("Scored from the register entry: the draft text does not exist yet."),
+    wykaz_organ_unknown="the responsible ministry",
+    action_wykaz_interest=(
+        "file a zgłoszenie zainteresowania pracami nad projektem with {organ} — anyone may,"
+        " a private individual on their own behalf included (art. 7 of the lobbying act); it"
+        " entitles you to take part in the Sejm's public hearing of the bill"
+    ),
+    link_wykaz_entry="Register entry",
+    tag_wykaz="governmentplan",
     rcl_process_closed="The project was closed on RCL without reaching the Sejm.",
+    wykaz_process_closed="The project was taken off the government's plan.",
     committee_report="committee report (sprawozdanie)",
     subcommittee_report="sub-committee report",
     proposes="proposes to",
@@ -727,6 +792,8 @@ EN = Labels(
         "rcl_stage": "New stage on RCL",
         "rcl_to_sejm": "Sent to the Sejm",
         "rcl_closed": "Project closed on RCL",
+        "rcl_started": "Draft published on RCL",
+        "wykaz_withdrawn": "The government dropped the project",
     },
     decision_labels={
         "niezwłocznie przystąpiono do iii": "moved straight on to the 3rd reading",
@@ -778,6 +845,11 @@ EN = Labels(
         "in_force_unknown": "entry into force (date not stated yet)",
         "veto": "the Sejm may override the veto (3/5 majority)",
         "tribunal": "ruling of the Constitutional Tribunal",
+        "wykaz": (
+            "the draft published on RCL with a public consultation, then the committees of the"
+            " Council of Ministers, the Council itself and the Sejm"
+        ),
+        "wykaz_to_rcl": "the draft published on RCL with a public consultation",
         "rcl_consultation": (
             "public consultation until {date}, then opinions, the committees of the Council of"
             " Ministers, the Council and submission to the Sejm"
@@ -803,6 +875,8 @@ EN = Labels(
         "third_reading": "often at the same sitting as the second reading",
         "senate_amendments": "usually at the next Sejm sitting",
         "publication": "usually 1–4 weeks after the signature",
+        "wykaz": "usually 1–6 months until the draft is published",
+        "wykaz_to_rcl": "usually a few weeks",
         "rcl_committees": "usually 1–3 months",
         "rcl_council": "usually a few weeks",
         "rcl_to_sejm": "usually a few days",
@@ -835,11 +909,15 @@ EN = Labels(
         "in_force_unknown": "nothing yet — the act is passed, the entry-into-force date is unknown",
         "veto": "nothing yet — the Sejm decides",
         "tribunal": "nothing yet — the Constitutional Tribunal decides",
+        "wykaz_to_rcl": (
+            "nothing yet — waiting for the draft on RCL, which opens the consultation"
+        ),
         "rcl_to_sejm": (
             "nothing yet — waiting for the print number, then first reading and committee"
         ),
     },
     path_steps={
+        "wykaz": "plan",
         "rcl": "RCL",
         "sejm": "Sejm",
         "committee": "committees",

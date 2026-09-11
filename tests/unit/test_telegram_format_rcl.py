@@ -54,7 +54,7 @@ def test_card_names_the_ministry_the_letter_deadline_and_both_ways_to_react() ->
     assert_telegram_html(text)
     assert "Правительственный проект (RCL) — UC164" in text
     assert "Стадия:</b> сбор мнений министерств и партнёров (4. Opiniowanie)" in text
-    assert "Путь:</b> RCL ● → Сейм → комиссии → II и III чтение → Сенат → Президент" in text
+    assert "Путь:</b> план ✓ → RCL ● → Сейм → комиссии → II и III чтение → Сенат" in text
     assert (
         "Инициатор:</b> правительственный — Minister Spraw Wewnętrznych i Administracji"
         " · номер в wykazie prac RM: UC164\n📄 <b>Опубликован на RCL:</b> 31.08.2026" in text

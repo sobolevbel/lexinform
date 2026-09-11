@@ -27,7 +27,10 @@ from lexinform.models.sejm import ProcessSummary
 
 REGISTER_PAGE_URL = "https://www.gov.pl/web/premier/wplip-rm"
 BILL_KIND = "Projekty ustaw"  # `Rodzaj dokumentu`; rozporządzenia and programmes are not followed
-WITHDRAWN_STATUS = "Wycofany"
+# `Status realizacji`. A project the government gives up on is either taken off the plan or left
+# unrealised, and art. 3 ust. 3 of the lobbying act obliges the register to say so; the reason
+# goes into `Informacja o rezygnacji z prac nad projektem`.
+DROPPED_STATUSES = frozenset({"Wycofany", "Niezrealizowany"})
 ADOPTED_STATUS = "Zrealizowany"
 DESCRIPTION_LIMIT = 6000  # characters of goals + essence handed to the model (~3k tokens)
 
@@ -78,7 +81,7 @@ class WykazEntry(BaseModel):
 
     @property
     def is_withdrawn(self) -> bool:
-        return self.status == WITHDRAWN_STATUS or bool(self.resignation.strip())
+        return self.status in DROPPED_STATUSES or bool(self.resignation.strip())
 
     @property
     def is_adopted(self) -> bool:

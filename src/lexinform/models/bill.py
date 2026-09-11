@@ -162,10 +162,23 @@ PRESIDENT_DAYS, PRESIDENT_DAYS_URGENT = 21, 7
 
 
 # The "path" of a bill as a reader sees it, and which step each phase sits on. RCL phases
-# (except the hand-over) sit on "rcl"; the step is skipped for bills that never went through
-# the government.
-PATH_STEPS = ("rcl", "sejm", "committee", "readings", "senate", "president", "journal", "in_force")
+# (except the hand-over) sit on "rcl"; the government steps are skipped for bills that never
+# went through the government.
+PATH_STEPS = (
+    "wykaz",
+    "rcl",
+    "sejm",
+    "committee",
+    "readings",
+    "senate",
+    "president",
+    "journal",
+    "in_force",
+)
+GOVERNMENT_STEPS = frozenset({"wykaz", "rcl"})  # shown only for bills that came from the government
 PHASE_STEP = {
+    "wykaz": "wykaz",
+    "wykaz_to_rcl": "rcl",
     "rcl_to_sejm": "sejm",
     "pre_print": "sejm",
     "pre_print_consultation": "sejm",
@@ -235,6 +248,8 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
         return None
     if bill.discontinued_at is not None:
         return None  # lapsed with the end of the term: a new Sejm must receive it again
+    if bill.wykaz is not None:
+        return _wykaz_phase(bill)
     if bill.rcl is not None:
         return _rcl_phase(bill, today)
     if bill.is_pre_print or not bill.stages:
@@ -297,6 +312,17 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
     if kind == "Start":
         return Phase(key="first_reading")
     return None
+
+
+def _wykaz_phase(bill: Bill) -> Phase | None:
+    """A bill the government has only announced: waiting for its project, which RCL publishes."""
+    entry = bill.wykaz
+    assert entry is not None
+    if entry.is_withdrawn:
+        return None  # taken off the plan
+    if entry.rcl_project_id is not None or entry.is_adopted:
+        return Phase(key="wykaz_to_rcl")
+    return Phase(key="wykaz")
 
 
 def _rcl_phase(bill: Bill, today: dt.date) -> Phase | None:

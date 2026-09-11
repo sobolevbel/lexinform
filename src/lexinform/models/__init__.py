@@ -21,6 +21,7 @@ from lexinform.models.analysis import (
 )
 from lexinform.models.bill import (
     COMMITTEE_PHASES,
+    GOVERNMENT_STEPS,
     PATH_STEPS,
     PHASE_STEP,
     SITTING_PHASES,
@@ -193,6 +194,7 @@ __all__ = [
     "LocatedText",
     "Mp",
     "PRE_PRINT_PREFIX",
+    "GOVERNMENT_STEPS",
     "PATH_STEPS",
     "PHASE_STEP",
     "Phase",
