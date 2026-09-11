@@ -1,8 +1,8 @@
 """Command-line interface."""
 
 import logging
-import re
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated
@@ -18,7 +18,6 @@ from lexinform.models import (
     Bill,
     BillStatus,
     BillSubmission,
-    ProcessSummary,
     PublicationKind,
     RclProject,
     RunReport,
@@ -26,15 +25,12 @@ from lexinform.models import (
     flatten_stages,
     is_pre_print_number,
     is_rcl_number,
-    normalize_wykaz_number,
-    process_summary,
-    rcl_fingerprint,
     rcl_project_id,
-    rcl_stages,
     stage_fingerprint,
     usage_of,
 )
 from lexinform.pricing import cost_usd
+from lexinform.services.lookup import BillNotFoundError
 from lexinform.services.pipeline import RunOptions
 from lexinform.settings import Settings
 
@@ -347,7 +343,7 @@ def show(
     c = _container()
     try:
         number = _resolve_number(c, number)
-        local = c.find_bill(number)
+        local = c.bill_lookup().find(number)
         if is_rcl_number(number):
             _show_rcl(c, number, local)
             return
@@ -685,64 +681,30 @@ def _show_rcl(c: Container, number: str, local: Bill | None) -> None:
 
 def _read_rcl_project(c: Container, number: str) -> RclProject:
     """The whole project from RCL: timeline, every reached stage's catalog, the letter."""
-    reader = c.rcl_reader()
-    return reader.complete(reader.timeline(rcl_project_id(number)))
-
-
-_WYKAZ_NUMBER = re.compile(r"^U[A-Z]*\s?\d+$", re.IGNORECASE)
+    return _or_exit(lambda: c.bill_lookup().read_rcl_project(number))
 
 
 def _resolve_number(c: Container, number: str) -> str:
     """A wykaz number (UC164) names the RCL row it belongs to; anything else is passed on."""
-    if not _WYKAZ_NUMBER.match(number):
-        return number
-    wykaz = normalize_wykaz_number(number) or number
-    bill = c.find_rcl_by_wykaz(wykaz)
-    if bill is None:
-        typer.echo(f"{wykaz}: no RCL project with this number in the database", err=True)
-        raise typer.Exit(code=1)
-    return bill.number
+    return _or_exit(lambda: c.bill_lookup().resolve_number(number))
 
 
 def _load_bill(c: Container, number: str) -> Bill:
     """The bill from the database, fetched from the API (or RCL) and prefiltered on first sight."""
-    number = _resolve_number(c, number)
-    bill = c.find_bill(number)
-    if bill is not None:
-        return bill
-    term = c.term()
-    if is_rcl_number(number):
-        project = _read_rcl_project(c, number)
-        summary: ProcessSummary = process_summary(project, term=term)
-        bill = c.repo.upsert_summary(summary, now=c.clock.now())
-        c.repo.save_rcl(bill.term, bill.number, project)
-        c.repo.save_stages(bill.term, bill.number, rcl_stages(project), rcl_fingerprint(project))
-    elif is_pre_print_number(number):
-        sub = _find_submission(c, number)
-        summary = ProcessSummary.from_submission(sub)
-        bill = c.repo.upsert_summary(summary, now=c.clock.now())
-        c.repo.save_submission(bill.term, bill.number, sub)
-    else:
-        summary = c.gateway.get_process(term, number)
-        bill = c.repo.upsert_summary(summary, now=c.clock.now())
-    hits = c.prefilter.match(summary.title, summary.description)
-    c.repo.set_status(
-        bill.term,
-        bill.number,
-        BillStatus.ANALYSIS_PENDING if hits else BillStatus.SKIPPED_PREFILTER,
-        prefilter_hits=hits,
-    )
-    stored = c.repo.get(term, number)
-    assert stored is not None
-    return stored
+    return _or_exit(lambda: c.bill_lookup().load(number))
 
 
 def _find_submission(c: Container, number: str) -> BillSubmission:
-    sub = next((b for b in c.gateway.iter_bills(c.term()) if b.number == number), None)
-    if sub is None:
-        typer.echo(f"{number}: not found in /bills", err=True)
-        raise typer.Exit(code=1)
-    return sub
+    return _or_exit(lambda: c.bill_lookup().find_submission(c.term(), number))
+
+
+def _or_exit[T](action: Callable[[], T]) -> T:
+    """A bill nobody knows is a message and exit code 1, not a traceback."""
+    try:
+        return action()
+    except BillNotFoundError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from None
 
 
 def main() -> None:

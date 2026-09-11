@@ -35,6 +35,16 @@ from lexinform.models.bill import (
     government_path,
     next_phase,
 )
+from lexinform.models.commands import (
+    NEEDS_REFERENCE,
+    BillRef,
+    Command,
+    CommandName,
+    IncomingCommand,
+    RefKind,
+    parse_command,
+    parse_reference,
+)
 from lexinform.models.enums import (
     AMENDMENT_SOURCES,
     BILL_DOCUMENT_TYPE,
@@ -123,6 +133,14 @@ from lexinform.models.sejm import (
 )
 
 __all__ = [
+    "parse_reference",
+    "parse_command",
+    "RefKind",
+    "IncomingCommand",
+    "CommandName",
+    "Command",
+    "BillRef",
+    "NEEDS_REFERENCE",
     "AMENDMENT_SOURCES",
     "ActInfo",
     "AgendaItem",

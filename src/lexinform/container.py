@@ -23,7 +23,6 @@ from lexinform.adapters.telegram import TelegramBotClient, TelegramPublisher, Te
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
-from lexinform.models import Bill
 from lexinform.ports import (
     BillRepository,
     Clock,
@@ -40,6 +39,7 @@ from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.documents import TextLoader
+from lexinform.services.lookup import BillLookup
 from lexinform.services.pipeline import DailyPipeline
 from lexinform.services.publishing import PublishingService
 from lexinform.services.rcl_discovery import RclDiscoveryService
@@ -81,20 +81,21 @@ class Container:
         one as the API reports it (the newest one in the database when the API is down)."""
         return self.terms.current()
 
-    def find_bill(self, number: str) -> Bill | None:
-        """The stored row for a number: the working term first, then older terms (print numbers
-        restart with every kadencja, RPW and RCL numbers do not)."""
-        current = self.term()
-        older = [t for t in reversed(self.repo.known_terms()) if t != current]
-        for term in (current, *older):
-            bill = self.repo.get(term, number)
-            if bill is not None:
-                return bill
-        return None
-
-    def find_rcl_by_wykaz(self, wykaz_number: str) -> Bill | None:
-        """The RCL row behind a wykaz number (UC164), whichever term it sits in."""
-        return self.repo.find_by_wykaz_number(wykaz_number)
+    def bill_lookup(self) -> BillLookup:
+        """One bill by number or reference, fetched and prefiltered on first sight."""
+        return self._once(
+            "lookup",
+            lambda: BillLookup(
+                self.gateway,
+                self.repo,
+                self.prefilter,
+                self.clock,
+                self.terms,
+                rcl_reader=self.rcl_reader() if self.rcl is not None else None,
+                projects=self.rcl,
+                text_prefilter=self.settings.text_prefilter_enabled,
+            ),
+        )
 
     def _once[T](self, key: str, factory: Callable[[], T]) -> T:
         """One instance per service (and per dry-run flag where it matters)."""
