@@ -9,7 +9,14 @@ from typer.testing import CliRunner
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.cli import app
-from lexinform.models import AnalysisRecord, BillStatus, ProcessDetail, RunReport, TokenUsage
+from lexinform.models import (
+    AnalysisRecord,
+    BillStatus,
+    ProcessDetail,
+    RunMode,
+    RunReport,
+    TokenUsage,
+)
 from tests.fakes import make_analysis
 
 runner = CliRunner()
@@ -68,7 +75,7 @@ def _record_run(db: Path, started: datetime, *, analyzed: int, input_tokens: int
     report = RunReport(
         started_at=started,
         since=started,
-        mode="run",
+        mode=RunMode.RUN,
         analyzed=analyzed,
         published=1,
         llm_input_tokens=input_tokens,

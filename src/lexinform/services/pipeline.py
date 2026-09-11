@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.logging_setup import MemoryLogHandler
-from lexinform.models import RunReport, TokenUsage
+from lexinform.models import RunMode, RunReport, TokenUsage
 from lexinform.ports import BillRepository, Clock, RunNotifier
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.commands import CommandService
@@ -46,7 +46,7 @@ class RunOptions(BaseModel):
     min_score: int = 3
     full_track: bool = False  # check every followed bill, not only those the API lists as changed
     commands: bool = True  # answer the operator commands waiting in the inbox (when there is one)
-    mode: str = "run"
+    mode: RunMode = RunMode.RUN
 
 
 class DailyPipeline:
@@ -107,7 +107,7 @@ class DailyPipeline:
     def run(self, opts: RunOptions) -> RunReport:
         started = self._clock.now()
         report = RunReport(
-            started_at=started, since=started, mode="dry_run" if opts.dry_run else opts.mode
+            started_at=started, since=started, mode=RunMode.DRY_RUN if opts.dry_run else opts.mode
         )
         captured = MemoryLogHandler()
         captured.install()
@@ -353,7 +353,7 @@ class DailyPipeline:
     def _notify(self, report: RunReport, captured: MemoryLogHandler) -> None:
         if self._notifier is None:
             return
-        if report.mode == "commands" and report.ok:
+        if report.mode is RunMode.COMMANDS and report.ok:
             return  # the replies under the commands said everything; no report for a kick
         lines = list(captured.lines)
         if captured.dropped:

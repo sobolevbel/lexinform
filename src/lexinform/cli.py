@@ -19,6 +19,7 @@ from lexinform.models import (
     BillStatus,
     BillSubmission,
     RclProject,
+    RunMode,
     RunReport,
     TokenUsage,
     flatten_stages,
@@ -324,7 +325,7 @@ def track(
                 commands=False,
                 max_analyze=0,
                 max_publish=0,
-                mode="track",
+                mode=RunMode.TRACK,
             )
         )
     finally:
@@ -360,7 +361,7 @@ def commands(
                 max_analyze=0,
                 max_publish=0,
                 min_score=s.min_score,
-                mode="commands",
+                mode=RunMode.COMMANDS,
             )
         )
     finally:
@@ -679,7 +680,9 @@ def _report_startup_failure(settings: Settings, message: str) -> None:
         return
     try:
         now = datetime.now(UTC)
-        report = RunReport(started_at=now, finished_at=now, since=now, mode="run", errors=[message])
+        report = RunReport(
+            started_at=now, finished_at=now, since=now, mode=RunMode.RUN, errors=[message]
+        )
         client = TelegramBotClient(
             settings.telegram_bot_token, base_url=settings.telegram_api_base_url
         )

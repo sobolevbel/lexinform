@@ -71,10 +71,19 @@ class PublicationStatus(StrEnum):
     UNKNOWN = "unknown"
 
 
+class RunMode(StrEnum):
+    """What a recorded run was: the whole day, one phase, or a rehearsal of either."""
+
+    RUN = "run"
+    TRACK = "track"
+    COMMANDS = "commands"
+    DRY_RUN = "dry_run"
+
+
 # How an analysis was made: the full text of one PDF, the full text of a set of documents (RCL:
 # projekt + uzasadnienie + OSR), keyword excerpts (rejected by the triage), or metadata only.
 TextSource = Literal["pdf", "documents", "excerpts", "metadata_only"]
-FULL_TEXT_SOURCES: frozenset[str] = frozenset({"pdf", "documents"})
+FULL_TEXT_SOURCES: frozenset[TextSource] = frozenset({"pdf", "documents"})
 SourceKind = Literal[
     "print",
     "committee_report",
@@ -86,4 +95,4 @@ SourceKind = Literal[
     "senate_amendments",
     "committee_amendments",
 ]
-AMENDMENT_SOURCES: frozenset[str] = frozenset({"senate_amendments", "committee_amendments"})
+AMENDMENT_SOURCES: frozenset[SourceKind] = frozenset({"senate_amendments", "committee_amendments"})

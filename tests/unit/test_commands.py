@@ -5,7 +5,7 @@ import datetime as dt
 from typing import Any
 
 from lexinform.errors import LlmUnavailableError
-from lexinform.models import BillStatus, OutcomeStatus, PublicationKind, RunReport
+from lexinform.models import BillStatus, OutcomeStatus, PublicationKind, RunMode, RunReport
 from lexinform.services.commands import FORCE_HINT
 from tests.fakes import FakeLlm, FakeTextExtractor, make_analysis
 from tests.harness import RCL, RCL_ID, World, rcl_project
@@ -18,7 +18,7 @@ TEXT_WITH_HITS = "Art. 1. Cudzoziemiec składa wniosek o zezwolenie na pobyt cza
 def _commands_only(w: World, **options: Any) -> RunReport:
     """What `lexinform commands` runs: the commands phase and nothing else."""
     return w.run(
-        mode="commands", discover=False, track=False, max_analyze=0, max_publish=0, **options
+        mode=RunMode.COMMANDS, discover=False, track=False, max_analyze=0, max_publish=0, **options
     )
 
 

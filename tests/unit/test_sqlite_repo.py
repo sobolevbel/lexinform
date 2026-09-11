@@ -20,6 +20,7 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    RunMode,
     RunReport,
     StatusChange,
     process_summary,
@@ -582,7 +583,7 @@ def test_bills_awaiting_consultation_results(
 def test_watermark_is_the_last_run_whose_discovery_completed(
     repo: SqliteBillRepository, now: datetime
 ) -> None:
-    report = RunReport(started_at=now, since=now, mode="run", finished_at=now)
+    report = RunReport(started_at=now, since=now, mode=RunMode.RUN, finished_at=now)
     run_id = repo.start_run(report)
 
     report.errors.append("publishing: 1 publication(s) failed")
@@ -618,7 +619,9 @@ def test_dump_restores_rows_indexes_and_the_schema_version(
             "3039", PublicationKind.STATUS_UPDATE, now, message_id=2, status_change_id=change_id
         )
     )
-    report = RunReport(started_at=now, since=now, mode="run", finished_at=now, discovery_ok=True)
+    report = RunReport(
+        started_at=now, since=now, mode=RunMode.RUN, finished_at=now, discovery_ok=True
+    )
     repo.finish_run(repo.start_run(report), report)
 
     script = repo.dump()
@@ -710,7 +713,7 @@ def test_old_run_records_are_pruned_and_the_watermark_survives(
 ) -> None:
     for days_ago in (120, 100, 5):
         started = now - timedelta(days=days_ago)
-        report = RunReport(started_at=started, since=started, mode="run", discovery_ok=True)
+        report = RunReport(started_at=started, since=started, mode=RunMode.RUN, discovery_ok=True)
         repo.finish_run(repo.start_run(report), report)
 
     pruned = repo.prune_runs(before=now - timedelta(days=90))

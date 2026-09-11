@@ -28,6 +28,7 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
     RclProject,
+    RunMode,
     RunReport,
     Stage,
     StatusChange,
@@ -961,8 +962,9 @@ class SqliteBillRepository:
     def last_discovery_started_at(self) -> datetime | None:
         """Start of the last full run whose discovery phase completed (the watermark)."""
         row = self._conn.execute(
-            "SELECT started_at FROM runs WHERE discovery_ok = 1 AND mode = 'run'"
-            " ORDER BY started_at DESC LIMIT 1"
+            "SELECT started_at FROM runs WHERE discovery_ok = 1 AND mode = ?"
+            " ORDER BY started_at DESC LIMIT 1",
+            (RunMode.RUN.value,),
         ).fetchone()
         return datetime.fromisoformat(row[0]) if row else None
 
@@ -974,7 +976,7 @@ class SqliteBillRepository:
     def start_run(self, report: RunReport) -> int:
         cur = self._conn.execute(
             "INSERT INTO runs (started_at, since, mode) VALUES (?, ?, ?)",
-            (report.started_at.isoformat(), report.since.isoformat(), report.mode),
+            (report.started_at.isoformat(), report.since.isoformat(), report.mode.value),
         )
         return int(cur.lastrowid or 0)
 

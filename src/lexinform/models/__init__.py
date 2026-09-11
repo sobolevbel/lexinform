@@ -61,6 +61,7 @@ from lexinform.models.enums import (
     DocumentType,
     PublicationKind,
     PublicationStatus,
+    RunMode,
     SourceKind,
     TextSource,
 )
@@ -191,6 +192,7 @@ __all__ = [
     "PublicationStatus",
     "RCL_PREFIX",
     "RCL_STAGE_TYPE",
+    "RunMode",
     "RclConsultation",
     "RclDocument",
     "RclFolder",

@@ -5,6 +5,7 @@ import datetime as dt
 from pydantic import BaseModel, Field
 
 from lexinform.models.analysis import TokenUsage
+from lexinform.models.enums import RunMode
 
 
 class AnalysisVerdict(BaseModel):
@@ -28,7 +29,7 @@ class RunReport(BaseModel):
     started_at: dt.datetime
     finished_at: dt.datetime | None = None
     since: dt.datetime
-    mode: str
+    mode: RunMode
     term: int | None = None  # the Sejm term discovery ran in (None: could not be resolved)
     discovery_ok: bool = False  # discovery finished: the watermark may advance past `started_at`
     discovered: int = 0
