@@ -38,6 +38,7 @@ from lexinform.models.bill import (
 from lexinform.models.commands import (
     NEEDS_REFERENCE,
     BillRef,
+    ChannelPost,
     Command,
     CommandName,
     CommandOutcome,
@@ -140,6 +141,7 @@ __all__ = [
     "RefKind",
     "IncomingCommand",
     "CommandName",
+    "ChannelPost",
     "CommandOutcome",
     "OutcomeStatus",
     "Command",

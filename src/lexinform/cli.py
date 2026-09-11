@@ -376,6 +376,43 @@ def commands(
 
 
 @app.command()
+def listen(
+    once: Annotated[
+        bool, typer.Option("--once", help="One poll (up to the timeout), then exit.")
+    ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option(
+            "--dry-run", help="Read the channel, print the commands, file and confirm nothing."
+        ),
+    ] = False,
+) -> None:
+    """The relay: long-poll the technical channel for commands and file each one into the
+    `inbox` branch on GitHub (that push starts the workflow that answers it).
+
+    Runs where something is always on (the VPS). Telegram lets one process poll a bot at a
+    time: a second `listen` on the same token steals updates from the first, so test with
+    `--dry-run`, which confirms nothing.
+    """
+    settings = _settings()
+    c: Container | None = None
+    try:
+        c = build_container(settings)
+        listener = c.command_listener(dry_run=dry_run)
+        if once:
+            filed = listener.poll_once()
+            listener.confirm()
+            for post in listener.filed:
+                typer.echo(f"{post.update_id}: {post.text}")
+            typer.echo(f"filed={filed}" + (" (dry run: nothing written)" if dry_run else ""))
+        else:
+            listener.run_forever()
+    finally:
+        if c is not None:
+            c.close()
+
+
+@app.command()
 def show(
     number: Annotated[
         str,

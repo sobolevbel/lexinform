@@ -30,6 +30,38 @@ class IncomingCommand(BaseModel):
     received_at: dt.datetime
 
 
+class ChannelPost(BaseModel):
+    """One Telegram update as the relay sees it: a post in some channel (or chat)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    update_id: int
+    chat_id: int
+    chat_username: str | None = None
+    message_id: int
+    text: str | None = None
+    date: dt.datetime
+
+    def is_from(self, channel: str) -> bool:
+        """Whether the post comes from `channel`: a numeric id (`-100…`) or `@username`."""
+        wanted = channel.strip()
+        if wanted.startswith("@"):
+            return (
+                self.chat_username is not None and self.chat_username.lower() == wanted[1:].lower()
+            )
+        return str(self.chat_id) == wanted
+
+    def as_command(self) -> IncomingCommand:
+        assert self.text is not None
+        return IncomingCommand(
+            update_id=self.update_id,
+            chat_id=str(self.chat_id),
+            message_id=self.message_id,
+            text=self.text,
+            received_at=self.date,
+        )
+
+
 class RefKind(StrEnum):
     DRUK = "druk"  # a numbered print of a Sejm term
     RPW = "rpw"  # a bill in /bills without a print number yet

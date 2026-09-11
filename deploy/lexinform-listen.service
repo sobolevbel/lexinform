@@ -1,0 +1,27 @@
+# The relay between the technical Telegram channel and the GitHub runs: `lexinform listen`.
+# Install: cp deploy/lexinform-listen.service /etc/systemd/system/ && systemctl daemon-reload
+#          && systemctl enable --now lexinform-listen
+# Logs:    journalctl -u lexinform-listen -f
+# See docs/operator-commands.md for the whole setup.
+
+[Unit]
+Description=lexinform: relay operator commands from Telegram to the inbox branch
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/lexinform
+# Secrets live in /opt/lexinform/.env (bot token, log channel id, GitHub repo and token).
+ExecStart=/root/.local/bin/uv run --frozen --no-dev lexinform listen
+Restart=always
+RestartSec=30
+# A long poll is 50 s; give a graceful stop time to finish the one in flight.
+TimeoutStopSec=70
+Environment=PYTHONUNBUFFERED=1
+Environment=LEXINFORM_LOG_LEVEL=INFO
+# A few dozen MB in practice; the cap keeps a leak from taking the box down.
+MemoryMax=150M
+
+[Install]
+WantedBy=multi-user.target

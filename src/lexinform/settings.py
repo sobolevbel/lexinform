@@ -69,6 +69,13 @@ class Settings(BaseSettings):
     # that is always on) files each command as `{update_id}.json` into the git branch `inbox`;
     # a run reads the directory that branch is checked out in (None: no commands phase).
     inbox_dir: Path | None = None
+    # The relay's side (`lexinform listen`): the repository (`owner/name`) and a fine-grained
+    # personal access token with Contents read/write on it, the branch the inbox lives in, and
+    # how long one getUpdates call waits for a post.
+    github_repo: str = ""
+    github_token: str = ""
+    inbox_branch: str = "inbox"
+    listen_timeout_seconds: int = Field(default=50, ge=0, le=300)
 
     # Pipeline
     min_score: int = Field(default=3, ge=1, le=5)

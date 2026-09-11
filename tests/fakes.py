@@ -29,6 +29,7 @@ from lexinform.models import (
     BillContext,
     BillSubmission,
     Category,
+    ChannelPost,
     CommandOutcome,
     Committee,
     CommitteeSitting,
@@ -514,3 +515,48 @@ class FakeReplier:
         if self.outage:
             raise TelegramUnavailableError("sendMessage: ConnectError after 3 attempts")
         self.replies.append((command, outcome))
+
+
+class FakeUpdates:
+    """Telegram's getUpdates over scripted batches: every call returns the next batch (an empty
+    list when the script is exhausted) and records the offset it was asked for."""
+
+    def __init__(self, *batches: list[ChannelPost], outage: bool = False) -> None:
+        self.batches = list(batches)
+        self.offsets: list[int | None] = []
+        self.outage = outage
+
+    def get_updates(self, *, offset: int | None, timeout: int) -> list[ChannelPost]:
+        self.offsets.append(offset)
+        if self.outage:
+            raise TelegramUnavailableError("getUpdates: ConnectError after 3 attempts")
+        return self.batches.pop(0) if self.batches else []
+
+
+class FakeInboxWriter:
+    def __init__(self, *, fail: bool = False) -> None:
+        self.filed: list[IncomingCommand] = []
+        self.fail = fail
+
+    def put(self, command: IncomingCommand) -> None:
+        if self.fail:
+            raise SejmApiUnavailableError("PUT inbox: HTTP 503")  # any outage-class error
+        self.filed.append(command)
+
+
+class FakeAcknowledger:
+    def __init__(self) -> None:
+        self.acknowledged: list[int] = []
+
+    def queued(self, command: IncomingCommand) -> None:
+        self.acknowledged.append(command.update_id)
+
+
+def channel_post(update_id: int, text: str | None, *, chat_id: int = -1001) -> ChannelPost:
+    return ChannelPost(
+        update_id=update_id,
+        chat_id=chat_id,
+        message_id=update_id + 500,
+        text=text,
+        date=datetime(2026, 9, 11, 8, 0, tzinfo=UTC),
+    )

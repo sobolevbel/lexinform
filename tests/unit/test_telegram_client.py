@@ -135,3 +135,43 @@ def test_publisher_sends_the_card_as_one_message(
 
     assert posted == ["sendMessage"]
     assert (result.message_id, result.document_message_ids) == (1, [])
+
+
+def test_get_updates_long_polls_for_channel_posts_and_parses_them() -> None:
+    bodies: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/botTOKEN/getUpdates"
+        bodies.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "ok": True,
+                "result": [
+                    {
+                        "update_id": 10,
+                        "channel_post": {
+                            "message_id": 42,
+                            "date": 1789200000,
+                            "chat": {"id": -1001, "type": "channel", "username": "lexlog"},
+                            "text": "/analyze 3039",
+                        },
+                    },
+                    {"update_id": 11, "edited_channel_post": {"message_id": 1}},  # another kind
+                    {
+                        "update_id": 12,
+                        "channel_post": {"message_id": 43, "date": 1, "chat": {"id": -1001}},
+                    },
+                ],
+            },
+        )
+
+    posts = _client(handler).get_updates(offset=7, timeout=50)
+
+    assert bodies[0] == {"timeout": 50, "allowed_updates": ["channel_post"], "offset": 7}
+    assert [p.update_id for p in posts] == [10, 11, 12]  # every update moves the offset
+    first = posts[0]
+    assert (first.chat_id, first.chat_username, first.message_id) == (-1001, "lexlog", 42)
+    assert first.text == "/analyze 3039" and first.date.isoformat() == "2026-09-12T08:00:00+00:00"
+    assert posts[1].chat_id == 0 and posts[1].text is None  # a placeholder from no chat
+    assert posts[2].text is None  # a post without text (a photo)

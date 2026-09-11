@@ -14,6 +14,7 @@ import anthropic
 from lexinform.adapters.console import ConsolePublisher, ConsoleReplier, ConsoleRunNotifier
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.adapters.github_inbox import GitHubInboxWriter
 from lexinform.adapters.inbox_files import FileInbox
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.pdf_text import PypdfTextExtractor
@@ -21,6 +22,7 @@ from lexinform.adapters.rcl_html import RclClient
 from lexinform.adapters.sejm_api import SejmApiClient
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.adapters.telegram import (
+    TelegramAcknowledger,
     TelegramBotClient,
     TelegramOperatorReplier,
     TelegramPublisher,
@@ -48,6 +50,7 @@ from lexinform.services.analysis import AnalysisService
 from lexinform.services.commands import CommandService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.documents import TextLoader
+from lexinform.services.listener import CommandListener
 from lexinform.services.lookup import BillLookup
 from lexinform.services.pipeline import DailyPipeline
 from lexinform.services.publishing import PublishingService
@@ -274,6 +277,25 @@ class Container:
             return ConsoleReplier(self.formatter)
         return TelegramOperatorReplier(
             self.telegram_client(), self.formatter, channel_id=self.settings.telegram_log_channel_id
+        )
+
+    def command_listener(self, *, dry_run: bool) -> CommandListener:
+        """The relay: Telegram in, the inbox branch out. A dry run reads and reports only."""
+        s = self.settings
+        if not s.telegram_log_channel_id:
+            raise ValueError("Missing required settings: LEXINFORM_TELEGRAM_LOG_CHANNEL_ID")
+        client = self.telegram_client()
+        writer = None
+        acknowledger = None
+        if not dry_run:
+            writer = GitHubInboxWriter(s.github_repo, s.github_token, branch=s.inbox_branch)
+            acknowledger = TelegramAcknowledger(client, channel_id=s.telegram_log_channel_id)
+        return CommandListener(
+            client,
+            writer,
+            acknowledger,
+            channel_id=s.telegram_log_channel_id,
+            poll_timeout=s.listen_timeout_seconds,
         )
 
     def command_service(self, *, dry_run: bool) -> CommandService | None:

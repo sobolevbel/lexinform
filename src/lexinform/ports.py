@@ -15,6 +15,7 @@ from lexinform.models import (
     BillContext,
     BillStatus,
     BillSubmission,
+    ChannelPost,
     CommandOutcome,
     Committee,
     CommitteeSitting,
@@ -237,6 +238,29 @@ class OperatorReplier(Protocol):
     """Answers a command where it was given (under the message in the log channel)."""
 
     def reply(self, command: IncomingCommand, outcome: CommandOutcome) -> None: ...
+
+
+# The relay (`lexinform listen`): what it reads, where it files commands, how it acknowledges.
+
+
+class UpdatesSource(Protocol):
+    """Telegram's `getUpdates`: the posts the bot has not confirmed yet; `offset` confirms
+    every update below it. `TelegramUnavailableError` when Telegram is down."""
+
+    def get_updates(self, *, offset: int | None, timeout: int) -> list[ChannelPost]: ...
+
+
+class InboxWriter(Protocol):
+    """Files a command where a run will find it (the git branch `inbox` in production).
+    Raises when the file could not be written; filing the same update twice is not an error."""
+
+    def put(self, command: IncomingCommand) -> None: ...
+
+
+class CommandAcknowledger(Protocol):
+    """Tells the operator the command was taken (a reply under it); best effort."""
+
+    def queued(self, command: IncomingCommand) -> None: ...
 
 
 class BillRepository(Protocol):

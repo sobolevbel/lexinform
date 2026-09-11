@@ -4,6 +4,7 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx2 as httpx
@@ -11,9 +12,10 @@ import httpx2 as httpx
 from lexinform.adapters.publisher_base import Outgoing, RenderingPublisher
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import TelegramUnavailableError
-from lexinform.models import CommandOutcome, IncomingCommand, RunReport
+from lexinform.models import ChannelPost, CommandOutcome, IncomingCommand, RunReport
 
 log = logging.getLogger(__name__)
+_EPOCH = datetime.fromtimestamp(0, tz=UTC)
 
 
 class TelegramError(RuntimeError):
@@ -71,6 +73,27 @@ class TelegramBotClient:
         except TelegramError as exc:
             if "message is not modified" not in exc.description.lower():
                 raise
+
+    def get_updates(self, *, offset: int | None, timeout: int) -> list[ChannelPost]:
+        """Long-poll `getUpdates` for channel posts; `offset` confirms every update below it.
+        Only one consumer may poll at a time (Telegram answers 409 to the older one)."""
+        payload: dict[str, Any] = {"timeout": timeout, "allowed_updates": ["channel_post"]}
+        if offset is not None:
+            payload["offset"] = offset
+        result = self._call("getUpdates", json=payload, timeout=timeout + 15.0)
+        updates = result.get("result")
+        posts: list[ChannelPost] = []
+        for update in updates if isinstance(updates, list) else []:
+            post = _channel_post(update)
+            if post is None and isinstance(update.get("update_id"), int):
+                # Not a post (another update kind, an unreadable one): a placeholder from no
+                # chat, so that the offset still moves past it.
+                post = ChannelPost(
+                    update_id=update["update_id"], chat_id=0, message_id=0, date=_EPOCH
+                )
+            if post is not None:
+                posts.append(post)
+        return posts
 
     def close(self) -> None:
         self._client.close()
@@ -160,6 +183,41 @@ class TelegramRunNotifier:
     def notify(self, report: RunReport, log_lines: list[str]) -> None:
         rendered = self._formatter.run_report(report, log_lines)
         self._client.send_message(self._channel_id, rendered.text)
+
+
+def _channel_post(update: dict[str, Any]) -> ChannelPost | None:
+    """The channel post in one `getUpdates` item; None for other kinds of update. A post
+    without text (a photo, a poll) still comes back, so that the offset moves past it."""
+    update_id = update.get("update_id")
+    post = update.get("channel_post") or update.get("message")
+    if not isinstance(update_id, int) or not isinstance(post, dict):
+        return None
+    chat = post.get("chat") or {}
+    try:
+        return ChannelPost(
+            update_id=update_id,
+            chat_id=int(chat["id"]),
+            chat_username=chat.get("username"),
+            message_id=int(post["message_id"]),
+            text=post.get("text"),
+            date=datetime.fromtimestamp(int(post.get("date", 0)), tz=UTC),
+        )
+    except (KeyError, TypeError, ValueError):
+        log.warning("getUpdates: update %s has no readable post", update_id)
+        return None
+
+
+class TelegramAcknowledger:
+    """`⏳ queued` under the command, so the operator knows the relay took it."""
+
+    TEXT = "⏳ queued — the next run answers here in a few minutes"
+
+    def __init__(self, client: TelegramBotClient, *, channel_id: str) -> None:
+        self._client = client
+        self._channel_id = channel_id
+
+    def queued(self, command: IncomingCommand) -> None:
+        self._client.send_message(self._channel_id, self.TEXT, reply_to=command.message_id)
 
 
 class TelegramOperatorReplier:
