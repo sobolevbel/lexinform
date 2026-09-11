@@ -86,9 +86,10 @@ Done on 2026-09-12 (schema v15), a fourth source:
 - Only `Projekty ustaw` are followed, only entries published since the watermark are stored (the
   state dump is 822 KB; the 775 bill entries with their paragraphs would add ~2.3 MB per run),
   and the rest is reported as backlog.
-- Whether a GitHub runner can reach www.gov.pl at all is still unmeasured:
-  `.github/workflows/wykaz-probe.yml` answers it, and `LEXINFORM_WYKAZ_PROXY_URL` is the way out
-  if it cannot (the tinyproxy filter then needs `^www\.gov\.pl$`).
+- GitHub-hosted runners reach www.gov.pl directly (probed 2026-09-12 from Azure eastus2: page
+  0.57 s, CSV 3.1 s / 2.8 MB gzipped), unlike RCL, so the source needs no proxy.
+  `LEXINFORM_WYKAZ_PROXY_URL` and `.github/workflows/wykaz-probe.yml` stay for the day that
+  changes.
 
 Done on 2026-09-10, after a review of the code base (no schema change):
 
