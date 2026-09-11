@@ -86,6 +86,7 @@ class Labels:
     tag_term: str  # "#<tag_term><term number>": the Sejm term (kadencja) the bill belongs to
     tag_ukraine: str  # bills about citizens of Ukraine: the channel's largest audience
     consultation_link: str  # text of the link to the Sejm page where opinions are submitted
+    consultation_page: str  # the same page, named neutrally: the consultation is over
     action_now: str  # "What you can do now"
     action_senate: str  # "send an opinion to the Senate committee" (while the Senate has the bill)
     path: str  # "Path": the one-line map of the process with the current step marked
@@ -257,6 +258,7 @@ RU = Labels(
     tag_term="каденция",
     tag_ukraine="Украина",
     consultation_link="форма для мнений на сайте Сейма",
+    consultation_page="страница консультаций на сайте Сейма",
     action_now="Что можно сделать сейчас",
     action_senate="направить мнение в профильную комиссию Сената (senat.gov.pl)",
     path="Путь",
@@ -629,6 +631,7 @@ EN = Labels(
     tag_term="term",
     tag_ukraine="Ukraine",
     consultation_link="opinion form on the Sejm website",
+    consultation_page="consultation page on the Sejm website",
     action_now="What you can do now",
     action_senate="send an opinion to the competent Senate committee (senat.gov.pl)",
     path="Path",

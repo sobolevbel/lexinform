@@ -971,13 +971,20 @@ class MessageFormatter:
         if window is None:
             return ""
         lb = self._labels
-        if window.end is not None and not window.is_open(today) and not window.start:
-            # A bare "until <date>" reads as an open deadline; a closed one says so and drops the
-            # ways to send an opinion (the letter stays: it names the ministry and its e-mail).
+        if window.end is not None and not window.is_open(today):
+            # A date range, like a bare "until <date>", reads as an invitation; a consultation
+            # that is over says so and drops the ways to send an opinion (the letter stays: it
+            # names the ministry and its e-mail). The end date is what the reader needs, so the
+            # range collapses to it.
             closed = f"{esc(lb.consultation_closed_on)} {self.fmt_date(window.end)}"
-            letter = link(window.letter_url, lb.consultation_letter) if window.letter_url else ""
+            where = ""
+            if window.source == "sejm" and window.form_url:
+                # The page stays (the opinions that were sent appear there), the invitation goes.
+                where = link(window.form_url, lb.consultation_page)
+            elif window.source == "rcl" and window.letter_url:
+                where = link(window.letter_url, lb.consultation_letter)
             return f"{ICON['consultation']} <b>{esc(lb.consultation)}:</b> {closed}" + (
-                f" · {letter}" if letter else ""
+                f" · {where}" if where else ""
             )
         if window.source == "rcl":
             when = (

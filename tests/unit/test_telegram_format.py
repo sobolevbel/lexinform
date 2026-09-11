@@ -317,6 +317,32 @@ def test_closed_consultation_loses_its_tag_and_ukraine_is_read_from_the_title(
     assert tags == "#kadencja10druk3039 #важность5 #легализация #Украина #каденция10"
 
 
+def test_a_consultation_that_is_over_says_so_and_stops_inviting_opinions(
+    process_3039: ProcessDetail,
+) -> None:
+    """A Sejm consultation has a start and an end. Rendered as a plain range next to the form
+    link, a window that closed a year ago reads as an invitation (it is not)."""
+    bill = bill_of(
+        process_3039,
+        submission=consulted(
+            number="RPW/2793/2025",
+            consultation_start=dt.date(2025, 1, 24),
+            consultation_end=dt.date(2025, 2, 23),
+        ),
+    )
+    formatter = MessageFormatter("ru")
+
+    while_open = formatter.new_bill(bill, None, today=dt.date(2025, 2, 1)).text
+    once_closed = formatter.new_bill(bill, None, today=dt.date(2026, 9, 11)).text
+
+    assert "<b>Общественные консультации:</b> 24.01.2025 — 23.02.2025" in while_open
+    assert "форма для мнений" in while_open
+    assert "<b>Общественные консультации:</b> завершились 23.02.2025" in once_closed
+    assert "страница консультаций" in once_closed  # the page stays, the invitation goes
+    assert "форма для мнений" not in once_closed
+    assert "24.01.2025" not in once_closed  # the end date is the fact that matters
+
+
 # --------------------------------------------------------------------------- status updates
 
 
@@ -579,14 +605,15 @@ def test_card_links_the_consultation_form_and_names_the_next_step(
     assert "до заседания" not in action  # nothing scheduled yet
 
 
-def test_closed_consultation_keeps_the_link_but_drops_the_action(
+def test_closed_consultation_keeps_the_page_but_drops_the_action(
     process_3039: ProcessDetail,
 ) -> None:
     bill = bill_of(process_3039, submission=consulted())
 
     text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 10, 1)).text
 
-    assert "форма для мнений" in text
+    assert CONSULTATION_PAGE in text  # the opinions that were sent appear there
+    assert "форма для мнений" not in text  # but nothing can be sent any more
     assert "направить мнение через" not in text
     assert "направить мнение в комиссию —" in text
 
