@@ -29,6 +29,7 @@ from lexinform.models import (
     rcl_stages,
 )
 from lexinform.ports import BillRepository, Clock, ProjectResolver, SejmGateway
+from lexinform.services.discovery import NOT_FOLLOWED
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.terms import TermResolver
 
@@ -181,9 +182,12 @@ class BillLookup:
             self._repo.save_submission(bill.term, bill.number, sub)
         self._prefilter_by_title(bill, summary, has_text=True)
         entry = self._repo.get(term, sub.number) if sub is not None else None
-        if entry is None or entry.number == bill.number:
+        if entry is not None and entry.number != bill.number:
+            return self._link(entry, bill.number)
+        project = self._project_of(summary)
+        if project is None or project.rcl is None:
             return self._stored(bill)
-        return self._link(entry, bill.number)
+        return self._link(project, bill.number, wykaz_number=project.rcl.wykaz_number)
 
     def _prefilter_by_title(self, bill: Bill, summary: ProcessSummary, *, has_text: bool) -> None:
         """The status a bill fetched on request starts from, as discovery would decide it."""
@@ -205,6 +209,24 @@ class BillLookup:
         self._repo.link_bills(pre.term, pre.number, printed.number, wykaz_number=wykaz_number)
         log.info("%s is druk %s; linked", pre.number, printed.number)
         return self._stored(printed)
+
+    def _project_of(self, summary: ProcessSummary) -> Bill | None:
+        """The RCL project a government print continues, when the bot follows it: `rclNum` names
+        it, through the stored RM number or one `getIdFromLegislacja` request, as in discovery."""
+        if not summary.rcl_num:
+            return None
+        bill = self._repo.find_by_rm_number(summary.rcl_num)
+        if bill is None and self._projects is not None:
+            try:
+                project_id = self._projects.resolve_project_id(summary.rcl_num)
+            except Exception as exc:  # RCL is unreachable from CI: the print stands on its own
+                log.warning("RCL lookup of %s skipped: %s", summary.rcl_num, exc)
+                return None
+            if project_id is not None:
+                bill = self._repo.find_rcl(rcl_number(project_id))
+        if bill is None or bill.status in NOT_FOLLOWED:
+            return None
+        return bill
 
     def _submission_of(self, term: int, print_number: str) -> BillSubmission | None:
         """The `/bills` entry of a print: one filtered request, as discovery makes it."""

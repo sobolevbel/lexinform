@@ -145,7 +145,9 @@ Invariants worth keeping:
   — an RCL project asks `find_process_by_rcl_num` (the term's listing walked once) for the print
   its `rm_number` names; an RPW entry already carries `print` in its `/bills` row; a druk asks
   `/bills?print=N` (one request, the applicant and consultation dates come with it) for the entry
-  it continues and links when that row is followed. An entry whose act is already in force must
+  it continues, and its own `rclNum` for the project (`discovery.NOT_FOLLOWED`: a skipped or
+  already linked row has no thread, so its druk takes the normal path, and RCL being unreachable
+  leaves the print standing on its own). An entry whose act is already in force must
   never get a card promising a druk number, and a druk must not get a second card next to the
   entry's: a print linked outside tracking inherits the entry's card in `PublishingService`
   (`_inherited_card`, the same alias `Linker` makes, and the card is re-rendered with both tags).

@@ -19,7 +19,9 @@ from lexinform.ports import BillRepository, Clock, ProjectResolver, SejmGateway
 
 log = logging.getLogger(__name__)
 
-_NOT_ANALYSED = frozenset(
+# A row in one of these statuses has no thread of its own, so the druk that continues it takes
+# the normal path (its own prefilter, its own card) instead of being linked to it.
+NOT_FOLLOWED = frozenset(
     {BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER, BillStatus.LINKED}
 )
 
@@ -107,7 +109,7 @@ class BillDiscoveryService:
                 return None
             if project_id is not None:
                 bill = self._repo.find_rcl(rcl_number(project_id))
-        if bill is None or bill.rcl is None or bill.status in _NOT_ANALYSED:
+        if bill is None or bill.rcl is None or bill.status in NOT_FOLLOWED:
             return None
         return bill
 

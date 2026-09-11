@@ -396,6 +396,26 @@ def test_a_project_that_already_reached_the_sejm_leads_to_its_druk() -> None:
     assert w.bill("2172").linked_wykaz_number == "UC164"
 
 
+def test_a_druk_that_continues_a_followed_project_joins_its_card() -> None:
+    """The project is in the channel already; its druk named by hand must not get a second card
+    (discovery links the two only for a druk it sees first, and a command may name it earlier)."""
+    w = World()
+    w.add_rcl_project(rcl_project(rm_number="RM-0610-7-26", consultation=None))
+    w.run()
+    card_id = w.card_id(RCL)
+    w.add_bill("2172", TITLE)
+    w.touch("2172", dt.datetime(2026, 9, 9, 9, 0), rcl_num="RM-0610-7-26")
+    w.command("/analyze 2172")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.message_id == card_id  # the project's card, not a second one
+    assert len(w.publisher.new_bills) == 1
+    assert w.bill(RCL).status is BillStatus.LINKED
+    assert w.bill("2172").linked_wykaz_number == "UC164"  # the card's tag stays with the thread
+
+
 def test_an_entry_that_already_has_its_druk_leads_to_the_druk() -> None:
     """The same the other way round: the operator names an RPW number nobody followed, and the
     Sejm gave it a druk in the meantime. The druk has the text; the entry has a promise."""
