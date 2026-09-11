@@ -340,7 +340,7 @@ RU = Labels(
         " проекта в Сейме, если оно будет назначено"
     ),
     link_wykaz_entry="Запись в плане работ",
-    tag_wykaz="планРМ",
+    tag_wykaz="wykazRM",
     rcl_process_closed="Проект закрыт на RCL, в Сейм не направлен.",
     wykaz_process_closed="Проект снят с плана работ правительства.",
     committee_report="отчёт комиссии (sprawozdanie)",
@@ -748,7 +748,7 @@ EN = Labels(
         " of the bill, should one be held"
     ),
     link_wykaz_entry="Register entry",
-    tag_wykaz="governmentplan",
+    tag_wykaz="wykazRM",
     rcl_process_closed="The project was closed on RCL without reaching the Sejm.",
     wykaz_process_closed="The project was taken off the government's plan.",
     committee_report="committee report (sprawozdanie)",
