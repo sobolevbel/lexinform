@@ -61,5 +61,3 @@ Dependencies flow only in this direction:
 - Do not add a likelihood-of-passage estimate.
 - Prompt-version changes alone must not reanalyse or repost an existing card. A materially new text may.
 - Every card/update includes what happens next and what readers can do now. RCL cards ask readers to write in Polish and cite the wykaz number.
-
-@RTK.md
