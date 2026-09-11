@@ -147,6 +147,10 @@ class Phase(BaseModel):
 
 
 _PRESIDENT_NEXT = {"ToPresident", "SenatePositionConsideration"}
+# Stages that arrive next to the process without moving it: the government's position on a
+# deputies' bill, an opinion of local-government bodies. They land last in the tree while the
+# bill sits in committee, and taking them for the current step loses "what comes next" entirely.
+ASIDE_STAGE_TYPES = frozenset({"GovermentPosition", "Opinion"})
 SENATE_DAYS, SENATE_DAYS_URGENT = 30, 14
 PRESIDENT_DAYS, PRESIDENT_DAYS_URGENT = 21, 7
 
@@ -236,7 +240,9 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
         return Phase(key="pre_print")
     if summary.closure_date is not None and summary.passed is False:
         return None  # rejected or withdrawn
-    top = list(bill.stages)
+    top = [st for st in bill.stages if st.stage_type not in ASIDE_STAGE_TYPES]
+    if not top:
+        return Phase(key="first_reading")
     last = top[-1]
     kind = last.stage_type
     if kind == "End":

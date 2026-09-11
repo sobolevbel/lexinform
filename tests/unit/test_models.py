@@ -406,3 +406,35 @@ def test_current_term_is_the_flagged_one_else_the_highest_number() -> None:
     assert current_term(flagged) == 10
     assert current_term(unflagged) == 10
     assert current_term(()) is None
+
+
+def test_a_government_position_does_not_hide_what_comes_next(
+    process_3039: ProcessDetail,
+) -> None:
+    """Druk 1273: the government's position arrived while the bill sat in committee and became
+    the last top-level stage, so the card lost its path, next step and action block."""
+    referral = Stage(
+        stage_name="Skierowano do I czytania w komisjach",
+        stage_type="ReadingReferral",
+        date=dt.date(2025, 6, 10),
+        children=(
+            Stage(
+                stage_name="Skierowanie",
+                stage_type="Referral",
+                date=dt.date(2025, 6, 10),
+                committee_code="ASW",
+            ),
+        ),
+    )
+    aside = Stage(
+        stage_name="Wpłynęło stanowisko rządu",
+        stage_type="GovermentPosition",
+        date=dt.date(2025, 8, 21),
+    )
+
+    phase = next_phase(_bill(process_3039, (referral, aside)), today=TODAY)
+    alone = next_phase(_bill(process_3039, (aside,)), today=TODAY)
+
+    assert phase is not None
+    assert phase.key == "first_reading_committee" and phase.committees == ("ASW",)
+    assert alone is not None and alone.key == "first_reading"  # nothing but asides yet
