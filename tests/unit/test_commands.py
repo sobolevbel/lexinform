@@ -5,7 +5,7 @@ from typing import Any
 
 from lexinform.errors import LlmUnavailableError
 from lexinform.models import BillStatus, OutcomeStatus, PublicationKind, RunReport
-from tests.fakes import FakeTextExtractor, make_analysis
+from tests.fakes import FakeLlm, FakeTextExtractor, make_analysis
 from tests.harness import RCL, RCL_ID, World
 
 TITLE = "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach"
@@ -297,3 +297,20 @@ def test_the_card_a_command_posts_settles_the_bill_for_publishing() -> None:
     assert report.published == 0 and len(w.publisher.new_bills) == 1
     card = w.publication("3039", PublicationKind.NEW_BILL)
     assert card is not None and card.message_id == 101
+
+
+def test_the_reply_carries_the_run_time_and_what_the_analysis_cost() -> None:
+    w = World(triage=True)
+    w.add_bill("3039", TITLE)
+    w.command("/analyze 3039")
+    w.command("/show 3039")
+
+    _commands_only(w)
+
+    (_, analysed), (_, shown) = w.replier.replies
+    assert analysed.run_started_at == w.clock.now()
+    assert analysed.seconds is not None and analysed.seconds >= 0
+    # Both model calls are on the operator's bill: the triage and the analysis itself.
+    assert analysed.usage["fake"].input == FakeLlm.ANALYSIS_TOKENS[0]
+    assert analysed.usage["fake-triage"].input == FakeLlm.TRIAGE_TOKENS[0]
+    assert shown.usage == {}  # /show never calls the model

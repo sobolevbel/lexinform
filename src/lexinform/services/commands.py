@@ -8,6 +8,7 @@ command's own and is answered as such.
 """
 
 import logging
+import time
 from dataclasses import dataclass, field
 
 from lexinform.errors import ServiceUnavailableError
@@ -23,7 +24,6 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
     TokenUsage,
-    add_usage,
     parse_command,
 )
 from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier
@@ -82,6 +82,7 @@ class CommandService:
         """Answer every waiting command. In a dry run the inbox is left as it is: the files
         belong to a real run (the database is rolled back with them)."""
         self._dry_run = dry_run
+        run_started_at = self._clock.now()
         result = CommandsResult()
         for incoming in self._inbox.pending():
             if not self._repo.record_command(incoming) and self._repo.command_handled(
@@ -90,8 +91,10 @@ class CommandService:
                 log.info("command %d handled before; inbox file dropped", incoming.update_id)
                 self._done(incoming)
                 continue
+            started = time.perf_counter()
+            spent: dict[str, TokenUsage] = {}
             try:
-                outcome = self._execute(incoming, result, min_score=min_score, publish=publish)
+                outcome = self._execute(incoming, spent, min_score=min_score, publish=publish)
             except ServiceUnavailableError as exc:
                 result.fatal_error = exc.describe()
                 log.error("aborting commands phase: %s", result.fatal_error)
@@ -101,6 +104,18 @@ class CommandService:
                 outcome = CommandOutcome(
                     status=OutcomeStatus.ERROR, note=f"{type(exc).__name__}: {exc}"
                 )
+            # What this one command took, so the reply can say it (the run report sums them up).
+            outcome = outcome.model_copy(
+                update={
+                    "run_started_at": run_started_at,
+                    "seconds": round(time.perf_counter() - started, 1),
+                    "usage": spent,
+                }
+            )
+            for model, tokens in spent.items():
+                result.usage[model] = result.usage.get(model, TokenUsage()).plus(tokens)
+                result.input_tokens += tokens.input + tokens.cache_read
+                result.output_tokens += tokens.output
             self._answer(incoming, outcome)
             result.handled += 1
             result.failed += int(not outcome.ok)
@@ -126,7 +141,12 @@ class CommandService:
     # ------------------------------------------------------------------ the commands
 
     def _execute(
-        self, incoming: IncomingCommand, result: CommandsResult, *, min_score: int, publish: bool
+        self,
+        incoming: IncomingCommand,
+        spent: dict[str, TokenUsage],
+        *,
+        min_score: int,
+        publish: bool,
     ) -> CommandOutcome:
         command = parse_command(incoming.text)
         if command is None:
@@ -137,7 +157,7 @@ class CommandService:
         try:
             if command.name is CommandName.ANALYZE:
                 bill = self._lookup.load_ref(command.ref)
-                return self._analyze(bill, command, result, min_score=min_score, publish=publish)
+                return self._analyze(bill, command, spent, min_score=min_score, publish=publish)
             bill_or_none = self._lookup.find_ref(command.ref)
         except BillNotFoundError as exc:
             return CommandOutcome(status=OutcomeStatus.NOT_FOUND, note=str(exc))
@@ -156,7 +176,7 @@ class CommandService:
         self,
         bill: Bill,
         command: Command,
-        result: CommandsResult,
+        spent: dict[str, TokenUsage],
         *,
         min_score: int,
         publish: bool,
@@ -176,10 +196,8 @@ class CommandService:
                         status=OutcomeStatus.SKIPPED, bill=bill, note=f"{reason}; {FORCE_HINT}"
                     )
         if command.force or bill.analysis is None or bill.status is not BillStatus.ANALYZED:
-            record = self._analysis.analyze_bill(bill, ignore_cost_limit=command.force)
-            result.input_tokens += record.input_tokens or 0
-            result.output_tokens += record.output_tokens or 0
-            add_usage(result.usage, record)
+            analysed = self._analysis.analyze_bill(bill, ignore_cost_limit=command.force)
+            spent.update(analysed.usage)  # the triage counts too: the operator pays for both
             bill = self._reload(bill)
         assert bill.analysis is not None
         verdict = bill.analysis.analysis

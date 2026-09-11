@@ -11,8 +11,9 @@ import re
 from enum import StrEnum
 from urllib.parse import parse_qs, urlparse
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
+from lexinform.models.analysis import TokenUsage
 from lexinform.models.bill import Bill
 from lexinform.models.enums import PRE_PRINT_PREFIX, RCL_PREFIX
 from lexinform.models.rcl import normalize_wykaz_number
@@ -127,6 +128,11 @@ class CommandOutcome(BaseModel):
     bill: Bill | None = None
     note: str = ""  # the reason, the error, why the card was not posted
     message_id: int | None = None  # the card just posted (or posted again)
+    # What running this command took: when the run that answered it started, how long the
+    # command itself took, and the model tokens it spent (empty when the model was not called).
+    run_started_at: dt.datetime | None = None
+    seconds: float | None = None
+    usage: dict[str, TokenUsage] = Field(default_factory=dict)
 
     @property
     def ok(self) -> bool:

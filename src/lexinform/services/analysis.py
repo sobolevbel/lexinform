@@ -60,6 +60,23 @@ class AnalysisResult:
     stopped: str | None = None  # the phase ended early on the per-run cost limit (not an error)
 
 
+@dataclass(frozen=True)
+class AnalysisOutcome:
+    """One analysis and what it cost: the stored record plus the triage that preceded it (the
+    triage's own tokens are lost otherwise, and for the caller they are part of the bill)."""
+
+    record: AnalysisRecord
+    triage: TriageRecord | None = None
+
+    @property
+    def usage(self) -> dict[str, TokenUsage]:
+        tokens: dict[str, TokenUsage] = {}
+        for used in (self.triage, self.record):
+            if used is not None:
+                add_usage(tokens, used)
+        return tokens
+
+
 class TooExpensiveError(Exception):
     """A first analysis whose input alone would cost more than the per-bill limit allows."""
 
@@ -215,11 +232,12 @@ class AnalysisService:
                 break
         return result
 
-    def analyze_bill(self, bill: Bill, *, ignore_cost_limit: bool = False) -> AnalysisRecord:
+    def analyze_bill(self, bill: Bill, *, ignore_cost_limit: bool = False) -> AnalysisOutcome:
         """First analysis from the original text. Persists the result; raises on failure.
         `ignore_cost_limit` is the operator's explicit wish (a forced command): the per-bill
         cost guard does not apply."""
-        return self._persist(self._prepare_first(bill, cost_guard=not ignore_cost_limit))
+        prepared = self._prepare_first(bill, cost_guard=not ignore_cost_limit)
+        return AnalysisOutcome(self._persist(prepared), prepared.triage)
 
     def _prepare_first(self, bill: Bill, *, cost_guard: bool = True) -> _Prepared:
         return self._prepare(bill, self._texts.locate(bill), previous=None, cost_guard=cost_guard)

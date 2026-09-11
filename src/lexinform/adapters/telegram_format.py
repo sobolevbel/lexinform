@@ -778,6 +778,7 @@ class MessageFormatter:
             blocks.append(f"📣 card posted: message {outcome.message_id}")
         if outcome.note:
             blocks.append(esc(outcome.note))
+        blocks.append(_command_cost(outcome))
         return RenderedMessage(text=self._assemble(blocks))
 
     def _bill_facts(self, bill: Bill, *, full: bool) -> str:
@@ -1366,6 +1367,30 @@ def _translate(value: str | None, labels: dict[str, str]) -> str | None:
         return None
     lowered = value.lower()
     return next((label for part, label in labels.items() if part in lowered), None)
+
+
+def _command_cost(outcome: CommandOutcome) -> str:
+    """`⏱ run 11.09.2026 17:07 UTC · 41.2s · tokens 95.3k/1.1k · ≈ $0.48`: when the run that
+    answered the command started, how long the command took and what the model cost. The token
+    part is dropped when the model was not called (`/show`, a stored verdict)."""
+    parts: list[str] = []
+    if outcome.run_started_at is not None:
+        parts.append(f"run {outcome.run_started_at.strftime('%d.%m.%Y %H:%M')} UTC")
+    if outcome.seconds is not None:
+        parts.append(f"{outcome.seconds:.1f}s")
+    if outcome.usage:
+        spent_in = sum(u.input + u.cache_read for u in outcome.usage.values())
+        spent_out = sum(u.output for u in outcome.usage.values())
+        parts.append(f"tokens {_k(spent_in)}/{_k(spent_out)}")
+        parts += [
+            f"{esc(model.removeprefix('claude-'))} {_k(u.input + u.cache_read)}"
+            for model, u in outcome.usage.items()
+            if len(outcome.usage) > 1
+        ]
+        cost = cost_usd(outcome.usage)
+        if cost is not None:
+            parts.append(f"≈ ${cost:.2f}" if cost >= 0.01 else f"≈ ${cost:.3f}")
+    return f"⏱ {' · '.join(parts)}" if parts else ""
 
 
 def _tokens_line(report: RunReport) -> str:

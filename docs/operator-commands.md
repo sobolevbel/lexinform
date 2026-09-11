@@ -54,6 +54,11 @@ technical channel ──getUpdates──► lexinform listen (VPS) ──Content
    concurrency group, and a pending run replaced by a newer one is harmless because every run
    drains the whole inbox.
 
+Every reply ends with what the command took: when the run that answered it started, how long
+the command itself ran, and the model tokens and dollars it spent — the triage included, since
+it is part of the same bill. A command that never calls the model (`/show`, a bill whose
+verdict is already stored) shows the time alone.
+
 An outage of the Sejm API, RCL, the model or Telegram ends the phase and leaves the command for
 the next run; a mistake in the command (unknown bill, bad link) is answered as such.
 

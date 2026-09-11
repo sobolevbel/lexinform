@@ -1064,3 +1064,42 @@ def test_run_report_lists_the_commands_handled() -> None:
     text = MessageFormatter("ru").run_report(report, []).text
 
     assert "🛠 <b>commands</b>\n• /analyze 3039 → 3039 analysed (message 101)" in text
+
+
+def test_command_reply_reports_when_the_run_started_how_long_it_took_and_what_it_cost(
+    process_3039: ProcessDetail,
+) -> None:
+    outcome = CommandOutcome(
+        status=OutcomeStatus.ANALYSED,
+        bill=bill_of(process_3039),
+        message_id=101,
+        run_started_at=dt.datetime(2026, 9, 11, 17, 7, tzinfo=dt.UTC),
+        seconds=41.2,
+        usage={
+            "claude-opus-5": TokenUsage(input=95_300, output=1_100),
+            "claude-sonnet-5": TokenUsage(input=7_600, output=200),
+        },
+    )
+
+    text = MessageFormatter("ru").command_reply(_incoming("/analyze 3039"), outcome).text
+
+    assert_telegram_html(text)
+    assert "⏱ run 11.09.2026 17:07 UTC · 41.2s · tokens 102.9k/1.3k" in text
+    assert "opus-5 95.3k · sonnet-5 7.6k" in text  # the triage is part of the bill
+    assert "≈ $0.52" in text  # 95.3k in + 1.1k out on Opus, 7.6k + 0.2k on Sonnet
+
+
+def test_a_command_that_never_called_the_model_reports_only_the_time(
+    process_3039: ProcessDetail,
+) -> None:
+    outcome = CommandOutcome(
+        status=OutcomeStatus.SHOWN,
+        bill=bill_of(process_3039),
+        run_started_at=dt.datetime(2026, 9, 11, 17, 7, tzinfo=dt.UTC),
+        seconds=0.3,
+    )
+
+    text = MessageFormatter("ru").command_reply(_incoming("/show 3039"), outcome).text
+
+    assert "⏱ run 11.09.2026 17:07 UTC · 0.3s" in text
+    assert "tokens" not in text and "$" not in text
