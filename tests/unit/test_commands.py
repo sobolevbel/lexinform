@@ -8,7 +8,7 @@ from lexinform.errors import LlmUnavailableError
 from lexinform.models import BillStatus, OutcomeStatus, PublicationKind, RunMode, RunReport
 from lexinform.services.commands import FORCE_HINT
 from tests.fakes import FakeLlm, FakeTextExtractor, make_analysis
-from tests.harness import RCL, RCL_ID, RPW, World, rcl_project, submission
+from tests.harness import RCL, RCL_ID, RPW, WYKAZ, World, rcl_project, submission
 
 TITLE = "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach"
 PLAIN = "Rządowy projekt ustawy o podatku VAT"  # says nothing about foreigners
@@ -147,6 +147,36 @@ def test_wykaz_and_rm_numbers_name_the_project() -> None:
     assert analysed.status is OutcomeStatus.ANALYSED and analysed.message_id == 101
     assert shown.status is OutcomeStatus.SHOWN
     assert shown.bill is not None and shown.bill.number == RCL
+
+
+def test_analyze_takes_a_planned_bill_by_its_wykaz_number() -> None:
+    w = World()
+    w.add_wykaz_entry()
+    w.command("/analyze UD408")
+
+    _commands_only(w)
+
+    ((_, outcome),) = w.replier.replies
+    assert outcome.status is OutcomeStatus.ANALYSED
+    assert outcome.bill is not None and outcome.bill.number == WYKAZ
+    assert [b.number for b, _ in w.publisher.new_bills] == [WYKAZ]
+
+
+def test_a_wykaz_number_names_the_project_once_it_is_out_and_the_plan_before_that() -> None:
+    w = World()
+    w.add_wykaz_entry()
+    w.run()
+    w.command("/show UD408")
+    _commands_only(w)
+
+    w.add_rcl_project(rcl_project(wykaz_number="UD408"))
+    w.run()
+    w.command("/show UD408")
+    _commands_only(w)
+
+    (_, planned), (_, published) = w.replier.replies
+    assert planned.bill is not None and planned.bill.number == WYKAZ
+    assert published.bill is not None and published.bill.number == RCL
 
 
 def test_show_reads_the_database_only() -> None:

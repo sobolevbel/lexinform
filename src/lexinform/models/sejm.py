@@ -22,7 +22,6 @@ from lexinform.models.enums import (
     SourceKind,
 )
 
-# Every prefix a source invents for bills that have no Sejm process: see `has_process`.
 NON_SEJM_PREFIXES = (PRE_PRINT_PREFIX, RCL_PREFIX, WYKAZ_PREFIX)
 
 

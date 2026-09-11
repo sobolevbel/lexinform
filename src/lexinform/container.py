@@ -111,6 +111,7 @@ class Container:
                 self.terms,
                 rcl_reader=self.rcl_reader() if self.rcl is not None else None,
                 projects=self.rcl,
+                wykaz=self.wykaz,
                 text_prefilter=self.settings.text_prefilter_enabled,
             ),
         )

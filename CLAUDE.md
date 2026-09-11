@@ -1,7 +1,8 @@
 # lexinform — notes for Claude Code
 
-Daily bot: finds Polish bills that affect foreigners (Sejm API, and legislacja.rcl.gov.pl for
-government projects still with the ministries), scores them 1–5 with an LLM, posts Russian cards
+Daily bot: finds Polish bills that affect foreigners (Sejm API, legislacja.rcl.gov.pl for
+government projects still with the ministries, and the wykaz prac legislacyjnych RM on gov.pl
+for the ones the government has only announced), scores them 1–5 with an LLM, posts Russian cards
 to a Telegram channel and follows each bill until the act is in force. The point is not a
 chronicle but *timely action*: consultations, committee referrals, hearings, deadlines.
 Everything else in `README.md`; roadmap and verified API facts in `docs/roadmap.md`; the whole
@@ -37,23 +38,26 @@ windows and the API stage vocabulary in `docs/legislative-process.md`.
 
 ## Architecture in one breath
 
-`models/` (pydantic + pure helpers; `enums`, `sejm`, `rcl`, `analysis`, `bill` (incl.
+`models/` (pydantic + pure helpers; `enums`, `sejm`, `rcl`, `wykaz`, `analysis`, `bill` (incl.
 `next_phase`, `ConsultationWindow`), `report`, all re-exported from `lexinform.models`) →
-`ports.py` (Protocols) → `adapters/` (Sejm API, ELI, RCL scraper `rcl_html`, PDF, Word +
+`ports.py` (Protocols) → `adapters/` (Sejm API, ELI, RCL scraper `rcl_html`, the register CSV
+`wykaz_csv`, PDF, Word +
 format sniffing `document_text`, Anthropic, `publisher_base` (the `Publisher` port rendered once;
 Telegram and the console only deliver), Telegram (incl. `get_updates` and the command replier),
 SQLite, `inbox_files` (the command inbox as a directory), `github_inbox` (the relay's writer)) →
 `services/` (commands (the operator's `/analyze`, `/show`, `/skip`, `/republish`), lookup (one
 bill by number or reference, fetched and prefiltered on first sight; the CLI and the commands
 share it), listener (the relay on the VPS), discovery,
-rcl_discovery + rcl_projects, sources (`TextSources` routes a bill to `SejmTextSource`,
+rcl_discovery + rcl_projects, wykaz_discovery, sources (`TextSources` routes a bill to
+`SejmTextSource`,
 `RclTextSource` or `MetadataOnlySource`), documents (`TextLoader`, downloads routed by host),
-text_prefilter, analysis, signatories, publishing, `tracking/` (service, pre_print, rcl, linking,
-acts, consultations, agenda, posting, stages), pipeline) → `container.py` (manual wiring) →
+text_prefilter, analysis, signatories, publishing, `tracking/` (service, pre_print, rcl, wykaz,
+linking, acts, consultations, agenda, posting, stages), pipeline) → `container.py` (manual wiring) →
 `cli.py` (typer). Services import only ports, models and the pure modules (`keywords`, `sections`
 incl. `TextBudget`, `agenda`, `authors`, `rcl_letters`, `concurrency`), never adapters; the
 generic services (analysis, text prefilter, formatter, `next_phase`) never branch on the source:
-they read `Bill.has_process`, `Bill.consultation`, `Bill.rcl` and the `TextSource` port. Tests
+they read `Bill.has_process`, `Bill.consultation`, `Bill.rcl`, `Bill.wykaz` and the
+`TextSource` port. Tests
 use fakes in `tests/fakes.py` and the `World` harness in `tests/harness.py`, which builds the real
 `Container` from a `Settings` naming the fake hosts, so the wiring under test is the daily run's
 (`container.py` is typed on the ports and builds each service once; `llm`, `extractor`,
@@ -137,8 +141,9 @@ Invariants worth keeping:
 - **Outages never burn per-bill attempts.** `ServiceUnavailableError` subclasses abort a phase
   and go to the log channel; everything else is a per-bill failure (3 attempts). Unknown model id
   and bad request parameters are fatal, "prompt too long" is per-bill.
-- Pre-print bills (`RPW/…`) and RCL projects (`RCL/{id}`) have no Sejm process
-  (`Bill.has_process` is false): skip `get_process`/`get_print` for them; when the print appears,
+- Pre-print bills (`RPW/…`), RCL projects (`RCL/{id}`) and wykaz entries (`WPL/UD408`) have no
+  Sejm process (`has_process` tests one tuple of prefixes, `NON_SEJM_PREFIXES`; a prefix missing
+  there sends the rows to `/processes`): skip `get_process`/`get_print` for them; when the print appears,
   the print inherits the card (`tracking/linking.py::Linker`: `new_bill` row aliased with the same
   `message_id`). **A bill fetched on request is linked in whichever direction it is named**, and
   the druk is what comes back: it is the bill with the text. `BillLookup._fetch` splits per kind
@@ -169,6 +174,28 @@ Invariants worth keeping:
   `set_status` on a skipped status): the documents are most of the row and are never read again;
   `lexinform reset … --to analysis_pending` re-reads them. Run records older than
   `LEXINFORM_RUNS_RETENTION_DAYS` (90) are deleted at the start of a run.
+- **The wykaz is the earliest source and the thinnest: an intention, not a bill.** The whole
+  register arrives as one CSV per run (`adapters/wykaz_csv.py`; the id in the URL is read from
+  the page, columns are matched by prefix because their statutory wording gets repunctuated), so
+  the prefilter sees all of it, but only entries published since the watermark are stored:
+  `Data publikacji` never moves on an edit, so a rejected entry is never revisited, and storing
+  the 775 bill entries with their paragraphs would add ~2.3 MB to a state dump that is 822 KB.
+  The rest is `report.wykaz_backlog`, and `scan --since` is the way to take it. Only
+  `Projekty ustaw` are followed; a plan already realised or withdrawn on first sight never gets a
+  card (there is no action left to invite), and neither does one whose project is already on RCL.
+  The card says there is no text yet, and the one action it offers is the art. 7 zgłoszenie
+  zainteresowania — which anyone may file, and which is the ticket to the Sejm's wysłuchanie
+  publiczne (art. 8 ust. 2). The register is also the only source that says the government
+  **dropped** a project (`Status realizacji`, `Informacja o rezygnacji`, art. 3 ust. 3): that is
+  posted, a slipped quarter or a rewritten "istota" is only stored. `Planowane przyjęcie przez
+  RM` is free text and half of it carries the adoption note: only the quarter is ever rendered.
+- **A plan's project is stamped, not ingested.** RCL discovery has the wykaz number on the list
+  page: when it names a followed `WPL/` row it writes `rcl_project_id` on that row and skips the
+  project. `tracking/wykaz.py::WykazLinker` then creates the `RCL/` row, hands the card over
+  (alias with the same `message_id`) and **re-analyses from the documents** — the plan was judged
+  on an announcement, and that judgement must not decide the fate of the row that has the text.
+  Ingesting the project in discovery instead would post a second card: `publishing`'s inheritance
+  keys on a link that does not exist until the linker runs.
 - **RCL markup is parsed, not matched.** `adapters/rcl_html.py` uses CSS selectors; a missing
   detail (date, folder, link) is tolerated, a missing structural element (timeline, table with
   rows announced, every stage label) raises `RclPageError`, which the run report shows. The WAF's
@@ -204,7 +231,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v14 as of Sept 2026). `migrate()` reads `user_version` and
+`SCHEMA_VERSION = len(MIGRATIONS)` (v15 as of Sept 2026). `migrate()` reads `user_version` and
 runs every later script inside its own transaction, stamping the new version at the end, so a
 failed script leaves the database at the previous version. v8 (Sept 2026) added `rcl_json`, v9
 `bills.discontinued_at` and `status_changes.discontinued` (end of a Sejm term), v10
@@ -213,7 +240,8 @@ v11 the unique index of hearing reminders (per bill, channel and hearing date) a
 `status_changes.amendments_json` (the model's summary of the Senate's or a committee's amendments),
 v12 the unique index of `joint_bill` replies (per bill and channel), v13 (Sept 2026) the
 `commands` table (operator commands by Telegram update id), v14 `commands.executed_at` (a
-command whose answer never arrived is answered again, not executed again).
+command whose answer never arrived is answered again, not executed again), v15 (Sept 2026)
+`bills.wykaz_json` (entries of the wykaz prac legislacyjnych RM, `WPL/UD408` rows).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) →
 `db restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing
@@ -317,6 +345,38 @@ There is no downgrade. To roll back, revert the code and restore the previous du
 - Join: `/processes` `rclNum="RM-0610-81-26"`, `rclLink=…/getIdFromLegislacja?number=…` →
   302 to `/projekt/{id}`.
 
+## Wykaz prac RM lessons (verified live, 12 Sept 2026)
+
+- The register page `gov.pl/web/premier/wplip-rm` renders client-side; the whole register is one
+  file, `gov.pl/register-file/Rejestr_{id}.csv`, and the id is in the page as `registerVue-{id}`
+  (20874195 then). 10.5 MB, 2.8 MB gzipped, 1454 rows, `;`-separated with quoted multi-line
+  paragraphs. `ETag` and `If-None-Match` work (304, 0 bytes), but there is nowhere to keep the
+  tag, so every run downloads it.
+- 19 columns; `Rodzaj dokumentu` splits 775 Projekty ustaw / 357 rozporządzeń / 322 inne. Statuses:
+  403 empty (in progress), 1018 Zrealizowany, 31 Wycofany, 2 Niezrealizowany. Of the bill entries
+  ~19 match the project's keywords in the whole register — 2–5 a year.
+- `Data publikacji` is the **first** publication and does not move when an entry is edited; the
+  entry's own gov.pl page keeps a version history instead (UD408 is at 2.0, edited 18.08.2026).
+- Numbers are all but unique: UC168 is the same project entered twice a day apart, two `Podgląd`
+  URLs. The later publication wins.
+- Header wording drifts ("o przyczynach i potrzebie **wprowadzenia** rozwiązań" in one export,
+  without it in another) and two headers start with "Organ odpowiedzialny", so columns are matched
+  by the longest prefix.
+- Lead time over RCL, measured: UD408 (o zmianie ustawy o cudzoziemcach, MSWiA) entered the
+  register 2026-05-12 and appeared on RCL 2026-07-06 (`/projekt/12412103`) — 55 days. RCL shows
+  its number as "UD 408", with a space.
+- `www.gov.pl` resolves to one Polish address (185.32.48.49), not a CDN — the same shape that
+  turned out to be blocked for RCL from GitHub runners. Whether a runner reaches it is still
+  unmeasured: `.github/workflows/wykaz-probe.yml` answers that, and `LEXINFORM_WYKAZ_PROXY_URL`
+  is the way out.
+- The stage is genuinely actionable: art. 7 ust. 1 of the ustawa o działalności lobbingowej —
+  "z chwilą udostępnienia w BIP programów prac legislacyjnych … **każdy** może zgłosić
+  zainteresowanie pracami nad projektem", with the organ that prepares it; art. 8 ust. 2 makes
+  the filing the ticket to the Sejm's wysłuchanie publiczne. Caveat to check before the card
+  names a form: the RM regulation with the official form (Dz.U. 2011/1080) was repealed on
+  2026-08-28 by Dz.U. 2026/160, so the mechanics must be read from the consolidated text
+  (Dz.U. 2026/936).
+
 ## LLM cost model (Sept 2026)
 
 Opus 5 is $5/M input; output is ~1% of the bill. A government print is bill + uzasadnienie + OSR
@@ -362,7 +422,11 @@ consultation deadline and e-mail are parsed from the letter deterministically, n
 tell readers to write in Polish and quote the wykaz number. Prints considered jointly (decided
 2026-09-10, after druki 1929/1933 got two near-identical cards): one card per group, the later
 prints are short "alternative bill" replies under it, the government's print is preferred for the
-card. Abbreviations (MSWiA, UdSC, ZUS, PESEL) stay Polish in the analysis, never МВД. Operator
+card. Abbreviations (MSWiA, UdSC, ZUS, PESEL) stay Polish in the analysis, never МВД. The wykaz prac
+RM (decided 2026-09-12): planned bills get a card of their own, headed "План правительства" and
+saying above everything else that there is no text yet; the RCL project inherits that card when
+it appears (one thread from the plan to Dz.U.); only `Projekty ustaw` are followed; the
+government dropping a project is posted. Operator
 commands (decided 2026-09-11): from the technical channel, any admin of it; delivered by a relay
 on the owner's mikrus VPS (384 MB: enough for a getUpdates loop, not for the bot itself) into
 the `inbox` branch, executed by GitHub Actions so the state branch stays the only database

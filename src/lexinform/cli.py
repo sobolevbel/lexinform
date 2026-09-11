@@ -25,6 +25,7 @@ from lexinform.models import (
     flatten_stages,
     is_pre_print_number,
     is_rcl_number,
+    is_wykaz_number,
     rcl_project_id,
     stage_fingerprint,
     usage_of,
@@ -150,6 +151,11 @@ def scan(since: SinceOpt = None) -> None:
         effective = pipeline.resolve_since(_utc(since))
         term = c.term()
         result = c.discovery_service().discover(term, effective)
+        wykaz_service = c.wykaz_discovery_service()
+        wykaz_new = wykaz_backlog = 0
+        if wykaz_service is not None:
+            wykaz_result = wykaz_service.discover(term, effective)
+            wykaz_new, wykaz_backlog = wykaz_result.new, wykaz_result.backlog
         rcl_service = c.rcl_discovery_service()
         rcl_new = rcl_hits = 0
         if rcl_service is not None:
@@ -167,7 +173,8 @@ def scan(since: SinceOpt = None) -> None:
     typer.echo(
         f"term={term} since={effective.isoformat()} seen={result.seen} new={result.new} "
         f"pre_print={result.pre_print_new} title_hits={result.prefilter_hits} "
-        f"rcl_new={rcl_new} rcl_hits={rcl_hits} text_hits={text_hits}"
+        f"rcl_new={rcl_new} rcl_hits={rcl_hits} text_hits={text_hits} "
+        f"wykaz_new={wykaz_new} wykaz_backlog={wykaz_backlog}"
     )
     for bill in pending:
         label = bill.number if not bill.has_process else f"druk {bill.number}"
@@ -414,7 +421,10 @@ def listen(
 def show(
     number: Annotated[
         str,
-        typer.Argument(help="Print (druk) number, RPW/… before one, or RCL/{id} / UC164 on RCL."),
+        typer.Argument(
+            help="Print (druk) number, RPW/… before one, RCL/{id} or UC164 on RCL,"
+            " WPL/UD408 in the wykaz prac RM."
+        ),
     ],
 ) -> None:
     """Show what the Sejm API (or RCL) and the local database know about a bill."""
@@ -427,6 +437,9 @@ def show(
             return
         if is_pre_print_number(number):
             _show_pre_print(c, number, local)
+            return
+        if is_wykaz_number(number):
+            _show_wykaz(c, number, local)
             return
         term = local.term if local is not None else c.term()
         detail = c.gateway.get_process(term, number)
@@ -706,6 +719,33 @@ def _show_pre_print(c: Container, number: str, local: Bill | None) -> None:
             f"status={local.status} hits={local.prefilter_hits} linked={local.linked_number}"
             if local
             else "not in database"
+        )
+    )
+
+
+def _show_wykaz(c: Container, number: str, local: Bill | None) -> None:
+    entry = local.wykaz if local and local.wykaz else None
+    if entry is None:
+        entry = c.bill_lookup().read_wykaz_entry(number)
+    typer.echo(f"{entry.title}\n{entry.web_url}")
+    typer.echo(
+        f"number={entry.number} kind={entry.kind} type={entry.doc_type} organ={entry.organ}"
+        f" status={entry.status or '-'} published={entry.published_at:%Y-%m-%d %H:%M}"
+        f" planned={entry.planned_adoption or '-'} rcl={entry.rcl_project_id or '-'}"
+    )
+    if entry.person:
+        typer.echo(f"responsible: {entry.person}")
+    for label, text in (("cele", entry.goals), ("istota", entry.essence)):
+        if text:
+            typer.echo(f"\n{label}:\n{text}")
+    if entry.resignation:
+        typer.echo(f"\nrezygnacja: {entry.resignation}")
+    typer.echo(
+        "\nlocal: "
+        + (
+            f"status={local.status} hits={local.prefilter_hits} linked={local.linked_number}"
+            if local
+            else "not in the database"
         )
     )
 

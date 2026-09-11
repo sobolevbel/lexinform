@@ -9,9 +9,10 @@ living in Poland, scores and summarises them with an LLM, and posts the result t
 It then follows each bill through the whole legislative process, from public consultation to
 publication in Dziennik Ustaw, so readers learn about changes while they can still act on them.
 
-- Sources: the official Sejm REST API (`api.sejm.gov.pl`) and its ELI API, plus
-  legislacja.rcl.gov.pl (government projects before the Sejm), which has no API and is parsed
-  from HTML.
+- Sources: the official Sejm REST API (`api.sejm.gov.pl`) and its ELI API, legislacja.rcl.gov.pl
+  (government projects before the Sejm), which has no API and is parsed from HTML, and the wykaz
+  prac legislacyjnych RM on gov.pl (bills the government has only announced), which comes as one
+  CSV.
 - Importance 1–5, where **5 = legalization of stay** (ustawa o cudzoziemcach, residence permits,
   visas, citizenship, international protection).
 - Posts in Russian (Polish statute names kept in the original); English labels built in.
@@ -86,26 +87,34 @@ by the publication notice alone.
 
 Bills that have no print (druk) number yet (`RPW/…`, the consultation stage) are covered too, from
 their official description; when the print number is assigned the thread continues under the same
-card. Government bills are caught even earlier, on legislacja.rcl.gov.pl (Rządowy Proces
+card. Government bills are caught earlier still, on legislacja.rcl.gov.pl (Rządowy Proces
 Legislacyjny), where the ministry consults them months before the Sejm: the card names the
 deadline and the e-mail from the consultation letter, the RCL comment form, and follows the project
 through the committees of the Council of Ministers until the druk appears and takes over the
 thread. Once linked, the replies carry both tags (`#RCL_UC104 #kadencja10druk3055`, or the
 `#RPW_…` one) and the card is edited in place to carry the druk's tag, so a search for either
-finds the whole thread. A second, technical channel can receive a report after every run (counters, tokens,
+finds the whole thread. Earliest of all is the government's own register of planned legislation
+(wykaz prac legislacyjnych RM): an entry there is an intention, months before any text — UD408
+(o zmianie ustawy o cudzoziemcach) was entered on 2026-05-12 and reached RCL 55 days later. Its
+card says plainly that there is no draft yet and names the one thing the law allows at that
+stage: anyone, a private individual included, may file a zgłoszenie zainteresowania pracami nad
+projektem with the ministry (art. 7 of the lobbying act), which is also the ticket to the Sejm's
+public hearing. When the project appears on RCL it takes over that thread, and when the
+government drops a project — which only this register records — the thread is told so. A second, technical channel can receive a report after every run (counters, tokens,
 errors).
 
 ## How it works
 
 ```
-/processes + /bills + RCL ─► keyword prefilter (title, then text) ─► LLM (structured output) ─► SQLite
+/processes + /bills + RCL + wykaz ─► keyword prefilter (title, then text) ─► LLM ─► SQLite
 Telegram ◄── cards (once per bill) ◄── publish ◄──┘        └─► track: stage diff, votes, ELI act
 ```
 
 1. **Discover** bills modified since the last run (`/processes`, with one day of overlap), bills
-   submitted without a print number (`/bills`) and government projects modified on RCL (the HTML
+   submitted without a print number (`/bills`), government projects modified on RCL (the HTML
    list sorted by modification date; one project page per new project, its stage catalogs only
-   for candidates).
+   for candidates) and entries published in the wykaz prac RM (one CSV with the whole register;
+   entries older than the watermark are counted in the report and left alone).
 2. **Prefilter** by Polish word stems on title and description (for RCL: title, hasła and
    działy); misses get their text scanned with the same patterns (accepted on two distinct topics
    or three hits).

@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.models.analysis import TokenUsage
 from lexinform.models.bill import Bill
-from lexinform.models.enums import PRE_PRINT_PREFIX, RCL_PREFIX
+from lexinform.models.enums import PRE_PRINT_PREFIX, RCL_PREFIX, WYKAZ_PREFIX
 from lexinform.models.rcl import normalize_wykaz_number
 
 
@@ -191,8 +191,11 @@ def parse_reference(text: str) -> BillRef | None:
         return BillRef(kind=RefKind.RPW, value=PRE_PRINT_PREFIX + value[len(PRE_PRINT_PREFIX) :])
     if match := _RCL.match(value):
         return BillRef(kind=RefKind.RCL, value=RCL_PREFIX + match.group(1))
-    if _WYKAZ.match(value):
-        return BillRef(kind=RefKind.WYKAZ, value=normalize_wykaz_number(value) or value)
+    # `UD408` and `WPL/UD408` name the same thing: the wykaz number is what RCL, the ministries
+    # and the register itself use, the prefix is only our row's.
+    bare = value[len(WYKAZ_PREFIX) :] if value.upper().startswith(WYKAZ_PREFIX) else value
+    if _WYKAZ.match(bare):
+        return BillRef(kind=RefKind.WYKAZ, value=normalize_wykaz_number(bare) or bare)
     if _RM.match(value):
         return BillRef(kind=RefKind.RM, value=value.upper())
     return None

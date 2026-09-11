@@ -18,17 +18,22 @@ from lexinform.models import (
     ProcessSummary,
     RclProject,
     RefKind,
+    WykazEntry,
     is_pre_print_number,
     is_rcl_number,
-    normalize_wykaz_number,
+    is_wykaz_number,
     parse_reference,
     process_summary,
     rcl_fingerprint,
     rcl_number,
     rcl_project_id,
     rcl_stages,
+    wykaz_entry_number,
+    wykaz_fingerprint,
+    wykaz_number,
+    wykaz_summary,
 )
-from lexinform.ports import BillRepository, Clock, ProjectResolver, SejmGateway
+from lexinform.ports import BillRepository, Clock, ProjectResolver, SejmGateway, WykazGateway
 from lexinform.services.discovery import NOT_FOLLOWED
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.terms import TermResolver
@@ -51,6 +56,7 @@ class BillLookup:
         *,
         rcl_reader: RclProjectReader | None = None,
         projects: ProjectResolver | None = None,
+        wykaz: WykazGateway | None = None,
         text_prefilter: bool = True,
     ) -> None:
         self._gateway = gateway
@@ -60,6 +66,7 @@ class BillLookup:
         self._terms = terms
         self._rcl_reader = rcl_reader
         self._projects = projects
+        self._wykaz = wykaz
         self._text_prefilter = text_prefilter
 
     def find(self, number: str) -> Bill | None:
@@ -76,7 +83,9 @@ class BillLookup:
     def find_ref(self, ref: BillRef) -> Bill | None:
         """The stored row a reference points at, without touching the network for a miss."""
         if ref.kind is RefKind.WYKAZ:
-            return self._repo.find_by_wykaz_number(ref.value)
+            # The RCL row first: once the project is out, it is the row with the text.
+            found = self._repo.find_by_wykaz_number(ref.value)
+            return found or self._repo.find_wykaz(wykaz_number(ref.value))
         if ref.kind is RefKind.RM:
             return self._repo.find_by_rm_number(ref.value)
         if ref.term is not None:
@@ -84,15 +93,13 @@ class BillLookup:
         return self.find(ref.value)
 
     def resolve_number(self, number: str) -> str:
-        """A wykaz number (UC164) names the RCL row it belongs to; anything else is passed on."""
+        """A wykaz number (UC164) names the row it belongs to — the RCL project when there is
+        one, else the register entry; anything else is passed on."""
         ref = parse_reference(number)
         if ref is None or ref.kind is not RefKind.WYKAZ:
             return number
-        wykaz = normalize_wykaz_number(number) or number
-        bill = self._repo.find_by_wykaz_number(wykaz)
-        if bill is None:
-            raise BillNotFoundError(f"{wykaz}: no RCL project with this number in the database")
-        return bill.number
+        bill = self._repo.find_by_wykaz_number(ref.value)
+        return bill.number if bill is not None else wykaz_number(ref.value)
 
     def load(self, number: str) -> Bill:
         """The bill from the database, fetched from the API (or RCL) and prefiltered on first
@@ -109,7 +116,7 @@ class BillLookup:
         if bill is not None:
             return bill
         if ref.kind is RefKind.WYKAZ:
-            raise BillNotFoundError(f"{ref.value}: no RCL project with this number in the database")
+            return self.load(wykaz_number(ref.value))
         if ref.kind is RefKind.RM:
             if self._projects is None:
                 raise BillNotFoundError(f"{ref.value}: RCL is disabled, cannot look the number up")
@@ -126,6 +133,15 @@ class BillLookup:
             raise BillNotFoundError(f"{number}: RCL is disabled (LEXINFORM_RCL_ENABLED=false)")
         return self._rcl_reader.complete(self._rcl_reader.timeline(rcl_project_id(number)))
 
+    def read_wykaz_entry(self, number: str) -> WykazEntry:
+        """One entry of the wykaz prac RM, straight from the register."""
+        if self._wykaz is None:
+            raise BillNotFoundError(f"{number}: the wykaz is disabled (LEXINFORM_WYKAZ_ENABLED)")
+        entry = self._wykaz.find(wykaz_entry_number(number))
+        if entry is None:
+            raise BillNotFoundError(f"{number}: no such entry in the wykaz prac RM")
+        return entry
+
     def find_submission(self, term: int, number: str) -> BillSubmission:
         sub = next((b for b in self._gateway.iter_bills(term) if b.number == number), None)
         if sub is None:
@@ -140,6 +156,8 @@ class BillLookup:
             return self._fetch_project(term, number)
         if is_pre_print_number(number):
             return self._fetch_entry(term, number)
+        if is_wykaz_number(number):
+            return self._fetch_plan(term, number)
         return self._fetch_print(term, number)
 
     def _fetch_project(self, term: int, number: str) -> Bill:
@@ -156,6 +174,18 @@ class BillLookup:
         if print_number is None:
             return self._stored(bill)
         return self._link(bill, print_number, wykaz_number=project.wykaz_number)
+
+    def _fetch_plan(self, term: int, number: str) -> Bill:
+        """An entry of the wykaz prac RM: the government's own words about a bill it has not
+        drafted yet. The whole register is one download, so this costs nothing extra in a run
+        that already read it."""
+        entry = self.read_wykaz_entry(number)
+        summary = wykaz_summary(entry, term=term)
+        bill = self._repo.upsert_summary(summary, now=self._clock.now())
+        self._repo.save_wykaz(bill.term, bill.number, entry)
+        self._repo.save_stages(bill.term, bill.number, (), wykaz_fingerprint(entry))
+        self._prefilter_by_title(bill, summary, has_text=False)
+        return self._stored(bill)
 
     def _fetch_entry(self, term: int, number: str) -> Bill:
         """A `/bills` entry (RPW): applicant and consultation dates, no text to read (its PDF on

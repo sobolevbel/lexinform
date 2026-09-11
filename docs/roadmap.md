@@ -65,13 +65,30 @@ Done on 2026-09-09/10 (schema v8):
 
 Still open:
 
-- RCL leftovers: the wykaz prac legislacyjnych on gov.pl as an even earlier signal,
-  consultations of draft regulations (rozporządzenia, `typeId=10`), zgłoszenia lobbingowe.
-  (Legacy `.doc` files are read since 2026-09-09 by `adapters/doc_text.py`, a piece-table
-  parser over `olefile`, checked against four real RCL files.)
+- RCL leftovers: consultations of draft regulations (rozporządzenia, `typeId=10`), zgłoszenia
+  lobbingowe. (Legacy `.doc` files are read since 2026-09-09 by `adapters/doc_text.py`, a
+  piece-table parser over `olefile`, checked against four real RCL files.)
+- Wykaz prac RM leftovers (the register itself is followed since 2026-09-12): the rozporządzenia
+  (`RD`) and programme documents (`ID`, e.g. the migration strategy) it also lists, the ministers'
+  own registers on their gov.pl pages (the CSV link is not at the same URL pattern there), and
+  the backlog — an entry rewritten into relevance long after publication stays invisible, because
+  `Data publikacji` does not move on an edit; `lexinform scan --since …` is the way in.
 - Ukrainian-language channel; weekly digest; static site from the state dump.
 - Committee e-mail addresses in "what you can do now" (the Sejm API has none; the committee page
   is linked instead) and the Senate committee that received the act (the Senate API is not used).
+
+Done on 2026-09-12 (schema v15), a fourth source:
+
+- The wykaz prac legislacyjnych i programowych RM (KPRM, gov.pl) as one CSV: `WPL/UD408` rows,
+  analysed from the register's own `Cele`/`Istota` with no text to read, carded as an intention
+  and linked forward to the RCL project that continues them. Measured lead time on UD408
+  (o zmianie ustawy o cudzoziemcach): entered 2026-05-12, on RCL 2026-07-06 — 55 days.
+- Only `Projekty ustaw` are followed, only entries published since the watermark are stored (the
+  state dump is 822 KB; the 775 bill entries with their paragraphs would add ~2.3 MB per run),
+  and the rest is reported as backlog.
+- Whether a GitHub runner can reach www.gov.pl at all is still unmeasured:
+  `.github/workflows/wykaz-probe.yml` answers it, and `LEXINFORM_WYKAZ_PROXY_URL` is the way out
+  if it cannot (the tinyproxy filter then needs `^www\.gov\.pl$`).
 
 Done on 2026-09-10, after a review of the code base (no schema change):
 
