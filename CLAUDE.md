@@ -29,7 +29,11 @@ windows and the API stage vocabulary in `docs/legislative-process.md`.
 `next_phase`, `ConsultationWindow`), `report`, all re-exported from `lexinform.models`) →
 `ports.py` (Protocols) → `adapters/` (Sejm API, ELI, RCL scraper `rcl_html`, PDF, Word +
 format sniffing `document_text`, Anthropic, `publisher_base` (the `Publisher` port rendered once;
-Telegram and the console only deliver), Telegram, SQLite) → `services/` (discovery,
+Telegram and the console only deliver), Telegram (incl. `get_updates` and the command replier),
+SQLite, `inbox_files` (the command inbox as a directory), `github_inbox` (the relay's writer)) →
+`services/` (commands (the operator's `/analyze`, `/show`, `/skip`, `/republish`), lookup (one
+bill by number or reference, fetched and prefiltered on first sight; the CLI and the commands
+share it), listener (the relay on the VPS), discovery,
 rcl_discovery + rcl_projects, sources (`TextSources` routes a bill to `SejmTextSource`,
 `RclTextSource` or `MetadataOnlySource`), documents (`TextLoader`, downloads routed by host),
 text_prefilter, analysis, signatories, publishing, `tracking/` (service, pre_print, rcl, linking,
@@ -145,6 +149,23 @@ Invariants worth keeping:
   detail (date, folder, link) is tolerated, a missing structural element (timeline, table with
   rows announced, every stage label) raises `RclPageError`, which the run report shows. The WAF's
   "Request Rejected" page (HTTP 200) is `RclUnavailableError`.
+- **Operator commands are recorded before they run, and the relay confirms only what is filed.**
+  The technical channel's commands (`docs/operator-commands.md`) reach a run as
+  `{update_id}.json` files in the `inbox` branch (checked out by `daily.yml`, `LEXINFORM_INBOX_DIR`);
+  a push of that branch runs `lexinform commands` (the commands phase alone), every scheduled
+  run does the phase first. `CommandService` inserts the `commands` row (v13, keyed by the
+  Telegram update id) before executing, answers under the command's message
+  (`OperatorReplier`), marks it handled and deletes the file; a file read again (the deletion
+  not pushed) is only deleted. `/analyze` is idempotent by construction (an analysed bill is
+  not sent to the model again), `/republish` is not: the row is what keeps a second card away.
+  An outage ends the phase and leaves the file. The relay (`lexinform listen`, one `getUpdates`
+  consumer per bot, never a webhook) files a command through the GitHub Contents API, answers
+  "queued" and only then moves the offset; a dry run (`--dry-run`) confirms nothing. Only the
+  push of a personal access token starts the workflow; the workflow's own commits (GITHUB_TOKEN)
+  start nothing. The publish rule of a manual `/analyze` is the daily run's (relevant and score
+  ≥ `min_score`; `publish` overrides, `force` bypasses the prefilter, a previous analysis and
+  the per-bill cost guard). Replies are English (the operator's channel), rendered by
+  `MessageFormatter.command_reply`.
 - **Parallelism only around the network.** `concurrency.fan_out` runs one network step (download,
   process lookup, model call) for many items; that step never touches the repository. Outcomes
   are consumed in the calling thread, in input order, and that is where every DB write happens.
@@ -154,14 +175,15 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v12 as of Sept 2026). `migrate()` reads `user_version` and
+`SCHEMA_VERSION = len(MIGRATIONS)` (v13 as of Sept 2026). `migrate()` reads `user_version` and
 runs every later script inside its own transaction, stamping the new version at the end, so a
 failed script leaves the database at the previous version. v8 (Sept 2026) added `rcl_json`, v9
 `bills.discontinued_at` and `status_changes.discontinued` (end of a Sejm term), v10
 `bills.linked_wykaz_number` (the print continuing an RCL thread keeps the wykaz number for the tag),
 v11 the unique index of hearing reminders (per bill, channel and hearing date) and
 `status_changes.amendments_json` (the model's summary of the Senate's or a committee's amendments),
-v12 the unique index of `joint_bill` replies (per bill and channel).
+v12 the unique index of `joint_bill` replies (per bill and channel), v13 (Sept 2026) the
+`commands` table (operator commands by Telegram update id).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) →
 `db restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing
@@ -306,5 +328,9 @@ consultation deadline and e-mail are parsed from the letter deterministically, n
 tell readers to write in Polish and quote the wykaz number. Prints considered jointly (decided
 2026-09-10, after druki 1929/1933 got two near-identical cards): one card per group, the later
 prints are short "alternative bill" replies under it, the government's print is preferred for the
-card. Abbreviations (MSWiA, UdSC, ZUS, PESEL) stay Polish in the analysis, never МВД. Open items
+card. Abbreviations (MSWiA, UdSC, ZUS, PESEL) stay Polish in the analysis, never МВД. Operator
+commands (decided 2026-09-11): from the technical channel, any admin of it; delivered by a relay
+on the owner's mikrus VPS (384 MB: enough for a getUpdates loop, not for the bot itself) into
+the `inbox` branch, executed by GitHub Actions so the state branch stays the only database
+writer; a manual `/analyze` publishes under the daily rule unless told `publish`. Open items
 are listed under "Still open" in `docs/roadmap.md`.

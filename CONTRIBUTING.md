@@ -75,13 +75,17 @@ models/  → ports.py → adapters/ → services/ → container.py → cli.py
   `latest_text_document`, URL builders). No I/O.
 - `ports.py`: the Protocols services depend on (`SejmGateway`, `RclGateway`, `ProjectResolver`,
   `EliGateway`, `LlmAnalyzer`, `Publisher`, `BillRepository`, `Clock`, `TextExtractor`,
-  `Downloader`, `TextSource`, `AuthorsResolver`, `RunNotifier`).
+  `Downloader`, `TextSource`, `AuthorsResolver`, `RunNotifier`, `CommandInbox`,
+  `OperatorReplier`; the relay's `UpdatesSource`, `InboxWriter`, `CommandAcknowledger`).
 - `adapters/`: one implementation per external system: `sejm_api` (also the ELI API),
   `rcl_html` (the legislacja.rcl.gov.pl scraper, BeautifulSoup), `pdf_text`, `document_text`
   (Word files, format sniffing), `llm_anthropic` + `llm_prompts`, `telegram` +
-  `telegram_format`, `sqlite_repo`, `console` (the dry-run publisher).
-- `services/`: the phases (`discovery`, `rcl_discovery` + `rcl_projects`, `text_prefilter`,
-  `analysis`, `publishing`, `pipeline`), the seams between sources and the generic services
+  `telegram_format`, `sqlite_repo`, `console` (the dry-run publisher and replier),
+  `inbox_files` (the command inbox as a directory), `github_inbox` (the relay's writer).
+- `services/`: the phases (`commands`, `discovery`, `rcl_discovery` + `rcl_projects`,
+  `text_prefilter`, `analysis`, `publishing`, `pipeline`), `lookup` (one bill by number or
+  reference, fetched on first sight; the CLI and the commands share it), `listener` (the relay),
+  the seams between sources and the generic services
   (`sources`: `SejmTextSource`, `RclTextSource`, `MetadataOnlySource` behind `TextSources`;
   `documents`: `TextLoader` routing downloads by host; `signatories`), and `tracking/`
   (`service` loop, `pre_print`, `rcl`, `linking`, `acts`, `consultations`, `agenda`, `posting`,
@@ -203,6 +207,7 @@ history of the `state` branch.
 | Add an API endpoint | `SejmGateway` port, `adapters/sejm_api.py` (+ parser), `tests/fakes.py`, a fixture and a test in `test_sejm_api.py`. |
 | Read something new from an RCL page | `adapters/rcl_html.py` (a parser per page; CSS selectors, no regexes on markup; raise `RclPageError` when a structural element is missing, tolerate missing details), the model in `models/rcl.py`, a saved page in `tests/fixtures/rcl/`, a test in `test_rcl_html.py`. |
 | Change what an RCL event posts | `services/tracking/rcl.py` (detection), `models/rcl.py::rcl_fingerprint` (what counts as a change), `telegram_format.py` + `i18n.py` (words), `test_tracking_rcl.py` and `test_telegram_format_rcl.py`. |
+| Add an operator command | `models/commands.py` (`CommandName`, `parse_command`, an `OutcomeStatus` if the answer is a new kind), `services/commands.py` (`_execute` and a method), the reply in `telegram_format.py::command_reply` and `COMMAND_HELP`, a scenario in `test_commands.py`, the list in `docs/operator-commands.md`. A command reads the database through `BillLookup.find_ref` and the sources through `load_ref`; posts go through `PublishingService.publish_bill` (pending row first). |
 | Add a text format | `adapters/document_text.py` (`DocumentTextExtractor` picks by magic bytes; PDF, .docx/.docm, .odt, zip packages and legacy .doc via `doc_text.py` exist), a test in `test_document_text.py`; `models/rcl.py::READABLE_EXTENSIONS` and `_format_rank` if RCL publishes it. |
 
 ## Deploy and operations
@@ -213,7 +218,10 @@ history of the `state` branch.
 - `.github/workflows/integration.yml` runs the live API checks weekly and pings the log channel
   when the API changed under us.
 - Operator commands: `lexinform republish NUMBER` (post a card again), `lexinform reset NUMBER
-  --to analysis_pending` (re-analyse), `--to skipped_prefilter` (silence a false positive).
+  --to analysis_pending` (re-analyse), `--to skipped_prefilter` (silence a false positive); the
+  same from the technical channel (`/analyze`, `/show`, `/skip`, `/republish`) through the relay
+  on the VPS and the `inbox` branch: `docs/operator-commands.md` (setup, the systemd unit in
+  `deploy/`, the rules: one `getUpdates` consumer per bot, test with `--dry-run`).
 - The run report in the log channel lists counters, token cost, analysed-but-not-published
   bills and captured warnings; a red run means a phase failed, the state is saved regardless.
 

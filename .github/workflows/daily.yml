@@ -1,4 +1,6 @@
 # Daily job: discover, analyse, publish, track; state lives in the "state" branch.
+# Also the executor of operator commands: a push to the "inbox" branch (the relay on the VPS
+# files one JSON per command there, see docs/operator-commands.md) runs the commands phase alone.
 name: Daily run
 
 on:
@@ -22,6 +24,10 @@ on:
     - cron: "23 5 * * 1-5"   # 07:23 Warsaw (summer time)
     - cron: "23 16 * * 1-5"  # 18:23
     - cron: "23 10 * * 0,6"  # 12:23, Saturday and Sunday
+  push:
+    # The relay pushes with a personal access token, which starts a run within seconds (only
+    # cron is delayed); the run's own commits to the branch use GITHUB_TOKEN and start nothing.
+    branches: [inbox]
   workflow_dispatch:
     inputs:
       since:
@@ -37,18 +43,22 @@ on:
         required: false
         default: "0"
 
-# One run at a time so two runs never race on the state branch.
+# One run at a time so two runs never race on the state branch. A pending run is replaced by a
+# newer one (GitHub keeps one pending run per group): harmless, because every run drains the
+# whole inbox, whichever push started it.
 concurrency:
   group: lexinform-daily
   cancel-in-progress: false
 
 permissions:
-  contents: write  # needed to push the state branch with the automatic GITHUB_TOKEN
+  contents: write  # needed to push the state and inbox branches with the automatic GITHUB_TOKEN
 
 env:
   STATE_BRANCH: state
   STATE_FILE: state/lexinform.sql
+  INBOX_BRANCH: inbox
   LEXINFORM_DB_PATH: ${{ github.workspace }}/lexinform.db
+  LEXINFORM_INBOX_DIR: ${{ github.workspace }}/inbox/inbox
 
 jobs:
   run:
@@ -72,6 +82,24 @@ jobs:
             git -C state rm -rf --quiet . || true
             echo "# lexinform state branch: SQLite dump written by the daily workflow" > state/README.md
             echo "created=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The operator commands the relay filed (docs/operator-commands.md). No branch yet: no
+      # commands phase, and nothing to commit afterwards.
+      - name: Check out inbox branch (if it exists)
+        id: inbox
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin "$INBOX_BRANCH" >/dev/null; then
+            git fetch origin "$INBOX_BRANCH"
+            git worktree add inbox "origin/$INBOX_BRANCH"
+            git -C inbox checkout -B "$INBOX_BRANCH"
+            mkdir -p inbox/inbox
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            echo "inbox: $(ls inbox/inbox | wc -l) command file(s)"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "no inbox branch: operator commands are off"
           fi
 
       - uses: astral-sh/setup-uv@v7
@@ -98,6 +126,8 @@ jobs:
 
       # The run exits 1 when it had errors, but whatever it did publish is recorded in the
       # database, so the state must be saved anyway (otherwise the next run would post duplicates).
+      # A push to the inbox branch runs the commands phase alone; the schedule and the button run
+      # the whole day (which answers the waiting commands first).
       - name: Run lexinform
         id: run
         continue-on-error: true
@@ -111,8 +141,15 @@ jobs:
           LEXINFORM_LOG_LEVEL: INFO
           INPUT_SINCE: ${{ inputs.since }}
           INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          EVENT_NAME: ${{ github.event_name }}
+          INBOX_PRESENT: ${{ steps.inbox.outputs.present }}
         run: |
           set -euo pipefail
+          if [ "$INBOX_PRESENT" != "true" ]; then unset LEXINFORM_INBOX_DIR; fi
+          if [ "$EVENT_NAME" = "push" ]; then
+            uv run --frozen --no-dev lexinform commands
+            exit 0
+          fi
           ARGS=()
           if [ -n "$INPUT_SINCE" ]; then ARGS+=(--since "$INPUT_SINCE"); fi
           if [ "$INPUT_DRY_RUN" = "true" ]; then ARGS+=(--dry-run); fi
@@ -141,6 +178,27 @@ jobs:
             echo "push rejected, fetching the branch again (attempt $attempt)"
             git -C state fetch origin "$STATE_BRANCH"
             git -C state reset --hard "origin/$STATE_BRANCH"
+          done
+          exit 1
+
+      # The run deleted the command files it answered; commit the deletions. The relay only adds
+      # files and the run only removes them, so a rebase onto a moved branch never conflicts.
+      - name: Commit handled commands and push inbox branch
+        if: ${{ always() && inputs.dry_run != true && steps.inbox.outputs.present == 'true' && steps.run.outcome != 'skipped' }}
+        run: |
+          set -euo pipefail
+          git -C inbox config user.name "github-actions[bot]"
+          git -C inbox config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C inbox add -A
+          if git -C inbox diff --cached --quiet; then
+            echo "inbox unchanged"; exit 0
+          fi
+          git -C inbox commit -m "inbox: handled $(date -u +%Y-%m-%dT%H:%MZ)"
+          for attempt in 1 2 3; do
+            if git -C inbox push origin "HEAD:$INBOX_BRANCH"; then exit 0; fi
+            echo "push rejected, rebasing onto the branch (attempt $attempt)"
+            git -C inbox fetch origin "$INBOX_BRANCH"
+            git -C inbox rebase "origin/$INBOX_BRANCH"
           done
           exit 1
 

@@ -116,6 +116,19 @@ Done on 2026-09-10 (schema v11), after a reader's-eye review of the update posts
   (~$0.85), and every RCL stage republishes that package; without the hash each republication
   would cost the same again.
 
+Done on 2026-09-11 (schema v13):
+
+- **Operator commands from the technical channel.** `/analyze BILL [force] [publish]`, `/show`,
+  `/skip`, `/republish`, `/help`; a bill by druk/RPW/RCL/wykaz/RM number or a link to
+  sejm.gov.pl, api.sejm.gov.pl or legislacja.rcl.gov.pl. The bot is a batch job, so a relay
+  (`lexinform listen`, on the owner's mikrus VPS: 384 MB, enough for a getUpdates loop and not
+  for pypdf) files each command as a JSON file into the git branch `inbox` through the GitHub
+  Contents API; the push starts `daily.yml` within seconds (only cron is delayed here) and the
+  run answers under the command (~3–5 min). Decided with the owner: commands from channel
+  admins only; a manual `/analyze` publishes under the daily rule (relevant and score ≥
+  `min_score`), `publish` overrides; the whole bot does not move to the VPS (memory), so the
+  state branch stays the only database writer. `docs/operator-commands.md`.
+
 The sections below are the original plan, kept for the rationale and the verified API facts.
 
 ---

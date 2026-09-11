@@ -120,6 +120,10 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
    new text version (re-analysed) and the hand-over to the Sejm each make one reply; the druk
    whose `rclNum` names a followed project inherits its card.
 6. **Report** to the technical channel when `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` is set.
+7. **Obey** the operator: commands posted in that channel (`/analyze 3039`, `/show`, `/skip`,
+   `/republish`, `/help`; a bill by any number or link) are answered under the command a few
+   minutes later. A small relay on an always-on server files them into the git branch `inbox`,
+   and that push runs the commands phase on GitHub. See `docs/operator-commands.md`.
 
 The Sejm term (kadencja) is read from the API on every run (`/sejm/term`), so a new Sejm is
 picked up without any change of configuration. Discovery works in the current term; everything
@@ -169,6 +173,9 @@ The workflow checks out `state` into a worktree, restores the database, runs the
 database back and pushes with its own `GITHUB_TOKEN`. Schema migrations run on restore. Do not
 protect the `state` branch. GitHub may delay scheduled runs by up to an hour.
 
+Operator commands from the technical channel need the `inbox` branch and a relay process on a
+server that is always on (`lexinform listen`): `docs/operator-commands.md`.
+
 ## Configuration
 
 Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
@@ -176,7 +183,10 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | Variable | Default | Meaning |
 |---|---|---|
 | `LEXINFORM_TELEGRAM_BOT_TOKEN` / `_CHANNEL_ID` | — | Required to post |
-| `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` | — | Technical channel for run reports |
+| `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` | — | Technical channel for run reports and operator commands |
+| `LEXINFORM_INBOX_DIR` | — | Directory of `{update_id}.json` command files (the `inbox` branch checked out by the workflow); empty = no commands phase |
+| `LEXINFORM_GITHUB_REPO` / `_GITHUB_TOKEN` / `_INBOX_BRANCH` | — / — / `inbox` | The relay's side (`lexinform listen`): where to file commands (fine-grained token, Contents read/write) |
+| `LEXINFORM_LISTEN_TIMEOUT_SECONDS` | `50` | How long one `getUpdates` call of the relay waits for a post |
 | `LEXINFORM_TERM` | — | Sejm term; empty = the current one from `/sejm/term` (a new kadencja is picked up by itself), a number pins an older term |
 | `LEXINFORM_DB_PATH` | `lexinform.db` | SQLite file |
 | `LEXINFORM_LLM_MODEL` / `_LLM_EFFORT` | `claude-opus-5` / `medium` | Model and effort |
@@ -226,6 +236,8 @@ The rubric is in `src/lexinform/adapters/llm_prompts.py`; `PROMPT_VERSION` is st
 | `lexinform analyze NUMBER [--force] [--json]` | Analyse one bill |
 | `lexinform preview NUMBER [--to CHAT]` | Render or send the card |
 | `lexinform track [--dry-run]` | Only the tracking phase |
+| `lexinform commands [--dry-run]` | Answer the operator commands waiting in `LEXINFORM_INBOX_DIR` (what a push to the `inbox` branch runs) |
+| `lexinform listen [--once] [--dry-run]` | The relay: file the technical channel's commands into the `inbox` branch (runs on a server) |
 | `lexinform show NUMBER` | API data and local status (`RPW/…` numbers show the submission) |
 | `lexinform republish NUMBER [-y]` | Post a bill's card again after a failed or lost post |
 | `lexinform reset NUMBER [--to STATUS] [-y]` | Put a bill back into a status with a clean retry budget |
