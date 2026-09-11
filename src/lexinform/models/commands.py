@@ -252,7 +252,7 @@ def parse_command(text: str) -> Command | None:
     if name not in NEEDS_REFERENCE:
         return Command(name=name)
     if not args:
-        return Command(name=name, error=f"/{name.value} needs a bill number or a link")
+        return Command(name=name, error=f"/{name} needs a bill number or a link")
     ref = parse_reference(" ".join(args))
     if ref is None:
         return Command(

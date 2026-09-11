@@ -216,7 +216,7 @@ class MessageFormatter:
             + self._field(
                 ICON["category"],
                 lb.category,
-                esc(lb.category_labels.get(a.category, a.category.value)),
+                esc(lb.category_labels.get(a.category, a.category)),
             )
         )
         summary_block = f"{ICON['about']} <b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
@@ -313,7 +313,7 @@ class MessageFormatter:
             [
                 self._thread_tags(bill),
                 f"#{lb.tag_importance}{a.score}",
-                f"#{lb.category_tags.get(a.category, a.category.value)}",
+                f"#{lb.category_tags.get(a.category, a.category)}",
                 *([f"#{lb.tag_consultations}"] if consultation_open(bill, today) else []),
                 *([f"#{lb.tag_ukraine}"] if about_ukraine(bill) else []),
                 *([f"#{lb.tag_rcl}"] if bill.rcl is not None else []),
@@ -354,7 +354,7 @@ class MessageFormatter:
             badge = (
                 f"{score_icon(analysis.score)} {importance_bar(analysis.score)} "
                 f"{analysis.score}/5 — "
-                f"{esc(lb.category_labels.get(analysis.category, analysis.category.value))}"
+                f"{esc(lb.category_labels.get(analysis.category, analysis.category))}"
             )
 
         stage_lines = [f"• {self._stage_line(st)}" for st in told_stages(change.new_stages)]
@@ -755,7 +755,7 @@ class MessageFormatter:
             OutcomeStatus.HELP: "🛠",
             OutcomeStatus.EXECUTED_EARLIER: "🕗",
         }.get(outcome.status, "❌")
-        head = f"{icon} <b>{esc(outcome.status.value)}</b> · <code>{esc(command.text)}</code>"
+        head = f"{icon} <b>{esc(outcome.status)}</b> · <code>{esc(command.text)}</code>"
         if outcome.status is OutcomeStatus.HELP:
             body = [esc(outcome.note), COMMAND_HELP] if outcome.note else [COMMAND_HELP]
             return RenderedMessage(text="\n\n".join([head, *body]))
@@ -778,7 +778,7 @@ class MessageFormatter:
         ]
         if full:
             hits = ", ".join(bill.prefilter_hits) or "none"
-            lines.append(f"status: {esc(bill.status.value)} · prefilter hits: {esc(hits)}")
+            lines.append(f"status: {esc(bill.status)} · prefilter hits: {esc(hits)}")
             if bill.last_error:
                 lines.append(f"last error: {esc(_clip(bill.last_error, 200))}")
             last = bill.last_stage
@@ -796,7 +796,7 @@ class MessageFormatter:
             verdict = "relevant" if a.relevant else "not relevant"
             lines.append(
                 f"{score_icon(a.score)} {verdict} · importance {a.score}/5"
-                f" · {esc(a.category.value)} · {esc(record.model)} · {esc(record.text_source)}"
+                f" · {esc(a.category)} · {esc(record.model)} · {esc(record.text_source)}"
             )
             if a.relevant:
                 lines.append(f"<i>{esc(lead(a.summary))}</i>")
@@ -906,7 +906,7 @@ class MessageFormatter:
         is long and the date was lost at its end."""
         lb = self._labels
         s = bill.summary
-        applicant = esc(lb.applicant_labels.get(s.applicant_type, s.applicant_type.value))
+        applicant = esc(lb.applicant_labels.get(s.applicant_type, s.applicant_type))
         if bill.rcl is not None:
             project = bill.rcl
             who = f"{applicant} — {esc(project.applicant)}"

@@ -123,7 +123,7 @@ def build_triage_prompt(ctx: TriageContext) -> str:
     lines = [
         f"Druk nr {ctx.number}",
         f"Tytuł: {ctx.title}",
-        f"Wnioskodawca: {ctx.applicant_type.value}",
+        f"Wnioskodawca: {ctx.applicant_type}",
     ]
     if ctx.description:
         lines.append(f"Opis: {ctx.description}")
@@ -138,7 +138,7 @@ def build_user_prompt(ctx: BillContext) -> str:
     lines = [
         f"Druk nr {ctx.number}",
         f"Tytuł: {ctx.title}",
-        f"Wnioskodawca: {ctx.applicant_type.value}",
+        f"Wnioskodawca: {ctx.applicant_type}",
     ]
     if ctx.description:
         lines.append(f"Opis: {ctx.description}")

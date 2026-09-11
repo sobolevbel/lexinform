@@ -265,9 +265,7 @@ def analyze(
         typer.echo(bill.analysis.model_dump_json(indent=2))
     else:
         a = bill.analysis.analysis
-        typer.echo(
-            f"druk {number}: relevant={a.relevant} score={a.score} category={a.category.value}"
-        )
+        typer.echo(f"druk {number}: relevant={a.relevant} score={a.score} category={a.category}")
         typer.echo(
             f"confidence={a.confidence:.2f} model={bill.analysis.model} "
             f"truncated={bill.analysis.truncated}"
@@ -437,7 +435,7 @@ def show(
         c.close()
     typer.echo(f"{detail.title}\n{detail.web_url}")
     typer.echo(
-        f"type={detail.document_type_enum.value} applicant={detail.applicant_type.value} "
+        f"type={detail.document_type_enum} applicant={detail.applicant_type} "
         f"passed={detail.passed} closure={detail.closure_date}"
     )
     if detail.description:
@@ -462,8 +460,7 @@ def show(
     typer.echo(
         "\nlocal: "
         + (
-            f"status={local.status.value} hits={local.prefilter_hits} "
-            f"attempts={local.analysis_attempts}"
+            f"status={local.status} hits={local.prefilter_hits} attempts={local.analysis_attempts}"
             if local
             else "not in database"
         )
@@ -576,7 +573,7 @@ def republish(
             raise typer.Exit(code=2)
         publishing = c.publishing_service(dry_run=False)
         existing = publishing.card_of(bill)
-        state = f"{existing.status.value} (message {existing.message_id})" if existing else "none"
+        state = f"{existing.status} (message {existing.message_id})" if existing else "none"
         typer.echo(f"{number}: current card in {c.channel_id()}: {state}")
         if not yes and not typer.confirm("Send the card again?"):
             raise typer.Exit(code=1)
@@ -609,9 +606,7 @@ def reset(
     c = _container()
     try:
         bill = _load_bill(c, number)
-        typer.echo(
-            f"{number}: {bill.status.value} (attempts {bill.analysis_attempts}) -> {to.value}"
-        )
+        typer.echo(f"{number}: {bill.status} (attempts {bill.analysis_attempts}) -> {to}")
         if not yes and not typer.confirm("Apply?"):
             raise typer.Exit(code=1)
         c.repo.reset_bill(bill.term, bill.number, to)
@@ -699,7 +694,7 @@ def _show_pre_print(c: Container, number: str, local: Bill | None) -> None:
     sub = local.submission if local and local.submission else _find_submission(c, number)
     typer.echo(f"{sub.title}\n{sub.pdf_url}")
     typer.echo(
-        f"received={sub.date_of_receipt} applicant={sub.applicant.value} status={sub.status}"
+        f"received={sub.date_of_receipt} applicant={sub.applicant} status={sub.status}"
         f" print={sub.print_number or '-'}"
         f" consultation={sub.consultation_start}..{sub.consultation_end}"
     )
@@ -708,7 +703,7 @@ def _show_pre_print(c: Container, number: str, local: Bill | None) -> None:
     typer.echo(
         "\nlocal: "
         + (
-            f"status={local.status.value} hits={local.prefilter_hits} linked={local.linked_number}"
+            f"status={local.status} hits={local.prefilter_hits} linked={local.linked_number}"
             if local
             else "not in database"
         )
@@ -744,7 +739,7 @@ def _show_rcl(c: Container, number: str, local: Bill | None) -> None:
     typer.echo(
         "\nlocal: "
         + (
-            f"status={local.status.value} hits={local.prefilter_hits} linked={local.linked_number}"
+            f"status={local.status} hits={local.prefilter_hits} linked={local.linked_number}"
             if local
             else "not in database"
         )

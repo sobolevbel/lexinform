@@ -30,7 +30,7 @@ class ConsolePublisher(RenderingPublisher):
         return self._counter
 
     def _deliver(self, message: Outgoing) -> ConsolePublishResult:
-        title = f"{message.kind.value.replace('_', ' ').upper()} druk {message.bill.number}"
+        title = f"{message.kind.replace('_', ' ').upper()} druk {message.bill.number}"
         if message.detail:
             title += f" {message.detail}"
         if message.reply_to is not None:

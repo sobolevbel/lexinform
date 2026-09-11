@@ -160,7 +160,7 @@ class BillLookup:
         else:
             status = BillStatus.SKIPPED_PREFILTER
         self._repo.set_status(bill.term, bill.number, status, prefilter_hits=hits)
-        log.info("%s fetched on request: %s (%s)", number, summary.title, status.value)
+        log.info("%s fetched on request: %s (%s)", number, summary.title, status)
         if project is not None:
             print_number = self._print_of(project, term)
             if print_number is not None:

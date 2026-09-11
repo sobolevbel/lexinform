@@ -6,6 +6,7 @@ import pytest
 
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.sejm_api import BILL_DOCUMENT_TYPE, SejmApiClient
+from lexinform.models import DocumentType
 
 pytestmark = pytest.mark.integration
 
@@ -24,7 +25,7 @@ def test_modified_since_narrows_results(client: SejmApiClient) -> None:
         )
     )
     assert 0 < len(recent) < 500
-    assert all(p.document_type_enum.value == "BILL" for p in recent)
+    assert all(p.document_type_enum is DocumentType.BILL for p in recent)
 
 
 def test_print_3039_has_pdf_with_text(client: SejmApiClient) -> None:
