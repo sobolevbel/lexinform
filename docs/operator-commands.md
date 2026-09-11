@@ -93,9 +93,17 @@ systemctl daemon-reload && systemctl enable --now lexinform-listen
 journalctl -u lexinform-listen -f
 ```
 
-Update: `cd /opt/lexinform && git pull && ~/.local/bin/uv sync --frozen --no-dev && systemctl
-restart lexinform-listen`. The relay changes rarely (it knows nothing about bills), so an old
-checkout keeps working as long as the inbox file format is the same.
+Updates are automatic: `.github/workflows/deploy-relay.yml` runs after every green CI on
+`main` (and on demand from the Actions tab), connects with the deploy key in the repository
+secret `MIKRUS_SSH_KEY` and runs `deploy/update.sh` on the server (fetch, reset to
+`origin/main`, `uv sync`, restart). The key is bound to that script in `authorized_keys`
+(`command="/opt/lexinform/deploy/update.sh",no-pty,…`), so it can do nothing else; the server's
+host key is pinned in the workflow. By hand: `ssh mikrus /opt/lexinform/deploy/update.sh`.
+The bot itself needs no deploy: every run of `daily.yml` checks out `main`.
+
+To rotate the key: `ssh-keygen -t ed25519 -N "" -f deploy_key -C lexinform-deploy`, replace the
+`lexinform-deploy` line in the server's `~/.ssh/authorized_keys` (keep the `command=` prefix),
+`gh secret set MIKRUS_SSH_KEY < deploy_key`, delete the local files.
 
 Rules of the road:
 

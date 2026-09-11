@@ -15,6 +15,8 @@ windows and the API stage vocabulary in `docs/legislative-process.md`.
   `src` and `tests`: no `type: ignore`, no local imports, tests fully typed.
 - Developer guide (setup, tests, migrations, where a change goes): `CONTRIBUTING.md`.
 - Commit after each finished part. Do not push unless asked. No `Co-Authored-By` trailers.
+  A push of `main` deploys everything: the bot (every `daily.yml` run checks out `main`) and,
+  after a green CI, the relay on the VPS (`deploy-relay.yml` → `deploy/update.sh` over SSH).
 - `.env` holds real secrets and is untracked; never print values. `.env.example` mirrors keys.
   `Settings()` reads it, so a test that builds the real container would reach the real Telegram
   or model: `tests/conftest.py` blanks every credential for every test (autouse). Keep it that

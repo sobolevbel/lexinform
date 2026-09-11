@@ -222,6 +222,9 @@ history of the `state` branch.
   same from the technical channel (`/analyze`, `/show`, `/skip`, `/republish`) through the relay
   on the VPS and the `inbox` branch: `docs/operator-commands.md` (setup, the systemd unit in
   `deploy/`, the rules: one `getUpdates` consumer per bot, test with `--dry-run`).
+- Deploying: the bot needs none (`daily.yml` checks out `main` on every run). The relay on the
+  VPS is updated by `.github/workflows/deploy-relay.yml` after every green CI on `main`
+  (`deploy/update.sh` over SSH with a key bound to that script; secret `MIKRUS_SSH_KEY`).
 - The run report in the log channel lists counters, token cost, analysed-but-not-published
   bills and captured warnings; a red run means a phase failed, the state is saved regardless.
 

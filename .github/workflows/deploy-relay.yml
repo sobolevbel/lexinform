@@ -1,0 +1,45 @@
+# Deploy the relay (`lexinform listen`) to the VPS after a green CI on main.
+#
+# The bot itself needs no deploy: every run of daily.yml checks out main. Only the relay on the
+# always-on server keeps a checkout, and this workflow brings it up to date: one SSH command with
+# a key that can do nothing but run deploy/update.sh (a forced command in authorized_keys).
+# Secrets: MIKRUS_SSH_KEY (the private key). The host and its public key are not secret.
+name: Deploy relay
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-relay
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  HOST: viktor253.mikrus.xyz
+  PORT: "10253"
+  HOST_KEY: "[viktor253.mikrus.xyz]:10253 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBC7+TCkNSO0r3kkbXbQvmBtUQx3FWef+YIFq5JKbNXy"
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Update the checkout on the VPS and restart the service
+        env:
+          SSH_KEY: ${{ secrets.MIKRUS_SSH_KEY }}
+          COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          set -euo pipefail
+          [ -n "$SSH_KEY" ] || { echo "MIKRUS_SSH_KEY is not set"; exit 1; }
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$HOST_KEY" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes \
+            -o ConnectTimeout=20 "root@$HOST" "$COMMIT"
