@@ -443,6 +443,10 @@ class BillRepository(Protocol):
 
     def save_wykaz(self, term: int, number: str, entry: WykazEntry) -> None: ...
 
+    def list_wykaz_awaiting_link(self) -> list[Bill]:
+        """Wykaz rows whose project RCL discovery has seen but that are not linked to it yet."""
+        ...
+
     def find_wykaz(self, number: str) -> Bill | None:
         """The row of a register entry by its `WPL/UD408` number."""
         ...

@@ -660,6 +660,14 @@ class SqliteBillRepository:
             (entry.model_dump_json(), term, number),
         )
 
+    def list_wykaz_awaiting_link(self) -> list[Bill]:
+        rows = self._conn.execute(
+            "SELECT * FROM bills WHERE number LIKE ? AND status != ?"
+            " AND json_extract(wykaz_json, '$.rcl_project_id') IS NOT NULL ORDER BY term, number",
+            (f"{WYKAZ_PREFIX}%", BillStatus.LINKED.value),
+        ).fetchall()
+        return [self._row_to_bill(r) for r in rows]
+
     def find_wykaz(self, number: str) -> Bill | None:
         # A wykaz number identifies the entry on its own (it is the row's number), and the row
         # lives in one term at a time, as an RCL project does.

@@ -368,6 +368,7 @@ class Container:
                 ),
                 agenda_watch=self.settings.agenda_watch,
                 rcl_reader=self.rcl_reader() if self.rcl is not None else None,
+                wykaz=self.wykaz,
                 max_publish_attempts=self.settings.max_publish_attempts,
                 club_breakdown=self.settings.voting_club_breakdown,
                 local_tz=LOCAL_TZ,

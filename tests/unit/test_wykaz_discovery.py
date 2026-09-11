@@ -125,10 +125,11 @@ def test_a_gov_pl_outage_costs_only_its_own_phase() -> None:
     assert w.publication("3039") is not None
 
 
-def test_the_register_is_read_once_per_run() -> None:
+def test_the_register_is_asked_for_by_both_phases_and_downloaded_once() -> None:
+    # Discovery and tracking share the client's copy of the file (see `WykazClient.entries`).
     w = World()
     w.add_wykaz_entry()
 
     w.run()
 
-    assert w.wykaz.calls == 1
+    assert w.wykaz.calls == 2

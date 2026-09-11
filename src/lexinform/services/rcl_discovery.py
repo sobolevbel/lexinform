@@ -18,12 +18,15 @@ from lexinform.models import (
     BillStatus,
     RclProject,
     RclProjectSummary,
+    normalize_wykaz_number,
     process_summary,
     rcl_fingerprint,
     rcl_number,
     rcl_stages,
+    wykaz_number,
 )
 from lexinform.ports import BillRepository, Clock, RclGateway
+from lexinform.services.discovery import NOT_FOLLOWED
 from lexinform.services.rcl_projects import RclProjectReader
 
 log = logging.getLogger(__name__)
@@ -37,6 +40,7 @@ class RclDiscoveryResult:
     new: int = 0
     refreshed: int = 0
     prefilter_hits: int = 0
+    planned: int = 0  # projects that continue a plan we already follow
     failed: int = 0
 
 
@@ -70,6 +74,8 @@ class RclDiscoveryService:
             # term stays stored under that term and must not come back as new.
             existing = self._repo.find_rcl(rcl_number(row.id))
             if existing is None:
+                if self._continues_a_plan(row, result):
+                    continue  # the wykaz row it continues takes it over in the tracking phase
                 new_rows.append(row)
                 continue
             modified = dt.datetime.combine(row.modified, dt.time(0, 0), tzinfo=dt.UTC)
@@ -96,6 +102,25 @@ class RclDiscoveryService:
             result.failed,
         )
         return result
+
+    def _continues_a_plan(self, row: RclProjectSummary, result: RclDiscoveryResult) -> bool:
+        """A project published under the number of a plan we follow: stamp it on the plan and
+        leave the row alone. Ingesting it here would give the same bill a second card before
+        the linker could hand the plan's card over (`publishing._inherited_card` keys on the
+        link, which does not exist yet)."""
+        number = normalize_wykaz_number(row.wykaz_number)
+        if number is None:
+            return False
+        plan = self._repo.find_wykaz(wykaz_number(number))
+        if plan is None or plan.wykaz is None or plan.status in NOT_FOLLOWED:
+            return False
+        if plan.wykaz.rcl_project_id != row.id:
+            self._repo.save_wykaz(
+                plan.term, plan.number, plan.wykaz.model_copy(update={"rcl_project_id": row.id})
+            )
+            log.info("RCL %s is the project of the planned bill %s", row.id, plan.number)
+        result.planned += 1
+        return True
 
     def _read(self, row: RclProjectSummary) -> RclProject:
         """Network only: as much of the project as its prefilter verdict needs."""

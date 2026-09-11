@@ -24,7 +24,14 @@ from lexinform.models import (
     has_news,
     stage_fingerprint,
 )
-from lexinform.ports import BillRepository, Clock, EliGateway, Publisher, SejmGateway
+from lexinform.ports import (
+    BillRepository,
+    Clock,
+    EliGateway,
+    Publisher,
+    SejmGateway,
+    WykazGateway,
+)
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.sources import SejmTextSource, fetch_print
@@ -39,6 +46,7 @@ from lexinform.services.tracking.rcl import RclWatcher
 from lexinform.services.tracking.result import TrackingResult
 from lexinform.services.tracking.rollover import TermRollover
 from lexinform.services.tracking.stages import StageEnricher, change_key
+from lexinform.services.tracking.wykaz import WykazLinker, WykazWatcher
 
 log = logging.getLogger(__name__)
 
@@ -77,6 +85,7 @@ class StatusTrackingService:
         consultation_reminder_days: int | None = 3,
         agenda_watch: bool = True,
         rcl_reader: RclProjectReader | None = None,
+        wykaz: WykazGateway | None = None,
         local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
         text_prefilter: bool = True,
         workers: int = 1,
@@ -147,6 +156,24 @@ class StatusTrackingService:
             if rcl_reader is not None
             else None
         )
+        self._wykaz = (
+            WykazWatcher(
+                wykaz,
+                repo,
+                clock,
+                self._poster,
+                WykazLinker(
+                    rcl_reader,
+                    repo,
+                    clock,
+                    self._poster,
+                    channel_id=channel_id,
+                    analysis=analysis,
+                ),
+            )
+            if wykaz is not None and rcl_reader is not None
+            else None
+        )
         self._agenda = (
             AgendaWatcher(
                 gateway,
@@ -196,6 +223,10 @@ class StatusTrackingService:
         # Agendas change without touching the process: every followed bill is checked, and before
         # the stage loop, so that an update posted below already carries the sitting dates.
         if self._agenda is not None and not self._agenda.check(everyone, result, publish=publish):
+            return result
+        # Before RCL: a plan whose project is out hands its card over, and the project is then
+        # among the rows the RCL watcher refreshes in the same run.
+        if self._wykaz is not None and not self._wykaz.check(tracked, result, publish=publish):
             return result
         if self._rcl is not None and not self._rcl.check(tracked, result, publish=publish):
             return result
