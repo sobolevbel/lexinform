@@ -50,14 +50,12 @@ class Poster:
     def card(self, bill: Bill) -> Publication | None:
         """The bill's card in this channel: the message every reply is attached to."""
         return self._repo.get_publication(
-            bill.term, bill.number, PublicationKind.NEW_BILL.value, self._channel_id
+            bill.term, bill.number, PublicationKind.NEW_BILL, self._channel_id
         )
 
     def posted(self, bill: Bill, kind: PublicationKind, *, ref: str | None = None) -> bool:
         """True when this post exists and must not be attempted (again)."""
-        pub = self._repo.get_publication(
-            bill.term, bill.number, kind.value, self._channel_id, ref=ref
-        )
+        pub = self._repo.get_publication(bill.term, bill.number, kind, self._channel_id, ref=ref)
         if pub is None:
             return False
         if pub.status is PublicationStatus.FAILED:
@@ -66,9 +64,7 @@ class Poster:
 
     def retry_due(self, bill: Bill, kind: PublicationKind, *, ref: str | None = None) -> bool:
         """True when this post was attempted, failed, and still has attempts left."""
-        pub = self._repo.get_publication(
-            bill.term, bill.number, kind.value, self._channel_id, ref=ref
-        )
+        pub = self._repo.get_publication(bill.term, bill.number, kind, self._channel_id, ref=ref)
         return (
             pub is not None
             and pub.status is PublicationStatus.FAILED
