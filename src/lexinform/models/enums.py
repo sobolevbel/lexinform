@@ -24,6 +24,8 @@ class BillStatus(StrEnum):
 
 PRE_PRINT_PREFIX = "RPW/"  # numbers of bills that have not been assigned a print (druk) number yet
 RCL_PREFIX = "RCL/"  # government projects on legislacja.rcl.gov.pl, keyed by the RCL project id
+WYKAZ_PREFIX = "WPL/"  # entries of the wykaz prac legislacyjnych RM, keyed by their number (UD408)
+WYKAZ_REGISTER_URL = "https://www.gov.pl/web/premier/wplip-rm"  # the register itself
 
 
 class Category(StrEnum):

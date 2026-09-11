@@ -129,12 +129,22 @@ from lexinform.models.sejm import (
     has_process,
     is_pre_print_number,
     is_rcl_number,
+    is_wykaz_number,
     latest_text_document,
     print_web_url,
     process_web_url,
     stage_fingerprint,
     submission_pdf_url,
     third_reading_kept_the_text,
+)
+from lexinform.models.wykaz import (
+    BILL_KIND,
+    REGISTER_PAGE_URL,
+    WykazEntry,
+    wykaz_entry_number,
+    wykaz_fingerprint,
+    wykaz_number,
+    wykaz_summary,
 )
 
 __all__ = [
@@ -236,6 +246,7 @@ __all__ = [
     "is_pre_print_number",
     "is_rcl_number",
     "is_substantive",
+    "is_wykaz_number",
     "latest_text_document",
     "next_phase",
     "open_hearing",
@@ -254,4 +265,11 @@ __all__ = [
     "told_stages",
     "update_event",
     "usage_of",
+    "BILL_KIND",
+    "REGISTER_PAGE_URL",
+    "WykazEntry",
+    "wykaz_entry_number",
+    "wykaz_fingerprint",
+    "wykaz_number",
+    "wykaz_summary",
 ]

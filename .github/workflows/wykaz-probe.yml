@@ -1,0 +1,63 @@
+# Diagnostic, run by hand: can a GitHub runner reach www.gov.pl, where the wykaz prac
+# legislacyjnych RM is published as one CSV? legislacja.rcl.gov.pl drops the SYN from these
+# runners (see rcl-probe.yml); www.gov.pl is a single Polish address too (185.32.48.49, no CDN),
+# so it has the same shape and has to be measured before the source is wired in.
+name: Wykaz probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Runner egress address
+        run: curl -sS --max-time 10 https://api.ipify.org || true
+
+      - name: DNS
+        run: |
+          getent hosts www.gov.pl || true
+          dig +short www.gov.pl A || true
+
+      - name: Timings per phase, several user agents
+        env:
+          PAGE: "https://www.gov.pl/web/premier/wplip-rm"
+          CSV: "https://www.gov.pl/register-file/Rejestr_20874195.csv"
+          FMT: "http=%{http_code} dns=%{time_namelookup}s tcp=%{time_connect}s tls=%{time_appconnect}s ttfb=%{time_starttransfer}s total=%{time_total}s bytes=%{size_download}\n"
+        run: |
+          set +e
+          probe() {
+            echo "--- $1 | UA: $2"
+            curl -sS -o /tmp/body -w "$FMT" --max-time 45 -A "$2" "$1"
+          }
+          probe "$PAGE" "lexinform (+github)"
+          probe "$PAGE" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36"
+          echo "register id on the page: $(grep -o 'registerVue-[0-9]*' /tmp/body | head -1)"
+          probe "$CSV" "lexinform (+github)"
+          echo "first line: $(head -c 200 /tmp/body)"
+
+      - name: The CSV compressed, as the client asks for it
+        run: |
+          curl -sS -o /dev/null --compressed --max-time 60 \
+            -w "gzip: http=%{http_code} bytes=%{size_download} total=%{time_total}s\n" \
+            "https://www.gov.pl/register-file/Rejestr_20874195.csv" || true
+
+      - name: Verbose handshake of one request
+        run: |
+          curl -v -sS -o /dev/null --max-time 45 -A "lexinform (+github)" \
+            "https://www.gov.pl/web/premier/wplip-rm" 2>&1 | sed 's/^/  /' | head -60 || true
+
+      - name: Control, the Sejm API from the same runner
+        run: curl -sS -o /dev/null -w "sejm api http=%{http_code} total=%{time_total}s\n" --max-time 30 https://api.sejm.gov.pl/sejm/term
+
+      - name: Through the EU proxy (LEXINFORM_WYKAZ_PROXY_URL), when configured
+        if: env.PROXY != ''
+        env:
+          PROXY: ${{ secrets.LEXINFORM_WYKAZ_PROXY_URL }}
+        run: |
+          set +e
+          curl -sS -o /tmp/p.csv -w "via proxy: http=%{http_code} ttfb=%{time_starttransfer}s total=%{time_total}s bytes=%{size_download}\n" \
+            --max-time 90 -x "$PROXY" "https://www.gov.pl/register-file/Rejestr_20874195.csv"
+          echo "first line: $(head -c 200 /tmp/p.csv)"
+          true

@@ -15,10 +15,15 @@ from lexinform.models.enums import (
     BILL_DOCUMENT_TYPE,
     PRE_PRINT_PREFIX,
     RCL_PREFIX,
+    WYKAZ_PREFIX,
+    WYKAZ_REGISTER_URL,
     ApplicantType,
     DocumentType,
     SourceKind,
 )
+
+# Every prefix a source invents for bills that have no Sejm process: see `has_process`.
+NON_SEJM_PREFIXES = (PRE_PRINT_PREFIX, RCL_PREFIX, WYKAZ_PREFIX)
 
 
 class ClubVotes(BaseModel):
@@ -334,6 +339,11 @@ class ProcessSummary(BaseModel):
         return is_rcl_number(self.number)
 
     @property
+    def is_wykaz(self) -> bool:
+        """An entry of the wykaz prac legislacyjnych RM: a planned bill, with no text yet."""
+        return is_wykaz_number(self.number)
+
+    @property
     def has_process(self) -> bool:
         """True when the Sejm API has a legislative process (`/processes/{number}`) for it."""
         return has_process(self.number)
@@ -420,9 +430,18 @@ def is_rcl_number(number: str) -> bool:
     return number.startswith(RCL_PREFIX)
 
 
+def is_wykaz_number(number: str) -> bool:
+    return number.startswith(WYKAZ_PREFIX)
+
+
 def has_process(number: str) -> bool:
-    """False for the numbers we invent for bills the Sejm API has no process for (RPW, RCL)."""
-    return not (is_pre_print_number(number) or is_rcl_number(number))
+    """False for the numbers we invent for bills the Sejm API has no process for.
+
+    Every source that is not the Sejm invents its own prefix, and this is the one gate that keeps
+    its rows away from `/processes`, from the print downloader and from the trackers: a prefix
+    missing here would send `get_process("WPL/UD408")` to the API on the next run.
+    """
+    return not number.startswith(NON_SEJM_PREFIXES)
 
 
 def submission_pdf_url(term: int, number: str) -> str:
@@ -436,6 +455,8 @@ def process_web_url(term: int, number: str) -> str:
         return submission_pdf_url(term, number)
     if is_rcl_number(number):
         return f"https://legislacja.rcl.gov.pl/projekt/{number.removeprefix(RCL_PREFIX)}"
+    if is_wykaz_number(number):
+        return WYKAZ_REGISTER_URL  # the entry's own page is `WykazEntry.web_url`
     return f"https://www.sejm.gov.pl/Sejm{term}.nsf/PrzebiegProc.xsp?nr={number}"
 
 
