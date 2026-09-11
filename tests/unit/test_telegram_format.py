@@ -880,7 +880,7 @@ def test_run_report_lists_counters_costs_rejections_and_warnings() -> None:
     text = MessageFormatter("ru").run_report(_report(), warnings).text
 
     assert_telegram_html(text)
-    assert text.startswith("<b>❌")
+    assert text.startswith("<b>❌ lexinform run report</b>")
     assert "\n\n🔎 <b>discovery</b>\nSejm: 77 new · prefilter hits: 3\n\n" in text
     assert "\n🤖 <b>analysis</b>\nanalyzed: 2 · failures: 1\ntokens" in text
     assert "\n📣 <b>posts</b>\nnew cards: 2 · updates: 1\n\n" in text
