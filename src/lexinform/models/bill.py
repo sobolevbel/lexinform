@@ -20,6 +20,7 @@ from lexinform.models.sejm import (
     TextDocument,
     flatten_stages,
 )
+from lexinform.models.wykaz import WykazEntry
 
 
 class ConsultationWindow(BaseModel):
@@ -63,6 +64,7 @@ class Bill(BaseModel):
     authors: BillAuthors | None = None  # signatories of a deputies' bill, by club
     agenda: tuple[AgendaItem, ...] = ()  # upcoming sittings that name the bill, soonest first
     rcl: RclProject | None = None  # the RCL project of a government bill followed before the Sejm
+    wykaz: WykazEntry | None = None  # the register entry of a bill the government only announced
     # Set when the Sejm term ended with the bill unfinished (zasada dyskontynuacji): nothing
     # more will happen to it under this number, so it is not tracked or analysed any more.
     discontinued_at: dt.datetime | None = None
@@ -84,6 +86,10 @@ class Bill(BaseModel):
     @property
     def is_rcl(self) -> bool:
         return self.summary.is_rcl
+
+    @property
+    def is_wykaz(self) -> bool:
+        return self.summary.is_wykaz
 
     @property
     def has_process(self) -> bool:

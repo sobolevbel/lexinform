@@ -343,7 +343,7 @@ class DailyPipeline:
         report.consultation_results_posted += tracked.consultation_results_posted
         report.agenda_posted += tracked.agenda_posted
         report.discontinued += tracked.discontinued
-        report.rcl_rehomed += tracked.rcl_rehomed
+        report.rehomed += tracked.rehomed
         report.llm_input_tokens += tracked.input_tokens
         report.llm_output_tokens += tracked.output_tokens
         _merge_usage(report, tracked.usage)

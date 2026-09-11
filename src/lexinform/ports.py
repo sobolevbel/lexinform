@@ -436,11 +436,21 @@ class BillRepository(Protocol):
         """The RCL row whose project shows this `RM-…` number (set once it went to the Sejm)."""
         ...
 
-    def find_by_wykaz_number(self, wykaz_number: str) -> Bill | None: ...
+    def find_by_wykaz_number(self, wykaz_number: str) -> Bill | None:
+        """The RCL row of a project with this wykaz number; the register's own row is
+        `find_wykaz` (an `UD408` names both once the project is published)."""
+        ...
 
-    def move_rcl_projects(self, from_term: int, to_term: int) -> int:
-        """Carry the RCL rows still waiting for their druk over to a new term (with their posts
-        and status changes); a project already joined to a druk stays. Returns the count."""
+    def save_wykaz(self, term: int, number: str, entry: WykazEntry) -> None: ...
+
+    def find_wykaz(self, number: str) -> Bill | None:
+        """The row of a register entry by its `WPL/UD408` number."""
+        ...
+
+    def move_government_rows(self, from_term: int, to_term: int) -> int:
+        """Carry the government's own rows — RCL projects still waiting for their druk, and
+        wykaz entries — over to a new term (with their posts and status changes); a project
+        already joined to a druk stays. Returns the count."""
         ...
 
     # end of a term (zasada dyskontynuacji)

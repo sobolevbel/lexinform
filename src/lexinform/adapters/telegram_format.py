@@ -709,7 +709,7 @@ class MessageFormatter:
                 ),
                 _counters(
                     ("end of term: {} bill(s) lapsed", report.discontinued),
-                    ("{} RCL project(s) carried over", report.rcl_rehomed),
+                    ("{} government row(s) carried over", report.rehomed),
                 ),
                 empty="nothing posted",
             ),

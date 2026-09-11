@@ -148,7 +148,7 @@ def test_rcl_project_follows_the_sejm_and_its_druk_in_the_new_term_takes_over() 
     w.clock.advance(days=1)
     linked = w.run(term=None)
 
-    assert moved.rcl_rehomed == 1 and w.repo.get(TERM, RCL) is None
+    assert moved.rehomed == 1 and w.repo.get(TERM, RCL) is None
     carried = w.repo.get(NEW_TERM, RCL)
     assert carried is not None and carried.rcl is not None and carried.analysis is not None
     card = w.repo.get_publication(NEW_TERM, RCL, PublicationKind.NEW_BILL, CHANNEL)

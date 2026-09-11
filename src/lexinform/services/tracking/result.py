@@ -36,7 +36,7 @@ class TrackingResult:
     hearing_reminders: int = 0
     held: int = 0  # service-stage changes kept for the next post
     discontinued: int = 0  # bills that lapsed with the end of the term, announced under the card
-    rcl_rehomed: int = 0  # RCL projects carried over to the new term
+    rehomed: int = 0  # the government's own rows (RCL, wykaz) carried over to the new term
     reanalyzed: int = 0
     failed: int = 0
     input_tokens: int = 0

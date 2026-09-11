@@ -13,6 +13,7 @@ from pathlib import Path
 from lexinform.models import (
     PRE_PRINT_PREFIX,
     RCL_PREFIX,
+    WYKAZ_PREFIX,
     ActInfo,
     AgendaItem,
     AmendmentsRecord,
@@ -32,6 +33,7 @@ from lexinform.models import (
     RunReport,
     Stage,
     StatusChange,
+    WykazEntry,
 )
 
 MIGRATIONS: tuple[str, ...] = (
@@ -187,6 +189,11 @@ MIGRATIONS: tuple[str, ...] = (
     """
     ALTER TABLE commands ADD COLUMN executed_at TEXT;
     UPDATE commands SET executed_at = handled_at WHERE handled_at IS NOT NULL;
+    """,
+    # v15: bills the government has only announced, in the wykaz prac legislacyjnych RM
+    # (`WPL/UD408` rows), months before a text exists
+    """
+    ALTER TABLE bills ADD COLUMN wykaz_json TEXT;
     """,
 )
 
@@ -647,6 +654,21 @@ class SqliteBillRepository:
         ).fetchone()
         return self._row_to_bill(row) if row else None
 
+    def save_wykaz(self, term: int, number: str, entry: WykazEntry) -> None:
+        self._conn.execute(
+            "UPDATE bills SET wykaz_json = ? WHERE term = ? AND number = ?",
+            (entry.model_dump_json(), term, number),
+        )
+
+    def find_wykaz(self, number: str) -> Bill | None:
+        # A wykaz number identifies the entry on its own (it is the row's number), and the row
+        # lives in one term at a time, as an RCL project does.
+        row = self._conn.execute(
+            "SELECT * FROM bills WHERE number = ? AND number LIKE ? ORDER BY term DESC LIMIT 1",
+            (number, f"{WYKAZ_PREFIX}%"),
+        ).fetchone()
+        return self._row_to_bill(row) if row else None
+
     def find_by_rm_number(self, rm_number: str) -> Bill | None:
         return self._find_rcl("$.rm_number", rm_number)
 
@@ -661,13 +683,14 @@ class SqliteBillRepository:
         ).fetchone()
         return self._row_to_bill(row) if row else None
 
-    def move_rcl_projects(self, from_term: int, to_term: int) -> int:
+    def move_government_rows(self, from_term: int, to_term: int) -> int:
         numbers = [
             str(r[0])
             for r in self._conn.execute(
-                "SELECT number FROM bills WHERE term = ? AND number LIKE ? AND status != ?"
-                " AND json_extract(rcl_json, '$.print_number') IS NULL ORDER BY number",
-                (from_term, f"{RCL_PREFIX}%", BillStatus.LINKED.value),
+                "SELECT number FROM bills WHERE term = ? AND status != ?"
+                " AND ((number LIKE ? AND json_extract(rcl_json, '$.print_number') IS NULL)"
+                "      OR number LIKE ?) ORDER BY number",
+                (from_term, BillStatus.LINKED.value, f"{RCL_PREFIX}%", f"{WYKAZ_PREFIX}%"),
             )
         ]
         if not numbers:
@@ -693,12 +716,14 @@ class SqliteBillRepository:
         self._conn.execute("RELEASE rehome")
         return len(numbers)
 
-    # Sejm rows the chamber never finished with: no closure, not passed. RCL projects are not
-    # bound to a term, linked rows live on under their print number.
+    # Sejm rows the chamber never finished with: no closure, not passed. The government's own
+    # rows (RCL projects, wykaz entries) are not bound to a term and a new Sejm does not end
+    # them; linked rows live on under their print number.
     _UNFINISHED = (
-        "number NOT LIKE ? AND status != ? AND discontinued_at IS NULL"
+        "number NOT LIKE ? AND number NOT LIKE ? AND status != ? AND discontinued_at IS NULL"
         " AND closure_date IS NULL AND (passed IS NULL OR passed = 0)"
     )
+    _UNFINISHED_PARAMS = (f"{RCL_PREFIX}%", f"{WYKAZ_PREFIX}%", BillStatus.LINKED.value)
 
     def list_unfinished_published(self, term: int, channel_id: str) -> list[Bill]:
         rows = self._conn.execute(
@@ -712,14 +737,14 @@ class SqliteBillRepository:
               )
             ORDER BY number
             """,
-            (term, f"{RCL_PREFIX}%", BillStatus.LINKED.value, channel_id),
+            (term, *self._UNFINISHED_PARAMS, channel_id),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
     def discontinue_unfinished(self, term: int, *, at: datetime) -> int:
         cur = self._conn.execute(
             f"UPDATE bills SET discontinued_at = ? WHERE term = ? AND {self._UNFINISHED}",
-            (at.isoformat(), term, f"{RCL_PREFIX}%", BillStatus.LINKED.value),
+            (at.isoformat(), term, *self._UNFINISHED_PARAMS),
         )
         return int(cur.rowcount or 0)
 
@@ -1087,6 +1112,9 @@ class SqliteBillRepository:
                 AgendaItem.model_validate(i) for i in json.loads(row["agenda_json"] or "[]")
             ),
             rcl=RclProject.model_validate_json(row["rcl_json"]) if row["rcl_json"] else None,
+            wykaz=(
+                WykazEntry.model_validate_json(row["wykaz_json"]) if row["wykaz_json"] else None
+            ),
             discontinued_at=(
                 datetime.fromisoformat(row["discontinued_at"]) if row["discontinued_at"] else None
             ),

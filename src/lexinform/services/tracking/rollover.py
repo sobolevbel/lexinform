@@ -36,12 +36,14 @@ class TermRollover:
     def close_term(
         self, previous: int, current: int, result: TrackingResult, *, publish: bool
     ) -> bool:
-        """Announce the lapsed bills of `previous` and carry its RCL projects over to `current`.
-        False when Telegram is down (the unposted bills are left for the next run)."""
-        moved = self._repo.move_rcl_projects(previous, current)
+        """Announce the lapsed bills of `previous` and carry the government's own rows over to
+        `current`. False when Telegram is down (the unposted bills are left for the next run)."""
+        moved = self._repo.move_government_rows(previous, current)
         if moved:
-            result.rcl_rehomed += moved
-            log.warning("term %d -> %d: %d RCL project(s) carried over", previous, current, moved)
+            result.rehomed += moved
+            log.warning(
+                "term %d -> %d: %d government row(s) carried over", previous, current, moved
+            )
         unfinished = self._repo.list_unfinished_published(previous, self._channel_id)
         for bill in unfinished:
             try:

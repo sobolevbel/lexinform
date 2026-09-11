@@ -25,9 +25,10 @@ from lexinform.models import (
     StatusChange,
     process_summary,
     stage_fingerprint,
+    wykaz_summary,
 )
 from tests.fakes import FakeLlm, make_amendments
-from tests.harness import RCL, RCL_CONSULTATION, RCL_ID, rcl_project
+from tests.harness import RCL, RCL_CONSULTATION, RCL_ID, rcl_project, wykaz_entry
 
 CHANNEL = "chan"
 
@@ -671,6 +672,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "rcl_json",
         "discontinued_at",
         "linked_wykaz_number",
+        "wykaz_json",  # v15
     } <= bills
     assert {
         "ux_pub_once_per_kind",
@@ -729,6 +731,44 @@ def _rcl_row(repo: SqliteBillRepository, now: datetime, **fields: Any) -> str:
     return number
 
 
+def _wykaz_row(repo: SqliteBillRepository, now: datetime, **fields: Any) -> str:
+    entry = wykaz_entry(**fields)
+    number = repo.upsert_summary(wykaz_summary(entry, term=10), now=now).number
+    repo.save_wykaz(10, number, entry)
+    return number
+
+
+def test_a_register_entry_is_stored_and_found_by_its_number(
+    repo: SqliteBillRepository, now: datetime
+) -> None:
+    number = _wykaz_row(repo, now)
+
+    found = repo.find_wykaz(number)
+
+    assert number == "WPL/UD408"
+    assert found is not None and found.wykaz is not None
+    assert (found.wykaz.number, found.wykaz.organ) == ("UD408", "MSWiA")
+    assert repo.find_wykaz("WPL/UD999") is None
+
+
+def test_the_end_of_a_term_leaves_the_governments_own_rows_alone(
+    repo: SqliteBillRepository, now: datetime
+) -> None:
+    entry = _wykaz_row(repo, now)
+    _card_sent(repo, entry, now)
+
+    unfinished = repo.list_unfinished_published(10, CHANNEL)
+    marked = repo.discontinue_unfinished(10, at=now)
+    moved = repo.move_government_rows(10, 11)
+
+    # The wykaz is the Council of Ministers': a new Sejm does not end what it plans.
+    assert (unfinished, marked) == ([], 0)
+    assert moved == 1
+    carried = repo.get(11, entry)
+    assert carried is not None and carried.wykaz is not None
+    assert repo.get_publication(11, entry, PublicationKind.NEW_BILL, CHANNEL) is not None
+
+
 def test_known_terms_lists_every_term_with_bills(
     repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
 ) -> None:
@@ -748,7 +788,7 @@ def test_rcl_projects_waiting_for_their_druk_move_to_the_new_term_with_their_pos
     repo.add_status_change(_change(waiting, now, closure_detected=True))
     joined = _rcl_row(repo, now, id=RCL_ID + 1, print_number="3100")
 
-    moved = repo.move_rcl_projects(10, 11)
+    moved = repo.move_government_rows(10, 11)
 
     assert moved == 1
     carried = repo.get(11, waiting)
@@ -757,7 +797,7 @@ def test_rcl_projects_waiting_for_their_druk_move_to_the_new_term_with_their_pos
     assert repo.get_publication(11, waiting, PublicationKind.NEW_BILL, CHANNEL) is not None
     assert repo.closure_announced(11, waiting) and not repo.closure_announced(10, waiting)
     assert repo.get(10, joined) is not None  # already joined to its druk: stays with it
-    assert repo.move_rcl_projects(10, 11) == 0
+    assert repo.move_government_rows(10, 11) == 0
 
 
 def test_unfinished_bills_of_a_term_lapse_and_leave_every_listing(

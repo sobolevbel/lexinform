@@ -49,7 +49,7 @@ class RunReport(BaseModel):
     consultation_results_posted: int = 0
     agenda_posted: int = 0  # "the bill is on the agenda of a sitting" notices
     discontinued: int = 0  # bills that lapsed with the end of a term, announced under their card
-    rcl_rehomed: int = 0  # RCL projects carried over to the new term
+    rehomed: int = 0  # the government's own rows (RCL, wykaz) carried over to the new term
     analyzed: int = 0
     triaged_out: int = 0  # rejected by the cheap first pass, no full analysis
     analysis_failures: int = 0

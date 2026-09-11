@@ -34,8 +34,10 @@ from lexinform.models import (
     RunReport,
     Stage,
     Triage,
+    WykazEntry,
 )
 from lexinform.models.rcl import StageState
+from lexinform.models.wykaz import BILL_KIND
 from lexinform.ports import TextExtractor
 from lexinform.services.pipeline import RunOptions
 from lexinform.services.terms import TermResolver
@@ -129,6 +131,9 @@ def submission(**overrides: Any) -> BillSubmission:
 RCL_ID = 12414100
 RCL = f"RCL/{RCL_ID}"
 RCL_HOST = "rcl.test"  # the fake RCL gateway serves documents from here
+
+WYKAZ_NUMBER = "UD408"
+WYKAZ = f"WPL/{WYKAZ_NUMBER}"
 
 
 def rcl_document(doc_id: int, name: str, *, created: dt.date = dt.date(2026, 9, 1)) -> RclDocument:
@@ -229,6 +234,28 @@ def rcl_project(**overrides: Any) -> RclProject:
     )
     fields.update(overrides)
     return RclProject(**fields)
+
+
+def wykaz_entry(**overrides: Any) -> WykazEntry:
+    """A bill the government has announced in its register, with no text yet (UD408)."""
+    fields: dict[str, Any] = dict(
+        number=WYKAZ_NUMBER,
+        title="Projekt ustawy o zmianie ustawy o cudzoziemcach",
+        kind=BILL_KIND,
+        doc_type="D – pozostałe projekty",
+        goals="Polska przekształciła się z państwa emigracyjnego w państwo imigracyjne.",
+        essence=(
+            "Obywatele najbardziej rozwiniętych państw trzecich w postępowaniach dotyczących"
+            " legalizacji pobytu będą korzystać z milczącego zakończenia postępowania."
+        ),
+        organ="MSWiA",
+        person="Maciej Duszczyk Podsekretarz Stanu",
+        planned_adoption="III kwartał 2026 r.",
+        published_at=dt.datetime(2026, 9, 1, 10, 0, tzinfo=dt.UTC),
+        web_url="https://www.gov.pl/web/premier/projekt-ustawy-o-zmianie-ustawy-o-cudzoziemcach",
+    )
+    fields.update(overrides)
+    return WykazEntry(**fields)
 
 
 def act(**overrides: Any) -> ActInfo:
