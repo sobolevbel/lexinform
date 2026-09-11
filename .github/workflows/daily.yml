@@ -1,6 +1,7 @@
 # Daily job: discover, analyse, publish, track; state lives in the "state" branch.
-# Also the executor of operator commands: a push to the "inbox" branch (the relay on the VPS
-# files one JSON per command there, see docs/operator-commands.md) runs the commands phase alone.
+# Also the executor of operator commands: the relay on the VPS files one JSON per command into
+# the "inbox" branch and sends a repository_dispatch, which runs the commands phase alone
+# (docs/operator-commands.md).
 name: Daily run
 
 on:
@@ -24,10 +25,11 @@ on:
     - cron: "23 5 * * 1-5"   # 07:23 Warsaw (summer time)
     - cron: "23 16 * * 1-5"  # 18:23
     - cron: "23 10 * * 0,6"  # 12:23, Saturday and Sunday
-  push:
-    # The relay pushes with a personal access token, which starts a run within seconds (only
-    # cron is delayed); the run's own commits to the branch use GITHUB_TOKEN and start nothing.
-    branches: [inbox]
+  repository_dispatch:
+    # The relay files a command into the inbox branch and then sends this event, which starts
+    # a run within seconds (only cron is delayed). A push of the inbox branch itself would start
+    # nothing: GitHub reads a push event's workflow from the pushed branch, which has none.
+    types: [inbox]
   workflow_dispatch:
     inputs:
       since:
@@ -45,7 +47,7 @@ on:
 
 # One run at a time so two runs never race on the state branch. A pending run is replaced by a
 # newer one (GitHub keeps one pending run per group): harmless, because every run drains the
-# whole inbox, whichever push started it.
+# whole inbox, whichever event started it.
 concurrency:
   group: lexinform-daily
   cancel-in-progress: false
@@ -126,8 +128,8 @@ jobs:
 
       # The run exits 1 when it had errors, but whatever it did publish is recorded in the
       # database, so the state must be saved anyway (otherwise the next run would post duplicates).
-      # A push to the inbox branch runs the commands phase alone; the schedule and the button run
-      # the whole day (which answers the waiting commands first).
+      # The relay's event runs the commands phase alone; the schedule and the button run the
+      # whole day (which answers the waiting commands first).
       - name: Run lexinform
         id: run
         continue-on-error: true
@@ -146,7 +148,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$INBOX_PRESENT" != "true" ]; then unset LEXINFORM_INBOX_DIR; fi
-          if [ "$EVENT_NAME" = "push" ]; then
+          if [ "$EVENT_NAME" = "repository_dispatch" ]; then
             uv run --frozen --no-dev lexinform commands
             exit 0
           fi

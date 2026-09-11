@@ -152,17 +152,18 @@ Invariants worth keeping:
 - **Operator commands are recorded before they run, and the relay confirms only what is filed.**
   The technical channel's commands (`docs/operator-commands.md`) reach a run as
   `{update_id}.json` files in the `inbox` branch (checked out by `daily.yml`, `LEXINFORM_INBOX_DIR`);
-  a push of that branch runs `lexinform commands` (the commands phase alone), every scheduled
-  run does the phase first. `CommandService` inserts the `commands` row (v13, keyed by the
+  the relay's event runs `lexinform commands` (the commands phase alone), every scheduled run
+  does the phase first. `CommandService` inserts the `commands` row (v13, keyed by the
   Telegram update id) before executing, answers under the command's message
   (`OperatorReplier`), marks it handled and deletes the file; a file read again (the deletion
   not pushed) is only deleted. `/analyze` is idempotent by construction (an analysed bill is
   not sent to the model again), `/republish` is not: the row is what keeps a second card away.
   An outage ends the phase and leaves the file. The relay (`lexinform listen`, one `getUpdates`
   consumer per bot, never a webhook) files a command through the GitHub Contents API, answers
-  "queued" and only then moves the offset; a dry run (`--dry-run`) confirms nothing. Only the
-  push of a personal access token starts the workflow; the workflow's own commits (GITHUB_TOKEN)
-  start nothing. The publish rule of a manual `/analyze` is the daily run's (relevant and score
+  "queued" and only then moves the offset; a dry run (`--dry-run`) confirms nothing. The run is
+  started by a `repository_dispatch` the writer sends after the file (a push of the inbox branch
+  would start nothing: GitHub reads a push event's workflow from the pushed branch, which has
+  none); a lost event costs nothing, the next scheduled run drains the inbox. The publish rule of a manual `/analyze` is the daily run's (relevant and score
   ≥ `min_score`; `publish` overrides, `force` bypasses the prefilter, a previous analysis and
   the per-bill cost guard). Replies are English (the operator's channel), rendered by
   `MessageFormatter.command_reply`.

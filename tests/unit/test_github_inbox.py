@@ -28,36 +28,58 @@ def _writer(handler: Handler, sleeps: list[float] | None = None) -> GitHubInboxW
     )
 
 
-def test_put_creates_the_file_on_the_inbox_branch() -> None:
+def _github(request: httpx.Request) -> httpx.Response:
+    """A GitHub that accepts the file and the dispatch."""
+    if request.url.path.endswith("/dispatches"):
+        return httpx.Response(204)
+    return httpx.Response(201, json={"content": {"path": "inbox/5.json"}})
+
+
+def test_put_creates_the_file_on_the_inbox_branch_and_starts_the_run() -> None:
     requests: list[httpx.Request] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
-        return httpx.Response(201, json={"content": {"path": "inbox/5.json"}})
+        return _github(request)
 
     _writer(handler).put(COMMAND)
 
-    (request,) = requests
-    assert request.method == "PUT"
-    assert request.url.path == "/repos/owner/repo/contents/inbox/5.json"
-    assert request.headers["Authorization"] == "Bearer TOKEN"
-    body = json.loads(request.content)
+    put, dispatch = requests
+    assert put.method == "PUT"
+    assert put.url.path == "/repos/owner/repo/contents/inbox/5.json"
+    assert put.headers["Authorization"] == "Bearer TOKEN"
+    body = json.loads(put.content)
     assert body["branch"] == "inbox" and body["message"] == "inbox: /analyze 3039 (update 5)"
     filed = json.loads(base64.b64decode(body["content"]))
     assert filed["update_id"] == 5 and filed["text"] == "/analyze 3039"
+    assert dispatch.method == "POST" and dispatch.url.path == "/repos/owner/repo/dispatches"
+    assert json.loads(dispatch.content)["event_type"] == "inbox"
 
 
 def test_a_file_that_exists_already_is_not_an_error() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/dispatches"):
+            return httpx.Response(204)
         return httpx.Response(422, json={"message": '"sha" wasn\'t supplied.'})
 
     _writer(handler).put(COMMAND)  # the same update filed twice: fine
+
+
+def test_a_failed_kick_is_not_an_error_the_file_is_what_counts() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/dispatches"):
+            return httpx.Response(404, json={"message": "Not Found"})
+        return httpx.Response(201, json={})
+
+    _writer(handler).put(COMMAND)  # the next scheduled run answers it
 
 
 def test_a_moved_branch_is_retried_and_a_bad_token_is_not() -> None:
     calls = {"n": 0}
 
     def conflict_then_ok(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/dispatches"):
+            return httpx.Response(204)
         calls["n"] += 1
         return httpx.Response(409 if calls["n"] == 1 else 201, json={})
 

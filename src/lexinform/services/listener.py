@@ -1,10 +1,10 @@
 """The relay between the technical channel and the runs: `lexinform listen`.
 
 Runs where something is always on (a small VPS): long-polls Telegram for posts in the
-technical channel, files every command into the inbox (the git branch a push of which starts
-the workflow), acknowledges it under the post and confirms the update. Nothing else: no
-database, no model, no Sejm. An update is confirmed only once its command is filed, so a
-GitHub outage leaves it with Telegram (which keeps unconfirmed updates for 24 hours).
+technical channel, files every command into the inbox (the git branch `inbox`; the writer then
+asks GitHub to run the workflow), acknowledges it under the post and confirms the update.
+Nothing else: no database, no model, no Sejm. An update is confirmed only once its command is
+filed, so a GitHub outage leaves it with Telegram (which keeps unconfirmed updates for 24 hours).
 """
 
 import logging

@@ -33,19 +33,21 @@ searched for a bill already in the database).
 
 ```
 technical channel ──getUpdates──► lexinform listen (VPS) ──Contents API──► branch `inbox`
-                                                                               │ push event
-                  ◄──reply under the command── daily.yml: lexinform commands ◄─┘
+                                          │ repository_dispatch                         │
+                  ◄──reply under the command── daily.yml: lexinform commands ◄─────────┘
 ```
 
 1. `lexinform listen` runs on a small always-on server and long-polls Telegram for posts in the
    log channel. A post that starts with `/` becomes `inbox/{update_id}.json` on the git branch
-   `inbox`, written through the GitHub Contents API with a personal access token. The relay
+   `inbox`, written through the GitHub Contents API with a personal access token, and the relay
+   sends a `repository_dispatch` event (same token) that starts the workflow within seconds
+   (only cron runs are delayed; a push of the inbox branch itself would start nothing, because
+   GitHub reads a push event's workflow from the pushed branch, which has none). The relay
    replies "⏳ queued" under the post and only then confirms the update to Telegram, so a GitHub
    outage leaves the command with Telegram (kept for 24 hours).
-2. The push starts `.github/workflows/daily.yml` within seconds (only cron runs are delayed).
-   The workflow checks out `state` and `inbox`, restores the database and runs
+2. `.github/workflows/daily.yml` checks out `state` and `inbox`, restores the database and runs
    `lexinform commands`: the commands phase alone. Every scheduled run does the same phase first,
-   so a command is answered by whichever run comes first.
+   so a command whose event was lost is answered by the next scheduled run.
 3. The run records the command in the `commands` table before executing it (a file it could not
    delete is not executed twice), executes it, answers under the command's message, marks it
    handled and deletes the file; the workflow commits the deletions. Runs never race: one
@@ -116,5 +118,5 @@ Rules of the road:
   ```
 - `lexinform listen --once --dry-run` with the real token: prints the pending posts of the
   channel, files and confirms nothing.
-- End to end: post `/help` in the log channel, watch the run start on the push and the reply
+- End to end: post `/help` in the log channel, watch the run start on the event and the reply
   appear; then `/analyze` of a bill known to be irrelevant (no card) and of a relevant one.

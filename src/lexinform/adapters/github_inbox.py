@@ -1,7 +1,9 @@
 """The inbox branch written from outside git: one file per command through the GitHub
 Contents API (`PUT /repos/{owner}/{repo}/contents/{path}`), which commits and pushes in one
-call. Pushes made with a personal access token start the `on: push` workflow; the workflow's
-own commits (GITHUB_TOKEN) do not, so the run that deletes the files starts no run.
+call, followed by a `repository_dispatch` that starts the workflow on the default branch (a
+push of the inbox branch itself would start nothing: GitHub reads a push event's workflow from
+the pushed branch, and the inbox branch carries no workflow). The kick is a courtesy: a
+command that is filed but not kicked is answered by the next scheduled run.
 """
 
 import base64
@@ -29,6 +31,7 @@ class GitHubError(RuntimeError):
 
 class GitHubInboxWriter:
     MAX_ATTEMPTS = 4
+    DISPATCH_EVENT = "inbox"  # `on: repository_dispatch: types: [inbox]` in daily.yml
 
     def __init__(
         self,
@@ -60,6 +63,33 @@ class GitHubInboxWriter:
         self._sleep = sleep
 
     def put(self, command: IncomingCommand) -> None:
+        """File the command, then ask GitHub to run the workflow. Raises when the file could
+        not be written; a failed kick is only logged."""
+        self._file(command)
+        try:
+            self._kick(command)
+        except (GitHubError, GitHubUnavailableError) as exc:
+            log.warning(
+                "inbox: filed update %d but could not start the run: %s", command.update_id, exc
+            )
+
+    def _kick(self, command: IncomingCommand) -> None:
+        payload = {
+            "event_type": self.DISPATCH_EVENT,
+            "client_payload": {"update_id": command.update_id, "text": command.text[:200]},
+        }
+        try:
+            response = self._client.post(f"/repos/{self._repo}/dispatches", json=payload)
+        except httpx.TransportError as exc:
+            raise GitHubUnavailableError(f"dispatch: {type(exc).__name__}") from exc
+        if response.status_code == 204:
+            log.info("inbox: run requested for update %d", command.update_id)
+            return
+        if response.status_code >= 500:
+            raise GitHubUnavailableError(f"dispatch: HTTP {response.status_code}")
+        raise GitHubError(f"dispatch: HTTP {response.status_code}: {response.text[:200]}")
+
+    def _file(self, command: IncomingCommand) -> None:
         path = f"{self._dir}/{inbox_file_name(command)}"
         body = command.model_dump_json(indent=2) + "\n"
         payload: dict[str, Any] = {

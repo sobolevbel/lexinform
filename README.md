@@ -122,8 +122,8 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
 6. **Report** to the technical channel when `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` is set.
 7. **Obey** the operator: commands posted in that channel (`/analyze 3039`, `/show`, `/skip`,
    `/republish`, `/help`; a bill by any number or link) are answered under the command a few
-   minutes later. A small relay on an always-on server files them into the git branch `inbox`,
-   and that push runs the commands phase on GitHub. See `docs/operator-commands.md`.
+   minutes later. A small relay on an always-on server files them into the git branch `inbox`
+   and starts the commands phase on GitHub. See `docs/operator-commands.md`.
 
 The Sejm term (kadencja) is read from the API on every run (`/sejm/term`), so a new Sejm is
 picked up without any change of configuration. Discovery works in the current term; everything
@@ -236,7 +236,7 @@ The rubric is in `src/lexinform/adapters/llm_prompts.py`; `PROMPT_VERSION` is st
 | `lexinform analyze NUMBER [--force] [--json]` | Analyse one bill |
 | `lexinform preview NUMBER [--to CHAT]` | Render or send the card |
 | `lexinform track [--dry-run]` | Only the tracking phase |
-| `lexinform commands [--dry-run]` | Answer the operator commands waiting in `LEXINFORM_INBOX_DIR` (what a push to the `inbox` branch runs) |
+| `lexinform commands [--dry-run]` | Answer the operator commands waiting in `LEXINFORM_INBOX_DIR` (what the relay's `repository_dispatch` runs) |
 | `lexinform listen [--once] [--dry-run]` | The relay: file the technical channel's commands into the `inbox` branch (runs on a server) |
 | `lexinform show NUMBER` | API data and local status (`RPW/…` numbers show the submission) |
 | `lexinform republish NUMBER [-y]` | Post a bill's card again after a failed or lost post |

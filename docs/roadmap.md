@@ -123,8 +123,9 @@ Done on 2026-09-11 (schema v13):
   sejm.gov.pl, api.sejm.gov.pl or legislacja.rcl.gov.pl. The bot is a batch job, so a relay
   (`lexinform listen`, on the owner's mikrus VPS: 384 MB, enough for a getUpdates loop and not
   for pypdf) files each command as a JSON file into the git branch `inbox` through the GitHub
-  Contents API; the push starts `daily.yml` within seconds (only cron is delayed here) and the
-  run answers under the command (~3–5 min). Decided with the owner: commands from channel
+  Contents API and sends a `repository_dispatch`, which starts `daily.yml` within seconds (only
+  cron is delayed here; a push of the orphan inbox branch would start nothing); the run answers
+  under the command (~3–5 min). Decided with the owner: commands from channel
   admins only; a manual `/analyze` publishes under the daily rule (relevant and score ≥
   `min_score`), `publish` overrides; the whole bot does not move to the VPS (memory), so the
   state branch stays the only database writer. `docs/operator-commands.md`.

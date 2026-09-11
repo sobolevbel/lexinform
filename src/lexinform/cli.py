@@ -342,7 +342,7 @@ def commands(
 ) -> None:
     """Answer the operator commands waiting in the inbox (LEXINFORM_INBOX_DIR) and nothing else.
 
-    The daily run does the same at its start; this is what a push to the `inbox` branch runs.
+    The daily run does the same at its start; this is what the relay's event runs.
     """
     c = _container()
     try:
@@ -388,7 +388,7 @@ def listen(
     ] = False,
 ) -> None:
     """The relay: long-poll the technical channel for commands and file each one into the
-    `inbox` branch on GitHub (that push starts the workflow that answers it).
+    `inbox` branch on GitHub and start the workflow that answers it.
 
     Runs where something is always on (the VPS). Telegram lets one process poll a bot at a
     time: a second `listen` on the same token steals updates from the first, so test with
