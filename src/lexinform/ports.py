@@ -17,6 +17,7 @@ from lexinform.models import (
     BillSubmission,
     Committee,
     CommitteeSitting,
+    IncomingCommand,
     LocatedText,
     Mp,
     PrintInfo,
@@ -432,6 +433,15 @@ class BillRepository(Protocol):
     def most_expensive_analyses(self, *, limit: int) -> list[Bill]:
         """Analysed bills by the input tokens of their analysis, largest first."""
         ...
+
+    # operator commands (one row per Telegram update)
+    def record_command(self, command: IncomingCommand) -> bool:
+        """Remember the command before it runs; False when the update was recorded already."""
+        ...
+
+    def command_handled(self, update_id: int) -> bool: ...
+
+    def mark_command_handled(self, update_id: int, *, reply: str, at: datetime) -> None: ...
 
     # the transaction a dry run rolls back
     def begin(self) -> None: ...

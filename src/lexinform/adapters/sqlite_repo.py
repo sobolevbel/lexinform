@@ -21,6 +21,7 @@ from lexinform.models import (
     BillAuthors,
     BillStatus,
     BillSubmission,
+    IncomingCommand,
     ProcessSummary,
     Publication,
     PublicationKind,
@@ -165,6 +166,19 @@ MIGRATIONS: tuple[str, ...] = (
     """
     CREATE UNIQUE INDEX ux_pub_joint ON publications(term, number, kind, channel_id)
         WHERE kind = 'joint_bill';
+    """,
+    # v13: operator commands from the technical channel, one row per Telegram update, recorded
+    # before the command runs so that a re-read inbox file is not executed twice
+    """
+    CREATE TABLE commands (
+        update_id INTEGER PRIMARY KEY,
+        chat_id TEXT NOT NULL,
+        message_id INTEGER NOT NULL,
+        text TEXT NOT NULL,
+        received_at TEXT NOT NULL,
+        handled_at TEXT,
+        reply TEXT
+    );
     """,
 )
 
@@ -991,6 +1005,35 @@ class SqliteBillRepository:
             (limit,),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
+
+    # ------------------------------------------------------------------ operator commands
+
+    def record_command(self, command: IncomingCommand) -> bool:
+        """Remember the command before it runs; False when the update was recorded already."""
+        cur = self._conn.execute(
+            "INSERT OR IGNORE INTO commands (update_id, chat_id, message_id, text, received_at)"
+            " VALUES (?, ?, ?, ?, ?)",
+            (
+                command.update_id,
+                command.chat_id,
+                command.message_id,
+                command.text,
+                command.received_at.isoformat(),
+            ),
+        )
+        return bool(cur.rowcount)
+
+    def command_handled(self, update_id: int) -> bool:
+        row = self._conn.execute(
+            "SELECT handled_at FROM commands WHERE update_id = ?", (update_id,)
+        ).fetchone()
+        return row is not None and row[0] is not None
+
+    def mark_command_handled(self, update_id: int, *, reply: str, at: datetime) -> None:
+        self._conn.execute(
+            "UPDATE commands SET handled_at = ?, reply = ? WHERE update_id = ?",
+            (at.isoformat(), reply, update_id),
+        )
 
     # ------------------------------------------------------------------ row mapping
 

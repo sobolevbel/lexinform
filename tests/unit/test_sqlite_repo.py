@@ -14,6 +14,7 @@ from lexinform.models import (
     BillContext,
     BillStatus,
     BillSubmission,
+    IncomingCommand,
     ProcessDetail,
     ProcessSummary,
     Publication,
@@ -692,7 +693,9 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     } <= indexes
     with sqlite3.connect(tmp_path / "current.db") as conn:
         changes = {r[1] for r in conn.execute("PRAGMA table_info(status_changes)")}
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     assert "amendments_json" in changes  # v11
+    assert "commands" in tables  # v13
     # v9: the flag is stored, so a retried post renders the same message
     when = datetime(2026, 9, 7, 6, 0, tzinfo=UTC)
     assert repo.add_status_change(_change("1", when, discontinued=True)) is not None
@@ -796,3 +799,26 @@ def test_unfinished_bills_of_a_term_lapse_and_leave_every_listing(
     assert repo.list_by_status([BillStatus.ANALYSIS_PENDING], limit=10) == []
     assert repo.list_unfinished_published(10, CHANNEL) == []
     assert repo.discontinue_unfinished(10, at=now) == 0
+
+
+# --------------------------------------------------------------------------- operator commands
+
+
+def _command(update_id: int, now: datetime, text: str = "/analyze 3039") -> IncomingCommand:
+    return IncomingCommand(
+        update_id=update_id, chat_id="-100", message_id=update_id + 10, text=text, received_at=now
+    )
+
+
+def test_a_command_is_recorded_once_and_marked_handled(
+    repo: SqliteBillRepository, now: datetime
+) -> None:
+    first = repo.record_command(_command(5, now))
+    pending = repo.command_handled(5)
+    repo.mark_command_handled(5, reply="druk 3039: relevant", at=now)
+    again = repo.record_command(_command(5, now))
+
+    assert first and not pending
+    assert repo.command_handled(5)
+    assert not again  # the same Telegram update is never a second command
+    assert not repo.command_handled(6)  # unknown updates are not "handled" either
