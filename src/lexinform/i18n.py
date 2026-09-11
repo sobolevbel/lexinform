@@ -331,9 +331,13 @@ RU = Labels(
     ),
     wykaz_organ_unknown="профильное министерство",
     action_wykaz_interest=(
-        "подать zgłoszenie zainteresowania pracami nad projektem в {organ} — это может сделать"
-        " любой, в том числе физлицо от своего имени (ст. 7 закона о лоббировании); подавший"
-        " получает право участвовать в публичном слушании проекта в Сейме"
+        "подать в {organ} zgłoszenie zainteresowania pracami nad projektem — заявить, что вы"
+        " следите за проектом. Это может любой: гражданство и юридическое лицо не нужны, частное"
+        " лицо подаёт от своего имени (ст. 7 ustawy o działalności lobbingowej). Зачем: в"
+        " заявлении вы пишете, какой интерес защищаете и какого решения добиваетесь, — и оно"
+        " попадает в BIP к документам проекта ещё до того, как текст написан, то есть когда его"
+        " проще всего изменить; кроме того, подавший вправе участвовать в публичном слушании"
+        " проекта в Сейме, если оно будет назначено"
     ),
     link_wykaz_entry="Запись в плане работ",
     tag_wykaz="планРМ",
@@ -735,9 +739,13 @@ EN = Labels(
     wykaz_metadata_note=("Scored from the register entry: the draft text does not exist yet."),
     wykaz_organ_unknown="the responsible ministry",
     action_wykaz_interest=(
-        "file a zgłoszenie zainteresowania pracami nad projektem with {organ} — anyone may,"
-        " a private individual on their own behalf included (art. 7 of the lobbying act); it"
-        " entitles you to take part in the Sejm's public hearing of the bill"
+        "file a zgłoszenie zainteresowania pracami nad projektem with {organ} — a declaration"
+        " that you are following the project. Anyone may: no citizenship and no legal entity"
+        " needed, a private individual files on their own behalf (art. 7 of the lobbying act)."
+        " What it is for: you state the interest you want to protect and the solution you will"
+        " seek, and it goes into the BIP file of the project before the text is written, when it"
+        " is easiest to change; it also entitles you to take part in the Sejm's public hearing"
+        " of the bill, should one be held"
     ),
     link_wykaz_entry="Register entry",
     tag_wykaz="governmentplan",
