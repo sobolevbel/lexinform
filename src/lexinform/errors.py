@@ -23,6 +23,12 @@ class RclUnavailableError(ServiceUnavailableError):
     system = "RCL"
 
 
+class WykazUnavailableError(ServiceUnavailableError):
+    """gov.pl does not answer, so the wykaz prac legislacyjnych RM cannot be read."""
+
+    system = "wykaz prac RM"
+
+
 class AttachmentTooLargeError(RuntimeError):
     """A download was stopped because the body exceeded the caller's limit (per-item problem)."""
 

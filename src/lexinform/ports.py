@@ -40,6 +40,7 @@ from lexinform.models import (
     TriageContext,
     TriageRecord,
     Vote,
+    WykazEntry,
 )
 
 
@@ -132,6 +133,21 @@ class ProjectResolver(Protocol):
     """The one question the Sejm discovery asks RCL: which project is behind a `rclNum`."""
 
     def resolve_project_id(self, rm_number: str) -> int | None: ...
+
+
+class WykazGateway(Protocol):
+    """The wykaz prac legislacyjnych RM on gov.pl (one CSV, downloaded once per run);
+    `WykazUnavailableError` when gov.pl does not answer."""
+
+    def entries(self) -> tuple[WykazEntry, ...]:
+        """Every entry of the register, newest publication first, one per number."""
+        ...
+
+    def find(self, number: str) -> WykazEntry | None:
+        """The entry with this wykaz number (`UD408`), however it is spelled."""
+        ...
+
+    def close(self) -> None: ...
 
 
 class EliGateway(Protocol):

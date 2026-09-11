@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     # with an EU address, `http://user:password@host:port`; "" connects directly.
     rcl_proxy_url: str = ""
 
+    # Wykaz prac legislacyjnych RM (gov.pl): bills the government has only announced. One CSV of
+    # ~10 MB per run; gov.pl is a single Polish address, so it may need the same EU proxy as RCL.
+    wykaz_enabled: bool = False
+    wykaz_base_url: str = "https://www.gov.pl"
+    wykaz_timeout_seconds: float = 60.0
+    wykaz_proxy_url: str = ""
+
     # Storage
     db_path: Path = Path("lexinform.db")
 

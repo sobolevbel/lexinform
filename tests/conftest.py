@@ -14,6 +14,7 @@ from lexinform.models import PrintInfo, ProcessDetail, ProcessSummary
 
 FIXTURES = Path(__file__).parent / "fixtures" / "sejm"
 RCL_FIXTURES = Path(__file__).parent / "fixtures" / "rcl"
+WYKAZ_FIXTURES = Path(__file__).parent / "fixtures" / "wykaz"
 
 
 def load_json(name: str) -> Any:
