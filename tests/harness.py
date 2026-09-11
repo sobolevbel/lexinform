@@ -20,6 +20,7 @@ from lexinform.models import (
     Bill,
     BillSubmission,
     DocumentType,
+    IncomingCommand,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
@@ -40,10 +41,12 @@ from lexinform.services.pipeline import RunOptions
 from lexinform.services.terms import TermResolver
 from lexinform.settings import Settings
 from tests.fakes import (
+    FakeInbox,
     FakeLlm,
     FakeNotifier,
     FakePublisher,
     FakeRclGateway,
+    FakeReplier,
     FakeSejmGateway,
     FakeTextExtractor,
     FixedClock,
@@ -266,6 +269,8 @@ class World:
         self.llm = FakeLlm(script=llm_script, triage_script=triage_script)
         self.publisher = FakePublisher(fail_on=fail_publish)
         self.notifier = FakeNotifier()
+        self.inbox = FakeInbox()
+        self.replier = FakeReplier()
         self.extractor = extractor or FakeTextExtractor()
         self.rcl = FakeRclGateway()
         # The production wiring over the fakes: the settings name the fake hosts (downloads are
@@ -307,6 +312,8 @@ class World:
             extractor=self.extractor,
             publisher_override=self.publisher,
             notifier_override=self.notifier,
+            inbox_override=self.inbox,
+            replier_override=self.replier,
         )
         self.discovery = self.container.discovery_service()
         self.analysis = self.container.analysis_service()
@@ -373,6 +380,10 @@ class World:
             eli=ELI,
             display_address="Dz.U. 2026 poz. 1099",
         )
+
+    def command(self, text: str, *, update_id: int | None = None) -> IncomingCommand:
+        """An operator posted `text` in the technical channel (the relay filed it)."""
+        return self.inbox.put(text, update_id=update_id)
 
     # ------------------------------------------------------------------ act
 

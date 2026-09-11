@@ -23,7 +23,10 @@ from lexinform.models import (
     AnalysisVerdict,
     ApplicantType,
     Bill,
+    CommandOutcome,
     ConsultationWindow,
+    IncomingCommand,
+    OutcomeStatus,
     Phase,
     PrintInfo,
     RclProject,
@@ -51,6 +54,21 @@ from lexinform.pricing import cost_usd
 
 MESSAGE_LIMIT = 4096
 ELLIPSIS = "…"
+
+# What the technical channel accepts (English, like the run report; the operator's language).
+COMMAND_HELP = (
+    "<b>commands</b> (a bill is a druk number, RPW/…, RCL/…, UC164, RM-… or a link to"
+    " sejm.gov.pl / api.sejm.gov.pl / legislacja.rcl.gov.pl):\n"
+    "• <code>/analyze BILL</code> — fetch, prefilter, analyse; post the card when relevant"
+    " and important enough, then follow it\n"
+    "• <code>/analyze BILL force</code> — analyse past the prefilter, a previous analysis"
+    " and the cost guard\n"
+    "• <code>/analyze BILL publish</code> — post a relevant card even below the score threshold\n"
+    "• <code>/show BILL</code> — what the database knows\n"
+    "• <code>/skip BILL</code> — silence a false positive (no analysis, no card)\n"
+    "• <code>/republish BILL</code> — post the card again\n"
+    "• <code>/help</code>"
+)
 
 FILLED = "●"
 EMPTY = "○"
@@ -713,6 +731,8 @@ class MessageFormatter:
         )
         if timing:
             sections.append(_section("⏱", "timing", timing))
+        if report.commands:
+            sections.append(_section("🛠", "commands", *(f"• {esc(c)}" for c in report.commands)))
         if report.errors:
             sections.append(_section("❌", "errors", *(f"• {esc(e)}" for e in report.errors)))
         if report.notes:
@@ -732,6 +752,65 @@ class MessageFormatter:
             logs = "⚠️ <b>warnings</b>\n<pre>" + esc("\n".join(log_lines)) + "</pre>"
         text = self._assemble([head, "\n\n".join(sections)], flexible=[rejected, logs])
         return RenderedMessage(text=text)
+
+    # ------------------------------------------------------------------ operator commands
+
+    def command_reply(self, command: IncomingCommand, outcome: CommandOutcome) -> RenderedMessage:
+        """The answer to an operator command, English like the run report: what the bot knows
+        about the bill, the verdict, and what happened to the card."""
+        icon = {
+            OutcomeStatus.ANALYSED: "🤖",
+            OutcomeStatus.SKIPPED: "⏭",
+            OutcomeStatus.SHOWN: "🔎",
+            OutcomeStatus.SILENCED: "🔇",
+            OutcomeStatus.REPUBLISHED: "📣",
+            OutcomeStatus.HELP: "🛠",
+        }.get(outcome.status, "❌")
+        head = f"{icon} <b>{esc(outcome.status.value)}</b> · <code>{esc(command.text)}</code>"
+        if outcome.status is OutcomeStatus.HELP:
+            body = [esc(outcome.note), COMMAND_HELP] if outcome.note else [COMMAND_HELP]
+            return RenderedMessage(text="\n\n".join([head, *body]))
+        blocks = [head]
+        bill = outcome.bill
+        if bill is not None:
+            blocks.append(self._bill_facts(bill, full=outcome.status is OutcomeStatus.SHOWN))
+        if outcome.message_id is not None:
+            blocks.append(f"📣 card posted: message {outcome.message_id}")
+        if outcome.note:
+            blocks.append(esc(outcome.note))
+        return RenderedMessage(text=self._assemble(blocks))
+
+    def _bill_facts(self, bill: Bill, *, full: bool) -> str:
+        """The bill's title and link, its verdict, and (for /show) its status and last stage."""
+        lines = [
+            f"<b>{self._number_label(bill)}</b> · "
+            + link(process_web_url(bill.term, bill.number), esc(_clip(bill.summary.title, 160)))
+        ]
+        if full:
+            hits = ", ".join(bill.prefilter_hits) or "none"
+            lines.append(f"status: {esc(bill.status.value)} · prefilter hits: {esc(hits)}")
+            if bill.last_error:
+                lines.append(f"last error: {esc(_clip(bill.last_error, 200))}")
+            last = bill.last_stage
+            if last is not None:
+                when = f"{last.date} " if last.date else ""
+                lines.append(f"last stage: {esc(when)}{esc(last.stage_name)}")
+            window = bill.consultation
+            if window is not None and window.end is not None:
+                lines.append(f"consultation until {window.end}")
+        record = bill.analysis
+        if record is None:
+            lines.append("not analysed")
+        else:
+            a = record.analysis
+            verdict = "relevant" if a.relevant else "not relevant"
+            lines.append(
+                f"{score_icon(a.score)} {verdict} · importance {a.score}/5"
+                f" · {esc(a.category.value)} · {esc(record.model)} · {esc(record.text_source)}"
+            )
+            if a.relevant:
+                lines.append(f"<i>{esc(lead(a.summary))}</i>")
+        return "\n".join(lines)
 
     # ------------------------------------------------------------------ helpers
 

@@ -18,6 +18,7 @@ from lexinform.logging_setup import MemoryLogHandler
 from lexinform.models import RunReport, TokenUsage
 from lexinform.ports import BillRepository, Clock, RunNotifier
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.commands import CommandService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.publishing import PublishingService
 from lexinform.services.rcl_discovery import RclDiscoveryService
@@ -44,6 +45,7 @@ class RunOptions(BaseModel):
     max_text_prefilter: int = 20
     min_score: int = 3
     full_track: bool = False  # check every followed bill, not only those the API lists as changed
+    commands: bool = True  # answer the operator commands waiting in the inbox (when there is one)
     mode: str = "run"
 
 
@@ -63,6 +65,7 @@ class DailyPipeline:
         notifier: RunNotifier | None = None,
         text_prefilter: TextPrefilterService | None = None,
         rcl_discovery: RclDiscoveryService | None = None,
+        commands: CommandService | None = None,
         first_run_lookback_days: int = 1,
         rerun_overlap_days: int = 1,
         runs_retention_days: int | None = 90,
@@ -79,6 +82,7 @@ class DailyPipeline:
         self._notifier = notifier
         self._text_prefilter = text_prefilter
         self._rcl_discovery = rcl_discovery
+        self._commands = commands  # None: no inbox configured
         self._first_run_lookback = timedelta(days=first_run_lookback_days)
         self._overlap = timedelta(days=rerun_overlap_days)
         self._runs_retention = (
@@ -188,6 +192,9 @@ class DailyPipeline:
             self._phase(
                 report, "end of term", lambda: self._close_terms(previous, current, opts, report)
             )
+        if opts.commands and self._commands is not None:
+            # Before discovery: a card a command posts is followed by this run's tracking.
+            self._phase(report, "commands", lambda: self._handle_commands(opts, report))
         if opts.discover:
             self._phase(report, "discovery", lambda: self._discover(current, since, report))
         if opts.discover and opts.rcl and self._rcl_discovery is not None:
@@ -221,6 +228,20 @@ class DailyPipeline:
             elapsed = time.perf_counter() - started
             report.phase_seconds[name] = round(elapsed, 1)
             log.info("%s took %.1fs", name, elapsed)
+
+    def _handle_commands(self, opts: RunOptions, report: RunReport) -> None:
+        assert self._commands is not None
+        handled = self._commands.handle_pending(
+            min_score=opts.min_score, publish=opts.publish, dry_run=opts.dry_run
+        )
+        report.commands_handled = handled.handled
+        report.commands_failed = handled.failed
+        report.commands = handled.lines
+        report.llm_input_tokens += handled.input_tokens
+        report.llm_output_tokens += handled.output_tokens
+        _merge_usage(report, handled.usage)
+        if handled.fatal_error:
+            report.errors.append(f"commands: {handled.fatal_error}")
 
     def _discover(self, term: int, since: datetime, report: RunReport) -> None:
         discovered = self._discovery.discover(term, since, pre_print=self._pre_print)
@@ -329,6 +350,8 @@ class DailyPipeline:
     def _notify(self, report: RunReport, captured: MemoryLogHandler) -> None:
         if self._notifier is None:
             return
+        if report.mode == "commands" and report.ok:
+            return  # the replies under the commands said everything; no report for a kick
         lines = list(captured.lines)
         if captured.dropped:
             lines.append(f"... and {captured.dropped} more")

@@ -29,8 +29,10 @@ from lexinform.models import (
     BillContext,
     BillSubmission,
     Category,
+    CommandOutcome,
     Committee,
     CommitteeSitting,
+    IncomingCommand,
     Mp,
     PrintInfo,
     ProcessDetail,
@@ -471,3 +473,44 @@ class FakeNotifier:
 
     def notify(self, report: RunReport, log_lines: list[str]) -> None:
         self.calls.append((report, log_lines))
+
+
+class FakeInbox:
+    """Operator commands as the relay would file them; `put` adds one, `done` takes it out."""
+
+    def __init__(self) -> None:
+        self.commands: list[IncomingCommand] = []
+        self.done_ids: list[int] = []
+        self._next_id = 0
+
+    def put(self, text: str, *, update_id: int | None = None) -> IncomingCommand:
+        self._next_id += 1
+        command = IncomingCommand(
+            update_id=update_id if update_id is not None else self._next_id,
+            chat_id="-1001",
+            message_id=self._next_id + 500,
+            text=text,
+            received_at=datetime(2026, 9, 11, 8, 0, tzinfo=UTC),
+        )
+        self.commands.append(command)
+        return command
+
+    def pending(self) -> list[IncomingCommand]:
+        return sorted(self.commands, key=lambda c: c.update_id)
+
+    def done(self, command: IncomingCommand) -> None:
+        self.done_ids.append(command.update_id)
+        self.commands = [c for c in self.commands if c.update_id != command.update_id]
+
+
+class FakeReplier:
+    """Records the answer to every command; `outage` makes the channel unreachable."""
+
+    def __init__(self, *, outage: bool = False) -> None:
+        self.replies: list[tuple[IncomingCommand, CommandOutcome]] = []
+        self.outage = outage
+
+    def reply(self, command: IncomingCommand, outcome: CommandOutcome) -> None:
+        if self.outage:
+            raise TelegramUnavailableError("sendMessage: ConnectError after 3 attempts")
+        self.replies.append((command, outcome))

@@ -13,6 +13,7 @@ from urllib.parse import parse_qs, urlparse
 
 from pydantic import BaseModel, ConfigDict
 
+from lexinform.models.bill import Bill
 from lexinform.models.enums import PRE_PRINT_PREFIX, RCL_PREFIX
 from lexinform.models.rcl import normalize_wykaz_number
 
@@ -74,6 +75,39 @@ class Command(BaseModel):
     force: bool = False  # analyse past the prefilter, a previous analysis and the cost guard
     publish: bool = False  # post the card of a relevant bill even below the score threshold
     error: str | None = None
+
+
+class OutcomeStatus(StrEnum):
+    ANALYSED = "analysed"  # a verdict (fresh or stored); `message_id` when the card went out
+    SKIPPED = "skipped"  # the prefilter said no (`note` = why); `force` gets past it
+    SHOWN = "shown"
+    SILENCED = "silenced"  # /skip: the bill will not be analysed or posted
+    REPUBLISHED = "republished"
+    HELP = "help"
+    NOT_FOUND = "not_found"
+    ERROR = "error"
+
+
+class CommandOutcome(BaseModel):
+    """What happened to a command; the replier renders it under the command's message."""
+
+    status: OutcomeStatus
+    bill: Bill | None = None
+    note: str = ""  # the reason, the error, why the card was not posted
+    message_id: int | None = None  # the card just posted (or posted again)
+
+    @property
+    def ok(self) -> bool:
+        return self.status not in (OutcomeStatus.ERROR, OutcomeStatus.NOT_FOUND)
+
+    def line(self) -> str:
+        """One row of the run report: the status and the note."""
+        head = self.status.value
+        if self.bill is not None:
+            head = f"{self.bill.number} {head}"
+        if self.message_id is not None:
+            head += f" (message {self.message_id})"
+        return f"{head}: {self.note}" if self.note else head
 
 
 _DRUK = re.compile(r"^(?:druk\s*(?:nr\s*)?)?(\d{1,5})$", re.IGNORECASE)

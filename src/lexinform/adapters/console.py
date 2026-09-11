@@ -6,7 +6,7 @@ from typing import TextIO
 
 from lexinform.adapters.publisher_base import Outgoing, RenderingPublisher
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import RunReport
+from lexinform.models import CommandOutcome, IncomingCommand, RunReport
 
 
 @dataclass
@@ -49,4 +49,19 @@ class ConsoleRunNotifier:
     def notify(self, report: RunReport, log_lines: list[str]) -> None:
         rendered = self._formatter.run_report(report, log_lines)
         self._stream.write(f"\n===== RUN REPORT (dry-run) =====\n{rendered.text}\n")
+        self._stream.flush()
+
+
+class ConsoleReplier:
+    """The answer to an operator command, printed instead of posted."""
+
+    def __init__(self, formatter: MessageFormatter, stream: TextIO = sys.stdout) -> None:
+        self._formatter = formatter
+        self._stream = stream
+
+    def reply(self, command: IncomingCommand, outcome: CommandOutcome) -> None:
+        rendered = self._formatter.command_reply(command, outcome)
+        self._stream.write(
+            f"\n===== REPLY to update {command.update_id} (dry-run) =====\n{rendered.text}\n"
+        )
         self._stream.flush()

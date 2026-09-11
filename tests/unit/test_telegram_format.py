@@ -18,6 +18,9 @@ from lexinform.models import (
     BillStatus,
     BillSubmission,
     ClubVotes,
+    CommandOutcome,
+    IncomingCommand,
+    OutcomeStatus,
     PrintInfo,
     ProcessDetail,
     RunReport,
@@ -968,3 +971,69 @@ def test_shrink_block_keeps_the_header_and_well_formed_html(budget: int) -> None
         assert_telegram_html(out)
         assert out.startswith("🔑 <b>Ключевые изменения</b>\n")
         assert "&" not in out.replace("&amp;", "").replace("&lt;", "").replace("&gt;", "")
+
+
+# --------------------------------------------------------------------------- operator commands
+
+
+def _incoming(text: str) -> IncomingCommand:
+    return IncomingCommand(update_id=7, chat_id="-1001", message_id=42, text=text, received_at=NOW)
+
+
+def test_command_reply_names_the_bill_the_verdict_and_the_card(
+    process_3039: ProcessDetail,
+) -> None:
+    formatter = MessageFormatter("ru")
+    outcome = CommandOutcome(
+        status=OutcomeStatus.ANALYSED, bill=bill_of(process_3039), message_id=101
+    )
+
+    text = formatter.command_reply(_incoming("/analyze 3039 <force>"), outcome).text
+
+    assert_telegram_html(text)
+    assert text.startswith("🤖 <b>analysed</b> · <code>/analyze 3039 &lt;force&gt;</code>")
+    assert "<b>druk nr 3039</b>" in text and "PrzebiegProc.xsp?nr=3039" in text
+    assert "🔴 relevant · importance 5/5 · legal_stay · m · pdf" in text
+    assert "<i>Проект меняет правила легализации пребывания.</i>" in text
+    assert "📣 card posted: message 101" in text
+
+
+def test_show_reply_adds_status_stage_and_the_last_error(process_3039: ProcessDetail) -> None:
+    formatter = MessageFormatter("ru")
+    bill = bill_of(
+        process_3039, prefilter_hits=["cudzoziemcy"], last_error="text prefilter: no hits"
+    ).model_copy(update={"status": BillStatus.SKIPPED_TEXT_PREFILTER, "analysis": None})
+    outcome = CommandOutcome(status=OutcomeStatus.SHOWN, bill=bill)
+
+    text = formatter.command_reply(_incoming("/show 3039"), outcome).text
+
+    assert_telegram_html(text)
+    assert "status: skipped_text_prefilter · prefilter hits: cudzoziemcy" in text
+    assert "last error: text prefilter: no hits" in text
+    assert "last stage: " in text and "not analysed" in text
+
+
+def test_help_reply_lists_the_commands_after_the_complaint() -> None:
+    formatter = MessageFormatter("ru")
+    outcome = CommandOutcome(status=OutcomeStatus.HELP, note="unknown command /delete")
+
+    text = formatter.command_reply(_incoming("/delete 1"), outcome).text
+
+    assert_telegram_html(text)
+    assert "unknown command /delete" in text
+    assert "<code>/analyze BILL force</code>" in text and "<code>/help</code>" in text
+
+
+def test_run_report_lists_the_commands_handled() -> None:
+    report = RunReport(
+        started_at=NOW,
+        finished_at=NOW,
+        since=NOW,
+        mode="commands",
+        commands_handled=1,
+        commands=["/analyze 3039 → 3039 analysed (message 101)"],
+    )
+
+    text = MessageFormatter("ru").run_report(report, []).text
+
+    assert "🛠 <b>commands</b>\n• /analyze 3039 → 3039 analysed (message 101)" in text

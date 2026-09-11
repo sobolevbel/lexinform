@@ -215,12 +215,14 @@ class AnalysisService:
                 break
         return result
 
-    def analyze_bill(self, bill: Bill) -> AnalysisRecord:
-        """First analysis from the original text. Persists the result; raises on failure."""
-        return self._persist(self._prepare_first(bill))
+    def analyze_bill(self, bill: Bill, *, ignore_cost_limit: bool = False) -> AnalysisRecord:
+        """First analysis from the original text. Persists the result; raises on failure.
+        `ignore_cost_limit` is the operator's explicit wish (a forced command): the per-bill
+        cost guard does not apply."""
+        return self._persist(self._prepare_first(bill, cost_guard=not ignore_cost_limit))
 
-    def _prepare_first(self, bill: Bill) -> _Prepared:
-        return self._prepare(bill, self._texts.locate(bill), previous=None)
+    def _prepare_first(self, bill: Bill, *, cost_guard: bool = True) -> _Prepared:
+        return self._prepare(bill, self._texts.locate(bill), previous=None, cost_guard=cost_guard)
 
     # ------------------------------------------------------------------ re-analysis
 
@@ -279,7 +281,12 @@ class AnalysisService:
     # ------------------------------------------------------------------ internals
 
     def _prepare(
-        self, bill: Bill, located: LocatedText, *, previous: AnalysisRecord | None
+        self,
+        bill: Bill,
+        located: LocatedText,
+        *,
+        previous: AnalysisRecord | None,
+        cost_guard: bool = True,
     ) -> _Prepared:
         """Load the text and ask the model. Network only: safe to run for several bills at once."""
         document = located.document
@@ -303,7 +310,12 @@ class AnalysisService:
             triage, rejection = self._triage_verdict(bill, meta, text)
             if rejection is not None:
                 return _Prepared(bill, located, text, source, rejection, first=True)
-        if previous is None and self._max_bill_cost and self._input_price is not None:
+        if (
+            previous is None
+            and cost_guard
+            and self._max_bill_cost
+            and self._input_price is not None
+        ):
             # First analyses only: a re-analysis reads a new version of a text that already
             # passed, and skipping it would leave the card's analysis behind the bill.
             estimate = estimate_input_cost(len(text), self._input_price)

@@ -322,6 +322,7 @@ def track(
                 discover=False,
                 publish=not dry_run,
                 track=True,
+                commands=False,
                 max_analyze=0,
                 max_publish=0,
                 mode="track",
@@ -330,6 +331,48 @@ def track(
     finally:
         c.close()
     typer.echo(f"updates={report.updates} errors={report.errors}")
+
+
+@app.command()
+def commands(
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Print the replies and cards, roll back, keep the inbox."),
+    ] = False,
+) -> None:
+    """Answer the operator commands waiting in the inbox (LEXINFORM_INBOX_DIR) and nothing else.
+
+    The daily run does the same at its start; this is what a push to the `inbox` branch runs.
+    """
+    c = _container()
+    try:
+        s = c.settings
+        if c.command_inbox() is None:
+            typer.echo(
+                "no inbox: set LEXINFORM_INBOX_DIR to the directory of the inbox branch", err=True
+            )
+            raise typer.Exit(code=2)
+        report = c.pipeline(dry_run=dry_run).run(
+            RunOptions(
+                term=s.term,
+                dry_run=dry_run,
+                discover=False,
+                track=False,
+                max_analyze=0,
+                max_publish=0,
+                min_score=s.min_score,
+                mode="commands",
+            )
+        )
+    finally:
+        c.close()
+    for line in report.commands:
+        typer.echo(line)
+    typer.echo(
+        f"handled={report.commands_handled} failed={report.commands_failed}"
+        f" errors={len(report.errors)}"
+    )
+    raise typer.Exit(code=0 if report.ok else 1)
 
 
 @app.command()

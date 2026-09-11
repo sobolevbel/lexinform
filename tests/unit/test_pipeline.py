@@ -223,6 +223,7 @@ def test_report_carries_phase_timings() -> None:
     report = w.run()
 
     assert set(report.phase_seconds) == {
+        "commands",
         "discovery",
         "rcl discovery",
         "text prefilter",

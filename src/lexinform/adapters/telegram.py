@@ -11,7 +11,7 @@ import httpx2 as httpx
 from lexinform.adapters.publisher_base import Outgoing, RenderingPublisher
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import TelegramUnavailableError
-from lexinform.models import RunReport
+from lexinform.models import CommandOutcome, IncomingCommand, RunReport
 
 log = logging.getLogger(__name__)
 
@@ -160,3 +160,18 @@ class TelegramRunNotifier:
     def notify(self, report: RunReport, log_lines: list[str]) -> None:
         rendered = self._formatter.run_report(report, log_lines)
         self._client.send_message(self._channel_id, rendered.text)
+
+
+class TelegramOperatorReplier:
+    """Answers an operator command as a reply under it in the technical channel."""
+
+    def __init__(
+        self, client: TelegramBotClient, formatter: MessageFormatter, *, channel_id: str
+    ) -> None:
+        self._client = client
+        self._formatter = formatter
+        self._channel_id = channel_id
+
+    def reply(self, command: IncomingCommand, outcome: CommandOutcome) -> None:
+        rendered = self._formatter.command_reply(command, outcome)
+        self._client.send_message(self._channel_id, rendered.text, reply_to=command.message_id)

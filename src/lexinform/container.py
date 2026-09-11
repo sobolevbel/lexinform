@@ -11,23 +11,31 @@ from zoneinfo import ZoneInfo
 
 import anthropic
 
-from lexinform.adapters.console import ConsolePublisher, ConsoleRunNotifier
+from lexinform.adapters.console import ConsolePublisher, ConsoleReplier, ConsoleRunNotifier
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.adapters.inbox_files import FileInbox
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.rcl_html import RclClient
 from lexinform.adapters.sejm_api import SejmApiClient
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
-from lexinform.adapters.telegram import TelegramBotClient, TelegramPublisher, TelegramRunNotifier
+from lexinform.adapters.telegram import (
+    TelegramBotClient,
+    TelegramOperatorReplier,
+    TelegramPublisher,
+    TelegramRunNotifier,
+)
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
 from lexinform.ports import (
     BillRepository,
     Clock,
+    CommandInbox,
     Downloader,
     LlmAnalyzer,
+    OperatorReplier,
     Publisher,
     RclGateway,
     RunNotifier,
@@ -37,6 +45,7 @@ from lexinform.ports import (
 from lexinform.pricing import price_of
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.commands import CommandService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.documents import TextLoader
 from lexinform.services.lookup import BillLookup
@@ -72,6 +81,8 @@ class Container:
     extractor: TextExtractor | None = None
     publisher_override: Publisher | None = None
     notifier_override: RunNotifier | None = None
+    inbox_override: CommandInbox | None = None
+    replier_override: OperatorReplier | None = None
     _telegram: TelegramBotClient | None = field(default=None, init=False, repr=False)
     _loader: TextLoader | None = field(default=None, init=False, repr=False)
     _services: dict[str, object] = field(default_factory=dict, init=False, repr=False)
@@ -249,6 +260,41 @@ class Container:
     def channel_id(self) -> str:
         return self.settings.telegram_channel_id or "console"
 
+    def command_inbox(self) -> CommandInbox | None:
+        if self.inbox_override is not None:
+            return self.inbox_override
+        if self.settings.inbox_dir is None:
+            return None
+        return FileInbox(self.settings.inbox_dir)
+
+    def operator_replier(self, *, dry_run: bool) -> OperatorReplier:
+        if self.replier_override is not None:
+            return self.replier_override
+        if dry_run or not self.settings.telegram_log_channel_id:
+            return ConsoleReplier(self.formatter)
+        return TelegramOperatorReplier(
+            self.telegram_client(), self.formatter, channel_id=self.settings.telegram_log_channel_id
+        )
+
+    def command_service(self, *, dry_run: bool) -> CommandService | None:
+        inbox = self.command_inbox()
+        if inbox is None:
+            return None
+        return self._once(
+            f"commands:{dry_run}",
+            lambda: CommandService(
+                self.repo,
+                inbox,
+                self.operator_replier(dry_run=dry_run),
+                self.bill_lookup(),
+                self.analysis_service(),
+                self.publishing_service(dry_run=dry_run),
+                self.clock,
+                channel_id=self.channel_id(),
+                text_prefilter=self.text_prefilter_service(),
+            ),
+        )
+
     def publishing_service(self, *, dry_run: bool) -> PublishingService:
         return self._once(
             f"publishing:{dry_run}",
@@ -305,6 +351,7 @@ class Container:
                 notifier=self.run_notifier(dry_run=dry_run),
                 text_prefilter=self.text_prefilter_service(),
                 rcl_discovery=self.rcl_discovery_service(),
+                commands=self.command_service(dry_run=dry_run),
                 first_run_lookback_days=self.settings.first_run_lookback_days,
                 rerun_overlap_days=self.settings.rerun_overlap_days,
                 runs_retention_days=self.settings.runs_retention_days,

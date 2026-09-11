@@ -15,6 +15,7 @@ from lexinform.models import (
     BillContext,
     BillStatus,
     BillSubmission,
+    CommandOutcome,
     Committee,
     CommitteeSitting,
     IncomingCommand,
@@ -218,6 +219,24 @@ class Publisher(Protocol):
 
 class RunNotifier(Protocol):
     def notify(self, report: RunReport, log_lines: list[str]) -> None: ...
+
+
+class CommandInbox(Protocol):
+    """Where operator commands wait for a run (JSON files of the `inbox` branch in production)."""
+
+    def pending(self) -> list[IncomingCommand]:
+        """Every command not yet taken, oldest update first."""
+        ...
+
+    def done(self, command: IncomingCommand) -> None:
+        """The command was handled: take it out of the inbox."""
+        ...
+
+
+class OperatorReplier(Protocol):
+    """Answers a command where it was given (under the message in the log channel)."""
+
+    def reply(self, command: IncomingCommand, outcome: CommandOutcome) -> None: ...
 
 
 class BillRepository(Protocol):

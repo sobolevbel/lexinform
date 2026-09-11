@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     telegram_log_channel_id: str = ""
     telegram_api_base_url: str = "https://api.telegram.org"
 
+    # Operator commands posted in the log channel. The relay (`lexinform listen`, on a server
+    # that is always on) files each command as `{update_id}.json` into the git branch `inbox`;
+    # a run reads the directory that branch is checked out in (None: no commands phase).
+    inbox_dir: Path | None = None
+
     # Pipeline
     min_score: int = Field(default=3, ge=1, le=5)
     max_publish_per_run: int = 10

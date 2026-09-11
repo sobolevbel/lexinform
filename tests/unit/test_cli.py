@@ -1,5 +1,6 @@
 """Operator commands through typer, against a temporary database (no network, no Telegram)."""
 
+import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -131,6 +132,38 @@ def test_republish_refuses_a_bill_without_a_relevant_analysis(db: Path) -> None:
 
     assert result.exit_code == 2
     assert "no relevant analysis" in result.output
+
+
+def test_commands_answers_the_inbox_and_empties_it(db: Path, tmp_path: Path) -> None:
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    (inbox / "5.json").write_text(
+        json.dumps(
+            {
+                "update_id": 5,
+                "chat_id": "-1001",
+                "message_id": 9,
+                "text": "/show 3039",
+                "received_at": "2026-09-11T08:00:00+00:00",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (inbox / "README.md").write_text("not a command", encoding="utf-8")
+
+    result = runner.invoke(app, ["commands"], env={**_env(db), "LEXINFORM_INBOX_DIR": str(inbox)})
+
+    assert result.exit_code == 0, result.output
+    assert "/show 3039 → 3039 shown" in result.output
+    assert "handled=1 failed=0 errors=0" in result.output
+    assert sorted(p.name for p in inbox.iterdir()) == ["README.md"]
+
+
+def test_commands_without_an_inbox_says_what_to_set(db: Path) -> None:
+    result = runner.invoke(app, ["commands"], env=_env(db))
+
+    assert result.exit_code == 2
+    assert "LEXINFORM_INBOX_DIR" in result.output
 
 
 def test_db_dump_and_restore_round_trip(db: Path, tmp_path: Path) -> None:

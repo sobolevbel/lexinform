@@ -55,6 +55,9 @@ class RunReport(BaseModel):
     analysis_skipped_cost: int = 0  # texts over the per-bill cost limit, not sent to the model
     notes: list[str] = Field(default_factory=list)  # worth telling, not an error (a budget stop)
     rejected: list[AnalysisVerdict] = Field(default_factory=list)  # analysed, not published
+    commands_handled: int = 0  # operator commands answered (from the technical channel)
+    commands_failed: int = 0
+    commands: list[str] = Field(default_factory=list)  # one line per command: what happened
     published: int = 0
     joint_published: int = 0  # "alternative bill" replies under the card of a joint print
     updates: int = 0
