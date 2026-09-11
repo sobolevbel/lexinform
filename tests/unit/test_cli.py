@@ -43,10 +43,14 @@ def db(tmp_path: Path, process_3039: ProcessDetail) -> Path:
 
 
 def _env(db: Path, term: str = "10") -> dict[str, str]:
-    # The term is pinned so that no command asks the live API which term is running.
+    # The term is pinned so that no command asks the live API which term is running. No bot
+    # token and no log channel, whatever the developer's `.env` says (see `conftest.py`):
+    # replies and reports go to the console, never to Telegram.
     return {
         "LEXINFORM_DB_PATH": str(db),
         "LEXINFORM_TELEGRAM_CHANNEL_ID": "@test",
+        "LEXINFORM_TELEGRAM_BOT_TOKEN": "",
+        "LEXINFORM_TELEGRAM_LOG_CHANNEL_ID": "",
         "LEXINFORM_TERM": term,
     }
 
@@ -151,7 +155,15 @@ def test_commands_answers_the_inbox_and_empties_it(db: Path, tmp_path: Path) -> 
     )
     (inbox / "README.md").write_text("not a command", encoding="utf-8")
 
-    result = runner.invoke(app, ["commands"], env={**_env(db), "LEXINFORM_INBOX_DIR": str(inbox)})
+    # The container builds the Telegram publisher eagerly: a dummy token, and an API address
+    # nothing listens on, so that an accidental send fails here instead of reaching Telegram.
+    env = {
+        **_env(db),
+        "LEXINFORM_INBOX_DIR": str(inbox),
+        "LEXINFORM_TELEGRAM_BOT_TOKEN": "test-token",
+        "LEXINFORM_TELEGRAM_API_BASE_URL": "http://127.0.0.1:9",
+    }
+    result = runner.invoke(app, ["commands"], env=env)
 
     assert result.exit_code == 0, result.output
     assert "/show 3039 → 3039 shown" in result.output

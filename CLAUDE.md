@@ -16,6 +16,9 @@ windows and the API stage vocabulary in `docs/legislative-process.md`.
 - Developer guide (setup, tests, migrations, where a change goes): `CONTRIBUTING.md`.
 - Commit after each finished part. Do not push unless asked. No `Co-Authored-By` trailers.
 - `.env` holds real secrets and is untracked; never print values. `.env.example` mirrors keys.
+  `Settings()` reads it, so a test that builds the real container would reach the real Telegram
+  or model: `tests/conftest.py` blanks every credential for every test (autouse). Keep it that
+  way; a CLI test's `env` sets the token and the log channel to "" explicitly as well.
 - Messages to readers are Russian (labels in `i18n.py`, RU + EN); Polish law titles stay Polish.
 - Prod state = SQLite dump in the `state` branch, written by `.github/workflows/daily.yml`
   (weekdays 05:23 and 16:23 UTC = 07:23 and 18:23 Warsaw in summer, weekend 10:23 UTC; GitHub

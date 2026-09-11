@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Effort = Literal["low", "medium", "high", "xhigh", "max"]
@@ -69,6 +69,13 @@ class Settings(BaseSettings):
     # that is always on) files each command as `{update_id}.json` into the git branch `inbox`;
     # a run reads the directory that branch is checked out in (None: no commands phase).
     inbox_dir: Path | None = None
+
+    @field_validator("inbox_dir", mode="before")
+    @classmethod
+    def _empty_inbox_dir_is_none(cls, value: object) -> object:
+        """`LEXINFORM_INBOX_DIR=` (blank) means no inbox, not the current directory."""
+        return None if isinstance(value, str) and not value.strip() else value
+
     # The relay's side (`lexinform listen`): the repository (`owner/name`) and a fine-grained
     # personal access token with Contents read/write on it, the branch the inbox lives in, and
     # how long one getUpdates call waits for a post.

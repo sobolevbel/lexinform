@@ -48,3 +48,10 @@ def test_telegram_settings_are_required_only_to_post() -> None:
 
     with pytest.raises(ValueError, match="LEXINFORM_TELEGRAM_BOT_TOKEN"):
         settings.require_telegram()
+
+
+def test_a_blank_inbox_dir_means_no_inbox(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LEXINFORM_INBOX_DIR", "")
+
+    assert Settings(_env_file=None).inbox_dir is None
+    assert Settings(_env_file=None, inbox_dir="/tmp/inbox").inbox_dir == Path("/tmp/inbox")

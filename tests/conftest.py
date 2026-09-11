@@ -20,6 +20,23 @@ def load_json(name: str) -> Any:
     return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
 
 
+@pytest.fixture(autouse=True)
+def no_real_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
+    """`Settings()` reads the developer's `.env`: a CLI test that builds the real container
+    would otherwise post to the real log channel or call the real model. Every credential is
+    blanked for every test; the environment wins over the file."""
+    for name in (
+        "ANTHROPIC_API_KEY",
+        "LEXINFORM_TELEGRAM_BOT_TOKEN",
+        "LEXINFORM_TELEGRAM_CHANNEL_ID",
+        "LEXINFORM_TELEGRAM_LOG_CHANNEL_ID",
+        "LEXINFORM_GITHUB_TOKEN",
+        "LEXINFORM_RCL_PROXY_URL",
+        "LEXINFORM_INBOX_DIR",
+    ):
+        monkeypatch.setenv(name, "")
+
+
 @pytest.fixture
 def repo() -> SqliteBillRepository:
     repository = SqliteBillRepository(":memory:")
