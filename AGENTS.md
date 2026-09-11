@@ -5,7 +5,9 @@
 Read `README.md` for product context, `CONTRIBUTING.md` before changing code, and:
 
 - `docs/roadmap.md` for verified API facts and open work;
-- `docs/legislative-process.md` for stages, legal deadlines and public participation windows.
+- `docs/legislative-process.md` for stages, legal deadlines and public participation windows;
+- `docs/operator-commands.md` for the technical channel's commands and the relay that carries them;
+- `docs/database.html` for the schema, its indexes and the migration ledger on one page.
 
 ## Working rules
 
@@ -57,7 +59,7 @@ Dependencies flow only in this direction:
 
 ## Product defaults
 
-- Default model: `Codex-opus-5`; minimum publication score: 3. Triage texts at least 20k chars with `Codex-sonnet-5`.
+- Default model: `claude-opus-5`; minimum publication score: 3. Triage texts at least 20k chars with `claude-sonnet-5`.
 - Do not add a likelihood-of-passage estimate.
 - Prompt-version changes alone must not reanalyse or repost an existing card. A materially new text may.
 - Every card/update includes what happens next and what readers can do now. RCL cards ask readers to write in Polish and cite the wykaz number.

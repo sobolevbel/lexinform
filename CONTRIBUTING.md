@@ -22,7 +22,7 @@ is read without a prefix (the SDK wants it that way); everything else is `LEXINF
 ```bash
 uv run ruff format src tests && uv run ruff check src tests
 uv run mypy                   # strict, over src and tests
-uv run pytest                 # unit tests, ~2 s, offline
+uv run pytest                 # unit tests, a few seconds, offline
 ```
 
 All three must be clean. CI (`.github/workflows/ci.yml`) runs the same on Python 3.12 and 3.13.
@@ -88,14 +88,15 @@ models/  → ports.py → adapters/ → services/ → container.py → cli.py
   `telegram_format`, `sqlite_repo`, `console` (the dry-run publisher and replier),
   `inbox_files` (the command inbox as a directory), `github_inbox` (the relay's writer).
 - `services/`: the phases (`commands`, `discovery`, `rcl_discovery` + `rcl_projects`,
-  `text_prefilter`, `analysis`, `publishing`, `pipeline`), `lookup` (one bill by number or
-  reference, fetched on first sight; the CLI and the commands share it), `listener` (the relay),
-  the seams between sources and the generic services
-  (`sources`: `SejmTextSource`, `RclTextSource`, `MetadataOnlySource` behind `TextSources`;
-  `documents`: `TextLoader` routing downloads by host; `signatories`), and `tracking/`
-  (`service` loop, `pre_print`, `rcl`, `linking`, `acts`, `consultations`, `agenda`, `posting`,
-  `stages`). Services import ports, models and the pure modules (`keywords`, `sections`,
-  `agenda`, `authors`, `rcl_letters`, `concurrency`), never adapters.
+  `text_prefilter`, `analysis`, `publishing`, `pipeline`), `terms` (the current kadencja from
+  `/sejm/term`), `lookup` (one bill by number or reference, fetched on first sight; the CLI and
+  the commands share it), `listener` (the relay), the seams between sources and the generic
+  services (`sources`: `SejmTextSource`, `RclTextSource`, `MetadataOnlySource` behind
+  `TextSources`; `documents`: `TextLoader` routing downloads by host; `signatories`), and
+  `tracking/` (`service` loop, `pre_print`, `rcl`, `linking`, `acts`, `consultations`,
+  `hearings`, `agenda`, `rollover`, `posting`, `stages`). Services import ports, models and the
+  pure modules (`keywords`, `sections`, `agenda`, `authors`, `rcl_letters`, `concurrency`),
+  never adapters.
 - `container.py` wires adapters into services from `Settings`; `cli.py` is typer.
 
 Rules that keep this honest:
@@ -131,10 +132,10 @@ Layout:
 - `tests/harness.py`: `World`, the production `Container` built over the fakes and an in-memory
   SQLite (a `Settings` names the fake hosts; `llm`, `extractor`, `publisher_override` and
   `notifier_override` are the container's injection points), plus builders
-  (`summary`, `detail`, `submission`, `act`, stage tuples). A scenario test arranges the Sejm
-  (`w.add_bill`, `w.set_stages`, `w.touch`, `w.gateway.submissions`), acts (`w.run(...)`) and
-  asserts on the `RunReport`, the publisher's records and the database (`w.bill`,
-  `w.publication`, `w.card_id`).
+  (`summary`, `detail`, `submission`, `act`, stage tuples). A scenario test arranges the Sejm and
+  RCL (`w.add_bill`, `w.add_rcl_project`, `w.set_stages`, `w.touch`, `w.publish_act`,
+  `w.command`, `w.gateway.submissions`), acts (`w.run(...)`) and asserts on the `RunReport`, the
+  publisher's records and the database (`w.bill`, `w.publication`, `w.card_id`).
 - `tests/fixtures/sejm/`: recorded API responses. Refresh with `curl` when the API changes
   (commands below) and keep them small.
 - Adapter tests use `httpx2.MockTransport` (`test_sejm_api`, `test_telegram_client`) or a stub
@@ -222,7 +223,9 @@ history of the `state` branch.
 
 - `.github/workflows/daily.yml` runs the bot twice a day on weekdays, once on weekend days, and pushes the dump to `state`.
   Secrets: `ANTHROPIC_API_KEY`, `LEXINFORM_TELEGRAM_BOT_TOKEN`, `LEXINFORM_TELEGRAM_CHANNEL_ID`,
-  optionally `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID`. Do not protect the `state` branch.
+  optionally `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` and `LEXINFORM_RCL_PROXY_URL` — without the
+  proxy the RCL phase fails on every scheduled run, because RCL drops connections from
+  GitHub-hosted runners (`docs/rcl-proxy.md`). Do not protect the `state` branch.
 - `.github/workflows/integration.yml` runs the live API checks weekly and pings the log channel
   when the API changed under us.
 - Operator commands: `lexinform republish NUMBER` (post a card again), `lexinform reset NUMBER

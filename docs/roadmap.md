@@ -116,6 +116,26 @@ Done on 2026-09-10 (schema v11), after a reader's-eye review of the update posts
   (~$0.85), and every RCL stage republishes that package; without the hash each republication
   would cost the same again.
 
+Done on 2026-09-09/10 (schema v9, v10, v12):
+
+- **The Sejm term switches by itself.** `services/terms.py` reads the term flagged `current` in
+  `/sejm/term` (the newest term in the database when the API is down), `LEXINFORM_TERM` only pins
+  an older one. Discovery works in the current term; the repository listings are not scoped to a
+  term, so acts of the previous kadencja still get their Dz.U. and in-force posts. The first run
+  of a new term runs `services/tracking/rollover.py` before discovery: one "lapsed" update under
+  every published, unfinished Sejm bill of the old term (a citizens' bill is taken over instead),
+  `discontinued_at` on the unfinished rows (v9), and the RCL projects still waiting for their
+  druk moved to the new term, keeping the wykaz number for the tag of the print that continues
+  the thread (v10). Idempotent, repeats every run.
+- **Prints considered jointly share one card** (v12), after druki 1929/1933 got two nearly
+  identical cards: `ProcessSummary.prints_considered_jointly` names the group, the first
+  candidate gets the card (the government's print goes first within a run: its text is the one
+  the committee works on) and every later print becomes a short `joint_bill` reply under it —
+  title, applicant, date, links, both tags, no analysis of its own. The reply settles the bill
+  like a card would, and because it is not a `new_bill` row every tracker ignores it: the group's
+  events come from the card's process. `/republish` forgets both rows and lets the normal path
+  decide again.
+
 Done on 2026-09-11 (schema v13):
 
 - **Operator commands from the technical channel.** `/analyze BILL [force] [publish]`, `/show`,
@@ -129,6 +149,19 @@ Done on 2026-09-11 (schema v13):
   admins only; a manual `/analyze` publishes under the daily rule (relevant and score ≥
   `min_score`), `publish` overrides; the whole bot does not move to the VPS (memory), so the
   state branch stays the only database writer. `docs/operator-commands.md`.
+
+Done on 2026-09-12 (schema v14):
+
+- A command whose answer never reached the channel (the channel was down, the job died after the
+  post) is **answered again, not executed again**: `commands.executed_at` marks the side effects
+  as done before the reply is posted, so a file that comes back cannot produce a second card.
+  `/analyze` was already idempotent by construction; `/republish` was not.
+- An RCL project a command names may already be in the Sejm: `BillLookup` resolves it to its druk
+  through `find_process_by_rcl_num`, links the rows and answers about the print, so a project
+  whose act is in force can no longer get a card promising a druk number. A bill with a
+  `closure_date` gets no card at all — a card invites action, and the process is over.
+- The database on one page, drawn and explained: `docs/database.html` (tables, relations,
+  indexes, the migration ledger). The source of truth stays `MIGRATIONS` in `sqlite_repo.py`.
 
 The sections below are the original plan, kept for the rationale and the verified API facts.
 

@@ -223,7 +223,7 @@ Adding a migration:
 2. Extend the model and `_row_to_bill` / mapping code. JSON columns (`summary_json`,
    `analysis_json`, `stages_json`, …) are pydantic dumps: new fields need defaults so old rows still
    load; renaming a JSON field is a data migration (SQL `json_set` or a one-off Python step).
-3. Extend `test_restore_of_a_previous_schema_dump_applies_missing_migrations` in
+3. Extend `test_restore_of_a_v1_dump_applies_every_later_migration` in
    `tests/unit/test_sqlite_repo.py` (it restores a hand-built v1 dump and asserts the new columns)
    and, before pushing, run the real dump through it: `git show origin/state:lexinform.sql`,
    `db init` + `db restore`, then `sqlite3 file "PRAGMA user_version"` and `lexinform show 2699`.

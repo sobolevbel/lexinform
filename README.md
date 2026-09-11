@@ -1,16 +1,25 @@
 # lexinform
 
+[![CI](https://github.com/sobolevbel/lexinform/actions/workflows/ci.yml/badge.svg)](https://github.com/sobolevbel/lexinform/actions/workflows/ci.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 A daily bot that watches bills in the Polish Sejm, picks out the ones that matter to foreigners
 living in Poland, scores and summarises them with an LLM, and posts the result to a Telegram channel.
 It then follows each bill through the whole legislative process, from public consultation to
 publication in Dziennik Ustaw, so readers learn about changes while they can still act on them.
 
-- Source: the official Sejm REST API (`api.sejm.gov.pl`) and its ELI API. No scraping.
+- Sources: the official Sejm REST API (`api.sejm.gov.pl`) and its ELI API, plus
+  legislacja.rcl.gov.pl (government projects before the Sejm), which has no API and is parsed
+  from HTML.
 - Importance 1–5, where **5 = legalization of stay** (ustawa o cudzoziemcach, residence permits,
   visas, citizenship, international protection).
 - Posts in Russian (Polish statute names kept in the original); English labels built in.
-- Runs twice a day on weekdays and once at midday on the weekend in GitHub Actions; state is a SQLite dump in the `state` branch. Zero infra.
-- Python 3.12+, `uv`, `pydantic`, `anthropic` SDK, `httpx2`, `pypdf`, SQLite.
+- Runs twice a day on weekdays and once at midday on the weekend in GitHub Actions; state is a
+  SQLite dump in the `state` branch. The bot itself needs no server; only the optional relay that
+  carries operator commands does.
+- Python 3.12+, `uv`, `pydantic`, `anthropic` SDK, `httpx2`, `beautifulsoup4`, `pypdf`, `typer`,
+  SQLite.
 
 ## What readers get
 
@@ -123,7 +132,7 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
 7. **Obey** the operator: commands posted in that channel (`/analyze 3039`, `/show`, `/skip`,
    `/republish`, `/help`; a bill by any number or link) are answered under the command a few
    minutes later. A small relay on an always-on server files them into the git branch `inbox`
-   and starts the commands phase on GitHub. See `docs/operator-commands.md`.
+   and starts the commands phase on GitHub. See [`docs/operator-commands.md`](docs/operator-commands.md).
 
 The Sejm term (kadencja) is read from the API on every run (`/sejm/term`), so a new Sejm is
 picked up without any change of configuration. Discovery works in the current term; everything
@@ -156,6 +165,7 @@ uv run lexinform run
 
 The first run publishes nothing from the past: only bills modified after the watermark (default:
 last 24 hours). `--since YYYY-MM-DD` starts earlier; `--no-publish` seeds the database silently.
+`--dry-run` still calls the model; add `--max-analyze 0` to try the pipeline without paying.
 
 ## Deploy with GitHub Actions
 
@@ -166,15 +176,22 @@ Warsaw in summer) and on the weekend at 10:23 UTC (12:23 Warsaw); GitHub starts 
 1. Create a bot with [@BotFather](https://t.me/BotFather); create the channel and add the bot as an
    administrator (channel id: `@name` or `-100…`).
 2. Add repository secrets: `ANTHROPIC_API_KEY`, `LEXINFORM_TELEGRAM_BOT_TOKEN`,
-   `LEXINFORM_TELEGRAM_CHANNEL_ID`, optionally `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID`.
+   `LEXINFORM_TELEGRAM_CHANNEL_ID`, optionally `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` and
+   `LEXINFORM_RCL_PROXY_URL`.
 3. *Actions → Daily run → Run workflow* with `dry_run` checked, then once more without it.
 
 The workflow checks out `state` into a worktree, restores the database, runs the bot, dumps the
 database back and pushes with its own `GITHUB_TOKEN`. Schema migrations run on restore. Do not
 protect the `state` branch. GitHub may delay scheduled runs by up to an hour.
 
+RCL drops connections from GitHub-hosted runners (US addresses), so without
+`LEXINFORM_RCL_PROXY_URL` — an HTTP forward proxy on an EU host — the RCL discovery phase fails
+on every scheduled run while the rest of the bot works:
+[`docs/rcl-proxy.md`](docs/rcl-proxy.md).
+
 Operator commands from the technical channel need the `inbox` branch and a relay process on a
-server that is always on (`lexinform listen`): `docs/operator-commands.md`.
+server that is always on (`lexinform listen`):
+[`docs/operator-commands.md`](docs/operator-commands.md).
 
 ## Configuration
 
@@ -195,24 +212,30 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_OUTPUT_LANGUAGE` | `ru` | `ru` or `en` (add more in `i18n.py`) |
 | `LEXINFORM_MIN_SCORE` | `3` | Minimum importance to publish |
 | `LEXINFORM_MAX_PUBLISH_PER_RUN` / `_MAX_ANALYZE_PER_RUN` | `10` / `40` | Flood and cost caps |
+| `LEXINFORM_MAX_ANALYSIS_ATTEMPTS` | `3` | Attempts per bill before the analysis is given up on (an outage costs none) |
 | `LEXINFORM_TEXT_BUDGET_CHARS` | `1500000` | Safety cap on text sent to the LLM (prints go in full) |
 | `LEXINFORM_MAX_ANALYSIS_COST_USD` / `_MAX_RUN_COST_USD` | `2.0` / `15.0` | Cost guard rails (0 disables): a first analysis estimated above the per-bill limit is skipped (`skipped_cost`, revive with `reset`); the analysis phase stops for the run at the per-run limit |
 | `LEXINFORM_MAX_PDF_DOWNLOAD_MB` | `200` | Safety valve for memory; bigger files are analysed from metadata |
 | `LEXINFORM_SEJM_CONCURRENCY` / `_LLM_CONCURRENCY` | `4` / `2` | Parallel PDF downloads and process lookups / bills analysed at once |
 | `LEXINFORM_TEXT_PREFILTER_ENABLED` | `true` | Scan the PDF when the title says nothing |
 | `LEXINFORM_TEXT_PREFILTER_MIN_DISTINCT` / `_MIN_OCCURRENCES` | `2` / `3` | Text-hit threshold |
+| `LEXINFORM_TEXT_PREFILTER_MAX_PER_RUN` | `20` | Texts scanned per run (a download and an extraction each) |
 | `LEXINFORM_PRE_PRINT_ENABLED` | `true` | Watch `/bills` for bills without a print number |
 | `LEXINFORM_VOTING_CLUB_BREAKDOWN` | `true` | Show how each club voted |
 | `LEXINFORM_TRACK_CLOSED_GRACE_DAYS` / `_TRACK_PASSED_MAX_DAYS` | `90` / `180` | How long closed / passed-but-unpublished bills are followed |
 | `LEXINFORM_TRACK_FULL_WEEKDAY` | `0` (Monday) | Weekday on which every followed bill is checked, not only the changed ones |
 | `LEXINFORM_IN_FORCE_REMINDERS` | `true` | Reminder on the entry-into-force day |
 | `LEXINFORM_RCL_ENABLED` / `_RCL_CONCURRENCY` | `true` / `6` | Follow government projects on legislacja.rcl.gov.pl before they reach the Sejm; projects read at once (a page takes ~10 s) |
-| `LEXINFORM_RCL_PROXY_URL` | — | HTTP forward proxy with an EU address for RCL (`http://user:pass@host:port`); RCL drops connections from GitHub's US runners. See `docs/rcl-proxy.md` |
-| `LEXINFORM_CONSULTATION_REMINDERS` / `_CONSULTATION_REMINDER_DAYS` | `true` / `3` | Reminder this many days before a public consultation closes |
+| `LEXINFORM_RCL_PROXY_URL` | — | HTTP forward proxy with an EU address for RCL (`http://user:pass@host:port`); RCL drops connections from GitHub's US runners. See [`docs/rcl-proxy.md`](docs/rcl-proxy.md) |
+| `LEXINFORM_CONSULTATION_REMINDERS` / `_CONSULTATION_REMINDER_DAYS` | `true` / `3` | Reminder this many days before a public consultation closes or applications to a public hearing close |
 | `LEXINFORM_AGENDA_WATCH` | `true` | Post when a followed bill appears on the agenda of a committee or Sejm sitting |
 | `LEXINFORM_MAX_PUBLISH_ATTEMPTS` | `3` | Retries of a failed Telegram post |
 | `LEXINFORM_RUNS_RETENTION_DAYS` | `90` | Run records (with their reports) older than this are deleted from the database |
 | `LEXINFORM_LOG_LEVEL` / `LEXINFORM_LOG_JSON` | `INFO` / `false` | Logging |
+
+The rest of `src/lexinform/settings.py` is infrastructure that rarely moves: API base URLs and
+timeouts, the page size of Sejm listings, the first-run lookback and the re-run overlap in days,
+and the model's `max_tokens`.
 
 ## Scoring rubric
 
@@ -230,7 +253,7 @@ The rubric is in `src/lexinform/adapters/llm_prompts.py`; `PROMPT_VERSION` is st
 
 | Command | Purpose |
 |---|---|
-| `lexinform run [--since D] [--dry-run] [--no-publish] [--no-track] [--max-publish N] [--max-analyze N] [--min-score N]` | The daily job |
+| `lexinform run [--since D] [--dry-run] [--no-publish] [--no-track] [--no-rcl] [--full-track] [--max-publish N] [--max-analyze N] [--min-score N]` | The daily job |
 | `lexinform scan [--since D]` | Discovery + prefilters, prints candidates |
 | `lexinform reprefilter [--limit N] [--include-text-skipped]` | Scan the texts of bills the title prefilter skipped (print PDFs; RCL projects are read again) |
 | `lexinform analyze NUMBER [--force] [--json]` | Analyse one bill |
@@ -238,7 +261,7 @@ The rubric is in `src/lexinform/adapters/llm_prompts.py`; `PROMPT_VERSION` is st
 | `lexinform track [--dry-run]` | Only the tracking phase |
 | `lexinform commands [--dry-run]` | Answer the operator commands waiting in `LEXINFORM_INBOX_DIR` (what the relay's `repository_dispatch` runs) |
 | `lexinform listen [--once] [--dry-run]` | The relay: file the technical channel's commands into the `inbox` branch (runs on a server) |
-| `lexinform show NUMBER` | API data and local status (`RPW/…` numbers show the submission) |
+| `lexinform show NUMBER` | API data and local status (`RPW/…` and `RCL/…` numbers show the submission or the project) |
 | `lexinform republish NUMBER [-y]` | Post a bill's card again after a failed or lost post |
 | `lexinform reset NUMBER [--to STATUS] [-y]` | Put a bill back into a status with a clean retry budget |
 | `lexinform runs [--days N]` | The recorded runs of the last days: counters, errors, tokens, cost |
@@ -249,30 +272,42 @@ The rubric is in `src/lexinform/adapters/llm_prompts.py`; `PROMPT_VERSION` is st
 
 ```
 src/lexinform/
-  models/, ports.py          domain models (enums, sejm, rcl, analysis, bill, report), Protocols
+  models/, ports.py          domain models (enums, sejm, rcl, analysis, bill, events, commands,
+                             report), the Protocols every service depends on
   keywords.py, authors.py    keyword prefilter, cover-letter parsing
   rcl_letters.py             deadline and e-mail out of an RCL consultation letter
   sections.py, pricing.py    print structure (trimming, excerpts), model list prices
-  concurrency.py             fan_out: parallel network steps, sequential writes
+  agenda.py, concurrency.py  prints named in a sitting agenda; fan_out: parallel network steps,
+                             sequential writes
   i18n.py, settings.py       labels per language, pydantic-settings
-  adapters/                  sejm_api (+ ELI), rcl_html (scraper), pdf_text, document_text (Word,
-                             format sniffing), llm_anthropic (+ llm_prompts), telegram
-                             (+ telegram_format), sqlite_repo, console
-  services/                  discovery, rcl_discovery (+ rcl_projects), sources (where a bill's
-                             text comes from), documents (loader), text_prefilter, analysis,
-                             signatories, publishing, pipeline, tracking/ (stages, pre-print and
-                             RCL links, rcl watcher, acts, reminders, agenda, posting)
+  adapters/                  sejm_api (+ ELI), rcl_html (scraper), pdf_text, doc_text,
+                             document_text (Word, format sniffing), llm_anthropic
+                             (+ llm_prompts), publisher_base + telegram (+ telegram_format) and
+                             console, sqlite_repo, inbox_files and github_inbox (the command
+                             inbox and the relay's writer)
+  services/                  terms, discovery, rcl_discovery (+ rcl_projects), sources (where a
+                             bill's text comes from), documents (loader), text_prefilter,
+                             analysis, signatories, publishing, lookup, commands, listener (the
+                             relay), pipeline, tracking/ (service, stages, pre_print, rcl,
+                             linking, acts, consultations, hearings, agenda, rollover, posting)
   container.py, cli.py       composition root, typer commands
 tests/                       fakes.py (ports in memory), harness.py (the real Container over the fakes),
                              unit/ on fakes + recorded API fixtures; `-m integration` hits the live API
 ```
 
 Services depend only on `ports.py`, so swapping the LLM, the database or the messenger means one
-adapter. Roadmap and verified API facts: `docs/roadmap.md`. How a Polish law is made, with the
-deadlines, the public's windows and the API stage vocabulary: `docs/legislative-process.md`
-(a Russian one-page version for readers: `docs/legislative-process.html`, open it in a browser).
-The database — tables, relations, indexes and the migration ledger on one page:
-`docs/database.html`. Contributing: `CONTRIBUTING.md`.
+adapter.
+
+## Documentation
+
+| Document | What is in it |
+|---|---|
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Setup, the check before every commit, tests, migrations, where a change goes |
+| [`docs/legislative-process.md`](docs/legislative-process.md) | How a Polish law is made: stages, legal deadlines, the public's windows, the API's stage vocabulary (`docs/legislative-process.html` is a one-page Russian version for readers) |
+| [`docs/database.html`](docs/database.html) | The database on one page: tables, relations, indexes and the migration ledger (Russian, open it in a browser) |
+| [`docs/operator-commands.md`](docs/operator-commands.md) | The technical channel's commands, how one travels to a run, the relay's setup |
+| [`docs/rcl-proxy.md`](docs/rcl-proxy.md) | Why RCL needs an EU egress and how the proxy is built |
+| [`docs/roadmap.md`](docs/roadmap.md) | What is done, what is still open, and the API facts verified with curl |
 
 ## License
 
