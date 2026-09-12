@@ -4,9 +4,22 @@ import datetime as dt
 
 import pytest
 
-from lexinform.models import BillStatus, Category, DocumentType, PublicationStatus
+from lexinform.models import BillStatus, Category, DocumentType, PublicationStatus, Stage
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import COMMITTEE_STAGES, World, summary
+
+FOREIGNERS = "Projekt ustawy o cudzoziemcach"
+# What the Sejm's tree looks like once it has adopted a bill: the third reading decided it and
+# the closing node is there, while the Senate and the President are still ahead.
+PASSED_STAGES = COMMITTEE_STAGES + (
+    Stage(
+        stage_name="III czytanie na posiedzeniu Sejmu",
+        stage_type="SejmReading",
+        date=dt.date(2026, 9, 4),
+        decision="uchwalono",
+    ),
+    Stage(stage_name="Uchwalono", stage_type="End"),
+)
 
 
 def test_relevant_bill_is_analysed_and_published_once() -> None:
@@ -84,6 +97,59 @@ def test_no_publish_marks_the_card_skipped_forever() -> None:
     card = w.publication("3039")
     assert card is not None and card.status is PublicationStatus.SKIPPED
     assert later.published == 0
+
+
+def test_a_bill_whose_act_is_already_published_is_neither_analysed_nor_posted() -> None:
+    w = World()
+    w.add_bill("2695", FOREIGNERS, stages=PASSED_STAGES)
+    w.publish_act("2695")
+
+    report = w.run()
+
+    assert (report.discovered, report.over_on_arrival) == (1, 1)
+    assert (report.analyzed, report.published) == (0, 0)
+    assert w.bill("2695").status is BillStatus.SKIPPED_CLOSED
+    assert w.llm.contexts == [] and w.publisher.new_bills == []
+
+
+def test_a_bill_rejected_before_we_saw_it_is_skipped_after_reading_its_stages() -> None:
+    w = World()
+    w.add_bill("2172", FOREIGNERS, stages=COMMITTEE_STAGES)
+    w.touch("2172", dt.datetime(2026, 9, 5), closure_date=dt.date(2026, 9, 5), passed=False)
+
+    report = w.run()
+
+    assert report.over_on_arrival == 1
+    assert "get_process:2172" in w.gateway.calls  # the last stage says whether anything is left
+    bill = w.bill("2172")
+    assert bill.status is BillStatus.SKIPPED_CLOSED
+    assert bill.last_error == "the process ended on 2026-09-05, before it was first seen"
+    assert w.llm.contexts == [] and w.publisher.new_bills == []
+
+
+def test_a_bill_the_sejm_has_just_passed_is_analysed_and_posted() -> None:
+    """`closureDate` is set at the third reading; the Senate's 30 days are still to come."""
+    w = World()
+    w.add_bill("2799", FOREIGNERS, stages=PASSED_STAGES)
+    w.touch("2799", dt.datetime(2026, 9, 4), closure_date=dt.date(2026, 9, 4), passed=True)
+
+    report = w.run()
+
+    assert (report.over_on_arrival, report.analyzed, report.published) == (0, 1, 1)
+    assert [b.number for b, _ in w.publisher.new_bills] == ["2799"]
+
+
+def test_a_known_bill_that_ends_keeps_its_card_and_its_updates() -> None:
+    w = World()
+    w.add_bill("3039", FOREIGNERS)
+    w.run()
+
+    w.set_stages("3039", PASSED_STAGES)
+    w.touch("3039", dt.datetime(2026, 9, 8), closure_date=dt.date(2026, 9, 8), passed=True)
+    report = w.run()
+
+    assert report.over_on_arrival == 0  # the gate is about bills we see for the first time
+    assert len(w.publisher.new_bills) == 1 and report.updates == 1
 
 
 def test_dry_run_leaves_the_database_empty() -> None:

@@ -136,6 +136,18 @@ def test_title_miss_without_documents_is_skipped_for_good() -> None:
     assert not any(c.startswith("download") for c in w.rcl.calls)
 
 
+def test_a_project_closed_before_we_saw_it_is_recorded_and_left_alone() -> None:
+    w = World()
+    w.add_rcl_project(rcl_project(status="zamknięty"))
+
+    report = w.run()
+
+    assert (report.rcl_discovered, report.over_on_arrival) == (1, 1)
+    assert (report.analyzed, report.published) == (0, 0)
+    assert w.bill(RCL).status is BillStatus.SKIPPED_CLOSED
+    assert not [c for c in w.rcl.calls if c.startswith("get_stage")]  # no catalogs read
+
+
 def test_known_project_is_not_discovered_again_only_its_change_date_moves() -> None:
     w = World()
     project = w.add_rcl_project()

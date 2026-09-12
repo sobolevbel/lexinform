@@ -261,12 +261,14 @@ class DailyPipeline:
         report.discovered = discovered.new
         report.pre_print_discovered = discovered.pre_print_new
         report.prefilter_hits = discovered.prefilter_hits
+        report.over_on_arrival += discovered.over
 
     def _discover_rcl(self, term: int, since: datetime, report: RunReport) -> None:
         assert self._rcl_discovery is not None
         discovered = self._rcl_discovery.discover(term, since)
         report.rcl_discovered = discovered.new
         report.rcl_prefilter_hits = discovered.prefilter_hits
+        report.over_on_arrival += discovered.over
         if discovered.failed:
             report.errors.append(f"{discovered.failed} RCL project(s) could not be read")
 
@@ -275,6 +277,7 @@ class DailyPipeline:
         discovered = self._wykaz_discovery.discover(term, since)
         report.wykaz_discovered = discovered.new
         report.wykaz_backlog = discovered.backlog
+        report.over_on_arrival += discovered.over
 
     def _prefilter_text(self, opts: RunOptions, report: RunReport) -> None:
         assert self._text_prefilter is not None

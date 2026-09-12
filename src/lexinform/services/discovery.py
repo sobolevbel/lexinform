@@ -13,6 +13,8 @@ from lexinform.models import (
     BillSubmission,
     DocumentType,
     ProcessSummary,
+    Stage,
+    is_over,
     rcl_number,
 )
 from lexinform.ports import BillRepository, Clock, ProjectResolver, SejmGateway
@@ -22,7 +24,12 @@ log = logging.getLogger(__name__)
 # A row in one of these statuses has no thread of its own, so the druk that continues it takes
 # the normal path (its own prefilter, its own card) instead of being linked to it.
 NOT_FOLLOWED = frozenset(
-    {BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER, BillStatus.LINKED}
+    {
+        BillStatus.SKIPPED_PREFILTER,
+        BillStatus.SKIPPED_TEXT_PREFILTER,
+        BillStatus.SKIPPED_CLOSED,
+        BillStatus.LINKED,
+    }
 )
 
 
@@ -35,6 +42,7 @@ class DiscoveryResult:
     pre_print_seen: int = 0
     pre_print_new: int = 0
     prefilter_hits: int = 0
+    over: int = 0  # first seen with the process already ended: no analysis, no card
 
 
 class BillDiscoveryService:
@@ -63,12 +71,14 @@ class BillDiscoveryService:
         if pre_print:
             self._discover_submissions(term, since, result)
         log.info(
-            "discovery: seen=%d new=%d pre_print_seen=%d pre_print_new=%d prefilter_hits=%d",
+            "discovery: seen=%d new=%d pre_print_seen=%d pre_print_new=%d prefilter_hits=%d"
+            " over=%d",
             result.seen,
             result.new,
             result.pre_print_seen,
             result.pre_print_new,
             result.prefilter_hits,
+            result.over,
         )
         return result
 
@@ -113,6 +123,30 @@ class BillDiscoveryService:
             return None
         return bill
 
+    def _ended_before_first_sight(self, bill: Bill, now: datetime) -> bool:
+        """Whether a bill we have never seen has nothing left to act on: then it gets no
+        analysis and no card, because a card invites action and there is none.
+
+        The listing's `closureDate` is not the answer: the Sejm sets it at the third reading,
+        with the Senate, the President and Dziennik Ustaw still ahead. The stages decide, and
+        they are read once, here — a bill whose detail cannot be read takes the normal path.
+        """
+        if bill.summary.eli is None and bill.has_process:
+            stages = self._stages_of(bill.summary)
+            if stages is None:
+                return False
+            bill = bill.model_copy(update={"stages": stages})
+        return is_over(bill, today=now.date())
+
+    def _stages_of(self, summary: ProcessSummary) -> tuple[Stage, ...] | None:
+        try:
+            return self._gateway.get_process(summary.term, summary.number).stages
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("process %s not read: %s", summary.number, exc)
+            return None
+
     def _find_submission(self, summary: ProcessSummary) -> BillSubmission | None:
         """The /bills entry of a numbered print: consultation dates, applicant, RPW number."""
         try:
@@ -141,6 +175,18 @@ class BillDiscoveryService:
         changed). True when the bill is new."""
         existing = self._repo.get(summary.term, summary.number)
         now = self._clock.now()
+        if existing is None and (summary.closure_date or summary.eli):
+            stored = self._repo.upsert_summary(summary, now=now)
+            if self._ended_before_first_sight(stored, now):
+                self._repo.set_status(
+                    stored.term,
+                    stored.number,
+                    BillStatus.SKIPPED_CLOSED,
+                    reason=f"the process ended on {summary.closure_date}, before it was first seen",
+                )
+                log.info("%s ended before we saw it: no analysis, no card", stored.number)
+                result.over += 1
+                return True
         submission = None
         if existing is None and summary.has_process:
             submission = self._find_submission(summary)

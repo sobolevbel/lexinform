@@ -27,6 +27,7 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
     TokenUsage,
+    is_over,
     parse_command,
 )
 from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier
@@ -38,7 +39,12 @@ from lexinform.services.text_prefilter import TextPrefilterService
 log = logging.getLogger(__name__)
 
 SKIPPED = frozenset(
-    {BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER, BillStatus.SKIPPED_COST}
+    {
+        BillStatus.SKIPPED_PREFILTER,
+        BillStatus.SKIPPED_TEXT_PREFILTER,
+        BillStatus.SKIPPED_COST,
+        BillStatus.SKIPPED_CLOSED,
+    }
 )
 FORCE_HINT = "add `force` to analyse anyway"
 
@@ -268,14 +274,17 @@ class CommandService:
                 bill=bill,
                 note="lapsed with the end of its Sejm term: not posted",
             )
-        if bill.summary.closure_date is not None:
-            # The Sejm is done with it (adopted, rejected, withdrawn). A card is an invitation
-            # to act, and there is nothing left to act on; the verdict above says what it was.
+        if is_over(bill, today=self._clock.now().date()):
+            # The road ended (the act is out, or the bill was rejected or withdrawn). A card is
+            # an invitation to act, and there is nothing left to act on; the verdict above says
+            # what it was. A bill the Sejm has only passed is not over: the Senate is next.
+            ended = bill.summary.closure_date
             outcome = "passed" if bill.summary.passed else "closed"
+            when = f" on {ended}" if ended is not None else ""
             return CommandOutcome(
                 status=OutcomeStatus.ANALYSED,
                 bill=bill,
-                note=f"the process ended on {bill.summary.closure_date} ({outcome}): not posted",
+                note=f"the process ended{when} ({outcome}): not posted",
             )
         if verdict.score < min_score and not command.publish:
             return CommandOutcome(

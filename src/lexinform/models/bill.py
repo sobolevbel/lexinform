@@ -314,6 +314,23 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
     return None
 
 
+def is_over(bill: Bill, *, today: dt.date) -> bool:
+    """True when the road has ended: nothing is left that a reader could act on.
+
+    The Sejm's `closureDate` does not say this on its own — it is set at the third reading,
+    while the Senate (30 days), the President (21) and Dziennik Ustaw are still ahead: druk
+    2799 is closed on 2026-09-04, `passed`, with no act yet. What ends the road is the act in
+    Dziennik Ustaw, a rejection or a withdrawal, a project closed on RCL, a plan taken off the
+    wykaz, a lapsed term — and the stages are what tell those apart, so a Sejm bill whose
+    stages were never read is not over but unknown.
+    """
+    if bill.summary.eli is not None:
+        return True  # the act is in Dziennik Ustaw; only its entry into force is still ahead
+    if bill.has_process and not bill.stages:
+        return False
+    return next_phase(bill, today=today) is None
+
+
 def _wykaz_phase(bill: Bill) -> Phase | None:
     """A bill the government has only announced: waiting for its project, which RCL publishes."""
     entry = bill.wykaz
@@ -330,10 +347,10 @@ def _rcl_phase(bill: Bill, today: dt.date) -> Phase | None:
     Ministers, the Council, the hand-over to the Sejm (then the print number)."""
     project = bill.rcl
     assert project is not None
+    if project.is_over:
+        return None  # closed on RCL without reaching the Sejm
     if project.sent_to_sejm:
         return Phase(key="rcl_to_sejm")
-    if not project.is_open:
-        return None  # closed on RCL without reaching the Sejm
     window = bill.consultation
     if window is not None and window.is_open(today):
         return Phase(key="rcl_consultation", date=window.end)

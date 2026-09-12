@@ -61,8 +61,10 @@ technical channel ──getUpdates──► lexinform listen (VPS) ──Content
 druk instead: the rows are linked and the print carries the thread, so an entry whose act is in
 force cannot get a card that promises a druk number any day now. Named the other way round — the
 druk of an entry already in the channel — the print joins that card instead of getting a second
-one, exactly as the next run's tracking would have linked them. No card is posted for a bill the
-Sejm has finished with (adopted, rejected, withdrawn) — the reply gives the verdict and says so.
+one, exactly as the next run's tracking would have linked them. No card is posted for a bill
+whose road has ended (the act is in Dziennik Ustaw, the bill was rejected or withdrawn, the
+project or the plan was dropped) — the reply gives the verdict and says so. A bill the Sejm has
+only passed still gets its card: the Senate and the President are ahead.
 
 Every reply ends with what the command took: when the run that answered it started, how long
 the command itself ran, and the model tokens and dollars it spent — the triage included, since

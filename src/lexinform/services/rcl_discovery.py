@@ -41,6 +41,7 @@ class RclDiscoveryResult:
     refreshed: int = 0
     prefilter_hits: int = 0
     planned: int = 0  # projects that continue a plan we already follow
+    over: int = 0  # first seen closed on RCL without reaching the Sejm: no analysis, no card
     failed: int = 0
 
 
@@ -94,11 +95,12 @@ class RclDiscoveryService:
                 continue
             self._ingest(term, project, result)
         log.info(
-            "RCL discovery: seen=%d new=%d refreshed=%d prefilter_hits=%d failed=%d",
+            "RCL discovery: seen=%d new=%d refreshed=%d prefilter_hits=%d over=%d failed=%d",
             result.seen,
             result.new,
             result.refreshed,
             result.prefilter_hits,
+            result.over,
             result.failed,
         )
         return result
@@ -125,6 +127,8 @@ class RclDiscoveryService:
     def _read(self, row: RclProjectSummary) -> RclProject:
         """Network only: as much of the project as its prefilter verdict needs."""
         project = self._reader.timeline(row.id)
+        if project.is_over:
+            return project  # dropped before we ever saw it: `_ingest` records the skip
         if accept_title_hits(self._hits(project, term=0)):
             log.info("RCL %s (%s): candidate, reading its catalogs", row.id, row.wykaz_number)
             return self._reader.complete(project)
@@ -142,6 +146,23 @@ class RclDiscoveryService:
         bill = self._repo.upsert_summary(summary, now=self._clock.now())
         self._repo.save_rcl(term, bill.number, project)
         self._repo.save_stages(term, bill.number, rcl_stages(project), rcl_fingerprint(project))
+        if project.is_over:
+            # Closed on RCL without reaching the Sejm before we ever saw it: the project is
+            # history, and a card would invite action on something nobody is working on.
+            self._repo.set_status(
+                term,
+                bill.number,
+                BillStatus.SKIPPED_CLOSED,
+                reason=f"closed on RCL on {project.modified}, before it was first seen",
+            )
+            log.info(
+                "%s was closed on RCL on %s before we saw it: not followed",
+                bill.number,
+                project.modified,
+            )
+            result.over += 1
+            result.new += 1
+            return
         hits = self._hits(project, term=term)
         if accept_title_hits(hits):
             status = BillStatus.ANALYSIS_PENDING

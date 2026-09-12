@@ -20,6 +20,7 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    is_over,
 )
 from lexinform.ports import BillRepository, Clock, Publisher, PublishResult, SejmGateway
 
@@ -93,7 +94,16 @@ class PublishingService:
             limit=limit,
             max_attempts=self._max_attempts,
         )
+        today = self._clock.now().date()
         for bill in government_first(candidates):
+            if is_over(bill, today=today):
+                # Analysed while the process was still running, over before the card went out
+                # (publishing was off, the channel was down): a card invites action, and there
+                # is none left. The skipped row settles the bill, as `--no-publish` does.
+                log.info("%s is over: no card", bill.number)
+                self._record_skipped(bill)
+                result.skipped += 1
+                continue
             if not publish:
                 self._record_skipped(bill)
                 result.skipped += 1

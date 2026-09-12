@@ -19,6 +19,7 @@ from lexinform.models import (
     current_term,
     diff_stages,
     flatten_stages,
+    is_over,
     latest_text_document,
     next_phase,
     stage_fingerprint,
@@ -327,6 +328,30 @@ def test_passed_bill_awaits_publication_then_entry_into_force(
     assert (awaiting_force.key, awaiting_force.date) == ("in_force", dt.date(2026, 11, 19))
     assert undated is not None and undated.key == "in_force_unknown"
     assert in_force is None
+
+
+def test_a_bill_is_over_only_when_the_stages_leave_nothing_ahead(
+    process_1962: ProcessDetail,
+) -> None:
+    bill = _bill(process_1962, process_1962.stages)
+    adopted = bill.model_copy(
+        update={
+            "summary": bill.summary.model_copy(
+                update={"closure_date": dt.date(2026, 9, 4), "passed": True}
+            )
+        }
+    )
+    rejected = adopted.model_copy(
+        update={"summary": adopted.summary.model_copy(update={"passed": False})}
+    )
+    published = adopted.model_copy(
+        update={"summary": adopted.summary.model_copy(update={"eli": "DU/2026/1"})}
+    )
+
+    assert not is_over(adopted, today=TODAY)  # closed by the Sejm, the President has it
+    assert not is_over(adopted.model_copy(update={"stages": ()}), today=TODAY)  # unread: unknown
+    assert is_over(rejected, today=TODAY)
+    assert is_over(published, today=TODAY)
 
 
 def test_pre_print_bill_waits_for_its_consultation_then_its_print_number(

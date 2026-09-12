@@ -27,6 +27,7 @@ class WykazDiscoveryResult:
     new: int = 0
     prefilter_hits: int = 0
     backlog: int = 0  # entries that match but were published before the watermark
+    over: int = 0  # first seen already realised or withdrawn: no analysis, no card
 
 
 class WykazDiscoveryService:
@@ -61,6 +62,7 @@ class WykazDiscoveryService:
                 # Adopted or withdrawn before we ever saw it: there is no action left to take,
                 # and a card would invite one.
                 log.info("wykaz %s: %s already, not followed", entry.number, entry.status)
+                result.over += 1
                 continue
             if self._repo.find_by_wykaz_number(entry.number) is not None:
                 # The project is already on RCL under this number, with its text: that row is
@@ -69,11 +71,12 @@ class WykazDiscoveryService:
                 continue
             self._ingest(term, entry, hits, result)
         log.info(
-            "wykaz discovery: seen=%d new=%d prefilter_hits=%d backlog=%d",
+            "wykaz discovery: seen=%d new=%d prefilter_hits=%d backlog=%d over=%d",
             result.seen,
             result.new,
             result.prefilter_hits,
             result.backlog,
+            result.over,
         )
         return result
 

@@ -714,6 +714,9 @@ class MessageFormatter:
                     ("{} older entries match, not followed", report.wykaz_backlog),
                 ),
                 _counters(
+                    ("{} already over when first seen, not followed", report.over_on_arrival),
+                ),
+                _counters(
                     ("text prefilter: checked {}", report.text_prefilter_checked),
                     ("hits {}", report.text_prefilter_hits),
                     ("unreadable {}", report.text_prefilter_unreadable),

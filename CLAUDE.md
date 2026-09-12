@@ -39,7 +39,8 @@ windows and the API stage vocabulary in `docs/legislative-process.md`.
 ## Architecture in one breath
 
 `models/` (pydantic + pure helpers; `enums`, `sejm`, `rcl`, `wykaz`, `analysis`, `bill` (incl.
-`next_phase`, `ConsultationWindow`), `report`, all re-exported from `lexinform.models`) →
+`next_phase`, `is_over`, `ConsultationWindow`), `report`, all re-exported from
+`lexinform.models`) →
 `ports.py` (Protocols) → `adapters/` (Sejm API, ELI, RCL scraper `rcl_html`, the register CSV
 `wykaz_csv`, PDF, Word +
 format sniffing `document_text`, Anthropic, `publisher_base` (the `Publisher` port rendered once;
@@ -111,6 +112,19 @@ Invariants worth keeping:
   sittings, refreshed every run for every followed bill, not only the changed ones) or from the
   constitutional deadline (`Phase.deadline`: Senate 30 days from the 3rd reading, President 21
   from receiving the act; 14/7 for urgent bills).
+- **A bill whose road ended before we saw it gets neither an analysis nor a card.** A card
+  invites action, and there is none left. `models.is_over(bill, today)` decides for every source:
+  over means the act is in Dziennik Ustaw (`ELI`), the bill was rejected or withdrawn, the RCL
+  project was closed without reaching the Sejm, the plan was realised or taken off the wykaz, or
+  the term lapsed — `next_phase` finding nothing ahead, with a Sejm bill whose stages were never
+  read counting as unknown, not over. `closureDate` alone is *not* the end: the Sejm sets it at
+  the third reading, with the Senate, the President and Dz.U. still ahead (druk 2799: closed
+  2026-09-04, `passed`, no act), so discovery reads the stages once for a bill it sees for the
+  first time with a closure date (`_ended_before_first_sight`) and stores the skip as
+  `skipped_closed` (`reset --to analysis_pending` revives it); RCL discovery decides from the
+  timeline, before the catalogs, and the wykaz from the entry's status. Bills already followed
+  are untouched by this: they keep their card and their updates to the end. The last gate is
+  `PublishingService.publish_new`, for a bill analysed while it was still running.
 - **Not every stage is a post.** `models/events.py`: `is_substantive` separates the events a
   reader cares about (referral, committee report, vote, Senate, President, hearing, a decided
   reading) from the frame nodes (`Start`, `ReadingReferral`, `Reading`, `CommitteeWork`,
@@ -156,8 +170,8 @@ Invariants worth keeping:
   never get a card promising a druk number, and a druk must not get a second card next to the
   entry's: a print linked outside tracking inherits the entry's card in `PublishingService`
   (`_inherited_card`, the same alias `Linker` makes, and the card is re-rendered with both tags).
-  A command posts no card at all for a bill whose `closure_date` is set: a card invites action,
-  and the process is over. The print copies the entry's status, except `skipped_prefilter`: an RPW entry has
+  A command posts no card at all for a bill `models.is_over` calls finished, and answers with the
+  verdict instead. The print copies the entry's status, except `skipped_prefilter`: an RPW entry has
   no text to scan, so its print goes to `text_prefilter_pending` instead of inheriting the skip
   (otherwise every non-government bill with a neutral title would bypass the text stage). The RPW
   reconciler finds the print in `/bills`; for RCL, Sejm discovery notices a
@@ -291,6 +305,14 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   signalled by `ELI`/`displayAddress`; details from `/eli/acts/DU/{year}/{pos}`: `promulgation`
   = Dz.U. date, `entryIntoForce`, `announcementDate` = date in the act's title. Publication
   follows the Sejm vote by ~30–40 days.
+- `closureDate` is the **Sejm's** closure, set at the third reading (and on a rejection or a
+  withdrawal), not the end of the road: the term-10 listing (2026-09-12) has 938 bills, 498
+  closed with an act, 84 closed and `passed` with no act (druk 2799 closed 2026-09-04, the
+  Senate's 30 days only starting; the older ones are vetoes, a referral to the Tribunal, bills
+  the President never signed) and 47 closed with `passed=false` (odrzucono/wycofano). The
+  listing carries `closureDate` and `passed`; an open process never has the date. `End`
+  ("Uchwalono") is appended at the third reading and stays last, so it says nothing about how
+  far the bill got — read the stages before it.
 - `rclNum` and `rclLink` exist only in a process's **detail**, never in the `/processes` or
   `/bills` listing (verified 2026-09-11): finding the print an RCL project became means reading
   details one by one, so `find_process_by_rcl_num` narrows by the hand-over date and caps the
@@ -432,5 +454,9 @@ government dropping a project is posted. Operator
 commands (decided 2026-09-11): from the technical channel, any admin of it; delivered by a relay
 on the owner's mikrus VPS (384 MB: enough for a getUpdates loop, not for the bot itself) into
 the `inbox` branch, executed by GitHub Actions so the state branch stays the only database
-writer; a manual `/analyze` publishes under the daily rule unless told `publish`. Open items
-are listed under "Still open" in `docs/roadmap.md`.
+writer; a manual `/analyze` publishes under the daily rule unless told `publish`. Bills found
+when their road is already over (decided 2026-09-12): no card and no analysis, whatever the
+source — but only when there is really nothing ahead (the act is out, the bill was rejected or
+withdrawn, the project or the plan was dropped), and a bill the Sejm has merely passed keeps its
+card, because the Senate and the President are the reader's last windows; the last stage is read
+to tell the two apart. Open items are listed under "Still open" in `docs/roadmap.md`.

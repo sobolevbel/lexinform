@@ -488,15 +488,29 @@ def test_a_druk_that_continues_a_followed_entry_joins_its_card() -> None:
     assert (edited.number, edited_message) == (RPW, card_id)
 
 
-def test_a_bill_the_sejm_has_finished_with_gets_a_verdict_but_no_card() -> None:
+def test_a_bill_whose_road_has_ended_gets_a_verdict_but_no_card() -> None:
     w = World()
     w.add_bill("2172", TITLE)
-    w.touch("2172", dt.datetime(2026, 1, 23), closure_date=dt.date(2026, 1, 23), passed=True)
+    w.touch("2172", dt.datetime(2026, 1, 23), closure_date=dt.date(2026, 1, 23), passed=False)
     w.command("/analyze 2172")
 
     _commands_only(w)
 
     (_, outcome), *_ = w.replier.replies
     assert outcome.status is OutcomeStatus.ANALYSED and outcome.message_id is None
-    assert outcome.note == "the process ended on 2026-01-23 (passed): not posted"
+    assert outcome.note == "the process ended on 2026-01-23 (closed): not posted"
     assert w.publisher.new_bills == []
+
+
+def test_a_bill_the_sejm_has_just_passed_still_gets_a_card() -> None:
+    """`closureDate` is set at the third reading, with the Senate's 30 days still to come."""
+    w = World()
+    w.add_bill("2172", TITLE)
+    w.touch("2172", dt.datetime(2026, 9, 4), closure_date=dt.date(2026, 9, 4), passed=True)
+    w.command("/analyze 2172")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.ANALYSED and outcome.message_id == 101
+    assert [b.number for b, _ in w.publisher.new_bills] == ["2172"]

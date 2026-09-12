@@ -176,8 +176,17 @@ Done on 2026-09-12 (schema v14):
   `/analyze` was already idempotent by construction; `/republish` was not.
 - An RCL project a command names may already be in the Sejm: `BillLookup` resolves it to its druk
   through `find_process_by_rcl_num`, links the rows and answers about the print, so a project
-  whose act is in force can no longer get a card promising a druk number. A bill with a
-  `closure_date` gets no card at all — a card invites action, and the process is over.
+  whose act is in force can no longer get a card promising a druk number.
+- **A bill found when its road is already over gets no card and no analysis** (every source).
+  `models.is_over(bill, today)` is the test: the act in Dziennik Ustaw, a rejection or a
+  withdrawal, an RCL project closed without reaching the Sejm, a plan realised or taken off the
+  wykaz, a lapsed term. `closureDate` is not that test — the Sejm sets it at the third reading
+  and 84 of the 938 term-10 bills are closed and `passed` with no act yet (druk 2799: closed
+  2026-09-04, the Senate's 30 days only starting) — so discovery reads the stage tree once for a
+  bill it meets for the first time with a closure date, and a bill the Sejm has merely passed
+  still gets its card: the Senate and the President are the reader's last windows. Skipped rows
+  are stored as `skipped_closed` (`reset --to analysis_pending` revives them); bills already
+  followed keep their card and their updates to the end.
 - The database on one page, drawn and explained: `docs/database.html` (tables, relations,
   indexes, the migration ledger). The source of truth stays `MIGRATIONS` in `sqlite_repo.py`.
 

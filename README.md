@@ -114,7 +114,12 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
    submitted without a print number (`/bills`), government projects modified on RCL (the HTML
    list sorted by modification date; one project page per new project, its stage catalogs only
    for candidates) and entries published in the wykaz prac RM (one CSV with the whole register;
-   entries older than the watermark are counted in the report and left alone).
+   entries older than the watermark are counted in the report and left alone). A bill met for
+   the first time when its road is already over — the act is in Dziennik Ustaw, the bill was
+   rejected or withdrawn, the project or the plan was dropped — is recorded and left there: a
+   card invites action, and there is none. The Sejm's `closureDate` is not that point (it is
+   set at the third reading, with the Senate and the President still ahead), so the stage tree
+   decides.
 2. **Prefilter** by Polish word stems on title and description (for RCL: title, hasła and
    działy); misses get their text scanned with the same patterns (accepted on two distinct topics
    or three hits).

@@ -70,6 +70,7 @@ def test_a_plan_the_government_has_already_finished_with_gets_no_card() -> None:
 
     # A card invites action, and there is none left to take on either of these.
     assert (report.wykaz_discovered, report.published) == (0, 0)
+    assert report.over_on_arrival == 2
     assert w.repo.find_wykaz(WYKAZ) is None
 
 

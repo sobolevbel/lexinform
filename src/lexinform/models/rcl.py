@@ -223,6 +223,11 @@ class RclProject(BaseModel):
         return self.status.strip().lower() == OPEN_STATUS
 
     @property
+    def is_over(self) -> bool:
+        """Closed on RCL without reaching the Sejm: the government dropped the project."""
+        return not self.is_open and not self.sent_to_sejm
+
+    @property
     def reached_stages(self) -> tuple[RclStage, ...]:
         return tuple(st for st in self.stages if st.reached)
 
@@ -349,7 +354,7 @@ def process_summary(project: RclProject, *, term: int) -> ProcessSummary:
         process_start_date=project.created,
         document_date=max(dated) if dated else project.created,
         change_date=dt.datetime.combine(project.modified, dt.time(0, 0), tzinfo=dt.UTC),
-        closure_date=None if project.is_open or project.sent_to_sejm else project.modified,
+        closure_date=project.modified if project.is_over else None,
         eu_related=project.eu_note is not None or (project.wykaz_number or "").startswith("UC"),
         rcl_num=project.rm_number,
         rcl_link=project.web_url,

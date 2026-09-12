@@ -34,6 +34,7 @@ from lexinform.models.bill import (
     about_ukraine,
     consultation_open,
     government_path,
+    is_over,
     next_phase,
 )
 from lexinform.models.commands import (
@@ -247,6 +248,7 @@ __all__ = [
     "has_process",
     "hearing_application_deadline",
     "hearings_due",
+    "is_over",
     "is_pre_print_number",
     "is_rcl_number",
     "is_substantive",

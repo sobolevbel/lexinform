@@ -502,7 +502,7 @@
             <tr><td>change_date<span class="tag idx">idx</span></td><td>TEXT</td><td>Момент изменения по данным API. По нему сортируются очереди и отсекается <code>changed_since</code> в трекинге.</td></tr>
             <tr><td>closure_date</td><td>TEXT</td><td>Дата закрытия процесса. Закрытые ведутся ещё <code>closed_grace_days</code>, принятые — дольше, пока не выйдет акт.</td></tr>
             <tr><td>passed</td><td>INTEGER</td><td>Принят парламентом (не «вступил в силу»): у ветированных тоже 1.</td></tr>
-            <tr><td>status<span class="tag idx">idx</span></td><td>TEXT</td><td><code>BillStatus</code>: discovered → skipped_prefilter / text_prefilter_pending → analysis_pending → analyzed, плюс analysis_failed, skipped_cost, linked.</td></tr>
+            <tr><td>status<span class="tag idx">idx</span></td><td>TEXT</td><td><code>BillStatus</code>: discovered → skipped_prefilter / text_prefilter_pending → analysis_pending → analyzed, плюс analysis_failed, skipped_cost, skipped_closed (процесс завершился до того, как мы впервые увидели законопроект), linked.</td></tr>
             <tr><td>entry_into_force<span class="tag idx">idx</span></td><td>TEXT</td><td>Дата вступления акта в силу, вынутая из <code>act_json</code> ради запроса «кому сегодня напомнить».</td></tr>
             <tr><td>discontinued_at</td><td>TEXT</td><td>Проставляется при смене каденции (принцип дисконтинуации). Фильтр <code>discontinued_at IS NULL</code> стоит во всех листингах.</td></tr>
             <tr><td>linked_number</td><td>TEXT</td><td>Ссылка на себя же: запись RPW или RCL указывает на появившийся друк, который наследует карточку.</td></tr>

@@ -335,7 +335,12 @@ class SqliteBillRepository:
         return bill
 
     _SKIPPED = frozenset(
-        {BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER, BillStatus.SKIPPED_COST}
+        {
+            BillStatus.SKIPPED_PREFILTER,
+            BillStatus.SKIPPED_TEXT_PREFILTER,
+            BillStatus.SKIPPED_COST,
+            BillStatus.SKIPPED_CLOSED,
+        }
     )
 
     def set_status(

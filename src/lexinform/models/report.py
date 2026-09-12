@@ -38,6 +38,9 @@ class RunReport(BaseModel):
     rcl_prefilter_hits: int = 0
     wykaz_discovered: int = 0  # bills first seen as a plan in the wykaz prac RM
     wykaz_backlog: int = 0  # older entries that match the keywords and were left unfollowed
+    # Bills first seen with their road already over (act published, rejected, withdrawn, a
+    # project dropped on RCL, a plan realised or taken off the wykaz): stored, never posted.
+    over_on_arrival: int = 0
     linked: int = 0
     prefilter_hits: int = 0
     text_prefilter_checked: int = 0
