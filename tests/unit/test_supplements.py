@@ -11,6 +11,18 @@ OPINION = "Do druku nr 3039 - opinia SN"
 NO_REMARKS = "Do druku nr 3039 - opinia PG RP ( nie zgłoszono uwag )."
 HOUSEKEEPING = "Do druku nr 3039 - zmiana posła sprawozdawcy"
 TITLE = "Projekt ustawy o cudzoziemcach"
+PM_LETTER = """Warszawa, 21 sierpnia 2025 r.
+Prezes Rady Ministrów
+DSP.WPP.0640.57.2025
+ Pan
+ Marszałek Sejmu
+Szanowny Panie Marszałku,
+przekazuję przyjęte przez Radę Ministrów stanowisko w sprawie poselskiego projektu ustawy
+- o zmianie ustawy o obywatelstwie polskim (druk nr 1273).
+Jednocześnie informuję, że Rada Ministrów upoważniła Ministra Spraw Wewnętrznych
+i Administracji do prezentowania stanowiska Rządu w tej sprawie w toku prac parlamentarnych.
+Z wyrazami szacunku, Donald Tusk
+"""
 
 
 def test_the_kinds_worth_telling_are_told_apart_by_their_title() -> None:
@@ -163,6 +175,26 @@ def test_a_document_over_the_cost_limit_is_told_without_a_digest() -> None:
     assert w.llm.supplement_contexts == []
     text = MessageFormatter("ru").status_update(*w.publisher.updates[0][:2]).text
     assert "📄 <b>Оценка последствий (OSR)</b>" in text and f'href="{url}"' in text
+
+
+def test_a_filed_document_that_is_only_its_covering_letter_is_not_digested() -> None:
+    """Of 66 documents filed to prints, 11 carry the Prime Minister's letter and nothing else
+    (term 10, 12 Sept 2026); it names the bill and says who will present the position, never
+    what the position is."""
+    w = World(extractor=FakeTextExtractor(by_content={b"%PDF-filed": PM_LETTER}))
+    w.add_bill("1273", TITLE)
+    w.run()
+    url = w.file_to_print("1273", GOVERNMENT_POSITION.replace("3039", "1273"))
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.updates == 1
+    _, change, _ = w.publisher.updates[0]
+    assert change.supplements[0].digest is None
+    assert w.llm.supplement_contexts == []
+    text = MessageFormatter("ru").status_update(*w.publisher.updates[0][:2]).text
+    assert "📄 <b>Позиция правительства по проекту</b>" in text and f'href="{url}"' in text
 
 
 def test_a_model_failure_does_not_lose_the_document() -> None:

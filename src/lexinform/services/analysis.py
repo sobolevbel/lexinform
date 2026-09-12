@@ -41,8 +41,8 @@ from lexinform.models import (
 from lexinform.ports import AuthorsResolver, BillRepository, Clock, LlmAnalyzer
 from lexinform.ports import TextSource as TextSourcePort
 from lexinform.pricing import cost_usd, estimate_input_cost
-from lexinform.sections import TextBudget, excerpts, trim_print
-from lexinform.services.documents import TextLoader
+from lexinform.sections import TextBudget, carries_the_document, excerpts, trim_print
+from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 
 log = logging.getLogger(__name__)
 
@@ -485,11 +485,13 @@ class AnalysisService:
                 bill.term, bill.number, located.stages, stage_fingerprint(located.stages)
             )
         document = located.document
+        # A scanned print is still signed on its first page: the letter is the one part of it
+        # that has a text layer, so the signatures survive an analysis made without the text.
         if (
             self._authors is not None
             and document is not None
             and document.kind == "print"
-            and prepared.source in FULL_TEXT_SOURCES
+            and prepared.text
         ):
             described = (
                 bill
@@ -506,6 +508,12 @@ class AnalysisService:
         self, document: TextDocument | None, *, trim: bool = True
     ) -> tuple[str, bool, TextSource]:
         """Trimmed, budgeted text of the document; metadata-only when it cannot be fetched or read.
+
+        A file whose text layer is only the letter handing the document to the Marshal counts as
+        unreadable, and the text comes back with it so that the signatures under the letter are
+        still resolved: the prompt shows the model nothing under a metadata source, and an
+        analysis that says it read the bill when it read a covering note is worse than one that
+        admits it had the title alone.
 
         Only an outage of the document's host propagates: a missing or broken file falls back to
         the metadata instead of costing the bill an analysis attempt. `trim=False` keeps the
@@ -528,6 +536,13 @@ class AnalysisService:
             return "", False, "metadata_only"
         if text is None:
             return "", False, "metadata_only"
+        if not carries_the_document(text, min_chars=MIN_TEXT_CHARS):
+            log.info(
+                "%s: %d chars, and all of them the covering letter; using metadata only",
+                document.url,
+                len(text),
+            )
+            return text, False, "metadata_only"
         if not trim:
             budgeted = self._budget.apply(text)
             return budgeted.text, budgeted.truncated, "pdf"

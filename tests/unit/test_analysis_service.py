@@ -160,6 +160,25 @@ def test_deputies_bill_gets_its_signatories_resolved_to_clubs() -> None:
     assert w.gateway.calls.count("list_mps") == 1  # the directory is fetched once per process
 
 
+def test_a_print_scanned_but_for_its_letter_is_analysed_from_metadata() -> None:
+    """Druk 604 is 37 pages of images and one page of text: the letter and the signatures under
+    it. The model is told the text is unavailable rather than handed a covering note as the bill,
+    and the signatures, the one thing the page does carry, are still resolved."""
+    cover = DEPUTIES_LETTER.split("Tłoczono z polecenia Marszałka Sejmu")[0]
+    w = World(extractor=FakeTextExtractor(cover))
+    w.gateway.mps = MPS
+    w.add_bill("4200", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
+
+    w.run()
+
+    assert w.llm.contexts[0].text_source == "metadata_only"
+    assert w.llm.contexts[0].text == cover  # the prompt shows none of it under that source
+    analysis = w.bill("4200").analysis
+    assert analysis is not None and analysis.text_sha256 is None
+    authors = w.bill("4200").authors
+    assert authors is not None and authors.clubs == (("KO", 2), ("Lewica", 1))
+
+
 def test_card_shows_signatory_clubs_and_the_representative() -> None:
     w = World(extractor=FakeTextExtractor(DEPUTIES_LETTER))
     w.gateway.mps = MPS

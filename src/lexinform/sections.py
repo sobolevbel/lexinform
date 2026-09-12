@@ -12,6 +12,10 @@ parties, consultations).
 the beginning of the justification and windows of text around every keyword hit. `TextBudget` is
 the last safety cap before the model call.
 
+`carries_the_document` asks the question that comes before all of them: whether the file has the
+document in it at all. Much of what the Sejm publishes is scanned paper whose only text layer is
+the letter that hands it to the Marshal.
+
 The PDF extractor separates pages with a form feed, which is what `PAGE_BREAK` is, and a section
 header sits within the first few hundred characters of a page. The OSR form's point 6 is where
 the trim cuts; RCL's Word files carry that number as list formatting rather than as text, so the
@@ -83,6 +87,57 @@ def _section_start(page: str, current: str) -> str:
     if _JUSTIFICATION_RE.search(head):
         return KEEP
     return current
+
+
+_COVER_LIMIT = 3000
+_TRANSMITTAL_RE = re.compile(
+    r"art\.\s*118\s*ust\.\s*1\s*Konstytucji"
+    r"|wnosz[ąa]\s+projekt\s+ustawy"
+    r"|przekazuj[ęe]\s+(?:przyj[ęe]te|w\s+za[łl][ąa]czeniu)",
+    re.IGNORECASE,
+)
+_BODY_RE = re.compile(
+    r"^\s*U\s?S\s?T\s?A\s?W\s?A\b"
+    r"|^\s*Art\.\s*1\s*[.)]"
+    r"|^\s*u\s?z\s?a\s?s\s?a\s?d\s?n\s?i\s?e\s?n\s?i\s?e\s*$"
+    r"|^\s*Nazwa projektu\b"
+    r"|^\s*Projekt\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def without_cover_letter(text: str) -> str:
+    """The document itself: what follows the letter that hands it to the Marshal.
+
+    Every print and every document filed to one opens with such a letter — "na podstawie
+    art. 118 ust. 1 Konstytucji … wnoszą projekt ustawy", "przekazuję przyjęte przez Radę
+    Ministrów stanowisko" — and the document proper starts on the next page or at its own
+    heading, whichever comes first. A text with no such opening (a committee report, an RCL
+    file) is its own document from the first line and is returned unchanged.
+    """
+    match = _TRANSMITTAL_RE.search(text[:_COVER_LIMIT])
+    if match is None:
+        return text
+    body = _BODY_RE.search(text, match.end())
+    page = text.find(PAGE_BREAK, match.end())
+    cuts = [cut for cut in (body.start() if body else -1, page) if cut >= 0]
+    return text[min(cuts) :] if cuts else ""
+
+
+def carries_the_document(text: str, *, min_chars: int) -> bool:
+    """Whether the extracted text is the document at all, or only the letter transmitting it.
+
+    Sejm papers are scanned, signed on paper and filed as images: of 66 documents filed to
+    prints (term 10, 12 Sept 2026) 55 have no text layer whatsoever and the remaining 11 carry
+    the Prime Minister's covering letter and nothing else — 700-820 characters that name the
+    bill and say who will present the government's position, never what the position is. Of 39
+    prints, 11 are scans and one (druk 604) is its cover letter and the signatures under it.
+
+    Those 800 characters are the trap this answers: they read as a document, they pass any
+    length threshold, and a model asked what the government makes of a bill would answer from
+    a polite transmittal note.
+    """
+    return len(without_cover_letter(text).strip()) >= min_chars
 
 
 def trim_print(text: str) -> TrimmedText:

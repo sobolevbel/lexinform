@@ -4,7 +4,14 @@ import pytest
 
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.keywords import KeywordPrefilter
-from lexinform.sections import PAGE_BREAK, TextBudget, excerpts, trim_print
+from lexinform.sections import (
+    PAGE_BREAK,
+    TextBudget,
+    carries_the_document,
+    excerpts,
+    trim_print,
+    without_cover_letter,
+)
 from tests.conftest import FIXTURES
 
 BILL = "Projekt\nU S T AWA\nz dnia ... o zmianie ustawy o cudzoziemcach\nArt. 1. " + "x" * 500
@@ -91,6 +98,84 @@ def test_real_deputies_print_is_not_trimmed() -> None:
     assert PAGE_BREAK in text
     result = trim_print(text)
     assert result.dropped == () and "Druk nr 3039" in result.text
+
+
+DEPUTIES_COVER = """Druk nr 604       Warszawa, 23 lipca 2024 r.
+SEJM
+RZECZYPOSPOLITEJ POLSKIEJ
+X kadencja
+ Pan
+ Szymon Hołownia
+ Marszałek Sejmu
+ Rzeczypospolitej Polskiej
+Na podstawie art. 118 ust. 1 Konstytucji Rzeczypospolitej Polskiej i na podstawie
+art. 32 ust. 2 regulaminu Sejmu niżej podpisani posłowie wnoszą projekt ustawy:
+ - o zmianie ustawy o Krajowej Administracji
+Skarbowej.
+Do reprezentowania wnioskodawców w pracach nad projektem ustawy
+upoważniamy pana posła Ryszarda Petru.
+ (-)  Elżbieta Burkiewicz;  (-)  Żaneta Cwalina-Śliwowska;  (-)  Sławomir
+Ćwik;  (-)  Piotr Górnikiewicz;  (-)  Paulina Hennig-Kloska
+"""
+GOVERNMENT_LETTER = """Warszawa, 21 sierpnia 2025 r.
+SEJM
+RZECZYPOSPOLITEJ POLSKIEJ
+X kadencja
+
+Prezes Rady Ministrów
+DSP.WPP.0640.57.2025
+
+ Pan
+ Szymon Hołownia
+ Marszałek Sejmu
+ Rzeczypospolitej Polskiej
+
+Szanowny Panie Marszałku,
+
+przekazuję przyjęte przez Radę Ministrów stanowisko  w sprawie
+poselskiego projektu ustawy
+
+- o zmianie ustawy o obywatelstwie
+polskim (druk nr 1273).
+
+Jednocześnie informuję, że Rada Ministrów upoważniła Ministra Spraw
+Wewnętrznych i Administracji  do prezentowania stanowiska Rządu w tej sprawie
+w toku prac parlamentarnych.
+
+Z wyrazami szacunku,
+            Donald Tusk
+"""
+COMMITTEE_REPORT = (
+    """Tłoczono z polecenia Marszałka Sejmu Rzeczypospolitej Polskiej
+
+Druk nr 2715
+S P R A W O Z D A N I E
+KOMISJI KULTURY, DZIEDZICTWA NARODOWEGO I ŚRODKÓW PRZEKAZU
+o poselskim projekcie uchwały (druk nr 2508)
+Marszałek Sejmu skierował w dniu 6 maja 2026 r. powyższy projekt uchwały do Komisji
+"""
+    + "s" * 300
+)
+
+
+def test_a_print_that_is_a_scan_of_its_cover_letter_carries_no_document() -> None:
+    """Druk 604: 37 pages, and the only text layer is page one — the letter and the signatures."""
+    scanned = DEPUTIES_COVER + PAGE_BREAK + PAGE_BREAK.join("" for _ in range(36))
+
+    assert not carries_the_document(scanned, min_chars=200)
+    assert not carries_the_document(GOVERNMENT_LETTER, min_chars=200)
+
+
+def test_the_same_letter_followed_by_the_bill_carries_the_document() -> None:
+    whole = DEPUTIES_COVER + PAGE_BREAK + BILL + PAGE_BREAK + JUSTIFICATION
+
+    assert carries_the_document(whole, min_chars=200)
+    assert without_cover_letter(whole).lstrip().startswith("Projekt")
+
+
+def test_a_document_with_no_covering_letter_is_its_own_first_page() -> None:
+    assert carries_the_document(COMMITTEE_REPORT, min_chars=200)
+    assert without_cover_letter(COMMITTEE_REPORT) == COMMITTEE_REPORT
 
 
 def test_excerpts_take_heads_and_keyword_windows_in_order() -> None:
