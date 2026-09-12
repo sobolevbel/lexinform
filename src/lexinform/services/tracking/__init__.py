@@ -8,6 +8,6 @@ pending before sending) and `stages` (enrichment and the dedupe key).
 """
 
 from lexinform.services.tracking.result import TrackingResult
-from lexinform.services.tracking.service import StatusTrackingService
+from lexinform.services.tracking.service import StatusTrackingService, TrackingOptions
 
-__all__ = ["StatusTrackingService", "TrackingResult"]
+__all__ = ["StatusTrackingService", "TrackingOptions", "TrackingResult"]

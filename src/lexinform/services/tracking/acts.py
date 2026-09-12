@@ -61,7 +61,11 @@ class ActWatcher:
         result.count_post(self._poster.act_published(fresh), "acts_published")
 
     def remind_in_force(self, result: TrackingResult) -> None:
-        """One reply on the day the act enters into force (Warsaw time)."""
+        """One reply on the day the act enters into force (Warsaw time).
+
+        An act that was already in force when we first read it gets none: the publication notice
+        said "in force since …" itself.
+        """
         if not self._in_force_reminders:
             return
         today = self._clock.now().astimezone(self._local_tz).date()
@@ -70,7 +74,6 @@ class ActWatcher:
             if act is None or act.entry_into_force is None:
                 continue
             if act.already_in_force_when_fetched:
-                # The publication notice already said "in force since …".
                 self._poster.record(bill, PublicationKind.IN_FORCE, PublicationStatus.SKIPPED)
                 continue
             if self._poster.posted(bill, PublicationKind.IN_FORCE):

@@ -55,6 +55,138 @@ log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
+class TrackingOptions:
+    """The knobs of a tracking run, as `Settings` sets them.
+
+    A reminder is switched off by giving it no days (`consultation_reminder_days`,
+    `decision_reminder_days` = None), the agenda watcher by `agenda_watch`.
+    """
+
+    channel_id: str
+    closed_grace_days: int = 90
+    passed_max_days: int = 180
+    pending_decision_max_days: int = 1095
+    max_publish_attempts: int = 3
+    club_breakdown: bool = True
+    in_force_reminders: bool = True
+    consultation_reminder_days: int | None = 3
+    decision_reminder_days: int | None = 7
+    agenda_watch: bool = True
+    max_card_edits: int = 30
+    local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw")
+    text_prefilter: bool = True
+    workers: int = 1
+
+
+def _consultation_reminder(
+    repo: BillRepository, clock: Clock, poster: Poster, options: TrackingOptions
+) -> ConsultationReminder | None:
+    if options.consultation_reminder_days is None:
+        return None
+    return ConsultationReminder(
+        repo,
+        clock,
+        poster,
+        channel_id=options.channel_id,
+        local_tz=options.local_tz,
+        days_before=options.consultation_reminder_days,
+    )
+
+
+def _hearing_reminder(
+    clock: Clock, poster: Poster, options: TrackingOptions
+) -> HearingReminder | None:
+    if options.consultation_reminder_days is None:
+        return None
+    return HearingReminder(
+        clock,
+        poster,
+        local_tz=options.local_tz,
+        days_before=options.consultation_reminder_days,
+    )
+
+
+def _deadline_reminder(
+    repo: BillRepository, clock: Clock, poster: Poster, options: TrackingOptions
+) -> DeadlineReminder | None:
+    if options.decision_reminder_days is None:
+        return None
+    return DeadlineReminder(
+        repo,
+        clock,
+        poster,
+        local_tz=options.local_tz,
+        days_before=options.decision_reminder_days,
+    )
+
+
+def _rcl_watcher(
+    reader: RclProjectReader | None,
+    repo: BillRepository,
+    clock: Clock,
+    poster: Poster,
+    linker: Linker,
+    gateway: SejmGateway,
+    analysis: AnalysisService | None,
+    consultations: ConsultationReminder | None,
+    options: TrackingOptions,
+) -> RclWatcher | None:
+    if reader is None:
+        return None
+    return RclWatcher(
+        reader,
+        repo,
+        clock,
+        poster,
+        linker,
+        gateway,
+        analysis=analysis,
+        consultations=consultations,
+        workers=options.workers,
+    )
+
+
+def _wykaz_watcher(
+    wykaz: WykazGateway | None,
+    reader: RclProjectReader | None,
+    repo: BillRepository,
+    clock: Clock,
+    poster: Poster,
+    analysis: AnalysisService | None,
+    options: TrackingOptions,
+) -> WykazWatcher | None:
+    """A plan is followed only when its project can be read: the hand-over to RCL is the whole
+    point of watching the register."""
+    if wykaz is None or reader is None:
+        return None
+    linker = WykazLinker(
+        reader, repo, clock, poster, channel_id=options.channel_id, analysis=analysis
+    )
+    return WykazWatcher(wykaz, repo, clock, poster, linker)
+
+
+def _agenda_watcher(
+    gateway: SejmGateway,
+    repo: BillRepository,
+    clock: Clock,
+    poster: Poster,
+    enricher: StageEnricher,
+    options: TrackingOptions,
+) -> AgendaWatcher | None:
+    if not options.agenda_watch:
+        return None
+    return AgendaWatcher(
+        gateway,
+        repo,
+        clock,
+        poster,
+        enricher,
+        channel_id=options.channel_id,
+        local_tz=options.local_tz,
+    )
+
+
+@dataclass(frozen=True)
 class _Amendments:
     """An amendments document found among the new stages, with the committee's proposal."""
 
@@ -76,140 +208,62 @@ class StatusTrackingService:
         repo: BillRepository,
         publisher: Publisher,
         clock: Clock,
+        options: TrackingOptions,
         *,
-        channel_id: str,
         analysis: AnalysisService | None = None,
         eli: EliGateway | None = None,
-        closed_grace_days: int = 90,
-        passed_max_days: int = 180,
-        pending_decision_max_days: int = 1095,
-        max_publish_attempts: int = 3,
-        club_breakdown: bool = True,
-        in_force_reminders: bool = True,
-        consultation_reminder_days: int | None = 3,
-        decision_reminder_days: int | None = 7,
-        agenda_watch: bool = True,
-        max_card_edits: int = 30,
         rcl_reader: RclProjectReader | None = None,
         wykaz: WykazGateway | None = None,
-        local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
-        text_prefilter: bool = True,
-        workers: int = 1,
     ) -> None:
-        self._gateway = gateway
-        self._repo = repo
-        self._clock = clock
-        self._channel_id = channel_id
-        self._analysis = analysis
-        self._closed_grace_days = closed_grace_days
-        self._passed_max_days = passed_max_days
-        self._pending_decision_max_days = pending_decision_max_days
-        self._max_publish_attempts = max_publish_attempts
-        self._workers = workers
-        self._poster = Poster(
-            repo, publisher, clock, channel_id=channel_id, max_attempts=max_publish_attempts
+        channel_id = options.channel_id
+        poster = Poster(
+            repo, publisher, clock, channel_id=channel_id, max_attempts=options.max_publish_attempts
         )
-        self._enricher = StageEnricher(gateway, club_breakdown=club_breakdown)
-        self._texts = SejmTextSource(gateway)
-        self._consultations = (
-            ConsultationReminder(
-                repo,
-                clock,
-                self._poster,
-                channel_id=channel_id,
-                local_tz=local_tz,
-                days_before=consultation_reminder_days,
-            )
-            if consultation_reminder_days is not None
-            else None
-        )
-        self._hearings = (
-            HearingReminder(
-                clock, self._poster, local_tz=local_tz, days_before=consultation_reminder_days
-            )
-            if consultation_reminder_days is not None
-            else None
-        )
-        self._deadlines = (
-            DeadlineReminder(
-                repo, clock, self._poster, local_tz=local_tz, days_before=decision_reminder_days
-            )
-            if decision_reminder_days is not None
-            else None
-        )
+        enricher = StageEnricher(gateway, club_breakdown=options.club_breakdown)
+        consultations = _consultation_reminder(repo, clock, poster, options)
         linker = Linker(
             gateway,
             repo,
             clock,
-            self._poster,
-            self._enricher,
+            poster,
+            enricher,
             channel_id=channel_id,
             analysis=analysis,
-            text_prefilter=text_prefilter,
+            text_prefilter=options.text_prefilter,
         )
+        self._gateway = gateway
+        self._repo = repo
+        self._clock = clock
+        self._analysis = analysis
+        self._options = options
+        self._poster = poster
+        self._enricher = enricher
+        self._texts = SejmTextSource(gateway)
+        self._consultations = consultations
+        self._hearings = _hearing_reminder(clock, poster, options)
+        self._deadlines = _deadline_reminder(repo, clock, poster, options)
         self._pre_print = PrePrintReconciler(
             gateway,
             repo,
             clock,
-            self._poster,
+            poster,
             linker,
             channel_id=channel_id,
-            consultations=self._consultations,
+            consultations=consultations,
         )
-        self._rcl = (
-            RclWatcher(
-                rcl_reader,
-                repo,
-                clock,
-                self._poster,
-                linker,
-                gateway,
-                analysis=analysis,
-                consultations=self._consultations,
-                workers=workers,
-            )
-            if rcl_reader is not None
-            else None
+        self._rcl = _rcl_watcher(
+            rcl_reader, repo, clock, poster, linker, gateway, analysis, consultations, options
         )
-        self._wykaz = (
-            WykazWatcher(
-                wykaz,
-                repo,
-                clock,
-                self._poster,
-                WykazLinker(
-                    rcl_reader,
-                    repo,
-                    clock,
-                    self._poster,
-                    channel_id=channel_id,
-                    analysis=analysis,
-                ),
-            )
-            if wykaz is not None and rcl_reader is not None
-            else None
-        )
-        self._agenda = (
-            AgendaWatcher(
-                gateway,
-                repo,
-                clock,
-                self._poster,
-                self._enricher,
-                channel_id=channel_id,
-                local_tz=local_tz,
-            )
-            if agenda_watch
-            else None
-        )
+        self._wykaz = _wykaz_watcher(wykaz, rcl_reader, repo, clock, poster, analysis, options)
+        self._agenda = _agenda_watcher(gateway, repo, clock, poster, enricher, options)
         self._acts = ActWatcher(
             eli,
             repo,
             clock,
-            self._poster,
+            poster,
             channel_id=channel_id,
-            local_tz=local_tz,
-            in_force_reminders=in_force_reminders,
+            local_tz=options.local_tz,
+            in_force_reminders=options.in_force_reminders,
         )
         self._cards = CardRefresher(
             gateway,
@@ -217,10 +271,10 @@ class StatusTrackingService:
             publisher,
             clock,
             channel_id=channel_id,
-            local_tz=local_tz,
-            max_edits=max_card_edits,
+            local_tz=options.local_tz,
+            max_edits=options.max_card_edits,
         )
-        self._rollover = TermRollover(repo, clock, self._poster, channel_id=channel_id)
+        self._rollover = TermRollover(repo, clock, poster, channel_id=channel_id)
 
     def close_term(self, previous: int, current: int, *, publish: bool = True) -> TrackingResult:
         """The Sejm moved on to `current`: announce the lapsed bills of `previous` and carry its
@@ -235,7 +289,8 @@ class StatusTrackingService:
         """Look for news on published bills, whichever term they belong to.
 
         `changed_since` limits the check to bills the Sejm API reported as modified since then
-        (discovery refreshes their `change_date`); None checks every followed bill.
+        (discovery refreshes their `change_date`); None checks every followed bill. The reminders
+        of `_remind` and the card refresh see every followed bill either way.
         """
         result = TrackingResult()
         if publish and not self._retry_failed(result):
@@ -244,18 +299,35 @@ class StatusTrackingService:
             return result
         tracked = self._list_tracked(changed_since)
         everyone = tracked if changed_since is None else self._list_tracked()
-        # Agendas change without touching the process: every followed bill is checked, and before
-        # the stage loop, so that an update posted below already carries the sitting dates.
+        if not self._check_other_sources(tracked, everyone, result, publish=publish):
+            return result
+        self._check_processes(tracked, result, publish=publish)
+        self._remind_and_refresh(everyone, result, publish=publish)
+        self._log_outcome(result, changed_since)
+        return result
+
+    def _check_other_sources(
+        self, tracked: list[Bill], everyone: list[Bill], result: TrackingResult, *, publish: bool
+    ) -> bool:
+        """The watchers that do not read a Sejm process; False when one of them had to stop.
+
+        Agendas change without the process being touched, so every followed bill is checked, and
+        before the stage loop, so that an update posted there already carries the sitting dates.
+        The wykaz comes before RCL: a plan whose project is out hands its card over, and the
+        project is then among the rows the RCL watcher refreshes in the same run.
+        """
         if self._agenda is not None and not self._agenda.check(everyone, result, publish=publish):
-            return result
-        # Before RCL: a plan whose project is out hands its card over, and the project is then
-        # among the rows the RCL watcher refreshes in the same run.
+            return False
         if self._wykaz is not None and not self._wykaz.check(tracked, result, publish=publish):
-            return result
-        if self._rcl is not None and not self._rcl.check(tracked, result, publish=publish):
-            return result
+            return False
+        return self._rcl is None or self._rcl.check(tracked, result, publish=publish)
+
+    def _check_processes(
+        self, tracked: list[Bill], result: TrackingResult, *, publish: bool
+    ) -> None:
+        """Read the process of every followed Sejm bill and tell what is new about it."""
         followed = [bill for bill in tracked if bill.has_process]
-        for outcome in fan_out(followed, self._fetch, workers=self._workers):
+        for outcome in fan_out(followed, self._fetch, workers=self._options.workers):
             bill = outcome.item
             result.checked += 1
             try:
@@ -263,7 +335,7 @@ class StatusTrackingService:
                 change = self._detect(bill, detail, print_info, result, amendments)
             except ServiceUnavailableError as exc:
                 result.abort(exc)
-                break
+                return
             except Exception as exc:
                 result.failed += 1
                 log.exception("tracking druk %s failed: %s", bill.number, exc)
@@ -271,40 +343,64 @@ class StatusTrackingService:
             if change is not None:
                 result.changed += 1
             try:
-                # The act notice goes first, so that the closure is suppressed only when the
-                # notice that would have told it really went out; ELI can be a day behind the
-                # process, and the change row is unique, so a suppressed closure is never
-                # detected again.
-                self._acts.check(bill, detail, result, publish=publish)
-                if change is not None:
-                    announced = self._poster.sent(bill, PublicationKind.ACT_PUBLISHED)
-                    if publish and has_news(change, act_published=announced):
-                        result.count_post(self._poster.status_update(bill, change))
-                    else:
-                        # Held, not dropped: with publishing off the change row already exists
-                        # and is unique, so nothing would ever detect these stages again.
-                        self._poster.hold(bill, change)
-                        result.held += 1
+                self._post_news(bill, detail, change, result, publish=publish)
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
-                break
+                return
             except Exception as exc:
                 result.failed += 1
                 log.exception("posting for druk %s failed: %s", bill.number, exc)
-        # The reminders come before the card refresh, and the refresh cannot stop them: they are
-        # the posts with a deadline behind them (three days for a consultation, the day itself
-        # for an act entering into force), and the next run is twelve hours away — twenty-four
-        # at a weekend. Re-rendering a card is worth none of that.
-        if result.fatal_error is None and publish:
-            self._acts.remind_in_force(result)
-        if result.fatal_error is None and publish and self._consultations is not None:
-            self._consultations.remind(result)
-        if result.fatal_error is None and publish and self._hearings is not None:
-            self._hearings.remind(everyone, result)
-        if result.fatal_error is None and publish and self._deadlines is not None:
-            self._deadlines.remind(everyone, result)
+
+    def _post_news(
+        self,
+        bill: Bill,
+        detail: ProcessDetail,
+        change: StatusChange | None,
+        result: TrackingResult,
+        *,
+        publish: bool,
+    ) -> None:
+        """Tell what the run found about one bill.
+
+        The act notice goes first, so that the closure is suppressed only when the notice that
+        would have told it really went out; ELI can be a day behind the process, and the change
+        row is unique, so a suppressed closure is never detected again. A change with no news is
+        held rather than dropped for the same reason: with publishing off the row already exists,
+        so nothing would ever detect those stages again.
+        """
+        self._acts.check(bill, detail, result, publish=publish)
+        if change is None:
+            return
+        announced = self._poster.sent(bill, PublicationKind.ACT_PUBLISHED)
+        if publish and has_news(change, act_published=announced):
+            result.count_post(self._poster.status_update(bill, change))
+        else:
+            self._poster.hold(bill, change)
+            result.held += 1
+
+    def _remind_and_refresh(
+        self, everyone: list[Bill], result: TrackingResult, *, publish: bool
+    ) -> None:
+        if publish:
+            self._remind(everyone, result)
         if result.fatal_error is None:
             self._cards.refresh(everyone, result, publish=publish)
+
+    def _remind(self, everyone: list[Bill], result: TrackingResult) -> None:
+        """The posts with a deadline behind them — three days for a consultation, the day itself
+        for an act entering into force — and the next run is twelve hours away, twenty-four at a
+        weekend. They come before the card refresh, and the refresh cannot stop them: re-rendering
+        a card is worth none of that."""
+        if result.fatal_error is None:
+            self._acts.remind_in_force(result)
+        if result.fatal_error is None and self._consultations is not None:
+            self._consultations.remind(result)
+        if result.fatal_error is None and self._hearings is not None:
+            self._hearings.remind(everyone, result)
+        if result.fatal_error is None and self._deadlines is not None:
+            self._deadlines.remind(everyone, result)
+
+    def _log_outcome(self, result: TrackingResult, changed_since: datetime | None) -> None:
         scope = "all" if changed_since is None else f"changed since {changed_since:%F %R}"
         log.info(
             "tracking (%s): checked=%d changed=%d reanalyzed=%d published=%d agenda=%d failed=%d",
@@ -316,14 +412,14 @@ class StatusTrackingService:
             result.agenda_posted,
             result.failed,
         )
-        return result
 
     def _list_tracked(self, changed_since: datetime | None = None) -> list[Bill]:
+        options = self._options
         return self._repo.list_tracked(
-            self._channel_id,
-            closed_grace_days=self._closed_grace_days,
-            passed_max_days=self._passed_max_days,
-            pending_decision_max_days=self._pending_decision_max_days,
+            options.channel_id,
+            closed_grace_days=options.closed_grace_days,
+            passed_max_days=options.passed_max_days,
+            pending_decision_max_days=options.pending_decision_max_days,
             now=self._clock.now(),
             changed_since=changed_since,
         )
@@ -331,7 +427,7 @@ class StatusTrackingService:
     def _retry_failed(self, result: TrackingResult) -> bool:
         """Re-send status updates whose post failed earlier. False if Telegram is down."""
         for change in self._repo.list_failed_status_changes(
-            self._channel_id, max_attempts=self._max_publish_attempts
+            self._options.channel_id, max_attempts=self._options.max_publish_attempts
         ):
             bill = self._repo.get(change.term, change.number)
             if bill is None:
@@ -402,12 +498,12 @@ class StatusTrackingService:
         result: TrackingResult,
         amendments: _Amendments | None = None,
     ) -> StatusChange | None:
+        """What is new about the bill, with the fingerprint written last: a failure above (an LLM
+        outage during the re-analysis) leaves the old one in place, so the next run sees the same
+        new stages and tells them instead of a bare "text changed"."""
         new_fp = stage_fingerprint(detail.stages)
         change = self._detect_change(bill, detail, new_fp, print_info, result, amendments)
         if new_fp != bill.stages_fingerprint:
-            # Written last: a failure above (an LLM outage during the re-analysis) leaves the
-            # old fingerprint in place, so the next run sees the same new stages and tells them
-            # instead of a bare "text changed".
             self._repo.save_stages(bill.term, bill.number, detail.stages, new_fp)
         return change
 
@@ -420,31 +516,26 @@ class StatusTrackingService:
         result: TrackingResult,
         amendments: _Amendments | None,
     ) -> StatusChange | None:
+        """The one change worth a post, or None when there is nothing to tell.
+
+        A first sight of the stages seeds them silently: there is no "before" to compare with.
+        Closure is detected against what was announced rather than against the stored closure
+        date, because discovery refreshes the stored summary before tracking runs. New stages
+        that are gone again (a stage edited or removed upstream) leave nothing to tell either,
+        and neither does a change an earlier run already recorded.
+        """
         now = self._clock.now()
-        old_fp = bill.stages_fingerprint
-        stages_changed = new_fp != old_fp
         self._repo.upsert_summary(detail, now=now)
-
-        document = self._texts.newer(bill, detail, print_info) if self._analysis else None
-        content_changed = False
-        if document is not None and self._analysis is not None:
-            log.info("druk %s: new text (%s), re-analysing", bill.number, document.kind)
-            record = self._analysis.reanalyze_bill(bill, document, summary=detail)
-            if record is not None:
-                result.count_reanalysis(record)
-                content_changed = True
-
+        content_changed = self._reanalyze_new_text(bill, detail, print_info, result)
+        old_fp = bill.stages_fingerprint
         if old_fp is None:
-            return None  # first sight of the stages: seed silently
-        # Discovery refreshes the stored summary before tracking runs, so closure is detected
-        # against what was announced, not against the stored closure date.
+            return None
         closure_detected = detail.closure_date is not None and not self._repo.closure_announced(
             bill.term, bill.number
         )
-        new_stages = diff_stages(bill.stages, detail.stages) if stages_changed else []
+        new_stages = diff_stages(bill.stages, detail.stages) if new_fp != old_fp else []
         if not (new_stages or content_changed or closure_detected):
-            return None  # a stage was edited or removed upstream: nothing to tell
-        new_stages = [self._enricher.enrich(bill.term, st) for st in new_stages]
+            return None
 
         fresh = self._repo.get(bill.term, bill.number) or bill
         change = StatusChange(
@@ -452,7 +543,7 @@ class StatusTrackingService:
             number=bill.number,
             old_fingerprint=old_fp,
             new_fingerprint=change_key(new_fp, fresh, closed=closure_detected),
-            new_stages=new_stages,
+            new_stages=[self._enricher.enrich(bill.term, st) for st in new_stages],
             closure_detected=closure_detected,
             passed=detail.passed,
             content_changed=content_changed,
@@ -460,20 +551,50 @@ class StatusTrackingService:
         )
         change_id = self._repo.add_status_change(change)
         if change_id is None:
-            return None  # already recorded by an earlier run
+            return None
         change.id = change_id
         if amendments is not None:
-            # After the row exists: a change recorded by an earlier run never pays for a second
-            # model call, and the summary is stored with the change it belongs to.
-            change.amendments = self._summarize_amendments(bill, amendments, result)
-            if change.amendments is not None:
-                self._repo.save_status_change_amendments(change_id, change.amendments)
-        log.info(
-            "druk %s: %d new stage(s)%s%s: %s",
-            bill.number,
-            len(change.new_stages),
-            " + new text" if content_changed else "",
-            " + amendments" if change.amendments is not None else "",
-            "; ".join(s.stage_name for s in change.new_stages) or "-",
-        )
+            self._attach_amendments(change, bill, amendments, result)
+        _log_change(bill, change)
         return change
+
+    def _reanalyze_new_text(
+        self,
+        bill: Bill,
+        detail: ProcessDetail,
+        print_info: PrintInfo | None,
+        result: TrackingResult,
+    ) -> bool:
+        """True when the source published a text we had not read and the model read it now."""
+        if self._analysis is None:
+            return False
+        document = self._texts.newer(bill, detail, print_info)
+        if document is None:
+            return False
+        log.info("druk %s: new text (%s), re-analysing", bill.number, document.kind)
+        record = self._analysis.reanalyze_bill(bill, document, summary=detail)
+        if record is None:
+            return False
+        result.count_reanalysis(record)
+        return True
+
+    def _attach_amendments(
+        self, change: StatusChange, bill: Bill, found: _Amendments, result: TrackingResult
+    ) -> None:
+        """Summarised once the change row exists: a change an earlier run recorded never pays for
+        a second model call, and the summary is stored with the change it belongs to."""
+        assert change.id is not None
+        change.amendments = self._summarize_amendments(bill, found, result)
+        if change.amendments is not None:
+            self._repo.save_status_change_amendments(change.id, change.amendments)
+
+
+def _log_change(bill: Bill, change: StatusChange) -> None:
+    log.info(
+        "druk %s: %d new stage(s)%s%s: %s",
+        bill.number,
+        len(change.new_stages),
+        " + new text" if change.content_changed else "",
+        " + amendments" if change.amendments is not None else "",
+        "; ".join(st.stage_name for st in change.new_stages) or "-",
+    )

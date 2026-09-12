@@ -35,7 +35,7 @@ from lexinform.services.tracking.result import TrackingResult
 
 log = logging.getLogger(__name__)
 
-REMOVED_STATUS = "Wycofany"  # the row is gone from the register, which says the same thing
+REMOVED_STATUS = "Wycofany"
 
 
 class WykazLinker:
@@ -60,7 +60,12 @@ class WykazLinker:
         self._texts = RclTextSource()
 
     def link(self, plan: Bill, project_id: int, result: TrackingResult, *, publish: bool) -> None:
-        """Continue `plan` as its RCL project, in the same thread."""
+        """Continue `plan` as its RCL project, in the same thread.
+
+        The plan was judged on an announcement and the project has the text, so the row is
+        re-analysed here: without that, a thin description would decide the fate of the row that
+        finally carries the real thing.
+        """
         assert plan.wykaz is not None
         now = self._clock.now()
         project = self._reader.complete(self._reader.timeline(project_id))
@@ -87,8 +92,6 @@ class WykazLinker:
         bill = self._repo.get(plan.term, summary.number)
         if bill is None:
             return
-        # The plan was analysed from an announcement; the project has the text. Without this,
-        # a thin description would decide the fate of the row that finally has the real thing.
         content_changed = self._reanalyse(bill, result)
         fresh = self._repo.get(plan.term, summary.number) or bill
         change = StatusChange(
@@ -133,6 +136,7 @@ class WykazLinker:
         )
 
     def _reanalyse(self, bill: Bill, result: TrackingResult) -> bool:
+        """True when the project's documents gave the model a text to read."""
         if self._analysis is None or bill.analysis is None:
             return False
         document = self._texts.locate(bill).document
@@ -168,37 +172,52 @@ class WykazWatcher:
         followed = [b for b in bills if b.wykaz is not None]
         if not followed:
             return True
+        entries = self._entries(result)
+        if entries is None:
+            return True
+        return all(self._check_one(bill, entries, result, publish=publish) for bill in followed)
+
+    def _entries(self, result: TrackingResult) -> dict[str, WykazEntry] | None:
+        """The whole register, by number; None when it could not be downloaded, which stops this
+        watcher and nothing else."""
         try:
-            entries = {e.number: e for e in self._wykaz.entries()}
+            return {e.number: e for e in self._wykaz.entries()}
         except ServiceUnavailableError as exc:
             result.partial_errors.append(f"wykaz: {exc.describe()}")
             log.error("wykaz tracking stopped: %s", exc.describe())
+            return None
+
+    def _check_one(
+        self,
+        bill: Bill,
+        entries: dict[str, WykazEntry],
+        result: TrackingResult,
+        *,
+        publish: bool,
+    ) -> bool:
+        """False when Telegram is down; a failure of this one plan is counted and passed over."""
+        assert bill.wykaz is not None
+        result.checked += 1
+        entry = entries.get(bill.wykaz.number) or self._removed(bill, entries)
+        if entry is None:
             return True
-        for bill in followed:
-            assert bill.wykaz is not None
-            result.checked += 1
-            entry = entries.get(bill.wykaz.number)
-            if entry is None:
-                entry = self._removed(bill, entries)
-                if entry is None:
-                    continue
-            try:
-                change = self._detect(bill, entry, result)
-            except Exception as exc:
-                result.failed += 1
-                log.exception("tracking %s failed: %s", bill.number, exc)
-                continue
-            if change is None:
-                continue
-            fresh = self._repo.get(bill.term, bill.number) or bill
-            try:
-                if publish:
-                    result.count_post(self._poster.status_update(fresh, change))
-                else:
-                    self._poster.hold(fresh, change)
-            except ServiceUnavailableError as exc:
-                result.abort(exc, failed=True)
-                return False
+        try:
+            change = self._detect(bill, entry, result)
+        except Exception as exc:
+            result.failed += 1
+            log.exception("tracking %s failed: %s", bill.number, exc)
+            return True
+        if change is None:
+            return True
+        fresh = self._repo.get(bill.term, bill.number) or bill
+        try:
+            if publish:
+                result.count_post(self._poster.status_update(fresh, change))
+            else:
+                self._poster.hold(fresh, change)
+        except ServiceUnavailableError as exc:
+            result.abort(exc, failed=True)
+            return False
         return True
 
     def _link_pending(self, result: TrackingResult, *, publish: bool) -> bool:
@@ -227,7 +246,8 @@ class WykazWatcher:
 
     def _detect(self, bill: Bill, entry: WykazEntry, result: TrackingResult) -> StatusChange | None:
         """Store what the register says now; a change row only for a decision a reader can act
-        on: the government dropping the project, or adopting it."""
+        on: the government dropping the project, or adopting it. A slipped quarter or a rewritten
+        "istota" is stored and not posted."""
         assert bill.wykaz is not None
         entry = entry.model_copy(update={"rcl_project_id": bill.wykaz.rcl_project_id})
         new_fp = wykaz_fingerprint(entry)
@@ -239,7 +259,7 @@ class WykazWatcher:
         dropped = entry.is_withdrawn and not bill.wykaz.is_withdrawn
         adopted = entry.is_adopted and not bill.wykaz.is_adopted
         if not dropped and not adopted:
-            return None  # a slipped quarter or a rewritten "istota": stored, not posted
+            return None
         change = StatusChange(
             term=bill.term,
             number=bill.number,

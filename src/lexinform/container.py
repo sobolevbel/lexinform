@@ -62,7 +62,7 @@ from lexinform.services.signatories import SejmAuthorsResolver
 from lexinform.services.sources import RclTextSource, SejmTextSource, TextSources
 from lexinform.services.terms import TermResolver
 from lexinform.services.text_prefilter import TextPrefilterService
-from lexinform.services.tracking import StatusTrackingService
+from lexinform.services.tracking import StatusTrackingService, TrackingOptions
 from lexinform.services.wykaz_discovery import WykazDiscoveryService
 from lexinform.settings import Settings
 
@@ -358,33 +358,35 @@ class Container:
                 self.repo,
                 self.publisher(dry_run=dry_run),
                 self.clock,
-                channel_id=self.channel_id(),
+                self.tracking_options(),
                 analysis=self.analysis_service(),
                 eli=self.gateway,
-                closed_grace_days=self.settings.track_closed_grace_days,
-                passed_max_days=self.settings.track_passed_max_days,
-                in_force_reminders=self.settings.in_force_reminders,
-                consultation_reminder_days=(
-                    self.settings.consultation_reminder_days
-                    if self.settings.consultation_reminders
-                    else None
-                ),
-                decision_reminder_days=(
-                    self.settings.decision_reminder_days
-                    if self.settings.decision_reminders
-                    else None
-                ),
-                agenda_watch=self.settings.agenda_watch,
-                max_card_edits=self.settings.max_card_edits,
-                pending_decision_max_days=self.settings.track_pending_decision_max_days,
                 rcl_reader=self.rcl_reader() if self.rcl is not None else None,
                 wykaz=self.wykaz,
-                max_publish_attempts=self.settings.max_publish_attempts,
-                club_breakdown=self.settings.voting_club_breakdown,
-                local_tz=LOCAL_TZ,
-                text_prefilter=self.settings.text_prefilter_enabled,
-                workers=self.settings.sejm_concurrency,
             ),
+        )
+
+    def tracking_options(self) -> TrackingOptions:
+        settings = self.settings
+        return TrackingOptions(
+            channel_id=self.channel_id(),
+            closed_grace_days=settings.track_closed_grace_days,
+            passed_max_days=settings.track_passed_max_days,
+            pending_decision_max_days=settings.track_pending_decision_max_days,
+            max_publish_attempts=settings.max_publish_attempts,
+            club_breakdown=settings.voting_club_breakdown,
+            in_force_reminders=settings.in_force_reminders,
+            consultation_reminder_days=(
+                settings.consultation_reminder_days if settings.consultation_reminders else None
+            ),
+            decision_reminder_days=(
+                settings.decision_reminder_days if settings.decision_reminders else None
+            ),
+            agenda_watch=settings.agenda_watch,
+            max_card_edits=settings.max_card_edits,
+            local_tz=LOCAL_TZ,
+            text_prefilter=settings.text_prefilter_enabled,
+            workers=settings.sejm_concurrency,
         )
 
     def pipeline(self, *, dry_run: bool) -> DailyPipeline:

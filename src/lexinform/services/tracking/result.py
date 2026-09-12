@@ -23,30 +23,38 @@ PostCounter = Literal[
 
 @dataclass
 class TrackingResult:
-    """What the tracking phase did; copied into the run report by the pipeline."""
+    """What the tracking phase did; copied into the run report by the pipeline.
+
+    `published` counts status updates, `decision_reminders` the warnings that the Senate's 30
+    days or the President's 21 are running out, `cards_refreshed` the cards edited in place
+    because what they said had drifted, `held` the service-stage changes kept back for the next
+    post, `discontinued` the bills that lapsed with the end of a term and `rehomed` the
+    government's own rows carried over to the new one. `usage` is counted per model, and
+    `partial_errors` names a side system that was down while the rest of the phase ran.
+    """
 
     checked: int = 0
     changed: int = 0
     linked: int = 0
-    published: int = 0  # status updates
+    published: int = 0
     acts_published: int = 0
     in_force_posted: int = 0
     consultation_reminders: int = 0
     consultation_results_posted: int = 0
     agenda_posted: int = 0
     hearing_reminders: int = 0
-    decision_reminders: int = 0  # the Senate's 30 days / the President's 21 are running out
-    cards_refreshed: int = 0  # cards edited in place because what they said had drifted
-    held: int = 0  # service-stage changes kept for the next post
-    discontinued: int = 0  # bills that lapsed with the end of the term, announced under the card
-    rehomed: int = 0  # the government's own rows (RCL, wykaz) carried over to the new term
+    decision_reminders: int = 0
+    cards_refreshed: int = 0
+    held: int = 0
+    discontinued: int = 0
+    rehomed: int = 0
     reanalyzed: int = 0
     failed: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
-    usage: dict[str, TokenUsage] = field(default_factory=dict)  # per model
+    usage: dict[str, TokenUsage] = field(default_factory=dict)
     fatal_error: str | None = None
-    partial_errors: list[str] = field(default_factory=list)  # a side system down; the rest ran
+    partial_errors: list[str] = field(default_factory=list)
 
     def count_post(self, sent: bool, counter: PostCounter = "published") -> None:
         if sent:

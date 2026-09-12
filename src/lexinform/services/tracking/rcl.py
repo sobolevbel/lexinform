@@ -143,12 +143,13 @@ class RclWatcher:
     def _detect(
         self, bill: Bill, project: RclProject, result: TrackingResult
     ) -> StatusChange | None:
+        """What is new about the project, with the fingerprint written last: a failure above (an
+        LLM outage during the re-analysis) leaves the old one in place, so the next run sees the
+        same new stages and tells them."""
         new_fp = rcl_fingerprint(project)
         stages = rcl_stages(project)
         change = self._detect_change(bill, project, stages, new_fp, result)
         if new_fp != bill.stages_fingerprint:
-            # Written last: a failure above (an LLM outage during the re-analysis) leaves the
-            # old fingerprint in place, so the next run sees the same new stages and tells them.
             self._repo.save_stages(bill.term, bill.number, stages, new_fp)
         return change
 
@@ -203,7 +204,7 @@ class RclWatcher:
         )
         change_id = self._repo.add_status_change(change)
         if change_id is None:
-            return None  # already recorded by an earlier run
+            return None
         change.id = change_id
         log.info(
             "%s: %s%s%s",

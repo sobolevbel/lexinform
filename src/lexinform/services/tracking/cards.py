@@ -49,6 +49,15 @@ class CardRefresher:
 
         Each row is read again: the phases above may have re-analysed the bill, moved its stages
         or handed its thread to a successor since `bills` was listed.
+
+        A card is refreshed while `next_phase` still finds something ahead, which is not the same
+        as `is_over`: that calls a bill finished as soon as its act is in Dziennik Ustaw, and a
+        card frozen there would keep saying "дальше: публикация" through a vacatio legis that can
+        run for months. The card is left alone once the act actually applies.
+
+        An outage is caught rather than raised: this is the last, cosmetic step of the phase, and
+        letting it out would throw away the result object with everything the phase already
+        posted and spent.
         """
         if not publish:
             return
@@ -61,9 +70,6 @@ class CardRefresher:
             bill = self._repo.get(stale.term, stale.number)
             if bill is None or bill.analysis is None or bill.discontinued_at is not None:
                 continue
-            # Not `is_over`: that calls a bill finished as soon as its act is in Dziennik Ustaw,
-            # and a card frozen there keeps saying "дальше: публикация" through a vacatio legis
-            # that can run for months. The card is left alone once the act actually applies.
             if bill.status is BillStatus.LINKED or next_phase(bill, today=today) is None:
                 continue
             card = self._repo.get_publication(
@@ -77,8 +83,6 @@ class CardRefresher:
             try:
                 refreshed = self._edit(bill, card.message_id)
             except ServiceUnavailableError as exc:
-                # This is the last, cosmetic step of the phase: letting it out would throw away
-                # the result object with everything the phase already posted and spent.
                 result.abort(exc)
                 return
             if refreshed:

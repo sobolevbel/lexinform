@@ -27,7 +27,8 @@ from lexinform.ports import BillRepository, Clock, Publisher
 
 log = logging.getLogger(__name__)
 
-Send = Callable[[int | None], int]  # reply_to -> message id
+Send = Callable[[int | None], int]
+"""Sends one post under an optional reply-to message and answers with its message id."""
 
 
 class Poster:
@@ -137,8 +138,12 @@ class Poster:
         )
 
     def status_update(self, bill: Bill, change: StatusChange) -> bool:
-        """Post a detected change as a reply to the card; True on success. Stages held since the
-        previous post are listed first and released with it."""
+        """Post a detected change as a reply to the card; True on success.
+
+        Stages held since the previous post are listed first and released against the message
+        just sent, not against "the newest update row": a retried update keeps its old row id, so
+        a later held row would be the newest one.
+        """
         assert change.id is not None
         pub_id = self._repo.create_publication(
             self._update_row(bill, change.id, PublicationStatus.PENDING)
@@ -156,8 +161,6 @@ class Poster:
             ),
         )
         if message_id is not None and held:
-            # Released against the message just sent, not "the newest update row": a retried
-            # update keeps its old row id, so a later held row would be the newest one.
             self._repo.release_held_status_changes(
                 bill.term,
                 bill.number,
@@ -261,14 +264,16 @@ class Poster:
         return self._send(pub_id, bill, send) is not None
 
     def _send(self, pub_id: int, bill: Bill, send: Send) -> int | None:
-        """Send and record the outcome; the message id on success, None on a per-bill failure
-        (an outage of the channel propagates)."""
+        """Send and record the outcome; the message id on success, None on a per-bill failure.
+
+        An outage of the channel propagates and does not count an attempt: it is the channel that
+        is down, not the post, so the post keeps its retry budget.
+        """
         card = self.card(bill)
         reply_to = card.message_id if card else None
         try:
             message_id = send(reply_to)
         except ServiceUnavailableError as exc:
-            # The channel is down, not the post: keep its retry budget.
             self._repo.mark_publication(
                 pub_id, PublicationStatus.FAILED, error=exc.describe(), count_attempt=False
             )

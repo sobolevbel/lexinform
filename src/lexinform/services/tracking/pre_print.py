@@ -20,13 +20,15 @@ from lexinform.services.tracking.result import TrackingResult
 
 log = logging.getLogger(__name__)
 
-# An entry older than this that /bills no longer lists is over: the Sejm gives a print
-# within weeks, and the register keeps the rest.
 PRE_PRINT_MAX_DAYS = 365
 
 
 class PrePrintReconciler:
-    """Re-reads `/bills` for the entries we follow and reacts to what changed there."""
+    """Re-reads `/bills` for the entries we follow and reacts to what changed there.
+
+    An entry older than `PRE_PRINT_MAX_DAYS` that `/bills` no longer lists is over: the Sejm
+    gives a print within weeks, and the register keeps the rest.
+    """
 
     def __init__(
         self,
@@ -56,12 +58,25 @@ class PrePrintReconciler:
             for b in self._repo.list_awaiting_consultation_results(self._channel_id)
             if not b.is_pre_print
         ]
-        if not pending and not awaiting:
+        rows = pending + awaiting
+        if not rows:
             return True
-        # One /bills listing per term the followed entries belong to.
+        listed = self._listing(rows, result)
+        if listed is None:
+            return True
+        return all(self._reconcile_one(bill, listed, result, publish=publish) for bill in rows)
+
+    def _listing(
+        self, rows: list[Bill], result: TrackingResult
+    ) -> dict[tuple[int, str], BillSubmission] | None:
+        """One `/bills` listing per term the followed entries belong to, by (term, number).
+
+        None when `/bills` is down, which says nothing about the rest of the run: the Dziennik
+        Ustaw notices, the reminders and the stage updates are all still due.
+        """
         latest: dict[tuple[int, str], BillSubmission] = {}
-        for term in sorted({b.term for b in pending + awaiting}):
-            of_term = [b for b in pending + awaiting if b.term == term]
+        for term in sorted({b.term for b in rows}):
+            of_term = [b for b in rows if b.term == term]
             earliest = min(
                 (b.submission.date_of_receipt for b in of_term if b.submission),
                 default=self._clock.now().date(),
@@ -70,49 +85,67 @@ class PrePrintReconciler:
                 for listed in self._gateway.iter_bills(term, received_from=earliest):
                     latest[(term, listed.number)] = listed
             except ServiceUnavailableError as exc:
-                # /bills being down says nothing about the rest of the run: the Dziennik Ustaw
-                # notices, the reminders and the stage updates below are all still due.
                 result.partial_errors.append(f"/bills: {exc.describe()}")
                 log.error("pre-print reconciliation stopped: %s", exc.describe())
-                return True
-        for bill in pending + awaiting:
-            key = bill.submission.number if bill.submission else bill.number
-            sub = latest.get((bill.term, key))
-            if sub is None:
-                if latest and self._long_gone(bill):
-                    self._announce_withdrawal(bill, result, publish=publish)
-                continue
-            try:
-                if bill.is_pre_print and sub.print_number:
-                    self._repo.save_submission(bill.term, bill.number, sub)
-                    self._linker.link(bill, sub.print_number, result, publish=publish)
-                elif (
-                    bill.is_pre_print
-                    and sub.is_closed
-                    and not self._repo.closure_announced(bill.term, bill.number)
-                ):
-                    self._repo.save_submission(bill.term, bill.number, sub)
-                    self._announce_withdrawal(bill, result, publish=publish)
-                elif self._results_appeared(bill, sub) and self._consultations is not None:
-                    news = bill.model_copy(update={"submission": sub})
-                    if not self._consultations.results_published(news, result, publish=publish):
-                        # The post failed: the stored copy stays as it is, so the flip is seen
-                        # again on the next run and the post retried.
-                        continue
-                    self._repo.save_submission(bill.term, bill.number, sub)
-                else:
-                    self._repo.save_submission(bill.term, bill.number, sub)
-            except ServiceUnavailableError as exc:
-                result.abort(exc)
-                return False
-            except Exception as exc:
-                result.failed += 1
-                log.exception("reconciling %s failed: %s", bill.number, exc)
+                return None
+        return latest
+
+    def _reconcile_one(
+        self,
+        bill: Bill,
+        listed: dict[tuple[int, str], BillSubmission],
+        result: TrackingResult,
+        *,
+        publish: bool,
+    ) -> bool:
+        """False when the phase must stop; a failure of this one bill is counted and passed over."""
+        key = bill.submission.number if bill.submission else bill.number
+        sub = listed.get((bill.term, key))
+        if sub is None:
+            if listed and self._long_gone(bill):
+                self._announce_withdrawal(bill, result, publish=publish)
+            return True
+        try:
+            self._apply(bill, sub, result, publish=publish)
+        except ServiceUnavailableError as exc:
+            result.abort(exc)
+            return False
+        except Exception as exc:
+            result.failed += 1
+            log.exception("reconciling %s failed: %s", bill.number, exc)
         return True
+
+    def _apply(
+        self, bill: Bill, sub: BillSubmission, result: TrackingResult, *, publish: bool
+    ) -> None:
+        """What the `/bills` row says has happened to the entry since it was stored."""
+        if bill.is_pre_print and sub.print_number:
+            self._repo.save_submission(bill.term, bill.number, sub)
+            self._linker.link(bill, sub.print_number, result, publish=publish)
+            return
+        if (
+            bill.is_pre_print
+            and sub.is_closed
+            and not self._repo.closure_announced(bill.term, bill.number)
+        ):
+            self._repo.save_submission(bill.term, bill.number, sub)
+            self._announce_withdrawal(bill, result, publish=publish)
+            return
+        if self._results_appeared(bill, sub) and self._consultations is not None:
+            news = bill.model_copy(update={"submission": sub})
+            if not self._consultations.results_published(news, result, publish=publish):
+                return
+            self._repo.save_submission(bill.term, bill.number, sub)
+            return
+        self._repo.save_submission(bill.term, bill.number, sub)
 
     @staticmethod
     def _results_appeared(bill: Bill, sub: BillSubmission) -> bool:
-        """`consultationResults` flipped to true since the stored copy of the entry."""
+        """`consultationResults` flipped to true since the stored copy of the entry.
+
+        The stored copy is left alone until the post goes out, so that a failed post is seen
+        again on the next run and retried.
+        """
         before = bill.submission
         return sub.consultation_results and not (before is not None and before.consultation_results)
 
@@ -134,7 +167,11 @@ class PrePrintReconciler:
         return age > PRE_PRINT_MAX_DAYS
 
     def _announce_withdrawal(self, bill: Bill, result: TrackingResult, *, publish: bool) -> None:
-        """Close the thread of an RPW entry that was withdrawn before getting a print number."""
+        """Close the thread of an RPW entry that was withdrawn before getting a print number.
+
+        With publishing off the change is held rather than dropped: the change row alone would
+        look like something that had been announced.
+        """
         change = StatusChange(
             term=bill.term,
             number=bill.number,
@@ -155,4 +192,4 @@ class PrePrintReconciler:
         if publish:
             result.count_post(self._poster.status_update(bill, change))
         else:
-            self._poster.hold(bill, change)  # bookkeeping: the change row alone looks announced
+            self._poster.hold(bill, change)

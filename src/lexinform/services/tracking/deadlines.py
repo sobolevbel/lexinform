@@ -24,8 +24,6 @@ from lexinform.services.tracking.result import TrackingResult
 
 log = logging.getLogger(__name__)
 
-# The phases whose deadline is a window, not a formality: someone outside the process can still
-# write to the Senate's committee, and the President can still be asked not to sign.
 REMINDED_PHASES = frozenset({"senate", "president"})
 
 
@@ -46,11 +44,15 @@ class DeadlineReminder:
         self._days_before = days_before
 
     def remind(self, bills: list[Bill], result: TrackingResult) -> None:
-        """One reply per bill and phase, `days_before` days before the term runs out."""
+        """One reply per bill and phase, `days_before` days before the term runs out.
+
+        `REMINDED_PHASES` are the two whose deadline is a window rather than a formality: someone
+        outside the process can still write to the Senate's committee, and the President can
+        still be asked not to sign. Each row is read again, because the stage loop that ran
+        before this is what moves a bill into one of those two phases.
+        """
         today = self._today()
         for stale in bills:
-            # Read again: the stage loop above is what moves a bill to the Senate or the
-            # President, and these are the two phases this whole reply exists for.
             bill = self._repo.get(stale.term, stale.number)
             if bill is None:
                 continue

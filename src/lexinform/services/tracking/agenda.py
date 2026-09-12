@@ -28,7 +28,16 @@ from lexinform.services.tracking.stages import StageEnricher
 
 log = logging.getLogger(__name__)
 
-PLANNED = "PLANNED"  # `CommitteeSitting.status`; anything else is over or called off
+PLANNED = "PLANNED"
+
+
+def _kept_from_failed(bill: Bill, failed_codes: set[str], today: dt.date) -> tuple[AgendaItem, ...]:
+    """A committee whose listing failed keeps what we already knew about it."""
+    return tuple(
+        old
+        for old in bill.agenda
+        if old.kind == "committee" and old.committee_code in failed_codes and old.date >= today
+    )
 
 
 def _committee_codes(bill: Bill) -> set[str]:
@@ -42,11 +51,15 @@ def _committee_codes(bill: Bill) -> set[str]:
     }
 
 
-NO_COMMITTEE = "Sejm"  # `committeeCode` of a referral to a reading at a sitting
+NO_COMMITTEE = "Sejm"
 
 
 class AgendaWatcher:
-    """Matches followed bills against the agendas of upcoming committee and Sejm sittings."""
+    """Matches followed bills against the agendas of upcoming committee and Sejm sittings.
+
+    A sitting counts only while its status is `PLANNED`; anything else is over or called off.
+    `NO_COMMITTEE` is the `committeeCode` the API gives a referral to a reading at a sitting.
+    """
 
     def __init__(
         self,
@@ -107,14 +120,7 @@ class AgendaWatcher:
         for bill in bills:
             try:
                 items = self._items_for(bill.term, bill, committee_sittings, sejm_sittings)
-                # A committee whose listing failed keeps what we knew about it.
-                items += tuple(
-                    old
-                    for old in bill.agenda
-                    if old.kind == "committee"
-                    and old.committee_code in failed_codes
-                    and old.date >= today
-                )
+                items += _kept_from_failed(bill, failed_codes, today)
                 items = tuple(sorted(items, key=lambda i: (i.date, i.ref)))
                 if items != bill.agenda:
                     self._repo.save_agenda(bill.term, bill.number, items)
@@ -233,7 +239,7 @@ class AgendaWatcher:
         now = self._clock.now().astimezone(self._local_tz)
         for item in items:
             if _already_happened(item, now):
-                continue  # a sitting that is over: a reader can do nothing about it now
+                continue
             if self._poster.posted(bill, PublicationKind.AGENDA, ref=item.ref):
                 continue
             if self._poster.told_jointly(bill, PublicationKind.AGENDA, item.ref):

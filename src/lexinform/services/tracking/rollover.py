@@ -67,7 +67,11 @@ class TermRollover:
         return True
 
     def _announce(self, bill: Bill, result: TrackingResult, *, publish: bool) -> bool:
-        """One update under the card; False when it was posted by an earlier run already."""
+        """One update under the card; False when it was posted by an earlier run already.
+
+        With publishing off the change is held rather than dropped: the change row alone would
+        make the next publishing run believe the announcement had been made.
+        """
         card = self._poster.card(bill)
         if card is None or card.status is not PublicationStatus.SENT:
             return False
@@ -93,8 +97,6 @@ class TermRollover:
             result.count_post(sent)
             result.discontinued += int(sent)
         else:
-            # Bookkeeping even without a post: the change row alone would make the next
-            # publishing run believe the announcement was made.
             self._poster.hold(bill, change)
             result.discontinued += 1
         return True
