@@ -27,6 +27,8 @@ from lexinform.models import (
     BillStatus,
     Category,
     LocatedText,
+    PageMapContext,
+    PageMapRecord,
     ProcessSummary,
     ScannedDocument,
     SupplementContext,
@@ -42,7 +44,13 @@ from lexinform.models import (
 from lexinform.ports import AuthorsResolver, BillRepository, Clock, LlmAnalyzer
 from lexinform.ports import TextSource as TextSourcePort
 from lexinform.pricing import cost_usd, estimate_input_cost, estimate_scan_cost, input_cost
-from lexinform.sections import TextBudget, carries_the_document, excerpts, trim_print
+from lexinform.sections import (
+    TextBudget,
+    carries_the_document,
+    excerpts,
+    pages_to_keep,
+    trim_print,
+)
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 
 log = logging.getLogger(__name__)
@@ -76,11 +84,12 @@ class AnalysisOutcome:
 
     record: AnalysisRecord
     triage: TriageRecord | None = None
+    page_map: PageMapRecord | None = None
 
     @property
     def usage(self) -> dict[str, TokenUsage]:
         tokens: dict[str, TokenUsage] = {}
-        for used in (self.triage, self.record):
+        for used in (self.page_map, self.triage, self.record):
             if used is not None:
                 add_usage(tokens, used)
         return tokens
@@ -114,6 +123,9 @@ class _Loaded:
     truncated: bool
     source: TextSource
     scan: ScannedDocument | None = None
+    page_map: PageMapRecord | None = None
+    """What the pages of a scan were found to hold, when a map was made of them; its tokens
+    are the bill's, so it travels with the document to the outcome."""
 
     @property
     def digest(self) -> str | None:
@@ -149,6 +161,7 @@ class _Prepared:
     record: AnalysisRecord
     first: bool
     triage: TriageRecord | None = None
+    page_map: PageMapRecord | None = None
     unchanged: bool = False
     unreadable: bool = False
 
@@ -190,7 +203,8 @@ class AnalysisService:
         triage: KeywordPrefilter | None = None,
         triage_min_chars: int = 20_000,
         triage_min_confidence: float = 0.8,
-        scan_page_budget: int = 16,
+        scan_map_min_pages: int = 12,
+        scan_map_page_width: int = 700,
     ) -> None:
         self._repo = repo
         self._texts = texts
@@ -207,7 +221,8 @@ class AnalysisService:
         self._triage = triage
         self._triage_min_chars = triage_min_chars
         self._triage_min_confidence = triage_min_confidence
-        self._scan_page_budget = scan_page_budget
+        self._scan_map_min_pages = scan_map_min_pages
+        self._scan_map_page_width = scan_map_page_width
 
     def analyze_pending(self, *, limit: int) -> AnalysisResult:
         """Analyse up to `limit` candidates; an outage stops the phase, a bill's own error
@@ -286,7 +301,7 @@ class AnalysisService:
         `ignore_cost_limit` is the operator's explicit wish (a forced command): the per-bill
         cost guard does not apply."""
         prepared = self._prepare_first(bill, cost_guard=not ignore_cost_limit)
-        return AnalysisOutcome(self._persist(prepared), prepared.triage)
+        return AnalysisOutcome(self._persist(prepared), prepared.triage, prepared.page_map)
 
     def _prepare_first(self, bill: Bill, *, cost_guard: bool = True) -> _Prepared:
         return self._prepare(bill, self._texts.locate(bill), previous=None, cost_guard=cost_guard)
@@ -449,7 +464,56 @@ class AnalysisService:
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
         record.text_sha256 = digest
-        return _Prepared(bill, located, text, source, record, first=previous is None, triage=triage)
+        return _Prepared(
+            bill,
+            located,
+            text,
+            source,
+            record,
+            first=previous is None,
+            triage=triage,
+            page_map=loaded.page_map,
+        )
+
+    def _trim_scan(
+        self, scan: ScannedDocument, document: TextDocument
+    ) -> tuple[ScannedDocument, PageMapRecord | None]:
+        """Drop the pages of a scan that are worth nothing: the appendices a printed document is
+        trimmed of, which in a scan can only be found by looking at the pages.
+
+        A short document is sent whole — the map is a request of its own, and below a dozen or so
+        pages it costs more than the pages it would save. A map that cannot be made, or one that
+        does not fit the document, leaves it whole too (`pages_to_keep`).
+        """
+        if scan.pages < self._scan_map_min_pages:
+            return scan, None
+        images = self._loader.render_scan(scan, max_width=self._scan_map_page_width)
+        if not images:
+            return scan, None
+        ctx = PageMapContext(
+            number=document.url.rsplit("/", 1)[-1],
+            document_title=document.kind,
+            source_kind=document.kind,
+            pages=images,
+        )
+        try:
+            mapped = self._llm.map_pages(ctx)
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("%s: pages not mapped (%s); reading them all", document.url, exc)
+            return scan, None
+        keep = pages_to_keep(mapped.map.roles, pages=scan.pages)
+        if len(keep) == scan.pages:
+            return scan, mapped
+        log.info(
+            "%s: %d of %d pages are worth reading (%s)",
+            document.url,
+            len(keep),
+            scan.pages,
+            ", ".join(sorted(set(mapped.map.roles))),
+        )
+        return self._loader.select_scan_pages(scan, keep), mapped
 
     def _refuse_if_too_expensive(self, ctx: BillContext, loaded: _Loaded) -> None:
         """Stop a first analysis whose input alone costs more than the per-bill limit.
@@ -598,11 +662,10 @@ class AnalysisService:
     def _load_scan(self, document: TextDocument, text: str) -> _Loaded:
         """The document as pages, when its file carries no text; metadata when it has no pages
         either (a Word file, an archive, a PDF too big for the model to take)."""
-        scan = self._loader.load_scan(
-            document.url,
-            cover_letter=bool(text.strip()),
-            budget=self._scan_page_budget if document.kind == "impact_assessment" else None,
-        )
+        scan = self._loader.load_scan(document.url, cover_letter=bool(text.strip()))
+        mapped: PageMapRecord | None = None
+        if scan is not None:
+            scan, mapped = self._trim_scan(scan, document)
         if scan is None:
             log.info(
                 "%s: %d chars, none of them the document itself; using metadata only",
@@ -616,4 +679,4 @@ class AnalysisService:
             scan.pages,
             scan.of_pages,
         )
-        return _Loaded(text, scan.truncated, "scan", scan)
+        return _Loaded(text, scan.truncated, "scan", scan, mapped)

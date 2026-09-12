@@ -3,7 +3,7 @@
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import BillStatus, Mp, Triage
 from lexinform.services.analysis import text_digest
-from tests.fakes import FakeTextExtractor
+from tests.fakes import FakePageRenderer, FakeTextExtractor
 from tests.harness import World, print_url
 
 FOREIGNER_TEXT = (
@@ -167,7 +167,7 @@ def test_a_print_scanned_but_for_its_letter_is_read_as_pages() -> None:
     """
     cover = DEPUTIES_LETTER.split("Tłoczono z polecenia Marszałka Sejmu")[0]
     extractor = FakeTextExtractor(cover, page_count=37)
-    w = World(extractor=extractor)
+    w = World(extractor=extractor, renderer=FakePageRenderer(36))
     w.gateway.mps = MPS
     w.add_bill("4200", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
 
@@ -175,11 +175,41 @@ def test_a_print_scanned_but_for_its_letter_is_read_as_pages() -> None:
 
     ctx = w.llm.contexts[0]
     assert ctx.text_source == "scan" and ctx.scan is not None
-    assert ctx.scan.pages == 36 and extractor.selections == [(1, 36)]
+    assert extractor.selections[0] == tuple(range(1, 37))  # the letter's page left behind
+    assert ctx.scan.pages == 35  # and the mapped page the model called a cover
     analysis = w.bill("4200").analysis
     assert analysis is not None and analysis.text_sha256 == ctx.scan.sha256
     authors = w.bill("4200").authors
     assert authors is not None and authors.clubs == (("KO", 2), ("Lewica", 1))
+
+
+def test_a_long_scan_is_mapped_and_its_appendices_are_not_read() -> None:
+    """A scanned print is mostly appendices — comment tables, compliance tables, draft
+    regulations — and they cost 1600 tokens a page to read. A cheap model sorts the pages from
+    small images of them; the analysis sees what is left."""
+    renderer = FakePageRenderer(20)
+    w = World(extractor=FakeTextExtractor("", page_count=20), renderer=renderer)
+    w.llm.page_map_script = ["cover", "bill", "bill", "justification"] + ["appendix"] * 16
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+
+    w.run()
+
+    ctx = w.llm.contexts[0]
+    assert ctx.scan is not None and (ctx.scan.pages, ctx.scan.of_pages) == (3, 20)
+    assert len(w.llm.page_maps[0].pages) == 20  # every page was rendered, small, for the map
+    assert renderer.calls == [700]
+
+
+def test_a_scan_too_short_to_be_worth_mapping_is_read_whole() -> None:
+    renderer = FakePageRenderer(6)
+    w = World(extractor=FakeTextExtractor("", page_count=6), renderer=renderer)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+
+    w.run()
+
+    ctx = w.llm.contexts[0]
+    assert ctx.scan is not None and ctx.scan.pages == 6
+    assert w.llm.page_maps == [] and renderer.calls == []
 
 
 def test_card_shows_signatory_clubs_and_the_representative() -> None:

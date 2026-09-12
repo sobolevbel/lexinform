@@ -8,9 +8,11 @@ from typing import Any, Protocol
 import anthropic
 
 from lexinform.adapters.llm_prompts import (
+    PAGE_MAP_SYSTEM_PROMPT,
     PROMPT_VERSION,
     amendments_system_prompt,
     build_amendments_prompt,
+    build_page_map_prompt,
     build_supplement_prompt,
     build_triage_prompt,
     build_user_prompt,
@@ -27,6 +29,9 @@ from lexinform.models import (
     AnalysisRecord,
     BillContext,
     DocumentDigest,
+    PageMap,
+    PageMapContext,
+    PageMapRecord,
     ScannedDocument,
     SupplementContext,
     SupplementRecord,
@@ -68,6 +73,7 @@ class AnthropicAnalyzer:
         *,
         model: str = "claude-opus-5",
         triage_model: str | None = None,
+        map_model: str | None = None,
         output_language: str = "ru",
         effort: Effort = "medium",
         max_tokens: int = 4000,
@@ -76,6 +82,7 @@ class AnthropicAnalyzer:
         self._client = client
         self._model = model
         self._triage_model = triage_model or model
+        self._map_model = map_model or self._triage_model
         self._effort = effort
         self._max_tokens = max_tokens
         self._clock = clock
@@ -114,6 +121,42 @@ class AnthropicAnalyzer:
             truncated=ctx.truncated,
             text_source=ctx.text_source,
             created_at=self._clock(),
+            input_tokens=_usage_int(usage, "input_tokens"),
+            output_tokens=_usage_int(usage, "output_tokens"),
+            cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
+            cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
+        )
+
+    def map_pages(self, ctx: PageMapContext) -> PageMapRecord:
+        """What each page of a scan holds, on the cheap model, without thinking: this is sorting
+        by headings, not reading."""
+        images: list[Any] = [
+            {
+                "type": "image",
+                "source": {"type": "base64", "media_type": "image/jpeg", "data": page},
+            }
+            for page in ctx.pages
+        ]
+        images.append({"type": "text", "text": build_page_map_prompt(ctx)})
+        response = self._request(
+            self._map_model, PAGE_MAP_SYSTEM_PROMPT, images, PageMap, thinking=False
+        )
+        mapped = response.parsed_output
+        if not isinstance(mapped, PageMap):
+            raise LlmError("model returned no parsable structured output")
+        usage = getattr(response, "usage", None)
+        log.info(
+            "LLM mapped %d page(s) of %s (%s) in=%s out=%s",
+            len(mapped.roles),
+            ctx.document_title,
+            ctx.number,
+            _usage_int(usage, "input_tokens"),
+            _usage_int(usage, "output_tokens"),
+        )
+        return PageMapRecord(
+            map=mapped,
+            model=self._map_model,
+            prompt_version=PROMPT_VERSION,
             input_tokens=_usage_int(usage, "input_tokens"),
             output_tokens=_usage_int(usage, "output_tokens"),
             cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
@@ -253,12 +296,27 @@ class AnthropicAnalyzer:
         thinking: bool,
         scan: ScannedDocument | None = None,
     ) -> _ParsedMessageLike:
-        """One structured-output request with the error classification shared by both passes.
+        """One structured-output request from a prompt, with the document in front of it when
+        the document is a scan: that is the only way to read the signed paper the Sejm files as
+        images."""
+        return self._request(
+            model, system, _content(user_prompt, scan), output_format, thinking=thinking
+        )
 
-        The analysis thinks (adaptive thinking, configured effort); the triage is a short
-        classification and runs without it, which also keeps smaller models (Haiku 4.5) eligible.
-        A `scan` is the document itself, attached before the prompt so the model reads its pages:
-        that is the only way to read the signed paper the Sejm files as images.
+    def _request(
+        self,
+        model: str,
+        system: str,
+        content: list[Any],
+        output_format: type[Any],
+        *,
+        thinking: bool,
+    ) -> _ParsedMessageLike:
+        """One structured-output request with the error classification shared by every pass.
+
+        The analysis thinks (adaptive thinking, configured effort); the triage and the page map
+        are short classifications and run without it, which also keeps smaller models (Haiku 4.5)
+        eligible.
         """
         reasoning: dict[str, Any] = (
             {"thinking": {"type": "adaptive"}, "output_config": {"effort": self._effort}}
@@ -270,7 +328,7 @@ class AnthropicAnalyzer:
                 model=model,
                 max_tokens=self._max_tokens,
                 system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-                messages=[{"role": "user", "content": _content(user_prompt, scan)}],
+                messages=[{"role": "user", "content": content}],
                 output_format=output_format,
                 **reasoning,
             )

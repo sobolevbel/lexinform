@@ -9,6 +9,7 @@ from lexinform.sections import (
     TextBudget,
     carries_the_document,
     excerpts,
+    pages_to_keep,
     scan_page_window,
     trim_print,
     without_cover_letter,
@@ -174,18 +175,28 @@ def test_the_same_letter_followed_by_the_bill_carries_the_document() -> None:
     assert without_cover_letter(whole).lstrip().startswith("Projekt")
 
 
-def test_the_pages_of_a_scan_worth_sending_leave_out_the_letter_and_the_osr_tail() -> None:
-    """Druk 1273's OSR is 30 scanned pages; the 13-point form's points 1-5 took 2 to 19 pages of
-    the prints measured, and the rest is the public-finance tables a printed OSR loses too."""
-    position = scan_page_window(10, cover_letter=True, budget=None)
-    osr = scan_page_window(30, cover_letter=True, budget=16)
-    short = scan_page_window(4, cover_letter=False, budget=16)
-    single = scan_page_window(1, cover_letter=True, budget=None)
+def test_a_scan_loses_its_covering_page_and_nothing_else_before_it_is_read() -> None:
+    """Druk 1273's government position is 10 pages and says "Strona 1 z 9" on the second: the
+    first is the letter. What else is chaff can only be told by looking at the pages."""
+    position = scan_page_window(10, cover_letter=True)
+    unproven = scan_page_window(30, cover_letter=False)
+    single = scan_page_window(1, cover_letter=True)
 
     assert (position.first, position.count) == (1, 9)
-    assert (osr.first, osr.count) == (1, 16)
-    assert (short.first, short.count) == (0, 4)
+    assert (unproven.first, unproven.count) == (0, 30)
     assert (single.first, single.count) == (0, 1)  # nothing else is in there to read
+
+
+def test_the_mapped_pages_kept_are_the_ones_trim_print_would_keep() -> None:
+    roles = ["cover", "bill", "justification", "impact", "finance", "appendix", "comparison"]
+
+    assert pages_to_keep(roles, pages=7) == (1, 2, 3, 6)
+    # The appendices of a government print are 55-92% of it, so keeping two pages of twenty is
+    # the map doing its job. Only a map of the wrong length, or one that keeps nothing, is not
+    # trusted: reading an appendix costs money, not reading the bill costs the reader.
+    assert pages_to_keep(["appendix"] * 18 + ["bill", "bill"], pages=20) == (18, 19)
+    assert pages_to_keep(roles, pages=9) == tuple(range(9))
+    assert pages_to_keep(["appendix"] * 4, pages=4) == (0, 1, 2, 3)
 
 
 def test_a_document_with_no_covering_letter_is_its_own_first_page() -> None:

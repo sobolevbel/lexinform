@@ -7,6 +7,7 @@ from lexinform.models import (
     WYKAZ_PREFIX,
     AmendmentsContext,
     BillContext,
+    PageMapContext,
     SupplementContext,
     TriageContext,
 )
@@ -149,6 +150,25 @@ def build_amendments_prompt(ctx: AmendmentsContext) -> str:
     return "\n".join(lines)
 
 
+PAGE_MAP_SYSTEM_PROMPT = """You sort the pages of a scanned Polish parliamentary document so that only the pages that matter are read by another model. You see every page as a small image: enough for the headings, not for the body. Do not read or summarise anything — label each page.
+
+## Labels
+
+- cover: the letter handing the document to the Marshal (pismo przewodnie, "przekazuję", "wnoszą projekt ustawy"), a title page with no content of its own, the page with the signatures, authors or acceptance.
+- bill: the text of the bill itself — "USTAWA z dnia …", articles ("Art. 1."), the amendments it makes.
+- justification: uzasadnienie, or the reasoning of an opinion: the problem, the recommended solution, what the bill would change and why.
+- impact: whom the bill affects and at what cost to them — numbers of people, groups, fees, deadlines, procedures.
+- finance: the effect on public finances — budget tables, "Wpływ na sektor finansów publicznych", figures in thousands of złoty per year.
+- comparison: how other countries or the EU solved the same problem.
+- appendix: everything a reader of the bill does not need — tables of comments (zestawienie uwag), reports from consultations (raport z konsultacji), compliance tables (tabela zgodności), draft regulations attached to the bill, bibliographies, lists of addressees.
+
+## Rules
+
+- Exactly one label per page, in the order the pages are given, and exactly as many labels as there are pages.
+- A page that continues the previous section carries the previous section's label.
+- When a page could be two things, choose the one it is mostly made of; when it is unreadable, label it as the page before it.
+"""
+
 SCAN_NOTE = (
     "=== DOKUMENT W ZAŁĄCZENIU (skan; tekstu do odczytania nie ma, przeczytaj strony) ===\n"
     "[pominięto pismo przewodnie; z formularza OSR pokazano początek]"
@@ -165,6 +185,18 @@ _SUPPLEMENT_LABEL = {
     "government_position": "stanowisko Rządu do projektu",
     "impact_assessment": "ocena skutków regulacji (OSR)",
 }
+
+
+def build_page_map_prompt(ctx: PageMapContext) -> str:
+    return "\n".join(
+        [
+            f"Druk nr {ctx.number}",
+            f"Dokument: {ctx.document_title}",
+            f"Stron: {len(ctx.pages)}",
+            "",
+            f"Podaj {len(ctx.pages)} etykiet, po jednej na stronę, w kolejności stron.",
+        ]
+    )
 
 
 def build_supplement_prompt(ctx: SupplementContext) -> str:
