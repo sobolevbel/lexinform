@@ -11,6 +11,7 @@ replies under it tell how the story ended.
 """
 
 import logging
+from zoneinfo import ZoneInfo
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import Bill, BillStatus, PublicationKind, PublicationStatus, is_over
@@ -30,6 +31,7 @@ class CardRefresher:
         clock: Clock,
         *,
         channel_id: str,
+        local_tz: ZoneInfo,
         max_edits: int,
     ) -> None:
         self._gateway = gateway
@@ -37,6 +39,7 @@ class CardRefresher:
         self._publisher = publisher
         self._clock = clock
         self._channel_id = channel_id
+        self._local_tz = local_tz
         self._max_edits = max_edits
 
     def refresh(self, bills: list[Bill], result: TrackingResult, *, publish: bool) -> None:
@@ -47,7 +50,7 @@ class CardRefresher:
         """
         if not publish:
             return
-        today = self._clock.now().date()
+        today = self._clock.now().astimezone(self._local_tz).date()
         edited = 0
         for stale in bills:
             if edited >= self._max_edits:

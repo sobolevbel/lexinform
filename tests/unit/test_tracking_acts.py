@@ -113,3 +113,16 @@ def test_failed_act_notice_is_retried_next_run() -> None:
 
     assert failed.acts_published == 0 and failed.errors
     assert retried.acts_published == 1 and len(w.publisher.acts) == 1
+
+
+def test_an_act_fetched_after_midnight_in_warsaw_counts_as_already_in_force() -> None:
+    """22:00 UTC is already the next day in Warsaw, and the act's dates are Polish legal dates."""
+    w = _published_bill()
+    w.clock.current = dt.datetime(2026, 9, 19, 23, 30, tzinfo=dt.UTC)  # 01:30 on the 20th
+    w.gateway.acts[ELI] = act(fetched_at=w.clock.current)  # in force 2026-09-20
+
+    report = w.run()
+
+    assert (report.acts_published, report.in_force_posted) == (1, 0)
+    bill, _ = w.publisher.acts[0]
+    assert "Уже действует с</b> 20.09.2026" in MessageFormatter("ru").act_published(bill).text

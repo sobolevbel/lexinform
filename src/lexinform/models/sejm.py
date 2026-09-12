@@ -8,6 +8,7 @@ import hashlib
 import json
 from collections.abc import Iterable
 from typing import Literal, Self
+from zoneinfo import ZoneInfo
 
 from pydantic import BaseModel, ConfigDict
 
@@ -280,6 +281,9 @@ class AgendaItem(BaseModel):
         return self.ref.rsplit("/", 1)[0]
 
 
+POLAND_TZ = ZoneInfo("Europe/Warsaw")  # every date an act carries is a Polish legal date
+
+
 class ActInfo(BaseModel):
     """The published act, from the ELI API (GET /eli/acts/{publisher}/{year}/{pos})."""
 
@@ -299,7 +303,11 @@ class ActInfo(BaseModel):
 
     @property
     def already_in_force_when_fetched(self) -> bool:
-        return self.entry_into_force is not None and self.entry_into_force <= self.fetched_at.date()
+        """`entry_into_force` is a Polish legal date, so the day it is measured against is the
+        Polish one: `fetched_at` is UTC and is two hours behind Warsaw for part of every night."""
+        if self.entry_into_force is None:
+            return False
+        return self.entry_into_force <= self.fetched_at.astimezone(POLAND_TZ).date()
 
 
 class ProcessSummary(BaseModel):

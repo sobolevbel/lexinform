@@ -3,6 +3,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.keywords import KeywordPrefilter, accept_title_hits
@@ -56,6 +57,7 @@ class BillDiscoveryService:
         clock: Clock,
         *,
         text_prefilter: bool = True,
+        local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
         projects: ProjectResolver | None = None,
     ) -> None:
         self._gateway = gateway
@@ -63,6 +65,7 @@ class BillDiscoveryService:
         self._prefilter = prefilter
         self._clock = clock
         self._text_prefilter = text_prefilter
+        self._local_tz = local_tz
         self._projects = projects  # resolves a government print's rclNum to its RCL project
 
     def discover(self, term: int, since: datetime, *, pre_print: bool = True) -> DiscoveryResult:
@@ -136,7 +139,7 @@ class BillDiscoveryService:
             if stages is None:
                 return False
             bill = bill.model_copy(update={"stages": stages})
-        return is_over(bill, today=now.date())
+        return is_over(bill, today=now.astimezone(self._local_tz).date())
 
     def _stages_of(self, summary: ProcessSummary) -> tuple[Stage, ...] | None:
         try:

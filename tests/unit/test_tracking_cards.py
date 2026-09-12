@@ -82,3 +82,20 @@ def test_telegram_going_down_on_a_refresh_does_not_erase_what_the_phase_did() ->
 
     assert report.updates == 1 and report.tracked == 1
     assert any("tracking: Telegram" in e for e in report.errors)
+
+
+def test_the_day_a_card_is_judged_by_is_the_readers_day_not_the_runners() -> None:
+    """Between 22:00 and midnight UTC it is already tomorrow in Warsaw. The card's own text is
+    rendered for the Warsaw day, so the decision whether the bill is still running must be too."""
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
+    w.run()
+    w.clock.current = dt.datetime(2026, 9, 19, 23, 30, tzinfo=dt.UTC)  # 01:30 on the 20th in Warsaw
+    w.repo.save_act(10, "3039", act(entry_into_force=dt.date(2026, 9, 20)))
+    w.set_stages("3039", (*COMMITTEE_STAGES, Stage(stage_type="End", stage_name="Uchwalono")))
+    w.touch("3039", dt.datetime(2026, 9, 19, 9, tzinfo=dt.UTC))
+
+    report = w.run()
+
+    assert report.cards_refreshed == 0
+    assert w.publisher.edits == []
