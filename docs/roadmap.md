@@ -4,9 +4,12 @@ Planned on 2026-09-07 after the first production runs. Purpose of the project, r
 owner: catch bills that may affect foreigners **early**, follow their whole legislative life, and
 give readers a chance to **act in time** (public consultations, hearings, opinions to committees).
 
-## Status (2026-09-07, evening)
+## Status (2026-09-12)
 
-Done the same day, see the commit history:
+The blocks below are in the order they were built; "Still open" closes them. See the commit
+history for the detail.
+
+Done on 2026-09-07, the day of the plan:
 
 - **Bills before they get a print number** (`RPW/…` entries from `/bills`): discovered, analysed
   from the official description, published with the public consultation dates; linked to the print
@@ -51,7 +54,9 @@ Done on 2026-09-09/10 (schema v8):
   bill went to the Sejm) and the stage catalogs (`/projekt/{id}/katalog/{stageId}`: folders
   "Projekt", "Pisma kierujące…", "Stanowiska zgłoszone…", "Odniesienie się wnioskodawcy…" with
   their files). Projects are `bills` rows `RCL/{id}` with the project in `rcl_json`; the card
-  analyses projekt + uzasadnienie + OSR (Word or PDF; legacy `.doc` cannot be read), names the
+  analyses projekt + uzasadnienie + OSR (PDF, Word, ZIP, and legacy `.doc` since 2026-09-09
+  through `adapters/doc_text.py`, a piece-table parser over `olefile` checked against four real
+  RCL files), names the
   ministry, the wykaz number, the consultation deadline and e-mail read out of the letter
   (`rcl_letters.py`: "w terminie N dni od dnia otrzymania", counted from the letter date or its
   publication on RCL) and the RCL comment form; updates follow the stages, a consultation that
@@ -63,33 +68,25 @@ Done on 2026-09-09/10 (schema v8):
   new project, catalogs only for candidates, one catalog for a title miss, changed catalogs only
   when tracking; six projects at a time (a page takes ~10 s).
 
-Still open:
+Done on 2026-09-09/10 (schema v9, v10, v12):
 
-- RCL leftovers: consultations of draft regulations (rozporządzenia, `typeId=10`), zgłoszenia
-  lobbingowe. (Legacy `.doc` files are read since 2026-09-09 by `adapters/doc_text.py`, a
-  piece-table parser over `olefile`, checked against four real RCL files.)
-- Wykaz prac RM leftovers (the register itself is followed since 2026-09-12): the rozporządzenia
-  (`RD`) and programme documents (`ID`, e.g. the migration strategy) it also lists, the ministers'
-  own registers on their gov.pl pages (the CSV link is not at the same URL pattern there), and
-  the backlog — an entry rewritten into relevance long after publication stays invisible, because
-  `Data publikacji` does not move on an edit; `lexinform scan --since …` is the way in.
-- Ukrainian-language channel; weekly digest; static site from the state dump.
-- Committee e-mail addresses in "what you can do now" (the Sejm API has none; the committee page
-  is linked instead) and the Senate committee that received the act (the Senate API is not used).
-
-Done on 2026-09-12 (schema v15), a fourth source:
-
-- The wykaz prac legislacyjnych i programowych RM (KPRM, gov.pl) as one CSV: `WPL/UD408` rows,
-  analysed from the register's own `Cele`/`Istota` with no text to read, carded as an intention
-  and linked forward to the RCL project that continues them. Measured lead time on UD408
-  (o zmianie ustawy o cudzoziemcach): entered 2026-05-12, on RCL 2026-07-06 — 55 days.
-- Only `Projekty ustaw` are followed, only entries published since the watermark are stored (the
-  state dump is 822 KB; the 775 bill entries with their paragraphs would add ~2.3 MB per run),
-  and the rest is reported as backlog.
-- GitHub-hosted runners reach www.gov.pl directly (probed 2026-09-12 from Azure eastus2: page
-  0.57 s, CSV 3.1 s / 2.8 MB gzipped), unlike RCL, so the source needs no proxy.
-  `LEXINFORM_WYKAZ_PROXY_URL` and `.github/workflows/wykaz-probe.yml` stay for the day that
-  changes.
+- **The Sejm term switches by itself.** `services/terms.py` reads the term flagged `current` in
+  `/sejm/term` (the newest term in the database when the API is down), `LEXINFORM_TERM` only pins
+  an older one. Discovery works in the current term; the repository listings are not scoped to a
+  term, so acts of the previous kadencja still get their Dz.U. and in-force posts. The first run
+  of a new term runs `services/tracking/rollover.py` before discovery: one "lapsed" update under
+  every published, unfinished Sejm bill of the old term (a citizens' bill is taken over instead),
+  `discontinued_at` on the unfinished rows (v9), and the RCL projects still waiting for their
+  druk moved to the new term, keeping the wykaz number for the tag of the print that continues
+  the thread (v10). Idempotent, repeats every run.
+- **Prints considered jointly share one card** (v12), after druki 1929/1933 got two nearly
+  identical cards: `ProcessSummary.prints_considered_jointly` names the group, the first
+  candidate gets the card (the government's print goes first within a run: its text is the one
+  the committee works on) and every later print becomes a short `joint_bill` reply under it —
+  title, applicant, date, links, both tags, no analysis of its own. The reply settles the bill
+  like a card would, and because it is not a `new_bill` row every tracker ignores it: the group's
+  events come from the card's process. `/republish` forgets both rows and lets the normal path
+  decide again.
 
 Done on 2026-09-10, after a review of the code base (no schema change):
 
@@ -134,26 +131,6 @@ Done on 2026-09-10 (schema v11), after a reader's-eye review of the update posts
   (~$0.85), and every RCL stage republishes that package; without the hash each republication
   would cost the same again.
 
-Done on 2026-09-09/10 (schema v9, v10, v12):
-
-- **The Sejm term switches by itself.** `services/terms.py` reads the term flagged `current` in
-  `/sejm/term` (the newest term in the database when the API is down), `LEXINFORM_TERM` only pins
-  an older one. Discovery works in the current term; the repository listings are not scoped to a
-  term, so acts of the previous kadencja still get their Dz.U. and in-force posts. The first run
-  of a new term runs `services/tracking/rollover.py` before discovery: one "lapsed" update under
-  every published, unfinished Sejm bill of the old term (a citizens' bill is taken over instead),
-  `discontinued_at` on the unfinished rows (v9), and the RCL projects still waiting for their
-  druk moved to the new term, keeping the wykaz number for the tag of the print that continues
-  the thread (v10). Idempotent, repeats every run.
-- **Prints considered jointly share one card** (v12), after druki 1929/1933 got two nearly
-  identical cards: `ProcessSummary.prints_considered_jointly` names the group, the first
-  candidate gets the card (the government's print goes first within a run: its text is the one
-  the committee works on) and every later print becomes a short `joint_bill` reply under it —
-  title, applicant, date, links, both tags, no analysis of its own. The reply settles the bill
-  like a card would, and because it is not a `new_bill` row every tracker ignores it: the group's
-  events come from the card's process. `/republish` forgets both rows and lets the normal path
-  decide again.
-
 Done on 2026-09-11 (schema v13):
 
 - **Operator commands from the technical channel.** `/analyze BILL [force] [publish]`, `/show`,
@@ -177,6 +154,25 @@ Done on 2026-09-12 (schema v14):
 - An RCL project a command names may already be in the Sejm: `BillLookup` resolves it to its druk
   through `find_process_by_rcl_num`, links the rows and answers about the print, so a project
   whose act is in force can no longer get a card promising a druk number.
+- The database on one page, drawn and explained: `docs/database.html` (tables, relations,
+  indexes, the migration ledger). The source of truth stays `MIGRATIONS` in `sqlite_repo.py`.
+
+Done on 2026-09-12 (schema v15), a fourth source:
+
+- The wykaz prac legislacyjnych i programowych RM (KPRM, gov.pl) as one CSV: `WPL/UD408` rows,
+  analysed from the register's own `Cele`/`Istota` with no text to read, carded as an intention
+  and linked forward to the RCL project that continues them. Measured lead time on UD408
+  (o zmianie ustawy o cudzoziemcach): entered 2026-05-12, on RCL 2026-07-06 — 55 days.
+- Only `Projekty ustaw` are followed, only entries published since the watermark are stored (the
+  state dump is 822 KB; the 775 bill entries with their paragraphs would add ~2.3 MB per run),
+  and the rest is reported as backlog.
+- GitHub-hosted runners reach www.gov.pl directly (probed 2026-09-12 from Azure eastus2: page
+  0.57 s, CSV 3.1 s / 2.8 MB gzipped), unlike RCL, so the source needs no proxy.
+  `LEXINFORM_WYKAZ_PROXY_URL` and `.github/workflows/wykaz-probe.yml` stay for the day that
+  changes.
+
+Done on 2026-09-12 (no schema change):
+
 - **A bill found when its road is already over gets no card and no analysis** (every source).
   `models.is_over(bill, today)` is the test: the act in Dziennik Ustaw, a rejection or a
   withdrawal, an RCL project closed without reaching the Sejm, a plan realised or taken off the
@@ -187,10 +183,28 @@ Done on 2026-09-12 (schema v14):
   still gets its card: the Senate and the President are the reader's last windows. Skipped rows
   are stored as `skipped_closed` (`reset --to analysis_pending` revives them); bills already
   followed keep their card and their updates to the end.
-- The database on one page, drawn and explained: `docs/database.html` (tables, relations,
-  indexes, the migration ledger). The source of truth stays `MIGRATIONS` in `sqlite_repo.py`.
+- **An urgent bill is told in urgent terms.** A bill the government declared *pilny* (art. 123;
+  `models.is_urgent`) gets its own wording in "what comes next": `Labels.urgent_step_labels` and
+  `urgent_durations` replace the normal steps and the constitutional deadlines shrink to 14 days
+  for the Senate and 7 for the President, so a card never promises weeks where the Sejm measured
+  days.
 
-The sections below are the original plan, kept for the rationale and the verified API facts.
+Still open:
+
+- RCL leftovers: consultations of draft regulations (rozporządzenia, `typeId=10`), zgłoszenia
+  lobbingowe.
+- Wykaz prac RM leftovers: the rozporządzenia (`RD`) and programme documents (`ID`, e.g. the
+  migration strategy) it also lists, the ministers' own registers on their gov.pl pages (the CSV
+  link is not at the same URL pattern there), and the backlog — an entry rewritten into relevance
+  long after publication stays invisible, because `Data publikacji` does not move on an edit;
+  `lexinform scan --since …` is the way in.
+- Ukrainian-language channel; weekly digest; static site from the state dump.
+- Committee e-mail addresses in "what you can do now" (the Sejm API has none; the committee page
+  is linked instead) and the Senate committee that received the act (the Senate API is not used).
+
+The sections below are the original plan, kept for the rationale and the verified API facts. They
+are not updated as the code moves on: where a name or a CLI flag below differs from the code, the
+code is right.
 
 ---
 
@@ -239,19 +253,22 @@ state branch). Legacy `SKIPPED_PREFILTER` keeps meaning "title-only skip, text n
 **Threshold** (pure function in `keywords.py`): `match_counts(text) -> dict[str, int]`; accept when
 `distinct >= 2` **or** `sum(counts) >= 3`. One "cudzoziemiec" in a 200-page tax bill is noise.
 
-**Design.** No migration. New `services/text_prefilter.py::TextPrefilterService(gateway, repo,
-extractor, prefilter, *, max_pdf_bytes, min_distinct, min_occurrences)` with
-`run(term, *, limit)`; a `text_prefilter` phase between discovery and analysis;
+**Design.** No migration. New `services/text_prefilter.py::TextPrefilterService` with
+`run(*, limit)`; a `text_prefilter` phase between discovery and analysis;
 `ServiceUnavailableError` aborts the phase leaving bills pending, any other per-bill error →
 `SKIPPED_TEXT_PREFILTER` + warning. No text caching in the DB (the dump lives in git); the double
-download (prefilter + analysis) is accepted for v1.
+download (prefilter + analysis) is avoided by a run-scoped cache in `TextLoader`, not by a column.
+(As built: `TextPrefilterService(repo, texts, loader, prefilter, *, min_distinct,
+min_occurrences, workers)` — the download limit belongs to the loader, and the source of a bill's
+text to `TextSources`.)
 
 **Settings.** `text_prefilter_enabled=True`, `text_prefilter_min_distinct=2`,
 `text_prefilter_min_occurrences=3`, `text_prefilter_max_per_run=20`.
 
-**CLI.** `lexinform reprefilter [--since] [--limit] [--include-text-skipped] [--dry-run]` runs the
-text stage over previously skipped bills; candidates are analysed by the next `run` (use
-`run --no-publish` after a big backfill). `scan` also runs the text stage.
+**CLI.** `lexinform reprefilter [--limit N] [--include-text-skipped]` runs the text stage over
+previously skipped bills (for an RCL project it reads the newest text again: a skipped project
+keeps no documents); candidates are analysed by the next `run` (use `run --no-publish` after a big
+backfill). `scan` also runs the text stage.
 
 **Tests.** `match_counts` + threshold table; real `print_3039.pdf` → accepted; service on fakes
 (hit, weak hit, no PDF, oversize, Sejm down leaves pending, extractor error → skipped); pipeline
@@ -303,7 +320,8 @@ the reminder is recorded as `skipped`.
 **Data model.** `ProcessDetail` + `display_address`, `isap_url`. New frozen `ActInfo` (`eli`,
 `display_address`, `title`, `act_date`, `promulgation_date`, `entry_into_force`, `in_force`,
 `status`, `text_pdf_url`, `isap_url`, `fetched_at`); `Bill.act: ActInfo | None`.
-`PublicationKind` + `ACT_PUBLISHED`, `IN_FORCE`. Migration v3:
+`PublicationKind` + `ACT_PUBLISHED`, `IN_FORCE`. Migration v4 (v3 went to the RPW rows, which
+were built first):
 
 ```sql
 ALTER TABLE bills ADD COLUMN act_json TEXT;
@@ -330,8 +348,9 @@ fixed note in both messages.
 
 **Steps (~1.5–2 days).** models + parsing + fixtures (`process_2699.json`,
 `eli_act_DU_2026_1099.json`) → `EliGateway` + tests → migration + repo methods → labels +
-formatter + publisher + fakes → tracking + pipeline wiring + report counters → settings/CLI
-(`lexinform act NUMBER`) → README.
+formatter + publisher + fakes → tracking + pipeline wiring + report counters → settings → README.
+(Built without a CLI command of its own: `lexinform show NUMBER` prints the act, `track` runs the
+phase.)
 
 ---
 
@@ -348,7 +367,8 @@ formatter + publisher + fakes → tracking + pipeline wiring + report counters �
 • 2026-07-17: ⛔ Президент наложил вето (druk 2863)
 ```
 
-Per-club breakdown ("за: KO 152, PSL-TD 31 · против: PiS 178") behind a flag, off by default.
+Per-club breakdown ("за: KO 152, PSL-TD 31 · против: PiS 178") behind `voting_club_breakdown`,
+which was switched on the same day.
 
 **Data model.** `Stage.voting: VotingSummary | None` (`yes`, `no`, `abstain`, `not_participating`,
 `total_voted`, `majority_type`, `sitting`, `voting_number`, `date`, `pdf_url`, `topic`). `Stage.position`
@@ -407,11 +427,11 @@ signals. Never edit earlier entries of `MIGRATIONS`; `restore()` migrates old du
 |---|---|
 | Text threshold | distinct ≥ 2 or occurrences ≥ 3 |
 | New statuses vs reuse | new `text_prefilter_pending` / `skipped_text_prefilter` |
-| Cache PDF text between prefilter and analysis | not in v1 |
+| Cache PDF text between prefilter and analysis | run-scoped in `TextLoader`, not in the DB |
 | `reprefilter` results published by next `run` | yes; document `run --no-publish` for backfills |
 | `EliGateway` implementation | same `SejmApiClient` class, separate Protocol |
 | Publication notice merged with a stage update | no, separate message |
-| Club breakdown in v1 | no, flag off |
+| Club breakdown | `voting_club_breakdown`, on since 2026-09-07 |
 | "Today" for reminders | Europe/Warsaw |
 | Tracking cap for passed bills without an act | 180 days |
 | In-force reminder repeats summary | yes |
