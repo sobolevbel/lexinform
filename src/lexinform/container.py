@@ -66,13 +66,19 @@ from lexinform.services.tracking import StatusTrackingService, TrackingOptions
 from lexinform.services.wykaz_discovery import WykazDiscoveryService
 from lexinform.settings import Settings
 
-LOCAL_TZ = ZoneInfo("Europe/Warsaw")  # the readers' and the Sejm's day, whatever the runner's zone
+LOCAL_TZ = ZoneInfo("Europe/Warsaw")
 
 
 @dataclass
 class Container:
     """The wiring. Services are built once and shared (`discovery_service()` and the pipeline's
-    discovery are the same object), so a test can hold a service and run the pipeline."""
+    discovery are the same object), so a test can hold a service and run the pipeline.
+
+    `LOCAL_TZ` is the readers' and the Sejm's day, whatever zone the runner is in. `rcl` and
+    `wykaz` are None when their source is switched off in the settings, and the four `*_override`
+    fields, `llm` and `extractor` are what a test or a dry run supplies instead of the real
+    adapters.
+    """
 
     settings: Settings
     clock: Clock
@@ -81,9 +87,8 @@ class Container:
     formatter: MessageFormatter
     prefilter: KeywordPrefilter
     terms: TermResolver
-    rcl: RclGateway | None = None  # None when LEXINFORM_RCL_ENABLED is off
-    wykaz: WykazGateway | None = None  # None when LEXINFORM_WYKAZ_ENABLED is off
-    # Collaborators a test (or a dry run) supplies instead of the real adapters.
+    rcl: RclGateway | None = None
+    wykaz: WykazGateway | None = None
     llm: LlmAnalyzer | None = None
     extractor: TextExtractor | None = None
     publisher_override: Publisher | None = None

@@ -149,14 +149,18 @@ def run(
 
 @app.command()
 def scan(since: SinceOpt = None) -> None:
-    """Discover bills and run the keyword prefilter only (no LLM, no publishing)."""
+    """Discover bills and run the keyword prefilter only (no LLM, no publishing).
+
+    The "over" count is the bills, projects and plans whose road had already ended when this run
+    first saw them.
+    """
     c = _container()
     try:
         pipeline = c.pipeline(dry_run=True)
         effective = pipeline.resolve_since(_utc(since))
         term = c.term()
         result = c.discovery_service().discover(term, effective)
-        over = result.over  # bills, projects and plans whose road had ended before this run
+        over = result.over
         wykaz_service = c.wykaz_discovery_service()
         wykaz_new = wykaz_backlog = 0
         if wykaz_service is not None:
@@ -225,7 +229,6 @@ def reprefilter(
             ok = service.check(bill)
             accepted += int(ok)
             if ok and bill.is_rcl:
-                # The analysis wants every catalog and the consultation letter, not just the text.
                 c.repo.save_rcl(bill.term, bill.number, _read_rcl_project(c, bill.number))
             fresh = c.repo.get(bill.term, bill.number)
             hits = ", ".join(fresh.prefilter_hits) if fresh else ""
@@ -487,7 +490,11 @@ DaysOpt = Annotated[int, typer.Option("--days", min=1, help="How many days back 
 
 @app.command()
 def runs(days: DaysOpt = 30) -> None:
-    """List the recorded runs of the last days: what each found, posted and cost."""
+    """List the recorded runs of the last days: what each found, posted and cost.
+
+    A run recorded before the per-model breakdown existed carries tokens but no usage: its cost
+    is unknown, not zero, and is shown as such.
+    """
     c = _container()
     try:
         reports = c.repo.list_runs(since=c.clock.now() - timedelta(days=days))
@@ -500,8 +507,6 @@ def runs(days: DaysOpt = 30) -> None:
         "started (UTC)     mode      ok   disc  anal  publ  upd  errs  tokens in/out       cost"
     )
     for r in reports:
-        # Reports stored before the per-model breakdown existed carry tokens but no usage:
-        # their cost is unknown, not zero.
         cost = cost_usd(r.llm_usage) if r.llm_usage or not r.llm_input_tokens else None
         typer.echo(
             f"{r.started_at:%Y-%m-%d %H:%M}  {r.mode:<8}  {'ok ' if r.ok else 'ERR'}  "
@@ -561,8 +566,9 @@ def _k(tokens: int) -> str:
 
 
 def _money(usd: float | None) -> str:
+    """A cost, or "$?" when the price list does not know the model that ran."""
     if usd is None:
-        return "$?"  # a model missing from the price list
+        return "$?"
     return f"${usd:.2f}" if usd >= 0.01 or usd == 0 else f"${usd:.3f}"
 
 
@@ -578,7 +584,9 @@ def republish(
 
     Forgets the channel's `new_bill` publication row and sends the card through the normal
     path, so the pending-before-send protocol and the retry bookkeeping still apply. Updates,
-    act notices and reminders keep replying to the new card from now on.
+    act notices and reminders keep replying to the new card from now on. A bill considered
+    jointly with one that has a card gets its "alternative bill" reply again rather than a card:
+    both rows are forgotten, and the normal path decides which it is.
     """
     c = _container()
     try:
@@ -592,8 +600,6 @@ def republish(
         typer.echo(f"{number}: current card in {c.channel_id()}: {state}")
         if not yes and not typer.confirm("Send the card again?"):
             raise typer.Exit(code=1)
-        # A bill considered jointly with one that has a card gets its "alternative bill" reply
-        # again instead of a card; both rows are forgotten so the normal path decides.
         publishing.forget_card(bill)
         ok = publishing.publish_bill(bill)
         fresh = publishing.card_of(bill)
@@ -616,7 +622,8 @@ def reset(
     """Put a bill back into a status with a clean retry budget (e.g. re-run a failed analysis).
 
     `--to analysis_pending` re-analyses the bill on the next run; `--to skipped_prefilter`
-    silences a false positive. Existing analyses and posts are left untouched.
+    silences a false positive. Existing analyses and posts are left untouched. A skipped RCL row
+    keeps only the project's skeleton, so its documents are read again when it is revived.
     """
     c = _container()
     try:
@@ -630,7 +637,6 @@ def reset(
             and bill.rcl is not None
             and not bill.rcl.text_documents()
         ):
-            # A skipped RCL row keeps only the project's skeleton: fetch the documents again.
             c.repo.save_rcl(bill.term, bill.number, _read_rcl_project(c, bill.number))
             typer.echo("project documents re-read from RCL")
         typer.echo("done")
@@ -701,7 +707,7 @@ def _report_startup_failure(settings: Settings, message: str) -> None:
             MessageFormatter(settings.output_language),
             channel_id=settings.telegram_log_channel_id,
         ).notify(report, [])
-    except Exception as exc:  # nothing more we can do
+    except Exception as exc:
         logging.getLogger(__name__).error("could not post startup failure to log channel: %s", exc)
 
 

@@ -4,6 +4,9 @@ The Sejm API does not expose signatories, but every print starts with a letter t
 "niżej podpisani posłowie wnoszą projekt ustawy ... Do reprezentowania wnioskodawców ...
 upoważniamy posła X. (-) A; (-) B; ...". Names are matched against the MP directory (/MP) to
 show which clubs stand behind a bill.
+
+A signature ends at a ";", at a final ".", at a blank line, at the end of the letter, or at the
+next "(-)"; a single line break inside a name, which is how a PDF wraps one, does not end it.
 """
 
 import re
@@ -17,8 +20,6 @@ _REPRESENTATIVE_RE = re.compile(
     r"upoważnion[ya]\s+(?:pos[łl]a|pos[łl]ank[ęe]|pose[łl])\s+([^.\n;]+?)\s*\.",
     re.IGNORECASE,
 )
-# A signature ends at ";", at a final ".", at a blank line, at the end of the letter, or at the
-# next "(-)"; a single line break inside a name (PDF wrapping) does not end it.
 _SIGNATURE_RE = re.compile(
     r"\(\s*-\s*\)\s*([^;()]+?)(?=\s*;|\s*\.\s*(?:\n|$)|\s*\n\s*\n|\s*$|\s*\(\s*-\s*\))"
 )
@@ -27,12 +28,17 @@ _END_MARKERS = ("Tłoczono z polecenia", "\nProjekt\n", "\nU S T AWA", "\nUSTAWA
 
 @dataclass(frozen=True)
 class CoverLetter:
-    representative: str | None = None  # as written (accusative case: "Darię Gosek-Popiołek")
-    signatories: tuple[str, ...] = ()  # nominative names as printed
+    """The names the letter carries: the representative as written, in the accusative case the
+    letters use ("Darię Gosek-Popiołek"), and the signatories as printed, in the nominative."""
+
+    representative: str | None = None
+    signatories: tuple[str, ...] = ()
 
 
 def _clean(name: str) -> str:
-    name = re.sub(r"\s*-\s*", "-", name)  # "Gosek -\nPopiołek" -> "Gosek-Popiołek"
+    """One name on one line: a PDF wraps a double-barrelled name across two, as
+    "Gosek -\nPopiołek"."""
+    name = re.sub(r"\s*-\s*", "-", name)
     return re.sub(r"\s+", " ", name).strip(" ,;.")
 
 
@@ -55,11 +61,11 @@ def _key(name: str) -> str:
 
 @dataclass
 class MpDirectory:
-    """Name -> club lookup built from GET /MP."""
+    """Name to club lookup built from GET /MP; `display` maps the same keys to "First Last"."""
 
     by_name: dict[str, str] = field(default_factory=dict)
     by_accusative: dict[str, str] = field(default_factory=dict)
-    display: dict[str, str] = field(default_factory=dict)  # key -> "First Last"
+    display: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def from_mps(cls, mps: tuple[Mp, ...]) -> Self:

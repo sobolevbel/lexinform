@@ -33,7 +33,6 @@ def configure_logging(level: str = "INFO", *, json_output: bool = False) -> None
     root.setLevel(level.upper())
     for noisy in ("httpx2", "httpcore", "anthropic"):
         logging.getLogger(noisy).setLevel(max(logging.WARNING, root.level))
-    # pypdf warns per font per page on unusual PDFs; the loader logs unreadable files itself.
     logging.getLogger("pypdf").setLevel(logging.ERROR)
 
 
@@ -47,12 +46,13 @@ class MemoryLogHandler(logging.Handler):
         self.dropped = 0
 
     def emit(self, record: logging.LogRecord) -> None:
+        """Keep the message alone: a record already listed in the run report's errors is
+        skipped, and tracebacks belong in the full log, not in the Telegram report."""
         if getattr(record, "in_report", False):
-            return  # already listed in the run report's errors
+            return
         if len(self.lines) >= self.capacity:
             self.dropped += 1
             return
-        # Message only: tracebacks belong in the full log, not in the Telegram report.
         self.lines.append(f"{record.levelname} {record.name}: {record.getMessage()}")
 
     def install(self) -> None:

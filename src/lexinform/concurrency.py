@@ -20,10 +20,13 @@ class Outcome[T, R]:
     error: Exception | None = None
 
     def result(self) -> R:
-        """The value, or re-raise the step's exception so the caller classifies it as usual."""
+        """The value, or re-raise the step's exception so the caller classifies it as usual.
+
+        A step that returned None left `value` None and no error, which is the same thing.
+        """
         if self.error is not None:
             raise self.error
-        return cast(R, self.value)  # a step that returned None has value=None and no error
+        return cast(R, self.value)
 
 
 def fan_out[T, R](

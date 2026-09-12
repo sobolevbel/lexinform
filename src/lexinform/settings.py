@@ -1,4 +1,8 @@
-"""Runtime configuration. Environment variables with the LEXINFORM_ prefix, or a .env file."""
+"""Runtime configuration. Environment variables with the LEXINFORM_ prefix, or a .env file.
+
+Every field that needs more than its name to be understood carries a `description`, which is
+what `.env.example` and the operator's documentation say about it.
+"""
 
 from pathlib import Path
 from typing import Literal
@@ -14,68 +18,105 @@ class Settings(BaseSettings):
         env_prefix="LEXINFORM_", env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    # Sejm. The term is normally taken from the API (`/sejm/term`, the one flagged current), so
-    # the bot moves to a new kadencja by itself; set it only to pin an older term.
-    term: int | None = None
+    term: int | None = Field(
+        default=None,
+        description="Pins the Sejm term. Empty takes the one the API flags as current, so the"
+        " bot moves to a new kadencja by itself.",
+    )
     sejm_api_base_url: str = "https://api.sejm.gov.pl"
     sejm_page_size: int = 100
     sejm_timeout_seconds: float = 30.0
-    sejm_concurrency: int = Field(default=4, ge=1)  # parallel PDF downloads / process lookups
+    sejm_concurrency: int = Field(
+        default=4, ge=1, description="Parallel PDF downloads and process lookups."
+    )
 
-    # RCL (legislacja.rcl.gov.pl): government projects before they reach the Sejm
-    rcl_enabled: bool = True
+    rcl_enabled: bool = Field(
+        default=True, description="Follow government projects on legislacja.rcl.gov.pl."
+    )
     rcl_base_url: str = "https://legislacja.rcl.gov.pl"
-    rcl_timeout_seconds: float = 60.0  # a project page takes ~10 s to render
-    rcl_concurrency: int = Field(default=6, ge=1)  # projects read at once (pages are slow)
-    # RCL drops connections from outside the EU (GitHub runners included): an HTTP forward proxy
-    # with an EU address, `http://user:password@host:port`; "" connects directly.
-    rcl_proxy_url: str = ""
+    rcl_timeout_seconds: float = Field(
+        default=60.0, description="A project page takes some ten seconds to render."
+    )
+    rcl_concurrency: int = Field(
+        default=6, ge=1, description="Projects read at once; the pages are slow."
+    )
+    rcl_proxy_url: str = Field(
+        default="",
+        description="RCL drops connections from outside the EU, GitHub runners included: an HTTP"
+        " forward proxy with an EU address, `http://user:password@host:port`. Empty connects"
+        " directly.",
+    )
 
-    # Wykaz prac legislacyjnych RM (gov.pl): bills the government has only announced. One CSV of
-    # ~10 MB per run; gov.pl is a single Polish address, so it may need the same EU proxy as RCL.
-    wykaz_enabled: bool = True
+    wykaz_enabled: bool = Field(
+        default=True,
+        description="Follow the wykaz prac legislacyjnych RM: bills the government has only"
+        " announced. One CSV of ~10 MB per run.",
+    )
     wykaz_base_url: str = "https://www.gov.pl"
     wykaz_timeout_seconds: float = 60.0
-    wykaz_proxy_url: str = ""
+    wykaz_proxy_url: str = Field(
+        default="",
+        description="gov.pl is a single Polish address, so it may one day need the same EU proxy"
+        " as RCL; it answers GitHub runners today.",
+    )
 
-    # Storage
     db_path: Path = Path("lexinform.db")
 
-    # LLM. The key is read under its plain name (no LEXINFORM_ prefix) from the environment or
-    # .env so that one variable serves both this app and the anthropic SDK.
-    anthropic_api_key: str | None = Field(default=None, validation_alias="ANTHROPIC_API_KEY")
+    anthropic_api_key: str | None = Field(
+        default=None,
+        validation_alias="ANTHROPIC_API_KEY",
+        description="Read under its plain name, without the LEXINFORM_ prefix, so that one"
+        " variable serves both this app and the anthropic SDK.",
+    )
     llm_model: str = "claude-opus-5"
     llm_effort: Effort = "medium"
     llm_max_tokens: int = 4000
-    llm_concurrency: int = Field(default=2, ge=1)  # bills analysed at the same time
-    # Cheap first pass on excerpts before the full analysis of long prints; "" disables it.
-    llm_triage_model: str = "claude-sonnet-5"
-    triage_min_chars: int = 20_000  # shorter texts go straight to the full analysis
+    llm_concurrency: int = Field(default=2, ge=1, description="Bills analysed at the same time.")
+    llm_triage_model: str = Field(
+        default="claude-sonnet-5",
+        description="Cheap first pass on excerpts before the full analysis of a long print;"
+        " empty disables it.",
+    )
+    triage_min_chars: int = Field(
+        default=20_000, description="Shorter texts go straight to the full analysis."
+    )
     triage_min_confidence: float = Field(default=0.8, ge=0.0, le=1.0)
-    # Cost guard rails (0 disables): a first analysis whose input alone is estimated above the
-    # per-bill limit is skipped (`skipped_cost`, revived with `lexinform reset`); the analysis
-    # phase stops for the run once the run's model spend reaches the per-run limit.
-    max_analysis_cost_usd: float = Field(default=2.0, ge=0.0)
-    max_run_cost_usd: float = Field(default=15.0, ge=0.0)
+    max_analysis_cost_usd: float = Field(
+        default=2.0,
+        ge=0.0,
+        description="A first analysis whose input alone is estimated above this is skipped"
+        " (`skipped_cost`, revived with `lexinform reset`). 0 disables the guard.",
+    )
+    max_run_cost_usd: float = Field(
+        default=15.0,
+        ge=0.0,
+        description="The analysis phase stops for the run once its model spend reaches this."
+        " 0 disables the guard.",
+    )
     output_language: str = "ru"
-    # Safety cap only: Polish text is ~2 chars/token, so this is ~750k tokens and fits the
-    # 1M context of the default model. Real prints (even 800k-char ones) go in whole.
-    text_budget_chars: int = 1_500_000
-    # Safety valve only, not a relevance rule: the body is buffered in memory and unpacked zip
-    # members are capped by the same number. Real prints reach 40 MB (druk 2865: 346 pages,
-    # text layer); a 25 MB cap silently skipped them in the text prefilter.
-    max_pdf_download_mb: int = 200
+    text_budget_chars: int = Field(
+        default=1_500_000,
+        description="Safety cap only: Polish text is ~2 chars per token, so this is ~750k tokens"
+        " and fits the 1M context of the default model. Real prints go in whole.",
+    )
+    max_pdf_download_mb: int = Field(
+        default=200,
+        description="Safety valve only, not a relevance rule: the body is buffered in memory and"
+        " unpacked zip members are capped by the same number. Real prints reach 40 MB (druk 2865:"
+        " 346 pages with a text layer), and a 25 MB cap silently skipped them.",
+    )
 
-    # Telegram
     telegram_bot_token: str = ""
     telegram_channel_id: str = ""
     telegram_log_channel_id: str = ""
     telegram_api_base_url: str = "https://api.telegram.org"
 
-    # Operator commands posted in the log channel. The relay (`lexinform listen`, on a server
-    # that is always on) files each command as `{update_id}.json` into the git branch `inbox`;
-    # a run reads the directory that branch is checked out in (None: no commands phase).
-    inbox_dir: Path | None = None
+    inbox_dir: Path | None = Field(
+        default=None,
+        description="Where the operator commands wait: the relay files each as"
+        " `{update_id}.json` into the git branch `inbox`, and a run reads the directory that"
+        " branch is checked out in. Empty means no commands phase.",
+    )
 
     @field_validator("inbox_dir", mode="before")
     @classmethod
@@ -83,51 +124,93 @@ class Settings(BaseSettings):
         """`LEXINFORM_INBOX_DIR=` (blank) means no inbox, not the current directory."""
         return None if isinstance(value, str) and not value.strip() else value
 
-    # The relay's side (`lexinform listen`): the repository (`owner/name`) and a fine-grained
-    # personal access token with Contents read/write on it, the branch the inbox lives in, and
-    # how long one getUpdates call waits for a post.
-    github_repo: str = ""
-    github_token: str = ""
+    github_repo: str = Field(
+        default="", description="The relay's side: the inbox repository, as `owner/name`."
+    )
+    github_token: str = Field(
+        default="",
+        description="A fine-grained personal access token with Contents read/write on"
+        " `github_repo`.",
+    )
     inbox_branch: str = "inbox"
-    listen_timeout_seconds: int = Field(default=50, ge=0, le=300)
+    listen_timeout_seconds: int = Field(
+        default=50, ge=0, le=300, description="How long one getUpdates call waits for a post."
+    )
 
-    # Pipeline
     min_score: int = Field(default=3, ge=1, le=5)
     max_publish_per_run: int = 10
     max_analyze_per_run: int = 40
     max_analysis_attempts: int = 3
-    text_prefilter_enabled: bool = True  # scan the print PDF when the title says nothing
-    text_prefilter_min_distinct: int = 2  # accept when this many different patterns occur ...
-    text_prefilter_min_occurrences: int = 3  # ... or when patterns occur this many times in total
+    text_prefilter_enabled: bool = Field(
+        default=True, description="Scan the print PDF when the title says nothing."
+    )
+    text_prefilter_min_distinct: int = Field(
+        default=2, description="Accept a text when this many different patterns occur in it."
+    )
+    text_prefilter_min_occurrences: int = Field(
+        default=3, description="...or when the patterns occur this many times in total."
+    )
     text_prefilter_max_per_run: int = 20
-    pre_print_enabled: bool = True  # also watch /bills for bills without a print number yet
-    voting_club_breakdown: bool = True  # fetch per-MP votes to show how each club voted
-    max_publish_attempts: int = 3  # failed posts are retried on later runs up to this many times
-    # Cards re-rendered in place per run when what they say has drifted; bounds the run.
-    max_card_edits: int = 30
+    pre_print_enabled: bool = Field(
+        default=True, description="Also watch /bills for bills without a print number yet."
+    )
+    voting_club_breakdown: bool = Field(
+        default=True, description="Fetch per-MP votes to show how each club voted."
+    )
+    max_publish_attempts: int = Field(
+        default=3, description="Failed posts are retried on later runs up to this many times."
+    )
+    max_card_edits: int = Field(
+        default=30,
+        description="Cards re-rendered in place per run when what they say has drifted; bounds"
+        " the run.",
+    )
     first_run_lookback_days: int = 1
     rerun_overlap_days: int = 1
-    runs_retention_days: int = Field(default=90, ge=7)  # run records (with reports) kept this long
-    track_closed_grace_days: int = 90  # Dz.U. publication follows ~30-40 days after closure
-    track_passed_max_days: int = 180  # follow passed bills without a published act this long
-    # A veto or a referral to the Tribunal can hold a law for years before an act appears.
-    track_pending_decision_max_days: int = 1095
-    track_full_weekday: int = Field(default=0, ge=0, le=6)  # weekday of the full check (0 = Monday)
-    in_force_reminders: bool = True  # post a reminder on the day the act enters into force
-    # Remind before a public consultation closes and before applications to a public hearing
-    # close, this many days ahead.
-    consultation_reminders: bool = True
+    runs_retention_days: int = Field(
+        default=90, ge=7, description="Run records, with their reports, are kept this long."
+    )
+    track_closed_grace_days: int = Field(
+        default=90,
+        description="Publication in Dziennik Ustaw follows the Sejm's closure by 30 to 40 days.",
+    )
+    track_passed_max_days: int = Field(
+        default=180, description="Follow passed bills without a published act this long."
+    )
+    track_pending_decision_max_days: int = Field(
+        default=1095,
+        description="A veto or a referral to the Tribunal can hold a law for years before an act"
+        " appears.",
+    )
+    track_full_weekday: int = Field(
+        default=0, ge=0, le=6, description="Weekday of the full check; 0 is Monday."
+    )
+    in_force_reminders: bool = Field(
+        default=True, description="Post a reminder on the day the act enters into force."
+    )
+    consultation_reminders: bool = Field(
+        default=True,
+        description="Remind before a public consultation closes, and before applications to a"
+        " public hearing close.",
+    )
     consultation_reminder_days: int = Field(default=3, ge=0)
-    # Remind before the Senate's 30 days (art. 121) and the President's 21 (art. 122) run out.
-    # Wider than the consultation's window on purpose: both dates are counted from the stage
-    # before the hand-over, so they fall a few days early, and the Senate's committee takes the
-    # act well before day 30.
-    decision_reminders: bool = True
-    decision_reminder_days: int = Field(default=7, ge=0)
-    # Post when a followed bill appears on a committee or Sejm sitting agenda.
-    agenda_watch: bool = True
+    decision_reminders: bool = Field(
+        default=True,
+        description="Remind before the Senate's 30 days (art. 121) and the President's 21"
+        " (art. 122) run out.",
+    )
+    decision_reminder_days: int = Field(
+        default=7,
+        ge=0,
+        description="Wider than the consultation's window on purpose: both dates are counted from"
+        " the stage before the hand-over, so they fall a few days early, and the Senate's"
+        " committee takes the act well before day 30.",
+    )
+    agenda_watch: bool = Field(
+        default=True,
+        description="Post when a followed bill appears on a committee or Sejm sitting agenda.",
+    )
 
-    # Logging
     log_level: str = "INFO"
     log_json: bool = False
 

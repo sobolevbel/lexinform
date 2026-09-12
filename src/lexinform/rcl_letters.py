@@ -5,6 +5,10 @@ Ministries write these letters by hand, but the phrasing is fixed by the Regulam
 Ministrów: "w terminie 14 dni od dnia otrzymania niniejszego pisma" (relative to the letter,
 whose date is in its heading or, with an electronic signature, missing) or "do dnia 30 września
 2026 r." (absolute), and "na adres: sekretariat@ministerstwo.gov.pl". Pure text parsing; no I/O.
+
+`MAX_CONSULTATION` is what a parsed deadline is measured against: the longest term the ministries
+set is 30 days, 60 for a few big projects, so six months is far outside that — and inside any
+sunset clause a bill is likely to quote.
 """
 
 import re
@@ -33,8 +37,6 @@ _DATE = rf"(?:{_WORD_DATE}|{_NUMERIC_DATE})"
 _LETTER_DATE = re.compile(rf"Warszawa,?\s*(?:dnia\s+)?{_DATE}", re.IGNORECASE)
 _DAYS = re.compile(r"w\s+(?:terminie|ciągu)\s+(\d{1,3})\s+dni", re.IGNORECASE)
 _UNTIL = re.compile(rf"(?:w\s+terminie\s+)?do\s+(?:dnia\s+)?{_DATE}", re.IGNORECASE)
-# The longest consultation term the ministries set is 30 days (60 for a few big projects);
-# six months is far outside that and inside any sunset clause a bill is likely to quote.
 MAX_CONSULTATION = timedelta(days=180)
 _EMAIL = r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
 _ADDRESS_EMAIL = re.compile(rf"adres[^@\n]{{0,80}}?({_EMAIL})", re.IGNORECASE)
@@ -43,11 +45,15 @@ _ANY_EMAIL = re.compile(_EMAIL)
 
 @dataclass(frozen=True)
 class LetterInfo:
-    """What the letter says about the consultation; every field may be unknown."""
+    """What the letter says about the consultation; every field may be unknown.
+
+    `days` is the relative term ("w terminie N dni od dnia otrzymania") and `deadline` the
+    absolute date, when the letter gives one instead.
+    """
 
     letter_date: date | None = None
-    days: int | None = None  # "w terminie N dni od dnia otrzymania"
-    deadline: date | None = None  # an absolute date, when the letter gives one
+    days: int | None = None
+    deadline: date | None = None
     email: str | None = None
 
 
@@ -87,9 +93,11 @@ def _first_email(flat: str) -> str | None:
 
 
 def _date_of(match: re.Match[str] | None) -> date | None:
+    """The date a `_DATE` match found: its last six groups are the two spellings the letters
+    use — day, month name, year for a written date, and day, month, year for a numeric one."""
     if match is None:
         return None
-    groups = match.groups()[-6:]  # word date: day, month name, year; numeric: day, month, year
+    groups = match.groups()[-6:]
     try:
         if groups[0] is not None:
             return date(int(groups[2]), _MONTHS[groups[1].lower()], int(groups[0]))

@@ -11,6 +11,11 @@ parties, consultations).
 `excerpts` builds the short digest used for the cheap relevance triage: the beginning of the bill,
 the beginning of the justification and windows of text around every keyword hit. `TextBudget` is
 the last safety cap before the model call.
+
+The PDF extractor separates pages with a form feed, which is what `PAGE_BREAK` is, and a section
+header sits within the first few hundred characters of a page. The OSR form's point 6 is where
+the trim cuts; RCL's Word files carry that number as list formatting rather than as text, so the
+heading is accepted without it.
 """
 
 import re
@@ -18,15 +23,14 @@ from bisect import bisect_left
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-PAGE_BREAK = "\f"  # the PDF extractor separates pages with a form feed
+PAGE_BREAK = "\f"
 
-_HEAD = 600  # a section header sits within this many characters of the page top
+_HEAD = 600
 
 _JUSTIFICATION_RE = re.compile(
     r"^\s*u\s?z\s?a\s?s\s?a\s?d\s?n\s?i\s?e\s?n\s?i\s?e\s*$", re.IGNORECASE | re.MULTILINE
 )
 _OSR_RE = re.compile(r"^\s*Nazwa projektu\b", re.MULTILINE)
-# Point 6 of the OSR form; RCL's Word files carry the number as list formatting, not as text.
 _OSR_CUT_RE = re.compile(r"^\s*(?:6\.\s*)?Wpływ na sektor finans", re.MULTILINE)
 _REGULATION_RE = re.compile(
     r"^\s*R\s?O\s?Z\s?P\s?O\s?R\s?Z\s?Ą\s?D\s?Z\s?E\s?N\s?I\s?E\s*$", re.MULTILINE
@@ -61,10 +65,11 @@ class TrimmedText:
 
 
 def _section_start(page: str, current: str) -> str:
-    """The section a page opens, or the one it continues."""
+    """The section a page opens, or the one it continues: everything after the first draft
+    regulation belongs to the drafts."""
     head = page[:_HEAD]
     if current == REGULATIONS:
-        return REGULATIONS  # everything after the first draft regulation belongs to the drafts
+        return REGULATIONS
     if _REGULATION_RE.search(head):
         return REGULATIONS
     if _CONSULTATION_RE.search(head):
@@ -101,9 +106,6 @@ def trim_print(text: str) -> TrimmedText:
         else:
             kept.append(page)
     if not any(page for page in kept if not page.startswith("\n[pominięto: ")):
-        # Nothing but markers left. A document extracted without page breaks is one page, so a
-        # heading in its first lines would decide the fate of the whole text; unknown layouts
-        # pass through, and this is one.
         return TrimmedText(text=text.strip())
     return TrimmedText(text="\n".join(kept).strip(), dropped=tuple(dropped))
 
@@ -142,8 +144,6 @@ def excerpts(
     used = sum(end - start for start, end in merged)
     for start, end in sorted(spans):
         piece = (max(0, start - window), min(len(text), end + window))
-        # What the window adds to what is already kept, not its own length: hits cluster, and
-        # counting each one in full spends the budget on text that was taken once.
         added = _uncovered(merged, piece)
         if used + added > max_chars:
             break

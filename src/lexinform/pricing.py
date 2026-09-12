@@ -4,16 +4,18 @@ Verified against platform.claude.com/docs/en/about-claude/pricing on 2026-09-08.
 0.1x the input price, cache writes 1.25x. Keys are matched as prefixes of the model id so dated
 snapshots ("claude-sonnet-5-20260601") price like their family; an unknown model yields None and
 the report simply shows no dollar figure.
+
+`CHARS_PER_TOKEN` is what Polish legal text measures on Claude's tokenizer, which is what the
+per-bill cost estimate is built on.
 """
 
 from collections.abc import Mapping
 
 from lexinform.models import TokenUsage
 
-# model id prefix -> (input, output) per million tokens
 PRICES: dict[str, tuple[float, float]] = {
     "claude-opus-5": (5.0, 25.0),
-    "claude-opus-4": (5.0, 25.0),  # 4.5 .. 4.8
+    "claude-opus-4": (5.0, 25.0),
     "claude-sonnet-5": (2.0, 10.0),
     "claude-sonnet-4": (3.0, 15.0),
     "claude-haiku-4": (1.0, 5.0),
@@ -21,7 +23,7 @@ PRICES: dict[str, tuple[float, float]] = {
 
 CACHE_READ_FACTOR = 0.1
 CACHE_WRITE_FACTOR = 1.25
-CHARS_PER_TOKEN = 2.0  # Polish legal text on Claude's tokenizer (measured, see CLAUDE.md)
+CHARS_PER_TOKEN = 2.0
 
 
 def estimate_input_cost(chars: int, input_price_per_mtok: float) -> float:

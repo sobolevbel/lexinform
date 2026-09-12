@@ -3,6 +3,25 @@
 Patterns are Polish word stems anchored with word boundaries so that e.g. `wiz` does not match
 `wizja` and `granic` does not match `ograniczeniu`. The LLM makes the final relevance call, so
 false positives here only cost an LLM request, while false negatives lose a bill forever.
+
+Some patterns name a group of people without the word "cudzoziemcy" — EU citizens (free movement,
+local elections), third-country nationals (entry bans) — and some name work only foreigners do:
+a work permit, a seasonal work permit, an employer's declaration (oświadczenie o powierzeniu
+wykonywania pracy).
+
+`WEAK_PATTERNS` are the authorities and places that turn up in bills about customs, policing or
+inspections without the bill touching foreigners at all — a food-quality bill lists Straż
+Graniczna among its inspectors — plus "legalizacja", which in Polish law usually means excise
+stamps, metrology or unpermitted buildings (one excise bill said it 140 times) while a bill
+legalising someone's stay says "cudzoziemiec" as well. "Nierezydent" is mostly a company in tax
+law, and "przekraczanie granicy" belongs to customs and transport. Inside a full text they count
+only next to a strong pattern, and in a title they do not send a bill to the model on their own.
+
+Some words are deliberately not patterns at all: PESEL, mObywatel and ePUAP, NFZ, świadczenia
+(800+), prawo jazdy, szkolnictwo wyższe, Kodeks wyborczy. A bill changing those *for foreigners*
+says "cudzoziemiec" or "obywatel Ukrainy" and the text stage catches it; as title patterns they
+would each hit 4 to 14 unrelated bills per term — measured over the 1500 processes of term 10 —
+and every hit is a full analysis.
 """
 
 import re
@@ -29,7 +48,7 @@ KEYWORD_PATTERNS: tuple[KeywordPattern, ...] = (
     _p("repatriacja",        r"\brepatria\w*"),
     _p("obywatelstwo",       r"\bobywatelstw\w*"),
     _p("obywatele_ukrainy",  r"\bobywatel\w*\s+ukrainy\b"),
-    _p("wizy",               r"\bwiz(a|y|ie|ę|ą|om|ach|ami|ow\w*)?\b"),  # incl. bare "wiz"
+    _p("wizy",               r"\bwiz(a|y|ie|ę|ą|om|ach|ami|ow\w*)?\b"),
     _p("zezwolenie_pobyt",   r"\bzezwoleni\w*\s+na\s+pobyt\w*"),
     _p("pobyt_kwalifikowany", r"\bpobyt\w*\s+(czasow|sta[łl]|rezydent|tolerowan|humanitarn)\w*"),
     _p("legalizacja",        r"\blegalizac\w*"),
@@ -50,12 +69,8 @@ KEYWORD_PATTERNS: tuple[KeywordPattern, ...] = (
     _p("prawnicy_zagraniczni", r"\bprawnik\w*\s+zagraniczn\w*"),
     _p("status_uchodzcy",    r"\bstatus\w*\s+uchod[źz]c\w*"),
     _p("integracja_cudzoziemcow", r"\bintegracj\w*\s+(cudzoziemc|migrant|uchod)\w*"),
-    # Non-Polish citizens named by their citizenship rather than as "cudzoziemcy": EU citizens
-    # (free movement, local elections), third-country nationals (entry bans).
     _p("obywatele_innych_panstw",
        r"\bobywatel\w*\s+(unii\s+europejskiej|ue|pa[ńn]stw\w*\s+(cz[łl]onkowsk|trzeci)\w*)\b"),
-    # Work of foreigners without the word: only foreigners need a work permit, a seasonal work
-    # permit or an employer's declaration (oświadczenie o powierzeniu wykonywania pracy).
     _p("zezwolenie_praca",   r"\bzezwoleni\w*\s+na\s+prac[ęe]\b"),
     _p("praca_sezonowa",     r"\bprac\w*\s+sezonow\w*"),
     _p("oswiadczenie_powierzenie", r"\bo[śs]wiadczeni\w*\s+o\s+powierzeniu\b"),
@@ -67,18 +82,6 @@ KEYWORD_PATTERNS: tuple[KeywordPattern, ...] = (
 )
 # fmt: on
 
-# Authorities and places that turn up in bills about customs, policing or inspections without the
-# bill touching foreigners at all (a food-quality bill lists Straż Graniczna among inspectors),
-# and "legalizacja", which in Polish law mostly means excise stamps, metrology or unpermitted
-# buildings (an excise bill said it 140 times); a bill legalising someone's stay says
-# "cudzoziemiec" too. "Nierezydent" is mostly a company in tax law; "przekraczanie granicy" turns
-# up in customs and transport bills. Inside a full text they count only next to a strong
-# pattern, and in a title they do not send the bill to the model on their own.
-#
-# Not patterns at all, on purpose: PESEL, mObywatel/ePUAP, NFZ, świadczenia (800+), prawo jazdy,
-# szkolnictwo wyższe, Kodeks wyborczy. A bill changing these *for foreigners* says "cudzoziemiec"
-# or "obywatel Ukrainy" and the text stage catches it; as title patterns they hit 4–14 unrelated
-# bills each per term (measured on the 1500 processes of term 10), every one a full analysis.
 WEAK_PATTERNS: frozenset[str] = frozenset(
     {
         "straz_graniczna",

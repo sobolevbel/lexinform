@@ -11,8 +11,41 @@ from lexinform.models import ApplicantType, Category
 
 @dataclass(frozen=True)
 class Labels:
+    """Every piece of text the formatter can put around a bill, in one language.
+
+    The fields follow the shape of a card: the Sejm's process first, then the government's two
+    earlier sources — the RCL project, and the entry in the wykaz prac legislacyjnych RM whose
+    `wykaz_intention` says above everything else that there is no text yet — and then the replies:
+    status updates, consultation and hearing reminders, the constitutional deadlines, and the
+    summaries of amendments.
+
+    Some of them carry a fact of their own. `consultation_link` names the Sejm's survey (verified
+    on 2026-09-13 for RPW/29075/2026: the project page carries "Link do ankiety: Ankieta", and
+    "Liczba ankiet" once the window has shut), and `consultation_page` names the same page
+    neutrally once the consultation is over. `action_wykaz_interest` is the zgłoszenie
+    zainteresowania of art. 7 of the lobbying act, which anyone may file, and
+    `action_rcl_interest` says it in short, because the RCL card already offers other moves.
+    `stalled_for_weeks` and `stalled_for_months` are said instead of the usual duration once a
+    step has outlived it (`models.stalled_days`), and `urgent_mode` marks "what comes next" for a
+    bill the government declared pilny (art. 123). The `senate_deadline_*` and
+    `president_deadline_*` labels are the last two constitutional windows — thirty days
+    (art. 121) and twenty-one (art. 122) — both counted from the stage before the hand-over,
+    which the API does not date, so `deadline_counted_from_vote` says so rather than letting the
+    reader trust a date that is a few days early.
+
+    The dictionaries are keyed as their names suggest. `update_headers` and `event_tags` go by
+    event key (`models.update_event`); `next_step_labels`, `typical_durations` and
+    `no_action_labels` by phase key (`models.next_phase`), with `urgent_step_labels` and
+    `urgent_durations` consulted first for an urgent bill and the normal entries filling the
+    phases the urgent mode does not change; `path_steps` holds the steps of the path line in
+    order. `stage_labels` goes by `Stage.stage_type` and `rcl_stage_labels` by a lower-case
+    fragment of an RCL stage name, first match winning, as do `decision_labels` and
+    `proposal_labels` over a `SejmReading.decision` and a `CommitteeReport.proposal`; a value
+    none of them knows passes through in Polish.
+    """
+
     new_bill_header: str
-    finished_bill_header: str  # the card of a bill whose road had already ended
+    finished_bill_header: str
     update_header: str
     importance: str
     category: str
@@ -25,22 +58,20 @@ class Labels:
     stage: str
     applicant: str
     document_date: str
-    print_number: str  # what a print (druk) is called before its number
+    print_number: str
     partial_text_note: str
     new_stages: str
-    reading_stage: str  # "{numeral} чтение …": a reading that has happened
+    reading_stage: str
     process_closed: str
     process_passed: str
-    process_not_enacted: str  # the process ended without a law, and how is not recorded
+    process_not_enacted: str
     process_veto_sustained: str
-    stage_veto_sustained: str  # the `End` node of a bill the veto killed
+    stage_veto_sustained: str
     link_process: str
     link_pdf: str
     link_rcl: str
     link_text_after3: str
     joint_prints: str
-    # A bill considered jointly with one that already has a card: header of the reply under that
-    # card and the note that the group is followed there ("{numbers}" = the other prints)
     joint_bill_header: str
     joint_bill_note: str
     current_summary: str
@@ -68,8 +99,8 @@ class Labels:
     consultation_hint: str
     print_assigned: str
     process_withdrawn: str
-    process_discontinued: str  # the term ended with the bill unfinished: it lapsed
-    process_carried_over: str  # same, for a citizens' bill: the next Sejm takes it over
+    process_discontinued: str
+    process_carried_over: str
     link_submission_pdf: str
     act_published_header: str
     journal: str
@@ -78,8 +109,8 @@ class Labels:
     already_in_force_since: str
     entry_into_force_unknown: str
     partial_vacatio_note: str
-    in_force_header: str  # the act enters into force today
-    in_force_header_dated: str  # ... and when a run was missed and it was earlier
+    in_force_header: str
+    in_force_header_dated: str
     in_force_since: str
     act_summary: str
     link_isap: str
@@ -89,17 +120,15 @@ class Labels:
     consultation_deadline_header: str
     consultation_days_left: str
     consultation_last_day: str
-    tag_consultations: str  # an open consultation: a reader can still send an opinion
-    tag_consultation_results: str  # the opinions received, once the window has shut
-    tag_term: str  # "#<tag_term><term number>": the Sejm term (kadencja) the bill belongs to
-    tag_ukraine: str  # bills about citizens of Ukraine: the channel's largest audience
-    # Verified on 2026-09-13, RPW/29075/2026: the Sejm page carries "Link do ankiety: Ankieta"
-    # and, once the window shuts, "Liczba ankiet" — the opinion goes in as that survey.
+    tag_consultations: str
+    tag_consultation_results: str
+    tag_term: str
+    tag_ukraine: str
     consultation_link: str
-    consultation_page: str  # the same page, named neutrally: the consultation is over
+    consultation_page: str
     action_now: str
     action_senate: str
-    path: str  # the one-line map of the process with the current step marked
+    path: str
     action_send_opinion: str
     action_consultation_page: str
     action_committee: str
@@ -109,24 +138,23 @@ class Labels:
     agenda_committee_header: str
     agenda_sejm_header: str
     agenda_item: str
-    sitting_moved_from: str  # the same sitting was announced for another day before
+    sitting_moved_from: str
     sejm_sitting: str
     link_video: str
     link_committee: str
-    link_senate_bills: str  # the Senate's listing of the laws the Sejm has passed
+    link_senate_bills: str
     tag_committee_sitting: str
     tag_sejm_sitting: str
     consultation_results_header: str
     consultation_results_hint: str
-    # Government projects on RCL (before the Sejm)
     rcl_header: str
-    rcl_wykaz: str  # "number in the wykaz prac legislacyjnych RM"
+    rcl_wykaz: str
     rcl_published: str
     rcl_no_stage: str
-    rcl_metadata_note: str  # the text could not be read (bad file): metadata only
+    rcl_metadata_note: str
     consultation_letter: str
     consultation_days_from_letter: str
-    consultation_deadline_in_letter: str  # deadline could not be read: "see the letter"
+    consultation_deadline_in_letter: str
     consultation_email: str
     action_email_ministry: str
     action_in_polish: str
@@ -134,79 +162,60 @@ class Labels:
     rcl_results_hint: str
     rcl_sent_to_sejm: str
     link_rcl_project: str
-    link_bill_text: str  # "Bill text" (the format follows in brackets)
+    link_bill_text: str
     link_justification: str
     link_osr: str
     link_wykaz: str
-    link_ministry_plan: str  # a ministry's own register, which RCL sometimes links instead
+    link_ministry_plan: str
     tag_rcl: str
-    # Bills the government has only announced (wykaz prac legislacyjnych RM)
     wykaz_header: str
-    wykaz_intention: str  # "no text yet", above everything the model wrote
+    wykaz_intention: str
     wykaz_stage: str
     wykaz_published: str
-    wykaz_planned: str  # the quarter the Council of Ministers means to adopt it in
+    wykaz_planned: str
     wykaz_metadata_note: str
     wykaz_organ_unknown: str
-    action_wykaz_interest: str  # art. 7 of the lobbying act: anyone may file a zgłoszenie
-    action_rcl_interest: str  # the same, in short: the RCL card already offers other moves
+    action_wykaz_interest: str
+    action_rcl_interest: str
     link_wykaz_entry: str
     tag_wykaz: str
-    # Status updates named after their event (see `models.update_event`)
-    rcl_process_closed: str  # the project was closed on RCL without reaching the Sejm
-    wykaz_process_closed: str  # the government took the project off its plan
+    rcl_process_closed: str
+    wykaz_process_closed: str
     committee_report: str
     subcommittee_report: str
     proposes: str
-    deadline_until: str  # "deadline" (a computed statutory deadline follows)
-    deadline_passed: str  # the same deadline, once it has run out
-    # Said instead of the usual duration once the step has outlived it (`models.stalled_days`).
+    deadline_until: str
+    deadline_passed: str
     stalled_for_weeks: str
     stalled_for_months: str
-    urgent_mode: str  # marks "what comes next" for a bill declared pilny (art. 123)
-    # Public hearings: the reminder before applications close
+    urgent_mode: str
     hearing_deadline_header: str
     hearing_on: str
     hearing_apply_until: str
     hearing_applications_closed: str
     hearing_hint: str
     tag_hearing: str
-    # The last constitutional windows: the Senate's 30 days (art. 121) and the President's 21
-    # (art. 122). Both dates are counted from the stage before the hand-over, which the API does
-    # not date, so the reminder says so rather than printing a date it knows is a little early.
     senate_deadline_header: str
     president_deadline_header: str
-    senate_deadline_line: str  # "{date}"
-    president_deadline_line: str  # "{date}"
+    senate_deadline_line: str
+    president_deadline_line: str
     senate_deadline_body: str
     president_deadline_body: str
     deadline_counted_from_vote: str
-    # Amendments summarised from their document (Senate resolution, committee "-A" report)
     amendments_senate: str
     amendments_committee: str
     link_amendments: str
-    update_headers: dict[str, str] = field(default_factory=dict)  # by event key
-    # Fragments (lower case) of a `SejmReading.decision` and a `CommitteeReport.proposal`;
-    # first match wins, an unknown value passes through in Polish.
+    update_headers: dict[str, str] = field(default_factory=dict)
     decision_labels: dict[str, str] = field(default_factory=dict)
     proposal_labels: dict[str, str] = field(default_factory=dict)
-    event_tags: dict[str, str] = field(default_factory=dict)  # voting, senate, president, ...
-    next_step_labels: dict[str, str] = field(default_factory=dict)  # by phase key, see models
-    # By phase key: how long the step usually takes, shown when no sitting is scheduled yet.
+    event_tags: dict[str, str] = field(default_factory=dict)
+    next_step_labels: dict[str, str] = field(default_factory=dict)
     typical_durations: dict[str, str] = field(default_factory=dict)
-    # The same two, for a bill declared pilny (art. 123): the constitutional terms are shorter
-    # and the Sejm moves in days. Consulted first for such a bill, the normal entry fills the
-    # phases the urgent mode does not change.
     urgent_step_labels: dict[str, str] = field(default_factory=dict)
     urgent_durations: dict[str, str] = field(default_factory=dict)
-    # By phase key: what to say when the public has no move right now (and what comes next).
     no_action_labels: dict[str, str] = field(default_factory=dict)
-    # The steps of the "path" line, in order: rcl, sejm, committee, readings, senate, president,
-    # journal, in_force.
     path_steps: dict[str, str] = field(default_factory=dict)
-    # The card's "stage" line: by Sejm stage type (`Stage.stage_type`) ...
     stage_labels: dict[str, str] = field(default_factory=dict)
-    # ... and by a fragment of an RCL stage name (lower case), first match wins.
     rcl_stage_labels: dict[str, str] = field(default_factory=dict)
     date_format: str = "%Y-%m-%d"
     stage_type_labels: dict[str, str] = field(default_factory=dict)

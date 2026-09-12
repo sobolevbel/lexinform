@@ -303,7 +303,12 @@ class CommandAcknowledger(Protocol):
 
 
 class BillRepository(Protocol):
-    """Persistence of bills, publications, status changes and runs (SQLite in production)."""
+    """Persistence of bills, publications, status changes and runs (SQLite in production).
+
+    The listings span every term: a `Bill` carries its own, and the services group by `bill.term`
+    where an API path needs one. Only the end-of-term methods, which serve the zasada
+    dyskontynuacji, are scoped to a term. The command methods keep one row per Telegram update.
+    """
 
     def migrate(self) -> None: ...
 
@@ -353,8 +358,6 @@ class BillRepository(Protocol):
         bill's last error, so that a later answer can say who put it there."""
         ...
 
-    # Listings span every term: a `Bill` carries its own, and the services group by `bill.term`
-    # where an API path needs one. Only the end-of-term methods below are scoped to a term.
     def list_by_status(
         self,
         statuses: list[BillStatus],
@@ -477,7 +480,6 @@ class BillRepository(Protocol):
         already joined to a druk stays. Returns the count."""
         ...
 
-    # end of a term (zasada dyskontynuacji)
     def list_unfinished_published(self, term: int, channel_id: str) -> list[Bill]:
         """Bills of the term with a card in the channel that the Sejm never finished with: no
         closure, not passed, not an RCL project, not yet marked discontinued."""
@@ -538,7 +540,6 @@ class BillRepository(Protocol):
         """Analysed bills by the input tokens of their analysis, largest first."""
         ...
 
-    # One row per Telegram update.
     def record_command(self, command: IncomingCommand) -> bool:
         """Remember the command before it runs; False when the update was recorded already."""
         ...
@@ -553,7 +554,8 @@ class BillRepository(Protocol):
 
     def mark_command_handled(self, update_id: int, *, reply: str, at: datetime) -> None: ...
 
-    # the transaction a dry run rolls back
-    def begin(self) -> None: ...
+    def begin(self) -> None:
+        """Open the transaction a dry run rolls back."""
+        ...
 
     def rollback(self) -> None: ...
