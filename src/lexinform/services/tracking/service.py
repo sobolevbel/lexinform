@@ -282,14 +282,18 @@ class StatusTrackingService:
             except Exception as exc:
                 result.failed += 1
                 log.exception("posting for druk %s failed: %s", bill.number, exc)
-        if result.fatal_error is None:
-            self._cards.refresh(everyone, result, publish=publish)
+        # The reminders come before the card refresh, and the refresh cannot stop them: they are
+        # the posts with a deadline behind them (three days for a consultation, the day itself
+        # for an act entering into force), and the next run is twelve hours away — twenty-four
+        # at a weekend. Re-rendering a card is worth none of that.
         if result.fatal_error is None and publish:
             self._acts.remind_in_force(result)
         if result.fatal_error is None and publish and self._consultations is not None:
             self._consultations.remind(result)
         if result.fatal_error is None and publish and self._hearings is not None:
             self._hearings.remind(everyone, result)
+        if result.fatal_error is None:
+            self._cards.refresh(everyone, result, publish=publish)
         scope = "all" if changed_since is None else f"changed since {changed_since:%F %R}"
         log.info(
             "tracking (%s): checked=%d changed=%d reanalyzed=%d published=%d agenda=%d failed=%d",

@@ -119,7 +119,7 @@ class AgendaWatcher:
                 if items != bill.agenda:
                     self._repo.save_agenda(bill.term, bill.number, items)
                 if publish:
-                    self._post_new(bill, items, result, today)
+                    self._post_new(bill, items, result)
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return False
@@ -229,11 +229,10 @@ class AgendaWatcher:
             log.warning("name of committee %s unavailable: %s", code, exc)
             return None
 
-    def _post_new(
-        self, bill: Bill, items: tuple[AgendaItem, ...], result: TrackingResult, today: dt.date
-    ) -> None:
+    def _post_new(self, bill: Bill, items: tuple[AgendaItem, ...], result: TrackingResult) -> None:
+        now = self._clock.now().astimezone(self._local_tz)
         for item in items:
-            if item.last_date < today:
+            if _already_happened(item, now):
                 continue  # a sitting that is over: a reader can do nothing about it now
             if self._poster.posted(bill, PublicationKind.AGENDA, ref=item.ref):
                 continue
@@ -257,3 +256,12 @@ class AgendaWatcher:
             if old.sitting_key == item.sitting_key and old.date != item.date
         ]
         return max((old.date for old in previous), default=None)
+
+
+def _already_happened(item: AgendaItem, now: dt.datetime) -> bool:
+    """Whether the sitting is behind the reader. The day alone does not tell: a committee meets
+    at 08:30 and the evening run would announce it at 22:00, hours after it closed. A sitting the
+    API gives no time for (a plenary spans days) keeps the whole of its last day."""
+    if item.last_date < now.date():
+        return True
+    return item.date == now.date() and item.start_time is not None and item.start_time <= now.time()

@@ -4,7 +4,7 @@ import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import PublicationKind, PublicationStatus
-from tests.harness import RPW, World, submission
+from tests.harness import COMMITTEE_STAGES, REFERRED, RPW, World, submission
 
 
 def test_reminder_is_posted_three_days_before_the_deadline() -> None:
@@ -151,3 +151,21 @@ def test_pre_print_bill_gets_the_notice_when_its_opinions_appear() -> None:
 
     assert report.consultation_results_posted == 1
     assert w.publisher.consultation_results[0][0].number == RPW
+
+
+def test_a_failed_card_edit_does_not_cost_the_reminder() -> None:
+    """The card refresh is cosmetic and comes last; the reminder has three days behind it and the
+    next run is twelve hours away. An outage on the edit used to abort the phase before both."""
+    w = World()
+    w.gateway.submissions.append(submission(consultation_end=dt.date(2026, 9, 20)))
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
+    w.run()
+    w.clock.advance(days=10)  # 2026-09-17: three days left for the consultation
+    w.set_stages("3039", COMMITTEE_STAGES)  # ... and another bill's card has drifted
+    w.touch("3039", dt.datetime(2026, 9, 16, 9, tzinfo=dt.UTC))
+    w.publisher.outage_on_edit.add("3039")
+
+    report = w.run()
+
+    assert report.consultation_reminders == 1
+    assert any("tracking: Telegram" in e for e in report.errors)

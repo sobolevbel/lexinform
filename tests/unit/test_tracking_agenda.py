@@ -224,3 +224,27 @@ def test_a_sitting_that_moved_corrects_the_post_instead_of_contradicting_it() ->
     assert item.date == dt.date(2026, 9, 22)
     text = MessageFormatter("ru").agenda(bill, item, moved_from=dt.date(2026, 9, 17)).text
     assert "Заседание перенесено с 17.09.2026" in text
+
+
+def test_a_committee_sitting_that_has_already_met_today_is_not_announced() -> None:
+    """A committee agenda often appears on the morning of the sitting, and a run lands at ~11:00
+    and ~22:00 Warsaw. Announcing an 09:00 sitting at 22:00 tells the reader about a room they
+    cannot walk into any more."""
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(date=dt.date(2026, 9, 7)),)  # today, 09:00
+    w.clock.current = dt.datetime(2026, 9, 7, 20, 0, tzinfo=dt.UTC)  # 22:00 in Warsaw
+
+    report = w.run()
+
+    assert report.agenda_posted == 0
+    assert _refs(w) == ["ASW/136/2026-09-07"]  # still stored: the card dates its next step by it
+
+
+def test_a_committee_sitting_later_today_is_announced() -> None:
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(date=dt.date(2026, 9, 7)),)  # today, 09:00
+    w.clock.current = dt.datetime(2026, 9, 7, 5, 0, tzinfo=dt.UTC)  # 07:00 in Warsaw
+
+    report = w.run()
+
+    assert report.agenda_posted == 1
