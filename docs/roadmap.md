@@ -218,6 +218,17 @@ reader are in the commit messages; the shape of the fixes:
 - **Tags**: every reply carries importance, category and topic, the event vocabulary covers what
   a reader searches for, and the tag line is in one alphabet.
 
+Done on 2026-09-12 (schema v18):
+
+- **The documents filed to a print are read, not only listed.** `PrintInfo.additional_prints` was
+  parsed from the start and looked at by `lexinform show` alone. Now `supplement_kind` picks out
+  the three kinds worth a word — the government's position on someone else's bill, the OSR the
+  Marshal asks the applicant for, an opinion that raised something — and each new one is digested
+  against the bill's current analysis by one model call and told as one reply under the card. The
+  arrival of the government's position used to be a bare "Обновление" (the `GovermentPosition`
+  stage has no name of its own), and a late OSR was a wasted download: it re-dated the print, the
+  main PDF hashed the same, and the assessment itself was never read.
+
 Knowingly not modelled, and cheap to add if a case turns up: the seven days the President has to
 sign after the Sejm overrides a veto (art. 122 ust. 5 — the card would still say 21), the budget
 act's own terms (20 days for the Senate, 7 for the President, art. 223/224) and a constitutional

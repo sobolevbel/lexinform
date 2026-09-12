@@ -321,7 +321,9 @@ last as `models.process_stages` counts it, which drops `GovermentPosition` and `
 arrive beside the process) and the trailing `End`: the Sejm appends "Uchwalono" at the third
 reading and keeps it last while the Senate, the President and Dziennik Ustaw are still ahead
 (druk 2799, read 2026-09-12). Only the `End` of a bill a veto killed ("nie uchwalona ponownie")
-is an answer in itself.
+is an answer in itself. Dropping the two says nothing about their content: the government's
+position is a document filed to the print (`additionalPrints`), and it is read and told like the
+OSR and the opinions with remarks — it just never becomes the step the reader is waiting for.
 `Stage.carries_bill_text` decides which committee report is a text worth re-analysing (`-A`
 reports and "przyjąć poprawki" are amendment tables). `passed` = adopted by the Sejm; `ELI` =
 published; `/eli/acts` `entryIntoForce` = in force. Timestamps in the API are naive Warsaw time.

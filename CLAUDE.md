@@ -52,7 +52,8 @@ share it), listener (the relay on the VPS), discovery,
 rcl_discovery + rcl_projects, wykaz_discovery, sources (`TextSources` routes a bill to
 `SejmTextSource`,
 `RclTextSource` or `MetadataOnlySource`), documents (`TextLoader`, downloads routed by host),
-text_prefilter, analysis, signatories, publishing, `tracking/` (service, pre_print, rcl, wykaz,
+text_prefilter, analysis (the bill, the triage, the amendments and the documents filed to a
+print), signatories, publishing, `tracking/` (service, pre_print, rcl, wykaz,
 linking, acts, consultations, agenda, posting, stages), pipeline) → `container.py` (manual wiring) →
 `cli.py` (typer). Services import only ports, models and the pure modules (`keywords`, `sections`
 incl. `TextBudget`, `agenda`, `authors`, `rcl_letters`, `concurrency`), never adapters; the
@@ -174,6 +175,22 @@ Invariants worth keeping:
   already says it. Amendments (Senate resolution print, a committee report whose proposal is about
   poprawki) are summarised by a third model call (`AnalysisService.summarize_amendments`) after
   the change row exists and stored on it (`amendments_json`); a failure degrades to the bare event.
+- **A document filed to a print is told once, and the bill is what remembers.** The print's
+  `additional_prints` say what has been filed; `models.supplement_kind` keeps the government's
+  position, the OSR and an opinion with remarks and drops the housekeeping; `bills.supplements_json`
+  (v18) is the list the channel has been told about, written last by `_remember_supplements` and
+  only when the print was actually read. None means never recorded, and the first sight seeds it
+  silently, the way the stage fingerprint is seeded — otherwise every followed bill would announce
+  its whole history of filings after the deploy. Each new document is digested against the current
+  analysis by one model call (`AnalysisService.digest_supplement`) *after* the change row exists,
+  so a change an earlier run recorded never pays twice, and the numbers go into `change_key`: a
+  document that arrives between two stages moves nothing else, and without them the row would
+  collide with the previous change and be dropped. A digest that could not be made (a scan, a
+  refusal) still leaves the document named and linked (`SupplementRecord.digest is None`) —
+  the run records it as told either way, so dropping it would lose it. The reply is named after
+  the newest document when the stages do not name it (`models.supplement_event`): the government's
+  position has a stage but no name of its own, and «Обновление» over the government's verdict
+  was telling the reader nothing.
 - **A re-analysis needs a new text, not a new URL.** `AnalysisRecord.text_sha256` is the digest
   of the normalised text the model saw (`services/analysis.py::text_digest`: page numbers and
   whitespace ignored). `reanalyze_bill` returns None and only repoints `source_url` /
@@ -284,7 +301,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v17 as of Sept 2026). `migrate()` reads `user_version` and
+`SCHEMA_VERSION = len(MIGRATIONS)` (v18 as of Sept 2026). `migrate()` reads `user_version` and
 runs every later script inside its own transaction, stamping the new version at the end, so a
 failed script leaves the database at the previous version. v8 (Sept 2026) added `rcl_json`, v9
 `bills.discontinued_at` and `status_changes.discontinued` (end of a Sejm term), v10
@@ -298,7 +315,9 @@ command whose answer never arrived is answered again, not executed again), v15 (
 `publications.rendered_sha256` (the card as last rendered, so a run can tell a card that has
 drifted from one that is still true without asking Telegram), v17 the unique index of the
 constitutional-deadline reminders (per bill, channel and phase: the Senate's 30 days and the
-President's 21 are each told once).
+President's 21 are each told once), v18 (Sept 2026) the documents filed to a print after its
+submission — `bills.supplements_json` (which of them the channel has been told about) and
+`status_changes.supplements_json` (the digests one update carried).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) →
 `db restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing
@@ -362,6 +381,17 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   listing carries `closureDate` and `passed`; an open process never has the date. `End`
   ("Uchwalono") is appended at the third reading and stays last, so it says nothing about how
   far the bill got — read the stages before it.
+- `additionalPrints` in a print's detail are the documents filed to it after its submission, each
+  a print of its own (`1273-001`, `1273-s`) with `title`, `documentDate`, `deliveryDate` and its
+  own PDF, served from api.sejm.gov.pl like any attachment (no Incapsula, unlike the RPW PDFs on
+  orka). Term 10, 12 Sept 2026: 2339 of them over 3282 prints — 289 "ocena skutków regulacji",
+  82 "Stanowisko Rządu", 1732 opinions (563 saying "nie zgłoszono uwag" in the title itself),
+  42 amendments tabled at the second reading, the rest housekeeping (a changed representative of
+  the applicants, an extra list of signatures, an errata). Among prints that have any, the median
+  is one opinion with remarks and the maximum sixteen. An autopoprawka is never one of them: it
+  gets a print number of its own. Only the government's position is also a stage
+  (`GovermentPosition`, with the document's title on it); the OSR and the opinions appear nowhere
+  in the process tree, which is why the bill has to remember which of them it has been told.
 - `rclNum` and `rclLink` exist only in a process's **detail**, never in the `/processes` or
   `/bills` listing (verified 2026-09-11): finding the print an RCL project became means reading
   details one by one, so `find_process_by_rcl_num` narrows by the hand-over date and caps the
@@ -520,4 +550,12 @@ sitting or a hearing is told once for a group of jointly considered prints, not 
 print; every reply carries the importance, category and topic tags, so a tag finds the
 moments to act and not only the card; and a source that is unreachable (`/bills`,
 `/proceedings`, RCL, the register) stops its own part of the run and nothing else.
+Documents filed to a print (decided 2026-09-12): the government's position on a bill it did not
+write, the OSR and an opinion that raised something are each told with what they say — the
+position because it decides the bill's fate, the OSR because it is the first count of who is
+affected and at what cost, the opinion because an objection from SN, PG or UODO is news; an
+opinion whose own title says "nie zgłoszono uwag" and the housekeeping filings are not, and the
+amendments tabled at the second reading stay with the committee's report, which already tells
+them. The document is judged against the bill's analysis, not in place of it: a filed document is
+what somebody makes of the bill, never a new version of it.
 Open items are listed under "Still open" in `docs/roadmap.md`.
