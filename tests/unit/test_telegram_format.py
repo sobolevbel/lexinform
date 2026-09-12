@@ -1209,6 +1209,25 @@ def test_a_step_that_outlived_its_usual_duration_says_how_long(
     assert "без движения уже 18 мес." in stale
 
 
+def test_an_undated_stage_is_not_read_as_no_movement_since_the_bill_arrived(
+    process_3039: ProcessDetail,
+) -> None:
+    """The API sometimes gives a stage without a date. That is an unknown day, not the day the
+    bill was submitted — reading it as the latter ages the step by the whole life of the bill."""
+    undated = process_3039.stages[:-1] + (
+        process_3039.stages[-1].model_copy(update={"date": None, "children": ()}),
+    )
+    bill = bill_of(
+        process_3039.model_copy(update={"stages": undated}),
+        submission=consulted(date_of_receipt=dt.date(2025, 1, 10)),
+    )
+
+    text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 9, 20)).text
+
+    assert "без движения" not in text
+    assert "обычно 2–6 недель" in text
+
+
 def test_the_third_reading_is_not_dated_by_a_committee_sitting(
     process_1962: ProcessDetail,
 ) -> None:

@@ -318,7 +318,10 @@ def _phase_started(bill: Bill) -> dt.date | None:
     """When the bill reached the step it is on, so that "what comes next" can say how long it
     has been waiting instead of quoting an average that ran out long ago."""
     last = bill.last_stage
-    if last is not None and last.date is not None:
+    if last is not None:
+        # Its own date or nothing: a stage the API left undated started on an unknown day, not
+        # on the day the bill was submitted, and reading it as the latter ages the step by the
+        # whole life of the bill.
         return last.date
     if bill.rcl is not None:
         # RCL's "rozpoczęcie" is usually absent; the stage's last modification is what the page
