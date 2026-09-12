@@ -195,11 +195,18 @@ def lead(text: str) -> str:
     return first.strip()
 
 
+def length(text: str) -> int:
+    """What Telegram counts: UTF-16 code units, so every emoji and every rare sign counts twice."""
+    return len(text) + sum(1 for ch in text if ord(ch) > 0xFFFF)
+
+
 def fit(text: str, limit: int) -> str:
-    """Trim to `limit` characters at a paragraph/line boundary, appending an ellipsis."""
-    if len(text) <= limit:
+    """Trim to `limit` (as Telegram counts) at a paragraph/line boundary, with an ellipsis."""
+    if length(text) <= limit:
         return text
     cut = text[: limit - 1]
+    while length(cut) > limit - 1:
+        cut = cut[: -max(1, (length(cut) - limit + 1) // 2)]
     boundary = max(cut.rfind("\n\n"), cut.rfind("\n"), cut.rfind(" "))
     if boundary > limit // 2:
         cut = cut[:boundary]
@@ -1562,17 +1569,17 @@ class MessageFormatter:
         kept_head = [b for b in head if b]
         kept_tail = [b for b in tail if b]
         pending = [b for b in flexible if b]
-        budget = MESSAGE_LIMIT - sum(len(b) + 2 for b in kept_head + kept_tail)
+        budget = MESSAGE_LIMIT - sum(length(b) + 2 for b in kept_head + kept_tail)
         shrunk: list[str] = []
         for block in pending:
             allowed = max(0, budget - 2 * (len(pending) - len(shrunk)))
-            if len(block) > allowed:
+            if length(block) > allowed:
                 block = shrink_block(block, allowed) if allowed > 40 else ""
             if block:
                 shrunk.append(block)
-                budget -= len(block) + 2
+                budget -= length(block) + 2
         text = "\n\n".join(kept_head + shrunk + kept_tail)
-        return text if len(text) <= MESSAGE_LIMIT else _cut_lines(text, MESSAGE_LIMIT)
+        return text if length(text) <= MESSAGE_LIMIT else _cut_lines(text, MESSAGE_LIMIT)
 
 
 def _quoted(value: str | None) -> str:
@@ -1694,8 +1701,13 @@ def _cut_lines(text: str, limit: int) -> str:
     """Drop whole lines from the end until `text` fits `limit` (every line of a message is
     HTML-balanced on its own, so no tag is split). Better a card without its last lines than
     Telegram's 400 and a lost post; a message without a single fitting line is left alone."""
-    cut = text.rfind("\n", 0, limit)
-    return text[:cut].rstrip() if cut > 0 else text
+    lines = text.split("\n")
+    while len(lines) > 1:
+        lines.pop()
+        kept = "\n".join(lines).rstrip()
+        if kept and length(kept) <= limit:
+            return kept
+    return text
 
 
 def shrink_block(block: str, allowed: int) -> str:
@@ -1707,11 +1719,11 @@ def shrink_block(block: str, allowed: int) -> str:
     if block.endswith("</pre>"):
         opening = block.index("<pre>") + len("<pre>")
         inner = block[opening : -len("</pre>")]
-        room = allowed - opening - len("</pre>")
+        room = allowed - length(block[:opening]) - len("</pre>")
         return block[:opening] + fit(inner, max(room, 0)) + "</pre>" if room > 10 else ""
     header_end = block.find("\n")
-    if header_end == -1 or header_end + 1 >= allowed:
+    if header_end == -1 or length(block[: header_end + 1]) >= allowed:
         return ""
     head, body = block[: header_end + 1], block[header_end + 1 :]
-    kept = fit(body, allowed - len(head))
+    kept = fit(body, allowed - length(head))
     return head + kept if kept.strip(ELLIPSIS) else ""

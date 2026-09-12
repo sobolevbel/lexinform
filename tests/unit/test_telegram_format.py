@@ -7,7 +7,13 @@ from typing import Any
 import pytest
 
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
-from lexinform.adapters.telegram_format import MESSAGE_LIMIT, MessageFormatter, fit, shrink_block
+from lexinform.adapters.telegram_format import (
+    MESSAGE_LIMIT,
+    MessageFormatter,
+    fit,
+    length,
+    shrink_block,
+)
 from lexinform.models import (
     ActInfo,
     AgendaItem,
@@ -64,7 +70,7 @@ def assert_telegram_html(text: str) -> None:
     checker.feed(text)
     assert checker.balanced, text
     assert checker.tags <= {"b", "i", "a", "code", "pre"}
-    assert len(text) <= MESSAGE_LIMIT
+    assert length(text) <= MESSAGE_LIMIT
 
 
 def bill_of(
@@ -1018,7 +1024,9 @@ def test_run_report_cost_line_adapts_to_the_models_used() -> None:
 def test_fit_trims_at_a_word_boundary_and_marks_the_cut() -> None:
     assert fit("abc", 10) == "abc"
     trimmed = fit("word " * 100, 50)
-    assert len(trimmed) <= 50 and trimmed.endswith("…")
+    assert length(trimmed) <= 50 and trimmed.endswith("…")
+    emoji = fit("🙂" * 100, 50)
+    assert length(emoji) <= 50 and len(emoji) < 50  # Telegram counts an emoji twice
 
 
 @pytest.mark.parametrize("budget", range(41, 120, 7))
@@ -1027,7 +1035,7 @@ def test_shrink_block_keeps_the_header_and_well_formed_html(budget: int) -> None
 
     out = shrink_block(block, budget)
 
-    assert len(out) <= budget
+    assert length(out) <= budget
     if out:
         assert_telegram_html(out)
         assert out.startswith("🔑 <b>Ключевые изменения</b>\n")
