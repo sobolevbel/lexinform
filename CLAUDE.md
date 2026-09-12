@@ -402,7 +402,10 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   ("Projekt", "Pisma kierujące…", "Stanowiska zgłoszone…", "Odniesienie się wnioskodawcy…"),
   `li.doc > a[href=/docs//…/dokumentN.ext]`. Files in "Projekt" folders (40 projects, Sept
   2026): PDF 40%, DOCX/DOCM 43%, ZIP 7% (the package in one archive, read member by member, bill
-  first), legacy DOC 6% (`adapters/doc_text.py`, an [MS-DOC] piece-table parser over `olefile`),
+  first), legacy DOC 6% (`adapters/doc_text.py`, an [MS-DOC] piece-table parser over `olefile`
+  reading the document, its footnotes and its endnotes, and the one paragraph property that tells
+  the end of a table row from the end of a cell — Word writes both as 0x07, so without it a
+  tabela zgodności arrives as one line of tabs),
   ODT rare; XLSX/MSG/XADES/RTF are tables of comments, e-mails, signatures and reports, not bill
   texts. Display names often lack the extension; the URL carries it. Unknown or damaged files
   fall back to metadata-only analysis. RCL's OSR is a separate Word form starting with "Nazwa

@@ -55,8 +55,9 @@ Done on 2026-09-09/10 (schema v8):
   "Projekt", "Pisma kierujące…", "Stanowiska zgłoszone…", "Odniesienie się wnioskodawcy…" with
   their files). Projects are `bills` rows `RCL/{id}` with the project in `rcl_json`; the card
   analyses projekt + uzasadnienie + OSR (PDF, Word, ZIP, and legacy `.doc` since 2026-09-09
-  through `adapters/doc_text.py`, a piece-table parser over `olefile` checked against four real
-  RCL files), names the
+  through `adapters/doc_text.py`, a piece-table parser over `olefile` measured on 144 real RCL
+  `.doc` files against macOS `textutil`: the text matches everywhere it is text, and what the two
+  differ on is the field codes — HYPERLINK targets, PAGE — which only `textutil` prints), names the
   ministry, the wykaz number, the consultation deadline and e-mail read out of the letter
   (`rcl_letters.py`: "w terminie N dni od dnia otrzymania", counted from the letter date or its
   publication on RCL) and the RCL comment form; updates follow the stages, a consultation that
