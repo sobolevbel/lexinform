@@ -747,6 +747,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "discontinued_at",
         "linked_wykaz_number",
         "wykaz_json",  # v15
+        "supplements_json",  # v18
     } <= bills
     assert {
         "ux_pub_once_per_kind",
@@ -762,6 +763,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         commands = {r[1] for r in conn.execute("PRAGMA table_info(commands)")}
     assert "amendments_json" in changes  # v11
+    assert "supplements_json" in changes  # v18
     assert "commands" in tables  # v13
     assert "executed_at" in commands  # v14
     # v9: the flag is stored, so a retried post renders the same message

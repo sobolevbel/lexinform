@@ -8,9 +8,12 @@ from lexinform.models import (
     BillStatus,
     BillSubmission,
     ProcessDetail,
+    SourceKind,
     Stage,
     StatusChange,
+    SupplementRecord,
     amendments_stage,
+    event_keys,
     flatten_stages,
     has_news,
     hearing_application_deadline,
@@ -41,6 +44,12 @@ def _change(stages: list[Stage], **fields: Any) -> StatusChange:
         new_stages=stages,
         detected_at=NOW,
         **fields,
+    )
+
+
+def _filed(kind: SourceKind) -> SupplementRecord:
+    return SupplementRecord(
+        number="1962-s", title="Do druku nr 1962", source_kind=kind, source_url=""
     )
 
 
@@ -154,6 +163,27 @@ def test_a_veto_the_sejm_could_not_override_is_not_a_rejection(
     event = update_event(_change([end], closure_detected=True, passed=False), vetoed)
 
     assert event == "veto_sustained"
+
+
+def test_the_government_position_outweighs_the_other_filed_documents(
+    process_1962: ProcessDetail,
+) -> None:
+    """A stage the arrival of the position also makes has no name of its own, so without this
+    the post that carries the government's verdict would be headed "Обновление"."""
+    stage = Stage(stage_type="GovermentPosition", stage_name="Wpłynęło stanowisko rządu")
+    filed = [_filed("opinion"), _filed("government_position"), _filed("impact_assessment")]
+    change = _change([stage], supplements=filed)
+
+    assert has_news(change)
+    assert update_event(change, _bill(process_1962)) == "government_position"
+    assert "government_position" in event_keys(change, "government_position")
+
+
+def test_an_opinion_alone_is_news_of_its_own(process_1962: ProcessDetail) -> None:
+    change = _change([], supplements=[_filed("opinion")])
+
+    assert has_news(change)
+    assert update_event(change, _bill(process_1962)) == "opinion"
 
 
 def test_a_bill_withdrawn_after_its_print_is_not_told_as_rejected(

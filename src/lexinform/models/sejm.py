@@ -486,6 +486,36 @@ class PrintInfo(BaseModel):
         return pdfs[0] if pdfs else None
 
 
+def supplement_kind(title: str) -> SourceKind | None:
+    """What a document filed to a print after its submission is, or None when it is not worth
+    a word to a reader.
+
+    Measured over term 10 (3282 prints, 2339 additional prints, 2026-09-12): 289 are the OSR the
+    Marshal asked the applicant for, 82 the government's position on someone else's bill and 1732
+    opinions, of which 563 say in the title itself that they raised nothing ("nie zgłoszono
+    uwag"). What is left is housekeeping the channel has no reason to repeat — a changed
+    representative of the applicants, an extra list of supporting signatures, an errata — and
+    amendments tabled at the second reading, which reach the reader through the committee's
+    report instead (`amendments_stage`), never twice.
+    """
+    low = " ".join(title.lower().split())
+    if "stanowisko rządu" in low:
+        return "government_position"
+    if "ocena skutków regulacji" in low:
+        return "impact_assessment"
+    if "opini" in low and "nie zgłoszono uwag" not in low:
+        return "opinion"
+    return None
+
+
+def new_supplements(print_info: PrintInfo | None, seen: Iterable[str]) -> tuple[PrintInfo, ...]:
+    """The print's additional documents that are not in `seen` yet, oldest first."""
+    if print_info is None:
+        return ()
+    known = set(seen)
+    return tuple(p for p in print_info.additional_prints if p.number not in known)
+
+
 def is_pre_print_number(number: str) -> bool:
     return number.startswith(PRE_PRINT_PREFIX)
 

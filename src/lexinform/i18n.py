@@ -205,6 +205,11 @@ class Labels:
     amendments_senate: str
     amendments_committee: str
     link_amendments: str
+    link_supplement: str
+    supplement_headers: dict[str, str] = field(default_factory=dict)
+    """What a document filed to the print is called in the block that carries its digest."""
+    supplement_supports: dict[str, str] = field(default_factory=dict)
+    """The government's verdict, when its position states one."""
     update_headers: dict[str, str] = field(default_factory=dict)
     decision_labels: dict[str, str] = field(default_factory=dict)
     proposal_labels: dict[str, str] = field(default_factory=dict)
@@ -442,6 +447,16 @@ RU = Labels(
     amendments_senate="Что меняют поправки Сената",
     amendments_committee="Что меняют поправки (по отчёту комиссии)",
     link_amendments="Текст поправок (PDF)",
+    link_supplement="Документ (PDF)",
+    supplement_headers={
+        "government_position": "Позиция правительства по проекту",
+        "impact_assessment": "Оценка последствий (OSR)",
+        "opinion": "Мнение по проекту",
+    },
+    supplement_supports={
+        "yes": "правительство поддерживает проект",
+        "no": "правительство против проекта",
+    },
     update_headers={
         "update": "Обновление",
         "print_assigned": "Присвоен номер druku",
@@ -474,6 +489,9 @@ RU = Labels(
         "veto": "Президент наложил вето",
         "tribunal": "Закон направлен в Конституционный трибунал",
         "text_changed": "Новая версия текста",
+        "government_position": "Правительство высказалось о проекте",
+        "impact_assessment": "Появилась оценка последствий проекта",
+        "opinion": "Поступило мнение по проекту",
         "withdrawn": "Проект отозван",
         "discontinued": "Проект прекращён с концом каденции",
         "rcl_stage": "Новая стадия на RCL",
@@ -507,6 +525,7 @@ RU = Labels(
         "president": "президент",
         "veto": "вето",
         "amendments": "поправки",
+        "government_position": "правительство",
         "new_text": "новыйтекст",
         "committee": "комиссия",
         "hearing": "слушания",
@@ -950,6 +969,16 @@ EN = Labels(
     amendments_senate="What the Senate's amendments change",
     amendments_committee="What the amendments change (per the committee's report)",
     link_amendments="Amendments (PDF)",
+    link_supplement="Document (PDF)",
+    supplement_headers={
+        "government_position": "The government's position on the bill",
+        "impact_assessment": "Assessment of the effects (OSR)",
+        "opinion": "Opinion on the bill",
+    },
+    supplement_supports={
+        "yes": "the government backs the bill",
+        "no": "the government is against the bill",
+    },
     update_headers={
         "update": "Update",
         "print_assigned": "Print number assigned",
@@ -982,6 +1011,9 @@ EN = Labels(
         "veto": "The President vetoed the act",
         "tribunal": "Referred to the Constitutional Tribunal",
         "text_changed": "New version of the text",
+        "government_position": "The government has spoken on the bill",
+        "impact_assessment": "An assessment of the bill's effects was filed",
+        "opinion": "An opinion on the bill was filed",
         "withdrawn": "Bill withdrawn",
         "discontinued": "Bill lapsed with the end of the term",
         "rcl_stage": "New stage on RCL",
@@ -1015,6 +1047,7 @@ EN = Labels(
         "president": "president",
         "veto": "veto",
         "amendments": "amendments",
+        "government_position": "government",
         "new_text": "newtext",
         "committee": "committee",
         "hearing": "hearing",

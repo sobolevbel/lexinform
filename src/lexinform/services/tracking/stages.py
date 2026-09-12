@@ -2,6 +2,7 @@
 
 import hashlib
 import logging
+from collections.abc import Iterable
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import Bill, Stage, aggregate_clubs
@@ -52,9 +53,14 @@ class StageEnricher:
         return self._committee_names[code]
 
 
-def change_key(stage_fp: str, bill: Bill, *, closed: bool) -> str:
-    """Dedupe key for status_changes: stages, analysed text revision, closure announcement."""
+def change_key(stage_fp: str, bill: Bill, *, closed: bool, supplements: Iterable[str] = ()) -> str:
+    """Dedupe key for status_changes: stages, analysed text revision, closure announcement and
+    the documents filed to the print. A document that arrives between two stages moves nothing
+    else, so without its number the row would collide with the previous change and be dropped."""
     revision = bill.analysis.revision if bill.analysis else 0
     source = bill.analysis.source_url if bill.analysis else ""
     key = f"{stage_fp}|{revision}|{source}" + ("|closed" if closed else "")
+    filed = ",".join(sorted(supplements))
+    if filed:
+        key = f"{key}|{filed}"
     return hashlib.sha256(key.encode()).hexdigest()

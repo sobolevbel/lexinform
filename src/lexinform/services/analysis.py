@@ -16,6 +16,7 @@ from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
     AMENDMENT_SOURCES,
     FULL_TEXT_SOURCES,
+    SUPPLEMENT_SOURCES,
     AmendmentsContext,
     AmendmentsRecord,
     Analysis,
@@ -27,6 +28,8 @@ from lexinform.models import (
     Category,
     LocatedText,
     ProcessSummary,
+    SupplementContext,
+    SupplementRecord,
     TextDocument,
     TextSource,
     TokenUsage,
@@ -306,6 +309,40 @@ class AnalysisService:
         record.source_url = document.url
         return record
 
+    def digest_supplement(
+        self, bill: Bill, document: TextDocument, *, number: str, title: str
+    ) -> SupplementRecord:
+        """What the document filed to the print says about the bill, against its current
+        analysis. A document with no readable text (a scan) comes back as the bare record, which
+        the reply still names and links. Only an outage propagates."""
+        assert bill.analysis is not None
+        assert document.kind in SUPPLEMENT_SOURCES
+        text, truncated, source = self._load_text(document, trim=False)
+        if source == "metadata_only" or not text.strip():
+            return self.bare_supplement(document, number=number, title=title)
+        ctx = SupplementContext(
+            number=bill.number,
+            title=bill.summary.title,
+            document_title=title,
+            source_kind=document.kind,
+            text=text,
+            truncated=truncated,
+            previous_summary=bill.analysis.analysis.summary,
+            previous_key_changes=list(bill.analysis.analysis.key_changes),
+        )
+        record = self._llm.digest_supplement(ctx)
+        record.number = number
+        record.source_url = document.url
+        return record
+
+    def bare_supplement(
+        self, document: TextDocument, *, number: str, title: str
+    ) -> SupplementRecord:
+        """The document named and linked, with nothing read: what a failed digest degrades to."""
+        return SupplementRecord(
+            number=number, title=title, source_kind=document.kind, source_url=document.url
+        )
+
     def _prepare(
         self,
         bill: Bill,
@@ -456,7 +493,7 @@ class AnalysisService:
         Only an outage of the document's host propagates: a missing or broken file falls back to
         the metadata instead of costing the bill an analysis attempt. `trim=False` keeps the
         whole text (an amendments document has no appendices to drop, and its uzasadnienie
-        explains the amendments).
+        explains the amendments; a document filed to a print is one such document end to end).
         """
         if document is None:
             return "", False, "metadata_only"

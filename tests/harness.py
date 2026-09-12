@@ -390,6 +390,26 @@ class World:
             self.extractor.by_content[LETTER_BYTES] = letter
         return project
 
+    def file_to_print(self, number: str, title: str, *, suffix: str = "s") -> str:
+        """A document was filed to the print after its submission (the API's `additionalPrints`):
+        the government's position, an OSR, an opinion. Returns the document's URL."""
+        parent = self.gateway.prints[number]
+        filed_number = f"{number}-{suffix}"
+        url = print_url(filed_number)
+        filed = PrintInfo(
+            term=TERM,
+            number=filed_number,
+            title=title,
+            attachments=(
+                Attachment(print_number=filed_number, name=f"{filed_number}.pdf", url=url),
+            ),
+        )
+        self.gateway.prints[number] = parent.model_copy(
+            update={"additional_prints": (*parent.additional_prints, filed)}
+        )
+        self.gateway.files[url] = b"%PDF-filed"
+        return url
+
     def set_stages(self, number: str, stages: tuple[Stage, ...]) -> None:
         """The Sejm added or changed stages of a followed bill."""
         process = next(p for p in self.gateway.processes if p.number == number)

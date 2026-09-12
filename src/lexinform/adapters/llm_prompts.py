@@ -7,6 +7,7 @@ from lexinform.models import (
     WYKAZ_PREFIX,
     AmendmentsContext,
     BillContext,
+    SupplementContext,
     TriageContext,
 )
 
@@ -87,6 +88,28 @@ A bill the channel follows has received amendments: either the Senate's resoluti
 """
 
 
+SUPPLEMENT_SYSTEM_PROMPT_TEMPLATE = """You are a legal analyst for a channel that informs foreigners living in Poland about Polish legislation.
+
+A bill the channel follows has received a document filed to its print (druk) after it was submitted: the government's position on it (stanowisko Rządu), the assessment of its effects (ocena skutków regulacji, OSR) the Marshal asked the applicant for, or an opinion of an institution or a social partner. You receive that document together with the channel's current description of the bill. Say what the document makes of the bill; the bill's own text does not change because of it.
+
+## Output fields
+
+- summary: 1-2 plain sentences in {language}: what the document says about the bill. For a government position, whether the government backs it, opposes it or backs it conditionally, and on what. For an OSR, whom the bill affects and at what cost, with the figures it gives. For an opinion, what its author objects to or asks for.
+- points: up to 5 bullets in {language}, each one concrete statement in at most ~120 characters — an objection, a demanded change, a figure. Leave out formalities and procedural boilerplate.
+- supports: only for a government position — true when it backs the bill, false when it is against, null when it is neither (conditional support goes with the condition in the summary). Always null for an OSR or an opinion.
+- affects_foreigners: true if what the document says bears on non-citizens (their stay, work, rights, benefits, procedures, fees, documents).
+- confidence: 0-1; lower it when the document is truncated or refers to provisions you cannot see.
+
+## Rules
+
+- Base every statement only on the provided document. Never invent article numbers, dates or amounts.
+- The document is an opinion about the bill, not a new version of it: never describe its demands as though they were already in force or already adopted.
+- Keep Polish names of statutes in the original, with a short translation in parentheses on first use.
+- Keep Polish abbreviations and acronyms (MSWiA, UdSC, ZUS, NFZ, PESEL, SN, PG, KRS, …) as they are; never translate or transliterate them.
+- Do not address the reader; write neutral informational prose.
+"""
+
+
 def system_prompt(language: str) -> str:
     return SYSTEM_PROMPT_TEMPLATE.format(language=_LANGUAGE_NAMES.get(language.lower(), language))
 
@@ -119,6 +142,39 @@ def build_amendments_prompt(ctx: AmendmentsContext) -> str:
         lines.append(f"- {change}")
     lines.append("")
     lines.append("=== TEKST DOKUMENTU Z POPRAWKAMI ===")
+    lines.append(ctx.text)
+    if ctx.truncated:
+        lines.append("")
+        lines.append("[TEKST OBCIĘTY: pokazano tylko część dokumentu]")
+    return "\n".join(lines)
+
+
+def supplement_system_prompt(language: str) -> str:
+    return SUPPLEMENT_SYSTEM_PROMPT_TEMPLATE.format(
+        language=_LANGUAGE_NAMES.get(language.lower(), language)
+    )
+
+
+_SUPPLEMENT_LABEL = {
+    "government_position": "stanowisko Rządu do projektu",
+    "impact_assessment": "ocena skutków regulacji (OSR)",
+    "opinion": "opinia do projektu",
+}
+
+
+def build_supplement_prompt(ctx: SupplementContext) -> str:
+    lines = [
+        f"Druk nr {ctx.number}",
+        f"Tytuł: {ctx.title}",
+        f"Dokument: {_SUPPLEMENT_LABEL.get(ctx.source_kind, 'dokument złożony do druku')}",
+        f"Tytuł dokumentu: {ctx.document_title}",
+        "",
+        "=== AKTUALNY OPIS PROJEKTU ===",
+        ctx.previous_summary,
+    ]
+    lines.extend(f"- {change}" for change in ctx.previous_key_changes)
+    lines.append("")
+    lines.append("=== TEKST DOKUMENTU ===")
     lines.append(ctx.text)
     if ctx.truncated:
         lines.append("")

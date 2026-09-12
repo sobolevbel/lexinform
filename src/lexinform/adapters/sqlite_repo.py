@@ -34,6 +34,7 @@ from lexinform.models import (
     RunReport,
     Stage,
     StatusChange,
+    SupplementRecord,
     WykazEntry,
 )
 
@@ -206,6 +207,12 @@ MIGRATIONS: tuple[str, ...] = (
     """
     CREATE UNIQUE INDEX ux_pub_decision ON publications(term, number, kind, channel_id, ref)
         WHERE kind = 'decision_deadline';
+    """,
+    # v18: the documents filed to a print after its submission (the API's `additionalPrints`):
+    # which of them the channel already knows about, and the digests of those one update told
+    """
+    ALTER TABLE bills ADD COLUMN supplements_json TEXT;
+    ALTER TABLE status_changes ADD COLUMN supplements_json TEXT;
     """,
 )
 
@@ -718,6 +725,12 @@ class SqliteBillRepository:
         ).fetchone()
         return self._row_to_bill(row) if row else None
 
+    def save_seen_supplements(self, term: int, number: str, numbers: tuple[str, ...]) -> None:
+        self._conn.execute(
+            "UPDATE bills SET supplements_json = ? WHERE term = ? AND number = ?",
+            (json.dumps(list(numbers), ensure_ascii=False), term, number),
+        )
+
     def save_wykaz(self, term: int, number: str, entry: WykazEntry) -> None:
         self._conn.execute(
             "UPDATE bills SET wykaz_json = ? WHERE term = ? AND number = ?",
@@ -981,8 +994,8 @@ class SqliteBillRepository:
                 INSERT INTO status_changes (term, number, old_fingerprint, new_fingerprint,
                                             new_stages_json, closure_detected, passed,
                                             content_changed, withdrawn, discontinued,
-                                            amendments_json, detected_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                            amendments_json, supplements_json, detected_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     change.term,
@@ -1002,6 +1015,7 @@ class SqliteBillRepository:
                         if change.amendments is not None
                         else None
                     ),
+                    _supplements_json(change.supplements),
                     change.detected_at.isoformat(),
                 ),
             )
@@ -1013,6 +1027,14 @@ class SqliteBillRepository:
         self._conn.execute(
             "UPDATE status_changes SET amendments_json = ? WHERE id = ?",
             (record.model_dump_json(), change_id),
+        )
+
+    def save_status_change_supplements(
+        self, change_id: int, records: list[SupplementRecord]
+    ) -> None:
+        self._conn.execute(
+            "UPDATE status_changes SET supplements_json = ? WHERE id = ?",
+            (_supplements_json(records), change_id),
         )
 
     def closure_announced(self, term: int, number: str) -> bool:
@@ -1200,6 +1222,9 @@ class SqliteBillRepository:
             wykaz=(
                 WykazEntry.model_validate_json(row["wykaz_json"]) if row["wykaz_json"] else None
             ),
+            seen_supplements=(
+                tuple(json.loads(row["supplements_json"])) if row["supplements_json"] else None
+            ),
             discontinued_at=(
                 datetime.fromisoformat(row["discontinued_at"]) if row["discontinued_at"] else None
             ),
@@ -1226,6 +1251,10 @@ class SqliteBillRepository:
                 if row["amendments_json"]
                 else None
             ),
+            supplements=[
+                SupplementRecord.model_validate(r)
+                for r in json.loads(row["supplements_json"] or "[]")
+            ],
             detected_at=datetime.fromisoformat(row["detected_at"]),
         )
 
@@ -1252,6 +1281,12 @@ class SqliteBillRepository:
 
 def _bool(value: bool | None) -> int | None:
     return None if value is None else int(value)
+
+
+def _supplements_json(records: list[SupplementRecord]) -> str | None:
+    if not records:
+        return None
+    return json.dumps([r.model_dump(mode="json") for r in records], ensure_ascii=False)
 
 
 def _iso_date(value: object) -> str | None:

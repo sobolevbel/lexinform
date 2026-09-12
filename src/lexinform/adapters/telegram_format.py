@@ -100,6 +100,7 @@ ICON = {
     "stage": "🏛",
     "applicant": "✍️",
     "doc_date": "📄",
+    "filed": "📄",
     "links": "🔗",
     "new_stages": "🧭",
     "path": "🗺",
@@ -151,6 +152,9 @@ EVENT_ICON = {
     "veto": "⛔",
     "tribunal": "⚖️",
     "text_changed": "🆕",
+    "government_position": "🏛",
+    "impact_assessment": "📊",
+    "opinion": "📝",
     "withdrawn": "🏁",
     "discontinued": "🏁",
     "rcl_to_sejm": "🔢",
@@ -188,6 +192,14 @@ def esc(value: object) -> str:
 
 def link(url: str, text: str) -> str:
     return f'<a href="{html.escape(url, quote=True)}">{esc(text)}</a>'
+
+
+def _supports_key(supports: bool | None) -> str:
+    """The government's verdict as a label key; "" when the position states none, which is what
+    a conditional one does — the condition is in the summary and a bare "backs it" would lie."""
+    if supports is None:
+        return ""
+    return "yes" if supports else "no"
 
 
 def lead(text: str) -> str:
@@ -437,6 +449,7 @@ class MessageFormatter:
         summary_block = ""
         changes_block = ""
         amendments_block = self._amendments_block(change)
+        supplements_block = self._supplements_block(change)
         if analysis is not None:
             # The card carries the whole summary; a reply repeats one sentence of it, the whole
             # text only when the analysis itself changed.
@@ -462,7 +475,7 @@ class MessageFormatter:
         # here and released against it: shrunk away, they would be marked told and never told.
         text = self._assemble(
             [header, badge, stages_block],
-            flexible=[amendments_block, changes_block, summary_block],
+            flexible=[supplements_block, amendments_block, changes_block, summary_block],
             tail=[
                 closure,
                 consultation,
@@ -504,7 +517,8 @@ class MessageFormatter:
         return closure
 
     def _update_links(self, bill: Bill, change: StatusChange) -> list[str]:
-        """The process (or RCL project) page, the text the update is about, the amendments."""
+        """The process (or RCL project) page, the text the update is about, the amendments, and
+        every document filed to the print that this update tells."""
         lb = self._labels
         s = bill.summary
         if bill.wykaz is not None:
@@ -519,7 +533,34 @@ class MessageFormatter:
             links.append(link(bill.analysis.source_url, lb.link_pdf))
         if change.amendments is not None and change.amendments.source_url:
             links.append(link(change.amendments.source_url, lb.link_amendments))
+        for record in change.supplements:
+            if record.source_url:
+                label = lb.supplement_headers.get(record.source_kind, lb.link_supplement)
+                links.append(link(record.source_url, label))
         return links
+
+    def _supplements_block(self, change: StatusChange) -> str:
+        """One `📄 Позиция правительства` heading per document filed to the print, with the
+        model's digest under it. A document that could not be read keeps its heading and its
+        link: the reader is told it exists."""
+        lb = self._labels
+        blocks = []
+        for record in change.supplements:
+            label = lb.supplement_headers.get(record.source_kind, record.title)
+            lines = [f"{ICON['filed']} <b>{esc(label)}</b>"]
+            digest = record.digest
+            if digest is None:
+                lines.append(esc(record.title))
+                blocks.append("\n".join(lines))
+                continue
+            verdict = lb.supplement_supports.get(_supports_key(digest.supports))
+            if verdict:
+                lines.append(f"<b>{esc(verdict)}</b>")
+            if digest.summary.strip():
+                lines.append(esc(digest.summary.strip()))
+            lines.extend(f"• {esc(p.strip())}" for p in digest.points if p.strip())
+            blocks.append("\n".join(lines))
+        return "\n\n".join(blocks)
 
     def _amendments_block(self, change: StatusChange) -> str:
         """`🆕 Что меняют поправки Сената` with the model's summary and bullets."""

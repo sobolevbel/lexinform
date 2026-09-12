@@ -153,7 +153,64 @@ class AmendmentsContext(BaseModel):
     proposal: str | None = None
 
 
-UsageRecord = AnalysisRecord | TriageRecord | AmendmentsRecord
+class DocumentDigest(BaseModel):
+    """Structured output about a document filed to a print: what it says about the bill that is
+    already there, not a new analysis of the bill."""
+
+    summary: str = Field(description="1-2 plain sentences: what the document says overall.")
+    points: list[str] = Field(
+        default_factory=list, description="Up to 5 concrete statements, one per bullet."
+    )
+    supports: bool | None = Field(
+        default=None,
+        description="Only for the government's position: true when it backs the bill, false when"
+        " it is against, null when it is neither or the document is not a position.",
+    )
+    affects_foreigners: bool = Field(
+        description="True if what the document says bears on non-citizens."
+    )
+    confidence: float = Field(ge=0.0, le=1.0)
+
+
+class SupplementRecord(BaseModel):
+    """One document filed to a print after its submission, as the status change that announces it
+    carries it: what the document is (`number` and `title` are the additional print's own), and
+    what the model made of it.
+
+    `digest` is None when the document could not be read or the model call failed. The reply then
+    names the document and links it — a scan of an opinion is still news, and dropping it would
+    lose it for good, since the run records it as told either way.
+    """
+
+    number: str
+    title: str
+    source_kind: SourceKind
+    source_url: str
+    digest: DocumentDigest | None = None
+    model: str = ""
+    prompt_version: str = ""
+    created_at: dt.datetime | None = None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    cache_read_input_tokens: int | None = None
+    cache_creation_input_tokens: int | None = None
+
+
+class SupplementContext(BaseModel):
+    """What the model sees to digest a filed document: the bill as the channel currently
+    describes it, and the document."""
+
+    number: str
+    title: str
+    document_title: str
+    source_kind: SourceKind
+    text: str
+    truncated: bool
+    previous_summary: str
+    previous_key_changes: list[str] = Field(default_factory=list)
+
+
+UsageRecord = AnalysisRecord | TriageRecord | AmendmentsRecord | SupplementRecord
 
 
 def usage_of(record: UsageRecord) -> TokenUsage:

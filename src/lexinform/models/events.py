@@ -43,6 +43,8 @@ def has_news(change: StatusChange, *, act_published: bool = False) -> bool:
         return True
     if change.closure_detected and not act_published:
         return True
+    if change.supplements:
+        return True
     return any(is_substantive(st) for st in change.new_stages)
 
 
@@ -61,9 +63,24 @@ def update_event(change: StatusChange, bill: Bill) -> str:
         return _closure_event_of(change, bill)
     if change.content_changed:
         return "text_changed"
+    supplement = supplement_event(change)
+    if supplement is not None:
+        return supplement
     if bill.wykaz is not None and bill.wykaz.is_adopted:
         return "wykaz_adopted"
     return "update"
+
+
+def supplement_event(change: StatusChange) -> str | None:
+    """The filed document the post is named after: the government's position outweighs the OSR,
+    and both outweigh an opinion. The arrival of the position is also a stage
+    (`GovermentPosition`), and one with no name of its own — without this the post that carries
+    the government's verdict would be headed "Обновление"."""
+    kinds = {record.source_kind for record in change.supplements}
+    for kind in ("government_position", "impact_assessment", "opinion"):
+        if kind in kinds:
+            return kind
+    return None
 
 
 def _is_first_update_of_successor(change: StatusChange, bill: Bill) -> bool:
@@ -242,6 +259,8 @@ def event_keys(change: StatusChange, event: str) -> list[str]:
         keys.append("veto")
     if change.amendments is not None or event == "second_reading_amendments":
         keys.append("amendments")
+    if any(r.source_kind == "government_position" for r in change.supplements):
+        keys.append("government_position")
     if change.content_changed:
         keys.append("new_text")
     if change.withdrawn:

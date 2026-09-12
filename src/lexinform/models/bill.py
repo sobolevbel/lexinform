@@ -7,7 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.keywords import KEYWORD_PATTERNS
-from lexinform.models.analysis import AmendmentsRecord, AnalysisRecord
+from lexinform.models.analysis import AmendmentsRecord, AnalysisRecord, SupplementRecord
 from lexinform.models.enums import ApplicantType, BillStatus, PublicationKind, PublicationStatus
 from lexinform.models.rcl import RclProject
 from lexinform.models.sejm import (
@@ -77,6 +77,10 @@ class Bill(BaseModel):
     agenda: tuple[AgendaItem, ...] = ()
     rcl: RclProject | None = None
     wykaz: WykazEntry | None = None
+    seen_supplements: tuple[str, ...] | None = None
+    """The documents filed to the print that the channel already knows about. None means they
+    were never recorded: the next run takes what the print has now as the starting point and
+    tells none of it, the way a first sight of the stages seeds the fingerprint silently."""
     discontinued_at: dt.datetime | None = None
     first_seen_at: dt.datetime
     last_checked_at: dt.datetime
@@ -620,4 +624,7 @@ class StatusChange(BaseModel):
     amendments: AmendmentsRecord | None = None
     """What the amendments announced by this change do (Senate resolution, "-A" report), when
     their document could be read and summarised."""
+    supplements: list[SupplementRecord] = Field(default_factory=list)
+    """The documents filed to the print since the last check, digested: the government's
+    position, the OSR, an opinion that raised something."""
     detected_at: dt.datetime

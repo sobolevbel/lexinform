@@ -11,8 +11,10 @@ from lexinform.adapters.llm_prompts import (
     PROMPT_VERSION,
     amendments_system_prompt,
     build_amendments_prompt,
+    build_supplement_prompt,
     build_triage_prompt,
     build_user_prompt,
+    supplement_system_prompt,
     system_prompt,
     triage_system_prompt,
 )
@@ -24,6 +26,9 @@ from lexinform.models import (
     Analysis,
     AnalysisRecord,
     BillContext,
+    DocumentDigest,
+    SupplementContext,
+    SupplementRecord,
     Triage,
     TriageContext,
     TriageRecord,
@@ -76,6 +81,7 @@ class AnthropicAnalyzer:
         self._system = system_prompt(output_language)
         self._triage_system = triage_system_prompt(output_language)
         self._amendments_system = amendments_system_prompt(output_language)
+        self._supplement_system = supplement_system_prompt(output_language)
 
     def analyze(self, ctx: BillContext) -> AnalysisRecord:
         response = self._parse(
@@ -167,6 +173,44 @@ class AnthropicAnalyzer:
             prompt_version=PROMPT_VERSION,
             source_url="",  # the caller knows the document
             source_kind=ctx.source_kind,
+            created_at=self._clock(),
+            input_tokens=_usage_int(usage, "input_tokens"),
+            output_tokens=_usage_int(usage, "output_tokens"),
+            cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
+            cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
+        )
+
+    def digest_supplement(self, ctx: SupplementContext) -> SupplementRecord:
+        """What a document filed to the print says about the bill; the analysis model, thinking."""
+        response = self._parse(
+            self._model,
+            self._supplement_system,
+            build_supplement_prompt(ctx),
+            DocumentDigest,
+            thinking=True,
+        )
+        digest = response.parsed_output
+        if not isinstance(digest, DocumentDigest):
+            raise LlmError("model returned no parsable structured output")
+        usage = getattr(response, "usage", None)
+        log.info(
+            "LLM digested %s of druk %s: %d point(s), supports=%s affects=%s in=%s out=%s",
+            ctx.source_kind,
+            ctx.number,
+            len(digest.points),
+            digest.supports,
+            digest.affects_foreigners,
+            _usage_int(usage, "input_tokens"),
+            _usage_int(usage, "output_tokens"),
+        )
+        return SupplementRecord(
+            number="",  # the caller knows which document it handed over
+            title=ctx.document_title,
+            source_kind=ctx.source_kind,
+            source_url="",
+            digest=digest,
+            model=self._model,
+            prompt_version=PROMPT_VERSION,
             created_at=self._clock(),
             input_tokens=_usage_int(usage, "input_tokens"),
             output_tokens=_usage_int(usage, "output_tokens"),

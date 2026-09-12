@@ -36,6 +36,7 @@ from lexinform.models import (
     CommandOutcome,
     Committee,
     CommitteeSitting,
+    DocumentDigest,
     IncomingCommand,
     Mp,
     Phase,
@@ -50,6 +51,8 @@ from lexinform.models import (
     SejmTerm,
     Stage,
     StatusChange,
+    SupplementContext,
+    SupplementRecord,
     Triage,
     TriageContext,
     TriageRecord,
@@ -331,6 +334,18 @@ def make_amendments(**overrides: object) -> Amendments:
     return Amendments.model_validate(fields)
 
 
+def make_digest(**overrides: object) -> DocumentDigest:
+    fields: dict[str, object] = dict(
+        summary="Правительство поддерживает проект с оговорками.",
+        points=["Просит сохранить трёхлетний срок для выпускников польских вузов"],
+        supports=True,
+        affects_foreigners=True,
+        confidence=0.8,
+    )
+    fields.update(overrides)
+    return DocumentDigest.model_validate(fields)
+
+
 def make_analysis(
     *, relevant: bool = True, score: int = 5, category: Category = Category.LEGAL_STAY
 ) -> Analysis:
@@ -356,6 +371,7 @@ class FakeLlm:
     TRIAGE_TOKENS = (10, 5)
     ANALYSIS_TOKENS = (100, 50)
     AMENDMENTS_TOKENS = (40, 20)
+    SUPPLEMENT_TOKENS = (30, 15)
 
     def __init__(
         self,
@@ -363,14 +379,17 @@ class FakeLlm:
         default: Analysis | None = None,
         triage_script: dict[str, Triage | Exception] | None = None,
         amendments_script: dict[str, Amendments | Exception] | None = None,
+        supplement_script: dict[str, DocumentDigest | Exception] | None = None,
     ) -> None:
         self.script = script or {}
         self.default = default or make_analysis()
         self.triage_script = triage_script or {}
         self.amendments_script = amendments_script or {}
+        self.supplement_script = supplement_script or {}
         self.contexts: list[BillContext] = []
         self.triage_contexts: list[TriageContext] = []
         self.amendment_contexts: list[AmendmentsContext] = []
+        self.supplement_contexts: list[SupplementContext] = []
 
     def triage(self, ctx: TriageContext) -> TriageRecord:
         self.triage_contexts.append(ctx)
@@ -402,6 +421,24 @@ class FakeLlm:
             created_at=datetime(2026, 9, 7, tzinfo=UTC),
             input_tokens=self.ANALYSIS_TOKENS[0],
             output_tokens=self.ANALYSIS_TOKENS[1],
+        )
+
+    def digest_supplement(self, ctx: SupplementContext) -> SupplementRecord:
+        self.supplement_contexts.append(ctx)
+        outcome = self.supplement_script.get(ctx.document_title, make_digest())
+        if isinstance(outcome, Exception):
+            raise outcome
+        return SupplementRecord(
+            number="",
+            title=ctx.document_title,
+            source_kind=ctx.source_kind,
+            source_url="",
+            digest=outcome,
+            model=self.MODEL,
+            prompt_version=PROMPT_VERSION,
+            created_at=datetime(2026, 9, 7, tzinfo=UTC),
+            input_tokens=self.SUPPLEMENT_TOKENS[0],
+            output_tokens=self.SUPPLEMENT_TOKENS[1],
         )
 
     def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:

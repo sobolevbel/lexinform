@@ -23,7 +23,9 @@ from lexinform.models import (
     amendments_stage,
     diff_stages,
     has_news,
+    new_supplements,
     stage_fingerprint,
+    supplement_kind,
 )
 from lexinform.ports import (
     BillRepository,
@@ -194,6 +196,26 @@ class _Amendments:
     proposal: str | None
 
 
+@dataclass(frozen=True)
+class _Supplement:
+    """A document filed to the print since the last check and worth telling: its own print
+    number and title, and the file to read it from."""
+
+    number: str
+    title: str
+    document: TextDocument
+
+
+@dataclass(frozen=True)
+class _Found:
+    """What one bill's network step brought back, for the detection that follows it."""
+
+    detail: ProcessDetail
+    print_info: PrintInfo | None
+    amendments: _Amendments | None
+    supplements: list[_Supplement]
+
+
 class StatusTrackingService:
     """Follows published bills: stage changes, new texts, sittings, acts, consultations.
 
@@ -331,8 +353,9 @@ class StatusTrackingService:
             bill = outcome.item
             result.checked += 1
             try:
-                detail, print_info, amendments = outcome.result()
-                change = self._detect(bill, detail, print_info, result, amendments)
+                found = outcome.result()
+                detail = found.detail
+                change = self._detect(bill, found, result)
             except ServiceUnavailableError as exc:
                 result.abort(exc)
                 return
@@ -440,11 +463,35 @@ class StatusTrackingService:
                 return False
         return True
 
-    def _fetch(self, bill: Bill) -> tuple[ProcessDetail, PrintInfo | None, _Amendments | None]:
+    def _fetch(self, bill: Bill) -> _Found:
         """What detection needs from the API for one bill (no database access): the process,
-        the print and, when a new stage brings amendments, their document."""
+        the print, whatever document a new stage brings amendments in, and the documents filed
+        to the print since the last check."""
         detail = self._gateway.get_process(bill.term, bill.number)
-        return detail, fetch_print(self._gateway, bill), self._amendments_document(bill, detail)
+        print_info = fetch_print(self._gateway, bill)
+        return _Found(
+            detail,
+            print_info,
+            self._amendments_document(bill, detail),
+            self._supplements(bill, print_info),
+        )
+
+    def _supplements(self, bill: Bill, print_info: PrintInfo | None) -> list[_Supplement]:
+        """The documents filed to the print that this run should tell (no network: the print
+        carries them). None of them until the bill's own list has been recorded once — the first
+        sight seeds it silently, the way the stage fingerprint is seeded."""
+        if self._analysis is None or bill.analysis is None or bill.seen_supplements is None:
+            return []
+        found = []
+        for filed in new_supplements(print_info, bill.seen_supplements):
+            kind = supplement_kind(filed.title)
+            pdf = filed.main_pdf
+            if kind is None or pdf is None:
+                continue
+            found.append(
+                _Supplement(filed.number, filed.title, TextDocument(url=pdf.url, kind=kind))
+            )
+        return found
 
     def _amendments_document(self, bill: Bill, detail: ProcessDetail) -> _Amendments | None:
         """The Senate's resolution print or the committee's report on amendments, if one of
@@ -490,31 +537,30 @@ class StatusTrackingService:
             log.info("druk %s: amendments summarised from %s", bill.number, found.document.url)
         return record
 
-    def _detect(
-        self,
-        bill: Bill,
-        detail: ProcessDetail,
-        print_info: PrintInfo | None,
-        result: TrackingResult,
-        amendments: _Amendments | None = None,
-    ) -> StatusChange | None:
+    def _detect(self, bill: Bill, found: _Found, result: TrackingResult) -> StatusChange | None:
         """What is new about the bill, with the fingerprint written last: a failure above (an LLM
         outage during the re-analysis) leaves the old one in place, so the next run sees the same
         new stages and tells them instead of a bare "text changed"."""
+        detail = found.detail
         new_fp = stage_fingerprint(detail.stages)
-        change = self._detect_change(bill, detail, new_fp, print_info, result, amendments)
+        change = self._detect_change(bill, found, new_fp, result)
         if new_fp != bill.stages_fingerprint:
             self._repo.save_stages(bill.term, bill.number, detail.stages, new_fp)
+        self._remember_supplements(bill, found.print_info)
         return change
 
+    def _remember_supplements(self, bill: Bill, print_info: PrintInfo | None) -> None:
+        """Written last, and only when the print was actually read: a run that could not fetch
+        it must not forget the documents it knew about, and a run that told them must not tell
+        them twice."""
+        if print_info is None:
+            return
+        filed = tuple(p.number for p in print_info.additional_prints)
+        if filed != bill.seen_supplements:
+            self._repo.save_seen_supplements(bill.term, bill.number, filed)
+
     def _detect_change(
-        self,
-        bill: Bill,
-        detail: ProcessDetail,
-        new_fp: str,
-        print_info: PrintInfo | None,
-        result: TrackingResult,
-        amendments: _Amendments | None,
+        self, bill: Bill, found: _Found, new_fp: str, result: TrackingResult
     ) -> StatusChange | None:
         """The one change worth a post, or None when there is nothing to tell.
 
@@ -524,9 +570,10 @@ class StatusTrackingService:
         that are gone again (a stage edited or removed upstream) leave nothing to tell either,
         and neither does a change an earlier run already recorded.
         """
+        detail = found.detail
         now = self._clock.now()
         self._repo.upsert_summary(detail, now=now)
-        content_changed = self._reanalyze_new_text(bill, detail, print_info, result)
+        content_changed = self._reanalyze_new_text(bill, detail, found.print_info, result)
         old_fp = bill.stages_fingerprint
         if old_fp is None:
             return None
@@ -534,7 +581,8 @@ class StatusTrackingService:
             bill.term, bill.number
         )
         new_stages = diff_stages(bill.stages, detail.stages) if new_fp != old_fp else []
-        if not (new_stages or content_changed or closure_detected):
+        filed = found.supplements
+        if not (new_stages or content_changed or closure_detected or filed):
             return None
 
         fresh = self._repo.get(bill.term, bill.number) or bill
@@ -542,7 +590,12 @@ class StatusTrackingService:
             term=bill.term,
             number=bill.number,
             old_fingerprint=old_fp,
-            new_fingerprint=change_key(new_fp, fresh, closed=closure_detected),
+            new_fingerprint=change_key(
+                new_fp,
+                fresh,
+                closed=closure_detected,
+                supplements=[s.number for s in filed],
+            ),
             new_stages=[self._enricher.enrich(bill.term, st) for st in new_stages],
             closure_detected=closure_detected,
             passed=detail.passed,
@@ -553,8 +606,10 @@ class StatusTrackingService:
         if change_id is None:
             return None
         change.id = change_id
-        if amendments is not None:
-            self._attach_amendments(change, bill, amendments, result)
+        if found.amendments is not None:
+            self._attach_amendments(change, bill, found.amendments, result)
+        if filed:
+            self._attach_supplements(change, bill, filed, result)
         _log_change(bill, change)
         return change
 
@@ -578,6 +633,35 @@ class StatusTrackingService:
         result.count_reanalysis(record)
         return True
 
+    def _attach_supplements(
+        self,
+        change: StatusChange,
+        bill: Bill,
+        filed: list[_Supplement],
+        result: TrackingResult,
+    ) -> None:
+        """Read after the change row exists, for the same reason the amendments are: a change an
+        earlier run recorded never pays for the model again. A document the model could not be
+        asked about is still announced, so nothing filed is lost."""
+        assert change.id is not None
+        assert self._analysis is not None
+        for supplement in filed:
+            try:
+                record = self._analysis.digest_supplement(
+                    bill, supplement.document, number=supplement.number, title=supplement.title
+                )
+            except ServiceUnavailableError:
+                raise
+            except Exception as exc:
+                log.warning("druk %s: %s not digested: %s", bill.number, supplement.number, exc)
+                record = self._analysis.bare_supplement(
+                    supplement.document, number=supplement.number, title=supplement.title
+                )
+            if record.digest is not None:
+                result.count_usage(record)
+            change.supplements.append(record)
+        self._repo.save_status_change_supplements(change.id, change.supplements)
+
     def _attach_amendments(
         self, change: StatusChange, bill: Bill, found: _Amendments, result: TrackingResult
     ) -> None:
@@ -591,10 +675,11 @@ class StatusTrackingService:
 
 def _log_change(bill: Bill, change: StatusChange) -> None:
     log.info(
-        "druk %s: %d new stage(s)%s%s: %s",
+        "druk %s: %d new stage(s)%s%s%s: %s",
         bill.number,
         len(change.new_stages),
         " + new text" if change.content_changed else "",
         " + amendments" if change.amendments is not None else "",
+        f" + {len(change.supplements)} filed document(s)" if change.supplements else "",
         "; ".join(st.stage_name for st in change.new_stages) or "-",
     )

@@ -38,6 +38,8 @@ from lexinform.models import (
     SejmTerm,
     Stage,
     StatusChange,
+    SupplementContext,
+    SupplementRecord,
     TriageContext,
     TriageRecord,
     Vote,
@@ -193,6 +195,11 @@ class LlmAnalyzer(Protocol):
 
     def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:
         """What a set of amendments (Senate, "-A" report) changes in the bill as described."""
+        ...
+
+    def digest_supplement(self, ctx: SupplementContext) -> SupplementRecord:
+        """What a document filed to a print (the government's position, the OSR, an opinion)
+        says about the bill as described."""
         ...
 
 
@@ -427,6 +434,16 @@ class BillRepository(Protocol):
 
     def save_status_change_amendments(self, change_id: int, record: AmendmentsRecord) -> None:
         """Attach the amendments summary to a recorded change (made after the row exists)."""
+        ...
+
+    def save_status_change_supplements(
+        self, change_id: int, records: list[SupplementRecord]
+    ) -> None:
+        """Attach the digests of the documents this change announces (after the row exists)."""
+        ...
+
+    def save_seen_supplements(self, term: int, number: str, numbers: tuple[str, ...]) -> None:
+        """Record which documents filed to the print the channel now knows about."""
         ...
 
     def save_submission(self, term: int, number: str, submission: BillSubmission) -> None: ...
