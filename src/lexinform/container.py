@@ -369,6 +369,11 @@ class Container:
                     if self.settings.consultation_reminders
                     else None
                 ),
+                decision_reminder_days=(
+                    self.settings.decision_reminder_days
+                    if self.settings.decision_reminders
+                    else None
+                ),
                 agenda_watch=self.settings.agenda_watch,
                 max_card_edits=self.settings.max_card_edits,
                 pending_decision_max_days=self.settings.track_pending_decision_max_days,

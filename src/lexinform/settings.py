@@ -118,6 +118,12 @@ class Settings(BaseSettings):
     # close, this many days ahead.
     consultation_reminders: bool = True
     consultation_reminder_days: int = Field(default=3, ge=0)
+    # Remind before the Senate's 30 days (art. 121) and the President's 21 (art. 122) run out.
+    # Wider than the consultation's window on purpose: both dates are counted from the stage
+    # before the hand-over, so they fall a few days early, and the Senate's committee takes the
+    # act well before day 30.
+    decision_reminders: bool = True
+    decision_reminder_days: int = Field(default=7, ge=0)
     # Post when a followed bill appears on a committee or Sejm sitting agenda.
     agenda_watch: bool = True
 

@@ -40,6 +40,7 @@ from lexinform.services.tracking.acts import ActWatcher
 from lexinform.services.tracking.agenda import AgendaWatcher
 from lexinform.services.tracking.cards import CardRefresher
 from lexinform.services.tracking.consultations import ConsultationReminder
+from lexinform.services.tracking.deadlines import DeadlineReminder
 from lexinform.services.tracking.hearings import HearingReminder
 from lexinform.services.tracking.linking import Linker
 from lexinform.services.tracking.posting import Poster
@@ -86,6 +87,7 @@ class StatusTrackingService:
         club_breakdown: bool = True,
         in_force_reminders: bool = True,
         consultation_reminder_days: int | None = 3,
+        decision_reminder_days: int | None = 7,
         agenda_watch: bool = True,
         max_card_edits: int = 30,
         rcl_reader: RclProjectReader | None = None,
@@ -126,6 +128,13 @@ class StatusTrackingService:
                 clock, self._poster, local_tz=local_tz, days_before=consultation_reminder_days
             )
             if consultation_reminder_days is not None
+            else None
+        )
+        self._deadlines = (
+            DeadlineReminder(
+                repo, clock, self._poster, local_tz=local_tz, days_before=decision_reminder_days
+            )
+            if decision_reminder_days is not None
             else None
         )
         linker = Linker(
@@ -292,6 +301,8 @@ class StatusTrackingService:
             self._consultations.remind(result)
         if result.fatal_error is None and publish and self._hearings is not None:
             self._hearings.remind(everyone, result)
+        if result.fatal_error is None and publish and self._deadlines is not None:
+            self._deadlines.remind(everyone, result)
         if result.fatal_error is None:
             self._cards.refresh(everyone, result, publish=publish)
         scope = "all" if changed_since is None else f"changed since {changed_since:%F %R}"

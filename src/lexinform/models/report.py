@@ -50,6 +50,7 @@ class RunReport(BaseModel):
     in_force_posted: int = 0
     consultation_reminders: int = 0
     hearing_reminders: int = 0
+    decision_reminders: int = 0  # the Senate's or the President's term is nearly out
     held: int = 0  # stage changes held for the next post (service stages only)
     cards_refreshed: int = 0  # cards edited in place because what they said had drifted
     consultation_results_posted: int = 0

@@ -169,6 +169,16 @@ class Labels:
     hearing_applications_closed: str
     hearing_hint: str
     tag_hearing: str
+    # The last constitutional windows: the Senate's 30 days (art. 121) and the President's 21
+    # (art. 122). Both dates are counted from the stage before the hand-over, which the API does
+    # not date, so the reminder says so rather than printing a date it knows is a little early.
+    senate_deadline_header: str
+    president_deadline_header: str
+    senate_deadline_line: str  # "{date}"
+    president_deadline_line: str  # "{date}"
+    senate_deadline_body: str
+    president_deadline_body: str
+    deadline_counted_from_vote: str
     # Amendments summarised from their document (Senate resolution, committee "-A" report)
     amendments_senate: str
     amendments_committee: str
@@ -384,7 +394,7 @@ RU = Labels(
     committee_report="отчёт комиссии (sprawozdanie)",
     subcommittee_report="отчёт подкомиссии",
     proposes="предлагает",
-    deadline_until="срок до",
+    deadline_until="решение до",
     deadline_passed="срок истёк",
     stalled_for_weeks="без движения уже {weeks} нед.",
     stalled_for_months="без движения уже {months} мес.",
@@ -398,6 +408,23 @@ RU = Labels(
         " каждый заявитель получает слово"
     ),
     tag_hearing="слушания",
+    senate_deadline_header="Закон в Сенате",
+    president_deadline_header="Закон у Президента",
+    senate_deadline_line="Сенат должен решить до {date}",
+    president_deadline_line="Президент должен решить до {date}",
+    senate_deadline_body=(
+        "Принять закон без изменений, внести поправки или отклонить его целиком"
+        " (ст. 121 Конституции). Профильная комиссия Сената обычно рассматривает закон"
+        " задолго до этого срока — мнение имеет смысл направить сейчас."
+    ),
+    president_deadline_body=(
+        "Подписать закон, наложить вето или направить его в Конституционный трибунал"
+        " (ст. 122 Конституции)."
+    ),
+    deadline_counted_from_vote=(
+        "Срок отсчитан от голосования в Сейме: фактический на несколько дней позже —"
+        " он идёт с момента передачи закона."
+    ),
     amendments_senate="Что меняют поправки Сената",
     amendments_committee="Что меняют поправки (по отчёту комиссии)",
     link_amendments="Текст поправок (PDF)",
@@ -863,7 +890,7 @@ EN = Labels(
     committee_report="committee report (sprawozdanie)",
     subcommittee_report="sub-committee report",
     proposes="proposes to",
-    deadline_until="deadline",
+    deadline_until="decision by",
     deadline_passed="deadline passed",
     stalled_for_weeks="no movement for {weeks} weeks",
     stalled_for_months="no movement for {months} months",
@@ -877,6 +904,23 @@ EN = Labels(
         " every applicant gets to speak"
     ),
     tag_hearing="hearing",
+    senate_deadline_header="The act is with the Senate",
+    president_deadline_header="The act is with the President",
+    senate_deadline_line="The Senate must decide by {date}",
+    president_deadline_line="The President must decide by {date}",
+    senate_deadline_body=(
+        "Pass the act unchanged, amend it or reject it as a whole (art. 121 of the"
+        " Constitution). Its committee takes the act well before that date, so an opinion is"
+        " worth sending now."
+    ),
+    president_deadline_body=(
+        "Sign the act, veto it or refer it to the Constitutional Tribunal"
+        " (art. 122 of the Constitution)."
+    ),
+    deadline_counted_from_vote=(
+        "Counted from the Sejm's vote: the real deadline is a few days later, as it runs from"
+        " the day the act is handed over."
+    ),
     amendments_senate="What the Senate's amendments change",
     amendments_committee="What the amendments change (per the committee's report)",
     link_amendments="Amendments (PDF)",

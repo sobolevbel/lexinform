@@ -23,6 +23,7 @@ from lexinform.models import (
     IncomingCommand,
     LocatedText,
     Mp,
+    Phase,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
@@ -250,6 +251,12 @@ class Publisher(Protocol):
         self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date
     ) -> PublishResult:
         """Applications to the public hearing `hearing` close in a few days."""
+        ...
+
+    def publish_decision_deadline(
+        self, bill: Bill, phase: Phase, reply_to: int | None, *, today: date
+    ) -> PublishResult:
+        """The Senate's or the President's constitutional term is running out."""
         ...
 
 

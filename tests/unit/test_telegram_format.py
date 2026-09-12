@@ -731,7 +731,7 @@ def test_senate_stage_invites_an_opinion_to_the_senate_committee(
     )
 
     # The 30 days count from the third reading (17.07.2026): the date, not only the rule.
-    assert "Что дальше:</b> рассмотрение в Сенате (до 30 дней) · срок до 16.08.2026" in text
+    assert "Что дальше:</b> рассмотрение в Сенате (до 30 дней) · решение до 16.08.2026" in text
     assert "Что можно сделать сейчас:</b> направить мнение в профильную комиссию Сената" in text
     assert "→ Сенат ● → Президент" in text
 
@@ -765,7 +765,7 @@ def test_urgent_bill_gets_the_shortened_terms_and_not_the_usual_ones(
     )
     # 14 days from the third reading (17.07.2026), where a normal bill would get 30.
     assert (
-        "Что дальше:</b> рассмотрение в Сенате (срочный режим: до 14 дней) · срок до 31.07.2026"
+        "Что дальше:</b> рассмотрение в Сенате (срочный режим: до 14 дней) · решение до 31.07.2026"
         in senate
     )
 
@@ -1212,7 +1212,7 @@ def test_a_deadline_that_has_run_out_is_named_as_expired(process_1962: ProcessDe
     text = MessageFormatter("ru").new_bill(bill_of(in_senate), None, today=TODAY).text
 
     assert "срок истёк 16.08.2026" in text
-    assert "срок до 16.08.2026" not in text
+    assert "решение до 16.08.2026" not in text
 
 
 def test_a_step_that_outlived_its_usual_duration_says_how_long(

@@ -16,6 +16,7 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     AgendaItem,
     Bill,
+    Phase,
     Publication,
     PublicationKind,
     PublicationStatus,
@@ -223,6 +224,20 @@ class Poster:
                 self._publisher.publish_agenda(bill, item, reply_to, moved_from).message_id
             ),
             ref=item.ref,
+        )
+
+    def decision_deadline(self, bill: Bill, phase: Phase, *, today: date) -> bool:
+        """One reminder per (bill, phase): the Senate's term and the President's are told apart
+        by the phase key, and each is told once."""
+        return self._once(
+            bill,
+            PublicationKind.DECISION_DEADLINE,
+            lambda reply_to: (
+                self._publisher.publish_decision_deadline(
+                    bill, phase, reply_to, today=today
+                ).message_id
+            ),
+            ref=phase.key,
         )
 
     def hearing_deadline(self, bill: Bill, hearing: Stage, *, today: date) -> bool:

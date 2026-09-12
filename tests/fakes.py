@@ -38,6 +38,7 @@ from lexinform.models import (
     CommitteeSitting,
     IncomingCommand,
     Mp,
+    Phase,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
@@ -446,6 +447,7 @@ class FakePublisher:
         self.fail_on = fail_on or set()  # bill numbers whose post fails (per-bill error)
         self.outage_on = outage_on or set()  # bill numbers whose post finds Telegram down
         # Telegram can answer a post and be gone by the time the card is edited.
+        self.decision_deadlines: list[tuple[Bill, Phase, int | None, date]] = []
         self.outage_on_edit: set[str] = set()
         self._next_id = 100
 
@@ -468,6 +470,7 @@ class FakePublisher:
             "in_force": [b.number for b, _ in self.in_force],
             "consultations": [b.number for b, _, _ in self.consultations],
             "consultation_results": [b.number for b, _ in self.consultation_results],
+            "decision_deadlines": [b.number for b, _, _, _ in self.decision_deadlines],
             "agendas": [b.number for b, _, _ in self.agendas],
             "hearings": [b.number for b, _, _, _ in self.hearings],
         }
@@ -538,6 +541,13 @@ class FakePublisher:
     ) -> FakePublishResult:
         result = self._send(bill)
         self.hearings.append((bill, hearing, reply_to, today))
+        return result
+
+    def publish_decision_deadline(
+        self, bill: Bill, phase: Phase, reply_to: int | None, *, today: date
+    ) -> FakePublishResult:
+        result = self._send(bill)
+        self.decision_deadlines.append((bill, phase, reply_to, today))
         return result
 
 

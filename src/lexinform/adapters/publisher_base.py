@@ -11,7 +11,15 @@ from dataclasses import dataclass
 from datetime import date
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import AgendaItem, Bill, PrintInfo, PublicationKind, Stage, StatusChange
+from lexinform.models import (
+    AgendaItem,
+    Bill,
+    Phase,
+    PrintInfo,
+    PublicationKind,
+    Stage,
+    StatusChange,
+)
 from lexinform.ports import PublishResult
 
 
@@ -96,3 +104,12 @@ class RenderingPublisher(ABC):
     ) -> PublishResult:
         text = self._formatter.hearing_deadline(bill, hearing, today=today).text
         return self._deliver(Outgoing(PublicationKind.HEARING_DEADLINE, bill, text, reply_to))
+
+    def publish_decision_deadline(
+        self, bill: Bill, phase: Phase, reply_to: int | None, *, today: date
+    ) -> PublishResult:
+        text = self._formatter.decision_deadline(bill, phase, today=today).text
+        detail = phase.key
+        return self._deliver(
+            Outgoing(PublicationKind.DECISION_DEADLINE, bill, text, reply_to, detail)
+        )

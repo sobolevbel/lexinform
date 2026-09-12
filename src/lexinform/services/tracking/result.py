@@ -17,6 +17,7 @@ PostCounter = Literal[
     "consultation_results_posted",
     "agenda_posted",
     "hearing_reminders",
+    "decision_reminders",
 ]
 
 
@@ -34,6 +35,7 @@ class TrackingResult:
     consultation_results_posted: int = 0
     agenda_posted: int = 0
     hearing_reminders: int = 0
+    decision_reminders: int = 0  # the Senate's 30 days / the President's 21 are running out
     cards_refreshed: int = 0  # cards edited in place because what they said had drifted
     held: int = 0  # service-stage changes kept for the next post
     discontinued: int = 0  # bills that lapsed with the end of the term, announced under the card

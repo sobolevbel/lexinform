@@ -122,6 +122,7 @@ ICON = {
     "agenda": "📝",
     "hearing": "📢",
     "wykaz": "⏳",
+    "deadline": "⏳",
 }
 # The header icon of a status update, by event (see `models.update_event`); 🔄 otherwise.
 EVENT_ICON = {
@@ -693,6 +694,45 @@ class MessageFormatter:
         )
         return RenderedMessage(text=text)
 
+    def decision_deadline(self, bill: Bill, phase: Phase, *, today: dt.date) -> RenderedMessage:
+        """Reply under the card as the Senate's or the President's constitutional term runs out.
+
+        Between the Sejm's vote and the act in Dziennik Ustaw the channel is otherwise silent for
+        up to seven weeks, and those are the reader's last two windows: the Senate's committee
+        takes opinions, and the President can still veto."""
+        lb = self._labels
+        if phase.deadline is None:
+            raise ValueError(f"bill {bill.number}: the {phase.key} phase carries no deadline")
+        senate = phase.key == "senate"
+        label = lb.senate_deadline_header if senate else lb.president_deadline_header
+        header = self._header(ICON["deadline"], label, bill)
+        line = (lb.senate_deadline_line if senate else lb.president_deadline_line).format(
+            date=self.fmt_date(phase.deadline)
+        )
+        body = lb.senate_deadline_body if senate else lb.president_deadline_body
+        facts = (
+            f"{ICON['effective']} <b>{esc(line)}</b> · "
+            f"{self._countdown((phase.deadline - today).days)}\n"
+            f"{esc(body)}\n"
+            f"{ICON['note']} <i>{esc(lb.deadline_counted_from_vote)}</i>"
+        )
+        links = [link(bill.summary.web_url, lb.link_process)]
+        if senate:
+            links.append(link(SENATE_BILLS_URL, lb.link_senate_bills))
+        summary_block = ""
+        if bill.analysis is not None:
+            summary_block = self._summary_reminder(bill.analysis.analysis.summary, full=False)
+        text = self._assemble(
+            [header, facts],
+            flexible=[summary_block],
+            tail=[
+                self._action_line(bill, today),
+                self._links(links),
+                self._tag_line(lb.event_tags["senate" if senate else "president"], bill),
+            ],
+        )
+        return RenderedMessage(text=text)
+
     def hearing_deadline(self, bill: Bill, hearing: Stage, *, today: dt.date) -> RenderedMessage:
         """Reply under the card a few days before applications to a public hearing close."""
         lb = self._labels
@@ -802,6 +842,7 @@ class MessageFormatter:
                     ("results: {}", report.consultation_results_posted),
                     ("agenda: {}", report.agenda_posted),
                     ("hearings: {}", report.hearing_reminders),
+                    ("Senate/President deadline: {}", report.decision_reminders),
                 ),
                 _counters(
                     ("end of term: {} bill(s) lapsed", report.discontinued),
@@ -1373,10 +1414,10 @@ class MessageFormatter:
                     text += f" {esc(lb.consultation_until)} {self.fmt_date(deadline)}"
                 actions.append(text)
         if phase is not None and phase.key == "senate":
-            senate = f"{esc(lb.action_senate)} {link(SENATE_BILLS_URL, lb.link_senate_bills)}"
-            if phase.deadline is not None and phase.deadline >= today:
-                senate += f" {esc(lb.consultation_until)} {self.fmt_date(phase.deadline)}"
-            actions.append(senate)
+            # No date: art. 121 gives the *Senate* thirty days, and its committee takes the act
+            # long before they are out — "until 04.10" would read as a window that stays open.
+            where = link(SENATE_BILLS_URL, lb.link_senate_bills)
+            actions.append(f"{esc(lb.action_senate)} ({where})")
         if not actions:
             # Say so, and name the next window, rather than leave the reader guessing.
             nothing = lb.no_action_labels.get(phase.key) if phase is not None else None

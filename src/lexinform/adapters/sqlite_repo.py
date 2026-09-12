@@ -201,6 +201,12 @@ MIGRATIONS: tuple[str, ...] = (
     """
     ALTER TABLE publications ADD COLUMN rendered_sha256 TEXT;
     """,
+    # v17: one reminder per bill, channel and constitutional term (`ref` = the phase key), so the
+    # Senate's 30 days and the President's 21 are each told once
+    """
+    CREATE UNIQUE INDEX ux_pub_decision ON publications(term, number, kind, channel_id, ref)
+        WHERE kind = 'decision_deadline';
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
