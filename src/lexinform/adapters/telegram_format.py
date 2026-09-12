@@ -152,6 +152,7 @@ EVENT_ICON = {
     "discontinued": "🏁",
     "rcl_to_sejm": "🔢",
     "rcl_closed": "🏁",
+    "wykaz_adopted": "✅",
     "rcl_started": "📄",
     "wykaz_withdrawn": "🚫",
 }

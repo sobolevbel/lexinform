@@ -6,6 +6,7 @@ last. Or the government drops it, which art. 3 ust. 3 of the lobbying act oblige
 to say (`Status realizacji`, `Informacja o rezygnacji`) and no other source tells at all.
 
 A slipped quarter or a rewritten "istota" is stored and not posted: that is a chronicle.
+A row that simply disappears from the register says the same as `Wycofany` and is read so.
 """
 
 import logging
@@ -33,6 +34,8 @@ from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.result import TrackingResult
 
 log = logging.getLogger(__name__)
+
+REMOVED_STATUS = "Wycofany"  # the row is gone from the register, which says the same thing
 
 
 class WykazLinker:
@@ -176,7 +179,9 @@ class WykazWatcher:
             result.checked += 1
             entry = entries.get(bill.wykaz.number)
             if entry is None:
-                continue  # taken off the published register: nothing to say about it
+                entry = self._removed(bill, entries)
+                if entry is None:
+                    continue
             try:
                 change = self._detect(bill, entry, result)
             except Exception as exc:
@@ -208,9 +213,19 @@ class WykazWatcher:
                 log.exception("linking %s to its RCL project failed: %s", bill.number, exc)
         return True
 
+    def _removed(self, bill: Bill, entries: dict[str, WykazEntry]) -> WykazEntry | None:
+        """A plan whose row is gone from the register: the government dropped it without saying
+        so, which is the one thing only this source can tell. An empty register is a download
+        that went wrong, not a government that dropped everything."""
+        assert bill.wykaz is not None
+        if not entries:
+            log.warning("the register came back empty: absences are not read as removals")
+            return None
+        return bill.wykaz.model_copy(update={"status": REMOVED_STATUS})
+
     def _detect(self, bill: Bill, entry: WykazEntry, result: TrackingResult) -> StatusChange | None:
         """Store what the register says now; a change row only for a decision a reader can act
-        on."""
+        on: the government dropping the project, or adopting it."""
         assert bill.wykaz is not None
         entry = entry.model_copy(update={"rcl_project_id": bill.wykaz.rcl_project_id})
         new_fp = wykaz_fingerprint(entry)
@@ -219,15 +234,17 @@ class WykazWatcher:
         self._repo.upsert_summary(wykaz_summary(entry, term=bill.term), now=self._clock.now())
         self._repo.save_wykaz(bill.term, bill.number, entry)
         self._repo.save_stages(bill.term, bill.number, (), new_fp)
-        if not entry.is_withdrawn or bill.wykaz.is_withdrawn:
-            return None  # the plan moved on, or was already known to be over
+        dropped = entry.is_withdrawn and not bill.wykaz.is_withdrawn
+        adopted = entry.is_adopted and not bill.wykaz.is_adopted
+        if not dropped and not adopted:
+            return None  # a slipped quarter or a rewritten "istota": stored, not posted
         change = StatusChange(
             term=bill.term,
             number=bill.number,
             old_fingerprint=bill.stages_fingerprint,
             new_fingerprint=new_fp,
             new_stages=[],
-            closure_detected=True,
+            closure_detected=dropped,
             passed=False,
             detected_at=self._clock.now(),
         )
@@ -236,5 +253,6 @@ class WykazWatcher:
             return None
         change.id = change_id
         result.changed += 1
-        log.info("%s: the government dropped the project (%s)", bill.number, entry.status or "—")
+        what = "dropped" if dropped else "adopted"
+        log.info("%s: the government %s the project (%s)", bill.number, what, entry.status)
         return change

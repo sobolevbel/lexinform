@@ -422,6 +422,7 @@ RU = Labels(
         "rcl_closed": "Проект закрыт на RCL",
         "rcl_started": "Проект опубликован на RCL",
         "wykaz_withdrawn": "Правительство отказалось от проекта",
+        "wykaz_adopted": "Правительство приняло проект",
     },
     decision_labels={
         "niezwłocznie przystąpiono do iii": "сразу перешли к III чтению",
@@ -883,6 +884,7 @@ EN = Labels(
         "rcl_closed": "Project closed on RCL",
         "rcl_started": "Draft published on RCL",
         "wykaz_withdrawn": "The government dropped the project",
+        "wykaz_adopted": "The government adopted the project",
     },
     decision_labels={
         "niezwłocznie przystąpiono do iii": "moved straight on to the 3rd reading",

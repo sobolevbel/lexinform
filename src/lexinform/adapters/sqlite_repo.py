@@ -535,13 +535,16 @@ class SqliteBillRepository:
             decision_cutoff,
         ]
         if changed_since is not None:
-            # Timestamps are stored as ISO text in UTC; compare to the second.
+            # Timestamps are stored as ISO text in UTC; compare to the second. A wykaz row is
+            # exempt: its `change_date` is the register's `Data publikacji`, which never moves,
+            # and the whole register is downloaded every run anyway.
             sql += """
               AND (substr(b.change_date, 1, 19) >= substr(?, 1, 19)
-                   OR (b.passed = 1 AND b.act_json IS NULL))
+                   OR (b.passed = 1 AND b.act_json IS NULL)
+                   OR b.number LIKE ?)
             """
             since = changed_since if changed_since.tzinfo is None else changed_since.astimezone(UTC)
-            params.append(since.replace(tzinfo=None).isoformat())
+            params.extend([since.replace(tzinfo=None).isoformat(), f"{WYKAZ_PREFIX}%"])
         rows = self._conn.execute(sql + " ORDER BY b.term, b.number", params).fetchall()
         return [self._row_to_bill(r) for r in rows]
 

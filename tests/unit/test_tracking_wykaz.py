@@ -1,5 +1,6 @@
 """Following a plan in the register: what is told, and what is only stored."""
 
+from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import PublicationKind
 from tests.harness import WYKAZ, World, wykaz_entry
 
@@ -71,3 +72,32 @@ def test_an_entry_that_left_the_register_is_left_as_it_was() -> None:
 
     assert (report.updates, report.errors) == (0, [])
     assert w.bill(WYKAZ).wykaz is not None
+
+
+def test_a_row_that_left_the_register_is_told_as_a_withdrawal() -> None:
+    """The register is the only source that says the government dropped a project, and deleting
+    the row says it as plainly as `Wycofany` does."""
+    w = _followed()
+    w.wykaz.entries_by_number.pop(wykaz_entry().number)
+    w.wykaz.put(wykaz_entry(number="UD999", title="Projekt ustawy o czymś innym"))
+
+    report = w.run()
+
+    assert report.updates == 1
+    bill, change, _ = w.publisher.updates[0]
+    assert change.closure_detected
+    text = MessageFormatter("ru").status_update(bill, change).text
+    assert "Правительство отказалось от проекта" in text
+
+
+def test_the_government_adopting_the_project_is_posted() -> None:
+    w = _followed()
+    w.wykaz.put(wykaz_entry(status="Zrealizowany"))
+
+    report = w.run()
+
+    assert report.updates == 1
+    bill, change, _ = w.publisher.updates[0]
+    assert not change.closure_detected
+    text = MessageFormatter("ru").status_update(bill, change).text
+    assert "Правительство приняло проект" in text

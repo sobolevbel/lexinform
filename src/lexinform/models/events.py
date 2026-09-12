@@ -15,9 +15,9 @@ from lexinform.models.rcl import RCL_STAGE_TYPE
 from lexinform.models.sejm import Stage, flatten_stages, second_reading_sent_back
 
 # Nodes that only frame other events. A `SejmReading` is decided case by case (see below).
-SERVICE_STAGE_TYPES = frozenset(
-    {"Start", "ReadingReferral", "Reading", "CommitteeWork", "ToPresident", "End"}
-)
+# "Ustawę przekazano Prezydentowi" is not a frame node: it starts the 21 days of art. 122,
+# which is the reader's last window.
+SERVICE_STAGE_TYPES = frozenset({"Start", "ReadingReferral", "Reading", "CommitteeWork", "End"})
 # Regulamin Sejmu art. 70b: applications to a public hearing at least 10 days before it.
 HEARING_APPLICATION_DAYS = 10
 
@@ -69,6 +69,8 @@ def update_event(change: StatusChange, bill: Bill) -> str:
         return "passed" if change.passed else closure_event(bill)
     if change.content_changed:
         return "text_changed"
+    if bill.wykaz is not None and bill.wykaz.is_adopted:
+        return "wykaz_adopted"
     return "update"
 
 
