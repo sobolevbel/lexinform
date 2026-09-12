@@ -300,8 +300,11 @@ class MessageFormatter:
         if a.affected_groups:
             groups = ", ".join(g.strip() for g in a.affected_groups)
             details.append(self._field(ICON["affected"], lb.affected, esc(groups)))
-        effective = a.effective_date.strip() if a.effective_date else lb.effective_date_unknown
-        details.append(self._field(ICON["effective"], lb.effective_date, esc(effective)))
+        # Not on a plan's card: two blocks above it says there is no text yet, and a vacatio
+        # legis can only be quoted from one — "не указано" there reads as a fact about the bill.
+        if bill.wykaz is None:
+            effective = a.effective_date.strip() if a.effective_date else lb.effective_date_unknown
+            details.append(self._field(ICON["effective"], lb.effective_date, esc(effective)))
         consultation = self._consultation_line(bill, today)
         if consultation:
             details.append(consultation)

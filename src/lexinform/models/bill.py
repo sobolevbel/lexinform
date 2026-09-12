@@ -234,8 +234,10 @@ PHASE_STEP = {
     "in_force_unknown": "in_force",
 }
 # How long a step may take before saying "usually N weeks" contradicts the dates on the same
-# card. The numbers are the upper end of `Labels.typical_durations`, which must say the same in
-# words; a step not listed here is given the default.
+# card. Deliberately two to three times the upper end of `Labels.typical_durations` (90 days
+# against "2–6 недель" for a first reading): a step that runs a fortnight over its average is
+# still ordinary, and "без движения уже 7 нед." said of it would cry wolf. A step not listed
+# here is given the default.
 PHASE_PATIENCE = {
     "rcl_to_sejm": 30,
     "wykaz_to_rcl": 60,

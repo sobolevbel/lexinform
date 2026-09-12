@@ -93,7 +93,7 @@ class Labels:
     tag_consultation_results: str  # the opinions received, once the window has shut
     tag_term: str  # "#<tag_term><term number>": the Sejm term (kadencja) the bill belongs to
     tag_ukraine: str  # bills about citizens of Ukraine: the channel's largest audience
-    consultation_link: str  # the Sejm page of a bill under consultation (it carries no form)
+    consultation_link: str  # the Sejm page of a consulted bill: the form and, later, the opinions
     consultation_page: str  # the same page, named neutrally: the consultation is over
     action_now: str
     action_senate: str
@@ -379,13 +379,15 @@ RU = Labels(
         " лицо подаёт от своего имени (ст. 7 ustawy o działalności lobbingowej). Зачем: в"
         " заявлении вы пишете, какой интерес защищаете и какого решения добиваетесь, — и оно"
         " попадает в BIP к документам проекта ещё до того, как текст написан, то есть когда его"
-        " проще всего изменить; кроме того, подавший вправе участвовать в публичном слушании"
-        " проекта в Сейме, если оно будет назначено"
+        " проще всего изменить; кроме того, подавший получает право участвовать в публичном"
+        " слушании проекта в Сейме — но заявиться на сами слушания нужно отдельно, не позднее"
+        " чем за 10 дней до них"
     ),
     action_rcl_interest=(
-        "подать в {organ} zgłoszenie zainteresowania pracami nad projektem — это может любой,"
-        " и подавший вправе участвовать в публичном слушании в Сейме (ст. 7 и 8 ust. 2"
-        " ustawy o działalności lobbingowej)"
+        "подать в {organ} zgłoszenie zainteresowania pracami nad projektem — это может любой, и"
+        " подавший получает право участвовать в публичном слушании в Сейме, если оно будет"
+        " назначено (ст. 7 и 8 ust. 2 ustawy o działalności lobbingowej; заявка на сами слушания"
+        " подаётся отдельно, не позднее чем за 10 дней до них)"
     ),
     link_wykaz_entry="Запись в плане работ",
     tag_wykaz="wykazRM",
@@ -404,8 +406,9 @@ RU = Labels(
     hearing_apply_until="заявки на участие до",
     hearing_applications_closed="приём заявок на участие закрыт",
     hearing_hint=(
-        "заявку подаёт любой желающий через систему Сейма (формуляр на странице комиссии);"
-        " каждый заявитель получает слово"
+        "заявить участие может любой — заявки подаются в Сейм не позднее чем за 10 дней до"
+        " слушаний (рег. Сейма, ст. 70b); если места в зале не хватает, участников ограничивают,"
+        " и решает порядок подачи — поэтому заявку стоит подать сразу"
     ),
     tag_hearing="слушания",
     senate_deadline_header="Закон в Сенате",
@@ -635,6 +638,15 @@ RU = Labels(
         "wykaz_adopted": (
             "пока ничего — правительство приняло проект, ждём внесения в Сейм и номера druku"
         ),
+        "senate": (
+            "направить мнение в профильную комиссию Сената — она рассматривает закон"
+            " в ближайшие дни после голосования в Сейме"
+        ),
+        "wykaz": "пока ничего — ждём публикации проекта на RCL, тогда откроются консультации",
+        "rcl_consultation": "пока ничего — консультации по проекту уже закрыты",
+        "rcl_opinions": "пока ничего — проект проходит согласования внутри правительства",
+        "rcl_committees": "пока ничего — проект в комитетах Совета министров",
+        "rcl_council": "пока ничего — проект ждёт принятия Радой министров",
         "rcl_to_sejm": "пока ничего — ждём номер druku, затем I чтение и комиссия",
     },
     path_steps={
@@ -876,12 +888,14 @@ EN = Labels(
         " What it is for: you state the interest you want to protect and the solution you will"
         " seek, and it goes into the BIP file of the project before the text is written, when it"
         " is easiest to change; it also entitles you to take part in the Sejm's public hearing"
-        " of the bill, should one be held"
+        " of the bill — but the hearing itself is applied for separately, no later than 10 days"
+        " before it"
     ),
     action_rcl_interest=(
-        "file a zgłoszenie zainteresowania pracami nad projektem with {organ} — anyone may,"
-        " and whoever does may take part in the public hearing in the Sejm (art. 7 and"
-        " 8 ust. 2 of the lobbying act)"
+        "file a zgłoszenie zainteresowania pracami nad projektem with {organ} — anyone may, and"
+        " whoever does may take part in the public hearing in the Sejm should one be held"
+        " (art. 7 and 8 ust. 2 of the lobbying act; the hearing itself is applied for"
+        " separately, no later than 10 days before it)"
     ),
     link_wykaz_entry="Register entry",
     tag_wykaz="wykazRM",
@@ -900,8 +914,9 @@ EN = Labels(
     hearing_apply_until="applications until",
     hearing_applications_closed="applications are closed",
     hearing_hint=(
-        "anyone may apply through the Sejm's system (form on the committee page);"
-        " every applicant gets to speak"
+        "anyone may apply, and the application goes to the Sejm no later than 10 days before the"
+        " hearing (Regulamin Sejmu art. 70b); if the room cannot hold everyone, participation is"
+        " capped in the order applications arrived — so it is worth applying at once"
     ),
     tag_hearing="hearing",
     senate_deadline_header="The act is with the Senate",
@@ -1128,6 +1143,15 @@ EN = Labels(
         "in_force_unknown": "nothing yet — the act is passed, the entry-into-force date is unknown",
         "veto": "nothing yet — the Sejm decides",
         "tribunal": "nothing yet — the Constitutional Tribunal decides",
+        "senate": (
+            "send an opinion to the competent Senate committee — it takes the act within days"
+            " of the Sejm's vote"
+        ),
+        "wykaz": "nothing yet — waiting for the draft on RCL, which opens the consultation",
+        "rcl_consultation": "nothing yet — the consultation on this draft has closed",
+        "rcl_opinions": "nothing yet — the draft is being agreed inside the government",
+        "rcl_committees": "nothing yet — the draft is with the Council of Ministers' committees",
+        "rcl_council": "nothing yet — the draft awaits adoption by the Council of Ministers",
         "wykaz_to_rcl": (
             "nothing yet — waiting for the draft on RCL, which opens the consultation"
         ),

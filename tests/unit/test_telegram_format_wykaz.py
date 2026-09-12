@@ -136,3 +136,12 @@ def test_a_withdrawal_is_not_told_as_a_rejection_by_the_sejm() -> None:
     assert_telegram_html(text)
     assert "Правительство отказалось от проекта" in text
     assert "Сейм" not in text.split("#")[0].split("Что дальше")[0].replace("в Сейме", "")
+
+
+def test_a_plan_card_does_not_claim_an_entry_into_force() -> None:
+    """Two blocks above, the card says there is no text yet; «Вступление в силу: не указано»
+    reads as a fact about the bill rather than the absence of one."""
+    text = MessageFormatter("ru").new_bill(wykaz_bill(), None, today=TODAY).text
+
+    assert "текста проекта ещё нет" in text
+    assert "Вступление в силу" not in text
