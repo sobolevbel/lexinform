@@ -95,9 +95,6 @@ class Labels:
     tag_ukraine: str  # bills about citizens of Ukraine: the channel's largest audience
     # Verified on 2026-09-13, RPW/29075/2026: the Sejm page carries "Link do ankiety: Ankieta"
     # and, once the window shuts, "Liczba ankiet" — the opinion goes in as that survey.
-    # Submitting needs an account: an unauthenticated request to the survey is redirected to
-    # logowanie.sejm.gov.pl (verified 2026-09-13).
-    consultation_account: str
     consultation_link: str
     consultation_page: str  # the same page, named neutrally: the consultation is over
     action_now: str
@@ -315,7 +312,6 @@ RU = Labels(
     tag_consultation_results="мнениявконсультациях",
     tag_term="kadencja",
     tag_ukraine="Украина",
-    consultation_account="требуется вход",
     consultation_link="анкета на сайте Сейма",
     consultation_page="страница консультаций на сайте Сейма",
     action_now="Что можно сделать сейчас",
@@ -827,7 +823,6 @@ EN = Labels(
     tag_consultation_results="consultationopinions",
     tag_term="term",
     tag_ukraine="Ukraine",
-    consultation_account="sign-in required",
     consultation_link="survey form on the Sejm site",
     consultation_page="consultation page on the Sejm website",
     action_now="What you can do now",

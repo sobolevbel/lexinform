@@ -335,10 +335,11 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   `www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=KONSULTOWANY_PROJEKT&NrProjektu=RPW/29075/2026`
   (browser only: www.sejm.gov.pl answers curl and fetchers with an F5 captcha). That page only
   *links* the form: the opinion is a survey (ankieta) at `opiniowanie.sejm.gov.pl/RPW-29075-2026`
-  — the RPW number with dashes — and **submitting needs a Sejm account** (unauthenticated
-  requests redirect to `logowanie.sejm.gov.pl`, verified 2026-09-13, and the pattern holds for
-  every RPW tried). `models.consultation_survey_url` builds it; the card and the reminder link it
-  directly and say a sign-in is needed. Only deputies',
+  — the RPW number with dashes (verified 2026-09-13; the pattern holds for every RPW tried).
+  `models.consultation_survey_url` builds it, and the card and the reminder link it directly
+  rather than the page it hangs on. Sending the survey means signing in (it redirects to
+  `logowanie.sejm.gov.pl`), but Profil Zaufany is one of the ways in and the readers use it:
+  decided 2026-09-13 that the messages say nothing about it. Only deputies',
   president's, Senate, committee and citizens' bills have Sejm consultations; government bills
   (541 of 1279 in term 10) were consulted on RCL before submission and never have them.
 - Sittings: `/committees/{code}/sittings` items have `num`, `date`, `startDateTime`, `room`,

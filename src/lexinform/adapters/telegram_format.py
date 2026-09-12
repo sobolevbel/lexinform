@@ -1181,8 +1181,7 @@ class MessageFormatter:
             # The survey is the thing to fill in; the project page only links to it.
             form = window.survey_url or window.form_url
             label = sejm_label or lb.consultation_link
-            where = link(form, label) if form else esc(lb.consultation_hint)
-            return f"{where} ({esc(lb.consultation_account)})"
+            return link(form, label) if form else esc(lb.consultation_hint)
         parts: list[str] = []
         if window.email:
             parts.append(f"{esc(lb.consultation_email)} {esc(window.email)}")
@@ -1395,8 +1394,8 @@ class MessageFormatter:
                 else esc(lb.action_consultation_page)
             )
             actions.append(
-                f"{esc(lb.action_send_opinion)} {where} ({esc(lb.consultation_account)}) "
-                f"{esc(lb.consultation_until)} {self.fmt_date(window.end)}"
+                f"{esc(lb.action_send_opinion)} {where} {esc(lb.consultation_until)} "
+                f"{self.fmt_date(window.end)}"
             )
         phase = next_phase(bill, today=today)
         if phase is not None and phase.key in COMMITTEE_PHASES:

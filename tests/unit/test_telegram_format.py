@@ -344,7 +344,7 @@ def test_a_consultation_that_is_over_says_so_and_stops_inviting_opinions(
     once_closed = formatter.new_bill(bill, None, today=dt.date(2026, 9, 11)).text
 
     assert "<b>Общественные консультации:</b> 24.01.2025 — 23.02.2025" in while_open
-    assert ">анкета на сайте Сейма</a> (требуется вход)" in while_open
+    assert ">анкета на сайте Сейма</a>" in while_open
     assert "<b>Общественные консультации:</b> завершились 23.02.2025" in once_closed
     assert "страница консультаций" in once_closed  # the page stays, the invitation goes
     assert "анкета на сайте Сейма" not in once_closed
@@ -597,16 +597,10 @@ def test_card_links_the_consultation_form_and_names_the_next_step(
     text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
 
     assert_telegram_html(text)
-    assert (
-        f'31.08.2026 — 30.09.2026 · <a href="{SURVEY}">анкета на сайте Сейма</a> (требуется вход)'
-        in text
-    )
+    assert f'31.08.2026 — 30.09.2026 · <a href="{SURVEY}">анкета на сайте Сейма</a>' in text
     assert "⏭ <b>Что дальше:</b> I чтение в комиссии — ASW" in text  # name unknown: the code
     action = next(line for line in text.splitlines() if line.startswith("👉"))
-    assert (
-        f'заполнить анкету (ankieta) <a href="{SURVEY}">на сайте Сейма</a> (требуется вход)'
-        in action
-    )
+    assert f'заполнить анкету (ankieta) <a href="{SURVEY}">на сайте Сейма</a> до' in action
     assert "до 30.09.2026" in action
     assert f"{COMMITTEE_PAGE}>ASW</a>" in action
     assert "до заседания" not in action  # nothing scheduled yet
@@ -863,10 +857,7 @@ def test_consultation_deadline_reminder(process_3039: ProcessDetail) -> None:
     assert_telegram_html(ahead)
     assert "Консультации заканчиваются — druk nr 3039" in ahead
     assert "до 30.09.2026 · осталось дней: 2" in ahead
-    assert (
-        f'👉 <a href="{SURVEY}">мнение подаётся анкетой (ankieta) на сайте Сейма</a> (требуется вход)'
-        in ahead
-    )
+    assert f'👉 <a href="{SURVEY}">мнение подаётся анкетой (ankieta) на сайте Сейма</a>' in ahead
     assert (
         f'🔗 <a href="{SURVEY}">анкета на сайте Сейма</a> | <a href="{CONSULTATION_PAGE}">' in ahead
     )
