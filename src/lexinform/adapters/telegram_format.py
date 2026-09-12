@@ -439,9 +439,11 @@ class MessageFormatter:
             + [self._thread_tags(bill)]
         )
 
+        # The new stages are what the post is for, and stages held since the last one are listed
+        # here and released against it: shrunk away, they would be marked told and never told.
         text = self._assemble(
-            [header, badge],
-            flexible=[stages_block, amendments_block, changes_block, summary_block],
+            [header, badge, stages_block],
+            flexible=[amendments_block, changes_block, summary_block],
             tail=[
                 closure,
                 consultation,

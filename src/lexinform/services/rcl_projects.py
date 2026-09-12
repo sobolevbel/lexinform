@@ -90,10 +90,15 @@ class RclProjectReader:
             return RclConsultation(letter_url=url)
         info = parse_letter(text)
         published = letter.created or stage.modified or project.modified
+        deadline = deadline_of(info, published=published)
+        if deadline is None:
+            # Without it the card can only say "срок в письме" and no reminder is ever due, so
+            # the operator's channel is told which letter the parser could not read.
+            log.warning("consultation letter %s gives no deadline this run can use", url)
         return RclConsultation(
             letter_url=url,
             letter_date=info.letter_date,
             days=info.days,
-            deadline=deadline_of(info, published=published),
+            deadline=deadline,
             email=info.email,
         )

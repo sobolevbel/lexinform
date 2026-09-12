@@ -261,16 +261,21 @@ class StatusTrackingService:
                 # process, and the change row is unique, so a suppressed closure is never
                 # detected again.
                 self._acts.check(bill, detail, result, publish=publish)
-                if change is not None and publish:
+                if change is not None:
                     announced = self._poster.posted(bill, PublicationKind.ACT_PUBLISHED)
-                    if has_news(change, act_published=announced):
+                    if publish and has_news(change, act_published=announced):
                         result.count_post(self._poster.status_update(bill, change))
                     else:
+                        # Held, not dropped: with publishing off the change row already exists
+                        # and is unique, so nothing would ever detect these stages again.
                         self._poster.hold(bill, change)
                         result.held += 1
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 break
+            except Exception as exc:
+                result.failed += 1
+                log.exception("posting for druk %s failed: %s", bill.number, exc)
         if result.fatal_error is None:
             self._cards.refresh(everyone, result, publish=publish)
         if result.fatal_error is None and publish:

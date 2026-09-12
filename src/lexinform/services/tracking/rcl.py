@@ -90,6 +90,8 @@ class RclWatcher:
                     result.changed += 1
                     if publish:
                         result.count_post(self._poster.status_update(fresh, change))
+                    else:
+                        self._poster.hold(fresh, change)
                 if results_due and self._consultations is not None:
                     self._consultations.results_published(fresh, result, publish=publish)
             except ServiceUnavailableError as exc:

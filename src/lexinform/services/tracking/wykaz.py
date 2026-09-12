@@ -194,6 +194,8 @@ class WykazWatcher:
             try:
                 if publish:
                     result.count_post(self._poster.status_update(fresh, change))
+                else:
+                    self._poster.hold(fresh, change)
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return False

@@ -70,8 +70,11 @@ class PrePrintReconciler:
                 for listed in self._gateway.iter_bills(term, received_from=earliest):
                     latest[(term, listed.number)] = listed
             except ServiceUnavailableError as exc:
-                result.abort(exc)
-                return False
+                # /bills being down says nothing about the rest of the run: the Dziennik Ustaw
+                # notices, the reminders and the stage updates below are all still due.
+                result.partial_errors.append(f"/bills: {exc.describe()}")
+                log.error("pre-print reconciliation stopped: %s", exc.describe())
+                return True
         for bill in pending + awaiting:
             key = bill.submission.number if bill.submission else bill.number
             sub = latest.get((bill.term, key))

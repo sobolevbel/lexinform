@@ -63,8 +63,9 @@ class AgendaWatcher:
                 committee_sittings, failed_codes = self._committee_sittings(term, of_term, today)
                 sejm_sittings = self._sejm_sittings(term, today)
             except ServiceUnavailableError as exc:
-                result.abort(exc)
-                return False
+                result.partial_errors.append(f"sittings: {exc.describe()}")
+                log.error("agenda watch stopped for term %d: %s", term, exc.describe())
+                continue
             if not self._check_term(
                 of_term,
                 committee_sittings,

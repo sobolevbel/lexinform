@@ -133,7 +133,9 @@ def test_failed_committee_listing_keeps_the_known_items() -> None:
     assert _refs(w) == [SITTING_REF]
 
 
-def test_sejm_api_outage_aborts_the_phase_and_loses_nothing() -> None:
+def test_sejm_api_outage_stops_only_the_agenda_watch_and_loses_nothing() -> None:
+    """The sittings being unreachable says nothing about the Dziennik Ustaw notices, the
+    reminders and the stage updates that the rest of the phase still owes its readers."""
     w = _referred_bill()
     w.gateway.committee_sittings["ASW"] = (_sitting(),)
     w.run()
@@ -142,7 +144,7 @@ def test_sejm_api_outage_aborts_the_phase_and_loses_nothing() -> None:
 
     report = w.run()
 
-    assert any(e.startswith("tracking: Sejm API unavailable") for e in report.errors)
+    assert any("sittings: Sejm API unavailable" in e for e in report.errors)
     assert _refs(w) == [SITTING_REF]
     assert len(w.publisher.agendas) == 1
 

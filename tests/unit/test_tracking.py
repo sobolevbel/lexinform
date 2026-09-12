@@ -581,3 +581,27 @@ def test_passed_bills_waiting_for_their_act_are_always_checked() -> None:
 
     assert report.tracked == 1
     assert "get_process:3039" in w.gateway.calls
+
+
+def test_a_no_publish_run_does_not_swallow_the_stages_it_did_not_post() -> None:
+    """The change row is written and unique, so without a `skipped` row nothing would ever
+    detect these stages again."""
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=START)
+    w.run()
+    w.clock.advance(days=1)
+    w.set_stages("3039", COMMITTEE_STAGES)
+    w.touch("3039", dt.datetime(2026, 9, 8, 9, 0))
+
+    silent = w.run(publish=False)
+    posted_silently = list(w.publisher.updates)
+    w.clock.advance(days=1)
+    w.set_stages("3039", (*COMMITTEE_STAGES, Stage(stage_type="Voting", stage_name="Głosowanie")))
+    w.touch("3039", dt.datetime(2026, 9, 9, 9, 0))
+    told = w.run()
+
+    assert (silent.updates, posted_silently) == (1, [])
+    assert told.updates == 1
+    _, change, _ = w.publisher.updates[0]
+    kinds = {st.stage_type for st in change.new_stages}
+    assert "Voting" in kinds and "Referral" in kinds  # the held stages ride along
