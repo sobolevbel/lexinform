@@ -6,7 +6,7 @@ import pytest
 
 from lexinform.models import BillStatus, Category, DocumentType, PublicationStatus, Stage
 from tests.fakes import FakeTextExtractor, make_analysis
-from tests.harness import COMMITTEE_STAGES, World, summary
+from tests.harness import COMMITTEE_STAGES, World, submission, summary
 
 FOREIGNERS = "Projekt ustawy o cudzoziemcach"
 # What the Sejm's tree looks like once it has adopted a bill: the third reading decided it and
@@ -328,3 +328,23 @@ def test_parallel_workers_produce_the_same_result_as_a_plain_loop() -> None:
     assert (first["analyzed"], first["published"], first["text_prefilter_hits"]) == (4, 4, 2)
     assert (second["tracked"], second["updates"]) == (4, 4)
     assert published == ["3039", "3040", "4000", "4001"]
+
+
+def test_a_second_run_over_a_world_that_did_not_move_says_nothing() -> None:
+    """Every source at once: a druk, a pre-print entry, an RCL project and a plan of the wykaz.
+    Nothing changed between the runs, so nothing may reach the channel a second time."""
+    w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT))
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.gateway.submissions.append(submission())
+    w.add_rcl_project()
+    w.add_wykaz_entry()
+    first = w.run()
+    posted = w.publisher.snapshot()
+
+    for _ in range(2):
+        w.clock.advance(hours=11)
+        again = w.run()
+        assert (again.published, again.updates, again.cards_refreshed) == (0, 0, 0)
+        assert w.publisher.snapshot() == posted
+
+    assert first.published == 4

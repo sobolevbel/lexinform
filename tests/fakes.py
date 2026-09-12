@@ -457,6 +457,21 @@ class FakePublisher:
         self._next_id += 1
         return FakePublishResult(message_id=self._next_id)
 
+    def snapshot(self) -> dict[str, list[str]]:
+        """Everything posted so far, as the channel would show it: kind -> bill numbers."""
+        return {
+            "new_bills": [b.number for b, _ in self.new_bills],
+            "edits": [b.number for b, _ in self.edits],
+            "joint_bills": [b.number for b, _, _ in self.joint_bills],
+            "updates": [b.number for b, _, _ in self.updates],
+            "acts": [b.number for b, _ in self.acts],
+            "in_force": [b.number for b, _ in self.in_force],
+            "consultations": [b.number for b, _, _ in self.consultations],
+            "consultation_results": [b.number for b, _ in self.consultation_results],
+            "agendas": [b.number for b, _, _ in self.agendas],
+            "hearings": [b.number for b, _, _, _ in self.hearings],
+        }
+
     def publish_new_bill(self, bill: Bill, print_info: PrintInfo | None) -> FakePublishResult:
         result = self._send(bill)
         self.new_bills.append((bill, print_info))
