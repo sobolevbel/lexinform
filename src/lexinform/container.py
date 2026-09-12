@@ -17,7 +17,6 @@ from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtr
 from lexinform.adapters.github_inbox import GitHubInboxWriter
 from lexinform.adapters.inbox_files import FileInbox
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
-from lexinform.adapters.pdf_render import PdfPageRenderer
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.rcl_html import RclClient
 from lexinform.adapters.sejm_api import SejmApiClient
@@ -40,7 +39,6 @@ from lexinform.ports import (
     Downloader,
     LlmAnalyzer,
     OperatorReplier,
-    PageRenderer,
     Publisher,
     RclGateway,
     RunNotifier,
@@ -78,8 +76,8 @@ class Container:
 
     `LOCAL_TZ` is the readers' and the Sejm's day, whatever zone the runner is in. `rcl` and
     `wykaz` are None when their source is switched off in the settings, and the four `*_override`
-    fields, `llm`, `extractor` and `renderer` are what a test or a dry run supplies instead of
-    the real adapters.
+    fields, `llm` and `extractor` are what a test or a dry run supplies instead of the real
+    adapters.
     """
 
     settings: Settings
@@ -93,7 +91,6 @@ class Container:
     wykaz: WykazGateway | None = None
     llm: LlmAnalyzer | None = None
     extractor: TextExtractor | None = None
-    renderer: PageRenderer | None = None
     publisher_override: Publisher | None = None
     notifier_override: RunNotifier | None = None
     inbox_override: CommandInbox | None = None
@@ -146,12 +143,7 @@ class Container:
                 DocTextExtractor(),
                 max_member_bytes=max_bytes,
             )
-            self._loader = TextLoader(
-                downloaders,
-                extractor,
-                max_bytes=max_bytes,
-                renderer=self.renderer or PdfPageRenderer(),
-            )
+            self._loader = TextLoader(downloaders, extractor, max_bytes=max_bytes)
         return self._loader
 
     def text_sources(self) -> TextSources:
@@ -196,7 +188,6 @@ class Container:
             anthropic.Anthropic(api_key=self.settings.anthropic_api_key),
             model=self.settings.llm_model,
             triage_model=self.settings.llm_triage_model or None,
-            map_model=self.settings.llm_map_model or None,
             output_language=self.settings.output_language,
             effort=self.settings.llm_effort,
             max_tokens=self.settings.llm_max_tokens,
@@ -223,8 +214,6 @@ class Container:
             max_run_cost_usd=self.settings.max_run_cost_usd,
             triage=self.prefilter if self.settings.llm_triage_model else None,
             triage_min_chars=self.settings.triage_min_chars,
-            scan_map_min_pages=self.settings.scan_map_min_pages,
-            scan_map_page_width=self.settings.scan_map_page_width,
             triage_min_confidence=self.settings.triage_min_confidence,
         )
 

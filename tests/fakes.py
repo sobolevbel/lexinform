@@ -7,7 +7,7 @@ gateway and `outage_on` on the publisher raise the phase-fatal `ServiceUnavailab
 """
 
 import hashlib
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 
@@ -39,9 +39,6 @@ from lexinform.models import (
     DocumentDigest,
     IncomingCommand,
     Mp,
-    PageMap,
-    PageMapContext,
-    PageMapRecord,
     Phase,
     PrintInfo,
     ProcessDetail,
@@ -223,7 +220,7 @@ class FakeTextExtractor:
         self.error = error
         self.by_content = by_content or {}
         self.page_count = page_count
-        self.selections: list[tuple[int, ...]] = []
+        self.selections: list[tuple[int, int]] = []
 
     def extract(self, data: bytes) -> str:
         if self.error is not None:
@@ -233,8 +230,8 @@ class FakeTextExtractor:
     def pages(self, data: bytes) -> int:
         return self.page_count
 
-    def select_pages(self, data: bytes, pages: Sequence[int]) -> bytes:
-        self.selections.append(tuple(pages))
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
+        self.selections.append((first, count))
         return data
 
 
@@ -376,23 +373,10 @@ def make_analysis(
     )
 
 
-class FakePageRenderer:
-    """One tiny image per page, as many as the test says the document has."""
-
-    def __init__(self, pages: int = 4) -> None:
-        self.pages = pages
-        self.calls: list[int] = []
-
-    def render(self, data: bytes, *, max_width: int) -> list[bytes]:
-        self.calls.append(max_width)
-        return [b"\xff\xd8page"] * self.pages
-
-
 class FakeLlm:
     """Answers from a script keyed by bill number; an Exception in the script is raised."""
 
     TRIAGE_MODEL = "fake-triage"
-    MAP_MODEL = "fake-map"
     MODEL = "fake"
     TRIAGE_TOKENS = (10, 5)
     ANALYSIS_TOKENS = (100, 50)
@@ -417,8 +401,6 @@ class FakeLlm:
         self.amendment_contexts: list[AmendmentsContext] = []
         self.supplement_contexts: list[SupplementContext] = []
         self.counted: list[str] = []
-        self.page_maps: list[PageMapContext] = []
-        self.page_map_script: list[str] = []
         self.count_fails = False
 
     def triage(self, ctx: TriageContext) -> TriageRecord:
@@ -434,19 +416,6 @@ class FakeLlm:
             prompt_version=PROMPT_VERSION,
             input_tokens=self.TRIAGE_TOKENS[0],
             output_tokens=self.TRIAGE_TOKENS[1],
-        )
-
-    def map_pages(self, ctx: PageMapContext) -> PageMapRecord:
-        """Labels the pages from a script keyed by the number of pages; by default the first
-        page is the letter, the rest is the bill."""
-        self.page_maps.append(ctx)
-        roles = self.page_map_script or ["cover", *["bill"] * (len(ctx.pages) - 1)]
-        return PageMapRecord(
-            map=PageMap(roles=list(roles)),
-            model=self.MAP_MODEL,
-            prompt_version=PROMPT_VERSION,
-            input_tokens=len(ctx.pages) * 900,
-            output_tokens=20,
         )
 
     def count_input_tokens(self, ctx: BillContext) -> int | None:

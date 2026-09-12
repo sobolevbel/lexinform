@@ -26,7 +26,6 @@ dependencies = [
   "pydantic>=2.7,<3",
   "pydantic-settings>=2.3,<3",
   "pypdf[fonts]>=5,<7",
-  "pypdfium2>=4,<6",
   "typer>=0.12,<1",
 ]
 
@@ -75,7 +74,7 @@ plugins = ["pydantic.mypy"]
 warn_unreachable = true
 
 [[tool.mypy.overrides]]
-module = ["pypdf.*", "pypdfium2.*", "olefile"]  # ship no type information
+module = ["pypdf.*", "olefile"]  # ship no type information
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

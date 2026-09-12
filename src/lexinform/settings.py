@@ -81,24 +81,6 @@ class Settings(BaseSettings):
         default=20_000, description="Shorter texts go straight to the full analysis."
     )
     triage_min_confidence: float = Field(default=0.8, ge=0.0, le=1.0)
-    llm_map_model: str = Field(
-        default="claude-haiku-4-5",
-        description="Sorts the pages of a scan by what they hold, from small images of them, so"
-        " that only the pages worth reading go to the analysis model. Empty falls back to the"
-        " triage model.",
-    )
-    scan_map_min_pages: int = Field(
-        default=12,
-        ge=1,
-        description="A scan shorter than this is read whole: mapping it is a request of its own"
-        " and would cost more than the pages it saves.",
-    )
-    scan_map_page_width: int = Field(
-        default=700,
-        ge=200,
-        description="Pixels across for the images the map is made from: a heading is legible at"
-        " this size and the body is not, which is all the map needs (~900 tokens a page).",
-    )
     max_analysis_cost_usd: float = Field(
         default=2.0,
         ge=0.0,

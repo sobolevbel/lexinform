@@ -15,7 +15,7 @@ import io
 import logging
 import re
 import zipfile
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 from xml.etree import ElementTree as ET
 from zipfile import ZipInfo
 
@@ -53,7 +53,7 @@ class DocxTextExtractor:
         """Word paginates when it renders; the file does not say how many pages it has."""
         return 0
 
-    def select_pages(self, data: bytes, pages: Sequence[int]) -> bytes:
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
         return data
 
     def extract(self, data: bytes) -> str:
@@ -144,7 +144,7 @@ class OdtTextExtractor:
     def pages(self, data: bytes) -> int:
         return 0
 
-    def select_pages(self, data: bytes, pages: Sequence[int]) -> bytes:
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
         return data
 
     def extract(self, data: bytes) -> str:
@@ -256,8 +256,10 @@ class DocumentTextExtractor:
         archive is not a document at all."""
         return self._pdf.pages(data) if self._is_pdf(data) else 0
 
-    def select_pages(self, data: bytes, pages: Sequence[int]) -> bytes:
-        return self._pdf.select_pages(data, pages) if self._is_pdf(data) else data
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
+        return (
+            self._pdf.select_pages(data, first=first, count=count) if self._is_pdf(data) else data
+        )
 
     @staticmethod
     def _is_pdf(data: bytes) -> bool:

@@ -149,36 +149,16 @@ class PageWindow:
 
 
 def scan_page_window(pages: int, *, cover_letter: bool) -> PageWindow:
-    """What to send of a scanned document before anything has read it.
+    """Which pages of a scanned document to put before the model.
 
     The letter that hands the document to the Marshal is one page — in all 15 government prints
     measured on 12 Sept 2026 — and says nothing the model needs, so it goes when the text layer
-    proved it is there. Everything else goes: what is chaff can only be told by looking at the
-    pages, which is `pages_to_keep`'s business.
+    proved it is there. Everything else goes: the documents that reach us as scans are their own
+    substance from the first page to the last (druk 1273's OSR quantifies the affected on page
+    10 of 30), and nothing short of reading them can tell which page is chaff.
     """
     first = 1 if cover_letter and pages > 1 else 0
     return PageWindow(first, pages - first)
-
-
-KEPT_PAGE_ROLES = frozenset({"bill", "justification", "impact", "comparison"})
-"""What a mapped page must be to be sent to the model that reads it: the same choice
-`trim_print` makes over a text. Dropped are `cover` (the letter and the signature page),
-`finance` (the public-finance tables a printed OSR is cut before) and `appendix` (comment
-tables, compliance tables, consultation reports, draft regulations)."""
-
-
-def pages_to_keep(roles: Sequence[str], *, pages: int) -> tuple[int, ...]:
-    """Which pages of a mapped scan to send, 0-based.
-
-    A map of the wrong length describes another document and is not trusted; neither is one that
-    would leave nothing at all. Anything else is: the appendices of a government print are 55 to
-    92% of it, so a map that keeps a tenth of a long document is doing its job, not failing at
-    it. Reading an appendix costs money; not reading the bill costs the reader.
-    """
-    if len(roles) != pages:
-        return tuple(range(pages))
-    kept = tuple(index for index, role in enumerate(roles) if role in KEPT_PAGE_ROLES)
-    return kept or tuple(range(pages))
 
 
 def trim_print(text: str) -> TrimmedText:

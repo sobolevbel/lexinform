@@ -38,7 +38,7 @@ from lexinform.models import (
 )
 from lexinform.models.rcl import StageState
 from lexinform.models.wykaz import BILL_KIND
-from lexinform.ports import PageRenderer, TextExtractor
+from lexinform.ports import TextExtractor
 from lexinform.services.pipeline import RunOptions
 from lexinform.services.terms import TermResolver
 from lexinform.settings import Settings
@@ -46,7 +46,6 @@ from tests.fakes import (
     FakeInbox,
     FakeLlm,
     FakeNotifier,
-    FakePageRenderer,
     FakePublisher,
     FakeRclGateway,
     FakeReplier,
@@ -287,7 +286,6 @@ class World:
         triage_min_chars: int = 100,  # every fake PDF is "long" enough to be triaged
         text_prefilter: bool = True,
         extractor: TextExtractor | None = None,
-        renderer: PageRenderer | None = None,
         workers: int = 1,
         max_bill_cost_usd: float = 0.0,  # the cost guard rails are off unless a test turns them on
         max_run_cost_usd: float = 0.0,
@@ -302,7 +300,6 @@ class World:
         self.inbox = FakeInbox()
         self.replier = FakeReplier()
         self.extractor = extractor or FakeTextExtractor()
-        self.renderer = renderer or FakePageRenderer()
         self.rcl = FakeRclGateway()
         self.wykaz = FakeWykazGateway()
         # The production wiring over the fakes: the settings name the fake hosts (downloads are
@@ -344,7 +341,6 @@ class World:
             wykaz=self.wykaz,
             llm=self.llm,
             extractor=self.extractor,
-            renderer=self.renderer,
             publisher_override=self.publisher,
             notifier_override=self.notifier,
             inbox_override=self.inbox,

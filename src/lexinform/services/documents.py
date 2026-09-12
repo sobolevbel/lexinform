@@ -10,12 +10,12 @@ import hashlib
 import logging
 import threading
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from urllib.parse import urlparse
 
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
 from lexinform.models import ScannedDocument, TextDocument
-from lexinform.ports import Downloader, PageRenderer, TextExtractor
+from lexinform.ports import Downloader, TextExtractor
 from lexinform.sections import PAGE_BREAK, scan_page_window
 
 log = logging.getLogger(__name__)
@@ -41,12 +41,10 @@ class TextLoader:
         extractor: TextExtractor,
         *,
         max_bytes: int,
-        renderer: PageRenderer | None = None,
         cache_size: int = 32,
     ) -> None:
         self._downloaders = dict(downloaders)
         self._extractor = extractor
-        self._renderer = renderer
         self._max_bytes = max_bytes
         self._cache: dict[str, str | None] = {}
         self._cache_size = cache_size
@@ -105,8 +103,7 @@ class TextLoader:
         window = scan_page_window(pages, cover_letter=cover_letter)
         selected = data
         if (window.first, window.count) != (0, pages):
-            kept = range(window.first, window.first + window.count)
-            selected = self._extractor.select_pages(data, kept)
+            selected = self._extractor.select_pages(data, first=window.first, count=window.count)
             log.info("%s: %d of %d pages kept for the model", url, window.count, pages)
         if len(selected) > MAX_SCAN_BYTES or window.count > MAX_SCAN_PAGES:
             log.warning(
@@ -123,27 +120,6 @@ class TextLoader:
             pages=window.count,
             of_pages=pages,
             sha256=hashlib.sha256(data).hexdigest(),
-        )
-
-    def render_scan(self, scan: ScannedDocument, *, max_width: int) -> list[str]:
-        """The pages of a scan as small base64 images, for the model that maps them; empty when
-        there is no renderer or the file cannot be rendered."""
-        if self._renderer is None:
-            return []
-        pages = self._renderer.render(base64.standard_b64decode(scan.data), max_width=max_width)
-        return [base64.standard_b64encode(page).decode("ascii") for page in pages]
-
-    def select_scan_pages(self, scan: ScannedDocument, pages: Sequence[int]) -> ScannedDocument:
-        """The same scan cut down to the pages worth reading; unchanged when they all are."""
-        if len(pages) == scan.pages:
-            return scan
-        data = base64.standard_b64decode(scan.data)
-        selected = self._extractor.select_pages(data, pages)
-        return scan.model_copy(
-            update={
-                "data": base64.standard_b64encode(selected).decode("ascii"),
-                "pages": len(pages),
-            }
         )
 
     def _fetch(self, url: str) -> str | None:

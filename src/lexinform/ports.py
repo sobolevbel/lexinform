@@ -1,6 +1,6 @@
 """Interfaces (typing.Protocol) that services depend on. Adapters implement them."""
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 from datetime import date, datetime
 from typing import Protocol
 
@@ -23,8 +23,6 @@ from lexinform.models import (
     IncomingCommand,
     LocatedText,
     Mp,
-    PageMapContext,
-    PageMapRecord,
     Phase,
     PrintInfo,
     ProcessDetail,
@@ -195,16 +193,9 @@ class TextExtractor(Protocol):
         layer holds nothing — which is what most of what the Sejm publishes is."""
         ...
 
-    def select_pages(self, data: bytes, pages: Sequence[int]) -> bytes:
-        """The same document cut down to the pages named (0-based, in order), so that the pages
-        worth nothing are not paid for. The file unchanged when it has no pages."""
-        ...
-
-
-class PageRenderer(Protocol):
-    def render(self, data: bytes, *, max_width: int) -> list[bytes]:
-        """One image per page of a paged document, in order; empty when it cannot be rendered.
-        Small enough for a model to read the headings and no more."""
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
+        """The same document cut down to `count` pages from `first` (0-based), so that the pages
+        that are worth nothing are not paid for. The file unchanged when it has no pages."""
         ...
 
 
@@ -215,11 +206,6 @@ class LlmAnalyzer(Protocol):
 
     def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:
         """What a set of amendments (Senate, "-A" report) changes in the bill as described."""
-        ...
-
-    def map_pages(self, ctx: PageMapContext) -> PageMapRecord:
-        """What each page of a scanned document holds, so that the pages worth nothing are not
-        sent to the model that reads it. Runs on the cheap model."""
         ...
 
     def count_input_tokens(self, ctx: BillContext) -> int | None:

@@ -2,7 +2,7 @@
 the answers are stored, plus token accounting."""
 
 import datetime as dt
-from typing import Literal, Self
+from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -177,45 +177,6 @@ class ScannedDocument(BaseModel):
         return self.pages < self.of_pages
 
 
-PageRole = Literal["cover", "bill", "justification", "impact", "finance", "comparison", "appendix"]
-"""What one page of a scanned document holds. The vocabulary is `sections.trim_print`'s, in
-pages instead of characters: `cover` is the letter that hands the document over and the page it
-is signed on, `finance` the public-finance tables a printed OSR is cut before, `appendix` the
-comment tables, compliance tables, consultation reports and draft regulations that make up most
-of a government print, and `comparison` the survey of how other countries solved it."""
-
-
-class PageMap(BaseModel):
-    """Structured output of the page map: one role per page, in order."""
-
-    roles: list[PageRole] = Field(
-        description="One entry per page of the document, in the order the pages were given."
-    )
-
-
-class PageMapRecord(BaseModel):
-    """A page map and what it cost; the model that read the pages is a cheap one."""
-
-    map: PageMap
-    model: str
-    prompt_version: str
-    input_tokens: int | None = None
-    output_tokens: int | None = None
-    cache_read_input_tokens: int | None = None
-    cache_creation_input_tokens: int | None = None
-
-
-class PageMapContext(BaseModel):
-    """What the mapping model sees: the pages, small, and what the document is supposed to be."""
-
-    number: str
-    document_title: str
-    source_kind: SourceKind
-    pages: list[str]
-    """One base64 JPEG per page, rendered small: a heading is legible, the body is not, and a
-    heading is all the map needs."""
-
-
 class DocumentDigest(BaseModel):
     """Structured output about a document filed to a print: what it says about the bill that is
     already there, not a new analysis of the bill."""
@@ -278,7 +239,7 @@ class SupplementContext(BaseModel):
     previous_key_changes: list[str] = Field(default_factory=list)
 
 
-UsageRecord = AnalysisRecord | TriageRecord | AmendmentsRecord | SupplementRecord | PageMapRecord
+UsageRecord = AnalysisRecord | TriageRecord | AmendmentsRecord | SupplementRecord
 
 
 def usage_of(record: UsageRecord) -> TokenUsage:

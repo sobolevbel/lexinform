@@ -3,7 +3,6 @@
 import io
 import logging
 import re
-from collections.abc import Sequence
 
 from pypdf import PdfReader, PdfWriter
 
@@ -44,13 +43,13 @@ class PypdfTextExtractor:
             log.warning("pdf not read (%s: %s); no pages", type(exc).__name__, exc)
             return 0
 
-    def select_pages(self, data: bytes, pages: Sequence[int]) -> bytes:
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
         """A new PDF of the chosen pages; the original when it cannot be taken apart."""
         try:
             reader = PdfReader(io.BytesIO(data))
             writer = PdfWriter()
-            for index in pages:
-                writer.add_page(reader.pages[index])
+            for page in reader.pages[first : first + count]:
+                writer.add_page(page)
             out = io.BytesIO()
             writer.write(out)
         except Exception as exc:

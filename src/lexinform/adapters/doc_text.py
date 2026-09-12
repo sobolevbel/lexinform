@@ -17,7 +17,7 @@ empty string with a warning, so such a document is analysed from its metadata, a
 import io
 import logging
 import struct
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator
 
 import olefile
 
@@ -77,7 +77,7 @@ class DocTextExtractor:
     def pages(self, data: bytes) -> int:
         return 0
 
-    def select_pages(self, data: bytes, pages: Sequence[int]) -> bytes:
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
         return data
 
     def extract(self, data: bytes) -> str:

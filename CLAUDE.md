@@ -189,11 +189,17 @@ Invariants worth keeping:
   tokens and $0.008 a page, and `pricing.estimate_scan_cost` guards by that); what is kept of it
   is the file's `sha256`, standing where a text's digest would. The extracted text comes back
   either way, because the letter is the one page of a scanned print that has a text layer and the
-  card's club breakdown is parsed from it. Pages are trimmed like a printed document
-  (`sections.scan_page_window`): the letter's page goes (exactly one page in all 15 government
-  prints measured), and a scanned OSR takes `LEXINFORM_SCAN_PAGE_BUDGET` (16) — its points 1–5
-  took 2–19 pages, a median of 8, and the rest is the public-finance tail `trim_print` drops from
-  a printed OSR. Druk 1273's OSR: 47,268 tokens whole, 25,232 trimmed.
+  card's club breakdown is parsed from it. Of the pages, only the letter's is dropped
+  (`sections.scan_page_window`: exactly one page in all 15 government prints measured, and only
+  when the text layer proved it is there). **Nothing else of a scan is trimmed, and the reason is
+  measured.** A filed OSR is not the government's 13-point form — druk 1273's is the Sejm's own
+  expertise (BEOS), sections I–XI, substantive from the first page, with the count of affected
+  foreigners on page 10 of 30 — so a page budget cuts into the substance. A page map by a cheap
+  model was built and removed on 2026-09-12: it labels the pages well (Haiku over the PDF, 30
+  pages, $0.048), but it keeps 25 of those 30, so the document costs $0.245 mapped against $0.236
+  whole. Mapping pays only where the appendices dominate, and those prints — the government's —
+  carry a text layer and are trimmed by `trim_print` already; what reaches us as a scan is an old
+  deputies' bill of a few dozen pages that is substance throughout.
 - **A document filed to a print is told once, and the bill is what remembers.** The print's
   `additional_prints` say what has been filed; `models.supplement_kind` keeps the government's
   position, the OSR and an opinion with remarks and drops the housekeeping; `bills.supplements_json`

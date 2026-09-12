@@ -202,7 +202,7 @@ def test_the_covering_letter_is_left_out_of_the_pages_sent() -> None:
     assert change.supplements[0].digest is not None
     ctx = w.llm.supplement_contexts[0]
     assert ctx.scan is not None and ctx.scan.pages == 9 and ctx.text == ""
-    assert extractor.selections == [tuple(range(1, 10))]  # nine pages, the letter left behind
+    assert extractor.selections[-1] == (1, 9)
     text = MessageFormatter("ru").status_update(*w.publisher.updates[0][:2]).text
     assert "📄 <b>Позиция правительства по проекту</b>" in text and f'href="{url}"' in text
 
