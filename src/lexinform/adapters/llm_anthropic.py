@@ -27,6 +27,7 @@ from lexinform.models import (
     AnalysisRecord,
     BillContext,
     DocumentDigest,
+    ScannedDocument,
     SupplementContext,
     SupplementRecord,
     Triage,
@@ -85,7 +86,12 @@ class AnthropicAnalyzer:
 
     def analyze(self, ctx: BillContext) -> AnalysisRecord:
         response = self._parse(
-            self._model, self._system, build_user_prompt(ctx), Analysis, thinking=True
+            self._model,
+            self._system,
+            build_user_prompt(ctx),
+            Analysis,
+            thinking=True,
+            scan=ctx.scan,
         )
         analysis = response.parsed_output
         if not isinstance(analysis, Analysis):
@@ -188,6 +194,7 @@ class AnthropicAnalyzer:
             build_supplement_prompt(ctx),
             DocumentDigest,
             thinking=True,
+            scan=ctx.scan,
         )
         digest = response.parsed_output
         if not isinstance(digest, DocumentDigest):
@@ -226,23 +233,39 @@ class AnthropicAnalyzer:
         output_format: type[Any],
         *,
         thinking: bool,
+        scan: ScannedDocument | None = None,
     ) -> _ParsedMessageLike:
         """One structured-output request with the error classification shared by both passes.
 
         The analysis thinks (adaptive thinking, configured effort); the triage is a short
         classification and runs without it, which also keeps smaller models (Haiku 4.5) eligible.
+        A `scan` is the document itself, attached before the prompt so the model reads its pages:
+        that is the only way to read the signed paper the Sejm files as images.
         """
         reasoning: dict[str, Any] = (
             {"thinking": {"type": "adaptive"}, "output_config": {"effort": self._effort}}
             if thinking
             else {}
         )
+        content: list[Any] = []
+        if scan is not None:
+            content.append(
+                {
+                    "type": "document",
+                    "source": {
+                        "type": "base64",
+                        "media_type": scan.media_type,
+                        "data": scan.data,
+                    },
+                }
+            )
+        content.append({"type": "text", "text": user_prompt})
         try:
             response: _ParsedMessageLike = self._client.messages.parse(
                 model=model,
                 max_tokens=self._max_tokens,
                 system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-                messages=[{"role": "user", "content": user_prompt}],
+                messages=[{"role": "user", "content": content}],
                 output_format=output_format,
                 **reasoning,
             )

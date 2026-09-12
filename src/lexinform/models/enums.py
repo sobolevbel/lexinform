@@ -6,7 +6,8 @@ legislacja.rcl.gov.pl (keyed by the RCL project id) and `WYKAZ_PREFIX` for entri
 prac legislacyjnych RM (keyed by their own number, UD408). A bare number is a druk.
 
 `TextSource` says how an analysis was made: the full text of one PDF, the full text of a set of
-documents (RCL: projekt + uzasadnienie + OSR), keyword excerpts (the triage rejected it) or
+documents (RCL: projekt + uzasadnienie + OSR), the pages of a scan read as images (`scan`, for
+the signed paper much of the Sejm publishes), keyword excerpts (the triage rejected it) or
 metadata only. `SourceKind` says which document it read, and `AMENDMENT_SOURCES` are the two that
 carry no bill text but amendments — the Senate's resolution print, and the committee report that
 answers amendments rather than attaching a new text. `SUPPLEMENT_SOURCES` are the documents
@@ -121,8 +122,8 @@ class RunMode(StrEnum):
     DRY_RUN = "dry_run"
 
 
-TextSource = Literal["pdf", "documents", "excerpts", "metadata_only"]
-FULL_TEXT_SOURCES: frozenset[TextSource] = frozenset({"pdf", "documents"})
+TextSource = Literal["pdf", "documents", "scan", "excerpts", "metadata_only"]
+FULL_TEXT_SOURCES: frozenset[TextSource] = frozenset({"pdf", "documents", "scan"})
 SourceKind = Literal[
     "print",
     "committee_report",

@@ -24,11 +24,19 @@ PRICES: dict[str, tuple[float, float]] = {
 CACHE_READ_FACTOR = 0.1
 CACHE_WRITE_FACTOR = 1.25
 CHARS_PER_TOKEN = 2.0
+TOKENS_PER_SCANNED_PAGE = 1_600
+"""A page of a Sejm scan, measured with `count_tokens` on 12 Sept 2026: druk 1273's government
+position 16,157 tokens over 10 pages, its OSR 47,268 over 30, the opinion 1,622 over one."""
 
 
 def estimate_input_cost(chars: int, input_price_per_mtok: float) -> float:
     """What sending `chars` of Polish text costs in input tokens, before the call is made."""
     return chars / CHARS_PER_TOKEN / 1_000_000 * input_price_per_mtok
+
+
+def estimate_scan_cost(pages: int, input_price_per_mtok: float) -> float:
+    """What sending a scanned document of `pages` costs, before the call is made."""
+    return pages * TOKENS_PER_SCANNED_PAGE / 1_000_000 * input_price_per_mtok
 
 
 def price_of(model: str) -> tuple[float, float] | None:

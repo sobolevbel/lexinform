@@ -49,6 +49,13 @@ _ROLE_ORDER: dict[TextRole, int] = {"bill": 0, "justification": 1, "osr": 2}
 class DocxTextExtractor:
     """Paragraphs of `word/document.xml`, tables as tab-separated rows, `\\f` at page breaks."""
 
+    def pages(self, data: bytes) -> int:
+        """Word paginates when it renders; the file does not say how many pages it has."""
+        return 0
+
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
+        return data
+
     def extract(self, data: bytes) -> str:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             xml = archive.read("word/document.xml")
@@ -133,6 +140,12 @@ class _WordMl:
 
 class OdtTextExtractor:
     """Paragraphs and headings of `content.xml`, tables as tab-separated rows."""
+
+    def pages(self, data: bytes) -> int:
+        return 0
+
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
+        return data
 
     def extract(self, data: bytes) -> str:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
@@ -237,6 +250,21 @@ class DocumentTextExtractor:
 
     def extract(self, data: bytes) -> str:
         return self._extract(data, depth=0)
+
+    def pages(self, data: bytes) -> int:
+        """Only a PDF has pages of its own. A Word file paginates when it is rendered, and an
+        archive is not a document at all."""
+        return self._pdf.pages(data) if self._is_pdf(data) else 0
+
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
+        return (
+            self._pdf.select_pages(data, first=first, count=count) if self._is_pdf(data) else data
+        )
+
+    @staticmethod
+    def _is_pdf(data: bytes) -> bool:
+        head = data[:1024]
+        return head.startswith(b"%PDF") or (b"%PDF-" in head and not head.startswith(_ZIP_MAGIC))
 
     def _extract(self, data: bytes, *, depth: int) -> str:
         head = data[:1024]

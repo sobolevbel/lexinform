@@ -140,6 +140,29 @@ def carries_the_document(text: str, *, min_chars: int) -> bool:
     return len(without_cover_letter(text).strip()) >= min_chars
 
 
+@dataclass(frozen=True)
+class PageWindow:
+    """The pages of a scan worth their tokens: `count` pages from `first` (0-based)."""
+
+    first: int
+    count: int
+
+
+def scan_page_window(pages: int, *, cover_letter: bool, budget: int | None) -> PageWindow:
+    """Which pages of a scanned document to put before the model.
+
+    The letter that hands the document to the Marshal is one page — in all 15 government prints
+    measured on 12 Sept 2026 — and says nothing the model needs, so it goes when the text layer
+    proved it is there. A `budget` bounds what follows: a scanned OSR is the 13-point form, whose
+    points 1-5 (problem, solution, affected parties, consultations) took 2 to 19 pages of those
+    prints, a median of 8, while points 6-13 are the public-finance tables `trim_print` drops
+    from a printed OSR. A bill and a government position have no such tail and take no budget.
+    """
+    first = 1 if cover_letter and pages > 1 else 0
+    count = pages - first
+    return PageWindow(first, min(count, budget) if budget else count)
+
+
 def trim_print(text: str) -> TrimmedText:
     """Drop the appendices of a print; unknown layouts (Senate texts, reports) pass unchanged.
 

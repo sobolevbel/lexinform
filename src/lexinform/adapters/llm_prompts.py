@@ -149,6 +149,12 @@ def build_amendments_prompt(ctx: AmendmentsContext) -> str:
     return "\n".join(lines)
 
 
+SCAN_NOTE = (
+    "=== DOKUMENT W ZAŁĄCZENIU (skan; tekstu do odczytania nie ma, przeczytaj strony) ===\n"
+    "[pominięto pismo przewodnie; z formularza OSR pokazano początek]"
+)
+
+
 def supplement_system_prompt(language: str) -> str:
     return SUPPLEMENT_SYSTEM_PROMPT_TEMPLATE.format(
         language=_LANGUAGE_NAMES.get(language.lower(), language)
@@ -173,6 +179,9 @@ def build_supplement_prompt(ctx: SupplementContext) -> str:
     ]
     lines.extend(f"- {change}" for change in ctx.previous_key_changes)
     lines.append("")
+    if ctx.scan is not None:
+        lines.append(SCAN_NOTE)
+        return "\n".join(lines)
     lines.append("=== TEKST DOKUMENTU ===")
     lines.append(ctx.text)
     if ctx.truncated:
@@ -235,6 +244,8 @@ def build_user_prompt(ctx: BillContext) -> str:
     lines.append("")
     if ctx.text_source == "metadata_only":
         lines.append("=== TEKST DRUKU NIEDOSTĘPNY (analiza tylko na podstawie tytułu i opisu) ===")
+    elif ctx.scan is not None:
+        lines.append(SCAN_NOTE)
     else:
         lines.append("=== TEKST DRUKU ===")
         lines.append(ctx.text)

@@ -160,21 +160,24 @@ def test_deputies_bill_gets_its_signatories_resolved_to_clubs() -> None:
     assert w.gateway.calls.count("list_mps") == 1  # the directory is fetched once per process
 
 
-def test_a_print_scanned_but_for_its_letter_is_analysed_from_metadata() -> None:
+def test_a_print_scanned_but_for_its_letter_is_read_as_pages() -> None:
     """Druk 604 is 37 pages of images and one page of text: the letter and the signatures under
-    it. The model is told the text is unavailable rather than handed a covering note as the bill,
-    and the signatures, the one thing the page does carry, are still resolved."""
+    it. The bill itself is only in the images, so the file goes to the model — without its first
+    page, which is the letter — and the signatures on that page are still resolved from the text.
+    """
     cover = DEPUTIES_LETTER.split("Tłoczono z polecenia Marszałka Sejmu")[0]
-    w = World(extractor=FakeTextExtractor(cover))
+    extractor = FakeTextExtractor(cover, page_count=37)
+    w = World(extractor=extractor)
     w.gateway.mps = MPS
     w.add_bill("4200", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
 
     w.run()
 
-    assert w.llm.contexts[0].text_source == "metadata_only"
-    assert w.llm.contexts[0].text == cover  # the prompt shows none of it under that source
+    ctx = w.llm.contexts[0]
+    assert ctx.text_source == "scan" and ctx.scan is not None
+    assert ctx.scan.pages == 36 and extractor.selections == [(1, 36)]
     analysis = w.bill("4200").analysis
-    assert analysis is not None and analysis.text_sha256 is None
+    assert analysis is not None and analysis.text_sha256 == ctx.scan.sha256
     authors = w.bill("4200").authors
     assert authors is not None and authors.clubs == (("KO", 2), ("Lewica", 1))
 

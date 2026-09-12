@@ -4,7 +4,7 @@ import io
 import logging
 import re
 
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
 
 from lexinform.sections import PAGE_BREAK
 
@@ -35,6 +35,29 @@ class PypdfTextExtractor:
             log.warning("pdf not read (%s: %s); no text", type(exc).__name__, exc)
             return ""
         return _normalize_whitespace(PAGE_BREAK.join(pages))
+
+    def pages(self, data: bytes) -> int:
+        try:
+            return len(PdfReader(io.BytesIO(data)).pages)
+        except Exception as exc:
+            log.warning("pdf not read (%s: %s); no pages", type(exc).__name__, exc)
+            return 0
+
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
+        """A new PDF of the chosen pages; the original when it cannot be taken apart."""
+        try:
+            reader = PdfReader(io.BytesIO(data))
+            writer = PdfWriter()
+            for page in reader.pages[first : first + count]:
+                writer.add_page(page)
+            out = io.BytesIO()
+            writer.write(out)
+        except Exception as exc:
+            log.warning(
+                "pdf pages not selected (%s: %s); sending it whole", type(exc).__name__, exc
+            )
+            return data
+        return out.getvalue()
 
 
 def _normalize_whitespace(text: str) -> str:

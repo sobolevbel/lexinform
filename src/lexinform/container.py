@@ -214,6 +214,7 @@ class Container:
             max_run_cost_usd=self.settings.max_run_cost_usd,
             triage=self.prefilter if self.settings.llm_triage_model else None,
             triage_min_chars=self.settings.triage_min_chars,
+            scan_page_budget=self.settings.scan_page_budget,
             triage_min_confidence=self.settings.triage_min_confidence,
         )
 

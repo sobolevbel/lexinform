@@ -9,6 +9,7 @@ from lexinform.sections import (
     TextBudget,
     carries_the_document,
     excerpts,
+    scan_page_window,
     trim_print,
     without_cover_letter,
 )
@@ -171,6 +172,20 @@ def test_the_same_letter_followed_by_the_bill_carries_the_document() -> None:
 
     assert carries_the_document(whole, min_chars=200)
     assert without_cover_letter(whole).lstrip().startswith("Projekt")
+
+
+def test_the_pages_of_a_scan_worth_sending_leave_out_the_letter_and_the_osr_tail() -> None:
+    """Druk 1273's OSR is 30 scanned pages; the 13-point form's points 1-5 took 2 to 19 pages of
+    the prints measured, and the rest is the public-finance tables a printed OSR loses too."""
+    position = scan_page_window(10, cover_letter=True, budget=None)
+    osr = scan_page_window(30, cover_letter=True, budget=16)
+    short = scan_page_window(4, cover_letter=False, budget=16)
+    single = scan_page_window(1, cover_letter=True, budget=None)
+
+    assert (position.first, position.count) == (1, 9)
+    assert (osr.first, osr.count) == (1, 16)
+    assert (short.first, short.count) == (0, 4)
+    assert (single.first, single.count) == (0, 1)  # nothing else is in there to read
 
 
 def test_a_document_with_no_covering_letter_is_its_own_first_page() -> None:

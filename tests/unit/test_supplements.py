@@ -183,11 +183,13 @@ def test_a_document_over_the_cost_limit_is_told_without_a_digest() -> None:
     assert "📄 <b>Оценка последствий (OSR)</b>" in text and f'href="{url}"' in text
 
 
-def test_a_filed_document_that_is_only_its_covering_letter_is_not_digested() -> None:
-    """Of 66 documents filed to prints, 11 carry the Prime Minister's letter and nothing else
-    (term 10, 12 Sept 2026); it names the bill and says who will present the position, never
-    what the position is."""
-    w = World(extractor=FakeTextExtractor(by_content={b"%PDF-filed": PM_LETTER}))
+def test_the_covering_letter_is_left_out_of_the_pages_sent() -> None:
+    """Of 66 documents filed to prints, 55 have no text layer and 11 carry the Prime Minister's
+    letter and nothing else (term 10, 12 Sept 2026). The letter names the bill and says who will
+    present the position, never what it is — so the document is read as pages, without that one.
+    """
+    extractor = FakeTextExtractor(by_content={b"%PDF-filed": PM_LETTER}, page_count=10)
+    w = World(extractor=extractor)
     w.add_bill("1273", TITLE)
     w.run()
     url = w.file_to_print("1273", GOVERNMENT_POSITION.replace("3039", "1273"))
@@ -197,8 +199,10 @@ def test_a_filed_document_that_is_only_its_covering_letter_is_not_digested() -> 
 
     assert report.updates == 1
     _, change, _ = w.publisher.updates[0]
-    assert change.supplements[0].digest is None
-    assert w.llm.supplement_contexts == []
+    assert change.supplements[0].digest is not None
+    ctx = w.llm.supplement_contexts[0]
+    assert ctx.scan is not None and ctx.scan.pages == 9 and ctx.text == ""
+    assert extractor.selections[-1] == (1, 9)
     text = MessageFormatter("ru").status_update(*w.publisher.updates[0][:2]).text
     assert "📄 <b>Позиция правительства по проекту</b>" in text and f'href="{url}"' in text
 

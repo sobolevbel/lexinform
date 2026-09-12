@@ -214,15 +214,25 @@ class FakeTextExtractor:
         *,
         error: Exception | None = None,
         by_content: dict[bytes, str] | None = None,
+        page_count: int = 4,
     ) -> None:
         self.text = text
         self.error = error
         self.by_content = by_content or {}
+        self.page_count = page_count
+        self.selections: list[tuple[int, int]] = []
 
     def extract(self, data: bytes) -> str:
         if self.error is not None:
             raise self.error
         return self.by_content.get(data, self.text)
+
+    def pages(self, data: bytes) -> int:
+        return self.page_count
+
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
+        self.selections.append((first, count))
+        return data
 
 
 @dataclass

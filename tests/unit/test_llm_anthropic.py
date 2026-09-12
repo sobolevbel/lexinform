@@ -17,6 +17,7 @@ from lexinform.models import (
     Analysis,
     ApplicantType,
     BillContext,
+    ScannedDocument,
     Triage,
     TriageContext,
 )
@@ -63,6 +64,16 @@ def _ctx(**overrides: Any) -> BillContext:
     return BillContext(**fields)
 
 
+def _prompt_of(call: dict[str, Any]) -> str:
+    """The text block of the one user message; a scan rides in front of it as a document."""
+    blocks = call["messages"][0]["content"]
+    return str(next(block["text"] for block in blocks if block["type"] == "text"))
+
+
+def _documents_of(call: dict[str, Any]) -> list[dict[str, Any]]:
+    return [b for b in call["messages"][0]["content"] if b["type"] == "document"]
+
+
 def _api_error(cls: type[anthropic.APIStatusError], message: str) -> Exception:
     response = httpx.Response(400, request=httpx.Request("POST", "https://api.test/v1/messages"))
     return cls(message, response=response, body=None)
@@ -91,13 +102,35 @@ def test_analysis_request_thinks_caches_the_system_prompt_and_records_usage() ->
     }
     assert call["system"][0]["cache_control"] == {"type": "ephemeral"}
     assert "Russian" in call["system"][0]["text"]
-    assert "Druk nr 3039" in call["messages"][0]["content"]
+    assert "Druk nr 3039" in _prompt_of(call) and _documents_of(call) == []
     assert record.prompt_version == PROMPT_VERSION
     assert (record.input_tokens, record.output_tokens, record.cache_read_input_tokens) == (
         1200,
         300,
         1000,
     )
+
+
+def test_a_scanned_print_is_attached_as_a_document_before_the_prompt() -> None:
+    """Nothing else can read it: the file is signed paper, filed as images."""
+    client = _client(_response(make_analysis(), input_tokens=16_000, output_tokens=300))
+    analyzer = AnthropicAnalyzer(client, model="claude-opus-5", output_language="ru")
+    scan = ScannedDocument(data="JVBERi0=", pages=9, of_pages=10, sha256="abc")
+
+    analyzer.analyze(_ctx(text="", text_source="scan", scan=scan))
+
+    call = client.messages.calls[0]
+    assert _documents_of(call) == [
+        {
+            "type": "document",
+            "source": {
+                "type": "base64",
+                "media_type": "application/pdf",
+                "data": "JVBERi0=",
+            },
+        }
+    ]
+    assert "skan" in _prompt_of(call)
 
 
 def test_amendments_request_uses_the_analysis_model_with_thinking() -> None:
@@ -125,7 +158,7 @@ def test_amendments_request_uses_the_analysis_model_with_thinking() -> None:
     assert call["model"] == "claude-opus-5" and call["output_format"] is Amendments
     assert call["thinking"] == {"type": "adaptive"}
     assert "amendments" in call["system"][0]["text"] and "Russian" in call["system"][0]["text"]
-    prompt = call["messages"][0]["content"]
+    prompt = _prompt_of(call)
     assert "uchwała Senatu z poprawkami" in prompt and "Проект меняет правила." in prompt
     assert "- Изменение 1" in prompt and "Poprawka 1." in prompt
     assert (record.source_kind, record.input_tokens, record.output_tokens) == (
@@ -172,7 +205,7 @@ def test_triage_runs_on_its_own_model_without_thinking() -> None:
     assert call["model"] == "claude-sonnet-5" and call["output_format"] is Triage
     assert "thinking" not in call and "output_config" not in call
     assert "gate" in call["system"][0]["text"]
-    assert "Pełny tekst: 200000 znaków" in call["messages"][0]["content"]
+    assert "Pełny tekst: 200000 znaków" in _prompt_of(call)
     assert (record.model, record.input_tokens) == ("claude-sonnet-5", 5000)
     assert record.rejects(min_confidence=0.8) and not record.rejects(min_confidence=0.99)
 

@@ -187,6 +187,17 @@ class AuthorsResolver(Protocol):
 class TextExtractor(Protocol):
     def extract(self, data: bytes) -> str: ...
 
+    def pages(self, data: bytes) -> int:
+        """How many pages the file has; 0 when its format has none (Word, ODT, an archive) or it
+        cannot be read. A file with pages can be handed to the model as images when its text
+        layer holds nothing — which is what most of what the Sejm publishes is."""
+        ...
+
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
+        """The same document cut down to `count` pages from `first` (0-based), so that the pages
+        that are worth nothing are not paid for. The file unchanged when it has no pages."""
+        ...
+
 
 class LlmAnalyzer(Protocol):
     def analyze(self, ctx: BillContext) -> AnalysisRecord: ...

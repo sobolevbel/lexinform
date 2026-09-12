@@ -28,6 +28,7 @@ from lexinform.models import (
     Category,
     LocatedText,
     ProcessSummary,
+    ScannedDocument,
     SupplementContext,
     SupplementRecord,
     TextDocument,
@@ -40,7 +41,7 @@ from lexinform.models import (
 )
 from lexinform.ports import AuthorsResolver, BillRepository, Clock, LlmAnalyzer
 from lexinform.ports import TextSource as TextSourcePort
-from lexinform.pricing import cost_usd, estimate_input_cost
+from lexinform.pricing import cost_usd, estimate_input_cost, estimate_scan_cost
 from lexinform.sections import TextBudget, carries_the_document, excerpts, trim_print
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 
@@ -97,6 +98,34 @@ class TooExpensiveError(Exception):
 
 def _usd(amount: float) -> str:
     return f"{amount:.2f}" if amount >= 0.01 else f"{amount:.3f}"
+
+
+@dataclass(frozen=True)
+class _Loaded:
+    """What a document turned into for the model: its text, or its pages when it has none.
+
+    `text` is what was extracted whatever the source — for a scan that is the covering letter, or
+    nothing at all — because the signatures on the letter are read from it even when the model is
+    not shown a word of it.
+    """
+
+    text: str
+    truncated: bool
+    source: TextSource
+    scan: ScannedDocument | None = None
+
+    @property
+    def digest(self) -> str | None:
+        """What says this is the same document as last time: the normalised text, or the file."""
+        if self.scan is not None:
+            return self.scan.sha256
+        return text_digest(self.text) if self.source in FULL_TEXT_SOURCES else None
+
+    def estimate(self, input_price: float) -> float:
+        """What the model will charge to read it, before it is asked."""
+        if self.scan is not None:
+            return estimate_scan_cost(self.scan.pages, input_price)
+        return estimate_input_cost(len(self.text), input_price)
 
 
 @dataclass(frozen=True)
@@ -160,6 +189,7 @@ class AnalysisService:
         triage: KeywordPrefilter | None = None,
         triage_min_chars: int = 20_000,
         triage_min_confidence: float = 0.8,
+        scan_page_budget: int = 16,
     ) -> None:
         self._repo = repo
         self._texts = texts
@@ -176,6 +206,7 @@ class AnalysisService:
         self._triage = triage
         self._triage_min_chars = triage_min_chars
         self._triage_min_confidence = triage_min_confidence
+        self._scan_page_budget = scan_page_budget
 
     def analyze_pending(self, *, limit: int) -> AnalysisResult:
         """Analyse up to `limit` candidates; an outage stops the phase, a bill's own error
@@ -292,15 +323,15 @@ class AnalysisService:
         event. Only an outage propagates."""
         assert bill.analysis is not None
         assert document.kind in AMENDMENT_SOURCES
-        text, truncated, source = self._load_text(document, trim=False)
-        if source == "metadata_only" or not text.strip():
+        loaded = self._load_text(document, trim=False)
+        if not loaded.text.strip():
             return None
         ctx = AmendmentsContext(
             number=bill.number,
             title=bill.summary.title,
             source_kind=document.kind,
-            text=text,
-            truncated=truncated,
+            text=loaded.text,
+            truncated=loaded.truncated,
             previous_summary=bill.analysis.analysis.summary,
             previous_key_changes=list(bill.analysis.analysis.key_changes),
             proposal=proposal,
@@ -317,15 +348,14 @@ class AnalysisService:
         the reply still names and links. Only an outage propagates."""
         assert bill.analysis is not None
         assert document.kind in SUPPLEMENT_SOURCES
-        text, truncated, source = self._load_text(document, trim=False)
-        if source == "metadata_only" or not text.strip():
+        loaded = self._load_text(document, trim=False)
+        if loaded.scan is None and (loaded.source == "metadata_only" or not loaded.text.strip()):
             return self.bare_supplement(document, number=number, title=title)
-        if self._too_expensive_to_digest(text):
+        if self._too_expensive_to_digest(loaded):
             log.info(
-                "%s: %s (%d chars) is over the per-document cost limit; told without a digest",
+                "%s: %s is over the per-document cost limit; told without a digest",
                 bill.number,
                 number,
-                len(text),
             )
             return self.bare_supplement(document, number=number, title=title)
         ctx = SupplementContext(
@@ -333,8 +363,9 @@ class AnalysisService:
             title=bill.summary.title,
             document_title=title,
             source_kind=document.kind,
-            text=text,
-            truncated=truncated,
+            text=loaded.text if loaded.scan is None else "",
+            truncated=loaded.truncated,
+            scan=loaded.scan,
             previous_summary=bill.analysis.analysis.summary,
             previous_key_changes=list(bill.analysis.analysis.key_changes),
         )
@@ -343,14 +374,14 @@ class AnalysisService:
         record.source_url = document.url
         return record
 
-    def _too_expensive_to_digest(self, text: str) -> bool:
+    def _too_expensive_to_digest(self, loaded: _Loaded) -> bool:
         """The per-bill cost limit applies to a filed document too, and here it is the whole
-        answer rather than a reason to skip the bill: an OSR arrives as a 2.7 MB PDF (druk 1273),
-        and a reader who is told what it is and where it lies has lost little. A bill's own text
-        is worth its price; somebody's opinion of it is not worth any price."""
+        answer rather than a reason to skip the bill: a reader who is told what the document is
+        and where it lies has lost little. A bill's own text is worth its price; the assessment
+        of it is worth a bounded one."""
         if not self._max_bill_cost or self._input_price is None:
             return False
-        return estimate_input_cost(len(text), self._input_price) > self._max_bill_cost
+        return loaded.estimate(self._input_price) > self._max_bill_cost
 
     def bare_supplement(
         self, document: TextDocument, *, number: str, title: str
@@ -375,10 +406,11 @@ class AnalysisService:
         analysis behind the bill.
         """
         document = located.document
-        text, truncated, source = self._load_text(document)
+        loaded = self._load_text(document)
+        text, truncated, source = loaded.text, loaded.truncated, loaded.source
         if previous is not None and source not in FULL_TEXT_SOURCES:
             return _Prepared(bill, located, text, source, previous, first=False, unreadable=True)
-        digest = text_digest(text) if source in FULL_TEXT_SOURCES else None
+        digest = loaded.digest
         if previous is not None and digest is not None and digest == previous.text_sha256:
             assert document is not None
             pointer = previous.model_copy(
@@ -401,7 +433,7 @@ class AnalysisService:
             and self._max_bill_cost
             and self._input_price is not None
         ):
-            estimate = estimate_input_cost(len(text), self._input_price)
+            estimate = loaded.estimate(self._input_price)
             if estimate > self._max_bill_cost:
                 raise TooExpensiveError(estimate, self._max_bill_cost, len(text))
         ctx = BillContext(
@@ -413,6 +445,7 @@ class AnalysisService:
             text=text,
             truncated=truncated,
             text_source=source,
+            scan=loaded.scan,
             source_kind=document.kind if document and source in FULL_TEXT_SOURCES else "metadata",
             previous_summary=previous.analysis.summary if previous else None,
             previous_key_changes=list(previous.analysis.key_changes) if previous else [],
@@ -504,16 +537,15 @@ class AnalysisService:
         self._repo.save_analysis(bill.term, bill.number, prepared.record)
         return prepared.record
 
-    def _load_text(
-        self, document: TextDocument | None, *, trim: bool = True
-    ) -> tuple[str, bool, TextSource]:
-        """Trimmed, budgeted text of the document; metadata-only when it cannot be fetched or read.
+    def _load_text(self, document: TextDocument | None, *, trim: bool = True) -> _Loaded:
+        """Trimmed, budgeted text of the document — or its pages, when the file has no text in it.
 
-        A file whose text layer is only the letter handing the document to the Marshal counts as
-        unreadable, and the text comes back with it so that the signatures under the letter are
-        still resolved: the prompt shows the model nothing under a metadata source, and an
-        analysis that says it read the bill when it read a covering note is worse than one that
-        admits it had the title alone.
+        Much of what the Sejm publishes is signed paper, filed as images: the text layer is empty
+        or holds only the letter that hands the document to the Marshal. Such a file goes to the
+        model as pages instead (`scan`), with the letter's page and, for an OSR, the tail of the
+        13-point form left behind. The extracted text comes back either way, so the signatures
+        under the letter are still resolved; the prompt shows the model the text only when it is
+        the document.
 
         Only an outage of the document's host propagates: a missing or broken file falls back to
         the metadata instead of costing the bill an analysis attempt. `trim=False` keeps the
@@ -521,7 +553,7 @@ class AnalysisService:
         explains the amendments; a document filed to a print is one such document end to end).
         """
         if document is None:
-            return "", False, "metadata_only"
+            return _Loaded("", False, "metadata_only")
         try:
             text = self._loader.load_document(document)
         except ServiceUnavailableError:
@@ -533,19 +565,12 @@ class AnalysisService:
                 type(exc).__name__,
                 exc,
             )
-            return "", False, "metadata_only"
-        if text is None:
-            return "", False, "metadata_only"
-        if not carries_the_document(text, min_chars=MIN_TEXT_CHARS):
-            log.info(
-                "%s: %d chars, and all of them the covering letter; using metadata only",
-                document.url,
-                len(text),
-            )
-            return text, False, "metadata_only"
+            return _Loaded("", False, "metadata_only")
+        if text is None or not carries_the_document(text, min_chars=MIN_TEXT_CHARS):
+            return self._load_scan(document, text or "")
         if not trim:
             budgeted = self._budget.apply(text)
-            return budgeted.text, budgeted.truncated, "pdf"
+            return _Loaded(budgeted.text, budgeted.truncated, "pdf")
         trimmed = trim_print(text)
         if trimmed.dropped:
             log.info(
@@ -556,4 +581,28 @@ class AnalysisService:
                 ", ".join(f"{d.name} {d.chars}" for d in trimmed.dropped),
             )
         budgeted = self._budget.apply(trimmed.text)
-        return budgeted.text, budgeted.truncated, "documents" if document.kind == "rcl" else "pdf"
+        source: TextSource = "documents" if document.kind == "rcl" else "pdf"
+        return _Loaded(budgeted.text, budgeted.truncated, source)
+
+    def _load_scan(self, document: TextDocument, text: str) -> _Loaded:
+        """The document as pages, when its file carries no text; metadata when it has no pages
+        either (a Word file, an archive, a PDF too big for the model to take)."""
+        scan = self._loader.load_scan(
+            document.url,
+            cover_letter=bool(text.strip()),
+            budget=self._scan_page_budget if document.kind == "impact_assessment" else None,
+        )
+        if scan is None:
+            log.info(
+                "%s: %d chars, none of them the document itself; using metadata only",
+                document.url,
+                len(text),
+            )
+            return _Loaded(text, False, "metadata_only")
+        log.info(
+            "%s: no text, reading %d of %d page(s) as images",
+            document.url,
+            scan.pages,
+            scan.of_pages,
+        )
+        return _Loaded(text, scan.truncated, "scan", scan)

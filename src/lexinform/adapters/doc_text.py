@@ -74,6 +74,12 @@ class DocTextExtractor:
     tab-separated, `\\f` at page breaks, field results kept and field codes (HYPERLINK, PAGE,
     TOC) dropped."""
 
+    def pages(self, data: bytes) -> int:
+        return 0
+
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
+        return data
+
     def extract(self, data: bytes) -> str:
         try:
             return _extract(data)

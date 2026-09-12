@@ -4,7 +4,7 @@ the answers are stored, plus token accounting."""
 import datetime as dt
 from typing import Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.models.enums import ApplicantType, Category, SourceKind, TextSource
 
@@ -153,6 +153,30 @@ class AmendmentsContext(BaseModel):
     proposal: str | None = None
 
 
+class ScannedDocument(BaseModel):
+    """A document the model reads as pages, because its file carries no text to read.
+
+    `data` is the file itself, base64 without line breaks, as the API's document block wants it.
+    It is never stored: what the analysis keeps of a scan is `sha256`, which plays the part
+    `text_sha256` plays for a text, so a republished scan is recognised as the same document.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    media_type: str = "application/pdf"
+    data: str
+    pages: int
+    """How many pages were sent."""
+    of_pages: int
+    """How many the document has: more than `pages` when the covering letter or the tail of an
+    OSR form was left behind, which is what the card's "partial text" note is rendered from."""
+    sha256: str
+
+    @property
+    def truncated(self) -> bool:
+        return self.pages < self.of_pages
+
+
 class DocumentDigest(BaseModel):
     """Structured output about a document filed to a print: what it says about the bill that is
     already there, not a new analysis of the bill."""
@@ -209,6 +233,8 @@ class SupplementContext(BaseModel):
     source_kind: SourceKind
     text: str
     truncated: bool
+    scan: ScannedDocument | None = None
+    """The file itself, when the document is scanned paper and `text` is empty."""
     previous_summary: str
     previous_key_changes: list[str] = Field(default_factory=list)
 
@@ -253,6 +279,8 @@ class BillContext(BaseModel):
     text: str
     truncated: bool
     text_source: TextSource
+    scan: ScannedDocument | None = None
+    """The file itself, when `text_source` is "scan" and the pages are what the model reads."""
     source_kind: SourceKind = "print"
     previous_summary: str | None = None
     previous_key_changes: list[str] = Field(default_factory=list)

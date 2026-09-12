@@ -81,6 +81,13 @@ class Settings(BaseSettings):
         default=20_000, description="Shorter texts go straight to the full analysis."
     )
     triage_min_confidence: float = Field(default=0.8, ge=0.0, le=1.0)
+    scan_page_budget: int = Field(
+        default=16,
+        ge=1,
+        description="Pages of a scanned OSR put before the model, after its covering letter. The"
+        " 13-point form's points 1-5 took 2 to 19 pages of the prints measured (a median of 8);"
+        " what follows is the public-finance tables a printed OSR is trimmed of as well.",
+    )
     max_analysis_cost_usd: float = Field(
         default=2.0,
         ge=0.0,
