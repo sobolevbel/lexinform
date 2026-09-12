@@ -267,6 +267,23 @@ def test_a_second_reading_that_sent_the_bill_back_names_the_committee(
     assert phase.committees == ("SPC",)
 
 
+def test_an_unfinished_second_reading_leaves_the_bill_with_the_committee(
+    process_1962: ProcessDetail,
+) -> None:
+    """druk 1929's decision reads "niedokończone II czytanie", not "skierowano ponownie"."""
+    second = next(
+        i
+        for i, st in enumerate(process_1962.stages)
+        if st.stage_type == "SejmReading" and st.stage_name.startswith("II ")
+    )
+    stages = list(process_1962.stages[: second + 1])
+    stages[-1] = stages[-1].model_copy(update={"decision": "niedokończone II czytanie"})
+
+    phase = next_phase(_bill(process_1962, tuple(stages)), today=TODAY)
+
+    assert phase is not None and phase.key == "second_reading_committee"
+
+
 def test_a_senate_rejection_is_not_a_senate_amendment(process_1962: ProcessDetail) -> None:
     position = next(
         i for i, st in enumerate(process_1962.stages) if st.stage_type == "SenatePosition"

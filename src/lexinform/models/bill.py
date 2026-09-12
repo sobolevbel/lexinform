@@ -19,6 +19,7 @@ from lexinform.models.sejm import (
     Stage,
     TextDocument,
     flatten_stages,
+    second_reading_sent_back,
 )
 from lexinform.models.wykaz import WykazEntry
 
@@ -154,6 +155,7 @@ class Phase(BaseModel):
     # days from receiving the act (art. 121), the President 21 from receiving it (art. 122);
     # 14 and 7 for an urgent bill (art. 123). Counted from the dates the Sejm API shows.
     deadline: dt.date | None = None
+    since: dt.date | None = None  # when the bill reached this step; stamped by `next_phase`
 
 
 _PRESIDENT_NEXT = {"ToPresident", "SenatePositionConsideration"}
@@ -163,6 +165,9 @@ _PRESIDENT_NEXT = {"ToPresident", "SenatePositionConsideration"}
 ASIDE_STAGE_TYPES = frozenset({"GovermentPosition", "Opinion"})
 SENATE_DAYS, SENATE_DAYS_URGENT = 30, 14
 PRESIDENT_DAYS, PRESIDENT_DAYS_URGENT = 21, 7
+# art. 121/122 count from the day the act is handed over, which the API does not give: the
+# deadline is computed from the stage before it and is therefore early by a few days.
+DEADLINE_GRACE_DAYS = 7
 
 
 # The "path" of a bill as a reader sees it, and which step each phase sits on. RCL phases
@@ -204,6 +209,42 @@ PHASE_STEP = {
     "in_force": "in_force",
     "in_force_unknown": "in_force",
 }
+# How long a step may take before saying "usually N weeks" contradicts the dates on the same
+# card. The numbers are the upper end of `Labels.typical_durations`, which must say the same in
+# words; a step not listed here is given the default.
+PHASE_PATIENCE = {
+    "rcl_to_sejm": 30,
+    "wykaz_to_rcl": 60,
+    "wykaz_adopted": 60,
+    "second_reading": 60,
+    "second_reading_committee": 60,
+    "third_reading": 60,
+    "senate_amendments": 60,
+    "senate_rejection": 60,
+    "publication": 60,
+    "first_reading": 90,
+    "first_reading_committee": 90,
+    "first_reading_sitting": 90,
+    "rcl_council": 90,
+    "rcl_committees": 120,
+    "wykaz": 210,
+    "committee_work": 400,
+}
+DEFAULT_PATIENCE_DAYS = 180
+DAYS_PER_MONTH = 30
+
+
+def stalled_days(phase: Phase, today: dt.date) -> int | None:
+    """How long the bill has been on this step, once that outlived what the step usually takes;
+    None while the step is still running on schedule or its start is unknown."""
+    since = phase.since
+    if since is None:
+        return None
+    waited = (today - since).days
+    patience = PHASE_PATIENCE.get(phase.key, DEFAULT_PATIENCE_DAYS)
+    return waited if waited > patience else None
+
+
 # Phases during which a reader can address a committee, or watch a sitting.
 COMMITTEE_PHASES = frozenset(
     {
@@ -263,11 +304,34 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
     act; None when the process is over (in force, rejected, withdrawn) or unknown.
 
     Keys: rcl_consultation, rcl_opinions, rcl_committees, rcl_council, rcl_to_sejm (government
-    projects before the Sejm), pre_print, pre_print_consultation, first_reading,
-    first_reading_committee, first_reading_sitting, committee_work, second_reading,
-    third_reading, senate, senate_amendments, president, publication, in_force,
-    in_force_unknown, veto, tribunal.
+    projects before the Sejm), wykaz, wykaz_to_rcl, wykaz_adopted, pre_print,
+    pre_print_consultation, first_reading, first_reading_committee, first_reading_sitting,
+    committee_work, second_reading, second_reading_committee, third_reading, senate,
+    senate_amendments, senate_rejection, president, publication, in_force, in_force_unknown,
+    veto, tribunal.
     """
+    phase = _phase_of(bill, today)
+    return phase if phase is None else phase.model_copy(update={"since": _phase_started(bill)})
+
+
+def _phase_started(bill: Bill) -> dt.date | None:
+    """When the bill reached the step it is on, so that "what comes next" can say how long it
+    has been waiting instead of quoting an average that ran out long ago."""
+    last = bill.last_stage
+    if last is not None and last.date is not None:
+        return last.date
+    if bill.rcl is not None:
+        # RCL's "rozpoczęcie" is usually absent; the stage's last modification is what the page
+        # actually shows, and it is what stops moving when a project stalls.
+        current = bill.rcl.current_stage
+        return current.modified if current is not None else None
+    if bill.wykaz is not None:
+        return bill.wykaz.published_at.date()
+    submission = bill.submission
+    return submission.date_of_receipt if submission is not None else None
+
+
+def _phase_of(bill: Bill, today: dt.date) -> Phase | None:
     summary = bill.summary
     act = bill.act
     if act is not None:
@@ -328,8 +392,7 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
                 return Phase(key="senate", deadline=_days_after(last.date, days))
             return None if decided else Phase(key="third_reading")
         if "ii czytanie" in name:
-            if "ponownie" in (last.decision or "").lower():
-                # "skierowano ponownie do komisji": the third reading waits for the "-A" report.
+            if second_reading_sent_back(last):
                 return Phase(key="second_reading_committee", committees=_latest_committees(top))
             return Phase(key="third_reading")
         return Phase(key="committee_work", committees=_latest_committees(top))

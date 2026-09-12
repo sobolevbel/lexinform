@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from lexinform.i18n import Labels, labels_for
 from lexinform.models import (
     COMMITTEE_PHASES,
+    DAYS_PER_MONTH,
+    DEADLINE_GRACE_DAYS,
     GOVERNMENT_STEPS,
     PATH_STEPS,
     PHASE_STEP,
@@ -52,6 +54,7 @@ from lexinform.models import (
     open_hearing,
     process_web_url,
     reaches_sejm,
+    stalled_days,
     told_stages,
     update_event,
     wykaz_entry_number,
@@ -218,9 +221,11 @@ class MessageFormatter:
         today = today or self._today()
 
         header = self._header(ICON["new_bill"], self._card_header(bill), bill)
+        # The scale's legend is not a statement about this bill, and the category line below it
+        # is: a treaty scored 3 read as if it were about "здравоохранение, образование".
         meta = (
             f"{score_icon(a.score)} <b>{esc(lb.importance)}:</b> {importance_bar(a.score)} "
-            f"{a.score}/5 — {esc(lb.score_labels.get(a.score, ''))}\n"
+            f"{a.score}/5\n"
             + self._field(
                 ICON["category"],
                 lb.category,
@@ -388,7 +393,7 @@ class MessageFormatter:
                 f"{esc(lb.category_labels.get(analysis.category, analysis.category))}"
             )
 
-        stage_lines = [f"• {self._stage_line(st)}" for st in told_stages(change.new_stages)]
+        stage_lines = [f"• {self._stage_line(st, today)}" for st in told_stages(change.new_stages)]
         stages_block = (
             f"{ICON['new_stages']} <b>{esc(lb.new_stages)}</b>\n" + "\n".join(stage_lines)
             if stage_lines
@@ -1105,15 +1110,17 @@ class MessageFormatter:
         ]
         return "\n".join(line for line in lines if line)
 
-    def _planned_adoption(self, bill: Bill) -> str | None:
+    def _planned_adoption(self, bill: Bill, today: dt.date) -> str | None:
         """The quarter in which the register says the Council of Ministers means to adopt the
         bill. The field it comes from is free text and often carries the adoption note as well,
-        so only the quarter is shown."""
+        so only the quarter is shown — and only while the quarter is still ahead."""
         entry = bill.wykaz
         quarter = entry.planned_quarter if entry is not None else None
         if quarter is None:
             return None
         year, number = quarter
+        if (year, number) < (today.year, (today.month - 1) // 3 + 1):
+            return None
         return esc(self._labels.wykaz_planned.format(quarter=QUARTERS[number], year=year))
 
     def _path_line(self, bill: Bill, today: dt.date) -> str:
@@ -1171,19 +1178,38 @@ class MessageFormatter:
         ).strip()
         if urgent and shortened is None:
             text = f"{text} ({lb.urgent_mode})"  # the shortened wordings name the mode themselves
+        when = self._when(bill, phase, today, urgent=urgent)
+        return f"{ICON['next']} <b>{esc(lb.next_step)}:</b> {esc(text)}{when}"
+
+    def _when(self, bill: Bill, phase: Phase, today: dt.date, *, urgent: bool) -> str:
+        """When the step is expected, in decreasing order of how much it is worth: a sitting
+        already on the calendar, the statutory deadline, how long the bill has been waiting
+        once it outlived the average, the planned quarter, the average."""
+        lb = self._labels
         upcoming = self._upcoming(bill, today, phase)
         if upcoming is not None:
-            suffix = f" · {self._agenda_when(upcoming)}"
-        elif phase.deadline is not None:
-            suffix = f" · {esc(lb.deadline_until)} {self.fmt_date(phase.deadline)}"
-        elif (planned := self._planned_adoption(bill)) is not None:
-            suffix = f" · {planned}"
-        else:
-            usual = (lb.urgent_durations.get(phase.key) if urgent else None) or (
-                lb.typical_durations.get(phase.key)
-            )
-            suffix = f" · {esc(usual)}" if usual else ""
-        return f"{ICON['next']} <b>{esc(lb.next_step)}:</b> {esc(text)}{suffix}"
+            return f" · {self._agenda_when(upcoming)}"
+        if (deadline := phase.deadline) is not None:
+            overdue = (today - deadline).days > DEADLINE_GRACE_DAYS
+            label = lb.deadline_passed if overdue else lb.deadline_until
+            return f" · {esc(label)} {self.fmt_date(deadline)}"
+        if (stalled := self._stalled_for(phase, today)) is not None:
+            return f" · {esc(stalled)}"
+        if (planned := self._planned_adoption(bill, today)) is not None:
+            return f" · {planned}"
+        usual = (lb.urgent_durations.get(phase.key) if urgent else None) or (
+            lb.typical_durations.get(phase.key)
+        )
+        return f" · {esc(usual)}" if usual else ""
+
+    def _stalled_for(self, phase: Phase, today: dt.date) -> str | None:
+        days = stalled_days(phase, today)
+        if days is None:
+            return None
+        lb = self._labels
+        if days < 2 * DAYS_PER_MONTH:
+            return lb.stalled_for_weeks.format(weeks=days // 7)
+        return lb.stalled_for_months.format(months=days // DAYS_PER_MONTH)
 
     def _translate_stage(self, stage: Stage) -> str | None:
         """The stage in the reader's language, or None when the labels have nothing for it: an
@@ -1246,13 +1272,14 @@ class MessageFormatter:
                 text = f"{esc(lb.action_committee)} {', '.join(targets)}"
                 sitting = agenda_item if agenda_item and agenda_item.kind == "committee" else None
                 sitting = sitting or self._upcoming(bill, today, phase, kind="committee")
-                if sitting is not None:
+                # "before the sitting on <date>" is an empty instruction once the sitting is today.
+                if sitting is not None and sitting.date > today:
                     text += f" {esc(lb.action_before_sitting)} {self.fmt_date(sitting.date)}"
                 actions.append(text)
             hearing = open_hearing(bill, today)
-            if hearing is not None:
+            deadline = hearing_application_deadline(hearing) if hearing else None
+            if hearing is not None and (deadline is None or deadline >= today):
                 text = esc(lb.action_hearing)
-                deadline = hearing_application_deadline(hearing)
                 if deadline is not None:
                     text += f" {esc(lb.consultation_until)} {self.fmt_date(deadline)}"
                 actions.append(text)
@@ -1298,7 +1325,9 @@ class MessageFormatter:
     def _upcoming(
         self, bill: Bill, today: dt.date, phase: Phase, *, kind: str | None = None
     ) -> AgendaItem | None:
-        """The soonest future sitting naming the bill, preferring the venue the phase implies."""
+        """The soonest future sitting naming the bill, in the venue the phase implies. A phase
+        that implies one and has none scheduled there dates nothing: a committee's 08:30 slot is
+        not the date of a third reading."""
         future = sorted((i for i in bill.agenda if i.date >= today), key=lambda i: i.date)
         if kind is not None:
             return next((i for i in future if i.kind == kind), None)
@@ -1311,7 +1340,7 @@ class MessageFormatter:
             item = next((i for i in future if i.kind == wanted), None)
             if item is not None:
                 return item
-        return future[0] if future else None
+        return None if preferred else (future[0] if future else None)
 
     def _agenda_when(self, item: AgendaItem) -> str:
         lb = self._labels
@@ -1349,7 +1378,7 @@ class MessageFormatter:
             )
         return f"{name} ({code})" if name else code
 
-    def _stage_line(self, stage: Stage) -> str:
+    def _stage_line(self, stage: Stage, today: dt.date) -> str:
         """One bullet of the "new stages" list; may span two lines (voting + club breakdown)."""
         lb = self._labels
         when = f"{self.fmt_date(stage.date)}: " if stage.date else ""
@@ -1373,9 +1402,11 @@ class MessageFormatter:
         if stage.stage_type == "PublicHearing":
             line = when + esc(lb.stage_type_labels["PublicHearing"])
             deadline = hearing_application_deadline(stage)
-            if deadline is not None:
-                line += f" {esc(lb.consultation_until)} {self.fmt_date(deadline)}"
-            return line
+            if deadline is None:
+                return line
+            if deadline < today:
+                return f"{line} — {esc(lb.hearing_applications_closed)}"
+            return f"{line} — {esc(lb.hearing_apply_until)} {self.fmt_date(deadline)}"
         # An RCL stage's bullet keeps the numbered original: the header names it in the
         # reader's language already, and the number is what the RCL page shows.
         translated = None if stage.stage_type == RCL_STAGE_TYPE else self._translate_stage(stage)

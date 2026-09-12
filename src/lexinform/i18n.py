@@ -146,11 +146,16 @@ class Labels:
     subcommittee_report: str
     proposes: str
     deadline_until: str  # "deadline" (a computed statutory deadline follows)
+    deadline_passed: str  # the same deadline, once it has run out
+    # Said instead of the usual duration once the step has outlived it (`models.stalled_days`).
+    stalled_for_weeks: str
+    stalled_for_months: str
     urgent_mode: str  # marks "what comes next" for a bill declared pilny (art. 123)
     # Public hearings: the reminder before applications close
     hearing_deadline_header: str
     hearing_on: str
     hearing_apply_until: str
+    hearing_applications_closed: str
     hearing_hint: str
     tag_hearing: str
     # Amendments summarised from their document (Senate resolution, committee "-A" report)
@@ -183,7 +188,6 @@ class Labels:
     date_format: str = "%Y-%m-%d"
     stage_type_labels: dict[str, str] = field(default_factory=dict)
     senate_position_labels: dict[str, str] = field(default_factory=dict)
-    score_labels: dict[int, str] = field(default_factory=dict)
     category_labels: dict[Category, str] = field(default_factory=dict)
     category_tags: dict[Category, str] = field(default_factory=dict)
     applicant_labels: dict[ApplicantType, str] = field(default_factory=dict)
@@ -353,10 +357,14 @@ RU = Labels(
     subcommittee_report="отчёт подкомиссии",
     proposes="предлагает",
     deadline_until="срок до",
+    deadline_passed="срок истёк",
+    stalled_for_weeks="без движения уже {weeks} нед.",
+    stalled_for_months="без движения уже {months} мес.",
     urgent_mode="срочный режим, tryb pilny",
     hearing_deadline_header="Заявки на публичные слушания",
     hearing_on="слушания",
     hearing_apply_until="заявки на участие до",
+    hearing_applications_closed="приём заявок на участие закрыт",
     hearing_hint=(
         "заявку подаёт любой желающий через систему Сейма (формуляр на странице комиссии);"
         " каждый заявитель получает слово"
@@ -603,9 +611,7 @@ RU = Labels(
         "PresidentSignature": "✍️ Президент подписал закон",
         "Veto": "⛔ Президент наложил вето",
         "PresidentToTribunal": "⚖️ Президент направил закон в Конституционный трибунал",
-        "PublicHearing": (
-            "📢 Публичные слушания (wysłuchanie publiczne) — можно подать заявку на участие"
-        ),
+        "PublicHearing": "📢 Публичные слушания (wysłuchanie publiczne)",
         "SenatePositionConsideration": "Сейм рассмотрел позицию Сената",
         "GovermentPosition": "поступила позиция правительства",
         "Opinion": "поступило мнение организации",
@@ -615,13 +621,6 @@ RU = Labels(
         "wniósł poprawki": "Сенат внёс поправки",
         "wniósł poprawkę": "Сенат внёс поправку",
         "odrzucił ustawę": "Сенат отклонил закон",
-    },
-    score_labels={
-        5: "изменения в легализации пребывания",
-        4: "работа, Karta Polaka, спецзакон по Украине",
-        3: "соцсфера, здравоохранение, образование",
-        2: "косвенно касается иностранцев",
-        1: "второстепенное упоминание",
     },
     category_labels={
         Category.LEGAL_STAY: "легализация пребывания",
@@ -810,10 +809,14 @@ EN = Labels(
     subcommittee_report="sub-committee report",
     proposes="proposes to",
     deadline_until="deadline",
+    deadline_passed="deadline passed",
+    stalled_for_weeks="no movement for {weeks} weeks",
+    stalled_for_months="no movement for {months} months",
     urgent_mode="urgent procedure, tryb pilny",
     hearing_deadline_header="Public hearing: applications close",
     hearing_on="hearing on",
     hearing_apply_until="applications until",
+    hearing_applications_closed="applications are closed",
     hearing_hint=(
         "anyone may apply through the Sejm's system (form on the committee page);"
         " every applicant gets to speak"
@@ -1066,7 +1069,7 @@ EN = Labels(
         "PresidentSignature": "✍️ Signed by the President",
         "Veto": "⛔ Vetoed by the President",
         "PresidentToTribunal": "⚖️ Referred by the President to the Constitutional Tribunal",
-        "PublicHearing": "📢 Public hearing (wysłuchanie publiczne) — participation requests open",
+        "PublicHearing": "📢 Public hearing (wysłuchanie publiczne)",
         "SenatePositionConsideration": "Sejm considered the Senate position",
         "GovermentPosition": "the government's position arrived",
         "Opinion": "an organisation's opinion arrived",
@@ -1076,13 +1079,6 @@ EN = Labels(
         "wniósł poprawki": "Senate introduced amendments",
         "wniósł poprawkę": "Senate introduced an amendment",
         "odrzucił ustawę": "Senate rejected the bill",
-    },
-    score_labels={
-        5: "changes to legalization of stay",
-        4: "employment, Karta Polaka, Ukraine special act",
-        3: "social benefits, healthcare, education",
-        2: "indirect impact on foreigners",
-        1: "marginal mention",
     },
     category_labels={
         Category.LEGAL_STAY: "legal stay",

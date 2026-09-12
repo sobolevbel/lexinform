@@ -12,7 +12,7 @@ import datetime as dt
 
 from lexinform.models.bill import Bill, StatusChange
 from lexinform.models.rcl import RCL_STAGE_TYPE
-from lexinform.models.sejm import Stage, flatten_stages
+from lexinform.models.sejm import Stage, flatten_stages, second_reading_sent_back
 
 # Nodes that only frame other events. A `SejmReading` is decided case by case (see below).
 SERVICE_STAGE_TYPES = frozenset(
@@ -31,8 +31,7 @@ def is_substantive(stage: Stage) -> bool:
         # something (rejected outright, sent back to the committee with amendments).
         if _reading_numeral(stage) == "III":
             return True
-        decided = (stage.decision or "").lower()
-        return "odrzuc" in decided or "ponownie" in decided
+        return "odrzuc" in (stage.decision or "").lower() or second_reading_sent_back(stage)
     return True
 
 
@@ -91,7 +90,8 @@ def _stage_event(stage: Stage) -> str | None:
         if numeral == "III":
             return "passed" if decided.startswith("uchwal") else "third_reading"
         if numeral == "II":
-            return "second_reading_amendments" if "ponownie" in decided else "second_reading"
+            sent_back = second_reading_sent_back(stage)
+            return "second_reading_amendments" if sent_back else "second_reading"
         return "first_reading"
     if kind == "CommitteeWork":
         return "committee_work"

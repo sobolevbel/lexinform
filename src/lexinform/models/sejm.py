@@ -604,6 +604,18 @@ def latest_text_document(
     return None
 
 
+# A second reading whose `decision` says one of these left the bill with the committee, which
+# works the amendments into an additional ("-A") report before the Sejm votes. Observed:
+# "skierowano ponownie do komisji…", "niedokończone II czytanie" (druk 1929).
+_SECOND_READING_SENT_BACK = ("ponownie", "niedokończone")
+
+
+def second_reading_sent_back(stage: Stage) -> bool:
+    """True when the second reading did not hand the bill on to the third."""
+    decided = (stage.decision or "").lower()
+    return any(marker in decided for marker in _SECOND_READING_SENT_BACK)
+
+
 def third_reading_kept_the_text(stages: tuple[Stage, ...] | list[Stage]) -> bool:
     """True when the text after the 3rd reading cannot differ from the text the committee (or
     the print) put before the Sejm: no amendments were tabled at the 2nd reading (the Sejm went

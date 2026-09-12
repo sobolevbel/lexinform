@@ -21,6 +21,8 @@ from lexinform.models.analysis import (
 )
 from lexinform.models.bill import (
     COMMITTEE_PHASES,
+    DAYS_PER_MONTH,
+    DEADLINE_GRACE_DAYS,
     GOVERNMENT_STEPS,
     PATH_STEPS,
     PHASE_STEP,
@@ -37,6 +39,7 @@ from lexinform.models.bill import (
     is_over,
     is_urgent,
     next_phase,
+    stalled_days,
 )
 from lexinform.models.commands import (
     NEEDS_REFERENCE,
@@ -242,6 +245,8 @@ __all__ = [
     "current_term",
     "diff_stages",
     "flatten_stages",
+    "DAYS_PER_MONTH",
+    "DEADLINE_GRACE_DAYS",
     "consultation_open",
     "event_keys",
     "government_path",
@@ -257,6 +262,7 @@ __all__ = [
     "is_wykaz_number",
     "latest_text_document",
     "next_phase",
+    "stalled_days",
     "open_hearing",
     "normalize_wykaz_number",
     "print_web_url",

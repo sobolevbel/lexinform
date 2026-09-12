@@ -697,7 +697,9 @@ def test_senate_stage_invites_an_opinion_to_the_senate_committee(
         update={"stages": process_1962.stages[: third_reading + 1], "passed": True}
     )
 
-    text = MessageFormatter("ru").new_bill(bill_of(in_senate), None, today=TODAY).text
+    text = (
+        MessageFormatter("ru").new_bill(bill_of(in_senate), None, today=dt.date(2026, 7, 20)).text
+    )
 
     # The 30 days count from the third reading (17.07.2026): the date, not only the rule.
     assert "Что дальше:</b> рассмотрение в Сенате (до 30 дней) · срок до 16.08.2026" in text
@@ -726,7 +728,7 @@ def test_urgent_bill_gets_the_shortened_terms_and_not_the_usual_ones(
     fmt = MessageFormatter("ru")
 
     committee = fmt.new_bill(bill_of(in_committee), None, today=TODAY).text
-    senate = fmt.new_bill(bill_of(in_senate), None, today=TODAY).text
+    senate = fmt.new_bill(bill_of(in_senate), None, today=dt.date(2026, 7, 20)).text
 
     assert (
         "Что дальше:</b> I чтение в комиссии — ASW (срочный режим, tryb pilny)"
@@ -754,7 +756,7 @@ def test_public_hearing_names_the_application_deadline(process_3039: ProcessDeta
 
     assert update.startswith("📢 <b>Назначены публичные слушания — druk nr 3039</b>")
     assert "• 30.09.2026: 📢 Публичные слушания (wysłuchanie publiczne)" in update
-    assert "можно подать заявку на участие до 20.09.2026" in update
+    assert "заявки на участие до 20.09.2026" in update
     assert "подать заявку на участие в публичных слушаниях до 20.09.2026" in update
     assert_telegram_html(reminder)
     assert "📢 <b>Заявки на публичные слушания — druk nr 3039</b>" in reminder
@@ -1112,3 +1114,81 @@ def test_a_command_that_never_called_the_model_reports_only_the_time(
 
     assert "⏱ run 11.09.2026 17:07 UTC · 0.3s" in text
     assert "tokens" not in text and "$" not in text
+
+
+def test_a_deadline_that_has_run_out_is_named_as_expired(process_1962: ProcessDetail) -> None:
+    third_reading = next(
+        i
+        for i, st in enumerate(process_1962.stages)
+        if st.stage_type == "SejmReading" and "III" in st.stage_name
+    )
+    in_senate = process_1962.model_copy(
+        update={"stages": process_1962.stages[: third_reading + 1], "passed": True}
+    )
+
+    text = MessageFormatter("ru").new_bill(bill_of(in_senate), None, today=TODAY).text
+
+    assert "срок истёк 16.08.2026" in text
+    assert "срок до 16.08.2026" not in text
+
+
+def test_a_step_that_outlived_its_usual_duration_says_how_long(
+    process_3039: ProcessDetail,
+) -> None:
+    """The card must not promise "usually 2–6 weeks" under a referral eighteen months old."""
+    bill = bill_of(process_3039)
+
+    fresh = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 9, 20)).text
+    stale = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2028, 3, 20)).text
+
+    assert "обычно 2–6 недель после поступления" in fresh
+    assert "обычно 2–6 недель" not in stale
+    assert "без движения уже 18 мес." in stale
+
+
+def test_the_third_reading_is_not_dated_by_a_committee_sitting(
+    process_1962: ProcessDetail,
+) -> None:
+    """A committee's 08:30 slot is not the date of a third reading in the Sejm."""
+    second_reading = next(
+        i
+        for i, st in enumerate(process_1962.stages)
+        if st.stage_type == "SejmReading" and st.stage_name.startswith("II ")
+    )
+    stages = list(process_1962.stages[: second_reading + 1])
+    stages[-1] = stages[-1].model_copy(update={"decision": "przystąpiono do III czytania"})
+    in_readings = process_1962.model_copy(update={"stages": tuple(stages), "passed": None})
+
+    text = (
+        MessageFormatter("ru")
+        .new_bill(bill_of(in_readings, agenda=(sitting(),)), None, today=TODAY)
+        .text
+    )
+
+    assert "III чтение и голосование в Сейме" in text
+    assert "17.09.2026" not in text
+
+
+def test_an_application_deadline_in_the_past_is_not_offered_as_an_action(
+    process_3039: ProcessDetail,
+) -> None:
+    hearing = Stage(
+        stage_name="Wysłuchanie publiczne",
+        stage_type="PublicHearing",
+        date=dt.date(2026, 9, 12),  # applications closed on 02.09
+    )
+    bill = bill_of(process_3039.model_copy(update={"stages": (*process_3039.stages, hearing)}))
+
+    text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
+
+    assert "подать заявку на участие в публичных слушаниях" not in text
+
+
+def test_a_sitting_today_is_not_a_deadline_to_write_before(process_3039: ProcessDetail) -> None:
+    today = dt.date(2026, 9, 17)
+    bill = bill_of(process_3039, agenda=(sitting(),))
+
+    text = MessageFormatter("ru").new_bill(bill, None, today=today).text
+
+    assert "направить мнение в комиссию" in text
+    assert "до заседания" not in text

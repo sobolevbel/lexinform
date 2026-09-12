@@ -99,12 +99,20 @@ def test_a_quarter_that_cannot_be_read_falls_back_to_the_usual_duration() -> Non
 
 
 def test_the_adoption_note_in_the_field_never_reaches_the_card() -> None:
-    realised = "II kwartał 2025 r. - ZREALIZOWANY Rada Ministrów przyjęła 6 maja 2025 r."
+    realised = "IV kwartał 2026 r. - ZREALIZOWANY Rada Ministrów przyjęła 6 maja 2025 r."
 
     text = MessageFormatter("ru").new_bill(wykaz_bill(planned_adoption=realised), None).text
 
     assert "ZREALIZOWANY" not in text
-    assert "принятие правительством: II кв. 2025" in text
+    assert "принятие правительством: IV кв. 2026" in text
+
+
+def test_a_quarter_that_has_already_passed_is_not_offered_as_a_plan() -> None:
+    entry = wykaz_entry(planned_adoption="II kwartał 2025 r.")
+
+    text = MessageFormatter("ru").new_bill(wykaz_bill(entry), None, today=TODAY).text
+
+    assert "принятие правительством" not in text
 
 
 def test_a_withdrawal_is_not_told_as_a_rejection_by_the_sejm() -> None:

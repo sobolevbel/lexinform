@@ -19,7 +19,6 @@ from lexinform.i18n import EN, LABELS, RU, labels_for
         "rcl_stage_labels",
         "stage_type_labels",
         "senate_position_labels",
-        "score_labels",
         "category_labels",
         "category_tags",
         "applicant_labels",
