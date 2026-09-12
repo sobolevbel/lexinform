@@ -75,7 +75,7 @@ def test_every_kind_is_printed_with_an_increasing_message_id() -> None:
         publisher.publish_consultation_results(BILL, 1).message_id,
         publisher.publish_agenda(BILL, SITTING, 1).message_id,
         publisher.publish_act_published(BILL, 1).message_id,
-        publisher.publish_in_force(BILL, 1).message_id,
+        publisher.publish_in_force(BILL, 1, today=date(2026, 9, 7)).message_id,
         publisher.publish_joint_bill(BILL, BILL, None, 1).message_id,
     ]
 

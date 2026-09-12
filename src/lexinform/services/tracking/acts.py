@@ -76,7 +76,7 @@ class ActWatcher:
             if self._poster.posted(bill, PublicationKind.IN_FORCE):
                 continue
             try:
-                result.count_post(self._poster.in_force(bill), "in_force_posted")
+                result.count_post(self._poster.in_force(bill, today=today), "in_force_posted")
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return

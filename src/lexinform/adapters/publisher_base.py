@@ -69,8 +69,10 @@ class RenderingPublisher(ABC):
         text = self._formatter.act_published(bill).text
         return self._deliver(Outgoing(PublicationKind.ACT_PUBLISHED, bill, text, reply_to))
 
-    def publish_in_force(self, bill: Bill, reply_to: int | None) -> PublishResult:
-        text = self._formatter.in_force(bill).text
+    def publish_in_force(
+        self, bill: Bill, reply_to: int | None, *, today: date | None = None
+    ) -> PublishResult:
+        text = self._formatter.in_force(bill, today=today).text
         return self._deliver(Outgoing(PublicationKind.IN_FORCE, bill, text, reply_to))
 
     def publish_consultation_deadline(

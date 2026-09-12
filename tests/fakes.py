@@ -487,7 +487,9 @@ class FakePublisher:
         self.acts.append((bill, reply_to))
         return result
 
-    def publish_in_force(self, bill: Bill, reply_to: int | None) -> FakePublishResult:
+    def publish_in_force(
+        self, bill: Bill, reply_to: int | None, *, today: date | None = None
+    ) -> FakePublishResult:
         result = self._send(bill)
         self.in_force.append((bill, reply_to))
         return result

@@ -20,6 +20,7 @@ from lexinform.models import (
     PHASE_STEP,
     RCL_PREFIX,
     RCL_STAGE_TYPE,
+    SENATE_BILLS_URL,
     SITTING_PHASES,
     WYKAZ_REGISTER_URL,
     ActInfo,
@@ -551,12 +552,15 @@ class MessageFormatter:
         tags = self._tag_line(lb.tag_published, bill)
         return RenderedMessage(text=self._assemble([header, facts, links_block, tags]))
 
-    def in_force(self, bill: Bill) -> RenderedMessage:
+    def in_force(self, bill: Bill, *, today: dt.date | None = None) -> RenderedMessage:
         lb = self._labels
         act = bill.act
         if act is None or act.entry_into_force is None:
             raise ValueError(f"bill {bill.number} has no entry-into-force date")
-        header = self._header(ICON["in_force"], lb.in_force_header, bill, act.title)
+        # A missed run posts this late, and "from today" would then be the one thing that is not.
+        on_the_day = act.entry_into_force == (today or self._today())
+        label = lb.in_force_header if on_the_day else lb.in_force_header_dated
+        header = self._header(ICON["in_force"], label, bill, act.title)
         facts = (
             f"{ICON['journal']} {esc(act.display_address)} · {esc(lb.in_force_since)} "
             f"{self.fmt_date(act.entry_into_force)}\n"
@@ -1060,7 +1064,12 @@ class MessageFormatter:
         if "osr" in documents:
             links.append(link(documents["osr"].url, lb.link_osr))
         if project.wykaz_url:
-            links.append(link(project.wykaz_url, lb.link_wykaz))
+            # RCL's "Numer z wykazu" often points at a ministry's own register of draft
+            # regulations, which is not the wykaz prac RM and does not list this bill.
+            register = project.wykaz_url.startswith(WYKAZ_REGISTER_URL)
+            links.append(
+                link(project.wykaz_url, lb.link_wykaz if register else lb.link_ministry_plan)
+            )
         return links
 
     def _consultation_line(self, bill: Bill, today: dt.date) -> str:
@@ -1355,7 +1364,10 @@ class MessageFormatter:
                     text += f" {esc(lb.consultation_until)} {self.fmt_date(deadline)}"
                 actions.append(text)
         if phase is not None and phase.key == "senate":
-            actions.append(esc(lb.action_senate))
+            senate = f"{esc(lb.action_senate)} {link(SENATE_BILLS_URL, lb.link_senate_bills)}"
+            if phase.deadline is not None and phase.deadline >= today:
+                senate += f" {esc(lb.consultation_until)} {self.fmt_date(phase.deadline)}"
+            actions.append(senate)
         if not actions:
             # Say so, and name the next window, rather than leave the reader guessing.
             nothing = lb.no_action_labels.get(phase.key) if phase is not None else None
@@ -1391,6 +1403,8 @@ class MessageFormatter:
             actions.append(f"{text} {esc(polish)}")
         if project.is_open and not project.sent_to_sejm:
             actions.append(link(project.comment_url, lb.action_rcl_comment))
+            organ = project.applicant or lb.wykaz_organ_unknown
+            actions.append(esc(lb.action_wykaz_interest.format(organ=organ)))
         return actions
 
     def _upcoming(

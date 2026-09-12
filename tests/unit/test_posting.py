@@ -64,7 +64,7 @@ def test_failed_post_is_recorded_with_the_error_and_counted_as_an_attempt(
 ) -> None:
     poster = _poster(repo, FakePublisher(fail_on={"3039"}))
 
-    sent = poster.in_force(bill)
+    sent = poster.in_force(bill, today=dt.date(2026, 9, 7))
 
     assert not sent
     row = repo.get_publication(10, "3039", PublicationKind.IN_FORCE, CHANNEL)

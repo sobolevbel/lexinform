@@ -177,11 +177,13 @@ class Poster:
             lambda reply_to: self._publisher.publish_act_published(bill, reply_to).message_id,
         )
 
-    def in_force(self, bill: Bill) -> bool:
+    def in_force(self, bill: Bill, *, today: date) -> bool:
         return self._once(
             bill,
             PublicationKind.IN_FORCE,
-            lambda reply_to: self._publisher.publish_in_force(bill, reply_to).message_id,
+            lambda reply_to: (
+                self._publisher.publish_in_force(bill, reply_to, today=today).message_id
+            ),
         )
 
     def consultation_deadline(self, bill: Bill, *, today: date) -> bool:

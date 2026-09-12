@@ -499,6 +499,13 @@ def aggregate_clubs(votes: Iterable[Vote]) -> tuple[ClubVotes, ...]:
     return tuple(result)
 
 
+# Where the Senate puts the laws the Sejm has passed, with the committee that has each one:
+# the Senate has no API, so this listing is the only address a reader can be given.
+SENATE_BILLS_URL = (
+    "https://www.senat.gov.pl/prace/proces-legislacyjny-w-senacie/ustawy-uchwalone-przez-sejm/"
+)
+
+
 def print_web_url(term: int, number: str) -> str:
     return f"https://www.sejm.gov.pl/Sejm{term}.nsf/druk.xsp?nr={number}"
 

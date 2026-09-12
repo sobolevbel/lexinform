@@ -230,7 +230,9 @@ class Publisher(Protocol):
 
     def publish_act_published(self, bill: Bill, reply_to: int | None) -> PublishResult: ...
 
-    def publish_in_force(self, bill: Bill, reply_to: int | None) -> PublishResult: ...
+    def publish_in_force(
+        self, bill: Bill, reply_to: int | None, *, today: date | None = None
+    ) -> PublishResult: ...
 
     def publish_consultation_deadline(
         self, bill: Bill, reply_to: int | None, *, today: date

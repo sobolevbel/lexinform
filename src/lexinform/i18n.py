@@ -76,7 +76,8 @@ class Labels:
     already_in_force_since: str
     entry_into_force_unknown: str
     partial_vacatio_note: str
-    in_force_header: str
+    in_force_header: str  # the act enters into force today
+    in_force_header_dated: str  # ... and when a run was missed and it was earlier
     in_force_since: str
     act_summary: str
     link_isap: str
@@ -90,7 +91,7 @@ class Labels:
     tag_consultation_results: str  # the opinions received, once the window has shut
     tag_term: str  # "#<tag_term><term number>": the Sejm term (kadencja) the bill belongs to
     tag_ukraine: str  # bills about citizens of Ukraine: the channel's largest audience
-    consultation_link: str  # text of the link to the Sejm page where opinions are submitted
+    consultation_link: str  # the Sejm page of a bill under consultation (it carries no form)
     consultation_page: str  # the same page, named neutrally: the consultation is over
     action_now: str
     action_senate: str
@@ -108,6 +109,7 @@ class Labels:
     sejm_sitting: str
     link_video: str
     link_committee: str
+    link_senate_bills: str  # the Senate's listing of the laws the Sejm has passed
     tag_committee_sitting: str
     tag_sejm_sitting: str
     consultation_results_header: str
@@ -133,6 +135,7 @@ class Labels:
     link_justification: str
     link_osr: str
     link_wykaz: str
+    link_ministry_plan: str  # a ministry's own register, which RCL sometimes links instead
     tag_rcl: str
     # Bills the government has only announced (wykaz prac legislacyjnych RM)
     wykaz_header: str
@@ -279,6 +282,7 @@ RU = Labels(
         "Отдельные положения могут вступать в силу в другие сроки — см. текст закона."
     ),
     in_force_header="С сегодняшнего дня действует",
+    in_force_header_dated="Закон вступил в силу",
     in_force_since="вступил в силу",
     act_summary="Суть закона",
     link_isap="ISAP",
@@ -292,10 +296,10 @@ RU = Labels(
     tag_consultation_results="мнениявконсультациях",
     tag_term="kadencja",
     tag_ukraine="Украина",
-    consultation_link="форма для мнений на сайте Сейма",
+    consultation_link="страница проекта на сайте Сейма",
     consultation_page="страница консультаций на сайте Сейма",
     action_now="Что можно сделать сейчас",
-    action_senate="направить мнение в профильную комиссию Сената (senat.gov.pl)",
+    action_senate="направить мнение в профильную комиссию Сената",
     path="Путь",
     action_send_opinion="направить мнение через",
     action_consultation_page="страницу проекта на сайте Сейма",
@@ -310,6 +314,7 @@ RU = Labels(
     sejm_sitting="заседание Сейма №",
     link_video="Трансляция",
     link_committee="Страница комиссии",
+    link_senate_bills="законы в Сенате",
     tag_committee_sitting="заседаниекомиссии",
     tag_sejm_sitting="заседаниесейма",
     consultation_results_header="Опубликованы мнения из консультаций",
@@ -340,6 +345,7 @@ RU = Labels(
     link_justification="Uzasadnienie",
     link_osr="OSR",
     link_wykaz="Wykaz prac RM",
+    link_ministry_plan="План работ министерства",
     tag_rcl="RCL",
     wykaz_header="План правительства",
     wykaz_intention=(
@@ -752,6 +758,7 @@ EN = Labels(
     entry_into_force_unknown="entry-into-force date not stated yet",
     partial_vacatio_note="Some provisions may enter into force on other dates — see the act.",
     in_force_header="In force from today",
+    in_force_header_dated="The act has entered into force",
     in_force_since="in force since",
     act_summary="What the act does",
     link_isap="ISAP",
@@ -765,10 +772,10 @@ EN = Labels(
     tag_consultation_results="consultationopinions",
     tag_term="term",
     tag_ukraine="Ukraine",
-    consultation_link="opinion form on the Sejm website",
+    consultation_link="the bill's page on the Sejm website",
     consultation_page="consultation page on the Sejm website",
     action_now="What you can do now",
-    action_senate="send an opinion to the competent Senate committee (senat.gov.pl)",
+    action_senate="send an opinion to the competent Senate committee",
     path="Path",
     action_send_opinion="send an opinion via",
     action_consultation_page="the bill's page on the Sejm website",
@@ -783,6 +790,7 @@ EN = Labels(
     sejm_sitting="Sejm sitting no.",
     link_video="Live stream",
     link_committee="Committee page",
+    link_senate_bills="bills in the Senate",
     tag_committee_sitting="committeesitting",
     tag_sejm_sitting="sejmsitting",
     consultation_results_header="Consultation opinions published",
@@ -812,6 +820,7 @@ EN = Labels(
     link_justification="Uzasadnienie",
     link_osr="OSR",
     link_wykaz="Wykaz prac RM",
+    link_ministry_plan="Ministry work plan",
     tag_rcl="RCL",
     wykaz_header="Government plan",
     wykaz_intention=(

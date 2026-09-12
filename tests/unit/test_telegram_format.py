@@ -336,10 +336,10 @@ def test_a_consultation_that_is_over_says_so_and_stops_inviting_opinions(
     once_closed = formatter.new_bill(bill, None, today=dt.date(2026, 9, 11)).text
 
     assert "<b>Общественные консультации:</b> 24.01.2025 — 23.02.2025" in while_open
-    assert "форма для мнений" in while_open
+    assert "страница проекта на сайте Сейма" in while_open
     assert "<b>Общественные консультации:</b> завершились 23.02.2025" in once_closed
     assert "страница консультаций" in once_closed  # the page stays, the invitation goes
-    assert "форма для мнений" not in once_closed
+    assert "страница проекта на сайте Сейма" not in once_closed
     assert "24.01.2025" not in once_closed  # the end date is the fact that matters
 
 
@@ -589,7 +589,7 @@ def test_card_links_the_consultation_form_and_names_the_next_step(
 
     assert_telegram_html(text)
     assert (
-        f'31.08.2026 — 30.09.2026 · <a href="{CONSULTATION_PAGE}">форма для мнений на сайте Сейма</a>'
+        f'31.08.2026 — 30.09.2026 · <a href="{CONSULTATION_PAGE}">страница проекта на сайте Сейма</a>'
         in text
     )
     assert "⏭ <b>Что дальше:</b> I чтение в комиссии — ASW" in text  # name unknown: the code
@@ -608,7 +608,7 @@ def test_closed_consultation_keeps_the_page_but_drops_the_action(
     text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 10, 1)).text
 
     assert CONSULTATION_PAGE in text  # the opinions that were sent appear there
-    assert "форма для мнений" not in text  # but nothing can be sent any more
+    assert "страница проекта на сайте Сейма" not in text  # nothing can be sent any more
     assert "направить мнение через" not in text
     assert "направить мнение в комиссию —" in text
 
@@ -818,7 +818,7 @@ def test_consultation_deadline_reminder(process_3039: ProcessDetail) -> None:
     assert "Консультации заканчиваются — druk nr 3039" in ahead
     assert "до 30.09.2026 · осталось дней: 2" in ahead
     assert f'👉 <a href="{CONSULTATION_PAGE}">мнение можно направить' in ahead
-    assert f'🔗 <a href="{CONSULTATION_PAGE}">форма для мнений на сайте Сейма</a> | ' in ahead
+    assert f'🔗 <a href="{CONSULTATION_PAGE}">страница проекта на сайте Сейма</a> | ' in ahead
     assert "сегодня последний день" in last_day
 
 
@@ -1226,3 +1226,34 @@ def test_a_bill_waiting_only_for_its_vacatio_legis_is_not_called_finished(
     assert "Новый законопроект" in text
     assert "Что дальше:</b> вступление в силу 19.11.2026" in text
     assert "Уже действует" not in text
+
+
+def test_the_senate_window_gets_an_address_and_its_deadline(process_1962: ProcessDetail) -> None:
+    """The one window the reader has left, and the card used to spell out a bare domain."""
+    third_reading = next(
+        i
+        for i, st in enumerate(process_1962.stages)
+        if st.stage_type == "SejmReading" and "III" in st.stage_name
+    )
+    in_senate = process_1962.model_copy(
+        update={"stages": process_1962.stages[: third_reading + 1], "passed": True}
+    )
+
+    text = (
+        MessageFormatter("ru").new_bill(bill_of(in_senate), None, today=dt.date(2026, 7, 20)).text
+    )
+
+    assert "направить мнение в профильную комиссию Сената" in text
+    assert "senat.gov.pl/prace/proces-legislacyjny-w-senacie" in text
+    assert "до 16.08.2026" in text
+
+
+def test_the_in_force_reminder_does_not_claim_today_when_a_run_was_missed(
+    process_3039: ProcessDetail,
+) -> None:
+    late = bill_of(process_3039, act=act(entry_into_force=dt.date(2026, 9, 1)))
+    due = bill_of(process_3039, act=act(entry_into_force=TODAY))
+    fmt = MessageFormatter("ru", today=lambda: TODAY)
+
+    assert fmt.in_force(late).text.startswith("⚖️ <b>Закон вступил в силу")
+    assert fmt.in_force(due).text.startswith("⚖️ <b>С сегодняшнего дня действует")
