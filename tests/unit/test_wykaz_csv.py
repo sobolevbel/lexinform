@@ -83,6 +83,30 @@ def test_a_register_with_no_readable_row_is_an_error() -> None:
         parse_register(header + "\n")
 
 
+def test_a_paragraph_longer_than_the_csv_modules_own_limit_is_still_read() -> None:
+    """`Istota rozwiązań` is free prose; Python's csv module refuses a field over 128 KB, and
+    that refusal is not a `WykazPageError`, so it would escape the phase as an unknown failure."""
+    huge = _csv().replace("Polska przekształciła", "X" * 200_000 + " Polska przekształciła", 1)
+
+    entries = parse_register(huge)
+
+    assert [e.number for e in entries] == ["UC168", "UD408", "RD199", "UA4"]
+
+
+def test_rows_the_reader_had_to_drop_are_counted_in_the_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A register whose date format moved drops every row; without a count and an example the
+    only message is "no readable rows", which says nothing about what changed."""
+    moved = _csv().replace(" 15:21", "T15:21:00")
+
+    with caplog.at_level("WARNING"):
+        parse_register(moved)
+
+    assert "1 register row(s) dropped" in caplog.text
+    assert "2026-05-12T15:21:00" in caplog.text
+
+
 def test_the_register_id_comes_from_the_page() -> None:
     requested: list[str] = []
 

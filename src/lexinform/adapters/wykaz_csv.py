@@ -35,6 +35,11 @@ WYKAZ_TZ = ZoneInfo("Europe/Warsaw")  # `Data publikacji` is a local wall clock
 
 _REGISTER_ID = re.compile(r"registerVue-(\d+)")
 _PUBLISHED = "%Y-%m-%d %H:%M"
+# `Cele projektu` and `Istota rozwiązań` are free prose in quoted, multi-line fields, and the csv
+# module refuses a field over 128 KB by default. The whole register is one download of ~10 MB, so
+# a field cannot be bigger than that; anything larger is a different file, not a long paragraph.
+_MAX_FIELD_CHARS = 16 * 1024 * 1024
+csv.field_size_limit(_MAX_FIELD_CHARS)
 
 # Column header -> field. Matched by prefix against the header row, longest header first, so that
 # "Organ odpowiedzialny za opracowanie projektu" is not taken for "Organ odpowiedzialny".
@@ -70,18 +75,33 @@ def parse_register(text: str) -> tuple[WykazEntry, ...]:
     reader = csv.DictReader(io.StringIO(text), delimiter=";")
     fields = _map_columns(reader.fieldnames or [])
     entries: dict[str, WykazEntry] = {}
-    for row in reader:
+    dropped: list[str] = []
+    try:
+        rows = list(reader)
+    except csv.Error as exc:  # not a WykazPageError on its own: it would escape the phase
+        raise WykazPageError(f"the register could not be read: {exc}") from exc
+    for row in rows:
         entry = _entry(row, fields)
         if entry is None:
+            dropped.append(_row_label(row, fields))
             continue
         known = entries.get(entry.number)
         if known is not None and known.published_at >= entry.published_at:
-            log.info("wykaz %s entered twice; keeping the newer entry", entry.number)
+            log.info("wykaz %s entered twice; keeping the entry published later", entry.number)
             continue
         entries[entry.number] = entry
+    if dropped:
+        # Silence here is what hides a format change: the register would simply get shorter.
+        log.warning("%d register row(s) dropped, e.g. %s", len(dropped), "; ".join(dropped[:3]))
     if not entries:
         raise WykazPageError("the register has no readable rows")
     return tuple(sorted(entries.values(), key=lambda e: e.published_at, reverse=True))
+
+
+def _row_label(row: dict[str, str | None], fields: dict[str, str]) -> str:
+    """What a dropped row offers to identify it by: its number and the date that was unreadable."""
+    parts = [(row.get(fields[f]) or "").strip() for f in ("number", "published_at") if f in fields]
+    return " / ".join(p for p in parts if p) or "(empty row)"
 
 
 def _map_columns(header: Iterable[str]) -> dict[str, str]:
