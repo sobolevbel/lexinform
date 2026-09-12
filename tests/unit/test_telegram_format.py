@@ -31,6 +31,7 @@ from lexinform.models import (
     flatten_stages,
 )
 from tests.fakes import make_analysis
+from tests.harness import act
 
 NOW = dt.datetime(2026, 9, 7, tzinfo=dt.UTC)
 TODAY = dt.date(2026, 9, 9)
@@ -1192,3 +1193,32 @@ def test_a_sitting_today_is_not_a_deadline_to_write_before(process_3039: Process
 
     assert "направить мнение в комиссию" in text
     assert "до заседания" not in text
+
+
+def test_a_card_for_a_bill_already_in_force_says_so_and_links_the_act(
+    process_1962: ProcessDetail,
+) -> None:
+    """Discovery keeps such a bill off the channel, but `/republish` and an inherited card can
+    still put one there, and three empty lines would say nothing about being over."""
+    published = process_1962.model_copy(update={"eli": "DU/2026/1100"})
+    bill = bill_of(published, act=act(entry_into_force=dt.date(2026, 9, 1)))
+
+    text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
+
+    assert "Законопроект: процесс завершён — druk nr 1962" in text
+    assert "Уже действует с</b> 01.09.2026" in text
+    assert "Что дальше" not in text and "Что можно сделать" not in text
+    assert "Текст закона (PDF)" in text
+
+
+def test_a_bill_waiting_only_for_its_vacatio_legis_is_not_called_finished(
+    process_1962: ProcessDetail,
+) -> None:
+    published = process_1962.model_copy(update={"eli": "DU/2026/1100"})
+    bill = bill_of(published, act=act(entry_into_force=dt.date(2026, 11, 19)))
+
+    text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
+
+    assert "Новый законопроект" in text
+    assert "Что дальше:</b> вступление в силу 19.11.2026" in text
+    assert "Уже действует" not in text

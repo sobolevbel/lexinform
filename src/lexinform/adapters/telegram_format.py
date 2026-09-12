@@ -220,7 +220,7 @@ class MessageFormatter:
         lb = self._labels
         today = today or self._today()
 
-        header = self._header(ICON["new_bill"], self._card_header(bill), bill)
+        header = self._header(ICON["new_bill"], self._card_header(bill, today), bill)
         meta = (
             f"{score_icon(a.score)} <b>{esc(lb.importance)}:</b> {importance_bar(a.score)} "
             f"{a.score}/5\n"
@@ -247,8 +247,10 @@ class MessageFormatter:
         )
         return RenderedMessage(text=text)
 
-    def _card_header(self, bill: Bill) -> str:
+    def _card_header(self, bill: Bill, today: dt.date) -> str:
         lb = self._labels
+        if next_phase(bill, today=today) is None:
+            return lb.finished_bill_header
         if bill.wykaz is not None:
             return lb.wykaz_header
         return lb.rcl_header if bill.rcl is not None else lb.new_bill_header
@@ -327,6 +329,8 @@ class MessageFormatter:
             return self._rcl_links(bill.rcl)
         if bill.is_pre_print:
             return [link(s.web_url, lb.link_submission_pdf)]
+        if bill.act is not None:
+            return self._act_links(bill, bill.act)
         links = [link(s.web_url, lb.link_process)]
         pdf = print_info.main_pdf if print_info else None
         if pdf is not None:
@@ -1100,13 +1104,40 @@ class MessageFormatter:
 
     def _steps_block(self, bill: Bill, today: dt.date) -> str:
         """Where the bill is on its path, "what comes next" (dated when a sitting is scheduled,
-        else with the usual duration) and "what you can do" (or why nothing, for now)."""
+        else with the usual duration) and "what you can do" (or why nothing, for now) — or, when
+        the road has ended, the one sentence that says so."""
         lines = [
             self._path_line(bill, today),
             self._next_step_line(bill, today),
             self._action_line(bill, today),
         ]
-        return "\n".join(line for line in lines if line)
+        block = "\n".join(line for line in lines if line)
+        ended = self._ended_line(bill, today)
+        return "\n".join(part for part in (block, ended) if part)
+
+    def _ended_line(self, bill: Bill, today: dt.date) -> str:
+        """How the road ended. Without it a finished bill's card loses its last three lines and
+        says nothing at all about being over (a card posted for a bill whose act was already in
+        force, or one revived by `/republish`)."""
+        if next_phase(bill, today=today) is not None:
+            return ""
+        lb = self._labels
+        act = bill.act
+        if act is not None and act.entry_into_force is not None:
+            when = self.fmt_date(act.entry_into_force)
+            return f"{ICON['in_force']} <b>{esc(lb.already_in_force_since)}</b> {when}"
+        if bill.discontinued_at is not None:
+            carried = bill.summary.applicant_type is ApplicantType.CITIZENS
+            label = lb.process_carried_over if carried else lb.process_discontinued
+        elif bill.wykaz is not None:
+            label = lb.wykaz_process_closed
+        elif bill.rcl is not None:
+            label = lb.rcl_process_closed
+        elif bill.summary.closure_date is not None:
+            label = lb.process_not_enacted
+        else:
+            return ""
+        return f"{ICON['closed']} {esc(label)}"
 
     def _planned_adoption(self, bill: Bill, today: dt.date) -> str | None:
         """The quarter in which the register says the Council of Ministers means to adopt the

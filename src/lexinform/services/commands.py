@@ -268,24 +268,8 @@ class CommandService:
                 bill=bill,
                 note=f"the card is in the channel already ({card})",
             )
-        if bill.discontinued_at is not None:
-            return CommandOutcome(
-                status=OutcomeStatus.ANALYSED,
-                bill=bill,
-                note="lapsed with the end of its Sejm term: not posted",
-            )
-        if is_over(bill, today=self._clock.now().date()):
-            # The road ended (the act is out, or the bill was rejected or withdrawn). A card is
-            # an invitation to act, and there is nothing left to act on; the verdict above says
-            # what it was. A bill the Sejm has only passed is not over: the Senate is next.
-            ended = bill.summary.closure_date
-            outcome = "passed" if bill.summary.passed else "closed"
-            when = f" on {ended}" if ended is not None else ""
-            return CommandOutcome(
-                status=OutcomeStatus.ANALYSED,
-                bill=bill,
-                note=f"the process ended{when} ({outcome}): not posted",
-            )
+        if (over := self._over_note(bill)) is not None:
+            return CommandOutcome(status=OutcomeStatus.ANALYSED, bill=bill, note=over)
         if verdict.score < min_score and not command.publish:
             return CommandOutcome(
                 status=OutcomeStatus.ANALYSED,
@@ -312,11 +296,26 @@ class CommandService:
             note += f"; its card ({card}) stays and is still followed"
         return CommandOutcome(status=OutcomeStatus.SILENCED, bill=self._reload(bill), note=note)
 
+    def _over_note(self, bill: Bill) -> str | None:
+        """Why no card may be posted for this bill, when its road has ended. A card is an
+        invitation to act, and there is nothing left to act on; a bill the Sejm has only passed
+        is not over, because the Senate is next."""
+        if bill.discontinued_at is not None:
+            return "lapsed with the end of its Sejm term: not posted"
+        if not is_over(bill, today=self._clock.now().date()):
+            return None
+        ended = bill.summary.closure_date
+        outcome = "passed" if bill.summary.passed else "closed"
+        when = f" on {ended}" if ended is not None else ""
+        return f"the process ended{when} ({outcome}): not posted"
+
     def _republish(self, bill: Bill, *, publish: bool) -> CommandOutcome:
         if bill.analysis is None or not bill.analysis.analysis.relevant:
             return CommandOutcome(
                 status=OutcomeStatus.ERROR, bill=bill, note="no relevant analysis: nothing to post"
             )
+        if (over := self._over_note(bill)) is not None:
+            return CommandOutcome(status=OutcomeStatus.ERROR, bill=bill, note=over)
         if not publish:
             return CommandOutcome(
                 status=OutcomeStatus.ERROR, bill=bill, note="publishing is off in this run"

@@ -12,6 +12,7 @@ from lexinform.models import ApplicantType, Category
 @dataclass(frozen=True)
 class Labels:
     new_bill_header: str
+    finished_bill_header: str  # the card of a bill whose road had already ended
     update_header: str
     importance: str
     category: str
@@ -28,6 +29,7 @@ class Labels:
     new_stages: str
     process_closed: str
     process_passed: str
+    process_not_enacted: str  # the process ended without a law, and how is not recorded
     link_process: str
     link_pdf: str
     link_rcl: str
@@ -195,6 +197,7 @@ class Labels:
 
 RU = Labels(
     new_bill_header="Новый законопроект",
+    finished_bill_header="Законопроект: процесс завершён",
     update_header="Обновление",
     importance="Важность",
     category="Категория",
@@ -210,6 +213,7 @@ RU = Labels(
     partial_text_note="Анализ основан на неполном тексте документа.",
     new_stages="Новые стадии",
     process_closed="Сейм отклонил проект, процесс завершён.",
+    process_not_enacted="Процесс завершён: закон не принят.",
     process_passed="Сейм принял закон.",
     link_process="Ход процесса в Сейме",
     link_pdf="PDF",
@@ -652,6 +656,7 @@ RU = Labels(
 
 EN = Labels(
     new_bill_header="New bill",
+    finished_bill_header="Bill: the process is over",
     update_header="Update",
     importance="Importance",
     category="Category",
@@ -667,6 +672,7 @@ EN = Labels(
     partial_text_note="The analysis is based on a partial text of the document.",
     new_stages="New stages",
     process_closed="The Sejm rejected the bill; the process is over.",
+    process_not_enacted="The process is over: no law was enacted.",
     process_passed="The Sejm passed the bill.",
     link_process="Legislative process",
     link_pdf="Print PDF",
