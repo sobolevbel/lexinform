@@ -164,6 +164,7 @@ class PublishingService:
         )
         if not self._send(pub_id, bill, lambda: self._publisher.publish_new_bill(bill, print_info)):
             return False
+        self._repo.set_card_digest(pub_id, self._publisher.card_digest(bill))
         result.published += 1
         return True
 

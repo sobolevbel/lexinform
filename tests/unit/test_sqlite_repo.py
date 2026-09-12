@@ -662,7 +662,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         publications = {r[1] for r in conn.execute("PRAGMA table_info(publications)")}
         bills = {r[1] for r in conn.execute("PRAGMA table_info(bills)")}
         indexes = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")}
-    assert {"attempts", "ref"} <= publications
+    assert {"attempts", "ref", "rendered_sha256"} <= publications  # v16
     assert {
         "submission_json",
         "linked_number",

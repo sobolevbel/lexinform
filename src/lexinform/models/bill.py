@@ -501,6 +501,7 @@ class Publication(BaseModel):
     created_at: dt.datetime
     sent_at: dt.datetime | None = None
     error: str | None = None
+    rendered_sha256: str | None = None  # digest of the card text as last sent (new_bill)
 
 
 class StatusChange(BaseModel):

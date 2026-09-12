@@ -209,8 +209,12 @@ class Publisher(Protocol):
     def publish_new_bill(self, bill: Bill, print_info: PrintInfo | None) -> PublishResult: ...
 
     def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:
-        """Replace the card `message_id` with the bill's card as it renders now (used to add
-        the print's tag to an RCL/RPW card once the druk exists)."""
+        """Replace the card `message_id` with the bill's card as it renders now."""
+        ...
+
+    def card_digest(self, bill: Bill) -> str:
+        """Digest of the card as it would render now, without sending anything: what lets a run
+        tell a card that is still true from one that has drifted."""
         ...
 
     def publish_joint_bill(
@@ -395,6 +399,8 @@ class BillRepository(Protocol):
     def delete_publication(
         self, term: int, number: str, kind: PublicationKind, channel_id: str
     ) -> int: ...
+
+    def set_card_digest(self, publication_id: int, digest: str) -> None: ...
 
     def mark_stale_pending_as_unknown(self, *, now: datetime) -> int: ...
 

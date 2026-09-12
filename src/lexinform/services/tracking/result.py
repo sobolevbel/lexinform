@@ -34,6 +34,7 @@ class TrackingResult:
     consultation_results_posted: int = 0
     agenda_posted: int = 0
     hearing_reminders: int = 0
+    cards_refreshed: int = 0  # cards edited in place because what they said had drifted
     held: int = 0  # service-stage changes kept for the next post
     discontinued: int = 0  # bills that lapsed with the end of the term, announced under the card
     rehomed: int = 0  # the government's own rows (RCL, wykaz) carried over to the new term

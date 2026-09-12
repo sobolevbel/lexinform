@@ -6,11 +6,13 @@ gateway and `outage_on` on the publisher raise the phase-fatal `ServiceUnavailab
 `fail_on` raises an ordinary per-bill error.
 """
 
+import hashlib
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
+from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import (
     AttachmentTooLargeError,
     RclUnavailableError,
@@ -460,6 +462,11 @@ class FakePublisher:
     def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:
         self._send(bill)
         self.edits.append((bill, message_id))
+
+    def card_digest(self, bill: Bill) -> str:
+        """The real card's digest: a test sees the card change exactly when a reader would."""
+        text = MessageFormatter("ru").new_bill(bill, None).text
+        return hashlib.sha256(text.encode()).hexdigest()
 
     def publish_joint_bill(
         self, bill: Bill, primary: Bill, print_info: PrintInfo | None, reply_to: int | None

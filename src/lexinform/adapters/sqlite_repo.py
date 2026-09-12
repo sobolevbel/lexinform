@@ -195,6 +195,11 @@ MIGRATIONS: tuple[str, ...] = (
     """
     ALTER TABLE bills ADD COLUMN wykaz_json TEXT;
     """,
+    # v16: the digest of the card as it was last rendered, so that a run can tell whether the
+    # card still says what it would say today without asking Telegram.
+    """
+    ALTER TABLE publications ADD COLUMN rendered_sha256 TEXT;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -892,6 +897,12 @@ class SqliteBillRepository:
         )
         return int(cur.rowcount)
 
+    def set_card_digest(self, publication_id: int, digest: str) -> None:
+        """Remember what the card said when it was last sent or edited."""
+        self._conn.execute(
+            "UPDATE publications SET rendered_sha256 = ? WHERE id = ?", (digest, publication_id)
+        )
+
     def mark_stale_pending_as_unknown(self, *, now: datetime) -> int:
         cur = self._conn.execute(
             "UPDATE publications SET status = ?, error = ? WHERE status = ?",
@@ -1174,6 +1185,7 @@ class SqliteBillRepository:
             created_at=datetime.fromisoformat(row["created_at"]),
             sent_at=datetime.fromisoformat(row["sent_at"]) if row["sent_at"] else None,
             error=row["error"],
+            rendered_sha256=row["rendered_sha256"],
         )
 
 

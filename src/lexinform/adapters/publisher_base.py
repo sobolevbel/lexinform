@@ -5,6 +5,7 @@ Adding a message kind means one formatter method, one `Publisher` method here an
 concrete publishers.
 """
 
+import hashlib
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date
@@ -46,6 +47,10 @@ class RenderingPublisher(ABC):
     def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:
         text = self._formatter.new_bill(bill, print_info).text
         self._edit(Outgoing(PublicationKind.NEW_BILL, bill, text), message_id=message_id)
+
+    def card_digest(self, bill: Bill) -> str:
+        text = self._formatter.new_bill(bill, None).text
+        return hashlib.sha256(text.encode()).hexdigest()
 
     def publish_joint_bill(
         self, bill: Bill, primary: Bill, print_info: PrintInfo | None, reply_to: int | None

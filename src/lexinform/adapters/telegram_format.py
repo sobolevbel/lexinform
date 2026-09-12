@@ -221,8 +221,6 @@ class MessageFormatter:
         today = today or self._today()
 
         header = self._header(ICON["new_bill"], self._card_header(bill), bill)
-        # The scale's legend is not a statement about this bill, and the category line below it
-        # is: a treaty scored 3 read as if it were about "здравоохранение, образование".
         meta = (
             f"{score_icon(a.score)} <b>{esc(lb.importance)}:</b> {importance_bar(a.score)} "
             f"{a.score}/5\n"
@@ -1272,7 +1270,6 @@ class MessageFormatter:
                 text = f"{esc(lb.action_committee)} {', '.join(targets)}"
                 sitting = agenda_item if agenda_item and agenda_item.kind == "committee" else None
                 sitting = sitting or self._upcoming(bill, today, phase, kind="committee")
-                # "before the sitting on <date>" is an empty instruction once the sitting is today.
                 if sitting is not None and sitting.date > today:
                     text += f" {esc(lb.action_before_sitting)} {self.fmt_date(sitting.date)}"
                 actions.append(text)

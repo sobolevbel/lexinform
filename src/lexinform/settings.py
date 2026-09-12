@@ -103,6 +103,8 @@ class Settings(BaseSettings):
     pre_print_enabled: bool = True  # also watch /bills for bills without a print number yet
     voting_club_breakdown: bool = True  # fetch per-MP votes to show how each club voted
     max_publish_attempts: int = 3  # failed posts are retried on later runs up to this many times
+    # Cards re-rendered in place per run when what they say has drifted; bounds the run.
+    max_card_edits: int = 30
     first_run_lookback_days: int = 1
     rerun_overlap_days: int = 1
     runs_retention_days: int = Field(default=90, ge=7)  # run records (with reports) kept this long

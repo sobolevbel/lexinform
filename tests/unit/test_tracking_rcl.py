@@ -287,9 +287,10 @@ def test_hand_over_to_the_sejm_then_the_druk_continues_the_thread() -> None:
     stored = w.bill("3100")
     assert stored.analysis is not None and stored.rcl is None
     assert stored.linked_wykaz_number == "UC164"
-    # The card is re-rendered in place with the druk's tag next to its own.
-    edited, edited_message = w.publisher.edits[0]
-    assert (edited.number, edited_message) == (RCL, card_id)
+    # Every edit lands on the card: first the hand-over to the Sejm, then the druk's tag.
+    assert {message for _, message in w.publisher.edits} == {card_id}
+    edited, _ = w.publisher.edits[-1]
+    assert edited.number == RCL
     assert "#RCL_UC164 #kadencja10druk3100" in MessageFormatter("ru").new_bill(edited, None).text
 
 

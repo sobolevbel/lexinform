@@ -358,6 +358,7 @@ class DailyPipeline:
         report.consultation_reminders += tracked.consultation_reminders
         report.hearing_reminders += tracked.hearing_reminders
         report.held += tracked.held
+        report.cards_refreshed += tracked.cards_refreshed
         report.consultation_results_posted += tracked.consultation_results_posted
         report.agenda_posted += tracked.agenda_posted
         report.discontinued += tracked.discontinued

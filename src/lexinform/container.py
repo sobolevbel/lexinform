@@ -368,6 +368,7 @@ class Container:
                     else None
                 ),
                 agenda_watch=self.settings.agenda_watch,
+                max_card_edits=self.settings.max_card_edits,
                 rcl_reader=self.rcl_reader() if self.rcl is not None else None,
                 wykaz=self.wykaz,
                 max_publish_attempts=self.settings.max_publish_attempts,

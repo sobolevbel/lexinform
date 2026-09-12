@@ -95,7 +95,7 @@ class Poster:
     def retag_card(self, bill: Bill, card: Publication) -> bool:
         """Re-render the card in place so it carries the tags of the whole thread; one attempt,
         a refusal is logged and not retried (the replies carry both tags anyway)."""
-        if card.message_id is None:
+        if card.message_id is None or card.id is None:
             return False
         try:
             self._publisher.edit_new_bill(bill, None, message_id=card.message_id)
@@ -104,6 +104,7 @@ class Poster:
         except Exception as exc:
             log.warning("card of %s not re-tagged: %s: %s", bill.number, type(exc).__name__, exc)
             return False
+        self._repo.set_card_digest(card.id, self._publisher.card_digest(bill))
         log.info("card of %s re-rendered with the tags of its druk", bill.number)
         return True
 

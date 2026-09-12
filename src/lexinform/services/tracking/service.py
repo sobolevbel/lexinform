@@ -37,6 +37,7 @@ from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.sources import SejmTextSource, fetch_print
 from lexinform.services.tracking.acts import ActWatcher
 from lexinform.services.tracking.agenda import AgendaWatcher
+from lexinform.services.tracking.cards import CardRefresher
 from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.hearings import HearingReminder
 from lexinform.services.tracking.linking import Linker
@@ -84,6 +85,7 @@ class StatusTrackingService:
         in_force_reminders: bool = True,
         consultation_reminder_days: int | None = 3,
         agenda_watch: bool = True,
+        max_card_edits: int = 30,
         rcl_reader: RclProjectReader | None = None,
         wykaz: WykazGateway | None = None,
         local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
@@ -196,6 +198,9 @@ class StatusTrackingService:
             local_tz=local_tz,
             in_force_reminders=in_force_reminders,
         )
+        self._cards = CardRefresher(
+            gateway, repo, publisher, clock, channel_id=channel_id, max_edits=max_card_edits
+        )
         self._rollover = TermRollover(repo, clock, self._poster, channel_id=channel_id)
 
     def close_term(self, previous: int, current: int, *, publish: bool = True) -> TrackingResult:
@@ -259,6 +264,8 @@ class StatusTrackingService:
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 break
+        if result.fatal_error is None:
+            self._cards.refresh(everyone, result, publish=publish)
         if result.fatal_error is None and publish:
             self._acts.remind_in_force(result)
         if result.fatal_error is None and publish and self._consultations is not None:
