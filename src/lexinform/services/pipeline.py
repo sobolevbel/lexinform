@@ -143,8 +143,13 @@ class DailyPipeline:
                     log.exception("could not record the run: %s", exc)
                     report.errors.append(f"could not record the run: {type(exc).__name__}: {exc}")
             if opts.dry_run:
-                self._repo.rollback()
-                log.info("dry run: database changes rolled back")
+                try:
+                    self._repo.rollback()
+                    log.info("dry run: database changes rolled back")
+                except Exception as exc:
+                    # Raising here would skip the report, which is how the run is heard from.
+                    log.exception("dry run: could not roll back: %s", exc)
+                    report.errors.append(f"could not roll back: {type(exc).__name__}: {exc}")
             captured.uninstall()
             self._notify(report, captured)
         log.info(

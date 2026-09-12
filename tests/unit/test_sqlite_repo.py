@@ -5,6 +5,8 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from lexinform.adapters.sqlite_repo import MIGRATIONS, SCHEMA_VERSION, SqliteBillRepository
 from lexinform.models import (
     ActInfo,
@@ -681,6 +683,35 @@ def test_dump_restores_rows_indexes_and_the_schema_version(
     assert card is not None and card.message_id == 1
     assert update is not None and update.status_change_id == change_id
     assert fresh.add_status_change(_change("3039", now)) is None  # unique index restored too
+
+
+def test_a_dump_that_does_not_replay_leaves_the_database_as_it_was(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)
+    truncated = repo.dump()[: len(repo.dump()) // 2]
+
+    with pytest.raises(sqlite3.Error):
+        repo.restore(truncated)
+
+    assert repo.get(10, "3039") is not None
+    assert repo.schema_version == SCHEMA_VERSION
+
+
+def test_a_rollback_sqlite_refuses_does_not_leave_the_next_one_pretending(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    """`executescript` commits whatever is open, so the dry run's rollback can find nothing to
+    roll back. If the repository still believes it is in one, the next dry run writes for real."""
+    repo.begin()
+    repo.restore(repo.dump())
+    repo.rollback()
+
+    repo.begin()
+    repo.upsert_summary(process_3039, now=now)
+    repo.rollback()
+
+    assert repo.get(10, "3039") is None
 
 
 def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> None:

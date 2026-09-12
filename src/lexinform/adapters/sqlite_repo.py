@@ -6,6 +6,7 @@ a git branch with readable diffs.
 """
 
 import json
+import logging
 import sqlite3
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -221,6 +222,9 @@ def _dump_version(script: str) -> int:
     return 1
 
 
+log = logging.getLogger(__name__)
+
+
 class SqliteBillRepository:
     """`BillRepository` on one sqlite3 connection; JSON columns hold pydantic dumps."""
 
@@ -255,8 +259,15 @@ class SqliteBillRepository:
             self._in_txn = True
 
     def rollback(self) -> None:
-        if self._in_txn:
+        if not self._in_txn:
+            return
+        try:
             self._conn.execute("ROLLBACK")
+        except sqlite3.OperationalError as exc:
+            # Something underneath committed (`executescript` does). Nothing is left to undo,
+            # and believing otherwise would make the next `begin()` a no-op: a dry run that writes.
+            log.warning("nothing to roll back: %s", exc)
+        finally:
             self._in_txn = False
 
     def dump(self) -> str:
@@ -264,7 +275,18 @@ class SqliteBillRepository:
         return "\n".join(self._conn.iterdump()) + f"\n{_VERSION_LINE}{self.schema_version};\n"
 
     def restore(self, script: str) -> None:
-        """Replace the current contents with a script produced by `dump()`."""
+        """Replace the current contents with a script produced by `dump()`.
+
+        `executescript` commits as it goes, so the replacement cannot be one transaction: the
+        script is replayed into a scratch database first, and the real one is only emptied once
+        that has worked. Otherwise a truncated dump leaves no tables at all.
+        """
+        scratch = sqlite3.connect(":memory:")
+        try:
+            scratch.execute("PRAGMA foreign_keys = OFF")
+            scratch.executescript(script)
+        finally:
+            scratch.close()
         tables = [
             r[0]
             for r in self._conn.execute(
