@@ -65,6 +65,11 @@ from lexinform.pricing import cost_usd
 
 MESSAGE_LIMIT = 4096
 ELLIPSIS = "…"
+# A line the message cannot break stays one line, so whatever an outside system put in it must be
+# clipped before it is rendered: Telegram takes 4096 characters in a command, and an exception
+# message carries whatever the failing library chose to put there. Without this, one such value
+# pushes the whole message over the limit and `_cut_lines` drops every line after it.
+QUOTED_LINE_CHARS = 300
 QUARTERS = {1: "I", 2: "II", 3: "III", 4: "IV"}
 
 # What the technical channel accepts (English, like the run report; the operator's language).
@@ -808,11 +813,11 @@ class MessageFormatter:
         if timing:
             sections.append(_section("⏱", "timing", timing))
         if report.commands:
-            sections.append(_section("🛠", "commands", *(f"• {esc(c)}" for c in report.commands)))
+            sections.append(_section("🛠", "commands", *(_bullet(c) for c in report.commands)))
         if report.errors:
-            sections.append(_section("❌", "errors", *(f"• {esc(e)}" for e in report.errors)))
+            sections.append(_section("❌", "errors", *(_bullet(e) for e in report.errors)))
         if report.notes:
-            sections.append(_section("ℹ️", "notes", *(f"• {esc(n)}" for n in report.notes)))
+            sections.append(_section("ℹ️", "notes", *(_bullet(n) for n in report.notes)))
         rejected = ""
         if report.rejected:
             rejected = _section(
@@ -841,10 +846,11 @@ class MessageFormatter:
             OutcomeStatus.HELP: "🛠",
             OutcomeStatus.EXECUTED_EARLIER: "🕗",
         }.get(outcome.status, "❌")
-        head = f"{icon} <b>{esc(outcome.status)}</b> · <code>{esc(command.text)}</code>"
+        quoted = esc(_clip(command.text, QUOTED_LINE_CHARS))
+        head = f"{icon} <b>{esc(outcome.status)}</b> · <code>{quoted}</code>"
         if outcome.status is OutcomeStatus.HELP:
             body = [esc(outcome.note), COMMAND_HELP] if outcome.note else [COMMAND_HELP]
-            return RenderedMessage(text="\n\n".join([head, *body]))
+            return RenderedMessage(text=self._assemble([head, *body]))
         blocks = [head]
         bill = outcome.bill
         if bill is not None:
@@ -1653,6 +1659,11 @@ def _verdict_ref(verdict: AnalysisVerdict) -> str:
 
 def _clip(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
+
+
+def _bullet(text: str) -> str:
+    """One row of a report section: clipped, because an error or a note quotes an outside system."""
+    return f"• {esc(_clip(text, QUOTED_LINE_CHARS))}"
 
 
 def _tag_safe(number: str) -> str:

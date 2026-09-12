@@ -1122,6 +1122,32 @@ def test_a_command_that_never_called_the_model_reports_only_the_time(
     assert "tokens" not in text and "$" not in text
 
 
+@pytest.mark.parametrize(
+    "status", [OutcomeStatus.HELP, OutcomeStatus.SKIPPED, OutcomeStatus.EXECUTED_EARLIER]
+)
+def test_a_reply_fits_however_long_the_command_the_operator_sent_was(
+    status: OutcomeStatus,
+) -> None:
+    """Telegram accepts 4096 characters in a message and echoes them back into the reply."""
+    outcome = CommandOutcome(status=status, note="nothing to do")
+
+    text = MessageFormatter("ru").command_reply(_incoming("/analyze " + "x" * 4090), outcome).text
+
+    assert_telegram_html(text)
+
+
+def test_one_endless_error_does_not_take_the_rest_of_the_report_with_it() -> None:
+    """An exception message carries whatever the failing library put in it; the report is the
+    only place the operator learns that the run failed, so it must survive a long one."""
+    report = _report(errors=["unexpected failure: ValueError: " + "B" * 6000])
+
+    text = MessageFormatter("ru").run_report(report, []).text
+
+    assert_telegram_html(text)
+    assert "\n\n❌ <b>errors</b>\n• unexpected failure: ValueError: BBB" in text
+    assert "\n🤖 <b>analysis</b>\nanalyzed: 2 · failures: 1\n" in text  # the counters are still
+
+
 def test_a_deadline_that_has_run_out_is_named_as_expired(process_1962: ProcessDetail) -> None:
     third_reading = next(
         i
