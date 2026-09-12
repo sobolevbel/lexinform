@@ -336,7 +336,7 @@ def make_amendments(**overrides: object) -> Amendments:
 
 def make_digest(**overrides: object) -> DocumentDigest:
     fields: dict[str, object] = dict(
-        summary="Правительство поддерживает проект с оговорками.",
+        summary="Правительство просит смягчить требования к сроку пребывания.",
         points=["Просит сохранить трёхлетний срок для выпускников польских вузов"],
         supports=True,
         affects_foreigners=True,

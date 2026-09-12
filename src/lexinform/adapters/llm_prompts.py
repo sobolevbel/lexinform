@@ -94,7 +94,7 @@ A bill the channel follows has received a document filed to its print (druk) aft
 
 ## Output fields
 
-- summary: 1-2 plain sentences in {language}: what the document says about the bill. For a government position, whether the government backs it, opposes it or backs it conditionally, and on what. For an OSR, whom the bill affects and at what cost, with the figures it gives. For an opinion, what its author objects to or asks for.
+- summary: 1-2 plain sentences in {language}: what the document says about the bill. For a government position, what it asks for or objects to, and the condition when the support is conditional — whether the government is simply for or against goes in `supports` and is not to be repeated here. For an OSR, whom the bill affects and at what cost, with the figures it gives. For an opinion, what its author objects to or asks for.
 - points: up to 5 bullets in {language}, each one concrete statement in at most ~120 characters — an objection, a demanded change, a figure. Leave out formalities and procedural boilerplate.
 - supports: only for a government position — true when it backs the bill, false when it is against, null when it is neither (conditional support goes with the condition in the summary). Always null for an OSR or an opinion.
 - affects_foreigners: true if what the document says bears on non-citizens (their stay, work, rights, benefits, procedures, fees, documents).

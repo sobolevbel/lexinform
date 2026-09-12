@@ -157,7 +157,10 @@ class DocumentDigest(BaseModel):
     """Structured output about a document filed to a print: what it says about the bill that is
     already there, not a new analysis of the bill."""
 
-    summary: str = Field(description="1-2 plain sentences: what the document says overall.")
+    summary: str = Field(
+        description="1-2 plain sentences: what the document asks for or objects to, never a"
+        " repetition of the verdict `supports` already carries."
+    )
     points: list[str] = Field(
         default_factory=list, description="Up to 5 concrete statements, one per bullet."
     )

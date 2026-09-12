@@ -69,7 +69,7 @@ def test_the_governments_position_is_told_with_what_it_says() -> None:
     assert text.startswith("🏛 <b>Правительство высказалось о проекте — druk nr 3039</b>")
     assert "📄 <b>Позиция правительства по проекту</b>" in text
     assert "<b>правительство поддерживает проект</b>" in text
-    assert "Правительство поддерживает проект с оговорками." in text
+    assert "Правительство просит смягчить требования к сроку пребывания." in text
     assert f'href="{url}"' in text
     assert "#правительство" in text
 
