@@ -1,0 +1,127 @@
+# Diagnostic, run by hand: can a GitHub runner download the PDF of a bill that has no print
+# number yet? Those files live on orka.sejm.gov.pl behind Imperva Incapsula, and the project has
+# treated them as unreachable since the start. Measured from a home connection on 2026-09-12 that
+# is wrong: Incapsula answers 403 only to a User-Agent carrying a bot signature (`curl/8.x`), and
+# any other identity — our own "lexinform (+github)" included — gets the file, provided the client
+# follows the 302 and keeps the cookies it sets (visid_incap_*, incap_ses_*). Five RPW files came
+# back as PDF, 86 KB to 70 MB.
+#
+# What is unknown is the runner: Incapsula scores the address, and these runners are Azure
+# datacenter IPs (legislacja.rcl.gov.pl drops their SYN outright, see rcl-probe.yml). So the three
+# user agents are probed with a cookie jar, the default curl UA is kept as the negative control,
+# and the body is checked for %PDF — Incapsula answers its challenge with HTTP 200 too.
+name: Orka probe
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OURS: "lexinform (+github)"
+      BROWSER: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36"
+      FMT: "http=%{http_code} type=%{content_type} dns=%{time_namelookup}s tcp=%{time_connect}s tls=%{time_appconnect}s ttfb=%{time_starttransfer}s total=%{time_total}s bytes=%{size_download}\n"
+    steps:
+      - name: Runner egress address
+        run: curl -sS --max-time 10 https://api.ipify.org || true
+
+      - name: DNS
+        run: |
+          getent hosts orka.sejm.gov.pl || true
+          dig +short orka.sejm.gov.pl A || true
+
+      - name: Bills without a print number, from the API
+        run: |
+          set +e
+          TERM=$(curl -sS --max-time 30 -A "$OURS" https://api.sejm.gov.pl/sejm/term \
+            | jq -r '[.[] | select(.current)][0].num')
+          echo "current term: $TERM"
+          echo "$TERM" > /tmp/term
+          : > /tmp/bills.jsonl
+          off=0
+          while [ "$off" -le 3000 ]; do
+            curl -sS --max-time 30 -A "$OURS" -o /tmp/page.json \
+              "https://api.sejm.gov.pl/sejm/term$TERM/bills?limit=100&offset=$off"
+            n=$(jq 'length' /tmp/page.json 2>/dev/null || echo 0)
+            [ "$n" -eq 0 ] && break
+            jq -c '.[]' /tmp/page.json >> /tmp/bills.jsonl
+            off=$((off + 100))
+          done
+          echo "rows: $(wc -l < /tmp/bills.jsonl)"
+          # The newest entries are last, and an entry that has since been given a print number is
+          # no longer served under its RPW name.
+          jq -rs '[.[] | select(.number | startswith("RPW")) | select(.printNumber == null)]
+                  | .[-3:] | .[].number' /tmp/bills.jsonl > /tmp/rpw.txt
+          echo "probing:"; cat /tmp/rpw.txt
+
+      - name: One file, three identities, with the cookies Incapsula sets
+        run: |
+          set +e
+          TERM=$(cat /tmp/term)
+          NUM=$(head -1 /tmp/rpw.txt)
+          SLUG="$TERM-$(echo "$NUM" | tr '/' '-')"
+          URL="https://orka.sejm.gov.pl/Druki${TERM}ka.nsf/Projekty/$SLUG/\$file/$SLUG.pdf"
+          echo "$URL"
+          probe() {
+            echo "--- UA: ${1:-<curl default>}"
+            rm -f /tmp/jar
+            if [ -n "$1" ]; then
+              curl -sS -L -c /tmp/jar -b /tmp/jar -o /tmp/body -w "$FMT" --max-time 120 -A "$1" "$URL"
+            else
+              curl -sS -L -c /tmp/jar -b /tmp/jar -o /tmp/body -w "$FMT" --max-time 120 "$URL"
+            fi
+            echo "  first bytes: $(head -c 4 /tmp/body | tr -d '\0')"
+            echo "  incap cookies: $(grep -c incap /tmp/jar 2>/dev/null || echo 0)"
+          }
+          probe "$OURS"
+          probe "$BROWSER"
+          probe ""
+
+      - name: The same file without a cookie jar, which is what "not downloadable" looked like
+        run: |
+          set +e
+          TERM=$(cat /tmp/term)
+          NUM=$(head -1 /tmp/rpw.txt)
+          SLUG="$TERM-$(echo "$NUM" | tr '/' '-')"
+          curl -sS -L --max-redirs 5 -o /dev/null -w "$FMT" --max-time 60 -A "$OURS" \
+            "https://orka.sejm.gov.pl/Druki${TERM}ka.nsf/Projekty/$SLUG/\$file/$SLUG.pdf"
+          echo "(exit $? — a redirect loop here is the cookie, not the identity)"
+
+      - name: Every picked file, as the project would fetch it
+        run: |
+          set +e
+          TERM=$(cat /tmp/term)
+          while read -r NUM; do
+            [ -z "$NUM" ] && continue
+            SLUG="$TERM-$(echo "$NUM" | tr '/' '-')"
+            URL="https://orka.sejm.gov.pl/Druki${TERM}ka.nsf/Projekty/$SLUG/\$file/$SLUG.pdf"
+            rm -f /tmp/jar
+            echo "--- $NUM"
+            curl -sS -L -c /tmp/jar -b /tmp/jar -o /tmp/body -w "  $FMT" --max-time 180 -A "$OURS" "$URL"
+            echo "  first bytes: $(head -c 4 /tmp/body | tr -d '\0')"
+          done < /tmp/rpw.txt
+
+      - name: Verbose handshake of one request
+        run: |
+          set +e
+          TERM=$(cat /tmp/term)
+          NUM=$(head -1 /tmp/rpw.txt)
+          SLUG="$TERM-$(echo "$NUM" | tr '/' '-')"
+          rm -f /tmp/jar
+          curl -v -sS -L -c /tmp/jar -b /tmp/jar -o /dev/null --max-time 120 -A "$OURS" \
+            "https://orka.sejm.gov.pl/Druki${TERM}ka.nsf/Projekty/$SLUG/\$file/$SLUG.pdf" 2>&1 \
+            | sed 's/^/  /' | head -80
+
+      - name: robots.txt of the host
+        run: |
+          set +e
+          rm -f /tmp/jar
+          curl -sS -L -c /tmp/jar -b /tmp/jar --max-time 30 -A "$OURS" \
+            https://orka.sejm.gov.pl/robots.txt | head -10
+
+      - name: Control, the Sejm API from the same runner
+        run: |
+          curl -sS -o /dev/null -w "sejm api http=%{http_code} total=%{time_total}s\n" \
+            --max-time 30 -A "$OURS" https://api.sejm.gov.pl/sejm/term
