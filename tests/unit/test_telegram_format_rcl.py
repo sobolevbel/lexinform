@@ -137,7 +137,7 @@ def test_update_lists_the_new_stage_and_announces_the_hand_over_to_the_sejm() ->
 
     assert_telegram_html(text)
     assert "🔢 <b>Проект направлен в Сейм — UC164</b>" in text
-    assert "• 02.09.2026: 14. Skierowanie projektu ustawy do Sejmu" in text
+    assert "• 02.09.2026: <i>14. Skierowanie projektu ustawy do Sejmu</i>" in text
     assert "Проект направлен в Сейм — ждём номер druku" in text
     assert "Что дальше:</b> присвоение номера druku в Сейме, затем I чтение" in text
     assert ">Проект на RCL</a>" in text and "#RCL_UC164" in text

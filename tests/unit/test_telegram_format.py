@@ -382,7 +382,8 @@ def test_status_update_lists_new_stages_and_the_closure(process_1962: ProcessDet
     # The header names the newest event; the stages are bullets in the reader's language.
     assert "🏛 <b>Сейм рассмотрел поправки Сената — druk nr 1962</b>" in text
     assert (
-        "• 03.09.2026: отчёт комиссии (sprawozdanie) (druk 3014): предлагает принять часть" in text
+        "• 03.09.2026: отчёт комиссии (sprawozdanie) (druk nr 3014): предлагает принять часть"
+        in text
     )
     assert "• 04.09.2026: Сейм рассмотрел позицию Сената — часть поправок Сената принята" in text
     assert "• процесс в Сейме завершён" in text and "Uchwalono" not in text
@@ -521,7 +522,7 @@ def test_senate_position_is_rendered_from_its_position_field(process_1962: Proce
     known = fmt.status_update(bill_of(process_1962), change_of("1962", [senate])).text
     unknown = fmt.status_update(bill_of(process_1962), change_of("1962", [odd])).text
 
-    assert "Сенат внёс поправки" in known and "(druk 2994)" in known
+    assert "Сенат внёс поправки" in known and "(druk nr 2994)" in known
     assert "odroczył rozpatrywanie" in unknown  # unknown positions pass through verbatim
 
 
@@ -575,7 +576,7 @@ def test_president_stages_and_committee_referrals_have_labels(process_3039: Proc
     )
 
     assert "• 13.08.2026: ✍️ Президент подписал закон" in text
-    assert "• ⛔ Президент наложил вето (druk 2863)" in text
+    assert "• ⛔ Президент наложил вето (druk nr 2863)" in text
     assert "• 📮 Направлен в комиссию: Komisja Administracji i Spraw Wewnętrznych (ASW)" in text
     assert "• 📮 Направлен в комиссию: ASW" in text
 

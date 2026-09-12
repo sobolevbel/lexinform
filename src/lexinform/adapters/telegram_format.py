@@ -961,7 +961,7 @@ class MessageFormatter:
             return esc(bill.rcl.wykaz_number or bill.number)
         if bill.is_pre_print:
             return f"{esc(bill.number)} ({esc(self._labels.no_print_yet)})"
-        return f"druk nr {esc(bill.number)}"
+        return f"{esc(self._labels.print_number)} {esc(bill.number)}"
 
     def _term_tag(self, term: int) -> str:
         """Only on cards: a search for it lists every bill of the term, without the replies."""
@@ -1300,9 +1300,7 @@ class MessageFormatter:
             return next((t for part, t in lb.rcl_stage_labels.items() if part in name), None)
         if stage.stage_type == "SejmReading":
             match = _READING_NUMERAL.match(stage.stage_name)
-            if match:
-                return lb.next_step_labels["second_reading"].replace("II", match.group(1))
-            return None
+            return lb.reading_stage.format(numeral=match.group(1)) if match else None
         if stage.stage_type == "End" and veto_stood((stage,)):
             return lb.stage_veto_sustained
         return lb.stage_labels.get(stage.stage_type) or lb.stage_type_labels.get(stage.stage_type)
@@ -1315,7 +1313,7 @@ class MessageFormatter:
             return f"{esc(self._labels.stage_labels['Referral'])} {esc(committee)}"
         label = self._translate_stage(stage)
         if label is None:
-            return esc(stage.stage_name)
+            return _quoted(stage.stage_name)
         if stage.stage_type == RCL_STAGE_TYPE:
             return f"{esc(label)} ({esc(stage.stage_name)})"
         return esc(label)
@@ -1470,8 +1468,9 @@ class MessageFormatter:
         if stage.stage_type == "Voting" and stage.voting is not None:
             return when + self._voting_lines(stage.voting)
         if stage.stage_type == "SenatePosition" and stage.position:
-            text = lb.senate_position_labels.get(stage.position.strip().lower(), stage.position)
-            return when + esc(text) + self._print_suffix(stage)
+            known = lb.senate_position_labels.get(stage.position.strip().lower())
+            text = esc(known) if known else _quoted(stage.position)
+            return when + text + self._print_suffix(stage)
         if stage.stage_type == "Referral" and stage.committee_code:
             name = stage.committee_code
             if stage.committee_name:
@@ -1480,9 +1479,10 @@ class MessageFormatter:
         if stage.stage_type == "CommitteeReport":
             label = lb.subcommittee_report if stage.sub_committee else lb.committee_report
             line = when + esc(label) + self._print_suffix(stage)
-            proposal = _translate(stage.proposal, lb.proposal_labels) or stage.proposal
+            known = _translate(stage.proposal, lb.proposal_labels)
+            proposal = esc(known) if known else _quoted(stage.proposal)
             if proposal:
-                line += f": {esc(lb.proposes)} {esc(proposal)}"
+                line += f": {esc(lb.proposes)} {proposal}"
             return line
         if stage.stage_type == "PublicHearing":
             line = when + esc(lb.stage_type_labels["PublicHearing"])
@@ -1497,19 +1497,20 @@ class MessageFormatter:
         translated = None if stage.stage_type == RCL_STAGE_TYPE else self._translate_stage(stage)
         if translated is not None:
             line = when + esc(translated)
-            decision = _translate(stage.decision, lb.decision_labels) or stage.decision
+            known = _translate(stage.decision, lb.decision_labels)
+            decision = esc(known) if known else _quoted(stage.decision)
             if decision:
-                line += f" — {esc(decision)}"
+                line += f" — {decision}"
             return line + self._print_suffix(stage)
-        parts = [stage.stage_name]
         outcome = stage.decision or stage.position
-        if outcome:
-            parts.append(f"— {outcome}")
-        return when + esc(" ".join(parts)) + self._print_suffix(stage)
+        original = f"{stage.stage_name} — {outcome}" if outcome else stage.stage_name
+        return when + _quoted(original) + self._print_suffix(stage)
 
-    @staticmethod
-    def _print_suffix(stage: Stage) -> str:
-        return f" (druk {esc(stage.print_number)})" if stage.print_number else ""
+    def _print_suffix(self, stage: Stage) -> str:
+        """The print a stage produced, in brackets after the stage."""
+        if not stage.print_number:
+            return ""
+        return f" ({esc(self._labels.print_number)} {esc(stage.print_number)})"
 
     def _voting_lines(self, v: VotingSummary) -> str:
         lb = self._labels
@@ -1561,6 +1562,12 @@ class MessageFormatter:
                 budget -= len(block) + 2
         text = "\n\n".join(kept_head + shrunk + kept_tail)
         return text if len(text) <= MESSAGE_LIMIT else _cut_lines(text, MESSAGE_LIMIT)
+
+
+def _quoted(value: str | None) -> str:
+    """A value the labels have no wording for, in italics: the reader sees what the Sejm wrote
+    rather than a Polish phrase standing where a Russian one belongs."""
+    return f"<i>{esc(value)}</i>" if value else ""
 
 
 def _translate(value: str | None, labels: dict[str, str]) -> str | None:

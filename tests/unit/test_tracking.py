@@ -447,7 +447,7 @@ def test_additional_committee_report_is_summarised_with_its_proposal() -> None:
     assert change.amendments is not None and change.amendments.source_url == A_REPORT_URL
     assert w.llm.amendment_contexts[-1].proposal == "przyjąć poprawki"
     text = MessageFormatter("ru").status_update(*w.publisher.updates[-1][:2]).text
-    assert "отчёт комиссии (sprawozdanie) (druk 2689-A): предлагает принять поправки" in text
+    assert "отчёт комиссии (sprawozdanie) (druk nr 2689-A): предлагает принять поправки" in text
     assert "Что меняют поправки (по отчёту комиссии)" in text
 
 

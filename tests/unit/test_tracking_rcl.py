@@ -61,7 +61,7 @@ def test_reached_stage_is_posted_once() -> None:
     text = MessageFormatter("ru").status_update(bill, change).text
     # The header names the stage in the reader's language; the bullet keeps the original.
     assert "<b>Постоянный комитет Совета министров — UC164</b>" in text
-    assert "• 9. Stały Komitet Rady Ministrów" in text
+    assert "• <i>9. Stały Komitet Rady Ministrów</i>" in text
     assert "Что дальше:</b> комитеты Совета министров и Komisja Prawnicza" in text
 
 
@@ -97,7 +97,7 @@ def test_consultation_opening_later_is_announced_with_the_deadline() -> None:
     bill, change, _ = w.publisher.updates[0]
     assert bill.consultation is not None and bill.consultation.end == dt.date(2026, 9, 8)
     text = MessageFormatter("ru").status_update(bill, change, today=dt.date(2026, 9, 8)).text
-    assert "• 3. Konsultacje publiczne" in text
+    assert "• <i>3. Konsultacje publiczne</i>" in text
     assert "направить замечания на dep.prawny@mswia.gov.pl до 08.09.2026" in text
 
 

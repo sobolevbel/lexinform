@@ -25,8 +25,10 @@ class Labels:
     stage: str
     applicant: str
     document_date: str
+    print_number: str  # what a print (druk) is called before its number
     partial_text_note: str
     new_stages: str
+    reading_stage: str  # "{numeral} чтение …": a reading that has happened
     process_closed: str
     process_passed: str
     process_not_enacted: str  # the process ended without a law, and how is not recorded
@@ -116,7 +118,6 @@ class Labels:
     consultation_results_hint: str
     # Government projects on RCL (before the Sejm)
     rcl_header: str
-    rcl_ministry: str
     rcl_wykaz: str  # "number in the wykaz prac legislacyjnych RM"
     rcl_published: str
     rcl_no_stage: str
@@ -217,8 +218,10 @@ RU = Labels(
     stage="Стадия",
     applicant="Инициатор",
     document_date="Дата druku",
+    print_number="druk nr",
     partial_text_note="Анализ основан на неполном тексте документа.",
     new_stages="Новые стадии",
+    reading_stage="{numeral} чтение на заседании Сейма",
     process_closed="Сейм отклонил проект, процесс завершён.",
     process_not_enacted="Процесс завершён: закон не принят.",
     process_veto_sustained=(
@@ -322,7 +325,6 @@ RU = Labels(
         "мнения, поданные в ходе общественных консультаций, доступны на странице проекта"
     ),
     rcl_header="Правительственный проект (RCL)",
-    rcl_ministry="министерство",
     rcl_wykaz="номер в wykazie prac RM",
     rcl_published="Опубликован на RCL",
     rcl_no_stage="проект опубликован на RCL, работа над ним ещё не началась",
@@ -695,8 +697,10 @@ EN = Labels(
     stage="Stage",
     applicant="Submitted by",
     document_date="Print date",
+    print_number="print no.",
     partial_text_note="The analysis is based on a partial text of the document.",
     new_stages="New stages",
+    reading_stage="{numeral} reading at a Sejm sitting",
     process_closed="The Sejm rejected the bill; the process is over.",
     process_not_enacted="The process is over: no law was enacted.",
     process_veto_sustained=(
@@ -798,7 +802,6 @@ EN = Labels(
         "the opinions submitted during the public consultation are available on the bill's page"
     ),
     rcl_header="Government bill (RCL)",
-    rcl_ministry="ministry",
     rcl_wykaz="wykaz prac RM number",
     rcl_published="Published on RCL",
     rcl_no_stage="published on RCL, work has not started yet",
