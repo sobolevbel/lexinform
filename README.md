@@ -80,9 +80,11 @@ and a reminder on the day the act enters into force.
 Every update is named after its event ("Сейм принял закон", "Направлен в комиссии", "Сенат внёс
 поправки"), lists the new stages in the reader's language and repeats one sentence of the
 summary (the whole text only when the analysis changed). Stages that only frame an event
-("Skierowano do I czytania", "Praca w komisjach", the first reading itself, the hand-over to the
-President, the final "Uchwalono") get no post of their own: they are held and listed with the
-next substantive update. A closure that arrives together with the act in Dziennik Ustaw is told
+("Skierowano do I czytania", "Praca w komisjach", the first reading itself, the final
+"Uchwalono") get no post of their own: they are held and listed with the next substantive
+update. The hand-over to the President is not one of them — it starts the 21 days of art. 122,
+which is the reader's last window, and the Senate's 30 days and the President's 21 each get a
+reminder of their own as they run out. A closure that arrives together with the act in Dziennik Ustaw is told
 by the publication notice alone.
 
 Bills that have no print (druk) number yet (`RPW/…`, the consultation stage) are covered too, from

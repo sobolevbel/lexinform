@@ -281,7 +281,7 @@ practice.
 | Sejm consultation of an RPW bill (non-government) | anyone | web form on sejm.gov.pl, 30 days | consultation line + link, reminder 3 days before, notice when opinions are published |
 | Committee work after the first reading | anyone; organisations formally via lobbying declaration | letter/e-mail to the committee secretariat, ideally before the sitting that handles the bill | "what you can do now" with the committee link; committee sitting agenda posts |
 | Wysłuchanie publiczne | anyone who applies ≥ 10 days before | application via the Sejm's system | `PublicHearing` stage line and action line with the application deadline; reminder reply before it |
-| Senate committee stage | anyone | opinion to the Senate committee | "what you can do now" names it while the Senate has the bill, with the 30-day deadline as a date (no committee link: the Senate API is not used); the Senate's amendments are summarised from its resolution print |
+| Senate committee stage | anyone | opinion to the Senate committee | "what you can do now" names it while the Senate has the bill (no committee link: the Senate API is not used), and a reminder reply goes out as the 30 days run out. The date is shown as the Senate's own deadline, never as a window for opinions: it is computed from the third reading, because the API does not give the day the act was handed over, and so falls a few days early — the messages say so |
 | Petition (any time, incl. after the act) | anyone (ustawa o petycjach), no citizenship requirement | petition to the Sejm (Komisja do Spraw Petycji), Senate or a ministry | not covered |
 | After entry into force | — | compliance; a new bill is needed to change it | in-force reminder |
 
@@ -305,10 +305,17 @@ SenatePositionConsideration  Rozpatrywanie na forum Sejmu stanowiska Senatu   de
 ToPresident                  Ustawę przekazano Prezydentowi do podpisu
 PresidentSignature           Prezydent podpisał ustawę
 Veto / PresidentToTribunal
+GovermentPosition            Stanowisko rządu (the API's own misspelling)
+Opinion                      Opinia (a body's opinion, filed beside the process)
 End                          Uchwalono
 ```
 
-`models.next_phase` turns the last top-level stage into the reader-facing "what comes next";
+`models.next_phase` turns the last top-level stage into the reader-facing "what comes next" —
+last as `models.process_stages` counts it, which drops `GovermentPosition` and `Opinion` (they
+arrive beside the process) and the trailing `End`: the Sejm appends "Uchwalono" at the third
+reading and keeps it last while the Senate, the President and Dziennik Ustaw are still ahead
+(druk 2799, read 2026-09-12). Only the `End` of a bill a veto killed ("nie uchwalona ponownie")
+is an answer in itself.
 `Stage.carries_bill_text` decides which committee report is a text worth re-analysing (`-A`
 reports and "przyjąć poprawki" are amendment tables). `passed` = adopted by the Sejm; `ELI` =
 published; `/eli/acts` `entryIntoForce` = in force. Timestamps in the API are naive Warsaw time.

@@ -115,8 +115,9 @@ Done on 2026-09-10 (schema v11), after a reader's-eye review of the update posts
 - Updates are named after their event (header from `models.update_event`), list the new stages in
   the reader's language with the committee's proposal, and repeat one sentence of the summary
   unless the analysis changed. Frame stages ("Skierowano", "Praca w komisjach", the first reading,
-  hand-over to the President, "Uchwalono") are held and told with the next substantive update; a
-  closure that comes with the act is left to the Dziennik Ustaw notice.
+  "Uchwalono") are held and told with the next substantive update; a closure that comes with the
+  act is left to the Dziennik Ustaw notice. The hand-over to the President is *not* a frame stage
+  (`models/events.py`): it starts the 21 days of art. 122.
 - Amendments are read: the Senate's resolution print (`SenatePosition.printNumber`) and the
   committee reports whose proposal is about poprawki ("-A", the report on the Senate's position)
   get a model summary (`Amendments`: what changes, whether it touches foreigners), stored on the
@@ -215,6 +216,12 @@ reader are in the commit messages; the shape of the fixes:
   shows where the group stands.
 - **Tags**: every reply carries importance, category and topic, the event vocabulary covers what
   a reader searches for, and the tag line is in one alphabet.
+
+Knowingly not modelled, and cheap to add if a case turns up: the seven days the President has to
+sign after the Sejm overrides a veto (art. 122 ust. 5 — the card would still say 21), the budget
+act's own terms (20 days for the Senate, 7 for the President, art. 223/224) and a constitutional
+amendment's 60 days for the Senate (art. 235). Only the `urgencyStatus` split is read, and the
+budget and the constitution are not what this channel follows.
 
 Still open:
 

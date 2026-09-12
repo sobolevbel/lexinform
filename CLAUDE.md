@@ -107,6 +107,16 @@ Invariants worth keeping:
   the reconciler (`tracking/pre_print.py`) re-reads `/bills` for pending RPW entries and for bills
   awaiting consultation results and compares new with stored (print assigned, withdrawn,
   `consultationResults` flipped). If discovery overwrote the row first, the flip would be lost.
+- **The last stage is not the last node.** `models.process_stages` is what `next_phase` and
+  `Bill.last_stage` read: top-level stages minus `ASIDE_STAGE_TYPES` (`GovermentPosition`,
+  `Opinion` — they arrive beside the process) **and minus a trailing `End`**. The Sejm appends
+  "Uchwalono" at the third reading and keeps it last while the Senate, the President and Dz.U.
+  are all still ahead (druk 2799, read 2026-09-12: III czytanie "uchwalono" 2026-09-04, `End`
+  already there, no Senate stage, no act). Taking it for the current step collapsed the whole
+  Senate → President segment into `publication`, so the card marked «Сенат ✓ → Президент ✓» and
+  offered «пока ничего» over the reader's last two windows, and the `SenatePosition`,
+  `ToPresident`, `Veto` and `PresidentToTribunal` branches were dead code. The `End` of a bill a
+  veto killed ("nie uchwalona ponownie", `models.veto_stood`) stays and ends the road.
 - **"What comes next" is derived, not stored.** `models.next_phase(bill, today)` reads the
   top-level stages, submission and act; the formatter dates it from `bill.agenda` (upcoming
   sittings, refreshed every run for every followed bill, not only the changed ones) or from the
@@ -119,22 +129,36 @@ Invariants worth keeping:
   has been standing (`models.stalled_days`, `Phase.since`) instead of quoting an average, and a
   sitting only dates a phase whose venue it matches (a committee's 08:30 slot is not a third
   reading). The same rule governs the action line: a hearing whose application deadline has gone
-  is not offered, and «до заседания» is dropped on the day of the sitting.
+  is not offered, and «до заседания» is dropped on the day of the sitting. A constitutional
+  deadline is shown as the deadline of the body that is under it, never as a window the reader
+  has: «решение до 04.10.2026», and the reminder (`tracking/deadlines.py`, one reply per bill and
+  phase, v17, `decision_reminder_days` = 7) says the date is counted from the third reading and
+  so runs a few days early. The Senate action carries no date at all — art. 121 gives the Senate
+  thirty days and its committee takes the act long before they are out.
 - **A live card is kept true; a finished one is left alone.** Everything the card says about
   "now" is derived from the day it was rendered, so `tracking/cards.py::CardRefresher` re-renders
   the card of every followed bill each run and edits it in place when the text has drifted. The
   digest of what was last sent (`publications.rendered_sha256`, v16) makes a quiet run free: a
-  pure render per bill, no request. `models.is_over` bills keep the card they had.
+  pure render per bill, no request. The refresher stops at `next_phase(...) is None`, **not** at
+  `is_over`: an act in Dziennik Ustaw with months of vacatio legis is still live, and freezing
+  the card there left it saying «дальше: публикация в Dz.U.» for ever. The card calls itself
+  finished only when the ending line can also say *how* (`_ended_line`): `next_phase` gives up on
+  an unrecognised stage tree too, and "процесс завершён" over nothing is a guess.
 - **A bill whose road ended before we saw it gets neither an analysis nor a card.** A card
   invites action, and there is none left. `models.is_over(bill, today)` decides for every source:
-  over means the act is in Dziennik Ustaw (`ELI`), the bill was rejected or withdrawn, the RCL
+  over means the act *applies*, the bill was rejected or withdrawn, the RCL
   project was closed without reaching the Sejm, the plan was realised or taken off the wykaz, or
   the term lapsed — `next_phase` finding nothing ahead, with a Sejm bill whose stages were never
   read counting as unknown, not over. `closureDate` alone is *not* the end: the Sejm sets it at
   the third reading, with the Senate, the President and Dz.U. still ahead (druk 2799: closed
   2026-09-04, `passed`, no act), so discovery reads the stages once for a bill it sees for the
   first time with a closure date (`_ended_before_first_sight`) and stores the skip as
-  `skipped_closed` (`reset --to analysis_pending` revives it); RCL discovery decides from the
+  `skipped_closed` (`reset --to analysis_pending` revives it). The ELI address is not the end
+  either: an act published with a long vacatio legis (druk 2699: Dz.U. 2026-08-18, in force
+  2026-11-19) is the one stretch where a reader has a fixed date to prepare for, so discovery
+  reads the act too (one request, the row keeps it — the publishing gate asks the same question a
+  phase later and without it would drop the card). An ELI the API has not indexed yet still
+  counts as the end. RCL discovery decides from the
   timeline, before the catalogs, and the wykaz from the entry's status. Bills already followed
   are untouched by this: they keep their card and their updates to the end. The last gate is
   `PublishingService.publish_new`, for a bill analysed while it was still running.
@@ -260,7 +284,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v16 as of Sept 2026). `migrate()` reads `user_version` and
+`SCHEMA_VERSION = len(MIGRATIONS)` (v17 as of Sept 2026). `migrate()` reads `user_version` and
 runs every later script inside its own transaction, stamping the new version at the end, so a
 failed script leaves the database at the previous version. v8 (Sept 2026) added `rcl_json`, v9
 `bills.discontinued_at` and `status_changes.discontinued` (end of a Sejm term), v10
@@ -272,7 +296,9 @@ v12 the unique index of `joint_bill` replies (per bill and channel), v13 (Sept 2
 command whose answer never arrived is answered again, not executed again), v15 (Sept 2026)
 `bills.wykaz_json` (entries of the wykaz prac legislacyjnych RM, `WPL/UD408` rows), v16
 `publications.rendered_sha256` (the card as last rendered, so a run can tell a card that has
-drifted from one that is still true without asking Telegram).
+drifted from one that is still true without asking Telegram), v17 the unique index of the
+constitutional-deadline reminders (per bill, channel and phase: the Senate's 30 days and the
+President's 21 are each told once).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) →
 `db restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing
@@ -476,7 +502,9 @@ when their road is already over (decided 2026-09-12): no card and no analysis, w
 source — but only when there is really nothing ahead (the act is out, the bill was rejected or
 withdrawn, the project or the plan was dropped), and a bill the Sejm has merely passed keeps its
 card, because the Senate and the President are the reader's last windows; the last stage is read
-to tell the two apart. The product review of 2026-09-12 settled the rest: a live card is
+to tell the two apart. The product review of 2026-09-13 added the two constitutional deadlines as reminders of their
+own and stopped the card freezing while an act's vacatio legis runs. The product review of
+2026-09-12 settled the rest: a live card is
 edited in place when what it says has drifted and a finished one is not; the «Важность» line
 shows the score without the scale's legend, which read as a statement about the bill; a
 sitting or a hearing is told once for a group of jointly considered prints, not once per
