@@ -17,6 +17,7 @@ from lexinform.models import (
     Bill,
     CommitteeSitting,
     PublicationKind,
+    PublicationStatus,
     SejmSitting,
     flatten_stages,
 )
@@ -235,6 +236,11 @@ class AgendaWatcher:
             if item.last_date < today:
                 continue  # a sitting that is over: a reader can do nothing about it now
             if self._poster.posted(bill, PublicationKind.AGENDA, ref=item.ref):
+                continue
+            if self._poster.told_jointly(bill, PublicationKind.AGENDA, item.ref):
+                self._poster.record(
+                    bill, PublicationKind.AGENDA, PublicationStatus.SKIPPED, ref=item.ref
+                )
                 continue
             fresh = self._repo.get(bill.term, bill.number) or bill
             log.info("druk %s on the agenda: %s", bill.number, item.ref)

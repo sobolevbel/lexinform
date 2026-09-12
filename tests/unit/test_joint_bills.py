@@ -3,7 +3,7 @@ others a short "alternative bill" reply under it, and the group is followed thro
 
 import datetime as dt
 
-from lexinform.models import PublicationKind, PublicationStatus
+from lexinform.models import Committee, CommitteeSitting, PublicationKind, PublicationStatus
 from tests.harness import COMMITTEE_STAGES, World
 
 DEPUTIES = "Poselski projekt ustawy o cudzoziemcach"
@@ -96,3 +96,27 @@ def test_a_joint_print_gets_its_own_card_when_the_partner_was_withdrawn() -> Non
 
     assert (report.published, report.joint_published) == (1, 0)
     assert [b.number for b, _ in w.publisher.new_bills] == ["1933", "1929"]
+
+
+def test_one_sitting_is_told_once_for_the_whole_group() -> None:
+    """A committee takes the group together, so a post per print is the same news twice — which
+    is what druki 1929 and 1933 did in the channel."""
+    w = World()
+    w.gateway.committees["ASW"] = Committee(term=10, code="ASW", name="Komisja ASW")
+    for number, other in (("3039", "3040"), ("3040", "3039")):
+        w.add_bill(number, f"Projekt ustawy o cudzoziemcach {number}", stages=COMMITTEE_STAGES)
+        w.touch(number, dt.datetime(2026, 9, 7, 9, 0), prints_considered_jointly=(other,))
+    w.gateway.committee_sittings["ASW"] = (
+        CommitteeSitting(
+            code="ASW",
+            num=136,
+            date=dt.date(2026, 9, 17),
+            status="PLANNED",
+            agenda='<div class="agenda-indent-0">Rozpatrzenie druków nr 3039 i 3040</div>',
+        ),
+    )
+
+    report = w.run()
+
+    assert report.agenda_posted == 1
+    assert [item.ref for _, item, _ in w.publisher.agendas] == ["ASW/136/2026-09-17"]

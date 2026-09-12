@@ -369,7 +369,12 @@ class MessageFormatter:
         )
 
     def joint_bill(
-        self, bill: Bill, primary: Bill, print_info: PrintInfo | None
+        self,
+        bill: Bill,
+        primary: Bill,
+        print_info: PrintInfo | None,
+        *,
+        today: dt.date | None = None,
     ) -> RenderedMessage:
         """Reply under `primary`'s card: `bill` is considered jointly with it and gets no card of
         its own. Title, who submitted it and when, links; the analysis stays the card's, which
@@ -383,7 +388,10 @@ class MessageFormatter:
         links_block = self._links(self._card_links(bill, print_info))
         # Its own tag and the thread's: a search for either finds the reply.
         tags = f"{self._number_tag(bill)} {self._thread_tags(primary)}"
-        return RenderedMessage(text=self._assemble([header, facts, links_block, tags]))
+        steps = self._steps_block(primary, today or self._today())
+        return RenderedMessage(
+            text=self._assemble([header, facts], tail=[steps, links_block, tags])
+        )
 
     def status_update(
         self, bill: Bill, change: StatusChange, *, today: dt.date | None = None

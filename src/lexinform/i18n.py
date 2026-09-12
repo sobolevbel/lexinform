@@ -229,7 +229,7 @@ RU = Labels(
     joint_prints="Рассматривается совместно с druk",
     joint_bill_header="Альтернативный проект того же закона",
     joint_bill_note=(
-        "Рассматривается совместно с druk {numbers}: комиссия готовит один общий текст, "
+        "Рассматривается совместно с druk {numbers}: комиссия рассматривает их вместе, "
         "дальнейший ход дела — в этой ветке."
     ),
     current_summary="Суть проекта",
@@ -697,7 +697,7 @@ EN = Labels(
     joint_prints="Considered jointly with print",
     joint_bill_header="Alternative bill on the same subject",
     joint_bill_note=(
-        "Considered jointly with print {numbers}: the committee prepares one joint text; "
+        "Considered jointly with print {numbers}: the committee works on them together; "
         "what happens next is posted in this thread."
     ),
     current_summary="Summary",

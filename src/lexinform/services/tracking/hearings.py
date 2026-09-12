@@ -36,9 +36,13 @@ class HearingReminder:
                 continue
             for hearing in hearings_due(bill, today, days_before=self._days_before):
                 assert hearing.date is not None
-                if self._poster.posted(
-                    bill, PublicationKind.HEARING_DEADLINE, ref=hearing.date.isoformat()
-                ):
+                ref = hearing.date.isoformat()
+                if self._poster.posted(bill, PublicationKind.HEARING_DEADLINE, ref=ref):
+                    continue
+                if self._poster.told_jointly(bill, PublicationKind.HEARING_DEADLINE, ref):
+                    self._poster.record(
+                        bill, PublicationKind.HEARING_DEADLINE, PublicationStatus.SKIPPED, ref=ref
+                    )
                     continue
                 try:
                     sent = self._poster.hearing_deadline(bill, hearing, today=today)

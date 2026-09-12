@@ -62,6 +62,16 @@ class Poster:
             return pub.attempts >= self._max_attempts
         return True
 
+    def told_jointly(self, bill: Bill, kind: PublicationKind, ref: str) -> bool:
+        """A print considered jointly with this one has already told the channel about this very
+        event. A sitting and a hearing belong to the whole group — one committee report for all
+        of them — so telling it once per print is the same news twice."""
+        for number in bill.summary.prints_considered_jointly:
+            pub = self._repo.get_publication(bill.term, number, kind, self._channel_id, ref=ref)
+            if pub is not None and pub.status is PublicationStatus.SENT:
+                return True
+        return False
+
     def retry_due(self, bill: Bill, kind: PublicationKind, *, ref: str | None = None) -> bool:
         """True when this post was attempted, failed, and still has attempts left."""
         pub = self._repo.get_publication(bill.term, bill.number, kind, self._channel_id, ref=ref)
