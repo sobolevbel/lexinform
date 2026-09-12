@@ -17,6 +17,7 @@ from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtr
 from lexinform.adapters.github_inbox import GitHubInboxWriter
 from lexinform.adapters.inbox_files import FileInbox
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
+from lexinform.adapters.orka import OrkaClient
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.rcl_html import RclClient
 from lexinform.adapters.sejm_api import SejmApiClient
@@ -31,7 +32,6 @@ from lexinform.adapters.telegram import (
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.adapters.wykaz_csv import WykazClient
 from lexinform.clock import SystemClock
-from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.keywords import KeywordPrefilter
 from lexinform.ports import (
     BillRepository,
@@ -95,6 +95,7 @@ class Container:
     terms: TermResolver
     rcl: RclGateway | None = None
     wykaz: WykazGateway | None = None
+    orka: Downloader | None = None
     llm: LlmAnalyzer | None = None
     extractor: TextExtractor | None = None
     publisher_override: Publisher | None = None
@@ -142,7 +143,7 @@ class Container:
             }
             orka = _host(self.settings.orka_base_url)
             if orka not in downloaders:
-                downloaders[orka] = self._download_from_orka
+                downloaders[orka] = self.orka_downloader()
             if self.rcl is not None:
                 downloaders[_host(self.settings.rcl_base_url)] = self.rcl.download
             max_bytes = self.settings.max_pdf_download_mb * 1024 * 1024
@@ -155,18 +156,12 @@ class Container:
             self._loader = TextLoader(downloaders, extractor, max_bytes=max_bytes)
         return self._loader
 
-    def _download_from_orka(self, url: str, *, max_bytes: int | None = None) -> bytes:
-        """The file of a bill that has no print number, over the Sejm client (same identity, the
-        one Imperva lets through) but with this host's failures kept to the bill.
-
-        `OrkaUnreachableError` is why this wrapper exists: everything else the analysis reads is
-        api.sejm.gov.pl, and a WAF that changes its mind about us must not end the phase for the
-        prints as well.
-        """
-        try:
-            return self.gateway.download(url, max_bytes=max_bytes)
-        except ServiceUnavailableError as exc:
-            raise OrkaUnreachableError(f"{url}: {exc}") from exc
+    def orka_downloader(self) -> Downloader:
+        """Files of bills that have no print number: a client of its own, with a browser's
+        identity and a cookie jar, because the host is a WAF-guarded site and not an API."""
+        if self.orka is not None:
+            return self.orka
+        return self._once("orka", OrkaClient).download
 
     def text_sources(self) -> TextSources:
         rcl = RclTextSource() if self.rcl is not None else None
@@ -446,6 +441,9 @@ class Container:
 
     def close(self) -> None:
         self.gateway.close()
+        orka = self._services.get("orka")
+        if isinstance(orka, OrkaClient):
+            orka.close()
         if self.rcl is not None:
             self.rcl.close()
         if self.wykaz is not None:

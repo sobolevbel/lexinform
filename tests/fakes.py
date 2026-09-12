@@ -15,6 +15,7 @@ from lexinform.adapters.llm_prompts import PROMPT_VERSION
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import (
     AttachmentTooLargeError,
+    OrkaUnreachableError,
     RclUnavailableError,
     SejmApiUnavailableError,
     TelegramUnavailableError,
@@ -93,7 +94,6 @@ class FakeSejmGateway:
         default_factory=lambda: [SejmTerm(num=10, start=date(2023, 11, 13), current=True)]
     )
     outages: set[str] = field(default_factory=set)  # method names that behave as "API down"
-    outage_urls: set[str] = field(default_factory=set)  # files whose host answers as "down"
     calls: list[str] = field(default_factory=list)
 
     def _called(self, method: str, detail: str = "") -> None:
@@ -199,8 +199,31 @@ class FakeSejmGateway:
 
     def download(self, url: str, *, max_bytes: int | None = None) -> bytes:
         self._called("download", url)
-        if url in self.outage_urls:
-            raise SejmApiUnavailableError(f"download {url}: connection refused")
+        data = self.files[url]
+        if max_bytes is not None and len(data) > max_bytes:
+            raise AttachmentTooLargeError(url, max_bytes)
+        return data
+
+
+class FakeOrkaDownloader:
+    """orka.sejm.gov.pl: the files of bills that have no print number yet.
+
+    Serves them out of the gateway's own dictionary, because to a test they are all "the Sejm's
+    files", and fails the way the real client does: `OrkaUnreachableError`, which is a per-bill
+    problem and never ends a phase — a WAF can refuse one address and serve another.
+    """
+
+    def __init__(self, files: dict[str, bytes]) -> None:
+        self.files = files
+        self.refuses: set[str] = set()  # URLs the WAF answers with its challenge page
+        self.calls: list[str] = []
+
+    def __call__(self, url: str, *, max_bytes: int | None = None) -> bytes:
+        self.calls.append(url)
+        if url in self.refuses:
+            raise OrkaUnreachableError(f"GET {url}: the WAF answered with its challenge page")
+        if url not in self.files:
+            raise OrkaUnreachableError(f"GET {url}: HTTP 404")
         data = self.files[url]
         if max_bytes is not None and len(data) > max_bytes:
             raise AttachmentTooLargeError(url, max_bytes)

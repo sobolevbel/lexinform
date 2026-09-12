@@ -384,12 +384,15 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   `status`, `print`, `consultationResults`. Their text is a PDF on orka.sejm.gov.pl, at an
   address built by convention (`models.submission_pdf_url`, `LEXINFORM_ORKA_BASE_URL`), and it
   **is** downloadable, which the project denied until 2026-09-12: Imperva there refuses a
-  `User-Agent` that names a bot (`curl/8.x`) with 403 and serves every other identity, ours
-  included, as long as the client follows the 302 and keeps the cookies it sets — httpx does
-  both. Verified from a GitHub runner too (`.github/workflows/orka-probe.yml`), where the bot UA
-  gets the challenge page as **HTTP 200 text/html**, so a caller must look at the body, not the
-  status. A failure of this host is a per-bill problem on purpose (`OrkaUnreachableError`): it is
-  WAF-guarded and address-judged, and everything else the analysis reads is api.sejm.gov.pl.
+  `User-Agent` that names a bot (`curl/8.x`) and serves a browser, as long as the client follows
+  the 302 and keeps the cookies it sets (`visid_incap_*`, `incap_ses_*`) — `adapters/orka.py`
+  does both and is the one client for this host. Verified from a GitHub runner too
+  (`.github/workflows/orka-probe.yml`), where the refusal arrives as **HTTP 200 text/html**, not
+  403, so the body decides and not the status. A failure of this host is a per-bill problem on
+  purpose (`OrkaUnreachableError`): it is WAF-guarded and address-judged, and everything else the
+  analysis reads is api.sejm.gov.pl. Every outgoing client says the same thing about itself
+  (`adapters/browser_identity.py`, Chrome 140 on Windows; measured: the WAFs score the kind of
+  client, not the version), `Accept` aside, which each client sets for what it asks for.
   The API carries no link to the opinion form; the Sejm page is
   `www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=KONSULTOWANY_PROJEKT&NrProjektu=RPW/29075/2026`
   (browser only: www.sejm.gov.pl answers curl and fetchers with an F5 captcha). That page only

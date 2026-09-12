@@ -34,7 +34,7 @@ def test_pre_print_bill_falls_back_to_its_description_when_orka_refuses_the_file
     w.gateway.submissions.append(submission())
     w.add_bill("3100", "Rządowy projekt ustawy o cudzoziemcach")
     w.gateway.files[submission_url()] = b"%PDF"
-    w.gateway.outage_urls.add(submission_url())
+    w.orka.refuses.add(submission_url())
 
     report = w.run()
 

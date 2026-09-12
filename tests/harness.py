@@ -47,6 +47,7 @@ from tests.fakes import (
     FakeInbox,
     FakeLlm,
     FakeNotifier,
+    FakeOrkaDownloader,
     FakePublisher,
     FakeRclGateway,
     FakeReplier,
@@ -308,6 +309,7 @@ class World:
         self.replier = FakeReplier()
         self.extractor = extractor or FakeTextExtractor()
         self.rcl = FakeRclGateway()
+        self.orka = FakeOrkaDownloader(self.gateway.files)
         self.wykaz = FakeWykazGateway()
         # The production wiring over the fakes: the settings name the fake hosts (downloads are
         # routed by host), every tuning value is the daily run's unless a test says otherwise,
@@ -347,6 +349,7 @@ class World:
             terms=TermResolver(self.gateway, self.repo),
             rcl=self.rcl,
             wykaz=self.wykaz,
+            orka=self.orka,
             llm=self.llm,
             extractor=self.extractor,
             publisher_override=self.publisher,

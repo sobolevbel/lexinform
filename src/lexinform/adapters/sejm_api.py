@@ -23,6 +23,7 @@ from zoneinfo import ZoneInfo
 
 import httpx2 as httpx
 
+from lexinform.adapters.browser_identity import BROWSER_USER_AGENT
 from lexinform.errors import AttachmentTooLargeError, SejmApiUnavailableError
 from lexinform.models import (
     BILL_DOCUMENT_TYPE,
@@ -84,7 +85,7 @@ class SejmApiClient:
         self._client = httpx.Client(
             base_url=base_url.rstrip("/"),
             timeout=timeout,
-            headers={"Accept": "application/json", "User-Agent": "lexinform (+github)"},
+            headers={"Accept": "application/json", "User-Agent": BROWSER_USER_AGENT},
             transport=transport,
             follow_redirects=True,
         )
