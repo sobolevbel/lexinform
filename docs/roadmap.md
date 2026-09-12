@@ -220,6 +220,13 @@ reader are in the commit messages; the shape of the fixes:
 
 Done on 2026-09-12 (schema v18):
 
+- **Scanned paper is read.** Most of what the Sejm publishes about a bill is signed on paper and
+  filed as images: of 66 documents filed to prints none carries readable text, and 11 of 39
+  prints are scans. They used to reach the model as a title and a description, or — worse, for
+  druk 604 — as the covering letter recorded as though the bill had been read. Now the file goes
+  to the model as pages, minus the letter's page and, for an OSR, minus the tail of the 13-point
+  form. `sections.carries_the_document` is the gate, in the one place every document the model
+  reads passes through.
 - **The documents filed to a print are read, not only listed.** `PrintInfo.additional_prints` was
   parsed from the start and looked at by `lexinform show` alone. Now `supplement_kind` picks out
   the three kinds worth a word — the government's position on someone else's bill, the OSR the

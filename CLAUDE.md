@@ -175,6 +175,25 @@ Invariants worth keeping:
   already says it. Amendments (Senate resolution print, a committee report whose proposal is about
   poprawki) are summarised by a third model call (`AnalysisService.summarize_amendments`) after
   the change row exists and stored on it (`amendments_json`); a failure degrades to the bare event.
+- **What the Sejm publishes is largely scanned paper, and a covering letter is not the document
+  it transmits.** Measured with the project's own extractor (term 10, 12 Sept 2026): of 66
+  documents filed to prints **none** carries readable text — 55 have no text layer at all and 11
+  hold the Prime Minister's letter and nothing else (700–820 characters naming the bill and
+  saying who will present the position, never what it is); of 39 prints, 11 are scans and druk
+  604 is its letter and the signatures under it. Those 800 characters passed `MIN_TEXT_CHARS`
+  and read like a document, so `sections.carries_the_document` cuts the letter (at the page break
+  or the heading after it, `without_cover_letter`) and asks whether anything is left. The gate
+  sits in `AnalysisService._load_text`, the one place every document the model reads passes
+  through, so the rule is one and not four. A file with no text but with pages goes to the model
+  as pages instead (`ScannedDocument`, `text_source="scan"`, the API's document block — ~1,600
+  tokens and $0.008 a page, and `pricing.estimate_scan_cost` guards by that); what is kept of it
+  is the file's `sha256`, standing where a text's digest would. The extracted text comes back
+  either way, because the letter is the one page of a scanned print that has a text layer and the
+  card's club breakdown is parsed from it. Pages are trimmed like a printed document
+  (`sections.scan_page_window`): the letter's page goes (exactly one page in all 15 government
+  prints measured), and a scanned OSR takes `LEXINFORM_SCAN_PAGE_BUDGET` (16) — its points 1–5
+  took 2–19 pages, a median of 8, and the rest is the public-finance tail `trim_print` drops from
+  a printed OSR. Druk 1273's OSR: 47,268 tokens whole, 25,232 trimmed.
 - **A document filed to a print is told once, and the bill is what remembers.** The print's
   `additional_prints` say what has been filed; `models.supplement_kind` keeps the government's
   position, the OSR and an opinion with remarks and drops the housekeeping; `bills.supplements_json`
@@ -409,6 +428,12 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   and stop at the limit (`download(url, max_bytes=…)`).
 - pypdf needs `pypdf[fonts]` (fontTools) for CFF fonts, otherwise it logs a warning per font per
   page; its logger is capped at ERROR. Extraction is CPU-bound (~1 s per 100 pages).
+- **Much of it is scanned paper, and the text layer is a trap.** Sampled 12 Sept 2026 with the
+  project's extractor: 66 documents filed to prints (0 with readable text, 55 empty, 11 holding
+  only the covering letter) and 39 prints (27 with text, 11 scans, 1 cover-only). The model reads
+  such a file as a PDF document block — 32 MB of request (so ≤ 24 MB of file, base64 being a
+  third larger; druk 2865 is 40 MB and does not fit) and 600 pages, ~1,600 tokens a page measured
+  with `count_tokens` on druk 1273 (10 pages 16,157 tokens, 30 pages 47,268, one page 1,622).
 
 ## RCL lessons (verified live, Sept 2026)
 
@@ -552,12 +577,15 @@ sitting or a hearing is told once for a group of jointly considered prints, not 
 print; every reply carries the importance, category and topic tags, so a tag finds the
 moments to act and not only the card; and a source that is unreachable (`/bills`,
 `/proceedings`, RCL, the register) stops its own part of the run and nothing else.
-Documents filed to a print (decided 2026-09-12): the government's position on a bill it did not
-write, the OSR and an opinion that raised something are each told with what they say — the
-position because it decides the bill's fate, the OSR because it is the first count of who is
-affected and at what cost, the opinion because an objection from SN, PG or UODO is news; an
-opinion whose own title says "nie zgłoszono uwag" and the housekeeping filings are not, and the
-amendments tabled at the second reading stay with the committee's report, which already tells
-them. The document is judged against the bill's analysis, not in place of it: a filed document is
-what somebody makes of the bill, never a new version of it.
+Documents filed to a print (decided 2026-09-12): only the government's position on a bill it did
+not write and the OSR are told, each with what it says — the position because it decides the
+bill's fate, the OSR because it is the only count of who is affected that a non-government bill
+gets (226 of the 285 filed OSRs go to deputies' bills; a government print carries its own, which
+`trim_print` keeps points 1–5 of). Opinions are not: 1732 of the 2339 filings are opinions, 1.4
+per print and 16 at the most, and "another body has written something" is the chronicle this
+channel is not — with scans now readable that is a decision about noise, not about content, and
+one line of `supplement_kind` away from being revisited. The housekeeping filings and the
+amendments tabled at the second reading are not told either; the latter reach the reader through
+the committee's report. The document is judged against the bill's analysis, not in place of it: a
+filed document is what somebody makes of the bill, never a new version of it.
 Open items are listed under "Still open" in `docs/roadmap.md`.
