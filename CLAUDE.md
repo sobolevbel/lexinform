@@ -186,7 +186,9 @@ Invariants worth keeping:
   so a change an earlier run recorded never pays twice, and the numbers go into `change_key`: a
   document that arrives between two stages moves nothing else, and without them the row would
   collide with the previous change and be dropped. A digest that could not be made (a scan, a
-  refusal) still leaves the document named and linked (`SupplementRecord.digest is None`) —
+  refusal, or a text over `LEXINFORM_MAX_ANALYSIS_COST_USD` — the OSR of druk 1273 is a 2.7 MB
+  PDF, and somebody's opinion of a bill is not worth any price) still leaves the document named
+  and linked (`SupplementRecord.digest is None`) —
   the run records it as told either way, so dropping it would lose it. The reply is named after
   the newest document when the stages do not name it (`models.supplement_event`): the government's
   position has a stage but no name of its own, and «Обновление» over the government's verdict

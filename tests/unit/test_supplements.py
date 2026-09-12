@@ -144,6 +144,27 @@ def test_an_unreadable_document_is_still_named_and_linked() -> None:
     assert GOVERNMENT_POSITION in text and f'href="{url}"' in text
 
 
+def test_a_document_over_the_cost_limit_is_told_without_a_digest() -> None:
+    """An OSR arrives as a 2.7 MB PDF (druk 1273); the bill's own text passes the same limit."""
+    w = World(
+        extractor=FakeTextExtractor(by_content={b"%PDF-filed": "Ocena skutków. " * 20_000}),
+        max_bill_cost_usd=0.01,
+    )
+    w.add_bill("3039", TITLE)
+    w.run()
+    url = w.file_to_print("3039", OSR, suffix="001")
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.updates == 1
+    _, change, _ = w.publisher.updates[0]
+    assert change.supplements[0].digest is None
+    assert w.llm.supplement_contexts == []
+    text = MessageFormatter("ru").status_update(*w.publisher.updates[0][:2]).text
+    assert "📄 <b>Оценка последствий (OSR)</b>" in text and f'href="{url}"' in text
+
+
 def test_a_model_failure_does_not_lose_the_document() -> None:
     w = World()
     w.add_bill("3039", TITLE)

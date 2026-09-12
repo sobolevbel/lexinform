@@ -320,6 +320,14 @@ class AnalysisService:
         text, truncated, source = self._load_text(document, trim=False)
         if source == "metadata_only" or not text.strip():
             return self.bare_supplement(document, number=number, title=title)
+        if self._too_expensive_to_digest(text):
+            log.info(
+                "%s: %s (%d chars) is over the per-document cost limit; told without a digest",
+                bill.number,
+                number,
+                len(text),
+            )
+            return self.bare_supplement(document, number=number, title=title)
         ctx = SupplementContext(
             number=bill.number,
             title=bill.summary.title,
@@ -334,6 +342,15 @@ class AnalysisService:
         record.number = number
         record.source_url = document.url
         return record
+
+    def _too_expensive_to_digest(self, text: str) -> bool:
+        """The per-bill cost limit applies to a filed document too, and here it is the whole
+        answer rather than a reason to skip the bill: an OSR arrives as a 2.7 MB PDF (druk 1273),
+        and a reader who is told what it is and where it lies has lost little. A bill's own text
+        is worth its price; somebody's opinion of it is not worth any price."""
+        if not self._max_bill_cost or self._input_price is None:
+            return False
+        return estimate_input_cost(len(text), self._input_price) > self._max_bill_cost
 
     def bare_supplement(
         self, document: TextDocument, *, number: str, title: str
