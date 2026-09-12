@@ -10,7 +10,7 @@ listed with the next substantive one) and `update_event` names the post: the rea
 
 import datetime as dt
 
-from lexinform.models.bill import Bill, StatusChange
+from lexinform.models.bill import Bill, StatusChange, veto_stood
 from lexinform.models.rcl import RCL_STAGE_TYPE
 from lexinform.models.sejm import Stage, flatten_stages, second_reading_sent_back
 
@@ -87,15 +87,6 @@ def closure_event(bill: Bill) -> str:
     if any(_rejects(stage) for stage in flatten_stages(bill.stages)):
         return "rejected"
     return "not_enacted"
-
-
-def veto_stood(stages: tuple[Stage, ...]) -> bool:
-    """The Sejm voted on the President's veto and did not reach the 3/5 majority: the process
-    closes with "nie uchwalona ponownie po wecie Prezydenta" as its last node."""
-    return any(
-        stage.stage_type == "End" and "nie uchwalona ponownie" in stage.stage_name.lower()
-        for stage in stages
-    )
 
 
 def _rejects(stage: Stage) -> bool:

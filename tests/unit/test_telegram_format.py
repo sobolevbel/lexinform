@@ -653,13 +653,37 @@ def test_committee_phase_prefers_the_committee_sitting_over_the_plenary(
 
 
 def test_late_phases_name_what_follows(process_1962: ProcessDetail) -> None:
+    """The Sejm is done with druk 1962 and appended "Uchwalono"; the President has not had it yet,
+    so the card must still name him — and not mark his step as taken."""
     passed = process_1962.model_copy(update={"passed": True})
+    signed = passed.model_copy(
+        update={
+            "stages": (
+                *passed.stages[:-1],
+                Stage(
+                    stage_name="Prezydent podpisał ustawę",
+                    stage_type="PresidentSignature",
+                    date=dt.date(2026, 9, 20),
+                ),
+                passed.stages[-1],
+            )
+        }
+    )
     fmt = MessageFormatter("ru")
 
-    awaiting_publication = fmt.new_bill(bill_of(passed), None, today=TODAY).text
+    with_president = fmt.new_bill(bill_of(passed), None, today=TODAY).text
+    awaiting_publication = fmt.new_bill(bill_of(signed), None, today=TODAY).text
     awaiting_force = fmt.new_bill(bill_of(passed, act=ACT), None, today=TODAY).text
     in_force = fmt.new_bill(bill_of(passed, act=ACT), None, today=dt.date(2026, 11, 20)).text
 
+    assert (
+        "⏭ <b>Что дальше:</b> подпись Президента (до 21 дня), затем публикация в Dziennik Ustaw"
+        in with_president
+    )
+    # A committee bill: no RCL step on its path.
+    assert "Путь:</b> Сейм ✓ → комиссии ✓ → II и III чтение ✓ → Сенат ✓ → Президент ● → Dz.U." in (
+        with_president
+    )
     assert (
         "⏭ <b>Что дальше:</b> публикация в Dziennik Ustaw · обычно 1–4 недели после подписи"
         in awaiting_publication
@@ -668,11 +692,7 @@ def test_late_phases_name_what_follows(process_1962: ProcessDetail) -> None:
     assert (
         "👉 <b>Что можно сделать сейчас:</b> пока ничего — ждём публикации" in awaiting_publication
     )
-    # A committee bill: no RCL step on its path.
-    assert "Путь:</b> Сейм ✓ → комиссии ✓ → II и III чтение ✓ → Сенат ✓ → Президент ✓" in (
-        awaiting_publication
-    )
-    assert "→ Dz.U. ● → в силе" in awaiting_publication
+    assert "→ Президент ✓ → Dz.U. ● → в силе" in awaiting_publication
     assert "вступление в силу 19.11.2026" in awaiting_force
     assert "→ Dz.U. ✓ → в силе ●" in awaiting_force
     assert "Что дальше" not in in_force

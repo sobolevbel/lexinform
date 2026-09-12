@@ -98,11 +98,8 @@ class Bill(BaseModel):
 
     @property
     def last_stage(self) -> Stage | None:
-        """Where the bill stands. `ASIDE_STAGE_TYPES` are skipped for the same reason
-        `next_phase` skips them: they land last while the bill sits in committee."""
-        flat = flatten_stages(
-            tuple(st for st in self.stages if st.stage_type not in ASIDE_STAGE_TYPES)
-        )
+        """Where the bill stands; `process_stages` names the nodes that do not answer that."""
+        flat = flatten_stages(tuple(process_stages(self.stages)))
         return flat[-1] if flat else None
 
     @property
@@ -163,6 +160,33 @@ _PRESIDENT_NEXT = {"ToPresident", "SenatePositionConsideration"}
 # deputies' bill, an opinion of local-government bodies. They land last in the tree while the
 # bill sits in committee, and taking them for the current step loses "what comes next" entirely.
 ASIDE_STAGE_TYPES = frozenset({"GovermentPosition", "Opinion"})
+
+
+def veto_stood(stages: tuple[Stage, ...]) -> bool:
+    """The Sejm voted on the President's veto and did not reach the 3/5 majority: the process
+    closes with "nie uchwalona ponownie po wecie Prezydenta" as its last node."""
+    return any(
+        stage.stage_type == "End" and "nie uchwalona ponownie" in stage.stage_name.lower()
+        for stage in stages
+    )
+
+
+def process_stages(stages: tuple[Stage, ...]) -> list[Stage]:
+    """The top-level stages that say where the bill stands.
+
+    Two kinds of node are dropped. `ASIDE_STAGE_TYPES` arrive beside the process without moving
+    it. And `End` ("Uchwalono") is appended by the Sejm at the third reading and kept last while
+    the Senate, the President and Dziennik Ustaw are all still ahead — druk 2799, read on
+    2026-09-12: III czytanie "uchwalono" on 2026-09-04, `End` already there, no Senate stage and
+    no act — so taking it for the current step marks the reader's last two windows as passed.
+    The `End` of a bill a veto killed says something of its own and stays.
+    """
+    top = [st for st in stages if st.stage_type not in ASIDE_STAGE_TYPES]
+    if top and top[-1].stage_type == "End" and not veto_stood((top[-1],)):
+        top.pop()
+    return top
+
+
 SENATE_DAYS, SENATE_DAYS_URGENT = 30, 14
 PRESIDENT_DAYS, PRESIDENT_DAYS_URGENT = 21, 7
 # art. 121/122 count from the day the act is handed over, which the API does not give: the
@@ -358,13 +382,13 @@ def _phase_of(bill: Bill, today: dt.date) -> Phase | None:
         return Phase(key="pre_print")
     if summary.closure_date is not None and summary.passed is False:
         return None  # rejected or withdrawn
-    top = [st for st in bill.stages if st.stage_type not in ASIDE_STAGE_TYPES]
+    if veto_stood(bill.stages):
+        return None  # the Sejm could not override the veto: the law is dead
+    top = process_stages(bill.stages)
     if not top:
         return Phase(key="first_reading")
     last = top[-1]
     kind = last.stage_type
-    if kind == "End":
-        return Phase(key="publication") if summary.passed else None
     if kind == "PresidentSignature":
         return Phase(key="publication")
     if kind == "Veto":

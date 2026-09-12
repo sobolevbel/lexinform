@@ -39,7 +39,9 @@ from lexinform.models.bill import (
     is_over,
     is_urgent,
     next_phase,
+    process_stages,
     stalled_days,
+    veto_stood,
 )
 from lexinform.models.commands import (
     NEEDS_REFERENCE,
@@ -87,7 +89,6 @@ from lexinform.models.events import (
     reaches_sejm,
     told_stages,
     update_event,
-    veto_stood,
 )
 from lexinform.models.rcl import (
     RCL_STAGE_TYPE,
@@ -281,6 +282,7 @@ __all__ = [
     "reaches_sejm",
     "told_stages",
     "update_event",
+    "process_stages",
     "veto_stood",
     "usage_of",
     "BILL_KIND",

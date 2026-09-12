@@ -242,12 +242,17 @@ def test_next_phase_walks_a_bill_amended_by_the_senate(process_1962: ProcessDeta
         "president",  # Sejm considered the Senate position
     ]
 
-    phases = [
-        next_phase(_bill(process_1962, process_1962.stages[:i]), today=TODAY)
-        for i in range(1, len(process_1962.stages))
-    ]
+    end = process_1962.stages[-1]
+    assert end.stage_type == "End"
+    prefixes = [process_1962.stages[:i] for i in range(1, len(process_1962.stages))]
+
+    phases = [next_phase(_bill(process_1962, stages), today=TODAY) for stages in prefixes]
+    # The Sejm appends "Uchwalono" at the third reading and keeps it last, so every prefix from
+    # then on really arrives with that node; it must not move the bill one step further.
+    with_end = [next_phase(_bill(process_1962, (*stages, end)), today=TODAY) for stages in prefixes]
 
     assert [p.key for p in phases if p] == expected
+    assert [p.key for p in with_end if p] == expected
     assert phases[1] is not None and phases[1].committees == ("SPC",)
 
 
@@ -335,10 +340,12 @@ def test_senate_and_president_phases_carry_their_constitutional_deadline(
         for i, st in enumerate(process_1962.stages)
         if st.stage_type == "SejmReading" and "III" in st.stage_name
     )
-    in_senate = _bill(process_1962, process_1962.stages[: third + 1])  # passed 2026-07-17
+    end = process_1962.stages[-1]
+    # As the API shows it: "Uchwalono" is already appended, the Senate has not answered yet.
+    in_senate = _bill(process_1962, (*process_1962.stages[: third + 1], end))  # passed 2026-07-17
     urgent = _bill(
         process_1962.model_copy(update={"urgency_status": "URGENT"}),
-        process_1962.stages[: third + 1],
+        (*process_1962.stages[: third + 1], end),
     )
     to_president = Stage(
         stage_name="Ustawę przekazano Prezydentowi do podpisu",
@@ -379,10 +386,38 @@ def test_senate_without_amendments_sends_the_law_to_the_president(
     assert phase is not None and phase.key == "president"
 
 
+def test_a_veto_is_the_current_step_until_the_sejm_answers_it(
+    process_1962: ProcessDetail,
+) -> None:
+    """ "Uchwalono" sits under a veto too, and a bill the veto killed says so with its own node."""
+    veto = Stage(
+        stage_name="Wniosek Prezydenta o ponowne rozpatrzenie ustawy",
+        stage_type="Veto",
+        date=dt.date(2026, 9, 20),
+    )
+    end, killed = (
+        process_1962.stages[-1],
+        Stage(stage_name="Ustawa nie uchwalona ponownie po wecie Prezydenta", stage_type="End"),
+    )
+    vetoed = (*process_1962.stages[:-1], veto, end)
+
+    pending = next_phase(_bill(process_1962, vetoed), today=TODAY)
+    over = next_phase(_bill(process_1962, (*vetoed[:-1], killed)), today=TODAY)
+
+    assert pending is not None and pending.key == "veto"
+    assert over is None
+
+
 def test_passed_bill_awaits_publication_then_entry_into_force(
     process_1962: ProcessDetail,
 ) -> None:
-    passed = _bill(process_1962, process_1962.stages)
+    signed = Stage(
+        stage_name="Prezydent podpisał ustawę",
+        stage_type="PresidentSignature",
+        date=dt.date(2026, 9, 20),
+    )
+    # "Uchwalono" stays last whatever happens after it, so the signature goes in front of it.
+    passed = _bill(process_1962, (*process_1962.stages[:-1], signed, process_1962.stages[-1]))
     passed = passed.model_copy(
         update={"summary": passed.summary.model_copy(update={"passed": True})}
     )
