@@ -26,8 +26,8 @@ class WykazDiscoveryResult:
     seen: int = 0
     new: int = 0
     prefilter_hits: int = 0
-    backlog: int = 0  # entries that match but were published before the watermark
-    over: int = 0  # first seen already realised or withdrawn: no analysis, no card
+    backlog: int = 0
+    over: int = 0
 
 
 class WykazDiscoveryService:
@@ -44,29 +44,33 @@ class WykazDiscoveryService:
         self._clock = clock
 
     def discover(self, term: int, since: dt.datetime) -> WykazDiscoveryResult:
-        """Entries published since `since`; a gov.pl outage propagates (the phase is over)."""
+        """Entries published since `since`; a gov.pl outage propagates (the phase is over).
+
+        Only bills are followed, not rozporządzenia or government programmes, and only entries
+        published since the watermark: the rest are counted as `backlog`, which `scan --since`
+        takes. A plan that was realised or withdrawn before we ever saw it gets no card — there
+        is no action left to invite — and neither does one whose project is already on RCL under
+        the same number: that row is the bill, with its text, and a second thread for the plan
+        behind it would only repeat it.
+        """
         result = WykazDiscoveryResult()
         for entry in self._wykaz.entries():
             if not entry.is_bill:
-                continue  # rozporządzenia and government programmes are not followed
+                continue
             result.seen += 1
             hits = self._hits(entry, term=term)
             if not accept_title_hits(hits):
                 continue
             if self._repo.find_wykaz(entry.bill_number) is not None:
-                continue  # known: the watcher follows it from here
+                continue
             if entry.published_at < since:
                 result.backlog += 1
                 continue
             if not entry.is_open:
-                # Adopted or withdrawn before we ever saw it: there is no action left to take,
-                # and a card would invite one.
                 log.info("wykaz %s: %s already, not followed", entry.number, entry.status)
                 result.over += 1
                 continue
             if self._repo.find_by_wykaz_number(entry.number) is not None:
-                # The project is already on RCL under this number, with its text: that row is
-                # the bill, and a second thread for the plan behind it would only repeat it.
                 log.info("wykaz %s: already followed as an RCL project", entry.number)
                 continue
             self._ingest(term, entry, hits, result)
@@ -87,11 +91,11 @@ class WykazDiscoveryService:
     def _ingest(
         self, term: int, entry: WykazEntry, hits: list[str], result: WykazDiscoveryResult
     ) -> None:
+        """Follow the plan: one announcement is not a timeline, so the row gets no stages, only
+        a fingerprint of what the government says it plans."""
         summary = wykaz_summary(entry, term=term)
         bill = self._repo.upsert_summary(summary, now=self._clock.now())
         self._repo.save_wykaz(term, bill.number, entry)
-        # One announcement is not a timeline: the entry has no stages, only a fingerprint of
-        # what the government says it plans.
         self._repo.save_stages(term, bill.number, (), wykaz_fingerprint(entry))
         self._repo.set_status(term, bill.number, BillStatus.ANALYSIS_PENDING, prefilter_hits=hits)
         result.new += 1

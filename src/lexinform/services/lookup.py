@@ -82,9 +82,12 @@ class BillLookup:
         return None
 
     def find_ref(self, ref: BillRef) -> Bill | None:
-        """The stored row a reference points at, without touching the network for a miss."""
+        """The stored row a reference points at, without touching the network for a miss.
+
+        A wykaz number is looked up on RCL first: once the project is out, that is the row with
+        the text.
+        """
         if ref.kind is RefKind.WYKAZ:
-            # The RCL row first: once the project is out, it is the row with the text.
             found = self._repo.find_by_wykaz_number(ref.value)
             return found or self._repo.find_wykaz(wykaz_number(ref.value))
         if ref.kind is RefKind.RM:
@@ -221,12 +224,13 @@ class BillLookup:
         return self._link(project, bill.number, wykaz_number=project.rcl.wykaz_number)
 
     def _prefilter_by_title(self, bill: Bill, summary: ProcessSummary, *, has_text: bool) -> None:
-        """The status a bill fetched on request starts from, as discovery would decide it."""
+        """The status a bill fetched on request starts from, as discovery would decide it: a
+        title miss goes on to the text stage when there is a text to read."""
         hits = self._prefilter.match(summary.title, summary.description)
         if accept_title_hits(hits):
             status = BillStatus.ANALYSIS_PENDING
         elif self._text_prefilter and has_text:
-            status = BillStatus.TEXT_PREFILTER_PENDING  # a title miss goes to the text stage
+            status = BillStatus.TEXT_PREFILTER_PENDING
         else:
             status = BillStatus.SKIPPED_PREFILTER
         self._repo.set_status(bill.term, bill.number, status, prefilter_hits=hits)
@@ -243,14 +247,18 @@ class BillLookup:
 
     def _project_of(self, summary: ProcessSummary) -> Bill | None:
         """The RCL project a government print continues, when the bot follows it: `rclNum` names
-        it, through the stored RM number or one `getIdFromLegislacja` request, as in discovery."""
+        it, through the stored RM number or one `getIdFromLegislacja` request, as in discovery.
+
+        RCL is unreachable from CI, and a print is worth having without its project: a failed
+        lookup leaves the print standing on its own.
+        """
         if not summary.rcl_num:
             return None
         bill = self._repo.find_by_rm_number(summary.rcl_num)
         if bill is None and self._projects is not None:
             try:
                 project_id = self._projects.resolve_project_id(summary.rcl_num)
-            except Exception as exc:  # RCL is unreachable from CI: the print stands on its own
+            except Exception as exc:
                 log.warning("RCL lookup of %s skipped: %s", summary.rcl_num, exc)
                 return None
             if project_id is not None:
@@ -260,12 +268,13 @@ class BillLookup:
         return bill
 
     def _submission_of(self, term: int, print_number: str) -> BillSubmission | None:
-        """The `/bills` entry of a print: one filtered request, as discovery makes it."""
+        """The `/bills` entry of a print: one filtered request, as discovery makes it. The print
+        is worth having without its consultation dates, so a failure here is only logged."""
         try:
             return self._gateway.find_submission(term, print_number)
         except ServiceUnavailableError:
             raise
-        except Exception as exc:  # the print is worth having without its consultation dates
+        except Exception as exc:
             log.warning("submission lookup for druk %s failed: %s", print_number, exc)
             return None
 

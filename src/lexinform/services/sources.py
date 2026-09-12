@@ -47,7 +47,7 @@ def print_of_project(gateway: SejmGateway, project: RclProject, term: int) -> st
         found = gateway.find_process_by_rcl_num(term, project.rm_number, since=handover)
     except ServiceUnavailableError:
         raise
-    except Exception as exc:  # the project is still worth having without its print
+    except Exception as exc:
         log.warning("looking up the print of %s failed: %s", project.rm_number, exc)
         return None
     return found.number if found is not None else None
@@ -74,7 +74,11 @@ class SejmTextSource:
     ) -> TextDocument | None:
         """The document to re-analyse from, if the bill text changed since the stored analysis:
         a committee report with the amended text, the text after the 3rd reading, or an updated
-        print."""
+        print.
+
+        The text after a third reading that adopted what it was given — no amendments, no
+        minority motions — is the analysed text again, and is not read a second time.
+        """
         record = bill.analysis
         if record is None:
             return None
@@ -82,8 +86,6 @@ class SejmTextSource:
         if candidate is None:
             return None
         if candidate.kind == "text_after3" and third_reading_kept_the_text(detail.stages):
-            # The Sejm adopted the text it was given without amendments or minority motions:
-            # the text after the 3rd reading is that text again, no need to read it.
             voted = latest_text_document(detail.stages, before_third_reading=True)
             voted = voted or original_document(print_info)
             if voted is not None and voted.url == record.source_url:
@@ -113,12 +115,14 @@ class RclTextSource:
     separate files (no network: the project page was read by discovery or tracking)."""
 
     def locate(self, bill: Bill) -> LocatedText:
+        """The project's own documents; an empty result (nothing readable, a legacy .doc alone)
+        sends the bill to a metadata-only analysis."""
         project = bill.rcl
         if project is None:
             return LocatedText()
         documents = project.text_documents()
         if "bill" not in documents:
-            return LocatedText()  # nothing readable (legacy .doc only): metadata
+            return LocatedText()
         extras = tuple(
             documents[role].url for role in ("justification", "osr") if role in documents
         )

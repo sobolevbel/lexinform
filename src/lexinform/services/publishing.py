@@ -6,6 +6,9 @@ be published gets the card, every later one a short "alternative bill" reply und
 group is followed through the card's bill (the stages of the joint prints coincide from the
 joint referral on). Within one run the government's print goes first: its text is usually the
 one the committee works on.
+
+`CARD_KINDS` are therefore the two ways a bill can be in the channel — its own card, or that
+reply under someone else's — and a bill has one of them, never both.
 """
 
 import logging
@@ -27,18 +30,16 @@ from lexinform.ports import BillRepository, Clock, Publisher, PublishResult, Sej
 log = logging.getLogger(__name__)
 
 Send = Callable[[], PublishResult]
-
-# The two ways a bill can be in the channel: its own card, or the "alternative bill" reply it
-# got under the card of a print it is considered jointly with. One of them, never both.
 CARD_KINDS = (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL)
 
 
 @dataclass
 class PublishingResult:
-    """Counters of one publishing phase."""
+    """Counters of one publishing phase; `joined` counts the replies posted under the card of a
+    jointly considered print instead of a card of the bill's own."""
 
     published: int = 0
-    joined: int = 0  # replies under the card of a jointly considered print, instead of a card
+    joined: int = 0
     skipped: int = 0
     failed: int = 0
     fatal_error: str | None = None
@@ -87,6 +88,12 @@ class PublishingService:
         self._max_attempts = max_attempts
 
     def publish_new(self, *, min_score: int, limit: int, publish: bool = True) -> PublishingResult:
+        """Post the cards this run has earned.
+
+        A bill whose road ended between the analysis and the card — publishing was off, or the
+        channel was down — gets none: a card invites action, and there is none left. The skipped
+        row settles it, the way `--no-publish` does.
+        """
         result = PublishingResult()
         candidates = self._repo.list_publish_candidates(
             self._channel_id,
@@ -97,9 +104,6 @@ class PublishingService:
         today = self._clock.now().date()
         for bill in government_first(candidates):
             if is_over(bill, today=today):
-                # Analysed while the process was still running, over before the card went out
-                # (publishing was off, the channel was down): a card invites action, and there
-                # is none left. The skipped row settles the bill, as `--no-publish` does.
                 log.info("%s is over: no card", bill.number)
                 self._record_skipped(bill)
                 result.skipped += 1
@@ -138,8 +142,13 @@ class PublishingService:
 
     def publish_bill(self, bill: Bill, result: PublishingResult | None = None) -> bool:
         """Send one bill: a card, or a reply under the card of a print it is considered jointly
-        with. Records a pending publication before sending so a crash cannot cause a duplicate
-        post; returns True on success and counts the post in `result`."""
+        with. Returns True on success and counts the post in `result`.
+
+        The pending publication row is written before the post, so that a crash cannot cause a
+        duplicate one. Everything the card needs from the Sejm API is fetched before that row
+        exists: an outage there must leave no row behind — a stale pending row becomes `unknown`
+        and is never sent — so that the bill is simply a candidate again on the next run.
+        """
         result = result if result is not None else PublishingResult()
         primary = self._primary_of(bill)
         if primary is not None:
@@ -147,9 +156,6 @@ class PublishingService:
         inherited = self._inherited_card(bill)
         if inherited is not None:
             return self._inherit_card(bill, inherited)
-        # Everything the card needs from the Sejm API is fetched before the pending row exists:
-        # an outage here must leave no row behind (a stale pending row becomes `unknown` and is
-        # never sent), so that the bill is simply a candidate again on the next run.
         print_info = self._safe_print(bill) if bill.has_process else None
         bill = self._with_submission(bill)
         pub_id = self._repo.create_publication(
@@ -172,7 +178,7 @@ class PublishingService:
         self, bill: Bill, primary: tuple[Bill, int], result: PublishingResult
     ) -> bool:
         card_bill, card_message_id = primary
-        print_info = self._safe_print(bill)  # before the pending row, as in `publish_bill`
+        print_info = self._safe_print(bill)
         pub_id = self._repo.create_publication(
             Publication(
                 term=bill.term,
@@ -252,7 +258,11 @@ class PublishingService:
 
     def _primary_of(self, bill: Bill) -> tuple[Bill, int] | None:
         """The bill `bill` is considered jointly with that already has a card in this channel
-        and is still followed, with the card's message id; None when `bill` gets its own card."""
+        and is still followed, with the card's message id; None when `bill` gets its own card.
+
+        A print that was withdrawn or rejected is not one of them: its thread is over, and the
+        bill gets a card of its own.
+        """
         for number in bill.summary.prints_considered_jointly:
             card = self._repo.get_publication(
                 bill.term, number, PublicationKind.NEW_BILL, self._channel_id
@@ -263,15 +273,16 @@ class PublishingService:
             if other is None or other.discontinued_at is not None:
                 continue
             if other.summary.closure_date is not None and not other.summary.passed:
-                continue  # withdrawn or rejected: its thread is over, the bill gets its own card
+                continue
             return other, card.message_id
         return None
 
     def _send(self, pub_id: int, bill: Bill, send: Send) -> bool:
+        """Send the post and record what became of it. An outage of the channel propagates and
+        counts no attempt: the channel is down, not the post, so it keeps its retry budget."""
         try:
             sent = send()
         except ServiceUnavailableError as exc:
-            # The channel is down, not the post: keep its retry budget.
             self._repo.mark_publication(
                 pub_id, PublicationStatus.FAILED, error=exc.describe(), count_attempt=False
             )

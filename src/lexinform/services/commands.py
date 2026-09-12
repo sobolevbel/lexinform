@@ -55,13 +55,22 @@ def _day(when: dt.datetime | None) -> str:
 
 @dataclass
 class CommandsResult:
+    """What the commands phase did; `lines` holds one line per command for the run report."""
+
     handled: int = 0
     failed: int = 0
-    lines: list[str] = field(default_factory=list)  # one per command, for the run report
+    lines: list[str] = field(default_factory=list)
     input_tokens: int = 0
     output_tokens: int = 0
     usage: dict[str, TokenUsage] = field(default_factory=dict)
     fatal_error: str | None = None
+
+
+def _count_usage(result: CommandsResult, spent: dict[str, TokenUsage]) -> None:
+    for model, tokens in spent.items():
+        result.usage[model] = result.usage.get(model, TokenUsage()).plus(tokens)
+        result.input_tokens += tokens.input + tokens.cache_read
+        result.output_tokens += tokens.output
 
 
 class CommandService:
@@ -100,56 +109,93 @@ class CommandService:
         them)."""
         result = CommandsResult()
         for incoming in self._inbox.pending():
-            earlier = self._earlier_state(incoming)
-            if earlier is not None and earlier.handled_at is not None:
-                log.info("command %d answered before; inbox file dropped", incoming.update_id)
-                self._done(incoming, dry_run=dry_run)
-                continue
-            started = time.perf_counter()
-            spent: dict[str, TokenUsage] = {}
-            if earlier is not None:
-                outcome = self._answer_of_an_earlier_run(earlier)
-            else:
-                try:
-                    # `spent` is filled as the command goes, not returned: a command that raises
-                    # halfway has still spent what it spent, and the report must say so.
-                    outcome = self._execute(incoming, spent, min_score=min_score, publish=publish)
-                except ServiceUnavailableError as exc:
-                    result.fatal_error = exc.describe()
-                    log.error("aborting commands phase: %s", result.fatal_error)
-                    break
-                except Exception as exc:
-                    log.exception("command %d failed: %s", incoming.update_id, exc)
-                    outcome = CommandOutcome(
-                        status=OutcomeStatus.ERROR, note=f"{type(exc).__name__}: {exc}"
-                    )
-                self._repo.mark_command_executed(
-                    incoming.update_id, outcome=outcome.line(), at=self._clock.now()
-                )
-            # What this one command took, so the reply can say it (the run report sums them up).
-            outcome = outcome.model_copy(
-                update={
-                    "run_started_at": run_started_at,
-                    "seconds": round(time.perf_counter() - started, 1),
-                    "usage": spent,
-                }
-            )
-            for model, tokens in spent.items():
-                result.usage[model] = result.usage.get(model, TokenUsage()).plus(tokens)
-                result.input_tokens += tokens.input + tokens.cache_read
-                result.output_tokens += tokens.output
-            try:
-                self._answer(incoming, outcome, dry_run=dry_run)
-            except ServiceUnavailableError as exc:
-                # The command ran; only its answer did not reach the channel. It stays in the
-                # inbox, marked executed, and the next run repeats the answer alone.
-                result.fatal_error = exc.describe()
-                log.error("aborting commands phase, %d unanswered: %s", incoming.update_id, exc)
+            if not self._handle_one(
+                incoming,
+                result,
+                min_score=min_score,
+                run_started_at=run_started_at,
+                publish=publish,
+                dry_run=dry_run,
+            ):
                 break
-            result.handled += 1
-            result.failed += int(not outcome.ok)
-            result.lines.append(f"{incoming.text} → {outcome.line()}")
         return result
+
+    def _handle_one(
+        self,
+        incoming: IncomingCommand,
+        result: CommandsResult,
+        *,
+        min_score: int,
+        run_started_at: dt.datetime,
+        publish: bool,
+        dry_run: bool,
+    ) -> bool:
+        """Answer one command; False when the phase must stop.
+
+        A command an earlier run already answered is only dropped from the inbox. When the answer
+        is the one that cannot be delivered, the command stays in the inbox marked executed, and
+        the next run repeats the answer alone.
+        """
+        earlier = self._earlier_state(incoming)
+        if earlier is not None and earlier.handled_at is not None:
+            log.info("command %d answered before; inbox file dropped", incoming.update_id)
+            self._done(incoming, dry_run=dry_run)
+            return True
+        started = time.perf_counter()
+        spent: dict[str, TokenUsage] = {}
+        if earlier is not None:
+            outcome = self._answer_of_an_earlier_run(earlier)
+        else:
+            ran = self._run_now(incoming, spent, result, min_score=min_score, publish=publish)
+            if ran is None:
+                return False
+            outcome = ran
+        outcome = outcome.model_copy(
+            update={
+                "run_started_at": run_started_at,
+                "seconds": round(time.perf_counter() - started, 1),
+                "usage": spent,
+            }
+        )
+        _count_usage(result, spent)
+        try:
+            self._answer(incoming, outcome, dry_run=dry_run)
+        except ServiceUnavailableError as exc:
+            result.fatal_error = exc.describe()
+            log.error("aborting commands phase, %d unanswered: %s", incoming.update_id, exc)
+            return False
+        result.handled += 1
+        result.failed += int(not outcome.ok)
+        result.lines.append(f"{incoming.text} → {outcome.line()}")
+        return True
+
+    def _run_now(
+        self,
+        incoming: IncomingCommand,
+        spent: dict[str, TokenUsage],
+        result: CommandsResult,
+        *,
+        min_score: int,
+        publish: bool,
+    ) -> CommandOutcome | None:
+        """Run the command and record that it ran; None when a source is down and the phase must
+        stop. `spent` is filled as the command goes rather than returned: a command that raises
+        halfway has still spent what it spent, and the report must say so."""
+        try:
+            outcome = self._execute(incoming, spent, min_score=min_score, publish=publish)
+        except ServiceUnavailableError as exc:
+            result.fatal_error = exc.describe()
+            log.error("aborting commands phase: %s", result.fatal_error)
+            return None
+        except Exception as exc:
+            log.exception("command %d failed: %s", incoming.update_id, exc)
+            outcome = CommandOutcome(
+                status=OutcomeStatus.ERROR, note=f"{type(exc).__name__}: {exc}"
+            )
+        self._repo.mark_command_executed(
+            incoming.update_id, outcome=outcome.line(), at=self._clock.now()
+        )
+        return outcome
 
     def _earlier_state(self, incoming: IncomingCommand) -> CommandState | None:
         """What earlier runs did with this command, recording it when it is new. None means
@@ -180,12 +226,18 @@ class CommandService:
         )
 
     def _answer(self, incoming: IncomingCommand, outcome: CommandOutcome, *, dry_run: bool) -> None:
+        """Reply under the command's own message and drop its inbox file.
+
+        An outage of the channel propagates: the phase ends and the answer is repeated next run.
+        A reply that failed for any other reason is noted and the command is marked handled all
+        the same — the command itself ran, and running it again could post a second card.
+        """
         line = outcome.line()
         try:
             self._replier.reply(incoming, outcome)
         except ServiceUnavailableError:
-            raise  # the channel is down: the phase ends, the answer is repeated next run
-        except Exception as exc:  # the answer failed, the command did not: do not run it again
+            raise
+        except Exception as exc:
             log.exception("reply to command %d failed: %s", incoming.update_id, exc)
             line += f" (reply failed: {exc})"
         self._repo.mark_command_handled(incoming.update_id, reply=line, at=self._clock.now())
@@ -236,41 +288,67 @@ class CommandService:
         min_score: int,
         publish: bool,
     ) -> CommandOutcome:
+        """`/analyze`: the prefilter, the model and the publishing rule, as the daily run applies
+        them; `force` gets past the first two, `publish` past the score threshold."""
         if not command.force:
-            if bill.status in SKIPPED:
-                reason = bill.last_error or "title prefilter: no keyword hits"
-                return CommandOutcome(
+            bill, skipped = self._skipped_by_prefilter(bill)
+            if skipped is not None:
+                return skipped
+        if command.force or bill.analysis is None or bill.status is not BillStatus.ANALYZED:
+            bill, too_expensive = self._analyse_now(bill, spent, force=command.force)
+            if too_expensive is not None:
+                return too_expensive
+        assert bill.analysis is not None
+        return self._card_verdict(bill, command, min_score=min_score, publish=publish)
+
+    def _skipped_by_prefilter(self, bill: Bill) -> tuple[Bill, CommandOutcome | None]:
+        """The prefilter's answer, with the row as it stands after the text stage may have run."""
+        if bill.status in SKIPPED:
+            reason = bill.last_error or "title prefilter: no keyword hits"
+            return bill, CommandOutcome(
+                status=OutcomeStatus.SKIPPED, bill=bill, note=f"{reason}; {FORCE_HINT}"
+            )
+        if bill.status is BillStatus.TEXT_PREFILTER_PENDING and self._text_prefilter:
+            accepted = self._text_prefilter.check(bill)
+            bill = self._reload(bill)
+            if not accepted:
+                reason = bill.last_error or "text prefilter: no keyword hits"
+                return bill, CommandOutcome(
                     status=OutcomeStatus.SKIPPED, bill=bill, note=f"{reason}; {FORCE_HINT}"
                 )
-            if bill.status is BillStatus.TEXT_PREFILTER_PENDING and self._text_prefilter:
-                accepted = self._text_prefilter.check(bill)
-                bill = self._reload(bill)
-                if not accepted:
-                    reason = bill.last_error or "text prefilter: no keyword hits"
-                    return CommandOutcome(
-                        status=OutcomeStatus.SKIPPED, bill=bill, note=f"{reason}; {FORCE_HINT}"
-                    )
-        if command.force or bill.analysis is None or bill.status is not BillStatus.ANALYZED:
-            try:
-                analysed = self._analysis.analyze_bill(bill, ignore_cost_limit=command.force)
-            except TooExpensiveError as exc:
-                # The same answer the analysis phase gives a text over the per-bill limit, so
-                # that the queue looks the same whoever hit the guard.
-                self._repo.set_status(
-                    bill.term,
-                    bill.number,
-                    BillStatus.SKIPPED_COST,
-                    reason=f"analysis skipped: {exc}",
-                )
-                return CommandOutcome(
-                    status=OutcomeStatus.SKIPPED,
-                    bill=self._reload(bill),
-                    note=f"{exc}; {FORCE_HINT}",
-                )
-            spent.update(analysed.usage)  # the triage counts too: the operator pays for both
-            bill = self._reload(bill)
-        assert bill.analysis is not None
-        verdict = bill.analysis.analysis
+        return bill, None
+
+    def _analyse_now(
+        self, bill: Bill, spent: dict[str, TokenUsage], *, force: bool
+    ) -> tuple[Bill, CommandOutcome | None]:
+        """Ask the model, and count the triage too: the operator pays for both.
+
+        A text over the per-bill limit gets the answer the analysis phase gives it, so that the
+        queue looks the same whoever hit the guard.
+        """
+        try:
+            analysed = self._analysis.analyze_bill(bill, ignore_cost_limit=force)
+        except TooExpensiveError as exc:
+            self._repo.set_status(
+                bill.term,
+                bill.number,
+                BillStatus.SKIPPED_COST,
+                reason=f"analysis skipped: {exc}",
+            )
+            return bill, CommandOutcome(
+                status=OutcomeStatus.SKIPPED,
+                bill=self._reload(bill),
+                note=f"{exc}; {FORCE_HINT}",
+            )
+        spent.update(analysed.usage)
+        return self._reload(bill), None
+
+    def _card_verdict(
+        self, bill: Bill, command: Command, *, min_score: int, publish: bool
+    ) -> CommandOutcome:
+        """Whether the analysis earns a card now, and what to say when it does not."""
+        verdict = bill.analysis.analysis if bill.analysis is not None else None
+        assert verdict is not None
         if not verdict.relevant:
             return CommandOutcome(
                 status=OutcomeStatus.ANALYSED, bill=bill, note="not relevant: no card"

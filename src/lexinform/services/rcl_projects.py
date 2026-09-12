@@ -15,8 +15,6 @@ from lexinform.services.documents import TextLoader
 
 log = logging.getLogger(__name__)
 
-# Catalogs read, newest first, when looking for the bill text of a title miss. Every stage
-# republishes the current text in its own "Projekt" folder, so the newest one is enough.
 TEXT_STAGE_ATTEMPTS = 1
 
 
@@ -36,7 +34,9 @@ class RclProjectReader:
         return project.model_copy(update={"consultation": self.consultation(project)})
 
     def with_text(self, project: RclProject) -> RclProject:
-        """The newest stage that carries the bill text, reading at most a couple of catalogs."""
+        """The newest stage that carries the bill text, reading at most `TEXT_STAGE_ATTEMPTS`
+        catalogs: every stage republishes the current text in its own "Projekt" folder, so the
+        newest one is enough, and a page takes some ten seconds."""
         for stage in list(reversed(project.reached_stages))[:TEXT_STAGE_ATTEMPTS]:
             read = self._rcl.get_stage(project.id, stage.id)
             project = project.with_stage(read)
@@ -62,7 +62,11 @@ class RclProjectReader:
     def consultation(
         self, project: RclProject, *, known: RclConsultation | None = None
     ) -> RclConsultation | None:
-        """What the consultation stage shows; the letter is read once (`known` keeps its data)."""
+        """What the consultation stage shows; the letter is read once (`known` keeps its data).
+
+        A letter whose deadline the parser cannot read is logged for the operator's channel:
+        without a date the card can only say "срок в письме" and no reminder is ever due.
+        """
         stage = project.consultation_stage
         if stage is None or not any(f.documents for f in stage.folders):
             return None
@@ -92,8 +96,6 @@ class RclProjectReader:
         published = letter.created or stage.modified or project.modified
         deadline = deadline_of(info, published=published)
         if deadline is None:
-            # Without it the card can only say "срок в письме" and no reminder is ever due, so
-            # the operator's channel is told which letter the parser could not read.
             log.warning("consultation letter %s gives no deadline this run can use", url)
         return RclConsultation(
             letter_url=url,

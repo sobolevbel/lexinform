@@ -32,27 +32,37 @@ log = logging.getLogger(__name__)
 
 
 class RunOptions(BaseModel):
-    """What one run should do; built by the CLI from settings and flags."""
+    """What one run should do; built by the CLI from settings and flags.
 
-    term: int | None = None  # None: the current term, as the Sejm API reports it
+    `term` is the current one as the Sejm API reports it unless it is pinned here. `rcl` and
+    `wykaz` add the two government sources (when the pipeline was given those services),
+    `full_track` checks every followed bill rather than only those the API lists as changed, and
+    `commands` answers the operator commands waiting in the inbox (when one is configured).
+    """
+
+    term: int | None = None
     since: datetime | None = None
     dry_run: bool = False
     discover: bool = True
-    rcl: bool = True  # also look at legislacja.rcl.gov.pl (when the pipeline has the service)
-    wykaz: bool = True  # also look at the wykaz prac legislacyjnych RM on gov.pl
+    rcl: bool = True
+    wykaz: bool = True
     publish: bool = True
     track: bool = True
     max_publish: int = 10
     max_analyze: int = 40
     max_text_prefilter: int = 20
     min_score: int = 3
-    full_track: bool = False  # check every followed bill, not only those the API lists as changed
-    commands: bool = True  # answer the operator commands waiting in the inbox (when there is one)
+    full_track: bool = False
+    commands: bool = True
     mode: RunMode = RunMode.RUN
 
 
 class DailyPipeline:
-    """Runs the phases in order, isolates their failures and produces the run report."""
+    """Runs the phases in order, isolates their failures and produces the run report.
+
+    `commands` is None when no inbox is configured, and `full_track_weekday` is the weekday on
+    which every followed bill is checked (Monday by default; None never does).
+    """
 
     def __init__(
         self,
@@ -86,14 +96,14 @@ class DailyPipeline:
         self._text_prefilter = text_prefilter
         self._rcl_discovery = rcl_discovery
         self._wykaz_discovery = wykaz_discovery
-        self._commands = commands  # None: no inbox configured
+        self._commands = commands
         self._first_run_lookback = timedelta(days=first_run_lookback_days)
         self._overlap = timedelta(days=rerun_overlap_days)
         self._runs_retention = (
             timedelta(days=runs_retention_days) if runs_retention_days is not None else None
         )
         self._pre_print = pre_print
-        self._full_track_weekday = full_track_weekday  # Monday by default; None = never
+        self._full_track_weekday = full_track_weekday
 
     def resolve_since(self, requested: datetime | None) -> datetime:
         """Discovery watermark: the start of the last run that completed discovery, minus overlap.
@@ -109,6 +119,8 @@ class DailyPipeline:
         return self._clock.now() - self._first_run_lookback
 
     def run(self, opts: RunOptions) -> RunReport:
+        """One whole run: every failure is caught, because the report is how the run is heard
+        from and a process that crashes says nothing at all."""
         started = self._clock.now()
         report = RunReport(
             started_at=started, since=started, mode=RunMode.DRY_RUN if opts.dry_run else opts.mode
@@ -131,7 +143,7 @@ class DailyPipeline:
                     report.term,
                 )
                 self._execute(opts, report.term, report.since, report)
-        except Exception as exc:  # last line of defence: report, never crash the process
+        except Exception as exc:
             log.exception("run failed unexpectedly: %s", exc)
             report.errors.append(f"unexpected failure: {type(exc).__name__}: {exc}")
         finally:
@@ -147,7 +159,6 @@ class DailyPipeline:
                     self._repo.rollback()
                     log.info("dry run: database changes rolled back")
                 except Exception as exc:
-                    # Raising here would skip the report, which is how the run is heard from.
                     log.exception("dry run: could not roll back: %s", exc)
                     report.errors.append(f"could not roll back: {type(exc).__name__}: {exc}")
             captured.uninstall()
@@ -181,43 +192,60 @@ class DailyPipeline:
         return None
 
     def _execute(self, opts: RunOptions, current: int, since: datetime, report: RunReport) -> None:
-        stale = self._repo.mark_stale_pending_as_unknown(now=self._clock.now())
-        if stale:
-            # Named, because they are never sent again: this line is the operator's only chance
-            # to put the missing post back (/republish for a card, /analyze to look at the bill).
-            msg = (
-                f"{len(stale)} publication(s) were left pending by a previous run and are never"
-                f" re-sent; marked unknown: {', '.join(stale[:10])}"
-            )
-            log.error(msg, extra={"in_report": True})
-            report.errors.append(msg)
-        if self._runs_retention is not None:
-            pruned = self._repo.prune_runs(before=self._clock.now() - self._runs_retention)
-            if pruned:
-                log.info("%d run record(s) older than %s removed", pruned, self._runs_retention)
+        """The phases of a run, in the order they depend on each other."""
+        self._report_stale_publications(report)
+        self._prune_runs()
+        self._run_phases(opts, current, since, report)
 
-        # New bills come from the current Sejm; the queues and the tracking are not scoped to a
-        # term (every row carries its own).
+    def _report_stale_publications(self, report: RunReport) -> None:
+        """Rows a crashed run left pending are named in the report, because they are never sent
+        again: this line is the operator's only chance to put the missing post back (`/republish`
+        for a card, `/analyze` to look at the bill)."""
+        stale = self._repo.mark_stale_pending_as_unknown(now=self._clock.now())
+        if not stale:
+            return
+        msg = (
+            f"{len(stale)} publication(s) were left pending by a previous run and are never"
+            f" re-sent; marked unknown: {', '.join(stale[:10])}"
+        )
+        log.error(msg, extra={"in_report": True})
+        report.errors.append(msg)
+
+    def _prune_runs(self) -> None:
+        if self._runs_retention is None:
+            return
+        pruned = self._repo.prune_runs(before=self._clock.now() - self._runs_retention)
+        if pruned:
+            log.info("%d run record(s) older than %s removed", pruned, self._runs_retention)
+
+    def _run_phases(
+        self, opts: RunOptions, current: int, since: datetime, report: RunReport
+    ) -> None:
+        """New bills come from the current Sejm; the queues and the tracking are not scoped to a
+        term, because every row carries its own.
+
+        The order is what the phases need of each other. The end of a term comes first, before
+        discovery sees the old rows: the unfinished bills of the older terms lapsed (announced
+        once) and the government's rows follow the Sejm — idempotent, so it runs every time. The
+        commands come before discovery, so that a card one of them posts is followed by this
+        run's tracking. The wykaz comes before RCL, so that a project published today joins the
+        thread of its own plan, and RCL is a phase of its own so that an outage there costs the
+        Sejm discovery nothing.
+        """
         previous = [term for term in self._repo.known_terms() if term < current]
         if previous:
-            # First thing in a new term, before discovery sees the old rows: the unfinished bills
-            # of the older terms lapsed (announced once), the RCL projects follow the Sejm.
-            # Nothing to do once done, so it runs every time.
             self._phase(
                 report, "end of term", lambda: self._close_terms(previous, current, opts, report)
             )
         if opts.commands and self._commands is not None:
-            # Before discovery: a card a command posts is followed by this run's tracking.
             self._phase(report, "commands", lambda: self._handle_commands(opts, report))
         if opts.discover:
             self._phase(report, "discovery", lambda: self._discover(current, since, report))
         if opts.discover and opts.wykaz and self._wykaz_discovery is not None:
-            # Before RCL, so that a project published today joins the thread of its own plan.
             self._phase(
                 report, "wykaz discovery", lambda: self._discover_wykaz(current, since, report)
             )
         if opts.discover and opts.rcl and self._rcl_discovery is not None:
-            # Its own phase: an RCL outage must not cost the Sejm discovery.
             self._phase(report, "rcl discovery", lambda: self._discover_rcl(current, since, report))
         if self._text_prefilter is not None:
             self._phase(report, "text prefilter", lambda: self._prefilter_text(opts, report))
@@ -340,13 +368,9 @@ class DailyPipeline:
             report.errors.append(f"{failed} end-of-term update(s) failed")
 
     def _track(self, opts: RunOptions, report: RunReport) -> None:
-        # Daily: only bills the API listed as modified. Weekly (or when discovery did not run):
-        # every followed bill, in case something moved without a visible change.
-        weekly = (
-            self._full_track_weekday is not None
-            and self._clock.now().weekday() == self._full_track_weekday
-        )
-        full = opts.full_track or not opts.discover or not report.discovery_ok or weekly
+        """Daily, only the bills the API listed as modified; once a week, or whenever discovery
+        did not run, every followed bill, in case something moved without a visible change."""
+        full = opts.full_track or not opts.discover or not report.discovery_ok or self._full_day()
         tracked = self._tracking.check_updates(
             publish=opts.publish, changed_since=None if full else report.since
         )
@@ -355,6 +379,12 @@ class DailyPipeline:
             report.errors.append(f"tracking: {tracked.fatal_error}")
         elif failed:
             report.errors.append(f"{failed} status update(s) failed")
+
+    def _full_day(self) -> bool:
+        return (
+            self._full_track_weekday is not None
+            and self._clock.now().weekday() == self._full_track_weekday
+        )
 
     @staticmethod
     def _merge_tracking(report: RunReport, tracked: TrackingResult, opts: RunOptions) -> int:
@@ -381,16 +411,21 @@ class DailyPipeline:
         return tracked.failed
 
     def _notify(self, report: RunReport, captured: MemoryLogHandler) -> None:
+        """Send the run report to the log channel; a failure there must never break the run.
+
+        A commands run that went well says nothing: the replies under the commands themselves
+        have told the operator everything, and a report for a kick is noise.
+        """
         if self._notifier is None:
             return
         if report.mode is RunMode.COMMANDS and report.ok:
-            return  # the replies under the commands said everything; no report for a kick
+            return
         lines = list(captured.lines)
         if captured.dropped:
             lines.append(f"... and {captured.dropped} more")
         try:
             self._notifier.notify(report, lines)
-        except Exception as exc:  # the log channel must never break the run itself
+        except Exception as exc:
             log.exception("run notification failed: %s", exc)
 
 

@@ -22,11 +22,12 @@ TEXT_HIT_PREFIX = "text:"
 
 @dataclass
 class TextPrefilterResult:
-    """Counters of one text-prefilter phase."""
+    """Counters of one text-prefilter phase; `unreadable` counts the bills with no document, no
+    text layer, or a download or extraction that failed."""
 
     checked: int = 0
     hits: int = 0
-    unreadable: int = 0  # no document, no text layer, or the download/extraction failed
+    unreadable: int = 0
     failed: int = 0
     fatal_error: str | None = None
 
@@ -71,13 +72,11 @@ class TextPrefilterService:
             result.checked += 1
             try:
                 loaded = outcome.result()
-            except ServiceUnavailableError as exc:  # bills stay pending for the next run
+            except ServiceUnavailableError as exc:
                 result.fatal_error = exc.describe()
                 log.error("aborting text prefilter phase: %s", result.fatal_error)
                 break
             except Exception as exc:
-                # A 404, a damaged file, an unknown format: the bill is skipped with the reason
-                # on record (`lexinform reprefilter --include-text-skipped` scans it again).
                 result.failed += 1
                 log.warning("text prefilter for druk %s failed: %s", bill.number, exc)
                 loaded = _Loaded(None, f"text prefilter failed: {type(exc).__name__}: {exc}")
@@ -129,8 +128,13 @@ class TextPrefilterService:
         return accepted
 
     def _load(self, bill: Bill) -> _Loaded:
-        """Network only. The text to scan, or the reason there is none; a download or extraction
-        failure propagates for the caller to record (an outage aborts the phase)."""
+        """Network only. The bill text alone decides, so that is all this reads.
+
+        The text to scan, or the reason there is none; a 404, a damaged file or an unknown format
+        propagates for the caller to record — the bill is then skipped with the reason on file,
+        and `lexinform reprefilter --include-text-skipped` scans it again. An outage aborts the
+        phase instead, leaving the bills pending for the next run.
+        """
         try:
             located = self._texts.locate(bill)
         except ServiceUnavailableError:
@@ -141,7 +145,7 @@ class TextPrefilterService:
         if located.document is None:
             log.info("%s has no readable text; text prefilter skipped", bill.number)
             return _Loaded(None, "text prefilter: no document to read")
-        text = self._loader.load(located.document.url)  # the bill text alone decides
+        text = self._loader.load(located.document.url)
         if text is None:
             return _Loaded(None, "text prefilter: no text layer or file over the size limit")
         return _Loaded(text, None)

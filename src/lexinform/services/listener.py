@@ -30,7 +30,10 @@ class CommandListener:
         retry_delay: float = 15.0,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
-        """`writer=None` is a dry run: commands are logged, nothing is filed or confirmed."""
+        """`writer=None` is a dry run: commands are logged, nothing is filed or confirmed.
+
+        `filed` collects what this process filed, or would have filed in a dry run.
+        """
         self._updates = updates
         self._writer = writer
         self._ack = acknowledger
@@ -39,7 +42,7 @@ class CommandListener:
         self._retry_delay = retry_delay
         self._sleep = sleep
         self._offset: int | None = None
-        self.filed: list[ChannelPost] = []  # what this process filed (or would have, dry)
+        self.filed: list[ChannelPost] = []
 
     @property
     def offset(self) -> int | None:
@@ -85,6 +88,10 @@ class CommandListener:
         return post.text is not None and parse_command(post.text) is not None
 
     def _file(self, post: ChannelPost) -> bool:
+        """Put one command in the inbox; True when it is safely there and the offset may move.
+
+        The acknowledgement in the channel is a courtesy: the command is filed either way.
+        """
         command = post.as_command()
         if self._writer is None:
             log.info("dry run: would file update %d: %s", post.update_id, post.text)
@@ -103,6 +110,6 @@ class CommandListener:
         if self._ack is not None:
             try:
                 self._ack.queued(command)
-            except Exception as exc:  # the acknowledgement is a courtesy
+            except Exception as exc:
                 log.warning("could not acknowledge update %d: %s", post.update_id, exc)
         return True

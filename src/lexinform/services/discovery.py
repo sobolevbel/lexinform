@@ -23,8 +23,6 @@ from lexinform.ports import BillRepository, Clock, EliGateway, ProjectResolver, 
 
 log = logging.getLogger(__name__)
 
-# A row in one of these statuses has no thread of its own, so the druk that continues it takes
-# the normal path (its own prefilter, its own card) instead of being linked to it.
 NOT_FOLLOWED = frozenset(
     {
         BillStatus.SKIPPED_PREFILTER,
@@ -37,14 +35,15 @@ NOT_FOLLOWED = frozenset(
 
 @dataclass
 class DiscoveryResult:
-    """Counters of one discovery phase."""
+    """Counters of one discovery phase; `over` counts the bills first seen with the process
+    already ended, which get neither an analysis nor a card."""
 
     seen: int = 0
     new: int = 0
     pre_print_seen: int = 0
     pre_print_new: int = 0
     prefilter_hits: int = 0
-    over: int = 0  # first seen with the process already ended: no analysis, no card
+    over: int = 0
 
 
 class BillDiscoveryService:
@@ -68,8 +67,8 @@ class BillDiscoveryService:
         self._clock = clock
         self._text_prefilter = text_prefilter
         self._local_tz = local_tz
-        self._projects = projects  # resolves a government print's rclNum to its RCL project
-        self._eli = eli  # reads the act of a bill first seen after its publication in Dz.U.
+        self._projects = projects
+        self._eli = eli
 
     def discover(self, term: int, since: datetime, *, pre_print: bool = True) -> DiscoveryResult:
         result = DiscoveryResult()
@@ -98,7 +97,6 @@ class BillDiscoveryService:
             if self._ingest(summary, result):
                 result.new += 1
         if result.seen == 0:
-            # A quiet interval is the normal case twice a day, not a warning for the channel.
             log.info("Sejm API returned no bills modified since %s", since.isoformat())
 
     def _miss_status(self, summary: ProcessSummary) -> BillStatus:
@@ -138,15 +136,16 @@ class BillDiscoveryService:
         act published with months of vacatio legis is the one moment a reader has a date to
         prepare for. Both are read once, here — a bill whose detail cannot be read takes the
         normal path.
+
+        An act that exists but cannot be read counts as the end: unlike an unread stage tree, an
+        unread act is not a reason to assume the road is still open. The act that *was* read is
+        stored whatever the verdict, because the publishing gate asks the same question a phase
+        later and without it would answer "over" and drop the card after all.
         """
         if bill.summary.eli is not None:
             act = None if self._eli is None else self._act_of(bill.summary.eli)
             if act is None:
-                # An act exists and nothing contradicts it: unlike an unread stage tree, an
-                # unread act is not a reason to assume the road is still open.
                 return True
-            # Kept whatever the verdict: the publishing gate asks the same question again, and
-            # without the act it would answer "over" and drop the card after all.
             self._repo.save_act(bill.term, bill.number, act)
             bill = bill.model_copy(update={"act": act})
         elif bill.has_process:
@@ -188,21 +187,30 @@ class BillDiscoveryService:
             return None
 
     def _discover_submissions(self, term: int, since: datetime, result: DiscoveryResult) -> None:
-        """Bills from /bills that have no print number yet: the earliest, consultation stage."""
+        """Bills from /bills that have no print number yet: the earliest, consultation stage.
+
+        Numbered prints come through `/processes` and closed ones are history, so neither is
+        taken from here. A known entry is left to tracking, which compares the new `/bills` row
+        with the stored one (print number assigned, withdrawn, opinions published).
+        """
         for sub in self._gateway.iter_bills(term, received_from=since.date()):
             if not sub.is_bill or sub.print_number or sub.is_closed:
-                continue  # numbered prints come through /processes; closed ones are history
+                continue
             result.pre_print_seen += 1
             summary = ProcessSummary.from_submission(sub)
             if self._ingest(summary, result):
                 result.pre_print_new += 1
-                # Known entries are refreshed by tracking, which compares the new /bills row with
-                # the stored one (print number assigned, withdrawn, opinions published).
                 self._repo.save_submission(sub.term, sub.number, sub)
 
     def _ingest(self, summary: ProcessSummary, result: DiscoveryResult) -> bool:
         """Upsert the summary; prefilter new bills (and re-prefilter skipped ones whose title
-        changed). True when the bill is new."""
+        changed). True when the bill is new.
+
+        A print that continues a row we already follow — an RPW entry, or an RCL project — is not
+        ingested here: tracking links the two and keeps the Telegram thread, and a second card
+        would duplicate it. A row in `NOT_FOLLOWED` has no thread of its own, so the druk that
+        continues it takes the normal path instead, with its own prefilter and its own card.
+        """
         existing = self._repo.get(summary.term, summary.number)
         now = self._clock.now()
         if existing is None and (summary.closure_date or summary.eli):
@@ -222,8 +230,6 @@ class BillDiscoveryService:
             submission = self._find_submission(summary)
             if submission is not None:
                 if self._repo.get(summary.term, submission.number) is not None:
-                    # Already followed under its RPW number: tracking links the two and keeps
-                    # the Telegram thread; a second card here would duplicate it.
                     log.info(
                         "druk %s continues %s; linked by tracking",
                         summary.number,
@@ -233,7 +239,6 @@ class BillDiscoveryService:
                 summary = summary.model_copy(update={"applicant": submission.applicant})
             project = self._rcl_project_of(summary)
             if project is not None:
-                # Same for a government print whose project we follow on RCL.
                 assert project.rcl is not None
                 self._repo.save_rcl(
                     project.term,
@@ -256,7 +261,7 @@ class BillDiscoveryService:
         )
         if needs_prefilter:
             hits = self._prefilter.match(summary.title, summary.description)
-            candidate = accept_title_hits(hits)  # a weak hit alone goes to the text stage
+            candidate = accept_title_hits(hits)
             status = BillStatus.ANALYSIS_PENDING if candidate else self._miss_status(summary)
             self._repo.set_status(bill.term, bill.number, status, prefilter_hits=hits)
             if candidate:

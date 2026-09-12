@@ -18,11 +18,16 @@ from lexinform.sections import PAGE_BREAK
 
 log = logging.getLogger(__name__)
 
-MIN_TEXT_CHARS = 200  # below this the file is a scan or empty: treat as "no text"
+MIN_TEXT_CHARS = 200
 
 
 class TextLoader:
-    """Text of remote documents, one download per URL per run."""
+    """Text of remote documents, one download per URL per run.
+
+    `downloaders` is keyed by host. A file that yields less than `MIN_TEXT_CHARS` is a scan or an
+    empty document and counts as having no text at all. Loads run in parallel during the text
+    prefilter, so the cache is locked.
+    """
 
     def __init__(
         self,
@@ -32,12 +37,12 @@ class TextLoader:
         max_bytes: int,
         cache_size: int = 32,
     ) -> None:
-        self._downloaders = dict(downloaders)  # host -> downloader
+        self._downloaders = dict(downloaders)
         self._extractor = extractor
         self._max_bytes = max_bytes
         self._cache: dict[str, str | None] = {}
         self._cache_size = cache_size
-        self._lock = threading.Lock()  # loads run in parallel during the text prefilter
+        self._lock = threading.Lock()
 
     def load(self, url: str) -> str | None:
         """Extracted text of the file at `url`, or None when it is too big or has no text layer.

@@ -46,18 +46,23 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class AnalysisResult:
-    """Counters and verdicts of one analysis phase."""
+    """Counters and verdicts of one analysis phase.
+
+    `skipped_cost` counts the texts that were over the per-bill cost limit and never reached the
+    model, `usage` is counted per model, and `stopped` says the phase ended early on the per-run
+    cost limit, which is a note and not an error.
+    """
 
     analyzed: int = 0
     triaged_out: int = 0
-    skipped_cost: int = 0  # texts over the per-bill cost limit: not sent to the model
+    skipped_cost: int = 0
     failed: int = 0
     verdicts: list[AnalysisVerdict] = field(default_factory=list)
     input_tokens: int = 0
     output_tokens: int = 0
-    usage: dict[str, TokenUsage] = field(default_factory=dict)  # per model
+    usage: dict[str, TokenUsage] = field(default_factory=dict)
     fatal_error: str | None = None
-    stopped: str | None = None  # the phase ended early on the per-run cost limit (not an error)
+    stopped: str | None = None
 
 
 @dataclass(frozen=True)
@@ -94,20 +99,24 @@ def _usd(amount: float) -> str:
 @dataclass(frozen=True)
 class _Prepared:
     """Everything an analysis needs to be written down: produced without touching the database,
-    so several bills can be prepared at the same time."""
+    so several bills can be prepared at the same time.
+
+    `first` marks a first analysis, which seeds the stages; a re-analysis leaves them to
+    tracking. `triage` is a triage the bill passed, whose tokens count too. Two flags say the
+    model was not asked at all: `unchanged`, when a re-analysis found the same text under a new
+    URL and `record` is the previous one pointing at the new source, and `unreadable`, when the
+    new document could not be read and `record` is the previous one kept as it is — an analysis
+    of the metadata must never replace one of a text.
+    """
 
     bill: Bill
     located: LocatedText
     text: str
     source: TextSource
     record: AnalysisRecord
-    first: bool  # first analysis seeds the stages; a re-analysis leaves them to tracking
-    triage: TriageRecord | None = None  # a triage the bill passed: its tokens count too
-    # A re-analysis that found the same text under a new URL: `record` is the previous one
-    # pointing at the new source, the model was not asked.
+    first: bool
+    triage: TriageRecord | None = None
     unchanged: bool = False
-    # A re-analysis whose new document could not be read: `record` is the previous one, kept as
-    # it is; the model was not asked (an analysis of the metadata must never replace one of a text).
     unreadable: bool = False
 
 
@@ -123,7 +132,12 @@ def text_digest(text: str) -> str:
 
 
 class AnalysisService:
-    """First analyses of candidates and re-analyses of bills whose text changed."""
+    """First analyses of candidates and re-analyses of bills whose text changed.
+
+    The cost guards are off when their limit is 0, and the per-bill estimate needs the model's
+    input price; `triage` holds the keyword patterns that cut the excerpts of the cheap first
+    pass, and None disables that pass.
+    """
 
     def __init__(
         self,
@@ -153,17 +167,20 @@ class AnalysisService:
         self._authors = authors
         self._max_attempts = max_attempts
         self._workers = workers
-        # Guard rails (0 disables): the estimate needs the model's input price.
         self._input_price = input_price_usd_per_mtok
         self._max_bill_cost = max_bill_cost_usd
         self._max_run_cost = max_run_cost_usd
-        self._triage = triage  # the keyword patterns that cut the excerpts; None disables it
+        self._triage = triage
         self._triage_min_chars = triage_min_chars
         self._triage_min_confidence = triage_min_confidence
 
     def analyze_pending(self, *, limit: int) -> AnalysisResult:
         """Analyse up to `limit` candidates; an outage stops the phase, a bill's own error
-        costs it one attempt."""
+        costs it one attempt.
+
+        The phase also stops when the run's model spend reaches the per-run limit: the remaining
+        candidates keep their status and wait for the next run.
+        """
         result = AnalysisResult()
         if limit <= 0:
             return result
@@ -221,7 +238,6 @@ class AnalysisService:
                 add_usage(result.usage, prepared.triage)
             spent = cost_usd(result.usage)
             if self._max_run_cost and spent is not None and spent >= self._max_run_cost:
-                # The remaining candidates keep their status and wait for the next run.
                 result.stopped = (
                     f"run cost limit reached (≈${_usd(spent)} ≥ ${_usd(self._max_run_cost)}); "
                     "the remaining candidates wait for the next run"
@@ -298,7 +314,12 @@ class AnalysisService:
         previous: AnalysisRecord | None,
         cost_guard: bool = True,
     ) -> _Prepared:
-        """Load the text and ask the model. Network only: safe to run for several bills at once."""
+        """Load the text and ask the model. Network only: safe to run for several bills at once.
+
+        The per-bill cost guard applies to first analyses alone: a re-analysis reads a new
+        version of a text that already passed it, and skipping that would leave the card's
+        analysis behind the bill.
+        """
         document = located.document
         text, truncated, source = self._load_text(document)
         if previous is not None and source not in FULL_TEXT_SOURCES:
@@ -326,8 +347,6 @@ class AnalysisService:
             and self._max_bill_cost
             and self._input_price is not None
         ):
-            # First analyses only: a re-analysis reads a new version of a text that already
-            # passed, and skipping it would leave the card's analysis behind the bill.
             estimate = estimate_input_cost(len(text), self._input_price)
             if estimate > self._max_bill_cost:
                 raise TooExpensiveError(estimate, self._max_bill_cost, len(text))

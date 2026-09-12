@@ -40,8 +40,8 @@ class RclDiscoveryResult:
     new: int = 0
     refreshed: int = 0
     prefilter_hits: int = 0
-    planned: int = 0  # projects that continue a plan we already follow
-    over: int = 0  # first seen closed on RCL without reaching the Sejm: no analysis, no card
+    planned: int = 0
+    over: int = 0
     failed: int = 0
 
 
@@ -66,17 +66,21 @@ class RclDiscoveryService:
         self._workers = workers
 
     def discover(self, term: int, since: dt.datetime) -> RclDiscoveryResult:
-        """Projects modified since `since`; an RCL outage propagates (the phase is over)."""
+        """Projects modified since `since`; an RCL outage propagates (the phase is over).
+
+        A project is looked up without a term, because RCL ids are not bound to one: a project
+        joined to a druk of the previous term stays stored under that term and must not come back
+        as new. One that continues a plan we already follow is left to the tracking phase, where
+        the wykaz row hands its thread over.
+        """
         result = RclDiscoveryResult()
         new_rows: list[RclProjectSummary] = []
         for row in self._rcl.list_projects(modified_since=since.date()):
             result.seen += 1
-            # RCL ids are not bound to a Sejm term: a project joined to a druk of the previous
-            # term stays stored under that term and must not come back as new.
             existing = self._repo.find_rcl(rcl_number(row.id))
             if existing is None:
                 if self._continues_a_plan(row, result):
-                    continue  # the wykaz row it continues takes it over in the tracking phase
+                    continue
                 new_rows.append(row)
                 continue
             if row.modified is None:
@@ -127,10 +131,13 @@ class RclDiscoveryService:
         return True
 
     def _read(self, row: RclProjectSummary) -> RclProject:
-        """Network only: as much of the project as its prefilter verdict needs."""
+        """Network only: as much of the project as its prefilter verdict needs.
+
+        A project that is already over is read no further: `_ingest` records the skip.
+        """
         project = self._reader.timeline(row.id)
         if project.is_over:
-            return project  # dropped before we ever saw it: `_ingest` records the skip
+            return project
         if accept_title_hits(self._hits(project, term=0)):
             log.info("RCL %s (%s): candidate, reading its catalogs", row.id, row.wykaz_number)
             return self._reader.complete(project)
@@ -144,13 +151,16 @@ class RclDiscoveryService:
         return self._prefilter.match(summary.title, summary.description)
 
     def _ingest(self, term: int, project: RclProject, result: RclDiscoveryResult) -> None:
+        """Store the project and decide what happens to it.
+
+        One closed on RCL without ever reaching the Sejm, before we saw it, is history: a card
+        would invite action on something nobody is working on.
+        """
         summary = process_summary(project, term=term)
         bill = self._repo.upsert_summary(summary, now=self._clock.now())
         self._repo.save_rcl(term, bill.number, project)
         self._repo.save_stages(term, bill.number, rcl_stages(project), rcl_fingerprint(project))
         if project.is_over:
-            # Closed on RCL without reaching the Sejm before we ever saw it: the project is
-            # history, and a card would invite action on something nobody is working on.
             self._repo.set_status(
                 term,
                 bill.number,
