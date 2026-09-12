@@ -1402,7 +1402,7 @@ class MessageFormatter:
         if project.is_open and not project.sent_to_sejm:
             actions.append(link(project.comment_url, lb.action_rcl_comment))
             organ = project.applicant or lb.wykaz_organ_unknown
-            actions.append(esc(lb.action_wykaz_interest.format(organ=organ)))
+            actions.append(esc(lb.action_rcl_interest.format(organ=organ)))
         return actions
 
     def _upcoming(

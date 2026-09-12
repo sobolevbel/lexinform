@@ -147,6 +147,7 @@ class Labels:
     wykaz_metadata_note: str
     wykaz_organ_unknown: str
     action_wykaz_interest: str  # art. 7 of the lobbying act: anyone may file a zgłoszenie
+    action_rcl_interest: str  # the same, in short: the RCL card already offers other moves
     link_wykaz_entry: str
     tag_wykaz: str
     # Status updates named after their event (see `models.update_event`)
@@ -370,6 +371,11 @@ RU = Labels(
         " попадает в BIP к документам проекта ещё до того, как текст написан, то есть когда его"
         " проще всего изменить; кроме того, подавший вправе участвовать в публичном слушании"
         " проекта в Сейме, если оно будет назначено"
+    ),
+    action_rcl_interest=(
+        "подать в {organ} zgłoszenie zainteresowania pracami nad projektem — это может любой,"
+        " и подавший вправе участвовать в публичном слушании в Сейме (ст. 7 и 8 ust. 2"
+        " ustawy o działalności lobbingowej)"
     ),
     link_wykaz_entry="Запись в плане работ",
     tag_wykaz="wykazRM",
@@ -844,6 +850,11 @@ EN = Labels(
         " seek, and it goes into the BIP file of the project before the text is written, when it"
         " is easiest to change; it also entitles you to take part in the Sejm's public hearing"
         " of the bill, should one be held"
+    ),
+    action_rcl_interest=(
+        "file a zgłoszenie zainteresowania pracami nad projektem with {organ} — anyone may,"
+        " and whoever does may take part in the public hearing in the Sejm (art. 7 and"
+        " 8 ust. 2 of the lobbying act)"
     ),
     link_wykaz_entry="Register entry",
     tag_wykaz="wykazRM",
