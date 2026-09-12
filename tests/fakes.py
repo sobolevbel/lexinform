@@ -505,7 +505,7 @@ class FakePublisher:
         return result
 
     def publish_agenda(
-        self, bill: Bill, item: AgendaItem, reply_to: int | None
+        self, bill: Bill, item: AgendaItem, reply_to: int | None, moved_from: date | None = None
     ) -> FakePublishResult:
         result = self._send(bill)
         self.agendas.append((bill, item, reply_to))

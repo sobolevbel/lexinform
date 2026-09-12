@@ -103,6 +103,7 @@ class Labels:
     agenda_committee_header: str
     agenda_sejm_header: str
     agenda_item: str
+    sitting_moved_from: str  # the same sitting was announced for another day before
     sejm_sitting: str
     link_video: str
     link_committee: str
@@ -303,6 +304,7 @@ RU = Labels(
     agenda_committee_header="Заседание комиссии",
     agenda_sejm_header="В повестке заседания Сейма",
     agenda_item="Пункт повестки",
+    sitting_moved_from="Заседание перенесено с",
     sejm_sitting="заседание Сейма №",
     link_video="Трансляция",
     link_committee="Страница комиссии",
@@ -768,6 +770,7 @@ EN = Labels(
     agenda_committee_header="Committee sitting",
     agenda_sejm_header="On the agenda of a Sejm sitting",
     agenda_item="Agenda item",
+    sitting_moved_from="The sitting was moved from",
     sejm_sitting="Sejm sitting no.",
     link_video="Live stream",
     link_committee="Committee page",

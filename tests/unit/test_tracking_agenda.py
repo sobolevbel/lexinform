@@ -196,3 +196,31 @@ def test_sejm_sitting_agenda_naming_the_bill_is_posted() -> None:
     assert [c for c in w.gateway.calls if c.startswith("get_sitting:")] == ["get_sitting:65"]
     card = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 9, 7)).text
     assert "Что дальше:</b> I чтение на заседании Сейма · заседание Сейма № 65" in card
+
+
+def test_a_sitting_the_api_no_longer_calls_planned_is_not_announced() -> None:
+    """`CommitteeSitting.status` was parsed and never read: a called-off sitting still carries a
+    future date and an agenda."""
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(status="CANCELLED"),)
+
+    report = w.run()
+
+    assert report.agenda_posted == 0
+    assert _refs(w) == []
+
+
+def test_a_sitting_that_moved_corrects_the_post_instead_of_contradicting_it() -> None:
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (_sitting(date=dt.date(2026, 9, 22)),)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.agenda_posted == 1
+    bill, item, _ = w.publisher.agendas[-1]
+    assert item.date == dt.date(2026, 9, 22)
+    text = MessageFormatter("ru").agenda(bill, item, moved_from=dt.date(2026, 9, 17)).text
+    assert "Заседание перенесено с 17.09.2026" in text

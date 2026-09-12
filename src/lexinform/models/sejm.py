@@ -268,6 +268,17 @@ class AgendaItem(BaseModel):
     text: str = ""  # the agenda item, plain text
     video_url: str | None = None
 
+    @property
+    def last_date(self) -> dt.date:
+        """The day the sitting ends: a Sejm sitting spans several, a committee's one."""
+        return self.end_date or self.date
+
+    @property
+    def sitting_key(self) -> str:
+        """The sitting itself, without the date `ref` carries: what tells a moved sitting from
+        a different one."""
+        return self.ref.rsplit("/", 1)[0]
+
 
 class ActInfo(BaseModel):
     """The published act, from the ELI API (GET /eli/acts/{publisher}/{year}/{pos})."""

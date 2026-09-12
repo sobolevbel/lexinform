@@ -628,7 +628,12 @@ class MessageFormatter:
         return RenderedMessage(text=self._assemble([header, facts, steps, links_block, tags]))
 
     def agenda(
-        self, bill: Bill, item: AgendaItem, *, today: dt.date | None = None
+        self,
+        bill: Bill,
+        item: AgendaItem,
+        *,
+        moved_from: dt.date | None = None,
+        today: dt.date | None = None,
     ) -> RenderedMessage:
         """Reply under the card: the bill is on the agenda of a committee or Sejm sitting."""
         lb = self._labels
@@ -646,6 +651,8 @@ class MessageFormatter:
             lines.append(when)
         else:
             lines.append(f"{ICON['stage']} {self._agenda_when(item)}")
+        if moved_from is not None:
+            lines.append(f"{ICON['note']} {esc(lb.sitting_moved_from)} {self.fmt_date(moved_from)}")
         if item.text:
             lines.append(self._field(ICON["agenda"], lb.agenda_item, esc(item.text)))
         facts = "\n".join(lines)
@@ -674,12 +681,17 @@ class MessageFormatter:
         if deadline is None or hearing.date is None:
             raise ValueError(f"bill {bill.number}: the hearing has no date")
         header = self._header(ICON["hearing"], lb.hearing_deadline_header, bill)
-        facts = (
-            f"{ICON['effective']} <b>{esc(lb.hearing_on)}</b> {self.fmt_date(hearing.date)} · "
-            f"{esc(lb.hearing_apply_until)} <b>{self.fmt_date(deadline)}</b> · "
-            f"{self._countdown((deadline - today).days)}\n"
-            f"{ICON['action']} {esc(lb.hearing_hint)}"
-        )
+        when = f"{ICON['effective']} <b>{esc(lb.hearing_on)}</b> {self.fmt_date(hearing.date)}"
+        if deadline < today:
+            # Announced with less than the ten days art. 70b asks for: the hearing is still
+            # ahead and worth telling, the application window never opened for the reader.
+            facts = f"{when} · {esc(lb.hearing_applications_closed)}"
+        else:
+            facts = (
+                f"{when} · {esc(lb.hearing_apply_until)} <b>{self.fmt_date(deadline)}</b> · "
+                f"{self._countdown((deadline - today).days)}\n"
+                f"{ICON['action']} {esc(lb.hearing_hint)}"
+            )
         links = [link(bill.summary.web_url, lb.link_process)]
         phase = next_phase(bill, today=today)
         for code in phase.committees if phase else ():

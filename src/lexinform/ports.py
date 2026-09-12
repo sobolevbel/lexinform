@@ -239,8 +239,10 @@ class Publisher(Protocol):
     def publish_consultation_results(self, bill: Bill, reply_to: int | None) -> PublishResult: ...
 
     def publish_agenda(
-        self, bill: Bill, item: AgendaItem, reply_to: int | None
-    ) -> PublishResult: ...
+        self, bill: Bill, item: AgendaItem, reply_to: int | None, moved_from: date | None = None
+    ) -> PublishResult:
+        """`moved_from` is the date the same sitting was announced under before."""
+        ...
 
     def publish_hearing_deadline(
         self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date

@@ -2,6 +2,7 @@
 
 import datetime as dt
 
+from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import PublicationKind, Stage
 from tests.harness import COMMITTEE_STAGES, World
 
@@ -30,11 +31,34 @@ def test_reminder_is_posted_once_three_days_before_applications_close() -> None:
     assert posted is not None and posted.ref == "2026-09-20"
 
 
-def test_no_reminder_far_ahead_or_once_applications_closed() -> None:
+def test_no_reminder_while_the_deadline_is_still_far_ahead() -> None:
     far = HEARING.model_copy(update={"date": dt.date(2026, 10, 20)})
-    over = HEARING.model_copy(update={"date": dt.date(2026, 9, 15)})  # closed on 09-05
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES + (far,))
+
+    report = w.run()
+
+    assert report.hearing_reminders == 0 and w.publisher.hearings == []
+
+
+def test_a_hearing_announced_late_is_still_told_even_though_applications_closed() -> None:
+    """art. 70a asks for 14 days' notice and art. 70b for applications 10 days ahead: announced
+    in between, the window never opens, and silence is the one thing that helps nobody."""
+    late = HEARING.model_copy(update={"date": dt.date(2026, 9, 15)})  # applications closed 09-05
+    w = World()
+    w.add_bill("3040", "Projekt ustawy o obywatelstwie", stages=COMMITTEE_STAGES + (late,))
+
+    report = w.run()
+
+    assert report.hearing_reminders == 1
+    bill, hearing, _, today = w.publisher.hearings[0]
+    text = MessageFormatter("ru").hearing_deadline(bill, hearing, today=today).text
+    assert "слушания</b> 15.09.2026 · приём заявок на участие закрыт" in text
+
+
+def test_a_hearing_that_has_taken_place_is_not_reminded() -> None:
+    over = HEARING.model_copy(update={"date": dt.date(2026, 9, 1)})
+    w = World()
     w.add_bill("3040", "Projekt ustawy o obywatelstwie", stages=COMMITTEE_STAGES + (over,))
 
     report = w.run()

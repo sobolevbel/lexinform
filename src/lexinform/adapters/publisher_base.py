@@ -83,8 +83,10 @@ class RenderingPublisher(ABC):
         text = self._formatter.consultation_results(bill).text
         return self._deliver(Outgoing(PublicationKind.CONSULTATION_RESULTS, bill, text, reply_to))
 
-    def publish_agenda(self, bill: Bill, item: AgendaItem, reply_to: int | None) -> PublishResult:
-        text = self._formatter.agenda(bill, item).text
+    def publish_agenda(
+        self, bill: Bill, item: AgendaItem, reply_to: int | None, moved_from: date | None = None
+    ) -> PublishResult:
+        text = self._formatter.agenda(bill, item, moved_from=moved_from).text
         return self._deliver(Outgoing(PublicationKind.AGENDA, bill, text, reply_to, item.ref))
 
     def publish_hearing_deadline(

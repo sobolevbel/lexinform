@@ -239,12 +239,19 @@ def open_hearing(bill: Bill, today: dt.date) -> Stage | None:
 
 
 def hearings_due(bill: Bill, today: dt.date, *, days_before: int) -> list[Stage]:
-    """Public hearings whose application deadline falls within the next `days_before` days."""
+    """Public hearings a reader should be reminded of now: the application deadline is within
+    the next `days_before` days, or it is already the last one — a hearing announced with less
+    than the ten days art. 70b asks for would otherwise never be reminded at all, and that is
+    the case where a reader most needs to hear about it."""
     due: list[Stage] = []
     for stage in flatten_stages(bill.stages):
         deadline = hearing_application_deadline(stage)
-        if deadline is not None and 0 <= (deadline - today).days <= days_before:
+        if deadline is None or stage.date is None:
+            continue
+        if today <= deadline <= today + dt.timedelta(days=days_before):
             due.append(stage)
+        elif deadline < today <= stage.date:
+            due.append(stage)  # announced late: the deadline is behind us, the hearing is not
     return due
 
 

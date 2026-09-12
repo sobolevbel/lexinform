@@ -194,12 +194,15 @@ class Poster:
             ),
         )
 
-    def agenda(self, bill: Bill, item: AgendaItem) -> bool:
-        """One post per (bill, sitting): `item.ref` tells the sittings apart."""
+    def agenda(self, bill: Bill, item: AgendaItem, moved_from: date | None = None) -> bool:
+        """One post per (bill, sitting date): `item.ref` tells the sittings apart, and a sitting
+        that moved gets a new one that says where it moved from."""
         return self._once(
             bill,
             PublicationKind.AGENDA,
-            lambda reply_to: self._publisher.publish_agenda(bill, item, reply_to).message_id,
+            lambda reply_to: (
+                self._publisher.publish_agenda(bill, item, reply_to, moved_from).message_id
+            ),
             ref=item.ref,
         )
 

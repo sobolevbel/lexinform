@@ -27,6 +27,20 @@ from lexinform.services.tracking.stages import StageEnricher
 
 log = logging.getLogger(__name__)
 
+PLANNED = "PLANNED"  # `CommitteeSitting.status`; anything else is over or called off
+
+
+def _committee_codes(bill: Bill) -> set[str]:
+    """Committees that have the bill: the referral names one, and the work and the report that
+    follow name whichever took it over."""
+    wanted = ("Referral", "CommitteeWork", "CommitteeReport")
+    return {
+        st.committee_code
+        for st in flatten_stages(bill.stages)
+        if st.stage_type in wanted and st.committee_code
+    }
+
+
 NO_COMMITTEE = "Sejm"  # `committeeCode` of a referral to a reading at a sitting
 
 
@@ -104,7 +118,7 @@ class AgendaWatcher:
                 if items != bill.agenda:
                     self._repo.save_agenda(bill.term, bill.number, items)
                 if publish:
-                    self._post_new(bill, items, result)
+                    self._post_new(bill, items, result, today)
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return False
@@ -118,14 +132,7 @@ class AgendaWatcher:
     ) -> tuple[dict[str, list[CommitteeSitting]], set[str]]:
         """Upcoming sittings per committee the bills were referred to, and the codes that failed."""
         codes = sorted(
-            {
-                st.committee_code
-                for bill in bills
-                for st in flatten_stages(bill.stages)
-                if st.stage_type == "Referral"
-                and st.committee_code
-                and st.committee_code != NO_COMMITTEE
-            }
+            {code for bill in bills for code in _committee_codes(bill) if code != NO_COMMITTEE}
         )
         upcoming: dict[str, list[CommitteeSitting]] = {}
         failed: set[str] = set()
@@ -138,7 +145,9 @@ class AgendaWatcher:
                 failed.add(code)
                 log.warning("sittings of committee %s unavailable: %s", code, exc)
                 continue
-            upcoming[code] = [s for s in sittings if s.date >= today and s.agenda]
+            upcoming[code] = [
+                s for s in sittings if s.date >= today and s.agenda and s.status == PLANNED
+            ]
         return upcoming, failed
 
     def _sejm_sittings(self, term: int, today: dt.date) -> list[SejmSitting]:
@@ -173,11 +182,7 @@ class AgendaWatcher:
         """Agenda items naming the bill (or a print considered jointly with it)."""
         numbers = {bill.number, *bill.summary.prints_considered_jointly}
         items: list[AgendaItem] = []
-        codes = {
-            st.committee_code
-            for st in flatten_stages(bill.stages)
-            if st.stage_type == "Referral" and st.committee_code
-        }
+        codes = _committee_codes(bill)
         for code in sorted(codes & committee_sittings.keys()):
             for sitting in committee_sittings[code]:
                 texts = items_mentioning(sitting.agenda, numbers)
@@ -223,10 +228,26 @@ class AgendaWatcher:
             log.warning("name of committee %s unavailable: %s", code, exc)
             return None
 
-    def _post_new(self, bill: Bill, items: tuple[AgendaItem, ...], result: TrackingResult) -> None:
+    def _post_new(
+        self, bill: Bill, items: tuple[AgendaItem, ...], result: TrackingResult, today: dt.date
+    ) -> None:
         for item in items:
+            if item.last_date < today:
+                continue  # a sitting that is over: a reader can do nothing about it now
             if self._poster.posted(bill, PublicationKind.AGENDA, ref=item.ref):
                 continue
             fresh = self._repo.get(bill.term, bill.number) or bill
             log.info("druk %s on the agenda: %s", bill.number, item.ref)
-            result.count_post(self._poster.agenda(fresh, item), "agenda_posted")
+            moved_from = self._moved_from(bill, item)
+            result.count_post(self._poster.agenda(fresh, item, moved_from), "agenda_posted")
+
+    def _moved_from(self, bill: Bill, item: AgendaItem) -> dt.date | None:
+        """The date the same sitting was announced under before, when it was moved. The `ref`
+        carries the date, so a moved sitting is a new post; without this it would contradict the
+        one still standing above it instead of correcting it."""
+        previous = [
+            old
+            for old in bill.agenda
+            if old.sitting_key == item.sitting_key and old.date != item.date
+        ]
+        return max((old.date for old in previous), default=None)
