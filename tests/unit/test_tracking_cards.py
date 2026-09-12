@@ -67,3 +67,18 @@ def test_a_finished_bill_keeps_the_card_it_had() -> None:
 
     assert report.cards_refreshed == 0
     assert w.publisher.edits == []
+
+
+def test_telegram_going_down_on_a_refresh_does_not_erase_what_the_phase_did() -> None:
+    """The refresh is the last, cosmetic step; an outage there used to throw away the phase's
+    result object, so the run reported neither the update it had posted nor the tokens it spent."""
+    w = _followed()
+    w.clock.advance(days=1)
+    w.set_stages("3039", COMMITTEE_STAGES)
+    w.touch("3039", dt.datetime(2026, 9, 8, 9, tzinfo=dt.UTC))
+    w.publisher.outage_on_edit.add("3039")
+
+    report = w.run()
+
+    assert report.updates == 1 and report.tracked == 1
+    assert any("tracking: Telegram" in e for e in report.errors)

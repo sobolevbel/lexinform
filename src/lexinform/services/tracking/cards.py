@@ -66,7 +66,14 @@ class CardRefresher:
             digest = self._publisher.card_digest(bill)
             if digest == card.rendered_sha256 or card.message_id is None:
                 continue
-            if self._edit(bill, card.message_id):
+            try:
+                refreshed = self._edit(bill, card.message_id)
+            except ServiceUnavailableError as exc:
+                # This is the last, cosmetic step of the phase: letting it out would throw away
+                # the result object with everything the phase already posted and spent.
+                result.abort(exc)
+                return
+            if refreshed:
                 self._repo.set_card_digest(card.id, digest)
                 result.cards_refreshed += 1
                 edited += 1

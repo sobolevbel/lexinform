@@ -445,6 +445,8 @@ class FakePublisher:
         self.hearings: list[tuple[Bill, Stage, int | None, date]] = []
         self.fail_on = fail_on or set()  # bill numbers whose post fails (per-bill error)
         self.outage_on = outage_on or set()  # bill numbers whose post finds Telegram down
+        # Telegram can answer a post and be gone by the time the card is edited.
+        self.outage_on_edit: set[str] = set()
         self._next_id = 100
 
     def _send(self, bill: Bill) -> FakePublishResult:
@@ -461,6 +463,8 @@ class FakePublisher:
         return result
 
     def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:
+        if bill.number in self.outage_on_edit:
+            raise TelegramUnavailableError("editMessageText: ConnectError after 3 attempts")
         self._send(bill)
         self.edits.append((bill, message_id))
 
