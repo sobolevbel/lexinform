@@ -127,7 +127,7 @@ def test_unexpected_bug_in_a_phase_is_reported(monkeypatch: pytest.MonkeyPatch) 
 
     monkeypatch.setattr(w.discovery, "discover", bug)
 
-    report = w.run()
+    report = w.run(expect_bugs=True)
 
     assert report.errors == ["discovery failed: KeyError: 'oops'"]
 

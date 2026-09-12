@@ -302,7 +302,10 @@ def test_druk_of_a_skipped_project_goes_the_normal_way() -> None:
     w.rcl.rm_numbers["RM-0610-1-26"] = skipped.id  # the RCL page does not show the RM number yet
     w.add_bill("3101", "Projekt ustawy o cudzoziemcach")
     druk = w.gateway.processes[-1].model_copy(
-        update={"rcl_num": "RM-0610-1-26", "change_date": dt.datetime(2026, 9, 9, 9, 0)}
+        update={
+            "rcl_num": "RM-0610-1-26",
+            "change_date": dt.datetime(2026, 9, 9, 9, 0, tzinfo=dt.UTC),
+        }
     )
     w.gateway.processes[-1] = druk
     w.gateway.details["3101"] = detail(druk, START)

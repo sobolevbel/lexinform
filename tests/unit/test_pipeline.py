@@ -229,7 +229,7 @@ def test_migration_failure_is_reported_not_raised(monkeypatch: pytest.MonkeyPatc
 
     monkeypatch.setattr(w.repo, "migrate", boom)
 
-    report = w.run()
+    report = w.run(expect_bugs=True)
 
     assert report.errors and "database is locked" in report.errors[0]
     assert w.notifier.calls  # the log channel still gets the report

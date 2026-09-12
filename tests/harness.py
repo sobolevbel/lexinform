@@ -98,7 +98,7 @@ def summary(number: str, title: str, *, change: str = "2026-09-06T10:00:00") -> 
         title=title,
         document_type="projekt ustawy",
         document_type_enum=DocumentType.BILL,
-        change_date=dt.datetime.fromisoformat(change),
+        change_date=dt.datetime.fromisoformat(change).replace(tzinfo=dt.UTC),
         document_date=dt.date(2026, 9, 1),
         passed=False,
     )
@@ -397,6 +397,9 @@ class World:
 
     def touch(self, number: str, when: dt.datetime, **summary_updates: Any) -> None:
         """The API lists the bill as modified at `when` (and changes summary fields)."""
+        # The parser makes every timestamp aware; a naive one here would compare against nothing.
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=dt.UTC)
         updates = {"change_date": when, **summary_updates}
         self.gateway.processes = [
             p.model_copy(update=updates) if p.number == number else p
@@ -420,11 +423,20 @@ class World:
         """An operator posted `text` in the technical channel (the relay filed it)."""
         return self.inbox.put(text, update_id=update_id)
 
-    def run(self, **options: Any) -> RunReport:
-        """One pipeline run pinned to `TERM`; `term=None` resolves it from the fake API."""
+    def run(self, *, expect_bugs: bool = False, **options: Any) -> RunReport:
+        """One pipeline run pinned to `TERM`; `term=None` resolves it from the fake API.
+
+        `_phase` swallows a programming error the same way it swallows an outage, so a broken
+        fake or a stale call signature would leave a phase doing nothing and every assertion
+        about it still passing. Those errors fail the test instead, unless it asked for one.
+        """
         options.setdefault("since", SINCE)
         options.setdefault("term", TERM)
-        return self.pipeline.run(RunOptions(**options))
+        report = self.pipeline.run(RunOptions(**options))
+        if not expect_bugs:
+            bugs = [e for e in report.errors if " failed: " in e or e.startswith("unexpected ")]
+            assert not bugs, f"a phase failed with a programming error: {bugs}"
+        return report
 
     def bill(self, number: str) -> Bill:
         stored = self.repo.get(TERM, number)

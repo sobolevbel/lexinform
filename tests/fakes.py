@@ -113,7 +113,7 @@ class FakeSejmGateway:
         for p in self.processes:
             if p.term != term:
                 continue
-            if modified_since is None or p.change_date >= modified_since.replace(tzinfo=None):
+            if modified_since is None or p.change_date >= modified_since:
                 yield p
 
     def iter_bills(
