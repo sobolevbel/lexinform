@@ -24,6 +24,12 @@ class Settings(BaseSettings):
         " bot moves to a new kadencja by itself.",
     )
     sejm_api_base_url: str = "https://api.sejm.gov.pl"
+    orka_base_url: str = Field(
+        default="https://orka.sejm.gov.pl",
+        description="Where the Sejm serves the text of a bill that has no print number yet."
+        " A host of its own because it is a host of its own: Imperva in front, its own verdict"
+        " on our client, and a failure there must not stop what api.sejm.gov.pl is serving.",
+    )
     sejm_page_size: int = 100
     sejm_timeout_seconds: float = 30.0
     sejm_concurrency: int = Field(

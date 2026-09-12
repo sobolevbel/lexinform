@@ -93,6 +93,7 @@ class FakeSejmGateway:
         default_factory=lambda: [SejmTerm(num=10, start=date(2023, 11, 13), current=True)]
     )
     outages: set[str] = field(default_factory=set)  # method names that behave as "API down"
+    outage_urls: set[str] = field(default_factory=set)  # files whose host answers as "down"
     calls: list[str] = field(default_factory=list)
 
     def _called(self, method: str, detail: str = "") -> None:
@@ -198,6 +199,8 @@ class FakeSejmGateway:
 
     def download(self, url: str, *, max_bytes: int | None = None) -> bytes:
         self._called("download", url)
+        if url in self.outage_urls:
+            raise SejmApiUnavailableError(f"download {url}: connection refused")
         data = self.files[url]
         if max_bytes is not None and len(data) > max_bytes:
             raise AttachmentTooLargeError(url, max_bytes)

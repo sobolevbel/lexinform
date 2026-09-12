@@ -5,12 +5,13 @@ import datetime as dt
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import ApplicantType, BillStatus
 from tests.fakes import FakeTextExtractor
-from tests.harness import RPW, World, submission
+from tests.harness import RPW, World, submission, submission_url
 
 
-def test_pre_print_bill_is_analysed_from_its_description_and_published() -> None:
+def test_pre_print_bill_is_analysed_from_its_own_text_and_published() -> None:
     w = World()
     w.gateway.submissions.append(submission())
+    w.gateway.files[submission_url()] = b"%PDF"
 
     report = w.run()
 
@@ -19,13 +20,31 @@ def test_pre_print_bill_is_analysed_from_its_description_and_published() -> None
     ctx = w.llm.contexts[0]
     assert (ctx.number, ctx.text_source, ctx.applicant_type) == (
         RPW,
-        "metadata_only",
+        "pdf",
         ApplicantType.DEPUTIES,
     )
-    bill, print_info = w.publisher.new_bills[0]
-    assert bill.is_pre_print and print_info is None
-    assert bill.submission is not None
-    assert bill.submission.consultation_end == dt.date(2026, 9, 30)
+    record = w.bill(RPW).analysis
+    assert record is not None and record.source_url == submission_url()
+
+
+def test_pre_print_bill_falls_back_to_its_description_when_orka_refuses_the_file() -> None:
+    # Imperva judges the client by its address and can start refusing us; that must cost this
+    # bill its text and nothing else — least of all the analysis of the prints in the same run.
+    w = World()
+    w.gateway.submissions.append(submission())
+    w.add_bill("3100", "Rządowy projekt ustawy o cudzoziemcach")
+    w.gateway.files[submission_url()] = b"%PDF"
+    w.gateway.outage_urls.add(submission_url())
+
+    report = w.run()
+
+    assert (report.analyzed, report.published, report.analysis_failures) == (2, 2, 0)
+    assert not report.errors
+    sources = {ctx.number: ctx.text_source for ctx in w.llm.contexts}
+    assert sources == {RPW: "metadata_only", "3100": "pdf"}
+    entry = next(bill for bill, _ in w.publisher.new_bills if bill.is_pre_print)
+    assert entry.submission is not None
+    assert entry.submission.consultation_end == dt.date(2026, 9, 30)
 
 
 def test_pre_print_card_names_the_stage_and_links_the_sejm_pdf() -> None:
@@ -153,13 +172,32 @@ FOREIGNER_TEXT = (
 )
 
 
+def test_title_miss_entry_is_scanned_by_the_text_prefilter_and_becomes_a_candidate() -> None:
+    # "o zmianie ustawy o podatku" says nothing, and the bill is at the stage where the reader
+    # can still send an opinion. While the file on orka was taken for unreachable, a title like
+    # this ended the bill here, months before the print would have been scanned.
+    w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT))
+    w.gateway.submissions.append(submission(title=NEUTRAL_TITLE, description="zmiany podatkowe"))
+    w.gateway.files[submission_url()] = b"%PDF"
+
+    report = w.run()
+
+    assert (report.text_prefilter_checked, report.text_prefilter_hits) == (1, 1)
+    assert (report.analyzed, report.published) == (1, 1)
+    bill = w.bill(RPW)
+    assert bill.status is BillStatus.ANALYZED
+    assert "text:cudzoziemcy" in bill.prefilter_hits
+    assert w.llm.contexts[0].text_source == "pdf"
+
+
 def test_print_of_a_title_miss_entry_goes_through_the_text_prefilter() -> None:
-    # The RPW entry has no PDF, so a title miss ends there; the print has one and must be scanned
-    # instead of inheriting the skip.
+    # The entry's own file is not on orka (a scan, a 404, a WAF that changed its mind), so its
+    # text stage ends in a skip whose reason the print cannot read. The print is served by the
+    # API and must be scanned rather than inherit that skip.
     w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT))
     w.gateway.submissions.append(submission(title=NEUTRAL_TITLE, description="zmiany podatkowe"))
     w.run()
-    assert w.bill(RPW).status is BillStatus.SKIPPED_PREFILTER
+    assert w.bill(RPW).status is BillStatus.SKIPPED_TEXT_PREFILTER
     w.gateway.submissions[0] = submission(
         title=NEUTRAL_TITLE, description="zmiany podatkowe", print_number="3100"
     )

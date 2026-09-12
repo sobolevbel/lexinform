@@ -53,10 +53,17 @@ class Linker:
         self._texts = SejmTextSource(gateway)
 
     def _status_of_print(self, pre: Bill) -> BillStatus:
-        """The print copies the entry's status, except a title miss: an RPW entry has no text
-        to scan, the print has, so it goes through the text prefilter instead of inheriting
-        the skip."""
-        if pre.status is BillStatus.SKIPPED_PREFILTER and self._text_prefilter:
+        """The print copies the entry's status, except a prefilter skip: the print's own PDF is
+        scanned instead of the skip being inherited.
+
+        The entry has a text of its own now (its file on orka.sejm.gov.pl), so the skip may mean
+        the keywords missed it — but it may equally mean that file was a scan, or that the WAF
+        refused us. The print is served by api.sejm.gov.pl, it is the text the Sejm works from,
+        and scanning it again costs a download and no tokens. Inheriting a skip we cannot read
+        the reason of would lose the bill for good.
+        """
+        skipped = (BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER)
+        if pre.status in skipped and self._text_prefilter:
             return BillStatus.TEXT_PREFILTER_PENDING
         return pre.status
 

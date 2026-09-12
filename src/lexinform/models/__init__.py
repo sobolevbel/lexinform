@@ -116,6 +116,7 @@ from lexinform.models.report import (
     RunReport,
 )
 from lexinform.models.sejm import (
+    ORKA_BASE_URL,
     SENATE_BILLS_URL,
     ActInfo,
     AgendaItem,
@@ -227,6 +228,7 @@ __all__ = [
     "PublicationKind",
     "PublicationStatus",
     "RCL_PREFIX",
+    "ORKA_BASE_URL",
     "SENATE_BILLS_URL",
     "RCL_STAGE_TYPE",
     "RunMode",

@@ -123,8 +123,13 @@ Before assigning a print number the Marszałek:
 
 Assigning the **druk number** creates the `/processes/{number}` entry (stage `Start`, "Projekt
 wpłynął do Sejmu", carries `printNumber`). Everything before that is invisible in `/processes`,
-which is why lexinform also reads `/bills`. Pre-print bills carry only a title and an official
-description; the PDF sits on orka.sejm.gov.pl behind a bot wall.
+which is why lexinform also reads `/bills`. Pre-print bills carry a title and an official
+description; their text is a PDF on orka.sejm.gov.pl, at
+`/Druki{term}ka.nsf/Projekty/{term}-RPW-N-YYYY/$file/…pdf` — an address built by convention, the
+API gives none. The host is fronted by Imperva, which refuses a `User-Agent` that names a bot
+(`curl/8.x`) and serves everyone else, our own identity included, provided the client follows the
+302 and keeps the cookies it sets; measured from a GitHub runner as well on 2026-09-12
+(`.github/workflows/orka-probe.yml`).
 
 ## 4. Three readings in the Sejm (Constitution art. 119, Regulamin Sejmu)
 

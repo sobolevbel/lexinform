@@ -100,8 +100,13 @@ class BillDiscoveryService:
             log.info("Sejm API returned no bills modified since %s", since.isoformat())
 
     def _miss_status(self, summary: ProcessSummary) -> BillStatus:
-        """A title miss goes on to the text stage, unless there is no print to read."""
-        if self._text_prefilter and summary.has_process:
+        """A title miss goes on to the text stage, unless there is no document to read.
+
+        A bill without a print number has one too: its file on orka.sejm.gov.pl. That host was
+        taken for unreachable until the probe of 2026-09-12, and while it was, a title miss at
+        the consultation stage ended the bill — the one stage where the reader still has a say.
+        """
+        if self._text_prefilter and (summary.has_process or summary.is_pre_print):
             return BillStatus.TEXT_PREFILTER_PENDING
         return BillStatus.SKIPPED_PREFILTER
 

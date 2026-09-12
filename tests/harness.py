@@ -35,6 +35,7 @@ from lexinform.models import (
     Stage,
     Triage,
     WykazEntry,
+    submission_pdf_url,
 )
 from lexinform.models.rcl import StageState
 from lexinform.models.wykaz import BILL_KIND
@@ -62,6 +63,7 @@ ELI = "DU/2026/1099"
 MAX_PDF_MB = 9  # a fake file of 10 000 001 bytes is over the limit
 MAX_PDF_BYTES = MAX_PDF_MB * 1024 * 1024
 FILE_HOST = "api.test"  # the fake gateway serves every file the loader asks for from here
+ORKA_HOST = "orka.test"  # and, under another name, the files of bills without a print number
 SINCE = dt.datetime(2026, 9, 1, tzinfo=dt.UTC)
 
 START = (
@@ -110,6 +112,11 @@ def detail(process: ProcessSummary, stages: tuple[Stage, ...]) -> ProcessDetail:
 
 def print_url(number: str) -> str:
     return f"https://{FILE_HOST}/sejm/term{TERM}/prints/{number}/{number}.pdf"
+
+
+def submission_url(number: str = RPW) -> str:
+    """Where the run looks for the file of a bill that has no print number yet."""
+    return submission_pdf_url(TERM, number, base_url=f"https://{ORKA_HOST}")
 
 
 def submission(**overrides: Any) -> BillSubmission:
@@ -309,6 +316,7 @@ class World:
             _env_file=None,
             term=None,
             sejm_api_base_url=f"https://{FILE_HOST}",
+            orka_base_url=f"https://{ORKA_HOST}",
             rcl_base_url=f"https://{RCL_HOST}",
             rcl_enabled=True,
             wykaz_enabled=True,

@@ -192,13 +192,13 @@ class BillLookup:
         return self._stored(bill)
 
     def _fetch_entry(self, term: int, number: str) -> Bill:
-        """A `/bills` entry (RPW): applicant and consultation dates, no text to read (its PDF on
-        orka.sejm.gov.pl is behind Incapsula). The entry names its print as soon as it has one."""
+        """A `/bills` entry (RPW): applicant, consultation dates and the file the Sejm site
+        serves under the RPW number. The entry names its print as soon as it has one."""
         sub = self.find_submission(term, number)
         summary = ProcessSummary.from_submission(sub)
         bill = self._repo.upsert_summary(summary, now=self._clock.now())
         self._repo.save_submission(bill.term, bill.number, sub)
-        self._prefilter_by_title(bill, summary, has_text=False)
+        self._prefilter_by_title(bill, summary, has_text=True)
         if not sub.print_number:
             return self._stored(bill)
         return self._link(bill, sub.print_number)

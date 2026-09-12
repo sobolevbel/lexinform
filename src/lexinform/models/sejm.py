@@ -537,10 +537,19 @@ def has_process(number: str) -> bool:
     return not number.startswith(NON_SEJM_PREFIXES)
 
 
-def submission_pdf_url(term: int, number: str) -> str:
-    """Where the Sejm site serves the text of a bill without a print number (browser only)."""
+ORKA_BASE_URL = "https://orka.sejm.gov.pl"
+
+
+def submission_pdf_url(term: int, number: str, *, base_url: str = ORKA_BASE_URL) -> str:
+    """Where the Sejm site serves the text of a bill without a print number.
+
+    The address is a convention, not something the API gives: `/Druki10ka.nsf/Projekty/
+    10-RPW-29075-2026/$file/10-RPW-29075-2026.pdf`. `base_url` is the setting, so that the
+    reader's link (this host) and the file the run downloads are the same URL in production and
+    can be the fake host under test.
+    """
     slug = f"{term}-{number.replace('/', '-')}"
-    return f"https://orka.sejm.gov.pl/Druki{term}ka.nsf/Projekty/{slug}/$file/{slug}.pdf"
+    return f"{base_url.rstrip('/')}/Druki{term}ka.nsf/Projekty/{slug}/$file/{slug}.pdf"
 
 
 def process_web_url(term: int, number: str) -> str:

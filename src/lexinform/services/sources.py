@@ -1,8 +1,9 @@
 """Where the text of a bill comes from, per source system.
 
 `TextSources` picks the source for a bill; the analysis and the text prefilter only know the
-`TextSource` port. Sejm prints come with a legislative process (fresh metadata and stages);
-RPW entries have nothing readable (the PDF is behind a bot wall), so the model sees metadata only.
+`TextSource` port. Sejm prints come with a legislative process (fresh metadata and stages); an
+RPW entry has no process at all, only its file on orka.sejm.gov.pl, and a register entry has no
+text anywhere yet, so it is the one source the model still reads as metadata alone.
 """
 
 import logging
@@ -10,6 +11,7 @@ from datetime import UTC, datetime
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
+    ORKA_BASE_URL,
     Bill,
     LocatedText,
     PrintInfo,
@@ -17,6 +19,7 @@ from lexinform.models import (
     RclProject,
     TextDocument,
     latest_text_document,
+    submission_pdf_url,
     third_reading_kept_the_text,
 )
 from lexinform.ports import SejmGateway, TextSource
@@ -110,6 +113,22 @@ class MetadataOnlySource:
         return LocatedText()
 
 
+class SubmissionTextSource:
+    """Bills the Sejm has received but not numbered yet (`RPW/…`): the file on orka.sejm.gov.pl.
+
+    There is no process to read at this stage — `/bills` is all the metadata there is — so this
+    locates the document and nothing else. The address is built from the RPW number by the
+    convention `submission_pdf_url` knows.
+    """
+
+    def __init__(self, base_url: str = ORKA_BASE_URL) -> None:
+        self._base_url = base_url
+
+    def locate(self, bill: Bill) -> LocatedText:
+        url = submission_pdf_url(bill.term, bill.number, base_url=self._base_url)
+        return LocatedText(document=TextDocument(url=url, kind="print"))
+
+
 class RclTextSource:
     """Government projects on RCL: the newest bill text with its uzasadnienie and OSR, as
     separate files (no network: the project page was read by discovery or tracking)."""
@@ -139,17 +158,22 @@ class TextSources:
         sejm: TextSource,
         *,
         rcl: TextSource | None = None,
+        submissions: TextSource | None = None,
         metadata: TextSource | None = None,
     ) -> None:
         self._sejm = sejm
         self._metadata = metadata or MetadataOnlySource()
         self._rcl = rcl or self._metadata
+        self._submissions = submissions or self._metadata
 
     def locate(self, bill: Bill) -> LocatedText:
         if bill.is_rcl:
             return self._rcl.locate(bill)
-        source = self._sejm if bill.has_process else self._metadata
-        return source.locate(bill)
+        if bill.has_process:
+            return self._sejm.locate(bill)
+        if bill.is_pre_print:
+            return self._submissions.locate(bill)
+        return self._metadata.locate(bill)
 
 
 def _as_utc(value: datetime) -> datetime:

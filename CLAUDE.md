@@ -50,8 +50,8 @@ SQLite, `inbox_files` (the command inbox as a directory), `github_inbox` (the re
 bill by number or reference, fetched and prefiltered on first sight; the CLI and the commands
 share it), listener (the relay on the VPS), discovery,
 rcl_discovery + rcl_projects, wykaz_discovery, sources (`TextSources` routes a bill to
-`SejmTextSource`,
-`RclTextSource` or `MetadataOnlySource`), documents (`TextLoader`, downloads routed by host),
+`SejmTextSource`, `RclTextSource`, `SubmissionTextSource` (the RPW file on orka) or
+`MetadataOnlySource`), documents (`TextLoader`, downloads routed by host),
 text_prefilter, analysis (the bill, the triage, the amendments and the documents filed to a
 print), signatories, publishing, `tracking/` (service, pre_print, rcl, wykaz,
 linking, acts, consultations, agenda, posting, stages), pipeline) → `container.py` (manual wiring) →
@@ -238,7 +238,10 @@ Invariants worth keeping:
   and bad request parameters are fatal, "prompt too long" is per-bill.
 - Pre-print bills (`RPW/…`), RCL projects (`RCL/{id}`) and wykaz entries (`WPL/UD408`) have no
   Sejm process (`has_process` tests one tuple of prefixes, `NON_SEJM_PREFIXES`; a prefix missing
-  there sends the rows to `/processes`): skip `get_process`/`get_print` for them; when the print appears,
+  there sends the rows to `/processes`): skip `get_process`/`get_print` for them. They are not
+  textless, though: `TextSources` routes an RPW row to `SubmissionTextSource` (its file on orka),
+  an RCL row to its documents, and only a register entry — a bill that has not been written yet —
+  to the metadata; when the print appears,
   the print inherits the card (`tracking/linking.py::Linker`: `new_bill` row aliased with the same
   `message_id`). **A bill fetched on request is linked in whichever direction it is named**, and
   the druk is what comes back: it is the bill with the text. `BillLookup._fetch` splits per kind
@@ -252,10 +255,12 @@ Invariants worth keeping:
   entry's: a print linked outside tracking inherits the entry's card in `PublishingService`
   (`_inherited_card`, the same alias `Linker` makes, and the card is re-rendered with both tags).
   A command posts no card at all for a bill `models.is_over` calls finished, and answers with the
-  verdict instead. The print copies the entry's status, except `skipped_prefilter`: an RPW entry has
-  no text to scan, so its print goes to `text_prefilter_pending` instead of inheriting the skip
-  (otherwise every non-government bill with a neutral title would bypass the text stage). The RPW
-  reconciler finds the print in `/bills`; for RCL, Sejm discovery notices a
+  verdict instead. The print copies the entry's status, except a prefilter skip
+  (`skipped_prefilter` or `skipped_text_prefilter`), which sends it to `text_prefilter_pending`:
+  the entry's own text may have been missed by the keywords, but the file may equally have been a
+  scan or refused by the WAF, and the reason cannot be read off the status — the print's PDF
+  comes from the API, is the text the Sejm works from, and scanning it costs a download and no
+  tokens. The RPW reconciler finds the print in `/bills`; for RCL, Sejm discovery notices a
   druk whose `rclNum` names a followed project (stored RM number, else
   `getIdFromLegislacja?number=…`), stores the druk number on the RCL row and the RCL watcher links.
 - **RCL rows are refreshed by the RCL watcher only.** RCL discovery reads a project once (timeline
@@ -376,8 +381,16 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   signal for the switch, print numbers restart at 1 in the new term.
 - `/processes` only lists bills that already have a print number. Bills at the consultation
   stage live in `/bills` (`RPW/…`), with `publicConsultationStart/EndDate`, `applicantType`,
-  `status`, `print`, `consultationResults`. Their PDF on orka.sejm.gov.pl is behind Incapsula: not
-  downloadable. The API carries no link to the opinion form; the Sejm page is
+  `status`, `print`, `consultationResults`. Their text is a PDF on orka.sejm.gov.pl, at an
+  address built by convention (`models.submission_pdf_url`, `LEXINFORM_ORKA_BASE_URL`), and it
+  **is** downloadable, which the project denied until 2026-09-12: Imperva there refuses a
+  `User-Agent` that names a bot (`curl/8.x`) with 403 and serves every other identity, ours
+  included, as long as the client follows the 302 and keeps the cookies it sets — httpx does
+  both. Verified from a GitHub runner too (`.github/workflows/orka-probe.yml`), where the bot UA
+  gets the challenge page as **HTTP 200 text/html**, so a caller must look at the body, not the
+  status. A failure of this host is a per-bill problem on purpose (`OrkaUnreachableError`): it is
+  WAF-guarded and address-judged, and everything else the analysis reads is api.sejm.gov.pl.
+  The API carries no link to the opinion form; the Sejm page is
   `www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=KONSULTOWANY_PROJEKT&NrProjektu=RPW/29075/2026`
   (browser only: www.sejm.gov.pl answers curl and fetchers with an F5 captcha). That page only
   *links* the form: the opinion is a survey (ankieta) at `opiniowanie.sejm.gov.pl/RPW-29075-2026`
@@ -410,8 +423,8 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   far the bill got — read the stages before it.
 - `additionalPrints` in a print's detail are the documents filed to it after its submission, each
   a print of its own (`1273-001`, `1273-s`) with `title`, `documentDate`, `deliveryDate` and its
-  own PDF, served from api.sejm.gov.pl like any attachment (no Incapsula, unlike the RPW PDFs on
-  orka). Term 10, 12 Sept 2026: 2339 of them over 3282 prints — 289 "ocena skutków regulacji",
+  own PDF, served from api.sejm.gov.pl like any attachment (no WAF in front, unlike the RPW
+  PDFs on orka). Term 10, 12 Sept 2026: 2339 of them over 3282 prints — 289 "ocena skutków regulacji",
   82 "Stanowisko Rządu", 1732 opinions (563 saying "nie zgłoszono uwag" in the title itself),
   42 amendments tabled at the second reading, the rest housekeeping (a changed representative of
   the applicants, an extra list of signatures, an errata). Among prints that have any, the median
