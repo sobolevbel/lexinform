@@ -33,6 +33,9 @@ _DATE = rf"(?:{_WORD_DATE}|{_NUMERIC_DATE})"
 _LETTER_DATE = re.compile(rf"Warszawa,?\s*(?:dnia\s+)?{_DATE}", re.IGNORECASE)
 _DAYS = re.compile(r"w\s+(?:terminie|ciągu)\s+(\d{1,3})\s+dni", re.IGNORECASE)
 _UNTIL = re.compile(rf"(?:w\s+terminie\s+)?do\s+(?:dnia\s+)?{_DATE}", re.IGNORECASE)
+# The longest consultation term the ministries set is 30 days (60 for a few big projects);
+# six months is far outside that and inside any sunset clause a bill is likely to quote.
+MAX_CONSULTATION = timedelta(days=180)
 _EMAIL = r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
 _ADDRESS_EMAIL = re.compile(rf"adres[^@\n]{{0,80}}?({_EMAIL})", re.IGNORECASE)
 _ANY_EMAIL = re.compile(_EMAIL)
@@ -64,12 +67,18 @@ def parse_letter(text: str) -> LetterInfo:
 
 def deadline_of(info: LetterInfo, *, published: date) -> date | None:
     """The last day for comments: the absolute date when given, else the letter date (or the
-    day the letter was published on RCL) plus the number of days."""
-    if info.deadline is not None:
+    day the letter was published on RCL) plus the number of days.
+
+    A letter also quotes the dates of the bill it carries ("przepis obowiązuje do dnia 31
+    grudnia 2030 r."), and the first "do dnia …" in it need not be the consultation's. One
+    beyond `MAX_CONSULTATION_DAYS` is not a day anyone may still send an opinion by.
+    """
+    start = info.letter_date or published
+    if info.deadline is not None and start <= info.deadline <= start + MAX_CONSULTATION:
         return info.deadline
     if info.days is None:
         return None
-    return (info.letter_date or published) + timedelta(days=info.days)
+    return start + timedelta(days=info.days)
 
 
 def _first_email(flat: str) -> str | None:

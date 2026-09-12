@@ -58,3 +58,18 @@ def test_the_first_address_is_used_when_none_follows_the_word_adres() -> None:
     info = parse_letter("Uwagi w ciągu 21 dni prosimy kierować do: uwagi@kprm.gov.pl")
 
     assert (info.days, info.email) == (21, "uwagi@kprm.gov.pl")
+
+
+def test_a_date_out_of_a_consultation_range_is_not_the_consultation_deadline() -> None:
+    """Letters quote the bill's own dates — "ustawa obowiązuje do dnia 31 grudnia 2030 r." — and
+    that is not a day anyone may still send an opinion by."""
+    text = (
+        "Warszawa, dnia 1 września 2026 r. Uprzejmie proszę o zajęcie stanowiska w terminie 14 "
+        "dni od dnia otrzymania niniejszego pisma na adres: dep@mswia.gov.pl. Projekt przewiduje, "
+        "że przepis obowiązuje do dnia 31 grudnia 2030 r."
+    )
+
+    info = parse_letter(text)
+
+    assert (info.days, info.deadline) == (14, date(2030, 12, 31))
+    assert deadline_of(info, published=date(2026, 9, 1)) == date(2026, 9, 15)
