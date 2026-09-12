@@ -298,6 +298,25 @@ def test_a_command_whose_answer_did_not_arrive_is_answered_again_not_run_again()
     assert w.inbox.commands == []
 
 
+def test_a_command_a_dead_run_started_is_not_run_a_second_time() -> None:
+    """The two marks keep a second card away when the answer fails. They did not when the job
+    itself died: the row was recorded and nothing else, so the next run began from the top."""
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    incoming = w.command("/republish 3039")
+    w.repo.record_command(incoming)  # as the run that then died had already done
+
+    report = _commands_only(w)
+
+    assert report.commands_handled == 1 and report.ok
+    assert len(w.publisher.new_bills) == 1  # the original card, no second one
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.EXECUTED_EARLIER
+    assert "did not finish" in outcome.note
+    assert w.inbox.commands == []
+
+
 def test_a_channel_that_falls_over_mid_phase_keeps_what_the_earlier_commands_reported() -> None:
     w = World()
     w.add_bill("3039", TITLE)

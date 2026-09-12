@@ -1127,12 +1127,13 @@ class SqliteBillRepository:
 
     def command_state(self, update_id: int) -> CommandState | None:
         row = self._conn.execute(
-            "SELECT executed_at, handled_at, reply FROM commands WHERE update_id = ?",
+            "SELECT received_at, executed_at, handled_at, reply FROM commands WHERE update_id = ?",
             (update_id,),
         ).fetchone()
         if row is None:
             return None
         return CommandState(
+            received_at=_parse_dt(row["received_at"]),
             executed_at=_parse_dt(row["executed_at"]),
             handled_at=_parse_dt(row["handled_at"]),
             reply=row["reply"],

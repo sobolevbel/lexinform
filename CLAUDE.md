@@ -234,9 +234,11 @@ Invariants worth keeping:
   does the phase first. `CommandService` inserts the `commands` row (v13, keyed by the
   Telegram update id) before executing, marks it executed (v14 `executed_at`) as soon as the
   side effects are done, answers under the command's message (`OperatorReplier`), marks it
-  handled and deletes the file. A file read again is measured against those two marks: handled
-  → only deleted; executed but unanswered (the channel was down, the job died after the post)
-  → the recorded outcome is answered again and the command is **not** run a second time.
+  handled and deletes the file. A file read again is measured against the row: handled
+  → only deleted; recorded but not handled (the channel was down, or the job itself died)
+  → the command is **not** run a second time, it is answered with what the row knows — the
+  recorded outcome when it was executed, and otherwise a note that a run started it and did
+  not finish, which the operator answers by sending the command again.
   `/analyze` is idempotent by construction (an analysed bill is not sent to the model again),
   `/republish` is not: the marks are what keep a second card away.
   An outage of a source system *or of the channel* ends the phase and leaves the file, with the

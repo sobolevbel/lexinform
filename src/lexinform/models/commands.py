@@ -42,6 +42,7 @@ class CommandState(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
+    received_at: dt.datetime | None = None
     executed_at: dt.datetime | None = None
     handled_at: dt.datetime | None = None
     reply: str | None = None

@@ -49,6 +49,10 @@ SKIPPED = frozenset(
 FORCE_HINT = "add `force` to analyse anyway"
 
 
+def _day(when: dt.datetime | None) -> str:
+    return str(when.date()) if when is not None else "an earlier run"
+
+
 @dataclass
 class CommandsResult:
     handled: int = 0
@@ -103,7 +107,7 @@ class CommandService:
                 continue
             started = time.perf_counter()
             spent: dict[str, TokenUsage] = {}
-            if earlier is not None and earlier.executed_at is not None:
+            if earlier is not None:
                 outcome = self._answer_of_an_earlier_run(earlier)
             else:
                 try:
@@ -156,13 +160,23 @@ class CommandService:
 
     @staticmethod
     def _answer_of_an_earlier_run(earlier: CommandState) -> CommandOutcome:
-        """A command an earlier run executed but could not answer. Running it again could post
-        a second card, so its recorded outcome is repeated instead."""
-        when = earlier.executed_at.date() if earlier.executed_at is not None else None
-        ran = f"the run of {when} " if when is not None else ""
+        """A command an earlier run took on. Running it again could post a second card, so its
+        recorded outcome is repeated instead — and when the run died before recording one, the
+        operator is told that and can send the command again, which is the safer way round."""
+        if earlier.executed_at is None:
+            return CommandOutcome(
+                status=OutcomeStatus.EXECUTED_EARLIER,
+                note=(
+                    f"a run of {_day(earlier.received_at)} started this command and did not"
+                    " finish; send it again if it left nothing behind"
+                ),
+            )
         return CommandOutcome(
             status=OutcomeStatus.EXECUTED_EARLIER,
-            note=f"{ran}ran this command but could not answer: {earlier.reply or 'no record'}",
+            note=(
+                f"the run of {earlier.executed_at.date()} ran this command but could not"
+                f" answer: {earlier.reply or 'no record'}"
+            ),
         )
 
     def _answer(self, incoming: IncomingCommand, outcome: CommandOutcome, *, dry_run: bool) -> None:
