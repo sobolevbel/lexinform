@@ -66,8 +66,7 @@ def test_listing_walks_pages_newest_first_and_stops_at_the_first_older_row() -> 
 
 
 def test_a_row_whose_date_cannot_be_read_does_not_end_the_walk() -> None:
-    """A date RCL writes differently is a missing detail, not "modified in year one": reading it
-    as the oldest date there is would stop the newest-first walk on the row that carries it."""
+    """Reading an unparsable date as the oldest date there is would stop the walk on that row."""
     page = _page("lista.html").replace("08-09-2026", "08-09-2026 10:31", 1)
 
     rows = list(

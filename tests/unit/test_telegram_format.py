@@ -1128,7 +1128,7 @@ def test_a_command_that_never_called_the_model_reports_only_the_time(
 def test_a_reply_fits_however_long_the_command_the_operator_sent_was(
     status: OutcomeStatus,
 ) -> None:
-    """Telegram accepts 4096 characters in a message and echoes them back into the reply."""
+    """Telegram accepts 4096 characters in a command, and the reply echoes them back."""
     outcome = CommandOutcome(status=status, note="nothing to do")
 
     text = MessageFormatter("ru").command_reply(_incoming("/analyze " + "x" * 4090), outcome).text
@@ -1137,8 +1137,7 @@ def test_a_reply_fits_however_long_the_command_the_operator_sent_was(
 
 
 def test_one_endless_error_does_not_take_the_rest_of_the_report_with_it() -> None:
-    """An exception message carries whatever the failing library put in it; the report is the
-    only place the operator learns that the run failed, so it must survive a long one."""
+    """The report is the only place the operator learns why a run failed."""
     report = _report(errors=["unexpected failure: ValueError: " + "B" * 6000])
 
     text = MessageFormatter("ru").run_report(report, []).text

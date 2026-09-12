@@ -35,10 +35,7 @@ WYKAZ_TZ = ZoneInfo("Europe/Warsaw")  # `Data publikacji` is a local wall clock
 
 _REGISTER_ID = re.compile(r"registerVue-(\d+)")
 _PUBLISHED = "%Y-%m-%d %H:%M"
-# `Cele projektu` and `Istota rozwiązań` are free prose in quoted, multi-line fields, and the csv
-# module refuses a field over 128 KB by default. The whole register is one download of ~10 MB, so
-# a field cannot be bigger than that; anything larger is a different file, not a long paragraph.
-_MAX_FIELD_CHARS = 16 * 1024 * 1024
+_MAX_FIELD_CHARS = 16 * 1024 * 1024  # the csv module refuses a field over 128 KB by default
 csv.field_size_limit(_MAX_FIELD_CHARS)
 
 # Column header -> field. Matched by prefix against the header row, longest header first, so that
@@ -78,7 +75,7 @@ def parse_register(text: str) -> tuple[WykazEntry, ...]:
     dropped: list[str] = []
     try:
         rows = list(reader)
-    except csv.Error as exc:  # not a WykazPageError on its own: it would escape the phase
+    except csv.Error as exc:
         raise WykazPageError(f"the register could not be read: {exc}") from exc
     for row in rows:
         entry = _entry(row, fields)
@@ -91,7 +88,6 @@ def parse_register(text: str) -> tuple[WykazEntry, ...]:
             continue
         entries[entry.number] = entry
     if dropped:
-        # Silence here is what hides a format change: the register would simply get shorter.
         log.warning("%d register row(s) dropped, e.g. %s", len(dropped), "; ".join(dropped[:3]))
     if not entries:
         raise WykazPageError("the register has no readable rows")

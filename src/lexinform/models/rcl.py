@@ -175,8 +175,7 @@ class RclProjectSummary(BaseModel):
     title: str
     applicant: str
     wykaz_number: str | None = None
-    # The listing's own dates, absent when RCL writes one in a shape the parser does not know:
-    # the walk down the newest-first list must not read that as "modified in year one" and stop.
+    # None when the cell is not a date the parser knows: "very old" would stop the walk.
     created: dt.date | None = None
     modified: dt.date | None = None
 

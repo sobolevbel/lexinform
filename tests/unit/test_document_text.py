@@ -9,6 +9,7 @@ from lexinform.adapters.document_text import (
     DocxTextExtractor,
     OdtTextExtractor,
 )
+from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.sections import PAGE_BREAK
 from tests.conftest import RCL_FIXTURES
 from tests.fakes import FakeTextExtractor
@@ -295,3 +296,54 @@ def test_damaged_or_foreign_ole_files_yield_no_text_instead_of_an_error() -> Non
     assert DocTextExtractor().extract(data[:4096]) == ""  # truncated: streams missing
     assert DocTextExtractor().extract(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1" + b"\0" * 600) == ""
     assert DocTextExtractor().extract(b"not even an OLE file") == ""
+
+
+def test_a_damaged_pdf_yields_no_text_like_every_other_unreadable_file() -> None:
+    """Raising here instead burns the bill's three analysis attempts and leaves it failed."""
+    assert PypdfTextExtractor().extract(b"") == ""
+    assert PypdfTextExtractor().extract(b"%PDF-1.4 and then nothing") == ""
+    assert PypdfTextExtractor().extract(b"%PDF-" + b"\0" * 200) == ""
+
+
+def test_an_open_document_cannot_conjure_a_gigabyte_out_of_one_attribute() -> None:
+    # `<text:s text:c="N"/>` is N spaces. The count is the file's to choose, so it is capped.
+    data = _odt('<text:p>a<text:s text:c="50000000"/>b</text:p>')
+
+    text = OdtTextExtractor().extract(data)
+
+    assert len(text) < 100_000
+    assert text.startswith("a ") and text.endswith("b")
+
+
+def test_an_unreadable_space_count_does_not_stop_the_document() -> None:
+    data = _odt('<text:p>Art. 1.<text:s text:c="dużo"/>Cudzoziemiec.</text:p>')
+
+    assert OdtTextExtractor().extract(data) == "Art. 1. Cudzoziemiec."
+
+
+def test_a_document_that_declares_entities_is_refused_rather_than_expanded() -> None:
+    """Word and LibreOffice never write a DOCTYPE; an XML parser expands what one declares."""
+    bomb = (
+        '<?xml version="1.0"?><!DOCTYPE d [<!ENTITY a "xxxxxxxxxx">'
+        '<!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">]>'
+        f"<w:document {_NS}><w:body><w:p><w:r><w:t>&b;</w:t></w:r></w:p></w:body></w:document>"
+    )
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("word/document.xml", bomb)
+
+    assert DocxTextExtractor().extract(buffer.getvalue()) == ""
+
+
+def test_an_archive_member_that_cannot_be_unpacked_does_not_lose_the_others() -> None:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("projekt.pdf", b"%PDF-1.4 " + b"A" * 2000)
+        archive.writestr("uzasadnienie.pdf", b"%PDF-1.4 " + b"B" * 2000)
+    raw = bytearray(buffer.getvalue())
+    start = raw.index(b"uzasadnienie.pdf", 40) + len("uzasadnienie.pdf")
+    raw[start : start + 20] = bytes(b ^ 0xFF for b in raw[start : start + 20])
+
+    text = _router().extract(bytes(raw))
+
+    assert text == "from pdf"  # the bill is still read, only its uzasadnienie is lost

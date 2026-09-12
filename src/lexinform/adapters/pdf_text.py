@@ -21,13 +21,19 @@ class PypdfTextExtractor:
     """
 
     def extract(self, data: bytes) -> str:
-        reader = PdfReader(io.BytesIO(data))
         pages: list[str] = []
-        for index, page in enumerate(reader.pages):
-            try:
-                pages.append(page.extract_text() or "")
-            except Exception as exc:  # pypdf raises a zoo of exceptions on odd PDFs
-                log.warning("pypdf failed on page %d: %s", index + 1, exc)
+        try:
+            reader = PdfReader(io.BytesIO(data))
+            for index, page in enumerate(reader.pages):
+                try:
+                    pages.append(page.extract_text() or "")
+                except Exception as exc:  # pypdf raises a zoo of exceptions on odd PDFs
+                    log.warning("pypdf failed on page %d: %s", index + 1, exc)
+        except Exception as exc:
+            # An empty, truncated or encrypted file: the bill falls back to its metadata, as one
+            # of an unknown format does. Raising would spend its three analysis attempts instead.
+            log.warning("pdf not read (%s: %s); no text", type(exc).__name__, exc)
+            return ""
         return _normalize_whitespace(PAGE_BREAK.join(pages))
 
 

@@ -121,7 +121,7 @@ class RclClient:
             previous_first = rows[0].id
             for row in rows:
                 if row.modified is not None and row.modified < modified_since:
-                    return  # the list is newest first: everything below is older still
+                    return
                 yield row
             if len(rows) < self._page_size:
                 return

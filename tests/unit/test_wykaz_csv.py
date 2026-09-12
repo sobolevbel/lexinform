@@ -84,8 +84,7 @@ def test_a_register_with_no_readable_row_is_an_error() -> None:
 
 
 def test_a_paragraph_longer_than_the_csv_modules_own_limit_is_still_read() -> None:
-    """`Istota rozwiązań` is free prose; Python's csv module refuses a field over 128 KB, and
-    that refusal is not a `WykazPageError`, so it would escape the phase as an unknown failure."""
+    """`Istota rozwiązań` is free prose; the csv module refuses a field over 128 KB."""
     huge = _csv().replace("Polska przekształciła", "X" * 200_000 + " Polska przekształciła", 1)
 
     entries = parse_register(huge)
@@ -96,8 +95,7 @@ def test_a_paragraph_longer_than_the_csv_modules_own_limit_is_still_read() -> No
 def test_rows_the_reader_had_to_drop_are_counted_in_the_error(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    """A register whose date format moved drops every row; without a count and an example the
-    only message is "no readable rows", which says nothing about what changed."""
+    """A register whose date format moved drops every row, and says only "no readable rows"."""
     moved = _csv().replace(" 15:21", "T15:21:00")
 
     with caplog.at_level("WARNING"):

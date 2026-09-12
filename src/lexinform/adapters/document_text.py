@@ -40,6 +40,7 @@ _ODT_ROW_GROUPS = tuple(
 _ODT_CELLS = (f"{_ODT_TABLE}table-cell", f"{_ODT_TABLE}covered-table-cell")
 _ODT_CONTAINERS = (f"{_ODT_TEXT}section", f"{_ODT_TEXT}list", f"{_ODT_TEXT}list-item")
 _MAX_ARCHIVE_DEPTH = 2  # RCL packages come as "letter.pdf + projekt.zip": one nesting level
+_MAX_SPACES = 4096  # `<text:s text:c="N"/>`: the count is the file's to choose
 # The order the pieces of a bill package are read in: the bill, its uzasadnienie, the OSR (the
 # trimming in `sections` then drops what the analysis does not need).
 _ROLE_ORDER: dict[TextRole, int] = {"bill": 0, "justification": 1, "osr": 2}
@@ -51,6 +52,8 @@ class DocxTextExtractor:
     def extract(self, data: bytes) -> str:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             xml = archive.read("word/document.xml")
+        if _declares_entities(xml):
+            return ""
         root = ET.fromstring(xml)
         namespace, local = _split_tag(root.tag)
         if local != "document" or namespace not in _WORDML_NAMESPACES:
@@ -134,6 +137,8 @@ class OdtTextExtractor:
     def extract(self, data: bytes) -> str:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             xml = archive.read("content.xml")
+        if _declares_entities(xml):
+            return ""
         body = ET.fromstring(xml).find(f"{_ODT_OFFICE}body/{_ODT_OFFICE}text")
         if body is None:
             log.warning("OpenDocument file without a text body; no text")
@@ -162,6 +167,22 @@ def _odt_rows(table: ET.Element) -> Iterator[ET.Element]:
             yield from _odt_rows(child)
 
 
+def _space_count(value: str | None) -> int:
+    try:
+        count = int(value) if value else 1
+    except ValueError:
+        return 1
+    return max(0, min(count, _MAX_SPACES))
+
+
+def _declares_entities(xml: bytes) -> bool:
+    """Word and LibreOffice never write a DOCTYPE; an XML parser expands what one declares."""
+    if b"<!DOCTYPE" not in xml[:4096]:
+        return False
+    log.warning("document XML declares a DOCTYPE, which no word processor writes; no text")
+    return True
+
+
 def _odt_paragraph(p: ET.Element) -> str:
     parts: list[str] = [p.text or ""]
     _odt_inline(p, parts)
@@ -175,7 +196,7 @@ def _odt_inline(node: ET.Element, parts: list[str]) -> None:
         elif el.tag == f"{_ODT_TEXT}line-break":
             parts.append("\n")
         elif el.tag == f"{_ODT_TEXT}s":
-            parts.append(" " * int(el.get(f"{_ODT_TEXT}c", "1")))
+            parts.append(" " * _space_count(el.get(f"{_ODT_TEXT}c")))
         elif el.tag == f"{_ODT_TEXT}soft-page-break":
             parts.append(PAGE_BREAK)
         else:
@@ -262,7 +283,16 @@ class DocumentTextExtractor:
                 self._max_member_bytes,
             )
             return ""
-        return self._extract(archive.read(member), depth=depth + 1)
+        try:
+            data = archive.read(member)
+        except Exception as exc:
+            # Encrypted, AES, a compression method zipfile does not implement, a broken stream:
+            # the other members of the package are still worth reading.
+            log.warning(
+                "%s not unpacked (%s: %s); skipped", member.filename, type(exc).__name__, exc
+            )
+            return ""
+        return self._extract(data, depth=depth + 1)
 
 
 def _package_members(infos: list[ZipInfo]) -> list[ZipInfo]:

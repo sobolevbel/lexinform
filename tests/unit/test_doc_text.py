@@ -175,8 +175,7 @@ def test_a_negative_property_modifier_length_is_refused_instead_of_looping_forev
 
 
 def test_a_piece_whose_span_runs_backwards_is_refused_instead_of_read_short() -> None:
-    # A damaged piece table whose character positions do not grow: the second piece spans -2
-    # characters, and a plain slice of it is empty, so its text would vanish without a word.
+    # The second piece spans -2 characters, and a plain slice of it is empty.
     word, table = word_streams(
         [("Art. 1. ", True), ("Cudzoziemiec.", True)], cps=[0, 5, 3], ccp_text=10
     )

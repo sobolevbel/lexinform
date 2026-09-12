@@ -244,8 +244,7 @@ class FakeRclGateway:
 
     def list_projects(self, *, modified_since: date) -> Iterator[RclProjectSummary]:
         self._called("list_projects")
-        # As on the live site: newest first, and a row without a date is neither sorted away nor
-        # skipped (the real client stops the walk only on a row that is demonstrably older).
+        # As on the live site: newest first, and a row without a date never stops the walk.
         rows = sorted(self.listing, key=lambda r: r.modified or date.max, reverse=True)
         for row in rows:
             if row.modified is None or row.modified >= modified_since:

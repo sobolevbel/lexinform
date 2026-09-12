@@ -80,7 +80,7 @@ class RclDiscoveryService:
                 new_rows.append(row)
                 continue
             if row.modified is None:
-                continue  # the listing gave no date to bump the stored one with
+                continue
             modified = dt.datetime.combine(row.modified, dt.time(0, 0), tzinfo=dt.UTC)
             if modified > existing.summary.change_date:
                 refreshed = existing.summary.model_copy(update={"change_date": modified})

@@ -139,7 +139,7 @@ def _read_pieces(word: bytes, pieces: list[tuple[int, int, int, bool]], *, limit
         if cp_start >= limit:
             break
         length = min(cp_end, limit) - cp_start
-        if length < 0:  # character positions that do not grow: the slice would be empty
+        if length < 0:
             raise DocFormatError("piece spans backwards in the character positions")
         end = offset + (length if compressed else 2 * length)
         if end > len(word):  # a silent short read would hand the model a truncated text

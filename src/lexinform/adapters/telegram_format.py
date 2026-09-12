@@ -65,11 +65,7 @@ from lexinform.pricing import cost_usd
 
 MESSAGE_LIMIT = 4096
 ELLIPSIS = "…"
-# A line the message cannot break stays one line, so whatever an outside system put in it must be
-# clipped before it is rendered: Telegram takes 4096 characters in a command, and an exception
-# message carries whatever the failing library chose to put there. Without this, one such value
-# pushes the whole message over the limit and `_cut_lines` drops every line after it.
-QUOTED_LINE_CHARS = 300
+QUOTED_LINE_CHARS = 300  # Telegram takes 4096 characters in a command, and echoes them back
 QUARTERS = {1: "I", 2: "II", 3: "III", 4: "IV"}
 
 # What the technical channel accepts (English, like the run report; the operator's language).
