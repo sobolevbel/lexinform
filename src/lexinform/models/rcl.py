@@ -175,8 +175,10 @@ class RclProjectSummary(BaseModel):
     title: str
     applicant: str
     wykaz_number: str | None = None
-    created: dt.date
-    modified: dt.date
+    # The listing's own dates, absent when RCL writes one in a shape the parser does not know:
+    # the walk down the newest-first list must not read that as "modified in year one" and stop.
+    created: dt.date | None = None
+    modified: dt.date | None = None
 
     @property
     def web_url(self) -> str:

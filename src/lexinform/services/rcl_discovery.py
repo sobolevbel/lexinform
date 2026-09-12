@@ -79,6 +79,8 @@ class RclDiscoveryService:
                     continue  # the wykaz row it continues takes it over in the tracking phase
                 new_rows.append(row)
                 continue
+            if row.modified is None:
+                continue  # the listing gave no date to bump the stored one with
             modified = dt.datetime.combine(row.modified, dt.time(0, 0), tzinfo=dt.UTC)
             if modified > existing.summary.change_date:
                 refreshed = existing.summary.model_copy(update={"change_date": modified})

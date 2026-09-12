@@ -120,8 +120,8 @@ class RclClient:
                 return
             previous_first = rows[0].id
             for row in rows:
-                if row.modified < modified_since:
-                    return
+                if row.modified is not None and row.modified < modified_since:
+                    return  # the list is newest first: everything below is older still
                 yield row
             if len(rows) < self._page_size:
                 return
@@ -265,8 +265,8 @@ def parse_list_page(html: str) -> ListPage:
                 title=_text(link),
                 applicant=_text(cells[1]),
                 wykaz_number=normalize_wykaz_number(_text(cells[2])),
-                created=_parse_date(_text(cells[3])) or date.min,
-                modified=_parse_date(_text(cells[4])) or date.min,
+                created=_parse_date(_text(cells[3])),
+                modified=_parse_date(_text(cells[4])),
             )
         )
     return ListPage(rows, int(total_match.group(1)) if total_match else None, number)

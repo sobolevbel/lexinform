@@ -65,6 +65,21 @@ def test_listing_walks_pages_newest_first_and_stops_at_the_first_older_row() -> 
     assert seen[0]["typeId"] == "2" and seen[0]["pSize"] == "3"
 
 
+def test_a_row_whose_date_cannot_be_read_does_not_end_the_walk() -> None:
+    """A date RCL writes differently is a missing detail, not "modified in year one": reading it
+    as the oldest date there is would stop the newest-first walk on the row that carries it."""
+    page = _page("lista.html").replace("08-09-2026", "08-09-2026 10:31", 1)
+
+    rows = list(
+        _client(lambda r: httpx.Response(200, text=page)).list_projects(
+            modified_since=date(2026, 9, 5)
+        )
+    )
+
+    assert [r.id for r in rows] == [12411600, 12413507, 12409656]
+    assert rows[0].modified is None  # the row is still read, it just has no date
+
+
 def test_listing_stops_when_a_page_is_shorter_than_the_page_size() -> None:
     calls = 0
 
