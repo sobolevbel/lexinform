@@ -21,7 +21,7 @@ A bill is named by any number the bot knows or by a link to it:
 | Print number of the current term | `3039`, `druk 3039` |
 | Bill without a print number | `RPW/29075/2026` |
 | RCL project id | `RCL/12414100` |
-| Wykaz number of an RCL project already followed | `UC164`, `UD 247` |
+| Wykaz number | `UC164`, `UD 247`, `WPL/UD408` — the RCL project when it is out, the register entry before that |
 | RM number of a government print | `RM-0610-139-26` (resolved through RCL) |
 | Sejm links | `…/Sejm10.nsf/PrzebiegProc.xsp?nr=3039`, `…/druk.xsp?nr=3039`, `api.sejm.gov.pl/sejm/term10/processes/3039`, the consultation page with `NrProjektu=RPW/…` |
 | RCL links | `legislacja.rcl.gov.pl/projekt/12414100` (any subpage), `getIdFromLegislacja?number=RM-…` |

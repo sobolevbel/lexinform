@@ -43,6 +43,11 @@ app = typer.Typer(
 db_app = typer.Typer(help="Database maintenance (init, dump, restore).", no_args_is_help=True)
 app.add_typer(db_app, name="db")
 
+NUMBER_HELP = (
+    "Print (druk) number, RPW/… before one, RCL/{id} on RCL, or a wykaz number (UD408):"
+    " the RCL project when it is out, the wykaz prac RM entry before that."
+)
+
 SinceOpt = Annotated[
     datetime | None,
     typer.Option(
@@ -241,7 +246,7 @@ def _with_rcl_text(c: Container, bill: Bill) -> Bill:
 
 @app.command()
 def analyze(
-    number: Annotated[str, typer.Argument(help="Print (druk) number, e.g. 3039.")],
+    number: Annotated[str, typer.Argument(help=NUMBER_HELP)],
     force: Annotated[
         bool,
         typer.Option(
@@ -288,7 +293,7 @@ def analyze(
 
 @app.command()
 def preview(
-    number: Annotated[str, typer.Argument(help="Print (druk) number, RPW/…, RCL/{id} or UC164.")],
+    number: Annotated[str, typer.Argument(help=NUMBER_HELP)],
     to: Annotated[
         str | None, typer.Option("--to", help="Send to this chat id instead of printing.")
     ] = None,
@@ -422,13 +427,7 @@ def listen(
 
 @app.command()
 def show(
-    number: Annotated[
-        str,
-        typer.Argument(
-            help="Print (druk) number, RPW/… before one, RCL/{id} or UC164 on RCL,"
-            " WPL/UD408 in the wykaz prac RM."
-        ),
-    ],
+    number: Annotated[str, typer.Argument(help=NUMBER_HELP)],
 ) -> None:
     """Show what the Sejm API (or RCL) and the local database know about a bill."""
     c = _container()
@@ -572,7 +571,7 @@ YesOpt = Annotated[bool, typer.Option("--yes", "-y", help="Do not ask for confir
 
 @app.command()
 def republish(
-    number: Annotated[str, typer.Argument(help="Print (druk) or RPW number.")],
+    number: Annotated[str, typer.Argument(help=NUMBER_HELP)],
     yes: YesOpt = False,
 ) -> None:
     """Post the card of a bill again (after a failed, unknown or accidentally deleted post).
@@ -608,7 +607,7 @@ def republish(
 
 @app.command()
 def reset(
-    number: Annotated[str, typer.Argument(help="Print (druk) or RPW number.")],
+    number: Annotated[str, typer.Argument(help=NUMBER_HELP)],
     to: Annotated[
         BillStatus, typer.Option("--to", help="Status to put the bill into.")
     ] = BillStatus.ANALYSIS_PENDING,
