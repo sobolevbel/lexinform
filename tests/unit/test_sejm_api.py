@@ -176,6 +176,17 @@ def _bills_handler(seen: list[dict[str, str]]) -> Handler:
     return handler
 
 
+def test_the_bills_listing_stops_when_the_server_ignores_the_offset() -> None:
+    """`/prints` is already known to ignore its paging parameters; nothing said `/bills` would
+    not, and the loop had no way out of a server answering the same full page for ever."""
+    full_page = [BILLS[0]] * SejmApiClient.BILLS_PAGE_SIZE
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=full_page)
+
+    assert len(list(_client(handler).iter_bills(10))) == len(full_page)
+
+
 def test_bills_endpoint_parses_submissions_with_and_without_a_print() -> None:
     seen: list[dict[str, str]] = []
 

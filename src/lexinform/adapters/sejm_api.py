@@ -146,10 +146,17 @@ class SejmApiClient:
         if received_from is not None:
             params["dateOfReceiptFrom"] = received_from.isoformat()
         offset = 0
+        previous_first: str | None = None
         while True:
             page = self._get_json(f"/sejm/term{term}/bills", params={**params, "offset": offset})
             if not isinstance(page, list) or not page:
                 return
+            first = str(page[0].get("number"))
+            if first == previous_first:
+                # The server ignored `offset`: stop instead of looping forever.
+                log.warning("/bills returned the same page twice at offset %d", offset)
+                return
+            previous_first = first
             for item in page:
                 yield parse_submission(item, term=term)
             if len(page) < self.BILLS_PAGE_SIZE:
