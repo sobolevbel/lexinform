@@ -62,6 +62,13 @@ class Poster:
             return pub.attempts >= self._max_attempts
         return True
 
+    def sent(self, bill: Bill, kind: PublicationKind, *, ref: str | None = None) -> bool:
+        """True when this post actually reached the channel. `posted` answers a different
+        question — whether it may be attempted — and a row a crashed run left behind counts as
+        posted there while the reader never saw a word of it."""
+        pub = self._repo.get_publication(bill.term, bill.number, kind, self._channel_id, ref=ref)
+        return pub is not None and pub.status is PublicationStatus.SENT
+
     def told_jointly(self, bill: Bill, kind: PublicationKind, ref: str) -> bool:
         """A print considered jointly with this one has already told the channel about this very
         event. A sitting and a hearing belong to the whole group — one committee report for all

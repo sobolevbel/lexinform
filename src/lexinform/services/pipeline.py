@@ -183,7 +183,12 @@ class DailyPipeline:
     def _execute(self, opts: RunOptions, current: int, since: datetime, report: RunReport) -> None:
         stale = self._repo.mark_stale_pending_as_unknown(now=self._clock.now())
         if stale:
-            msg = f"{stale} publication(s) were left pending by a previous run; marked unknown"
+            # Named, because they are never sent again: this line is the operator's only chance
+            # to put the missing post back (/republish for a card, /analyze to look at the bill).
+            msg = (
+                f"{len(stale)} publication(s) were left pending by a previous run and are never"
+                f" re-sent; marked unknown: {', '.join(stale[:10])}"
+            )
             log.error(msg, extra={"in_report": True})
             report.errors.append(msg)
         if self._runs_retention is not None:

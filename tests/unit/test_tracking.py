@@ -4,7 +4,17 @@ import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import LlmUnavailableError
-from lexinform.models import Attachment, Committee, PrintInfo, Stage, Vote, VotingSummary
+from lexinform.models import (
+    Attachment,
+    Committee,
+    PrintInfo,
+    Publication,
+    PublicationKind,
+    PublicationStatus,
+    Stage,
+    Vote,
+    VotingSummary,
+)
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import COMMITTEE_STAGES, ELI, REFERRED, START, World, act, print_url
 
@@ -605,3 +615,32 @@ def test_a_no_publish_run_does_not_swallow_the_stages_it_did_not_post() -> None:
     _, change, _ = w.publisher.updates[0]
     kinds = {st.stage_type for st in change.new_stages}
     assert "Voting" in kinds and "Referral" in kinds  # the held stages ride along
+
+
+def test_an_act_notice_a_crash_lost_does_not_also_swallow_the_closure() -> None:
+    """A row a crashed run left behind is never sent again — that is deliberate. But it used to
+    count as "the publication notice told it", so the closure update was held as well and the
+    reader heard nothing at all about a bill that had reached Dziennik Ustaw."""
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.repo.create_publication(
+        Publication(
+            term=10,
+            number="3039",
+            kind=PublicationKind.ACT_PUBLISHED,
+            status=PublicationStatus.PENDING,
+            channel_id="@test",
+            created_at=w.clock.now(),
+        )
+    )
+    w.gateway.acts[ELI] = act()
+    w.publish_act("3039")
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.acts_published == 0  # the lost notice is not re-sent
+    assert report.updates == 1
+    _, change, _ = w.publisher.updates[0]
+    assert change.closure_detected and change.passed

@@ -268,7 +268,7 @@ class StatusTrackingService:
                 # detected again.
                 self._acts.check(bill, detail, result, publish=publish)
                 if change is not None:
-                    announced = self._poster.posted(bill, PublicationKind.ACT_PUBLISHED)
+                    announced = self._poster.sent(bill, PublicationKind.ACT_PUBLISHED)
                     if publish and has_news(change, act_published=announced):
                         result.count_post(self._poster.status_update(bill, change))
                     else:

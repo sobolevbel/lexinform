@@ -233,7 +233,8 @@ def test_pending_rows_of_a_crashed_run_become_unknown(
     marked = repo.mark_stale_pending_as_unknown(now=now)
 
     stored = repo.get_publication(10, number, PublicationKind.NEW_BILL, CHANNEL)
-    assert marked == 1
+    # Named, not just counted: the post is never re-sent, so the run report is the only trace.
+    assert marked == [f"{number} new_bill"]
     assert stored is not None and stored.status is PublicationStatus.UNKNOWN
 
 

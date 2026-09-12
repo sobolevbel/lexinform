@@ -951,8 +951,14 @@ class SqliteBillRepository:
             "UPDATE publications SET rendered_sha256 = ? WHERE id = ?", (digest, publication_id)
         )
 
-    def mark_stale_pending_as_unknown(self, *, now: datetime) -> int:
-        cur = self._conn.execute(
+    def mark_stale_pending_as_unknown(self, *, now: datetime) -> list[str]:
+        """Settle the rows a crashed run left behind, and name them: they are never re-sent, so
+        this one line is the only trace the reader's missing post leaves anywhere."""
+        rows = self._conn.execute(
+            "SELECT number, kind FROM publications WHERE status = ? ORDER BY number, kind",
+            (PublicationStatus.PENDING.value,),
+        ).fetchall()
+        self._conn.execute(
             "UPDATE publications SET status = ?, error = ? WHERE status = ?",
             (
                 PublicationStatus.UNKNOWN.value,
@@ -960,7 +966,7 @@ class SqliteBillRepository:
                 PublicationStatus.PENDING.value,
             ),
         )
-        return int(cur.rowcount or 0)
+        return [f"{r['number']} {r['kind']}" for r in rows]
 
     def add_status_change(self, change: StatusChange) -> int | None:
         try:

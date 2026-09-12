@@ -223,3 +223,26 @@ def test_an_entry_missing_for_a_few_days_is_left_alone() -> None:
     report = w.run()
 
     assert report.updates == 0
+
+
+def test_a_numbered_print_is_never_announced_as_withdrawn_by_the_entry_rule() -> None:
+    """The rows read here also include prints waiting for their consultation results. One whose
+    year-old RPW row drops out of /bills used to be told as «Проект отозван до присвоения номера
+    druku» in the middle of its process — and the mark left behind then suppressed the real
+    closure when it came."""
+    w = World()
+    w.gateway.submissions.append(submission())
+    w.run()
+    w.gateway.submissions[0] = submission(print_number="3100")
+    w.add_bill("3100", "Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony")
+    w.clock.advance(days=1)
+    w.run()
+    w.gateway.submissions.clear()  # the entry falls out of the listing the API still answers
+    w.gateway.submissions.append(submission(number="RPW/1/2026", title="Inny projekt"))
+    w.clock.advance(days=400)
+    told = len(w.publisher.updates)  # the print already has its "номер druku присвоен" reply
+
+    report = w.run()
+
+    assert report.updates == 0 and len(w.publisher.updates) == told
+    assert not w.repo.closure_announced(10, "3100")  # the real closure can still be told

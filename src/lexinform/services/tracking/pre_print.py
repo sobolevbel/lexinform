@@ -118,8 +118,16 @@ class PrePrintReconciler:
 
     def _long_gone(self, bill: Bill) -> bool:
         """An entry the Sejm has stopped listing and that is too old to still be waiting for a
-        print. Without this its thread ends at "ждём номер druku" and is re-queried for years."""
+        print. Without this its thread ends at "ждём номер druku" and is re-queried for years.
+
+        Only an entry: the rows read here also include numbered prints waiting for their
+        consultation results, and one whose year-old `/bills` row has dropped out of the listing
+        would otherwise be announced as withdrawn in the middle of its process — and the mark
+        left behind would then suppress the real closure when it came.
+        """
         submission = bill.submission
+        if not bill.is_pre_print:
+            return False
         if submission is None or self._repo.closure_announced(bill.term, bill.number):
             return False
         age = (self._clock.now().date() - submission.date_of_receipt).days
