@@ -805,7 +805,21 @@ def test_sejm_sitting_message(process_3039: ProcessDetail) -> None:
     assert "🏛 заседание Сейма № 65, 15–18.09.2026" in ru
     assert "Трансляция" not in ru and "Страница комиссии" not in ru
     assert ru.splitlines()[-1] == "#заседаниесейма #важность5 #легализация #kadencja10druk3039"
-    assert "On the agenda of a Sejm sitting" in en and "Sejm sitting no. 65, 15–2026-09-18" in en
+    assert "On the agenda of a Sejm sitting" in en
+    assert "Sejm sitting no. 65, 2026-09-15 – 2026-09-18" in en  # this locale writes the year first
+
+
+def test_a_sitting_that_runs_into_the_next_month_is_not_written_backwards(
+    process_3039: ProcessDetail,
+) -> None:
+    crossing = PLENARY.model_copy(
+        update={"date": dt.date(2026, 9, 30), "end_date": dt.date(2026, 10, 2)}
+    )
+    bill = bill_of(process_3039, agenda=(crossing,))
+
+    text = MessageFormatter("ru").agenda(bill, crossing, today=dt.date(2026, 9, 25)).text
+
+    assert "заседание Сейма № 65, 30.09.2026 – 02.10.2026" in text
 
 
 def test_consultation_deadline_reminder(process_3039: ProcessDetail) -> None:

@@ -1436,7 +1436,16 @@ class MessageFormatter:
             return esc(when)
         span = self.fmt_date(item.date)
         if item.end_date and item.end_date != item.date:
-            span = f"{item.date.day:02d}–{self.fmt_date(item.end_date)}"
+            # "15–18.09.2026" only holds when the month is shared and the format opens with the
+            # day; across a month, or in a locale writing year first, both dates are spelled out.
+            same_month = (item.date.year, item.date.month) == (
+                item.end_date.year,
+                item.end_date.month,
+            )
+            if same_month and lb.date_format.startswith("%d"):
+                span = f"{item.date.day:02d}–{self.fmt_date(item.end_date)}"
+            else:
+                span = f"{self.fmt_date(item.date)} – {self.fmt_date(item.end_date)}"
         number = f"{lb.sejm_sitting} {item.sitting_number}, " if item.sitting_number else ""
         return esc(f"{number}{span}")
 
