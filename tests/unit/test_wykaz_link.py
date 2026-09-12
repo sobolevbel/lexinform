@@ -54,8 +54,8 @@ def test_a_plan_the_model_rejected_leaves_its_project_the_normal_path() -> None:
     # No card to inherit, but the project is still the plan's: it keeps the thread's number and
     # is analysed from its documents, which is what decides whether it gets a card of its own.
     assert w.publication(WYKAZ, PublicationKind.NEW_BILL) is None
-    assert w.bill(RCL).analysis is not None
-    assert w.bill(RCL).analysis.text_source == "documents"  # type: ignore[union-attr]
+    record = w.bill(RCL).analysis
+    assert record is not None and record.text_source == "documents"
     assert report.published == 0  # the link happens in tracking, after this run's publishing
     assert w.run().published == 1
     assert w.publisher.new_bills[0][0].number == RCL
