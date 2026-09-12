@@ -9,6 +9,7 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.keywords import KeywordPrefilter, accept_title_hits
 from lexinform.models import (
     BILL_DOCUMENT_TYPE,
+    ActInfo,
     Bill,
     BillStatus,
     BillSubmission,
@@ -18,7 +19,7 @@ from lexinform.models import (
     is_over,
     rcl_number,
 )
-from lexinform.ports import BillRepository, Clock, ProjectResolver, SejmGateway
+from lexinform.ports import BillRepository, Clock, EliGateway, ProjectResolver, SejmGateway
 
 log = logging.getLogger(__name__)
 
@@ -59,6 +60,7 @@ class BillDiscoveryService:
         text_prefilter: bool = True,
         local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
         projects: ProjectResolver | None = None,
+        eli: EliGateway | None = None,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -67,6 +69,7 @@ class BillDiscoveryService:
         self._text_prefilter = text_prefilter
         self._local_tz = local_tz
         self._projects = projects  # resolves a government print's rclNum to its RCL project
+        self._eli = eli  # reads the act of a bill first seen after its publication in Dz.U.
 
     def discover(self, term: int, since: datetime, *, pre_print: bool = True) -> DiscoveryResult:
         result = DiscoveryResult()
@@ -131,15 +134,39 @@ class BillDiscoveryService:
         analysis and no card, because a card invites action and there is none.
 
         The listing's `closureDate` is not the answer: the Sejm sets it at the third reading,
-        with the Senate, the President and Dziennik Ustaw still ahead. The stages decide, and
-        they are read once, here — a bill whose detail cannot be read takes the normal path.
+        with the Senate, the President and Dziennik Ustaw still ahead. Neither is the ELI: an
+        act published with months of vacatio legis is the one moment a reader has a date to
+        prepare for. Both are read once, here — a bill whose detail cannot be read takes the
+        normal path.
         """
-        if bill.summary.eli is None and bill.has_process:
+        if bill.summary.eli is not None:
+            act = None if self._eli is None else self._act_of(bill.summary.eli)
+            if act is None:
+                # An act exists and nothing contradicts it: unlike an unread stage tree, an
+                # unread act is not a reason to assume the road is still open.
+                return True
+            # Kept whatever the verdict: the publishing gate asks the same question again, and
+            # without the act it would answer "over" and drop the card after all.
+            self._repo.save_act(bill.term, bill.number, act)
+            bill = bill.model_copy(update={"act": act})
+        elif bill.has_process:
             stages = self._stages_of(bill.summary)
             if stages is None:
                 return False
             bill = bill.model_copy(update={"stages": stages})
         return is_over(bill, today=now.astimezone(self._local_tz).date())
+
+    def _act_of(self, eli: str) -> ActInfo | None:
+        """The published act, so that its vacatio legis can be seen; None when ELI has not
+        indexed it yet (an act published today often is not)."""
+        assert self._eli is not None
+        try:
+            return self._eli.get_act(eli)
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("act %s not read: %s", eli, exc)
+            return None
 
     def _stages_of(self, summary: ProcessSummary) -> tuple[Stage, ...] | None:
         try:

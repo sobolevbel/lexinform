@@ -447,13 +447,20 @@ def is_over(bill: Bill, *, today: dt.date) -> bool:
 
     The Sejm's `closureDate` does not say this on its own — it is set at the third reading,
     while the Senate (30 days), the President (21) and Dziennik Ustaw are still ahead: druk
-    2799 is closed on 2026-09-04, `passed`, with no act yet. What ends the road is the act in
-    Dziennik Ustaw, a rejection or a withdrawal, a project closed on RCL, a plan taken off the
+    2799 is closed on 2026-09-04, `passed`, with no act yet. What ends the road is the act
+    *applying*, a rejection or a withdrawal, a project closed on RCL, a plan taken off the
     wykaz, a lapsed term — and the stages are what tell those apart, so a Sejm bill whose
     stages were never read is not over but unknown.
+
+    An act in Dziennik Ustaw does not end it either: its vacatio legis runs for weeks or months
+    (druk 2699: promulgated 2026-08-18, in force 2026-11-19), and that is the span in which a
+    reader has a known date to prepare for. Deciding that needs the act, so a bill whose ELI has
+    not been fetched yet is taken as over: callers that can fetch it (discovery) do.
     """
+    if bill.act is not None:
+        return next_phase(bill, today=today) is None
     if bill.summary.eli is not None:
-        return True  # the act is in Dziennik Ustaw; only its entry into force is still ahead
+        return True
     if bill.has_process and not bill.stages:
         return False
     return next_phase(bill, today=today) is None

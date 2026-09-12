@@ -313,11 +313,15 @@ class CommandService:
     def _over_note(self, bill: Bill) -> str | None:
         """Why no card may be posted for this bill, when its road has ended. A card is an
         invitation to act, and there is nothing left to act on; a bill the Sejm has only passed
-        is not over, because the Senate is next."""
+        is not over, because the Senate is next, and neither is one whose act is published but
+        does not apply yet."""
         if bill.discontinued_at is not None:
             return "lapsed with the end of its Sejm term: not posted"
         if not is_over(bill, today=self._clock.now().date()):
             return None
+        act = bill.act
+        if act is not None and act.entry_into_force is not None:
+            return f"{act.display_address} in force since {act.entry_into_force}: not posted"
         ended = bill.summary.closure_date
         outcome = "passed" if bill.summary.passed else "closed"
         when = f" on {ended}" if ended is not None else ""

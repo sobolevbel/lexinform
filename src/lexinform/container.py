@@ -223,6 +223,7 @@ class Container:
                 text_prefilter=self.settings.text_prefilter_enabled,
                 local_tz=LOCAL_TZ,
                 projects=self.rcl,
+                eli=self.gateway,
             ),
         )
 

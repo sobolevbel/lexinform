@@ -4,9 +4,10 @@ import datetime as dt
 
 import pytest
 
+from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import BillStatus, Category, DocumentType, PublicationStatus, Stage
 from tests.fakes import FakeTextExtractor, make_analysis
-from tests.harness import COMMITTEE_STAGES, World, submission, summary
+from tests.harness import COMMITTEE_STAGES, ELI, World, act, submission, summary
 
 FOREIGNERS = "Projekt ustawy o cudzoziemcach"
 # What the Sejm's tree looks like once it has adopted a bill: the third reading decided it and
@@ -99,10 +100,11 @@ def test_no_publish_marks_the_card_skipped_forever() -> None:
     assert later.published == 0
 
 
-def test_a_bill_whose_act_is_already_published_is_neither_analysed_nor_posted() -> None:
+def test_a_bill_whose_act_is_already_in_force_is_neither_analysed_nor_posted() -> None:
     w = World()
     w.add_bill("2695", FOREIGNERS, stages=PASSED_STAGES)
     w.publish_act("2695")
+    w.gateway.acts[ELI] = act(entry_into_force=dt.date(2026, 8, 1))
 
     report = w.run()
 
@@ -110,6 +112,36 @@ def test_a_bill_whose_act_is_already_published_is_neither_analysed_nor_posted() 
     assert (report.analyzed, report.published) == (0, 0)
     assert w.bill("2695").status is BillStatus.SKIPPED_CLOSED
     assert w.llm.contexts == [] and w.publisher.new_bills == []
+
+
+def test_an_act_whose_vacatio_legis_is_still_ahead_gets_its_card() -> None:
+    """Dz.U. on 2026-09-09, in force on 2026-11-19: three months in which a reader has a date to
+    prepare for. `is_over` used to answer the ELI alone and drop the bill without a word."""
+    w = World()
+    w.add_bill("2695", FOREIGNERS, stages=PASSED_STAGES)
+    w.publish_act("2695")
+    w.gateway.acts[ELI] = act(entry_into_force=dt.date(2026, 11, 19))
+
+    report = w.run()
+
+    assert (report.discovered, report.over_on_arrival) == (1, 0)
+    assert (report.analyzed, report.published) == (1, 1)
+    assert w.bill("2695").act is not None  # kept, or the publishing gate would drop the card
+    posted, _ = w.publisher.new_bills[0]
+    assert "вступление в силу 19.11.2026" in MessageFormatter("ru").new_bill(posted, None).text
+
+
+def test_an_act_the_eli_api_has_not_indexed_yet_is_left_alone() -> None:
+    """Nothing contradicts the ELI address the listing carries, and an unread act is not a
+    reason to assume the road is still open."""
+    w = World()
+    w.add_bill("2695", FOREIGNERS, stages=PASSED_STAGES)
+    w.publish_act("2695")
+
+    report = w.run()
+
+    assert report.over_on_arrival == 1
+    assert w.bill("2695").status is BillStatus.SKIPPED_CLOSED
 
 
 def test_a_bill_rejected_before_we_saw_it_is_skipped_after_reading_its_stages() -> None:
