@@ -1146,6 +1146,14 @@ class MessageFormatter:
                 parts.append(label)
         return f"{ICON['path']} <b>{esc(lb.path)}:</b> {esc(' → '.join(parts))}"
 
+    def _step_template(self, key: str, *, named: bool) -> str | None:
+        """The phase's wording, in the variant that names no committee when there is none to
+        name: `{committee}` left empty would render a dangling dash."""
+        labels = self._labels.next_step_labels
+        if not named and (plain := labels.get(f"{key}_unnamed")) is not None:
+            return plain
+        return labels.get(key)
+
     def _next_step_line(self, bill: Bill, today: dt.date) -> str:
         lb = self._labels
         phase = next_phase(bill, today=today)
@@ -1153,12 +1161,13 @@ class MessageFormatter:
             return ""
         urgent = is_urgent(bill)
         shortened = lb.urgent_step_labels.get(phase.key) if urgent else None
-        template = shortened or lb.next_step_labels.get(phase.key)
+        committees = self._committee_names(bill, phase.committees)
+        template = shortened or self._step_template(phase.key, named=bool(committees))
         if template is None:
             return ""
         text = template.format(
             date=self.fmt_date(phase.date) if phase.date else "",
-            committee=self._committee_names(bill, phase.committees),
+            committee=committees,
         ).strip()
         if urgent and shortened is None:
             text = f"{text} ({lb.urgent_mode})"  # the shortened wordings name the mode themselves

@@ -11,6 +11,7 @@ from lexinform.models import (
     BillSubmission,
     ClubVotes,
     ProcessDetail,
+    ProcessSummary,
     SejmTerm,
     Stage,
     Vote,
@@ -24,7 +25,9 @@ from lexinform.models import (
     next_phase,
     stage_fingerprint,
     third_reading_kept_the_text,
+    wykaz_summary,
 )
+from tests.harness import wykaz_entry
 
 NOW = dt.datetime(2026, 9, 9, tzinfo=dt.UTC)
 TODAY = NOW.date()
@@ -231,7 +234,7 @@ def test_next_phase_walks_a_bill_amended_by_the_senate(process_1962: ProcessDeta
         "first_reading_committee",  # ReadingReferral -> SPC
         "committee_work",  # Reading: I czytanie w komisjach
         "second_reading",  # CommitteeWork with the report carrying the text
-        "third_reading",  # II czytanie, sent back to the committee
+        "second_reading_committee",  # II czytanie, sent back to the committee
         "third_reading",  # -A report answering amendments
         "senate",  # III czytanie: uchwalono
         "senate_amendments",  # Senate introduced amendments
@@ -246,6 +249,65 @@ def test_next_phase_walks_a_bill_amended_by_the_senate(process_1962: ProcessDeta
 
     assert [p.key for p in phases if p] == expected
     assert phases[1] is not None and phases[1].committees == ("SPC",)
+
+
+def test_a_second_reading_that_sent_the_bill_back_names_the_committee(
+    process_1962: ProcessDetail,
+) -> None:
+    second = next(
+        i
+        for i, st in enumerate(process_1962.stages)
+        if st.stage_type == "SejmReading" and st.stage_name.startswith("II ")
+    )
+
+    phase = next_phase(_bill(process_1962, process_1962.stages[: second + 1]), today=TODAY)
+
+    assert phase is not None
+    assert phase.key == "second_reading_committee"
+    assert phase.committees == ("SPC",)
+
+
+def test_a_senate_rejection_is_not_a_senate_amendment(process_1962: ProcessDetail) -> None:
+    position = next(
+        i for i, st in enumerate(process_1962.stages) if st.stage_type == "SenatePosition"
+    )
+    stages = list(process_1962.stages[: position + 1])
+    stages[-1] = stages[-1].model_copy(update={"position": "odrzucił ustawę"})
+
+    phase = next_phase(_bill(process_1962, tuple(stages)), today=TODAY)
+
+    assert phase is not None and phase.key == "senate_rejection"
+
+
+def test_the_stage_line_ignores_a_position_that_arrived_beside_the_process() -> None:
+    committee = Stage(stage_type="Referral", stage_name="Skierowanie", committee_code="ASW")
+    aside = Stage(stage_type="GovermentPosition", stage_name="Wpłynęło stanowisko rządu")
+    bill = Bill(
+        summary=ProcessSummary(
+            term=10, number="1273", title="t", document_type="projekt ustawy", change_date=NOW
+        ),
+        status=BillStatus.ANALYZED,
+        stages=(committee, aside),
+        first_seen_at=NOW,
+        last_checked_at=NOW,
+    )
+
+    assert bill.last_stage == committee
+
+
+def test_a_plan_the_government_has_adopted_is_past_rcl() -> None:
+    entry = wykaz_entry(status="Zrealizowany")
+    bill = Bill(
+        summary=wykaz_summary(entry, term=10),
+        status=BillStatus.ANALYZED,
+        wykaz=entry,
+        first_seen_at=NOW,
+        last_checked_at=NOW,
+    )
+
+    phase = next_phase(bill, today=TODAY)
+
+    assert phase is not None and phase.key == "wykaz_adopted"
 
 
 def test_senate_and_president_phases_carry_their_constitutional_deadline(

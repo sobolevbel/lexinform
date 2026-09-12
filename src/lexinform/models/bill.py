@@ -97,7 +97,11 @@ class Bill(BaseModel):
 
     @property
     def last_stage(self) -> Stage | None:
-        flat = flatten_stages(self.stages)
+        """Where the bill stands. `ASIDE_STAGE_TYPES` are skipped for the same reason
+        `next_phase` skips them: they land last while the bill sits in committee."""
+        flat = flatten_stages(
+            tuple(st for st in self.stages if st.stage_type not in ASIDE_STAGE_TYPES)
+        )
         return flat[-1] if flat else None
 
     @property
@@ -179,6 +183,7 @@ GOVERNMENT_STEPS = frozenset({"wykaz", "rcl"})  # shown only for bills that came
 PHASE_STEP = {
     "wykaz": "wykaz",
     "wykaz_to_rcl": "rcl",
+    "wykaz_adopted": "sejm",
     "rcl_to_sejm": "sejm",
     "pre_print": "sejm",
     "pre_print_consultation": "sejm",
@@ -187,9 +192,11 @@ PHASE_STEP = {
     "first_reading_committee": "committee",
     "committee_work": "committee",
     "second_reading": "readings",
+    "second_reading_committee": "readings",
     "third_reading": "readings",
     "senate": "senate",
     "senate_amendments": "senate",
+    "senate_rejection": "senate",
     "president": "president",
     "veto": "president",
     "tribunal": "president",
@@ -198,9 +205,23 @@ PHASE_STEP = {
     "in_force_unknown": "in_force",
 }
 # Phases during which a reader can address a committee, or watch a sitting.
-COMMITTEE_PHASES = frozenset({"first_reading_committee", "committee_work", "senate_amendments"})
+COMMITTEE_PHASES = frozenset(
+    {
+        "first_reading_committee",
+        "committee_work",
+        "second_reading_committee",
+        "senate_amendments",
+        "senate_rejection",
+    }
+)
 SITTING_PHASES = frozenset(
-    {"first_reading_sitting", "second_reading", "third_reading", "senate_amendments"}
+    {
+        "first_reading_sitting",
+        "second_reading",
+        "third_reading",
+        "senate_amendments",
+        "senate_rejection",
+    }
 )
 _UKRAINE = next(p.regex for p in KEYWORD_PATTERNS if p.name == "obywatele_ukrainy")
 
@@ -288,8 +309,13 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
         days = PRESIDENT_DAYS_URGENT if urgent else PRESIDENT_DAYS
         return Phase(key="president", deadline=_days_after(last.date, days))
     if kind == "SenatePosition":
-        if "nie wniósł" in (last.position or "").lower():
+        position = (last.position or "").lower()
+        if "nie wniósł" in position:
             return Phase(key="president")
+        if "odrzuci" in position:
+            # art. 121 ust. 3: the rejection stands unless the Sejm throws it out by an
+            # absolute majority — a different stake from amendments, and a different majority.
+            return Phase(key="senate_rejection", committees=_committee_codes(last))
         return Phase(key="senate_amendments", committees=_committee_codes(last))
     if any(st.stage_type == "SenatePosition" for st in top):
         return Phase(key="senate_amendments", committees=_latest_committees(top))
@@ -302,6 +328,9 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
                 return Phase(key="senate", deadline=_days_after(last.date, days))
             return None if decided else Phase(key="third_reading")
         if "ii czytanie" in name:
+            if "ponownie" in (last.decision or "").lower():
+                # "skierowano ponownie do komisji": the third reading waits for the "-A" report.
+                return Phase(key="second_reading_committee", committees=_latest_committees(top))
             return Phase(key="third_reading")
         return Phase(key="committee_work", committees=_latest_committees(top))
     if kind == "CommitteeWork":
@@ -346,7 +375,10 @@ def _wykaz_phase(bill: Bill) -> Phase | None:
     assert entry is not None
     if entry.is_withdrawn:
         return None  # taken off the plan
-    if entry.rcl_project_id is not None or entry.is_adopted:
+    if entry.is_adopted:
+        # "Zrealizowany": the Council of Ministers has adopted the project, so RCL is behind it.
+        return Phase(key="wykaz_adopted")
+    if entry.rcl_project_id is not None:
         return Phase(key="wykaz_to_rcl")
     return Phase(key="wykaz")
 

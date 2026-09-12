@@ -436,14 +436,27 @@ RU = Labels(
         ),
         "first_reading": "I чтение",
         "first_reading_committee": "I чтение в комиссии — {committee}",
+        "first_reading_committee_unnamed": "I чтение в комиссии",
         "first_reading_sitting": "I чтение на заседании Сейма",
         "committee_work": (
             "работа в комиссии — {committee} (sprawozdanie), затем II чтение на заседании Сейма"
         ),
+        "committee_work_unnamed": "работа в комиссии (sprawozdanie), затем II чтение в Сейме",
         "second_reading": "II чтение на заседании Сейма",
+        "second_reading_committee": (
+            "комиссия рассматривает поправки II чтения — {committee} (дополнительное"
+            " sprawozdanie), затем III чтение"
+        ),
+        "second_reading_committee_unnamed": (
+            "комиссия рассматривает поправки II чтения, затем III чтение"
+        ),
         "third_reading": "III чтение и голосование в Сейме",
         "senate": "рассмотрение в Сенате (до 30 дней)",
         "senate_amendments": "Сейм рассматривает поправки Сената",
+        "senate_rejection": (
+            "Сейм голосует по решению Сената отклонить закон: закон будет принят, только если"
+            " Сейм отклонит это решение абсолютным большинством"
+        ),
         "president": "подпись Президента (до 21 дня), затем публикация в Dziennik Ustaw",
         "publication": "публикация в Dziennik Ustaw",
         "in_force": "вступление в силу {date}",
@@ -455,6 +468,7 @@ RU = Labels(
             " Rada Ministrów и направление в Сейм"
         ),
         "wykaz_to_rcl": "публикация проекта на RCL и публичные консультации",
+        "wykaz_adopted": "внесение проекта в Сейм и присвоение номера druku",
         "rcl_consultation": (
             "консультации публичные до {date}, затем opiniowanie, комитеты Совета министров,"
             " Rada Ministrów и направление в Сейм"
@@ -478,11 +492,16 @@ RU = Labels(
         "first_reading_sitting": "обычно 2–6 недель после поступления",
         "committee_work": "от нескольких недель до года",
         "second_reading": "часто на одном заседании с III чтением",
+        "second_reading_committee": "обычно дни — до ближайшего блока голосований",
         "third_reading": "часто на одном заседании со II чтением",
         "senate_amendments": "обычно на ближайшем заседании Сейма",
+        "senate_rejection": "обычно на ближайшем заседании Сейма",
+        "veto": "Сейм голосует, когда решит: от недель до конца каденции",
+        "tribunal": "трибунал рассматривает месяцами",
         "publication": "обычно 1–4 недели после подписи",
         "wykaz": "обычно 1–6 месяцев до публикации проекта",
         "wykaz_to_rcl": "обычно несколько недель",
+        "wykaz_adopted": "обычно несколько недель",
         "rcl_committees": "обычно 1–3 месяца",
         "rcl_council": "обычно несколько недель",
         "rcl_to_sejm": "обычно несколько дней",
@@ -515,14 +534,22 @@ RU = Labels(
         "first_reading_sitting": (
             "пока ничего — следующая возможность: замечания в комиссию после I чтения"
         ),
-        "committee_work": "пока ничего — замечания принимает комиссия, которая ведёт проект",
+        "committee_work": (
+            "написать в комиссию, которая ведёт проект — её название указано на странице"
+            " процесса в Сейме"
+        ),
         "second_reading": (
             "пока ничего — после голосования в Сейме мнение можно направить в комиссию Сената"
+        ),
+        "second_reading_committee": (
+            "написать в комиссию, которая дорабатывает поправки — её название указано на"
+            " странице процесса в Сейме"
         ),
         "third_reading": (
             "пока ничего — после голосования в Сейме мнение можно направить в комиссию Сената"
         ),
         "senate_amendments": "пока ничего — Сейм решает по поправкам Сената",
+        "senate_rejection": "пока ничего — Сейм решает, отклонить ли решение Сената",
         "president": "пока ничего — закон у Президента",
         "publication": "пока ничего — ждём публикации в Dziennik Ustaw",
         "in_force": "пока ничего — закон принят, остаётся подготовиться к вступлению в силу",
@@ -531,6 +558,9 @@ RU = Labels(
         "tribunal": "пока ничего — решение за Конституционным трибуналом",
         "wykaz_to_rcl": (
             "пока ничего — ждём публикации проекта на RCL, тогда откроются консультации"
+        ),
+        "wykaz_adopted": (
+            "пока ничего — правительство приняло проект, ждём внесения в Сейм и номера druku"
         ),
         "rcl_to_sejm": "пока ничего — ждём номер druku, затем I чтение и комиссия",
     },
@@ -577,6 +607,8 @@ RU = Labels(
             "📢 Публичные слушания (wysłuchanie publiczne) — можно подать заявку на участие"
         ),
         "SenatePositionConsideration": "Сейм рассмотрел позицию Сената",
+        "GovermentPosition": "поступила позиция правительства",
+        "Opinion": "поступило мнение организации",
     },
     senate_position_labels={
         "nie wniósł poprawek": "Сенат принял закон без поправок",
@@ -861,14 +893,27 @@ EN = Labels(
         ),
         "first_reading": "first reading",
         "first_reading_committee": "first reading in committee — {committee}",
+        "first_reading_committee_unnamed": "first reading in committee",
         "first_reading_sitting": "first reading at a Sejm sitting",
         "committee_work": (
             "committee work — {committee} (report), then the second reading at a Sejm sitting"
         ),
+        "committee_work_unnamed": "committee work (report), then the second reading in the Sejm",
         "second_reading": "second reading at a Sejm sitting",
+        "second_reading_committee": (
+            "the committee works on the second reading's amendments — {committee} (additional"
+            " report), then the third reading"
+        ),
+        "second_reading_committee_unnamed": (
+            "the committee works on the second reading's amendments, then the third reading"
+        ),
         "third_reading": "third reading and the vote in the Sejm",
         "senate": "consideration by the Senate (up to 30 days)",
         "senate_amendments": "the Sejm considers the Senate's amendments",
+        "senate_rejection": (
+            "the Sejm votes on the Senate's rejection: the law passes only if the Sejm throws"
+            " that rejection out by an absolute majority"
+        ),
         "president": (
             "the President's signature (up to 21 days), then publication in Dziennik Ustaw"
         ),
@@ -882,6 +927,7 @@ EN = Labels(
             " Council of Ministers, the Council itself and the Sejm"
         ),
         "wykaz_to_rcl": "the draft published on RCL with a public consultation",
+        "wykaz_adopted": "submission to the Sejm and a print number",
         "rcl_consultation": (
             "public consultation until {date}, then opinions, the committees of the Council of"
             " Ministers, the Council and submission to the Sejm"
@@ -904,11 +950,16 @@ EN = Labels(
         "first_reading_sitting": "usually 2–6 weeks after submission",
         "committee_work": "weeks to a year",
         "second_reading": "often at the same sitting as the third reading",
+        "second_reading_committee": "usually days — until the next block of votes",
         "third_reading": "often at the same sitting as the second reading",
         "senate_amendments": "usually at the next Sejm sitting",
+        "senate_rejection": "usually at the next Sejm sitting",
+        "veto": "the Sejm votes when it chooses: weeks to the end of the term",
+        "tribunal": "the Tribunal takes months",
         "publication": "usually 1–4 weeks after the signature",
         "wykaz": "usually 1–6 months until the draft is published",
         "wykaz_to_rcl": "usually a few weeks",
+        "wykaz_adopted": "usually a few weeks",
         "rcl_committees": "usually 1–3 months",
         "rcl_council": "usually a few weeks",
         "rcl_to_sejm": "usually a few days",
@@ -944,14 +995,21 @@ EN = Labels(
         "first_reading_sitting": (
             "nothing yet — next chance: comments to the committee after the first reading"
         ),
-        "committee_work": "nothing yet — the committee handling the bill takes comments",
+        "committee_work": (
+            "write to the committee handling the bill — its name is on the Sejm process page"
+        ),
         "second_reading": (
             "nothing yet — after the Sejm vote an opinion can go to the Senate committee"
+        ),
+        "second_reading_committee": (
+            "write to the committee working on the amendments — its name is on the Sejm process"
+            " page"
         ),
         "third_reading": (
             "nothing yet — after the Sejm vote an opinion can go to the Senate committee"
         ),
         "senate_amendments": "nothing yet — the Sejm decides on the Senate's amendments",
+        "senate_rejection": "nothing yet — the Sejm decides whether to throw out the rejection",
         "president": "nothing yet — the act is with the President",
         "publication": "nothing yet — waiting for publication in Dziennik Ustaw",
         "in_force": "nothing yet — the act is passed, prepare for its entry into force",
@@ -960,6 +1018,10 @@ EN = Labels(
         "tribunal": "nothing yet — the Constitutional Tribunal decides",
         "wykaz_to_rcl": (
             "nothing yet — waiting for the draft on RCL, which opens the consultation"
+        ),
+        "wykaz_adopted": (
+            "nothing yet — the government adopted the draft; waiting for the Sejm and a print"
+            " number"
         ),
         "rcl_to_sejm": (
             "nothing yet — waiting for the print number, then first reading and committee"
@@ -1006,6 +1068,8 @@ EN = Labels(
         "PresidentToTribunal": "⚖️ Referred by the President to the Constitutional Tribunal",
         "PublicHearing": "📢 Public hearing (wysłuchanie publiczne) — participation requests open",
         "SenatePositionConsideration": "Sejm considered the Senate position",
+        "GovermentPosition": "the government's position arrived",
+        "Opinion": "an organisation's opinion arrived",
     },
     senate_position_labels={
         "nie wniósł poprawek": "Senate passed the bill without amendments",
