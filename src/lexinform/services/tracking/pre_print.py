@@ -20,6 +20,10 @@ from lexinform.services.tracking.result import TrackingResult
 
 log = logging.getLogger(__name__)
 
+# An entry older than this that /bills no longer lists is over: the Sejm gives a print
+# within weeks, and the register keeps the rest.
+PRE_PRINT_MAX_DAYS = 365
+
 
 class PrePrintReconciler:
     """Re-reads `/bills` for the entries we follow and reacts to what changed there."""
@@ -72,6 +76,8 @@ class PrePrintReconciler:
             key = bill.submission.number if bill.submission else bill.number
             sub = latest.get((bill.term, key))
             if sub is None:
+                if latest and self._long_gone(bill):
+                    self._announce_withdrawal(bill, result, publish=publish)
                 continue
             try:
                 if bill.is_pre_print and sub.print_number:
@@ -106,6 +112,15 @@ class PrePrintReconciler:
         """`consultationResults` flipped to true since the stored copy of the entry."""
         before = bill.submission
         return sub.consultation_results and not (before is not None and before.consultation_results)
+
+    def _long_gone(self, bill: Bill) -> bool:
+        """An entry the Sejm has stopped listing and that is too old to still be waiting for a
+        print. Without this its thread ends at "ждём номер druku" and is re-queried for years."""
+        submission = bill.submission
+        if submission is None or self._repo.closure_announced(bill.term, bill.number):
+            return False
+        age = (self._clock.now().date() - submission.date_of_receipt).days
+        return age > PRE_PRINT_MAX_DAYS
 
     def _announce_withdrawal(self, bill: Bill, result: TrackingResult, *, publish: bool) -> None:
         """Close the thread of an RPW entry that was withdrawn before getting a print number."""

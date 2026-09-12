@@ -195,3 +195,31 @@ def test_print_of_a_title_miss_entry_stays_skipped_without_the_text_prefilter() 
 
     assert (report.linked, w.bill("3100").status) == (1, BillStatus.SKIPPED_PREFILTER)
     assert not any(c.startswith("download:") for c in w.gateway.calls)
+
+
+def test_an_entry_the_sejm_stopped_listing_does_not_wait_forever() -> None:
+    """Its thread would otherwise end at "ждём номер druku" and be re-queried for years."""
+    w = World()
+    w.gateway.submissions.append(submission())
+    w.run()
+    w.gateway.submissions[0] = submission(number="RPW/1/2026", title="Inny projekt")
+    w.clock.advance(days=400)
+
+    report = w.run()
+
+    assert report.updates == 1
+    bill, change, _ = w.publisher.updates[0]
+    assert bill.number == RPW
+    assert change.withdrawn and change.closure_detected
+
+
+def test_an_entry_missing_for_a_few_days_is_left_alone() -> None:
+    w = World()
+    w.gateway.submissions.append(submission())
+    w.run()
+    w.gateway.submissions[0] = submission(number="RPW/1/2026", title="Inny projekt")
+    w.clock.advance(days=30)
+
+    report = w.run()
+
+    assert report.updates == 0

@@ -154,6 +154,7 @@ class StatusTrackingService:
                 clock,
                 self._poster,
                 linker,
+                gateway,
                 analysis=analysis,
                 consultations=self._consultations,
                 workers=workers,

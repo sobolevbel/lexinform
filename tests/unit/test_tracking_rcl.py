@@ -340,3 +340,38 @@ def test_rcl_outage_during_tracking_is_reported_and_sejm_tracking_goes_on() -> N
 
     assert report.tracked == 2  # the RCL project (failed) and the druk
     assert any("tracking: RCL: RCL unavailable" in e for e in report.errors)
+
+
+def test_a_handed_over_project_asks_the_sejm_for_its_druk_every_run() -> None:
+    """Sejm discovery stamps the print number only on the run that first sees the druk; without
+    a second chance a project whose process carries no `rclNum` stays at "sent to the Sejm"."""
+    w = World()
+    project = _followed(w)
+    w.rcl.put(
+        _moved(
+            project,
+            *project.stages[:6],
+            rcl_stage(
+                14, "Skierowanie projektu ustawy do Sejmu", "active", modified=dt.date(2026, 9, 8)
+            ),
+            modified=dt.date(2026, 9, 8),
+            rm_number="RM-0610-139-26",
+        )
+    )
+    w.run()
+    card_id = w.card_id(RCL)
+
+    # The druk exists, and discovery does not run: only tracking can find it.
+    w.clock.advance(days=1)
+    druk = summary("3100", project.title, change="2026-09-09T09:00:00").model_copy(
+        update={"rcl_num": "RM-0610-139-26"}
+    )
+    w.gateway.processes.append(druk)
+    w.gateway.details["3100"] = detail(druk, START)
+
+    linked = w.run(discover=False)
+
+    assert linked.linked == 1
+    assert w.bill(RCL).status is BillStatus.LINKED
+    assert w.publication("3100", PublicationKind.NEW_BILL) is not None
+    assert w.card_id("3100") == card_id

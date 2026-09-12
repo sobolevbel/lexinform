@@ -19,10 +19,10 @@ from lexinform.models import (
     rcl_fingerprint,
     rcl_stages,
 )
-from lexinform.ports import BillRepository, Clock
+from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.rcl_projects import RclProjectReader
-from lexinform.services.sources import RclTextSource
+from lexinform.services.sources import RclTextSource, print_of_project
 from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.linking import Linker
 from lexinform.services.tracking.posting import Poster
@@ -40,8 +40,10 @@ class RclWatcher:
         clock: Clock,
         poster: Poster,
         linker: Linker,
+        gateway: SejmGateway,
         *,
         analysis: AnalysisService | None,
+        max_print_lookups: int = 3,
         consultations: ConsultationReminder | None,
         workers: int = 1,
     ) -> None:
@@ -50,7 +52,9 @@ class RclWatcher:
         self._clock = clock
         self._poster = poster
         self._linker = linker
+        self._gateway = gateway
         self._analysis = analysis
+        self._max_print_lookups = max_print_lookups
         self._consultations = consultations
         self._texts = RclTextSource()
         self._workers = workers
@@ -58,9 +62,13 @@ class RclWatcher:
     def check(self, bills: list[Bill], result: TrackingResult, *, publish: bool) -> bool:
         """Refresh the followed RCL projects among `bills` and post what changed; link the ones
         whose druk appeared. False when Telegram is down (RCL being down is only reported)."""
+        followed = [b for b in bills if b.rcl is not None]
+        try:
+            followed = self._find_prints(followed)
+        except ServiceUnavailableError as exc:
+            result.partial_errors.append(f"Sejm: {exc.describe()}")
         if not self._link_pending(result, publish=publish):
             return False
-        followed = [b for b in bills if b.rcl is not None]
         for outcome in fan_out(followed, self._refresh, workers=self._workers):
             bill = outcome.item
             result.checked += 1
@@ -88,6 +96,28 @@ class RclWatcher:
                 result.abort(exc, failed=True)
                 return False
         return True
+
+    def _find_prints(self, bills: list[Bill]) -> list[Bill]:
+        """Ask the Sejm for the druk of a project that has been handed over and has none stored.
+
+        Discovery stamps the print number on the run in which it first sees a druk whose
+        `rclNum` names a followed project — once, and only then. A process without `rclNum`, or
+        an outage in that one run, would leave the thread frozen at "направлен в Сейм" for good,
+        so the hand-over is asked about again on every run, for a few projects at a time."""
+        pending = [
+            b for b in bills if b.rcl is not None and b.rcl.sent_to_sejm and not b.rcl.print_number
+        ][: self._max_print_lookups]
+        found: dict[str, Bill] = {}
+        for bill in pending:
+            assert bill.rcl is not None
+            number = print_of_project(self._gateway, bill.rcl, bill.term)
+            if number is None:
+                continue
+            project = bill.rcl.model_copy(update={"print_number": number})
+            self._repo.save_rcl(bill.term, bill.number, project)
+            found[bill.number] = bill.model_copy(update={"rcl": project})
+            log.info("%s went to the Sejm as druk %s", bill.number, number)
+        return [found.get(b.number, b) for b in bills]
 
     def _link_pending(self, result: TrackingResult, *, publish: bool) -> bool:
         """Projects whose druk the Sejm discovery has seen: the print takes over the thread."""

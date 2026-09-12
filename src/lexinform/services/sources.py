@@ -8,11 +8,13 @@ RPW entries have nothing readable (the PDF is behind a bot wall), so the model s
 import logging
 from datetime import UTC, datetime
 
+from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
     LocatedText,
     PrintInfo,
     ProcessDetail,
+    RclProject,
     TextDocument,
     latest_text_document,
     third_reading_kept_the_text,
@@ -29,6 +31,26 @@ def fetch_print(gateway: SejmGateway, bill: Bill) -> PrintInfo | None:
     except Exception as exc:
         log.warning("print %s unavailable: %s", bill.number, exc)
         return None
+
+
+def print_of_project(gateway: SejmGateway, project: RclProject, term: int) -> str | None:
+    """The print number of a project that already went to the Sejm; None while it has not.
+    The RM number the hand-over stage carries names the process (`ProcessSummary.rcl_num`)."""
+    if project.print_number:
+        return project.print_number
+    if not project.rm_number:
+        return None
+    try:
+        handover = next(
+            (st.modified for st in reversed(project.stages) if st.is_sejm and st.reached), None
+        )
+        found = gateway.find_process_by_rcl_num(term, project.rm_number, since=handover)
+    except ServiceUnavailableError:
+        raise
+    except Exception as exc:  # the project is still worth having without its print
+        log.warning("looking up the print of %s failed: %s", project.rm_number, exc)
+        return None
+    return found.number if found is not None else None
 
 
 def original_document(print_info: PrintInfo | None) -> TextDocument | None:
