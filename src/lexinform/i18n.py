@@ -93,7 +93,12 @@ class Labels:
     tag_consultation_results: str  # the opinions received, once the window has shut
     tag_term: str  # "#<tag_term><term number>": the Sejm term (kadencja) the bill belongs to
     tag_ukraine: str  # bills about citizens of Ukraine: the channel's largest audience
-    consultation_link: str  # the Sejm page of a consulted bill: the form and, later, the opinions
+    # Verified on 2026-09-13, RPW/29075/2026: the Sejm page carries "Link do ankiety: Ankieta"
+    # and, once the window shuts, "Liczba ankiet" — the opinion goes in as that survey.
+    # Submitting needs an account: an unauthenticated request to the survey is redirected to
+    # logowanie.sejm.gov.pl (verified 2026-09-13).
+    consultation_account: str
+    consultation_link: str
     consultation_page: str  # the same page, named neutrally: the consultation is over
     action_now: str
     action_senate: str
@@ -274,7 +279,7 @@ RU = Labels(
     consultation="Общественные консультации",
     consultation_until="до",
     consultation_closed_on="завершились",
-    consultation_hint="мнение можно направить через страницу проекта на сайте Сейма",
+    consultation_hint="мнение подаётся анкетой (ankieta) на сайте Сейма",
     print_assigned="Проекту присвоен номер druku",
     process_withdrawn="Проект отозван до присвоения номера druku.",
     process_discontinued=(
@@ -310,13 +315,14 @@ RU = Labels(
     tag_consultation_results="мнениявконсультациях",
     tag_term="kadencja",
     tag_ukraine="Украина",
-    consultation_link="страница проекта на сайте Сейма",
+    consultation_account="требуется вход",
+    consultation_link="анкета на сайте Сейма",
     consultation_page="страница консультаций на сайте Сейма",
     action_now="Что можно сделать сейчас",
     action_senate="направить мнение в профильную комиссию Сената",
     path="Путь",
-    action_send_opinion="направить мнение через",
-    action_consultation_page="страницу проекта на сайте Сейма",
+    action_send_opinion="заполнить анкету (ankieta)",
+    action_consultation_page="на сайте Сейма",
     action_committee="направить мнение в комиссию —",
     action_before_sitting="до заседания",
     action_hearing="подать заявку на участие в публичных слушаниях",
@@ -333,7 +339,7 @@ RU = Labels(
     tag_sejm_sitting="заседаниесейма",
     consultation_results_header="Опубликованы мнения из консультаций",
     consultation_results_hint=(
-        "мнения, поданные в ходе общественных консультаций, доступны на странице проекта"
+        "поданные анкеты и их число видны на странице проекта на сайте Сейма"
     ),
     rcl_header="Правительственный проект (RCL)",
     rcl_wykaz="номер в wykazie prac RM",
@@ -787,7 +793,7 @@ EN = Labels(
     consultation="Public consultation",
     consultation_until="until",
     consultation_closed_on="closed on",
-    consultation_hint="opinions can be submitted via the bill's page on the Sejm website",
+    consultation_hint="opinions go in through the survey form (ankieta) on the Sejm website",
     print_assigned="Print number assigned",
     process_withdrawn="The bill was withdrawn before receiving a print number.",
     process_discontinued=(
@@ -821,13 +827,14 @@ EN = Labels(
     tag_consultation_results="consultationopinions",
     tag_term="term",
     tag_ukraine="Ukraine",
-    consultation_link="the bill's page on the Sejm website",
+    consultation_account="sign-in required",
+    consultation_link="survey form on the Sejm site",
     consultation_page="consultation page on the Sejm website",
     action_now="What you can do now",
     action_senate="send an opinion to the competent Senate committee",
     path="Path",
-    action_send_opinion="send an opinion via",
-    action_consultation_page="the bill's page on the Sejm website",
+    action_send_opinion="fill in the survey form (ankieta)",
+    action_consultation_page="on the Sejm website",
     action_committee="send an opinion to the committee —",
     action_before_sitting="before the sitting on",
     action_hearing="apply to take part in the public hearing",
@@ -844,7 +851,7 @@ EN = Labels(
     tag_sejm_sitting="sejmsitting",
     consultation_results_header="Consultation opinions published",
     consultation_results_hint=(
-        "the opinions submitted during the public consultation are available on the bill's page"
+        "the surveys submitted, and how many there were, are on the bill's page on the Sejm site"
     ),
     rcl_header="Government bill (RCL)",
     rcl_wykaz="wykaz prac RM number",

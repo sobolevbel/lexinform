@@ -559,3 +559,20 @@ def test_a_government_position_does_not_hide_what_comes_next(
     assert phase is not None
     assert phase.key == "first_reading_committee" and phase.committees == ("ASW",)
     assert alone is not None and alone.key == "first_reading"  # nothing but asides yet
+
+
+def test_the_opinion_survey_lives_on_its_own_host() -> None:
+    """Verified 2026-09-13: the project page carries "Link do ankiety" pointing at
+    opiniowanie.sejm.gov.pl, with the RPW number's slashes turned into dashes."""
+    sub = BillSubmission(
+        term=10,
+        number="RPW/29075/2026",
+        title="t",
+        date_of_receipt=dt.date(2026, 8, 31),
+        public_consultation=True,
+        consultation_end=dt.date(2026, 9, 30),
+    )
+
+    assert sub.survey_url == "https://opiniowanie.sejm.gov.pl/RPW-29075-2026"
+    assert sub.consultation_url is not None and "KONSULTOWANY_PROJEKT" in sub.consultation_url
+    assert sub.model_copy(update={"public_consultation": False}).survey_url is None

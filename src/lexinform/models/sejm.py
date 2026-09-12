@@ -210,10 +210,17 @@ class BillSubmission(BaseModel):
 
     @property
     def consultation_url(self) -> str | None:
-        """The Sejm page of a consulted bill: the form for opinions and, later, the opinions."""
+        """The Sejm page of a consulted bill: the text, the survey link and, later, its count."""
         if not self.public_consultation:
             return None
         return consultation_web_url(self.term, self.number)
+
+    @property
+    def survey_url(self) -> str | None:
+        """The survey form itself, where an opinion is actually submitted."""
+        if not self.public_consultation:
+            return None
+        return consultation_survey_url(self.number)
 
 
 class CommitteeSitting(BaseModel):
@@ -484,6 +491,17 @@ def consultation_web_url(term: int, number: str) -> str:
         f"https://www.sejm.gov.pl/Sejm{term}.nsf/agent.xsp?symbol=KONSULTOWANY_PROJEKT"
         f"&NrProjektu={number}"
     )
+
+
+def consultation_survey_url(number: str) -> str:
+    """Where the opinion itself goes: the Sejm's survey form (ankieta), on a host of its own.
+
+    The project page (`consultation_web_url`) carries the text, the description and a "Link do
+    ankiety" pointing here; the number is the RPW one with its slashes turned into dashes
+    (verified 2026-09-13 on RPW/29075/2026, RPW/26666/2026 and RPW/30158/2026). Submitting needs
+    an account: an unauthenticated request is redirected to logowanie.sejm.gov.pl.
+    """
+    return f"https://opiniowanie.sejm.gov.pl/{number.replace('/', '-')}"
 
 
 def committee_web_url(term: int, code: str) -> str:

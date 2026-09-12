@@ -37,7 +37,8 @@ class ConsultationWindow(BaseModel):
     source: Literal["sejm", "rcl"]
     start: dt.date | None = None
     end: dt.date | None = None
-    form_url: str | None = None
+    form_url: str | None = None  # the Sejm's project page: the text, the survey link, its count
+    survey_url: str | None = None  # where the opinion is actually submitted (Sejm only)
     email: str | None = None
     letter_url: str | None = None
     results_published: bool = False
@@ -125,6 +126,7 @@ class Bill(BaseModel):
             start=sub.consultation_start,
             end=sub.consultation_end,
             form_url=sub.consultation_url,
+            survey_url=sub.survey_url,
             results_published=sub.consultation_results,
         )
 

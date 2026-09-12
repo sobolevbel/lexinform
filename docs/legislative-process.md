@@ -111,9 +111,15 @@ Before assigning a print number the Marszałek:
 - for deputies', President's, Senate, committee and citizens' bills may order **public
   consultation on the Sejm website**: `publicConsultation`, `publicConsultationStart/EndDate`
   (30 days in 299 of 318 observed cases), then `consultationResults` when the opinions received
-  are published. The form and the opinions live at
+  are published. The project page is
   `www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=KONSULTOWANY_PROJEKT&NrProjektu=<RPW number>`
-  (browser only). Government bills skip this: they were consulted on RCL.
+  (browser only): title, applicant, "Status konsultacji", "Czas do zakończenia", the text as PDF
+  and DOC, and "Link do ankiety" — the opinion itself is a **survey (ankieta)** on a host of its
+  own, `opiniowanie.sejm.gov.pl/<RPW number with dashes>` (RPW/29075/2026 →
+  `opiniowanie.sejm.gov.pl/RPW-29075-2026`). **Submitting needs a Sejm account**: an
+  unauthenticated request is redirected to `logowanie.sejm.gov.pl/login.jsp` (verified
+  2026-09-13). Once the window shuts the project page shows "Liczba ankiet". Government bills
+  skip all of this: they were consulted on RCL.
 
 Assigning the **druk number** creates the `/processes/{number}` entry (stage `Start`, "Projekt
 wpłynął do Sejmu", carries `printNumber`). Everything before that is invisible in `/processes`,
@@ -278,7 +284,7 @@ practice.
 | Moment | Who may act | How | In lexinform |
 |---|---|---|---|
 | RCL konsultacje publiczne (government bills) | anyone, in Polish | e-mail/ePUAP to the ministry, address in the consultation letter; lobbying declaration | the card carries the deadline, the ministry's e-mail, the RCL comment form and the zgłoszenie zainteresowania; reminder 3 days before (draft regulations are still not covered) |
-| Sejm consultation of an RPW bill (non-government) | anyone | web form on sejm.gov.pl, 30 days | consultation line + link, reminder 3 days before, notice when opinions are published |
+| Sejm consultation of an RPW bill (non-government) | anyone with a Sejm account | survey (ankieta) at opiniowanie.sejm.gov.pl, linked from the project page, 30 days | consultation line + link, reminder 3 days before, notice when opinions are published |
 | Committee work after the first reading | anyone; organisations formally via lobbying declaration | letter/e-mail to the committee secretariat, ideally before the sitting that handles the bill | "what you can do now" with the committee link; committee sitting agenda posts |
 | Wysłuchanie publiczne | anyone who applies ≥ 10 days before | application via the Sejm's system | `PublicHearing` stage line and action line with the application deadline; reminder reply before it |
 | Senate committee stage | anyone | opinion to the Senate committee | "what you can do now" names it while the Senate has the bill (no committee link: the Senate API is not used), and a reminder reply goes out as the 30 days run out. The date is shown as the Senate's own deadline, never as a window for opinions: it is computed from the third reading, because the API does not give the day the act was handed over, and so falls a few days early — the messages say so |

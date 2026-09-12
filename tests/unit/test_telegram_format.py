@@ -45,6 +45,8 @@ CONSULTATION_PAGE = (
     "https://www.sejm.gov.pl/Sejm10.nsf/agent.xsp?symbol=KONSULTOWANY_PROJEKT"
     "&amp;NrProjektu=RPW/29075/2026"
 )
+# Where the opinion itself goes: a host of its own, behind a Sejm sign-in.
+SURVEY = "https://opiniowanie.sejm.gov.pl/RPW-29075-2026"
 COMMITTEE_PAGE = 'KodKom=ASW"'
 
 
@@ -342,10 +344,10 @@ def test_a_consultation_that_is_over_says_so_and_stops_inviting_opinions(
     once_closed = formatter.new_bill(bill, None, today=dt.date(2026, 9, 11)).text
 
     assert "<b>Общественные консультации:</b> 24.01.2025 — 23.02.2025" in while_open
-    assert "страница проекта на сайте Сейма" in while_open
+    assert ">анкета на сайте Сейма</a> (требуется вход)" in while_open
     assert "<b>Общественные консультации:</b> завершились 23.02.2025" in once_closed
     assert "страница консультаций" in once_closed  # the page stays, the invitation goes
-    assert "страница проекта на сайте Сейма" not in once_closed
+    assert "анкета на сайте Сейма" not in once_closed
     assert "24.01.2025" not in once_closed  # the end date is the fact that matters
 
 
@@ -596,12 +598,15 @@ def test_card_links_the_consultation_form_and_names_the_next_step(
 
     assert_telegram_html(text)
     assert (
-        f'31.08.2026 — 30.09.2026 · <a href="{CONSULTATION_PAGE}">страница проекта на сайте Сейма</a>'
+        f'31.08.2026 — 30.09.2026 · <a href="{SURVEY}">анкета на сайте Сейма</a> (требуется вход)'
         in text
     )
     assert "⏭ <b>Что дальше:</b> I чтение в комиссии — ASW" in text  # name unknown: the code
     action = next(line for line in text.splitlines() if line.startswith("👉"))
-    assert f'направить мнение через <a href="{CONSULTATION_PAGE}">' in action
+    assert (
+        f'заполнить анкету (ankieta) <a href="{SURVEY}">на сайте Сейма</a> (требуется вход)'
+        in action
+    )
     assert "до 30.09.2026" in action
     assert f"{COMMITTEE_PAGE}>ASW</a>" in action
     assert "до заседания" not in action  # nothing scheduled yet
@@ -615,8 +620,8 @@ def test_closed_consultation_keeps_the_page_but_drops_the_action(
     text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 10, 1)).text
 
     assert CONSULTATION_PAGE in text  # the opinions that were sent appear there
-    assert "страница проекта на сайте Сейма" not in text  # nothing can be sent any more
-    assert "направить мнение через" not in text
+    assert SURVEY not in text  # nothing can be sent any more
+    assert "заполнить анкету" not in text
     assert "направить мнение в комиссию —" in text
 
 
@@ -858,8 +863,13 @@ def test_consultation_deadline_reminder(process_3039: ProcessDetail) -> None:
     assert_telegram_html(ahead)
     assert "Консультации заканчиваются — druk nr 3039" in ahead
     assert "до 30.09.2026 · осталось дней: 2" in ahead
-    assert f'👉 <a href="{CONSULTATION_PAGE}">мнение можно направить' in ahead
-    assert f'🔗 <a href="{CONSULTATION_PAGE}">страница проекта на сайте Сейма</a> | ' in ahead
+    assert (
+        f'👉 <a href="{SURVEY}">мнение подаётся анкетой (ankieta) на сайте Сейма</a> (требуется вход)'
+        in ahead
+    )
+    assert (
+        f'🔗 <a href="{SURVEY}">анкета на сайте Сейма</a> | <a href="{CONSULTATION_PAGE}">' in ahead
+    )
     assert "сегодня последний день" in last_day
 
 
@@ -872,7 +882,7 @@ def test_consultation_results_notice(process_3039: ProcessDetail) -> None:
     assert text.startswith("🗣 <b>Опубликованы мнения из консультаций — druk nr 3039</b>")
     # The window shut — that is why this post exists — so it is not shown as a date range.
     assert "📅 <b>Общественные консультации:</b> завершились 30.09.2026" in text
-    assert f'<a href="{CONSULTATION_PAGE}">мнения, поданные' in text
+    assert f'<a href="{CONSULTATION_PAGE}">поданные анкеты' in text
     assert "⏭ <b>Что дальше:</b> I чтение в комиссии — ASW" in text
     assert (
         text.splitlines()[-1] == "#мнениявконсультациях #важность5 #легализация #kadencja10druk3039"

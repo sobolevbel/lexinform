@@ -1178,9 +1178,11 @@ class MessageFormatter:
         """Where an opinion goes: the Sejm form, or the ministry's e-mail and the letter (RCL)."""
         lb = self._labels
         if window.source == "sejm":
-            form = window.form_url
+            # The survey is the thing to fill in; the project page only links to it.
+            form = window.survey_url or window.form_url
             label = sejm_label or lb.consultation_link
-            return link(form, label) if form else esc(lb.consultation_hint)
+            where = link(form, label) if form else esc(lb.consultation_hint)
+            return f"{where} ({esc(lb.consultation_account)})"
         parts: list[str] = []
         if window.email:
             parts.append(f"{esc(lb.consultation_email)} {esc(window.email)}")
@@ -1197,7 +1199,9 @@ class MessageFormatter:
             return links
         links = [link(bill.summary.web_url, lb.link_process)]
         if window.form_url:
-            links.insert(0, link(window.form_url, lb.consultation_link))
+            links.insert(0, link(window.form_url, lb.consultation_page))
+        if window.survey_url:
+            links.insert(0, link(window.survey_url, lb.consultation_link))
         return links
 
     def _consultation_period(self, window: ConsultationWindow) -> str:
@@ -1384,15 +1388,15 @@ class MessageFormatter:
         elif bill.rcl is not None:
             actions.extend(self._rcl_actions(bill.rcl, window, today))
         elif window is not None and window.is_open(today) and window.end is not None:
-            page = window.form_url
+            page = window.survey_url or window.form_url
             where = (
                 link(page, lb.action_consultation_page)
                 if page
                 else esc(lb.action_consultation_page)
             )
             actions.append(
-                f"{esc(lb.action_send_opinion)} {where} {esc(lb.consultation_until)} "
-                f"{self.fmt_date(window.end)}"
+                f"{esc(lb.action_send_opinion)} {where} ({esc(lb.consultation_account)}) "
+                f"{esc(lb.consultation_until)} {self.fmt_date(window.end)}"
             )
         phase = next_phase(bill, today=today)
         if phase is not None and phase.key in COMMITTEE_PHASES:
