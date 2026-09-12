@@ -52,7 +52,7 @@ def test_act_notice_renders_the_journal_address_and_the_date() -> None:
     assert "Опубликован в Dziennik Ustaw — druk nr 3039" in text
     assert "Dz.U. 2026 poz. 1099 (опубликован 09.09.2026)" in text
     assert "Вступает в силу:</b> 20.09.2026" in text
-    assert "#закон #kadencja10druk3039" in text
+    assert "#закон #важность5 #легализация #kadencja10druk3039" in text
 
 
 def test_in_force_reminder_is_posted_on_the_day_in_warsaw_time() -> None:
@@ -74,7 +74,10 @@ def test_in_force_reminder_is_posted_on_the_day_in_warsaw_time() -> None:
     assert reply_to == w.card_id("3039")
     text = MessageFormatter("ru").in_force(bill).text
     assert "С сегодняшнего дня действует — druk nr 3039" in text
-    assert "Суть закона" in text and "#вступилвсилу #kadencja10druk3039" in text
+    assert (
+        "Суть закона" in text
+        and "#вступилвсилу #важность5 #легализация #kadencja10druk3039" in text
+    )
     assert after.in_force_posted == 0 and len(w.publisher.in_force) == 1
 
 

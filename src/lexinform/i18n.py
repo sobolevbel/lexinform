@@ -86,7 +86,8 @@ class Labels:
     consultation_deadline_header: str
     consultation_days_left: str
     consultation_last_day: str
-    tag_consultations: str
+    tag_consultations: str  # an open consultation: a reader can still send an opinion
+    tag_consultation_results: str  # the opinions received, once the window has shut
     tag_term: str  # "#<tag_term><term number>": the Sejm term (kadencja) the bill belongs to
     tag_ukraine: str  # bills about citizens of Ukraine: the channel's largest audience
     consultation_link: str  # text of the link to the Sejm page where opinions are submitted
@@ -288,7 +289,8 @@ RU = Labels(
     consultation_days_left="осталось дней",
     consultation_last_day="сегодня последний день",
     tag_consultations="консультации",
-    tag_term="каденция",
+    tag_consultation_results="мнениявконсультациях",
+    tag_term="kadencja",
     tag_ukraine="Украина",
     consultation_link="форма для мнений на сайте Сейма",
     consultation_page="страница консультаций на сайте Сейма",
@@ -450,6 +452,12 @@ RU = Labels(
         "president": "президент",
         "veto": "вето",
         "amendments": "поправки",
+        "new_text": "новыйтекст",
+        "committee": "комиссия",
+        "hearing": "слушания",
+        "passed": "принят",
+        "rejected": "непринят",
+        "tribunal": "трибунал",
         "withdrawn": "отозван",
         "discontinued": "прекращён",
     },
@@ -754,6 +762,7 @@ EN = Labels(
     consultation_days_left="days left",
     consultation_last_day="today is the last day",
     tag_consultations="consultation",
+    tag_consultation_results="consultationopinions",
     tag_term="term",
     tag_ukraine="Ukraine",
     consultation_link="opinion form on the Sejm website",
@@ -913,6 +922,12 @@ EN = Labels(
         "president": "president",
         "veto": "veto",
         "amendments": "amendments",
+        "new_text": "newtext",
+        "committee": "committee",
+        "hearing": "hearing",
+        "passed": "passed",
+        "rejected": "notenacted",
+        "tribunal": "tribunal",
         "withdrawn": "withdrawn",
         "discontinued": "lapsed",
     },

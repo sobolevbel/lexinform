@@ -181,16 +181,33 @@ def amendments_stage(stages: list[Stage]) -> Stage | None:
     return None
 
 
+# The events a reader searches the channel for, by the key the post is named after.
+_EVENT_TAG = {
+    "passed": "passed",
+    "rejected": "rejected",
+    "not_enacted": "rejected",
+    "veto_sustained": "rejected",
+    "withdrawn_by_applicant": "withdrawn",
+    "referral": "committee",
+    "referrals": "committee",
+    "committee_report": "committee",
+    "committee_rejects": "committee",
+    "subcommittee_report": "committee",
+    "hearing": "hearing",
+    "tribunal": "tribunal",
+}
 _SENATE_STAGES = frozenset({"SenatePosition", "SenatePositionConsideration"})
 _PRESIDENT_STAGES = frozenset({"ToPresident", "PresidentSignature"})
 # A parent node whose children are in the same update says nothing the children do not.
 FRAME_STAGE_TYPES = frozenset({"ReadingReferral", "CommitteeWork"})
 
 
-def event_keys(change: StatusChange) -> list[str]:
-    """Which searchable events a status update carries, in display order (the tags)."""
+def event_keys(change: StatusChange, event: str) -> list[str]:
+    """Which searchable events a status update carries, in display order (the tags). `event` is
+    what the post is named after, so that a reader can find every bill the Sejm passed or
+    rejected, not only the ones whose stages happen to carry a recognised type."""
     types = {stage.stage_type for stage in flatten_stages(tuple(change.new_stages))}
-    keys = []
+    keys = [key for key in (_EVENT_TAG.get(event),) if key]
     if "Voting" in types or any(st.voting for st in change.new_stages):
         keys.append("voting")
     if types & _SENATE_STAGES:
@@ -199,13 +216,15 @@ def event_keys(change: StatusChange) -> list[str]:
         keys.append("president")
     if "Veto" in types:
         keys.append("veto")
-    if change.content_changed or change.amendments is not None:
+    if change.amendments is not None or event == "second_reading_amendments":
         keys.append("amendments")
+    if change.content_changed:
+        keys.append("new_text")
     if change.withdrawn:
         keys.append("withdrawn")
     if change.discontinued:
         keys.append("discontinued")
-    return keys
+    return list(dict.fromkeys(keys))
 
 
 def reaches_sejm(change: StatusChange) -> bool:

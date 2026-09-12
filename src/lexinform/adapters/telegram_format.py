@@ -352,19 +352,15 @@ class MessageFormatter:
         """Each tag answers one search: this bill's whole thread, by importance, by topic, where
         an opinion can still be sent, about citizens of Ukraine, government projects before the
         Sejm, and the bills of the term."""
-        assert bill.analysis is not None
-        a = bill.analysis.analysis
         lb = self._labels
         return " ".join(
             [
                 self._thread_tags(bill),
-                f"#{lb.tag_importance}{a.score}",
-                f"#{lb.category_tags.get(a.category, a.category)}",
+                *self._topic_tags(bill),
                 *([f"#{lb.tag_consultations}"] if consultation_open(bill, today) else []),
-                *([f"#{lb.tag_ukraine}"] if about_ukraine(bill) else []),
                 *([f"#{lb.tag_rcl}"] if bill.rcl is not None else []),
                 *([f"#{lb.tag_wykaz}"] if bill.wykaz is not None else []),
-                self._term_tag(bill.summary.term),
+                *([] if bill.has_process is False else [self._term_tag(bill.summary.term)]),
             ]
         )
 
@@ -443,7 +439,7 @@ class MessageFormatter:
 
         # Event tags only when the reply carries the event a reader would search for.
         tags = " ".join(
-            [f"#{lb.event_tags[key]}" for key in event_keys(change) if key in lb.event_tags]
+            [f"#{lb.event_tags[key]}" for key in event_keys(change, event) if key in lb.event_tags]
             + [self._thread_tags(bill)]
         )
 
@@ -628,11 +624,12 @@ class MessageFormatter:
                 else esc(lb.consultation_results_hint)
             )
         if window.end:
-            period = self._consultation_period(window)
-            facts = f"{self._field(ICON['effective'], lb.consultation, period)}\n{facts}"
+            # A date range reads as an invitation, and this post exists because the window shut.
+            closed = f"{esc(lb.consultation_closed_on)} {self.fmt_date(window.end)}"
+            facts = f"{self._field(ICON['effective'], lb.consultation, closed)}\n{facts}"
         steps = self._steps_block(bill, today or self._today())
         links_block = self._links(self._consultation_links(bill, window))
-        tags = self._tag_line(lb.tag_consultations, bill)
+        tags = self._tag_line(lb.tag_consultation_results, bill)
         return RenderedMessage(text=self._assemble([header, facts, steps, links_block, tags]))
 
     def agenda(
@@ -907,8 +904,23 @@ class MessageFormatter:
         return f"{ICON['links']} " + " | ".join(links)
 
     def _tag_line(self, tag: str, bill: Bill) -> str:
-        """The message kind's tag and the thread's."""
-        return f"#{tag} {self._thread_tags(bill)}"
+        """The message kind's tag, what the bill is about, and the thread's.
+
+        A reader who follows a topic must find the moments to act, not only the card that
+        opened the thread; the topic tags are what a search on the channel matches."""
+        return " ".join([f"#{tag}", *self._topic_tags(bill), self._thread_tags(bill)])
+
+    def _topic_tags(self, bill: Bill) -> list[str]:
+        lb = self._labels
+        record = bill.analysis
+        if record is None:
+            return []
+        a = record.analysis
+        return [
+            f"#{lb.tag_importance}{a.score}",
+            f"#{lb.category_tags.get(a.category, a.category)}",
+            *([f"#{lb.tag_ukraine}"] if about_ukraine(bill) else []),
+        ]
 
     def _countdown(self, days_left: int) -> str:
         lb = self._labels

@@ -32,7 +32,7 @@ def test_reminder_renders_the_countdown() -> None:
 
     assert "Консультации заканчиваются — RPW/29075/2026" in ahead
     assert "до 20.09.2026 · осталось дней: 3" in ahead
-    assert "#консультации #RPW_29075_2026" in ahead
+    assert "#консультации #важность5 #легализация #RPW_29075_2026" in ahead
     assert "сегодня последний день" in last_day
 
 

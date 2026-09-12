@@ -173,7 +173,7 @@ def test_card_contains_every_section(process_3039: ProcessDetail, print_3039: Pr
     assert "О чём проект" in text and "Ключевые изменения" in text
     assert "Стадия:</b> направлен в комиссию ASW" in text  # translated, the body stays Polish
     assert "PrzebiegProc.xsp?nr=3039" in text and "prints/3039/3039.pdf" in text
-    assert "#kadencja10druk3039 #важность5 #легализация #каденция10" in text
+    assert "#kadencja10druk3039 #важность5 #легализация #kadencja10" in text
 
 
 def test_joint_bill_reply_names_the_thread_and_carries_both_tags(
@@ -295,7 +295,7 @@ def test_card_tags_open_consultations_and_ukraine(process_3039: ProcessDetail) -
         .text.splitlines()[-1]
     )
 
-    assert tags == "#kadencja10druk3039 #важность5 #легализация #консультации #Украина #каденция10"
+    assert tags == "#kadencja10druk3039 #важность5 #легализация #Украина #консультации #kadencja10"
 
 
 def test_closed_consultation_loses_its_tag_and_ukraine_is_read_from_the_title(
@@ -314,7 +314,7 @@ def test_closed_consultation_loses_its_tag_and_ukraine_is_read_from_the_title(
         .text.splitlines()[-1]
     )
 
-    assert tags == "#kadencja10druk3039 #важность5 #легализация #Украина #каденция10"
+    assert tags == "#kadencja10druk3039 #важность5 #легализация #Украина #kadencja10"
 
 
 def test_a_consultation_that_is_over_says_so_and_stops_inviting_opinions(
@@ -488,8 +488,9 @@ def test_status_update_tags_name_the_events(process_1962: ProcessDetail) -> None
         bill, change_of("1962", [], withdrawn=True, closure_detected=True)
     )
 
-    assert eventful.text.splitlines()[-1] == "#голосование #сенат #поправки #kadencja10druk1962"
-    assert plain.text.splitlines()[-1] == "#kadencja10druk1962"
+    assert eventful.text.splitlines()[-1] == "#голосование #сенат #новыйтекст #kadencja10druk1962"
+    # A referral is a searchable event of its own: "all the bills now in committee".
+    assert plain.text.splitlines()[-1] == "#комиссия #kadencja10druk1962"
     assert "#отозван #kadencja10druk1962" in withdrawn.text
 
 
@@ -765,7 +766,7 @@ def test_public_hearing_names_the_application_deadline(process_3039: ProcessDeta
         "слушания</b> 30.09.2026 · заявки на участие до <b>20.09.2026</b> · осталось дней: 2"
         in (reminder)
     )
-    assert "#слушания #kadencja10druk3039" in reminder
+    assert "#слушания #важность5 #легализация #kadencja10druk3039" in reminder
 
 
 def test_withdrawn_bill_gets_no_next_step(process_3039: ProcessDetail) -> None:
@@ -789,7 +790,7 @@ def test_committee_sitting_message(process_3039: ProcessDetail) -> None:
     assert "до заседания 17.09.2026" in text
     assert 'transmisje_arch.xsp?unid=1">Трансляция</a>' in text
     assert f"{COMMITTEE_PAGE}>Страница комиссии</a>" in text
-    assert text.splitlines()[-1] == "#заседаниекомиссии #kadencja10druk3039"
+    assert text.splitlines()[-1] == "#заседаниекомиссии #важность5 #легализация #kadencja10druk3039"
 
 
 def test_sejm_sitting_message(process_3039: ProcessDetail) -> None:
@@ -802,7 +803,7 @@ def test_sejm_sitting_message(process_3039: ProcessDetail) -> None:
     assert ru.startswith("🗓 <b>В повестке заседания Сейма — druk nr 3039</b>")
     assert "🏛 заседание Сейма № 65, 15–18.09.2026" in ru
     assert "Трансляция" not in ru and "Страница комиссии" not in ru
-    assert ru.splitlines()[-1] == "#заседаниесейма #kadencja10druk3039"
+    assert ru.splitlines()[-1] == "#заседаниесейма #важность5 #легализация #kadencja10druk3039"
     assert "On the agenda of a Sejm sitting" in en and "Sejm sitting no. 65, 15–2026-09-18" in en
 
 
@@ -828,10 +829,13 @@ def test_consultation_results_notice(process_3039: ProcessDetail) -> None:
 
     assert_telegram_html(text)
     assert text.startswith("🗣 <b>Опубликованы мнения из консультаций — druk nr 3039</b>")
-    assert "📅 <b>Общественные консультации:</b> 31.08.2026 — 30.09.2026" in text
+    # The window shut — that is why this post exists — so it is not shown as a date range.
+    assert "📅 <b>Общественные консультации:</b> завершились 30.09.2026" in text
     assert f'<a href="{CONSULTATION_PAGE}">мнения, поданные' in text
     assert "⏭ <b>Что дальше:</b> I чтение в комиссии — ASW" in text
-    assert text.splitlines()[-1] == "#консультации #kadencja10druk3039"
+    assert (
+        text.splitlines()[-1] == "#мнениявконсультациях #важность5 #легализация #kadencja10druk3039"
+    )
 
 
 def test_consultation_messages_need_a_consultation(process_3039: ProcessDetail) -> None:
