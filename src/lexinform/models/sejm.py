@@ -1,7 +1,14 @@
 """What the Sejm API tells us: processes, prints, stages, votes, submissions, acts, MPs, and
-the pure helpers over them (URLs, stage fingerprints and diffs, the latest bill text)."""
+the pure helpers over them (URLs, stage fingerprints and diffs, the latest bill text).
 
-from __future__ import annotations  # Stage and PrintInfo are trees: they refer to themselves
+`Stage` and `PrintInfo` are trees that refer to themselves, hence the postponed annotations.
+
+The Senate has no API of its own, so `SENATE_BILLS_URL` — where it lists the laws the Sejm has
+passed, with the committee that has each one — is the only address a reader can be given for that
+stretch of the road.
+"""
+
+from __future__ import annotations
 
 import datetime as dt
 import hashlib
@@ -39,13 +46,13 @@ class ClubVotes(BaseModel):
 
 
 class Vote(BaseModel):
-    """One MP's vote from GET /votings/{sitting}/{number}."""
+    """One MP's vote (YES, NO, ABSTAIN, ABSENT, ...) from GET /votings/{sitting}/{number}."""
 
     model_config = ConfigDict(frozen=True)
 
     mp: int
     club: str
-    vote: str  # YES | NO | ABSTAIN | ABSENT | ...
+    vote: str
 
 
 class VotingSummary(BaseModel):
@@ -73,7 +80,7 @@ class Mp(BaseModel):
     first_name: str
     last_name: str
     second_name: str | None = None
-    accusative_name: str | None = None  # "Jana Kowalskiego": the form cover letters use
+    accusative_name: str | None = None
     club: str = "niez."
 
     @property
@@ -87,13 +94,14 @@ class Mp(BaseModel):
 
 
 class BillAuthors(BaseModel):
-    """Who signed a bill, resolved to parliamentary clubs."""
+    """Who signed a bill, resolved to parliamentary clubs: `clubs` pairs each with its number of
+    signatories, the largest first."""
 
     model_config = ConfigDict(frozen=True)
 
     representative: str | None = None
     representative_club: str | None = None
-    clubs: tuple[tuple[str, int], ...] = ()  # (club, signatories) the largest first
+    clubs: tuple[tuple[str, int], ...] = ()
     signatories: int = 0
     unresolved: int = 0
 
@@ -105,7 +113,7 @@ class SejmTerm(BaseModel):
 
     num: int
     start: dt.date | None = None
-    end: dt.date | None = None  # missing for the running term
+    end: dt.date | None = None
     current: bool = False
 
 
@@ -134,7 +142,16 @@ class Committee(BaseModel):
 
 
 class Stage(BaseModel):
-    """One node of the legislative process tree returned by /processes/{n}."""
+    """One node of the legislative process tree returned by /processes/{n}.
+
+    Some fields belong to one kind of stage only: `position` is what the Senate did,
+    `proposal` what a committee proposes, `sub_committee` marks a subcommittee's report and
+    `minority_motions` the motions attached to it (voted at the third reading; None when the
+    report could not be parsed), `voting` the results of a vote and `committee_name` the name we
+    resolved from `/committees`. The four that are rendering only — `position`, `voting`,
+    `committee_name` and `proposal` — stay out of `_stage_key`, or every tracked bill would post
+    a spurious update after a deploy.
+    """
 
     model_config = ConfigDict(frozen=True)
 
@@ -147,13 +164,11 @@ class Stage(BaseModel):
     committee_code: str | None = None
     report_file: str | None = None
     text_after3: str | None = None
-    position: str | None = None  # SenatePosition: what the Senate did (not part of the fingerprint)
-    proposal: str | None = None  # CommitteeReport: what the committee proposes
-    sub_committee: bool = False  # CommitteeReport: a subcommittee report, not the final one
-    # CommitteeReport: minority motions attached (voted at the 3rd reading); None when unknown
+    position: str | None = None
+    proposal: str | None = None
+    sub_committee: bool = False
     minority_motions: int | None = None
-    voting: VotingSummary | None = None  # Voting: results (not part of the fingerprint)
-    # Referral: resolved by us from /committees (not fingerprinted)
+    voting: VotingSummary | None = None
     committee_name: str | None = None
     children: tuple[Stage, ...] = ()
 
@@ -176,17 +191,21 @@ class BillSubmission(BaseModel):
 
     This is the earliest public trace of a bill and the only place that carries the public
     consultation dates, so it is what lets readers act before the Sejm even starts working.
+
+    `number` is the RPW number ("RPW/29075/2026"), `status` one of ACTIVE, WITHDRAWN,
+    NOT_PROCEEDED, OBSOLETE, ADOPTED, and `submission_type` one of BILL, DRAFT_RESOLUTION,
+    BILL_AMENDMENT, RESOLUTION_AMENDMENT.
     """
 
     model_config = ConfigDict(frozen=True)
 
     term: int
-    number: str  # "RPW/29075/2026"
+    number: str
     title: str
     description: str | None = None
     applicant: ApplicantType = ApplicantType.UNKNOWN
-    status: str = "ACTIVE"  # ACTIVE | WITHDRAWN | NOT_PROCEEDED | OBSOLETE | ADOPTED
-    submission_type: str = "BILL"  # BILL | DRAFT_RESOLUTION | BILL_AMENDMENT | RESOLUTION_AMENDMENT
+    status: str = "ACTIVE"
+    submission_type: str = "BILL"
     date_of_receipt: dt.date
     print_number: str | None = None
     eu_related: bool = False
@@ -224,28 +243,33 @@ class BillSubmission(BaseModel):
 
 
 class CommitteeSitting(BaseModel):
-    """An item of GET /committees/{code}/sittings."""
+    """An item of GET /committees/{code}/sittings.
+
+    `start_time` is wall clock in Warsaw, as the API gives it, `status` PLANNED or FINISHED, and
+    `agenda` an HTML fragment `lexinform.agenda` reads.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     code: str
     num: int
     date: dt.date
-    start_time: dt.time | None = None  # wall clock in Warsaw, as the API gives it
+    start_time: dt.time | None = None
     room: str | None = None
-    status: str = "PLANNED"  # PLANNED | FINISHED | ...
-    agenda: str = ""  # HTML fragment, see `lexinform.agenda`
+    status: str = "PLANNED"
+    agenda: str = ""
     video_url: str | None = None
 
 
 class SejmSitting(BaseModel):
-    """An item of GET /proceedings; `agenda` comes from GET /proceedings/{number} only."""
+    """An item of GET /proceedings; the HTML `agenda` comes from GET /proceedings/{number} only,
+    and the `number` is 0 for a sitting that is merely planned and has none yet."""
 
     model_config = ConfigDict(frozen=True)
 
-    number: int  # 0 for a sitting that is only planned (no agenda yet)
+    number: int
     dates: tuple[dt.date, ...]
-    agenda: str = ""  # HTML fragment
+    agenda: str = ""
 
     @property
     def first_date(self) -> dt.date | None:
@@ -260,20 +284,24 @@ AgendaKind = Literal["committee", "sejm"]
 
 
 class AgendaItem(BaseModel):
-    """A future sitting whose agenda names the bill: the dated "what happens next"."""
+    """A future sitting whose agenda names the bill: the dated "what happens next".
+
+    `ref` is the dedupe key of the post ("ASW/136/2026-09-17", "sejm/65/2026-09-15"), `text` the
+    agenda item in plain text, and `end_date` the last day of a Sejm sitting, which spans several.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     kind: AgendaKind
-    ref: str  # dedupe key of the post: "ASW/136/2026-09-17" or "sejm/65/2026-09-15"
+    ref: str
     date: dt.date
-    end_date: dt.date | None = None  # Sejm sittings span several days
+    end_date: dt.date | None = None
     start_time: dt.time | None = None
     committee_code: str | None = None
     committee_name: str | None = None
     sitting_number: int | None = None
     room: str | None = None
-    text: str = ""  # the agenda item, plain text
+    text: str = ""
     video_url: str | None = None
 
     @property
@@ -288,22 +316,29 @@ class AgendaItem(BaseModel):
         return self.ref.rsplit("/", 1)[0]
 
 
-POLAND_TZ = ZoneInfo("Europe/Warsaw")  # every date an act carries is a Polish legal date
+POLAND_TZ = ZoneInfo("Europe/Warsaw")
 
 
 class ActInfo(BaseModel):
-    """The published act, from the ELI API (GET /eli/acts/{publisher}/{year}/{pos})."""
+    """The published act, from the ELI API (GET /eli/acts/{publisher}/{year}/{pos}).
+
+    Every date here is a Polish legal date, read in `POLAND_TZ`: `act_date` is the
+    `announcementDate` the act carries in its title, `promulgation_date` the day it appeared in
+    Dziennik Ustaw, and `entry_into_force` the single day it starts to apply — provisions that
+    enter in stages are not modelled. `eli` is the identifier ("DU/2026/1099") and
+    `display_address` how it is cited ("Dz.U. 2026 poz. 1099").
+    """
 
     model_config = ConfigDict(frozen=True)
 
-    eli: str  # "DU/2026/1099"
-    display_address: str  # "Dz.U. 2026 poz. 1099"
+    eli: str
+    display_address: str
     title: str
-    act_date: dt.date | None = None  # `announcementDate`: the date in the act's title
-    promulgation_date: dt.date | None = None  # publication in Dziennik Ustaw
-    entry_into_force: dt.date | None = None  # single date; staged provisions are not modelled
-    in_force: str | None = None  # IN_FORCE | NOT_IN_FORCE
-    status: str | None = None  # "obowiązujący", ...
+    act_date: dt.date | None = None
+    promulgation_date: dt.date | None = None
+    entry_into_force: dt.date | None = None
+    in_force: str | None = None
+    status: str | None = None
     text_pdf_url: str | None = None
     isap_url: str | None = None
     fetched_at: dt.datetime
@@ -318,7 +353,11 @@ class ActInfo(BaseModel):
 
 
 class ProcessSummary(BaseModel):
-    """An item of GET /processes (or, for pre-print bills, derived from GET /bills)."""
+    """An item of GET /processes (or, for pre-print bills, derived from GET /bills).
+
+    `applicant` is explicit when it came from `/bills` and derived from the title otherwise.
+    `eli` and `display_address` ("Dz.U. 2026 poz. 1099") are set once the act is published.
+    """
 
     model_config = ConfigDict(frozen=True)
 
@@ -338,9 +377,9 @@ class ProcessSummary(BaseModel):
     rcl_num: str | None = None
     rcl_link: str | None = None
     prints_considered_jointly: tuple[str, ...] = ()
-    applicant: ApplicantType | None = None  # explicit (from /bills); else derived from the title
-    eli: str | None = None  # set once the act is published in Dziennik Ustaw
-    display_address: str | None = None  # "Dz.U. 2026 poz. 1099"
+    applicant: ApplicantType | None = None
+    eli: str | None = None
+    display_address: str | None = None
     isap_url: str | None = None
 
     @property
@@ -476,12 +515,14 @@ def submission_pdf_url(term: int, number: str) -> str:
 
 
 def process_web_url(term: int, number: str) -> str:
+    """Where a reader can see the bill itself. A register entry has only the register: its own
+    page is `WykazEntry.web_url`, which this function does not have."""
     if is_pre_print_number(number):
         return submission_pdf_url(term, number)
     if is_rcl_number(number):
         return f"https://legislacja.rcl.gov.pl/projekt/{number.removeprefix(RCL_PREFIX)}"
     if is_wykaz_number(number):
-        return WYKAZ_REGISTER_URL  # the entry's own page is `WykazEntry.web_url`
+        return WYKAZ_REGISTER_URL
     return f"https://www.sejm.gov.pl/Sejm{term}.nsf/PrzebiegProc.xsp?nr={number}"
 
 
@@ -525,8 +566,6 @@ def aggregate_clubs(votes: Iterable[Vote]) -> tuple[ClubVotes, ...]:
     return tuple(result)
 
 
-# Where the Senate puts the laws the Sejm has passed, with the committee that has each one:
-# the Senate has no API, so this listing is the only address a reader can be given.
 SENATE_BILLS_URL = (
     "https://www.senat.gov.pl/prace/proces-legislacyjny-w-senacie/ustawy-uchwalone-przez-sejm/"
 )
@@ -648,14 +687,14 @@ def latest_text_document(
     return None
 
 
-# A second reading whose `decision` says one of these left the bill with the committee, which
-# works the amendments into an additional ("-A") report before the Sejm votes. Observed:
-# "skierowano ponownie do komisji…", "niedokończone II czytanie" (druk 1929).
 _SECOND_READING_SENT_BACK = ("ponownie", "niedokończone")
 
 
 def second_reading_sent_back(stage: Stage) -> bool:
-    """True when the second reading did not hand the bill on to the third."""
+    """True when the second reading did not hand the bill on to the third: it left it with the
+    committee, which works the amendments into an additional ("-A") report before the Sejm votes.
+    Observed decisions: "skierowano ponownie do komisji…", "niedokończone II czytanie"
+    (druk 1929)."""
     decided = (stage.decision or "").lower()
     return any(marker in decided for marker in _SECOND_READING_SENT_BACK)
 

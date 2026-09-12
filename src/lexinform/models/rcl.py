@@ -4,6 +4,11 @@ A project page lists up to 14 stages (uzgodnienia, konsultacje publiczne, opinio
 committees of the Council of Ministers, Komisja Prawnicza, Rada Ministrów, skierowanie do Sejmu);
 each reached stage has a catalog of folders with documents. Nothing here does I/O: the HTML is
 turned into these models by `adapters/rcl_html.py`.
+
+`RCL_STAGE_TYPE` is the `Stage.stage_type` such a stage carries once it is stored in
+`Bill.stages`, and `StageGroup` says where in the government path it sits: consultations and
+opinions, the committees of the Council of Ministers (Komisja Prawnicza among them), the Council
+itself, the hand-over to the Sejm.
 """
 
 import datetime as dt
@@ -18,15 +23,13 @@ from lexinform.models.enums import BILL_DOCUMENT_TYPE, RCL_PREFIX, ApplicantType
 from lexinform.models.sejm import ProcessSummary, Stage
 
 RCL_BASE_URL = "https://legislacja.rcl.gov.pl"
-RCL_STAGE_TYPE = "RclStage"  # `Stage.stage_type` of an RCL stage stored in `Bill.stages`
+RCL_STAGE_TYPE = "RclStage"
 READABLE_EXTENSIONS = frozenset({"pdf", "docx", "docm", "doc", "odt", "zip"})
 OPEN_STATUS = "otwarty"
 
 StageState = Literal["not_started", "reached", "active"]
 FolderKind = Literal["project", "letters", "positions", "response", "conference", "other"]
 TextRole = Literal["bill", "justification", "osr"]
-# Where in the government path a stage sits: consultations and opinions, the committees of the
-# Council of Ministers (incl. Komisja Prawnicza), the Council itself, the hand-over to the Sejm.
 StageGroup = Literal["opinions", "committees", "council", "sejm"]
 
 _STAGE_NAME = re.compile(r"^\s*(\d+)\.\s*(.+?)\s*$")
@@ -155,8 +158,8 @@ class RclConsultation(BaseModel):
     days: int | None = None
     deadline: dt.date | None = None
     email: str | None = None
-    positions: int = 0  # opinions published in "Stanowiska zgłoszone"
-    response_published: bool = False  # "Odniesienie się wnioskodawcy do uwag" has documents
+    positions: int = 0
+    response_published: bool = False
 
     def is_open(self, today: dt.date) -> bool:
         return self.deadline is not None and self.deadline >= today
@@ -167,7 +170,8 @@ class RclConsultation(BaseModel):
 
 
 class RclProjectSummary(BaseModel):
-    """One row of the project list."""
+    """One row of the project list; a date the parser does not recognise is None rather than
+    "very old", which would stop the walk through the listing."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -175,7 +179,6 @@ class RclProjectSummary(BaseModel):
     title: str
     applicant: str
     wykaz_number: str | None = None
-    # None when the cell is not a date the parser knows: "very old" would stop the walk.
     created: dt.date | None = None
     modified: dt.date | None = None
 
@@ -185,7 +188,12 @@ class RclProjectSummary(BaseModel):
 
 
 class RclProject(BaseModel):
-    """A project page with its timeline; stage folders are filled in for reached stages."""
+    """A project page with its timeline; stage folders are filled in for reached stages.
+
+    `term_label` is the Sejm term in Roman numerals ("X"), `rm_number` the RM-0610-139-26 the
+    project gets when it goes to the Sejm, and `print_number` the druk, stamped by Sejm discovery
+    once it appears.
+    """
 
     model_config = ConfigDict(frozen=True)
 
@@ -200,10 +208,10 @@ class RclProject(BaseModel):
     keywords: tuple[str, ...] = ()
     status: str = OPEN_STATUS
     eu_note: str | None = None
-    term_label: str | None = None  # "X" for the 10th Sejm term
-    rm_number: str | None = None  # RM-0610-139-26, shown once the bill went to the Sejm
+    term_label: str | None = None
+    rm_number: str | None = None
     sejm_url: str | None = None
-    print_number: str | None = None  # set by Sejm discovery when the druk appears
+    print_number: str | None = None
     stages: tuple[RclStage, ...] = ()
     consultation: RclConsultation | None = None
 

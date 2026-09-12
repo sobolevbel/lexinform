@@ -27,9 +27,10 @@ from lexinform.models.wykaz import WykazEntry
 class ConsultationWindow(BaseModel):
     """The public consultation of a bill, whoever runs it.
 
-    The Sejm consults deputies', Senate, presidential and citizens' bills through a web form
-    (`form_url`); the government consults its own on RCL, by e-mail to the ministry named in the
-    consultation letter (`email`, `letter_url`).
+    The Sejm consults deputies', Senate, presidential and citizens' bills: `form_url` is the
+    project page, which carries the text and links the survey at `survey_url`, where the opinion
+    is actually submitted. The government consults its own on RCL, by e-mail to the ministry
+    named in the consultation letter (`email`, `letter_url`).
     """
 
     model_config = ConfigDict(frozen=True)
@@ -37,8 +38,8 @@ class ConsultationWindow(BaseModel):
     source: Literal["sejm", "rcl"]
     start: dt.date | None = None
     end: dt.date | None = None
-    form_url: str | None = None  # the Sejm's project page: the text, the survey link, its count
-    survey_url: str | None = None  # where the opinion is actually submitted (Sejm only)
+    form_url: str | None = None
+    survey_url: str | None = None
     email: str | None = None
     letter_url: str | None = None
     results_published: bool = False
@@ -48,7 +49,17 @@ class ConsultationWindow(BaseModel):
 
 
 class Bill(BaseModel):
-    """One row of the `bills` table: everything we know and decided about a bill."""
+    """One row of the `bills` table: everything we know and decided about a bill.
+
+    `submission` is the `/bills` entry (consultation dates, applicant, RPW number), `rcl` the
+    project followed before the Sejm, `wykaz` the register entry of a bill the government has
+    only announced, `act` the published act once Dziennik Ustaw has it. A row keeps the numbers
+    of its other lives: `linked_number` is the print an RPW entry or an RCL project became (and
+    the other way round), `linked_wykaz_number` the wykaz number a print carries on so that the
+    card keeps its tag. `discontinued_at` is stamped when a Sejm term ended with the bill
+    unfinished (zasada dyskontynuacji): nothing more can happen to it under this number, so it is
+    neither tracked nor analysed again.
+    """
 
     summary: ProcessSummary
     status: BillStatus
@@ -58,17 +69,14 @@ class Bill(BaseModel):
     analysis: AnalysisRecord | None = None
     analysis_attempts: int = 0
     last_error: str | None = None
-    submission: BillSubmission | None = None  # the /bills entry (consultation dates, RPW number)
-    linked_number: str | None = None  # RPW/RCL <-> print number once the print is assigned
-    # Wykaz number (UC104) of the RCL project a print continues: its card is tagged with it.
+    submission: BillSubmission | None = None
+    linked_number: str | None = None
     linked_wykaz_number: str | None = None
-    act: ActInfo | None = None  # the published act, once it appears in Dziennik Ustaw
-    authors: BillAuthors | None = None  # signatories of a deputies' bill, by club
-    agenda: tuple[AgendaItem, ...] = ()  # upcoming sittings that name the bill, soonest first
-    rcl: RclProject | None = None  # the RCL project of a government bill followed before the Sejm
-    wykaz: WykazEntry | None = None  # the register entry of a bill the government only announced
-    # Set when the Sejm term ended with the bill unfinished (zasada dyskontynuacji): nothing
-    # more will happen to it under this number, so it is not tracked or analysed anymore.
+    act: ActInfo | None = None
+    authors: BillAuthors | None = None
+    agenda: tuple[AgendaItem, ...] = ()
+    rcl: RclProject | None = None
+    wykaz: WykazEntry | None = None
     discontinued_at: dt.datetime | None = None
     first_seen_at: dt.datetime
     last_checked_at: dt.datetime
@@ -143,24 +151,25 @@ class LocatedText(BaseModel):
 
 
 class Phase(BaseModel):
-    """What the legislative process holds next for a bill (see `next_phase`)."""
+    """What the legislative process holds next for a bill (see `next_phase`).
+
+    `committees` names the committees the bill sits in, `date` the consultation end or the entry
+    into force when the key has one, `since` the day the bill reached this step. `deadline` is
+    the constitutional term of the step where there is one: the Senate has 30 days from receiving
+    the act (art. 121), the President 21 (art. 122), 14 and 7 for an urgent bill (art. 123),
+    counted from the dates the Sejm API shows.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     key: str
-    committees: tuple[str, ...] = ()  # codes of the committees the bill sits in, if any
-    date: dt.date | None = None  # consultation end or entry into force, when the key needs one
-    # The constitutional deadline of the step, when the process gives one: the Senate has 30
-    # days from receiving the act (art. 121), the President 21 from receiving it (art. 122);
-    # 14 and 7 for an urgent bill (art. 123). Counted from the dates the Sejm API shows.
+    committees: tuple[str, ...] = ()
+    date: dt.date | None = None
     deadline: dt.date | None = None
-    since: dt.date | None = None  # when the bill reached this step; stamped by `next_phase`
+    since: dt.date | None = None
 
 
 _PRESIDENT_NEXT = {"ToPresident", "SenatePositionConsideration"}
-# Stages that arrive next to the process without moving it: the government's position on a
-# deputies' bill, an opinion of local-government bodies. They land last in the tree while the
-# bill sits in committee, and taking them for the current step loses "what comes next" entirely.
 ASIDE_STAGE_TYPES = frozenset({"GovermentPosition", "Opinion"})
 
 
@@ -176,12 +185,14 @@ def veto_stood(stages: tuple[Stage, ...]) -> bool:
 def process_stages(stages: tuple[Stage, ...]) -> list[Stage]:
     """The top-level stages that say where the bill stands.
 
-    Two kinds of node are dropped. `ASIDE_STAGE_TYPES` arrive beside the process without moving
-    it. And `End` ("Uchwalono") is appended by the Sejm at the third reading and kept last while
-    the Senate, the President and Dziennik Ustaw are all still ahead — druk 2799, read on
-    2026-09-12: III czytanie "uchwalono" on 2026-09-04, `End` already there, no Senate stage and
-    no act — so taking it for the current step marks the reader's last two windows as passed.
-    The `End` of a bill a veto killed says something of its own and stays.
+    Two kinds of node are dropped. `ASIDE_STAGE_TYPES` — the government's position on a deputies'
+    bill, an opinion of local-government bodies — arrive beside the process without moving it,
+    and land last in the tree while the bill sits in committee, so taking one for the current
+    step loses "what comes next" entirely. And `End` ("Uchwalono") is appended at the third
+    reading and kept last while the Senate, the President and Dziennik Ustaw are all still ahead
+    — druk 2799, read on 2026-09-12: III czytanie "uchwalono" on 2026-09-04, `End` already there,
+    no Senate stage and no act — so taking it for the current step marks the reader's last two
+    windows as passed. The `End` of a bill a veto killed says something of its own and stays.
     """
     top = [st for st in stages if st.stage_type not in ASIDE_STAGE_TYPES]
     if top and top[-1].stage_type == "End" and not veto_stood((top[-1],)):
@@ -191,14 +202,9 @@ def process_stages(stages: tuple[Stage, ...]) -> list[Stage]:
 
 SENATE_DAYS, SENATE_DAYS_URGENT = 30, 14
 PRESIDENT_DAYS, PRESIDENT_DAYS_URGENT = 21, 7
-# art. 121/122 count from the day the act is handed over, which the API does not give: the
-# deadline is computed from the stage before it and is therefore early by a few days.
 DEADLINE_GRACE_DAYS = 7
 
 
-# The "path" of a bill as a reader sees it, and which step each phase sits on. RCL phases
-# (except the hand-over) sit on "rcl"; the government steps are skipped for bills that never
-# went through the government.
 PATH_STEPS = (
     "wykaz",
     "rcl",
@@ -210,7 +216,7 @@ PATH_STEPS = (
     "journal",
     "in_force",
 )
-GOVERNMENT_STEPS = frozenset({"wykaz", "rcl"})  # shown only for bills that came from the government
+GOVERNMENT_STEPS = frozenset({"wykaz", "rcl"})
 PHASE_STEP = {
     "wykaz": "wykaz",
     "wykaz_to_rcl": "rcl",
@@ -235,11 +241,6 @@ PHASE_STEP = {
     "in_force": "in_force",
     "in_force_unknown": "in_force",
 }
-# How long a step may take before saying "usually N weeks" contradicts the dates on the same
-# card. Deliberately two to three times the upper end of `Labels.typical_durations` (90 days
-# against "2–6 недель" for a first reading): a step that runs a fortnight over its average is
-# still ordinary, and "без движения уже 7 нед." said of it would cry wolf. A step not listed
-# here is given the default.
 PHASE_PATIENCE = {
     "rcl_to_sejm": 30,
     "wykaz_to_rcl": 60,
@@ -264,7 +265,12 @@ DAYS_PER_MONTH = 30
 
 def stalled_days(phase: Phase, today: dt.date) -> int | None:
     """How long the bill has been on this step, once that outlived what the step usually takes;
-    None while the step is still running on schedule or its start is unknown."""
+    None while the step is still running on schedule or its start is unknown.
+
+    `PHASE_PATIENCE` is deliberately two to three times the upper end of the durations the card
+    quotes (90 days against "2–6 недель" for a first reading): a step that runs a fortnight over
+    its average is still ordinary, and "без движения уже 7 нед." said of it would cry wolf.
+    """
     since = phase.since
     if since is None:
         return None
@@ -273,7 +279,6 @@ def stalled_days(phase: Phase, today: dt.date) -> int | None:
     return waited if waited > patience else None
 
 
-# Phases during which a reader can address a committee, or watch a sitting.
 COMMITTEE_PHASES = frozenset(
     {
         "first_reading_committee",
@@ -296,7 +301,8 @@ _UKRAINE = next(p.regex for p in KEYWORD_PATTERNS if p.name == "obywatele_ukrain
 
 
 def government_path(bill: Bill) -> bool:
-    """Government bills start on RCL; the path shows that step only for them."""
+    """Government bills start on RCL and, before that, on the wykaz: `PATH_STEPS` shows the
+    `GOVERNMENT_STEPS` only for them."""
     return (
         bill.rcl is not None
         or bool(bill.summary.rcl_num)
@@ -343,17 +349,18 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
 
 
 def _phase_started(bill: Bill) -> dt.date | None:
-    """When the bill reached the step it is on, so that "what comes next" can say how long it
-    has been waiting instead of quoting an average that ran out long ago."""
+    """When the bill reached the step it is on, so that "what comes next" can say how long it has
+    been waiting instead of quoting an average that ran out long ago.
+
+    A stage the API left undated started on an unknown day, not on the day the bill was submitted:
+    reading it as the latter would age the step by the whole life of the bill. RCL leaves
+    "rozpoczęcie" empty for most stages, so the stage's last modification stands in — it is what
+    the page shows, and what stops moving when a project stalls.
+    """
     last = bill.last_stage
     if last is not None:
-        # Its own date or nothing: a stage the API left undated started on an unknown day, not
-        # on the day the bill was submitted, and reading it as the latter ages the step by the
-        # whole life of the bill.
         return last.date
     if bill.rcl is not None:
-        # RCL's "rozpoczęcie" is usually absent; the stage's last modification is what the page
-        # actually shows, and it is what stops moving when a project stalls.
         current = bill.rcl.current_stage
         return current.modified if current is not None else None
     if bill.wykaz is not None:
@@ -363,87 +370,133 @@ def _phase_started(bill: Bill) -> dt.date | None:
 
 
 def _phase_of(bill: Bill, today: dt.date) -> Phase | None:
-    summary = bill.summary
-    act = bill.act
-    if act is not None:
-        if act.entry_into_force is None:
-            return Phase(key="in_force_unknown")
-        if act.entry_into_force > today:
-            return Phase(key="in_force", date=act.entry_into_force)
-        return None
+    """The source the bill belongs to decides which road it is on; a lapsed term ends every one
+    of them, because a new Sejm must receive the bill again."""
+    if bill.act is not None:
+        return _act_phase(bill.act, today)
     if bill.discontinued_at is not None:
-        return None  # lapsed with the end of the term: a new Sejm must receive it again
+        return None
     if bill.wykaz is not None:
         return _wykaz_phase(bill)
     if bill.rcl is not None:
         return _rcl_phase(bill, today)
     if bill.is_pre_print or not bill.stages:
-        if summary.closure_date is not None:
-            return None  # withdrawn before getting a print number
-        window = bill.consultation
-        if window is not None and window.is_open(today):
-            return Phase(key="pre_print_consultation", date=window.end)
-        return Phase(key="pre_print")
+        return _pre_print_phase(bill, today)
+    return _sejm_phase(bill, today)
+
+
+def _act_phase(act: ActInfo, today: dt.date) -> Phase | None:
+    """An act in Dziennik Ustaw is still ahead of the reader until its vacatio legis runs out."""
+    if act.entry_into_force is None:
+        return Phase(key="in_force_unknown")
+    if act.entry_into_force > today:
+        return Phase(key="in_force", date=act.entry_into_force)
+    return None
+
+
+def _pre_print_phase(bill: Bill, today: dt.date) -> Phase | None:
+    """A bill submitted but not yet numbered: its own consultation, or the wait for the print.
+    A closure date here means it was withdrawn before ever getting one."""
+    if bill.summary.closure_date is not None:
+        return None
+    window = bill.consultation
+    if window is not None and window.is_open(today):
+        return Phase(key="pre_print_consultation", date=window.end)
+    return Phase(key="pre_print")
+
+
+def _sejm_phase(bill: Bill, today: dt.date) -> Phase | None:
+    """The road through the Sejm, read from the stage the process stands on."""
+    summary = bill.summary
     if summary.closure_date is not None and summary.passed is False:
-        return None  # rejected or withdrawn
+        return None
     if veto_stood(bill.stages):
-        return None  # the Sejm could not override the veto: the law is dead
+        return None
     top = process_stages(bill.stages)
     if not top:
         return Phase(key="first_reading")
-    last = top[-1]
+    return _phase_after(top[-1], top, urgent=is_urgent(bill), passed=summary.passed)
+
+
+_PHASE_AFTER_STAGE_TYPE = {
+    "PresidentSignature": "publication",
+    "Veto": "veto",
+    "PresidentToTribunal": "tribunal",
+    "Start": "first_reading",
+}
+
+
+def _phase_after(
+    last: Stage, top: list[Stage], *, urgent: bool, passed: bool | None
+) -> Phase | None:
+    """The step that follows the stage the process stands on. `_PHASE_AFTER_STAGE_TYPE` holds the
+    stages whose successor needs nothing but the stage's own type; the rest read the stage's
+    decision, its committees or the tree before it."""
     kind = last.stage_type
-    if kind == "PresidentSignature":
-        return Phase(key="publication")
-    if kind == "Veto":
-        return Phase(key="veto")
-    if kind == "PresidentToTribunal":
-        return Phase(key="tribunal")
-    urgent = is_urgent(bill)
+    key = _PHASE_AFTER_STAGE_TYPE.get(kind)
+    if key is not None:
+        return Phase(key=key)
     if kind in _PRESIDENT_NEXT:
         days = PRESIDENT_DAYS_URGENT if urgent else PRESIDENT_DAYS
         return Phase(key="president", deadline=_days_after(last.date, days))
     if kind == "SenatePosition":
-        position = (last.position or "").lower()
-        if "nie wniósł" in position:
-            return Phase(key="president")
-        if "odrzuci" in position:
-            # art. 121 ust. 3: the rejection stands unless the Sejm throws it out by an
-            # absolute majority — a different stake from amendments, and a different majority.
-            return Phase(key="senate_rejection", committees=_committee_codes(last))
-        return Phase(key="senate_amendments", committees=_committee_codes(last))
+        return _phase_after_senate(last)
     if any(st.stage_type == "SenatePosition" for st in top):
         return Phase(key="senate_amendments", committees=_latest_committees(top))
     if kind == "SejmReading":
-        name = last.stage_name.lower()
-        if "iii czytanie" in name:
-            decided = (last.decision or "").lower()
-            if decided.startswith("uchwal") or summary.passed:
-                days = SENATE_DAYS_URGENT if urgent else SENATE_DAYS
-                return Phase(key="senate", deadline=_days_after(last.date, days))
-            return None if decided else Phase(key="third_reading")
-        if "ii czytanie" in name:
-            if second_reading_sent_back(last):
-                return Phase(key="second_reading_committee", committees=_latest_committees(top))
-            return Phase(key="third_reading")
-        return Phase(key="committee_work", committees=_latest_committees(top))
+        return _phase_after_reading(last, top, urgent=urgent, passed=passed)
     if kind == "CommitteeWork":
-        reports = [c for c in last.children if c.stage_type == "CommitteeReport"]
-        if any(r.carries_bill_text for r in reports):
-            return Phase(key="second_reading")
-        if reports:
-            return Phase(key="third_reading")  # an "-A" report answering 2nd-reading amendments
-        return Phase(key="committee_work", committees=_latest_committees(top))
+        return _phase_after_committee_work(last, top)
     if kind in ("Reading", "PublicHearing"):
         return Phase(key="committee_work", committees=_latest_committees(top))
     if kind == "ReadingReferral":
-        codes = _committee_codes(last)
-        if codes:
-            return Phase(key="first_reading_committee", committees=codes)
-        return Phase(key="first_reading_sitting")
-    if kind == "Start":
-        return Phase(key="first_reading")
+        return _phase_after_referral(last)
     return None
+
+
+def _phase_after_senate(last: Stage) -> Phase:
+    """Amendments and a rejection are two different stakes: art. 121 ust. 3 lets a rejection
+    stand unless the Sejm throws it out by an absolute majority."""
+    position = (last.position or "").lower()
+    if "nie wniósł" in position:
+        return Phase(key="president")
+    key = "senate_rejection" if "odrzuci" in position else "senate_amendments"
+    return Phase(key=key, committees=_committee_codes(last))
+
+
+def _phase_after_reading(
+    last: Stage, top: list[Stage], *, urgent: bool, passed: bool | None
+) -> Phase | None:
+    name = last.stage_name.lower()
+    if "iii czytanie" in name:
+        decided = (last.decision or "").lower()
+        if decided.startswith("uchwal") or passed:
+            days = SENATE_DAYS_URGENT if urgent else SENATE_DAYS
+            return Phase(key="senate", deadline=_days_after(last.date, days))
+        return None if decided else Phase(key="third_reading")
+    if "ii czytanie" in name:
+        if second_reading_sent_back(last):
+            return Phase(key="second_reading_committee", committees=_latest_committees(top))
+        return Phase(key="third_reading")
+    return Phase(key="committee_work", committees=_latest_committees(top))
+
+
+def _phase_after_committee_work(last: Stage, top: list[Stage]) -> Phase:
+    """A report carrying the bill text sends it to the second reading; an "-A" report answers
+    amendments made there, so the next vote is the third reading."""
+    reports = [c for c in last.children if c.stage_type == "CommitteeReport"]
+    if any(r.carries_bill_text for r in reports):
+        return Phase(key="second_reading")
+    if reports:
+        return Phase(key="third_reading")
+    return Phase(key="committee_work", committees=_latest_committees(top))
+
+
+def _phase_after_referral(last: Stage) -> Phase:
+    codes = _committee_codes(last)
+    if codes:
+        return Phase(key="first_reading_committee", committees=codes)
+    return Phase(key="first_reading_sitting")
 
 
 def is_over(bill: Bill, *, today: dt.date) -> bool:
@@ -471,13 +524,16 @@ def is_over(bill: Bill, *, today: dt.date) -> bool:
 
 
 def _wykaz_phase(bill: Bill) -> Phase | None:
-    """A bill the government has only announced: waiting for its project, which RCL publishes."""
+    """A bill the government has only announced: waiting for its project, which RCL publishes.
+
+    An entry taken off the plan has no road left; "Zrealizowany" means the Council of Ministers
+    has adopted the project, so RCL is already behind it.
+    """
     entry = bill.wykaz
     assert entry is not None
     if entry.is_withdrawn:
-        return None  # taken off the plan
+        return None
     if entry.is_adopted:
-        # "Zrealizowany": the Council of Ministers has adopted the project, so RCL is behind it.
         return Phase(key="wykaz_adopted")
     if entry.rcl_project_id is not None:
         return Phase(key="wykaz_to_rcl")
@@ -486,11 +542,12 @@ def _wykaz_phase(bill: Bill) -> Phase | None:
 
 def _rcl_phase(bill: Bill, today: dt.date) -> Phase | None:
     """The government path: consultations and opinions, the committees of the Council of
-    Ministers, the Council, the hand-over to the Sejm (then the print number)."""
+    Ministers, the Council, the hand-over to the Sejm (then the print number). A project that is
+    over was closed on RCL without ever reaching the Sejm."""
     project = bill.rcl
     assert project is not None
     if project.is_over:
-        return None  # closed on RCL without reaching the Sejm
+        return None
     if project.sent_to_sejm:
         return Phase(key="rcl_to_sejm")
     window = bill.consultation
@@ -532,14 +589,16 @@ class Publication(BaseModel):
     kind: PublicationKind
     status: PublicationStatus
     channel_id: str
-    ref: str | None = None  # distinguishes posts of one kind that recur per bill (agenda: sitting)
+    ref: str | None = None
+    """Distinguishes posts of one kind that recur per bill (agenda: the sitting)."""
     message_id: int | None = None
     document_message_ids: list[int] = Field(default_factory=list)
     status_change_id: int | None = None
     created_at: dt.datetime
     sent_at: dt.datetime | None = None
     error: str | None = None
-    rendered_sha256: str | None = None  # digest of the card text as last sent (new_bill)
+    rendered_sha256: str | None = None
+    """Digest of the card text as last sent (`new_bill`)."""
 
 
 class StatusChange(BaseModel):
@@ -554,9 +613,11 @@ class StatusChange(BaseModel):
     closure_detected: bool = False
     passed: bool | None = None
     content_changed: bool = False
-    withdrawn: bool = False  # pre-print bill withdrawn before getting a print number
-    discontinued: bool = False  # the term ended before the Sejm finished with the bill
-    # What the amendments announced by this change do (Senate resolution, "-A" report), when
-    # their document could be read and summarised.
+    withdrawn: bool = False
+    """A pre-print bill withdrawn before getting a print number."""
+    discontinued: bool = False
+    """The term ended before the Sejm finished with the bill."""
     amendments: AmendmentsRecord | None = None
+    """What the amendments announced by this change do (Senate resolution, "-A" report), when
+    their document could be read and summarised."""
     detected_at: dt.datetime

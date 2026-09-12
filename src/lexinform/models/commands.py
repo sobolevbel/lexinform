@@ -20,13 +20,15 @@ from lexinform.models.rcl import normalize_wykaz_number
 
 
 class IncomingCommand(BaseModel):
-    """One channel post, as the relay stores it in the inbox (`inbox/{update_id}.json`)."""
+    """One channel post, as the relay stores it in the inbox (`inbox/{update_id}.json`).
+
+    `chat_id` is where the command was posted. The run answers in the technical channel it is
+    configured with — one relay, one channel — so it is provenance, not an address.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     update_id: int
-    # Where the command was posted. The run answers in the technical channel it is configured
-    # with (one relay, one channel), so this is provenance, not an address.
     chat_id: str
     message_id: int
     text: str
@@ -81,11 +83,15 @@ class ChannelPost(BaseModel):
 
 
 class RefKind(StrEnum):
-    DRUK = "druk"  # a numbered print of a Sejm term
-    RPW = "rpw"  # a bill in /bills without a print number yet
-    RCL = "rcl"  # a government project on legislacja.rcl.gov.pl, by project id
-    WYKAZ = "wykaz"  # the same, by its wykaz number (UC164)
-    RM = "rm"  # the same, by the RM number the Sejm print carries (RM-0610-139-26)
+    """Which number a command used to name a bill: a numbered print of a Sejm term, a bill in
+    `/bills` that has none yet, or a government project — by its RCL project id, by its wykaz
+    number (UC164) or by the RM number the Sejm print carries (RM-0610-139-26)."""
+
+    DRUK = "druk"
+    RPW = "rpw"
+    RCL = "rcl"
+    WYKAZ = "wykaz"
+    RM = "rm"
 
 
 class BillRef(BaseModel):
@@ -116,40 +122,56 @@ NEEDS_REFERENCE = frozenset(
 
 
 class Command(BaseModel):
-    """A parsed command line; `error` says what is wrong with it (the reply repeats it)."""
+    """A parsed command line; `error` says what is wrong with it (the reply repeats it).
+
+    `force` analyses past the prefilter, a previous analysis and the cost guard; `publish` posts
+    the card of a relevant bill even below the score threshold.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     name: CommandName
     ref: BillRef | None = None
-    force: bool = False  # analyse past the prefilter, a previous analysis and the cost guard
-    publish: bool = False  # post the card of a relevant bill even below the score threshold
+    force: bool = False
+    publish: bool = False
     error: str | None = None
 
 
 class OutcomeStatus(StrEnum):
-    ANALYSED = "analysed"  # a verdict (fresh or stored); `message_id` when the card went out
-    SKIPPED = "skipped"  # the prefilter said no (`note` = why); `force` gets past it
+    """How a command ended.
+
+    `ANALYSED` carries a verdict, fresh or stored, and a `message_id` when the card went out;
+    `SKIPPED` means the prefilter said no and the `note` says why (`force` gets past it);
+    `SILENCED` is what `/skip` leaves behind — the bill will not be analysed or posted;
+    `EXECUTED_EARLIER` means a previous run did the work and only its answer never arrived.
+    """
+
+    ANALYSED = "analysed"
+    SKIPPED = "skipped"
     SHOWN = "shown"
-    SILENCED = "silenced"  # /skip: the bill will not be analysed or posted
+    SILENCED = "silenced"
     REPUBLISHED = "republished"
     HELP = "help"
-    EXECUTED_EARLIER = "executed earlier"  # ran in a previous run whose answer did not arrive
+    EXECUTED_EARLIER = "executed earlier"
     NOT_FOUND = "not_found"
     ERROR = "error"
 
 
 class CommandOutcome(BaseModel):
-    """What happened to a command; the replier renders it under the command's message."""
+    """What happened to a command; the replier renders it under the command's message.
+
+    `note` is the reason, the error, or why the card was not posted, and `message_id` the card
+    just posted (or posted again). The rest is what running the command took: when the run that
+    answered it started, how long the command itself took, and the model tokens it spent (empty
+    when the model was not called).
+    """
 
     model_config = ConfigDict(frozen=True)
 
     status: OutcomeStatus
     bill: Bill | None = None
-    note: str = ""  # the reason, the error, why the card was not posted
-    message_id: int | None = None  # the card just posted (or posted again)
-    # What running this command took: when the run that answered it started, how long the
-    # command itself took, and the model tokens it spent (empty when the model was not called).
+    note: str = ""
+    message_id: int | None = None
     run_started_at: dt.datetime | None = None
     seconds: float | None = None
     usage: dict[str, TokenUsage] = Field(default_factory=dict)
@@ -180,7 +202,11 @@ _MODIFIERS = {"force": "force", "--force": "force", "publish": "publish", "--pub
 
 
 def parse_reference(text: str) -> BillRef | None:
-    """A bill number in any of the bot's notations, or a link to the bill; None otherwise."""
+    """A bill number in any of the bot's notations, or a link to the bill; None otherwise.
+
+    `UD408` and `WPL/UD408` name the same thing: the wykaz number is what RCL, the ministries and
+    the register itself use, and the prefix belongs to our row alone.
+    """
     value = text.strip().strip("<>")
     if not value:
         return None
@@ -192,8 +218,6 @@ def parse_reference(text: str) -> BillRef | None:
         return BillRef(kind=RefKind.RPW, value=PRE_PRINT_PREFIX + value[len(PRE_PRINT_PREFIX) :])
     if match := _RCL.match(value):
         return BillRef(kind=RefKind.RCL, value=RCL_PREFIX + match.group(1))
-    # `UD408` and `WPL/UD408` name the same thing: the wykaz number is what RCL, the ministries
-    # and the register itself use, the prefix is only our row's.
     bare = value[len(WYKAZ_PREFIX) :] if value.upper().startswith(WYKAZ_PREFIX) else value
     if _WYKAZ.match(bare):
         return BillRef(kind=RefKind.WYKAZ, value=normalize_wykaz_number(bare) or bare)
@@ -202,43 +226,61 @@ def parse_reference(text: str) -> BillRef | None:
     return None
 
 
+Query = dict[str, list[str]]
+
+
 def _parse_url(value: str) -> BillRef | None:
+    """The bill a link points at; each host writes the reference its own way."""
     url = urlparse(value if "://" in value else f"https://{value}")
     host = (url.hostname or "").lower()
     query = parse_qs(url.query)
     if host.endswith("legislacja.rcl.gov.pl"):
-        if match := _RCL_PATH.search(url.path):
-            return BillRef(kind=RefKind.RCL, value=RCL_PREFIX + match.group(1))
-        for rm in query.get("number", []):
-            if _RM.match(rm):
-                return BillRef(kind=RefKind.RM, value=rm.upper())
-        return None
+        return _rcl_url_ref(url.path, query)
     if host == "api.sejm.gov.pl":
-        if match := _API_PATH.match(url.path):
-            return BillRef(
-                kind=RefKind.DRUK, value=str(int(match.group(2))), term=int(match.group(1))
-            )
-        return None
+        return _api_url_ref(url.path)
     if host.endswith("sejm.gov.pl"):
-        term_match = _SEJM_TERM_PATH.search(url.path)
-        term = int(term_match.group(1)) if term_match else None
-        for rpw in query.get("NrProjektu", []):
-            if _RPW.match(rpw):
-                return BillRef(kind=RefKind.RPW, value=rpw.upper(), term=term)
-        for nr in query.get("nr", []):
-            if nr.isdigit():
-                return BillRef(kind=RefKind.DRUK, value=str(int(nr)), term=term)
+        return _sejm_url_ref(url.path, query)
+    return None
+
+
+def _rcl_url_ref(path: str, query: Query) -> BillRef | None:
+    if match := _RCL_PATH.search(path):
+        return BillRef(kind=RefKind.RCL, value=RCL_PREFIX + match.group(1))
+    for rm in query.get("number", []):
+        if _RM.match(rm):
+            return BillRef(kind=RefKind.RM, value=rm.upper())
+    return None
+
+
+def _api_url_ref(path: str) -> BillRef | None:
+    match = _API_PATH.match(path)
+    if match is None:
         return None
+    return BillRef(kind=RefKind.DRUK, value=str(int(match.group(2))), term=int(match.group(1)))
+
+
+def _sejm_url_ref(path: str, query: Query) -> BillRef | None:
+    term_match = _SEJM_TERM_PATH.search(path)
+    term = int(term_match.group(1)) if term_match else None
+    for rpw in query.get("NrProjektu", []):
+        if _RPW.match(rpw):
+            return BillRef(kind=RefKind.RPW, value=rpw.upper(), term=term)
+    for nr in query.get("nr", []):
+        if nr.isdigit():
+            return BillRef(kind=RefKind.DRUK, value=str(int(nr)), term=term)
     return None
 
 
 def parse_command(text: str) -> Command | None:
     """The command in a channel post; None when the post is not a command (no leading slash).
-    An unknown command, a missing or unreadable reference come back as `help` with `error`."""
+
+    An unknown command, a missing or unreadable reference come back as `help` with `error`. In a
+    group Telegram writes the bot's name into the command itself (`/analyze@lexinform_bot`).
+    """
     words = text.strip().split()
     if not words or not words[0].startswith("/"):
         return None
-    head = words[0][1:].split("@", 1)[0].lower()  # `/analyze@lexinform_bot` in a group
+    head = words[0][1:].split("@", 1)[0].lower()
     try:
         name = CommandName(head)
     except ValueError:

@@ -14,21 +14,22 @@ from lexinform.models.bill import Bill, StatusChange, veto_stood
 from lexinform.models.rcl import RCL_STAGE_TYPE
 from lexinform.models.sejm import Stage, flatten_stages, second_reading_sent_back
 
-# Nodes that only frame other events. A `SejmReading` is decided case by case (see below).
-# "Ustawę przekazano Prezydentowi" is not a frame node: it starts the 21 days of art. 122,
-# which is the reader's last window.
 SERVICE_STAGE_TYPES = frozenset({"Start", "ReadingReferral", "Reading", "CommitteeWork", "End"})
-# Regulamin Sejmu art. 70b: applications to a public hearing at least 10 days before it.
 HEARING_APPLICATION_DAYS = 10
 
 
 def is_substantive(stage: Stage) -> bool:
-    """True when the stage alone is worth telling the reader about."""
+    """True when the stage alone is worth telling the reader about.
+
+    `SERVICE_STAGE_TYPES` only frame other events; "Ustawę przekazano Prezydentowi" is not one of
+    them, because it starts the 21 days of art. 122, the reader's last window. A reading is
+    decided case by case: the third one decides the bill, an earlier one is news only when it
+    decided something — rejected the bill outright, or sent it back to the committee with
+    amendments.
+    """
     if stage.stage_type in SERVICE_STAGE_TYPES:
         return False
     if stage.stage_type == "SejmReading":
-        # The 3rd reading decides the bill; an earlier reading is news only when it decided
-        # something (rejected outright, sent back to the committee with amendments).
         if _reading_numeral(stage) == "III":
             return True
         return "odrzuc" in (stage.decision or "").lower() or second_reading_sent_back(stage)
@@ -51,27 +52,44 @@ def update_event(change: StatusChange, bill: Bill) -> str:
         return "discontinued"
     if change.withdrawn:
         return "withdrawn"
-    if bill.linked_number and change.old_fingerprint == bill.linked_number:
-        # The successor row's first update: the druk of an entry, or the project of a plan.
+    if _is_first_update_of_successor(change, bill):
         return "print_assigned" if bill.has_process else "rcl_started"
-    referrals = sum(1 for st in change.new_stages if st.stage_type == "Referral")
-    for stage in reversed(change.new_stages):  # the newest stage names the post
-        key = _stage_event(stage)
-        if key == "referral" and referrals > 1:
-            return "referrals"
-        if key is not None:
-            return key
+    named = _newest_stage_event(change.new_stages)
+    if named is not None:
+        return named
     if change.closure_detected:
-        if bill.wykaz is not None:
-            return "wykaz_withdrawn"
-        if bill.rcl is not None:
-            return "rcl_closed"
-        return "passed" if change.passed else closure_event(bill)
+        return _closure_event_of(change, bill)
     if change.content_changed:
         return "text_changed"
     if bill.wykaz is not None and bill.wykaz.is_adopted:
         return "wykaz_adopted"
     return "update"
+
+
+def _is_first_update_of_successor(change: StatusChange, bill: Bill) -> bool:
+    """A row that inherited a thread opens it by saying what it is: the druk of an RPW entry or
+    an RCL project, the project of a plan."""
+    return bool(bill.linked_number) and change.old_fingerprint == bill.linked_number
+
+
+def _newest_stage_event(stages: list[Stage]) -> str | None:
+    """The newest stage names the post; referrals to several committees are told as a group."""
+    referrals = sum(1 for st in stages if st.stage_type == "Referral")
+    for stage in reversed(stages):
+        key = _stage_event(stage)
+        if key == "referral" and referrals > 1:
+            return "referrals"
+        if key is not None:
+            return key
+    return None
+
+
+def _closure_event_of(change: StatusChange, bill: Bill) -> str:
+    if bill.wykaz is not None:
+        return "wykaz_withdrawn"
+    if bill.rcl is not None:
+        return "rcl_closed"
+    return "passed" if change.passed else closure_event(bill)
 
 
 def closure_event(bill: Bill) -> str:
@@ -98,54 +116,70 @@ def _rejects(stage: Stage) -> bool:
     return False
 
 
+_EVENT_BY_STAGE_TYPE = {
+    "ReadingReferral": "first_reading_referral",
+    "Reading": "first_reading",
+    "CommitteeWork": "committee_work",
+    "SenatePositionConsideration": "senate_considered",
+    "ToPresident": "to_president",
+    "PresidentSignature": "signed",
+    "Veto": "veto",
+    "PresidentToTribunal": "tribunal",
+    "PublicHearing": "hearing",
+    "Start": "start",
+}
+
+
 def _stage_event(stage: Stage) -> str | None:
+    """What one stage is called in a post; None when the stage has no name of its own.
+
+    `_EVENT_BY_STAGE_TYPE` holds the stages whose name is their type; the rest read what the
+    stage decided.
+    """
     kind = stage.stage_type
-    decided = (stage.decision or "").lower()
     if kind == RCL_STAGE_TYPE:
         return "rcl_to_sejm" if "sejm" in stage.stage_name.lower() else "rcl_stage"
     if kind == "Referral":
         return "referral_plenary" if stage.committee_code == "Sejm" else "referral"
-    if kind == "ReadingReferral":
-        return "first_reading_referral"
-    if kind == "Reading":
-        return "first_reading"
     if kind == "SejmReading":
-        numeral = _reading_numeral(stage)
-        if "odrzuc" in decided:
-            return "rejected"
-        if numeral == "III":
-            return "passed" if decided.startswith("uchwal") else "third_reading"
-        if numeral == "II":
-            sent_back = second_reading_sent_back(stage)
-            return "second_reading_amendments" if sent_back else "second_reading"
-        return "first_reading"
-    if kind == "CommitteeWork":
-        return "committee_work"
+        return _reading_event(stage)
     if kind == "CommitteeReport":
-        if stage.sub_committee:
-            return "subcommittee_report"
-        proposal = (stage.proposal or "").lower()
-        if "odrzuc" in proposal and "popraw" not in proposal:
-            return "committee_rejects"
-        return "committee_report"
+        return _report_event(stage)
     if kind == "SenatePosition":
-        position = (stage.position or "").lower()
-        if "nie wniósł" in position:
-            return "senate_no_amendments"
-        if "odrzuci" in position:
-            return "senate_rejected"
-        if "popraw" in position:
-            return "senate_amendments"
-        return "senate"
-    return {
-        "SenatePositionConsideration": "senate_considered",
-        "ToPresident": "to_president",
-        "PresidentSignature": "signed",
-        "Veto": "veto",
-        "PresidentToTribunal": "tribunal",
-        "PublicHearing": "hearing",
-        "Start": "start",
-    }.get(kind)
+        return _senate_event(stage)
+    return _EVENT_BY_STAGE_TYPE.get(kind)
+
+
+def _reading_event(stage: Stage) -> str:
+    decided = (stage.decision or "").lower()
+    if "odrzuc" in decided:
+        return "rejected"
+    numeral = _reading_numeral(stage)
+    if numeral == "III":
+        return "passed" if decided.startswith("uchwal") else "third_reading"
+    if numeral == "II":
+        return "second_reading_amendments" if second_reading_sent_back(stage) else "second_reading"
+    return "first_reading"
+
+
+def _report_event(stage: Stage) -> str:
+    if stage.sub_committee:
+        return "subcommittee_report"
+    proposal = (stage.proposal or "").lower()
+    if "odrzuc" in proposal and "popraw" not in proposal:
+        return "committee_rejects"
+    return "committee_report"
+
+
+def _senate_event(stage: Stage) -> str:
+    position = (stage.position or "").lower()
+    if "nie wniósł" in position:
+        return "senate_no_amendments"
+    if "odrzuci" in position:
+        return "senate_rejected"
+    if "popraw" in position:
+        return "senate_amendments"
+    return "senate"
 
 
 def _reading_numeral(stage: Stage) -> str:
@@ -172,7 +206,6 @@ def amendments_stage(stages: list[Stage]) -> Stage | None:
     return None
 
 
-# The events a reader searches the channel for, by the key the post is named after.
 _EVENT_TAG = {
     "passed": "passed",
     "rejected": "rejected",
@@ -189,14 +222,14 @@ _EVENT_TAG = {
 }
 _SENATE_STAGES = frozenset({"SenatePosition", "SenatePositionConsideration"})
 _PRESIDENT_STAGES = frozenset({"ToPresident", "PresidentSignature"})
-# A parent node whose children are in the same update says nothing the children do not.
 FRAME_STAGE_TYPES = frozenset({"ReadingReferral", "CommitteeWork"})
 
 
 def event_keys(change: StatusChange, event: str) -> list[str]:
     """Which searchable events a status update carries, in display order (the tags). `event` is
     what the post is named after, so that a reader can find every bill the Sejm passed or
-    rejected, not only the ones whose stages happen to carry a recognised type."""
+    rejected, not only the ones whose stages happen to carry a recognised type; `_EVENT_TAG` maps
+    those names to the events a reader searches the channel for."""
     types = {stage.stage_type for stage in flatten_stages(tuple(change.new_stages))}
     keys = [key for key in (_EVENT_TAG.get(event),) if key]
     if "Voting" in types or any(st.voting for st in change.new_stages):
@@ -228,7 +261,8 @@ def reaches_sejm(change: StatusChange) -> bool:
 
 def told_stages(stages: list[Stage]) -> list[Stage]:
     """The stages worth telling on their own: a frame node ("Skierowano do I czytania", "Praca
-    w komisjach") is dropped when its children are listed anyway."""
+    w komisjach") says nothing its children do not, so it is dropped when they are listed
+    anyway."""
     return [
         st
         for st in stages
@@ -253,20 +287,25 @@ def hearings_due(bill: Bill, today: dt.date, *, days_before: int) -> list[Stage]
     the next `days_before` days, or it is already the last one — a hearing announced with less
     than the ten days art. 70b asks for would otherwise never be reminded at all, and that is
     the case where a reader most needs to hear about it."""
-    due: list[Stage] = []
-    for stage in flatten_stages(bill.stages):
-        deadline = hearing_application_deadline(stage)
-        if deadline is None or stage.date is None:
-            continue
-        if today <= deadline <= today + dt.timedelta(days=days_before):
-            due.append(stage)
-        elif deadline < today <= stage.date:
-            due.append(stage)  # announced late: the deadline is behind us, the hearing is not
-    return due
+    return [
+        stage
+        for stage in flatten_stages(bill.stages)
+        if _hearing_reminder_due(stage, today, days_before=days_before)
+    ]
+
+
+def _hearing_reminder_due(stage: Stage, today: dt.date, *, days_before: int) -> bool:
+    deadline = hearing_application_deadline(stage)
+    if deadline is None or stage.date is None:
+        return False
+    if today <= deadline <= today + dt.timedelta(days=days_before):
+        return True
+    return deadline < today <= stage.date
 
 
 def hearing_application_deadline(stage: Stage) -> dt.date | None:
-    """Last day to apply for a public hearing (`PublicHearing` stage), if the hearing is dated."""
+    """Last day to apply for a public hearing (`PublicHearing` stage), if the hearing is dated:
+    Regulamin Sejmu art. 70b asks for the application at least ten days before it."""
     if stage.stage_type != "PublicHearing" or stage.date is None:
         return None
     return stage.date - dt.timedelta(days=HEARING_APPLICATION_DAYS)

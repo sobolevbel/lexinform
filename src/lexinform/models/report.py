@@ -9,14 +9,18 @@ from lexinform.models.enums import RunMode
 
 
 class AnalysisVerdict(BaseModel):
-    """What the model said about one bill this run; the report lists the ones not published."""
+    """What the model said about one bill this run; the report lists the ones not published.
+
+    `triaged` marks a bill the cheap first pass on excerpts rejected, without a full analysis.
+    `term` is what the link to the process page needs; reports stored before it existed have none.
+    """
 
     number: str
     title: str
     relevant: bool
     score: int
-    triaged: bool = False  # rejected by the cheap first pass on excerpts
-    term: int | None = None  # for the link to the process page (None in reports stored before)
+    triaged: bool = False
+    term: int | None = None
 
     @property
     def reason(self) -> str:
@@ -26,56 +30,70 @@ class AnalysisVerdict(BaseModel):
 
 
 class RunReport(BaseModel):
+    """The counters one run reports to the log channel and stores in the `runs` table.
+
+    `discovery_ok` says discovery finished, which is what lets the watermark advance past
+    `started_at`. `wykaz_backlog` counts older register entries that match the keywords and were
+    left unfollowed (`scan --since` takes them), `over_on_arrival` bills first seen with their
+    road already over — the act published, the bill rejected or withdrawn, a project dropped on
+    RCL, a plan realised or taken off the wykaz — which are stored and never posted.
+    `text_prefilter_unreadable` counts bills skipped without a text at all: no file, no text
+    layer, or a download that failed. `held` counts stage changes kept back for the next post
+    (service stages only), `rehomed` the government's own rows carried over to a new Sejm term,
+    `joint_published` the "alternative bill" replies under the card of a jointly considered
+    print. `notes` are worth telling without being errors (a cost budget that stopped a phase),
+    `commands` one line per operator command, `rejected` the bills that were analysed and not
+    published.
+    """
+
     started_at: dt.datetime
     finished_at: dt.datetime | None = None
     since: dt.datetime
     mode: RunMode
-    term: int | None = None  # the Sejm term discovery ran in (None: could not be resolved)
-    discovery_ok: bool = False  # discovery finished: the watermark may advance past `started_at`
+    term: int | None = None
+    discovery_ok: bool = False
     discovered: int = 0
     pre_print_discovered: int = 0
-    rcl_discovered: int = 0  # government projects first seen on RCL
+    rcl_discovered: int = 0
     rcl_prefilter_hits: int = 0
-    wykaz_discovered: int = 0  # bills first seen as a plan in the wykaz prac RM
-    wykaz_backlog: int = 0  # older entries that match the keywords and were left unfollowed
-    # Bills first seen with their road already over (act published, rejected, withdrawn, a
-    # project dropped on RCL, a plan realised or taken off the wykaz): stored, never posted.
+    wykaz_discovered: int = 0
+    wykaz_backlog: int = 0
     over_on_arrival: int = 0
     linked: int = 0
     prefilter_hits: int = 0
     text_prefilter_checked: int = 0
     text_prefilter_hits: int = 0
-    text_prefilter_unreadable: int = 0  # skipped without a text: no file, no text layer, failed
+    text_prefilter_unreadable: int = 0
     acts_published: int = 0
     in_force_posted: int = 0
     consultation_reminders: int = 0
     hearing_reminders: int = 0
-    decision_reminders: int = 0  # the Senate's or the President's term is nearly out
-    held: int = 0  # stage changes held for the next post (service stages only)
-    cards_refreshed: int = 0  # cards edited in place because what they said had drifted
+    decision_reminders: int = 0
+    held: int = 0
+    cards_refreshed: int = 0
     consultation_results_posted: int = 0
-    agenda_posted: int = 0  # "the bill is on the agenda of a sitting" notices
-    discontinued: int = 0  # bills that lapsed with the end of a term, announced under their card
-    rehomed: int = 0  # the government's own rows (RCL, wykaz) carried over to the new term
+    agenda_posted: int = 0
+    discontinued: int = 0
+    rehomed: int = 0
     analyzed: int = 0
-    triaged_out: int = 0  # rejected by the cheap first pass, no full analysis
+    triaged_out: int = 0
     analysis_failures: int = 0
-    analysis_skipped_cost: int = 0  # texts over the per-bill cost limit, not sent to the model
-    notes: list[str] = Field(default_factory=list)  # worth telling, not an error (a budget stop)
-    rejected: list[AnalysisVerdict] = Field(default_factory=list)  # analysed, not published
-    commands_handled: int = 0  # operator commands answered (from the technical channel)
+    analysis_skipped_cost: int = 0
+    notes: list[str] = Field(default_factory=list)
+    rejected: list[AnalysisVerdict] = Field(default_factory=list)
+    commands_handled: int = 0
     commands_failed: int = 0
-    commands: list[str] = Field(default_factory=list)  # one line per command: what happened
+    commands: list[str] = Field(default_factory=list)
     published: int = 0
-    joint_published: int = 0  # "alternative bill" replies under the card of a joint print
+    joint_published: int = 0
     updates: int = 0
     reanalyzed: int = 0
     tracked: int = 0
     errors: list[str] = Field(default_factory=list)
     llm_input_tokens: int = 0
     llm_output_tokens: int = 0
-    llm_usage: dict[str, TokenUsage] = Field(default_factory=dict)  # per model, for the cost line
-    phase_seconds: dict[str, float] = Field(default_factory=dict)  # wall time per phase
+    llm_usage: dict[str, TokenUsage] = Field(default_factory=dict)
+    phase_seconds: dict[str, float] = Field(default_factory=dict)
 
     @property
     def ok(self) -> bool:

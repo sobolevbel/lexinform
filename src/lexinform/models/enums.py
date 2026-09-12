@@ -1,4 +1,19 @@
-"""Enumerations and literal types shared by every other model."""
+"""Enumerations and literal types shared by every other model.
+
+A bill's number says which source it came from: `PRE_PRINT_PREFIX` for bills the Sejm has
+received but not yet given a print (druk) number, `RCL_PREFIX` for government projects on
+legislacja.rcl.gov.pl (keyed by the RCL project id) and `WYKAZ_PREFIX` for entries of the wykaz
+prac legislacyjnych RM (keyed by their own number, UD408). A bare number is a druk.
+
+`TextSource` says how an analysis was made: the full text of one PDF, the full text of a set of
+documents (RCL: projekt + uzasadnienie + OSR), keyword excerpts (the triage rejected it) or
+metadata only. `SourceKind` says which document it read, and `AMENDMENT_SOURCES` are the two that
+carry no bill text but amendments — the Senate's resolution print, and the committee report that
+answers amendments rather than attaching a new text.
+
+`BILL_DOCUMENT_TYPE` is the Polish display string the Sejm API filters `documentType` on; the
+enum value `BILL` does not filter.
+"""
 
 from enum import StrEnum
 from typing import Literal
@@ -11,22 +26,32 @@ class DocumentType(StrEnum):
 
 
 class BillStatus(StrEnum):
+    """How far a bill got through our own pipeline.
+
+    The skips say where it stopped: `SKIPPED_PREFILTER` on the title and description, with the
+    text never read; `TEXT_PREFILTER_PENDING` when the title missed but the print's text is still
+    to be scanned, and `SKIPPED_TEXT_PREFILTER` when that missed too; `SKIPPED_COST` when the text
+    was longer than the per-bill cost limit and `SKIPPED_CLOSED` when the road was already over
+    at first sight (`lexinform reset` revives either). `LINKED` is a row that continues under
+    another number — an RPW entry or an RCL project that became a print (`Bill.linked_number`).
+    """
+
     DISCOVERED = "discovered"
-    SKIPPED_PREFILTER = "skipped_prefilter"  # title/description miss, text never checked
-    TEXT_PREFILTER_PENDING = "text_prefilter_pending"  # title miss; the print text is next
-    SKIPPED_TEXT_PREFILTER = "skipped_text_prefilter"  # title and text miss
-    SKIPPED_COST = "skipped_cost"  # text too long for the per-bill cost limit (see `reset`)
-    SKIPPED_CLOSED = "skipped_closed"  # the process was already over when we first saw the bill
+    SKIPPED_PREFILTER = "skipped_prefilter"
+    TEXT_PREFILTER_PENDING = "text_prefilter_pending"
+    SKIPPED_TEXT_PREFILTER = "skipped_text_prefilter"
+    SKIPPED_COST = "skipped_cost"
+    SKIPPED_CLOSED = "skipped_closed"
     ANALYSIS_PENDING = "analysis_pending"
     ANALYSIS_FAILED = "analysis_failed"
     ANALYZED = "analyzed"
-    LINKED = "linked"  # a pre-print (RPW) entry that became a numbered print (Bill.linked_number)
+    LINKED = "linked"
 
 
-PRE_PRINT_PREFIX = "RPW/"  # numbers of bills that have not been assigned a print (druk) number yet
-RCL_PREFIX = "RCL/"  # government projects on legislacja.rcl.gov.pl, keyed by the RCL project id
-WYKAZ_PREFIX = "WPL/"  # entries of the wykaz prac legislacyjnych RM, keyed by their number (UD408)
-WYKAZ_REGISTER_URL = "https://www.gov.pl/web/premier/wplip-rm"  # the register itself
+PRE_PRINT_PREFIX = "RPW/"
+RCL_PREFIX = "RCL/"
+WYKAZ_PREFIX = "WPL/"
+WYKAZ_REGISTER_URL = "https://www.gov.pl/web/premier/wplip-rm"
 
 
 class Category(StrEnum):
@@ -38,7 +63,7 @@ class Category(StrEnum):
     NONE = "none"
 
 
-BILL_DOCUMENT_TYPE = "projekt ustawy"  # the `documentType` display string used by the API filter
+BILL_DOCUMENT_TYPE = "projekt ustawy"
 
 
 class ApplicantType(StrEnum):
@@ -53,19 +78,26 @@ class ApplicantType(StrEnum):
 
 
 class PublicationKind(StrEnum):
+    """What a Telegram post is: the card of a new bill, or one of the replies under it.
+
+    `AGENDA` is sent once per sitting the bill appears on, `CONSULTATION_DEADLINE` and
+    `HEARING_DEADLINE` a few days before those windows close, `CONSULTATION_RESULTS` when the
+    Sejm publishes the opinions it received, `IN_FORCE` on the day the act starts to apply.
+    `DECISION_DEADLINE` warns that the Senate's 30 days (art. 121) or the President's 21
+    (art. 122) are running out — the `ref` is the phase key, so each of the two is told once.
+    `JOINT_BILL` is the short reply a bill gets instead of a card of its own when it is
+    considered jointly with one that already has one; the group is followed through that card.
+    """
+
     NEW_BILL = "new_bill"
     STATUS_UPDATE = "status_update"
-    ACT_PUBLISHED = "act_published"  # the act appeared in Dziennik Ustaw
-    IN_FORCE = "in_force"  # reminder on the day the act enters into force
-    CONSULTATION_DEADLINE = "consultation_deadline"  # public consultation ends in a few days
-    CONSULTATION_RESULTS = "consultation_results"  # the Sejm published the opinions received
-    AGENDA = "agenda"  # the bill is on the agenda of a committee or Sejm sitting (one per sitting)
-    HEARING_DEADLINE = "hearing_deadline"  # applications to a public hearing close in a few days
-    # The Senate's 30 days (art. 121) or the President's 21 (art. 122) are running out; the
-    # `ref` is the phase key, so each of the two is told once per bill.
+    ACT_PUBLISHED = "act_published"
+    IN_FORCE = "in_force"
+    CONSULTATION_DEADLINE = "consultation_deadline"
+    CONSULTATION_RESULTS = "consultation_results"
+    AGENDA = "agenda"
+    HEARING_DEADLINE = "hearing_deadline"
     DECISION_DEADLINE = "decision_deadline"
-    # A bill considered jointly with one that already has a card: a short reply under that card
-    # instead of a card of its own (the group is followed through the card's bill)
     JOINT_BILL = "joint_bill"
 
 
@@ -86,8 +118,6 @@ class RunMode(StrEnum):
     DRY_RUN = "dry_run"
 
 
-# How an analysis was made: the full text of one PDF, the full text of a set of documents (RCL:
-# projekt + uzasadnienie + OSR), keyword excerpts (rejected by the triage), or metadata only.
 TextSource = Literal["pdf", "documents", "excerpts", "metadata_only"]
 FULL_TEXT_SOURCES: frozenset[TextSource] = frozenset({"pdf", "documents"})
 SourceKind = Literal[
@@ -96,8 +126,6 @@ SourceKind = Literal[
     "text_after3",
     "rcl",
     "metadata",
-    # Amendments only, not a bill text: the Senate's resolution print, the additional ("-A")
-    # committee report on 2nd-reading amendments, the report on the Senate's position.
     "senate_amendments",
     "committee_amendments",
 ]

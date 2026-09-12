@@ -7,6 +7,11 @@ means to adopt it. There is no text yet, so an entry is an intention, not a bill
 earliest public trace of one: UD408 (o zmianie ustawy o cudzoziemcach) was entered on 2026-05-12
 and appeared on RCL on 2026-07-06, 55 days later.
 
+Only `BILL_KIND` is followed: the register also plans rozporządzenia and programmes. A project
+the government gives up on is either taken off the plan or left unrealised (`DROPPED_STATUSES`),
+and art. 3 ust. 3 of the lobbying act obliges the register to say so, with the reason in
+`Informacja o rezygnacji z prac nad projektem`.
+
 Nothing here does I/O: the CSV is turned into these models by `adapters/wykaz_csv.py`.
 """
 
@@ -26,17 +31,11 @@ from lexinform.models.enums import (
 from lexinform.models.sejm import ProcessSummary
 
 REGISTER_PAGE_URL = "https://www.gov.pl/web/premier/wplip-rm"
-BILL_KIND = "Projekty ustaw"  # `Rodzaj dokumentu`; rozporządzenia and programmes are not followed
-# `Status realizacji`. A project the government gives up on is either taken off the plan or left
-# unrealised, and art. 3 ust. 3 of the lobbying act obliges the register to say so; the reason
-# goes into `Informacja o rezygnacji z prac nad projektem`.
+BILL_KIND = "Projekty ustaw"
 DROPPED_STATUSES = frozenset({"Wycofany", "Niezrealizowany"})
 ADOPTED_STATUS = "Zrealizowany"
-DESCRIPTION_LIMIT = 6000  # characters of goals + essence handed to the model (~3k tokens)
+DESCRIPTION_LIMIT = 6000
 
-# "III kwartał 2026 r.", "II/III kwartał 2026 r." — the field is free text and often carries the
-# realisation note as well ("II kwartał 2025 r. - ZREALIZOWANY Rada Ministrów przyjęła 6 maja"),
-# so only the quarter is taken from it and the rest is never shown.
 _QUARTER = re.compile(r"\b(IV|III|II|I)\s*(?:/\s*(IV|III|II|I))?\s*kwarta[łl]\w*\s+(\d{4})", re.I)
 _ROMAN = {"i": 1, "ii": 2, "iii": 3, "iv": 4}
 
@@ -52,24 +51,33 @@ def wykaz_entry_number(number: str) -> str:
 
 
 class WykazEntry(BaseModel):
-    """One row of the register, as published (art. 3 ust. 2 of the lobbying act)."""
+    """One row of the register, as published (art. 3 ust. 2 of the lobbying act).
+
+    The fields are the register's own columns: `number` normalised (UD408, UC164, UDER12), `kind`
+    is `Rodzaj dokumentu`, `doc_type` the `Typ dokumentu` ("C – projekty implementujące UE"),
+    `goals` and `essence` the two statutory paragraphs, `organ` the ministry a zgłoszenie is filed
+    with, `planned_adoption` the free-text `Planowane przyjęcie przez RM`, `status` the `Status
+    realizacji` and `resignation` the note about giving the project up. `published_at` is the
+    *first* publication and never moves when the entry is edited, `web_url` the entry's own page
+    on gov.pl. `rcl_project_id` is stamped by RCL discovery when the project appears there.
+    """
 
     model_config = ConfigDict(frozen=True)
 
-    number: str  # normalised wykaz number: UD408, UC164, UDER12
+    number: str
     title: str
-    kind: str  # `Rodzaj dokumentu`: only BILL_KIND is followed
-    doc_type: str | None = None  # `Typ dokumentu`: "C – projekty implementujące UE", ...
-    goals: str = ""  # `Cele projektu oraz informacja o przyczynach i potrzebie…`
-    essence: str = ""  # `Istota rozwiązań planowanych w projekcie…`
-    organ: str | None = None  # `Organ odpowiedzialny`: MSWiA — where a zgłoszenie is filed
-    person: str | None = None  # `Osoba odpowiedzialna`
-    planned_adoption: str = ""  # `Planowane przyjęcie przez RM`, free text
-    status: str = ""  # `Status realizacji`: "", Zrealizowany, Wycofany, Niezrealizowany
-    resignation: str = ""  # `Informacja o rezygnacji z prac nad projektem`
-    published_at: dt.datetime  # `Data publikacji`: the FIRST publication, never moved by an edit
-    web_url: str  # `Podgląd`: the entry's own page on gov.pl
-    rcl_project_id: int | None = None  # stamped by RCL discovery when the project is published
+    kind: str
+    doc_type: str | None = None
+    goals: str = ""
+    essence: str = ""
+    organ: str | None = None
+    person: str | None = None
+    planned_adoption: str = ""
+    status: str = ""
+    resignation: str = ""
+    published_at: dt.datetime
+    web_url: str
+    rcl_project_id: int | None = None
 
     @property
     def bill_number(self) -> str:
@@ -97,7 +105,12 @@ class WykazEntry(BaseModel):
 
     @property
     def planned_quarter(self) -> tuple[int, int] | None:
-        """The last quarter named by `Planowane przyjęcie przez RM`, as (year, quarter)."""
+        """The last quarter named by `Planowane przyjęcie przez RM`, as (year, quarter).
+
+        The column is free text ("III kwartał 2026 r.", "II/III kwartał 2026 r.") and half of it
+        carries the realisation note as well ("II kwartał 2025 r. - ZREALIZOWANY Rada Ministrów
+        przyjęła 6 maja"), so only the quarter is ever taken from it.
+        """
         match = _QUARTER.search(self.planned_adoption)
         if match is None:
             return None
@@ -106,7 +119,8 @@ class WykazEntry(BaseModel):
 
     @property
     def description(self) -> str | None:
-        """What the model and the keyword prefilter see instead of a text."""
+        """What the model and the keyword prefilter see instead of a text: at most
+        `DESCRIPTION_LIMIT` characters of the two statutory paragraphs, some 3k tokens."""
         parts = [part.strip() for part in (self.goals, self.essence) if part.strip()]
         joined = "\n\n".join(parts)
         return joined[:DESCRIPTION_LIMIT] or None

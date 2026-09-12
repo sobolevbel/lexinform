@@ -10,13 +10,15 @@ from lexinform.models.enums import ApplicantType, Category, SourceKind, TextSour
 
 
 class Analysis(BaseModel):
-    """Structured output of the LLM. Also the persisted shape."""
+    """Structured output of the LLM, and the persisted shape.
+
+    The field descriptions travel with the prompt as the structured-output contract, so what they
+    say about length must be what the prompt says.
+    """
 
     relevant: bool = Field(description="True if the bill changes anything for non-citizens.")
     score: int = Field(ge=1, le=5, description="Importance 1-5; 5 = legalization of stay.")
     category: Category
-    # The schema travels with the prompt as the structured-output contract, so what it says
-    # about length must be what the prompt says.
     summary: str = Field(description="2-3 plain sentences, at most ~350 characters.")
     key_changes: list[str] = Field(
         default_factory=list, description="Up to 5 bullets, at most ~120 characters each."
@@ -36,9 +38,10 @@ class Analysis(BaseModel):
 
 
 class TokenUsage(BaseModel):
-    """Tokens of one or more requests to one model, in the API's own categories."""
+    """Tokens of one or more requests to one model, in the API's own categories; `input` is the
+    uncached part of it."""
 
-    input: int = 0  # uncached input
+    input: int = 0
     output: int = 0
     cache_read: int = 0
     cache_creation: int = 0
@@ -53,7 +56,14 @@ class TokenUsage(BaseModel):
 
 
 class AnalysisRecord(BaseModel):
-    """A stored analysis: the model's answer plus how it was obtained (model, text, tokens)."""
+    """A stored analysis: the model's answer plus how it was obtained (model, text, tokens).
+
+    `text_sha256` is the digest of the trimmed, budgeted, whitespace-normalised text the model
+    saw, so that a document republished under a new URL with the same text is not analysed again.
+    `source_checked_at` is when the source was last found unchanged — a print re-dated by an
+    attachment, a republished RCL file — and the print's `changeDate` is compared with it, not
+    with `created_at`.
+    """
 
     analysis: Analysis
     model: str
@@ -69,11 +79,7 @@ class AnalysisRecord(BaseModel):
     source_url: str | None = None
     source_kind: SourceKind = "print"
     revision: int = 1
-    # Digest of the (trimmed, budgeted, whitespace-normalised) text the model saw: a document
-    # published under a new URL with the same text is not analysed again.
     text_sha256: str | None = None
-    # When the source was last found unchanged (a print re-dated by an attachment, a republished
-    # RCL file); the print's `changeDate` is compared with this, not with `created_at`.
     source_checked_at: dt.datetime | None = None
 
 
@@ -134,16 +140,17 @@ class AmendmentsRecord(BaseModel):
 
 
 class AmendmentsContext(BaseModel):
-    """What the model sees to summarise amendments: the current analysis and the document."""
+    """What the model sees to summarise amendments: the current analysis and the document, with
+    the committee's proposal on them where there is one."""
 
     number: str
     title: str
-    source_kind: SourceKind  # senate_amendments | committee_amendments
+    source_kind: SourceKind
     text: str
     truncated: bool
     previous_summary: str
     previous_key_changes: list[str] = Field(default_factory=list)
-    proposal: str | None = None  # the committee's proposal on the amendments, when it is one
+    proposal: str | None = None
 
 
 UsageRecord = AnalysisRecord | TriageRecord | AmendmentsRecord
@@ -164,14 +171,15 @@ def add_usage(target: dict[str, TokenUsage], record: UsageRecord) -> None:
 
 
 class TriageContext(BaseModel):
-    """What the triage model sees: metadata plus excerpts of the text, never the whole print."""
+    """What the triage model sees: metadata plus excerpts of the text, never the whole print;
+    `text_chars` is the length of the full (trimmed) text they were taken from."""
 
     number: str
     title: str
     description: str | None
     applicant_type: ApplicantType
     excerpts: str
-    text_chars: int  # length of the full (trimmed) text the excerpts were taken from
+    text_chars: int
 
 
 class BillContext(BaseModel):
