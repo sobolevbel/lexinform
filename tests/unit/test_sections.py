@@ -115,6 +115,18 @@ def test_excerpts_take_heads_and_keyword_windows_in_order() -> None:
     assert len(digest) < 600
 
 
+def test_a_text_dense_with_hits_still_fills_the_budget() -> None:
+    """Windows overlap, and each one used to be charged in full, so the text the triage judges
+    a keyword-dense bill by shrank to its first page."""
+    text = "Art. 1. Cudzoziemiec składa wniosek o zezwolenie na pobyt czasowy. " * 4000
+    spans = KeywordPrefilter().spans(text)
+
+    digest = excerpts(text, spans, max_chars=24_000)
+
+    assert len(spans) > 1000
+    assert 20_000 < len(digest) <= 24_000
+
+
 def test_excerpts_respect_the_budget_but_always_keep_the_heads() -> None:
     text = "start " * 100 + " cudzoziemiec " * 200
     spans = KeywordPrefilter().spans(text)

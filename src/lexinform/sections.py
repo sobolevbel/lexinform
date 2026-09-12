@@ -14,6 +14,7 @@ the last safety cap before the model call.
 """
 
 import re
+from bisect import bisect_left
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -135,23 +136,43 @@ def excerpts(
     ellipsis marker. Keyword windows are added in order until `max_chars` is reached; the two
     heads are always included.
     """
-    segments = [(0, min(head_chars, len(text)))]
+    merged: list[tuple[int, int]] = [(0, min(head_chars, len(text)))]
     if match := _JUSTIFICATION_RE.search(text):
-        segments.append((match.start(), min(match.start() + head_chars, len(text))))
-    budget = max_chars - sum(end - start for start, end in segments)
+        _merge_in(merged, (match.start(), min(match.start() + head_chars, len(text))))
+    used = sum(end - start for start, end in merged)
     for start, end in sorted(spans):
         piece = (max(0, start - window), min(len(text), end + window))
-        if budget <= 0:
+        # What the window adds to what is already kept, not its own length: hits cluster, and
+        # counting each one in full spends the budget on text that was taken once.
+        added = _uncovered(merged, piece)
+        if used + added > max_chars:
             break
-        segments.append(piece)
-        budget -= piece[1] - piece[0]
-    merged: list[tuple[int, int]] = []
-    for start, end in sorted(segments):
-        if merged and start <= merged[-1][1]:
-            merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
-        else:
-            merged.append((start, end))
+        _merge_in(merged, piece)
+        used += added
     return "\n[...]\n".join(text[start:end].strip() for start, end in merged)
+
+
+def _merge_in(merged: list[tuple[int, int]], piece: tuple[int, int]) -> None:
+    """Add one segment to a list kept sorted and non-overlapping."""
+    start, end = piece
+    index = bisect_left(merged, (start, end))
+    merged.insert(index, piece)
+    joined: list[tuple[int, int]] = []
+    for begin, stop in merged:
+        if joined and begin <= joined[-1][1]:
+            joined[-1] = (joined[-1][0], max(stop, joined[-1][1]))
+        else:
+            joined.append((begin, stop))
+    merged[:] = joined
+
+
+def _uncovered(merged: Sequence[tuple[int, int]], piece: tuple[int, int]) -> int:
+    """How many characters of `piece` no segment covers yet."""
+    start, end = piece
+    covered = sum(
+        min(end, stop) - max(start, begin) for begin, stop in merged if begin < end and start < stop
+    )
+    return max(0, end - start - covered)
 
 
 @dataclass(frozen=True)
