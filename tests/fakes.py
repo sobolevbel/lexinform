@@ -400,6 +400,8 @@ class FakeLlm:
         self.triage_contexts: list[TriageContext] = []
         self.amendment_contexts: list[AmendmentsContext] = []
         self.supplement_contexts: list[SupplementContext] = []
+        self.counted: list[str] = []
+        self.count_fails = False
 
     def triage(self, ctx: TriageContext) -> TriageRecord:
         self.triage_contexts.append(ctx)
@@ -415,6 +417,15 @@ class FakeLlm:
             input_tokens=self.TRIAGE_TOKENS[0],
             output_tokens=self.TRIAGE_TOKENS[1],
         )
+
+    def count_input_tokens(self, ctx: BillContext) -> int | None:
+        """What the real tokenizer would say, near enough for a guard: Polish text runs about
+        two characters to the token, a scanned page about 1600."""
+        self.counted.append(ctx.number)
+        if self.count_fails:
+            return None
+        pages = ctx.scan.pages if ctx.scan else 0
+        return len(ctx.text) // 2 + pages * 1600
 
     def analyze(self, ctx: BillContext) -> AnalysisRecord:
         self.contexts.append(ctx)

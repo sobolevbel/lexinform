@@ -220,6 +220,33 @@ def test_text_over_the_per_bill_cost_limit_is_skipped_without_a_model_call() -> 
     assert bill.last_error is not None and "exceeds the $0.01 limit" in bill.last_error
 
 
+def test_the_limit_is_measured_by_the_tokenizer_not_by_the_text_length() -> None:
+    """A scan has no text to measure at all: without the count it would pass the guard as free
+    and then cost whatever its pages cost."""
+    w = World(extractor=FakeTextExtractor(""), max_bill_cost_usd=0.01)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")  # 4 pages ≈ 6400 tokens ≈ $0.032
+
+    report = w.run()
+
+    assert (report.analyzed, report.analysis_skipped_cost) == (0, 1)
+    assert w.llm.contexts == [] and w.llm.counted == ["3039"]
+    bill = w.bill("3039")
+    assert bill.status is BillStatus.SKIPPED_COST
+    assert bill.last_error is not None and "6400 tokens" in bill.last_error
+
+
+def test_a_failed_count_falls_back_to_the_estimate() -> None:
+    w = World(extractor=FakeTextExtractor("Tekst ustawy. " * 700), max_bill_cost_usd=0.01)
+    w.llm.count_fails = True
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+
+    report = w.run()
+
+    assert (report.analyzed, report.analysis_skipped_cost) == (0, 1)
+    reason = w.bill("3039").last_error
+    assert reason is not None and "chars" in reason
+
+
 def test_run_cost_limit_stops_the_phase_and_leaves_the_rest_pending() -> None:
     w = World(max_run_cost_usd=0.001)
     w.llm.MODEL = "claude-opus-5"  # priced: 100 in + 50 out per analysis ≈ $0.002

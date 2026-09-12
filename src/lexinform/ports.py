@@ -208,6 +208,13 @@ class LlmAnalyzer(Protocol):
         """What a set of amendments (Senate, "-A" report) changes in the bill as described."""
         ...
 
+    def count_input_tokens(self, ctx: BillContext) -> int | None:
+        """What this analysis will be charged for its input, counted by the model's own
+        tokenizer before the call; None when the count could not be obtained. Free, and exact
+        where an estimate from the text length is not — a scanned document has no text to
+        measure at all."""
+        ...
+
     def digest_supplement(self, ctx: SupplementContext) -> SupplementRecord:
         """What a document filed to a print (the government's position, the OSR, an opinion)
         says about the bill as described."""

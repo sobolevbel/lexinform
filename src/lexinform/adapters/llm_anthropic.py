@@ -120,6 +120,24 @@ class AnthropicAnalyzer:
             cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
         )
 
+    def count_input_tokens(self, ctx: BillContext) -> int | None:
+        """The tokenizer's own count of what `analyze` would send, without sending it.
+
+        The structured-output schema of the request is not counted: it is about a thousand
+        tokens, it is cached, and this number exists to decide whether a document is too
+        expensive to read at all. A failure is not one — the caller falls back to estimating
+        from the text."""
+        try:
+            counted = self._client.messages.count_tokens(
+                model=self._model,
+                system=[{"type": "text", "text": self._system}],
+                messages=[{"role": "user", "content": _content(build_user_prompt(ctx), ctx.scan)}],
+            )
+        except Exception as exc:
+            log.warning("tokens of druk %s not counted (%s); estimating", ctx.number, _short(exc))
+            return None
+        return int(counted.input_tokens)
+
     def triage(self, ctx: TriageContext) -> TriageRecord:
         """The cheap first pass on excerpts; may run on a smaller model than the analysis."""
         response = self._parse(
@@ -247,25 +265,12 @@ class AnthropicAnalyzer:
             if thinking
             else {}
         )
-        content: list[Any] = []
-        if scan is not None:
-            content.append(
-                {
-                    "type": "document",
-                    "source": {
-                        "type": "base64",
-                        "media_type": scan.media_type,
-                        "data": scan.data,
-                    },
-                }
-            )
-        content.append({"type": "text", "text": user_prompt})
         try:
             response: _ParsedMessageLike = self._client.messages.parse(
                 model=model,
                 max_tokens=self._max_tokens,
                 system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-                messages=[{"role": "user", "content": content}],
+                messages=[{"role": "user", "content": _content(user_prompt, scan)}],
                 output_format=output_format,
                 **reasoning,
             )
@@ -294,6 +299,25 @@ class AnthropicAnalyzer:
         if response.stop_reason == "max_tokens":
             raise LlmError("response truncated by max_tokens")
         return response
+
+
+def _content(user_prompt: str, scan: ScannedDocument | None) -> list[Any]:
+    """The user turn: a scanned document goes in front of the prompt, so the model reads its
+    pages; a readable one is already inside the prompt as text."""
+    blocks: list[Any] = []
+    if scan is not None:
+        blocks.append(
+            {
+                "type": "document",
+                "source": {
+                    "type": "base64",
+                    "media_type": scan.media_type,
+                    "data": scan.data,
+                },
+            }
+        )
+    blocks.append({"type": "text", "text": user_prompt})
+    return blocks
 
 
 def _usage_int(usage: Any, field: str) -> int | None:

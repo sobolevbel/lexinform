@@ -34,6 +34,11 @@ def estimate_input_cost(chars: int, input_price_per_mtok: float) -> float:
     return chars / CHARS_PER_TOKEN / 1_000_000 * input_price_per_mtok
 
 
+def input_cost(tokens: int, input_price_per_mtok: float) -> float:
+    """What a counted input costs, with no estimating in between."""
+    return tokens / 1_000_000 * input_price_per_mtok
+
+
 def estimate_scan_cost(pages: int, input_price_per_mtok: float) -> float:
     """What sending a scanned document of `pages` costs, before the call is made."""
     return pages * TOKENS_PER_SCANNED_PAGE / 1_000_000 * input_price_per_mtok

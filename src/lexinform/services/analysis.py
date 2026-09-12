@@ -41,7 +41,7 @@ from lexinform.models import (
 )
 from lexinform.ports import AuthorsResolver, BillRepository, Clock, LlmAnalyzer
 from lexinform.ports import TextSource as TextSourcePort
-from lexinform.pricing import cost_usd, estimate_input_cost, estimate_scan_cost
+from lexinform.pricing import cost_usd, estimate_input_cost, estimate_scan_cost, input_cost
 from lexinform.sections import TextBudget, carries_the_document, excerpts, trim_print
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 
@@ -89,9 +89,10 @@ class AnalysisOutcome:
 class TooExpensiveError(Exception):
     """A first analysis whose input alone would cost more than the per-bill limit allows."""
 
-    def __init__(self, estimate: float, limit: float, chars: int) -> None:
+    def __init__(self, estimate: float, limit: float, *, tokens: int | None, chars: int) -> None:
+        measure = f"{tokens} tokens" if tokens is not None else f"~{chars} chars"
         super().__init__(
-            f"~${_usd(estimate)} of input for {chars} chars exceeds the ${_usd(limit)} limit"
+            f"${_usd(estimate)} of input for {measure} exceeds the ${_usd(limit)} limit"
         )
         self.estimate = estimate
 
@@ -427,15 +428,6 @@ class AnalysisService:
             triage, rejection = self._triage_verdict(bill, meta, text)
             if rejection is not None:
                 return _Prepared(bill, located, text, source, rejection, first=True)
-        if (
-            previous is None
-            and cost_guard
-            and self._max_bill_cost
-            and self._input_price is not None
-        ):
-            estimate = loaded.estimate(self._input_price)
-            if estimate > self._max_bill_cost:
-                raise TooExpensiveError(estimate, self._max_bill_cost, len(text))
         ctx = BillContext(
             number=bill.number,
             title=meta.title or bill.summary.title,
@@ -450,12 +442,31 @@ class AnalysisService:
             previous_summary=previous.analysis.summary if previous else None,
             previous_key_changes=list(previous.analysis.key_changes) if previous else [],
         )
+        if previous is None and cost_guard:
+            self._refuse_if_too_expensive(ctx, loaded)
         record = self._llm.analyze(ctx)
         record.source_url = document.url if document else None
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
         record.text_sha256 = digest
         return _Prepared(bill, located, text, source, record, first=previous is None, triage=triage)
+
+    def _refuse_if_too_expensive(self, ctx: BillContext, loaded: _Loaded) -> None:
+        """Stop a first analysis whose input alone costs more than the per-bill limit.
+
+        The model counts the input itself (free, and the only way to price a scan, which has no
+        text to measure); when that request fails the estimate from the text length stands in.
+        """
+        if not self._max_bill_cost or self._input_price is None:
+            return
+        tokens = self._llm.count_input_tokens(ctx)
+        cost = (
+            input_cost(tokens, self._input_price)
+            if tokens is not None
+            else loaded.estimate(self._input_price)
+        )
+        if cost > self._max_bill_cost:
+            raise TooExpensiveError(cost, self._max_bill_cost, tokens=tokens, chars=len(ctx.text))
 
     def _triage_verdict(
         self, bill: Bill, meta: ProcessSummary, text: str
