@@ -451,7 +451,6 @@ RU = Labels(
     supplement_headers={
         "government_position": "Позиция правительства по проекту",
         "impact_assessment": "Оценка последствий (OSR)",
-        "opinion": "Мнение по проекту",
     },
     supplement_supports={
         "yes": "правительство поддерживает проект",
@@ -491,7 +490,6 @@ RU = Labels(
         "text_changed": "Новая версия текста",
         "government_position": "Правительство высказалось о проекте",
         "impact_assessment": "Появилась оценка последствий проекта",
-        "opinion": "Поступило мнение по проекту",
         "withdrawn": "Проект отозван",
         "discontinued": "Проект прекращён с концом каденции",
         "rcl_stage": "Новая стадия на RCL",
@@ -973,7 +971,6 @@ EN = Labels(
     supplement_headers={
         "government_position": "The government's position on the bill",
         "impact_assessment": "Assessment of the effects (OSR)",
-        "opinion": "Opinion on the bill",
     },
     supplement_supports={
         "yes": "the government backs the bill",
@@ -1013,7 +1010,6 @@ EN = Labels(
         "text_changed": "New version of the text",
         "government_position": "The government has spoken on the bill",
         "impact_assessment": "An assessment of the bill's effects was filed",
-        "opinion": "An opinion on the bill was filed",
         "withdrawn": "Bill withdrawn",
         "discontinued": "Bill lapsed with the end of the term",
         "rcl_stage": "New stage on RCL",

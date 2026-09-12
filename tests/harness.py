@@ -392,7 +392,8 @@ class World:
 
     def file_to_print(self, number: str, title: str, *, suffix: str = "s") -> str:
         """A document was filed to the print after its submission (the API's `additionalPrints`):
-        the government's position, an OSR, an opinion. Returns the document's URL."""
+        the government's position, an OSR, an opinion, a changed representative. Returns the
+        document's URL."""
         parent = self.gateway.prints[number]
         filed_number = f"{number}-{suffix}"
         url = print_url(filed_number)

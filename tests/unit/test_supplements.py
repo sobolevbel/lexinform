@@ -7,7 +7,7 @@ from tests.harness import COMMITTEE_STAGES, World
 
 GOVERNMENT_POSITION = "Stanowisko Rządu do druku nr 3039."
 OSR = "Do druku nr 3039 - ocena skutków regulacji"
-OPINION = "Do druku nr 3039 - opinia SN"
+OPINION = "Do druku nr 3039 - opinia SN"  # filed, recorded, never told
 NO_REMARKS = "Do druku nr 3039 - opinia PG RP ( nie zgłoszono uwag )."
 HOUSEKEEPING = "Do druku nr 3039 - zmiana posła sprawozdawcy"
 TITLE = "Projekt ustawy o cudzoziemcach"
@@ -26,9 +26,12 @@ Z wyrazami szacunku, Donald Tusk
 
 
 def test_the_kinds_worth_telling_are_told_apart_by_their_title() -> None:
+    """An opinion is not one of them: 1732 of the 2339 documents filed in term 10 are opinions,
+    1.4 per print and 16 at the most, and a reader cannot act on yet another body having written
+    something."""
     assert supplement_kind(GOVERNMENT_POSITION) == "government_position"
     assert supplement_kind(OSR) == "impact_assessment"
-    assert supplement_kind(OPINION) == "opinion"
+    assert supplement_kind(OPINION) is None
     assert supplement_kind(NO_REMARKS) is None
     assert supplement_kind(HOUSEKEEPING) is None
 
@@ -106,18 +109,21 @@ def test_several_documents_filed_at_once_are_told_in_one_reply() -> None:
     w.add_bill("3039", TITLE)
     w.run()
     w.file_to_print("3039", OSR, suffix="001")
-    w.file_to_print("3039", OPINION, suffix="002")
+    w.file_to_print("3039", GOVERNMENT_POSITION)
     w.clock.advance(days=1)
 
     report = w.run()
 
     assert report.updates == 1
     _, change, _ = w.publisher.updates[0]
-    assert [r.source_kind for r in change.supplements] == ["impact_assessment", "opinion"]
+    assert [r.source_kind for r in change.supplements] == [
+        "impact_assessment",
+        "government_position",
+    ]
     text = MessageFormatter("ru").status_update(*w.publisher.updates[0][:2]).text
-    assert text.startswith("📊 <b>Появилась оценка последствий проекта — druk nr 3039</b>")
+    assert text.startswith("🏛 <b>Правительство высказалось о проекте — druk nr 3039</b>")
     assert "📄 <b>Оценка последствий (OSR)</b>" in text
-    assert "📄 <b>Мнение по проекту</b>" in text
+    assert "📄 <b>Позиция правительства по проекту</b>" in text
 
 
 def test_a_document_arriving_with_a_stage_is_told_under_the_stages_header() -> None:
@@ -247,16 +253,18 @@ def test_a_print_that_could_not_be_read_forgets_nothing() -> None:
 
 
 def test_a_second_document_of_the_same_kind_is_a_second_post() -> None:
+    """Nothing but the numbers tells two documents apart: no stage moves between them, so the
+    change key must carry them or the second row would collide with the first."""
     w = World()
     w.add_bill("3039", TITLE)
     w.run()
-    w.file_to_print("3039", OPINION, suffix="002")
+    w.file_to_print("3039", OSR, suffix="001")
     w.clock.advance(days=1)
     w.run()
-    w.file_to_print("3039", OPINION.replace("SN", "KRS"), suffix="003")
+    w.file_to_print("3039", OSR.replace("regulacji", "regulacji - uzupełnienie"), suffix="004")
     w.clock.advance(days=1)
 
     report = w.run()
 
     assert report.updates == 1
-    assert [r.number for r in w.publisher.updates[-1][1].supplements] == ["3039-003"]
+    assert [r.number for r in w.publisher.updates[-1][1].supplements] == ["3039-004"]

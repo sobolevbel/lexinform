@@ -72,12 +72,12 @@ def update_event(change: StatusChange, bill: Bill) -> str:
 
 
 def supplement_event(change: StatusChange) -> str | None:
-    """The filed document the post is named after: the government's position outweighs the OSR,
-    and both outweigh an opinion. The arrival of the position is also a stage
-    (`GovermentPosition`), and one with no name of its own — without this the post that carries
-    the government's verdict would be headed "Обновление"."""
+    """The filed document the post is named after: the government's position outweighs its
+    assessment of the effects. The arrival of the position is also a stage (`GovermentPosition`),
+    and one with no name of its own — without this the post that carries the government's verdict
+    would be headed "Обновление"."""
     kinds = {record.source_kind for record in change.supplements}
-    for kind in ("government_position", "impact_assessment", "opinion"):
+    for kind in ("government_position", "impact_assessment"):
         if kind in kinds:
             return kind
     return None

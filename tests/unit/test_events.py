@@ -171,7 +171,7 @@ def test_the_government_position_outweighs_the_other_filed_documents(
     """A stage the arrival of the position also makes has no name of its own, so without this
     the post that carries the government's verdict would be headed "Обновление"."""
     stage = Stage(stage_type="GovermentPosition", stage_name="Wpłynęło stanowisko rządu")
-    filed = [_filed("opinion"), _filed("government_position"), _filed("impact_assessment")]
+    filed = [_filed("impact_assessment"), _filed("government_position")]
     change = _change([stage], supplements=filed)
 
     assert has_news(change)
@@ -179,11 +179,11 @@ def test_the_government_position_outweighs_the_other_filed_documents(
     assert "government_position" in event_keys(change, "government_position")
 
 
-def test_an_opinion_alone_is_news_of_its_own(process_1962: ProcessDetail) -> None:
-    change = _change([], supplements=[_filed("opinion")])
+def test_a_filed_document_alone_is_news_of_its_own(process_1962: ProcessDetail) -> None:
+    change = _change([], supplements=[_filed("impact_assessment")])
 
     assert has_news(change)
-    assert update_event(change, _bill(process_1962)) == "opinion"
+    assert update_event(change, _bill(process_1962)) == "impact_assessment"
 
 
 def test_a_bill_withdrawn_after_its_print_is_not_told_as_rejected(

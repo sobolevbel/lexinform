@@ -158,7 +158,6 @@ def supplement_system_prompt(language: str) -> str:
 _SUPPLEMENT_LABEL = {
     "government_position": "stanowisko Rządu do projektu",
     "impact_assessment": "ocena skutków regulacji (OSR)",
-    "opinion": "opinia do projektu",
 }
 
 

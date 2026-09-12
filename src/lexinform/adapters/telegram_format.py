@@ -154,7 +154,6 @@ EVENT_ICON = {
     "text_changed": "🆕",
     "government_position": "🏛",
     "impact_assessment": "📊",
-    "opinion": "📝",
     "withdrawn": "🏁",
     "discontinued": "🏁",
     "rcl_to_sejm": "🔢",

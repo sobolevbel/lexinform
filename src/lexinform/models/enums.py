@@ -11,7 +11,8 @@ metadata only. `SourceKind` says which document it read, and `AMENDMENT_SOURCES`
 carry no bill text but amendments — the Senate's resolution print, and the committee report that
 answers amendments rather than attaching a new text. `SUPPLEMENT_SOURCES` are the documents
 filed to a print after it was submitted (`PrintInfo.additional_prints`): they carry no bill text
-either, but say what the government, an OSR or an opinion makes of the text there already is.
+either, but say what the government and its assessment of the effects make of the text there
+already is.
 
 `BILL_DOCUMENT_TYPE` is the Polish display string the Sejm API filters `documentType` on; the
 enum value `BILL` does not filter.
@@ -132,9 +133,6 @@ SourceKind = Literal[
     "committee_amendments",
     "government_position",
     "impact_assessment",
-    "opinion",
 ]
 AMENDMENT_SOURCES: frozenset[SourceKind] = frozenset({"senate_amendments", "committee_amendments"})
-SUPPLEMENT_SOURCES: frozenset[SourceKind] = frozenset(
-    {"government_position", "impact_assessment", "opinion"}
-)
+SUPPLEMENT_SOURCES: frozenset[SourceKind] = frozenset({"government_position", "impact_assessment"})

@@ -490,21 +490,20 @@ def supplement_kind(title: str) -> SourceKind | None:
     """What a document filed to a print after its submission is, or None when it is not worth
     a word to a reader.
 
-    Measured over term 10 (3282 prints, 2339 additional prints, 2026-09-12): 289 are the OSR the
-    Marshal asked the applicant for, 82 the government's position on someone else's bill and 1732
-    opinions, of which 563 say in the title itself that they raised nothing ("nie zgłoszono
-    uwag"). What is left is housekeeping the channel has no reason to repeat — a changed
-    representative of the applicants, an extra list of supporting signatures, an errata — and
-    amendments tabled at the second reading, which reach the reader through the committee's
-    report instead (`amendments_stage`), never twice.
+    Measured over term 10 (3282 prints, 2339 additional prints, 2026-09-12): 82 are the
+    government's position on a bill it did not write, 289 the OSR the Marshal asked the applicant
+    for, and 1732 are opinions. The first two decide things and arrive once per bill; the
+    opinions are 1.4 per print on average and 16 at the most, and telling a reader that yet
+    another body has written something is the chronicle this channel is not. What is left is
+    housekeeping — a changed representative of the applicants, an extra list of supporting
+    signatures, an errata — and amendments tabled at the second reading, which reach the reader
+    through the committee's report instead (`amendments_stage`), never twice.
     """
     low = " ".join(title.lower().split())
     if "stanowisko rządu" in low:
         return "government_position"
     if "ocena skutków regulacji" in low:
         return "impact_assessment"
-    if "opini" in low and "nie zgłoszono uwag" not in low:
-        return "opinion"
     return None
 
 
