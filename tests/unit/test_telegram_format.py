@@ -1169,6 +1169,16 @@ def test_one_endless_error_does_not_take_the_rest_of_the_report_with_it() -> Non
     assert "\n🤖 <b>analysis</b>\nanalyzed: 2 · failures: 1\n" in text  # the counters are still
 
 
+def test_a_command_reply_escapes_a_title_once(process_3039: ProcessDetail) -> None:
+    ampersand = process_3039.model_copy(update={"title": "Projekt R&D <x>"})
+    outcome = CommandOutcome(status=OutcomeStatus.SHOWN, bill=bill_of(ampersand))
+
+    text = MessageFormatter("ru").command_reply(_incoming("/show 3039"), outcome).text
+
+    assert_telegram_html(text)
+    assert ">Projekt R&amp;D &lt;x&gt;</a>" in text
+
+
 def test_a_deadline_that_has_run_out_is_named_as_expired(process_1962: ProcessDetail) -> None:
     third_reading = next(
         i

@@ -99,6 +99,11 @@ def trim_print(text: str) -> TrimmedText:
             _drop(dropped, kept, current, len(page))
         else:
             kept.append(page)
+    if not any(page for page in kept if not page.startswith("\n[pominięto: ")):
+        # Nothing but markers left. A document extracted without page breaks is one page, so a
+        # heading in its first lines would decide the fate of the whole text; unknown layouts
+        # pass through, and this is one.
+        return TrimmedText(text=text.strip())
     return TrimmedText(text="\n".join(kept).strip(), dropped=tuple(dropped))
 
 

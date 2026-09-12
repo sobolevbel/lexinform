@@ -869,7 +869,7 @@ class MessageFormatter:
         """The bill's title and link, its verdict, and (for /show) its status and last stage."""
         lines = [
             f"<b>{self._number_label(bill)}</b> · "
-            + link(process_web_url(bill.term, bill.number), esc(_clip(bill.summary.title, 160)))
+            + link(process_web_url(bill.term, bill.number), _clip(bill.summary.title, 160))
         ]
         if full:
             hits = ", ".join(bill.prefilter_hits) or "none"

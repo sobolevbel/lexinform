@@ -74,6 +74,18 @@ def test_unknown_layout_passes_unchanged() -> None:
     assert PAGE_BREAK not in result.text
 
 
+def test_a_trim_that_would_keep_nothing_keeps_everything() -> None:
+    """A Word file from RCL often has no page break at all, so the whole document is one page.
+    If that page opens with a heading the trimmer drops, the model would be sent the marker
+    line and nothing else."""
+    text = "ROZPORZĄDZENIE\n\nArt. 1. W ustawie o cudzoziemcach wprowadza się zmiany. " * 50
+
+    result = trim_print(text)
+
+    assert result.dropped == ()
+    assert result.text == text.strip()
+
+
 def test_real_deputies_print_is_not_trimmed() -> None:
     text = PypdfTextExtractor().extract((FIXTURES / "print_3039.pdf").read_bytes())
     assert PAGE_BREAK in text
