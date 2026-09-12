@@ -27,11 +27,13 @@ def word_streams(
     encrypted: bool = False,
     which_table: int = 1,
     prc: bytes = b"",
+    cps: list[int] | None = None,
 ) -> tuple[bytes, bytes]:
     """A `WordDocument` stream (FIB + the text of every piece) and its table stream (Clx).
 
     `pieces` are (text, compressed) in CP order; compressed pieces are stored as Windows-1252,
-    the others as UTF-16LE. `ccp_text` defaults to every character of every piece.
+    the others as UTF-16LE. `ccp_text` defaults to every character of every piece, and `cps`
+    replaces the character positions the pieces are stored under (a damaged file).
     """
     body = bytearray()
     pcds: list[tuple[int, bytes]] = []  # (cp count, Pcd)
@@ -44,9 +46,10 @@ def word_streams(
             body += text.encode("utf-16-le")
             fc_field = fc
         pcds.append((len(text), struct.pack("<HIH", 0, fc_field, 0)))
-    cps = [0]
-    for count, _ in pcds:
-        cps.append(cps[-1] + count)
+    if cps is None:
+        cps = [0]
+        for count, _ in pcds:
+            cps.append(cps[-1] + count)
     plc = b"".join(struct.pack("<I", cp) for cp in cps) + b"".join(pcd for _, pcd in pcds)
     clx = prc + b"\x02" + struct.pack("<I", len(plc)) + plc
     table = b"\0" * 16 + clx  # the piece table need not start the stream
@@ -168,6 +171,17 @@ def test_a_negative_property_modifier_length_is_refused_instead_of_looping_forev
     word, table = word_streams([("tekst", True)], prc=b"\x01" + struct.pack("<h", -3))
 
     with pytest.raises(DocFormatError, match="negative"):
+        word_text(word, table)
+
+
+def test_a_piece_whose_span_runs_backwards_is_refused_instead_of_read_short() -> None:
+    # A damaged piece table whose character positions do not grow: the second piece spans -2
+    # characters, and a plain slice of it is empty, so its text would vanish without a word.
+    word, table = word_streams(
+        [("Art. 1. ", True), ("Cudzoziemiec.", True)], cps=[0, 5, 3], ccp_text=10
+    )
+
+    with pytest.raises(DocFormatError, match="backwards"):
         word_text(word, table)
 
 

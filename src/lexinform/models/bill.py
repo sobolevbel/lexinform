@@ -67,7 +67,7 @@ class Bill(BaseModel):
     rcl: RclProject | None = None  # the RCL project of a government bill followed before the Sejm
     wykaz: WykazEntry | None = None  # the register entry of a bill the government only announced
     # Set when the Sejm term ended with the bill unfinished (zasada dyskontynuacji): nothing
-    # more will happen to it under this number, so it is not tracked or analysed any more.
+    # more will happen to it under this number, so it is not tracked or analysed anymore.
     discontinued_at: dt.datetime | None = None
     first_seen_at: dt.datetime
     last_checked_at: dt.datetime

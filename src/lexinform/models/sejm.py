@@ -92,7 +92,7 @@ class BillAuthors(BaseModel):
 
     representative: str | None = None
     representative_club: str | None = None
-    clubs: tuple[tuple[str, int], ...] = ()  # (club, signatories) largest first
+    clubs: tuple[tuple[str, int], ...] = ()  # (club, signatories) the largest first
     signatories: int = 0
     unresolved: int = 0
 
@@ -148,7 +148,7 @@ class Stage(BaseModel):
     text_after3: str | None = None
     position: str | None = None  # SenatePosition: what the Senate did (not part of the fingerprint)
     proposal: str | None = None  # CommitteeReport: what the committee proposes
-    sub_committee: bool = False  # CommitteeReport: a sub-committee report, not the final one
+    sub_committee: bool = False  # CommitteeReport: a subcommittee report, not the final one
     # CommitteeReport: minority motions attached (voted at the 3rd reading); None when unknown
     minority_motions: int | None = None
     voting: VotingSummary | None = None  # Voting: results (not part of the fingerprint)

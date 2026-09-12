@@ -596,7 +596,7 @@ class MessageFormatter:
         if window is None or window.end is None:
             raise ValueError(f"bill {bill.number} has no consultation end date")
         header = self._header(ICON["consultation"], lb.consultation_deadline_header, bill)
-        where = self._consultation_where(bill, window, sejm_label=lb.consultation_hint)
+        where = self._consultation_where(window, sejm_label=lb.consultation_hint)
         until = (
             f"{esc(lb.consultation_until)} {self.fmt_date(window.end)} · "
             f"{self._countdown((window.end - today).days)}"
@@ -818,9 +818,9 @@ class MessageFormatter:
             sections.append(_section("❌", "errors", *(_bullet(e) for e in report.errors)))
         if report.notes:
             sections.append(_section("ℹ️", "notes", *(_bullet(n) for n in report.notes)))
-        rejected = ""
+        rejected_text = ""
         if report.rejected:
-            rejected = _section(
+            rejected_text = _section(
                 "🗂",
                 "analysed, not published",
                 *(
@@ -831,7 +831,7 @@ class MessageFormatter:
         logs = ""
         if log_lines:
             logs = "⚠️ <b>warnings</b>\n<pre>" + esc("\n".join(log_lines)) + "</pre>"
-        text = self._assemble([head, "\n\n".join(sections)], flexible=[rejected, logs])
+        text = self._assemble([head, "\n\n".join(sections)], flexible=[rejected_text, logs])
         return RenderedMessage(text=text)
 
     def command_reply(self, command: IncomingCommand, outcome: CommandOutcome) -> RenderedMessage:
@@ -1110,7 +1110,7 @@ class MessageFormatter:
             return ""
         return (
             f"{ICON['consultation']} <b>{esc(lb.consultation)}:</b> {when} · "
-            f"{self._consultation_where(bill, window)}"
+            f"{self._consultation_where(window)}"
         )
 
     def _rcl_deadline(self, bill: Bill, window: ConsultationWindow) -> str:
@@ -1124,7 +1124,7 @@ class MessageFormatter:
         return text
 
     def _consultation_where(
-        self, bill: Bill, window: ConsultationWindow, *, sejm_label: str | None = None
+        self, window: ConsultationWindow, *, sejm_label: str | None = None
     ) -> str:
         """Where an opinion goes: the Sejm form, or the ministry's e-mail and the letter (RCL)."""
         lb = self._labels
