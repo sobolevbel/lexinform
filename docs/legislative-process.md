@@ -188,7 +188,8 @@ nad stanowiskiem Senatu" + `CommitteeReport` "przyjąć/odrzucić (część) pop
 (`SenatePositionConsideration`, `decision`: "przyjęto poprawki", "przyjęto część poprawek",
 "odrzucono poprawki"). A Senate amendment or rejection stands unless the Sejm rejects it by an
 **absolute majority** with at least half of the MPs present. If the Sejm cannot override a
-rejection, the law dies. The Senate's own text is not analysed by lexinform yet (roadmap).
+rejection, the law dies. `models.next_phase` tells the two apart (`senate_amendments` against
+`senate_rejection`) and the Senate's amendments are summarised from its resolution print.
 
 ## 6. The President (Constitution art. 122)
 
@@ -276,7 +277,7 @@ practice.
 
 | Moment | Who may act | How | In lexinform |
 |---|---|---|---|
-| RCL konsultacje publiczne (government bills, regulations) | anyone, in Polish | e-mail/ePUAP to the ministry, address in the consultation letter; lobbying declaration | not covered (roadmap) |
+| RCL konsultacje publiczne (government bills) | anyone, in Polish | e-mail/ePUAP to the ministry, address in the consultation letter; lobbying declaration | the card carries the deadline, the ministry's e-mail, the RCL comment form and the zgłoszenie zainteresowania; reminder 3 days before (draft regulations are still not covered) |
 | Sejm consultation of an RPW bill (non-government) | anyone | web form on sejm.gov.pl, 30 days | consultation line + link, reminder 3 days before, notice when opinions are published |
 | Committee work after the first reading | anyone; organisations formally via lobbying declaration | letter/e-mail to the committee secretariat, ideally before the sitting that handles the bill | "what you can do now" with the committee link; committee sitting agenda posts |
 | Wysłuchanie publiczne | anyone who applies ≥ 10 days before | application via the Sejm's system | `PublicHearing` stage line and action line with the application deadline; reminder reply before it |

@@ -114,7 +114,17 @@ Invariants worth keeping:
   from receiving the act; 14/7 for urgent bills). A bill the government declared *pilny*
   (`models.is_urgent`, art. 123) is told in its own words throughout: `Labels.urgent_step_labels`
   and `urgent_durations` override the normal entries, so the card never promises a reader weeks
-  where the Sejm measured days.
+  where the Sejm measured days. **No date is printed once it has passed**: a deadline past
+  `DEADLINE_GRACE_DAYS` says «срок истёк», a step that outlived `PHASE_PATIENCE` says how long it
+  has been standing (`models.stalled_days`, `Phase.since`) instead of quoting an average, and a
+  sitting only dates a phase whose venue it matches (a committee's 08:30 slot is not a third
+  reading). The same rule governs the action line: a hearing whose application deadline has gone
+  is not offered, and «до заседания» is dropped on the day of the sitting.
+- **A live card is kept true; a finished one is left alone.** Everything the card says about
+  "now" is derived from the day it was rendered, so `tracking/cards.py::CardRefresher` re-renders
+  the card of every followed bill each run and edits it in place when the text has drifted. The
+  digest of what was last sent (`publications.rendered_sha256`, v16) makes a quiet run free: a
+  pure render per bill, no request. `models.is_over` bills keep the card they had.
 - **A bill whose road ended before we saw it gets neither an analysis nor a card.** A card
   invites action, and there is none left. `models.is_over(bill, today)` decides for every source:
   over means the act is in Dziennik Ustaw (`ELI`), the bill was rejected or withdrawn, the RCL
@@ -248,7 +258,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v15 as of Sept 2026). `migrate()` reads `user_version` and
+`SCHEMA_VERSION = len(MIGRATIONS)` (v16 as of Sept 2026). `migrate()` reads `user_version` and
 runs every later script inside its own transaction, stamping the new version at the end, so a
 failed script leaves the database at the previous version. v8 (Sept 2026) added `rcl_json`, v9
 `bills.discontinued_at` and `status_changes.discontinued` (end of a Sejm term), v10
@@ -258,7 +268,9 @@ v11 the unique index of hearing reminders (per bill, channel and hearing date) a
 v12 the unique index of `joint_bill` replies (per bill and channel), v13 (Sept 2026) the
 `commands` table (operator commands by Telegram update id), v14 `commands.executed_at` (a
 command whose answer never arrived is answered again, not executed again), v15 (Sept 2026)
-`bills.wykaz_json` (entries of the wykaz prac legislacyjnych RM, `WPL/UD408` rows).
+`bills.wykaz_json` (entries of the wykaz prac legislacyjnych RM, `WPL/UD408` rows), v16
+`publications.rendered_sha256` (the card as last rendered, so a run can tell a card that has
+drifted from one that is still true without asking Telegram).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) →
 `db restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing
@@ -462,4 +474,11 @@ when their road is already over (decided 2026-09-12): no card and no analysis, w
 source — but only when there is really nothing ahead (the act is out, the bill was rejected or
 withdrawn, the project or the plan was dropped), and a bill the Sejm has merely passed keeps its
 card, because the Senate and the President are the reader's last windows; the last stage is read
-to tell the two apart. Open items are listed under "Still open" in `docs/roadmap.md`.
+to tell the two apart. The product review of 2026-09-12 settled the rest: a live card is
+edited in place when what it says has drifted and a finished one is not; the «Важность» line
+shows the score without the scale's legend, which read as a statement about the bill; a
+sitting or a hearing is told once for a group of jointly considered prints, not once per
+print; every reply carries the importance, category and topic tags, so a tag finds the
+moments to act and not only the card; and a source that is unreachable (`/bills`,
+`/proceedings`, RCL, the register) stops its own part of the run and nothing else.
+Open items are listed under "Still open" in `docs/roadmap.md`.

@@ -1,15 +1,22 @@
 """Prompt text for the bill analyzer. Keep the system prompt stable within a PROMPT_VERSION so
 prompt caching hits across all bills analysed in one run."""
 
-from lexinform.models import AmendmentsContext, BillContext, TriageContext
+from lexinform.models import (
+    PRE_PRINT_PREFIX,
+    RCL_PREFIX,
+    WYKAZ_PREFIX,
+    AmendmentsContext,
+    BillContext,
+    TriageContext,
+)
 
-PROMPT_VERSION = "2026-09-v4"
+PROMPT_VERSION = "2026-09-v5"
 
 _LANGUAGE_NAMES = {"ru": "Russian", "pl": "Polish", "en": "English", "uk": "Ukrainian"}
 
 SYSTEM_PROMPT_TEMPLATE = """You are a legal analyst for a channel that informs foreigners living in Poland about Polish legislation.
 
-You receive the text of a bill (projekt ustawy) submitted to the Sejm. Decide whether it matters for non-citizens and describe it for a general audience.
+You receive a bill (projekt ustawy) at some point of its life: a print submitted to the Sejm, a draft the government is still working on (RCL), or an entry in the government's register of planned bills, which has no text yet. The first line says which. Decide whether it matters for non-citizens and describe it for a general audience.
 
 ## Output fields
 
@@ -134,9 +141,25 @@ def build_triage_prompt(ctx: TriageContext) -> str:
     return "\n".join(lines)
 
 
+# What the number in front of the model means. Only a Sejm print is a druk: calling an RCL
+# project or a register entry one tells the model it is reading a bill before the Sejm.
+_SOURCE_LABEL = {
+    RCL_PREFIX: "Projekt na RCL (przed Sejmem), numer",
+    WYKAZ_PREFIX: "Wpis w wykazie prac legislacyjnych RM (sam tekst jeszcze nie istnieje), numer",
+    PRE_PRINT_PREFIX: "Projekt wniesiony do Sejmu, bez numeru druku, sygnatura",
+}
+
+
+def _source_line(number: str) -> str:
+    for prefix, label in _SOURCE_LABEL.items():
+        if number.startswith(prefix):
+            return f"{label} {number}"
+    return f"Druk nr {number}"
+
+
 def build_user_prompt(ctx: BillContext) -> str:
     lines = [
-        f"Druk nr {ctx.number}",
+        _source_line(ctx.number),
         f"Tytuł: {ctx.title}",
         f"Wnioskodawca: {ctx.applicant_type}",
     ]

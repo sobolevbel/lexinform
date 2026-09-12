@@ -15,8 +15,12 @@ class Analysis(BaseModel):
     relevant: bool = Field(description="True if the bill changes anything for non-citizens.")
     score: int = Field(ge=1, le=5, description="Importance 1-5; 5 = legalization of stay.")
     category: Category
-    summary: str = Field(description="3-6 plain-language sentences in the output language.")
-    key_changes: list[str] = Field(default_factory=list, description="Up to 6 bullets.")
+    # The schema travels with the prompt as the structured-output contract, so what it says
+    # about length must be what the prompt says.
+    summary: str = Field(description="2-3 plain sentences, at most ~350 characters.")
+    key_changes: list[str] = Field(
+        default_factory=list, description="Up to 5 bullets, at most ~120 characters each."
+    )
     affected_groups: list[str] = Field(default_factory=list)
     practical_impact: str = Field(description="What changes for a foreigner in practice.")
     effective_date: str | None = Field(

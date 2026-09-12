@@ -189,10 +189,42 @@ Done on 2026-09-12 (no schema change):
   for the Senate and 7 for the President, so a card never promises weeks where the Sejm measured
   days.
 
+Product review (2026-09-12), against the live channel. The findings and what each one cost a
+reader are in the commit messages; the shape of the fixes:
+
+- **Phase derivation told the truth about the states it actually meets.** A second reading that
+  sent the bill back to committee ("skierowano ponownie", "niedokończone II czytanie") no longer
+  announces the third reading with nothing to do; a Senate rejection is not amendments; a plan
+  the Council of Ministers adopted is not waiting for RCL; the card's "stage" line skips the
+  nodes that arrive beside the process and were rendering as raw Polish.
+- **Nothing time-dependent is printed once it has passed** (`Phase.since`, `stalled_days`,
+  `PHASE_PATIENCE`, `DEADLINE_GRACE_DAYS`), and a **live card is re-rendered each run** and
+  edited in place when it has drifted (`tracking/cards.py`, `publications.rendered_sha256`, v16).
+  A finished bill's card says how the road ended instead of losing its last three lines.
+- **The end of the road is followed to the end**: a veto or a referral to the Tribunal no longer
+  ages out 180 days after a `closureDate` set at the third reading, a closure is suppressed only
+  when the Dziennik Ustaw notice really went out, and a withdrawal, a sustained veto and a
+  rejection are told apart instead of all reading "Сейм отклонил проект".
+- **A run that cannot post does not consume what it saw** (`--no-publish` holds), and a source
+  being unreachable (`/bills`, `/proceedings`, ELI) stops its own part of the phase, not the
+  reminders and notices the rest of the run owes.
+- **Sittings**: a called-off sitting is not announced (`CommitteeSitting.status` was parsed and
+  never read), a moved one corrects the earlier post, a sitting already over is not posted, and a
+  hearing announced with less than ten days' notice is told rather than skipped.
+- **One event, one post for a group of jointly considered prints**; the "alternative bill" reply
+  shows where the group stands.
+- **Tags**: every reply carries importance, category and topic, the event vocabulary covers what
+  a reader searches for, and the tag line is in one alphabet.
+
 Still open:
 
-- RCL leftovers: consultations of draft regulations (rozporządzenia, `typeId=10`), zgłoszenia
-  lobbingowe.
+- A retroactive merge for druki 1929/1933, carded before the joint-print rule existed: both
+  threads stay, though they no longer duplicate each other's sittings.
+- `Analysis.confidence` is asked for and read by nothing; either show it or stop asking.
+
+- RCL leftovers: consultations of draft regulations (rozporządzenia, `typeId=10`); the
+  zgłoszenie zainteresowania is offered on the card but the declarations already filed
+  ("zgłoszenia lobbingowe") are not read.
 - Wykaz prac RM leftovers: the rozporządzenia (`RD`) and programme documents (`ID`, e.g. the
   migration strategy) it also lists, the ministers' own registers on their gov.pl pages (the CSV
   link is not at the same URL pattern there), and the backlog — an entry rewritten into relevance
@@ -200,7 +232,8 @@ Still open:
   `lexinform scan --since …` is the way in.
 - Ukrainian-language channel; weekly digest; static site from the state dump.
 - Committee e-mail addresses in "what you can do now" (the Sejm API has none; the committee page
-  is linked instead) and the Senate committee that received the act (the Senate API is not used).
+  is linked instead) and the Senate committee that received the act (the Senate API is not
+  used; the card links the Senate's listing of the laws the Sejm has passed).
 
 The sections below are the original plan, kept for the rationale and the verified API facts. They
 are not updated as the code moves on: where a name or a CLI flag below differs from the code, the

@@ -186,6 +186,15 @@ def test_triage_falls_back_to_the_analysis_model() -> None:
     assert client.messages.calls[0]["model"] == "claude-opus-5"
 
 
+def test_the_prompt_says_what_kind_of_document_the_number_names() -> None:
+    """Only a Sejm print is a druk; calling a register entry one tells the model it is reading
+    a bill before the Sejm, when no text exists at all."""
+    assert build_user_prompt(_ctx()).startswith("Druk nr 3039")
+    assert build_user_prompt(_ctx(number="RCL/12412103")).startswith("Projekt na RCL")
+    assert build_user_prompt(_ctx(number="WPL/UD408")).startswith("Wpis w wykazie")
+    assert build_user_prompt(_ctx(number="RPW/29075/2026")).startswith("Projekt wniesiony")
+
+
 def test_prompts_mention_truncation_and_metadata_only() -> None:
     assert "[TEKST OBCIĘTY" in build_user_prompt(_ctx(truncated=True))
     assert "NIEDOSTĘPNY" in build_user_prompt(_ctx(text="", text_source="metadata_only"))
