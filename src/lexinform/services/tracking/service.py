@@ -17,6 +17,7 @@ from lexinform.models import (
     Bill,
     PrintInfo,
     ProcessDetail,
+    PublicationKind,
     StatusChange,
     TextDocument,
     amendments_stage,
@@ -78,8 +79,9 @@ class StatusTrackingService:
         channel_id: str,
         analysis: AnalysisService | None = None,
         eli: EliGateway | None = None,
-        closed_grace_days: int = 30,
+        closed_grace_days: int = 90,
         passed_max_days: int = 180,
+        pending_decision_max_days: int = 1095,
         max_publish_attempts: int = 3,
         club_breakdown: bool = True,
         in_force_reminders: bool = True,
@@ -99,6 +101,7 @@ class StatusTrackingService:
         self._analysis = analysis
         self._closed_grace_days = closed_grace_days
         self._passed_max_days = passed_max_days
+        self._pending_decision_max_days = pending_decision_max_days
         self._max_publish_attempts = max_publish_attempts
         self._workers = workers
         self._poster = Poster(
@@ -252,15 +255,18 @@ class StatusTrackingService:
             if change is not None:
                 result.changed += 1
             try:
+                # The act notice goes first, so that the closure is suppressed only when the
+                # notice that would have told it really went out; ELI can be a day behind the
+                # process, and the change row is unique, so a suppressed closure is never
+                # detected again.
+                self._acts.check(bill, detail, result, publish=publish)
                 if change is not None and publish:
-                    # Service stages wait for the next event worth a post; a closure that comes
-                    # with the act in Dziennik Ustaw is told by the publication notice below.
-                    if has_news(change, act_published=bool(detail.eli)):
+                    announced = self._poster.posted(bill, PublicationKind.ACT_PUBLISHED)
+                    if has_news(change, act_published=announced):
                         result.count_post(self._poster.status_update(bill, change))
                     else:
                         self._poster.hold(bill, change)
                         result.held += 1
-                self._acts.check(bill, detail, result, publish=publish)
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 break
@@ -290,6 +296,7 @@ class StatusTrackingService:
             self._channel_id,
             closed_grace_days=self._closed_grace_days,
             passed_max_days=self._passed_max_days,
+            pending_decision_max_days=self._pending_decision_max_days,
             now=self._clock.now(),
             changed_since=changed_since,
         )

@@ -110,6 +110,8 @@ class Settings(BaseSettings):
     runs_retention_days: int = Field(default=90, ge=7)  # run records (with reports) kept this long
     track_closed_grace_days: int = 90  # Dz.U. publication follows ~30-40 days after closure
     track_passed_max_days: int = 180  # follow passed bills without a published act this long
+    # A veto or a referral to the Tribunal can hold a law for years before an act appears.
+    track_pending_decision_max_days: int = 1095
     track_full_weekday: int = Field(default=0, ge=0, le=6)  # weekday of the full check (0 = Monday)
     in_force_reminders: bool = True  # post a reminder on the day the act enters into force
     # Remind before a public consultation closes and before applications to a public hearing

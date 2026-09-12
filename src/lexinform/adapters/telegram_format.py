@@ -57,6 +57,7 @@ from lexinform.models import (
     stalled_days,
     told_stages,
     update_event,
+    veto_stood,
     wykaz_entry_number,
 )
 from lexinform.pricing import cost_usd
@@ -134,6 +135,9 @@ EVENT_ICON = {
     "third_reading": "🗳",
     "passed": "✅",
     "rejected": "❌",
+    "withdrawn_by_applicant": "🏁",
+    "veto_sustained": "⛔",
+    "not_enacted": "🏁",
     "senate": "🏛",
     "senate_no_amendments": "✅",
     "senate_amendments": "📋",
@@ -154,6 +158,10 @@ EVENT_ICON = {
 _SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
 _READING_NUMERAL = re.compile(r"^\s*(I{1,3})\s+czytanie", re.IGNORECASE)
 CLUBS_PER_SIDE = 4
+# Events whose header already tells how the process ended: a second sentence would repeat it.
+_SELF_EXPLAINING_CLOSURES = frozenset(
+    {"passed", "rejected", "rcl_closed", "wykaz_withdrawn", "withdrawn_by_applicant", "not_enacted"}
+)
 
 
 @dataclass(frozen=True)
@@ -460,12 +468,10 @@ class MessageFormatter:
             closure = f"{ICON['closed']} {esc(lb.wykaz_process_closed)}"
         elif change.closure_detected and bill.rcl is not None:
             closure = f"{ICON['closed']} {esc(lb.rcl_process_closed)}"
-        elif change.closure_detected and event not in (
-            "passed",
-            "rejected",
-            "rcl_closed",
-            "wykaz_withdrawn",
-        ):
+        elif event == "veto_sustained":
+            # The header names the outcome; the majority the Sejm needed is what explains it.
+            closure = f"{ICON['closed']} {esc(lb.process_veto_sustained)}"
+        elif change.closure_detected and event not in _SELF_EXPLAINING_CLOSURES:
             icon = ICON["passed"] if change.passed else ICON["closed"]
             closure = f"{icon} {esc(lb.process_passed if change.passed else lb.process_closed)}"
         if event == "print_assigned":
@@ -1253,6 +1259,8 @@ class MessageFormatter:
             if match:
                 return lb.next_step_labels["second_reading"].replace("II", match.group(1))
             return None
+        if stage.stage_type == "End" and veto_stood((stage,)):
+            return lb.stage_veto_sustained
         return lb.stage_labels.get(stage.stage_type) or lb.stage_type_labels.get(stage.stage_type)
 
     def _stage_label(self, bill: Bill, stage: Stage) -> str:

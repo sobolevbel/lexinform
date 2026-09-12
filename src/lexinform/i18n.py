@@ -30,6 +30,8 @@ class Labels:
     process_closed: str
     process_passed: str
     process_not_enacted: str  # the process ended without a law, and how is not recorded
+    process_veto_sustained: str
+    stage_veto_sustained: str  # the `End` node of a bill the veto killed
     link_process: str
     link_pdf: str
     link_rcl: str
@@ -214,6 +216,10 @@ RU = Labels(
     new_stages="Новые стадии",
     process_closed="Сейм отклонил проект, процесс завершён.",
     process_not_enacted="Процесс завершён: закон не принят.",
+    process_veto_sustained=(
+        "Сейм не отклонил вето Президента (нужно 3/5 голосов): закон не принят."
+    ),
+    stage_veto_sustained="закон не принят повторно после вето Президента",
     process_passed="Сейм принял закон.",
     link_process="Ход процесса в Сейме",
     link_pdf="PDF",
@@ -396,6 +402,9 @@ RU = Labels(
         "third_reading": "III чтение",
         "passed": "Сейм принял закон",
         "rejected": "Сейм отклонил проект",
+        "withdrawn_by_applicant": "Проект отозван",
+        "veto_sustained": "Вето Президента осталось в силе",
+        "not_enacted": "Процесс завершён: закон не принят",
         "senate": "Позиция Сената",
         "senate_no_amendments": "Сенат принял закон без поправок",
         "senate_amendments": "Сенат внёс поправки",
@@ -673,6 +682,10 @@ EN = Labels(
     new_stages="New stages",
     process_closed="The Sejm rejected the bill; the process is over.",
     process_not_enacted="The process is over: no law was enacted.",
+    process_veto_sustained=(
+        "The Sejm did not override the veto (a 3/5 majority is needed): no law was enacted."
+    ),
+    stage_veto_sustained="not passed again after the President's veto",
     process_passed="The Sejm passed the bill.",
     link_process="Legislative process",
     link_pdf="Print PDF",
@@ -850,6 +863,9 @@ EN = Labels(
         "third_reading": "Third reading",
         "passed": "The Sejm passed the bill",
         "rejected": "The Sejm rejected the bill",
+        "withdrawn_by_applicant": "The bill was withdrawn",
+        "veto_sustained": "The President's veto stood",
+        "not_enacted": "The process is over: no law was enacted",
         "senate": "Senate position",
         "senate_no_amendments": "The Senate passed the act without amendments",
         "senate_amendments": "The Senate introduced amendments",

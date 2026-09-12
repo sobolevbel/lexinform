@@ -362,6 +362,7 @@ class BillRepository(Protocol):
         *,
         closed_grace_days: int,
         passed_max_days: int,
+        pending_decision_max_days: int,
         now: datetime,
         changed_since: datetime | None = None,
     ) -> list[Bill]: ...

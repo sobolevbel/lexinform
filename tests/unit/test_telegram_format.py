@@ -414,7 +414,7 @@ def test_update_header_names_the_event_and_the_closure_line_is_not_repeated(
     assert passed.startswith("✅ <b>Сейм принял закон — druk nr 1962</b>")
     assert "• 17.07.2026: III чтение на заседании Сейма — закон принят" in passed
     assert "Сейм принял закон." not in passed  # the header said it
-    assert rejected.startswith("❌ <b>Сейм отклонил проект — druk nr 1962</b>")
+    assert rejected.startswith("🏁 <b>Процесс завершён: закон не принят — druk nr 1962</b>")
     assert referred.startswith("📮 <b>Направлен в комиссию — druk nr 1962</b>")
     assert reported.startswith("❌ <b>Комиссия предлагает отклонить проект — druk nr 1962</b>")
     assert "предлагает отклонить проект" in reported

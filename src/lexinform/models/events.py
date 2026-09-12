@@ -66,10 +66,43 @@ def update_event(change: StatusChange, bill: Bill) -> str:
             return "wykaz_withdrawn"
         if bill.rcl is not None:
             return "rcl_closed"
-        return "passed" if change.passed else "rejected"
+        return "passed" if change.passed else closure_event(bill)
     if change.content_changed:
         return "text_changed"
     return "update"
+
+
+def closure_event(bill: Bill) -> str:
+    """How a Sejm process ended without a law. `closureDate` with `passed=false` covers a
+    rejection, a withdrawal by the applicant and a veto the Sejm could not override, and the
+    listing tells none of them apart — so the stages and the `/bills` entry do, and what neither
+    explains is told without naming a culprit."""
+    if veto_stood(bill.stages):
+        return "veto_sustained"
+    submission = bill.submission
+    if submission is not None and submission.status == "WITHDRAWN":
+        return "withdrawn_by_applicant"
+    if any(_rejects(stage) for stage in flatten_stages(bill.stages)):
+        return "rejected"
+    return "not_enacted"
+
+
+def veto_stood(stages: tuple[Stage, ...]) -> bool:
+    """The Sejm voted on the President's veto and did not reach the 3/5 majority: the process
+    closes with "nie uchwalona ponownie po wecie Prezydenta" as its last node."""
+    return any(
+        stage.stage_type == "End" and "nie uchwalona ponownie" in stage.stage_name.lower()
+        for stage in stages
+    )
+
+
+def _rejects(stage: Stage) -> bool:
+    if stage.stage_type == "SejmReading":
+        return "odrzuc" in (stage.decision or "").lower()
+    if stage.stage_type == "CommitteeReport":
+        proposal = (stage.proposal or "").lower()
+        return "odrzuc" in proposal and "popraw" not in proposal
+    return False
 
 
 def _stage_event(stage: Stage) -> str | None:

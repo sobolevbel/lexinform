@@ -87,6 +87,7 @@ from lexinform.models.events import (
     reaches_sejm,
     told_stages,
     update_event,
+    veto_stood,
 )
 from lexinform.models.rcl import (
     RCL_STAGE_TYPE,
@@ -278,6 +279,7 @@ __all__ = [
     "reaches_sejm",
     "told_stages",
     "update_event",
+    "veto_stood",
     "usage_of",
     "BILL_KIND",
     "REGISTER_PAGE_URL",

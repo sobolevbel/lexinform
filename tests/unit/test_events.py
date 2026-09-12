@@ -6,6 +6,7 @@ from typing import Any
 from lexinform.models import (
     Bill,
     BillStatus,
+    BillSubmission,
     ProcessDetail,
     Stage,
     StatusChange,
@@ -104,7 +105,8 @@ def test_update_event_is_the_newest_stage_or_the_flag(process_1962: ProcessDetai
     assert update_event(_change([by_type["End"]], closure_detected=True, passed=True), bill) == (
         "passed"
     )
-    assert update_event(_change([], closure_detected=True, passed=False), bill) == "rejected"
+    # Nothing in the stages says the Sejm rejected it: the ending is told without a culprit.
+    assert update_event(_change([], closure_detected=True, passed=False), bill) == "not_enacted"
     assert update_event(_change([], content_changed=True), bill) == "text_changed"
     assert update_event(_change([], discontinued=True), bill) == "discontinued"
     assert update_event(_change([by_type["Start"]]), bill) == "start"
@@ -138,3 +140,34 @@ def test_hearing_application_deadline_is_ten_days_before() -> None:
 
     assert hearing_application_deadline(dated) == dt.date(2026, 9, 20)
     assert hearing_application_deadline(undated) is None
+
+
+def test_a_veto_the_sejm_could_not_override_is_not_a_rejection(
+    process_1962: ProcessDetail,
+) -> None:
+    """The re-vote fails and the process closes with `passed=false`, which the listing cannot
+    tell from a rejection at first reading."""
+    veto = Stage(stage_type="Veto", stage_name="Wniosek Prezydenta (weto)")
+    end = Stage(stage_type="End", stage_name="nie uchwalona ponownie po wecie Prezydenta")
+    vetoed = _bill(process_1962).model_copy(update={"stages": (veto, end)})
+
+    event = update_event(_change([end], closure_detected=True, passed=False), vetoed)
+
+    assert event == "veto_sustained"
+
+
+def test_a_bill_withdrawn_after_its_print_is_not_told_as_rejected(
+    process_1962: ProcessDetail,
+) -> None:
+    submission = BillSubmission(
+        term=10,
+        number="RPW/1/2026",
+        title=process_1962.title,
+        status="WITHDRAWN",
+        date_of_receipt=dt.date(2026, 1, 2),
+    )
+    withdrawn = _bill(process_1962, submission=submission).model_copy(update={"stages": ()})
+
+    event = update_event(_change([], closure_detected=True, passed=False), withdrawn)
+
+    assert event == "withdrawn_by_applicant"

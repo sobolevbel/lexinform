@@ -41,21 +41,20 @@ class ActWatcher:
         if self._eli is None or not detail.eli:
             return
         act = bill.act
-        if act is None or (act.entry_into_force is None and detail.eli == act.eli):
+        if act is None or act.entry_into_force is None or detail.eli != act.eli:
             fetched = self._eli.get_act(detail.eli)
             if fetched is None:
                 log.info("druk %s: act %s not in the ELI API yet", bill.number, detail.eli)
                 return
-            if act is not None and fetched.entry_into_force is None:
-                return  # nothing new
-            act = fetched
-            self._repo.save_act(bill.term, bill.number, act)
-            log.info(
-                "druk %s published as %s, in force %s",
-                bill.number,
-                act.display_address,
-                act.entry_into_force,
-            )
+            if fetched.entry_into_force is not None or act is None or detail.eli != act.eli:
+                act = fetched
+                self._repo.save_act(bill.term, bill.number, act)
+                log.info(
+                    "druk %s published as %s, in force %s",
+                    bill.number,
+                    act.display_address,
+                    act.entry_into_force,
+                )
         if not publish or self._poster.posted(bill, PublicationKind.ACT_PUBLISHED):
             return
         fresh = self._repo.get(bill.term, bill.number) or bill

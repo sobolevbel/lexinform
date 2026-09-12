@@ -22,19 +22,26 @@ from lexinform.models import (
     PublicationStatus,
     RunMode,
     RunReport,
+    Stage,
     StatusChange,
     process_summary,
     stage_fingerprint,
     wykaz_summary,
 )
 from tests.fakes import FakeLlm, make_amendments
-from tests.harness import RCL, RCL_CONSULTATION, RCL_ID, rcl_project, wykaz_entry
+from tests.harness import RCL, RCL_CONSULTATION, RCL_ID, act, rcl_project, wykaz_entry
 
 CHANNEL = "chan"
 
 
 def _tracked(repo: SqliteBillRepository, now: datetime) -> list[str]:
-    bills = repo.list_tracked(CHANNEL, closed_grace_days=30, passed_max_days=180, now=now)
+    bills = repo.list_tracked(
+        CHANNEL,
+        closed_grace_days=30,
+        passed_max_days=180,
+        pending_decision_max_days=1095,
+        now=now,
+    )
     return [b.number for b in bills]
 
 
@@ -403,7 +410,13 @@ def test_only_bills_with_a_sent_card_are_tracked(
 
     before = _tracked(repo, now)
     _card_sent(repo, "3039", now)
-    after = repo.list_tracked(CHANNEL, closed_grace_days=30, passed_max_days=180, now=now)
+    after = repo.list_tracked(
+        CHANNEL,
+        closed_grace_days=30,
+        passed_max_days=180,
+        pending_decision_max_days=1095,
+        now=now,
+    )
 
     assert before == []
     assert [b.number for b in after] == ["3039"]
@@ -430,11 +443,39 @@ def test_passed_bill_without_an_act_is_dropped_after_passed_max_days(
     repo: SqliteBillRepository, process_3039: ProcessDetail
 ) -> None:
     closed = process_3039.model_copy(update={"closure_date": date(2026, 7, 17), "passed": True})
-    now = datetime(2027, 3, 1, tzinfo=UTC)  # 200+ days: vetoed or in the Tribunal
+    now = datetime(2027, 3, 1, tzinfo=UTC)  # 200+ days and nothing says why
     repo.upsert_summary(closed, now=now)
     _card_sent(repo, "3039", now)
 
     assert _tracked(repo, now) == []
+
+
+def test_a_bill_at_the_tribunal_is_followed_past_the_passed_window(
+    repo: SqliteBillRepository, process_3039: ProcessDetail
+) -> None:
+    """`closure_date` is set at the third reading, long before the President sends the act on;
+    dropping the bill at 180 days loses the Dziennik Ustaw notice for good."""
+    closed = process_3039.model_copy(update={"closure_date": date(2026, 7, 17), "passed": True})
+    now = datetime(2027, 3, 1, tzinfo=UTC)
+    repo.upsert_summary(closed, now=now)
+    stages = (Stage(stage_type="PresidentToTribunal", stage_name="Wniosek Prezydenta"),)
+    repo.save_stages(10, "3039", stages, stage_fingerprint(stages))
+    _card_sent(repo, "3039", now)
+
+    assert _tracked(repo, now) == ["3039"]
+
+
+def test_an_act_whose_entry_into_force_is_unknown_stays_tracked(
+    repo: SqliteBillRepository, process_3039: ProcessDetail
+) -> None:
+    """Only a later ELI fetch can fill the date in, and nothing else would ever ask."""
+    closed = process_3039.model_copy(update={"closure_date": date(2026, 1, 5), "passed": True})
+    now = datetime(2027, 3, 1, tzinfo=UTC)
+    repo.upsert_summary(closed, now=now)
+    repo.save_act(10, "3039", act(entry_into_force=None))
+    _card_sent(repo, "3039", now)
+
+    assert _tracked(repo, now) == ["3039"]
 
 
 def test_list_tracked_filters_by_change_date_but_keeps_passed_bills(
@@ -461,6 +502,7 @@ def test_list_tracked_filters_by_change_date_but_keeps_passed_bills(
             CHANNEL,
             closed_grace_days=90,
             passed_max_days=180,
+            pending_decision_max_days=1095,
             now=now,
             changed_since=changed_since,
         )

@@ -495,6 +495,7 @@ class SqliteBillRepository:
         *,
         closed_grace_days: int,
         passed_max_days: int,
+        pending_decision_max_days: int,
         now: datetime,
         changed_since: datetime | None = None,
     ) -> list[Bill]:
@@ -502,7 +503,11 @@ class SqliteBillRepository:
 
         Closed bills are followed for `closed_grace_days`; bills passed by the Sejm whose act has
         not appeared in Dziennik Ustaw yet are followed longer (`passed_max_days`), because the
-        Senate, the President and publication take weeks.
+        Senate, the President and publication take weeks. A bill waiting for the Sejm to answer a
+        veto or for the Constitutional Tribunal is followed for `pending_decision_max_days`: every
+        window counts from `closure_date`, which the Sejm sets at the third reading, long before
+        either of those begins. An act whose entry into force ELI has not indexed yet is kept
+        whatever its age, because only a later fetch can fill that date in.
 
         With `changed_since`, only bills whose `change_date` (refreshed by discovery from the
         API's `modifiedSince` listing) is at least that recent are returned, plus bills passed
@@ -511,15 +516,24 @@ class SqliteBillRepository:
         """
         cutoff = (now - timedelta(days=closed_grace_days)).date().isoformat()
         passed_cutoff = (now - timedelta(days=passed_max_days)).date().isoformat()
-        sql = """
+        decision_cutoff = (now - timedelta(days=pending_decision_max_days)).date().isoformat()
+        sql = f"""
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
             WHERE p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
               AND b.status != ? AND b.discontinued_at IS NULL
               AND (b.closure_date IS NULL OR b.closure_date >= ?
-                   OR (b.passed = 1 AND b.act_json IS NULL AND b.closure_date >= ?))
+                   OR (b.passed = 1 AND b.act_json IS NULL AND b.closure_date >= ?)
+                   OR (b.act_json IS NOT NULL AND b.entry_into_force IS NULL)
+                   OR (b.act_json IS NULL AND b.closure_date >= ? AND {self._AWAITS_DECISION}))
             """
-        params: list[object] = [channel_id, BillStatus.LINKED.value, cutoff, passed_cutoff]
+        params: list[object] = [
+            channel_id,
+            BillStatus.LINKED.value,
+            cutoff,
+            passed_cutoff,
+            decision_cutoff,
+        ]
         if changed_since is not None:
             # Timestamps are stored as ISO text in UTC; compare to the second.
             sql += """
@@ -572,6 +586,15 @@ class SqliteBillRepository:
             CASE WHEN json_extract(b.submission_json, '$.public_consultation')
                  THEN json_extract(b.submission_json, '$.consultation_end') END,
             json_extract(b.rcl_json, '$.consultation.deadline')
+        )
+    """
+    # The President sent the law back to the Sejm or to the Tribunal: the answer can take years,
+    # and until it comes the bill still has an act ahead of it.
+    _AWAITS_DECISION = """
+        EXISTS (
+            SELECT 1 FROM json_tree(b.stages_json)
+            WHERE json_tree.key = 'stage_type'
+              AND json_tree.value IN ('Veto', 'PresidentToTribunal')
         )
     """
     # A one-off post blocks its bill once it is sent, skipped, pending or unknown; a failed one
