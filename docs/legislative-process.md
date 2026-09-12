@@ -164,7 +164,13 @@ qualified majority. `closureDate` is the date of the third reading and `passed=t
 
 **Urgency** (art. 123, `urgencyStatus`): the Council of Ministers may declare its bill *pilny*
 (not for taxes, elections, the constitution, codes, and a few more). Then the Senate has 14 days
-and the President 7.
+and the President 7. Rare and fast, measured over term 10 (12 Sept 2026): 5 of 1665 processes are
+`URGENT`; submission → third reading took 2, 2, 3, 7 and 17 days (56 the median for the rest), the
+Senate answered in 5–12, the President signed in 6–7 and Dz.U. followed 2–4 days later. A card for
+such a bill quotes those terms instead of the usual ones (`Labels.urgent_step_labels`,
+`urgent_durations`, chosen by `models.is_urgent`). The neighbouring `shortenProcedure` flag (54
+processes, median 19.5 days to the third reading) shortens Sejm deadlines only, within what the
+normal wordings already say, and is not rendered.
 
 **Joint consideration** (`printsConsideredJointly`): several bills on the same matter are handled
 together; the committee report merges them, so a bill we follow may continue under another number.

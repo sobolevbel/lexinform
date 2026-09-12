@@ -705,6 +705,40 @@ def test_senate_stage_invites_an_opinion_to_the_senate_committee(
     assert "→ Сенат ● → Президент" in text
 
 
+def test_urgent_bill_gets_the_shortened_terms_and_not_the_usual_ones(
+    process_3039: ProcessDetail, process_1962: ProcessDetail
+) -> None:
+    """A bill declared pilny (art. 123) runs on shorter terms: the Senate has 14 days instead of
+    30, and the Sejm measured days where a normal bill takes weeks."""
+    in_committee = process_3039.model_copy(update={"urgency_status": "URGENT"})
+    third_reading = next(
+        i
+        for i, st in enumerate(process_1962.stages)
+        if st.stage_type == "SejmReading" and "III" in st.stage_name
+    )
+    in_senate = process_1962.model_copy(
+        update={
+            "stages": process_1962.stages[: third_reading + 1],
+            "passed": True,
+            "urgency_status": "URGENT",
+        }
+    )
+    fmt = MessageFormatter("ru")
+
+    committee = fmt.new_bill(bill_of(in_committee), None, today=TODAY).text
+    senate = fmt.new_bill(bill_of(in_senate), None, today=TODAY).text
+
+    assert (
+        "Что дальше:</b> I чтение в комиссии — ASW (срочный режим, tryb pilny)"
+        " · обычно несколько дней после поступления" in committee
+    )
+    # 14 days from the third reading (17.07.2026), where a normal bill would get 30.
+    assert (
+        "Что дальше:</b> рассмотрение в Сенате (срочный режим: до 14 дней) · срок до 31.07.2026"
+        in senate
+    )
+
+
 def test_public_hearing_names_the_application_deadline(process_3039: ProcessDetail) -> None:
     hearing = Stage(
         stage_name="Wysłuchanie publiczne",

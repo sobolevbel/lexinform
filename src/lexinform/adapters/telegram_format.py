@@ -46,6 +46,7 @@ from lexinform.models import (
     hearing_application_deadline,
     is_pre_print_number,
     is_rcl_number,
+    is_urgent,
     is_wykaz_number,
     next_phase,
     open_hearing,
@@ -1150,13 +1151,17 @@ class MessageFormatter:
         phase = next_phase(bill, today=today)
         if phase is None:
             return ""
-        template = lb.next_step_labels.get(phase.key)
+        urgent = is_urgent(bill)
+        shortened = lb.urgent_step_labels.get(phase.key) if urgent else None
+        template = shortened or lb.next_step_labels.get(phase.key)
         if template is None:
             return ""
         text = template.format(
             date=self.fmt_date(phase.date) if phase.date else "",
             committee=self._committee_names(bill, phase.committees),
         ).strip()
+        if urgent and shortened is None:
+            text = f"{text} ({lb.urgent_mode})"  # the shortened wordings name the mode themselves
         upcoming = self._upcoming(bill, today, phase)
         if upcoming is not None:
             suffix = f" · {self._agenda_when(upcoming)}"
@@ -1165,7 +1170,9 @@ class MessageFormatter:
         elif (planned := self._planned_adoption(bill)) is not None:
             suffix = f" · {planned}"
         else:
-            usual = lb.typical_durations.get(phase.key)
+            usual = (lb.urgent_durations.get(phase.key) if urgent else None) or (
+                lb.typical_durations.get(phase.key)
+            )
             suffix = f" · {esc(usual)}" if usual else ""
         return f"{ICON['next']} <b>{esc(lb.next_step)}:</b> {esc(text)}{suffix}"
 

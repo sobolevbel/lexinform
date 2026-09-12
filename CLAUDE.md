@@ -111,7 +111,10 @@ Invariants worth keeping:
   top-level stages, submission and act; the formatter dates it from `bill.agenda` (upcoming
   sittings, refreshed every run for every followed bill, not only the changed ones) or from the
   constitutional deadline (`Phase.deadline`: Senate 30 days from the 3rd reading, President 21
-  from receiving the act; 14/7 for urgent bills).
+  from receiving the act; 14/7 for urgent bills). A bill the government declared *pilny*
+  (`models.is_urgent`, art. 123) is told in its own words throughout: `Labels.urgent_step_labels`
+  and `urgent_durations` override the normal entries, so the card never promises a reader weeks
+  where the Sejm measured days.
 - **A bill whose road ended before we saw it gets neither an analysis nor a card.** A card
   invites action, and there is none left. `models.is_over(bill, today)` decides for every source:
   over means the act is in Dziennik Ustaw (`ELI`), the bill was rejected or withdrawn, the RCL

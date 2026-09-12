@@ -214,6 +214,15 @@ def government_path(bill: Bill) -> bool:
     )
 
 
+def is_urgent(bill: Bill) -> bool:
+    """The government declared the bill pilny (art. 123): every step of the road is shorter —
+    the Senate has 14 days instead of 30, the President 7 instead of 21, and the Sejm measured
+    2–17 days from submission to the third reading (5 urgent bills of term 10, median 3, against
+    56 for the rest)."""
+    status = bill.summary.urgency_status
+    return bool(status) and status != "NORMAL"
+
+
 def consultation_open(bill: Bill, today: dt.date) -> bool:
     window = bill.consultation
     return window is not None and window.is_open(today)
@@ -274,7 +283,7 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
         return Phase(key="veto")
     if kind == "PresidentToTribunal":
         return Phase(key="tribunal")
-    urgent = bool(summary.urgency_status) and summary.urgency_status != "NORMAL"
+    urgent = is_urgent(bill)
     if kind in _PRESIDENT_NEXT:
         days = PRESIDENT_DAYS_URGENT if urgent else PRESIDENT_DAYS
         return Phase(key="president", deadline=_days_after(last.date, days))

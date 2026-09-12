@@ -11,6 +11,8 @@ from lexinform.i18n import EN, LABELS, RU, labels_for
         "event_tags",
         "next_step_labels",
         "typical_durations",
+        "urgent_step_labels",
+        "urgent_durations",
         "no_action_labels",
         "path_steps",
         "stage_labels",

@@ -35,6 +35,7 @@ from lexinform.models.bill import (
     consultation_open,
     government_path,
     is_over,
+    is_urgent,
     next_phase,
 )
 from lexinform.models.commands import (
@@ -252,6 +253,7 @@ __all__ = [
     "is_pre_print_number",
     "is_rcl_number",
     "is_substantive",
+    "is_urgent",
     "is_wykaz_number",
     "latest_text_document",
     "next_phase",

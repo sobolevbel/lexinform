@@ -146,6 +146,7 @@ class Labels:
     subcommittee_report: str
     proposes: str
     deadline_until: str  # "deadline" (a computed statutory deadline follows)
+    urgent_mode: str  # marks "what comes next" for a bill declared pilny (art. 123)
     # Public hearings: the reminder before applications close
     hearing_deadline_header: str
     hearing_on: str
@@ -165,6 +166,11 @@ class Labels:
     next_step_labels: dict[str, str] = field(default_factory=dict)  # by phase key, see models
     # By phase key: how long the step usually takes, shown when no sitting is scheduled yet.
     typical_durations: dict[str, str] = field(default_factory=dict)
+    # The same two, for a bill declared pilny (art. 123): the constitutional terms are shorter
+    # and the Sejm moves in days. Consulted first for such a bill, the normal entry fills the
+    # phases the urgent mode does not change.
+    urgent_step_labels: dict[str, str] = field(default_factory=dict)
+    urgent_durations: dict[str, str] = field(default_factory=dict)
     # By phase key: what to say when the public has no move right now (and what comes next).
     no_action_labels: dict[str, str] = field(default_factory=dict)
     # The steps of the "path" line, in order: rcl, sejm, committee, readings, senate, president,
@@ -347,6 +353,7 @@ RU = Labels(
     subcommittee_report="отчёт подкомиссии",
     proposes="предлагает",
     deadline_until="срок до",
+    urgent_mode="срочный режим, tryb pilny",
     hearing_deadline_header="Заявки на публичные слушания",
     hearing_on="слушания",
     hearing_apply_until="заявки на участие до",
@@ -479,6 +486,22 @@ RU = Labels(
         "rcl_committees": "обычно 1–3 месяца",
         "rcl_council": "обычно несколько недель",
         "rcl_to_sejm": "обычно несколько дней",
+    },
+    urgent_step_labels={
+        "senate": "рассмотрение в Сенате (срочный режим: до 14 дней)",
+        "president": (
+            "подпись Президента (срочный режим: до 7 дней), затем публикация в Dziennik Ustaw"
+        ),
+    },
+    urgent_durations={
+        "first_reading": "обычно несколько дней после поступления",
+        "first_reading_committee": "обычно несколько дней после поступления",
+        "first_reading_sitting": "обычно несколько дней после поступления",
+        "committee_work": "обычно дни, а не недели",
+        "second_reading": "III чтение обычно сразу после II",
+        "third_reading": "обычно на том же заседании, что и II чтение",
+        "senate_amendments": "обычно на ближайшем заседании Сейма",
+        "publication": "обычно несколько дней после подписи",
     },
     no_action_labels={
         "pre_print": "пока ничего — следующая возможность: замечания в комиссию после I чтения",
@@ -755,6 +778,7 @@ EN = Labels(
     subcommittee_report="sub-committee report",
     proposes="proposes to",
     deadline_until="deadline",
+    urgent_mode="urgent procedure, tryb pilny",
     hearing_deadline_header="Public hearing: applications close",
     hearing_on="hearing on",
     hearing_apply_until="applications until",
@@ -888,6 +912,23 @@ EN = Labels(
         "rcl_committees": "usually 1–3 months",
         "rcl_council": "usually a few weeks",
         "rcl_to_sejm": "usually a few days",
+    },
+    urgent_step_labels={
+        "senate": "consideration by the Senate (urgent procedure: up to 14 days)",
+        "president": (
+            "the President's signature (urgent procedure: up to 7 days), then publication in"
+            " Dziennik Ustaw"
+        ),
+    },
+    urgent_durations={
+        "first_reading": "usually a few days after submission",
+        "first_reading_committee": "usually a few days after submission",
+        "first_reading_sitting": "usually a few days after submission",
+        "committee_work": "days rather than weeks",
+        "second_reading": "the third reading usually follows at once",
+        "third_reading": "usually at the same sitting as the second reading",
+        "senate_amendments": "usually at the next Sejm sitting",
+        "publication": "usually a few days after the signature",
     },
     no_action_labels={
         "pre_print": "nothing yet — next chance: comments to the committee after the first reading",
