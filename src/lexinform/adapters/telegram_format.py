@@ -267,7 +267,9 @@ class MessageFormatter:
 
     def _card_header(self, bill: Bill, today: dt.date) -> str:
         lb = self._labels
-        if next_phase(bill, today=today) is None:
+        if self._ended_line(bill, today):
+            # Only when the card can also say *how* it ended: `next_phase` gives up on a stage
+            # tree it does not recognise too, and "процесс завершён" over nothing is a guess.
             return lb.finished_bill_header
         if bill.wykaz is not None:
             return lb.wykaz_header

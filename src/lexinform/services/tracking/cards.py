@@ -7,14 +7,16 @@ the text has drifted; the digest of what was last sent (`publications.rendered_s
 makes that cost nothing on the runs where nothing moved.
 
 A bill whose road has ended keeps the card it had: there is nothing left to invite, and the
-replies under it tell how the story ended.
+replies under it tell how the story ended. An act already in Dziennik Ustaw has not ended it —
+its vacatio legis can run for months, and "вступает в силу <date>" is the most useful thing the
+card ever says.
 """
 
 import logging
 from zoneinfo import ZoneInfo
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import Bill, BillStatus, PublicationKind, PublicationStatus, is_over
+from lexinform.models import Bill, BillStatus, PublicationKind, PublicationStatus, next_phase
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway
 from lexinform.services.sources import fetch_print
 from lexinform.services.tracking.result import TrackingResult
@@ -59,7 +61,10 @@ class CardRefresher:
             bill = self._repo.get(stale.term, stale.number)
             if bill is None or bill.analysis is None or bill.discontinued_at is not None:
                 continue
-            if bill.status is BillStatus.LINKED or is_over(bill, today=today):
+            # Not `is_over`: that calls a bill finished as soon as its act is in Dziennik Ustaw,
+            # and a card frozen there keeps saying "дальше: публикация" through a vacatio legis
+            # that can run for months. The card is left alone once the act actually applies.
+            if bill.status is BillStatus.LINKED or next_phase(bill, today=today) is None:
                 continue
             card = self._repo.get_publication(
                 bill.term, bill.number, PublicationKind.NEW_BILL, self._channel_id

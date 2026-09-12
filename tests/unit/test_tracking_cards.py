@@ -99,3 +99,19 @@ def test_the_day_a_card_is_judged_by_is_the_readers_day_not_the_runners() -> Non
 
     assert report.cards_refreshed == 0
     assert w.publisher.edits == []
+
+
+def test_an_act_with_a_vacatio_legis_still_ahead_keeps_its_card_true() -> None:
+    """Dz.U. is not the end of the road: druk 2699 was promulgated on 2026-08-18 and enters into
+    force on 2026-11-19. Until it does, «вступает в силу 19.11.2026» is what the card is for."""
+    w = _followed()
+    w.clock.advance(days=1)
+    w.repo.save_act(10, "3039", act(entry_into_force=dt.date(2026, 11, 19)))
+    w.set_stages("3039", (*COMMITTEE_STAGES, Stage(stage_type="End", stage_name="Uchwalono")))
+    w.touch("3039", dt.datetime(2026, 9, 8, 9, tzinfo=dt.UTC))
+
+    report = w.run()
+
+    assert report.cards_refreshed == 1
+    edited, _ = w.publisher.edits[0]
+    assert "вступление в силу 19.11.2026" in MessageFormatter("ru").new_bill(edited, None).text

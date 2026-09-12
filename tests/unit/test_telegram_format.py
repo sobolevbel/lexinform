@@ -1354,3 +1354,22 @@ def test_the_in_force_reminder_does_not_claim_today_when_a_run_was_missed(
 
     assert fmt.in_force(late).text.startswith("⚖️ <b>Закон вступил в силу")
     assert fmt.in_force(due).text.startswith("⚖️ <b>С сегодняшнего дня действует")
+
+
+def test_a_stage_tree_the_model_cannot_read_is_not_called_finished(
+    process_1962: ProcessDetail,
+) -> None:
+    """`next_phase` gives up on a stage type it does not know, and there is then nothing to say
+    about how the road ended. A header claiming it ended would be a guess, so the card keeps its
+    own and simply leaves the three step lines out."""
+    unknown = Stage(stage_name="Nowy etap", stage_type="SomethingNew", date=dt.date(2026, 9, 4))
+    running = process_1962.model_copy(
+        update={"stages": (unknown,), "closure_date": None, "passed": None}
+    )
+    bill = bill_of(running)
+
+    text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
+
+    assert "📜 <b>Новый законопроект — druk nr 1962</b>" in text
+    assert "процесс завершён" not in text
+    assert "Что дальше" not in text
