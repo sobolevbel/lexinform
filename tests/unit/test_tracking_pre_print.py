@@ -33,7 +33,7 @@ def test_pre_print_card_names_the_stage_and_links_the_sejm_pdf() -> None:
     w.gateway.submissions.append(submission())
     w.run()
 
-    text = MessageFormatter("ru").new_bill(w.bill(RPW), None).text
+    text = MessageFormatter("ru").new_bill(w.bill(RPW), None, today=w.clock.now().date()).text
 
     assert "RPW/29075/2026 (номер druku ещё не присвоен)" in text
     assert "Общественные консультации:</b> 02.09.2026 — 30.09.2026" in text

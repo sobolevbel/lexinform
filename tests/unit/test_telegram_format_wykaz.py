@@ -101,7 +101,9 @@ def test_a_quarter_that_cannot_be_read_falls_back_to_the_usual_duration() -> Non
 def test_the_adoption_note_in_the_field_never_reaches_the_card() -> None:
     realised = "IV kwartał 2026 r. - ZREALIZOWANY Rada Ministrów przyjęła 6 maja 2025 r."
 
-    text = MessageFormatter("ru").new_bill(wykaz_bill(planned_adoption=realised), None).text
+    bill = wykaz_bill(planned_adoption=realised)
+
+    text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
 
     assert "ZREALIZOWANY" not in text
     assert "принятие правительством: IV кв. 2026" in text
