@@ -59,7 +59,15 @@ _CONSULTATION_RE = re.compile(
 _REMARKS_RE = re.compile(
     r"^\s*(Zestawienie|Tabela)\s+(z\s+)?(uwag|nieuwzględnionych|uzgodnień)", re.IGNORECASE | re.M
 )
-_COMPLIANCE_RE = re.compile(r"^\s*(Odwrócona\s+)?Tabela\s+zgodności\b", re.IGNORECASE | re.M)
+_COMPLIANCE_RE = re.compile(
+    r"^\s*(Odwrócona\s+)?Tabela\s+zgodności\b"
+    r"|^\s*Tabelaryczne\s+zestawienie\s+przepisów"
+    # The columns of a table of provisions, whatever it calls itself. Druk 1430 heads its
+    # derivation table "Tabelaryczne zestawienie przepisów …" and then, further down the same
+    # page, "Tytuł projektu:" — which is how an OSR form opens, and it was read as one.
+    r"|^\s*Jedn\.\s*red\b|Treść\s+przepisu",
+    re.IGNORECASE | re.M,
+)
 # Case-sensitive on purpose, and the one discriminator there is: the compliance table opens with
 # "TYTUŁ PROJEKTU" as a column header, the OSR form with "Tytuł projektu" as a field label
 # (UD439's OSR, 13 Sept 2026). A digit may be glued to the header by the table's numbering.
