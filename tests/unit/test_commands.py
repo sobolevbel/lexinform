@@ -612,6 +612,29 @@ def test_preview_renders_the_card_without_posting_it() -> None:
     assert w.publisher.new_bills == []  # a preview is an answer, not a post
 
 
+def test_preview_of_a_joint_print_shows_the_reply_the_channel_would_get() -> None:
+    """A print considered jointly with one already in the channel gets a short reply, not a
+    card. A preview that rendered a card would show the operator the one message `/republish`
+    would never send."""
+    w = World()
+    w.add_bill("1933", TITLE)
+    w.run()
+    w.add_bill("1929", "Rządowy projekt ustawy o zmianie ustawy o cudzoziemcach")
+    w.touch("1929", dt.datetime(2026, 9, 8, 9, 0), prints_considered_jointly=("1933",))
+    w.run()
+    w.command("/preview 1929")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.PREVIEWED
+    assert outcome.joint_primary is not None and outcome.joint_primary.number == "1933"
+    assert outcome.note == (
+        f"considered jointly with 1933: a reply under its card"
+        f" (message {w.card_id('1933')}), not a card of its own"
+    )
+
+
 def test_preview_of_a_bill_without_an_analysis_says_there_is_no_card() -> None:
     w = World()
     w.add_bill("3039", TITLE)
@@ -655,6 +678,63 @@ def test_refresh_of_an_unchanged_bill_says_so_and_posts_nothing() -> None:
     (_, outcome), *_ = w.replier.replies
     assert outcome.note == "nothing new: the card and the stages are as they were"
     assert w.publisher.updates == []
+
+
+def test_refresh_of_a_bill_with_no_card_posts_nothing_into_the_channel() -> None:
+    """A scheduled run only ever tracks bills that have a card; every post replies under it.
+    Tracking one analysed below the threshold would drop an update into the channel with
+    nothing above it — the reader would meet a bill at its committee stage and never learn
+    which bill it is."""
+    w = World(llm_script={"3039": make_analysis(score=2)})
+    w.add_bill("3039", TITLE)
+    w.command("/analyze 3039")
+    _commands_only(w)
+    w.set_stages("3039", COMMITTEE_STAGES)
+    w.clock.advance(days=1)
+    w.command("/refresh 3039")
+
+    _commands_only(w)
+
+    (_, analysed), (_, refreshed) = w.replier.replies
+    assert analysed.message_id is None  # never posted
+    assert refreshed.status is OutcomeStatus.ERROR
+    assert "no card in the channel" in refreshed.note
+    assert w.publisher.updates == []
+
+
+def test_refresh_names_the_source_that_was_down_instead_of_saying_nothing_is_new() -> None:
+    """RCL is unreachable from a GitHub-hosted runner altogether, so "nothing new" about a page
+    nobody read is the answer the operator would get every single time."""
+    w = World()
+    w.add_rcl_project(rcl_project(consultation=None))
+    w.run()
+    w.rcl.outages.add("get_project")
+    w.command(f"/refresh RCL/{RCL_ID}")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.REFRESHED
+    assert outcome.note.startswith("nothing new from the sources that answered · not read: RCL:")
+
+
+def test_unskip_of_a_linked_row_leaves_the_card_to_the_bill_that_continues_it() -> None:
+    """The row handed its thread over: its card is the druk's now, rendered from the druk's
+    state. Queueing it again would put both rows in the card refresher, editing one message
+    from two states every run."""
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.gateway.submissions.append(submission(print_number="3039"))
+    w.command(f"/analyze {RPW}")
+    _commands_only(w)
+    w.command(f"/unskip {RPW}")
+
+    _commands_only(w)
+
+    (_, _analysed), (_, outcome) = w.replier.replies
+    assert outcome.status is OutcomeStatus.QUEUED
+    assert outcome.note == "linked: its card belongs to 3039, ask for that one"
+    assert w.bill(RPW).status is BillStatus.LINKED  # not queued for the model again
 
 
 def test_find_names_the_bills_whose_title_carries_the_words() -> None:

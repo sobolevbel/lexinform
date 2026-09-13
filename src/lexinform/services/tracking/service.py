@@ -331,7 +331,12 @@ class StatusTrackingService:
     def check_bill(self, bill: Bill, *, publish: bool = True) -> TrackingResult:
         """Everything a run would look at for one bill, now: its source's watcher, its process
         and its card. The reminders are left out — they are due-date queries over the whole
-        channel, and the operator asked about this bill."""
+        channel, and the operator asked about this bill.
+
+        `bill` must have a `sent` card when `publish`: the posters reply under it and post at the
+        top level without one. A scheduled run gets that from `_list_tracked`; the caller here
+        (`CommandService._refresh`) checks it before asking.
+        """
         result = TrackingResult()
         one = [bill]
         if not self._check_other_sources(one, one, result, publish=publish):

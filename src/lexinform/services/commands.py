@@ -77,7 +77,12 @@ class _SourceDownError(ServiceUnavailableError):
 
 
 def _tracking_note(result: TrackingResult) -> str:
-    """What `/refresh` found, in the counters that mean something to a reader of the channel."""
+    """What `/refresh` found, in the counters that mean something to a reader of the channel.
+
+    A source that was down while the rest of the phase ran is named: RCL is unreachable from a
+    GitHub-hosted runner altogether, so without this every `/refresh` of an `RCL/…` bill in the
+    daily workflow would answer "nothing new" about a page nobody read.
+    """
     posts = (
         result.published
         + result.acts_published
@@ -93,6 +98,9 @@ def _tracking_note(result: TrackingResult) -> str:
         f"{result.failed} failure(s), see the log" if result.failed else "",
     ]
     said = " · ".join(p for p in parts if p)
+    if result.partial_errors:
+        down = "; ".join(result.partial_errors)
+        return f"{said or 'nothing new from the sources that answered'} · not read: {down}"
     return said or "nothing new: the card and the stages are as they were"
 
 
@@ -462,6 +470,16 @@ class CommandService:
                 bill=bill,
                 note="already analysed; /analyze BILL force asks the model again",
             )
+        if bill.status is BillStatus.LINKED:
+            # The row has handed its thread to its druk, which now renders that message id.
+            # Queueing it again would pay for the analysis of a row nobody follows and put it
+            # back into `CardRefresher`, where the two rows edit one card from two states.
+            return CommandOutcome(
+                status=OutcomeStatus.QUEUED,
+                bill=bill,
+                note="linked: its card belongs to"
+                f" {bill.linked_number or 'the bill that continues it'}, ask for that one",
+            )
         if bill.rcl is not None and not bill.rcl.text_documents():
             project = self._lookup.read_rcl_project(bill.number)
             self._repo.save_rcl(bill.term, bill.number, project)
@@ -478,8 +496,16 @@ class CommandService:
         )
 
     def _preview(self, bill: Bill) -> CommandOutcome:
-        """The card as the channel would get it, rendered into the technical channel alone:
-        what `/republish` would send, before it is sent."""
+        """The message as the channel would get it, rendered into the technical channel alone:
+        what `/republish` would send, before it is sent.
+
+        It is `PublishingService.plan` that decides, not this method: a bill in a group of
+        jointly considered prints gets a short reply and not a card, a print continuing an
+        RCL or wykaz thread gets no message of its own at all, and a card carries the public
+        consultation dates from the `/bills` entry. Rendering a plain card for all three would
+        show the operator a message the channel would never send — the one thing a preview is
+        there to prevent.
+        """
         if bill.analysis is None:
             return CommandOutcome(
                 status=OutcomeStatus.ERROR, bill=bill, note="not analysed: no card to render"
@@ -492,21 +518,47 @@ class CommandService:
             )
         card = self._card(bill)
         note = f"the card in the channel is {card}" if card else "not posted to the channel"
+        plan = self._publishing.plan(bill)
+        if plan.inherited is not None:
+            note = (
+                f"continues {bill.linked_number}: no message of its own, its card is"
+                f" message {plan.inherited.message_id} re-rendered with both tags"
+            )
+        elif plan.primary is not None:
+            note = (
+                f"considered jointly with {plan.primary.number}: a reply under its card"
+                f" (message {plan.primary_message_id}), not a card of its own"
+            )
         return CommandOutcome(
             status=OutcomeStatus.PREVIEWED,
-            bill=bill,
+            bill=plan.bill,
             note=note,
-            print_info=self._publishing.print_info(bill),
+            print_info=plan.print_info,
+            joint_primary=plan.primary,
         )
 
     def _refresh(
         self, bill: Bill, spent: dict[str, TokenUsage], *, publish: bool
     ) -> CommandOutcome:
         """Everything the next run would look at for this bill, now: its stages, its source's
-        watcher and its card. The reader waits for the Sejm, not for our schedule."""
+        watcher and its card. The reader waits for the Sejm, not for our schedule.
+
+        A bill with no card in the channel is refused: a scheduled run only ever tracks the rows
+        of `list_tracked`, which all have a `sent` card, and every poster reads that card for the
+        message to reply under (`Poster._send` falls back to a top-level post). Tracking a bill
+        analysed below `min_score` would answer the operator with a status update or a Dziennik
+        Ustaw notice standing alone in the reader's channel.
+        """
         if self._tracking is None:
             return CommandOutcome(
                 status=OutcomeStatus.ERROR, bill=bill, note="tracking is off in this run"
+            )
+        if publish and self._card(bill) is None:
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR,
+                bill=bill,
+                note="no card in the channel: an update would have nothing to reply under."
+                " /analyze BILL publish posts the card first",
             )
         result = self._tracking.check_bill(bill, publish=publish)
         for model, tokens in result.usage.items():

@@ -223,8 +223,30 @@ def length(text: str) -> int:
     return len(text) + sum(1 for ch in text if ord(ch) > 0xFFFF)
 
 
+def fit_lines(text: str, limit: int) -> str:
+    """Trim to `limit` (as Telegram counts) by dropping whole lines from the end.
+
+    For a body that carries markup: every line of a message is HTML-balanced on its own (the
+    invariant `_cut_lines` rests on too), so a cut between lines cannot split a tag, while
+    `fit`'s cut at the nearest space can — and Telegram answers 400 to a dangling `<a`.
+    """
+    if length(text) <= limit:
+        return text
+    lines = text.split("\n")
+    while lines:
+        lines.pop()
+        kept = "\n".join(lines).rstrip()
+        if kept and length(kept) + length(ELLIPSIS) <= limit:
+            return kept + ELLIPSIS
+    return ""
+
+
 def fit(text: str, limit: int) -> str:
-    """Trim to `limit` (as Telegram counts) at a paragraph/line boundary, with an ellipsis."""
+    """Trim to `limit` (as Telegram counts) at a paragraph/line boundary, with an ellipsis.
+
+    Only for escaped text: it cuts at a space when no line boundary is near enough, which would
+    split a tag. Use `fit_lines` where the text carries markup.
+    """
     if length(text) <= limit:
         return text
     cut = text[: limit - 1]
@@ -982,6 +1004,8 @@ class MessageFormatter:
         the state of the queues. These are what gets shrunk when the message is too long."""
         bill = outcome.bill
         if outcome.status is OutcomeStatus.PREVIEWED and bill is not None:
+            if outcome.joint_primary is not None:
+                return [self.joint_bill(bill, outcome.joint_primary, outcome.print_info).text]
             return [self.new_bill(bill, outcome.print_info).text]
         if outcome.found:
             return ["\n".join(f"• {self._bill_line(b)}" for b in outcome.found)]
@@ -1892,8 +1916,10 @@ def _cut_lines(text: str, limit: int) -> str:
 def shrink_block(block: str, allowed: int) -> str:
     """Trim a block to `allowed` chars keeping its HTML well-formed.
 
-    Blocks are "<b>header</b>\n<escaped body>"; cutting is only allowed inside the body, at a line
-    boundary, so no tag or entity is ever split. A block that cannot keep its header is dropped.
+    Blocks are "<b>header</b>\n<body>"; cutting is only allowed inside the body, so the header is
+    never split. A body that carries markup of its own (a rendered card, a list of links, one
+    heading per document filed to a print) is cut between lines and nowhere else — no tag or
+    entity is ever split. A block that cannot keep its header is dropped.
     """
     if block.endswith("</pre>"):
         opening = block.index("<pre>") + len("<pre>")
@@ -1904,5 +1930,6 @@ def shrink_block(block: str, allowed: int) -> str:
     if header_end == -1 or length(block[: header_end + 1]) >= allowed:
         return ""
     head, body = block[: header_end + 1], block[header_end + 1 :]
-    kept = fit(body, allowed - length(head))
+    trim = fit_lines if "<" in body else fit
+    kept = trim(body, allowed - length(head))
     return head + kept if kept.strip(ELLIPSIS) else ""

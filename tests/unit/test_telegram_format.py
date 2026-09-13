@@ -68,10 +68,19 @@ class _TagChecker(HTMLParser):
 
 
 def assert_telegram_html(text: str) -> None:
-    """Balanced tags from Telegram's allowed subset, within the message limit."""
+    """Balanced tags from Telegram's allowed subset, within the message limit.
+
+    The empty stack and the last bracket are what catch a message cut inside its markup, and
+    Telegram answers 400 to both shapes: a tag opened and never closed leaves the stack
+    non-empty, while a cut inside `<a href=…` is dropped by the parser without a word, so the
+    text itself is asked whether its last `<` was ever closed.
+    """
     checker = _TagChecker()
     checker.feed(text)
+    checker.close()
     assert checker.balanced, text
+    assert checker.stack == [], text
+    assert text.rfind("<") <= text.rfind(">"), text
     assert checker.tags <= {"b", "i", "a", "code", "pre"}
     assert length(text) <= MESSAGE_LIMIT
 
@@ -1062,6 +1071,25 @@ def test_shrink_block_keeps_the_header_and_well_formed_html(budget: int) -> None
         assert_telegram_html(out)
         assert out.startswith("🔑 <b>Ключевые изменения</b>\n")
         assert "&" not in out.replace("&amp;", "").replace("&lt;", "").replace("&gt;", "")
+
+
+@pytest.mark.parametrize("budget", range(60, 900, 37))
+def test_shrink_block_cuts_a_body_that_carries_markup_between_its_lines(budget: int) -> None:
+    """A rendered card, a list of matches, a heading per filed document: the body has tags of
+    its own, and a cut at the nearest space would leave Telegram a dangling `<a` and answer the
+    operator with a 400 instead of the preview."""
+    lines = [
+        f'• <b>druk nr {n}</b> · <a href="https://sejm.gov.pl/druk/{n}">o cudzoziemcach {n}</a>'
+        for n in range(12)
+    ]
+    block = "📋 <b>Найдено</b>\n" + "\n".join(lines)
+
+    out = shrink_block(block, budget)
+
+    assert length(out) <= budget
+    if out:
+        assert_telegram_html(out)
+        assert all(line.endswith(("</a>", "</b>", "…")) for line in out.split("\n"))
 
 
 def _incoming(text: str) -> IncomingCommand:

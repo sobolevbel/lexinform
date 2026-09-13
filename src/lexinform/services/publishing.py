@@ -33,6 +33,25 @@ Send = Callable[[], PublishResult]
 CARD_KINDS = (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL)
 
 
+@dataclass(frozen=True)
+class CardPlan:
+    """What the channel would get for a bill, decided once and used twice: by `publish_bill` to
+    send it and by the operator's `/preview` to render it first.
+
+    `bill` carries everything the message needs that the stored row lacks (the `/bills` entry
+    with the consultation dates), and `print_info` the files the message links. `primary` is the
+    jointly considered print whose card this bill replies under instead of getting one of its
+    own, and `inherited` the sent card of the row this print continues — there the channel gets
+    no new message at all, only the card re-rendered with both tags.
+    """
+
+    bill: Bill
+    print_info: PrintInfo | None
+    primary: Bill | None = None
+    primary_message_id: int | None = None
+    inherited: Publication | None = None
+
+
 @dataclass
 class PublishingResult:
     """Counters of one publishing phase; `joined` counts the replies posted under the card of a
@@ -149,20 +168,19 @@ class PublishingService:
         """Send one bill: a card, or a reply under the card of a print it is considered jointly
         with. Returns True on success and counts the post in `result`.
 
-        The pending publication row is written before the post, so that a crash cannot cause a
-        duplicate one. Everything the card needs from the Sejm API is fetched before that row
-        exists: an outage there must leave no row behind — a stale pending row becomes `unknown`
-        and is never sent — so that the bill is simply a candidate again on the next run.
+        What it sends is `plan`'s decision, so that `/preview` can render the same message before
+        it goes out. The pending publication row is written after that decision and before the
+        post, so that a crash cannot cause a duplicate one and an outage of the Sejm API leaves
+        no row behind — a stale pending row becomes `unknown` and is never sent, so the bill has
+        to be simply a candidate again on the next run.
         """
         result = result if result is not None else PublishingResult()
-        primary = self._primary_of(bill)
-        if primary is not None:
-            return self._publish_joint(bill, primary, result)
-        inherited = self._inherited_card(bill)
-        if inherited is not None:
-            return self._inherit_card(bill, inherited)
-        print_info = self.print_info(bill)
-        bill = self._with_submission(bill)
+        plan = self.plan(bill)
+        if plan.primary is not None:
+            return self._publish_joint(plan, result)
+        if plan.inherited is not None:
+            return self._inherit_card(plan.bill, plan.inherited)
+        bill, print_info = plan.bill, plan.print_info
         pub_id = self._repo.create_publication(
             Publication(
                 term=bill.term,
@@ -179,11 +197,35 @@ class PublishingService:
         result.published += 1
         return True
 
-    def _publish_joint(
-        self, bill: Bill, primary: tuple[Bill, int], result: PublishingResult
-    ) -> bool:
-        card_bill, card_message_id = primary
-        print_info = self._safe_print(bill)
+    def plan(self, bill: Bill) -> CardPlan:
+        """Which of the three shapes the channel would get for `bill`, with everything fetched
+        that the message needs. Read-only but for the `/bills` entry it may store on the way
+        (the row had none; the publish would store it too).
+
+        Every fetch happens here and none of it after a publication row exists: an outage must
+        leave no pending row behind, or the bill would never be a candidate again.
+        """
+        primary = self._primary_of(bill)
+        if primary is not None:
+            card_bill, message_id = primary
+            return CardPlan(
+                bill=bill,
+                print_info=self._safe_print(bill),
+                primary=card_bill,
+                primary_message_id=message_id,
+            )
+        inherited = self._inherited_card(bill)
+        if inherited is not None:
+            # No message is sent: the card is re-rendered in place, and `_retag` renders it
+            # without the print's files, so there is nothing to fetch.
+            return CardPlan(bill=bill, print_info=None, inherited=inherited)
+        print_info = self.print_info(bill)
+        return CardPlan(bill=self._with_submission(bill), print_info=print_info)
+
+    def _publish_joint(self, plan: CardPlan, result: PublishingResult) -> bool:
+        bill, print_info = plan.bill, plan.print_info
+        card_bill, card_message_id = plan.primary, plan.primary_message_id
+        assert card_bill is not None
         pub_id = self._repo.create_publication(
             Publication(
                 term=bill.term,

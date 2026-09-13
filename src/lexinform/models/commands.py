@@ -206,8 +206,9 @@ class CommandOutcome(BaseModel):
     """What happened to a command; the replier renders it under the command's message.
 
     `note` is the reason, the error, or why the card was not posted, and `message_id` the card
-    just posted (or posted again). `print_info` belongs to a `/preview`: the card is rendered
-    with the same links the channel would get. `found` are the matches of a `/find` and
+    just posted (or posted again). `print_info` and `joint_primary` belong to a `/preview`: the
+    message is rendered with the links the channel would get, and as the reply it would be when
+    the bill joins the thread of the print named there. `found` are the matches of a `/find` and
     `snapshot` the answer to a `/status`. The rest is what running the command took: when the
     run that answered it started, how long the command itself took, and the model tokens it
     spent (empty when the model was not called).
@@ -220,6 +221,7 @@ class CommandOutcome(BaseModel):
     note: str = ""
     message_id: int | None = None
     print_info: PrintInfo | None = None
+    joint_primary: Bill | None = None
     found: tuple[Bill, ...] = ()
     snapshot: StatusSnapshot | None = None
     run_started_at: dt.datetime | None = None
