@@ -59,6 +59,11 @@ def update_event(change: StatusChange, bill: Bill) -> str:
     named = _newest_stage_event(change.new_stages)
     if named is not None:
         return named
+    if change.consultation_opened:
+        # The letter can arrive under a stage the timeline already showed as reached, and then
+        # there is no new stage to name the post: without this the one moment a reader of an RCL
+        # project can act on was announced as «Обновление».
+        return "consultation_opened"
     if change.closure_detected:
         return _closure_event_of(change, bill)
     if change.content_changed:
@@ -277,6 +282,8 @@ def event_keys(change: StatusChange, event: str) -> list[str]:
         keys.append("government_position")
     if change.content_changed:
         keys.append("new_text")
+    if change.consultation_opened:
+        keys.append("consultations")
     if change.withdrawn:
         keys.append("withdrawn")
     if change.discontinued:

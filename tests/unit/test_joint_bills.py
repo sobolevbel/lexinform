@@ -135,4 +135,4 @@ def test_the_reply_names_the_thread_and_carries_both_tags() -> None:
     (text,) = w.publisher.texts(PublicationKind.JOINT_BILL)
     assert "Альтернативный проект того же закона" in text
     assert "druk 1933, 316" in text
-    assert text.endswith("#kadencja10druk1929 #kadencja10druk1933")
+    assert text.endswith("#kadencja10druk1929 #важность5 #легализация #kadencja10druk1933")

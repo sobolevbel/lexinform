@@ -218,7 +218,9 @@ def test_joint_bill_reply_names_the_thread_and_carries_both_tags(
     assert "Инициатор:</b> правительственный\n📄 <b>Дата druku:</b> 02.09.2026" in text
     assert "О чём проект" not in text  # the analysis stays on the card
     assert "PrzebiegProc.xsp?nr=3050" in text
-    assert text.endswith("#kadencja10druk3050 #kadencja10druk3039")
+    # Its own tag, the card's topic tags and the thread's: a search for any of the three
+    # finds the reply, not only the card that carries the analysis.
+    assert text.endswith("#kadencja10druk3050 #важность5 #легализация #kadencja10druk3039")
 
 
 def test_card_escapes_model_output_and_notes_partial_text(
@@ -508,10 +510,12 @@ def test_status_update_tags_name_the_events(process_1962: ProcessDetail) -> None
         bill, change_of("1962", [], withdrawn=True, closure_detected=True)
     )
 
-    assert eventful.text.splitlines()[-1] == "#голосование #сенат #новыйтекст #kadencja10druk1962"
+    assert eventful.text.splitlines()[-1] == (
+        "#голосование #сенат #новыйтекст #важность5 #легализация #kadencja10druk1962"
+    )
     # A referral is a searchable event of its own: "all the bills now in committee".
-    assert plain.text.splitlines()[-1] == "#комиссия #kadencja10druk1962"
-    assert "#отозван #kadencja10druk1962" in withdrawn.text
+    assert plain.text.splitlines()[-1] == ("#комиссия #важность5 #легализация #kadencja10druk1962")
+    assert "#отозван #важность5 #легализация #kadencja10druk1962" in withdrawn.text
 
 
 def test_replies_of_a_linked_print_carry_the_tag_of_the_card_they_continue(
@@ -930,6 +934,18 @@ def test_act_notice_names_the_journal_the_date_and_the_staged_entry_caveat(
     assert "Вступает в силу:</b> 19.11.2026" in text
     assert "Отдельные положения могут вступать в силу" in text
     assert "дата вступления в силу пока не указана" in no_date
+    # The moment to diarise the date, and the card is months up the thread: one sentence of the
+    # summary and what is left to do, like every other reply carries.
+    assert "<b>Суть проекта:</b>" in text
+    assert "остаётся подготовиться к вступлению в силу" in text
+
+
+def test_the_card_cites_the_act_the_way_everyone_else_does(process_3039: ProcessDetail) -> None:
+    """Dz.U. 2026 poz. 1099 is how the law is named in every office and every other text; it
+    used to live only in the publication notice, months down the replies."""
+    text = MessageFormatter("ru").new_bill(bill_of(process_3039, act=ACT), None, today=TODAY).text
+
+    assert "📰 <b>Публикация:</b> Dz.U. 2026 poz. 1099 (опубликован 18.08.2026)" in text
 
 
 def test_in_force_reminder_needs_a_date(process_3039: ProcessDetail) -> None:

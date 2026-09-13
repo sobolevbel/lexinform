@@ -200,6 +200,7 @@ class RclWatcher:
             closure_detected=closure,
             passed=False if closure else None,
             content_changed=content_changed,
+            consultation_opened=consultation_opened,
             detected_at=now,
         )
         change_id = self._repo.add_status_change(change)

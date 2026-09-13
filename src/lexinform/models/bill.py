@@ -698,6 +698,10 @@ class StatusChange(BaseModel):
     """A pre-print bill withdrawn before getting a print number."""
     discontinued: bool = False
     """The term ended before the Sejm finished with the bill."""
+    consultation_opened: bool = False
+    """The project's public consultation opened with this change (RCL). Not stored: a retried
+    post takes its wording from the row, and by then the window is on the bill either way — what
+    this decides is only the header of the post that announces it."""
     amendments: AmendmentsRecord | None = None
     """What the amendments announced by this change do (Senate resolution, "-A" report), when
     their document could be read and summarised."""

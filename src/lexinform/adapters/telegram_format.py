@@ -174,6 +174,7 @@ EVENT_ICON = {
     "rcl_closed": "🏁",
     "wykaz_adopted": "✅",
     "rcl_started": "📄",
+    "consultation_opened": "🗣",
     "wykaz_withdrawn": "🚫",
 }
 _SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
@@ -370,6 +371,15 @@ class MessageFormatter:
         # Short one-line facts are grouped compactly; the paragraphs above are
         # separated by blank lines so they read as distinct blocks.
         meta_lines: list[str] = []
+        act = bill.act
+        if act is not None:
+            # The card is the top of the thread and the one message a reader comes back to; the
+            # Dziennik Ustaw address is how the act is cited everywhere else, and it was only
+            # ever in the publication notice, months down the replies.
+            published = esc(act.display_address)
+            if act.promulgation_date:
+                published += f" ({esc(lb.published_on)} {self.fmt_date(act.promulgation_date)})"
+            meta_lines.append(self._field(ICON["journal"], lb.journal, published))
         last = bill.last_stage
         if last is not None:
             meta_lines.append(self._field(ICON["stage"], lb.stage, self._current_stage(bill, last)))
@@ -450,8 +460,11 @@ class MessageFormatter:
         note = f"{ICON['note']} {esc(lb.joint_bill_note.format(numbers=', '.join(others)))}"
         facts = f"{note}\n{self._applicant_line(bill)}"
         links_block = self._links(self._card_links(bill, print_info))
-        # Its own tag and the thread's: a search for either finds the reply.
-        tags = f"{self._number_tag(bill)} {self._thread_tags(primary)}"
+        # Its own tag and the thread's: a search for either finds the reply. The topic tags are
+        # the card's — this print has no analysis of its own in the channel.
+        tags = " ".join(
+            [self._number_tag(bill), *self._topic_tags(primary), self._thread_tags(primary)]
+        )
         steps = self._steps_block(primary, today or self._today())
         return RenderedMessage(
             text=self._assemble([header, facts], tail=[steps, links_block, tags])
@@ -506,9 +519,12 @@ class MessageFormatter:
                 else:
                     changes_block = f"{ICON['note']} <i>{esc(lb.reanalyzed_note)}</i>"
 
-        # Event tags only when the reply carries the event a reader would search for.
+        # Event tags only when the reply carries the event a reader would search for; the topic
+        # tags are on every reply, so that a reader following #легализация finds the moments to
+        # act and not only the card that opened the thread.
         tags = " ".join(
             [f"#{lb.event_tags[key]}" for key in event_keys(change, event) if key in lb.event_tags]
+            + self._topic_tags(bill)
             + [self._thread_tags(bill)]
         )
 
@@ -644,9 +660,20 @@ class MessageFormatter:
             )
         lines.append(f"{ICON['note']} <i>{esc(lb.partial_vacatio_note)}</i>")
         facts = "\n".join(lines)
+        # The moment a reader has to diarise the date, and the last one before the channel goes
+        # quiet for the vacatio legis: without a sentence of the summary the notice was two dates
+        # under a Polish act title, and the card it replies to is months up the thread.
+        summary_block = ""
+        if bill.analysis is not None:
+            summary_block = self._summary_reminder(bill.analysis.analysis.summary, full=False)
         links_block = self._links(self._act_links(bill, act))
         tags = self._tag_line(lb.tag_published, bill)
-        return RenderedMessage(text=self._assemble([header, facts, links_block, tags]))
+        text = self._assemble(
+            [header, facts],
+            flexible=[summary_block],
+            tail=[self._action_line(bill, self._today()), links_block, tags],
+        )
+        return RenderedMessage(text=text)
 
     def in_force(self, bill: Bill, *, today: dt.date | None = None) -> RenderedMessage:
         lb = self._labels

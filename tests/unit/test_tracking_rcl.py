@@ -99,6 +99,40 @@ def test_consultation_opening_later_is_announced_with_the_deadline() -> None:
     text = MessageFormatter("ru").status_update(bill, change, today=dt.date(2026, 9, 8)).text
     assert "• <i>3. Konsultacje publiczne</i>" in text
     assert "направить замечания на dep.prawny@mswia.gov.pl до 08.09.2026" in text
+    assert change.consultation_opened and "#консультации" in text
+
+
+def test_a_consultation_that_opens_without_a_new_stage_is_still_named() -> None:
+    """The letter can appear under a stage the timeline already shows as reached, and then the
+    post has no new stage to be named after: it went out headed «Обновление», over the one
+    moment in the life of a government project that a reader can act on."""
+    w = World()
+    reached = rcl_stage(3, "Konsultacje publiczne", "reached")
+    early = rcl_project(consultation=None, stages=(rcl_stage(2, "Uzgodnienia"), reached))
+    _followed(w, early)
+    w.add_rcl_project(
+        _moved(
+            early,
+            early.stages[0],
+            rcl_stage(
+                3,
+                "Konsultacje publiczne",
+                "reached",
+                *CONSULTATION_FOLDERS,
+                modified=dt.date(2026, 9, 8),
+            ),
+            modified=dt.date(2026, 9, 8),
+        )
+    )
+
+    report = w.run()
+
+    assert report.updates == 1
+    bill, change, _ = w.publisher.updates[0]
+    assert change.new_stages == [] and change.consultation_opened
+    text = MessageFormatter("ru").status_update(bill, change, today=dt.date(2026, 9, 8)).text
+    assert "🗣 <b>Открылись публичные консультации — UC164</b>" in text
+    assert "направить замечания на dep.prawny@mswia.gov.pl до 08.09.2026" in text
 
 
 def test_deadline_reminder_uses_the_letter_and_is_sent_once() -> None:

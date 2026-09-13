@@ -439,7 +439,7 @@ def test_senate_amendments_are_summarised_from_the_senate_print() -> None:
     assert text.startswith("📋 <b>Сенат внёс поправки — druk nr 3039</b>")
     assert "🆕 <b>Что меняют поправки Сената</b>\nСенат смягчил проект" in text
     assert "• Убран сбор за дубликат" in text and 'href="' + SENATE_PRINT_URL in text
-    assert "#сенат #поправки #kadencja10druk3039" in text
+    assert "#сенат #поправки #важность5 #легализация #kadencja10druk3039" in text
 
 
 def test_additional_committee_report_is_summarised_with_its_proposal() -> None:
