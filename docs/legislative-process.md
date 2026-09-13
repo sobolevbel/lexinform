@@ -216,6 +216,19 @@ The Marszałek Sejmu sends the adopted law to the President (`ToPresident`), who
   President must sign within 7 days and may no longer go to the Tribunal. Vetoed laws keep
   `passed=true` in the API: `passed` is not "in force".
 
+The veto's own road through the Sejm is in the tree and was missing from this document until
+2026-09-13 (druk 2529 and druk 2842, both of term 10). The `Veto` node carries the referral to
+the committee that had the bill as its **child** (`Referral`, so the newest node of a flattened
+tree is "Skierowanie", not the veto); "Praca w komisjach nad wnioskiem Prezydenta" follows as a
+`CommitteeWork`, indistinguishable by type from the work after the first reading; and the vote
+itself is **`PresidentMotionConsideration`** ("Rozpatrywanie na forum Sejmu wniosku Prezydenta"),
+whose `decision` is "uchwalono ponownie" or "nie uchwalona ponownie". Only the second renames the
+trailing `End` to "nie uchwalona ponownie po wecie Prezydenta"; after an override "Uchwalono"
+comes back and the motion is the last stage that says anything, with the seven days of
+art. 122 ust. 5 running from its date (`models.PRESIDENT_DAYS_AFTER_VETO`, phase
+`president_after_veto`). Until then a reader can still write to the committee, so `veto` counts
+as a committee phase.
+
 ## 7. Publication and entry into force
 
 Publication in **Dziennik Ustaw** (Dz.U., published by RCL) is the signal we watch: `/processes`
@@ -315,7 +328,9 @@ SenatePosition               Stanowisko Senatu                         position,
 SenatePositionConsideration  Rozpatrywanie na forum Sejmu stanowiska Senatu   decision
 ToPresident                  Ustawę przekazano Prezydentowi do podpisu
 PresidentSignature           Prezydent podpisał ustawę
-Veto / PresidentToTribunal
+Veto                         Wniosek Prezydenta (weto)                 children: Referral per committee
+PresidentMotionConsideration Rozpatrywanie na forum Sejmu wniosku Prezydenta  decision, child Voting
+PresidentToTribunal          Prezydent skierował ustawę do Trybunału
 GovermentPosition            Stanowisko rządu (the API's own misspelling)
 Opinion                      Opinia (a body's opinion, filed beside the process)
 End                          Uchwalono
@@ -329,6 +344,9 @@ reading and keeps it last while the Senate, the President and Dziennik Ustaw are
 is an answer in itself. Dropping the two says nothing about their content: the government's
 position is a document filed to the print (`additionalPrints`), and it is read and told like the
 OSR and the opinions with remarks — it just never becomes the step the reader is waiting for.
+The *top-level* stage is also what the card's "Стадия" line names: children are the paperwork
+that followed the decision, and the newest node of a flattened tree is one of them, so a veto
+read as "направлен в комиссию ENM" (druk 2842, 2026-09-13).
 `Stage.carries_bill_text` decides which committee report is a text worth re-analysing (`-A`
 reports and "przyjąć poprawki" are amendment tables). `passed` = adopted by the Sejm; `ELI` =
 published; `/eli/acts` `entryIntoForce` = in force. Timestamps in the API are naive Warsaw time.

@@ -123,6 +123,24 @@ Invariants worth keeping:
   offered «пока ничего» over the reader's last two windows, and the `SenatePosition`,
   `ToPresident`, `Veto` and `PresidentToTribunal` branches were dead code. The `End` of a bill a
   veto killed ("nie uchwalona ponownie", `models.veto_stood`) stays and ends the road.
+  `Bill.last_stage` is that top-level stage and never a child of it: children are the paperwork
+  that followed the decision, so the newest node of a *flattened* tree is one of them — druk
+  2842's card named the referral under the `Veto` node («направлен в комиссию ENM») and the word
+  "вето" appeared nowhere on it. `last_stage_detail` adds the child back when it says something
+  the parent does not (which committee, how the Sejm voted); a referral to
+  `PLENARY_COMMITTEE_CODE` is not one of those.
+- **The veto has a road of its own, and the Sejm's vote on it is a stage.** `Veto` carries the
+  referral to the committee as its child, "Praca w komisjach nad wnioskiem Prezydenta" is a
+  `CommitteeWork` indistinguishable by type from the work after the first reading (only
+  `ANSWERED_IN_COMMITTEE`, read backwards over the tree, tells the two apart), and the vote is
+  `PresidentMotionConsideration`. Its `decision` decides everything: "nie uchwalona ponownie"
+  ends the road and renames the trailing `End`, "uchwalono ponownie" restores "Uchwalono" and
+  leaves the motion as the last stage that says anything — phase `president_after_veto`, seven
+  days from its date (art. 122 ust. 5, `PRESIDENT_DAYS_AFTER_VETO`). Before 2026-09-13 the type
+  was unknown to `_phase_after`, which fell through to `if any(SenatePosition in top)` and put an
+  overridden veto back at «Сейм рассматривает поправки Сената». There is no such fallback now:
+  an unrecognised last stage gives no phase, and `_ended_line` only says «закон не принят» when
+  the listing says `passed=false`.
 - **"What comes next" is derived, not stored.** `models.next_phase(bill, today)` reads the
   top-level stages, submission and act; the formatter dates it from `bill.agenda` (upcoming
   sittings, refreshed every run for every followed bill, not only the changed ones) or from the
@@ -131,10 +149,16 @@ Invariants worth keeping:
   (`models.is_urgent`, art. 123) is told in its own words throughout: `Labels.urgent_step_labels`
   and `urgent_durations` override the normal entries, so the card never promises a reader weeks
   where the Sejm measured days. **No date is printed once it has passed**: a deadline past
-  `DEADLINE_GRACE_DAYS` says «срок истёк», a step that outlived `PHASE_PATIENCE` says how long it
-  has been standing (`models.stalled_days`, `Phase.since`) instead of quoting an average, and a
-  sitting only dates a phase whose venue it matches (a committee's 08:30 slot is not a third
-  reading). The same rule governs the action line: a hearing whose application deadline has gone
+  `DEADLINE_GRACE_DAYS` says what its running out *meant* (`Labels.deadline_passed_labels`: for
+  the Senate art. 121 ust. 2 makes silence an adoption, so «срок истёк» said the opposite of what
+  had happened, and the action line stops offering the Senate's committee with it), a step that
+  outlived `PHASE_PATIENCE` says how long it has been standing (`models.stalled_days`,
+  `Phase.since` — which for an RCL project falls back to the stage's last modification, RCL
+  leaving "rozpoczęcie" empty), and a sitting only dates a phase whose venue it matches: a
+  committee's 08:30 slot is not a third reading, and a phase in `COMMITTEE_PHASES`/`SITTING_PHASES`
+  takes a sitting only from that venue while a phase in neither (the Senate, the President, Dz.U.,
+  a vacatio legis) takes none at all — the fallback to "the next item on the calendar" printed
+  «подпись Президента · заседание Сейма № 65» over the constitutional deadline. The same rule governs the action line: a hearing whose application deadline has gone
   is not offered, and «до заседания» is dropped on the day of the sitting. A constitutional
   deadline is shown as the deadline of the body that is under it, never as a window the reader
   has: «решение до 04.10.2026», and the reminder (`tracking/deadlines.py`, one reply per bill and
@@ -192,6 +216,14 @@ Invariants worth keeping:
   already says it. Amendments (Senate resolution print, a committee report whose proposal is about
   poprawki) are summarised by a third model call (`AnalysisService.summarize_amendments`) after
   the change row exists and stored on it (`amendments_json`); a failure degrades to the bare event.
+  `has_news` gates the *Sejm* loop only: `RclWatcher` posts every change it records, because
+  `rcl_fingerprint` already decides what counts (folder uploads alone do not). What a change with
+  no new stage needs is a name, not a gate — `StatusChange.consultation_opened` gives one to the
+  consultation that opens under a stage the timeline already shows as reached, which is the one
+  moment a reader of a government project can act on and went out headed «Обновление».
+  Every reply carries the topic tags: `_tag_line` does it for the kinds that have one, and the
+  status update and the joint reply, which build their tag line by hand, must add
+  `_topic_tags` themselves — they were the two that did not.
 - **What the Sejm publishes is largely scanned paper, and a covering letter is not the document
   it transmits.** Measured with the project's own extractor (term 10, 12 Sept 2026): of 66
   documents filed to prints **none** carries readable text — 55 have no text layer at all and 11
@@ -637,8 +669,17 @@ source — but only when there is really nothing ahead (the act is out, the bill
 withdrawn, the project or the plan was dropped), and a bill the Sejm has merely passed keeps its
 card, because the Senate and the President are the reader's last windows; the last stage is read
 to tell the two apart. The product review of 2026-09-13 added the two constitutional deadlines as reminders of their
-own and stopped the card freezing while an act's vacatio legis runs. The product review of
-2026-09-12 settled the rest: a live card is
+own and stopped the card freezing while an act's vacatio legis runs; the second review that day
+settled how the road *ends* — a veto the Sejm overrode is read from
+`PresidentMotionConsideration` and gets the seven days of art. 122 ust. 5 (until then an
+overridden veto read as «Сейм рассматривает поправки Сената»), a veto pending is a committee
+phase, and a constitutional term that has run out says what running out meant instead of «срок
+истёк». It also settled that a step outside the Sejm takes no sitting for its date, that a
+committee is named and not coded on the card, that a status update carries the topic tags like
+every other reply, that the Dz.U. address belongs on the card and a sentence of the summary on
+the Dz.U. notice, and that the analysis never states where the bill stands — the card does, and
+only the card is re-rendered (`PROMPT_VERSION` `2026-09-v7`; old cards keep their analysis).
+The product review of 2026-09-12 settled the rest: a live card is
 edited in place when what it says has drifted and a finished one is not; the «Важность» line
 shows the score without the scale's legend, which read as a statement about the bill; a
 sitting or a hearing is told once for a group of jointly considered prints, not once per

@@ -236,11 +236,50 @@ Done on 2026-09-12 (schema v18):
   stage has no name of its own), and a late OSR was a wasted download: it re-dated the print, the
   main PDF hashed the same, and the assessment itself was never read.
 
-Knowingly not modelled, and cheap to add if a case turns up: the seven days the President has to
-sign after the Sejm overrides a veto (art. 122 ust. 5 — the card would still say 21), the budget
-act's own terms (20 days for the Senate, 7 for the President, art. 223/224) and a constitutional
-amendment's 60 days for the Senate (art. 235). Only the `urgencyStatus` split is read, and the
-budget and the constitution are not what this channel follows.
+Knowingly not modelled, and cheap to add if a case turns up: the budget act's own terms (20 days
+for the Senate, 7 for the President, art. 223/224) and a constitutional amendment's 60 days for
+the Senate (art. 235). Only the `urgencyStatus` split is read, and the budget and the
+constitution are not what this channel follows. (The seven days of art. 122 ust. 5 were on this
+list until the review below found that the stage they hang on was unread.)
+
+Product review (2026-09-13), against the state dump and the card every bill in it renders. The
+findings and what each one cost a reader are in the commit messages; the shape of the fixes:
+
+- **The end of the road is read from the stage that decided it.**
+  `PresidentMotionConsideration` — the Sejm's vote on a veto — was the one stage type in the
+  whole dump that nothing knew, and an *overridden* veto therefore fell through `_phase_after`
+  into a fallback meaning "the committee is working on the Senate's answer": the card threw the
+  reader back to «Сенат ●» over a `SenatePosition` four months old, and the update that carried
+  the news was headed «Обновление» with the Polish decision quoted raw. Now it is a phase of its
+  own with the seven days of art. 122 ust. 5. That fallback is gone; what it really served —
+  "Praca w komisjach nad stanowiskiem Senatu", the same stage type as the work after the first
+  reading — reads the tree before it instead, so the committee answering the President is told
+  apart from the one answering the Senate. `Bill.last_stage` is the top-level stage, not the
+  newest leaf: druk 2842's card named the referral under the `Veto` node and never said "вето".
+  A veto is a committee phase — the referral names a committee a reader can still write to.
+- **A date is printed only where it belongs.** A phase that happens in neither house — the
+  Senate's thirty days, the President's twenty-one, the wait for Dziennik Ustaw, a vacatio legis
+  — took the next item on the calendar for its own and printed it *over* the constitutional
+  deadline: «подпись Президента (до 21 дня) · заседание Сейма № 65». A jointly considered print
+  is enough to keep a bill on the plenary agenda while it waits in the Senate.
+- **A committee is called by its name.** Nought of the 86 referrals stored in the dump carried
+  one, because the enricher named only the stages an update lists: every card's most actionable
+  line read «направить мнение в комиссию — ASW». The tree is stored named now, at no extra
+  request — the agenda watcher has already asked, and the name is not part of `_stage_key`.
+- **A term that has run out says what running out meant.** «срок истёк» over the Senate's thirty
+  days is the opposite of art. 121 ust. 2, which makes silence an adoption, and the card went on
+  inviting an opinion to a committee that no longer had the act.
+- **Every reply carries the topic tags**, which the review of 2026-09-12 decided and the status
+  update — the most frequent reply there is — did not do: a reader following `#легализация` got
+  the card and the Dz.U. notice and missed every move between them.
+- The Dziennik Ustaw notice was two dates under a Polish title: it repeats a sentence of the
+  summary and says what is left to do, and the card carries `Dz.U. 2026 poz. 1099`, which lived
+  only in that notice. An RCL consultation that opens without the stage moving is named rather
+  than announced as «Обновление». A plan the Council has adopted stops promising the quarter it
+  was adopted in. `konsultacje publiczne` is one term in Russian instead of three, and the RCL
+  steps stop quoting Polish two lines above their own translation. The prompt forbids the summary
+  from naming a stage (`2026-09-v7`): it is the one block of the card that is not re-derived, and
+  druk 2667's says "передан в Сенат" under «уже действует с 02.09.2026».
 
 Still open:
 
@@ -249,6 +288,12 @@ Still open:
   announced under both cards on 2026-09-10, two days before `Poster.told_jointly` — and do not
   any more (`test_one_sitting_is_told_once_for_the_whole_group` holds the same-run case).
 - `Analysis.confidence` is asked for and read by nothing; either show it or stop asking.
+- The stage a card names is right and the analysis under it can still be months old: the summary
+  is written once and only a new *text* re-analyses it (decided 2026-09-08). From `2026-09-v7`
+  the prompt keeps process statements out of it, so this only ages cards published before then.
+- `PHASE_PATIENCE` has no entry for `rcl_opinions` or `rcl_consultation` and falls back to 180
+  days. Now that `_phase_started` reaches the RCL fallback the thresholds are worth measuring
+  against the state branch rather than guessed at.
 
 - RCL leftovers: consultations of draft regulations (rozporządzenia, `typeId=10`); the
   zgłoszenie zainteresowania is offered on the card but the declarations already filed
