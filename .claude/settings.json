@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run pytest -q)",
+      "Bash(uv run pytest -q *)",
+      "Bash(uv run pytest tests/*)",
+      "Bash(uv run mypy)",
+      "Bash(uv run mypy *)",
+      "Bash(uv run ruff check src)",
+      "Bash(uv run ruff check src *)",
+      "Bash(uv run ruff format src)",
+      "Bash(uv run ruff format src *)",
+      "Bash(uv run lexinform show *)",
+      "Bash(curl -s \"https://api.sejm.gov.pl/*)",
+      "Bash(curl -s 'https://api.sejm.gov.pl/*)",
+      "Bash(curl -s https://api.sejm.gov.pl/*)"
+    ]
+  }
+}
