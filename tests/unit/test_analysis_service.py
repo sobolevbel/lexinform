@@ -125,6 +125,34 @@ def test_triage_tokens_are_counted_per_model() -> None:
     assert report.llm_usage[w.llm.MODEL].input == analysis_in
 
 
+def test_the_run_says_which_call_spent_what() -> None:
+    """One tokens figure for a whole run could not be accounted for afterwards: the run of
+    13 Sept 2026 billed 316,767 input tokens with nothing to say which call made them."""
+    w = World(
+        extractor=FakeTextExtractor(FOREIGNER_TEXT),
+        triage=True,
+        triage_script={
+            "4000": Triage(affects_foreigners=False, confidence=0.95, rationale="о бананах")
+        },
+    )
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.add_bill("4000", "Rządowy projekt ustawy o jakości handlowej")
+
+    report = w.run()
+
+    assert [(c.number, c.kind) for c in report.llm_calls] == [
+        ("3039", "triage"),
+        ("3039", "analysis"),
+        ("4000", "triage"),
+    ]
+    assert [c.model for c in report.llm_calls] == [
+        w.llm.TRIAGE_MODEL,
+        w.llm.MODEL,
+        w.llm.TRIAGE_MODEL,
+    ]
+    assert sum(c.input_tokens for c in report.llm_calls) == report.llm_input_tokens
+
+
 def test_triage_sees_keyword_windows_not_the_whole_print() -> None:
     w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT), triage=True)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")

@@ -26,7 +26,9 @@ from lexinform.models import (
     Bill,
     BillContext,
     BillStatus,
+    CallKind,
     Category,
+    LlmCall,
     LocatedText,
     ProcessSummary,
     ScannedDocument,
@@ -245,6 +247,7 @@ class AnalysisService:
         self._triage_min_confidence = triage_min_confidence
         self._channel_id = channel_id
         self._spent = 0.0
+        self._calls: list[LlmCall] = []
         self._spent_lock = threading.Lock()
         self._stopped: str | None = None
 
@@ -253,6 +256,7 @@ class AnalysisService:
         counter would be run-scoped anyway; a test drives several runs through one container."""
         with self._spent_lock:
             self._spent = 0.0
+            self._calls.clear()
         self._stopped = None
 
     @property
@@ -266,18 +270,36 @@ class AnalysisService:
         The analysis phase says it for itself (`AnalysisResult.stopped`)."""
         return self._stopped
 
-    def _charge(self, *records: UsageRecord | None) -> None:
-        """Count what a model call cost towards the run's budget. Called from the worker threads
-        of `fan_out`, so the sum is locked."""
-        usage: dict[str, TokenUsage] = {}
-        for record in records:
-            if record is not None:
-                add_usage(usage, record)
-        spent = cost_usd(usage)
-        if spent is None:
+    def _charge(self, record: UsageRecord | None, *, number: str, kind: CallKind) -> None:
+        """Count what a model call cost towards the run's budget, and write down which call it
+        was. Called from the worker threads of `fan_out`, so both are locked.
+
+        The run reported one tokens figure for everything and it could not be accounted for
+        afterwards; `calls` is what answers "where did the money go" without reading the logs.
+        """
+        if record is None:
             return
+        usage: dict[str, TokenUsage] = {}
+        add_usage(usage, record)
+        spent = cost_usd(usage)
         with self._spent_lock:
-            self._spent += spent
+            self._calls.append(
+                LlmCall(
+                    number=number,
+                    kind=kind,
+                    model=record.model,
+                    input_tokens=record.input_tokens or 0,
+                    output_tokens=record.output_tokens or 0,
+                )
+            )
+            if spent is not None:
+                self._spent += spent
+
+    @property
+    def calls(self) -> list[LlmCall]:
+        """Every model call this run has made, in the order they were charged."""
+        with self._spent_lock:
+            return list(self._calls)
 
     def _run_budget_reached(self) -> bool:
         return bool(self._max_run_cost) and self._spent >= self._max_run_cost
@@ -461,7 +483,7 @@ class AnalysisService:
             proposal=proposal,
         )
         record = self._llm.summarize_amendments(ctx)
-        self._charge(record)
+        self._charge(record, number=bill.number, kind="amendments")
         record.source_url = document.url
         return record
 
@@ -495,7 +517,7 @@ class AnalysisService:
             previous_key_changes=list(bill.analysis.analysis.key_changes),
         )
         record = self._llm.digest_supplement(ctx)
-        self._charge(record)
+        self._charge(record, number=bill.number, kind="supplement")
         record.number = number
         record.source_url = document.url
         return record
@@ -579,7 +601,9 @@ class AnalysisService:
         if cost_guard:
             ctx = self._fit_to_budget(ctx, loaded, first=previous is None)
         record = self._llm.analyze(ctx)
-        self._charge(record)
+        self._charge(
+            record, number=bill.number, kind="analysis" if previous is None else "reanalysis"
+        )
         record.source_url = document.url if document else None
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
@@ -676,7 +700,7 @@ class AnalysisService:
             text_chars=len(text),
         )
         verdict = self._llm.triage(ctx)
-        self._charge(verdict)
+        self._charge(verdict, number=bill.number, kind="triage")
         if not verdict.rejects(min_confidence=self._triage_min_confidence):
             log.info(
                 "%s passes triage (%s, %.2f): full analysis",

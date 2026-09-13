@@ -116,6 +116,8 @@ from lexinform.models.rcl import (
 )
 from lexinform.models.report import (
     AnalysisVerdict,
+    CallKind,
+    LlmCall,
     RunReport,
 )
 from lexinform.models.sejm import (
@@ -243,6 +245,8 @@ __all__ = [
     "RclProject",
     "RclProjectSummary",
     "RclStage",
+    "CallKind",
+    "LlmCall",
     "RunReport",
     "SERVICE_STAGE_TYPES",
     "SITTING_PHASES",

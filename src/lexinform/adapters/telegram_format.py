@@ -944,6 +944,7 @@ class MessageFormatter:
                     ("joint prints left alone: {}", report.analysis_skipped_joint),
                 ),
                 _tokens_line(report),
+                _spenders_line(report),
                 empty="nothing analyzed",
             ),
             _section(
@@ -1947,6 +1948,21 @@ def _tokens_line(report: RunReport) -> str:
     if cost is not None and report.llm_usage:
         parts.append(f"≈ ${cost:.2f}" if cost >= 0.01 else f"≈ ${cost:.3f}")
     return " · ".join(parts)
+
+
+def _spenders_line(report: RunReport, *, top: int = 3) -> str:
+    """`spent on: 2699 reanalysis $1.58 · 3039 analysis $0.21`, the costliest calls of the run.
+
+    One tokens figure for a whole run cannot be accounted for afterwards — the run of 13 Sept
+    2026 billed 316,767 input tokens with nothing to say which call made them — and the phases
+    do not spend evenly. Shown only where a call cost a cent or more, so a quiet run stays quiet.
+    """
+    priced = [(cost, call) for call in report.llm_calls if (cost := cost_usd(call.usage))]
+    priced.sort(key=lambda pair: -pair[0])
+    named = [
+        f"{esc(call.number)} {call.kind} ${cost:.2f}" for cost, call in priced[:top] if cost >= 0.01
+    ]
+    return "spent on: " + " · ".join(named) if named else ""
 
 
 def _k(tokens: int) -> str:

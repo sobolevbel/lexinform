@@ -149,6 +149,10 @@ class DailyPipeline:
             report.errors.append(f"unexpected failure: {type(exc).__name__}: {exc}")
         finally:
             report.finished_at = self._clock.now()
+            # Every phase that asks the model goes through one `AnalysisService`, so this is the
+            # whole run's spend, however it was reached, and it is recorded before the report is
+            # stored — a run that fell over still says what it had spent by then.
+            report.llm_calls = self._analysis.calls
             if run_id is not None:
                 try:
                     self._repo.finish_run(run_id, report)

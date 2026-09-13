@@ -1,6 +1,7 @@
 """What one run reports to the log channel and stores in the `runs` table."""
 
 import datetime as dt
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -27,6 +28,31 @@ class AnalysisVerdict(BaseModel):
         if self.triaged:
             return "triage"
         return f"score {self.score}" if self.relevant else "not relevant"
+
+
+CallKind = Literal["analysis", "reanalysis", "triage", "amendments", "supplement"]
+
+
+class LlmCall(BaseModel):
+    """One request to the model: which bill it was about, what kind of question, what it cost.
+
+    A run reported its tokens as a single number, and that number could not be accounted for: the
+    run of 13 Sept 2026 billed 316,767 input tokens with nothing in the report to say which call
+    made them. The phases do not spend evenly — a re-analysis of an RCL package is worth a dozen
+    triages — so the next saving is found by reading this list, not by digging through logs.
+    """
+
+    number: str
+    kind: CallKind
+    model: str
+    input_tokens: int = 0
+    output_tokens: int = 0
+
+    @property
+    def usage(self) -> dict[str, TokenUsage]:
+        """What it cost, in the shape `pricing.cost_usd` prices (which cannot be imported here:
+        `pricing` reads these models)."""
+        return {self.model: TokenUsage(input=self.input_tokens, output=self.output_tokens)}
 
 
 class RunReport(BaseModel):
@@ -97,6 +123,7 @@ class RunReport(BaseModel):
     llm_input_tokens: int = 0
     llm_output_tokens: int = 0
     llm_usage: dict[str, TokenUsage] = Field(default_factory=dict)
+    llm_calls: list[LlmCall] = Field(default_factory=list)
     phase_seconds: dict[str, float] = Field(default_factory=dict)
 
     @property
