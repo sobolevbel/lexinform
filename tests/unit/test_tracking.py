@@ -14,6 +14,7 @@ from lexinform.models import (
     Stage,
     Vote,
     VotingSummary,
+    flatten_stages,
 )
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import COMMITTEE_STAGES, ELI, REFERRED, START, World, act, print_url
@@ -525,6 +526,37 @@ def test_votes_get_the_club_breakdown_and_referrals_the_committee_name() -> None
     ]
     referral = next(s for s in change.new_stages if s.stage_type == "Referral")
     assert referral.committee_name == "Komisja ASW"
+    # And the name is kept on the bill, not only in the post: the card's «направить мнение в
+    # комиссию» is what a reader acts on, and it used to name the bare code.
+    stored = next(s for s in flatten_stages(w.bill("3039").stages) if s.stage_type == "Referral")
+    assert stored.committee_name == "Komisja ASW"
+
+
+def test_a_committee_is_named_on_the_card_even_when_nothing_moved() -> None:
+    """The tree is stored as the API gives it, and the API never names a committee, so the name
+    has to be written whether or not the fingerprint moved — none of the 86 referrals in the
+    state dump of 2026-09-13 had one, and every card addressed a three-letter code."""
+    w = World()
+    w.gateway.committees["ASW"] = Committee(term=10, code="ASW", name="Komisja ASW")
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
+    w.run()
+    stored = w.bill("3039")
+    assert stored.stages_fingerprint is not None
+    w.repo.save_stages(10, "3039", _unnamed(stored.stages), stored.stages_fingerprint)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.updates == 0  # the name is not part of the fingerprint: nothing to announce
+    referral = next(s for s in flatten_stages(w.bill("3039").stages) if s.stage_type == "Referral")
+    assert referral.committee_name == "Komisja ASW"
+
+
+def _unnamed(stages: tuple[Stage, ...]) -> tuple[Stage, ...]:
+    return tuple(
+        st.model_copy(update={"committee_name": None, "children": _unnamed(st.children)})
+        for st in stages
+    )
 
 
 def test_vote_detail_failure_degrades_to_totals_only() -> None:

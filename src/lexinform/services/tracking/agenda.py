@@ -205,7 +205,7 @@ class AgendaWatcher:
                         date=sitting.date,
                         start_time=sitting.start_time,
                         committee_code=code,
-                        committee_name=self._committee_name(term, code),
+                        committee_name=self._enricher.committee_name_or_none(term, code),
                         sitting_number=sitting.num,
                         room=sitting.room,
                         text=" ".join(texts),
@@ -228,15 +228,6 @@ class AgendaWatcher:
                 )
             )
         return tuple(items)
-
-    def _committee_name(self, term: int, code: str) -> str | None:
-        try:
-            return self._enricher.committee_name(term, code)
-        except ServiceUnavailableError:
-            raise
-        except Exception as exc:
-            log.warning("name of committee %s unavailable: %s", code, exc)
-            return None
 
     def _post_new(self, bill: Bill, items: tuple[AgendaItem, ...], result: TrackingResult) -> None:
         now = self._clock.now().astimezone(self._local_tz)

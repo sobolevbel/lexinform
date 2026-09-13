@@ -1369,6 +1369,31 @@ def test_the_third_reading_is_not_dated_by_a_committee_sitting(
     assert "17.09.2026" not in text
 
 
+def test_a_step_that_happens_in_neither_house_is_not_dated_by_a_sitting(
+    process_1962: ProcessDetail,
+) -> None:
+    """The President's twenty-one days have no sitting of the Sejm to be dated by, and a print
+    considered jointly with the bill keeps it on the plenary agenda while it waits: «подпись
+    Президента · заседание Сейма № 65» used to replace the constitutional deadline itself."""
+    plenary = sitting(
+        kind="sejm",
+        ref="sejm/65/2026-09-16",
+        date=dt.date(2026, 9, 16),
+        committee_code=None,
+        committee_name=None,
+        start_time=None,
+        sitting_number=65,
+    )
+    passed = process_1962.model_copy(update={"passed": True})
+
+    text = (
+        MessageFormatter("ru").new_bill(bill_of(passed, agenda=(plenary,)), None, today=TODAY).text
+    )
+
+    assert "подпись Президента (до 21 дня)" in text
+    assert "решение до 25.09.2026" in text and "заседание Сейма" not in text
+
+
 def test_an_application_deadline_in_the_past_is_not_offered_as_an_action(
     process_3039: ProcessDetail,
 ) -> None:

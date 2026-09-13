@@ -5,7 +5,7 @@ import logging
 from collections.abc import Iterable
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import Bill, Stage, aggregate_clubs
+from lexinform.models import PLENARY_COMMITTEE_CODE, Bill, Stage, aggregate_clubs
 from lexinform.ports import SejmGateway
 
 log = logging.getLogger(__name__)
@@ -45,6 +45,38 @@ class StageEnricher:
         except Exception as exc:
             log.warning("could not enrich stage %s: %s", stage.stage_name, exc)
         return stage
+
+    def name_committees(self, term: int, stages: tuple[Stage, ...]) -> tuple[Stage, ...]:
+        """The tree with every referral's committee named, for storage.
+
+        `enrich` names only the stages an update lists, and the tree saved on the bill is the
+        API's own — so on 2026-09-13 not one of the 86 referrals in the state dump carried a
+        name, and the card's most actionable line read «направить мнение в комиссию — ASW».
+        A foreigner does not know the Sejm's three-letter codes, and the name costs nothing:
+        the agenda watcher has already asked for every committee of every followed bill by the
+        time this runs, and the answers are cached for the run.
+        """
+        return tuple(self._named(term, stage) for stage in stages)
+
+    def _named(self, term: int, stage: Stage) -> Stage:
+        children = self.name_committees(term, stage.children)
+        name = stage.committee_name
+        if stage.committee_code and stage.committee_code != PLENARY_COMMITTEE_CODE and not name:
+            name = self.committee_name_or_none(term, stage.committee_code)
+        if name == stage.committee_name and children == stage.children:
+            return stage
+        return stage.model_copy(update={"committee_name": name, "children": children})
+
+    def committee_name_or_none(self, term: int, code: str) -> str | None:
+        """The committee's name, or None when the API will not give it: a missing name
+        degrades a line to the bare code, it never stops a post."""
+        try:
+            return self.committee_name(term, code)
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("name of committee %s unavailable: %s", code, exc)
+            return None
 
     def committee_name(self, term: int, code: str) -> str:
         """The committee's full name, fetched once per run."""

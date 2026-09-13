@@ -16,6 +16,7 @@ from lexinform.models import (
     process_summary,
     process_web_url,
     rcl_stages,
+    stalled_days,
 )
 from tests.fakes import make_analysis
 from tests.harness import RCL, RCL_CONSULTATION, RCL_ID, rcl_project, rcl_stage
@@ -144,3 +145,23 @@ def test_generic_stages_of_a_project_end_with_the_active_one() -> None:
     assert bill.last_stage is not None
     assert bill.last_stage.stage_name == "4. Opiniowanie"
     assert RCL_CONSULTATION.is_open(TODAY)
+
+
+def test_a_project_standing_still_is_dated_from_the_stage_that_stopped_moving() -> None:
+    """RCL leaves "rozpoczęcie" empty for most stages, so the stage's last modification is what
+    says how long a project has stood. The fallback sat behind `if last is not None`, which an
+    RCL project never fails, so seven of the ten projects in the state dump of 2026-09-13 had no
+    start at all and «без движения уже N мес.» could not fire on the source that stalls most."""
+    stale = dt.date(2026, 2, 1)
+    project = rcl_project(
+        stages=tuple(
+            st.model_copy(update={"started": None, "modified": stale})
+            for st in rcl_project().stages
+        ),
+        consultation=None,
+    )
+
+    phase = next_phase(rcl_bill(project), today=TODAY)
+
+    assert phase is not None and phase.since == stale
+    assert stalled_days(phase, TODAY) == (TODAY - stale).days

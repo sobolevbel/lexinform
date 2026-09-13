@@ -91,7 +91,10 @@ class Linker:
         """The print takes over everything the entry knew about the bill."""
         self._repo.upsert_summary(detail, now=now)
         self._repo.save_stages(
-            pre.term, print_number, detail.stages, stage_fingerprint(detail.stages)
+            pre.term,
+            print_number,
+            self._enricher.name_committees(pre.term, detail.stages),
+            stage_fingerprint(detail.stages),
         )
         status = self._status_of_print(pre)
         self._repo.set_status(pre.term, print_number, status, prefilter_hits=pre.prefilter_hits)

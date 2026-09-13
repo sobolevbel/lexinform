@@ -566,8 +566,11 @@ class StatusTrackingService:
         detail = found.detail
         new_fp = stage_fingerprint(detail.stages)
         change = self._detect_change(bill, found, new_fp, result)
-        if new_fp != bill.stages_fingerprint:
-            self._repo.save_stages(bill.term, bill.number, detail.stages, new_fp)
+        # Stored with the committees named, so the card can address them by name: the name is
+        # not part of `_stage_key`, so writing it moves no fingerprint and announces nothing.
+        named = self._enricher.name_committees(bill.term, detail.stages)
+        if new_fp != bill.stages_fingerprint or named != bill.stages:
+            self._repo.save_stages(bill.term, bill.number, named, new_fp)
         self._remember_supplements(bill, found.print_info)
         return change
 

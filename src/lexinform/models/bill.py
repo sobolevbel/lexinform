@@ -395,14 +395,19 @@ def _phase_started(bill: Bill) -> dt.date | None:
     A stage the API left undated started on an unknown day, not on the day the bill was submitted:
     reading it as the latter would age the step by the whole life of the bill. RCL leaves
     "rozpoczęcie" empty for most stages, so the stage's last modification stands in — it is what
-    the page shows, and what stops moving when a project stalls.
+    the page shows, and what stops moving when a project stalls. That fallback used to sit behind
+    `if last is not None`, which an RCL project never fails: seven of the ten projects in the
+    state dump of 2026-09-13 had an undated stage and therefore no start at all, so «без движения
+    уже N мес.» could not fire on the one source where a project really does stand for a year.
     """
     last = bill.last_stage
-    if last is not None:
+    if last is not None and last.date is not None:
         return last.date
     if bill.rcl is not None:
         current = bill.rcl.current_stage
         return current.modified if current is not None else None
+    if last is not None:
+        return None
     if bill.wykaz is not None:
         return bill.wykaz.published_at.date()
     submission = bill.submission

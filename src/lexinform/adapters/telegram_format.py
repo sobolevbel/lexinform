@@ -1623,9 +1623,16 @@ class MessageFormatter:
     def _upcoming(
         self, bill: Bill, today: dt.date, phase: Phase, *, kind: str | None = None
     ) -> AgendaItem | None:
-        """The soonest future sitting naming the bill, in the venue the phase implies. A phase
-        that implies one and has none scheduled there dates nothing: a committee's 08:30 slot is
-        not the date of a third reading."""
+        """The soonest future sitting naming the bill, in the venue the phase implies.
+
+        A phase dates nothing unless a sitting of *its own* venue is scheduled: a committee's
+        08:30 slot is not the date of a third reading, and a phase that happens in neither house
+        — the Senate's thirty days, the President's twenty-one, the wait for Dziennik Ustaw, a
+        vacatio legis — has no venue in the Sejm at all. Taking the next item on the calendar
+        for those read «подпись Президента … · заседание Сейма № 65, 16–18.09.2026», and did it
+        over the constitutional deadline `_when` had just computed, because a print considered
+        jointly with the bill was still being read while this one sat in the Senate.
+        """
         future = sorted((i for i in bill.agenda if i.date >= today), key=lambda i: i.date)
         if kind is not None:
             return next((i for i in future if i.kind == kind), None)
@@ -1638,7 +1645,7 @@ class MessageFormatter:
             item = next((i for i in future if i.kind == wanted), None)
             if item is not None:
                 return item
-        return None if preferred else (future[0] if future else None)
+        return None
 
     def _agenda_when(self, item: AgendaItem) -> str:
         lb = self._labels
