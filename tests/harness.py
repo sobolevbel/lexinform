@@ -297,6 +297,7 @@ class World:
         workers: int = 1,
         max_bill_cost_usd: float = 0.0,  # the cost guard rails are off unless a test turns them on
         max_run_cost_usd: float = 0.0,
+        text_budget_chars: int = 10_000,  # the outer cap; raise it to let the cost limit decide
     ) -> None:
         self.clock = FixedClock()
         self.repo = SqliteBillRepository(":memory:")
@@ -330,7 +331,7 @@ class World:
             llm_model="claude-opus-5",  # priced: the cost estimates use $5 per million tokens
             llm_triage_model="fake-triage" if triage else "",
             triage_min_chars=triage_min_chars,
-            text_budget_chars=10_000,
+            text_budget_chars=text_budget_chars,
             max_pdf_download_mb=MAX_PDF_MB,
             max_analysis_cost_usd=max_bill_cost_usd,
             max_run_cost_usd=max_run_cost_usd,

@@ -54,8 +54,20 @@ from lexinform.sections import (
     trim_print,
 )
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
+from lexinform.services.joint import primary_of
 
 log = logging.getLogger(__name__)
+
+_FIT_MARGIN = 0.9
+"""How much of the cost limit a shortened text aims at, the rest being the prompt and the schema.
+
+The counted input covers the system prompt, the structured-output schema and the bill's metadata
+as well as its text, so scaling the characters by the overshoot alone would still land a little
+over. Nine tenths clears the ~2k tokens of prefix with room to spare and costs one re-count.
+"""
+
+_FIT_MIN_CHARS = 20_000
+"""Below this a shortened text is not a document any more, and refusing is the honest answer."""
 
 
 @dataclass
@@ -63,13 +75,15 @@ class AnalysisResult:
     """Counters and verdicts of one analysis phase.
 
     `skipped_cost` counts the texts that were over the per-bill cost limit and never reached the
-    model, `usage` is counted per model, and `stopped` says the phase ended early on the per-run
-    cost limit, which is a note and not an error.
+    model, `skipped_joint` the prints whose group is already carried by another print's card,
+    `usage` is counted per model, and `stopped` says the phase ended early on the per-run cost
+    limit, which is a note and not an error.
     """
 
     analyzed: int = 0
     triaged_out: int = 0
     skipped_cost: int = 0
+    skipped_joint: int = 0
     failed: int = 0
     verdicts: list[AnalysisVerdict] = field(default_factory=list)
     input_tokens: int = 0
@@ -185,8 +199,11 @@ class AnalysisService:
     """First analyses of candidates and re-analyses of bills whose text changed.
 
     The cost guards are off when their limit is 0, and the per-bill estimate needs the model's
-    input price; `triage` holds the keyword patterns that cut the excerpts of the cheap first
-    pass, and None disables that pass.
+    input price; `keywords` holds the patterns that pick what survives when a text has to be cut
+    down to the limit, and `triage` the same patterns again when the cheap first pass is on —
+    None there disables that pass. `channel_id` is the channel the phase is analysing for,
+    and only the scheduled phase uses it, to leave a jointly considered print alone when the
+    group's card is another print's; None means the question is not asked.
     """
 
     def __init__(
@@ -204,9 +221,11 @@ class AnalysisService:
         input_price_usd_per_mtok: float | None = None,
         max_bill_cost_usd: float = 0.0,
         max_run_cost_usd: float = 0.0,
+        keywords: KeywordPrefilter | None = None,
         triage: KeywordPrefilter | None = None,
         triage_min_chars: int = 20_000,
         triage_min_confidence: float = 0.8,
+        channel_id: str | None = None,
     ) -> None:
         self._repo = repo
         self._texts = texts
@@ -220,9 +239,11 @@ class AnalysisService:
         self._input_price = input_price_usd_per_mtok
         self._max_bill_cost = max_bill_cost_usd
         self._max_run_cost = max_run_cost_usd
+        self._keywords = keywords or KeywordPrefilter()
         self._triage = triage
         self._triage_min_chars = triage_min_chars
         self._triage_min_confidence = triage_min_confidence
+        self._channel_id = channel_id
         self._spent = 0.0
         self._spent_lock = threading.Lock()
         self._stopped: str | None = None
@@ -276,6 +297,9 @@ class AnalysisService:
             limit=limit,
             max_attempts=self._max_attempts,
         )
+        candidates = [
+            bill for bill in candidates if not self._carried_by_a_joint_card(bill, result)
+        ]
         for outcome in fan_out(candidates, self._prepare_first, workers=self._workers):
             bill = outcome.item
             try:
@@ -342,6 +366,41 @@ class AnalysisService:
 
     def _prepare_first(self, bill: Bill, *, cost_guard: bool = True) -> _Prepared:
         return self._prepare(bill, self._texts.locate(bill), previous=None, cost_guard=cost_guard)
+
+    def _carried_by_a_joint_card(self, bill: Bill, result: AnalysisResult) -> bool:
+        """Whether another print of this bill's group already carries the card, so that this
+        print will be a reply that shows no analysis and the model need not be asked.
+
+        The question is the publisher's own (`services.joint.primary_of`), asked a phase earlier:
+        `PublishingService` settles the same bill as a `joint_bill` reply, which carries the
+        title, the applicant and the links but no analysis at all. Druk 1933 was analysed for
+        305,132 input tokens and published as one. If the group's card is later withdrawn or
+        rejected, `primary_of` stops finding it and `/unskip` puts the print back in the queue.
+        An operator's `/analyze` never comes through here: asking for one explicitly is a wish
+        to have it.
+        """
+        if self._channel_id is None or not bill.summary.prints_considered_jointly:
+            return False
+        primary = primary_of(self._repo, bill, self._channel_id)
+        if primary is None:
+            return False
+        other, _ = primary
+        result.skipped_joint += 1
+        log.info(
+            "%s is considered jointly with %s, which carries the card; not analysed",
+            bill.number,
+            other.number,
+        )
+        self._repo.set_status(
+            bill.term,
+            bill.number,
+            BillStatus.SKIPPED_JOINT,
+            reason=(
+                f"considered jointly with druk {other.number}, which carries the card; "
+                "its reply shows no analysis (/unskip to analyse anyway)"
+            ),
+        )
+        return True
 
     def reanalyze_bill(
         self, bill: Bill, document: TextDocument, *, summary: ProcessSummary | None = None
@@ -517,8 +576,8 @@ class AnalysisService:
             previous_summary=previous.analysis.summary if previous else None,
             previous_key_changes=list(previous.analysis.key_changes) if previous else [],
         )
-        if previous is None and cost_guard:
-            self._refuse_if_too_expensive(ctx, loaded)
+        if cost_guard:
+            ctx = self._fit_to_budget(ctx, loaded, first=previous is None)
         record = self._llm.analyze(ctx)
         self._charge(record)
         record.source_url = document.url if document else None
@@ -527,25 +586,76 @@ class AnalysisService:
         record.text_sha256 = digest
         return _Prepared(bill, located, text, source, record, first=previous is None, triage=triage)
 
-    def _refuse_if_too_expensive(self, ctx: BillContext, loaded: _Loaded) -> None:
-        """Stop a first analysis whose input alone costs more than the per-bill limit.
+    def _fit_to_budget(self, ctx: BillContext, loaded: _Loaded, *, first: bool) -> BillContext:
+        """The context the model is actually sent: this one, or a shorter one that fits the
+        per-bill cost limit.
 
         For a text the model counts the input itself — free, and exact where two characters per
         token is a rule of thumb. A scan is priced from its pages instead (1,600 tokens each,
         measured): asking the tokenizer would mean uploading the whole file, tens of megabytes,
         to learn a number we can multiply out. When the counting request fails, the estimate
         from the text length stands in.
+
+        A text over the limit is cut down rather than refused. The triage has already said the
+        bill matters, and dropping it there left the reader with nothing and the operator with a
+        `reset` to run by hand; a text read with gaps is worth more than a bill not read at all,
+        and the card says «неполный текст» either way. What a scan cannot do is be thinned: its
+        pages are substance from the first to the last, so there the answer is still to refuse —
+        and for a re-analysis not even that, because a bill whose new text we decline to read
+        must not be left with a card that describes the old one.
         """
         if not self._max_bill_cost or self._input_price is None:
-            return
-        tokens = None if loaded.scan is not None else self._llm.count_input_tokens(ctx)
-        cost = (
-            input_cost(tokens, self._input_price)
-            if tokens is not None
-            else loaded.estimate(self._input_price)
-        )
-        if cost > self._max_bill_cost:
+            return ctx
+        if loaded.scan is not None:
+            cost = loaded.estimate(self._input_price)
+            if cost > self._max_bill_cost and first:
+                raise TooExpensiveError(cost, self._max_bill_cost, measure=loaded.measure(None))
+            return ctx
+        tokens = self._llm.count_input_tokens(ctx)
+        if tokens is None:
+            cost = loaded.estimate(self._input_price)
+            if cost > self._max_bill_cost and first:
+                raise TooExpensiveError(cost, self._max_bill_cost, measure=loaded.measure(None))
+            return ctx
+        cost = input_cost(tokens, self._input_price)
+        if cost <= self._max_bill_cost:
+            return ctx
+        shorter = self._shorten(ctx.text, over_by=cost / self._max_bill_cost)
+        if shorter is None:
             raise TooExpensiveError(cost, self._max_bill_cost, measure=loaded.measure(tokens))
+        reduced = ctx.model_copy(update={"text": shorter, "truncated": True})
+        counted = self._llm.count_input_tokens(reduced)
+        log.info(
+            "%s: %d tokens is $%s, over the $%s limit; sending %d of %d chars instead",
+            ctx.number,
+            tokens,
+            _usd(cost),
+            _usd(self._max_bill_cost),
+            len(shorter),
+            len(ctx.text),
+        )
+        if counted is not None and input_cost(counted, self._input_price) > self._max_bill_cost:
+            raise TooExpensiveError(
+                input_cost(counted, self._input_price),
+                self._max_bill_cost,
+                measure=f"{counted} tokens after trimming to {len(shorter)} chars",
+            )
+        return reduced
+
+    def _shorten(self, text: str, *, over_by: float) -> str | None:
+        """The text cut to what the cost limit pays for: the head of the bill, the head of the
+        justification and a window around every keyword hit, in document order.
+
+        The target is measured, not assumed: `over_by` is how many times the counted input
+        overshot the limit, so the same ratio applied to the characters lands inside it whatever
+        the text tokenizes at. `_FIT_MARGIN` leaves room for the prompt and the schema, which
+        the count included and the ratio therefore over-charges the text for. None when there is
+        not enough left to be a document.
+        """
+        target = int(len(text) / over_by * _FIT_MARGIN)
+        if target < _FIT_MIN_CHARS:
+            return None
+        return excerpts(text, self._keywords.spans(text), head_chars=target // 4, max_chars=target)
 
     def _triage_verdict(
         self, bill: Bill, meta: ProcessSummary, text: str
@@ -679,7 +789,7 @@ class AnalysisService:
             )
             return _Loaded("", False, "metadata_only")
         if not trim:
-            budgeted = self._budget.apply(text)
+            budgeted = self._budget.apply(text, self._keywords.spans(text))
             return _Loaded(budgeted.text, budgeted.truncated, "pdf")
         trimmed = trim_print(text)
         # Said whether anything was dropped or not: a text that goes in whole is the expensive
@@ -691,7 +801,7 @@ class AnalysisService:
             len(trimmed.text),
             ", ".join(f"{d.name} {d.chars}" for d in trimmed.dropped) or "nothing",
         )
-        budgeted = self._budget.apply(trimmed.text)
+        budgeted = self._budget.apply(trimmed.text, self._keywords.spans(trimmed.text))
         source: TextSource = "documents" if document.kind == "rcl" else "pdf"
         return _Loaded(budgeted.text, budgeted.truncated, source)
 

@@ -306,14 +306,25 @@ def test_budget_keeps_the_head_and_the_start_of_the_justification() -> None:
 
     assert result.truncated
     assert result.text.startswith("Art. 1.")
-    assert "Uzasadnienie" in result.text and TextBudget.MARKER in result.text
-    assert len(result.text) <= 2000 + len(TextBudget.MARKER)
+    assert "Uzasadnienie" in result.text
+    assert len(result.text) <= 2000
+
+
+def test_budget_keeps_the_keyword_windows_it_is_given() -> None:
+    """The passages a bill is relevant for are usually not in its first pages, so a cap that
+    only kept the head threw away the very lines that made the bill worth reading."""
+    text = "Art. 1. " * 500 + "Art. 99. Zezwolenie na pobyt czasowy dla cudzoziemca. " + "x" * 4000
+    spans = KeywordPrefilter().spans(text)
+
+    result = TextBudget(2000).apply(text, spans)
+
+    assert result.truncated and "pobyt czasowy dla cudzoziemca" in result.text
 
 
 def test_budget_cuts_the_head_when_there_is_no_justification() -> None:
     result = TextBudget(50).apply("x" * 500)
 
-    assert result.truncated and len(result.text) == 50
+    assert result.truncated and len(result.text) == 25
 
 
 def test_budget_rejects_a_non_positive_cap() -> None:

@@ -448,12 +448,16 @@ def _marker(section: DroppedSection) -> str:
     return f"\n[pominięto: {section.name}, {chars} znaków]\n"
 
 
+_WINDOW = 1200
+"""How much text around a keyword hit reads as its context: a provision and what frames it."""
+
+
 def excerpts(
     text: str,
     spans: Sequence[tuple[int, int]],
     *,
     head_chars: int = 3000,
-    window: int = 1200,
+    window: int = _WINDOW,
     max_chars: int = 24_000,
 ) -> str:
     """The start of the bill, the start of the justification and text around each keyword hit.
@@ -508,25 +512,32 @@ class BudgetedText:
 class TextBudget:
     """Safety cap on the characters sent to the model.
 
-    A text over the cap keeps its head (the act) and the start of the justification, which
-    explains the purpose in plain language; the cut is marked in Polish.
+    A text over the cap is cut down by `excerpts`: the head (the act), the start of the
+    justification, which explains the purpose in plain language, and a window around each of
+    `spans`. Passing the keyword hits as `spans` is what makes the cut a choice rather than a
+    guillotine — the passages a bill is relevant for are usually not in its first pages — and
+    with none it degrades to the head and the justification, which is what the cap used to keep.
+
+    Half the cap goes to the two heads so that the windows have the other half to fill, and each
+    window is narrowed with the cap: a full-sized one is wider than a small cap has left over, so
+    a fixed width would mean no window ever fits and the cut would be the head and nothing else.
     """
 
-    MARKER = "\n\n[... fragment pominięty ...]\n\n"
-
-    def __init__(self, max_chars: int, *, justification_share: float = 0.35) -> None:
+    def __init__(self, max_chars: int) -> None:
         if max_chars <= 0:
             raise ValueError("max_chars must be positive")
         self._max = max_chars
-        self._justification_share = justification_share
 
-    def apply(self, text: str) -> BudgetedText:
+    def apply(self, text: str, spans: Sequence[tuple[int, int]] = ()) -> BudgetedText:
         if len(text) <= self._max:
             return BudgetedText(text=text, truncated=False)
-        match = _JUSTIFICATION_RE.search(text)
-        if match is None or match.start() < self._max:
-            return BudgetedText(text=text[: self._max], truncated=True)
-        justification_chars = int(self._max * self._justification_share)
-        head = text[: self._max - justification_chars]
-        justification = text[match.start() : match.start() + justification_chars]
-        return BudgetedText(text=head + self.MARKER + justification, truncated=True)
+        cut = excerpts(
+            text,
+            spans,
+            head_chars=self._max // 2,
+            window=min(_WINDOW, self._max // 8),
+            max_chars=self._max,
+        )
+        # `excerpts` counts the text it keeps and not the markers it joins it with, and this is a
+        # cap: what it is asked for is what it gives.
+        return BudgetedText(text=cut[: self._max], truncated=True)

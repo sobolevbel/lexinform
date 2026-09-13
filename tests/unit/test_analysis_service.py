@@ -295,6 +295,46 @@ def test_text_over_the_per_bill_cost_limit_is_skipped_without_a_model_call() -> 
     assert bill.last_error is not None and "exceeds the $0.01 limit" in bill.last_error
 
 
+_HUGE = (
+    "Tekst ustawy o niczym. " * 17_000  # 391,000 characters, far over any sane limit
+    + "Art. 500. Przepis dotyczy cudzoziemców przebywających na terytorium RP. "
+    + "Dalszy tekst. " * 3_000
+)
+
+
+def test_a_text_over_the_limit_is_cut_down_to_it_instead_of_being_dropped() -> None:
+    """The bill has already been judged worth reading, and refusing it there left the reader with
+    nothing and the operator with a `reset` to run by hand. What survives the cut is chosen by the
+    keywords, so the passages the bill is relevant for are the ones that reach the model."""
+    w = World(
+        extractor=FakeTextExtractor(_HUGE), max_bill_cost_usd=0.30, text_budget_chars=1_000_000
+    )
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+
+    report = w.run()
+
+    assert (report.analyzed, report.analysis_skipped_cost) == (1, 0)
+    (ctx,) = w.llm.contexts
+    assert ctx.truncated and len(ctx.text) < len(_HUGE)
+    assert len(ctx.text) / 2 / 1e6 * 5 <= 0.30  # what the shortened text costs, at Opus's price
+    assert "cudzoziemców przebywających" in ctx.text  # the keyword window survived the cut
+    assert w.bill("3039").status is BillStatus.ANALYZED
+
+
+def test_a_text_that_cannot_be_cut_small_enough_is_still_refused() -> None:
+    """Under `_FIT_MIN_CHARS` what is left is not a document any more, and saying so is honest."""
+    w = World(
+        extractor=FakeTextExtractor(_HUGE), max_bill_cost_usd=0.01, text_budget_chars=1_000_000
+    )
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+
+    report = w.run()
+
+    assert (report.analyzed, report.analysis_skipped_cost) == (0, 1)
+    assert w.llm.contexts == []
+    assert w.bill("3039").status is BillStatus.SKIPPED_COST
+
+
 def test_a_scan_is_priced_by_its_pages_without_being_uploaded_to_be_counted() -> None:
     """A scan has no text to measure, and asking the tokenizer means uploading the file itself —
     tens of megabytes to learn a number that is 1,600 tokens a page, measured."""

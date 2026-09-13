@@ -234,9 +234,11 @@ class Container:
             input_price_usd_per_mtok=price[0] if price is not None else None,
             max_bill_cost_usd=self.settings.max_analysis_cost_usd,
             max_run_cost_usd=self.settings.max_run_cost_usd,
+            keywords=self.prefilter,
             triage=self.prefilter if self.settings.llm_triage_model else None,
             triage_min_chars=self.settings.triage_min_chars,
             triage_min_confidence=self.settings.triage_min_confidence,
+            channel_id=self.channel_id(),
         )
 
     def discovery_service(self) -> BillDiscoveryService:
