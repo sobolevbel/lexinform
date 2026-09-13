@@ -534,8 +534,13 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   such a file as a PDF document block — 32 MB of request (so ≤ 24 MB of file, base64 being a
   third larger; druk 2865 is 40 MB and does not fit) and 600 pages, ~1,600 tokens a page measured
   with `count_tokens` on druk 1273 (10 pages 16,157 tokens, 30 pages 47,268, one page 1,622).
-- **What `trim_print` meets in a print, measured over 25 of term 10 with a text layer**
-  (13 Sept 2026; 9.34M characters, 41% kept). The OSR is cut at point 6 in 16 of them. Three
+- **What `trim_print` meets in a print, measured over 45 of term 10 with a text layer**
+  (13 Sept 2026). Reading the sections by `document_kind` rather than by a handful of headings
+  takes another **15%** off what the model is sent across the whole sample (7.65M characters kept
+  → 6.48M), and the bill, its uzasadnienie and "Art. 1." survive in every one of them: druk 1479
+  keeps 35% of what it did, druk 1963 48%, druk 810 63%. The one print that keeps *more* is druk
+  2670, whose OSR was being thrown away whole. The OSR is cut at point 6 in 16 of the first 25
+  measured. Three
   carry **"DEKLAROWANE SKUTKI REGULACJI (DSR)"** instead of the OSR form — the deputies' version,
   unknown to the pattern until now, 15 pages of 60 in druk 2673 — and one heads its OSR
   "Tytuł projektu". One (druk 1764) prints its club's name and site as the first line of all
@@ -584,7 +589,7 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   the model (`document_text._pick_parts`). A nested archive is opened only when the bill is not
   outside it — the three seen were bundles of draft regulations, and the "letter.pdf +
   projekt.zip" shape is what the exception is for. Measured over the packages of seven followed
-  projects and 25 prints of term 10 (13 Sept 2026), the name is the thing that lies:
+  projects and 45 prints of term 10 (13 Sept 2026), the name is the thing that lies:
   `projekt.docx`, `uzasadnienie.docx` and `OSR.doc` inside `akty_wykonawcze_ETIAS.ZIP` are draft
   **rozporządzenia**, `opiniaUE.pdf` and `Minister Zdrowia UD439 na SKRM.pdf` are letters,
   `Lista_kontrolna_na_KRMC_-_etias_.DOCX` is a checklist — and every one of them passed as the
