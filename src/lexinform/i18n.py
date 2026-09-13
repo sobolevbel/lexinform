@@ -490,6 +490,7 @@ RU = Labels(
         "rejected": "Сейм отклонил проект",
         "withdrawn_by_applicant": "Проект отозван",
         "veto_sustained": "Вето Президента осталось в силе",
+        "veto_overridden": "Сейм отклонил вето: закон принят повторно",
         "not_enacted": "Процесс завершён: закон не принят",
         "senate": "Позиция Сената",
         "senate_no_amendments": "Сенат принял закон без поправок",
@@ -516,6 +517,10 @@ RU = Labels(
         "niezwłocznie przystąpiono do iii": "сразу перешли к III чтению",
         "skierowano ponownie do komisji": "возвращён в комиссию для рассмотрения поправок",
         "skierowano do komisji": "направлен в комиссию",
+        # Longer first: `_translate` matches on the first fragment found, and "uchwalono
+        # ponownie" contains "uchwalono".
+        "uchwalono ponownie": "вето отклонено, закон принят повторно",
+        "nie uchwalona ponownie": "закон не принят повторно, вето устояло",
         "przyjęto część poprawek": "часть поправок Сената принята",
         "przyjęto poprawki": "поправки Сената приняты",
         "odrzucono poprawki": "поправки Сената отклонены",
@@ -575,10 +580,18 @@ RU = Labels(
             " Сейм отклонит это решение абсолютным большинством"
         ),
         "president": "подпись Президента (до 21 дня), затем публикация в Dziennik Ustaw",
+        "president_after_veto": (
+            "подпись Президента — после отклонения вето у него 7 дней и права на вето или"
+            " обращение в трибунал больше нет (ст. 122 ust. 5), затем публикация в Dziennik Ustaw"
+        ),
         "publication": "публикация в Dziennik Ustaw",
         "in_force": "вступление в силу {date}",
         "in_force_unknown": "вступление в силу (дата пока не указана)",
-        "veto": "Сейм может отклонить вето (3/5 голосов)",
+        "veto": (
+            "комиссия рассматривает вето — {committee}, затем голосование в Сейме:"
+            " вето будет отклонено, только если за закон снова проголосуют 3/5"
+        ),
+        "veto_unnamed": "голосование в Сейме по вето: отклонить его можно 3/5 голосов",
         "tribunal": "решение Конституционного трибунала",
         "wykaz": (
             "публикация проекта на RCL и публичные консультации, затем комитеты Совета министров,"
@@ -668,6 +681,7 @@ RU = Labels(
         "senate_amendments": "пока ничего — Сейм решает по поправкам Сената",
         "senate_rejection": "пока ничего — Сейм решает, отклонить ли решение Сената",
         "president": "пока ничего — закон у Президента",
+        "president_after_veto": "пока ничего — Президент обязан подписать закон в 7 дней",
         "publication": "пока ничего — ждём публикации в Dziennik Ustaw",
         "in_force": "пока ничего — закон принят, остаётся подготовиться к вступлению в силу",
         "in_force_unknown": "пока ничего — закон принят, дата вступления в силу ещё не известна",
@@ -731,6 +745,7 @@ RU = Labels(
         "PresidentToTribunal": "⚖️ Президент направил закон в Конституционный трибунал",
         "PublicHearing": "📢 Публичные слушания (wysłuchanie publiczne)",
         "SenatePositionConsideration": "Сейм рассмотрел позицию Сената",
+        "PresidentMotionConsideration": "Сейм рассмотрел вето Президента",
         "GovermentPosition": "поступила позиция правительства",
         "Opinion": "поступило мнение организации",
     },
@@ -1021,6 +1036,7 @@ EN = Labels(
         "rejected": "The Sejm rejected the bill",
         "withdrawn_by_applicant": "The bill was withdrawn",
         "veto_sustained": "The President's veto stood",
+        "veto_overridden": "The Sejm overrode the veto: the act is passed again",
         "not_enacted": "The process is over: no law was enacted",
         "senate": "Senate position",
         "senate_no_amendments": "The Senate passed the act without amendments",
@@ -1047,6 +1063,10 @@ EN = Labels(
         "niezwłocznie przystąpiono do iii": "moved straight on to the 3rd reading",
         "skierowano ponownie do komisji": "sent back to the committee to consider amendments",
         "skierowano do komisji": "referred to a committee",
+        # Longer first: `_translate` matches on the first fragment found, and "uchwalono
+        # ponownie" contains "uchwalono".
+        "uchwalono ponownie": "the veto overridden, the act passed again",
+        "nie uchwalona ponownie": "not passed again, the veto stood",
         "przyjęto część poprawek": "some of the Senate's amendments accepted",
         "przyjęto poprawki": "the Senate's amendments accepted",
         "odrzucono poprawki": "the Senate's amendments rejected",
@@ -1108,10 +1128,18 @@ EN = Labels(
         "president": (
             "the President's signature (up to 21 days), then publication in Dziennik Ustaw"
         ),
+        "president_after_veto": (
+            "the President's signature — once the veto is overridden he has 7 days and no"
+            " veto or Tribunal left (art. 122 ust. 5), then publication in Dziennik Ustaw"
+        ),
         "publication": "publication in Dziennik Ustaw",
         "in_force": "entry into force on {date}",
         "in_force_unknown": "entry into force (date not stated yet)",
-        "veto": "the Sejm may override the veto (3/5 majority)",
+        "veto": (
+            "the committee considers the veto — {committee}, then the Sejm votes: the veto is"
+            " overridden only if 3/5 vote for the act again"
+        ),
+        "veto_unnamed": "the Sejm votes on the veto: overriding it takes a 3/5 majority",
         "tribunal": "ruling of the Constitutional Tribunal",
         "wykaz": (
             "the draft published on RCL with a public consultation, then the committees of the"
@@ -1202,6 +1230,7 @@ EN = Labels(
         "senate_amendments": "nothing yet — the Sejm decides on the Senate's amendments",
         "senate_rejection": "nothing yet — the Sejm decides whether to throw out the rejection",
         "president": "nothing yet — the act is with the President",
+        "president_after_veto": "nothing yet — the President must sign within 7 days",
         "publication": "nothing yet — waiting for publication in Dziennik Ustaw",
         "in_force": "nothing yet — the act is passed, prepare for its entry into force",
         "in_force_unknown": "nothing yet — the act is passed, the entry-into-force date is unknown",
@@ -1268,6 +1297,7 @@ EN = Labels(
         "PresidentToTribunal": "⚖️ Referred by the President to the Constitutional Tribunal",
         "PublicHearing": "📢 Public hearing (wysłuchanie publiczne)",
         "SenatePositionConsideration": "Sejm considered the Senate position",
+        "PresidentMotionConsideration": "Sejm considered the President's veto",
         "GovermentPosition": "the government's position arrived",
         "Opinion": "an organisation's opinion arrived",
     },

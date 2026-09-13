@@ -164,7 +164,17 @@ def _stage_event(stage: Stage) -> str | None:
         return _report_event(stage)
     if kind == "SenatePosition":
         return _senate_event(stage)
+    if kind == "PresidentMotionConsideration":
+        return _veto_vote_event(stage)
     return _EVENT_BY_STAGE_TYPE.get(kind)
+
+
+def _veto_vote_event(stage: Stage) -> str:
+    """The Sejm voted on the President's motion: "uchwalono ponownie" (the 3/5 majority was
+    there, the law stands) or "nie uchwalona ponownie" (the veto ended it)."""
+    return (
+        "veto_sustained" if "nie uchwalon" in (stage.decision or "").lower() else "veto_overridden"
+    )
 
 
 def _reading_event(stage: Stage) -> str:
@@ -225,6 +235,7 @@ def amendments_stage(stages: list[Stage]) -> Stage | None:
 
 _EVENT_TAG = {
     "passed": "passed",
+    "veto_overridden": "passed",
     "rejected": "rejected",
     "not_enacted": "rejected",
     "veto_sustained": "rejected",
@@ -255,9 +266,10 @@ def event_keys(change: StatusChange, event: str) -> list[str]:
         keys.append("senate")
     if types & _PRESIDENT_STAGES:
         keys.append("president")
-    if "Veto" in types or event == "veto_sustained":
+    if "Veto" in types or event in ("veto_sustained", "veto_overridden"):
         # The post that closes the road carries no `Veto` stage — its new stage is the `End`
-        # node — so without this the veto's last word is the one post a search for it misses.
+        # node or the Sejm's vote on the motion — so without this the veto's last word is the
+        # one post a search for it misses.
         keys.append("veto")
     if change.amendments is not None or event == "second_reading_amendments":
         keys.append("amendments")

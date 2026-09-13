@@ -408,6 +408,67 @@ def test_a_veto_is_the_current_step_until_the_sejm_answers_it(
     assert over is None
 
 
+def test_a_veto_the_sejm_overrode_sends_the_act_back_to_the_president(
+    process_1962: ProcessDetail,
+) -> None:
+    """The Sejm's vote on the President's motion is `PresidentMotionConsideration`, and the
+    tree keeps its "Uchwalono" — so without reading the decision the newest stage is unknown
+    and the phase fell through to the `SenatePosition` this bill has carried since May."""
+    veto = Stage(
+        stage_name="Wniosek Prezydenta (weto)", stage_type="Veto", date=dt.date(2026, 8, 28)
+    )
+    motion = Stage(
+        stage_name="Rozpatrywanie na forum Sejmu wniosku Prezydenta",
+        stage_type="PresidentMotionConsideration",
+        date=dt.date(2026, 9, 4),
+        decision="uchwalono ponownie",
+    )
+    end = process_1962.stages[-1]
+    overridden = (*process_1962.stages[:-1], veto, motion, end)
+    sustained = motion.model_copy(update={"decision": "nie uchwalona ponownie"})
+
+    phase = next_phase(_bill(process_1962, overridden), today=TODAY)
+    killed = next_phase(
+        _bill(
+            process_1962,
+            (
+                *overridden[:-2],
+                sustained,
+                Stage(stage_name="nie uchwalona ponownie po wecie Prezydenta", stage_type="End"),
+            ),
+        ),
+        today=TODAY,
+    )
+
+    # Art. 122 ust. 5: seven days to sign, counted from the Sejm's vote, and no way back.
+    assert phase is not None and phase.key == "president_after_veto"
+    assert phase.deadline == dt.date(2026, 9, 11)
+    assert killed is None
+
+
+def test_the_committee_answering_the_veto_is_not_answering_the_senate(
+    process_1962: ProcessDetail,
+) -> None:
+    """Both arrive as `CommitteeWork`, and only the tree before them tells the two apart: a bill
+    that reached a veto has a `SenatePosition` months behind it."""
+    veto = Stage(
+        stage_name="Wniosek Prezydenta (weto)", stage_type="Veto", date=dt.date(2026, 8, 28)
+    )
+    work = Stage(
+        stage_name="Praca w komisjach nad wnioskiem Prezydenta",
+        stage_type="CommitteeWork",
+        date=dt.date(2026, 9, 1),
+        children=(
+            Stage(stage_name="Sprawozdanie komisji", stage_type="CommitteeReport", proposal="x"),
+        ),
+    )
+    stages = (*process_1962.stages[:-1], veto, work, process_1962.stages[-1])
+
+    phase = next_phase(_bill(process_1962, stages), today=TODAY)
+
+    assert phase is not None and phase.key == "veto"
+
+
 def test_passed_bill_awaits_publication_then_entry_into_force(
     process_1962: ProcessDetail,
 ) -> None:

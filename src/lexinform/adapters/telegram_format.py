@@ -154,6 +154,7 @@ EVENT_ICON = {
     "rejected": "❌",
     "withdrawn_by_applicant": "🏁",
     "veto_sustained": "⛔",
+    "veto_overridden": "✅",
     "not_enacted": "🏁",
     "senate": "🏛",
     "senate_no_amendments": "✅",
@@ -180,7 +181,15 @@ _READING_NUMERAL = re.compile(r"^\s*(I{1,3})\s+czytanie", re.IGNORECASE)
 CLUBS_PER_SIDE = 4
 # Events whose header already tells how the process ended: a second sentence would repeat it.
 _SELF_EXPLAINING_CLOSURES = frozenset(
-    {"passed", "rejected", "rcl_closed", "wykaz_withdrawn", "withdrawn_by_applicant", "not_enacted"}
+    {
+        "passed",
+        "veto_overridden",
+        "rejected",
+        "rcl_closed",
+        "wykaz_withdrawn",
+        "withdrawn_by_applicant",
+        "not_enacted",
+    }
 )
 
 
@@ -363,9 +372,7 @@ class MessageFormatter:
         meta_lines: list[str] = []
         last = bill.last_stage
         if last is not None:
-            when = f" ({self.fmt_date(last.date)})" if last.date else ""
-            stage = f"{self._stage_label(bill, last)}{when}"
-            meta_lines.append(self._field(ICON["stage"], lb.stage, stage))
+            meta_lines.append(self._field(ICON["stage"], lb.stage, self._current_stage(bill, last)))
         elif bill.wykaz is not None:
             meta_lines.append(self._field(ICON["stage"], lb.stage, esc(lb.wykaz_stage)))
         elif bill.rcl is not None:
@@ -1366,9 +1373,11 @@ class MessageFormatter:
             label = lb.wykaz_process_closed
         elif bill.rcl is not None:
             label = lb.rcl_process_closed
-        elif bill.summary.closure_date is not None:
+        elif bill.summary.closure_date is not None and bill.summary.passed is False:
             label = lb.process_not_enacted
         else:
+            # `next_phase` gives up on a stage tree it does not recognise as well, and a bill the
+            # Sejm passed is not one whose law failed: without the listing saying so, silence.
             return ""
         return f"{ICON['closed']} {esc(label)}"
 
@@ -1402,6 +1411,11 @@ class MessageFormatter:
             if current is None:
                 return ""
         steps = [s for s in PATH_STEPS if s not in GOVERNMENT_STEPS or government_path(bill)]
+        if current is not None and current not in steps:
+            # The loop marks every step before `current` as done, so a step filtered out of the
+            # line would mark the whole road done — "Dz.U. ✓ → в силе ✓" over a bill with no
+            # text yet. Better no path line than a finished one.
+            return ""
         parts: list[str] = []
         before = current is not None
         for step in steps:
@@ -1487,6 +1501,24 @@ class MessageFormatter:
         if stage.stage_type == "End" and veto_stood((stage,)):
             return lb.stage_veto_sustained
         return lb.stage_labels.get(stage.stage_type) or lb.stage_type_labels.get(stage.stage_type)
+
+    def _current_stage(self, bill: Bill, last: Stage) -> str:
+        """ "⛔ Президент наложил вето (28.08.2026) · направлен в комиссию ENM (03.09.2026)".
+
+        The top-level stage first: it is what happened to the bill. Its newest child follows
+        only when it adds something — the committee the bill went to, the vote — and never
+        instead, which is what a flattened tree used to give (see `Bill.last_stage`).
+        """
+        parts = [self._dated_stage(bill, last)]
+        detail = bill.last_stage_detail
+        if detail is not None and self._translate_stage(detail) is not None:
+            same_day = detail.date == last.date
+            parts.append(self._dated_stage(bill, detail, dated=not same_day))
+        return " · ".join(parts)
+
+    def _dated_stage(self, bill: Bill, stage: Stage, *, dated: bool = True) -> str:
+        when = f" ({self.fmt_date(stage.date)})" if stage.date and dated else ""
+        return f"{self._stage_label(bill, stage)}{when}"
 
     def _stage_label(self, bill: Bill, stage: Stage) -> str:
         """The card's stage in the reader's language; Polish stays only where it names a body

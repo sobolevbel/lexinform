@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 from lexinform.agenda import items_mentioning
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
+    PLENARY_COMMITTEE_CODE,
     AgendaItem,
     Bill,
     CommitteeSitting,
@@ -51,14 +52,11 @@ def _committee_codes(bill: Bill) -> set[str]:
     }
 
 
-NO_COMMITTEE = "Sejm"
-
-
 class AgendaWatcher:
     """Matches followed bills against the agendas of upcoming committee and Sejm sittings.
 
     A sitting counts only while its status is `PLANNED`; anything else is over or called off.
-    `NO_COMMITTEE` is the `committeeCode` the API gives a referral to a reading at a sitting.
+    `PLENARY_COMMITTEE_CODE` is the `committeeCode` a referral to a reading at a sitting has.
     """
 
     def __init__(
@@ -139,7 +137,12 @@ class AgendaWatcher:
     ) -> tuple[dict[str, list[CommitteeSitting]], set[str]]:
         """Upcoming sittings per committee the bills were referred to, and the codes that failed."""
         codes = sorted(
-            {code for bill in bills for code in _committee_codes(bill) if code != NO_COMMITTEE}
+            {
+                code
+                for bill in bills
+                for code in _committee_codes(bill)
+                if code != PLENARY_COMMITTEE_CODE
+            }
         )
         upcoming: dict[str, list[CommitteeSitting]] = {}
         failed: set[str] = set()

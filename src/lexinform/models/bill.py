@@ -18,7 +18,6 @@ from lexinform.models.sejm import (
     ProcessSummary,
     Stage,
     TextDocument,
-    flatten_stages,
     second_reading_sent_back,
 )
 from lexinform.models.wykaz import WykazEntry
@@ -111,9 +110,33 @@ class Bill(BaseModel):
 
     @property
     def last_stage(self) -> Stage | None:
-        """Where the bill stands; `process_stages` names the nodes that do not answer that."""
-        flat = flatten_stages(tuple(process_stages(self.stages)))
-        return flat[-1] if flat else None
+        """Where the bill stands; `process_stages` names the nodes that do not answer that.
+
+        The *top-level* stage, never a child of it: what the Sejm did to the bill is the parent,
+        and its children are the paperwork that followed. Druk 2842, read on 2026-09-13: the
+        President vetoed it on 28.08 and the Sejm referred his motion to two committees on 03.09,
+        as children of the `Veto` node — so the newest node of the flattened tree is
+        "Skierowanie", and a card that named it said "направлен в комиссию ENM" over a bill whose
+        news was the veto, without the word appearing anywhere.
+        """
+        top = process_stages(self.stages)
+        return top[-1] if top else None
+
+    @property
+    def last_stage_detail(self) -> Stage | None:
+        """The newest child of `last_stage`, when it adds something the parent does not say:
+        which committee the bill went to, how the Sejm voted.
+
+        A referral to `Sejm` names no committee — it is the API's way of saying the reading is a
+        plenary one, which "направлен на I чтение" and "what comes next" both say already.
+        """
+        last = self.last_stage
+        if last is None or not last.children:
+            return None
+        detail = last.children[-1]
+        if detail.stage_type == "Referral" and detail.committee_code == PLENARY_COMMITTEE_CODE:
+            return None
+        return detail
 
     @property
     def consultation(self) -> ConsultationWindow | None:
@@ -175,6 +198,9 @@ class Phase(BaseModel):
 
 _PRESIDENT_NEXT = {"ToPresident", "SenatePositionConsideration"}
 ASIDE_STAGE_TYPES = frozenset({"GovermentPosition", "Opinion"})
+PLENARY_COMMITTEE_CODE = "Sejm"
+"""The `committeeCode` the API puts on a referral to a reading at a sitting of the whole
+Sejm: not a committee, and nothing a reader can write to."""
 
 
 def veto_stood(stages: tuple[Stage, ...]) -> bool:
@@ -206,6 +232,9 @@ def process_stages(stages: tuple[Stage, ...]) -> list[Stage]:
 
 SENATE_DAYS, SENATE_DAYS_URGENT = 30, 14
 PRESIDENT_DAYS, PRESIDENT_DAYS_URGENT = 21, 7
+PRESIDENT_DAYS_AFTER_VETO = 7
+"""Art. 122 ust. 5: once the Sejm has overridden the veto the President signs within seven days,
+whether or not the bill was pilny, and may no longer go to the Tribunal."""
 DEADLINE_GRACE_DAYS = 7
 
 
@@ -239,6 +268,7 @@ PHASE_STEP = {
     "senate_amendments": "senate",
     "senate_rejection": "senate",
     "president": "president",
+    "president_after_veto": "president",
     "veto": "president",
     "tribunal": "president",
     "publication": "journal",
@@ -255,6 +285,7 @@ PHASE_PATIENCE = {
     "senate_amendments": 60,
     "senate_rejection": 60,
     "publication": 60,
+    "president_after_veto": 30,
     "first_reading": 90,
     "first_reading_committee": 90,
     "first_reading_sitting": 90,
@@ -290,8 +321,12 @@ COMMITTEE_PHASES = frozenset(
         "second_reading_committee",
         "senate_amendments",
         "senate_rejection",
+        "veto",
     }
 )
+"""Phases where a committee has the bill and takes opinions. A veto is one of them: the Sejm
+refers the President's motion to the committee that carried the bill (art. 122 ust. 5), and
+until the vote a reader can still write to it."""
 SITTING_PHASES = frozenset(
     {
         "first_reading_sitting",
@@ -299,6 +334,7 @@ SITTING_PHASES = frozenset(
         "third_reading",
         "senate_amendments",
         "senate_rejection",
+        "veto",
     }
 )
 _UKRAINE = next(p.regex for p in KEYWORD_PATTERNS if p.name == "obywatele_ukrainy")
@@ -424,10 +460,12 @@ def _sejm_phase(bill: Bill, today: dt.date) -> Phase | None:
 
 _PHASE_AFTER_STAGE_TYPE = {
     "PresidentSignature": "publication",
-    "Veto": "veto",
     "PresidentToTribunal": "tribunal",
     "Start": "first_reading",
 }
+ANSWERED_IN_COMMITTEE = ("Veto", "SenatePosition")
+"""What a `CommitteeWork` after them is working on: the President's motion, the Senate's
+resolution. The newest of them decides, because a bill can carry both."""
 
 
 def _phase_after(
@@ -440,13 +478,17 @@ def _phase_after(
     key = _PHASE_AFTER_STAGE_TYPE.get(kind)
     if key is not None:
         return Phase(key=key)
+    if kind == "Veto":
+        # The Sejm refers the President's motion to a committee before voting on it, and that
+        # referral is a child of the `Veto` stage itself.
+        return Phase(key="veto", committees=_committee_codes(last) or _latest_committees(top))
+    if kind == "PresidentMotionConsideration":
+        return _phase_after_veto_vote(last)
     if kind in _PRESIDENT_NEXT:
         days = PRESIDENT_DAYS_URGENT if urgent else PRESIDENT_DAYS
         return Phase(key="president", deadline=_days_after(last.date, days))
     if kind == "SenatePosition":
         return _phase_after_senate(last)
-    if any(st.stage_type == "SenatePosition" for st in top):
-        return Phase(key="senate_amendments", committees=_latest_committees(top))
     if kind == "SejmReading":
         return _phase_after_reading(last, top, urgent=urgent, passed=passed)
     if kind == "CommitteeWork":
@@ -456,6 +498,20 @@ def _phase_after(
     if kind == "ReadingReferral":
         return _phase_after_referral(last)
     return None
+
+
+def _phase_after_veto_vote(last: Stage) -> Phase | None:
+    """The Sejm has voted on the President's motion (`PresidentMotionConsideration`).
+
+    A veto that stood ends the road, and the `End` node says so in its own words, so `veto_stood`
+    has already answered before this is reached; what is left is the override, after which
+    art. 122 ust. 5 gives the President seven days to sign and no way back to the Tribunal.
+    """
+    if "nie uchwalon" in (last.decision or "").lower():
+        return None
+    return Phase(
+        key="president_after_veto", deadline=_days_after(last.date, PRESIDENT_DAYS_AFTER_VETO)
+    )
 
 
 def _phase_after_senate(last: Stage) -> Phase:
@@ -486,8 +542,22 @@ def _phase_after_reading(
 
 
 def _phase_after_committee_work(last: Stage, top: list[Stage]) -> Phase:
-    """A report carrying the bill text sends it to the second reading; an "-A" report answers
-    amendments made there, so the next vote is the third reading."""
+    """What the committee is working on decides what follows it.
+
+    "Praca w komisjach nad stanowiskiem Senatu" and "…nad wnioskiem Prezydenta" are the same
+    stage type as the work after the first reading, and only the tree before them tells the
+    three apart (`ANSWERED_IN_COMMITTEE`). Otherwise the committee's own report decides: one
+    carrying the bill text sends it to the second reading, an "-A" report answers amendments
+    made there, so the next vote is the third reading.
+    """
+    pending = next(
+        (st for st in reversed(top[:-1]) if st.stage_type in ANSWERED_IN_COMMITTEE), None
+    )
+    if pending is not None:
+        committees = _latest_committees(top)
+        if pending.stage_type == "Veto":
+            return Phase(key="veto", committees=committees)
+        return _phase_after_senate(pending).model_copy(update={"committees": committees})
     reports = [c for c in last.children if c.stage_type == "CommitteeReport"]
     if any(r.carries_bill_text for r in reports):
         return Phase(key="second_reading")
@@ -567,11 +637,13 @@ def _days_after(start: dt.date | None, days: int) -> dt.date | None:
 
 
 def _committee_codes(stage: Stage) -> tuple[str, ...]:
-    """Committees a stage refers the bill to ("Sejm" is a reading at a sitting, no committee)."""
+    """Committees a stage refers the bill to; `PLENARY_COMMITTEE_CODE` is not one."""
     return tuple(
         c.committee_code
         for c in stage.children
-        if c.stage_type == "Referral" and c.committee_code and c.committee_code != "Sejm"
+        if c.stage_type == "Referral"
+        and c.committee_code
+        and c.committee_code != PLENARY_COMMITTEE_CODE
     )
 
 

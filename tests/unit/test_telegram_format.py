@@ -189,7 +189,8 @@ def test_card_contains_every_section(process_3039: ProcessDetail, print_3039: Pr
     )
     assert "🔴 <b>Важность:</b> ●●●●● 5/5" in text
     assert "О чём проект" in text and "Ключевые изменения" in text
-    assert "Стадия:</b> направлен в комиссию ASW" in text  # translated, the body stays Polish
+    # The stage the bill stands on, then the referral under it; translated, the body stays Polish.
+    assert "Стадия:</b> направлен на I чтение (03.09.2026) · направлен в комиссию ASW" in text
     assert "PrzebiegProc.xsp?nr=3039" in text and "prints/3039/3039.pdf" in text
     assert "#kadencja10druk3039 #важность5 #легализация #kadencja10" in text
 
