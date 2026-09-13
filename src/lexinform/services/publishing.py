@@ -19,6 +19,7 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     ApplicantType,
     Bill,
+    BillStatus,
     PrintInfo,
     Publication,
     PublicationKind,
@@ -26,6 +27,7 @@ from lexinform.models import (
     is_over,
 )
 from lexinform.ports import BillRepository, Clock, Publisher, PublishResult, SejmGateway
+from lexinform.services.joint import primary_of
 
 log = logging.getLogger(__name__)
 
@@ -127,6 +129,20 @@ class PublishingService:
         )
         today = self._clock.now().date()
         for bill in government_first(candidates):
+            if bill.analysis is None and self._primary_of(bill) is None:
+                # It was left unanalysed because the group's card was another print's, and that
+                # card has since gone (withdrawn, rejected, discontinued). A card of its own is
+                # the right post now, and a card needs a verdict this print has never been given.
+                log.info(
+                    "%s no longer has a joint card to reply under; back to analysis", bill.number
+                )
+                self._repo.set_status(
+                    bill.term,
+                    bill.number,
+                    BillStatus.ANALYSIS_PENDING,
+                    reason="the jointly considered print that carried the card is gone",
+                )
+                continue
             if is_over(bill, today=today):
                 log.info("%s is over: no card", bill.number)
                 self._record_skipped(bill)
@@ -304,25 +320,7 @@ class PublishingService:
             log.warning("card of %s not re-tagged: %s: %s", pre.number, type(exc).__name__, exc)
 
     def _primary_of(self, bill: Bill) -> tuple[Bill, int] | None:
-        """The bill `bill` is considered jointly with that already has a card in this channel
-        and is still followed, with the card's message id; None when `bill` gets its own card.
-
-        A print that was withdrawn or rejected is not one of them: its thread is over, and the
-        bill gets a card of its own.
-        """
-        for number in bill.summary.prints_considered_jointly:
-            card = self._repo.get_publication(
-                bill.term, number, PublicationKind.NEW_BILL, self._channel_id
-            )
-            if card is None or card.status is not PublicationStatus.SENT or card.message_id is None:
-                continue
-            other = self._repo.get(bill.term, number)
-            if other is None or other.discontinued_at is not None:
-                continue
-            if other.summary.closure_date is not None and not other.summary.passed:
-                continue
-            return other, card.message_id
-        return None
+        return primary_of(self._repo, bill, self._channel_id)
 
     def _send(self, pub_id: int, bill: Bill, send: Send) -> bool:
         """Send the post and record what became of it. An outage of the channel propagates and

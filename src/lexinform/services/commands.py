@@ -34,6 +34,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier
 from lexinform.services.analysis import AnalysisService, TooExpensiveError
+from lexinform.services.joint import primary_of
 from lexinform.services.lookup import BillLookup, BillNotFoundError
 from lexinform.services.publishing import PublishingService
 from lexinform.services.text_prefilter import TextPrefilterService
@@ -47,6 +48,7 @@ SKIPPED = frozenset(
         BillStatus.SKIPPED_TEXT_PREFILTER,
         BillStatus.SKIPPED_COST,
         BillStatus.SKIPPED_CLOSED,
+        BillStatus.SKIPPED_JOINT,
     }
 )
 WAITING = (
@@ -509,10 +511,14 @@ class CommandService:
         there to prevent.
         """
         if bill.analysis is None:
-            return CommandOutcome(
-                status=OutcomeStatus.ERROR, bill=bill, note="not analysed: no card to render"
-            )
-        if not bill.analysis.analysis.relevant:
+            # A print whose group's card is another print's is never analysed, and the reply it
+            # gets carries the card's verdict rather than one of its own: there is a message to
+            # render here, and it is the one thing a preview exists to show.
+            if primary_of(self._repo, bill, self._publishing.channel_id) is None:
+                return CommandOutcome(
+                    status=OutcomeStatus.ERROR, bill=bill, note="not analysed: no card to render"
+                )
+        elif not bill.analysis.analysis.relevant:
             return CommandOutcome(
                 status=OutcomeStatus.ERROR,
                 bill=bill,

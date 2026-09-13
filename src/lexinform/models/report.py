@@ -82,6 +82,7 @@ class RunReport(BaseModel):
     triaged_out: int = 0
     analysis_failures: int = 0
     analysis_skipped_cost: int = 0
+    analysis_skipped_joint: int = 0
     notes: list[str] = Field(default_factory=list)
     rejected: list[AnalysisVerdict] = Field(default_factory=list)
     commands_handled: int = 0

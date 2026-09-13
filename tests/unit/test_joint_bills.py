@@ -3,7 +3,14 @@ others a short "alternative bill" reply under it, and the group is followed thro
 
 import datetime as dt
 
-from lexinform.models import Committee, CommitteeSitting, PublicationKind, PublicationStatus
+from lexinform.models import (
+    BillStatus,
+    Committee,
+    CommitteeSitting,
+    PublicationKind,
+    PublicationStatus,
+)
+from tests.fakes import make_analysis
 from tests.harness import COMMITTEE_STAGES, World
 
 DEPUTIES = "Poselski projekt ustawy o cudzoziemcach"
@@ -136,3 +143,58 @@ def test_the_reply_names_the_thread_and_carries_both_tags() -> None:
     assert "Альтернативный проект того же закона" in text
     assert "druk 1933, 316" in text
     assert text.endswith("#kadencja10druk1929 #важность5 #легализация #kadencja10druk1933")
+
+
+def test_the_print_that_replies_is_never_sent_to_the_model() -> None:
+    """The reply carries the card's verdict, its tags and its next step, never one of its own, so
+    an analysis of the print it is under would be paid for and shown to nobody. Druk 1933 cost
+    305,132 input tokens that way — a seventh of everything the project had spent."""
+    w = World()
+    w.add_bill("1933", DEPUTIES)
+    w.run()
+    _joint(w, "1929", GOVERNMENT, "1933", "316")
+
+    report = w.run()
+
+    assert [ctx.number for ctx in w.llm.contexts] == ["1933"]
+    assert (report.analyzed, report.analysis_skipped_joint) == (0, 1)
+    assert w.bill("1929").status is BillStatus.SKIPPED_JOINT
+    assert report.joint_published == 1
+
+
+def test_a_print_left_unanalysed_is_analysed_when_the_group_loses_its_card() -> None:
+    """A print is left unanalysed because the reply it will get carries the card's verdict. If
+    the print holding that card is withdrawn before the reply goes out, there is no verdict to
+    carry any more and no card to hang under: this print needs an analysis of its own.
+    """
+    w = World(fail_publish={"1929"})
+    w.add_bill("1933", DEPUTIES)
+    w.run()
+    _joint(w, "1929", GOVERNMENT, "1933")
+    w.run()  # the reply fails to send, so the print is still waiting for its post
+    assert w.bill("1929").status is BillStatus.SKIPPED_JOINT
+    w.publisher.fail_on.clear()
+    w.touch("1933", LATER, closure_date=dt.date(2026, 9, 9), passed=False)
+
+    w.run()  # publishing finds no card to reply under and asks for an analysis instead
+    assert w.bill("1929").status is BillStatus.ANALYSIS_PENDING
+    report = w.run()
+
+    assert [ctx.number for ctx in w.llm.contexts] == ["1933", "1929"]
+    assert w.bill("1929").analysis is not None
+    assert report.published == 1
+
+
+def test_a_joint_print_whose_partner_has_no_card_is_analysed_as_usual() -> None:
+    """The skip is about the card, not about the group: a print considered jointly with one that
+    the channel never posted has nobody to reply under and is judged on its own."""
+    w = World(llm_script={"1933": make_analysis(relevant=False)})
+    w.add_bill("1933", DEPUTIES)
+    w.run()
+    assert w.publication("1933") is None
+    _joint(w, "1929", GOVERNMENT, "1933")
+
+    report = w.run()
+
+    assert [ctx.number for ctx in w.llm.contexts] == ["1933", "1929"]
+    assert (report.published, report.analysis_skipped_joint) == (1, 0)

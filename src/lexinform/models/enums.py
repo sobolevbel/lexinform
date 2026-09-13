@@ -36,7 +36,9 @@ class BillStatus(StrEnum):
     text never read; `TEXT_PREFILTER_PENDING` when the title missed but the print's text is still
     to be scanned, and `SKIPPED_TEXT_PREFILTER` when that missed too; `SKIPPED_COST` when the text
     was longer than the per-bill cost limit and `SKIPPED_CLOSED` when the road was already over
-    at first sight (`lexinform reset` revives either). `LINKED` is a row that continues under
+    at first sight; `SKIPPED_JOINT` when another print of the same jointly considered group
+    already carries the group's card, so this one will be a reply that shows no analysis
+    (`lexinform reset` and `/unskip` revive any of them). `LINKED` is a row that continues under
     another number — an RPW entry or an RCL project that became a print (`Bill.linked_number`).
     """
 
@@ -46,6 +48,7 @@ class BillStatus(StrEnum):
     SKIPPED_TEXT_PREFILTER = "skipped_text_prefilter"
     SKIPPED_COST = "skipped_cost"
     SKIPPED_CLOSED = "skipped_closed"
+    SKIPPED_JOINT = "skipped_joint"
     ANALYSIS_PENDING = "analysis_pending"
     ANALYSIS_FAILED = "analysis_failed"
     ANALYZED = "analyzed"

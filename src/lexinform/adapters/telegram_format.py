@@ -941,6 +941,7 @@ class MessageFormatter:
                     ("triaged out: {}", report.triaged_out),
                     ("failures: {}", report.analysis_failures),
                     ("over the cost limit: {}", report.analysis_skipped_cost),
+                    ("joint prints left alone: {}", report.analysis_skipped_joint),
                 ),
                 _tokens_line(report),
                 empty="nothing analyzed",

@@ -334,6 +334,7 @@ class DailyPipeline:
         report.triaged_out = analysed.triaged_out
         report.analysis_failures = analysed.failed
         report.analysis_skipped_cost = analysed.skipped_cost
+        report.analysis_skipped_joint = analysed.skipped_joint
         if analysed.stopped:
             report.notes.append(f"analysis: {analysed.stopped}")
         report.rejected = [

@@ -519,12 +519,18 @@ class SqliteBillRepository:
     def list_publish_candidates(
         self, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
     ) -> list[Bill]:
-        """Analysed bills that still need a post. A card or an "alternative bill" reply settles
-        the bill; a failed one leaves it listed until the attempts are used up."""
+        """Bills that still need a post. A card or an "alternative bill" reply settles the bill;
+        a failed one leaves it listed until the attempts are used up.
+
+        `SKIPPED_JOINT` rows come with no analysis and are listed anyway: what they get is the
+        reply under another print's card, and that reply carries the card's verdict, its tags and
+        its next step, never one of its own — so there is nothing here for an analysis to decide.
+        The group was judged once, on the print that holds the card.
+        """
         rows = self._conn.execute(
             """
             SELECT b.* FROM bills b
-            WHERE b.status = ? AND b.analysis_json IS NOT NULL
+            WHERE ((b.status = ? AND b.analysis_json IS NOT NULL) OR b.status = ?)
               AND b.discontinued_at IS NULL
               AND NOT EXISTS (
                   SELECT 1 FROM publications p
@@ -535,15 +541,23 @@ class SqliteBillRepository:
                          OR (p.status = 'failed' AND p.attempts >= ?))
               )
             """,
-            (BillStatus.ANALYZED.value, channel_id, max_attempts),
+            (
+                BillStatus.ANALYZED.value,
+                BillStatus.SKIPPED_JOINT.value,
+                channel_id,
+                max_attempts,
+            ),
         ).fetchall()
         bills = [self._row_to_bill(r) for r in rows]
         eligible = [
             b
             for b in bills
-            if b.analysis is not None
-            and b.analysis.analysis.relevant
-            and b.analysis.analysis.score >= min_score
+            if b.status is BillStatus.SKIPPED_JOINT
+            or (
+                b.analysis is not None
+                and b.analysis.analysis.relevant
+                and b.analysis.analysis.score >= min_score
+            )
         ]
         eligible.sort(
             key=lambda b: (
