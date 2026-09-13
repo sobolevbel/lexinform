@@ -133,6 +133,50 @@ def test_an_appendix_to_the_osr_does_not_stand_in_for_the_osr() -> None:
     assert {role: d.id for role, d in picked.items()} == {"bill": 4, "osr": 3}
 
 
+def test_an_autopoprawka_and_an_opinion_are_not_the_bill_they_are_filed_against() -> None:
+    # UD… on the Stały Komitet: the amendment to the government's own bill is a PDF and the bill
+    # itself a package, so the format preference handed the thread to the autopoprawka.
+    folder = RclFolder(
+        id=10,
+        name="Projekt",
+        documents=(
+            _doc(1, "autopoprawka do projektu ustawy o wspieraniu rodziny.pdf"),
+            _doc(2, "KRM-0610-108-26 AUTOPOPRAWKA.pdf"),
+            _doc(3, "opinia RL.zip"),
+            _doc(4, "materiał uzupełniający do projektu ustawy o własności lokali.pdf"),
+            _doc(5, "Projekt ustawy o zmianie ustawy o własności lokali.zip"),
+        ),
+    )
+    project = _project(_stage(9, "Stały Komitet Rady Ministrów", "reached", folder))
+
+    assert {role: d.id for role, d in project.text_documents().items()} == {"bill": 5}
+
+
+def test_a_bill_published_for_opiniowanie_is_not_mistaken_for_an_opinion() -> None:
+    folder = RclFolder(id=10, name="Projekt", documents=(_doc(1, "projekt - opiniowanie.pdf"),))
+
+    assert _project(_stage(4, "Opiniowanie", "reached", folder)).text_documents()["bill"].id == 1
+
+
+def test_a_role_tag_in_brackets_beats_the_envelope_the_name_describes() -> None:
+    # One ministry files each part as an attachment to its covering letter and says which is
+    # which in a tag; without the tag every one of them reads as an appendix to a letter.
+    folder = RclFolder(
+        id=10,
+        name="Projekt",
+        documents=(
+            _doc(1, "załącznik do pismo 07.08.2026 uzgodnienia [osr].pdf"),
+            _doc(2, "załącznik do pismo 07.08.2026 uzgodnienia [projekt].pdf"),
+            _doc(3, "załącznik do pismo 07.08.2026 uzgodnienia [uzasadnienie].pdf"),
+        ),
+    )
+    project = _project(_stage(2, "Uzgodnienia", "reached", folder))
+
+    picked = project.text_documents()
+
+    assert {role: d.id for role, d in picked.items()} == {"osr": 1, "bill": 2, "justification": 3}
+
+
 def test_a_bill_ratifying_a_protocol_or_about_reporting_is_still_a_bill() -> None:
     # The patterns that rule an appendix out must not rule out a bill whose subject they name.
     folder = RclFolder(

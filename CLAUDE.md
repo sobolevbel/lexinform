@@ -598,7 +598,15 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   still narrow the candidates before a download, and they stay measured, not guessed: an appendix
   is ruled out *before* the OSR is recognised, or "załącznik do OSR" stands in for it, and no
   pattern may be a word a bill can carry in its own subject — "protokół" of a ratification,
-  "raportowanie" of a reporting duty. UC104's package: 646k characters → 338k. A file that opens
+  "raportowanie" of a reporting duty, "opiniowanie" the stage a bill is published for (which is
+  why "opinia" is word-bounded). UC104's package: 646k characters → 338k. Run over the "Projekt"
+  folders of 80 harvested projects (13 Sept 2026) the name rule finds the bill in all 80, and the
+  three it got wrong before are what the last patterns are for: an **autopoprawka** is an
+  amendment to the government's own bill and was winning over it (a PDF outranks the package the
+  bill comes in), an "opinia RL" and a "materiał uzupełniający" likewise, and one ministry files
+  each part as an attachment to its letter and says which is which in a tag —
+  `załącznik do pismo 07.08.2026 uzgodnienia [projekt].pdf`. The tag beats the rest of the name,
+  being the one part of it that is about the document rather than about its envelope. A file that opens
   as an appendix is refused at the other end too (`AnalysisService._load_text`): describing a
   compliance table would describe the wrong document with every appearance of describing the
   right one. A *letter* is not refused there — every print opens with one.

@@ -302,9 +302,21 @@ _NOT_A_TEXT_RE = re.compile(
     # on its own, for "o raportowaniu"; the rejected-comments tables come as "zestawienie".
     # A package names its members with underscores where the folder uses spaces, so every
     # multi-word pattern has to accept both.
+    # "opinia" is word-bounded because "opiniowanie" is a stage, and a file called
+    # "projekt - opiniowanie.pdf" is the bill as published for it.
     r"tabel|zgodno|załącznik|zalacznik|zał\.|pismo|rozdzielnik"
     r"|rozbieżno|rozbiezno|raport[\s_]+z|zestawienie|formatka|wyliczenia|akty[\s_]+wykonawcze"
+    r"|autopoprawka|\bopinia\b|materia[łl][\s_]+uzupe[łl]niaj"
 )
+# A ministry that files the bill as an attachment to its letter says which is which in a tag at
+# the end of the name: "załącznik do pismo 07.08.2026 uzgodnienia [projekt].pdf". The tag is the
+# one part of such a name that is about the document rather than about its envelope.
+_ROLE_TAG_RE = re.compile(r"\[\s*(projekt|uzasadnienie|osr)\s*\]")
+_TAGGED_ROLE: dict[str, TextRole] = {
+    "projekt": "bill",
+    "uzasadnienie": "justification",
+    "osr": "osr",
+}
 _BILL_RE = re.compile(r"projekt|ustaw")
 _FORMAT_RANK = {"pdf": 0, "docx": 1, "docm": 2, "doc": 3, "odt": 4, "zip": 8}
 
@@ -316,9 +328,13 @@ def text_role(name: str) -> TextRole | None:
     the bill.
 
     An appendix is ruled out before the OSR is recognised: "załącznik do OSR" and "Wyliczenia do
-    OSR" name the OSR they hang on, and taken for it they would stand in its place.
+    OSR" name the OSR they hang on, and taken for it they would stand in its place. A tag in
+    brackets beats everything: it is the ministry saying what the file is.
     """
     lowered = name.lower()
+    tagged = _ROLE_TAG_RE.search(lowered)
+    if tagged is not None:
+        return _TAGGED_ROLE[tagged.group(1)]
     if "uzasad" in lowered:
         return "justification"
     if _NOT_A_TEXT_RE.search(lowered):
