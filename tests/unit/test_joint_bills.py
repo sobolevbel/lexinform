@@ -120,3 +120,19 @@ def test_one_sitting_is_told_once_for_the_whole_group() -> None:
 
     assert report.agenda_posted == 1
     assert [item.ref for _, item, _ in w.publisher.agendas] == ["ASW/136/2026-09-17"]
+
+
+def test_the_reply_names_the_thread_and_carries_both_tags() -> None:
+    """The reply is rendered by the production publisher, so what the group's followers read is
+    what a test reads: which druk the thread belongs to, and a tag for each print in it."""
+    w = World()
+    w.add_bill("1933", DEPUTIES)
+    w.run()
+    _joint(w, "1929", GOVERNMENT, "1933", "316")
+
+    w.run()
+
+    (text,) = w.publisher.texts(PublicationKind.JOINT_BILL)
+    assert "Альтернативный проект того же закона" in text
+    assert "druk 1933, 316" in text
+    assert text.endswith("#kadencja10druk1929 #kadencja10druk1933")

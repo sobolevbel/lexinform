@@ -303,7 +303,11 @@ class World:
         self.repo.migrate()
         self.gateway = FakeSejmGateway()
         self.llm = FakeLlm(script=llm_script, triage_script=triage_script)
-        self.publisher = FakePublisher(fail_on=fail_publish)
+        # The formatter the container and the publisher share, as in production, and it dates
+        # what it renders from the test's clock: everything a message says about "now" is the
+        # run's now, not the day the suite happens to run on.
+        self.formatter = MessageFormatter("ru", today=lambda: self.clock.now().date())
+        self.publisher = FakePublisher(fail_on=fail_publish, formatter=self.formatter)
         self.notifier = FakeNotifier()
         self.inbox = FakeInbox()
         self.replier = FakeReplier()
@@ -344,7 +348,7 @@ class World:
             clock=self.clock,
             repo=self.repo,
             gateway=self.gateway,
-            formatter=MessageFormatter("ru", today=lambda: self.clock.now().date()),
+            formatter=self.formatter,
             prefilter=KeywordPrefilter(),
             terms=TermResolver(self.gateway, self.repo),
             rcl=self.rcl,

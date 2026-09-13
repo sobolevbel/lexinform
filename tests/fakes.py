@@ -6,12 +6,12 @@ gateway and `outage_on` on the publisher raise the phase-fatal `ServiceUnavailab
 `fail_on` raises an ordinary per-bill error.
 """
 
-import hashlib
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
+from lexinform.adapters.publisher_base import Outgoing, RenderingPublisher
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import (
     AttachmentTooLargeError,
@@ -44,6 +44,7 @@ from lexinform.models import (
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
+    PublicationKind,
     RclProject,
     RclProjectSummary,
     RclStage,
@@ -60,6 +61,7 @@ from lexinform.models import (
     Vote,
     WykazEntry,
 )
+from lexinform.ports import PublishResult
 
 
 class FixedClock:
@@ -519,12 +521,26 @@ class FakePublishResult:
     document_message_ids: list[int] = field(default_factory=list)
 
 
-class FakePublisher:
-    """Records every post; message ids start at 101 and grow by one per post."""
+class FakePublisher(RenderingPublisher):
+    """Records every post; message ids start at 101 and grow by one per post.
+
+    It is the production publisher — `RenderingPublisher` renders every message kind once, and a
+    concrete publisher only says how the result leaves — so what a test records is the message
+    the channel would show, text included (`sent`, `edited`). The per-kind lists keep the domain
+    objects the renderer does not carry (the print, the joint bill's primary, the day a reminder
+    was rendered for).
+    """
 
     def __init__(
-        self, fail_on: set[str] | None = None, *, outage_on: set[str] | None = None
+        self,
+        fail_on: set[str] | None = None,
+        *,
+        outage_on: set[str] | None = None,
+        formatter: MessageFormatter | None = None,
     ) -> None:
+        super().__init__(formatter or MessageFormatter("ru"))
+        self.sent: list[Outgoing] = []  # every message as rendered, in the order it went out
+        self.edited: list[tuple[Outgoing, int]] = []
         self.new_bills: list[tuple[Bill, PrintInfo | None]] = []
         self.edits: list[tuple[Bill, int]] = []  # cards re-rendered in place (bill, message id)
         # "alternative bill" replies: (bill, the bill whose card it went under, reply_to)
@@ -551,6 +567,21 @@ class FakePublisher:
         self._next_id += 1
         return FakePublishResult(message_id=self._next_id)
 
+    def _deliver(self, message: Outgoing) -> FakePublishResult:
+        result = self._send(message.bill)
+        self.sent.append(message)
+        return result
+
+    def _edit(self, message: Outgoing, *, message_id: int) -> None:
+        if message.bill.number in self.outage_on_edit:
+            raise TelegramUnavailableError("editMessageText: ConnectError after 3 attempts")
+        self._send(message.bill)
+        self.edited.append((message, message_id))
+
+    def texts(self, kind: PublicationKind) -> list[str]:
+        """The text of every message of one kind, in the order the channel got it."""
+        return [message.text for message in self.sent if message.kind is kind]
+
     def snapshot(self) -> dict[str, list[str]]:
         """Everything posted so far, as the channel would show it: kind -> bill numbers."""
         return {
@@ -567,78 +598,71 @@ class FakePublisher:
             "hearings": [b.number for b, _, _, _ in self.hearings],
         }
 
-    def publish_new_bill(self, bill: Bill, print_info: PrintInfo | None) -> FakePublishResult:
-        result = self._send(bill)
+    def publish_new_bill(self, bill: Bill, print_info: PrintInfo | None) -> PublishResult:
+        result = super().publish_new_bill(bill, print_info)
         self.new_bills.append((bill, print_info))
         return result
 
     def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:
-        if bill.number in self.outage_on_edit:
-            raise TelegramUnavailableError("editMessageText: ConnectError after 3 attempts")
-        self._send(bill)
+        super().edit_new_bill(bill, print_info, message_id=message_id)
         self.edits.append((bill, message_id))
-
-    def card_digest(self, bill: Bill) -> str:
-        """The real card's digest: a test sees the card change exactly when a reader would."""
-        text = MessageFormatter("ru").new_bill(bill, None).text
-        return hashlib.sha256(text.encode()).hexdigest()
 
     def publish_joint_bill(
         self, bill: Bill, primary: Bill, print_info: PrintInfo | None, reply_to: int | None
-    ) -> FakePublishResult:
-        result = self._send(bill)
+    ) -> PublishResult:
+        result = super().publish_joint_bill(bill, primary, print_info, reply_to)
         self.joint_bills.append((bill, primary, reply_to))
         return result
 
     def publish_status_update(
         self, bill: Bill, change: StatusChange, reply_to: int | None
-    ) -> FakePublishResult:
-        result = self._send(bill)
+    ) -> PublishResult:
+        result = super().publish_status_update(bill, change, reply_to)
         self.updates.append((bill, change, reply_to))
         return result
 
-    def publish_act_published(self, bill: Bill, reply_to: int | None) -> FakePublishResult:
-        result = self._send(bill)
+    def publish_act_published(self, bill: Bill, reply_to: int | None) -> PublishResult:
+        result = super().publish_act_published(bill, reply_to)
         self.acts.append((bill, reply_to))
         return result
 
     def publish_in_force(
         self, bill: Bill, reply_to: int | None, *, today: date | None = None
-    ) -> FakePublishResult:
-        result = self._send(bill)
+    ) -> PublishResult:
+        result = super().publish_in_force(bill, reply_to, today=today)
         self.in_force.append((bill, reply_to))
         return result
 
     def publish_consultation_deadline(
         self, bill: Bill, reply_to: int | None, *, today: date
-    ) -> FakePublishResult:
-        result = self._send(bill)
+    ) -> PublishResult:
+        result = super().publish_consultation_deadline(bill, reply_to, today=today)
         self.consultations.append((bill, reply_to, today))
         return result
 
-    def publish_consultation_results(self, bill: Bill, reply_to: int | None) -> FakePublishResult:
-        result = self._send(bill)
+    def publish_consultation_results(self, bill: Bill, reply_to: int | None) -> PublishResult:
+        result = super().publish_consultation_results(bill, reply_to)
         self.consultation_results.append((bill, reply_to))
         return result
 
     def publish_agenda(
         self, bill: Bill, item: AgendaItem, reply_to: int | None, moved_from: date | None = None
-    ) -> FakePublishResult:
-        result = self._send(bill)
+    ) -> PublishResult:
+        result = super().publish_agenda(bill, item, reply_to, moved_from)
         self.agendas.append((bill, item, reply_to))
         return result
 
     def publish_hearing_deadline(
         self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date
-    ) -> FakePublishResult:
-        result = self._send(bill)
+    ) -> PublishResult:
+        result = super().publish_hearing_deadline(bill, hearing, reply_to, today=today)
         self.hearings.append((bill, hearing, reply_to, today))
         return result
 
     def publish_decision_deadline(
         self, bill: Bill, phase: Phase, reply_to: int | None, *, today: date
-    ) -> FakePublishResult:
-        result = self._send(bill)
+    ) -> PublishResult:
+        result = super().publish_decision_deadline(bill, phase, reply_to, today=today)
         self.decision_deadlines.append((bill, phase, reply_to, today))
         return result
 

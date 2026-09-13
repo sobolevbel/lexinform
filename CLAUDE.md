@@ -68,7 +68,11 @@ use fakes in `tests/fakes.py` and the `World` harness in `tests/harness.py`, whi
 `add_bill`/`add_rcl_project`/`set_stages`/`touch`, act with `run`, assert on the report, the
 publisher's records and `bill`/`publication`); HTTP adapters use `httpx2.MockTransport`. The fake
 Sejm gateway answers per term like the API (a process, print or `/bills` entry exists only under
-its own term) and records the term in `calls`. Tests follow arrange-act-assert and never touch
+its own term) and records the term in `calls`. `FakePublisher` **is** `RenderingPublisher`: it
+overrides only delivery, so every message a scenario test records was rendered by the production
+formatter (shared with the container, dated from the test's clock) and `publisher.texts(kind)`
+is what the channel would show — a bill has to carry the act or the consultation window a reply
+is about, or the render raises the way it would in production. Tests follow arrange-act-assert and never touch
 private attributes.
 
 Invariants worth keeping:

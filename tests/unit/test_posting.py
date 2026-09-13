@@ -18,6 +18,7 @@ from lexinform.models import (
 )
 from lexinform.services.tracking.posting import Poster
 from tests.fakes import FakePublisher, FixedClock
+from tests.harness import act, submission
 
 CHANNEL = "@test"
 SITTING = AgendaItem(
@@ -39,7 +40,9 @@ def bill(repo: SqliteBillRepository, process_3039: ProcessDetail, now: dt.dateti
             created_at=now,
         )
     )
-    return stored
+    # These tests post every kind of reply under one card, and each is rendered for real: the
+    # bill has to carry the act and the consultation window those messages are about.
+    return stored.model_copy(update={"act": act(), "submission": submission(print_number="3039")})
 
 
 def _poster(repo: SqliteBillRepository, publisher: FakePublisher, attempts: int = 3) -> Poster:
