@@ -73,7 +73,11 @@ def test_single_stray_mention_is_rejected_but_kept_for_tuning() -> None:
     bill = w.bill("4100")
     assert bill.status is BillStatus.SKIPPED_TEXT_PREFILTER
     assert bill.prefilter_hits == ["text:cudzoziemcy"]
-    assert bill.last_error == "text prefilter: weak hits only (cudzoziemcy×1)"
+    # The reason names the threshold, not "weak patterns": cudzoziemcy is the strongest
+    # pattern there is, it simply occurred once.
+    assert bill.last_error == (
+        "text prefilter: under the threshold of 2 distinct patterns (cudzoziemcy×1)"
+    )
 
 
 def test_missing_or_broken_pdf_skips_the_bill_quietly() -> None:
@@ -90,6 +94,33 @@ def test_missing_or_broken_pdf_skips_the_bill_quietly() -> None:
     # The reason is on record: a skip for lack of a text is not a keyword miss.
     assert broken.last_error == "text prefilter failed: ValueError: not a PDF"
     assert missing.last_error == "text prefilter: no document to read"
+
+
+def test_a_scanned_print_goes_to_the_model_instead_of_being_skipped() -> None:
+    """Keywords cannot search a photograph of paper, and that is not a reason to drop the bill:
+    the deputies' prints that arrive as scans are the ones whose titles say the least."""
+    w = World(extractor=FakeTextExtractor("", page_count=12))
+    w.add_bill("4100", "Poselski projekt ustawy o zmianie niektórych ustaw")
+
+    report = w.run()
+
+    assert (report.text_prefilter_scans, report.text_prefilter_unreadable) == (1, 0)
+    assert report.text_prefilter_hits == 0  # not a keyword hit: nothing was searched
+    assert report.analyzed == 1
+    ctx = w.llm.contexts[0]
+    assert ctx.text_source == "scan" and ctx.scan is not None and ctx.scan.pages == 12
+
+
+def test_a_file_with_neither_text_nor_pages_is_still_a_skip() -> None:
+    w = World(extractor=FakeTextExtractor("", page_count=0))
+    w.add_bill("4100", "Poselski projekt ustawy o zmianie niektórych ustaw")
+
+    report = w.run()
+
+    assert (report.text_prefilter_scans, report.text_prefilter_unreadable) == (0, 1)
+    bill = w.bill("4100")
+    assert bill.status is BillStatus.SKIPPED_TEXT_PREFILTER
+    assert bill.last_error == "text prefilter: no text layer and no pages to read"
 
 
 def test_sejm_api_outage_leaves_bills_pending() -> None:

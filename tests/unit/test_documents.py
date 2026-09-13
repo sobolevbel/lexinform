@@ -91,13 +91,15 @@ def test_document_text_appends_the_extra_files_and_skips_unreadable_ones() -> No
     gateway = FakeSejmGateway(files={urls[0]: b"%PDF", urls[2]: b"%PDF"})  # uzasadnienie: 404
     document = TextDocument(url=urls[0], kind="rcl", extra_urls=(urls[1], urls[2]))
 
-    text = _loader(gateway).load_document(document)
+    loaded = _loader(gateway).read_document(document)
 
-    assert text == PAGE_BREAK.join([LONG_TEXT, LONG_TEXT])
+    assert loaded.text == PAGE_BREAK.join([LONG_TEXT, LONG_TEXT])
 
 
 def test_document_without_a_readable_main_file_has_no_text() -> None:
     gateway = FakeSejmGateway(files={URL: b"%" * 2000})
     document = TextDocument(url=URL, kind="print", extra_urls=(URL,))
 
-    assert _loader(gateway, max_bytes=1000).load_document(document) is None
+    loaded = _loader(gateway, max_bytes=1000).read_document(document)
+
+    assert (loaded.text, loaded.oversize) == (None, True)

@@ -168,13 +168,21 @@ class ScannedDocument(BaseModel):
     pages: int
     """How many pages were sent."""
     of_pages: int
-    """How many the document has: more than `pages` when the covering letter or the tail of an
-    OSR form was left behind, which is what the card's "partial text" note is rendered from."""
+    """How many the document has."""
     sha256: str
+    cover_letter_pages: int = 0
+    """How many of the pages not sent were the letter handing the document to the Marshal."""
 
     @property
     def truncated(self) -> bool:
-        return self.pages < self.of_pages
+        """Whether the model was kept from part of the document itself.
+
+        Dropping the covering letter is not that: it is one page that names the bill and says who
+        will present it, and calling the reading "partial" because of it made every scanned print
+        tell its readers that the analysis had seen less than the document — and told the model to
+        lower its confidence for the same reason.
+        """
+        return self.of_pages - self.pages > self.cover_letter_pages
 
 
 class DocumentDigest(BaseModel):

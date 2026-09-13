@@ -163,6 +163,15 @@ Invariants worth keeping:
   timeline, before the catalogs, and the wykaz from the entry's status. Bills already followed
   are untouched by this: they keep their card and their updates to the end. The last gate is
   `PublishingService.publish_new`, for a bill analysed while it was still running.
+- **A file keywords cannot search is not a file to drop.** The text prefilter scans the print
+  of a title miss; when the file has no text layer but has pages, the bill goes to
+  `analysis_pending` unsearched (`TextPrefilterResult.scans`, told apart in the run report from
+  `unreadable`, which is now only a file with no pages either). Refusing it there was refusing
+  the bill at both ends at once: the prints that arrive as scanned paper are the deputies'
+  bills, and those are the ones whose titles say "o zmianie niektórych ustaw". The per-bill cost
+  guard is what bounds the decision — at 1,600 tokens a page it stops a scan at ~250 pages — and
+  the skip reasons say which threshold was missed, because "weak hits only" was printed over
+  every kind of miss, a single strong pattern included.
 - **Not every stage is a post.** `models/events.py`: `is_substantive` separates the events a
   reader cares about (referral, committee report, vote, Senate, President, hearing, a decided
   reading) from the frame nodes (`Start`, `ReadingReferral`, `Reading`, `CommitteeWork`,
@@ -182,16 +191,29 @@ Invariants worth keeping:
   saying who will present the position, never what it is); of 39 prints, 11 are scans and druk
   604 is its letter and the signatures under it. Those 800 characters passed `MIN_TEXT_CHARS`
   and read like a document, so `sections.carries_the_document` cuts the letter (at the page break
-  or the heading after it, `without_cover_letter`) and asks whether anything is left. The gate
+  or the heading after it, `without_cover_letter`) and asks whether anything is left — and then
+  asks the same of the paper it came from: under 4,000 characters, a text thinner than 300
+  characters a page is a photograph of pages and not their text (30 prints drawn at random from
+  term 10 on 2026-09-12: the scan among them runs 139 characters a page, the thinnest real
+  document 477, the median ~2,200). The gate
   sits in `AnalysisService._load_text`, the one place every document the model reads passes
   through, so the rule is one and not four. A file with no text but with pages goes to the model
   as pages instead (`ScannedDocument`, `text_source="scan"`, the API's document block — ~1,600
-  tokens and $0.008 a page, and `pricing.estimate_scan_cost` guards by that); what is kept of it
-  is the file's `sha256`, standing where a text's digest would. The extracted text comes back
+  tokens and $0.008 a page, and `pricing.estimate_scan_cost` guards by that, which is also what
+  prices it before the call: asking the tokenizer would mean uploading the file to learn a
+  number we can multiply out); what is kept of it
+  is the file's `sha256`, standing where a text's digest would. A file with neither text nor
+  pages (a Word file whose letter we could not cut off, an archive) keeps its text after all:
+  there is nothing to fall back to, and a document of that length is not a covering letter.
+  The extracted text comes back
   either way, because the letter is the one page of a scanned print that has a text layer and the
   card's club breakdown is parsed from it. Of the pages, only the letter's is dropped
   (`sections.scan_page_window`: exactly one page in all 15 government prints measured, and only
-  when the text layer proved it is there). **Nothing else of a scan is trimmed, and the reason is
+  when `sections.has_cover_letter` finds the transmittal formula — *any* text is not that
+  finding, and a page dropped on a running head would be a page of the bill). Dropping it is
+  not truncation: `ScannedDocument.truncated` counts only pages of the document itself that the
+  model was not shown (`cover_letter_pages`), because the card's «неполный текст» and the
+  prompt's instruction to lower confidence were otherwise on every scanned print there is. **Nothing else of a scan is trimmed, and the reason is
   measured.** A filed OSR is not the government's 13-point form — druk 1273's is the Sejm's own
   expertise (BEOS), sections I–XI, substantive from the first page, with the count of affected
   foreigners on page 10 of 30 — so a page budget cuts into the substance. A page map by a cheap

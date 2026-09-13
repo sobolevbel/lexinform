@@ -1,8 +1,10 @@
 """Downloading and reading the documents a bill text comes from (Sejm prints, RCL files).
 
-A run-scoped cache keeps the extracted text so a file scanned by the text prefilter is not
-downloaded again a few seconds later by the analysis. Nothing is persisted: the state dump lives
-in git. Downloads are routed by host to the client of that system, so its outage semantics apply.
+A run-scoped cache keeps what one download told us — the text, how many pages the file has,
+whether it was over the size limit — so a file the text prefilter read is not downloaded again a
+few seconds later by the analysis, and so that a file with no text layer can still be recognised
+as a scan rather than as nothing at all. Nothing is persisted: the state dump lives in git.
+Downloads are routed by host to the client of that system, so its outage semantics apply.
 """
 
 import base64
@@ -11,6 +13,7 @@ import logging
 import threading
 import time
 from collections.abc import Mapping
+from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
@@ -25,6 +28,26 @@ MAX_SCAN_PAGES = 600
 MAX_SCAN_BYTES = 24_000_000
 """What the Messages API takes as one document: 600 pages, and 32 MB of request — which is
 base64, a third larger than the file (druk 2865 is 40 MB and does not fit)."""
+
+
+@dataclass(frozen=True)
+class LoadedFile:
+    """What one download told us about a file.
+
+    `text` is None when there is none to speak of; `pages` then says whether the file is a scan
+    (a PDF with pages to read) or nothing we can use at all (a Word file, an archive), and
+    `oversize` whether it was simply too big to fetch. The three apart are what lets a caller
+    say why a bill was skipped, and whether it should be skipped at all.
+    """
+
+    text: str | None
+    pages: int = 0
+    oversize: bool = False
+
+    @property
+    def is_scan(self) -> bool:
+        """No text to read, but pages a model could be shown."""
+        return self.text is None and self.pages > 0
 
 
 class TextLoader:
@@ -46,7 +69,7 @@ class TextLoader:
         self._downloaders = dict(downloaders)
         self._extractor = extractor
         self._max_bytes = max_bytes
-        self._cache: dict[str, str | None] = {}
+        self._cache: dict[str, LoadedFile] = {}
         self._cache_size = cache_size
         self._lock = threading.Lock()
 
@@ -56,23 +79,29 @@ class TextLoader:
         Raises a `ServiceUnavailableError` when the host is down; other problems (404, broken
         file, unknown host) propagate as ordinary exceptions for the caller to classify.
         """
+        return self.read(url).text
+
+    def read(self, url: str) -> LoadedFile:
+        """The same download, with what the file turned out to be."""
         with self._lock:
             if url in self._cache:
                 return self._cache[url]
-        text = self._fetch(url)
+        loaded = self._fetch(url)
         with self._lock:
             if len(self._cache) >= self._cache_size:
                 self._cache.pop(next(iter(self._cache)))
-            self._cache[url] = text
-        return text
+            self._cache[url] = loaded
+        return loaded
 
-    def load_document(self, document: TextDocument) -> str | None:
-        """The main file's text followed by the extra files' (pages separated by `PAGE_BREAK`);
-        None when the main file yields nothing. An unreadable extra file is skipped."""
-        main = self.load(document.url)
-        if main is None:
-            return None
-        parts = [main]
+    def read_document(self, document: TextDocument) -> LoadedFile:
+        """The main file's text followed by the extra files' (pages separated by `PAGE_BREAK`),
+        with the main file's page count: the extras are its uzasadnienie and OSR, and it is the
+        main file a caller falls back to reading as pages. An unreadable extra file is skipped.
+        """
+        main = self.read(document.url)
+        if main.text is None:
+            return main
+        parts = [main.text]
         for url in document.extra_urls:
             try:
                 extra = self.load(url)
@@ -83,7 +112,7 @@ class TextLoader:
                 continue
             if extra is not None:
                 parts.append(extra)
-        return PAGE_BREAK.join(parts)
+        return LoadedFile(PAGE_BREAK.join(parts), pages=main.pages)
 
     def load_scan(self, url: str, *, cover_letter: bool) -> ScannedDocument | None:
         """The file itself, for a model to read as pages, cut down to the pages worth paying for
@@ -101,17 +130,20 @@ class TextLoader:
         if pages <= 0:
             return None
         window = scan_page_window(pages, cover_letter=cover_letter)
+        if window.count > MAX_SCAN_PAGES:
+            log.warning(
+                "%s is %d pages: more than the model takes at once (%d)", url, pages, MAX_SCAN_PAGES
+            )
+            return None
         selected = data
         if (window.first, window.count) != (0, pages):
             selected = self._extractor.select_pages(data, first=window.first, count=window.count)
             log.info("%s: %d of %d pages kept for the model", url, window.count, pages)
-        if len(selected) > MAX_SCAN_BYTES or window.count > MAX_SCAN_PAGES:
+        if len(selected) > MAX_SCAN_BYTES:
             log.warning(
-                "%s is %d pages and %d KB: over what the model takes (%d pages, %d KB)",
+                "%s is %d KB: over what the model takes (%d KB)",
                 url,
-                window.count,
                 len(selected) // 1024,
-                MAX_SCAN_PAGES,
                 MAX_SCAN_BYTES // 1024,
             )
             return None
@@ -119,20 +151,22 @@ class TextLoader:
             data=base64.standard_b64encode(selected).decode("ascii"),
             pages=window.count,
             of_pages=pages,
+            cover_letter_pages=window.first,
             sha256=hashlib.sha256(data).hexdigest(),
         )
 
-    def _fetch(self, url: str) -> str | None:
+    def _fetch(self, url: str) -> LoadedFile:
         data = self._download(url)
         if data is None:
-            return None
+            return LoadedFile(None, oversize=True)
         started = time.perf_counter()
         text = self._extractor.extract(data)
+        pages = self._extractor.pages(data)
         log.info("%s: %d chars extracted in %.1fs", url, len(text), time.perf_counter() - started)
         if len(text.strip()) < MIN_TEXT_CHARS:
-            log.warning("%s yielded almost no text (%d chars)", url, len(text))
-            return None
-        return text
+            log.warning("%s yielded almost no text (%d chars, %d pages)", url, len(text), pages)
+            return LoadedFile(None, pages=pages)
+        return LoadedFile(text, pages=pages)
 
     def _download(self, url: str) -> bytes | None:
         host = urlparse(url).hostname or ""

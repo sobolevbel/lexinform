@@ -240,7 +240,7 @@ class FakeTextExtractor:
         *,
         error: Exception | None = None,
         by_content: dict[bytes, str] | None = None,
-        page_count: int = 4,
+        page_count: int | None = None,
     ) -> None:
         self.text = text
         self.error = error
@@ -254,7 +254,15 @@ class FakeTextExtractor:
         return self.by_content.get(data, self.text)
 
     def pages(self, data: bytes) -> int:
-        return self.page_count
+        """As many pages as the text would really fill, unless the test says otherwise.
+
+        A page of a Polish print holds some 2,000 characters (measured over term 10), and the
+        analysis tells a scan from a document by that density — so a fixture whose pages and
+        text do not match would put every test on the wrong side of the rule.
+        """
+        if self.page_count is not None:
+            return self.page_count
+        return max(1, len(self.by_content.get(data, self.text)) // 2000)
 
     def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
         self.selections.append((first, count))

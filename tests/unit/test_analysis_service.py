@@ -1,5 +1,6 @@
 """What the model gets to see and what is stored: text sources, triage, authors."""
 
+from lexinform.adapters.llm_prompts import build_user_prompt
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import BillStatus, Mp, Triage
 from lexinform.services.analysis import text_digest
@@ -182,6 +183,56 @@ def test_a_print_scanned_but_for_its_letter_is_read_as_pages() -> None:
     assert authors is not None and authors.clubs == (("KO", 2), ("Lewica", 1))
 
 
+def test_dropping_the_covering_letter_is_not_a_partial_reading() -> None:
+    """The letter is one page naming the bill; calling the analysis "partial" because of it told
+    every reader of a scanned print that the model had seen less than the document."""
+    cover = DEPUTIES_LETTER.split("Tłoczono z polecenia Marszałka Sejmu")[0]
+    w = World(extractor=FakeTextExtractor(cover, page_count=37))
+    w.gateway.mps = MPS
+    w.add_bill("4200", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
+
+    w.run()
+
+    ctx = w.llm.contexts[0]
+    assert ctx.scan is not None and not ctx.scan.truncated
+    prompt = build_user_prompt(ctx)
+    assert "[pominięto pismo przewodnie: 1 str.]" in prompt
+    assert "OBCIĘTY" not in prompt and "OSR" not in prompt
+    record = w.bill("4200").analysis
+    assert record is not None and not record.truncated
+    assert MessageFormatter("ru").new_bill(w.bill("4200"), None).text.count("неполном тексте") == 0
+
+
+def test_a_thin_text_layer_over_many_pages_is_paper_and_not_a_document() -> None:
+    """A title page or a running head left by an OCR pass reads as a document and passes any
+    length threshold; against the paper it came from it does not. Measured over 30 prints of
+    term 10: the thinnest real one runs 477 characters a page, the scan 139."""
+    w = World(extractor=FakeTextExtractor("Druk nr 4200. Projekt ustawy. " * 20, page_count=30))
+    w.add_bill("4200", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
+
+    w.run()
+
+    ctx = w.llm.contexts[0]
+    assert ctx.text_source == "scan" and ctx.scan is not None and ctx.scan.pages == 30
+
+
+def test_a_word_file_with_no_pages_is_read_as_the_text_it_has() -> None:
+    """`without_cover_letter` cuts at a page break or a heading, and a Word file has neither to
+    offer; there are no pages to fall back on either, so the text is all there will ever be."""
+    letter = (
+        "Szanowny Panie Marszałku, na podstawie art. 118 ust. 1 Konstytucji"
+        " wnoszą projekt ustawy o zmianie ustawy o cudzoziemcach. "
+    )
+    body = "Zmiany dotyczą pobytu czasowego cudzoziemców. " * 200
+    w = World(extractor=FakeTextExtractor(letter + body, page_count=0))
+    w.add_rcl_project()
+
+    w.run()
+
+    ctx = w.llm.contexts[0]
+    assert ctx.text_source == "documents" and ctx.scan is None
+
+
 def test_card_shows_signatory_clubs_and_the_representative() -> None:
     w = World(extractor=FakeTextExtractor(DEPUTIES_LETTER))
     w.gateway.mps = MPS
@@ -220,19 +271,19 @@ def test_text_over_the_per_bill_cost_limit_is_skipped_without_a_model_call() -> 
     assert bill.last_error is not None and "exceeds the $0.01 limit" in bill.last_error
 
 
-def test_the_limit_is_measured_by_the_tokenizer_not_by_the_text_length() -> None:
-    """A scan has no text to measure at all: without the count it would pass the guard as free
-    and then cost whatever its pages cost."""
-    w = World(extractor=FakeTextExtractor(""), max_bill_cost_usd=0.01)
+def test_a_scan_is_priced_by_its_pages_without_being_uploaded_to_be_counted() -> None:
+    """A scan has no text to measure, and asking the tokenizer means uploading the file itself —
+    tens of megabytes to learn a number that is 1,600 tokens a page, measured."""
+    w = World(extractor=FakeTextExtractor("", page_count=4), max_bill_cost_usd=0.01)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")  # 4 pages ≈ 6400 tokens ≈ $0.032
 
     report = w.run()
 
     assert (report.analyzed, report.analysis_skipped_cost) == (0, 1)
-    assert w.llm.contexts == [] and w.llm.counted == ["3039"]
+    assert w.llm.contexts == [] and w.llm.counted == []  # the file was never sent to be counted
     bill = w.bill("3039")
     assert bill.status is BillStatus.SKIPPED_COST
-    assert bill.last_error is not None and "6400 tokens" in bill.last_error
+    assert bill.last_error is not None and "4 scanned page(s)" in bill.last_error
 
 
 def test_a_failed_count_falls_back_to_the_estimate() -> None:

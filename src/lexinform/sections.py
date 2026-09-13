@@ -124,8 +124,37 @@ def without_cover_letter(text: str) -> str:
     return text[min(cuts) :] if cuts else ""
 
 
-def carries_the_document(text: str, *, min_chars: int) -> bool:
-    """Whether the extracted text is the document at all, or only the letter transmitting it.
+MIN_CHARS_PER_PAGE = 300
+"""Below this a PDF's text layer is not its document, however well it reads.
+
+Measured over 30 prints drawn at random from term 10 (2026-09-12, this project's extractor):
+the scan among them (druk 603, 14 pages) yields 139 characters a page and nothing at all once
+its covering letter is cut, while the thinnest real document (druk 325, 50 pages of a sparse
+print) yields 477 and the median is ~2,200. The threshold sits between the two with room on
+both sides, because what it separates is a text layer from a photograph of paper.
+"""
+
+SCANNED_TEXT_CEILING = 4_000
+"""Above this many characters the text is the document whatever its density.
+
+A print can be appendix-heavy — hundreds of pages of tables that extract to little — and text
+that long is still text to read, not a caption on an image. Only a short text can be the stray
+header, stamp or title page that the page count then exposes for what it is.
+"""
+
+
+def has_cover_letter(text: str) -> bool:
+    """Whether the text opens with the letter that hands the document to the Marshal.
+
+    What decides whether the first page of a scan is dropped: any text at all is not the same
+    finding — a running head or a title page left by an OCR pass is text too, and dropping the
+    first page because of one would throw away a page of the document.
+    """
+    return _TRANSMITTAL_RE.search(text[:_COVER_LIMIT]) is not None
+
+
+def carries_the_document(text: str, *, min_chars: int, pages: int = 0) -> bool:
+    """Whether the extracted text is the document at all, or a scrap of paper around it.
 
     Sejm papers are scanned, signed on paper and filed as images: of 66 documents filed to
     prints (term 10, 12 Sept 2026) 55 have no text layer whatsoever and the remaining 11 carry
@@ -135,9 +164,21 @@ def carries_the_document(text: str, *, min_chars: int) -> bool:
 
     Those 800 characters are the trap this answers: they read as a document, they pass any
     length threshold, and a model asked what the government makes of a bill would answer from
-    a polite transmittal note.
+    a polite transmittal note. A covering letter is not the only such scrap, though — a title
+    page, a running head, whatever a stray OCR pass left behind — so a short text is measured
+    against the paper it came from as well: `pages` (0 for a format that has none) turns
+    "long enough to read" into "enough for a document of this many pages".
     """
-    return len(without_cover_letter(text).strip()) >= min_chars
+    body = without_cover_letter(text).strip()
+    if len(body) < min_chars:
+        return False
+    return not _too_thin_for_its_pages(body, pages)
+
+
+def _too_thin_for_its_pages(body: str, pages: int) -> bool:
+    if pages <= 0 or len(body) >= SCANNED_TEXT_CEILING:
+        return False
+    return len(body) / pages < MIN_CHARS_PER_PAGE
 
 
 @dataclass(frozen=True)

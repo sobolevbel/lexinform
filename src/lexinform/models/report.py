@@ -37,8 +37,10 @@ class RunReport(BaseModel):
     left unfollowed (`scan --since` takes them), `over_on_arrival` bills first seen with their
     road already over — the act published, the bill rejected or withdrawn, a project dropped on
     RCL, a plan realised or taken off the wykaz — which are stored and never posted.
-    `text_prefilter_unreadable` counts bills skipped without a text at all: no file, no text
-    layer, or a download that failed. `held` counts stage changes kept back for the next post
+    `text_prefilter_scans` counts bills sent to the model unsearched because their file is
+    paper — pages and no text layer — and `text_prefilter_unreadable` those skipped with nothing
+    to read at all: no file, no pages either, or a download that failed. `held` counts stage
+    changes kept back for the next post
     (service stages only), `rehomed` the government's own rows carried over to a new Sejm term,
     `joint_published` the "alternative bill" replies under the card of a jointly considered
     print. `notes` are worth telling without being errors (a cost budget that stopped a phase),
@@ -63,6 +65,7 @@ class RunReport(BaseModel):
     prefilter_hits: int = 0
     text_prefilter_checked: int = 0
     text_prefilter_hits: int = 0
+    text_prefilter_scans: int = 0
     text_prefilter_unreadable: int = 0
     acts_published: int = 0
     in_force_posted: int = 0

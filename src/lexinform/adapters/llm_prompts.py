@@ -7,11 +7,12 @@ from lexinform.models import (
     WYKAZ_PREFIX,
     AmendmentsContext,
     BillContext,
+    ScannedDocument,
     SupplementContext,
     TriageContext,
 )
 
-PROMPT_VERSION = "2026-09-v5"
+PROMPT_VERSION = "2026-09-v6"
 
 _LANGUAGE_NAMES = {"ru": "Russian", "pl": "Polish", "en": "English", "uk": "Ukrainian"}
 
@@ -149,10 +150,27 @@ def build_amendments_prompt(ctx: AmendmentsContext) -> str:
     return "\n".join(lines)
 
 
-SCAN_NOTE = (
-    "=== DOKUMENT W ZAŁĄCZENIU (skan; tekstu do odczytania nie ma, przeczytaj strony) ===\n"
-    "[pominięto pismo przewodnie; z formularza OSR pokazano początek]"
+_SCAN_HEADER = (
+    "=== DOKUMENT W ZAŁĄCZENIU (skan; tekstu do odczytania nie ma, przeczytaj strony) ==="
 )
+
+
+def scan_note(scan: ScannedDocument) -> str:
+    """What the model is told about the pages it is given, from what was actually left out.
+
+    The note used to promise a trimmed OSR form that nothing trims any more, and announced a
+    dropped covering letter even where there was none to drop. A model told a document is
+    incomplete answers as though it were.
+    """
+    lines = [_SCAN_HEADER]
+    if scan.cover_letter_pages:
+        lines.append(f"[pominięto pismo przewodnie: {scan.cover_letter_pages} str.]")
+    if scan.truncated:
+        missing = scan.of_pages - scan.pages - scan.cover_letter_pages
+        lines.append(
+            f"[DOKUMENT OBCIĘTY: pokazano {scan.pages} z {scan.of_pages} str., brakuje {missing}]"
+        )
+    return "\n".join(lines)
 
 
 def supplement_system_prompt(language: str) -> str:
@@ -180,7 +198,7 @@ def build_supplement_prompt(ctx: SupplementContext) -> str:
     lines.extend(f"- {change}" for change in ctx.previous_key_changes)
     lines.append("")
     if ctx.scan is not None:
-        lines.append(SCAN_NOTE)
+        lines.append(scan_note(ctx.scan))
         return "\n".join(lines)
     lines.append("=== TEKST DOKUMENTU ===")
     lines.append(ctx.text)
@@ -245,7 +263,7 @@ def build_user_prompt(ctx: BillContext) -> str:
     if ctx.text_source == "metadata_only":
         lines.append("=== TEKST DRUKU NIEDOSTĘPNY (analiza tylko na podstawie tytułu i opisu) ===")
     elif ctx.scan is not None:
-        lines.append(SCAN_NOTE)
+        lines.append(scan_note(ctx.scan))
     else:
         lines.append("=== TEKST DRUKU ===")
         lines.append(ctx.text)

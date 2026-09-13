@@ -42,7 +42,13 @@ from lexinform.models import (
 from lexinform.ports import AuthorsResolver, BillRepository, Clock, LlmAnalyzer
 from lexinform.ports import TextSource as TextSourcePort
 from lexinform.pricing import cost_usd, estimate_input_cost, estimate_scan_cost, input_cost
-from lexinform.sections import TextBudget, carries_the_document, excerpts, trim_print
+from lexinform.sections import (
+    TextBudget,
+    carries_the_document,
+    excerpts,
+    has_cover_letter,
+    trim_print,
+)
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 
 log = logging.getLogger(__name__)
@@ -89,8 +95,7 @@ class AnalysisOutcome:
 class TooExpensiveError(Exception):
     """A first analysis whose input alone would cost more than the per-bill limit allows."""
 
-    def __init__(self, estimate: float, limit: float, *, tokens: int | None, chars: int) -> None:
-        measure = f"{tokens} tokens" if tokens is not None else f"~{chars} chars"
+    def __init__(self, estimate: float, limit: float, *, measure: str) -> None:
         super().__init__(
             f"${_usd(estimate)} of input for {measure} exceeds the ${_usd(limit)} limit"
         )
@@ -127,6 +132,12 @@ class _Loaded:
         if self.scan is not None:
             return estimate_scan_cost(self.scan.pages, input_price)
         return estimate_input_cost(len(self.text), input_price)
+
+    def measure(self, tokens: int | None) -> str:
+        """What the price was worked out from, for the record a skipped bill keeps."""
+        if self.scan is not None:
+            return f"{self.scan.pages} scanned page(s)"
+        return f"{tokens} tokens" if tokens is not None else f"~{len(self.text)} chars"
 
 
 @dataclass(frozen=True)
@@ -452,19 +463,22 @@ class AnalysisService:
     def _refuse_if_too_expensive(self, ctx: BillContext, loaded: _Loaded) -> None:
         """Stop a first analysis whose input alone costs more than the per-bill limit.
 
-        The model counts the input itself (free, and the only way to price a scan, which has no
-        text to measure); when that request fails the estimate from the text length stands in.
+        For a text the model counts the input itself — free, and exact where two characters per
+        token is a rule of thumb. A scan is priced from its pages instead (1,600 tokens each,
+        measured): asking the tokenizer would mean uploading the whole file, tens of megabytes,
+        to learn a number we can multiply out. When the counting request fails, the estimate
+        from the text length stands in.
         """
         if not self._max_bill_cost or self._input_price is None:
             return
-        tokens = self._llm.count_input_tokens(ctx)
+        tokens = None if loaded.scan is not None else self._llm.count_input_tokens(ctx)
         cost = (
             input_cost(tokens, self._input_price)
             if tokens is not None
             else loaded.estimate(self._input_price)
         )
         if cost > self._max_bill_cost:
-            raise TooExpensiveError(cost, self._max_bill_cost, tokens=tokens, chars=len(ctx.text))
+            raise TooExpensiveError(cost, self._max_bill_cost, measure=loaded.measure(tokens))
 
     def _triage_verdict(
         self, bill: Bill, meta: ProcessSummary, text: str
@@ -564,7 +578,7 @@ class AnalysisService:
         if document is None:
             return _Loaded("", False, "metadata_only")
         try:
-            text = self._loader.load_document(document)
+            file = self._loader.read_document(document)
         except ServiceUnavailableError:
             raise
         except Exception as exc:
@@ -575,8 +589,16 @@ class AnalysisService:
                 exc,
             )
             return _Loaded("", False, "metadata_only")
-        if text is None or not carries_the_document(text, min_chars=MIN_TEXT_CHARS):
-            return self._load_scan(document, text or "")
+        text = file.text
+        if text is None or not carries_the_document(
+            text, min_chars=MIN_TEXT_CHARS, pages=file.pages
+        ):
+            if file.pages > 0 or not text:
+                return self._load_scan(document, text or "")
+            # A format with no pages to fall back on (Word, an archive): whatever we could not
+            # find the document in this text, the text is all there will ever be, and a file of
+            # this length is not a covering letter.
+            log.info("%s: no pages to read; the text is taken as it is", document.url)
         if not trim:
             budgeted = self._budget.apply(text)
             return _Loaded(budgeted.text, budgeted.truncated, "pdf")
@@ -594,9 +616,9 @@ class AnalysisService:
         return _Loaded(budgeted.text, budgeted.truncated, source)
 
     def _load_scan(self, document: TextDocument, text: str) -> _Loaded:
-        """The document as pages, when its file carries no text; metadata when it has no pages
-        either (a Word file, an archive, a PDF too big for the model to take)."""
-        scan = self._loader.load_scan(document.url, cover_letter=bool(text.strip()))
+        """The document as pages, when its file carries no text of its own; metadata when it has
+        no pages either (a Word file, an archive, a PDF too big for the model to take)."""
+        scan = self._loader.load_scan(document.url, cover_letter=has_cover_letter(text))
         if scan is None:
             log.info(
                 "%s: %d chars, none of them the document itself; using metadata only",

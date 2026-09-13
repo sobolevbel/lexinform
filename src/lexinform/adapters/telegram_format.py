@@ -850,6 +850,7 @@ class MessageFormatter:
                 _counters(
                     ("text prefilter: checked {}", report.text_prefilter_checked),
                     ("hits {}", report.text_prefilter_hits),
+                    ("scans to the model {}", report.text_prefilter_scans),
                     ("unreadable {}", report.text_prefilter_unreadable),
                 ),
                 empty="nothing new",
