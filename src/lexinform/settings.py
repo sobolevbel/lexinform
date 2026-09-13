@@ -105,6 +105,13 @@ class Settings(BaseSettings):
         description="Safety cap only: Polish text is ~2 chars per token, so this is ~750k tokens"
         " and fits the 1M context of the default model. Real prints go in whole.",
     )
+    max_part_chars: int = Field(
+        default=300_000,
+        description="A file inside a package that is longer than this and does not name itself"
+        " (no USTAWA / UZASADNIENIE / Nazwa projektu heading) is not taken for a bill text."
+        " The longest real one measured is 161,678 characters; the longest appendix filed as a"
+        " nameless document, 954,730. 0 disables the guard.",
+    )
     max_pdf_download_mb: int = Field(
         default=200,
         description="Safety valve only, not a relevance rule: the body is buffered in memory and"

@@ -21,7 +21,7 @@ from zipfile import ZipInfo
 
 from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
 from lexinform.ports import TextExtractor
-from lexinform.sections import PAGE_BREAK
+from lexinform.sections import APPENDIX_KINDS, PAGE_BREAK, Kind, document_kind
 
 log = logging.getLogger(__name__)
 
@@ -230,7 +230,8 @@ class DocumentTextExtractor:
     appendices skipped by name); anything else is empty.
 
     `max_member_bytes` caps the *unpacked* size of an archive member: the download limit only
-    sees the compressed bytes.
+    sees the compressed bytes. `max_part_chars` is the length past which a member that does not
+    name itself is not taken for a bill text.
     """
 
     def __init__(
@@ -241,12 +242,14 @@ class DocumentTextExtractor:
         odt: TextExtractor | None = None,
         *,
         max_member_bytes: int | None = None,
+        max_part_chars: int | None = None,
     ) -> None:
         self._pdf = pdf
         self._docx = docx
         self._doc = doc
         self._odt = odt or OdtTextExtractor()
         self._max_member_bytes = max_member_bytes
+        self._max_part_chars = max_part_chars
 
     def extract(self, data: bytes) -> str:
         return self._extract(data, depth=0)
@@ -287,6 +290,14 @@ class DocumentTextExtractor:
             return ""
 
     def _zip_members(self, data: bytes, *, depth: int) -> str:
+        """The bill, its uzasadnienie and its OSR, chosen after reading every member.
+
+        An archive is never handed on as one opaque thing: it is unpacked, each member is read
+        and asked what it is, and only what the model needs is kept. A nested archive is opened
+        only when the bill is not out here — the three seen on RCL (13 Sept 2026) were bundles
+        of draft regulations, whose members are named `projekt.docx`, `uzasadnienie.docx` and
+        `OSR.doc` and are told from the bill's own files by their text alone.
+        """
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             names = set(archive.namelist())
             if "word/document.xml" in names:
@@ -296,11 +307,61 @@ class DocumentTextExtractor:
             if depth >= _MAX_ARCHIVE_DEPTH:
                 log.warning("archive nested too deep skipped")
                 return ""
-            members = _package_members(archive.infolist())
-            texts = [self._member_text(archive, m, depth=depth) for m in members]
-        if not members:
+            loose = [i for i in archive.infolist() if _is_readable(i.filename) and not _is_zip(i)]
+            parts = self._pick_parts(archive, loose, depth=depth)
+            if "bill" not in parts:
+                parts = self._from_nested(archive, parts, depth=depth)
+        if not parts:
             log.warning("archive holds no readable document; no text")
-        return PAGE_BREAK.join(t for t in texts if t.strip())
+        return PAGE_BREAK.join(parts[role] for role in _ROLE_ORDER if parts.get(role, "").strip())
+
+    def _pick_parts(
+        self, archive: zipfile.ZipFile, infos: list[ZipInfo], *, depth: int
+    ) -> dict[TextRole, str]:
+        """The best member for each role, its own text deciding what it is.
+
+        Content vetoes always and chooses where it can: a member whose text says it is a draft
+        regulation, a compliance table, a consultation report or a letter is never kept, whatever
+        its name; among the rest, one whose text names the role beats one that only carries the
+        right file name, which is the fallback for a layout `document_kind` does not know.
+        """
+        best: dict[TextRole, tuple[tuple[int, int, int], str]] = {}
+        for info in infos:
+            text = self._member_text(archive, info, depth=depth)
+            kind = document_kind(text) if text.strip() else "unknown"
+            if kind in _NOT_THE_BILL:
+                log.info("%s is a %s; not sent", info.filename, kind)
+                continue
+            base = info.filename.rsplit("/", 1)[-1]
+            role = _ROLE_OF_KIND.get(kind) or (_member_role(base) if kind == "unknown" else None)
+            if role is None:
+                continue
+            if kind == "unknown" and self._max_part_chars and len(text) > self._max_part_chars:
+                # A bill, its uzasadnienie and its OSR name themselves in their first lines: all
+                # eighteen measured on 13 Sept 2026 did. A member this long that names itself as
+                # nothing is the runaway case the file name would otherwise wave through — the
+                # 954k-character consultation report of UD439 was filed as one.
+                log.warning("%s is %d chars and says nothing of itself; not sent", base, len(text))
+                continue
+            rank = (0 if kind != "unknown" else 1, *_member_rank(info))
+            if role not in best or rank < best[role][0]:
+                best[role] = (rank, text)
+        for role, (_, text) in best.items():
+            log.info("package: %s, %d chars", role, len(text))
+        return {role: text for role, (_, text) in best.items()}
+
+    def _from_nested(
+        self, archive: zipfile.ZipFile, parts: dict[TextRole, str], *, depth: int
+    ) -> dict[TextRole, str]:
+        """The bill from an archive inside the archive, when it is nowhere outside it."""
+        for info in archive.infolist():
+            if not _is_zip(info):
+                continue
+            inner = self._member_text(archive, info, depth=depth)
+            if inner.strip():
+                log.info("%s holds the bill; read from there", info.filename)
+                return {"bill": inner}
+        return parts
 
     def _member_text(self, archive: zipfile.ZipFile, member: ZipInfo, *, depth: int) -> str:
         if self._max_member_bytes is not None and member.file_size > self._max_member_bytes:
@@ -323,31 +384,31 @@ class DocumentTextExtractor:
         return self._extract(data, depth=depth + 1)
 
 
-def _package_members(infos: list[ZipInfo]) -> list[ZipInfo]:
-    """One member of each role, the bill first, then its uzasadnienie, then the OSR.
+_ROLE_OF_KIND: dict[Kind, TextRole] = {
+    "bill": "bill",
+    "justification": "justification",
+    "osr": "osr",
+}
 
-    A package is a "Projekt" folder in a file and carries the same appendices, so it is read the
-    way the folder is (`models.rcl._classify`): the best file of each role and nothing else.
-    Reading every member a name did not rule out sent the consultation report, the rejected
-    remarks, the protokół rozbieżności and a nested archive of draft regulations next to the bill
-    — 262k characters against the 383k of the text itself (UC104, the package of 2026-08-03) —
-    and put them first, the members being ordered by file name within a role, which left
-    `trim_print` reading the whole package as an appendix to a draft regulation.
-    """
-    best: dict[TextRole, ZipInfo] = {}
-    for info in infos:
-        role = _member_role(info.filename)
-        if role is None:
-            continue
-        current = best.get(role)
-        if current is None or _member_rank(info) < _member_rank(current):
-            best[role] = info
-    return [best[role] for role in sorted(best, key=lambda role: _ROLE_ORDER[role])]
+_NOT_THE_BILL = APPENDIX_KINDS | {"letter"}
+"""What a package member may not be. The appendices, and a letter: inside a package the covering
+letter is a file of its own, not the opening of the document that follows it."""
 
 
 def _member_rank(info: ZipInfo) -> tuple[int, int]:
     base = info.filename.rsplit("/", 1)[-1]
     return text_rank(base, base.rsplit(".", 1)[-1].lower())
+
+
+def _is_zip(info: ZipInfo) -> bool:
+    return info.filename.rsplit(".", 1)[-1].lower() == "zip"
+
+
+def _is_readable(name: str) -> bool:
+    base = name.rsplit("/", 1)[-1]
+    if not base or base.startswith(".") or name.startswith("__MACOSX/"):
+        return False
+    return base.rsplit(".", 1)[-1].lower() in READABLE_EXTENSIONS
 
 
 def _member_role(name: str) -> TextRole | None:

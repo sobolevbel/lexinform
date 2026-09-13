@@ -45,8 +45,10 @@ from lexinform.ports import AuthorsResolver, BillRepository, Clock, LlmAnalyzer
 from lexinform.ports import TextSource as TextSourcePort
 from lexinform.pricing import cost_usd, estimate_input_cost, estimate_scan_cost, input_cost
 from lexinform.sections import (
+    APPENDIX_KINDS,
     TextBudget,
     carries_the_document,
+    document_kind,
     excerpts,
     has_cover_letter,
     trim_print,
@@ -665,6 +667,17 @@ class AnalysisService:
             # find the document in this text, the text is all there will ever be, and a file of
             # this length is not a covering letter.
             log.info("%s: no pages to read; the text is taken as it is", document.url)
+        kind = document_kind(text)
+        if kind in APPENDIX_KINDS:
+            # The file the name pointed at turned out to be published beside the bill, not to be
+            # it: a compliance table, a consultation report, a draft regulation. Analysing it
+            # would describe the wrong document with every appearance of describing the right
+            # one. A print opening with its covering letter is not this case (`letter` is not an
+            # appendix kind), and neither is a layout we simply do not recognise.
+            log.warning(
+                "%s opens as a %s, not as the bill; using metadata only", document.url, kind
+            )
+            return _Loaded("", False, "metadata_only")
         if not trim:
             budgeted = self._budget.apply(text)
             return _Loaded(budgeted.text, budgeted.truncated, "pdf")

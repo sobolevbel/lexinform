@@ -26,6 +26,7 @@ import re
 from bisect import bisect_left
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Literal
 
 PAGE_BREAK = "\f"
 
@@ -34,15 +35,43 @@ _HEAD = 600
 _JUSTIFICATION_RE = re.compile(
     r"^\s*u\s?z\s?a\s?s\s?a\s?d\s?n\s?i\s?e\s?n\s?i\s?e\s*$", re.IGNORECASE | re.MULTILINE
 )
-_OSR_RE = re.compile(r"^\s*Nazwa projektu\b", re.MULTILINE)
-_OSR_CUT_RE = re.compile(r"^\s*(?:6\.\s*)?Wpływ na sektor finans", re.MULTILINE)
-_REGULATION_RE = re.compile(
-    r"^\s*R\s?O\s?Z\s?P\s?O\s?R\s?Z\s?Ą\s?D\s?Z\s?E\s?N\s?I\s?E\s*$", re.MULTILINE
+# Two of the six bills measured head themselves "Ustawa" rather than "USTAWA" (UD439, UC145).
+# The whole-line anchor is what keeps it honest: the word is everywhere in a bill's prose and
+# nowhere alone on a line but in its title.
+_BILL_HEADING_RE = re.compile(r"^\s*U\s?S\s?T\s?A\s?W\s?A\s*$", re.IGNORECASE | re.MULTILINE)
+_OSR_RE = re.compile(
+    r"^\s*(Nazwa|Tytuł)\s+projektu\b(?!\s+dokumentu)|^\s*DEKLAROWANE\s+SKUTKI", re.MULTILINE
 )
-_CONSULTATION_RE = re.compile(r"^\s*Raport\s+z\s+(konsultacji|opiniowania)\b", re.I | re.M)
-_REMARKS_RE = re.compile(r"^\s*Zestawienie\s+uwag\b", re.IGNORECASE | re.MULTILINE)
-_COMPLIANCE_RE = re.compile(
-    r"^\s*(Odwrócona\s+)?Tabela\s+zgodności\b|^\s*TYTUŁ\s+PROJEKTU\b", re.IGNORECASE | re.MULTILINE
+_OSR_CUT_RE = re.compile(r"^\s*(?:6\.\s*)?Wpływ na sektor finans", re.MULTILINE)
+# What makes this safe is the anchor, not the case: the justification of every act implementing
+# an EU regulation wraps onto lines beginning "rozporządzenia 2018/1240", and none of them is the
+# word alone. Measured over the 147 openings of the corpus, ignoring case moves exactly one
+# document, and it moves it right — a draft headed "Rozporządzenie" that had passed for a bill's
+# uzasadnienie because its file name said so.
+_REGULATION_RE = re.compile(
+    r"^\s*R\s?O\s?Z\s?P\s?O\s?R\s?Z\s?Ą\s?D\s?Z\s?E\s?N\s?I\s?E\s*$", re.IGNORECASE | re.MULTILINE
+)
+_CONSULTATION_RE = re.compile(
+    r"^\s*Raport\s+z\s+(konsultacji|opiniowania|uzgodnie)"
+    r"|Zgodnie\s+z\s+art\.\s*5\s+ustawy.{0,120}?działalności\s+lobbingowej",
+    re.I | re.M | re.S,
+)
+_REMARKS_RE = re.compile(
+    r"^\s*(Zestawienie|Tabela)\s+(z\s+)?(uwag|nieuwzględnionych|uzgodnień)", re.IGNORECASE | re.M
+)
+_COMPLIANCE_RE = re.compile(r"^\s*(Odwrócona\s+)?Tabela\s+zgodności\b", re.IGNORECASE | re.M)
+# Case-sensitive on purpose, and the one discriminator there is: the compliance table opens with
+# "TYTUŁ PROJEKTU" as a column header, the OSR form with "Tytuł projektu" as a field label
+# (UD439's OSR, 13 Sept 2026). A digit may be glued to the header by the table's numbering.
+_COMPLIANCE_HEADER_RE = re.compile(r"^\s*\d*\s*TYTUŁ\s+PROJEKTU\b", re.MULTILINE)
+_DISCREPANCIES_RE = re.compile(r"^\s*Protok[oó][łl]\s+rozbie[żz]no[śs]ci", re.IGNORECASE | re.M)
+_LEGISLATIVE_TABLE_RE = re.compile(r"^\s*Nazwa\s+projektu\s+dokumentu\b", re.IGNORECASE | re.M)
+_CHECKLIST_RE = re.compile(r"^\s*(WZ[ÓO]R\s*)?LISTA\s+KONTROLNA\b", re.MULTILINE)
+# "Załącznik do …" names what it hangs on; a bare "Załącznik nr 2" is deliberately not here,
+# because a bill carries its own schedules under that heading and dropping from one would take
+# the rest of the bill with it (druk 2673 has one on page 25 of 60).
+_ANNEX_RE = re.compile(
+    r"^\s*Załącznik\w*\s+do\s+(uchwały|rozporządzenia|raportu)\b", re.IGNORECASE | re.M
 )
 
 KEEP = "keep"
@@ -52,8 +81,98 @@ CONSULTATION = "raport z konsultacji"
 REMARKS = "zestawienie uwag"
 COMPLIANCE = "tabela zgodności"
 REGULATIONS = "projekty rozporządzeń"
+ANNEX = "załącznik"
 
-_DROPPED = frozenset({OSR_TAIL, CONSULTATION, REMARKS, COMPLIANCE, REGULATIONS})
+_DROPPED = frozenset({OSR_TAIL, CONSULTATION, REMARKS, COMPLIANCE, REGULATIONS, ANNEX})
+
+Kind = Literal[
+    "bill",
+    "regulation",
+    "justification",
+    "osr",
+    "compliance_table",
+    "consultation_report",
+    "remarks_table",
+    "discrepancies",
+    "legislative_table",
+    "checklist",
+    "annex",
+    "letter",
+    "unknown",
+]
+
+HEAD_CHARS = 1200
+"""How much of a document says what it is: its own heading sits in the first lines."""
+
+# Order matters: a narrow pattern comes before the wide one it would otherwise be swallowed by.
+# "Nazwa projektu dokumentu" opens a tabela legislacyjna and differs from the OSR form's
+# "Nazwa projektu" by one word; "TYTUŁ PROJEKTU" differs from "Tytuł projektu" by case alone.
+_KINDS: tuple[tuple[Kind, re.Pattern[str]], ...] = (
+    ("legislative_table", _LEGISLATIVE_TABLE_RE),
+    ("compliance_table", _COMPLIANCE_HEADER_RE),
+    ("compliance_table", _COMPLIANCE_RE),
+    ("discrepancies", _DISCREPANCIES_RE),
+    ("consultation_report", _CONSULTATION_RE),
+    ("remarks_table", _REMARKS_RE),
+    ("checklist", _CHECKLIST_RE),
+    ("regulation", _REGULATION_RE),
+    ("annex", _ANNEX_RE),
+    ("osr", _OSR_RE),
+    ("justification", _JUSTIFICATION_RE),
+    ("bill", _BILL_HEADING_RE),
+)
+
+
+def document_kind(text: str) -> Kind:
+    """What a document is, read from its own opening rather than from its file name.
+
+    The name is what a ministry typed; the opening is what the document says it is. Measured
+    over the packages of six followed projects (13 Sept 2026), every appendix published beside
+    a bill names itself in its first lines, and the drafts of executive regulations that travel
+    with a bill — filed as `projekt.docx`, `uzasadnienie.docx`, `OSR.doc`, indistinguishable
+    from the bill's own files by name — say ROZPORZĄDZENIE where the bill says USTAWA.
+
+    The all-caps headings are matched case-sensitively and anchored to their whole line: a
+    justification wrapped so that a line begins "rozporządzenia 2018/1240" is not a regulation.
+    `unknown` is the honest answer for a layout not seen before, and callers treat it as such.
+    """
+    head = text[:HEAD_CHARS]
+    for kind, pattern in _KINDS:
+        if pattern.search(head):
+            return kind
+    return "letter" if has_cover_letter(text) else "unknown"
+
+
+APPENDIX_KINDS: frozenset[Kind] = frozenset(
+    {
+        "regulation",
+        "compliance_table",
+        "consultation_report",
+        "remarks_table",
+        "discrepancies",
+        "legislative_table",
+        "checklist",
+        "annex",
+    }
+)
+"""Kinds that are never the bill and never open a document that holds it.
+
+`letter` is deliberately not among them: every Sejm print opens with the letter that hands it to
+the Marshal, so a document beginning as one may still be the bill. `unknown` is not among them
+either — a layout we do not know is not an appendix, it is a layout we do not know.
+"""
+
+
+_SECTION_OF_KIND: dict[Kind, str] = {
+    "bill": KEEP,
+    "justification": KEEP,
+    "osr": OSR,
+    "regulation": REGULATIONS,
+    "consultation_report": CONSULTATION,
+    "remarks_table": REMARKS,
+    "compliance_table": COMPLIANCE,
+    "annex": ANNEX,
+}
 
 
 @dataclass(frozen=True)
@@ -71,22 +190,50 @@ class TrimmedText:
 def _section_start(page: str, current: str) -> str:
     """The section a page opens, or the one it continues: everything after the first draft
     regulation belongs to the drafts."""
-    head = page[:_HEAD]
     if current == REGULATIONS:
         return REGULATIONS
-    if _REGULATION_RE.search(head):
-        return REGULATIONS
-    if _CONSULTATION_RE.search(head):
-        return CONSULTATION
-    if _REMARKS_RE.search(head):
-        return REMARKS
-    if _COMPLIANCE_RE.search(head):
-        return COMPLIANCE
-    if _OSR_RE.search(head):
-        return OSR
-    if _JUSTIFICATION_RE.search(head):
-        return KEEP
-    return current
+    return _SECTION_OF_KIND.get(document_kind(page[:_HEAD]), current)
+
+
+_PAGE_NUMBER_LINE = re.compile(r"^\s*[–\-—]?\s*\d{1,4}\s*[–\-—]?\s*$", re.MULTILINE)
+
+
+def strip_page_furniture(page: str, running_head: str | None) -> str:
+    """A page without what the printer put on it: its running head and its page number.
+
+    A section heading is looked for in the opening of a page, and a running head stands in front
+    of it — druk 1764 carries "Konfederacja Wolność i Niepodległość | konfederacja.pl" as the
+    first line of all thirty of its pages. Left in place it hides whatever the page really opens.
+    """
+    lines = page.split("\n")
+    start = 0
+    while start < len(lines) and _is_furniture(lines[start], running_head):
+        start += 1
+    return "\n".join(lines[start:])
+
+
+def _is_furniture(line: str, running_head: str | None) -> bool:
+    stripped = line.strip()
+    if not stripped or _PAGE_NUMBER_LINE.fullmatch(line):
+        return True
+    return running_head is not None and stripped == running_head
+
+
+def _running_head(pages: Sequence[str]) -> str | None:
+    """The line that opens more than half the pages, when it is not their numbering."""
+    firsts = [first for page in pages if (first := _first_line(page))]
+    if len(firsts) < 4:
+        return None
+    candidate = max(set(firsts), key=firsts.count)
+    return candidate if firsts.count(candidate) * 2 > len(firsts) else None
+
+
+def _first_line(page: str) -> str:
+    for line in page.split("\n"):
+        stripped = line.strip()
+        if stripped and not _PAGE_NUMBER_LINE.fullmatch(line):
+            return stripped
+    return ""
 
 
 _COVER_LIMIT = 3000
@@ -209,11 +356,12 @@ def trim_print(text: str) -> TrimmedText:
     complete there.
     """
     pages = text.split(PAGE_BREAK)
+    running_head = _running_head(pages)
     kept: list[str] = []
     dropped: list[DroppedSection] = []
     current = KEEP
     for page in pages:
-        current = _section_start(page, current)
+        current = _section_start(strip_page_furniture(page, running_head), current)
         if current == OSR and (cut := _OSR_CUT_RE.search(page)):
             kept.append(page[: cut.start()].rstrip())
             _drop(dropped, kept, OSR_TAIL, len(page) - cut.start())

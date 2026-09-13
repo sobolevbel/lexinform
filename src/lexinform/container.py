@@ -152,6 +152,7 @@ class Container:
                 DocxTextExtractor(),
                 DocTextExtractor(),
                 max_member_bytes=max_bytes,
+                max_part_chars=self.settings.max_part_chars,
             )
             self._loader = TextLoader(downloaders, extractor, max_bytes=max_bytes)
         return self._loader

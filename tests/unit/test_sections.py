@@ -1,4 +1,6 @@
-"""Section trimming and excerpt building for Sejm prints."""
+"""Section trimming, document kinds and excerpt building for Sejm prints."""
+
+import json
 
 import pytest
 
@@ -8,12 +10,13 @@ from lexinform.sections import (
     PAGE_BREAK,
     TextBudget,
     carries_the_document,
+    document_kind,
     excerpts,
     scan_page_window,
     trim_print,
     without_cover_letter,
 )
-from tests.conftest import FIXTURES
+from tests.conftest import FIXTURES, RCL_FIXTURES
 
 BILL = "Projekt\nU S T AWA\nz dnia ... o zmianie ustawy o cudzoziemcach\nArt. 1. " + "x" * 500
 JUSTIFICATION = "UZASADNIENIE\nProjekt ma na celu ... " + "y" * 500
@@ -262,3 +265,69 @@ def test_budget_cuts_the_head_when_there_is_no_justification() -> None:
 def test_budget_rejects_a_non_positive_cap() -> None:
     with pytest.raises(ValueError):
         TextBudget(0)
+
+
+def test_every_document_of_the_corpus_is_recognised_by_its_opening() -> None:
+    """The whole collected corpus, one row per real document (`openings.json`).
+
+    The rule is only as good as what it was measured on, so what it was measured on is checked
+    in: 126 openings taken from the packages of seven followed RCL projects and from 25 Sejm
+    prints of term 10 (13 Sept 2026). A new case is one row.
+    """
+    corpus = json.loads((RCL_FIXTURES / "openings.json").read_text(encoding="utf-8"))
+
+    wrong = [
+        f"{row['source']}/{row['name']}: {document_kind(row['opening'])} != {row['kind']}"
+        for row in corpus
+        if document_kind(row["opening"]) != row["kind"]
+    ]
+
+    assert not wrong
+    assert len(corpus) > 100
+
+
+def test_a_bill_heads_itself_in_either_case_and_a_regulation_never_passes_for_one() -> None:
+    # Two of the six bills measured write "Ustawa", the rest "USTAWA"; the drafts of executive
+    # regulations filed beside a bill are told apart by this line and by nothing else.
+    assert document_kind("Projekt z dnia 20.08.2026 r.\nUstawa\nz dnia ……..…….") == "bill"
+    assert document_kind("Projekt z dnia 10 lipca 2026 r.\nEtap: SKRM\nUSTAWA") == "bill"
+    assert document_kind("Projekt z dnia 9 lipca 2026 r.\nROZPORZĄDZENIE\nMINISTRA") == "regulation"
+
+
+def test_a_justification_that_wraps_onto_the_word_rozporzadzenia_is_not_a_regulation() -> None:
+    # The heading is anchored to its whole line for this reason: the justification of every act
+    # implementing an EU regulation says the word, and a line may begin with it.
+    text = "UZASADNIENIE\nI. Potrzeba i cel uchwalenia ustawy\nProjektowana ustawa służy\n"
+    text += "rozporządzenia 2018/1240 Parlamentu Europejskiego i Rady"
+
+    assert document_kind(text) == "justification"
+
+
+def test_the_osr_is_recognised_under_each_of_its_three_headings() -> None:
+    # "Nazwa projektu" is the usual one; UD439's OSR opens "Tytuł projektu", and the form a
+    # deputies' print carries is headed "DEKLAROWANE SKUTKI REGULACJI" (3 of 25 prints measured).
+    assert document_kind("Nazwa projektu Ustawa o udziale RP") == "osr"
+    assert document_kind("Tytuł projektu Projekt ustawy o zmianie ustawy") == "osr"
+    assert document_kind("DEKLAROWANE SKUTKI REGULACJI (DSR)\nprojektu ustawy") == "osr"
+    assert document_kind("Nazwa projektu dokumentu: Ustawa o udziale") == "legislative_table"
+
+
+def test_the_compliance_table_and_the_osr_are_told_apart_by_case_alone() -> None:
+    assert document_kind("1TYTUŁ PROJEKTU\tUstawa o udziale") == "compliance_table"
+    assert document_kind("Tytuł projektu: ustawa o zmianie ustawy – Kodeks wyborczy") == "osr"
+
+
+def test_a_running_head_does_not_hide_what_a_page_opens() -> None:
+    # Druk 1764 carries its club's name and site as the first line of all thirty of its pages.
+    head = "Konfederacja Wolność i Niepodległość  |  konfederacja.pl"
+    text = _print(
+        f"{head}\n{BILL}",
+        f"{head}\n- 2 -\n{JUSTIFICATION}",
+        f"{head}\n{CONSULTATION}",
+        f"{head}\n{COMPLIANCE}",
+    )
+
+    result = trim_print(text)
+
+    assert "Art. 1." in result.text and "Projekt ma na celu" in result.text
+    assert [d.name for d in result.dropped] == ["raport z konsultacji", "tabela zgodności"]

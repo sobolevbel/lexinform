@@ -534,6 +534,16 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   such a file as a PDF document block — 32 MB of request (so ≤ 24 MB of file, base64 being a
   third larger; druk 2865 is 40 MB and does not fit) and 600 pages, ~1,600 tokens a page measured
   with `count_tokens` on druk 1273 (10 pages 16,157 tokens, 30 pages 47,268, one page 1,622).
+- **What `trim_print` meets in a print, measured over 25 of term 10 with a text layer**
+  (13 Sept 2026; 9.34M characters, 41% kept). The OSR is cut at point 6 in 16 of them. Three
+  carry **"DEKLAROWANE SKUTKI REGULACJI (DSR)"** instead of the OSR form — the deputies' version,
+  unknown to the pattern until now, 15 pages of 60 in druk 2673 — and one heads its OSR
+  "Tytuł projektu". One (druk 1764) prints its club's name and site as the first line of all
+  thirty pages, which stood in front of every section heading the trimmer looks for, so a page's
+  running head and its number are stripped before it is classified
+  (`sections.strip_page_furniture`). A bare "Załącznik" is deliberately *not* a section start:
+  druk 2673 carries one on page 25 of 60 as a schedule of its own bill, and cutting there would
+  take the rest of the bill with it; only "Załącznik do uchwały/rozporządzenia/raportu" is one.
 
 ## RCL lessons (verified live, Sept 2026)
 
@@ -568,22 +578,43 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   fall back to metadata-only analysis. RCL's OSR is a separate Word form starting with "Nazwa
   projektu"; point numbers are list formatting, so `sections._OSR_CUT_RE` accepts the heading
   without "6.".
-- **A package is a "Projekt" folder in a file, and it is read the way the folder is.** Both take
-  the best file of each role and nothing else (`models.rcl.text_role` / `text_rank`,
-  `document_text._package_members`). Reading every member a name had not ruled out sent the
-  consultation report, the rejected remarks, the protokół rozbieżności and a nested archive of
-  draft regulations along with the bill — 262k characters against the text's 383k in the UC104
-  package of 2026-08-03 — and sorted the archive first by file name, so `trim_print` read the
-  whole package as an appendix to a draft regulation, dropped everything, hit its "nothing
-  survived" valve and sent the package untouched, the OSR's 13 points included. Measured over the
-  six packages on hand (13 Sept 2026): 19–90% fewer characters, UC104 646k → 338k. What is
-  published beside the bill is ruled out by name, and the names are measured, not guessed: an
-  appendix is ruled out *before* the OSR is recognised, or "załącznik do OSR" stands in for it,
-  and no pattern may be a word a bill can carry in its own subject — "protokół" of a ratification,
-  "raportowanie" of a reporting duty, which is why those two are absent while "rozbieżności" and
-  "raport z" are there. The same names appear un-packed in the KSE folders, where the display
-  name embeds the bill's title ("protokół rozbieżności - Projekt ustawy_udział PL w ETIAS"), so
-  `_BILL_RE` cannot tell them apart and the choice of the bill was list order.
+- **An archive is never sent as an archive, and what a file is is read from the file, not from
+  its name.** A package is a "Projekt" folder in a file: it is unpacked, every member is read and
+  asked what it is (`sections.document_kind`), and only the best bill, uzasadnienie and OSR go to
+  the model (`document_text._pick_parts`). A nested archive is opened only when the bill is not
+  outside it — the three seen were bundles of draft regulations, and the "letter.pdf +
+  projekt.zip" shape is what the exception is for. Measured over the packages of seven followed
+  projects and 25 prints of term 10 (13 Sept 2026), the name is the thing that lies:
+  `projekt.docx`, `uzasadnienie.docx` and `OSR.doc` inside `akty_wykonawcze_ETIAS.ZIP` are draft
+  **rozporządzenia**, `opiniaUE.pdf` and `Minister Zdrowia UD439 na SKRM.pdf` are letters,
+  `Lista_kontrolna_na_KRMC_-_etias_.DOCX` is a checklist — and every one of them passed as the
+  bill until its own opening was read. Archives written on Windows carry cp437 file names
+  (`zaêÑcznik nr 2.docx`), which is one more reason no rule may rest on a name alone. The names
+  still narrow the candidates before a download, and they stay measured, not guessed: an appendix
+  is ruled out *before* the OSR is recognised, or "załącznik do OSR" stands in for it, and no
+  pattern may be a word a bill can carry in its own subject — "protokół" of a ratification,
+  "raportowanie" of a reporting duty. UC104's package: 646k characters → 338k. A file that opens
+  as an appendix is refused at the other end too (`AnalysisService._load_text`): describing a
+  compliance table would describe the wrong document with every appearance of describing the
+  right one. A *letter* is not refused there — every print opens with one.
+- **A heading is matched on its whole line, and where the case is data it is respected.**
+  `document_kind` reads the first 1,200 characters. `USTAWA` and `ROZPORZĄDZENIE` are matched in
+  either case but **anchored at both ends**, and the anchor is what does the work: the
+  justification of every act implementing an EU regulation wraps onto a line beginning
+  "rozporządzenia 2018/1240", and an unanchored pattern read UC104's uzasadnienie as a draft
+  regulation. Over the 147 openings of the corpus, ignoring case moves exactly one document, and
+  it moves it right — a draft headed "Rozporządzenie" in title case that had passed for a bill's
+  uzasadnienie on its file name alone. `TYTUŁ PROJEKTU` in capitals
+  opens a tabela zgodności and `Tytuł projektu` in title case opens an OSR form: that is the
+  whole difference, and reading UD439's OSR as a compliance table threw the document away — the
+  one that counts who is affected. `Nazwa projektu dokumentu` is a tabela legislacyjna, one word
+  from the OSR's `Nazwa projektu`. A kind we do not know is `unknown`, never an appendix: the
+  file name decides then, as it did before, unless the file is longer than
+  `LEXINFORM_MAX_PART_CHARS` (300k) — the longest real document measured is 161,678 characters
+  and the longest nameless appendix 954,730.
+- **What the rule was measured on is checked in.** `tests/fixtures/rcl/openings.json` holds the
+  opening of all 126 real documents collected, with the kind each must be recognised as, and one
+  table test runs `document_kind` over the lot. A new case is one row.
 - Consultation letters give a relative deadline ("w terminie 7/14 dni od dnia otrzymania
   niniejszego pisma", 30 for social partners), often no date (electronic time stamp) and the
   e-mail for comments ("na adres: …"). `rcl_letters.parse_letter` reads them; the deadline counts

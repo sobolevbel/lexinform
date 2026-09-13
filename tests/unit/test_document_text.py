@@ -384,3 +384,70 @@ def test_an_archive_member_that_cannot_be_unpacked_does_not_lose_the_others() ->
     text = _router().extract(bytes(raw))
 
     assert text == "from pdf"  # the bill is still read, only its uzasadnienie is lost
+
+
+def _bill(body: str = "Art. 1. Ustawa reguluje") -> bytes:
+    return _docx(
+        "<w:p><w:r><w:t>Projekt z dnia 10 lipca 2026 r.</w:t></w:r></w:p>"
+        "<w:p><w:r><w:t>USTAWA</w:t></w:r></w:p>"
+        f"<w:p><w:r><w:t>{body}</w:t></w:r></w:p>"
+    )
+
+
+def _regulation() -> bytes:
+    return _docx(
+        "<w:p><w:r><w:t>Projekt z dnia 9 lipca 2026 r.</w:t></w:r></w:p>"
+        "<w:p><w:r><w:t>ROZPORZĄDZENIE</w:t></w:r></w:p>"
+        "<w:p><w:r><w:t>MINISTRA SPRAW WEWNĘTRZNYCH</w:t></w:r></w:p>"
+    )
+
+
+BILL_TEXT = "Projekt z dnia 10 lipca 2026 r.\nUSTAWA\nArt. 1. Ustawa reguluje"
+
+
+def test_a_draft_regulation_named_like_the_bill_is_not_taken_for_it() -> None:
+    # As published inside UC104's package: the drafts of executive regulations are filed as
+    # `projekt.docx`, `uzasadnienie.docx` and `OSR.doc`, which is what the bill's own files are
+    # called. Only the heading of the document itself tells the two apart.
+    package = _zip({"projekt.docx": _regulation(), "projekt ustawy.docx": _bill()})
+
+    assert _router().extract(package) == BILL_TEXT
+
+
+def test_an_appendix_whose_name_says_nothing_is_refused_by_its_own_opening() -> None:
+    # `opiniaUE.pdf` and `Minister Zdrowia UD439 na SKRM.pdf` are published beside bills and no
+    # pattern rules their names out; what rules them out is that they are not bills.
+    package = _zip(
+        {
+            "a.docx": _docx("<w:p><w:r><w:t>TABELA ZGODNOŚCI</w:t></w:r></w:p>"),
+            "b.docx": _docx("<w:p><w:r><w:t>Raport z konsultacji publicznych</w:t></w:r></w:p>"),
+            "c.docx": _bill(),
+        }
+    )
+
+    assert _router().extract(package) == BILL_TEXT
+
+
+def test_a_nested_archive_is_opened_only_when_the_bill_is_not_outside_it() -> None:
+    inner = _zip({"projekt ustawy.pdf": b"%PDF-1.7 bill"})
+    with_bill = _zip({"projekt ustawy.docx": _bill(), "akty wykonawcze.zip": inner})
+    without_bill = _zip({"pismo.pdf": b"%PDF-1.7 letter", "projekt na RM.zip": inner})
+
+    assert _router().extract(with_bill) == BILL_TEXT
+    assert _router().extract(without_bill) == "from pdf"
+
+
+def test_a_long_member_that_names_itself_as_nothing_is_not_taken_for_the_bill() -> None:
+    # UD439's package holds a 954,730-character consultation report; the guard is what stops an
+    # unrecognised document of that size from being read as the bill because of its file name.
+    nameless = _docx(f"<w:p><w:r><w:t>{'x' * 4000}</w:t></w:r></w:p>")
+    package = _zip({"projekt ustawy.docx": nameless})
+    guarded = DocumentTextExtractor(
+        FakeTextExtractor("from pdf"),
+        DocxTextExtractor(),
+        FakeTextExtractor("from doc"),
+        max_part_chars=1000,
+    )
+
+    assert guarded.extract(package) == ""
+    assert _router().extract(package).startswith("xxx")  # no guard configured: read as before

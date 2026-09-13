@@ -44,6 +44,30 @@ def test_unreadable_pdf_falls_back_to_metadata_without_costing_an_attempt() -> N
     assert w.bill("3039").analysis_attempts == 0
 
 
+def test_a_file_that_opens_as_an_appendix_is_not_analysed_in_the_bills_place() -> None:
+    # The file a name pointed at turned out to be a compliance table. Describing it would
+    # describe the wrong document with every appearance of describing the right one.
+    w = World(extractor=FakeTextExtractor("TABELA ZGODNOŚCI\nTYTUŁ PROJEKTU\n" + "u" * 4000))
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+
+    report = w.run()
+
+    assert (report.analyzed, report.analysis_failures) == (1, 0)
+    assert w.llm.contexts[0].text_source == "metadata_only"
+
+
+def test_a_print_opening_with_its_covering_letter_is_still_analysed() -> None:
+    # The counterpart of the rule above: every print opens with the letter that hands it to the
+    # Marshal, so a letter at the top is not a reason to refuse the document under it.
+    letter = "Szanowny Panie Marszałku,\nna podstawie art. 118 ust. 1 Konstytucji wnoszą projekt"
+    w = World(extractor=FakeTextExtractor(f"{letter}\f USTAWA\nArt. 1. " + "x" * 4000))
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+
+    w.run()
+
+    assert w.llm.contexts[0].text_source == "pdf"
+
+
 def test_oversized_pdf_is_analysed_from_metadata() -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
