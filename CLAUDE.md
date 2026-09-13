@@ -573,6 +573,20 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   ustawy … o działalności lobbingowej" at character 298, druk 1638 the same way. One line is too
   few (the corpus then keeps 620k characters of appendices that name themselves on the second
   line, "Projekt" over "R O Z P O R Z Ą D Z E N I E"), three already reaches druk 810's wrap.
+  **What stands above the heading is furniture, and widening the window is the wrong way to
+  reach past it.** A ministry stamps a draft with its date and the committee it is going to —
+  "Projekt z dnia 9 lipca 2026 r." over "Etap: materiał informacyjny na SKRM" — and two such
+  lines put the heading on the third, out of the window, which `_page_opening` was narrowed to
+  two lines precisely so as not to reach. Measured over `openings.json` (13 Sept 2026) the
+  narrowing moved 12 of 147 documents to `unknown`, nine of them by the stamp and five of those
+  the draft regulations of the ETIAS package — and for a regulation the cost is not a
+  mislabelling: `_section_start` latches on `REGULATIONS` and drops everything after it, so a
+  block read as `unknown` never latches and each draft's own OSR form (`Nazwa projektu`, a kind
+  that is kept) re-opens the run and goes to the model. `strip_page_furniture` takes the stamp
+  off the top the way it takes a running head, and the window lands on the heading;
+  `page_kind` is the whole reading in one place. The two openings that stay `unknown` are a
+  letterhead and a signature block, which say what they are in their body and not at their top —
+  which is what the window is for.
 - **After the OSR, no page is the bill or its uzasadnienie again.** A print runs letter, bill,
   uzasadnienie, OSR, appendices, in that order and once each. Every table of submitted comments
   labels each row "Uzasadnienie", so a page of one read as the bill's own justification and
@@ -751,8 +765,20 @@ the uzasadnienie, a window around every hit — marking it `truncated`. Under `_
 (20k) there is no document left and `skipped_cost` stands. A **scan** is still refused rather
 than cut (its pages are substance from the first to the last), and for a re-analysis not even
 that: a bill whose new text we decline to read must not keep a card describing the old one.
+**Every refusal turns on `first`, and a re-analysis is never one** — not the scan, not a text
+with nothing left to cut, and not an excerpt that counts over the limit the whole document was
+scaled to fit (the live case: `excerpts` keeps keyword-dense provisions, which tokenize worse
+than the ratio the whole text measured). `reanalyze_bill` is called from the tracking loop,
+whose per-bill `except` has nowhere to put a refusal: the bill would fail on the same text every
+run, with no `skipped_cost` row to `reset` and no `/unskip` to undo.
 `TextBudget` is the outer cap only, and cuts the same keyword-aware way; the per-bill limit is
-what binds. The analysis phase stops for the run once its spend reaches
+what binds. The cap gives the whole cap: each head takes a **quarter** of it, because
+`excerpts` keeps both heads whatever it is asked for — at a half each they filled the budget
+before the first keyword window was measured, so no hit was ever kept and a text with no
+"Uzasadnienie" heading came back half the length allowed. What the windows leave unspent goes
+back to the head (`excerpts(fill_head=True)`, which only a cap asks for: the triage digest is
+paid for by the character, and a text whose keywords are few is one the cheap model should read
+less of, not more). The analysis phase stops for the run once its spend reaches
 the per-run limit (a note in the report, not an error; the rest waits for the next run).
 Re-analyses get the per-bill guard too, in the same cut-to-fit shape — they had none until
 2026-09-13, and the most expensive single call the project has made is one (316,767 tokens,
