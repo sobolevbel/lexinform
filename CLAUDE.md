@@ -558,8 +558,8 @@ There is no downgrade. To roll back, revert the code and restore the previous du
 - Stage catalog `/projekt/{id}/katalog/{stageId}`: `div.clearbox > ul > li.childdir` folders
   ("Projekt", "Pisma kierujące…", "Stanowiska zgłoszone…", "Odniesienie się wnioskodawcy…"),
   `li.doc > a[href=/docs//…/dokumentN.ext]`. Files in "Projekt" folders (40 projects, Sept
-  2026): PDF 40%, DOCX/DOCM 43%, ZIP 7% (the package in one archive, read member by member, bill
-  first), legacy DOC 6% (`adapters/doc_text.py`, an [MS-DOC] piece-table parser over `olefile`
+  2026): PDF 40%, DOCX/DOCM 43%, ZIP 7% (the whole package in one archive), legacy DOC 6%
+  (`adapters/doc_text.py`, an [MS-DOC] piece-table parser over `olefile`
   reading the document, its footnotes and its endnotes, and the one paragraph property that tells
   the end of a table row from the end of a cell — Word writes both as 0x07, so without it a
   tabela zgodności arrives as one line of tabs),
@@ -568,6 +568,22 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   fall back to metadata-only analysis. RCL's OSR is a separate Word form starting with "Nazwa
   projektu"; point numbers are list formatting, so `sections._OSR_CUT_RE` accepts the heading
   without "6.".
+- **A package is a "Projekt" folder in a file, and it is read the way the folder is.** Both take
+  the best file of each role and nothing else (`models.rcl.text_role` / `text_rank`,
+  `document_text._package_members`). Reading every member a name had not ruled out sent the
+  consultation report, the rejected remarks, the protokół rozbieżności and a nested archive of
+  draft regulations along with the bill — 262k characters against the text's 383k in the UC104
+  package of 2026-08-03 — and sorted the archive first by file name, so `trim_print` read the
+  whole package as an appendix to a draft regulation, dropped everything, hit its "nothing
+  survived" valve and sent the package untouched, the OSR's 13 points included. Measured over the
+  six packages on hand (13 Sept 2026): 19–90% fewer characters, UC104 646k → 338k. What is
+  published beside the bill is ruled out by name, and the names are measured, not guessed: an
+  appendix is ruled out *before* the OSR is recognised, or "załącznik do OSR" stands in for it,
+  and no pattern may be a word a bill can carry in its own subject — "protokół" of a ratification,
+  "raportowanie" of a reporting duty, which is why those two are absent while "rozbieżności" and
+  "raport z" are there. The same names appear un-packed in the KSE folders, where the display
+  name embeds the bill's title ("protokół rozbieżności - Projekt ustawy_udział PL w ETIAS"), so
+  `_BILL_RE` cannot tell them apart and the choice of the bill was list order.
 - Consultation letters give a relative deadline ("w terminie 7/14 dni od dnia otrzymania
   niniejszego pisma", 30 for social partners), often no date (electronic time stamp) and the
   e-mail for comments ("na adres: …"). `rcl_letters.parse_letter` reads them; the deadline counts
@@ -631,8 +647,15 @@ at 2 chars/token before the call; `LEXINFORM_MAX_RUN_COST_USD`, default $15 per 
 over the per-bill limit gets `skipped_cost` with the reason in `last_error` (`lexinform reset
 --to analysis_pending` revives it), the analysis phase stops for the run once its spend reaches
 the per-run limit (a note in the report, not an error; the rest waits for the next run).
-Re-analyses are not estimated: a new version of a text that already passed must not leave the
-card behind.
+Re-analyses are not estimated per bill: a new version of a text that already passed must not
+leave the card behind. They do count against the **run's** budget, though, and are held back
+once it is reached (`AnalysisService.start_run` / `stopped`, a note in the report) — until
+2026-09-13 the per-run limit bounded the analysis phase alone, and the tracking phase's
+re-analyses, amendment summaries and supplement digests spent on top of it with nothing watching:
+one re-analysis of the ETIAS package cost $1.63 in a run that consulted no limit at all. A held
+text is not written down, so the next run offers the same document again; what it costs is that
+the stage update of that run goes out without its «текст обновился» note, and the card catches up
+when the refresher re-renders it.
 
 ## Product decisions already taken
 

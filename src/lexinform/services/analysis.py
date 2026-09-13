@@ -374,12 +374,20 @@ class AnalysisService:
         self, bill: Bill, document: TextDocument, *, proposal: str | None = None
     ) -> AmendmentsRecord | None:
         """What the amendments in `document` change, against the bill's current analysis.
-        None when the document has no readable text (a scan): the update then only names the
-        event. Only an outage propagates."""
+        None when the document has no readable text (a scan) or costs more to read than the
+        per-bill limit allows: the update then only names the event, which is the same thing a
+        failed digest degrades to. Only an outage propagates."""
         assert bill.analysis is not None
         assert document.kind in AMENDMENT_SOURCES
         loaded = self._load_text(document, trim=False)
         if not loaded.text.strip():
+            return None
+        if self._too_expensive_to_digest(loaded):
+            log.info(
+                "%s: %s is over the per-document cost limit; told without a summary",
+                bill.number,
+                document.url,
+            )
             return None
         ctx = AmendmentsContext(
             number=bill.number,
@@ -661,14 +669,15 @@ class AnalysisService:
             budgeted = self._budget.apply(text)
             return _Loaded(budgeted.text, budgeted.truncated, "pdf")
         trimmed = trim_print(text)
-        if trimmed.dropped:
-            log.info(
-                "%s: %d chars, sending %d (dropped %s)",
-                document.url,
-                len(text),
-                len(trimmed.text),
-                ", ".join(f"{d.name} {d.chars}" for d in trimmed.dropped),
-            )
+        # Said whether anything was dropped or not: a text that goes in whole is the expensive
+        # case, and it was the silent one — the package that cost $1.63 logged nothing at all.
+        log.info(
+            "%s: %d chars, sending %d (dropped %s)",
+            document.url,
+            len(text),
+            len(trimmed.text),
+            ", ".join(f"{d.name} {d.chars}" for d in trimmed.dropped) or "nothing",
+        )
         budgeted = self._budget.apply(trimmed.text)
         source: TextSource = "documents" if document.kind == "rcl" else "pdf"
         return _Loaded(budgeted.text, budgeted.truncated, source)
