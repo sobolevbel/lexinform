@@ -19,7 +19,7 @@ from collections.abc import Iterator
 from xml.etree import ElementTree as ET
 from zipfile import ZipInfo
 
-from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_role
+from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
 from lexinform.ports import TextExtractor
 from lexinform.sections import PAGE_BREAK
 
@@ -324,10 +324,30 @@ class DocumentTextExtractor:
 
 
 def _package_members(infos: list[ZipInfo]) -> list[ZipInfo]:
-    """The members worth reading, the bill first, then its uzasadnienie, then the OSR."""
-    ranked = [(role, info) for info in infos if (role := _member_role(info.filename)) is not None]
-    ranked.sort(key=lambda pair: (_ROLE_ORDER[pair[0]], pair[1].filename))
-    return [info for _, info in ranked]
+    """One member of each role, the bill first, then its uzasadnienie, then the OSR.
+
+    A package is a "Projekt" folder in a file and carries the same appendices, so it is read the
+    way the folder is (`models.rcl._classify`): the best file of each role and nothing else.
+    Reading every member a name did not rule out sent the consultation report, the rejected
+    remarks, the protokół rozbieżności and a nested archive of draft regulations next to the bill
+    — 262k characters against the 383k of the text itself (UC104, the package of 2026-08-03) —
+    and put them first, the members being ordered by file name within a role, which left
+    `trim_print` reading the whole package as an appendix to a draft regulation.
+    """
+    best: dict[TextRole, ZipInfo] = {}
+    for info in infos:
+        role = _member_role(info.filename)
+        if role is None:
+            continue
+        current = best.get(role)
+        if current is None or _member_rank(info) < _member_rank(current):
+            best[role] = info
+    return [best[role] for role in sorted(best, key=lambda role: _ROLE_ORDER[role])]
+
+
+def _member_rank(info: ZipInfo) -> tuple[int, int]:
+    base = info.filename.rsplit("/", 1)[-1]
+    return text_rank(base, base.rsplit(".", 1)[-1].lower())
 
 
 def _member_role(name: str) -> TextRole | None:

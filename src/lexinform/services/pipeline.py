@@ -128,6 +128,7 @@ class DailyPipeline:
         captured = MemoryLogHandler()
         captured.install()
         run_id: int | None = None
+        self._analysis.start_run()
         try:
             self._repo.migrate()
             report.since = self.resolve_since(opts.since)
@@ -376,6 +377,8 @@ class DailyPipeline:
             publish=opts.publish, changed_since=None if full else report.since
         )
         failed = self._merge_tracking(report, tracked, opts)
+        if self._analysis.stopped:
+            report.notes.append(f"tracking: {self._analysis.stopped}")
         if tracked.fatal_error is not None:
             report.errors.append(f"tracking: {tracked.fatal_error}")
         elif failed:

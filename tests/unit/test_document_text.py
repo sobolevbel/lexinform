@@ -167,6 +167,43 @@ def test_zip_package_is_read_member_by_member_bill_first() -> None:
     assert text == f"from pdf{PAGE_BREAK}UZASADNIENIE{PAGE_BREAK}Nazwa projektu"
 
 
+def test_a_package_sends_one_member_of_each_role_and_none_of_the_appendices() -> None:
+    # The package of UC104 (3 Aug 2026) as published: the bill, its uzasadnienie and its OSR
+    # among nine other files, the draft regulations among them in an archive of their own.
+    package = _zip(
+        {
+            "akty_wykonawcze_ETIAS.zip": _zip({"rozporządzenie.pdf": b"%PDF-1.7 regulation"}),
+            "pismo_przewodnie_SKRM.docx": _docx("<w:p><w:r><w:t>pismo</w:t></w:r></w:p>"),
+            "projekt_ustawy_na_SKRM.docx": _docx("<w:p><w:r><w:t>USTAWA</w:t></w:r></w:p>"),
+            "protokół_rozbieżności.docx": _docx("<w:p><w:r><w:t>rozbieżności</w:t></w:r></w:p>"),
+            "raport_z_konsultacji_i_opiniowania.docx": _docx(
+                "<w:p><w:r><w:t>raport</w:t></w:r></w:p>"
+            ),
+            "tabela_zgodności.docx": _docx("<w:p><w:r><w:t>tabela</w:t></w:r></w:p>"),
+            "uzasadnienie_na_SKRM.docx": _docx("<w:p><w:r><w:t>UZASADNIENIE</w:t></w:r></w:p>"),
+            "zestawienie_niewzględnionych_uwag.docx": _docx(
+                "<w:p><w:r><w:t>uwagi</w:t></w:r></w:p>"
+            ),
+            "OSR_na_SKRM.docx": _docx("<w:p><w:r><w:t>Nazwa projektu</w:t></w:r></w:p>"),
+        }
+    )
+
+    text = _router().extract(package)
+
+    assert text == f"USTAWA{PAGE_BREAK}UZASADNIENIE{PAGE_BREAK}Nazwa projektu"
+
+
+def test_the_best_named_member_of_a_role_is_the_one_read() -> None:
+    package = _zip(
+        {
+            "Informacja.pdf": b"%PDF-1.7 note",
+            "projekt ustawy.docx": _docx("<w:p><w:r><w:t>USTAWA</w:t></w:r></w:p>"),
+        }
+    )
+
+    assert _router().extract(package) == "USTAWA"
+
+
 def test_zip_reads_one_level_of_nesting_and_gives_up_on_junk() -> None:
     # As published on RCL: a cover letter next to a zip that holds the bill itself. The letter
     # and the compliance table are not bill text and stay out, as they do in a "Projekt" folder.
@@ -212,7 +249,7 @@ def test_zip_members_in_folders_and_of_every_format_are_routed() -> None:
 
 def test_a_zip_whose_stored_member_starts_with_pdf_is_still_a_zip() -> None:
     # The PDF-behind-a-preamble heuristic must not fire on the stored bytes of a member.
-    package = _zip({"a.pdf": b"%PDF-1.7 " + b"x" * 10, "b.pdf": b"%PDF-1.7 y"})
+    package = _zip({"projekt.pdf": b"%PDF-1.7 " + b"x" * 10, "uzasadnienie.pdf": b"%PDF-1.7 y"})
 
     assert _router().extract(package) == f"from pdf{PAGE_BREAK}from pdf"
 

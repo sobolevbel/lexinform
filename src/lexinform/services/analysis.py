@@ -8,6 +8,7 @@ the model so it can say what changed. Where the text comes from is the `TextSour
 import hashlib
 import logging
 import re
+import threading
 from dataclasses import dataclass, field
 
 from lexinform.concurrency import fan_out
@@ -36,6 +37,7 @@ from lexinform.models import (
     TokenUsage,
     TriageContext,
     TriageRecord,
+    UsageRecord,
     add_usage,
     stage_fingerprint,
 )
@@ -146,11 +148,12 @@ class _Prepared:
     so several bills can be prepared at the same time.
 
     `first` marks a first analysis, which seeds the stages; a re-analysis leaves them to
-    tracking. `triage` is a triage the bill passed, whose tokens count too. Two flags say the
+    tracking. `triage` is a triage the bill passed, whose tokens count too. Three flags say the
     model was not asked at all: `unchanged`, when a re-analysis found the same text under a new
-    URL and `record` is the previous one pointing at the new source, and `unreadable`, when the
+    URL and `record` is the previous one pointing at the new source, `unreadable`, when the
     new document could not be read and `record` is the previous one kept as it is — an analysis
-    of the metadata must never replace one of a text.
+    of the metadata must never replace one of a text — and `deferred`, when the run had spent
+    its budget before the re-analysis and the text waits for the next one.
     """
 
     bill: Bill
@@ -162,6 +165,7 @@ class _Prepared:
     triage: TriageRecord | None = None
     unchanged: bool = False
     unreadable: bool = False
+    deferred: bool = False
 
 
 _PAGE_NUMBER_LINE = re.compile(r"^\s*[–\-—]?\s*\d{1,4}\s*[–\-—]?\s*$", re.MULTILINE)
@@ -217,6 +221,43 @@ class AnalysisService:
         self._triage = triage
         self._triage_min_chars = triage_min_chars
         self._triage_min_confidence = triage_min_confidence
+        self._spent = 0.0
+        self._spent_lock = threading.Lock()
+        self._stopped: str | None = None
+
+    def start_run(self) -> None:
+        """A run is one budget. In production the container is built once per process, so the
+        counter would be run-scoped anyway; a test drives several runs through one container."""
+        with self._spent_lock:
+            self._spent = 0.0
+        self._stopped = None
+
+    @property
+    def spent_usd(self) -> float:
+        """What the model has cost this run, over every phase that asks it something."""
+        return self._spent
+
+    @property
+    def stopped(self) -> str | None:
+        """Set once the per-run limit has held a re-analysis back, for the run report to say so.
+        The analysis phase says it for itself (`AnalysisResult.stopped`)."""
+        return self._stopped
+
+    def _charge(self, *records: UsageRecord | None) -> None:
+        """Count what a model call cost towards the run's budget. Called from the worker threads
+        of `fan_out`, so the sum is locked."""
+        usage: dict[str, TokenUsage] = {}
+        for record in records:
+            if record is not None:
+                add_usage(usage, record)
+        spent = cost_usd(usage)
+        if spent is None:
+            return
+        with self._spent_lock:
+            self._spent += spent
+
+    def _run_budget_reached(self) -> bool:
+        return bool(self._max_run_cost) and self._spent >= self._max_run_cost
 
     def analyze_pending(self, *, limit: int) -> AnalysisResult:
         """Analyse up to `limit` candidates; an outage stops the phase, a bill's own error
@@ -280,10 +321,10 @@ class AnalysisService:
                 result.input_tokens += prepared.triage.input_tokens or 0
                 result.output_tokens += prepared.triage.output_tokens or 0
                 add_usage(result.usage, prepared.triage)
-            spent = cost_usd(result.usage)
-            if self._max_run_cost and spent is not None and spent >= self._max_run_cost:
+            if self._run_budget_reached():
                 result.stopped = (
-                    f"run cost limit reached (≈${_usd(spent)} ≥ ${_usd(self._max_run_cost)}); "
+                    f"run cost limit reached (≈${_usd(self._spent)} ≥ "
+                    f"${_usd(self._max_run_cost)}); "
                     "the remaining candidates wait for the next run"
                 )
                 log.warning("analysis phase stopped: %s", result.stopped)
@@ -308,10 +349,14 @@ class AnalysisService:
 
         None when the document turns out to carry the text already analysed (a file republished
         on RCL, a print re-dated by an attachment): the stored analysis then points at the new
-        source and nothing else happens."""
+        source and nothing else happens. None too when the run has spent its budget, and then
+        nothing is written at all, so the next run offers the same document again."""
         assert bill.analysis is not None
         located = LocatedText(summary=summary, document=document)
         prepared = self._prepare(bill, located, previous=bill.analysis)
+        if prepared.deferred:
+            log.warning("%s: %s", bill.number, self._stopped)
+            return None
         if prepared.unreadable:
             log.warning(
                 "%s: %s cannot be read; the analysis of the previous text is kept",
@@ -347,6 +392,7 @@ class AnalysisService:
             proposal=proposal,
         )
         record = self._llm.summarize_amendments(ctx)
+        self._charge(record)
         record.source_url = document.url
         return record
 
@@ -380,6 +426,7 @@ class AnalysisService:
             previous_key_changes=list(bill.analysis.analysis.key_changes),
         )
         record = self._llm.digest_supplement(ctx)
+        self._charge(record)
         record.number = number
         record.source_url = document.url
         return record
@@ -431,6 +478,15 @@ class AnalysisService:
                 }
             )
             return _Prepared(bill, located, text, source, pointer, first=False, unchanged=True)
+        if previous is not None and self._run_budget_reached():
+            # The per-bill guard does not apply to a re-analysis, but the run's budget does: a
+            # bill whose text is not read now keeps the analysis and the `source_url` it had, so
+            # the next run sees the same new document and reads it then.
+            self._stopped = (
+                f"run cost limit reached (≈${_usd(self._spent)} ≥ ${_usd(self._max_run_cost)});"
+                " the new text(s) wait for the next run"
+            )
+            return _Prepared(bill, located, text, source, previous, first=False, deferred=True)
         meta = located.summary or bill.summary
         triage: TriageRecord | None = None
         if previous is None and source in FULL_TEXT_SOURCES and len(text) >= self._triage_min_chars:
@@ -454,6 +510,7 @@ class AnalysisService:
         if previous is None and cost_guard:
             self._refuse_if_too_expensive(ctx, loaded)
         record = self._llm.analyze(ctx)
+        self._charge(record)
         record.source_url = document.url if document else None
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
@@ -499,6 +556,7 @@ class AnalysisService:
             text_chars=len(text),
         )
         verdict = self._llm.triage(ctx)
+        self._charge(verdict)
         if not verdict.rejects(min_confidence=self._triage_min_confidence):
             log.info(
                 "%s passes triage (%s, %.2f): full analysis",

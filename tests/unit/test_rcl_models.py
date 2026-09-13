@@ -91,6 +91,68 @@ def test_the_latest_stage_with_a_project_folder_wins() -> None:
     assert project.text_documents()["bill"].id == 2
 
 
+def test_what_the_committees_file_beside_the_bill_is_not_taken_for_the_bill() -> None:
+    # Every name here was published in a "Projekt" folder of a followed project; none of them is
+    # the text, and each used to pass as one because no pattern ruled it out.
+    folder = RclFolder(
+        id=10,
+        name="Projekt",
+        documents=(
+            _doc(1, "protokół rozbieżności - Projekt ustawy_udział PL w ETIAS (UC104).pdf"),
+            _doc(2, "raport z konsultacji i opiniowania - Projekt ustawy.pdf"),
+            _doc(3, "zał. 1 do raportu z konsultacji i opiniowania - Projekt ustawy.pdf"),
+            _doc(4, "KSE - formatka_UC95 (30.07.2026).pdf"),
+            _doc(5, "zestawienie_niewzględnionych_uwag_z_opiniowania.docx"),
+            _doc(6, "akty_wykonawcze_ETIAS.zip"),
+            _doc(7, "raport z uzgodnień międzyresortowych UC95.pdf"),
+            _doc(8, "Projekt ustawy_udział PL w ETIAS (UC104).pdf"),
+        ),
+    )
+    project = _project(_stage(9, "Stały Komitet Rady Ministrów", "reached", folder))
+
+    picked = project.text_documents()
+
+    assert {role: d.id for role, d in picked.items()} == {"bill": 8}
+
+
+def test_an_appendix_to_the_osr_does_not_stand_in_for_the_osr() -> None:
+    folder = RclFolder(
+        id=10,
+        name="Projekt",
+        documents=(
+            _doc(1, "załącznik_do_OSR_na_SKRM.docx"),
+            _doc(2, "zał nr 1 Wyliczenia do OSR w zakresie nadzoru rynku.docx"),
+            _doc(3, "OSR_na_SKRM.docx"),
+            _doc(4, "projekt_ustawy_na_SKRM.docx"),
+        ),
+    )
+    project = _project(_stage(9, "Stały Komitet Rady Ministrów", "reached", folder))
+
+    picked = project.text_documents()
+
+    assert {role: d.id for role, d in picked.items()} == {"bill": 4, "osr": 3}
+
+
+def test_a_bill_ratifying_a_protocol_or_about_reporting_is_still_a_bill() -> None:
+    # The patterns that rule an appendix out must not rule out a bill whose subject they name.
+    folder = RclFolder(
+        id=10,
+        name="Projekt",
+        documents=(
+            _doc(1, "Projekt ustawy o ratyfikacji Protokołu do Konwencji.pdf"),
+            _doc(2, "Projekt ustawy o raportowaniu zrównoważonego rozwoju.pdf"),
+        ),
+    )
+
+    for document in folder.documents:
+        picked = _project(
+            _stage(
+                3, "Uzgodnienia", "reached", folder.model_copy(update={"documents": (document,)})
+            )
+        ).text_documents()
+        assert picked["bill"].id == document.id
+
+
 def test_a_zip_package_counts_as_text_only_when_nothing_better_is_published() -> None:
     only_zip = RclFolder(id=10, name="Projekt", documents=(_doc(1, "Projekt ustawy.zip"),))
     with_docx = RclFolder(

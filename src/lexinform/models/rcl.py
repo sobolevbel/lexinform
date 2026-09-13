@@ -288,40 +288,59 @@ def _classify(documents: list[RclDocument]) -> dict[TextRole, RclDocument]:
         if not candidates:
             continue
         if role == "bill":
-            picked[role] = min(candidates, key=lambda d: (_name_rank(d), _format_rank(d)))
+            picked[role] = min(candidates, key=_rank)
         else:
             picked[role] = min(candidates, key=_format_rank)
     return picked
 
 
 _OSR_RE = re.compile(r"(?:^|[^a-ząćęłńóśźż])osr(?:$|[^a-ząćęłńóśźż])|ocena skutk")
-_NOT_A_TEXT_RE = re.compile(r"tabel|zgodno|załącznik|zalacznik|pismo|rozdzielnik")
+_NOT_A_TEXT_RE = re.compile(
+    # Measured on the "Projekt" folders and packages of the followed projects (13 Sept 2026):
+    # every kind below is published beside the bill and none of it is the bill. "protokół" is
+    # deliberately not here — a bill ratifying a Protokół is a bill — and neither is "raport"
+    # on its own, for "o raportowaniu"; the rejected-comments tables come as "zestawienie".
+    # A package names its members with underscores where the folder uses spaces, so every
+    # multi-word pattern has to accept both.
+    r"tabel|zgodno|załącznik|zalacznik|zał\.|pismo|rozdzielnik"
+    r"|rozbieżno|rozbiezno|raport[\s_]+z|zestawienie|formatka|wyliczenia|akty[\s_]+wykonawcze"
+)
 _BILL_RE = re.compile(r"projekt|ustaw")
+_FORMAT_RANK = {"pdf": 0, "docx": 1, "docm": 2, "doc": 3, "odt": 4, "zip": 8}
 
 
 def text_role(name: str) -> TextRole | None:
     """What a file of a "Projekt" folder (or of a zip package) is, by its name: the bill, its
     uzasadnienie, the OSR, or None for what is not a bill text (compliance tables, letters,
-    appendices). A name that says nothing is taken for the bill."""
+    consultation reports, draft regulations, appendices). A name that says nothing is taken for
+    the bill.
+
+    An appendix is ruled out before the OSR is recognised: "załącznik do OSR" and "Wyliczenia do
+    OSR" name the OSR they hang on, and taken for it they would stand in its place.
+    """
     lowered = name.lower()
     if "uzasad" in lowered:
         return "justification"
-    if _OSR_RE.search(lowered):
-        return "osr"
     if _NOT_A_TEXT_RE.search(lowered):
         return None
+    if _OSR_RE.search(lowered):
+        return "osr"
     return "bill"
 
 
-def _name_rank(document: RclDocument) -> int:
-    """A file that calls itself the bill ("projekt ustawy") beats one that only fails to say
-    what it is (a note, an information sheet) whatever their formats."""
-    return 0 if _BILL_RE.search(document.name.lower()) else 1
+def text_rank(name: str, extension: str) -> tuple[int, int]:
+    """How good a file is as the text of its role: a name that calls itself the bill ("projekt
+    ustawy") beats one that only fails to say what it is (a note, an information sheet), and PDF
+    beats the Word formats, which beat a zip package."""
+    return (0 if _BILL_RE.search(name.lower()) else 1, _FORMAT_RANK.get(extension, 9))
+
+
+def _rank(document: RclDocument) -> tuple[int, int]:
+    return text_rank(document.name, document.extension)
 
 
 def _format_rank(document: RclDocument) -> int:
-    """PDF first, then the Word formats, then ODT; a zip package only when nothing else is there."""
-    return {"pdf": 0, "docx": 1, "docm": 2, "doc": 3, "odt": 4, "zip": 8}.get(document.extension, 9)
+    return _rank(document)[1]
 
 
 def parse_stage_label(text: str) -> tuple[int, str]:

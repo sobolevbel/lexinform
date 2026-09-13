@@ -244,6 +244,41 @@ def test_new_text_version_is_re_analysed_and_the_update_lists_the_changes() -> N
     assert w.llm.contexts[-1].previous_summary is not None
 
 
+def test_the_runs_cost_limit_holds_a_re_analysis_back_until_the_next_run() -> None:
+    # The per-bill guard does not apply to a re-analysis on purpose, and until the limit covered
+    # the tracking phase too, a new text was read whatever the run had already spent.
+    w = World(max_run_cost_usd=0.001)
+    w.llm.MODEL = "claude-opus-5"  # priced: 100 in + 50 out per call ≈ $0.002
+    project = _followed(w)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")  # spends the budget before tracking
+    new_text = rcl_folder(
+        777, "Projekt", rcl_document(801, "projekt_po_KP.pdf", created=dt.date(2026, 9, 8))
+    )
+    moved = _moved(
+        project,
+        *project.stages[:4],
+        rcl_stage(9, "Stały Komitet Rady Ministrów", "reached", modified=dt.date(2026, 9, 8)),
+        rcl_stage(10, "Komisja Prawnicza", "active", new_text, modified=dt.date(2026, 9, 8)),
+        *project.stages[5:],
+        modified=dt.date(2026, 9, 8),
+    )
+    w.add_rcl_project(moved)
+
+    held = w.run()
+
+    assert held.reanalyzed == 0 and not held.errors
+    assert "tracking: run cost limit reached" in " ".join(held.notes)
+    held_analysis = w.bill(RCL).analysis
+    assert held_analysis is not None and held_analysis.revision == 1
+
+    w.clock.advance(days=1)
+    again = w.run()
+
+    assert again.reanalyzed == 1  # nothing was written down, so the next run reads the same text
+    analysis = w.bill(RCL).analysis
+    assert analysis is not None and analysis.source_url == new_text.documents[0].url
+
+
 def test_republished_identical_text_is_not_analysed_again() -> None:
     w = World()
     project = _followed(w)
