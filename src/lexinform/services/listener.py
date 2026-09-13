@@ -28,6 +28,7 @@ class CommandListener:
         channel_id: str,
         poll_timeout: int = 50,
         retry_delay: float = 15.0,
+        max_retry_delay: float = 600.0,
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         """`writer=None` is a dry run: commands are logged, nothing is filed or confirmed.
@@ -40,8 +41,11 @@ class CommandListener:
         self._channel = channel_id
         self._poll_timeout = poll_timeout
         self._retry_delay = retry_delay
+        self._max_retry_delay = max_retry_delay
         self._sleep = sleep
         self._offset: int | None = None
+        self._stalled = False
+        self._failures = 0
         self.filed: list[ChannelPost] = []
 
     @property
@@ -56,9 +60,11 @@ class CommandListener:
         wait = self._poll_timeout if timeout is None else timeout
         posts = self._updates.get_updates(offset=self._offset, timeout=wait)
         filed = 0
+        self._stalled = False
         for post in posts:
             if self._is_command(post):
                 if not self._file(post):
+                    self._stalled = True
                     break
                 filed += 1
             self._offset = post.update_id + 1
@@ -75,11 +81,33 @@ class CommandListener:
             try:
                 self.poll_once()
             except ServiceUnavailableError as exc:
-                log.warning("%s; retrying in %.0fs", exc.describe(), self._retry_delay)
-                self._sleep(self._retry_delay)
+                self._back_off(exc.describe())
             except Exception as exc:
-                log.exception("listener error: %s; retrying in %.0fs", exc, self._retry_delay)
-                self._sleep(self._retry_delay)
+                log.exception("listener error: %s", exc)
+                self._back_off(str(exc))
+            else:
+                if self._stalled:
+                    self._back_off("a command could not be filed")
+                else:
+                    self._failures = 0
+
+    def _back_off(self, reason: str) -> None:
+        """Wait before the next poll, longer the longer the failures have been going on.
+
+        A poll that ends in a command it could not file returns without raising, so without
+        this the loop would spin at network speed: Telegram answers an update it has already
+        delivered at once, and the offset cannot move until the command is in the inbox. That
+        costs nothing while the inbox is merely unreachable (the writer retries with sleeps of
+        its own), but a refusal that no retry fixes — a revoked token, a repository the PAT can
+        no longer write — raises immediately, and a relay pinned to a 384 MB VPS would fill its
+        log until somebody noticed.
+        """
+        self._failures += 1
+        # A relay nobody rescues doubles for days; 2**1024 does not fit in a float.
+        growth = 2 ** min(self._failures - 1, 32)
+        delay = min(self._retry_delay * growth, self._max_retry_delay)
+        log.warning("%s; retrying in %.0fs", reason, delay)
+        self._sleep(delay)
 
     def _is_command(self, post: ChannelPost) -> bool:
         if not post.is_from(self._channel):

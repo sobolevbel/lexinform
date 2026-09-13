@@ -713,13 +713,14 @@ class FakeUpdates:
 
 
 class FakeInboxWriter:
-    def __init__(self, *, fail: bool = False) -> None:
+    def __init__(self, *, error: Exception | None = None) -> None:
+        """`error` is raised for every command instead of filing it."""
         self.filed: list[IncomingCommand] = []
-        self.fail = fail
+        self.error = error
 
     def put(self, command: IncomingCommand) -> None:
-        if self.fail:
-            raise SejmApiUnavailableError("PUT inbox: HTTP 503")  # any outage-class error
+        if self.error is not None:
+            raise self.error
         self.filed.append(command)
 
 

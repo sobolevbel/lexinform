@@ -152,6 +152,13 @@ Rules of the road:
   never set a webhook for the bot (`deleteWebhook` if one exists).
 - The relay must be the bot whose token the runs use, and an administrator of the log channel
   (it already is: it posts the run reports there).
+- A command that cannot be filed holds the relay where it is: the offset stays below it, so
+  Telegram delivers it again, and the loop waits before the next poll — 15 s, doubling to ten
+  minutes while the failures continue, back to nothing on the first poll that gets through.
+  A refusal no retry fixes (a revoked PAT, a repository the token may no longer write) therefore
+  shows in `journalctl -u lexinform-listen` as the same warning every few minutes with no
+  "⏳ queued" in the channel; the queued commands are all still with Telegram, which keeps them
+  for 24 hours, so a token replaced within the day loses nothing.
 - `LEXINFORM_INBOX_DIR` is set by the workflow; locally, point it at any directory of
   `{update_id}.json` files and run `lexinform commands --dry-run` to see the replies without
   posting (the model is still called for `/analyze`).
