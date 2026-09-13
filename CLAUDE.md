@@ -604,14 +604,20 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   "rozporządzenia 2018/1240", and an unanchored pattern read UC104's uzasadnienie as a draft
   regulation. Over the 147 openings of the corpus, ignoring case moves exactly one document, and
   it moves it right — a draft headed "Rozporządzenie" in title case that had passed for a bill's
-  uzasadnienie on its file name alone. `TYTUŁ PROJEKTU` in capitals
-  opens a tabela zgodności and `Tytuł projektu` in title case opens an OSR form: that is the
-  whole difference, and reading UD439's OSR as a compliance table threw the document away — the
-  one that counts who is affected. `Nazwa projektu dokumentu` is a tabela legislacyjna, one word
-  from the OSR's `Nazwa projektu`. A kind we do not know is `unknown`, never an appendix: the
-  file name decides then, as it did before, unless the file is longer than
+  uzasadnienie on its file name alone. `Nazwa projektu dokumentu` is a tabela legislacyjna, one
+  word from the OSR's `Nazwa projektu`. A kind we do not know is `unknown`, never an appendix:
+  the file name decides then, as it did before, unless the file is longer than
   `LEXINFORM_MAX_PART_CHARS` (300k) — the longest real document measured is 161,678 characters
   and the longest nameless appendix 954,730.
+- **A table of provisions is known by its columns, not by its title.** `Tytuł projektu` opens an
+  OSR form and `TYTUŁ PROJEKTU` a tabela zgodności, but the case does not settle it and the title
+  never did: UD439's OSR opens "Tytuł projektu" and druk 2670's "Tytuł projektu: ustawa o zmianie
+  ustawy – Kodeks wyborczy", while druk 1430's derivation table heads itself "Tabelaryczne
+  zestawienie przepisów rozporządzenia wykonawczego Komisji (UE) 2023/564" and only says
+  "Tytuł projektu:" further down the same page. Matching case-blind threw both OSRs away — 78,281
+  characters of UD439's, all of druk 2670's, and those are the documents that count who is
+  affected. What separates them is that one is a table: `Tabelaryczne zestawienie przepisów`,
+  `Jedn. red.` and `Treść przepisu` are its column headings and appear in no OSR form.
 - **What the rule was measured on is checked in.** `tests/fixtures/rcl/openings.json` holds the
   opening of all 126 real documents collected, with the kind each must be recognised as, and one
   table test runs `document_kind` over the lot. A new case is one row.
