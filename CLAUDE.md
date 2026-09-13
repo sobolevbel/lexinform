@@ -147,7 +147,10 @@ Invariants worth keeping:
   digest of what was last sent (`publications.rendered_sha256`, v16) makes a quiet run free: a
   pure render per bill, no request. The refresher stops at `next_phase(...) is None`, **not** at
   `is_over`: an act in Dziennik Ustaw with months of vacatio legis is still live, and freezing
-  the card there left it saying «дальше: публикация в Dz.U.» for ever. The card calls itself
+  the card there left it saying «дальше: публикация в Dz.U.» for ever. `list_tracked` has to
+  agree, or the refresher never sees the bill: the grace window runs from `closure_date`, which
+  the Sejm sets at the third reading, and 2699's ended 35 days before its act applied, so a
+  published act is followed until `entry_into_force`, whatever its age. The card calls itself
   finished only when the ending line can also say *how* (`_ended_line`): `next_phase` gives up on
   an unrecognised stage tree too, and "процесс завершён" over nothing is a guess.
 - **A bill whose road ended before we saw it gets neither an analysis nor a card.** A card

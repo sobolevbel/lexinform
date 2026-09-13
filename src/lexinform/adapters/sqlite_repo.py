@@ -570,8 +570,12 @@ class SqliteBillRepository:
         Senate, the President and publication take weeks. A bill waiting for the Sejm to answer a
         veto or for the Constitutional Tribunal is followed for `pending_decision_max_days`: every
         window counts from `closure_date`, which the Sejm sets at the third reading, long before
-        either of those begins. An act whose entry into force ELI has not indexed yet is kept
-        whatever its age, because only a later fetch can fill that date in.
+        either of those begins. A bill whose act is in Dziennik Ustaw is kept whatever its age
+        until the act applies: a vacatio legis can outrun `closed_grace_days` (druk 2699 closed
+        2026-07-17, in force 2026-11-19, 35 days past the window), and a card dropped here is a
+        card that stops being re-rendered over the one stretch where it has a fixed date to give.
+        An entry into force the ELI API has not indexed yet keeps the bill for the same reason:
+        only a later fetch can fill that date in.
 
         With `changed_since`, only bills whose `change_date` (refreshed by discovery from the
         API's `modifiedSince` listing) is at least that recent are returned, plus bills passed
@@ -588,7 +592,8 @@ class SqliteBillRepository:
               AND b.status != ? AND b.discontinued_at IS NULL
               AND (b.closure_date IS NULL OR b.closure_date >= ?
                    OR (b.passed = 1 AND b.act_json IS NULL AND b.closure_date >= ?)
-                   OR (b.act_json IS NOT NULL AND b.entry_into_force IS NULL)
+                   OR (b.act_json IS NOT NULL
+                       AND (b.entry_into_force IS NULL OR b.entry_into_force > ?))
                    OR (b.act_json IS NULL AND b.closure_date >= ? AND {self._AWAITS_DECISION}))
             """
         params: list[object] = [
@@ -596,6 +601,7 @@ class SqliteBillRepository:
             BillStatus.LINKED.value,
             cutoff,
             passed_cutoff,
+            now.date().isoformat(),
             decision_cutoff,
         ]
         if changed_since is not None:

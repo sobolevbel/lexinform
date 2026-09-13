@@ -426,9 +426,15 @@ def test_only_bills_with_a_sent_card_are_tracked(
     assert after[0].stages_fingerprint == fingerprint
 
 
-def test_passed_bills_stay_tracked_until_their_act_is_published(
+def test_passed_bills_stay_tracked_until_their_act_applies(
     repo: SqliteBillRepository, process_3039: ProcessDetail
 ) -> None:
+    """Dziennik Ustaw is not the hand-over point; the day the act applies is.
+
+    `_act()` is druk 2699: closed 2026-07-17, promulgated 2026-08-18, in force 2026-11-19. The
+    grace window ends 35 days before the act applies, and a bill dropped there is a card that
+    stops being re-rendered over the one stretch where it has a fixed date to give the reader.
+    """
     closed = process_3039.model_copy(update={"closure_date": date(2026, 7, 17), "passed": True})
     now = datetime(2026, 8, 25, tzinfo=UTC)  # 39 days after closure: past the 30-day grace
     repo.upsert_summary(closed, now=now)
@@ -437,9 +443,11 @@ def test_passed_bills_stay_tracked_until_their_act_is_published(
     waiting = _tracked(repo, now)
     repo.save_act(10, "3039", _act())
     published = _tracked(repo, now)
+    vacatio_over = _tracked(repo, datetime(2026, 11, 19, tzinfo=UTC))
 
     assert waiting == ["3039"]
-    assert published == []  # the reminder query takes over
+    assert published == ["3039"]
+    assert vacatio_over == []  # the act applies: the reminder query takes over
 
 
 def test_passed_bill_without_an_act_is_dropped_after_passed_max_days(
