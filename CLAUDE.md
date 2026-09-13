@@ -543,7 +543,11 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   measured. Three
   carry **"DEKLAROWANE SKUTKI REGULACJI (DSR)"** instead of the OSR form — the deputies' version,
   unknown to the pattern until now, 15 pages of 60 in druk 2673 — and one heads its OSR
-  "Tytuł projektu". One (druk 1764) prints its club's name and site as the first line of all
+  "Tytuł projektu". The DSR is recognised as the OSR section but **not cut**, on purpose: it has
+  no fixed thirteen points and so no "point 6" to cut at, and its own headings are where its
+  substance is ("Podmioty, na które wpływa projekt", "Wpływ projektu na wskazane podmioty" in
+  druk 3035) — which is the part of an OSR this channel reads it for. Cutting at a guessed
+  heading would take that and leave the rest. One (druk 1764) prints its club's name and site as the first line of all
   thirty pages, which stood in front of every section heading the trimmer looks for, so a page's
   running head and its number are stripped before it is classified
   (`sections.strip_page_furniture`). A bare "Załącznik" is deliberately *not* a section start:
