@@ -16,6 +16,7 @@ later. Any administrator of that channel can command; nobody else reaches the bo
 /skip 3039                    silence a false positive: no analysis, no card (the card stays)
 /unskip 3039                  the way back: the bill queues for the next run's analysis
 /republish 3039               post the card again (after a lost or failed post)
+/forget 3039                  drop the card the channel remembers, post nothing (deleted by hand)
 /find cudzoziemc              bills whose title or number carries the words
 /status                       the queues, what is stuck, what the last 7 days of runs cost
 /help                         this list
@@ -31,6 +32,17 @@ puts the bill back in the queue; an RCL project keeps only its skeleton while it
 its documents are read again first. `/status` is what no single run report says: the queues as
 they stand, the posts that are stuck (`pending` left by a crash, `failed` still retrying), how
 many bills are followed and what the recent runs did and cost.
+
+`/forget` is `/republish` without the post, for a card deleted from the channel by hand. The row
+goes on saying `sent` until something clears it, and everything downstream believes it: the bill
+stays in `list_tracked`, the refresher edits a message that is not there once a run (Telegram
+answers `message to edit not found`, which is a warning and not an error, so it repeats for
+ever), and an update would reply under nothing. `/republish` clears the same two rows by sending
+the card again — the right answer when the post was lost, the wrong one when it was deleted on
+purpose. What the bill gets afterwards is the publishing rule's decision, and the reply says
+which way it went: still analysed, relevant and above the threshold means the next run posts a
+fresh card; silenced or below it means the bill simply stops being followed. Running it twice
+changes nothing the first run did not.
 
 A bill is named by any number the bot knows or by a link to it:
 

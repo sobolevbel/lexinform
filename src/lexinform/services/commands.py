@@ -345,6 +345,8 @@ class CommandService:
             return self._preview(bill_or_none)
         if command.name is CommandName.REFRESH:
             return self._refresh(bill_or_none, spent, publish=publish)
+        if command.name is CommandName.FORGET:
+            return self._forget(bill_or_none, min_score=min_score)
         return self._republish(bill_or_none, publish=publish)
 
     def _analyze(
@@ -643,6 +645,46 @@ class CommandService:
             )
         self._publishing.forget_card(bill)
         return self._post(bill, OutcomeStatus.REPUBLISHED)
+
+    def _forget(self, bill: Bill, *, min_score: int) -> CommandOutcome:
+        """`/forget`: drop what the channel remembers of the card and post nothing in its place.
+
+        The way out of a card whose message was deleted by hand. The row goes on saying `sent`,
+        so `list_tracked` keeps joining on it, the refresher keeps editing a message that is not
+        there ("message to edit not found", once a run, for ever) and any update would reply
+        under nothing. `/republish` also clears that, by sending the card again — which is the
+        wrong answer when the message was deleted on purpose.
+
+        What happens next is the publishing rule's to decide, and the reply says which way it
+        went: an analysed, relevant, important enough bill is a candidate again and the next run
+        posts a fresh card, while a silenced or below-threshold one simply stops being followed.
+        Unlike `/republish`, running it twice changes nothing the first run did not.
+        """
+        card = self._card(bill)
+        if self._publishing.card_of(bill) is None:
+            return CommandOutcome(
+                status=OutcomeStatus.FORGOTTEN,
+                bill=bill,
+                note="the channel remembers no card for it; nothing to forget",
+            )
+        self._publishing.forget_card(bill)
+        verdict = bill.analysis.analysis if bill.analysis is not None else None
+        candidate = (
+            bill.status is BillStatus.ANALYZED
+            and bill.discontinued_at is None
+            and verdict is not None
+            and verdict.relevant
+            and verdict.score >= min_score
+        )
+        forgotten = f"forgotten: {card}" if card is not None else "forgotten"
+        next_run = (
+            "the next run posts a fresh card"
+            if candidate
+            else f"it will not be posted again ({bill.status})"
+        )
+        return CommandOutcome(
+            status=OutcomeStatus.FORGOTTEN, bill=bill, note=f"{forgotten}; {next_run}"
+        )
 
     def _post(self, bill: Bill, status: OutcomeStatus) -> CommandOutcome:
         """Send the card through the normal path (pending row first, joint prints share a

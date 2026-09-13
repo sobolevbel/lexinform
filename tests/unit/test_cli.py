@@ -145,6 +145,13 @@ def test_republish_refuses_a_bill_without_a_relevant_analysis(db: Path) -> None:
     assert "no relevant analysis" in result.output
 
 
+def test_forget_says_so_when_the_channel_carries_no_card(db: Path) -> None:
+    result = runner.invoke(app, ["forget", "3039", "-y"], env=_env(db))
+
+    assert result.exit_code == 0, result.output
+    assert "nothing to forget" in result.output
+
+
 def test_commands_answers_the_inbox_and_empties_it(db: Path, tmp_path: Path) -> None:
     inbox = tmp_path / "inbox"
     inbox.mkdir()

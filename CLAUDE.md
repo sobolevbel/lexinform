@@ -47,7 +47,7 @@ format sniffing `document_text`, Anthropic, `publisher_base` (the `Publisher` po
 Telegram and the console only deliver), Telegram (incl. `get_updates` and the command replier),
 SQLite, `inbox_files` (the command inbox as a directory), `github_inbox` (the relay's writer)) →
 `services/` (commands (the operator's `/analyze`, `/show`, `/preview`, `/refresh`, `/skip`,
-`/unskip`, `/republish`, `/find`, `/status`), lookup (one
+`/unskip`, `/republish`, `/forget`, `/find`, `/status`), lookup (one
 bill by number or reference, fetched and prefiltered on first sight; the CLI and the commands
 share it), listener (the relay on the VPS), discovery,
 rcl_discovery + rcl_projects, wykaz_discovery, sources (`TextSources` routes a bill to
@@ -343,7 +343,14 @@ Invariants worth keeping:
   recorded outcome when it was executed, and otherwise a note that a run started it and did
   not finish, which the operator answers by sending the command again.
   `/analyze` is idempotent by construction (an analysed bill is not sent to the model again),
-  `/republish` is not: the marks are what keep a second card away. The commands that only read
+  `/republish` is not: the marks are what keep a second card away. `/forget` is `/republish`
+  without the post, for a card deleted from the channel by hand: the `sent` row is what every
+  tracker joins on, so left alone it keeps the bill followed and the refresher keeps editing a
+  message that is not there (Telegram's `message to edit not found` is a warning, not an error,
+  so it repeats for ever), and sending the card again is the wrong answer when it was deleted on
+  purpose. Both card kinds go and nothing is posted, so what the bill gets next is the publishing
+  rule's decision — a fresh card if it is still a candidate, nothing if it is silenced — and
+  running it twice changes nothing. The commands that only read
   (`/show`, `/preview`, `/find`, `/status`) never post and never spend: `/preview` renders the
   card into the technical channel alone, so the wording can be read before `/republish` sends
   it. `/refresh` is the tracking phase for one bill (`StatusTrackingService.check_bill`) —

@@ -612,6 +612,44 @@ def republish(
 
 
 @app.command()
+def forget(
+    number: Annotated[str, typer.Argument(help=NUMBER_HELP)],
+    yes: YesOpt = False,
+) -> None:
+    """Drop the card the channel remembers for a bill, and post nothing in its place.
+
+    For a card whose message was deleted from the channel by hand: the row goes on saying
+    `sent`, so the bill stays followed, the refresher edits a message that is not there once a
+    run, and an update would reply under nothing. `republish` clears the same rows by sending
+    the card again, which is the wrong answer when the message was deleted on purpose.
+
+    Both card kinds go, the card and the "alternative bill" reply, so what the bill gets next
+    is the publishing rule's decision: an analysed, relevant, important enough bill is a
+    candidate again on the next run; a silenced one simply stops being followed.
+    """
+    c = _container()
+    try:
+        bill = _load_bill(c, number)
+        # Reading and dropping the rows is repository work; asking for the live publisher would
+        # only demand a bot token for a command whose whole point is that it sends nothing.
+        publishing = c.publishing_service(dry_run=True)
+        existing = publishing.card_of(bill)
+        if existing is None:
+            typer.echo(f"{number}: no card recorded in {c.channel_id()}; nothing to forget")
+            raise typer.Exit(code=0)
+        typer.echo(
+            f"{number}: card in {c.channel_id()}: {existing.kind} {existing.status}"
+            f" (message {existing.message_id})"
+        )
+        if not yes and not typer.confirm("Forget it, posting nothing?"):
+            raise typer.Exit(code=1)
+        publishing.forget_card(bill)
+        typer.echo("forgotten; the next run decides whether the bill gets a card again")
+    finally:
+        c.close()
+
+
+@app.command()
 def reset(
     number: Annotated[str, typer.Argument(help=NUMBER_HELP)],
     to: Annotated[

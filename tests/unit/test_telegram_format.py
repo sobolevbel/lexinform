@@ -1180,6 +1180,22 @@ def test_status_reply_shows_the_queues_the_posts_and_the_runs(process_3039: Proc
     assert "⏳ <b>waiting</b>" in text and "analysis_pending" in text
 
 
+def test_forget_reply_names_the_message_that_was_dropped(process_3039: ProcessDetail) -> None:
+    formatter = MessageFormatter("ru")
+    outcome = CommandOutcome(
+        status=OutcomeStatus.FORGOTTEN,
+        bill=bill_of(process_3039),
+        note="forgotten: message 21; it will not be posted again (skipped_prefilter)",
+    )
+
+    text = formatter.command_reply(_incoming("/forget 3039"), outcome).text
+
+    assert_telegram_html(text)
+    assert "🗑 <b>forgotten</b>" in text
+    assert "message 21" in text
+    assert "card posted" not in text  # nothing went out in its place
+
+
 def test_help_reply_lists_the_commands_after_the_complaint() -> None:
     formatter = MessageFormatter("ru")
     outcome = CommandOutcome(status=OutcomeStatus.HELP, note="unknown command /delete")

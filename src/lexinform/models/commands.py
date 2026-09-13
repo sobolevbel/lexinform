@@ -116,6 +116,7 @@ class CommandName(StrEnum):
     SKIP = "skip"
     UNSKIP = "unskip"
     REPUBLISH = "republish"
+    FORGET = "forget"
     PREVIEW = "preview"
     REFRESH = "refresh"
     FIND = "find"
@@ -130,6 +131,7 @@ NEEDS_REFERENCE = frozenset(
         CommandName.SKIP,
         CommandName.UNSKIP,
         CommandName.REPUBLISH,
+        CommandName.FORGET,
         CommandName.PREVIEW,
         CommandName.REFRESH,
     }
@@ -163,8 +165,9 @@ class OutcomeStatus(StrEnum):
     `SKIPPED` means the prefilter said no and the `note` says why (`force` gets past it);
     `SILENCED` is what `/skip` leaves behind — the bill will not be analysed or posted, and
     `QUEUED` what `/unskip` puts it back into; `PREVIEWED` carries a card that was rendered for
-    the technical channel and posted nowhere else; `EXECUTED_EARLIER` means a previous run did
-    the work and only its answer never arrived.
+    the technical channel and posted nowhere else; `FORGOTTEN` means the channel no longer
+    remembers a card for the bill, and nothing was posted in its place; `EXECUTED_EARLIER`
+    means a previous run did the work and only its answer never arrived.
     """
 
     ANALYSED = "analysed"
@@ -173,6 +176,7 @@ class OutcomeStatus(StrEnum):
     SILENCED = "silenced"
     QUEUED = "queued"
     REPUBLISHED = "republished"
+    FORGOTTEN = "forgotten"
     PREVIEWED = "preview"
     REFRESHED = "refreshed"
     FOUND = "found"

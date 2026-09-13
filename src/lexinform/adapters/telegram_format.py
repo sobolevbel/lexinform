@@ -85,6 +85,8 @@ COMMAND_HELP = (
     "• <code>/skip BILL</code> — silence a false positive (no analysis, no card)\n"
     "• <code>/unskip BILL</code> — put it back in the queue for the next run\n"
     "• <code>/republish BILL</code> — post the card again\n"
+    "• <code>/forget BILL</code> — drop the card the channel remembers, post nothing"
+    " (a card deleted by hand)\n"
     "• <code>/find WORDS</code> — bills whose title or number contains the words\n"
     "• <code>/status</code> — the queues, what is stuck, what the last runs cost\n"
     "• <code>/help</code>"
@@ -973,6 +975,7 @@ class MessageFormatter:
             OutcomeStatus.SILENCED: "🔇",
             OutcomeStatus.QUEUED: "🔁",
             OutcomeStatus.REPUBLISHED: "📣",
+            OutcomeStatus.FORGOTTEN: "🗑",
             OutcomeStatus.PREVIEWED: "👁",
             OutcomeStatus.REFRESHED: "🔄",
             OutcomeStatus.FOUND: "🔍",

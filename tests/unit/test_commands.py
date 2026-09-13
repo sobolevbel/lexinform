@@ -224,6 +224,61 @@ def test_skip_silences_a_bill_and_republish_posts_the_card_again() -> None:
     assert w.card_id("3039") == 102  # updates reply to the new card from now on
 
 
+def test_forget_drops_a_silenced_bills_card_and_stops_following_it() -> None:
+    """The card was deleted from the channel by hand; `/republish` would put it back.
+
+    Left alone, the `sent` row keeps the bill in `list_tracked` and the refresher goes on
+    editing a message that is not there, once a run, for ever.
+    """
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    w.command("/skip 3039")
+    w.command("/forget 3039")
+
+    _commands_only(w)
+    w.set_stages("3039", COMMITTEE_STAGES)
+    w.touch("3039", dt.datetime(2026, 9, 10, 9, 0))
+    w.run()
+
+    (_, _silenced), (_, forgotten) = w.replier.replies
+    assert forgotten.status is OutcomeStatus.FORGOTTEN
+    assert "message 101" in forgotten.note and "not be posted again" in forgotten.note
+    assert w.publication("3039") is None
+    assert len(w.publisher.new_bills) == 1  # nothing was posted in its place
+    assert w.publisher.updates == []  # and the stage change reaches no thread
+
+
+def test_forget_of_a_live_bill_lets_the_next_run_post_a_fresh_card() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    w.command("/forget 3039")
+
+    _commands_only(w)
+    first = w.publication("3039")
+    w.run()
+
+    (_, forgotten), *_ = w.replier.replies
+    assert forgotten.status is OutcomeStatus.FORGOTTEN and "fresh card" in forgotten.note
+    assert first is None
+    assert len(w.publisher.new_bills) == 2
+    assert w.card_id("3039") == 102
+
+
+def test_forget_of_a_bill_the_channel_never_carried_changes_nothing() -> None:
+    w = World(llm_script={"3039": make_analysis(relevant=False, score=1)})
+    w.add_bill("3039", TITLE)
+    w.run()
+    w.command("/forget 3039")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.FORGOTTEN and "nothing to forget" in outcome.note
+    assert w.publisher.new_bills == []
+
+
 def test_republish_refuses_a_bill_without_a_relevant_analysis() -> None:
     w = World(llm_script={"3039": make_analysis(relevant=False, score=1)})
     w.add_bill("3039", TITLE)
