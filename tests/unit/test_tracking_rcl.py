@@ -4,6 +4,7 @@ import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import BillStatus, PublicationKind, RclProject
+from tests.fakes import FakeTextExtractor
 from tests.harness import (
     CONSULTATION_FOLDERS,
     RCL,
@@ -242,6 +243,75 @@ def test_new_text_version_is_re_analysed_and_the_update_lists_the_changes() -> N
     assert bill.analysis is not None and bill.analysis.revision == 2
     assert bill.analysis.source_url == new_text.documents[0].url
     assert w.llm.contexts[-1].previous_summary is not None
+
+
+# 426,000 characters, far over any per-bill limit, and dense with hits from end to end: what
+# the cut keeps then really does fill the budget it was cut to, which is where the count of the
+# excerpt can come back over the limit the whole text was scaled to fit.
+_TOO_BIG = "Art. 500. Przepis dotyczy cudzoziemców przebywających na terytorium RP. " * 6_000
+
+
+def _new_text_stage(w: World, project: RclProject) -> RclProject:
+    """The project with a fresh redaction of its text under Komisja Prawnicza."""
+    return w.add_rcl_project(
+        _moved(
+            project,
+            *project.stages[:4],
+            rcl_stage(9, "Stały Komitet Rady Ministrów", "reached", modified=dt.date(2026, 9, 8)),
+            rcl_stage(
+                10,
+                "Komisja Prawnicza",
+                "active",
+                rcl_folder(
+                    777,
+                    "Projekt",
+                    rcl_document(801, "projekt_po_KP.pdf", created=dt.date(2026, 9, 8)),
+                ),
+                modified=dt.date(2026, 9, 8),
+            ),
+            *project.stages[5:],
+            modified=dt.date(2026, 9, 8),
+        )
+    )
+
+
+def test_a_re_analysis_too_big_to_cut_down_is_read_anyway_rather_than_failing() -> None:
+    """The per-bill guard refuses a first analysis and never a re-analysis.
+
+    A refusal here has nowhere to go: `reanalyze_bill` is called from the tracking loop, whose
+    per-bill `except` would count a failure and move on, so the same text would be offered and
+    refused every run, with no `skipped_cost` row to `reset` and no `/unskip` to undo — and the
+    card would go on describing the text before this one.
+    """
+    extractor = FakeTextExtractor()
+    w = World(extractor=extractor, max_bill_cost_usd=0.01, text_budget_chars=1_000_000)
+    project = _followed(w)
+    extractor.text = _TOO_BIG  # over the limit by ~100x: nothing left to cut down to
+
+    _new_text_stage(w, project)
+
+    report = w.run()
+
+    assert (report.reanalyzed, report.errors) == (1, [])
+    analysis = w.bill(RCL).analysis
+    assert analysis is not None and analysis.revision == 2
+
+
+def test_a_re_analysis_that_counts_over_the_limit_after_the_cut_is_still_read() -> None:
+    """The second refusal, and the live one: what `excerpts` keeps tokenizes worse than the ratio
+    the whole document measured, so the cut text can still count over the limit."""
+    extractor = FakeTextExtractor()
+    w = World(extractor=extractor, max_bill_cost_usd=0.30, text_budget_chars=1_000_000)
+    project = _followed(w)
+    extractor.text = _TOO_BIG
+    w.llm.count_overshoot = 1.5
+
+    _new_text_stage(w, project)
+
+    report = w.run()
+
+    assert (report.reanalyzed, report.errors) == (1, [])
+    assert w.llm.contexts[-1].truncated  # cut to fit, then sent even though it did not
 
 
 def test_the_runs_cost_limit_holds_a_re_analysis_back_until_the_next_run() -> None:

@@ -549,9 +549,9 @@ class AnalysisService:
     ) -> _Prepared:
         """Load the text and ask the model. Network only: safe to run for several bills at once.
 
-        The per-bill cost guard applies to first analyses alone: a re-analysis reads a new
-        version of a text that already passed it, and skipping that would leave the card's
-        analysis behind the bill.
+        The per-bill cost guard never refuses a re-analysis, only shortens it: a re-analysis
+        reads a new version of a text that already passed the guard, and a bill whose new text
+        we decline to read would keep a card describing the old one.
         """
         document = located.document
         loaded = self._load_text(document)
@@ -624,9 +624,15 @@ class AnalysisService:
         bill matters, and dropping it there left the reader with nothing and the operator with a
         `reset` to run by hand; a text read with gaps is worth more than a bill not read at all,
         and the card says «неполный текст» either way. What a scan cannot do is be thinned: its
-        pages are substance from the first to the last, so there the answer is still to refuse —
-        and for a re-analysis not even that, because a bill whose new text we decline to read
-        must not be left with a card that describes the old one.
+        pages are substance from the first to the last, so there the answer is still to refuse.
+
+        `first` is what every refusal turns on, and a re-analysis is never one: it is cut to fit
+        like any other text, but where a first analysis raises — a scan, a text with nothing
+        left to cut, an excerpt that tokenizes worse than the whole document's ratio predicted —
+        a re-analysis is sent as it stands. Raising there would land in the tracking loop's
+        per-bill `except`, which has nowhere to put it: the bill would fail on the same text
+        every run, with no `skipped_cost` row and no `reset` to undo, and keep a card that
+        describes the text before this one.
         """
         if not self._max_bill_cost or self._input_price is None:
             return ctx
@@ -646,6 +652,8 @@ class AnalysisService:
             return ctx
         shorter = self._shorten(ctx.text, over_by=cost / self._max_bill_cost)
         if shorter is None:
+            if not first:
+                return ctx
             raise TooExpensiveError(cost, self._max_bill_cost, measure=loaded.measure(tokens))
         reduced = ctx.model_copy(update={"text": shorter, "truncated": True})
         counted = self._llm.count_input_tokens(reduced)
@@ -658,7 +666,11 @@ class AnalysisService:
             len(shorter),
             len(ctx.text),
         )
-        if counted is not None and input_cost(counted, self._input_price) > self._max_bill_cost:
+        if (
+            first
+            and counted is not None
+            and input_cost(counted, self._input_price) > self._max_bill_cost
+        ):
             raise TooExpensiveError(
                 input_cost(counted, self._input_price),
                 self._max_bill_cost,

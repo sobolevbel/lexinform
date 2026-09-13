@@ -438,6 +438,14 @@ class FakeLlm:
         self.supplement_contexts: list[SupplementContext] = []
         self.counted: list[str] = []
         self.count_fails = False
+        self.count_overshoot = 1.0
+        """How much worse than two characters to the token an already-cut text is counted as.
+
+        What `_fit_to_budget` cuts to is scaled by the ratio the whole document measured, and
+        `excerpts` keeps a different distribution — keyword-dense provisions, sometimes tables —
+        so the trimmed text can count over the limit the whole one was scaled to fit. That is the
+        guard's second refusal, and without a knob no test can reach it.
+        """
 
     def triage(self, ctx: TriageContext) -> TriageRecord:
         self.triage_contexts.append(ctx)
@@ -456,12 +464,14 @@ class FakeLlm:
 
     def count_input_tokens(self, ctx: BillContext) -> int | None:
         """What the real tokenizer would say, near enough for a guard: Polish text runs about
-        two characters to the token, a scanned page about 1600."""
+        two characters to the token, a scanned page about 1600, and a text the guard has already
+        cut runs `count_overshoot` times worse than the whole one it was cut from."""
         self.counted.append(ctx.number)
         if self.count_fails:
             return None
         pages = ctx.scan.pages if ctx.scan else 0
-        return len(ctx.text) // 2 + pages * 1600
+        rate = self.count_overshoot if ctx.truncated else 1.0
+        return int(len(ctx.text) // 2 * rate) + pages * 1600
 
     def analyze(self, ctx: BillContext) -> AnalysisRecord:
         self.contexts.append(ctx)
