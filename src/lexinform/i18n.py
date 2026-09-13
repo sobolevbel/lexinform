@@ -171,6 +171,7 @@ class Labels:
     wykaz_header: str
     wykaz_intention: str
     wykaz_stage: str
+    wykaz_stage_adopted: str
     wykaz_published: str
     wykaz_planned: str
     wykaz_metadata_note: str
@@ -212,6 +213,10 @@ class Labels:
     """What a document filed to the print is called in the block that carries its digest."""
     supplement_supports: dict[str, str] = field(default_factory=dict)
     """The government's verdict, when its position states one."""
+    deadline_passed_labels: dict[str, str] = field(default_factory=dict)
+    """What a constitutional term running out means, by phase; `deadline_passed` otherwise."""
+    no_action_after_deadline: dict[str, str] = field(default_factory=dict)
+    """Why there is nothing to do once that term is out, by phase."""
     update_headers: dict[str, str] = field(default_factory=dict)
     decision_labels: dict[str, str] = field(default_factory=dict)
     proposal_labels: dict[str, str] = field(default_factory=dict)
@@ -385,6 +390,7 @@ RU = Labels(
         " опубликуют на RCL и начнутся публичные консультации."
     ),
     wykaz_stage="проект внесён в план работ правительства, текста ещё нет",
+    wykaz_stage_adopted="правительство приняло проект, ждём внесения в Сейм",
     wykaz_published="Внесён в план работ",
     wykaz_planned="принятие правительством: {quarter} кв. {year}",
     wykaz_metadata_note=(
@@ -468,6 +474,14 @@ RU = Labels(
     supplement_supports={
         "yes": "правительство поддерживает проект",
         "no": "правительство против проекта",
+    },
+    deadline_passed_labels={
+        "senate": "30 дней Сената истекли: закон считается принятым без поправок (ст. 121 ust. 2)",
+        "president": "21 день на подпись истёк",
+        "president_after_veto": "7 дней на подпись истекли",
+    },
+    no_action_after_deadline={
+        "senate": ("пока ничего — срок Сената вышел, закон уходит к Президенту"),
     },
     update_headers={
         "update": "Обновление",
@@ -596,18 +610,18 @@ RU = Labels(
         "veto_unnamed": "голосование в Сейме по вето: отклонить его можно 3/5 голосов",
         "tribunal": "решение Конституционного трибунала",
         "wykaz": (
-            "публикация проекта на RCL и публичные консультации, затем комитеты Совета министров,"
-            " Rada Ministrów и направление в Сейм"
+            "публикация проекта на RCL и общественные консультации, затем комитеты Совета"
+            " министров, Rada Ministrów и внесение в Сейм"
         ),
-        "wykaz_to_rcl": "публикация проекта на RCL и публичные консультации",
+        "wykaz_to_rcl": "публикация проекта на RCL и общественные консультации",
         "wykaz_adopted": "внесение проекта в Сейм и присвоение номера druku",
         "rcl_consultation": (
-            "консультации публичные до {date}, затем opiniowanie, комитеты Совета министров,"
-            " Rada Ministrów и направление в Сейм"
+            "общественные консультации до {date}, затем сбор мнений (opiniowanie), комитеты"
+            " Совета министров, Rada Ministrów и внесение в Сейм"
         ),
         "rcl_opinions": (
-            "uzgodnienia и opiniowanie, затем комитеты Совета министров, Rada Ministrów и"
-            " направление в Сейм (обычно 3–12 месяцев)"
+            "межведомственные согласования и сбор мнений, затем комитеты Совета министров,"
+            " Rada Ministrów и внесение в Сейм"
         ),
         "rcl_committees": (
             "комитеты Совета министров и Komisja Prawnicza, затем Rada Ministrów и направление"
@@ -634,6 +648,7 @@ RU = Labels(
         "wykaz": "обычно 1–6 месяцев до публикации проекта",
         "wykaz_to_rcl": "обычно несколько недель",
         "wykaz_adopted": "обычно несколько недель",
+        "rcl_opinions": "обычно 1–3 месяца на этом этапе; весь путь на RCL — 3–12 месяцев",
         "rcl_committees": "обычно 1–3 месяца",
         "rcl_council": "обычно несколько недель",
         "rcl_to_sejm": "обычно несколько дней",
@@ -694,10 +709,6 @@ RU = Labels(
         ),
         "wykaz_adopted": (
             "пока ничего — правительство приняло проект, ждём внесения в Сейм и номера druku"
-        ),
-        "senate": (
-            "направить мнение в профильную комиссию Сената — она рассматривает закон"
-            " в ближайшие дни после голосования в Сейме"
         ),
         "wykaz": "пока ничего — ждём публикации проекта на RCL, тогда откроются консультации",
         "rcl_consultation": "пока ничего — консультации по проекту уже закрыты",
@@ -935,6 +946,7 @@ EN = Labels(
         " the project is published on RCL and the public consultation starts."
     ),
     wykaz_stage="entered in the government's legislative plan, no text yet",
+    wykaz_stage_adopted="the Council of Ministers has adopted the draft; it goes to the Sejm",
     wykaz_published="Entered in the plan",
     wykaz_planned="adoption by the government: Q{quarter} {year}",
     wykaz_metadata_note=("Scored from the register entry: the draft text does not exist yet."),
@@ -1016,6 +1028,14 @@ EN = Labels(
     supplement_supports={
         "yes": "the government backs the bill",
         "no": "the government is against the bill",
+    },
+    deadline_passed_labels={
+        "senate": "the Senate's 30 days are out: the act counts as passed unamended (art. 121)",
+        "president": "the 21 days for the signature are out",
+        "president_after_veto": "the 7 days for the signature are out",
+    },
+    no_action_after_deadline={
+        "senate": "nothing yet — the Senate's term is out, the act goes to the President",
     },
     update_headers={
         "update": "Update",
@@ -1157,7 +1177,7 @@ EN = Labels(
         ),
         "rcl_opinions": (
             "inter-ministerial agreement and opinions, then the committees of the Council of"
-            " Ministers, the Council and submission to the Sejm (usually 3–12 months)"
+            " Ministers, the Council and submission to the Sejm"
         ),
         "rcl_committees": (
             "committees of the Council of Ministers and Komisja Prawnicza, then the Council and"
@@ -1183,6 +1203,7 @@ EN = Labels(
         "wykaz": "usually 1–6 months until the draft is published",
         "wykaz_to_rcl": "usually a few weeks",
         "wykaz_adopted": "usually a few weeks",
+        "rcl_opinions": "usually 1–3 months at this stage; the whole RCL path takes 3–12",
         "rcl_committees": "usually 1–3 months",
         "rcl_council": "usually a few weeks",
         "rcl_to_sejm": "usually a few days",
@@ -1240,10 +1261,6 @@ EN = Labels(
         "in_force_unknown": "nothing yet — the act is passed, the entry-into-force date is unknown",
         "veto": "nothing yet — the Sejm decides",
         "tribunal": "nothing yet — the Constitutional Tribunal decides",
-        "senate": (
-            "send an opinion to the competent Senate committee — it takes the act within days"
-            " of the Sejm's vote"
-        ),
         "wykaz": "nothing yet — waiting for the draft on RCL, which opens the consultation",
         "rcl_consultation": "nothing yet — the consultation on this draft has closed",
         "rcl_opinions": "nothing yet — the draft is being agreed inside the government",

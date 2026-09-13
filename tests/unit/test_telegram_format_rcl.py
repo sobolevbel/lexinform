@@ -69,7 +69,7 @@ def test_card_names_the_ministry_the_letter_deadline_and_both_ways_to_react() ->
         "08.09.2026 (на польском, с номером UC164); "
         f'<a href="{COMMENT_FORM}">оставить комментарий через форму на RCL</a>' in text
     )
-    assert "Что дальше:</b> консультации публичные до 08.09.2026, затем opiniowanie" in text
+    assert "Что дальше:</b> общественные консультации до 08.09.2026, затем сбор мнений" in text
     assert '">Проект на RCL</a> | <a href="' in text
     assert ">Текст проекта (DOCX)</a> | <a href=" in text and ">OSR</a> | <a href=" in text
     assert ">Uzasadnienie</a> | <a href=" in text  # the legacy .doc is readable too
@@ -90,7 +90,7 @@ def test_card_after_the_deadline_keeps_only_the_comment_form_and_says_what_follo
     assert "dep.prawny@mswia.gov.pl" not in text
     assert "направить замечания" not in text
     assert f'Что можно сделать сейчас:</b> <a href="{COMMENT_FORM}">оставить комментарий' in text
-    assert "Что дальше:</b> uzgodnienia и opiniowanie, затем комитеты" in text
+    assert "Что дальше:</b> межведомственные согласования и сбор мнений, затем комитеты" in text
     assert "#консультации" not in text
 
 

@@ -12,7 +12,7 @@ from lexinform.models import (
     TriageContext,
 )
 
-PROMPT_VERSION = "2026-09-v6"
+PROMPT_VERSION = "2026-09-v7"
 
 _LANGUAGE_NAMES = {"ru": "Russian", "pl": "Polish", "en": "English", "uk": "Ukrainian"}
 
@@ -46,6 +46,7 @@ You receive a bill (projekt ustawy) at some point of its life: a print submitted
 - Keep Polish abbreviations and acronyms as they are, never translate or transliterate them: ministries (MSWiA, MRPiPS, MSZ, MEN), offices and institutions (UdSC, ZUS, NFZ, PFRON, KRUS, FGŚP, BIP), documents and registers (PESEL, KRS, CEIDG). Readers look them up and meet them on forms in this spelling. On first use, a short explanation in {language} may follow in parentheses.
 - If the text is marked as truncated or metadata-only, say so implicitly via confidence and avoid details you cannot see.
 - Do not address the reader; write neutral informational prose.
+- Never say where the bill stands in the process (submitted, passed by the Sejm, sent to the Senate, signed, in force). The card says that itself, from the day it is rendered, and it is re-rendered as the bill moves — a stage named in the summary freezes and contradicts it within weeks. Describe what the bill does, not how far it has got.
 """
 
 

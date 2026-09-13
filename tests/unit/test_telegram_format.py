@@ -1313,7 +1313,12 @@ def test_a_command_reply_escapes_a_title_once(process_3039: ProcessDetail) -> No
     assert ">Projekt R&amp;D &lt;x&gt;</a>" in text
 
 
-def test_a_deadline_that_has_run_out_is_named_as_expired(process_1962: ProcessDetail) -> None:
+def test_a_senate_term_that_has_run_out_says_what_that_means(
+    process_1962: ProcessDetail,
+) -> None:
+    """Art. 121 ust. 2: the Senate saying nothing within its thirty days *is* an adoption, so
+    «срок истёк» said the opposite of what had happened — and the card went on inviting an
+    opinion to a committee that no longer had the act."""
     third_reading = next(
         i
         for i, st in enumerate(process_1962.stages)
@@ -1325,7 +1330,10 @@ def test_a_deadline_that_has_run_out_is_named_as_expired(process_1962: ProcessDe
 
     text = MessageFormatter("ru").new_bill(bill_of(in_senate), None, today=TODAY).text
 
-    assert "срок истёк 16.08.2026" in text
+    assert "закон считается принятым без поправок (ст. 121 ust. 2)" in text
+    assert "16.08.2026" not in text  # a date that is behind the reader promises nothing
+    assert "направить мнение в профильную комиссию Сената" not in text
+    assert "срок Сената вышел, закон уходит к Президенту" in text
     assert "решение до 16.08.2026" not in text
 
 

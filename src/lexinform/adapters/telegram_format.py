@@ -384,7 +384,10 @@ class MessageFormatter:
         if last is not None:
             meta_lines.append(self._field(ICON["stage"], lb.stage, self._current_stage(bill, last)))
         elif bill.wykaz is not None:
-            meta_lines.append(self._field(ICON["stage"], lb.stage, esc(lb.wykaz_stage)))
+            # "Zrealizowany" on the entry means the Council has adopted the draft: the plan
+            # is behind it, and "текста ещё нет" was the one thing the line said.
+            plan = lb.wykaz_stage_adopted if bill.wykaz.is_adopted else lb.wykaz_stage
+            meta_lines.append(self._field(ICON["stage"], lb.stage, esc(plan)))
         elif bill.rcl is not None:
             meta_lines.append(self._field(ICON["stage"], lb.stage, esc(lb.rcl_no_stage)))
         elif bill.is_pre_print:
@@ -844,7 +847,7 @@ class MessageFormatter:
             [header, facts],
             flexible=[summary_block],
             tail=[
-                self._action_line(bill, today),
+                self._action_line(bill, today, when_none=False),
                 self._links(links),
                 self._tag_line(lb.event_tags["senate" if senate else "president"], bill),
             ],
@@ -1411,10 +1414,12 @@ class MessageFormatter:
     def _planned_adoption(self, bill: Bill, today: dt.date) -> str | None:
         """The quarter in which the register says the Council of Ministers means to adopt the
         bill. The field it comes from is free text and often carries the adoption note as well,
-        so only the quarter is shown — and only while the quarter is still ahead."""
+        so only the quarter is shown — and only while the quarter is still ahead, and the
+        adoption with it: "Zrealizowany" means the Council has adopted the project, and the plan
+        for it then read as a promise next to a path that had ticked that step off."""
         entry = bill.wykaz
         quarter = entry.planned_quarter if entry is not None else None
-        if quarter is None:
+        if quarter is None or (entry is not None and entry.is_adopted):
             return None
         year, number = quarter
         if (year, number) < (today.year, (today.month - 1) // 3 + 1):
@@ -1493,9 +1498,11 @@ class MessageFormatter:
         if upcoming is not None:
             return f" · {self._agenda_when(upcoming)}"
         if (deadline := phase.deadline) is not None:
-            overdue = (today - deadline).days > DEADLINE_GRACE_DAYS
-            label = lb.deadline_passed if overdue else lb.deadline_until
-            return f" · {esc(label)} {self.fmt_date(deadline)}"
+            if not _deadline_overdue(phase, today):
+                return f" · {esc(lb.deadline_until)} {self.fmt_date(deadline)}"
+            # What a passed term means is not the same for every step, and for the Senate it is
+            # the opposite of "expired": art. 121 ust. 2 makes silence an adoption.
+            return f" · {esc(lb.deadline_passed_labels.get(phase.key, lb.deadline_passed))}"
         if (stalled := self._stalled_for(phase, today)) is not None:
             return f" · {esc(stalled)}"
         if (planned := self._planned_adoption(bill, today)) is not None:
@@ -1561,8 +1568,16 @@ class MessageFormatter:
         return esc(label)
 
     def _action_line(
-        self, bill: Bill, today: dt.date, *, agenda_item: AgendaItem | None = None
+        self,
+        bill: Bill,
+        today: dt.date,
+        *,
+        agenda_item: AgendaItem | None = None,
+        when_none: bool = True,
     ) -> str:
+        """What a reader can do now, or (with `when_none`) why nothing. A post that exists to
+        say something — the constitutional-deadline reminder, whose body lists the three things
+        the President may do — reads worse for ending in «пока ничего»."""
         lb = self._labels
         actions: list[str] = []
         window = bill.consultation
@@ -1603,18 +1618,31 @@ class MessageFormatter:
                 if deadline is not None:
                     text += f" {esc(lb.consultation_until)} {self.fmt_date(deadline)}"
                 actions.append(text)
-        if phase is not None and phase.key == "senate":
+        if phase is not None and phase.key == "senate" and not _deadline_overdue(phase, today):
             # No date: art. 121 gives the *Senate* thirty days, and its committee takes the act
             # long before they are out — "until 04.10" would read as a window that stays open.
+            # Once they are out the window is shut, whatever the process tree still shows.
             where = link(SENATE_BILLS_URL, lb.link_senate_bills)
             actions.append(f"{esc(lb.action_senate)} ({where})")
         if not actions:
             # Say so, and name the next window, rather than leave the reader guessing.
-            nothing = lb.no_action_labels.get(phase.key) if phase is not None else None
+            nothing = self._nothing_to_do(phase, today) if when_none else None
             return (
                 f"{ICON['action']} <b>{esc(lb.action_now)}:</b> {esc(nothing)}" if nothing else ""
             )
         return f"{ICON['action']} <b>{esc(lb.action_now)}:</b> " + "; ".join(actions)
+
+    def _nothing_to_do(self, phase: Phase | None, today: dt.date) -> str | None:
+        """Why there is nothing to do, and what comes after it. The Senate has two answers: one
+        while its thirty days run and the bill is with its committee, one once they are out."""
+        if phase is None:
+            return None
+        lb = self._labels
+        if _deadline_overdue(phase, today):
+            passed = lb.no_action_after_deadline.get(phase.key)
+            if passed is not None:
+                return passed
+        return lb.no_action_labels.get(phase.key)
 
     def _wykaz_actions(self, entry: WykazEntry) -> list[str]:
         """What a reader can do about a plan: art. 7 of the lobbying act lets anyone file a
@@ -1820,6 +1848,13 @@ class MessageFormatter:
                 budget -= length(block) + 2
         text = "\n\n".join(kept_head + shrunk + kept_tail)
         return text if length(text) <= MESSAGE_LIMIT else _cut_lines(text, MESSAGE_LIMIT)
+
+
+def _deadline_overdue(phase: Phase, today: dt.date) -> bool:
+    """The step's constitutional term has run out, grace included. Our Senate and President
+    deadlines are counted from the Sejm's vote and so fall a few days early, which is what
+    `DEADLINE_GRACE_DAYS` covers; past that the date is no longer something to promise."""
+    return phase.deadline is not None and (today - phase.deadline).days > DEADLINE_GRACE_DAYS
 
 
 def _quoted(value: str | None) -> str:
