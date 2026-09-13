@@ -9,10 +9,28 @@ later. Any administrator of that channel can command; nobody else reaches the bo
 /analyze 3039 force           analyse past the prefilter, a previous analysis and the cost guard
 /analyze 3039 publish         post the card of a relevant bill even below the score threshold
 /show 3039                    what the database knows: status, hits, verdict, card, last stage
+/preview 3039                 the card as the channel would get it, rendered here and posted
+                              nowhere else
+/refresh 3039                 check this bill now: stages, act, sittings, its card — what the
+                              next scheduled run would have found
 /skip 3039                    silence a false positive: no analysis, no card (the card stays)
+/unskip 3039                  the way back: the bill queues for the next run's analysis
 /republish 3039               post the card again (after a lost or failed post)
+/find cudzoziemc              bills whose title or number carries the words
+/status                       the queues, what is stuck, what the last 7 days of runs cost
 /help                         this list
 ```
+
+`/preview` answers with the card itself, links and tags and all, so the wording can be read
+before `/republish` sends it — and so that a bill held under the score threshold can be looked
+at without posting anything. `/refresh` runs the tracking phase for one bill: the reader waits
+for the Sejm, not for 05:23 UTC, and an update the Sejm published an hour ago can be posted now.
+It leaves the reminders to the scheduled run — those are due-date queries over the whole
+channel, not about the bill that was named. `/unskip` clears the skip and the spent attempts and
+puts the bill back in the queue; an RCL project keeps only its skeleton while it is skipped, so
+its documents are read again first. `/status` is what no single run report says: the queues as
+they stand, the posts that are stuck (`pending` left by a crash, `failed` still retrying), how
+many bills are followed and what the recent runs did and cost.
 
 A bill is named by any number the bot knows or by a link to it:
 
@@ -68,8 +86,10 @@ only passed still gets its card: the Senate and the President are ahead.
 
 Every reply ends with what the command took: when the run that answered it started, how long
 the command itself ran, and the model tokens and dollars it spent — the triage included, since
-it is part of the same bill. A command that never calls the model (`/show`, a bill whose
-verdict is already stored) shows the time alone.
+it is part of the same bill. A command that never calls the model (`/show`, `/find`, `/status`,
+a bill whose verdict is already stored) shows the time alone; `/refresh` counts what a
+re-analysis of a new text cost, because that is the run's spending done under the operator's
+hand.
 
 An outage of the Sejm API, RCL, the model or Telegram ends the phase and leaves the command for
 the next run; a mistake in the command (unknown bill, bad link) is answered as such. A text

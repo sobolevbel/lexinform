@@ -145,9 +145,9 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
    new text version (re-analysed) and the hand-over to the Sejm each make one reply; the druk
    whose `rclNum` names a followed project inherits its card.
 6. **Report** to the technical channel when `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` is set.
-7. **Obey** the operator: commands posted in that channel (`/analyze 3039`, `/show`, `/skip`,
-   `/republish`, `/help`; a bill by any number or link) are answered under the command a few
-   minutes later. A small relay on an always-on server files them into the git branch `inbox`
+7. **Obey** the operator: commands posted in that channel (`/analyze 3039`, `/show`, `/preview`,
+   `/refresh`, `/skip`, `/unskip`, `/republish`, `/find`, `/status`, `/help`; a bill by any
+   number or link) are answered under the command a few minutes later. A small relay on an always-on server files them into the git branch `inbox`
    and starts the commands phase on GitHub. See [`docs/operator-commands.md`](docs/operator-commands.md).
 
 The Sejm term (kadencja) is read from the API on every run (`/sejm/term`), so a new Sejm is

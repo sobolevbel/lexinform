@@ -391,6 +391,18 @@ class BillRepository(Protocol):
         max_attempts: int | None = None,
     ) -> list[Bill]: ...
 
+    def count_by_status(self) -> dict[str, int]:
+        """How many bills sit in each status, the empty statuses left out."""
+        ...
+
+    def count_publications(self, channel_id: str) -> dict[str, int]:
+        """How many posts of the channel are in each publication status."""
+        ...
+
+    def search(self, text: str, *, limit: int) -> list[Bill]:
+        """Bills whose title or number contains `text`, newest change first."""
+        ...
+
     def list_publish_candidates(
         self, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
     ) -> list[Bill]: ...

@@ -487,6 +487,35 @@ class SqliteBillRepository:
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
+    def count_by_status(self) -> dict[str, int]:
+        rows = self._conn.execute(
+            "SELECT status, count(*) FROM bills WHERE discontinued_at IS NULL GROUP BY status"
+        ).fetchall()
+        return {str(status): int(count) for status, count in rows}
+
+    def count_publications(self, channel_id: str) -> dict[str, int]:
+        rows = self._conn.execute(
+            "SELECT status, count(*) FROM publications WHERE channel_id = ? GROUP BY status",
+            (channel_id,),
+        ).fetchall()
+        return {str(status): int(count) for status, count in rows}
+
+    def search(self, text: str, *, limit: int) -> list[Bill]:
+        """A title or number search for the operator, who remembers what a bill is about and
+        not its number. SQLite folds case for ASCII only, so a Polish letter matches as it was
+        typed; the titles are mixed-case Polish and a word from the middle is the usual query.
+        """
+        pattern = f"%{text.strip()}%"
+        rows = self._conn.execute(
+            """
+            SELECT * FROM bills
+            WHERE title LIKE ? COLLATE NOCASE OR number LIKE ? COLLATE NOCASE
+            ORDER BY change_date DESC LIMIT ?
+            """,
+            (pattern, pattern, limit),
+        ).fetchall()
+        return [self._row_to_bill(r) for r in rows]
+
     def list_publish_candidates(
         self, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
     ) -> list[Bill]:

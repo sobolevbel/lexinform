@@ -17,6 +17,8 @@ from lexinform.models.analysis import TokenUsage
 from lexinform.models.bill import Bill
 from lexinform.models.enums import PRE_PRINT_PREFIX, RCL_PREFIX, WYKAZ_PREFIX
 from lexinform.models.rcl import normalize_wykaz_number
+from lexinform.models.report import RunReport
+from lexinform.models.sejm import PrintInfo
 
 
 class IncomingCommand(BaseModel):
@@ -112,26 +114,43 @@ class CommandName(StrEnum):
     ANALYZE = "analyze"
     SHOW = "show"
     SKIP = "skip"
+    UNSKIP = "unskip"
     REPUBLISH = "republish"
+    PREVIEW = "preview"
+    REFRESH = "refresh"
+    FIND = "find"
+    STATUS = "status"
     HELP = "help"
 
 
 NEEDS_REFERENCE = frozenset(
-    {CommandName.ANALYZE, CommandName.SHOW, CommandName.SKIP, CommandName.REPUBLISH}
+    {
+        CommandName.ANALYZE,
+        CommandName.SHOW,
+        CommandName.SKIP,
+        CommandName.UNSKIP,
+        CommandName.REPUBLISH,
+        CommandName.PREVIEW,
+        CommandName.REFRESH,
+    }
 )
+NEEDS_QUERY = frozenset({CommandName.FIND})
+MIN_QUERY_CHARS = 3
 
 
 class Command(BaseModel):
     """A parsed command line; `error` says what is wrong with it (the reply repeats it).
 
     `force` analyses past the prefilter, a previous analysis and the cost guard; `publish` posts
-    the card of a relevant bill even below the score threshold.
+    the card of a relevant bill even below the score threshold. `query` is what `/find` searches
+    for — the one command that names words instead of a bill.
     """
 
     model_config = ConfigDict(frozen=True)
 
     name: CommandName
     ref: BillRef | None = None
+    query: str | None = None
     force: bool = False
     publish: bool = False
     error: str | None = None
@@ -142,28 +161,56 @@ class OutcomeStatus(StrEnum):
 
     `ANALYSED` carries a verdict, fresh or stored, and a `message_id` when the card went out;
     `SKIPPED` means the prefilter said no and the `note` says why (`force` gets past it);
-    `SILENCED` is what `/skip` leaves behind — the bill will not be analysed or posted;
-    `EXECUTED_EARLIER` means a previous run did the work and only its answer never arrived.
+    `SILENCED` is what `/skip` leaves behind — the bill will not be analysed or posted, and
+    `QUEUED` what `/unskip` puts it back into; `PREVIEWED` carries a card that was rendered for
+    the technical channel and posted nowhere else; `EXECUTED_EARLIER` means a previous run did
+    the work and only its answer never arrived.
     """
 
     ANALYSED = "analysed"
     SKIPPED = "skipped"
     SHOWN = "shown"
     SILENCED = "silenced"
+    QUEUED = "queued"
     REPUBLISHED = "republished"
+    PREVIEWED = "preview"
+    REFRESHED = "refreshed"
+    FOUND = "found"
+    REPORTED = "status"
     HELP = "help"
     EXECUTED_EARLIER = "executed earlier"
     NOT_FOUND = "not_found"
     ERROR = "error"
 
 
+class StatusSnapshot(BaseModel):
+    """What `/status` answers: the queues as they stand, what is stuck, and what the last runs
+    did and cost.
+
+    `waiting` names the bills rather than counting them: an operator can act on a number and
+    not on a total. The run report tells what one run did; this tells what has piled up over
+    the days between them.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    bills: dict[str, int] = Field(default_factory=dict)
+    publications: dict[str, int] = Field(default_factory=dict)
+    followed: int = 0
+    waiting: tuple[Bill, ...] = ()
+    runs: tuple[RunReport, ...] = ()
+    days: int = 0
+
+
 class CommandOutcome(BaseModel):
     """What happened to a command; the replier renders it under the command's message.
 
     `note` is the reason, the error, or why the card was not posted, and `message_id` the card
-    just posted (or posted again). The rest is what running the command took: when the run that
-    answered it started, how long the command itself took, and the model tokens it spent (empty
-    when the model was not called).
+    just posted (or posted again). `print_info` belongs to a `/preview`: the card is rendered
+    with the same links the channel would get. `found` are the matches of a `/find` and
+    `snapshot` the answer to a `/status`. The rest is what running the command took: when the
+    run that answered it started, how long the command itself took, and the model tokens it
+    spent (empty when the model was not called).
     """
 
     model_config = ConfigDict(frozen=True)
@@ -172,6 +219,9 @@ class CommandOutcome(BaseModel):
     bill: Bill | None = None
     note: str = ""
     message_id: int | None = None
+    print_info: PrintInfo | None = None
+    found: tuple[Bill, ...] = ()
+    snapshot: StatusSnapshot | None = None
     run_started_at: dt.datetime | None = None
     seconds: float | None = None
     usage: dict[str, TokenUsage] = Field(default_factory=dict)
@@ -295,6 +345,13 @@ def parse_command(text: str) -> Command | None:
             publish = True
         else:
             args.append(word)
+    if name in NEEDS_QUERY:
+        query = " ".join(args).strip()
+        if len(query) < MIN_QUERY_CHARS:
+            return Command(
+                name=name, error=f"/{name} needs at least {MIN_QUERY_CHARS} characters to look for"
+            )
+        return Command(name=name, query=query)
     if name not in NEEDS_REFERENCE:
         return Command(name=name)
     if not args:

@@ -328,6 +328,23 @@ class StatusTrackingService:
         self._log_outcome(result, changed_since)
         return result
 
+    def check_bill(self, bill: Bill, *, publish: bool = True) -> TrackingResult:
+        """Everything a run would look at for one bill, now: its source's watcher, its process
+        and its card. The reminders are left out — they are due-date queries over the whole
+        channel, and the operator asked about this bill."""
+        result = TrackingResult()
+        one = [bill]
+        if not self._check_other_sources(one, one, result, publish=publish):
+            return result
+        self._check_processes(one, result, publish=publish)
+        if result.fatal_error is None:
+            self._cards.refresh(one, result, publish=publish)
+        return result
+
+    def followed(self) -> list[Bill]:
+        """The bills a run would check: a card in the channel and a road that has not ended."""
+        return self._list_tracked()
+
     def _check_other_sources(
         self, tracked: list[Bill], everyone: list[Bill], result: TrackingResult, *, publish: bool
     ) -> bool:

@@ -140,6 +140,28 @@ def test_an_unreadable_reference_is_reported_verbatim() -> None:
     assert command.error == "cannot read a bill number or a link in 'the bill about visas'"
 
 
+def test_find_takes_words_and_not_a_bill() -> None:
+    command = parse_command("/find ustawa o cudzoziemcach")
+
+    assert command is not None
+    assert command.name is CommandName.FIND and command.ref is None
+    assert command.query == "ustawa o cudzoziemcach" and command.error is None
+
+
+def test_find_needs_something_to_look_for() -> None:
+    command = parse_command("/find ab")
+
+    assert command is not None
+    assert command.error == "/find needs at least 3 characters to look for"
+
+
+def test_status_takes_no_arguments() -> None:
+    command = parse_command("/status")
+
+    assert command is not None
+    assert command.name is CommandName.STATUS and command.error is None
+
+
 def test_help_takes_no_arguments() -> None:
     command = parse_command("/help me")
 

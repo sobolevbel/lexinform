@@ -8,7 +8,16 @@ from lexinform.errors import LlmUnavailableError
 from lexinform.models import BillStatus, OutcomeStatus, PublicationKind, RunMode, RunReport, Stage
 from lexinform.services.commands import FORCE_HINT
 from tests.fakes import FakeLlm, FakeTextExtractor, make_analysis
-from tests.harness import RCL, RCL_ID, RPW, WYKAZ, World, rcl_project, submission
+from tests.harness import (
+    COMMITTEE_STAGES,
+    RCL,
+    RCL_ID,
+    RPW,
+    WYKAZ,
+    World,
+    rcl_project,
+    submission,
+)
 
 TITLE = "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach"
 PLAIN = "Rządowy projekt ustawy o podatku VAT"  # says nothing about foreigners
@@ -551,6 +560,150 @@ def test_a_dropped_plan_is_not_reported_as_a_law_that_was_not_enacted() -> None:
 
     (_, outcome), *_ = w.replier.replies
     assert outcome.note == "the process ended (dropped from the government's plan): not posted"
+
+
+def test_unskip_puts_a_silenced_bill_back_in_the_queue() -> None:
+    """`/skip` is the operator's only reversible mistake: the way back must be a command too,
+    and not a laptop with the production dump on it."""
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()  # discovered, analysed, posted
+    w.command("/skip 3039")
+    _commands_only(w)
+    w.command("/unskip 3039")
+
+    _commands_only(w)
+
+    (_, silenced), (_, queued) = w.replier.replies
+    assert silenced.status is OutcomeStatus.SILENCED
+    assert queued.status is OutcomeStatus.QUEUED
+    assert queued.note == "was skipped_prefilter; the next run analyses it"
+    assert w.bill("3039").status is BillStatus.ANALYSIS_PENDING
+    assert w.bill("3039").analysis_attempts == 0  # a clean budget, not the spent one
+
+
+def test_unskip_of_an_analysed_bill_does_not_pay_for_the_model_again() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    w.command("/unskip 3039")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.QUEUED and "already analysed" in outcome.note
+    assert w.bill("3039").status is BillStatus.ANALYZED
+
+
+def test_preview_renders_the_card_without_posting_it() -> None:
+    w = World(llm_script={"3039": make_analysis(score=2)})  # under the threshold: never posted
+    w.add_bill("3039", TITLE)
+    w.command("/analyze 3039")
+    _commands_only(w)
+    w.command("/preview 3039")
+
+    _commands_only(w)
+
+    (_, analysed), (_, preview) = w.replier.replies
+    assert analysed.message_id is None
+    assert preview.status is OutcomeStatus.PREVIEWED
+    assert preview.bill is not None and preview.print_info is not None
+    assert preview.note == "not posted to the channel"
+    assert w.publisher.new_bills == []  # a preview is an answer, not a post
+
+
+def test_preview_of_a_bill_without_an_analysis_says_there_is_no_card() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run(max_analyze=0)  # in the database, waiting for the model
+    w.command("/preview 3039")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.ERROR
+    assert outcome.note == "not analysed: no card to render"
+
+
+def test_refresh_posts_the_update_a_scheduled_run_would_have_found() -> None:
+    """The Sejm moves when it moves; the operator should not have to wait for 05:23 UTC."""
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    w.set_stages("3039", COMMITTEE_STAGES)
+    w.clock.advance(days=1)
+    w.command("/refresh 3039")
+
+    report = _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.REFRESHED and "1 post(s)" in outcome.note
+    bill, change, reply_to = w.publisher.updates[0]
+    assert (bill.number, reply_to) == ("3039", w.card_id("3039"))
+    assert [st.stage_type for st in change.new_stages] == ["ReadingReferral", "Referral"]
+    assert report.commands_failed == 0
+
+
+def test_refresh_of_an_unchanged_bill_says_so_and_posts_nothing() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    w.command("/refresh 3039")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.note == "nothing new: the card and the stages are as they were"
+    assert w.publisher.updates == []
+
+
+def test_find_names_the_bills_whose_title_carries_the_words() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.add_bill("4000", PLAIN)
+    w.run()
+    w.command("/find cudzoziemcach")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.FOUND
+    assert [b.number for b in outcome.found] == ["3039"]
+    assert outcome.note == "1 match(es) for 'cudzoziemcach'"
+
+
+def test_find_answers_a_miss_without_an_error() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    w.command("/find przewozy kolejowe")
+
+    report = _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.FOUND and outcome.found == ()
+    assert outcome.ok and report.commands_failed == 0
+
+
+def test_status_counts_the_queues_the_posts_and_the_runs() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()  # analysed and posted
+    w.add_bill("3100", TITLE)
+    w.clock.advance(days=1)
+    w.run(max_analyze=0)  # discovered, still waiting for the model
+    w.command("/status")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    snapshot = outcome.snapshot
+    assert snapshot is not None
+    assert snapshot.bills[BillStatus.ANALYZED] == 1
+    assert snapshot.publications["sent"] == 1
+    assert snapshot.followed == 1
+    assert [b.number for b in snapshot.waiting] == ["3100"]
+    assert len(snapshot.runs) == 2 and snapshot.runs[0].published == 0
 
 
 def test_a_bill_the_sejm_has_just_passed_still_gets_a_card() -> None:

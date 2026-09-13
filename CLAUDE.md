@@ -46,7 +46,8 @@ windows and the API stage vocabulary in `docs/legislative-process.md`.
 format sniffing `document_text`, Anthropic, `publisher_base` (the `Publisher` port rendered once;
 Telegram and the console only deliver), Telegram (incl. `get_updates` and the command replier),
 SQLite, `inbox_files` (the command inbox as a directory), `github_inbox` (the relay's writer)) →
-`services/` (commands (the operator's `/analyze`, `/show`, `/skip`, `/republish`), lookup (one
+`services/` (commands (the operator's `/analyze`, `/show`, `/preview`, `/refresh`, `/skip`,
+`/unskip`, `/republish`, `/find`, `/status`), lookup (one
 bill by number or reference, fetched and prefiltered on first sight; the CLI and the commands
 share it), listener (the relay on the VPS), discovery,
 rcl_discovery + rcl_projects, wykaz_discovery, sources (`TextSources` routes a bill to
@@ -335,7 +336,16 @@ Invariants worth keeping:
   recorded outcome when it was executed, and otherwise a note that a run started it and did
   not finish, which the operator answers by sending the command again.
   `/analyze` is idempotent by construction (an analysed bill is not sent to the model again),
-  `/republish` is not: the marks are what keep a second card away.
+  `/republish` is not: the marks are what keep a second card away. The commands that only read
+  (`/show`, `/preview`, `/find`, `/status`) never post and never spend: `/preview` renders the
+  card into the technical channel alone, so the wording can be read before `/republish` sends
+  it. `/refresh` is the tracking phase for one bill (`StatusTrackingService.check_bill`) —
+  the Sejm does not wait for 05:23 UTC — and leaves the reminders to the scheduled run, which
+  asks them of the whole channel; it is idempotent the way tracking is (the change row is
+  unique). `/unskip` is the way back from `/skip` and from every other skip: a clean budget of
+  attempts and `analysis_pending`, with a skipped RCL row's documents re-read *before* the
+  status is cleared, or an unreachable RCL would leave the bill queued to be analysed on its
+  metadata alone.
   An outage of a source system *or of the channel* ends the phase and leaves the file, with the
   counters of the commands already answered intact. The relay (`lexinform listen`, one `getUpdates`
   consumer per bot, never a webhook) files a command through the GitHub Contents API, answers

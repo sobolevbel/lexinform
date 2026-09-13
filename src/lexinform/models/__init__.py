@@ -58,6 +58,7 @@ from lexinform.models.commands import (
     IncomingCommand,
     OutcomeStatus,
     RefKind,
+    StatusSnapshot,
     parse_command,
     parse_reference,
 )
@@ -180,6 +181,7 @@ __all__ = [
     "CommandState",
     "OutcomeStatus",
     "Command",
+    "StatusSnapshot",
     "BillRef",
     "NEEDS_REFERENCE",
     "AMENDMENT_SOURCES",

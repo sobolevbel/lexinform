@@ -38,6 +38,8 @@ from lexinform.models import (
     RunReport,
     Stage,
     StatusChange,
+    StatusSnapshot,
+    TokenUsage,
     VotingSummary,
     WykazEntry,
     about_ukraine,
@@ -78,10 +80,19 @@ COMMAND_HELP = (
     " and the cost guard\n"
     "• <code>/analyze BILL publish</code> — post a relevant card even below the score threshold\n"
     "• <code>/show BILL</code> — what the database knows\n"
+    "• <code>/preview BILL</code> — the card as the channel would get it, rendered here only\n"
+    "• <code>/refresh BILL</code> — check this bill now: stages, act, sittings, its card\n"
     "• <code>/skip BILL</code> — silence a false positive (no analysis, no card)\n"
+    "• <code>/unskip BILL</code> — put it back in the queue for the next run\n"
     "• <code>/republish BILL</code> — post the card again\n"
+    "• <code>/find WORDS</code> — bills whose title or number contains the words\n"
+    "• <code>/status</code> — the queues, what is stuck, what the last runs cost\n"
     "• <code>/help</code>"
 )
+
+# The commands whose answer is a dossier and not a verdict: they get the status, the last stage
+# and the consultation window as well as the bill's title and score.
+FULL_FACTS = frozenset({OutcomeStatus.SHOWN, OutcomeStatus.REFRESHED})
 
 FILLED = "●"
 EMPTY = "○"
@@ -938,7 +949,12 @@ class MessageFormatter:
             OutcomeStatus.SKIPPED: "⏭",
             OutcomeStatus.SHOWN: "🔎",
             OutcomeStatus.SILENCED: "🔇",
+            OutcomeStatus.QUEUED: "🔁",
             OutcomeStatus.REPUBLISHED: "📣",
+            OutcomeStatus.PREVIEWED: "👁",
+            OutcomeStatus.REFRESHED: "🔄",
+            OutcomeStatus.FOUND: "🔍",
+            OutcomeStatus.REPORTED: "📊",
             OutcomeStatus.HELP: "🛠",
             OutcomeStatus.EXECUTED_EARLIER: "🕗",
         }.get(outcome.status, "❌")
@@ -950,13 +966,48 @@ class MessageFormatter:
         blocks = [head]
         bill = outcome.bill
         if bill is not None:
-            blocks.append(self._bill_facts(bill, full=outcome.status is OutcomeStatus.SHOWN))
+            blocks.append(self._bill_facts(bill, full=outcome.status in FULL_FACTS))
         if outcome.message_id is not None:
             blocks.append(f"📣 card posted: message {outcome.message_id}")
         if outcome.note:
             blocks.append(esc(outcome.note))
-        blocks.append(_command_cost(outcome))
-        return RenderedMessage(text=self._assemble(blocks))
+        return RenderedMessage(
+            text=self._assemble(
+                blocks, flexible=self._command_body(outcome), tail=[_command_cost(outcome)]
+            )
+        )
+
+    def _command_body(self, outcome: CommandOutcome) -> list[str]:
+        """What a command answers with beyond its verdict: a rendered card, a list of matches,
+        the state of the queues. These are what gets shrunk when the message is too long."""
+        bill = outcome.bill
+        if outcome.status is OutcomeStatus.PREVIEWED and bill is not None:
+            return [self.new_bill(bill, outcome.print_info).text]
+        if outcome.found:
+            return ["\n".join(f"• {self._bill_line(b)}" for b in outcome.found)]
+        if outcome.snapshot is not None:
+            return [self._snapshot_body(outcome.snapshot)]
+        return []
+
+    def _bill_line(self, bill: Bill) -> str:
+        """One bill in a list: its number, where our pipeline left it, and its title as a link."""
+        return f"<b>{self._number_label(bill)}</b> · {esc(bill.status)} · " + link(
+            process_web_url(bill.term, bill.number), _clip(bill.summary.title, 90)
+        )
+
+    def _snapshot_body(self, snapshot: StatusSnapshot) -> str:
+        lines = [
+            f"📥 <b>bills</b>: {_counts(snapshot.bills)}",
+            f"📣 <b>posts</b>: {_counts(snapshot.publications)}",
+            f"👁 <b>followed</b>: {snapshot.followed}",
+            _runs_line(snapshot),
+        ]
+        if snapshot.waiting:
+            lines.append(
+                "⏳ <b>waiting</b>\n"
+                + "\n".join(f"• {self._bill_line(b)}" for b in snapshot.waiting)
+            )
+        return "\n".join(lines)
 
     def _bill_facts(self, bill: Bill, *, full: bool) -> str:
         """The bill's title and link, its verdict, and (for /show) its status and last stage."""
@@ -1714,6 +1765,38 @@ def _command_cost(outcome: CommandOutcome) -> str:
         if cost is not None:
             parts.append(f"≈ ${cost:.2f}" if cost >= 0.01 else f"≈ ${cost:.3f}")
     return f"⏱ {' · '.join(parts)}" if parts else ""
+
+
+def _counts(counts: dict[str, int]) -> str:
+    """`analysis_pending 3 · analyzed 43`, the busiest first; "none" for an empty database."""
+    if not counts:
+        return "none"
+    ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+    return " · ".join(f"{esc(name)} {value}" for name, value in ordered)
+
+
+def _runs_line(snapshot: StatusSnapshot) -> str:
+    """What the recorded runs of the window did and cost, and when the last one started —
+    the answer to "is it still running at all", which no single run report gives."""
+    runs = snapshot.runs
+    if not runs:
+        return f"🏃 <b>runs</b>: none in {snapshot.days} days"
+    usage: dict[str, TokenUsage] = {}
+    for report in runs:
+        for model, spent in report.llm_usage.items():
+            usage[model] = usage.get(model, TokenUsage()).plus(spent)
+    cost = cost_usd(usage)
+    parts = [
+        f"{len(runs)} in {snapshot.days} days",
+        f"{sum(r.published for r in runs)} card(s)",
+        f"{sum(r.updates for r in runs)} update(s)",
+    ]
+    if failed := sum(1 for r in runs if not r.ok):
+        parts.append(f"{failed} with errors")
+    if cost is not None and usage:
+        parts.append(f"≈ ${cost:.2f}")
+    parts.append(f"last {runs[0].started_at:%d.%m %H:%M} UTC")
+    return "🏃 <b>runs</b>: " + " · ".join(parts)
 
 
 def _tokens_line(report: RunReport) -> str:

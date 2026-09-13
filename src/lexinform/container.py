@@ -360,6 +360,7 @@ class Container:
                 self.publishing_service(dry_run=dry_run),
                 self.clock,
                 text_prefilter=self.text_prefilter_service(),
+                tracking=self.tracking_service(dry_run=dry_run),
             ),
         )
 

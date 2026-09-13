@@ -33,6 +33,7 @@ from lexinform.models import (
     RunReport,
     Stage,
     StatusChange,
+    StatusSnapshot,
     TokenUsage,
     flatten_stages,
 )
@@ -1098,6 +1099,57 @@ def test_show_reply_adds_status_stage_and_the_last_error(process_3039: ProcessDe
     assert "status: skipped_text_prefilter · prefilter hits: cudzoziemcy" in text
     assert "last error: text prefilter: no hits" in text
     assert "last stage: " in text and "not analysed" in text
+
+
+def test_preview_reply_carries_the_card_itself(process_3039: ProcessDetail) -> None:
+    formatter = MessageFormatter("ru")
+    outcome = CommandOutcome(
+        status=OutcomeStatus.PREVIEWED,
+        bill=bill_of(process_3039),
+        note="not posted to the channel",
+    )
+
+    text = formatter.command_reply(_incoming("/preview 3039"), outcome).text
+
+    assert_telegram_html(text)
+    assert text.startswith("👁 <b>preview</b>")
+    assert "📜 <b>Новый законопроект — druk nr 3039</b>" in text  # the card, as the channel gets it
+
+
+def test_status_reply_shows_the_queues_the_posts_and_the_runs(process_3039: ProcessDetail) -> None:
+    formatter = MessageFormatter("ru")
+    waiting = bill_of(process_3039).model_copy(
+        update={"status": BillStatus.ANALYSIS_PENDING, "analysis": None}
+    )
+    outcome = CommandOutcome(
+        status=OutcomeStatus.REPORTED,
+        snapshot=StatusSnapshot(
+            bills={"analyzed": 43, "analysis_pending": 1},
+            publications={"sent": 120, "failed": 1},
+            followed=17,
+            waiting=(waiting,),
+            runs=(
+                RunReport(
+                    started_at=NOW,
+                    finished_at=NOW,
+                    since=NOW,
+                    mode=RunMode.RUN,
+                    published=2,
+                    updates=3,
+                ),
+            ),
+            days=7,
+        ),
+    )
+
+    text = formatter.command_reply(_incoming("/status"), outcome).text
+
+    assert_telegram_html(text)
+    assert "📥 <b>bills</b>: analyzed 43 · analysis_pending 1" in text
+    assert "📣 <b>posts</b>: sent 120 · failed 1" in text
+    assert "👁 <b>followed</b>: 17" in text
+    assert "🏃 <b>runs</b>: 1 in 7 days · 2 card(s) · 3 update(s) · last " in text
+    assert "⏳ <b>waiting</b>" in text and "analysis_pending" in text
 
 
 def test_help_reply_lists_the_commands_after_the_complaint() -> None:

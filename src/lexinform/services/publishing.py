@@ -87,6 +87,11 @@ class PublishingService:
         self._channel_id = channel_id
         self._max_attempts = max_attempts
 
+    @property
+    def channel_id(self) -> str:
+        """The channel the cards go to: what a caller counting its posts must ask about."""
+        return self._channel_id
+
     def publish_new(self, *, min_score: int, limit: int, publish: bool = True) -> PublishingResult:
         """Post the cards this run has earned.
 
@@ -156,7 +161,7 @@ class PublishingService:
         inherited = self._inherited_card(bill)
         if inherited is not None:
             return self._inherit_card(bill, inherited)
-        print_info = self._safe_print(bill) if bill.has_process else None
+        print_info = self.print_info(bill)
         bill = self._with_submission(bill)
         pub_id = self._repo.create_publication(
             Publication(
@@ -331,6 +336,12 @@ class PublishingService:
             return bill
         self._repo.save_submission(bill.term, bill.number, sub)
         return bill.model_copy(update={"submission": sub})
+
+    def print_info(self, bill: Bill) -> PrintInfo | None:
+        """The print whose files the card links, or None when the row has none (an RCL project,
+        a wykaz entry) or the API is having a bad day: a card without the links is still a card.
+        """
+        return self._safe_print(bill) if bill.has_process else None
 
     def _safe_print(self, bill: Bill) -> PrintInfo | None:
         try:

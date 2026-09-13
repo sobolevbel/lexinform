@@ -26,6 +26,7 @@ from lexinform.models import (
     OutcomeStatus,
     PublicationKind,
     PublicationStatus,
+    StatusSnapshot,
     TokenUsage,
     closure_event,
     is_over,
@@ -36,6 +37,7 @@ from lexinform.services.analysis import AnalysisService, TooExpensiveError
 from lexinform.services.lookup import BillLookup, BillNotFoundError
 from lexinform.services.publishing import PublishingService
 from lexinform.services.text_prefilter import TextPrefilterService
+from lexinform.services.tracking import StatusTrackingService, TrackingResult
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +48,12 @@ SKIPPED = frozenset(
         BillStatus.SKIPPED_COST,
         BillStatus.SKIPPED_CLOSED,
     }
+)
+WAITING = (
+    BillStatus.ANALYSIS_PENDING,
+    BillStatus.TEXT_PREFILTER_PENDING,
+    BillStatus.ANALYSIS_FAILED,
+    BillStatus.SKIPPED_COST,
 )
 FORCE_HINT = "add `force` to analyse anyway"
 _CLOSURE_NOTES = {
@@ -58,6 +66,34 @@ _CLOSURE_NOTES = {
 
 def _day(when: dt.datetime | None) -> str:
     return str(when.date()) if when is not None else "an earlier run"
+
+
+class _SourceDownError(ServiceUnavailableError):
+    """A watcher of `/refresh` stopped because its source is down. `TrackingResult.fatal_error`
+    already names the system, so the message is passed on as it is."""
+
+    def describe(self) -> str:
+        return str(self)
+
+
+def _tracking_note(result: TrackingResult) -> str:
+    """What `/refresh` found, in the counters that mean something to a reader of the channel."""
+    posts = (
+        result.published
+        + result.acts_published
+        + result.in_force_posted
+        + result.agenda_posted
+        + result.consultation_results_posted
+    )
+    parts = [
+        f"{posts} post(s)" if posts else "",
+        "card refreshed" if result.cards_refreshed else "",
+        f"{result.reanalyzed} re-analysis" if result.reanalyzed else "",
+        f"{result.held} stage(s) held for the next post" if result.held else "",
+        f"{result.failed} failure(s), see the log" if result.failed else "",
+    ]
+    said = " · ".join(p for p in parts if p)
+    return said or "nothing new: the card and the stages are as they were"
 
 
 @dataclass
@@ -92,6 +128,9 @@ class CommandService:
         clock: Clock,
         *,
         text_prefilter: TextPrefilterService | None = None,
+        tracking: StatusTrackingService | None = None,
+        status_days: int = 7,
+        status_bills: int = 10,
     ) -> None:
         self._repo = repo
         self._inbox = inbox
@@ -101,6 +140,9 @@ class CommandService:
         self._publishing = publishing
         self._clock = clock
         self._text_prefilter = text_prefilter
+        self._tracking = tracking
+        self._status_days = status_days
+        self._status_bills = status_bills
 
     def handle_pending(
         self,
@@ -267,6 +309,11 @@ class CommandService:
             return CommandOutcome(status=OutcomeStatus.HELP, note="not a command")
         if command.error or command.name is CommandName.HELP:
             return CommandOutcome(status=OutcomeStatus.HELP, note=command.error or "")
+        if command.name is CommandName.STATUS:
+            return self._status()
+        if command.name is CommandName.FIND:
+            assert command.query is not None
+            return self._find(command.query)
         assert command.ref is not None
         try:
             if command.name is CommandName.ANALYZE:
@@ -284,6 +331,12 @@ class CommandService:
             return CommandOutcome(status=OutcomeStatus.SHOWN, bill=bill_or_none)
         if command.name is CommandName.SKIP:
             return self._skip(bill_or_none)
+        if command.name is CommandName.UNSKIP:
+            return self._unskip(bill_or_none)
+        if command.name is CommandName.PREVIEW:
+            return self._preview(bill_or_none)
+        if command.name is CommandName.REFRESH:
+            return self._refresh(bill_or_none, spent, publish=publish)
         return self._republish(bill_or_none, publish=publish)
 
     def _analyze(
@@ -394,6 +447,105 @@ class CommandService:
         if card is not None:
             note += f"; its card ({card}) stays and is still followed"
         return CommandOutcome(status=OutcomeStatus.SILENCED, bill=self._reload(bill), note=note)
+
+    def _unskip(self, bill: Bill) -> CommandOutcome:
+        """The way back from `/skip` — and from any other skip the operator disagrees with: the
+        bill queues for the next run's analysis with a clean budget of attempts.
+
+        A skipped RCL row keeps only the project's skeleton, so its documents are read again
+        first: after the status is cleared, an unreachable RCL would leave the bill queued to be
+        analysed on its metadata alone.
+        """
+        if bill.status is BillStatus.ANALYZED:
+            return CommandOutcome(
+                status=OutcomeStatus.QUEUED,
+                bill=bill,
+                note="already analysed; /analyze BILL force asks the model again",
+            )
+        if bill.rcl is not None and not bill.rcl.text_documents():
+            project = self._lookup.read_rcl_project(bill.number)
+            self._repo.save_rcl(bill.term, bill.number, project)
+        self._repo.reset_bill(
+            bill.term,
+            bill.number,
+            BillStatus.ANALYSIS_PENDING,
+            reason="queued by the operator (/unskip)",
+        )
+        return CommandOutcome(
+            status=OutcomeStatus.QUEUED,
+            bill=self._reload(bill),
+            note=f"was {bill.status}; the next run analyses it",
+        )
+
+    def _preview(self, bill: Bill) -> CommandOutcome:
+        """The card as the channel would get it, rendered into the technical channel alone:
+        what `/republish` would send, before it is sent."""
+        if bill.analysis is None:
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR, bill=bill, note="not analysed: no card to render"
+            )
+        if not bill.analysis.analysis.relevant:
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR,
+                bill=bill,
+                note="not relevant: the channel would never get this card",
+            )
+        card = self._card(bill)
+        note = f"the card in the channel is {card}" if card else "not posted to the channel"
+        return CommandOutcome(
+            status=OutcomeStatus.PREVIEWED,
+            bill=bill,
+            note=note,
+            print_info=self._publishing.print_info(bill),
+        )
+
+    def _refresh(
+        self, bill: Bill, spent: dict[str, TokenUsage], *, publish: bool
+    ) -> CommandOutcome:
+        """Everything the next run would look at for this bill, now: its stages, its source's
+        watcher and its card. The reader waits for the Sejm, not for our schedule."""
+        if self._tracking is None:
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR, bill=bill, note="tracking is off in this run"
+            )
+        result = self._tracking.check_bill(bill, publish=publish)
+        for model, tokens in result.usage.items():
+            spent[model] = spent.get(model, TokenUsage()).plus(tokens)
+        if result.fatal_error is not None:
+            raise _SourceDownError(result.fatal_error)
+        return CommandOutcome(
+            status=OutcomeStatus.REFRESHED, bill=self._reload(bill), note=_tracking_note(result)
+        )
+
+    def _status(self) -> CommandOutcome:
+        """The queues, what is stuck and what the recent runs cost — the state between the run
+        reports, which each say what one run did and nothing about what has piled up."""
+        since = self._clock.now() - dt.timedelta(days=self._status_days)
+        snapshot = StatusSnapshot(
+            bills=self._repo.count_by_status(),
+            publications=self._repo.count_publications(self._publishing.channel_id),
+            followed=len(self._tracking.followed()) if self._tracking is not None else 0,
+            waiting=tuple(self._repo.list_by_status(list(WAITING), limit=self._status_bills)),
+            runs=tuple(self._repo.list_runs(since=since)),
+            days=self._status_days,
+        )
+        return CommandOutcome(
+            status=OutcomeStatus.REPORTED,
+            snapshot=snapshot,
+            note=f"{snapshot.followed} bills followed",
+        )
+
+    def _find(self, query: str) -> CommandOutcome:
+        found = self._repo.search(query, limit=self._status_bills)
+        if not found:
+            return CommandOutcome(
+                status=OutcomeStatus.FOUND, note=f"nothing in the database matches {query!r}"
+            )
+        return CommandOutcome(
+            status=OutcomeStatus.FOUND,
+            found=tuple(found),
+            note=f"{len(found)} match(es) for {query!r}",
+        )
 
     def _over_note(self, bill: Bill) -> str | None:
         """Why no card may be posted for this bill, when its road has ended. A card is an
