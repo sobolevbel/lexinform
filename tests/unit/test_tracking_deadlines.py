@@ -23,13 +23,15 @@ TO_PRESIDENT = Stage(
 )
 
 
-def _passed() -> World:
-    """A followed bill the Sejm passed on 2026-09-04: the Senate's term runs to 2026-10-04."""
+def _passed(*, urgent: bool = False) -> World:
+    """A followed bill the Sejm passed on 2026-09-04: the Senate's term runs to 2026-10-04, or
+    to 2026-09-18 when the government declared the bill pilny (art. 123)."""
     w = World()  # clock: 2026-09-07
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
     w.run()
     w.set_stages("3039", PASSED)
-    w.touch("3039", dt.datetime(2026, 9, 6, 9, tzinfo=dt.UTC), passed=True)
+    urgency = {"urgency_status": "URGENT"} if urgent else {}
+    w.touch("3039", dt.datetime(2026, 9, 6, 9, tzinfo=dt.UTC), passed=True, **urgency)
     w.run()
     return w
 
@@ -104,3 +106,19 @@ def test_the_reminder_says_what_the_senate_decides_and_how_exact_the_date_is() -
     assert "фактический на несколько дней позже" in text
     assert "направить мнение в профильную комиссию Сената" in text
     assert "#сенат #важность5 #легализация #kadencja10druk3039" in text
+
+
+def test_an_urgent_bill_is_reminded_in_its_own_terms() -> None:
+    """The deadline is already the shortened one, so a date two weeks earlier than every other
+    bill's has to say why — and must not promise a committee sitting "well before" it."""
+    w = _passed(urgent=True)
+    w.clock.advance(days=5)  # 2026-09-12: six days to the Senate's 14-day term
+
+    report = w.run()
+    bill, phase, _, today = w.publisher.decision_deadlines[0]
+    text = MessageFormatter("ru").decision_deadline(bill, phase, today=today).text
+
+    assert report.decision_reminders == 1
+    assert "Сенат должен решить до 18.09.2026" in text
+    assert "у Сената 14 дней вместо обычных 30" in text
+    assert "задолго до этого срока" not in text

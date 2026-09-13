@@ -201,6 +201,8 @@ class Labels:
     president_deadline_line: str
     senate_deadline_body: str
     president_deadline_body: str
+    senate_deadline_body_urgent: str
+    president_deadline_body_urgent: str
     deadline_counted_from_vote: str
     amendments_senate: str
     amendments_committee: str
@@ -379,7 +381,7 @@ RU = Labels(
     wykaz_header="План правительства",
     wykaz_intention=(
         "Это пока только намерение: текста проекта ещё нет. Запись в плане работ"
-        " правительства от {date}. Разбор текста придёт отдельной карточкой, когда проект"
+        " правительства от {date}. Разбор текста придёт ответом в эту же ветку, когда проект"
         " опубликуют на RCL и начнутся публичные консультации."
     ),
     wykaz_stage="проект внесён в план работ правительства, текста ещё нет",
@@ -408,7 +410,7 @@ RU = Labels(
     link_wykaz_entry="Запись в плане работ",
     tag_wykaz="wykazRM",
     rcl_process_closed="Проект закрыт на RCL, в Сейм не направлен.",
-    wykaz_process_closed="Проект снят с плана работ правительства.",
+    wykaz_process_closed="Правительство отказалось от проекта: он снят с плана работ.",
     committee_report="отчёт комиссии (sprawozdanie)",
     subcommittee_report="отчёт подкомиссии",
     proposes="предлагает",
@@ -439,6 +441,17 @@ RU = Labels(
     president_deadline_body=(
         "Подписать закон, наложить вето или направить его в Конституционный трибунал"
         " (ст. 122 Конституции)."
+    ),
+    senate_deadline_body_urgent=(
+        "Принять закон без изменений, внести поправки или отклонить его целиком"
+        " (ст. 121 Конституции). Проект срочный (tryb pilny, ст. 123): у Сената 14 дней"
+        " вместо обычных 30, и его комиссия рассмотрит закон в ближайшие дни —"
+        " если хотите направить мнение, отправляйте сразу."
+    ),
+    president_deadline_body_urgent=(
+        "Подписать закон, наложить вето или направить его в Конституционный трибунал"
+        " (ст. 122 Конституции). Проект срочный (tryb pilny, ст. 123): у Президента 7 дней"
+        " вместо обычных 21."
     ),
     deadline_counted_from_vote=(
         "Срок отсчитан от голосования в Сейме: фактический на несколько дней позже —"
@@ -901,8 +914,8 @@ EN = Labels(
     wykaz_header="Government plan",
     wykaz_intention=(
         "An intention so far: there is no draft text yet. Entered in the government's"
-        " legislative plan on {date}. The text will be analysed in a separate card once the"
-        " project is published on RCL and the public consultation starts."
+        " legislative plan on {date}. The text will be analysed in a reply in this thread once"
+        " the project is published on RCL and the public consultation starts."
     ),
     wykaz_stage="entered in the government's legislative plan, no text yet",
     wykaz_published="Entered in the plan",
@@ -928,7 +941,7 @@ EN = Labels(
     link_wykaz_entry="Register entry",
     tag_wykaz="wykazRM",
     rcl_process_closed="The project was closed on RCL without reaching the Sejm.",
-    wykaz_process_closed="The project was taken off the government's plan.",
+    wykaz_process_closed="The government dropped the project: it was taken off the plan.",
     committee_report="committee report (sprawozdanie)",
     subcommittee_report="sub-committee report",
     proposes="proposes to",
@@ -959,6 +972,17 @@ EN = Labels(
     president_deadline_body=(
         "Sign the act, veto it or refer it to the Constitutional Tribunal"
         " (art. 122 of the Constitution)."
+    ),
+    senate_deadline_body_urgent=(
+        "Pass the act unchanged, amend it or reject it as a whole (art. 121 of the"
+        " Constitution). The bill is urgent (tryb pilny, art. 123): the Senate has 14 days"
+        " instead of the usual 30 and its committee takes the act within days — send an"
+        " opinion now if you want one heard."
+    ),
+    president_deadline_body_urgent=(
+        "Sign the act, veto it or refer it to the Constitutional Tribunal"
+        " (art. 122 of the Constitution). The bill is urgent (tryb pilny, art. 123): the"
+        " President has 7 days instead of the usual 21."
     ),
     deadline_counted_from_vote=(
         "Counted from the Sejm's vote: the real deadline is a few days later, as it runs from"

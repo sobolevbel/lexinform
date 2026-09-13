@@ -245,7 +245,9 @@ budget and the constitution are not what this channel follows.
 Still open:
 
 - A retroactive merge for druki 1929/1933, carded before the joint-print rule existed: both
-  threads stay, though they no longer duplicate each other's sittings.
+  threads stay. They duplicated each other once for real — the sitting `PSR/139/2026-09-15` was
+  announced under both cards on 2026-09-10, two days before `Poster.told_jointly` — and do not
+  any more (`test_one_sitting_is_told_once_for_the_whole_group` holds the same-run case).
 - `Analysis.confidence` is asked for and read by nothing; either show it or stop asking.
 
 - RCL leftovers: consultations of draft regulations (rozporządzenia, `typeId=10`); the

@@ -160,9 +160,14 @@ def test_a_veto_the_sejm_could_not_override_is_not_a_rejection(
     end = Stage(stage_type="End", stage_name="nie uchwalona ponownie po wecie Prezydenta")
     vetoed = _bill(process_1962).model_copy(update={"stages": (veto, end)})
 
-    event = update_event(_change([end], closure_detected=True, passed=False), vetoed)
+    change = _change([end], closure_detected=True, passed=False)
+
+    event = update_event(change, vetoed)
 
     assert event == "veto_sustained"
+    # The closing post's only new stage is the `End` node, so without naming the event a search
+    # for the veto would miss the post that says how it finished.
+    assert "veto" in event_keys(change, event)
 
 
 def test_the_government_position_outweighs_the_other_filed_documents(

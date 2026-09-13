@@ -752,7 +752,13 @@ class MessageFormatter:
         line = (lb.senate_deadline_line if senate else lb.president_deadline_line).format(
             date=self.fmt_date(phase.deadline)
         )
-        body = lb.senate_deadline_body if senate else lb.president_deadline_body
+        # The deadline itself is already the shortened one for an urgent bill (art. 123), and a
+        # date two weeks earlier than every other bill's needs saying why: the normal body would
+        # promise the Senate's committee sits "well before" a term that is half as long.
+        if is_urgent(bill):
+            body = lb.senate_deadline_body_urgent if senate else lb.president_deadline_body_urgent
+        else:
+            body = lb.senate_deadline_body if senate else lb.president_deadline_body
         facts = (
             f"{ICON['effective']} <b>{esc(line)}</b> · "
             f"{self._countdown((phase.deadline - today).days)}\n"

@@ -27,6 +27,7 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
     TokenUsage,
+    closure_event,
     is_over,
     parse_command,
 )
@@ -47,6 +48,12 @@ SKIPPED = frozenset(
     }
 )
 FORCE_HINT = "add `force` to analyse anyway"
+_CLOSURE_NOTES = {
+    "veto_sustained": "the President's veto stood",
+    "withdrawn_by_applicant": "withdrawn by the applicant",
+    "rejected": "rejected",
+    "not_enacted": "closed without a law",
+}
 
 
 def _day(when: dt.datetime | None) -> str:
@@ -401,9 +408,23 @@ class CommandService:
         if act is not None and act.entry_into_force is not None:
             return f"{act.display_address} in force since {act.entry_into_force}: not posted"
         ended = bill.summary.closure_date
-        outcome = "passed" if bill.summary.passed else "closed"
-        when = f" on {ended}" if ended is not None else ""
-        return f"the process ended{when} ({outcome}): not posted"
+        # A dropped plan's "closure date" is the day the register first published it (the
+        # register gives no withdrawal date at all), so it dates nothing a reader asked about.
+        when = f" on {ended}" if ended is not None and bill.wykaz is None else ""
+        return f"the process ended{when} ({self._outcome(bill)}): not posted"
+
+    @staticmethod
+    def _outcome(bill: Bill) -> str:
+        """How the road ended, in the words the channel already tells apart: a rejection, a
+        withdrawal by the applicant and a veto the Sejm could not override are three different
+        answers to "why is there no card", and `closureDate` alone tells none of them apart."""
+        if bill.summary.passed:
+            return "passed"
+        if bill.wykaz is not None:
+            return "dropped from the government's plan"
+        if bill.rcl is not None:
+            return "closed on RCL without reaching the Sejm"
+        return _CLOSURE_NOTES[closure_event(bill)]
 
     def _republish(self, bill: Bill, *, publish: bool) -> CommandOutcome:
         if bill.analysis is None or not bill.analysis.analysis.relevant:

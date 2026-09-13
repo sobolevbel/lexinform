@@ -5,7 +5,7 @@ import datetime as dt
 from typing import Any
 
 from lexinform.errors import LlmUnavailableError
-from lexinform.models import BillStatus, OutcomeStatus, PublicationKind, RunMode, RunReport
+from lexinform.models import BillStatus, OutcomeStatus, PublicationKind, RunMode, RunReport, Stage
 from lexinform.services.commands import FORCE_HINT
 from tests.fakes import FakeLlm, FakeTextExtractor, make_analysis
 from tests.harness import RCL, RCL_ID, RPW, WYKAZ, World, rcl_project, submission
@@ -13,6 +13,12 @@ from tests.harness import RCL, RCL_ID, RPW, WYKAZ, World, rcl_project, submissio
 TITLE = "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach"
 PLAIN = "Rządowy projekt ustawy o podatku VAT"  # says nothing about foreigners
 TEXT_WITH_HITS = "Art. 1. Cudzoziemiec składa wniosek o zezwolenie na pobyt czasowy. " * 20
+REJECTED_AT_FIRST_READING = Stage(
+    stage_name="I czytanie na posiedzeniu Sejmu",
+    stage_type="SejmReading",
+    date=dt.date(2026, 1, 23),
+    decision="odrzucono w pierwszym czytaniu",
+)
 
 
 def _commands_only(w: World, **options: Any) -> RunReport:
@@ -517,8 +523,34 @@ def test_a_bill_whose_road_has_ended_gets_a_verdict_but_no_card() -> None:
 
     (_, outcome), *_ = w.replier.replies
     assert outcome.status is OutcomeStatus.ANALYSED and outcome.message_id is None
-    assert outcome.note == "the process ended on 2026-01-23 (closed): not posted"
+    assert outcome.note == "the process ended on 2026-01-23 (closed without a law): not posted"
     assert w.publisher.new_bills == []
+
+
+def test_the_verdict_names_how_the_road_ended() -> None:
+    """A rejection, a withdrawal and a veto that stood are three different answers to "why is
+    there no card", and the channel already tells them apart for its readers."""
+    w = World()
+    w.add_bill("2172", TITLE, stages=(REJECTED_AT_FIRST_READING,))
+    w.touch("2172", dt.datetime(2026, 1, 23), closure_date=dt.date(2026, 1, 23), passed=False)
+    w.command("/analyze 2172")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.note == "the process ended on 2026-01-23 (rejected): not posted"
+
+
+def test_a_dropped_plan_is_not_reported_as_a_law_that_was_not_enacted() -> None:
+    """A plan the government took off the wykaz never had a Sejm process to close."""
+    w = World()
+    w.add_wykaz_entry(status="Wycofany")
+    w.command("/analyze UD408")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.note == "the process ended (dropped from the government's plan): not posted"
 
 
 def test_a_bill_the_sejm_has_just_passed_still_gets_a_card() -> None:

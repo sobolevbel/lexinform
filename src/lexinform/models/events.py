@@ -255,7 +255,9 @@ def event_keys(change: StatusChange, event: str) -> list[str]:
         keys.append("senate")
     if types & _PRESIDENT_STAGES:
         keys.append("president")
-    if "Veto" in types:
+    if "Veto" in types or event == "veto_sustained":
+        # The post that closes the road carries no `Veto` stage — its new stage is the `End`
+        # node — so without this the veto's last word is the one post a search for it misses.
         keys.append("veto")
     if change.amendments is not None or event == "second_reading_amendments":
         keys.append("amendments")

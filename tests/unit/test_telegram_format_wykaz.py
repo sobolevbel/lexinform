@@ -50,6 +50,9 @@ def test_the_card_says_it_is_a_plan_before_it_says_anything_the_model_wrote() ->
     assert intention in text
     # Above the summary, and in the part of the message that is never shrunk away.
     assert text.index(intention) < text.index("О чём")
+    # The RCL project inherits this very card (`WykazLinker._inherit_card`) and its analysis
+    # arrives as a reply here: a reader told to wait for a card of its own waits for nothing.
+    assert "придёт ответом в эту же ветку" in text
     assert "Оценка по описанию из плана работ правительства" in text
 
 
