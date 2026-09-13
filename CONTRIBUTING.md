@@ -70,6 +70,16 @@ at a time: a normal run spends seconds on RCL, a backlog of a few days about two
 The dump is upgraded to the current schema on restore, so this is also how a migration is tested
 against real rows before it ships.
 
+### The same recipes as slash commands
+
+`.claude/commands/` holds the repeated procedures of this repo for Claude Code, so they are run
+the same way every time: `/dry-run` (a full run on a copy of production state, with the messages
+read as a subscriber would), `/bill <number>` (one bill: API, database, the card that was posted,
+what the next run will do with it), `/state` (what is stuck, unpublished or expensive),
+`/check` (the gate: ruff, mypy, pytest), `/migration` (the schema checklist below, end to end),
+`/relay` (the VPS relay, the command inbox and the last Actions runs) and `/product-review`
+(a product audit of the wording the channel shows).
+
 ## How the code is organised
 
 ```
