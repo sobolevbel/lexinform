@@ -109,6 +109,16 @@ Invariants worth keeping:
   has no `new_bill` row, so every tracker (they all join on a `sent` card) ignores it: the group's
   events come from the card's process, the card's analysis is redone when the joint text appears.
   `republish` forgets both rows and lets the normal path decide again.
+  **The print that only replies is never sent to the model.** The reply carries the card's
+  verdict, its tags and its next step and none of its own, so the analysis of such a print is paid
+  for and shown to nobody: druk 1933 cost 305,132 input tokens ($1.53, a seventh of everything the
+  project had spent) for one. `services/joint.py::primary_of` is the question, asked by
+  `PublishingService` and a phase earlier by `AnalysisService`, which answers it with
+  `SKIPPED_JOINT` instead of a call. `list_publish_candidates` therefore lists these rows without
+  an analysis; a `skipped_joint` row whose card has gone before the reply went out has no verdict
+  to carry and goes back to `analysis_pending` (`/unskip` and `reset` do it by hand). An
+  operator's `/analyze` does not pass through the skip — asking explicitly is a wish to have it —
+  and `/preview` renders the reply rather than refusing it for want of an analysis.
 - **`/bills` rows are refreshed by tracking only.** Discovery saves a submission for new bills;
   the reconciler (`tracking/pre_print.py`) re-reads `/bills` for pending RPW entries and for bills
   awaiting consultation results and compares new with stored (print assigned, withdrawn,
@@ -553,6 +563,34 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   (`sections.strip_page_furniture`). A bare "Załącznik" is deliberately *not* a section start:
   druk 2673 carries one on page 25 of 60 as a schedule of its own bill, and cutting there would
   take the rest of the bill with it; only "Załącznik do uchwały/rozporządzenia/raportu" is one.
+- **A section heading opens a page; one found inside a page is prose that wrapped that way.**
+  `_section_start` reads `document_kind` over the first **two non-empty lines** of the
+  furniture-stripped page, not over its first 600 characters — `document_kind` searches rather
+  than anchors, so anywhere in 600 characters means anywhere at all. Druk 810 page 40 is the bill
+  ("Art. 156q. 1. Prezes Urzędu … w części A") and wraps so that its third line begins
+  "załącznika do rozporządzenia nr 2019/947/UE": **119,420 characters of the bill were dropped as
+  an appendix** and the model never saw them. Druk 545 page 10 lost its OSR to "Zgodnie z art. 5
+  ustawy … o działalności lobbingowej" at character 298, druk 1638 the same way. One line is too
+  few (the corpus then keeps 620k characters of appendices that name themselves on the second
+  line, "Projekt" over "R O Z P O R Z Ą D Z E N I E"), three already reaches druk 810's wrap.
+- **After the OSR, no page is the bill or its uzasadnienie again.** A print runs letter, bill,
+  uzasadnienie, OSR, appendices, in that order and once each. Every table of submitted comments
+  labels each row "Uzasadnienie", so a page of one read as the bill's own justification and
+  re-opened the kept run: druk 1424 sent **270,989** characters of a consultation table to Opus
+  that way and druk 1677 **317,546**. The rule is tied to the OSR and not to the first dropped
+  section because druk 810's uzasadnienie stands *before* its OSR, behind an appendix wrongly
+  detected in front of it, and a blunter rule would lose it. Druk 1677 page 98 is why both rules
+  are needed: it genuinely opens "Uzasadnienie", so no window saves it.
+- **The OSR is cut at point 5, not point 6.** Point 5 ("Informacje na temat zakresu, czasu trwania
+  i podsumowanie wyników konsultacji") is the roll of organisations the draft was sent to — 5,136
+  characters in druk 1677, 10,187 in druk 1479 — and names nobody the bill affects; point 4
+  ("Podmioty, na które oddziałuje projekt"), the one count of the affected a print gives, survives
+  in all 26 prints of the corpus that have a point 5. Point 6 stays as the fallback. ~5k a print,
+  ~2–3k an RCL package.
+- **Net over the 45 prints (13 Sept 2026): 6,437,943 characters kept → 5,929,867.** The sum is not
+  the point: it is ~588k of appendices out and ~157k of real bill text back in. The pages these
+  rules were measured on are checked in as `tests/fixtures/sejm/page_starts.json`, one row per
+  page, the way `openings.json` holds the documents.
 
 ## RCL lessons (verified live, Sept 2026)
 
@@ -685,7 +723,8 @@ There is no downgrade. To roll back, revert the code and restore the previous du
 Opus 5 is $5/M input; output is ~1% of the bill. A government print is bill + uzasadnienie + OSR
 (13-point form) + appendices (consultation report, tabela zgodności, draft regulations with their
 own uzasadnienie/OSR), and the appendices are 55–80% of the text. `sections.trim_print` keeps the
-bill, uzasadnienie and OSR points 1–5 (pages are separated by `\f` by the extractor). Long texts
+bill, uzasadnienie and OSR points 1–4 (pages are separated by `\f` by the extractor, and the kept
+pages are rejoined with it: the page is the unit every rule in `sections` works in). Long texts
 (≥ `triage_min_chars`) first get a triage on `sections.excerpts` (heads + windows around keyword
 hits) by `llm_triage_model`; a confident "no" is stored as a non-relevant analysis with
 `text_source="excerpts"`. Real numbers: druk 2695 (564k chars, irrelevant) cost $1.45 in full,
@@ -695,14 +734,29 @@ rejects `thinking: adaptive`; a classification does not need it). The system pro
 entry, but the structured-output schema is part of the cached prefix, so the entry is ~2k tokens
 and does get read (the state dump of 2026-09-09: 23k cache-read tokens over 11 analyses). The run
 report's "cache read" figure and `lexinform cost` show it; `lexinform runs` lists the recorded
-runs. Guard rails
+runs. **Every model call is written down** (`RunReport.llm_calls`: bill, kind — analysis,
+reanalysis, triage, amendments, supplement — model and tokens, recorded by `AnalysisService.
+_charge`, which every phase that asks the model goes through). One figure per run could not be
+accounted for afterwards: the run of 2026-09-13 billed 316,767 input tokens with nothing to say
+which call made them, and the report now names the three costliest. Guard rails
 (`LEXINFORM_MAX_ANALYSIS_COST_USD`, default $2 per first analysis, estimated from the text length
-at 2 chars/token before the call; `LEXINFORM_MAX_RUN_COST_USD`, default $15 per run): a text
-over the per-bill limit gets `skipped_cost` with the reason in `last_error` (`lexinform reset
---to analysis_pending` revives it), the analysis phase stops for the run once its spend reaches
+at 2 chars/token before the call — verified against the real tokenizer on 13 Sept 2026, five
+documents, 1.96–2.08; `LEXINFORM_MAX_RUN_COST_USD`, default $15 per run): **a text over the
+per-bill limit is cut down to it, not refused.** The triage has already said the bill matters,
+and `skipped_cost` left the reader with nothing and the operator with a `reset` to run by hand.
+`_fit_to_budget` counts the real tokens, scales the characters by the overshoot the tokenizer
+measured (so it lands inside the limit whatever the text tokenizes at, one re-count to confirm)
+and rebuilds the text with `sections.excerpts` over the keyword hits — head of the bill, head of
+the uzasadnienie, a window around every hit — marking it `truncated`. Under `_FIT_MIN_CHARS`
+(20k) there is no document left and `skipped_cost` stands. A **scan** is still refused rather
+than cut (its pages are substance from the first to the last), and for a re-analysis not even
+that: a bill whose new text we decline to read must not keep a card describing the old one.
+`TextBudget` is the outer cap only, and cuts the same keyword-aware way; the per-bill limit is
+what binds. The analysis phase stops for the run once its spend reaches
 the per-run limit (a note in the report, not an error; the rest waits for the next run).
-Re-analyses are not estimated per bill: a new version of a text that already passed must not
-leave the card behind. They do count against the **run's** budget, though, and are held back
+Re-analyses get the per-bill guard too, in the same cut-to-fit shape — they had none until
+2026-09-13, and the most expensive single call the project has made is one (316,767 tokens,
+$1.58, an RCL package re-read). They count against the **run's** budget as well, and are held back
 once it is reached (`AnalysisService.start_run` / `stopped`, a note in the report) — until
 2026-09-13 the per-run limit bounded the analysis phase alone, and the tracking phase's
 re-analyses, amendment summaries and supplement digests spent on top of it with nothing watching:
@@ -774,4 +828,19 @@ one line of `supplement_kind` away from being revisited. The housekeeping filing
 amendments tabled at the second reading are not told either; the latter reach the reader through
 the committee's report. The document is judged against the bill's analysis, not in place of it: a
 filed document is what somebody makes of the bill, never a new version of it.
+Text selection and cost (decided 2026-09-13, measured on the 45 prints and 10 RCL packages of
+`../lexinform-corpus` and on the 46 analyses of the state branch, $10.87 spent to date of which
+the top five bills are $6.45): the per-bill limit stays **$2** and stops refusing — a text over it
+is cut down to it by the keywords and read, because the triage has already said the bill matters;
+a print that will only get a `joint_bill` reply is not analysed at all; every model call is
+written down so a run's spend can be accounted for. Three things were measured and **rejected**,
+and should not be revisited without new numbers: a diff-based re-analysis of a new RCL redaction
+(three consecutive packages differ by 63–116% of the new text's lines — the redactions are really
+rewritten, so a diff is not smaller than the text); article-level selection inside the bill body
+(`Art. N` with keyword hits kept: 21% over 15 prints, because the body is the minority of what is
+kept, 14–68%, and a provision the keywords do not name would be lost); and changing
+`CHARS_PER_TOKEN` (2.0 verified against the real tokenizer, 1.96–2.08 over five documents).
+RCL package handling was checked and left alone: on all ten packages `_pick_parts` refused every
+appendix by content and kept bill + uzasadnienie + OSR, $0.03–$0.84 a package.
+
 Open items are listed under "Still open" in `docs/roadmap.md`.
