@@ -332,6 +332,25 @@ def test_budget_rejects_a_non_positive_cap() -> None:
         TextBudget(0)
 
 
+def test_every_page_of_the_corpus_opens_the_section_it_should() -> None:
+    """The pages that decided the rule, as they really are in the prints (`page_starts.json`):
+    the opening `_section_start` sees, and the kind it must read there. A new failure is one row.
+
+    Druk 1677 page 98 is the pair that shows why two rules are needed and not one: it genuinely
+    opens "Uzasadnienie", so no window narrow enough saves it — what keeps that page of a
+    consultation table out of the analysis is that the OSR has already been passed.
+    """
+    rows = json.loads((FIXTURES / "page_starts.json").read_text(encoding="utf-8"))
+
+    wrong = [
+        (row["druk"], row["page"], row["kind"], got)
+        for row in rows
+        if (got := document_kind(row["opening"])) != row["kind"]
+    ]
+
+    assert not wrong
+
+
 def test_every_document_of_the_corpus_is_recognised_by_its_opening() -> None:
     """The whole collected corpus, one row per real document (`openings.json`).
 
