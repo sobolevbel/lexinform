@@ -5,8 +5,8 @@ assessment (OSR, a fixed 13-point form) and then hundreds of pages of appendices
 public consultations with tables of comments, EU compliance tables (tabela zgodności) and drafts
 of executive regulations, each with its own justification and OSR. Measured on real prints the
 appendices are 55-80% of the text and say nothing about who the bill affects. `trim_print` drops
-them and keeps the bill, the justification and OSR points 1-5 (problem, solution, affected
-parties, consultations).
+them and keeps the bill, the justification and OSR points 1-4 (problem, solution, affected
+parties).
 
 `excerpts` builds the short digest used for the cheap relevance triage: the beginning of the bill,
 the beginning of the justification and windows of text around every keyword hit. `TextBudget` is
@@ -17,8 +17,8 @@ document in it at all. Much of what the Sejm publishes is scanned paper whose on
 the letter that hands it to the Marshal.
 
 The PDF extractor separates pages with a form feed, which is what `PAGE_BREAK` is, and a section
-header sits within the first few hundred characters of a page. The OSR form's point 6 is where
-the trim cuts; RCL's Word files carry that number as list formatting rather than as text, so the
+header opens a page rather than sitting somewhere inside it. The OSR form's point 5 is where the
+trim cuts; RCL's Word files carry that number as list formatting rather than as text, so the
 heading is accepted without it.
 """
 
@@ -30,7 +30,17 @@ from typing import Literal
 
 PAGE_BREAK = "\f"
 
-_HEAD = 600
+_OPENING_LINES = 2
+"""How many lines of a page may carry the heading that opens a section.
+
+A heading that starts a section stands at the top of its page; a heading-shaped line further
+down is prose that happened to wrap that way. Druk 810 page 40 is the bill — "Art. 156q. 1.
+Prezes Urzędu … w części A" — and its third line begins "załącznika do rozporządzenia nr
+2019/947/UE", which read as the start of an appendix and threw away 119,420 characters of the
+bill. One line is too few (the corpus loses 620k characters of appendices that announce
+themselves on the second line, such as "Projekt" over "R O Z P O R Z Ą D Z E N I E"), three is
+already enough to reach druk 810's wrapped line.
+"""
 
 _JUSTIFICATION_RE = re.compile(
     r"^\s*u\s?z\s?a\s?s\s?a\s?d\s?n\s?i\s?e\s?n\s?i\s?e\s*$", re.IGNORECASE | re.MULTILINE
@@ -42,7 +52,17 @@ _BILL_HEADING_RE = re.compile(r"^\s*U\s?S\s?T\s?A\s?W\s?A\s*$", re.IGNORECASE | 
 _OSR_RE = re.compile(
     r"^\s*(Nazwa|Tytuł)\s+projektu\b(?!\s+dokumentu)|^\s*DEKLAROWANE\s+SKUTKI", re.MULTILINE
 )
-_OSR_CUT_RE = re.compile(r"^\s*(?:6\.\s*)?Wpływ na sektor finans", re.MULTILINE)
+# Point 5 of the 13-point form, not point 6. Point 5 ("Informacje na temat zakresu, czasu trwania
+# i podsumowanie wyników konsultacji") is the roll of organisations the draft was sent to — 5,136
+# characters in druk 1677, 10,187 in druk 1479 — and names nobody the bill affects. Point 4
+# ("Podmioty, na które oddziałuje projekt") is the one count of the affected a print gives, and it
+# survives in all 26 prints of the corpus that have a point 5 (measured 13 Sept 2026). Point 6
+# stays as the fallback for a form that words point 5 differently or does not carry it.
+_OSR_CUT_RE = re.compile(
+    r"^\s*(?:5\.\s*)?Informacje\s+na\s+temat\s+zakresu"
+    r"|^\s*(?:6\.\s*)?Wpływ na sektor finans",
+    re.MULTILINE,
+)
 # What makes this safe is the anchor, not the case: the justification of every act implementing
 # an EU regulation wraps onto lines beginning "rozporządzenia 2018/1240", and none of them is the
 # word alone. Measured over the 147 openings of the corpus, ignoring case moves exactly one
@@ -84,7 +104,7 @@ _ANNEX_RE = re.compile(
 
 KEEP = "keep"
 OSR = "osr"
-OSR_TAIL = "OSR pkt 6-13"
+OSR_TAIL = "OSR pkt 5-13"
 CONSULTATION = "raport z konsultacji"
 REMARKS = "zestawienie uwag"
 COMPLIANCE = "tabela zgodności"
@@ -195,12 +215,36 @@ class TrimmedText:
     dropped: tuple[DroppedSection, ...] = ()
 
 
-def _section_start(page: str, current: str) -> str:
+def _section_start(page: str, current: str, *, after_osr: bool = False) -> str:
     """The section a page opens, or the one it continues: everything after the first draft
-    regulation belongs to the drafts."""
+    regulation belongs to the drafts.
+
+    `after_osr` says the OSR form has already been reached, and then no page is the bill or its
+    justification again: a print runs letter, bill, uzasadnienie, OSR, appendices, in that order
+    and once each. The rule is what the word "Uzasadnienie" costs otherwise — a table of
+    submitted comments labels every row with it, so a page of one reads as the bill's own
+    justification and re-opens the kept run. Druk 1424 sent 270,989 characters of a consultation
+    table to the model that way and druk 1677 sent 317,546. It is tied to the OSR and not to the
+    first dropped section on purpose: druk 810's uzasadnienie stands *before* its OSR, with an
+    appendix wrongly detected in front of it, and a blunter rule would lose it.
+    """
     if current == REGULATIONS:
         return REGULATIONS
-    return _SECTION_OF_KIND.get(document_kind(page[:_HEAD]), current)
+    started = _SECTION_OF_KIND.get(document_kind(_page_opening(page)), current)
+    return current if after_osr and started == KEEP else started
+
+
+def _page_opening(page: str) -> str:
+    """The first `_OPENING_LINES` non-empty lines of a page: where a section heading can be."""
+    lines: list[str] = []
+    seen = 0
+    for line in page.split("\n"):
+        lines.append(line)
+        if line.strip():
+            seen += 1
+            if seen == _OPENING_LINES:
+                break
+    return "\n".join(lines)
 
 
 _PAGE_NUMBER_LINE = re.compile(r"^\s*[–\-—]?\s*\d{1,4}\s*[–\-—]?\s*$", re.MULTILINE)
@@ -361,15 +405,22 @@ def trim_print(text: str) -> TrimmedText:
     """Drop the appendices of a print; unknown layouts (Senate texts, reports) pass unchanged.
 
     Every dropped run is replaced by one Polish marker line so the model knows the text is not
-    complete there.
+    complete there. The pages that survive are rejoined with the form feed they were split on:
+    the page is the unit every rule here works in, and a text that arrives at the model without
+    its page breaks cannot be reduced by the page again further down.
     """
     pages = text.split(PAGE_BREAK)
     running_head = _running_head(pages)
     kept: list[str] = []
     dropped: list[DroppedSection] = []
     current = KEEP
+    after_osr = False
     for page in pages:
-        current = _section_start(strip_page_furniture(page, running_head), current)
+        current = _section_start(
+            strip_page_furniture(page, running_head), current, after_osr=after_osr
+        )
+        if current in (OSR, OSR_TAIL):
+            after_osr = True
         if current == OSR and (cut := _OSR_CUT_RE.search(page)):
             kept.append(page[: cut.start()].rstrip())
             _drop(dropped, kept, OSR_TAIL, len(page) - cut.start())
@@ -380,7 +431,7 @@ def trim_print(text: str) -> TrimmedText:
             kept.append(page)
     if not any(page for page in kept if not page.startswith("\n[pominięto: ")):
         return TrimmedText(text=text.strip())
-    return TrimmedText(text="\n".join(kept).strip(), dropped=tuple(dropped))
+    return TrimmedText(text=PAGE_BREAK.join(kept).strip(), dropped=tuple(dropped))
 
 
 def _drop(dropped: list[DroppedSection], kept: list[str], name: str, chars: int) -> None:

@@ -55,7 +55,7 @@ def test_appendices_are_dropped_and_the_core_is_kept() -> None:
     for gone in ("0" * 50, "c" * 50, "t" * 50, "u" * 50, "r" * 50, "q" * 50):
         assert gone not in result.text
     assert [d.name for d in result.dropped] == [
-        "OSR pkt 6-13",
+        "OSR pkt 5-13",
         "raport z konsultacji",
         "tabela zgodności",
         "projekty rozporządzeń",
@@ -63,26 +63,80 @@ def test_appendices_are_dropped_and_the_core_is_kept() -> None:
     assert result.dropped[1].chars == len(CONSULTATION) + len(ANNEX)  # annex belongs to the report
     assert result.dropped[3].chars == len(REGULATION) + len(REGULATION_JUSTIFICATION)
     assert result.text.count("[pominięto:") == 4
-    assert PAGE_BREAK not in result.text
 
 
-def test_rcl_osr_form_is_cut_at_point_6_even_without_the_number() -> None:
+def test_the_kept_pages_keep_their_page_breaks() -> None:
+    """The page is the unit every rule in `sections` works in, and a text that reaches the model
+    without its form feeds cannot be cut down by the page any more."""
+    text = _print("Art. 1. " + "b" * 100, "UZASADNIENIE\n" + "c" * 100)
+
+    result = trim_print(text)
+
+    assert result.text.count(PAGE_BREAK) == 1
+
+
+def test_rcl_osr_form_is_cut_at_point_5_even_without_the_number() -> None:
     # RCL publishes the OSR as a Word file: the form starts with "Nazwa projektu" and Word keeps
-    # the point numbers as list formatting, so the text has no "6." before the heading.
+    # the point numbers as list formatting, so the text has no "5." before the heading.
+    osr = "Nazwa projektu\nUstawa o ...\nMinisterstwo wiodące\n" + "z" * 300
+    tail = "Informacje na temat zakresu, czasu trwania\ni podsumowanie wyników\n" + "0" * 400
+
+    result = trim_print(_print(BILL, osr + "\n" + tail))
+
+    assert "z" * 300 in result.text and "0" * 50 not in result.text
+    assert [d.name for d in result.dropped] == ["OSR pkt 5-13"]
+
+
+def test_an_osr_without_a_point_5_is_still_cut_at_point_6() -> None:
+    """Point 6 stays as the fallback: not every form words point 5 the way the template does."""
     osr = "Nazwa projektu\nUstawa o ...\nMinisterstwo wiodące\n" + "z" * 300
     tail = "Wpływ na sektor finansów publicznych\n(ceny stałe z 2026 r.)\n" + "0" * 400
 
     result = trim_print(_print(BILL, osr + "\n" + tail))
 
     assert "z" * 300 in result.text and "0" * 50 not in result.text
-    assert [d.name for d in result.dropped] == ["OSR pkt 6-13"]
+    assert [d.name for d in result.dropped] == ["OSR pkt 5-13"]
+
+
+def test_a_heading_on_a_wrapped_line_does_not_open_a_section() -> None:
+    """Druk 810 page 40 is the bill — "Art. 156q. 1. Prezes Urzędu … w części A" — and wraps so
+    that its third line begins "załącznika do rozporządzenia nr 2019/947/UE". Read as the start
+    of an appendix it threw away 119,420 characters of the bill."""
+    page = (
+        "Art. 156q. 1. Prezes Urzędu, przy użyciu systemu teleinformatycznego BSP,\n"
+        "przeprowadza szkolenie oraz egzamin online na warunkach określonych w części A\n"
+        "załącznika do rozporządzenia nr 2019/947/UE, w podkategorii A1 i A3\n" + "b" * 400
+    )
+
+    result = trim_print(_print(BILL, page, JUSTIFICATION))
+
+    assert result.dropped == () and "b" * 400 in result.text
+
+
+def test_after_the_osr_no_page_is_the_bill_again() -> None:
+    """A table of submitted comments labels every row "Uzasadnienie", so a page of one reads as
+    the bill's own justification and re-opened the kept run: druk 1424 sent 270,989 characters
+    of a consultation table to the model that way, druk 1677 sent 317,546."""
+    comments = "Uzasadnienie\n1. Problemy obecnego systemu\n" + "k" * 400
+
+    result = trim_print(_print(BILL, JUSTIFICATION, OSR + OSR_TAIL, CONSULTATION, comments))
+
+    assert "k" * 400 not in result.text
+    assert [d.name for d in result.dropped] == ["OSR pkt 5-13", "raport z konsultacji"]
+
+
+def test_a_justification_before_the_osr_is_still_kept() -> None:
+    """Druk 810's uzasadnienie stands before its OSR with an appendix wrongly detected in front
+    of it, so the rule is tied to the OSR and not to the first dropped section."""
+    result = trim_print(_print(BILL, COMPLIANCE, JUSTIFICATION, OSR + OSR_TAIL))
+
+    assert "y" * 500 in result.text and "u" * 400 not in result.text
 
 
 def test_unknown_layout_passes_unchanged() -> None:
     text = _print("SPRAWOZDANIE KOMISJI\n" + "a" * 100, "Art. 1. " + "b" * 100)
     result = trim_print(text)
     assert result.dropped == () and "a" * 100 in result.text and "b" * 100 in result.text
-    assert PAGE_BREAK not in result.text
 
 
 def test_a_trim_that_would_keep_nothing_keeps_everything() -> None:
