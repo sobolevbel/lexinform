@@ -12,6 +12,7 @@ from lexinform.sections import (
     carries_the_document,
     document_kind,
     excerpts,
+    page_kind,
     scan_page_window,
     trim_print,
     without_cover_letter,
@@ -312,8 +313,19 @@ def test_budget_keeps_the_head_and_the_start_of_the_justification() -> None:
 
 def test_budget_keeps_the_keyword_windows_it_is_given() -> None:
     """The passages a bill is relevant for are usually not in its first pages, so a cap that
-    only kept the head threw away the very lines that made the bill worth reading."""
-    text = "Art. 1. " * 500 + "Art. 99. Zezwolenie na pobyt czasowy dla cudzoziemca. " + "x" * 4000
+    only kept the head threw away the very lines that made the bill worth reading.
+
+    The justification heading is what makes this the production shape: every print has one, and
+    when the two heads were given half the cap each they filled it between them, so the first
+    window measured was always the one over budget and no hit was ever kept.
+    """
+    text = (
+        "Art. 1. " * 500
+        + "\nUzasadnienie\n"
+        + "Projekt ma na celu. " * 100
+        + "Art. 99. Zezwolenie na pobyt czasowy dla cudzoziemca. "
+        + "x" * 4000
+    )
     spans = KeywordPrefilter().spans(text)
 
     result = TextBudget(2000).apply(text, spans)
@@ -321,10 +333,13 @@ def test_budget_keeps_the_keyword_windows_it_is_given() -> None:
     assert result.truncated and "pobyt czasowy dla cudzoziemca" in result.text
 
 
-def test_budget_cuts_the_head_when_there_is_no_justification() -> None:
+def test_budget_spends_its_whole_cap_when_there_is_no_justification() -> None:
+    """With no justification heading and no keyword hit there is nothing to share the cap with,
+    and the head takes all of it: a cap that handed back a fraction of what it allows would send
+    the model less of the bill than it is paid to read."""
     result = TextBudget(50).apply("x" * 500)
 
-    assert result.truncated and len(result.text) == 25
+    assert result.truncated and len(result.text) == 50
 
 
 def test_budget_rejects_a_non_positive_cap() -> None:
@@ -333,19 +348,25 @@ def test_budget_rejects_a_non_positive_cap() -> None:
 
 
 def test_every_page_of_the_corpus_opens_the_section_it_should() -> None:
-    """The pages that decided the rule, as they really are in the prints (`page_starts.json`):
-    the opening `_section_start` sees, and the kind it must read there. A new failure is one row.
+    """The pages that decided the rule, as they really are in the prints and in the RCL packages
+    (`page_starts.json`): the top of the page, and the kind `page_kind` must read there. A new
+    failure is one row.
 
     Druk 1677 page 98 is the pair that shows why two rules are needed and not one: it genuinely
     opens "Uzasadnienie", so no window narrow enough saves it — what keeps that page of a
     consultation table out of the analysis is that the OSR has already been passed.
+
+    The last rows are the draft regulations of the ETIAS package with the ministry's stamp above
+    their heading. Left in the opening window it pushed ROZPORZĄDZENIE out of it, the page read
+    as `unknown`, and then the sticky regulations rule never caught the block — so each draft's
+    own OSR form re-opened the kept run and went to the model.
     """
     rows = json.loads((FIXTURES / "page_starts.json").read_text(encoding="utf-8"))
 
     wrong = [
         (row["druk"], row["page"], row["kind"], got)
         for row in rows
-        if (got := document_kind(row["opening"])) != row["kind"]
+        if (got := page_kind(row["opening"])) != row["kind"]
     ]
 
     assert not wrong

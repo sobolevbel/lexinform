@@ -230,8 +230,18 @@ def _section_start(page: str, current: str, *, after_osr: bool = False) -> str:
     """
     if current == REGULATIONS:
         return REGULATIONS
-    started = _SECTION_OF_KIND.get(document_kind(_page_opening(page)), current)
+    started = _SECTION_OF_KIND.get(page_kind(page), current)
     return current if after_osr and started == KEEP else started
+
+
+def page_kind(page: str, running_head: str | None = None) -> Kind:
+    """What a page announces itself as: the printer's furniture off the top, then its opening.
+
+    The whole of how a page is read, in one place, because it is one rule and the corpus is
+    measured against it (`tests/fixtures/sejm/page_starts.json`). Stripping is idempotent, so a
+    page `trim_print` has already stripped may be passed in as it stands.
+    """
+    return document_kind(_page_opening(strip_page_furniture(page, running_head)))
 
 
 def _page_opening(page: str) -> str:
@@ -249,13 +259,24 @@ def _page_opening(page: str) -> str:
 
 _PAGE_NUMBER_LINE = re.compile(r"^\s*[–\-—]?\s*\d{1,4}\s*[–\-—]?\s*$", re.MULTILINE)
 
+_DRAFT_STAMP_LINE = re.compile(r"^\s*(Projekt\s+z\s+(dnia\s+)?\d|Etap\s*:)", re.IGNORECASE)
+"""The date and stage a ministry stamps over a draft, above its heading.
+
+"Projekt z dnia 9 lipca 2026 r." and "Etap: materiał informacyjny na SKRM" stand between the top
+of the page and the ROZPORZĄDZENIE or USTAWA that opens it. Two such lines push the heading out
+of the opening window, and for a draft regulation that is expensive: the page then reads as
+`unknown`, the sticky regulations rule never engages, and the draft's own OSR form re-opens the
+kept run. Nine of the corpus's openings carry the stamp, five of them regulations.
+"""
+
 
 def strip_page_furniture(page: str, running_head: str | None) -> str:
-    """A page without what the printer put on it: its running head and its page number.
+    """A page without what the printer put on it: its running head, its number, its draft stamp.
 
-    A section heading is looked for in the opening of a page, and a running head stands in front
-    of it — druk 1764 carries "Konfederacja Wolność i Niepodległość | konfederacja.pl" as the
-    first line of all thirty of its pages. Left in place it hides whatever the page really opens.
+    A section heading is looked for in the opening of a page, and whatever the printer put above
+    it stands in front — druk 1764 carries "Konfederacja Wolność i Niepodległość |
+    konfederacja.pl" as the first line of all thirty of its pages. Left in place it hides
+    whatever the page really opens.
     """
     lines = page.split("\n")
     start = 0
@@ -266,7 +287,7 @@ def strip_page_furniture(page: str, running_head: str | None) -> str:
 
 def _is_furniture(line: str, running_head: str | None) -> bool:
     stripped = line.strip()
-    if not stripped or _PAGE_NUMBER_LINE.fullmatch(line):
+    if not stripped or _PAGE_NUMBER_LINE.fullmatch(line) or _DRAFT_STAMP_LINE.match(stripped):
         return True
     return running_head is not None and stripped == running_head
 
@@ -459,12 +480,18 @@ def excerpts(
     head_chars: int = 3000,
     window: int = _WINDOW,
     max_chars: int = 24_000,
+    fill_head: bool = False,
 ) -> str:
     """The start of the bill, the start of the justification and text around each keyword hit.
 
     Segments are merged when they overlap and returned in document order, separated by an
     ellipsis marker. Keyword windows are added in order until `max_chars` is reached; the two
     heads are always included.
+
+    `fill_head` gives whatever the windows left unspent back to the head, and only a cap asks
+    for it: `TextBudget` must hand over the whole budget it was given, while the triage digest is
+    paid for by the character and a text whose keywords are few is one the cheap model should
+    read less of, not more.
     """
     merged: list[tuple[int, int]] = [(0, min(head_chars, len(text)))]
     if match := _JUSTIFICATION_RE.search(text):
@@ -477,6 +504,8 @@ def excerpts(
             break
         _merge_in(merged, piece)
         used += added
+    if fill_head and used < max_chars:
+        _merge_in(merged, (0, min(merged[0][1] + max_chars - used, len(text))))
     return "\n[...]\n".join(text[start:end].strip() for start, end in merged)
 
 
@@ -534,9 +563,15 @@ class TextBudget:
         cut = excerpts(
             text,
             spans,
-            head_chars=self._max // 2,
+            # A quarter each: `excerpts` keeps both heads whatever it is asked for, so a half
+            # each fills the cap before the first window is measured and no keyword hit is ever
+            # kept. What the windows do not take goes back to the head, or a text with no
+            # justification heading would come back a quarter of the length the cap allows —
+            # a cap gives what it is asked for.
+            head_chars=self._max // 4,
             window=min(_WINDOW, self._max // 8),
             max_chars=self._max,
+            fill_head=True,
         )
         # `excerpts` counts the text it keeps and not the markers it joins it with, and this is a
         # cap: what it is asked for is what it gives.

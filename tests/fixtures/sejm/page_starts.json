@@ -82,5 +82,35 @@
     "page": 163,
     "opening": "DEKLAROWANE SKUTKI REGULACJI (DSR)\nprojektu ustawy",
     "kind": "osr"
+  },
+  {
+    "druk": "RCL dokument790412.zip/akty_wykonawcze_ETIAS.ZIP",
+    "page": 1,
+    "opening": "Projekt z dnia 9 lipca 2026 r. \nEtap: materiał informacyjny na SKRM\n\nROZPORZĄDZENIE",
+    "kind": "regulation"
+  },
+  {
+    "druk": "RCL dokument790412.zip/akty_wykonawcze_ETIAS.ZIP",
+    "page": 1,
+    "opening": "Projekt z dnia 9 lipca 2026 r.\nEtap: materiał informacyjny na SKRM\nROZPORZĄDZENIE\nMINISTRA SPRAW WEWNĘTRZNYCH I ADMINISTRACJi)",
+    "kind": "regulation"
+  },
+  {
+    "druk": "RCL dokument758383.zip",
+    "page": 1,
+    "opening": "Projekt z dnia 12 stycznia 2026 r.\netap: Stały Komitet Rady Ministrów\n\nUSTAWA",
+    "kind": "bill"
+  },
+  {
+    "druk": "RCL dokument772231.zip",
+    "page": 1,
+    "opening": "Projekt z dnia 10 kwietnia 2026 r.\nEtap: Komitet do spraw Cyfryzacji\n\nUSTAWA",
+    "kind": "bill"
+  },
+  {
+    "druk": "RCL dokument759245.zip",
+    "page": 1,
+    "opening": "Projekt z dnia 20 stycznia 2026 r. \nw wersji uwzględniającej ustalenia Rady Ministrów \n\nUSTAWA",
+    "kind": "bill"
   }
 ]
