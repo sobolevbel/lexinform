@@ -11,7 +11,7 @@ FIRST_READING_AGENDA = (
     '<div class="agenda-indent-0">Pierwsze czytanie projektu (druk nr 3039)</div>\n'
     '<div class="agenda-indent-0">– uzasadnia poseł X.</div>'
 )
-SITTING_REF = "ASW/136/2026-09-17"
+SITTING_REF = "ASW/136/2026-09-17+09:00+sala 412"  # day, hour and room: a move of any is a new post
 
 
 def _sitting(
@@ -130,6 +130,26 @@ def test_the_sitting_on_the_senates_resolution_is_found_by_its_own_print() -> No
     assert "uchwały Senatu" in item.text
 
 
+def test_a_sitting_announced_under_the_old_ref_is_not_announced_again() -> None:
+    """The `ref` used to be the day alone. Without keeping it, the first run after the hour and
+    the room joined it would announce every sitting already on a bill's agenda a second time.
+
+    A sitting listed with no hour and given one later looks exactly like a stored day-only ref,
+    so it is held back too; the API gives an hour for every sitting of term 10 but one.
+    """
+    w = _referred_bill()
+    bare = _sitting().model_copy(update={"start_time": None, "room": None})
+    w.gateway.committee_sittings["ASW"] = (bare,)
+    first = w.run()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)  # the same sitting, hour and room now known
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (first.agenda_posted, report.agenda_posted) == (1, 0)
+    assert _refs(w) == ["ASW/136/2026-09-17"]
+
+
 def test_stage_update_carries_the_scheduled_sitting() -> None:
     w = _referred_bill()
     w.gateway.committee_sittings["ASW"] = (_sitting(),)
@@ -167,7 +187,7 @@ def test_rescheduled_sitting_is_posted_again_and_replaces_the_old_item() -> None
     report = w.run()
 
     assert report.agenda_posted == 1
-    assert _refs(w) == ["ASW/136/2026-09-24"]
+    assert _refs(w) == ["ASW/136/2026-09-24+09:00+sala 412"]
     assert len(w.publisher.agendas) == 2
 
 
@@ -285,8 +305,35 @@ def test_a_sitting_that_moved_corrects_the_post_instead_of_contradicting_it() ->
     assert report.agenda_posted == 1
     bill, item, _ = w.publisher.agendas[-1]
     assert item.date == dt.date(2026, 9, 22)
-    text = MessageFormatter("ru").agenda(bill, item, moved_from=dt.date(2026, 9, 17)).text
+    was = w.publisher.agendas[0][1]
+    text = MessageFormatter("ru").agenda(bill, item, moved_from=was).text
     assert "Заседание перенесено с 17.09.2026" in text
+
+
+def test_a_sitting_that_keeps_the_day_but_moves_the_hour_is_told_again() -> None:
+    """The hour and the room move on their own, and often: of the 886 committee sittings of
+    term 10 whose `comments` record a change, 204 say "Nastąpiła zmiana godziny posiedzenia" and
+    97 "zmiana sali". The day was the whole of the `ref`, so the run wrote the new hour to the
+    bill and said nothing, and the post the reader planned a day around named the old one."""
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (
+        _sitting().model_copy(update={"start_time": dt.time(13, 30), "room": "sala 118"}),
+    )
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.agenda_posted == 1
+    bill, item, _ = w.publisher.agendas[-1]
+    assert (item.start_time, item.room) == (dt.time(13, 30), "sala 118")
+    was = w.publisher.agendas[0][1]
+    text = MessageFormatter("ru").agenda(bill, item, moved_from=was).text
+    assert "13:30" in text and "sala 118" in text
+    assert "Изменились время или зал" in text and "09:00 · sala 412" in text
+    # The sitting is the same one, so it is corrected and not taken back as called off.
+    assert report.agenda_cancelled == 0
 
 
 def test_a_committee_sitting_that_has_already_met_today_is_not_announced() -> None:
@@ -300,7 +347,9 @@ def test_a_committee_sitting_that_has_already_met_today_is_not_announced() -> No
     report = w.run()
 
     assert report.agenda_posted == 0
-    assert _refs(w) == ["ASW/136/2026-09-07"]  # still stored: the card dates its next step by it
+    assert _refs(w) == [
+        "ASW/136/2026-09-07+09:00+sala 412"
+    ]  # still stored: the card dates its next step by it
 
 
 def test_a_committee_sitting_later_today_is_announced() -> None:

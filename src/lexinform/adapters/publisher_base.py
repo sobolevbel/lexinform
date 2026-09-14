@@ -94,7 +94,11 @@ class RenderingPublisher(ABC):
         return self._deliver(Outgoing(PublicationKind.CONSULTATION_RESULTS, bill, text, reply_to))
 
     def publish_agenda(
-        self, bill: Bill, item: AgendaItem, reply_to: int | None, moved_from: date | None = None
+        self,
+        bill: Bill,
+        item: AgendaItem,
+        reply_to: int | None,
+        moved_from: AgendaItem | None = None,
     ) -> PublishResult:
         text = self._formatter.agenda(bill, item, moved_from=moved_from).text
         return self._deliver(Outgoing(PublicationKind.AGENDA, bill, text, reply_to, item.ref))

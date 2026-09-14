@@ -267,9 +267,14 @@ class Publisher(Protocol):
     def publish_consultation_results(self, bill: Bill, reply_to: int | None) -> PublishResult: ...
 
     def publish_agenda(
-        self, bill: Bill, item: AgendaItem, reply_to: int | None, moved_from: date | None = None
+        self,
+        bill: Bill,
+        item: AgendaItem,
+        reply_to: int | None,
+        moved_from: AgendaItem | None = None,
     ) -> PublishResult:
-        """`moved_from` is the date the same sitting was announced under before."""
+        """`moved_from` is the same sitting as it was last announced, when it has moved: another
+        day, another hour or another room."""
         ...
 
     def publish_agenda_cancelled(

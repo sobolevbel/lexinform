@@ -273,7 +273,7 @@ class AgendaWatcher:
                     continue
                 item = AgendaItem(
                     kind="committee",
-                    ref=f"{code}/{sitting.num}/{sitting.date.isoformat()}",
+                    ref=f"{code}/{sitting.num}/{_when_and_where(sitting)}",
                     date=sitting.date,
                     start_time=sitting.start_time,
                     committee_code=code,
@@ -283,6 +283,7 @@ class AgendaWatcher:
                     text=" ".join(texts),
                     video_url=sitting.video_url,
                 )
+                item = _keep_told_ref(item, told)
                 kept = meetings.get(sitting.meeting_key)
                 if kept is None or (item.ref in told and kept.ref not in told):
                     meetings[sitting.meeting_key] = item
@@ -318,19 +319,58 @@ class AgendaWatcher:
                 continue
             fresh = self._repo.get(bill.term, bill.number) or bill
             log.info("druk %s on the agenda: %s", bill.number, item.ref)
-            moved_from = self._moved_from(bill, item)
-            result.count_post(self._poster.agenda(fresh, item, moved_from), "agenda_posted")
+            result.count_post(
+                self._poster.agenda(fresh, item, self._moved_from(bill, item)), "agenda_posted"
+            )
 
-    def _moved_from(self, bill: Bill, item: AgendaItem) -> dt.date | None:
-        """The date the same sitting was announced under before, when it was moved. The `ref`
-        carries the date, so a moved sitting is a new post; without this it would contradict the
-        one still standing above it instead of correcting it."""
+    def _moved_from(self, bill: Bill, item: AgendaItem) -> AgendaItem | None:
+        """The same sitting as the channel last announced it, when anything it named has changed.
+
+        The `ref` carries the day, the hour and the room, so a sitting that moves is a new post;
+        without it the new one would contradict the one still standing above it instead of
+        correcting it. The hour and the room are in there because they move on their own and
+        often: of the 886 committee sittings of term 10 whose `comments` record a change, 204
+        say "Nastąpiła zmiana godziny posiedzenia", 97 "zmiana sali" and 61 both. Until they
+        were part of the key the run saw every one of those, wrote the new hour to the bill and
+        said nothing, leaving the post the reader plans a day around naming the old one.
+        """
         previous = [
             old
             for old in bill.agenda
-            if old.sitting_key == item.sitting_key and old.date != item.date
+            if old.sitting_key == item.sitting_key and old.ref != item.ref
         ]
-        return max((old.date for old in previous), default=None)
+        return max(previous, key=lambda old: old.date, default=None)
+
+
+def _keep_told_ref(item: AgendaItem, told: set[str]) -> AgendaItem:
+    """Keep the `ref` a sitting was announced under when it named only the day.
+
+    Refs written before the hour and the room joined them are the day alone, so on the first run
+    after this change every sitting already on a bill's agenda would look new and be announced a
+    second time — the deploy hazard the stage fingerprint is guarded against for the same reason.
+    A sitting announced under the old key keeps it to the end; the new key starts with the next
+    one. This can go once no state dump carries a day-only agenda ref.
+    """
+    legacy = f"{item.committee_code}/{item.sitting_number}/{item.date.isoformat()}"
+    if item.ref != legacy and legacy in told:
+        return item.model_copy(update={"ref": legacy})
+    return item
+
+
+def _when_and_where(sitting: CommitteeSitting) -> str:
+    """The last segment of a committee sitting's `ref`: everything the announcement asserts about
+    when and where it meets, so that moving any of it makes a post of its own.
+
+    `AgendaItem.sitting_key` is the `ref` without this segment, so the sitting stays the same
+    sitting across a move and is not taken back as called off. Slashes are dropped because that
+    is the separator the key is split on.
+    """
+    parts = [sitting.date.isoformat()]
+    if sitting.start_time is not None:
+        parts.append(sitting.start_time.strftime("%H:%M"))
+    if sitting.room:
+        parts.append(sitting.room.replace("/", " "))
+    return "+".join(parts)
 
 
 def _already_happened(item: AgendaItem, now: dt.datetime) -> bool:

@@ -786,10 +786,17 @@ class MessageFormatter:
         bill: Bill,
         item: AgendaItem,
         *,
-        moved_from: dt.date | None = None,
+        moved_from: AgendaItem | None = None,
         today: dt.date | None = None,
     ) -> RenderedMessage:
-        """Reply under the card: the bill is on the agenda of a committee or Sejm sitting."""
+        """Reply under the card: the bill is on the agenda of a committee or Sejm sitting.
+
+        `moved_from` is the sitting as the channel last announced it. It moves to another day,
+        but it also keeps the day and moves the hour or the room — 302 of the 886 committee
+        sittings of term 10 whose `comments` record a change do exactly that — and «перенесено с
+        17.09.2026» printed over an unchanged date would tell the reader nothing. So the line
+        names what actually changed.
+        """
         lb = self._labels
         s = bill.summary
         is_committee = item.kind == "committee"
@@ -806,7 +813,7 @@ class MessageFormatter:
         else:
             lines.append(f"{ICON['stage']} {self._agenda_when(item)}")
         if moved_from is not None:
-            lines.append(f"{ICON['note']} {esc(lb.sitting_moved_from)} {self.fmt_date(moved_from)}")
+            lines.append(f"{ICON['note']} {self._moved_line(moved_from, item)}")
         if item.text:
             lines.append(self._field(ICON["agenda"], lb.agenda_item, esc(item.text)))
         facts = "\n".join(lines)
@@ -1830,6 +1837,17 @@ class MessageFormatter:
             if item is not None:
                 return item
         return None
+
+    def _moved_line(self, was: AgendaItem, now: AgendaItem) -> str:
+        """What the sitting moved from: the day when the day changed, otherwise the hour and the
+        room it was announced with, which is what the reader wrote down."""
+        lb = self._labels
+        if was.date != now.date:
+            return f"{esc(lb.sitting_moved_from)} {self.fmt_date(was.date)}"
+        before = [was.start_time.strftime("%H:%M")] if was.start_time else []
+        if was.room and was.room != now.room:
+            before.append(was.room)
+        return f"{esc(lb.sitting_moved_within_day)} {esc(' · '.join(before))}"
 
     def _agenda_when(self, item: AgendaItem) -> str:
         lb = self._labels

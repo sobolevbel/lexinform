@@ -126,7 +126,9 @@ def test_one_sitting_is_told_once_for_the_whole_group() -> None:
     report = w.run()
 
     assert report.agenda_posted == 1
-    assert [item.ref for _, item, _ in w.publisher.agendas] == ["ASW/136/2026-09-17"]
+    assert [item.ref for _, item, _ in w.publisher.agendas] == [
+        "ASW/136/2026-09-17"
+    ]  # no hour, no room: the stamp is the day alone
 
 
 def test_the_reply_names_the_thread_and_carries_both_tags() -> None:

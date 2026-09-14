@@ -222,9 +222,9 @@ class Poster:
             ),
         )
 
-    def agenda(self, bill: Bill, item: AgendaItem, moved_from: date | None = None) -> bool:
-        """One post per (bill, sitting date): `item.ref` tells the sittings apart, and a sitting
-        that moved gets a new one that says where it moved from."""
+    def agenda(self, bill: Bill, item: AgendaItem, moved_from: AgendaItem | None = None) -> bool:
+        """One post per (bill, sitting as announced): `item.ref` carries the day, the hour and the
+        room, so a sitting that moves any of them gets a new one saying what it moved from."""
         return self._once(
             bill,
             PublicationKind.AGENDA,

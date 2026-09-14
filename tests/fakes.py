@@ -697,7 +697,11 @@ class FakePublisher(RenderingPublisher):
         return result
 
     def publish_agenda(
-        self, bill: Bill, item: AgendaItem, reply_to: int | None, moved_from: date | None = None
+        self,
+        bill: Bill,
+        item: AgendaItem,
+        reply_to: int | None,
+        moved_from: AgendaItem | None = None,
     ) -> PublishResult:
         result = super().publish_agenda(bill, item, reply_to, moved_from)
         self.agendas.append((bill, item, reply_to))

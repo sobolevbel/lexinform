@@ -145,6 +145,7 @@ class Labels:
     agenda_off_note: str
     agenda_dropped_note: str
     sitting_moved_from: str
+    sitting_moved_within_day: str
     sejm_sitting: str
     link_video: str
     link_committee: str
@@ -371,6 +372,7 @@ RU = Labels(
         " снова в неё попадёт."
     ),
     sitting_moved_from="Заседание перенесено с",
+    sitting_moved_within_day="Изменились время или зал; ранее было объявлено:",
     sejm_sitting="заседание Сейма №",
     link_video="Трансляция",
     link_committee="Страница комиссии",
@@ -958,6 +960,7 @@ EN = Labels(
         " is back on."
     ),
     sitting_moved_from="The sitting was moved from",
+    sitting_moved_within_day="The time or the room changed; it was announced as:",
     sejm_sitting="Sejm sitting no.",
     link_video="Live stream",
     link_committee="Committee page",
