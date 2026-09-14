@@ -239,12 +239,58 @@ def test_server_errors_are_retried_then_reported_as_an_outage() -> None:
     assert calls == 3
 
 
+def _timed_out(calls: list[tuple[str, float | None]]) -> RclClient:
+    """A client whose every request times out, recording the path and the timeout it was given."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append((request.url.path, request.extensions.get("timeout", {}).get("read")))
+        raise httpx.ConnectTimeout("timed out", request=request)
+
+    return RclClient(
+        "https://rcl.test",
+        timeout=60.0,
+        probe_timeout=5.0,
+        max_retries=2,
+        transport=httpx.MockTransport(handler),
+        sleep=lambda s: None,
+    )
+
+
 def test_first_list_page_is_a_single_short_probe_project_pages_keep_their_retries() -> None:
     calls: list[tuple[str, float | None]] = []
 
+    with pytest.raises(RclUnavailableError, match="after 1 attempt"):
+        list(_timed_out(calls).list_projects(modified_since=date(2026, 9, 1)))
+    with pytest.raises(RclUnavailableError, match="after 3 attempt"):
+        _timed_out(calls).get_project(1)
+
+    assert calls[0] == ("/lista", 5.0)
+    assert calls[1:] == [("/projekt/1", 60.0)] * 3
+
+
+def test_a_host_found_unreachable_is_asked_briefly_until_it_answers() -> None:
+    """Full patience for every later request is patience spent on a question the run has already
+    answered: on 2026-09-14 the discovery probe declared RCL down at 20 s and the tracking phase
+    then spent 247 s of a 516-second run proving it again."""
+    calls: list[tuple[str, float | None]] = []
+    client = _timed_out(calls)
+
+    with pytest.raises(RclUnavailableError):
+        list(client.list_projects(modified_since=date(2026, 9, 1)))
+    with pytest.raises(RclUnavailableError, match="after 1 attempt"):
+        client.get_project(1)
+
+    assert calls == [("/lista", 5.0), ("/projekt/1", 5.0)]
+
+
+def test_the_host_answering_again_restores_the_full_patience() -> None:
+    calls: list[tuple[str, float | None]] = []
+    project = _page("projekt_12414100.html")
+
     def handler(request: httpx.Request) -> httpx.Response:
-        timeout = request.extensions.get("timeout", {}).get("read")
-        calls.append((request.url.path, timeout))
+        calls.append((request.url.path, request.extensions.get("timeout", {}).get("read")))
+        if request.url.path == "/projekt/2":
+            return httpx.Response(200, text=project)
         raise httpx.ConnectTimeout("timed out", request=request)
 
     client = RclClient(
@@ -256,13 +302,15 @@ def test_first_list_page_is_a_single_short_probe_project_pages_keep_their_retrie
         sleep=lambda s: None,
     )
 
-    with pytest.raises(RclUnavailableError, match="after 1 attempt"):
-        list(client.list_projects(modified_since=date(2026, 9, 1)))
-    with pytest.raises(RclUnavailableError, match="after 3 attempt"):
+    with pytest.raises(RclUnavailableError):
         client.get_project(1)
+    client.get_project(2)
+    with pytest.raises(RclUnavailableError, match="after 3 attempt"):
+        client.get_project(3)
 
-    assert calls[0] == ("/lista", 5.0)
-    assert [c for c in calls[1:]] == [("/projekt/1", 60.0)] * 3
+    assert [c[1] for c in calls[:3]] == [60.0] * 3  # trusted until it failed
+    assert calls[3] == ("/projekt/2", 5.0)  # probing, and it answered
+    assert [c[1] for c in calls[4:]] == [60.0] * 3  # the answer restored the patience
 
 
 def test_missing_project_is_a_page_error_not_an_outage() -> None:

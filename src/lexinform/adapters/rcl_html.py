@@ -91,6 +91,7 @@ class RclClient:
         self._max_retries = max_retries
         self._backoff = backoff_seconds
         self._sleep = sleep
+        self._unreachable_since: str | None = None
 
     def list_projects(self, *, modified_since: date) -> Iterator[RclProjectSummary]:
         page = 1
@@ -175,7 +176,17 @@ class RclClient:
         stream: bool = False,
         probe: bool = False,
     ) -> httpx.Response:
-        """One request with retries; a `probe` gets one attempt with the short timeout."""
+        """One request with retries; a `probe` gets one attempt with the short timeout.
+
+        A client that has already found the host unreachable keeps probing until one request
+        gets through: full patience for every later request is patience spent on a question the
+        run has answered. The run of 2026-09-14 declared RCL down on the discovery probe at 20 s
+        and then spent 247 s of its 516 proving it again, four project pages at four 60-second
+        attempts each — the tracking phase asking what the discovery phase had just been told.
+        One short attempt per request costs 20 s instead, and the host coming back mid-run is
+        still noticed, which a flag set for the whole run would not be.
+        """
+        probe = probe or self._unreachable_since is not None
         retries = 0 if probe else self._max_retries
         timeout = self._probe_timeout if probe else self._client.timeout
         attempt = 0
@@ -186,7 +197,7 @@ class RclClient:
                 response = self._client.send(request, stream=stream)
             except httpx.TransportError as exc:
                 if attempt > retries:
-                    raise RclUnavailableError(
+                    raise self._down(
                         f"{method} {url} failed after {attempt} attempt(s): {exc}"
                     ) from exc
                 self._wait(attempt, f"{method} {url}: {exc}")
@@ -196,15 +207,21 @@ class RclClient:
                 if attempt <= retries:
                     self._wait(attempt, f"{method} {url}: HTTP {response.status_code}")
                     continue
-                raise RclUnavailableError(
+                raise self._down(
                     f"{method} {url}: HTTP {response.status_code} after {attempt} attempts"
                 )
+            self._unreachable_since = None
             if response.status_code == 404 and allow_404:
                 return response
             if response.status_code >= 400:
                 response.close()
                 raise RclPageError(f"{method} {url}: HTTP {response.status_code}")
             return response
+
+    def _down(self, reason: str) -> RclUnavailableError:
+        """The host did not answer: remember it, so the next request asks briefly."""
+        self._unreachable_since = reason
+        return RclUnavailableError(reason)
 
     def _wait(self, attempt: int, reason: str) -> None:
         delay = self._backoff * (2 ** (attempt - 1))
