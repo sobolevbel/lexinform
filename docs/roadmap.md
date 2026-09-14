@@ -359,13 +359,19 @@ Still open:
   long after publication stays invisible, because `Data publikacji` does not move on an edit;
   `lexinform scan --since …` is the way in.
 - Left open by the audit of the cold places (14 Sept 2026, `../lexinform-corpus/checks/COLD.md`,
-  probes `10`–`14`), which asked what in the project had never been re-read and what was broken
-  there. Four defects fixed (the representative of a deputies' bill, a signature wrapped at a page
+  probes `10`–`18`), which asked what in the project had never been re-read and what was broken
+  there. Six defects fixed (the representative of a deputies' bill, a signature wrapped at a page
   break, the spacing pypdf leaves inside a surname, the print number pushed past the clip of an
-  agenda item), the register's quarter, three silent failures of the relay, and seven slices
-  measured and found sound — among them the discontinuation rule, which makes **no** false
-  announcement over the two real ends of terms 8 and 9 (0 of 299 and 0 of 306 lapsed processes
-  later got an act). What it left:
+  agenda item, the register's quarter, and the two stages that arrive beside the process — the
+  government's position went out as «Обновление» whenever its document could not be digested, and
+  a filed opinion got a post of its own against the decision of 2026-09-12), three silent failures
+  of the relay, and fourteen slices measured and found sound — among them the discontinuation
+  rule, which makes **no** false announcement over the two real ends of terms 8 and 9 (0 of 299
+  and 0 of 306 lapsed processes later got an act); the formatter, which renders all 938 bills of
+  the term with no crash, no overflow, no broken markup and no card losing its tags; the database,
+  which round-trips 3,354 rows of all four sources through save, read, dump and restore with zero
+  drift; and the stage fingerprint, deaf to all four rendering fields and sensitive to all four
+  key fields over 1,665 trees. What it left:
   - **A conditional sitting is announced as a certainty.** `notes` says so on 18 sittings of term
     10 ("Posiedzenie aktualne w przypadku zgłoszenia poprawek w czasie drugiego czytania"), and
     the agenda post states the sitting as a fact a reader plans a day around. One regex; the field
@@ -377,6 +383,11 @@ Still open:
   - **22 prints carry the covering letter in the PDF and not in its text layer** (the text starts
     at "projekt | USTAWA"). Worth checking against `prints.json` whether these are mixed PDFs — a
     scanned first page over a digital body.
+  - **The daily drift of the API is still unmeasured.** The corpus holds two `/processes` snapshots
+    a day apart and they differ in no field of any of the 1,665 processes — but the newest
+    `changeDate` of the whole term is 11 September, so the two collections straddle a weekend. The
+    question the measurement was for (does `changeDate` move on its own, and would that wake the
+    channel) needs snapshots of two working days.
 - Ukrainian-language channel; weekly digest; static site from the state dump.
 - Committee e-mail addresses in "what you can do now" (the Sejm API has none; the committee page
   is linked instead) and the Senate committee that received the act (the Senate API is not

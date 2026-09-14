@@ -363,8 +363,19 @@ Invariants worth keeping:
   and an unsure verdict passes the bill on, so only a *confident* wrong "no" loses one.
 - **Not every stage is a post.** `models/events.py`: `is_substantive` separates the events a reader
   cares about (referral, committee report, vote, Senate, President, hearing, a decided reading)
-  from the frame nodes (`Start`, `ReadingReferral`, `Reading`, `CommitteeWork`, `ToPresident`,
-  `End`); `has_news` decides whether a detected change is posted now. A change of frame nodes only
+  from the frame nodes (`Start`, `ReadingReferral`, `Reading`, `CommitteeWork`, `End`, `Opinion`
+  — `ToPresident` is *not* one of them, it starts the 21 days of art. 122); `has_news` decides
+  whether a detected change is posted now. **Both nodes that arrive beside the process are named
+  or held explicitly**, and neither was: replaying every one of the 6,260 stage transitions of
+  term 10 (cold-places audit, `../lexinform-corpus/checks/16_updates.py`), 222 went out under the
+  one header that says nothing. `Opinion` is `SERVICE_STAGE_TYPES` now — `process_stages` already
+  drops it as beside the road and the decision of 2026-09-12 says filed opinions are not this
+  channel's genre, so it is held and listed with the next update that has something to say (149
+  transitions, 192 prints). `GovermentPosition` is the other way round: it is told, so its stage
+  type names the post in `_EVENT_BY_STAGE_TYPE` under the key the digest uses. `supplement_event`
+  alone was not enough, because the stage arrives whether or not the document behind it could be
+  read, and a scan, a refusal or a text over the per-bill limit all leave the digest empty (73
+  transitions). A change of frame nodes only
   is *held*: its `status_changes` row exists (dedupe) with a `skipped` `status_update` publication,
   and `Poster.status_update` prepends the held stages to the next post and marks their rows `sent`
   with its message id. **Recording and telling are one pair of methods**, because a change that is
