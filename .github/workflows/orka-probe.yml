@@ -398,3 +398,64 @@ jobs:
           except Exception as exc:
               print(f"  httpx after the warm-up: {type(exc).__name__}: {exc}")
           PY
+
+  # TLS hello or HTTP bytes? `socket` sends exactly curl's request line and headers over Python's
+  # own ssl: a 200 there means the shape of our request is what the WAF reads and httpx can be
+  # taught it; a 403 means the hello itself and no header will help. Each on a cold address.
+  layer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        probe: [rawsocket, capitalised, ciphers]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: One layer, first request of this address
+        env:
+          PROBE: ${{ matrix.probe }}
+        run: |
+          set +e
+          echo "probe=$PROBE ip=$(curl -sS --max-time 10 https://api.ipify.org)"
+          uv run --frozen --no-dev python - "$PROBE" <<'PY'
+          import socket, ssl, sys
+
+          HOST = "orka.sejm.gov.pl"
+          PATH = "/Druki10ka.nsf/Projekty/10-RPW-30771-2026/$file/10-RPW-30771-2026.pdf"
+          UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
+                " Chrome/140.0.0.0 Safari/537.36")
+          probe = sys.argv[1]
+
+          if probe == "rawsocket":
+              # Byte for byte what curl sends, over Python's own TLS stack.
+              request = (
+                  f"GET {PATH} HTTP/1.1\r\nHost: {HOST}\r\nUser-Agent: {UA}\r\n"
+                  "Accept: */*\r\n\r\n"
+              ).encode()
+              ctx = ssl.create_default_context()
+              with socket.create_connection((HOST, 443), timeout=60) as raw:
+                  with ctx.wrap_socket(raw, server_hostname=HOST) as tls:
+                      tls.sendall(request)
+                      head = tls.recv(4096)
+              print(f"  result: {head.split(chr(13).encode())[0].decode(errors='replace')}")
+              raise SystemExit(0)
+
+          import httpx2 as httpx
+          if probe == "capitalised":
+              headers = {"Host": HOST, "User-Agent": UA, "Accept": "*/*"}
+              client = httpx.Client(headers=headers, follow_redirects=True, timeout=60)
+          else:
+              ctx = ssl.create_default_context()
+              ctx.set_ciphers("DEFAULT")  # OpenSSL's own list, which is curl's
+              ctx.set_alpn_protocols(["http/1.1"])
+              client = httpx.Client(
+                  headers={"User-Agent": UA, "Accept": "*/*"},
+                  follow_redirects=True, timeout=60, verify=ctx,
+              )
+          with client:
+              r = client.get(f"https://{HOST}{PATH}")
+          print(f"  result: http={r.status_code} type={r.headers.get('content-type')} bytes={len(r.content)}")
+          PY
