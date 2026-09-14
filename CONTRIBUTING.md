@@ -129,12 +129,15 @@ Rules that keep this honest:
 ```bash
 uv run pytest                          # unit (default: -m 'not integration and not llm')
 uv run pytest -m integration           # live Sejm API, network
-uv run pytest tests/unit/test_tracking.py -k closure -vv
+uv run pytest tests/scenario/test_tracking.py -k closure -vv
 uv run pytest --cov --cov-report=term-missing
 ```
 
 Layout:
 
+- `tests/unit/` is one module under test at a time; `tests/scenario/` is the whole pipeline over
+  the fakes (every file there builds a `World`), and `tests/integration/` is the live API.
+  A test that calls `World()` belongs in `tests/scenario/`, whatever it is about.
 - `tests/fakes.py`: in-memory fakes for the ports. They record what was asked of them and can
   fail on demand: `gateway.outages.add("get_process")` (API down), `publisher.fail_on={"3039"}`
   (one post rejected), `publisher.outage_on={...}` (Telegram down),

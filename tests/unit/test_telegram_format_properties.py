@@ -28,8 +28,8 @@ from lexinform.models import (
     StatusChange,
 )
 from tests.conftest import load_json
+from tests.formatting import assert_telegram_html, bill_of, consulted
 from tests.harness import act
-from tests.unit.test_telegram_format import assert_telegram_html, bill_of, consulted
 
 NOW = dt.datetime(2026, 9, 7, tzinfo=dt.UTC)
 

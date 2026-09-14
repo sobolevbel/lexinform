@@ -17,8 +17,8 @@ from lexinform.models import (
     rcl_stages,
 )
 from tests.fakes import make_analysis
+from tests.formatting import assert_telegram_html
 from tests.harness import CONSULTATION_LETTER, RCL_CONSULTATION, rcl_project, rcl_stage
-from tests.unit.test_telegram_format import assert_telegram_html
 
 NOW = dt.datetime(2026, 9, 7, tzinfo=dt.UTC)
 TODAY = dt.date(2026, 9, 7)
