@@ -169,6 +169,39 @@ def test_help_takes_no_arguments() -> None:
     assert command.name is CommandName.HELP and command.error is None
 
 
+def test_run_takes_the_workflows_own_inputs() -> None:
+    """`/run` is the one command that names no bill: its words are `daily.yml`'s inputs, and
+    `dry` alone is the flag."""
+    command = parse_command("/run since=2026-09-01 dry reprefilter=50 index_rcl_since=2023-11-01")
+
+    assert command is not None and command.name is CommandName.RUN and command.error is None
+    assert command.inputs == {
+        "since": "2026-09-01",
+        "dry_run": "true",
+        "reprefilter_limit": "50",
+        "index_rcl_since": "2023-11-01",
+    }
+
+
+def test_run_alone_starts_the_ordinary_run() -> None:
+    command = parse_command("/run")
+
+    assert command is not None and (command.name, command.inputs) == (CommandName.RUN, {})
+
+
+def test_a_run_option_is_checked_here_and_not_hours_later_by_the_workflow() -> None:
+    """The workflow would take `since=вчера` as free text and quietly do the wrong thing."""
+    bad_date = parse_command("/run since=вчера")
+    bad_count = parse_command("/run reprefilter=many")
+    unknown = parse_command("/run turbo")
+    missing = parse_command("/run since")
+
+    assert bad_date is not None and bad_date.error is not None and "date" in bad_date.error
+    assert bad_count is not None and bad_count.error is not None and "number" in bad_count.error
+    assert unknown is not None and unknown.error is not None and "unknown option" in unknown.error
+    assert missing is not None and missing.error is not None and "needs a value" in missing.error
+
+
 def test_druk_label_names_the_kind() -> None:
     assert BillRef(kind=RefKind.DRUK, value="3039").label == "druk 3039"
     assert BillRef(kind=RefKind.WYKAZ, value="UC164").label == "UC164"

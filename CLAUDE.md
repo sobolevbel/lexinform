@@ -582,6 +582,15 @@ Invariants worth keeping:
   detail (date, folder, link) is tolerated, a missing structural element (timeline, table with rows
   announced, every stage label) raises `RclPageError`, which the run report shows. The WAF's
   "Request Rejected" page (HTTP 200) is `RclUnavailableError`.
+- **`/run` is the one command a run does not execute, because it is the run.** The relay asks
+  GitHub for a `workflow_dispatch` of `daily.yml` on `main` with the inputs the operator named
+  (`since`, `dry`, `reprefilter`, `index_rcl_since` — `models.RUN_INPUTS`), answers «▶️ run
+  started …» with a link and files nothing: an inbox file is a thing *for* a run, and there is no
+  run yet. The values are checked in `_parse_run` and not by the workflow, which reads `since` as
+  free text and would answer a typo hours later with a job that did the wrong thing. That endpoint
+  needs a token with **Actions: read and write** (filing a command needs only Contents), and the
+  403/404 it answers otherwise is reported as the missing scope, because the operator cannot tell
+  the two apart. A `/run` that somehow reaches a run through the inbox is answered, not executed.
 - **Operator commands are recorded before they run, and the relay confirms only what is filed.**
   The technical channel's commands (`docs/operator-commands.md`) reach a run as `{update_id}.json`
   files in the `inbox` branch (checked out by `daily.yml`, `LEXINFORM_INBOX_DIR`); the relay's

@@ -19,8 +19,23 @@ later. Any administrator of that channel can command; nobody else reaches the bo
 /forget 3039                  drop the card the channel remembers, post nothing (deleted by hand)
 /find cudzoziemc              bills whose title or number carries the words
 /status                       the queues, what is stuck, what the last 7 days of runs cost
+/run                          start the daily workflow now, with its own inputs:
+/run since=2026-09-01           discover from this date instead of the watermark
+/run dry                        print what would be posted, persist and publish nothing
+/run reprefilter=50             first scan the texts of up to N bills the title prefilter skipped
+/run index_rcl_since=2023-11-01 first read the RCL listing back to this date for the wykaz join
 /help                         this list
 ```
+
+`/run` is the one command a run does not execute, because it **is** the run: the relay asks
+GitHub to start `daily.yml` (`workflow_dispatch` on `main`) with the inputs named after it and
+answers «▶️ run started …» with a link, instead of filing anything into the inbox. Its options
+are the workflow's own and may be combined (`/run dry since=2026-09-01`); a value is checked
+before it is sent, because the workflow would take `since=вчера` as free text and answer hours
+later with a job that did the wrong thing. Two things follow from `workflow_dispatch`: the
+token needs **Actions: read and write** on the repository (filing a command only needs
+Contents), and a dry run persists nothing at all — not even an index it was asked to build,
+since the state branch is only pushed by a real run.
 
 `/preview` answers with the card itself, links and tags and all, so the wording can be read
 before `/republish` sends it — and so that a bill held under the score threshold can be looked

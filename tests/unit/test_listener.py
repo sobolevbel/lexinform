@@ -25,6 +25,7 @@ def _listener(
         updates,
         writer,
         ack,
+        starter=writer,
         channel_id=CHANNEL,
         poll_timeout=5,
         max_retry_delay=max_retry_delay,
@@ -54,6 +55,45 @@ def test_commands_from_the_technical_channel_are_filed_acknowledged_and_confirme
     assert ack.acknowledged == [1, 5]
     assert listener.offset == 6
     assert updates.offsets == [None, 6]  # the confirming poll names the next offset
+
+
+def test_run_starts_the_workflow_instead_of_being_filed() -> None:
+    """`/run` is the one command a run cannot execute, because it is the run: the relay asks
+    GitHub to start the workflow with the inputs the operator named and says so under the post.
+    """
+    updates = FakeUpdates([channel_post(1, "/run since=2026-09-01 dry")])
+    writer, ack = FakeInboxWriter(), FakeAcknowledger()
+
+    filed = _listener(updates, writer, ack).poll_once()
+
+    assert filed == 1
+    assert writer.filed == []  # nothing in the inbox: there is nothing for a run to execute
+    assert writer.started == [{"since": "2026-09-01", "dry_run": "true"}]
+    assert ack.acknowledged == [1]
+    assert "since=2026-09-01, dry_run=true" in ack.started_notes[0]
+
+
+def test_a_misspelled_run_option_is_answered_and_starts_nothing() -> None:
+    """Telegram redelivers an update until the offset moves past it, so a command that can never
+    succeed has to be answered rather than retried."""
+    updates = FakeUpdates([channel_post(1, "/run turbo")])
+    writer, ack = FakeInboxWriter(), FakeAcknowledger()
+
+    listener = _listener(updates, writer, ack)
+    filed = listener.poll_once()
+
+    assert (filed, writer.started, listener.offset) == (1, [], 2)
+    assert "unknown option turbo" in ack.started_notes[0]
+
+
+def test_a_run_that_github_would_not_start_is_tried_again() -> None:
+    updates = FakeUpdates([channel_post(1, "/run")])
+    writer = FakeInboxWriter(error=ServiceUnavailableError("GitHub API is down"))
+
+    listener = _listener(updates, writer)
+    filed = listener.poll_once()
+
+    assert (filed, listener.offset) == (0, None)  # the update is delivered again
 
 
 def test_a_command_that_could_not_be_filed_is_not_confirmed() -> None:

@@ -4,12 +4,17 @@ call, followed by a `repository_dispatch` that starts the workflow on the defaul
 push of the inbox branch itself would start nothing: GitHub reads a push event's workflow from
 the pushed branch, and the inbox branch carries no workflow). The kick is a courtesy: a
 command that is filed but not kicked is answered by the next scheduled run.
+
+`/run` is the exception and goes out as a `workflow_dispatch` instead: it is not a command a
+run executes but the run itself, with the inputs `daily.yml` declares. That endpoint needs a
+token with **Actions: read and write**, one scope more than filing a command asks for, and says
+so when it is missing — a 403 there is about the token and not about the workflow.
 """
 
 import base64
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any
 
 import httpx2 as httpx
@@ -48,6 +53,8 @@ def _asks_for_a_sha(response: httpx.Response) -> bool:
 class GitHubInboxWriter:
     MAX_ATTEMPTS = 4
     DISPATCH_EVENT = "inbox"  # `on: repository_dispatch: types: [inbox]` in daily.yml
+    WORKFLOW = "daily.yml"
+    WORKFLOW_REF = "main"  # where the workflow and its inputs live
 
     def __init__(
         self,
@@ -88,6 +95,32 @@ class GitHubInboxWriter:
             log.warning(
                 "inbox: filed update %d but could not start the run: %s", command.update_id, exc
             )
+
+    def start_run(self, inputs: Mapping[str, str]) -> str:
+        """Start `daily.yml` with these inputs and answer with the link to its runs.
+
+        Unlike the kick after a filed command, a failure here is the operator's business: there
+        is no file waiting for the next scheduled run, so nothing happens unless this call does.
+        """
+        payload = {"ref": self.WORKFLOW_REF, "inputs": dict(inputs)}
+        url = f"/repos/{self._repo}/actions/workflows/{self.WORKFLOW}/dispatches"
+        try:
+            response = self._client.post(url, json=payload)
+        except httpx.TransportError as exc:
+            raise GitHubUnavailableError(f"workflow dispatch: {type(exc).__name__}") from exc
+        if response.status_code == 204:
+            log.info("workflow %s started with %s", self.WORKFLOW, dict(inputs) or "no inputs")
+            return f"https://github.com/{self._repo}/actions/workflows/{self.WORKFLOW}"
+        if response.status_code >= 500:
+            raise GitHubUnavailableError(f"workflow dispatch: HTTP {response.status_code}")
+        if response.status_code in (403, 404):
+            # 404 is also what GitHub answers a token that may not see Actions at all, so both
+            # statuses name the scope: the operator cannot tell them apart from the reply.
+            raise GitHubError(
+                f"workflow dispatch: HTTP {response.status_code} — the token needs"
+                f" Actions: read and write on {self._repo}"
+            )
+        raise GitHubError(f"workflow dispatch: HTTP {response.status_code}: {response.text[:200]}")
 
     def _kick(self, command: IncomingCommand) -> None:
         payload = {

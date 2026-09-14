@@ -59,6 +59,36 @@ def test_joint_bill_reply_names_the_thread_and_carries_both_tags(
     assert text.endswith("#kadencja10druk3050 #важность5 #легализация #kadencja10druk3039")
 
 
+def test_a_joint_reply_walks_the_road_of_its_own_print_not_the_cards(
+    process_3039: ProcessDetail, print_3039: PrintInfo
+) -> None:
+    """The step is the thread's — jointly considered prints move as one from the referral — but
+    the beginning of the road is each print's own: druk 316 is the President's and never passed
+    through a government plan or RCL, and under druk 1929's card it was saying it had.
+    """
+    # A government bill (it has an RM number): its road starts on the wykaz and on RCL.
+    primary = bill_of(process_3039.model_copy(update={"rcl_num": "RM-0610-188-25"}))
+    presidents = process_3039.model_copy(
+        update={
+            "number": "316",
+            "title": (
+                "Przedstawiony przez Prezydenta Rzeczypospolitej Polskiej projekt ustawy"
+                " o asystencji osobistej osób z niepełnosprawnościami"
+            ),
+            "prints_considered_jointly": ("3039",),
+            "rcl_num": None,
+        }
+    )
+
+    reply = bill_of(presidents, joint=joint_record(["3039"], make_comparison()))
+
+    text = MessageFormatter("ru").joint_bill(reply, primary, print_3039).text
+    card = MessageFormatter("ru").new_bill(primary, print_3039).text
+
+    assert "Путь:</b> Сейм ✓" in text and "план" not in text.split("Путь")[1]
+    assert "Путь:</b> план ✓ → RCL ✓ → Сейм ✓" in card  # the card's own road is unchanged
+
+
 def test_card_escapes_model_output_and_notes_partial_text(
     process_3039: ProcessDetail, print_3039: PrintInfo
 ) -> None:

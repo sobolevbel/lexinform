@@ -1,6 +1,7 @@
 """The inbox writer against a mock GitHub Contents API."""
 
 import base64
+import functools
 import json
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -54,6 +55,36 @@ def test_put_creates_the_file_on_the_inbox_branch_and_starts_the_run() -> None:
     assert filed["update_id"] == 5 and filed["text"] == "/analyze 3039"
     assert dispatch.method == "POST" and dispatch.url.path == "/repos/owner/repo/dispatches"
     assert json.loads(dispatch.content)["event_type"] == "inbox"
+
+
+def _refusal(request: httpx.Request, *, status: int) -> httpx.Response:
+    return httpx.Response(status, json={"message": "Not Found"})
+
+
+def test_start_run_dispatches_the_workflow_with_its_inputs() -> None:
+    """`/run` is not filed anywhere: the relay asks GitHub to run `daily.yml` on main."""
+    seen: list[tuple[str, dict[str, object]]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((str(request.url), json.loads(request.content)))
+        return httpx.Response(204)
+
+    where = _writer(handler).start_run({"since": "2026-09-01", "dry_run": "true"})
+
+    ((url, payload),) = seen
+    assert url.endswith("/repos/owner/repo/actions/workflows/daily.yml/dispatches")
+    assert payload == {"ref": "main", "inputs": {"since": "2026-09-01", "dry_run": "true"}}
+    assert where == "https://github.com/owner/repo/actions/workflows/daily.yml"
+
+
+def test_a_token_without_actions_says_which_scope_is_missing() -> None:
+    """403 and 404 mean the same thing here — a token that may not see Actions — and the
+    operator cannot tell them apart from the reply, so both name the scope."""
+    for status in (403, 404):
+        refuse = functools.partial(_refusal, status=status)
+
+        with pytest.raises(GitHubError, match="Actions: read and write"):
+            _writer(refuse).start_run({})
 
 
 def test_a_file_that_exists_already_is_not_an_error() -> None:

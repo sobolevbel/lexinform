@@ -323,6 +323,13 @@ class CommandService:
         if command.name is CommandName.FIND:
             assert command.query is not None
             return self._find(command.query)
+        if command.name is CommandName.RUN:
+            # The relay starts the workflow itself and files nothing, so this can only be an
+            # old file or a hand-written one; either way there is nothing here to execute.
+            return CommandOutcome(
+                status=OutcomeStatus.HELP,
+                note="/run is the relay's own command: it starts this workflow, not the other way",
+            )
         assert command.ref is not None
         try:
             if command.name is CommandName.ANALYZE:

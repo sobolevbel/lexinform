@@ -484,7 +484,7 @@ class MessageFormatter:
         # Its own tag first, then the card's topic and thread tags: a search for either number
         # finds the reply, and the verdict it carries is the card's.
         tags = self._tags(primary, self._number_tag(bill))
-        steps = self._steps_block(primary, today or self._today())
+        steps = self._steps_block(primary, today or self._today(), road=bill)
         return RenderedMessage(
             text=self._assemble(
                 [header, facts],
@@ -1521,12 +1521,19 @@ class MessageFormatter:
             return f"{self.fmt_date(window.start)} — {self.fmt_date(window.end)}"
         return f"{esc(lb.consultation_until)} {self.fmt_date(window.end)}"
 
-    def _steps_block(self, bill: Bill, today: dt.date) -> str:
+    def _steps_block(self, bill: Bill, today: dt.date, *, road: Bill | None = None) -> str:
         """Where the bill is on its path, "what comes next" (dated when a sitting is scheduled,
         else with the usual duration) and "what you can do" (or why nothing, for now) — or, when
-        the road has ended, the one sentence that says so."""
+        the road has ended, the one sentence that says so.
+
+        `road` is whose road it is, when that is not whose step it is: a reply under the card of
+        a jointly considered print takes the thread's step from the card (the group moves as
+        one from the joint referral) but the shape of the road from the print it is about —
+        druk 316 is the President's and never passed through a government plan or RCL, and the
+        card's «план ✓ → RCL ✓» said it had.
+        """
         lines = [
-            self._path_line(bill, today),
+            self._path_line(bill, today, road=road or bill),
             self._next_step_line(bill, today),
             self._action_line(bill, today),
         ]
@@ -1584,9 +1591,15 @@ class MessageFormatter:
             return None
         return esc(self._labels.wykaz_planned.format(quarter=QUARTERS[number], year=year))
 
-    def _path_line(self, bill: Bill, today: dt.date) -> str:
-        """ "RCL ✓ → Сейм ✓ → комиссии ● → II и III чтение → Сенат → Президент → Dz.U. → в силе"."""
+    def _path_line(self, bill: Bill, today: dt.date, *, road: Bill | None = None) -> str:
+        """ "RCL ✓ → Сейм ✓ → комиссии ● → II и III чтение → Сенат → Президент → Dz.U. → в силе".
+
+        The step is `bill`'s, the road is `road`'s: only a government bill starts on the wykaz
+        and on RCL, and a reply under a jointly considered print's card shares the step but not
+        the beginning of the road.
+        """
         lb = self._labels
+        road = road or bill
         phase = next_phase(bill, today=today)
         current: str | None
         if phase is None:
@@ -1600,7 +1613,7 @@ class MessageFormatter:
             current = PHASE_STEP.get(phase.key)
             if current is None:
                 return ""
-        steps = [s for s in PATH_STEPS if s not in GOVERNMENT_STEPS or government_path(bill)]
+        steps = [s for s in PATH_STEPS if s not in GOVERNMENT_STEPS or government_path(road)]
         if current is not None and current not in steps:
             # The loop marks every step before `current` as done, so a step filtered out of the
             # line would mark the whole road done — "Dz.U. ✓ → в силе ✓" over a bill with no

@@ -222,6 +222,10 @@ class TelegramAcknowledger:
     def queued(self, command: IncomingCommand) -> None:
         self._client.send_message(self._channel_id, self.TEXT, reply_to=command.message_id)
 
+    def started(self, command: IncomingCommand, note: str) -> None:
+        """`/run` is answered by the relay itself: nothing was filed for a run to report on."""
+        self._client.send_message(self._channel_id, f"▶️ {note}", reply_to=command.message_id)
+
 
 class TelegramOperatorReplier:
     """Answers an operator command as a reply under it in the technical channel."""

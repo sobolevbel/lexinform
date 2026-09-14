@@ -12,8 +12,8 @@ import time
 from collections.abc import Callable
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import ChannelPost, parse_command
-from lexinform.ports import CommandAcknowledger, InboxWriter, UpdatesSource
+from lexinform.models import ChannelPost, Command, CommandName, parse_command
+from lexinform.ports import CommandAcknowledger, InboxWriter, UpdatesSource, WorkflowStarter
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +25,7 @@ class CommandListener:
         writer: InboxWriter | None,
         acknowledger: CommandAcknowledger | None,
         *,
+        starter: WorkflowStarter | None = None,
         channel_id: str,
         poll_timeout: int = 50,
         retry_delay: float = 15.0,
@@ -37,6 +38,7 @@ class CommandListener:
         """
         self._updates = updates
         self._writer = writer
+        self._starter = starter
         self._ack = acknowledger
         self._channel = channel_id
         self._poll_timeout = poll_timeout
@@ -62,8 +64,14 @@ class CommandListener:
         filed = 0
         self._stalled = False
         for post in posts:
-            if self._is_command(post):
-                if not self._file(post):
+            command = self._command_in(post)
+            if command is not None:
+                handled = (
+                    self._start_run(post, command)
+                    if command.name is CommandName.RUN
+                    else self._file(post)
+                )
+                if not handled:
                     self._stalled = True
                     break
                 filed += 1
@@ -109,11 +117,55 @@ class CommandListener:
         log.warning("%s; retrying in %.0fs", reason, delay)
         self._sleep(delay)
 
-    def _is_command(self, post: ChannelPost) -> bool:
+    def _command_in(self, post: ChannelPost) -> Command | None:
         if not post.is_from(self._channel):
             log.debug("update %d: not from the technical channel, ignored", post.update_id)
+            return None
+        return parse_command(post.text) if post.text is not None else None
+
+    def _start_run(self, post: ChannelPost, command: Command) -> bool:
+        """`/run` is not filed: it is the run. The relay asks GitHub to start the workflow with
+        the inputs the operator named, and says so under the command.
+
+        True when the offset may move. A misspelled option is answered and passed over — leaving
+        it unhandled would make Telegram deliver it again for ever — while an outage is not: the
+        command is worth trying again, and nothing was started.
+        """
+        acted = post.as_command()
+        if command.error is not None:
+            log.info("update %d: %s", post.update_id, command.error)
+            self._say(lambda ack: ack.started(acted, command.error or ""))
+            self.filed.append(post)
+            return True
+        if self._starter is None:
+            log.info("dry run: would start the workflow with %s", command.inputs or "no inputs")
+            self.filed.append(post)
+            return True
+        try:
+            where = self._starter.start_run(command.inputs)
+        except ServiceUnavailableError as exc:
+            log.warning("update %d: the run was not started: %s", post.update_id, exc.describe())
             return False
-        return post.text is not None and parse_command(post.text) is not None
+        except Exception as exc:
+            log.exception("update %d: the run was not started: %s", post.update_id, exc)
+            refused = f"the run was not started: {exc}"
+            self._say(lambda ack: ack.started(acted, refused))
+            self.filed.append(post)
+            return True
+        named = ", ".join(f"{k}={v}" for k, v in command.inputs.items()) or "no inputs"
+        self.filed.append(post)
+        log.info("update %d started the workflow (%s)", post.update_id, named)
+        self._say(lambda ack: ack.started(acted, f"run started ({named}) — {where}"))
+        return True
+
+    def _say(self, tell: Callable[[CommandAcknowledger], None]) -> None:
+        """The acknowledgement is a courtesy: the run is started either way."""
+        if self._ack is None:
+            return
+        try:
+            tell(self._ack)
+        except Exception as exc:  # noqa: BLE001 — a channel that is down changes nothing here
+            log.warning("could not answer in the channel: %s", exc)
 
     def _file(self, post: ChannelPost) -> bool:
         """Put one command in the inbox; True when it is safely there and the offset may move.

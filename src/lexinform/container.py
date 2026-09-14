@@ -350,6 +350,7 @@ class Container:
             client,
             writer,
             acknowledger,
+            starter=writer,  # the same GitHub client: filing and starting differ only in scope
             channel_id=s.telegram_log_channel_id,
             poll_timeout=s.listen_timeout_seconds,
         )

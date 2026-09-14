@@ -6,7 +6,7 @@ gateway and `outage_on` on the publisher raise the phase-fatal `ServiceUnavailab
 `fail_on` raises an ordinary per-bill error.
 """
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 
@@ -843,8 +843,10 @@ class FakeUpdates:
 
 class FakeInboxWriter:
     def __init__(self, *, error: Exception | None = None) -> None:
-        """`error` is raised for every command instead of filing it."""
+        """`error` is raised for every command instead of filing it (or, for `/run`, instead of
+        starting the workflow: in production both go through the one GitHub client)."""
         self.filed: list[IncomingCommand] = []
+        self.started: list[dict[str, str]] = []
         self.error = error
 
     def put(self, command: IncomingCommand) -> None:
@@ -852,13 +854,24 @@ class FakeInboxWriter:
             raise self.error
         self.filed.append(command)
 
+    def start_run(self, inputs: Mapping[str, str]) -> str:
+        if self.error is not None:
+            raise self.error
+        self.started.append(dict(inputs))
+        return "https://github.com/owner/repo/actions/workflows/daily.yml"
+
 
 class FakeAcknowledger:
     def __init__(self) -> None:
         self.acknowledged: list[int] = []
+        self.started_notes: list[str] = []
 
     def queued(self, command: IncomingCommand) -> None:
         self.acknowledged.append(command.update_id)
+
+    def started(self, command: IncomingCommand, note: str) -> None:
+        self.acknowledged.append(command.update_id)
+        self.started_notes.append(note)
 
 
 def channel_post(update_id: int, text: str | None, *, chat_id: int = -1001) -> ChannelPost:

@@ -111,6 +111,7 @@ class BillRef(BaseModel):
 
 
 class CommandName(StrEnum):
+    RUN = "run"
     ANALYZE = "analyze"
     SHOW = "show"
     SKIP = "skip"
@@ -139,6 +140,21 @@ NEEDS_REFERENCE = frozenset(
 NEEDS_QUERY = frozenset({CommandName.FIND})
 MIN_QUERY_CHARS = 3
 
+# `/run` is the one command a run cannot execute, because it *is* the run: the relay asks
+# GitHub to start the workflow instead of filing it. These are its inputs, as `daily.yml`
+# declares them; the operator writes them as `key=value`, and `dry` alone is the flag.
+RUN_INPUTS: dict[str, str] = {
+    "since": "since",
+    "dry": "dry_run",
+    "dry_run": "dry_run",
+    "reprefilter": "reprefilter_limit",
+    "reprefilter_limit": "reprefilter_limit",
+    "index_rcl_since": "index_rcl_since",
+    "index": "index_rcl_since",
+}
+_DATE_INPUTS = frozenset({"since", "index_rcl_since"})
+_COUNT_INPUTS = frozenset({"reprefilter_limit"})
+
 
 class Command(BaseModel):
     """A parsed command line; `error` says what is wrong with it (the reply repeats it).
@@ -155,6 +171,7 @@ class Command(BaseModel):
     query: str | None = None
     force: bool = False
     publish: bool = False
+    inputs: dict[str, str] = Field(default_factory=dict)  # `/run` only: the workflow's inputs
     error: str | None = None
 
 
@@ -327,6 +344,42 @@ def _sejm_url_ref(path: str, query: Query) -> BillRef | None:
     return None
 
 
+def _parse_run(args: list[str]) -> Command:
+    """`/run`, `/run dry`, `/run since=2026-09-01 reprefilter=50 index_rcl_since=2023-11-01`.
+
+    Every value is checked here rather than by the workflow, which would answer a typo hours
+    later with a job that did the wrong thing — or nothing, `since` being free text to it.
+    """
+    inputs: dict[str, str] = {}
+    for word in args:
+        key, _, value = word.partition("=")
+        name = RUN_INPUTS.get(key.lower().lstrip("-"))
+        if name is None:
+            return Command(
+                name=CommandName.RUN,
+                error=f"/run: unknown option {word} (since, dry, reprefilter, index_rcl_since)",
+            )
+        if name == "dry_run":
+            inputs[name] = "true"
+            continue
+        if not value:
+            return Command(name=CommandName.RUN, error=f"/run: {key} needs a value ({key}=…)")
+        if name in _DATE_INPUTS and not _is_date(value):
+            return Command(name=CommandName.RUN, error=f"/run: {key} takes a date, not {value!r}")
+        if name in _COUNT_INPUTS and not value.isdigit():
+            return Command(name=CommandName.RUN, error=f"/run: {key} takes a number, not {value!r}")
+        inputs[name] = value
+    return Command(name=CommandName.RUN, inputs=inputs)
+
+
+def _is_date(value: str) -> bool:
+    try:
+        dt.date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
 def parse_command(text: str) -> Command | None:
     """The command in a channel post; None when the post is not a command (no leading slash).
 
@@ -351,6 +404,8 @@ def parse_command(text: str) -> Command | None:
             publish = True
         else:
             args.append(word)
+    if name is CommandName.RUN:
+        return _parse_run(args)
     if name in NEEDS_QUERY:
         query = " ".join(args).strip()
         if len(query) < MIN_QUERY_CHARS:
