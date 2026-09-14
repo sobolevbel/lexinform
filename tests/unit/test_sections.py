@@ -503,3 +503,26 @@ def test_a_heading_that_ends_a_page_is_found_too() -> None:
     assert document_kind("Strona tytułowa" + PAGE_BREAK + "R O Z P O R Z Ą D Z E N I E\n") == (
         "regulation"
     )
+
+
+def test_a_bill_is_not_its_own_justification_because_page_two_says_so() -> None:
+    """`HEAD_CHARS` is a budget, not a window: the opening is a page.
+
+    A bill's first page on RCL runs 550-1,150 characters, so a flat 1,200-character window reads
+    on into the second page, where the uzasadnienie begins — and `_KINDS` tries `justification`
+    before `bill`. Over the corpus that cost 94 documents their kind, every one headed USTAWA on
+    its own first page (dokument 716581, 778816, 674571 …), and `_pick_parts` then had no bill.
+    """
+    first = "Projekt z dnia 21 maja 2026 r.\nUSTAWA\nz dnia 2026 r.\no zmianie ustawy\n" + "x" * 700
+    text = first + PAGE_BREAK + "UZASADNIENIE\nCel projektu.\n" + "y" * 700
+
+    assert len(first) < 1200  # the second page is inside a flat window
+    assert document_kind(text) == "bill"
+
+
+def test_a_page_that_says_nothing_hands_the_budget_to_the_next_one() -> None:
+    """26 documents of the corpus open on a stamp or a title sheet and name themselves after it
+    (dokument 631755 opens 485 characters of heading and is an OSR on its second page)."""
+    text = "Ministerstwo Zdrowia\nWarszawa\n" + PAGE_BREAK + "Nazwa projektu\nUstawa o badaniach\n"
+
+    assert document_kind(text) == "osr"

@@ -193,14 +193,32 @@ def document_kind(text: str) -> Kind:
     with a bill — filed as `projekt.docx`, `uzasadnienie.docx`, `OSR.doc`, indistinguishable
     from the bill's own files by name — say ROZPORZĄDZENIE where the bill says USTAWA.
 
+    **The opening is a page, and the first page that speaks wins.** `HEAD_CHARS` is a budget,
+    not the window: a bill's first page on RCL runs 550-1,150 characters, so a flat window of
+    1,200 reads on into the second page, where the uzasadnienie begins — and `_KINDS` tries
+    `justification` before `bill`, so the second page's heading outranked the first page's.
+    Measured over the 9,208 documents of the corpus (14 Sept 2026) that cost **94 bills**, every
+    one of them headed USTAWA on its own first page: `Projekt ustawy … (UD51)`, `Załącznik 1
+    projekt ustawy z uzasadnieniem`, whole packages read as their own justification. Page order
+    beats pattern order because a document announces itself before it argues for itself.
+
+    A page that says nothing about itself is not an opening, so the budget carries to the next
+    one — 26 documents open on a stamp or a title sheet and name themselves on the page after.
+
     The all-caps headings are matched case-sensitively and anchored to their whole line: a
     justification wrapped so that a line begins "rozporządzenia 2018/1240" is not a regulation.
     `unknown` is the honest answer for a layout not seen before, and callers treat it as such.
     """
-    head = text[:HEAD_CHARS]
-    for kind, pattern in _KINDS:
-        if pattern.search(head):
-            return kind
+    budget = HEAD_CHARS
+    for page in text.split(PAGE_BREAK):
+        if not page.strip():
+            continue
+        for kind, pattern in _KINDS:
+            if pattern.search(page[:budget]):
+                return kind
+        budget -= len(page)
+        if budget <= 0:
+            break
     return "letter" if has_cover_letter(text) else "unknown"
 
 
