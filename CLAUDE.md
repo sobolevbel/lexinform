@@ -22,6 +22,13 @@ windows and the API stage vocabulary in `docs/legislative-process.md`.
   comment over it; a comment that opens a function body and says what the function does is a
   docstring written in the wrong place.
 - Developer guide (setup, tests, migrations, where a change goes): `CONTRIBUTING.md`.
+- **Every measured claim below can be re-run**: the documents are in `../lexinform-corpus` (not a
+  git repo, 11 GB) — all 938 bill prints of term 10 with their text, 825 RCL projects with every
+  reached stage and 9,208 of their files, the whole wykaz register, 826 orka submissions, and the
+  stage tree of all 5,533 processes of terms 8–10. Start at its `INDEX.json`: it maps a druk
+  number, an RCL id, a wykaz number (`wpl:UC104`) or an RPW number to the files, the labels and
+  each other, and its `cases` are the ready-made sets (`print.scan`, `document.unknown`, …). A
+  sample of size 45 is what most of the older numbers here rest on; the corpus is now the term.
 - Commit after each finished part. Do not push unless asked. No `Co-Authored-By` trailers.
   A push of `main` deploys everything: the bot (every `daily.yml` run checks out `main`) and,
   after a green CI, the relay on the VPS (`deploy-relay.yml` → `deploy/update.sh` over SSH).
@@ -239,13 +246,24 @@ Invariants worth keeping:
   documents filed to prints **none** carries readable text — 55 have no text layer at all and 11
   hold the Prime Minister's letter and nothing else (700–820 characters naming the bill and
   saying who will present the position, never what it is); of 39 prints, 11 are scans and druk
-  604 is its letter and the signatures under it. Those 800 characters passed `MIN_TEXT_CHARS`
+  604 is its letter and the signatures under it. "None" held for those 66 and not for the
+  population: over 570 filings (14 Sept 2026) 521 have no text layer and 39 more are a covering
+  letter, but **ten carry a document** — `1319-001`, `1528-004`, `3033-001`, `2883-005` are the
+  OSR asked of a deputies' bill, 56k–80k characters over 19–25 pages, and `439-s`, `494-s`,
+  `1676-s` the government's position. Those are the two kinds the channel is told about, so
+  `digest_supplement` sometimes gets real text instead of paying per page. Those 800 characters passed `MIN_TEXT_CHARS`
   and read like a document, so `sections.carries_the_document` cuts the letter (at the page break
   or the heading after it, `without_cover_letter`) and asks whether anything is left — and then
   asks the same of the paper it came from: under 4,000 characters, a text thinner than 300
   characters a page is a photograph of pages and not their text (30 prints drawn at random from
   term 10 on 2026-09-12: the scan among them runs 139 characters a page, the thinnest real
-  document 477, the median ~2,200). The gate
+  document 477, the median ~2,200). **The 4,000-character ceiling is a hole, and it is measured**:
+  the thinness test is skipped once the body passes it, so a print whose OCR layer covers a few
+  pages of otherwise scanned paper is called `text` and goes to the model as that fragment. Of
+  the 804 term-10 prints classified `text` that are PDFs, **26 run under 300 characters a page** —
+  druk 703 is 155 pages with text on three (6,865 characters, diacritics gone:
+  "norki amerykanskiej"), druk 204 is 268 pages with ten, druk 348 is 362 with sixteen. The card
+  says nothing, because to the code this is a text. The gate
   sits in `AnalysisService._load_text`, the one place every document the model reads passes
   through, so the rule is one and not four. A file with no text but with pages goes to the model
   as pages instead (`ScannedDocument`, `text_source="scan"`, the API's document block — ~1,600
@@ -512,6 +530,13 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   listing carries `closureDate` and `passed`; an open process never has the date. `End`
   ("Uchwalono") is appended at the third reading and stays last, so it says nothing about how
   far the bill got — read the stages before it.
+- **The `/prints` listing is not authoritative about attachments; the print's own detail is.**
+  For druki 599, 1768 and 2821 of term 10 (14 Sept 2026) every file the listing names answers
+  404, while the detail names one that downloads (`599.pdf` is gone, `599-s.pdf` is there). Three
+  of 3282 is nothing until a run builds its download URL from the listing and loses the print
+  whole; the only way to notice is to ask the detail when the listing's files all fail.
+  The listing does carry `additionalPrints` for all 847 prints that have any, so the whole
+  catalogue of 2339 filings costs one request.
 - `additionalPrints` in a print's detail are the documents filed to it after its submission, each
   a print of its own (`1273-001`, `1273-s`) with `title`, `documentDate`, `deliveryDate` and its
   own PDF, served from api.sejm.gov.pl like any attachment (no WAF in front, unlike the RPW
@@ -526,7 +551,12 @@ There is no downgrade. To roll back, revert the code and restore the previous du
 - `rclNum` and `rclLink` exist only in a process's **detail**, never in the `/processes` or
   `/bills` listing (verified 2026-09-11): finding the print an RCL project became means reading
   details one by one, so `find_process_by_rcl_num` narrows by the hand-over date and caps the
-  number of lookups. The other direction is one request (`getIdFromLegislacja`).
+  number of lookups. The other direction is one request (`getIdFromLegislacja`) — **and that
+  endpoint counts them**: about 90 in a row and it answers 403 with a 292-byte body until left
+  alone. A run asks it once per bill and never meets this, but a sweep must pause (1.5 s was
+  enough for all 476 rclNums of term 10, of which 471 resolve and 5 answer 200 because they are
+  genuinely not on RCL). A probe that keeps only the `Location` header cannot tell those apart:
+  record the status beside it, or "throttled" reads as "not on RCL".
 - Committee reports with print `…-A` (proposal "przyjąć poprawki") are amendment tables, not
   bill text; only `proposal` containing "projekt" carries the text. `SenatePosition` reports via
   `position`, not `decision`. `UE` enum is NO|ADAPTATION|ENFORCEMENT.
@@ -550,10 +580,14 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   → 6.48M), and the bill, its uzasadnienie and "Art. 1." survive in every one of them: druk 1479
   keeps 35% of what it did, druk 1963 48%, druk 810 63%. The one print that keeps *more* is druk
   2670, whose OSR was being thrown away whole. The OSR is cut at point 6 in 16 of the first 25
-  measured. Three
+  measured. Three of those 45
   carry **"DEKLAROWANE SKUTKI REGULACJI (DSR)"** instead of the OSR form — the deputies' version,
   unknown to the pattern until now, 15 pages of 60 in druk 2673 — and one heads its OSR
-  "Tytuł projektu". The DSR is recognised as the OSR section but **not cut**, on purpose: it has
+  "Tytuł projektu". Three was the sample: over all 938 bill prints of term 10 (14 Sept 2026,
+  `page_index.json.gz` in the corpus) **173** open a page with the DSR, 159 of which
+  `document_kind` reads as `osr` and **14 as `annex`** — the kind `_section_start` latches on,
+  dropping everything after it. So this is a form every fifth print carries, not a curiosity.
+  The DSR is recognised as the OSR section but **not cut**, on purpose: it has
   no fixed thirteen points and so no "point 6" to cut at, and its own headings are where its
   substance is ("Podmioty, na które wpływa projekt", "Wpływ projektu na wskazane podmioty" in
   druk 3035) — which is the part of an OSR this channel reads it for. Cutting at a guessed
@@ -603,8 +637,13 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   ~2–3k an RCL package.
 - **Net over the 45 prints (13 Sept 2026): 6,437,943 characters kept → 5,929,867.** The sum is not
   the point: it is ~588k of appendices out and ~157k of real bill text back in. The pages these
-  rules were measured on are checked in as `tests/fixtures/sejm/page_starts.json`, one row per
-  page, the way `openings.json` holds the documents.
+  rules were measured on are checked in as `tests/fixtures/sejm/page_starts.json` — **19 rows**,
+  the individual pages each rule was derived from, not a page corpus. The page corpus is
+  `../lexinform-corpus/sejm/term10/page_index.json.gz`: 84,422 pages of 914 prints, one row each
+  with the kind `page_kind` gives it, built by the same call the fixture is (druk 810's pages 40,
+  113, 182 and 388 come out identical). Asked of it (14 Sept 2026), **no print of term 10 now has
+  an appendix detected before its uzasadnienie** — the druk 810 failure is closed across the term
+  and not only on the print it was found on.
 
 ## RCL lessons (verified live, Sept 2026)
 
@@ -688,8 +727,11 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   affected. What separates them is that one is a table: `Tabelaryczne zestawienie przepisów`,
   `Jedn. red.` and `Treść przepisu` are its column headings and appear in no OSR form.
 - **What the rule was measured on is checked in.** `tests/fixtures/rcl/openings.json` holds the
-  opening of all 126 real documents collected, with the kind each must be recognised as, and one
-  table test runs `document_kind` over the lot. A new case is one row.
+  opening of 147 real documents, with the kind each must be recognised as, and one
+  table test runs `document_kind` over the lot. A new case is one row. It is a regression set and
+  not the corpus: `../lexinform-corpus/candidates/openings-candidate.json` holds all 21,071
+  openings collected, labelled by the current code — which is why they are copied in by hand and
+  read first, never generated into the repo.
 - Consultation letters give a relative deadline ("w terminie 7/14 dni od dnia otrzymania
   niniejszego pisma", 30 for social partners), often no date (electronic time stamp) and the
   e-mail for comments ("na adres: …"). `rcl_letters.parse_letter` reads them; the deadline counts
