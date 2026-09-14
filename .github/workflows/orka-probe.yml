@@ -350,3 +350,51 @@ jobs:
           if "pdf" not in (r.headers.get("content-type") or ""):
               print("  body: " + " ".join(r.text.split())[:400])
           PY
+
+  # Two candidate answers, each on its own runner: warming the address with one cheap curl
+  # request (does any answer vouch for it, or only the file?), and a client whose TLS hello is a
+  # browser's (curl_cffi), which would need no warming at all.
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        approach: [warm-robots, warm-head, curl-cffi]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: One approach, first request of this address
+        env:
+          APPROACH: ${{ matrix.approach }}
+          UA: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+        run: |
+          set +e
+          echo "approach=$APPROACH ip=$(curl -sS --max-time 10 https://api.ipify.org)"
+          URL='https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-30771-2026/$file/10-RPW-30771-2026.pdf'
+          case "$APPROACH" in
+            warm-robots)
+              curl -sS -o /dev/null -w "  warm-up (robots.txt): http=%{http_code}\n" --max-time 30 -A "$UA" \
+                https://orka.sejm.gov.pl/robots.txt ;;
+            warm-head)
+              curl -sS -I -o /dev/null -w "  warm-up (HEAD on the file): http=%{http_code}\n" --max-time 60 -A "$UA" "$URL" ;;
+          esac
+          if [ "$APPROACH" = "curl-cffi" ]; then
+            uv run --frozen --no-dev --with curl_cffi python - "$URL" <<'PY'
+          import sys
+          from curl_cffi import requests
+          r = requests.get(sys.argv[1], impersonate="chrome", timeout=90)
+          print(f"  curl_cffi: http={r.status_code} type={r.headers.get('content-type')} bytes={len(r.content)}")
+          PY
+            exit 0
+          fi
+          uv run --frozen --no-dev python - "$URL" <<'PY'
+          import sys
+          from lexinform.adapters.orka import OrkaClient
+          try:
+              print(f"  httpx after the warm-up: {len(OrkaClient(max_retries=0).download(sys.argv[1]))} bytes")
+          except Exception as exc:
+              print(f"  httpx after the warm-up: {type(exc).__name__}: {exc}")
+          PY
