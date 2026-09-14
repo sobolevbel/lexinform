@@ -45,7 +45,13 @@ from lexinform.models import (
 )
 from lexinform.ports import AuthorsResolver, BillRepository, Clock, LlmAnalyzer
 from lexinform.ports import TextSource as TextSourcePort
-from lexinform.pricing import cost_usd, estimate_input_cost, estimate_scan_cost, input_cost
+from lexinform.pricing import (
+    cost_usd,
+    estimate_input_cost,
+    estimate_scan_cost,
+    format_usd,
+    input_cost,
+)
 from lexinform.sections import (
     APPENDIX_KINDS,
     TextBudget,
@@ -117,13 +123,9 @@ class TooExpensiveError(Exception):
 
     def __init__(self, estimate: float, limit: float, *, measure: str) -> None:
         super().__init__(
-            f"${_usd(estimate)} of input for {measure} exceeds the ${_usd(limit)} limit"
+            f"{format_usd(estimate)} of input for {measure} exceeds the {format_usd(limit)} limit"
         )
         self.estimate = estimate
-
-
-def _usd(amount: float) -> str:
-    return f"{amount:.2f}" if amount >= 0.01 else f"{amount:.3f}"
 
 
 @dataclass(frozen=True)
@@ -373,8 +375,8 @@ class AnalysisService:
                 add_usage(result.usage, prepared.triage)
             if self._run_budget_reached():
                 result.stopped = (
-                    f"run cost limit reached (≈${_usd(self._spent)} ≥ "
-                    f"${_usd(self._max_run_cost)}); "
+                    f"run cost limit reached (≈{format_usd(self._spent)} ≥ "
+                    f"{format_usd(self._max_run_cost)}); "
                     "the remaining candidates wait for the next run"
                 )
                 log.warning("analysis phase stopped: %s", result.stopped)
@@ -576,7 +578,8 @@ class AnalysisService:
             # bill whose text is not read now keeps the analysis and the `source_url` it had, so
             # the next run sees the same new document and reads it then.
             self._stopped = (
-                f"run cost limit reached (≈${_usd(self._spent)} ≥ ${_usd(self._max_run_cost)});"
+                f"run cost limit reached (≈{format_usd(self._spent)} ≥"
+                f" {format_usd(self._max_run_cost)});"
                 " the new text(s) wait for the next run"
             )
             return _Prepared(bill, located, text, source, previous, first=False, deferred=True)
@@ -660,11 +663,11 @@ class AnalysisService:
         reduced = ctx.model_copy(update={"text": shorter, "truncated": True})
         counted = self._llm.count_input_tokens(reduced)
         log.info(
-            "%s: %d tokens is $%s, over the $%s limit; sending %d of %d chars instead",
+            "%s: %d tokens is %s, over the %s limit; sending %d of %d chars instead",
             ctx.number,
             tokens,
-            _usd(cost),
-            _usd(self._max_bill_cost),
+            format_usd(cost),
+            format_usd(self._max_bill_cost),
             len(shorter),
             len(ctx.text),
         )

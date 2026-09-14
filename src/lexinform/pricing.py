@@ -66,3 +66,17 @@ def cost_usd(usage_by_model: Mapping[str, TokenUsage]) -> float | None:
             + usage.output * per_output
         ) / 1_000_000
     return total
+
+
+def format_usd(amount: float | None) -> str:
+    """A cost as every message shows it: `$0.48`, and `$0.002` below a cent, because a run that
+    cost a fifth of a cent must not read as `$0.00`. `$?` when the price list does not know the
+    model that ran, which is what `cost_usd` says with None."""
+    if amount is None:
+        return "$?"
+    return f"${amount:.2f}" if amount >= 0.01 or amount == 0 else f"${amount:.3f}"
+
+
+def format_tokens(tokens: int) -> str:
+    """A token count as every message shows it: `95.3k` from a thousand up, the number below."""
+    return f"{tokens / 1000:.1f}k" if tokens >= 1000 else str(tokens)

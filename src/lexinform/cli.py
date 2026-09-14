@@ -30,7 +30,7 @@ from lexinform.models import (
     stage_fingerprint,
     usage_of,
 )
-from lexinform.pricing import cost_usd
+from lexinform.pricing import cost_usd, format_tokens, format_usd
 from lexinform.services.lookup import BillNotFoundError
 from lexinform.services.pipeline import RunOptions
 from lexinform.settings import Settings
@@ -508,11 +508,11 @@ def runs(days: DaysOpt = 30) -> None:
     )
     for r in reports:
         cost = cost_usd(r.llm_usage) if r.llm_usage or not r.llm_input_tokens else None
+        tokens = f"{format_tokens(r.llm_input_tokens)}/{format_tokens(r.llm_output_tokens)}"
         typer.echo(
             f"{r.started_at:%Y-%m-%d %H:%M}  {r.mode:<8}  {'ok ' if r.ok else 'ERR'}  "
             f"{r.discovered:>4}  {r.analyzed:>4}  {r.published:>4}  {r.updates:>3}  "
-            f"{len(r.errors):>4}  {_k(r.llm_input_tokens) + '/' + _k(r.llm_output_tokens):<18}"
-            f"{_money(cost)}"
+            f"{len(r.errors):>4}  {tokens:<18}{format_usd(cost)}"
         )
 
 
@@ -535,20 +535,20 @@ def cost(
     total = cost_usd(usage)
     per_run = total / len(reports) if total is not None and reports else None
     typer.echo(
-        f"{len(reports)} run(s) in the last {days} days: {_money(total)} total, "
-        f"{_money(per_run)} per run"
+        f"{len(reports)} run(s) in the last {days} days: {format_usd(total)} total, "
+        f"{format_usd(per_run)} per run"
     )
     for model, u in sorted(usage.items()):
         typer.echo(
-            f"  {model}: in {_k(u.input)} · cache read {_k(u.cache_read)} · "
-            f"cache write {_k(u.cache_creation)} · out {_k(u.output)} · "
-            f"{_money(cost_usd({model: u}))}"
+            f"  {model}: in {format_tokens(u.input)} · cache read {format_tokens(u.cache_read)} · "
+            f"cache write {format_tokens(u.cache_creation)} · out {format_tokens(u.output)} · "
+            f"{format_usd(cost_usd({model: u}))}"
         )
     if reports:
         dearest = max(reports, key=lambda r: cost_usd(r.llm_usage) or 0.0)
         typer.echo(
             f"most expensive run: {dearest.started_at:%Y-%m-%d %H:%M} "
-            f"({_money(cost_usd(dearest.llm_usage))}, {dearest.analyzed} analysed)"
+            f"({format_usd(cost_usd(dearest.llm_usage))}, {dearest.analyzed} analysed)"
         )
     if priciest:
         typer.echo("most expensive analyses (input tokens of the stored analysis):")
@@ -556,20 +556,9 @@ def cost(
         record = bill.analysis
         assert record is not None
         typer.echo(
-            f"  {bill.number}: {_k(record.input_tokens or 0)} in ({record.model}) "
-            f"{_money(cost_usd({record.model: usage_of(record)}))}  {bill.summary.title[:70]}"
+            f"  {bill.number}: {format_tokens(record.input_tokens or 0)} in ({record.model}) "
+            f"{format_usd(cost_usd({record.model: usage_of(record)}))}  {bill.summary.title[:70]}"
         )
-
-
-def _k(tokens: int) -> str:
-    return f"{tokens / 1000:.1f}k" if tokens >= 1000 else str(tokens)
-
-
-def _money(usd: float | None) -> str:
-    """A cost, or "$?" when the price list does not know the model that ran."""
-    if usd is None:
-        return "$?"
-    return f"${usd:.2f}" if usd >= 0.01 or usd == 0 else f"${usd:.3f}"
 
 
 YesOpt = Annotated[bool, typer.Option("--yes", "-y", help="Do not ask for confirmation.")]

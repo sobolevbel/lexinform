@@ -64,7 +64,7 @@ from lexinform.models import (
     veto_stood,
     wykaz_entry_number,
 )
-from lexinform.pricing import cost_usd
+from lexinform.pricing import cost_usd, format_tokens, format_usd
 
 MESSAGE_LIMIT = 4096
 ELLIPSIS = "…"
@@ -2027,15 +2027,15 @@ def _command_cost(outcome: CommandOutcome) -> str:
     if outcome.usage:
         spent_in = sum(u.input + u.cache_read for u in outcome.usage.values())
         spent_out = sum(u.output for u in outcome.usage.values())
-        parts.append(f"tokens {_k(spent_in)}/{_k(spent_out)}")
+        parts.append(f"tokens {format_tokens(spent_in)}/{format_tokens(spent_out)}")
         parts += [
-            f"{esc(model.removeprefix('claude-'))} {_k(u.input + u.cache_read)}"
+            f"{esc(model.removeprefix('claude-'))} {format_tokens(u.input + u.cache_read)}"
             for model, u in outcome.usage.items()
             if len(outcome.usage) > 1
         ]
         cost = cost_usd(outcome.usage)
         if cost is not None:
-            parts.append(f"≈ ${cost:.2f}" if cost >= 0.01 else f"≈ ${cost:.3f}")
+            parts.append(f"≈ {format_usd(cost)}")
     return f"⏱ {' · '.join(parts)}" if parts else ""
 
 
@@ -2066,7 +2066,7 @@ def _runs_line(snapshot: StatusSnapshot) -> str:
     if failed := sum(1 for r in runs if not r.ok):
         parts.append(f"{failed} with errors")
     if cost is not None and usage:
-        parts.append(f"≈ ${cost:.2f}")
+        parts.append(f"≈ {format_usd(cost)}")
     parts.append(f"last {runs[0].started_at:%d.%m %H:%M} UTC")
     return "🏃 <b>runs</b>: " + " · ".join(parts)
 
@@ -2080,15 +2080,16 @@ def _tokens_line(report: RunReport) -> str:
     parts = [f"tokens in/out: {report.llm_input_tokens}/{report.llm_output_tokens}"]
     cached = sum(u.cache_read for u in report.llm_usage.values())
     if cached:
-        parts.append(f"cache read {_k(cached)}")
+        parts.append(f"cache read {format_tokens(cached)}")
     if len(report.llm_usage) > 1:
         parts += [
-            f"{esc(model.removeprefix('claude-'))} {_k(u.input + u.cache_read)}/{_k(u.output)}"
+            f"{esc(model.removeprefix('claude-'))}"
+            f" {format_tokens(u.input + u.cache_read)}/{format_tokens(u.output)}"
             for model, u in report.llm_usage.items()
         ]
     cost = cost_usd(report.llm_usage)
     if cost is not None and report.llm_usage:
-        parts.append(f"≈ ${cost:.2f}" if cost >= 0.01 else f"≈ ${cost:.3f}")
+        parts.append(f"≈ {format_usd(cost)}")
     return " · ".join(parts)
 
 
@@ -2102,13 +2103,11 @@ def _spenders_line(report: RunReport, *, top: int = 3) -> str:
     priced = [(cost, call) for call in report.llm_calls if (cost := cost_usd(call.usage))]
     priced.sort(key=lambda pair: -pair[0])
     named = [
-        f"{esc(call.number)} {call.kind} ${cost:.2f}" for cost, call in priced[:top] if cost >= 0.01
+        f"{esc(call.number)} {call.kind} {format_usd(cost)}"
+        for cost, call in priced[:top]
+        if cost >= 0.01
     ]
     return "spent on: " + " · ".join(named) if named else ""
-
-
-def _k(tokens: int) -> str:
-    return f"{tokens / 1000:.1f}k" if tokens >= 1000 else str(tokens)
 
 
 def _section(icon: str, title: str, *lines: str, empty: str = "") -> str:
