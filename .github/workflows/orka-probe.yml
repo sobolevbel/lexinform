@@ -126,387 +126,58 @@ jobs:
           curl -sS -o /dev/null -w "sejm api http=%{http_code} total=%{time_total}s\n" \
             --max-time 30 -A "$OURS" https://api.sejm.gov.pl/sejm/term
 
-      # 2026-09-14: from this runner curl still gets the PDF, while the production client (httpx,
-      # HTTP/1.1) is answered 403 from the same address. These steps separate the two axes:
-      # the protocol (curl --http1.1 against the default HTTP/2) and the client itself.
-      - name: The same file over HTTP/1.1, which is what our client speaks
-        run: |
-          set +e
-          TERM=$(cat /tmp/term)
-          NUM=$(head -1 /tmp/rpw.txt)
-          SLUG="$TERM-$(echo "$NUM" | tr '/' '-')"
-          URL="https://orka.sejm.gov.pl/Druki${TERM}ka.nsf/Projekty/$SLUG/\$file/$SLUG.pdf"
-          for proto in --http2 --http1.1; do
-            rm -f /tmp/jar
-            echo "--- $proto"
-            curl -sS -L $proto -c /tmp/jar -b /tmp/jar -o /tmp/body -w "  $FMT" --max-time 120 \
-              -A "$BROWSER" -H 'Accept: text/html,application/xhtml+xml,*/*;q=0.8' \
-              -H 'Accept-Language: pl-PL,pl;q=0.9' "$URL"
-            echo "  first bytes: $(head -c 4 /tmp/body | tr -d '\0')"
-          done
-
+  # What the WAF reads is the shape of the request, and the trap in measuring it is that the
+  # first client an address is served vouches for it: every later request from that runner is
+  # served whatever it looks like, so a probe that ran curl first showed 44 successes out of 44
+  # and proved nothing. Hence one draw per job, the production client first, and a control that
+  # sends httpx's own header order (`Accept-Encoding` and `Connection` before `User-Agent`, which
+  # no Chrome has) — on 2026-09-14 that control was refused on every cold address and the
+  # browser's order was served on every one.
+  cold:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        draw: [ours-1, ours-2, ours-3, httpx-default]
+    steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      - name: The production client itself
+      - name: One draw, first request of this address
+        env:
+          DRAW: ${{ matrix.draw }}
         run: |
           set +e
-          uv sync --frozen
-          TERM=$(cat /tmp/term)
-          NUM=$(head -1 /tmp/rpw.txt)
-          uv run python - "$TERM" "$NUM" <<'PY'
+          echo "draw=$DRAW ip=$(curl -sS --max-time 10 https://api.ipify.org)"
+          uv run --frozen --no-dev python - "$DRAW" <<'PY'
           import sys
+
+          import httpx2 as httpx
+
+          from lexinform.adapters.browser_identity import BROWSER_USER_AGENT
           from lexinform.adapters.orka import OrkaClient
           from lexinform.models import submission_pdf_url
-          term, number = int(sys.argv[1]), sys.argv[2]
-          url = submission_pdf_url(term, number)
-          print(url)
+
+          url = submission_pdf_url(10, "RPW/30771/2026")
+
+          if sys.argv[1] == "httpx-default":
+              # The shape this bot sent until 2026-09-14: httpx's own defaults, written first.
+              headers = {
+                  "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
+                  "Accept-Language": "pl-PL,pl;q=0.9",
+                  "User-Agent": BROWSER_USER_AGENT,
+              }
+              with httpx.Client(headers=headers, follow_redirects=True, timeout=60) as client:
+                  response = client.get(url)
+              sent = ", ".join(name.decode() for name, _ in response.request.headers.raw)
+              print(f"  control: http={response.status_code} bytes={len(response.content)}")
+              print(f"  sent: {sent}")
+              raise SystemExit(0)
+
           try:
-              body = OrkaClient().download(url)
-              print("  OrkaClient:", len(body), body[:4])
+              print(f"  OrkaClient: {len(OrkaClient(max_retries=0).download(url))} bytes")
           except Exception as exc:
               print(f"  OrkaClient: {type(exc).__name__}: {exc}")
-          PY
-
-      - name: Twelve fresh sessions, with the WAF's own words when it refuses
-        run: |
-          set +e
-          TERM=$(cat /tmp/term)
-          NUM=$(head -1 /tmp/rpw.txt)
-          uv run python - "$TERM" "$NUM" <<'PY'
-          import sys, time
-          import httpx2 as httpx
-          from lexinform.adapters.browser_identity import BROWSER_HEADERS
-          from lexinform.models import submission_pdf_url
-
-          url = submission_pdf_url(int(sys.argv[1]), sys.argv[2])
-          for attempt in range(1, 13):
-              with httpx.Client(headers=BROWSER_HEADERS, follow_redirects=True, timeout=60) as c:
-                  r = c.get(url)
-              note = ""
-              if r.status_code != 200 or "pdf" not in r.headers.get("content-type", ""):
-                  note = " | " + r.headers.get("x-iinfo", "no x-iinfo") + " | " + r.text[:300].replace("\n", " ")
-              print(f"{attempt:2d} http={r.status_code} type={r.headers.get('content-type')} bytes={len(r.content)}{note}", flush=True)
-              time.sleep(3)
-          PY
-
-  # How often is a runner refused at all? One draw of the IP pool per job: the address it was
-  # given, and what orka answers a fresh session from it.
-  pool:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        draw: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    steps:
-      - name: Address and answer
-        run: |
-          set +e
-          IP=$(curl -sS --max-time 10 https://api.ipify.org)
-          URL="https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-30771-2026/\$file/10-RPW-30771-2026.pdf"
-          for i in 1 2 3; do
-            code=$(curl -sS -L -o /tmp/body -w '%{http_code} %{content_type} %{size_download}' --max-time 90 \
-              -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" \
-              -H 'Accept: text/html,application/xhtml+xml,*/*;q=0.8' -H 'Accept-Language: pl-PL,pl;q=0.9' "$URL")
-            echo "draw=${{ matrix.draw }} ip=$IP try=$i $code first=$(head -c 4 /tmp/body | tr -d '\0')"
-            sleep 2
-          done
-
-  # Every earlier probe ran curl against orka before the production client, from the same
-  # address. This one asks the question in the order a run asks it: httpx first, on an address
-  # that has said nothing to this host yet, then curl, then httpx again.
-  order:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        draw: [1, 2, 3, 4, 5, 6]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-      - name: httpx first, then curl, then httpx again
-        run: |
-          set +e
-          IP=$(curl -sS --max-time 10 https://api.ipify.org)
-          echo "draw=${{ matrix.draw }} ip=$IP"
-          uv sync --frozen --no-dev >/dev/null 2>&1
-          URL='https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-30771-2026/$file/10-RPW-30771-2026.pdf'
-          uv run --frozen --no-dev python - "$URL" "first" <<'PY'
-          import sys
-          from lexinform.adapters.orka import OrkaClient
-          try:
-              print(f"  httpx {sys.argv[2]}: {len(OrkaClient(max_retries=0).download(sys.argv[1]))} bytes")
-          except Exception as exc:
-              print(f"  httpx {sys.argv[2]}: {type(exc).__name__}: {exc}")
-          PY
-          curl -sS -L -o /tmp/b -w "  curl: http=%{http_code} type=%{content_type} bytes=%{size_download}\n" --max-time 90 \
-            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" \
-            -H 'Accept: text/html,application/xhtml+xml,*/*;q=0.8' -H 'Accept-Language: pl-PL,pl;q=0.9' "$URL"
-          uv run --frozen --no-dev python - "$URL" "after curl" <<'PY'
-          import sys
-          from lexinform.adapters.orka import OrkaClient
-          try:
-              print(f"  httpx {sys.argv[2]}: {len(OrkaClient(max_retries=0).download(sys.argv[1]))} bytes")
-          except Exception as exc:
-              print(f"  httpx {sys.argv[2]}: {type(exc).__name__}: {exc}")
-          PY
-
-  # Which part of the client is the WAF reading? Each variant gets a runner of its own, because
-  # the first answer vouches for the address and every later request from it is served.
-  variant:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        variant: [plain, http2, headers, http2headers, curl]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-      - name: One variant, first request of this address
-        env:
-          VARIANT: ${{ matrix.variant }}
-        run: |
-          set +e
-          echo "variant=$VARIANT ip=$(curl -sS --max-time 10 https://api.ipify.org)"
-          URL='https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-30771-2026/$file/10-RPW-30771-2026.pdf'
-          if [ "$VARIANT" = "curl" ]; then
-            curl -sS -L -o /tmp/b -w "  result: http=%{http_code} type=%{content_type} bytes=%{size_download}\n" \
-              --max-time 90 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" \
-              -H 'Accept: text/html,application/xhtml+xml,*/*;q=0.8' -H 'Accept-Language: pl-PL,pl;q=0.9' "$URL"
-            exit 0
-          fi
-          uv run --frozen --no-dev --with h2 python - "$VARIANT" "$URL" <<'PY'
-          import sys
-          import httpx2 as httpx
-          from lexinform.adapters.browser_identity import BROWSER_HEADERS
-
-          variant, url = sys.argv[1], sys.argv[2]
-          headers = dict(BROWSER_HEADERS)
-          if "headers" in variant:
-              headers |= {
-                  "Accept-Encoding": "gzip, deflate, br, zstd",
-                  "Upgrade-Insecure-Requests": "1",
-                  "Sec-Fetch-Dest": "document",
-                  "Sec-Fetch-Mode": "navigate",
-                  "Sec-Fetch-Site": "none",
-                  "Sec-Fetch-User": "?1",
-                  "sec-ch-ua": '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
-                  "sec-ch-ua-mobile": "?0",
-                  "sec-ch-ua-platform": '"Windows"',
-              }
-          with httpx.Client(headers=headers, follow_redirects=True, timeout=60,
-                            http2="http2" in variant) as client:
-              r = client.get(url)
-          print(f"  result: http={r.status_code} type={r.headers.get('content-type')}"
-                f" proto={r.http_version} bytes={len(r.content)}")
-          PY
-
-  # Neither the protocol nor the headers moved the WAF, so what is left is the address and the
-  # TLS hello. A forward proxy changes only the address: if that is enough, the ручка already
-  # exists (LEXINFORM_RCL_PROXY_URL). The refusal's own body is kept for the record.
-  proxy:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        route: [direct, proxied]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-      - name: httpx over one route, first request of this address
-        env:
-          ROUTE: ${{ matrix.route }}
-          PROXY: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
-        run: |
-          set +e
-          echo "route=$ROUTE ip=$(curl -sS --max-time 10 https://api.ipify.org) proxy_configured=$([ -n "$PROXY" ] && echo yes || echo no)"
-          URL='https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-30771-2026/$file/10-RPW-30771-2026.pdf'
-          uv run --frozen --no-dev python - "$ROUTE" "$URL" <<'PY'
-          import os, sys
-          import httpx2 as httpx
-          from lexinform.adapters.browser_identity import BROWSER_HEADERS
-
-          route, url = sys.argv[1], sys.argv[2]
-          proxy = os.environ["PROXY"] if route == "proxied" else None
-          if route == "proxied" and not proxy:
-              print("  result: no proxy configured")
-              raise SystemExit(0)
-          with httpx.Client(headers=BROWSER_HEADERS, follow_redirects=True, timeout=90,
-                            proxy=proxy) as client:
-              r = client.get(url)
-          print(f"  result: http={r.status_code} type={r.headers.get('content-type')} bytes={len(r.content)}")
-          print(f"  x-iinfo: {r.headers.get('x-iinfo', '(none)')}")
-          if "pdf" not in (r.headers.get("content-type") or ""):
-              print("  body: " + " ".join(r.text.split())[:400])
-          PY
-
-  # Two candidate answers, each on its own runner: warming the address with one cheap curl
-  # request (does any answer vouch for it, or only the file?), and a client whose TLS hello is a
-  # browser's (curl_cffi), which would need no warming at all.
-  fix:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        approach: [warm-robots, warm-head, curl-cffi]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-      - name: One approach, first request of this address
-        env:
-          APPROACH: ${{ matrix.approach }}
-          UA: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
-        run: |
-          set +e
-          echo "approach=$APPROACH ip=$(curl -sS --max-time 10 https://api.ipify.org)"
-          URL='https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-30771-2026/$file/10-RPW-30771-2026.pdf'
-          case "$APPROACH" in
-            warm-robots)
-              curl -sS -o /dev/null -w "  warm-up (robots.txt): http=%{http_code}\n" --max-time 30 -A "$UA" \
-                https://orka.sejm.gov.pl/robots.txt ;;
-            warm-head)
-              curl -sS -I -o /dev/null -w "  warm-up (HEAD on the file): http=%{http_code}\n" --max-time 60 -A "$UA" "$URL" ;;
-          esac
-          if [ "$APPROACH" = "curl-cffi" ]; then
-            uv run --frozen --no-dev --with curl_cffi python - "$URL" <<'PY'
-          import sys
-          from curl_cffi import requests
-          r = requests.get(sys.argv[1], impersonate="chrome", timeout=90)
-          print(f"  curl_cffi: http={r.status_code} type={r.headers.get('content-type')} bytes={len(r.content)}")
-          PY
-            exit 0
-          fi
-          uv run --frozen --no-dev python - "$URL" <<'PY'
-          import sys
-          from lexinform.adapters.orka import OrkaClient
-          try:
-              print(f"  httpx after the warm-up: {len(OrkaClient(max_retries=0).download(sys.argv[1]))} bytes")
-          except Exception as exc:
-              print(f"  httpx after the warm-up: {type(exc).__name__}: {exc}")
-          PY
-
-  # TLS hello or HTTP bytes? `socket` sends exactly curl's request line and headers over Python's
-  # own ssl: a 200 there means the shape of our request is what the WAF reads and httpx can be
-  # taught it; a 403 means the hello itself and no header will help. Each on a cold address.
-  layer:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        probe: [rawsocket, capitalised, ciphers]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-      - name: One layer, first request of this address
-        env:
-          PROBE: ${{ matrix.probe }}
-        run: |
-          set +e
-          echo "probe=$PROBE ip=$(curl -sS --max-time 10 https://api.ipify.org)"
-          uv run --frozen --no-dev python - "$PROBE" <<'PY'
-          import socket, ssl, sys
-
-          HOST = "orka.sejm.gov.pl"
-          PATH = "/Druki10ka.nsf/Projekty/10-RPW-30771-2026/$file/10-RPW-30771-2026.pdf"
-          UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
-                " Chrome/140.0.0.0 Safari/537.36")
-          probe = sys.argv[1]
-
-          if probe == "rawsocket":
-              # Byte for byte what curl sends, over Python's own TLS stack.
-              request = (
-                  f"GET {PATH} HTTP/1.1\r\nHost: {HOST}\r\nUser-Agent: {UA}\r\n"
-                  "Accept: */*\r\n\r\n"
-              ).encode()
-              ctx = ssl.create_default_context()
-              with socket.create_connection((HOST, 443), timeout=60) as raw:
-                  with ctx.wrap_socket(raw, server_hostname=HOST) as tls:
-                      tls.sendall(request)
-                      head = tls.recv(4096)
-              print(f"  result: {head.split(chr(13).encode())[0].decode(errors='replace')}")
-              raise SystemExit(0)
-
-          import httpx2 as httpx
-          if probe == "capitalised":
-              headers = {"Host": HOST, "User-Agent": UA, "Accept": "*/*"}
-              client = httpx.Client(headers=headers, follow_redirects=True, timeout=60)
-          else:
-              ctx = ssl.create_default_context()
-              ctx.set_ciphers("DEFAULT")  # OpenSSL's own list, which is curl's
-              ctx.set_alpn_protocols(["http/1.1"])
-              client = httpx.Client(
-                  headers={"User-Agent": UA, "Accept": "*/*"},
-                  follow_redirects=True, timeout=60, verify=ctx,
-              )
-          with client:
-              r = client.get(f"https://{HOST}{PATH}")
-          print(f"  result: http={r.status_code} type={r.headers.get('content-type')} bytes={len(r.content)}")
-          PY
-
-  # The raw socket with curl's bytes was let through on Python's own TLS, so what the WAF reads
-  # is the shape of the request. httpx keeps the order and the casing it is given — if all of
-  # its defaults are given too. Three draws of the browser's shape against today's control.
-  shape:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    strategy:
-      fail-fast: false
-      matrix:
-        shape: [chrome-1, chrome-2, chrome-3, curl-shape, control]
-    steps:
-      - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-      - name: One shape, first request of this address
-        env:
-          SHAPE: ${{ matrix.shape }}
-        run: |
-          set +e
-          echo "shape=$SHAPE ip=$(curl -sS --max-time 10 https://api.ipify.org)"
-          uv run --frozen --no-dev python - "$SHAPE" <<'PY'
-          import sys
-          import httpx2 as httpx
-          from lexinform.adapters.browser_identity import BROWSER_HEADERS
-
-          URL = ("https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-30771-2026/"
-                 "$file/10-RPW-30771-2026.pdf")
-          UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
-                " Chrome/140.0.0.0 Safari/537.36")
-          CHROME = {
-              "Connection": "keep-alive",
-              "Upgrade-Insecure-Requests": "1",
-              "User-Agent": UA,
-              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-              "Accept-Encoding": "gzip, deflate",
-              "Accept-Language": "pl-PL,pl;q=0.9",
-          }
-          shape = sys.argv[1]
-          headers = BROWSER_HEADERS if shape == "control" else CHROME
-          with httpx.Client(headers=headers, follow_redirects=True, timeout=60) as client:
-              request = client.build_request("GET", URL)
-              if shape == "curl-shape":
-                  del request.headers["accept-encoding"]
-                  del request.headers["connection"]
-                  del request.headers["upgrade-insecure-requests"]
-              r = client.send(request)
-          print(f"  result: http={r.status_code} type={r.headers.get('content-type')} bytes={len(r.content)}")
-          print("  sent: " + " | ".join(f"{k}: {v}" for k, v in request.headers.items()))
           PY
