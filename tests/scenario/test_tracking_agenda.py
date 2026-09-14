@@ -67,6 +67,37 @@ def test_committee_sitting_naming_the_bill_is_posted_once() -> None:
     assert again.agenda_posted == 0 and len(w.publisher.agendas) == 1
 
 
+def test_the_sitting_on_the_senates_resolution_is_found_by_its_own_print() -> None:
+    """Past the third reading the agenda stops naming the bill: "Rozpatrzenie uchwały Senatu w
+    sprawie ustawy o zmianie ustawy o cudzoziemcach (druk nr 1935)" is druk 1630 of term 10, and
+    its committee sitting (ASW/79, 18.11.2025) and the plenary one that followed were both
+    missed — the whole Senate and veto stretch, which is the reader's last window."""
+    w = _referred_bill()
+    senate = Stage(
+        stage_name="Stanowisko Senatu",
+        stage_type="SenatePosition",
+        date=dt.date(2026, 9, 4),
+        position="wniósł poprawki",
+        print_number="3105",
+    )
+    w.set_stages("3039", COMMITTEE_STAGES + (senate,))
+    w.gateway.committee_sittings["ASW"] = (
+        _sitting(
+            agenda=(
+                '<div class="agenda-indent-0">Rozpatrzenie uchwały Senatu w sprawie ustawy '
+                "o cudzoziemcach (druk nr 3105).</div>"
+            ),
+        ),
+    )
+
+    report = w.run()
+
+    assert report.agenda_posted == 1
+    _, item, _ = w.publisher.agendas[0]
+    assert item.ref == SITTING_REF
+    assert "uchwały Senatu" in item.text
+
+
 def test_stage_update_carries_the_scheduled_sitting() -> None:
     w = _referred_bill()
     w.gateway.committee_sittings["ASW"] = (_sitting(),)

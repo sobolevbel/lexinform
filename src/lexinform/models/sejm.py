@@ -741,6 +741,28 @@ def latest_text_document(
     return None
 
 
+_DERIVED_PRINT_STAGES = ("CommitteeReport", "SenatePosition", "Veto")
+"""Stages whose `printNumber` is a print of this bill's own process without being the bill:
+the committee's report, the Senate's resolution, the President's motion."""
+
+
+def derived_print_numbers(stages: tuple[Stage, ...] | list[Stage]) -> set[str]:
+    """The prints a sitting agenda may name this bill by, other than its own druk.
+
+    Past the third reading the agenda stops naming the bill at all: "Rozpatrzenie uchwały Senatu
+    w sprawie ustawy o zmianie ustawy o cudzoziemcach (druk nr 1935)" is druk 1630, and
+    "Sprawozdanie … o wniosku Prezydenta o ponowne rozpatrzenie" is the veto's print. Over term
+    10 that is 211 committee items and 160 plenary ones, and it covers the whole Senate and veto
+    stretch — the reader's last windows. The numbers are the bill's own (of the 991 in term 10
+    not one is a process number in its own right), so matching on them adds no stranger.
+    """
+    return {
+        stage.print_number.split("-")[0]
+        for stage in flatten_stages(stages)
+        if stage.stage_type in _DERIVED_PRINT_STAGES and stage.print_number
+    }
+
+
 def senate_moved_rejection(stage: Stage) -> bool:
     """The Senate resolved to reject the act as a whole (art. 121 ust. 3), not to amend it.
 

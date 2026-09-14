@@ -21,6 +21,7 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
     SejmSitting,
+    derived_print_numbers,
     flatten_stages,
 )
 from lexinform.ports import BillRepository, Clock, SejmGateway
@@ -245,8 +246,14 @@ class AgendaWatcher:
         return detailed, failed
 
     def _items_for(self, term: int, bill: Bill, listings: _Listings) -> tuple[AgendaItem, ...]:
-        """Agenda items naming the bill (or a print considered jointly with it)."""
-        numbers = {bill.number, *bill.summary.prints_considered_jointly}
+        """Agenda items naming the bill — by its own druk, by a print considered jointly with it,
+        or by one of the prints its process produced (`derived_print_numbers`), which is the only
+        name a sitting on the Senate's resolution or the President's motion gives it."""
+        numbers = {
+            bill.number,
+            *bill.summary.prints_considered_jointly,
+            *derived_print_numbers(bill.stages),
+        }
         items: list[AgendaItem] = []
         codes = _committee_codes(bill)
         for code in sorted(codes & listings.committee.keys()):
