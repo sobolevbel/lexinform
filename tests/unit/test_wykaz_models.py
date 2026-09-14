@@ -96,6 +96,13 @@ def test_the_planned_quarter_is_read_and_the_rest_of_the_field_is_not() -> None:
     assert _entry(planned_adoption="").planned_quarter is None
 
 
+def test_the_quarter_is_read_through_the_editors_own_typo() -> None:
+    """UD442 of the register says "III kwarta 2026 r." — the entry is still in the government's
+    hands, and the quarter is the only date its card has."""
+    assert _entry(planned_adoption="III kwarta 2026 r.").planned_quarter == (2026, 3)
+    assert _entry(planned_adoption="1 lipca 2025 r. WYCOFANY").planned_quarter is None
+
+
 def test_the_fingerprint_ignores_the_publication_date_and_the_entrys_url() -> None:
     entry = _entry()
 

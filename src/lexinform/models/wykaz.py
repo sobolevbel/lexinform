@@ -36,7 +36,9 @@ DROPPED_STATUSES = frozenset({"Wycofany", "Niezrealizowany"})
 ADOPTED_STATUS = "Zrealizowany"
 DESCRIPTION_LIMIT = 6000
 
-_QUARTER = re.compile(r"\b(IV|III|II|I)\s*(?:/\s*(IV|III|II|I))?\s*kwarta[łl]\w*\s+(\d{4})", re.I)
+# "kwarta" without its ł is a typo the register's editors make (UD442, "III kwarta 2026 r.");
+# the entry is live and the card loses the only date it has when the quarter does not parse.
+_QUARTER = re.compile(r"\b(IV|III|II|I)\s*(?:/\s*(IV|III|II|I))?\s*kwarta[łl]?\w*\s+(\d{4})", re.I)
 _ROMAN = {"i": 1, "ii": 2, "iii": 3, "iv": 4}
 
 
