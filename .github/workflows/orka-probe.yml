@@ -190,3 +190,26 @@ jobs:
               print(f"{attempt:2d} http={r.status_code} type={r.headers.get('content-type')} bytes={len(r.content)}{note}", flush=True)
               time.sleep(3)
           PY
+
+  # How often is a runner refused at all? One draw of the IP pool per job: the address it was
+  # given, and what orka answers a fresh session from it.
+  pool:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        draw: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    steps:
+      - name: Address and answer
+        run: |
+          set +e
+          IP=$(curl -sS --max-time 10 https://api.ipify.org)
+          URL="https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-30771-2026/\$file/10-RPW-30771-2026.pdf"
+          for i in 1 2 3; do
+            code=$(curl -sS -L -o /tmp/body -w '%{http_code} %{content_type} %{size_download}' --max-time 90 \
+              -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" \
+              -H 'Accept: text/html,application/xhtml+xml,*/*;q=0.8' -H 'Accept-Language: pl-PL,pl;q=0.9' "$URL")
+            echo "draw=${{ matrix.draw }} ip=$IP try=$i $code first=$(head -c 4 /tmp/body | tr -d '\0')"
+            sleep 2
+          done
