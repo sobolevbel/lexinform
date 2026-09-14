@@ -772,7 +772,7 @@ def _show_pre_print(c: Container, number: str, local: Bill | None) -> None:
 def _show_wykaz(c: Container, number: str, local: Bill | None) -> None:
     entry = local.wykaz if local and local.wykaz else None
     if entry is None:
-        entry = c.bill_lookup().read_wykaz_entry(number)
+        entry = _or_exit(lambda: c.bill_lookup().read_wykaz_entry(number))
     typer.echo(f"{entry.title}\n{entry.web_url}")
     typer.echo(
         f"number={entry.number} kind={entry.kind} type={entry.doc_type} organ={entry.organ}"

@@ -1,30 +1,81 @@
-"""Operator commands through typer, against a temporary database (no network, no Telegram)."""
+"""Operator commands through typer, against a temporary database (no network, no Telegram).
+
+These build the real `Container`, which is the point: `daily.yml` runs `db init` → `db restore`
+→ `run` → `db dump` through this very CLI, so the commands must not first be exercised there.
+What the API would answer comes from `_StubApi`, a local server over the recorded fixtures;
+`_env` points every other command at a dead port, so a command that reaches the network by
+accident fails here instead of calling api.sejm.gov.pl from the suite.
+"""
 
 import json
+import threading
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
-from lexinform.adapters.sqlite_repo import SqliteBillRepository
+from lexinform.adapters.sqlite_repo import SCHEMA_VERSION, SqliteBillRepository
 from lexinform.cli import app
 from lexinform.models import (
     AnalysisRecord,
     BillStatus,
     ProcessDetail,
+    ProcessSummary,
     RunMode,
     RunReport,
     TokenUsage,
+    process_summary,
+    wykaz_summary,
 )
+from lexinform.services.lookup import BillNotFoundError
+from tests.conftest import FIXTURES
 from tests.fakes import make_analysis
+from tests.harness import rcl_project, submission, wykaz_entry
 
 runner = CliRunner()
+
+NOWHERE = "http://127.0.0.1:9"  # the discard port: a request here is refused, never routed out
+
+
+class _StubApi(BaseHTTPRequestHandler):
+    """api.sejm.gov.pl as far as a CLI command can tell: the recorded fixtures by path, and an
+    empty listing for everything else, which is what makes a `run` here a quiet run."""
+
+    fixtures = {
+        "/sejm/term10/processes/3039": "process_3039.json",
+        "/sejm/term10/prints/3039": "print_3039.json",
+    }
+
+    def do_GET(self) -> None:  # noqa: N802 (BaseHTTPRequestHandler's own spelling)
+        name = self.fixtures.get(self.path.split("?")[0])
+        body = (FIXTURES / name).read_bytes() if name else b"[]"
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *args: object) -> None:
+        pass
+
+
+@pytest.fixture(scope="module")
+def api() -> Iterator[str]:
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _StubApi)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{server.server_address[1]}"
+    server.shutdown()
+    server.server_close()
 
 
 @pytest.fixture
 def db(tmp_path: Path, process_3039: ProcessDetail) -> Path:
-    """A database with druk 3039 analysed as not relevant after two failed attempts."""
+    """A database with druk 3039 analysed as not relevant after two failed attempts, and one row
+    of each of the other three kinds — a bill without a print number, a project on RCL and a plan
+    in the register — because `show` renders each of them its own way."""
     path = tmp_path / "t.db"
     repo = SqliteBillRepository(path)
     repo.migrate()
@@ -45,11 +96,20 @@ def db(tmp_path: Path, process_3039: ProcessDetail) -> Path:
             created_at=now,
         ),
     )
+    sub = submission()
+    repo.upsert_summary(ProcessSummary.from_submission(sub), now=now)
+    repo.save_submission(10, sub.number, sub)
+    project = rcl_project()
+    repo.upsert_summary(process_summary(project, term=10), now=now)
+    repo.save_rcl(10, f"RCL/{project.id}", project)
+    entry = wykaz_entry()
+    repo.upsert_summary(wykaz_summary(entry, term=10), now=now)
+    repo.save_wykaz(10, f"WPL/{entry.number}", entry)
     repo.close()
     return path
 
 
-def _env(db: Path, term: str = "10") -> dict[str, str]:
+def _env(db: Path, term: str = "10", *, api: str = NOWHERE) -> dict[str, str]:
     # The term is pinned so that no command asks the live API which term is running. No bot
     # token and no log channel, whatever the developer's `.env` says (see `conftest.py`):
     # replies and reports go to the console, never to Telegram.
@@ -59,6 +119,9 @@ def _env(db: Path, term: str = "10") -> dict[str, str]:
         "LEXINFORM_TELEGRAM_BOT_TOKEN": "",
         "LEXINFORM_TELEGRAM_LOG_CHANNEL_ID": "",
         "LEXINFORM_TERM": term,
+        "LEXINFORM_SEJM_API_BASE_URL": api,
+        "LEXINFORM_RCL_ENABLED": "false",
+        "LEXINFORM_WYKAZ_ENABLED": "false",
     }
 
 
@@ -213,3 +276,157 @@ def test_db_restore_of_a_missing_dump_is_an_error_unless_allowed(tmp_path: Path)
 
     assert strict.exit_code == 2
     assert lenient.exit_code == 0 and "empty database" in lenient.output
+
+
+def test_db_init_creates_the_schema_at_the_current_version(tmp_path: Path) -> None:
+    """The first step of every `daily.yml` run, and the only one that builds a database."""
+    fresh = tmp_path / "fresh.db"
+
+    result = runner.invoke(app, ["db", "init"], env=_env(fresh))
+
+    assert result.exit_code == 0, result.output
+    repo = SqliteBillRepository(fresh)
+    version = repo.schema_version
+    repo.close()
+    assert version == SCHEMA_VERSION
+
+
+def test_run_over_a_quiet_sejm_reports_it_and_changes_nothing(db: Path, api: str) -> None:
+    """The daily job end to end: the container, all five phases and the report, against an API
+    that answers every listing with nothing. `--dry-run` rolls the database back, so a run that
+    found nothing must also have recorded nothing."""
+    result = runner.invoke(
+        app, ["run", "--dry-run", "--since", "2026-09-01"], env=_env(db, api=api)
+    )
+
+    assert result.exit_code == 0, result.output
+    assert '"discovered": 0' in result.output and '"errors": []' in result.output
+    assert '"published": 0' in result.output and '"tracked": 0' in result.output
+    repo = SqliteBillRepository(db)
+    runs = repo.list_runs(since=datetime(2026, 1, 1, tzinfo=UTC))
+    repo.close()
+    assert runs == []
+
+
+def test_a_run_that_cannot_even_start_says_why_instead_of_raising(tmp_path: Path) -> None:
+    """A misconfigured deploy — here a database path that is a directory. The run never gets a
+    pipeline, so the failure has nowhere to go but the log (and the log channel, when one is
+    configured), and the exit code is what tells the workflow."""
+    result = runner.invoke(app, ["run"], env=_env(tmp_path))
+
+    assert result.exit_code == 1
+    assert "startup failed: OperationalError" in result.output
+
+
+def test_scan_prints_the_counters_and_the_queue_it_leaves_behind(db: Path, api: str) -> None:
+    result = runner.invoke(app, ["scan", "--since", "2026-09-01"], env=_env(db, api=api))
+
+    assert result.exit_code == 0, result.output
+    assert "term=10 since=2026-09-01T00:00:00+00:00 seen=0 new=0" in result.output
+    assert "rcl_new=0 rcl_hits=0" in result.output  # RCL off: the line still accounts for it
+
+
+def test_track_reports_what_it_posted(db: Path, api: str) -> None:
+    result = runner.invoke(app, ["track", "--dry-run"], env=_env(db, api=api))
+
+    assert result.exit_code == 0, result.output
+    assert "updates=0 errors=[]" in result.output
+
+
+def test_reprefilter_has_nothing_to_do_when_no_bill_was_skipped(db: Path, api: str) -> None:
+    result = runner.invoke(app, ["reprefilter"], env=_env(db, api=api))
+
+    assert result.exit_code == 0, result.output
+    assert "scanned=0 accepted=0" in result.output
+
+
+def test_reprefilter_says_so_when_the_text_prefilter_is_switched_off(db: Path) -> None:
+    env = {**_env(db), "LEXINFORM_TEXT_PREFILTER_ENABLED": "false"}
+
+    result = runner.invoke(app, ["reprefilter"], env=env)
+
+    assert result.exit_code == 2
+    assert "LEXINFORM_TEXT_PREFILTER_ENABLED" in result.output
+
+
+def test_show_prints_the_process_its_stages_and_what_the_database_knows(db: Path, api: str) -> None:
+    result = runner.invoke(app, ["show", "3039"], env=_env(db, api=api))
+
+    assert result.exit_code == 0, result.output
+    assert "Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom" in result.output
+    assert "type=BILL applicant=deputies passed=False closure=None" in result.output
+    assert "ReadingReferral              Skierowano do I czytania w komisjach" in result.output
+    assert "3039.pdf" in result.output
+    assert "+ 3039-001:" in result.output  # the documents filed to the print after it
+    assert "local: status=analyzed hits=[] attempts=2" in result.output
+
+
+def test_show_of_a_bill_without_a_print_number_reads_its_submission(db: Path) -> None:
+    """An `RPW/` row has no process to ask about: what is known is the `/bills` entry, and the
+    database has it, so this branch never touches the API."""
+    result = runner.invoke(app, ["show", "RPW/29075/2026"], env=_env(db))
+
+    assert result.exit_code == 0, result.output
+    assert "o udzielaniu cudzoziemcom ochrony" in result.output
+    assert "received=2026-09-02 applicant=deputies" in result.output
+    assert "print=- consultation=2026-09-02..2026-09-30" in result.output
+    assert "local: status=discovered" in result.output
+
+
+def test_show_of_an_rcl_project_prints_its_timeline_and_texts(db: Path) -> None:
+    result = runner.invoke(app, ["show", "RCL/12414100"], env=_env(db))
+
+    assert result.exit_code == 0, result.output
+    assert "wykaz=UC164" in result.output
+    assert "3. Konsultacje publiczne" in result.output
+    assert "reached" in result.output and "not_started" in result.output
+    assert "consultation: deadline=2026-09-08" in result.output
+    assert "uzasadnienie.doc" in result.output and "OSR.DOCX" in result.output
+
+
+def test_show_of_a_plan_in_the_register_prints_the_entry(db: Path) -> None:
+    result = runner.invoke(app, ["show", "WPL/UD408"], env=_env(db))
+
+    assert result.exit_code == 0, result.output
+    assert "number=UD408" in result.output and "organ=MSWiA" in result.output
+    assert "planned=III kwartał 2026 r." in result.output
+    assert "responsible: Maciej Duszczyk" in result.output
+    assert "istota:" in result.output
+
+
+def test_show_of_a_plan_nobody_knows_is_a_message_and_not_a_traceback(db: Path) -> None:
+    """Every other `show` branch already went through `_or_exit`; the register's did not, so an
+    unknown number (or, as here, a register switched off) came out as a traceback."""
+    result = runner.invoke(app, ["show", "WPL/UD999"], env=_env(db))
+
+    assert result.exit_code == 1
+    assert not isinstance(result.exception, BillNotFoundError)
+
+
+def test_preview_renders_the_card_into_the_console_without_sending_anything(
+    db: Path, api: str
+) -> None:
+    """`/preview` before `/republish`: the wording can be read without a post. The fixture's
+    analysis is not relevant, which the card does not care about — only the publishing rule does."""
+    result = runner.invoke(app, ["preview", "3039"], env=_env(db, api=api))
+
+    assert result.exit_code == 0, result.output
+    assert "📜 <b>Новый законопроект — druk nr 3039</b>" in result.output
+    assert "chars]" in result.output
+
+
+def test_version_is_printed_without_building_anything(tmp_path: Path) -> None:
+    """`--version` is eager: it answers before a container, a database or a term is needed."""
+    result = runner.invoke(app, ["--version"], env=_env(tmp_path / "absent.db"))
+
+    assert result.exit_code == 0
+    assert result.output.startswith("lexinform ")
+
+
+def test_a_command_that_does_not_exist_is_refused_before_anything_is_built(
+    tmp_path: Path,
+) -> None:
+    result = runner.invoke(app, ["nonesuch"], env=_env(tmp_path / "absent.db"))
+
+    assert result.exit_code == 2
+    assert not (tmp_path / "absent.db").exists()
