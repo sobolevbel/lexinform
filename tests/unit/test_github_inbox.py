@@ -91,3 +91,34 @@ def test_a_moved_branch_is_retried_and_a_bad_token_is_not() -> None:
         _writer(lambda _: httpx.Response(401, json={"message": "Bad credentials"})).put(COMMAND)
     with pytest.raises(GitHubUnavailableError):
         _writer(lambda _: httpx.Response(503, json={})).put(COMMAND)
+
+
+def test_another_422_is_an_error_and_not_a_silently_dropped_command() -> None:
+    """The check used to be a substring test on the whole body: any 422 whose text happened to
+    carry "sha" was read as "filed already", `put` returned success, the relay moved its offset
+    past the command and nothing was left to notice it had gone."""
+    body = {"message": "Validation failed", "errors": [{"resource": "Commit", "field": "sha"}]}
+    with pytest.raises(GitHubError):
+        _writer(lambda _: httpx.Response(422, json=body)).put(COMMAND)
+
+
+def test_a_422_that_is_not_json_is_an_error_too() -> None:
+    with pytest.raises(GitHubError):
+        _writer(lambda _: httpx.Response(422, text='"sha" wasn\'t supplied.')).put(COMMAND)
+
+
+def test_a_transport_error_while_filing_ends_the_phase() -> None:
+    def refuse(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("no route to host")
+
+    sleeps: list[float] = []
+    with pytest.raises(GitHubUnavailableError):
+        _writer(refuse, sleeps).put(COMMAND)
+    assert sleeps == [2.0, 4.0, 6.0]
+
+
+def test_a_branch_that_keeps_moving_ends_the_phase_rather_than_losing_the_command() -> None:
+    sleeps: list[float] = []
+    with pytest.raises(GitHubUnavailableError):
+        _writer(lambda _: httpx.Response(409, json={}), sleeps).put(COMMAND)
+    assert len(sleeps) == GitHubInboxWriter.MAX_ATTEMPTS - 1

@@ -10,6 +10,7 @@ import pytest
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
 from lexinform.adapters.telegram import TelegramBotClient, TelegramError, TelegramPublisher
 from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.errors import TelegramUnavailableError
 from lexinform.models import AnalysisRecord, Bill, BillStatus, PrintInfo, ProcessDetail
 from tests.fakes import make_analysis
 
@@ -175,3 +176,29 @@ def test_get_updates_long_polls_for_channel_posts_and_parses_them() -> None:
     assert first.text == "/analyze 3039" and first.date.isoformat() == "2026-09-12T08:00:00+00:00"
     assert posts[1].chat_id == 0 and posts[1].text is None  # a placeholder from no chat
     assert posts[2].text is None  # a post without text (a photo)
+
+
+def test_a_second_getupdates_consumer_ends_the_phase_instead_of_raising_per_call() -> None:
+    """409 "terminated by other getUpdates request" is a second relay or a webhook holding the
+    same bot: every poll fails while it lives. As a per-call error it reached `run_forever`'s
+    catch-all and printed a traceback once a cycle; as an outage the relay backs off."""
+
+    def conflict(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            409,
+            json={
+                "ok": False,
+                "error_code": 409,
+                "description": "Conflict: terminated by other getUpdates request",
+            },
+        )
+
+    with pytest.raises(TelegramUnavailableError):
+        _client(conflict).get_updates(offset=None, timeout=0)
+
+
+def test_an_answer_that_is_not_json_is_an_error_naming_the_status() -> None:
+    with pytest.raises(TelegramError):
+        _client(lambda _: httpx.Response(404, text="<html>nginx</html>")).get_updates(
+            offset=None, timeout=0
+        )

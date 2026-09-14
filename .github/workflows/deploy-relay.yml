@@ -43,3 +43,19 @@ jobs:
           printf '%s\n' "$HOST_KEY" > ~/.ssh/known_hosts
           ssh -i ~/.ssh/deploy -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes \
             -o ConnectTimeout=20 "root@$HOST" "$COMMIT"
+
+      # Without this the only workflow of the three that says nothing when it fails: a refused
+      # SSH (box down, rotated key, changed host key) left the relay on old code silently, and
+      # the operator learns of it when a command is not answered.
+      - name: Tell the log channel when the relay was not updated
+        if: failure()
+        env:
+          LEXINFORM_TELEGRAM_BOT_TOKEN: ${{ secrets.LEXINFORM_TELEGRAM_BOT_TOKEN }}
+          LEXINFORM_TELEGRAM_LOG_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          [ -n "${LEXINFORM_TELEGRAM_LOG_CHANNEL_ID}" ] || exit 0
+          curl -sS -o /dev/null -X POST \
+            "https://api.telegram.org/bot${LEXINFORM_TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${LEXINFORM_TELEGRAM_LOG_CHANNEL_ID}" \
+            --data-urlencode "text=❌ lexinform: реле не обновилось, оно осталось на прежнем коде: ${RUN_URL}"

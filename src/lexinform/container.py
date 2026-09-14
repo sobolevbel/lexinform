@@ -341,7 +341,10 @@ class Container:
         writer = None
         acknowledger = None
         if not dry_run:
-            writer = GitHubInboxWriter(s.github_repo, s.github_token, branch=s.inbox_branch)
+            writer = self._once(
+                "inbox_writer",
+                lambda: GitHubInboxWriter(s.github_repo, s.github_token, branch=s.inbox_branch),
+            )
             acknowledger = TelegramAcknowledger(client, channel_id=s.telegram_log_channel_id)
         return CommandListener(
             client,
@@ -451,6 +454,9 @@ class Container:
         orka = self._services.get("orka")
         if isinstance(orka, OrkaClient):
             orka.close()
+        writer = self._services.get("inbox_writer")
+        if isinstance(writer, GitHubInboxWriter):
+            writer.close()
         if self.rcl is not None:
             self.rcl.close()
         if self.wykaz is not None:

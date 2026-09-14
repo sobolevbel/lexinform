@@ -40,5 +40,13 @@ fi
 echo "${before:0:12} -> ${after:0:12}"
 "$UV" sync --frozen --no-dev -q
 systemctl restart "$SERVICE"
-sleep 3
-systemctl is-active "$SERVICE"
+
+# Three seconds only proved that systemd had started something: a relay that dies on its first
+# Telegram call (a revoked token, an .env that lost a line) reported a clean deploy and then
+# restarted for ever. A poll is 50 s, so a relay still up after 45 has opened its connection and
+# read from it; `is-active` alone is the answer for a unit that is still starting.
+for _ in $(seq 9); do
+  sleep 5
+  systemctl is-active --quiet "$SERVICE" || { systemctl status "$SERVICE" --no-pager -l; exit 1; }
+done
+echo "$SERVICE up 45 s after restart"

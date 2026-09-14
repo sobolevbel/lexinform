@@ -29,6 +29,22 @@ class GitHubError(RuntimeError):
     """A 4xx answer that a retry will not fix (bad token, wrong repository or branch)."""
 
 
+def _asks_for_a_sha(response: httpx.Response) -> bool:
+    """Whether a 422 means "this path is already there", which GitHub says as `"sha" wasn't
+    supplied`.
+
+    The question is asked of the `message` field and not of the raw body: any other 422 whose
+    text happened to contain "sha" was swallowed as "filed already", and the command then
+    vanished — `put` returned success, the relay moved its offset past it and nothing was left
+    to notice.
+    """
+    try:
+        body = response.json()
+    except ValueError:
+        return False
+    return isinstance(body, dict) and "sha" in str(body.get("message", "")).lower()
+
+
 class GitHubInboxWriter:
     MAX_ATTEMPTS = 4
     DISPATCH_EVENT = "inbox"  # `on: repository_dispatch: types: [inbox]` in daily.yml
@@ -109,7 +125,7 @@ class GitHubInboxWriter:
             if response.status_code in (200, 201):
                 log.info("inbox: filed %s", path)
                 return
-            if response.status_code == 422 and "sha" in response.text:
+            if response.status_code == 422 and _asks_for_a_sha(response):
                 log.info("inbox: %s exists already", path)  # the same update filed twice
                 return
             if response.status_code in (409, 429) or response.status_code >= 500:

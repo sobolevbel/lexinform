@@ -18,6 +18,12 @@ WorkingDirectory=/opt/lexinform
 ExecStart=/opt/lexinform/.venv/bin/lexinform listen
 Restart=always
 RestartSec=30
+# Without these the default (5 starts in 10 s) is out of reach at a 30 s interval, so a relay
+# that dies on every start restarts for ever and never enters `failed`: nothing to alert on, and
+# commands sit with Telegram until it drops them after 24 h. Six failures within an hour is a
+# relay that is not coming back by itself.
+StartLimitIntervalSec=3600
+StartLimitBurst=6
 # A long poll is 50 s; give a graceful stop time to finish the one in flight.
 TimeoutStopSec=70
 Environment=PYTHONUNBUFFERED=1
