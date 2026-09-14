@@ -220,7 +220,16 @@ Invariants worth keeping:
   bills, and those are the ones whose titles say "o zmianie niektórych ustaw". The per-bill cost
   guard is what bounds the decision — at 1,600 tokens a page it stops a scan at ~250 pages — and
   the skip reasons say which threshold was missed, because "weak hits only" was printed over
-  every kind of miss, a single strong pattern included.
+  every kind of miss, a single strong pattern included. **And the prefilter asks the question the
+  analysis asks**, not a cheaper one: `TextLoader` calls a file textless only under
+  `MIN_TEXT_CHARS`, so a print whose text layer is the letter that hands it to the Marshal (700
+  to 1,200 characters) arrived looking like a document, was searched for keywords a transmittal
+  note never contains, and was skipped for good — **91 of the 938 prints of term 10**, every one
+  with pages the model could have read. `carries_the_document` is now what both stages ask. The
+  price of that is worth knowing: those 119 prints carry 4,874 pages, $39 on Opus for the term
+  against the ~$44 the rest of it costs, and **a scan still bypasses the triage** —
+  `_triage_verdict` wants `len(text) >= triage_min_chars` and a scan's `text` is the letter, so
+  it goes straight to the expensive model. Giving the triage a scan's pages is the open item.
 - **Not every stage is a post.** `models/events.py`: `is_substantive` separates the events a
   reader cares about (referral, committee report, vote, Senate, President, hearing, a decided
   reading) from the frame nodes (`Start`, `ReadingReferral`, `Reading`, `CommitteeWork`,
@@ -597,7 +606,7 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   carry **"DEKLAROWANE SKUTKI REGULACJI (DSR)"** instead of the OSR form — the deputies' version,
   unknown to the pattern until now, 15 pages of 60 in druk 2673 — and one heads its OSR
   "Tytuł projektu". Three was the sample: over all 938 bill prints of term 10 (14 Sept 2026,
-  `page_index.json.gz` in the corpus) **173** open a page with the DSR — a form every fifth print
+  `page_index.json.gz` in the corpus) **180** open a page with the DSR — a form every fifth print
   carries, not a curiosity. **And the form was being dropped on 14 of them**: it is itself an
   attachment to a resolution of the Presidium of the Sejm, so it opens "Załącznik / do uchwały
   nr 51 / Prezydium Sejmu" and names itself only on the line after, while `_ANNEX_RE` matches the
@@ -640,6 +649,26 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   `page_kind` is the whole reading in one place. The two openings that stay `unknown` are a
   letterhead and a signature block, which say what they are in their body and not at their top —
   which is what the window is for.
+- **A page break is a line break, and Python's anchors do not know it.** `^` and `$` in
+  MULTILINE turn on `\n` alone; the pages are joined with `\f` and the extractor emits a page
+  from its first glyph, so a print whose justification opens a page reads `…\fUZASADNIENIE\n`
+  with no newline in front of the heading. Every line-anchored pattern in `sections` was blind to
+  it. Measured over term 10 (14 Sept 2026): **683 of the 819 prints with a text layer hide at
+  least one heading behind the form feed, and in 279 `_JUSTIFICATION_RE` finds no justification
+  anywhere**. That is the one search `excerpts` makes over the joined text, so those 279 went to
+  the triage — and to the cut a text over the per-bill limit is reduced to — as the head of the
+  bill and not one line of the reasons for it. `_BOL`/`_EOL` are the rule in one place; teaching
+  both anchors about the page break recovered 744,693 characters, and closed the same hole for
+  525 documents of RCL, where DOCX is worse still because `document_text` collapses `\n\f\n` to
+  `\f` on purpose.
+- **The opening of a document is a page, and the first page that speaks wins.** `HEAD_CHARS` is a
+  budget spent page by page, not a window over the joined text: a bill's first page on RCL runs
+  550-1,150 characters, so a flat 1,200 read on into the second page where the uzasadnienie
+  begins, and `_KINDS` tries `justification` before `bill`. Over the 9,208 documents of the
+  corpus that cost **66 bills**, every one headed USTAWA on its own first page — and in
+  `_pick_parts` such a member fills the justification role and the archive is left with no bill
+  at all. A page that says nothing hands the budget on: 26 documents open on a ministry's stamp
+  or a title sheet and name themselves on the page after.
 - **After the OSR, no page is the bill or its uzasadnienie again.** A print runs letter, bill,
   uzasadnienie, OSR, appendices, in that order and once each. Every table of submitted comments
   labels each row "Uzasadnienie", so a page of one read as the bill's own justification and
@@ -656,7 +685,7 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   ~2–3k an RCL package.
 - **Net over the 45 prints (13 Sept 2026): 6,437,943 characters kept → 5,929,867.** The sum is not
   the point: it is ~588k of appendices out and ~157k of real bill text back in. The pages these
-  rules were measured on are checked in as `tests/fixtures/sejm/page_starts.json` — **19 rows**,
+  rules were measured on are checked in as `tests/fixtures/sejm/page_starts.json` — **21 rows**,
   the individual pages each rule was derived from, not a page corpus. The page corpus is
   `../lexinform-corpus/sejm/term10/page_index.json.gz`: 84,422 pages of 914 prints, one row each
   with the kind `page_kind` gives it, built by the same call the fixture is (druk 810's pages 40,
@@ -729,7 +758,7 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   either case but **anchored at both ends**, and the anchor is what does the work: the
   justification of every act implementing an EU regulation wraps onto a line beginning
   "rozporządzenia 2018/1240", and an unanchored pattern read UC104's uzasadnienie as a draft
-  regulation. Over the 147 openings of the corpus, ignoring case moves exactly one document, and
+  regulation. Over the 168 openings of the fixture, ignoring case moves exactly one document, and
   it moves it right — a draft headed "Rozporządzenie" in title case that had passed for a bill's
   uzasadnienie on its file name alone. `Nazwa projektu dokumentu` is a tabela legislacyjna, one
   word from the OSR's `Nazwa projektu`. A kind we do not know is `unknown`, never an appendix:
@@ -930,4 +959,22 @@ kept, 14–68%, and a provision the keywords do not name would be lost); and cha
 RCL package handling was checked and left alone: on all ten packages `_pick_parts` refused every
 appendix by content and kept bill + uzasadnienie + OSR, $0.03–$0.84 a package.
 
-Open items are listed under "Still open" in `docs/roadmap.md`.
+**What a whole term costs, measured on the corpus (14 Sept 2026).** Of the 819 prints of term 10
+with a text layer, 268 pass the keywords; their 132.9M characters become 47.5M after `trim_print`
+(**35.8%**), which is **$118.83** on Opus. The triage is what the term actually costs: asked of
+183 of them on the production path (`AnthropicAnalyzer.triage`, the production prompt and digest,
+on Haiku for the measurement, $1.70 spent) it **rejects 62%** and takes $56.72 of $89.99 off that
+sample — so **the term is ≈$44, not $118**, and the triage is the cheapest saving in the system by
+a wide margin. What is left is not chaff: mapped page by page, the twelve most expensive
+candidates are the law and its reasons, prose to the last page, with **zero** non-prose pages
+among those kept. The bill is **$45.90 (38.8%)**, the uzasadnienie **$53.53 (45.2%)** — the
+largest single line — and OSR points 1-4 **$18.86 (15.9%)**; twenty prints of the 268 carry 30% of
+the bill. The per-bill guard binds **4 prints** and saves $3, so it is insurance and not economy.
+Article-level selection stays rejected on new numbers: over all 268 candidates the body is a
+**median 27%** of what is kept (quartiles 16% and 42%), which is the 14–68% of the old sample
+confirmed, not overturned.
+
+Open items are listed under "Still open" in `docs/roadmap.md`. The audit of 14 Sept 2026 over the
+whole corpus (`../lexinform-corpus/checks/FINDINGS.md`, with a runnable script per phase) closed
+five defects and left three questions: giving the triage a scan's pages, whether the uzasadnienie
+can be thinned at all, and whether `azyl` should stop matching "azyle dla zwierząt".
