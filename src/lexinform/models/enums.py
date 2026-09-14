@@ -40,12 +40,11 @@ class BillStatus(StrEnum):
     continues under another number — an RPW entry or an RCL project that became a print
     (`Bill.linked_number`).
 
-    `SKIPPED_JOINT` is historical and nothing sets it: until 2026-09-14 a print whose group was
-    already carried by another print's card was left unread, because the reply it would get
-    showed no analysis. The reply now says how the print differs from the ones the reader knows
-    about, which is a reading of it, so such a print goes through the pipeline like any other.
-    The member stays because a dump written before that carries the word, and `/unskip` is what
-    puts such a row back in the queue.
+    There was a `SKIPPED_JOINT` until 2026-09-14, for a print whose group was already carried by
+    another print's card: it was left unread, because the reply it would get showed no analysis.
+    The reply now says how the print differs from the ones the reader knows about, which is a
+    reading of it, so such a print goes through the pipeline like any other and the status has
+    gone (v21 turns a row of an older dump that still carries the word into `ANALYSIS_PENDING`).
     """
 
     DISCOVERED = "discovered"
@@ -54,7 +53,6 @@ class BillStatus(StrEnum):
     SKIPPED_TEXT_PREFILTER = "skipped_text_prefilter"
     SKIPPED_COST = "skipped_cost"
     SKIPPED_CLOSED = "skipped_closed"
-    SKIPPED_JOINT = "skipped_joint"
     ANALYSIS_PENDING = "analysis_pending"
     ANALYSIS_FAILED = "analysis_failed"
     ANALYZED = "analyzed"

@@ -48,7 +48,6 @@ SKIPPED = frozenset(
         BillStatus.SKIPPED_TEXT_PREFILTER,
         BillStatus.SKIPPED_COST,
         BillStatus.SKIPPED_CLOSED,
-        BillStatus.SKIPPED_JOINT,
     }
 )
 WAITING = (
@@ -511,9 +510,9 @@ class CommandService:
         there to prevent.
         """
         if bill.analysis is None:
-            # A row left unanalysed before 2026-09-14 because its group's card was another
-            # print's: its reply carries the card's verdict and there is still a message to
-            # render, which is the one thing a preview exists to show.
+            # A print whose group already holds a card is a reply, and a reply is a message a
+            # preview can render whether or not this print has been read yet — which is the one
+            # thing a preview exists to show.
             if primary_of(self._repo, bill, self._publishing.channel_id) is None:
                 return CommandOutcome(
                     status=OutcomeStatus.ERROR, bill=bill, note="not analysed: no card to render"

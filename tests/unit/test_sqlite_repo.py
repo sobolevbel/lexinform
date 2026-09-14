@@ -1007,3 +1007,27 @@ def test_a_v1_dump_keeps_its_rows_and_their_values_through_every_migration(
     card = repo.get_publication(10, "3039", PublicationKind.NEW_BILL, CHANNEL)
     assert card is not None and card.message_id == 4242
     assert card.status is PublicationStatus.SENT
+
+
+def test_restore_of_a_dump_that_still_says_skipped_joint(
+    tmp_path: Path, processes_page: list[ProcessSummary], now: datetime
+) -> None:
+    """The status is gone with the rule that set it, and `BillStatus` would refuse the word: a
+    dump written before 2026-09-14 has to come back as a bill in the queue, not as an error."""
+    source = SqliteBillRepository(tmp_path / "old.db")
+    source.migrate()
+    process = processes_page[0]
+    source.upsert_summary(process, now=now)
+    with sqlite3.connect(tmp_path / "old.db") as conn:
+        conn.execute("UPDATE bills SET status = 'skipped_joint', analysis_attempts = 2")
+        conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION - 1}")
+    dump = source.dump()
+    source.close()
+    repo = SqliteBillRepository(tmp_path / "current.db")
+    repo.migrate()
+
+    repo.restore(dump)
+
+    restored = repo.get(process.term, process.number)
+    assert restored is not None
+    assert (restored.status, restored.analysis_attempts) == (BillStatus.ANALYSIS_PENDING, 0)

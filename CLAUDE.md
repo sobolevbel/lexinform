@@ -193,9 +193,10 @@ Invariants worth keeping:
   applicant** (druk 1426 the government's Kodeks pracy against the deputies' 1404, druk 316 the
   President's asystencja osobista beside 1929 and 1933, druk 2530 the same rynek kryptoaktywów as
   2529), and reading all of them costs **$0.71 for the term**.
-  `BillStatus.SKIPPED_JOINT` is historical (nothing sets it; `/unskip` revives a row that carries
-  it), and `/preview` renders the reply without the difference block when none is stored — a
-  read-only command spends nothing, and the note says so.
+  `BillStatus.SKIPPED_JOINT` is gone with the rule that set it (v21 turns a row of an older dump
+  that carries the word into `analysis_pending`), and `/preview` renders the reply without the
+  difference block when none is stored — a read-only command spends nothing, and the note says
+  so.
 - **`/bills` rows are refreshed by tracking only.** Discovery saves a submission for new bills; the
   reconciler (`tracking/pre_print.py`) re-reads `/bills` for pending RPW entries and for bills
   awaiting consultation results and compares new with stored (print assigned, withdrawn,
@@ -596,7 +597,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS` tuple
 in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v20 as of Sept 2026). `migrate()` reads `user_version` and runs
+`SCHEMA_VERSION = len(MIGRATIONS)` (v21 as of Sept 2026). `migrate()` reads `user_version` and runs
 every later script inside its own transaction, stamping the new version at the end, so a failed
 script leaves the database at the previous version.
 
@@ -616,7 +617,9 @@ channel has been told about) and `status_changes.supplements_json` (the digests 
 carried); v19 the unique index of sitting retractions (per bill, channel and `ref`, so an announced
 sitting that is called off is taken back once); v20 `bills.joint_json` (how a print differs from
 the others considered jointly with it, as the reply under their card says it — stored so a retry,
-a `/preview` and a `/republish` do not pay for the comparison again).
+a `/preview` and a `/republish` do not pay for the comparison again); v21 the end of the
+`skipped_joint` status — the rule that set it is gone, so a row of an older dump that carries the
+word goes back to `analysis_pending` rather than failing to load.
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) → `db
 restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing `PRAGMA

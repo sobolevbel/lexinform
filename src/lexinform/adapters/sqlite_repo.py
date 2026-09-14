@@ -228,6 +228,14 @@ MIGRATIONS: tuple[str, ...] = (
     """
     ALTER TABLE bills ADD COLUMN joint_json TEXT;
     """,
+    # v21: `skipped_joint` is gone with the rule that set it — a print considered jointly with
+    # one that holds the card is read like any other now. A dump written before this carries the
+    # word, and `BillStatus` no longer has it, so the row is put back in the queue rather than
+    # failing to load.
+    """
+    UPDATE bills SET status = 'analysis_pending', analysis_attempts = 0
+        WHERE status = 'skipped_joint';
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
