@@ -306,9 +306,13 @@ Still open:
 - The document audit of 14 Sept 2026 (`../lexinform-corpus/checks/`, findings in `FINDINGS.md`,
   method and what to do next in `README.md`) closed six defects and left three things worth doing
   when the corpus is next touched:
-  - **Re-collect the corpus and replay.** Its labels now lag the code by those six fixes —
-    `document_kind` on 81 RCL files, `carries_document` on 3 orka bills, the parse of 642 letters.
-    Harmless while it is remembered; in six months the drift will read as a bug.
+  - ~~Re-collect the corpus and replay.~~ **Done 14 Sept 2026.** What was downloaded did not need
+    re-collecting — a print of 2025 is the same print today; what needed it was the labels
+    derived from those files (`scripts/rederive.py`, offline, ~25 min) plus 13 files that had
+    never been fetched, because `xml` only became a readable extension with the Flat OPC fix.
+    The replay is back to **zero drift on all thirteen slices**. The top-up paid for itself: four
+    of the thirteen turned out to be Word 2003 XML rather than Flat OPC, which is a second reader
+    (`01c5313`) and 159,305 characters of `Projekt ustawy … Prawo o prokuraturze`.
   - **Test the scan triage against a scan that *is* relevant.** The probe rejected 18 of 18
     correctly, but met no relevant scan, so it says nothing about false rejections — and that is
     the only way the window can lose a bill.
