@@ -501,3 +501,41 @@ def test_a_bill_flat_opc_inside_a_package_is_found() -> None:
         archive.writestr("Pismo przesyłające.pdf", b"%PDF-1.4 letter")
 
     assert "USTAWA o kooperatywach" in _router().extract(buffer.getvalue())
+
+
+_W2003 = 'xmlns:w="http://schemas.microsoft.com/office/word/2003/wordml"'
+_WX2003 = 'xmlns:wx="http://schemas.microsoft.com/office/word/2003/auxHint"'
+
+
+def _word_2003(body_xml: str) -> bytes:
+    """Word 2003's single-file XML: the root is the document, and the body's paragraphs sit
+    inside the layout hints Word puts there."""
+    return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        '<?mso-application progid="Word.Document"?>\n'
+        f"<w:wordDocument {_W2003} {_WX2003}>"
+        f"<w:body><wx:sect>{body_xml}</wx:sect></w:body>"
+        "</w:wordDocument>"
+    ).encode()
+
+
+def test_a_bill_filed_as_word_2003_xml_is_read() -> None:
+    """The older single-file shape: its root *is* the document, so there is nothing to unwrap,
+    and its element names are OOXML's. Four of the standalone XML files on RCL are this shape —
+    dokument 677202 is `Projekt ustawy … Prawo o prokuraturze`, 159,305 characters.
+    """
+    data = _word_2003("<w:p><w:r><w:t>USTAWA o prokuraturze</w:t></w:r></w:p>")
+
+    assert _router().extract(data) == "USTAWA o prokuraturze"
+
+
+def test_word_2003_layout_hints_are_looked_through() -> None:
+    """`wx:sect` carries nothing of its own and held all 755 paragraphs of dokument 677202: a
+    walk that only knows `w:p` and `w:tbl` came back with an empty document."""
+    rows = (
+        "<w:tbl><w:tr><w:tc><w:p><w:r><w:t>Lp.</w:t></w:r></w:p></w:tc>"
+        "<w:tc><w:p><w:r><w:t>Uwaga</w:t></w:r></w:p></w:tc></w:tr></w:tbl>"
+    )
+    data = _word_2003(f"<w:p><w:r><w:t>Art. 1.</w:t></w:r></w:p>{rows}")
+
+    assert _router().extract(data) == "Art. 1.\nLp.\tUwaga"

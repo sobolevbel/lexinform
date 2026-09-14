@@ -28,8 +28,18 @@ log = logging.getLogger(__name__)
 _WORDML_NAMESPACES = (
     "http://schemas.openxmlformats.org/wordprocessingml/2006/main",  # transitional: Word's default
     "http://purl.oclc.org/ooxml/wordprocessingml/main",  # "Strict Open XML Document"
+    # Word 2003's single-file XML, still what some ministries save a draft as. Its element names
+    # are the ones above — `w:body`, `w:p`, `w:r`, `w:t`, `w:tbl` — so the same walk reads it;
+    # only the namespace and the root's name differ.
+    "http://schemas.microsoft.com/office/word/2003/wordml",
 )
+_WORDML_ROOTS = ("document", "wordDocument")
 _MC_FALLBACK = "{http://schemas.openxmlformats.org/markup-compatibility/2006}Fallback"
+# Word 2003 XML wraps the paragraphs of the body in its own layout hints — one `wx:sect` holding
+# all 755 paragraphs of dokument 677202 — so a walk that only knows `w:p` and `w:tbl` finds an
+# empty document. They carry nothing themselves and are looked through, like a content control.
+_WX = "{http://schemas.microsoft.com/office/word/2003/auxHint}"
+_TRANSPARENT = (f"{_WX}sect", f"{_WX}sub-section")
 _TIDY_PAGE_BREAK = re.compile(rf"\n?{PAGE_BREAK}\n?")  # a break at a paragraph edge, once
 _ODT_TEXT = "{urn:oasis:names:tc:opendocument:xmlns:text:1.0}"
 _ODT_TABLE = "{urn:oasis:names:tc:opendocument:xmlns:table:1.0}"
@@ -68,7 +78,7 @@ def _wordml_text(root: ET.Element) -> str:
     """Text of a `w:document` element, wherever it came from: `word/document.xml` inside a .docx
     or the same element inlined in a Flat OPC file."""
     namespace, local = _split_tag(root.tag)
-    if local != "document" or namespace not in _WORDML_NAMESPACES:
+    if local not in _WORDML_ROOTS or namespace not in _WORDML_NAMESPACES:
         log.warning("not a WordprocessingML document (root %s); no text", root.tag)
         return ""
     reader = _WordMl(namespace)
@@ -81,25 +91,30 @@ def _wordml_text(root: ET.Element) -> str:
 
 
 _PKG = "{http://schemas.microsoft.com/office/2006/xmlPackage}"
-_FLAT_OPC_MARKERS = (b"xmlPackage", b'progid="Word.Document"')
+_WORD_XML_MARKERS = (b"xmlPackage", b'progid="Word.Document"', b"wordDocument")
 
 
-def _is_flat_opc(head: bytes) -> bool:
-    return head.lstrip()[:6] == b"<?xml " and any(m in head for m in _FLAT_OPC_MARKERS)
+def _is_word_xml(head: bytes) -> bool:
+    return head.lstrip()[:6] == b"<?xml " and any(m in head for m in _WORD_XML_MARKERS)
 
 
-class FlatOpcTextExtractor:
-    """Word's "Word XML Document" (Flat OPC): the whole OOXML package inlined in one XML file.
+class WordXmlTextExtractor:
+    """A Word document saved as one XML file, in either of the two shapes Word writes.
 
     Ministries save a draft this way and file it as `projekt ustawy.xml`, and the router saw an
-    opening `<?xml` it had no reader for. Measured over the corpus (14 Sept 2026): **52 of the 53
-    XML members of RCL packages are Flat OPC**, and they are the bill, its uzasadnienie and its
+    opening `<?xml` it had no reader for. Measured over the corpus (14 Sept 2026): of the 53 XML
+    members of RCL packages **52 are Flat OPC**, and they are the bill, its uzasadnienie and its
     OSR — `2020.10.26_UC44_projekt ustawy.xml`, `Uzasadnienie.xml`, `OSR.xml`. Three packages
     yielded no text at all because of it, among them the bill of the kooperatywy mieszkaniowe
     project, whose only other member is the letter that transmits it.
 
-    The parts are `pkg:part` elements keyed by their path in the package, so the document is the
-    one named `/word/document.xml` and its content is a `w:document` element like any other.
+    **Flat OPC** (2006) inlines the whole OOXML package as `pkg:part` elements keyed by their
+    path, so the document is the one named `/word/document.xml`. **Word 2003 XML** is the older
+    single-file form and needs no unwrapping at all: its root *is* the document, and its element
+    names are OOXML's, so the same walk reads it. Four of the standalone XML files on RCL are
+    this older shape, among them `Projekt ustawy o zmianie ustawy - Prawo o prokuraturze.xml`
+    and its OSR — which is why "no `/word/document.xml` part" is not the same finding as "no
+    text".
     """
 
     def pages(self, data: bytes) -> int:
@@ -114,8 +129,11 @@ class FlatOpcTextExtractor:
         try:
             root = ET.fromstring(data)
         except ET.ParseError as exc:
-            log.warning("Flat OPC file not parsed (%s); no text", exc)
+            log.warning("Word XML file not parsed (%s); no text", exc)
             return ""
+        namespace, local = _split_tag(root.tag)
+        if local in _WORDML_ROOTS and namespace in _WORDML_NAMESPACES:
+            return _wordml_text(root)  # Word 2003 XML: the root is the document
         for part in root.iter(f"{_PKG}part"):
             if part.get(f"{_PKG}name") != "/word/document.xml":
                 continue
@@ -124,7 +142,7 @@ class FlatOpcTextExtractor:
                 log.warning("Flat OPC document part carries no XML; no text")
                 return ""
             return _wordml_text(payload[0])
-        log.warning("Flat OPC file without a /word/document.xml part; no text")
+        log.warning("Word XML file with neither a document root nor a document part; no text")
         return ""
 
 
@@ -152,8 +170,8 @@ class _WordMl:
                 yield self.paragraph(child)
             elif child.tag == self.tag("tbl"):
                 yield from self._table(child)
-            elif child.tag in (self.tag("sdt"), self.tag("sdtContent")):
-                yield from self.blocks(child)  # content controls wrap ordinary paragraphs
+            elif child.tag in (self.tag("sdt"), self.tag("sdtContent"), *_TRANSPARENT):
+                yield from self.blocks(child)  # content controls and Word 2003's layout hints
 
     def _table(self, table: ET.Element) -> Iterator[str]:
         for row in self._direct(table, "tr"):
@@ -165,7 +183,7 @@ class _WordMl:
         for child in node:
             if child.tag == self.tag(name):
                 yield child
-            elif child.tag in (self.tag("sdt"), self.tag("sdtContent")):
+            elif child.tag in (self.tag("sdt"), self.tag("sdtContent"), *_TRANSPARENT):
                 yield from self._direct(child, name)
 
     def paragraph(self, p: ET.Element) -> str:
@@ -301,7 +319,7 @@ class DocumentTextExtractor:
         self._docx = docx
         self._doc = doc
         self._odt = odt or OdtTextExtractor()
-        self._flat_opc = FlatOpcTextExtractor()
+        self._word_xml = WordXmlTextExtractor()
         self._max_member_bytes = max_member_bytes
         self._max_part_chars = max_part_chars
 
@@ -331,8 +349,8 @@ class DocumentTextExtractor:
             return self._doc.extract(data)
         if head.startswith(_ZIP_MAGIC):
             return self._zip(data, depth=depth)
-        if _is_flat_opc(head):
-            return self._flat_opc.extract(data)
+        if _is_word_xml(head):
+            return self._word_xml.extract(data)
         if b"%PDF-" in head:  # a PDF behind a preamble; checked after the containers, whose
             return self._pdf.extract(data)  # stored members may hold a PDF near the start
         log.warning("document of unknown format (starts with %r); no text", data[:8])
