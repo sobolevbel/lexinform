@@ -39,7 +39,7 @@ BasicAuth lexinform PASSWORD
 ConnectPort 443
 Filter "/etc/tinyproxy/filter"
 FilterDefaultDeny Yes
-FilterExtended On
+FilterType ere
 Allow 0.0.0.0/0
 Allow ::/0
 EOF
@@ -53,6 +53,9 @@ ss -ltn | grep PORT
 What the configuration guarantees: credentials are required (`BasicAuth`), only `CONNECT` to
 port 443 is tunnelled, and only the RCL host passes the filter (`FilterDefaultDeny`), so a leaked
 password cannot turn the box into an open proxy. The Via header is off so RCL sees a plain client.
+`FilterType ere` is the name tinyproxy 1.11 gave the old `FilterExtended On`, which still works and
+writes one deprecation warning to the log at every start; the filter itself is a plain anchored
+host name, so basic and extended expressions match it alike.
 
 ## Check and wire it in
 
