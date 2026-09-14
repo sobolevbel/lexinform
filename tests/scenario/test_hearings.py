@@ -3,7 +3,8 @@
 import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import PublicationKind, Stage
+from lexinform.models import PublicationKind, PublicationStatus, Stage
+from tests.fakes import make_analysis
 from tests.harness import COMMITTEE_STAGES, World
 
 HEARING = Stage(
@@ -83,3 +84,39 @@ def test_failed_reminder_is_retried_next_run() -> None:
 
     assert (failed.hearing_reminders, retried.hearing_reminders) == (0, 1)
     assert len(w.publisher.hearings) == 1
+
+
+def test_a_bill_the_model_rejected_announces_no_hearing() -> None:
+    """A reminder is a reply, and a bill with no card has nothing to reply under: it is not
+    followed at all, so the hearing on its stage list reaches nobody. Worth pinning, because the
+    hearing is the one thing on that list a reader could have acted on."""
+    w = World(llm_script={"3039": make_analysis(relevant=False, score=1)})
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES + (HEARING,))
+
+    report = w.run()
+
+    assert report.hearing_reminders == 0 and w.publisher.hearings == []
+    assert w.publication("3039", PublicationKind.HEARING_DEADLINE) is None
+
+
+def test_a_hearing_on_jointly_considered_prints_is_told_once_for_the_group() -> None:
+    """Two prints that each got a card of their own, joined by the Sejm afterwards and sent to
+    one hearing. The reader wants to know about the hearing, not about the filing history, so the
+    second print records the reminder as skipped instead of repeating it."""
+    w = World()
+    w.add_bill("3039", "Poselski projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
+    w.add_bill("3050", "Rządowy projekt ustawy o obywatelstwie", stages=COMMITTEE_STAGES)
+    w.run()  # two separate cards: nothing yet says they are one subject
+    for number, other in (("3039", "3050"), ("3050", "3039")):
+        w.set_stages(number, COMMITTEE_STAGES + (HEARING,))
+        w.touch(
+            number, dt.datetime(2026, 9, 7, 5, tzinfo=dt.UTC), prints_considered_jointly=(other,)
+        )
+    announced = w.run()  # the reminders read the bills as they were before this run stored them
+
+    report = w.run()
+
+    assert (announced.hearing_reminders, report.hearing_reminders) == (0, 1)
+    assert [bill.number for bill, _, _, _ in w.publisher.hearings] == ["3039"]
+    once = w.publication("3050", PublicationKind.HEARING_DEADLINE)
+    assert once is not None and once.status is PublicationStatus.SKIPPED

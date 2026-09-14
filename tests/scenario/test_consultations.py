@@ -4,6 +4,7 @@ import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import PublicationKind, PublicationStatus
+from tests.fakes import make_analysis
 from tests.harness import COMMITTEE_STAGES, REFERRED, RPW, World, submission
 
 
@@ -169,3 +170,43 @@ def test_a_failed_card_edit_does_not_cost_the_reminder() -> None:
 
     assert report.consultation_reminders == 1
     assert any("tracking: Telegram" in e for e in report.errors)
+
+
+def test_a_bill_without_a_card_is_not_told_its_opinions_were_published() -> None:
+    """Every reply hangs under a card. A bill the model rejected has none, so the notice has
+    nothing to reply to and nothing to say — and must not leave a `pending` row behind either."""
+    w = World(llm_script={"3039": make_analysis(relevant=False, score=1)})
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.gateway.submissions.append(submission(number="RPW/26666/2026", print_number="3039"))
+    w.run()
+    w.gateway.submissions[0] = submission(
+        number="RPW/26666/2026", print_number="3039", consultation_results=True
+    )
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.consultation_results_posted, w.publisher.consultation_results) == (0, [])
+    assert w.publication("3039", PublicationKind.CONSULTATION_RESULTS) is None
+
+
+def test_a_run_that_does_not_publish_records_the_notice_as_skipped_instead_of_posting_it() -> None:
+    """`run --no-publish` after a backfill: the flip is seen and written down as told, so that
+    turning publishing back on does not announce a consultation that closed weeks ago."""
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.gateway.submissions.append(submission(number="RPW/26666/2026", print_number="3039"))
+    w.run()
+    w.gateway.submissions[0] = submission(
+        number="RPW/26666/2026", print_number="3039", consultation_results=True
+    )
+    w.clock.advance(days=1)
+
+    report = w.run(publish=False)
+    w.clock.advance(days=1)
+    later = w.run()
+
+    assert (report.consultation_results_posted, w.publisher.consultation_results) == (0, [])
+    notice = w.publication("3039", PublicationKind.CONSULTATION_RESULTS)
+    assert notice is not None and notice.status is PublicationStatus.SKIPPED
+    assert later.consultation_results_posted == 0

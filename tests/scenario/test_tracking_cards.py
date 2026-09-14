@@ -7,7 +7,7 @@ from lexinform.models import Stage
 from tests.harness import COMMITTEE_STAGES, REFERRED, World, act
 
 
-def _followed() -> World:
+def _followed_bill() -> World:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
     w.run()
@@ -15,7 +15,7 @@ def _followed() -> World:
 
 
 def test_a_run_that_changes_nothing_does_not_touch_the_card() -> None:
-    w = _followed()
+    w = _followed_bill()
 
     w.clock.advance(days=1)
     report = w.run()
@@ -25,7 +25,7 @@ def test_a_run_that_changes_nothing_does_not_touch_the_card() -> None:
 
 
 def test_a_card_is_re_rendered_when_what_it_says_has_drifted() -> None:
-    w = _followed()
+    w = _followed_bill()
     card = w.card_id("3039")
     before = MessageFormatter("ru").new_bill(w.bill("3039"), None).text
 
@@ -42,7 +42,7 @@ def test_a_card_is_re_rendered_when_what_it_says_has_drifted() -> None:
 
 
 def test_the_same_drift_is_not_edited_twice() -> None:
-    w = _followed()
+    w = _followed_bill()
     w.clock.advance(days=1)
     w.set_stages("3039", COMMITTEE_STAGES)
     w.touch("3039", dt.datetime(2026, 9, 8, 9, tzinfo=dt.UTC))
@@ -57,7 +57,7 @@ def test_the_same_drift_is_not_edited_twice() -> None:
 
 def test_a_finished_bill_keeps_the_card_it_had() -> None:
     """Its road is over: the card invites nothing, and the replies tell how it ended."""
-    w = _followed()
+    w = _followed_bill()
     w.clock.advance(days=1)
     w.repo.save_act(w.bill("3039").term, "3039", act(entry_into_force=dt.date(2026, 9, 1)))
     w.set_stages("3039", (*COMMITTEE_STAGES, Stage(stage_type="End", stage_name="Uchwalono")))
@@ -72,7 +72,7 @@ def test_a_finished_bill_keeps_the_card_it_had() -> None:
 def test_telegram_going_down_on_a_refresh_does_not_erase_what_the_phase_did() -> None:
     """The refresh is the last, cosmetic step; an outage there used to throw away the phase's
     result object, so the run reported neither the update it had posted nor the tokens it spent."""
-    w = _followed()
+    w = _followed_bill()
     w.clock.advance(days=1)
     w.set_stages("3039", COMMITTEE_STAGES)
     w.touch("3039", dt.datetime(2026, 9, 8, 9, tzinfo=dt.UTC))
@@ -104,7 +104,7 @@ def test_the_day_a_card_is_judged_by_is_the_readers_day_not_the_runners() -> Non
 def test_an_act_with_a_vacatio_legis_still_ahead_keeps_its_card_true() -> None:
     """Dz.U. is not the end of the road: druk 2699 was promulgated on 2026-08-18 and enters into
     force on 2026-11-19. Until it does, «вступает в силу 19.11.2026» is what the card is for."""
-    w = _followed()
+    w = _followed_bill()
     w.clock.advance(days=1)
     w.repo.save_act(10, "3039", act(entry_into_force=dt.date(2026, 11, 19)))
     w.set_stages("3039", (*COMMITTEE_STAGES, Stage(stage_type="End", stage_name="Uchwalono")))

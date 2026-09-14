@@ -25,7 +25,7 @@ UZGODNIENIA_ONLY = (
 )
 
 
-def _followed(w: World, project: RclProject | None = None) -> RclProject:
+def _followed_project(w: World, project: RclProject | None = None) -> RclProject:
     """A project discovered and published on the first run; the clock moved on by a day."""
     project = w.add_rcl_project(project)
     w.run()
@@ -39,7 +39,7 @@ def _moved(project: RclProject, *stages: object, **fields: object) -> RclProject
 
 def test_reached_stage_is_posted_once() -> None:
     w = World()
-    project = _followed(w)
+    project = _followed_project(w)
     w.rcl.put(
         _moved(
             project,
@@ -68,7 +68,7 @@ def test_reached_stage_is_posted_once() -> None:
 
 def test_unchanged_project_is_not_read_again_and_posts_nothing() -> None:
     w = World()
-    _followed(w)
+    _followed_project(w)
     reads = w.rcl.calls.count("get_project:12414100")
 
     report = w.run(full_track=True)
@@ -81,7 +81,7 @@ def test_unchanged_project_is_not_read_again_and_posts_nothing() -> None:
 def test_consultation_opening_later_is_announced_with_the_deadline() -> None:
     w = World()
     early = rcl_project(consultation=None, stages=UZGODNIENIA_ONLY, modified=dt.date(2026, 9, 2))
-    _followed(w, early)
+    _followed_project(w, early)
     w.add_rcl_project(
         _moved(
             early,
@@ -110,7 +110,7 @@ def test_a_consultation_that_opens_without_a_new_stage_is_still_named() -> None:
     w = World()
     reached = rcl_stage(3, "Konsultacje publiczne", "reached")
     early = rcl_project(consultation=None, stages=(rcl_stage(2, "Uzgodnienia"), reached))
-    _followed(w, early)
+    _followed_project(w, early)
     w.add_rcl_project(
         _moved(
             early,
@@ -138,7 +138,9 @@ def test_a_consultation_that_opens_without_a_new_stage_is_still_named() -> None:
 
 def test_deadline_reminder_uses_the_letter_and_is_sent_once() -> None:
     w = World()  # clock: 2026-09-07; the letter gives 7 days from 2026-09-01
-    _followed(w)  # first run posts the card; the reminder is due (3 days ahead) on this run too
+    _followed_project(
+        w
+    )  # first run posts the card; the reminder is due (3 days ahead) on this run too
 
     reminders = list(w.publisher.consultations)
     w.clock.advance(days=1)
@@ -152,7 +154,7 @@ def test_deadline_reminder_uses_the_letter_and_is_sent_once() -> None:
 
 def test_failed_opinions_notice_is_retried_on_the_next_run() -> None:
     w = World()
-    project = _followed(w)
+    project = _followed_project(w)
     with_positions = tuple(
         rcl_folder(f.id, f.name, rcl_document(900, "uwagi.pdf", created=dt.date(2026, 9, 8)))
         if f.kind == "positions"
@@ -186,7 +188,7 @@ def test_failed_opinions_notice_is_retried_on_the_next_run() -> None:
 
 def test_published_opinions_are_announced_once() -> None:
     w = World()
-    project = _followed(w)
+    project = _followed_project(w)
     with_positions = tuple(
         rcl_folder(
             f.id, f.name, rcl_document(900, "uwagi_fundacji.pdf", created=dt.date(2026, 9, 8))
@@ -220,7 +222,7 @@ def test_published_opinions_are_announced_once() -> None:
 
 def test_new_text_version_is_re_analysed_and_the_update_lists_the_changes() -> None:
     w = World()
-    project = _followed(w)
+    project = _followed_project(w)
     new_text = rcl_folder(
         777, "Projekt", rcl_document(801, "projekt_po_KP.pdf", created=dt.date(2026, 9, 8))
     )
@@ -285,7 +287,7 @@ def test_a_re_analysis_too_big_to_cut_down_is_read_anyway_rather_than_failing() 
     """
     extractor = FakeTextExtractor()
     w = World(extractor=extractor, max_bill_cost_usd=0.01, text_budget_chars=1_000_000)
-    project = _followed(w)
+    project = _followed_project(w)
     extractor.text = _TOO_BIG  # over the limit by ~100x: nothing left to cut down to
 
     _new_text_stage(w, project)
@@ -302,7 +304,7 @@ def test_a_re_analysis_that_counts_over_the_limit_after_the_cut_is_still_read() 
     the whole document measured, so the cut text can still count over the limit."""
     extractor = FakeTextExtractor()
     w = World(extractor=extractor, max_bill_cost_usd=0.30, text_budget_chars=1_000_000)
-    project = _followed(w)
+    project = _followed_project(w)
     extractor.text = _TOO_BIG
     w.llm.count_overshoot = 1.5
 
@@ -319,7 +321,7 @@ def test_the_runs_cost_limit_holds_a_re_analysis_back_until_the_next_run() -> No
     # the tracking phase too, a new text was read whatever the run had already spent.
     w = World(max_run_cost_usd=0.001)
     w.llm.MODEL = "claude-opus-5"  # priced: 100 in + 50 out per call ≈ $0.002
-    project = _followed(w)
+    project = _followed_project(w)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")  # spends the budget before tracking
     new_text = rcl_folder(
         777, "Projekt", rcl_document(801, "projekt_po_KP.pdf", created=dt.date(2026, 9, 8))
@@ -351,7 +353,7 @@ def test_the_runs_cost_limit_holds_a_re_analysis_back_until_the_next_run() -> No
 
 def test_republished_identical_text_is_not_analysed_again() -> None:
     w = World()
-    project = _followed(w)
+    project = _followed_project(w)
     analysed = w.bill(RCL).analysis
     assert analysed is not None
     consulted = next(f for st in project.stages for f in st.folders if f.kind == "project")
@@ -388,7 +390,7 @@ def test_republished_identical_text_is_not_analysed_again() -> None:
 
 def test_hand_over_to_the_sejm_then_the_druk_continues_the_thread() -> None:
     w = World()
-    project = _followed(w)
+    project = _followed_project(w)
     w.rcl.put(
         _moved(
             project,
@@ -458,7 +460,7 @@ def test_druk_of_a_skipped_project_goes_the_normal_way() -> None:
 
 def test_project_closed_on_rcl_ends_the_thread_once() -> None:
     w = World()
-    project = _followed(w)
+    project = _followed_project(w)
     w.rcl.put(project.model_copy(update={"status": "zamknięty", "modified": dt.date(2026, 9, 8)}))
 
     report = w.run()
@@ -472,7 +474,7 @@ def test_project_closed_on_rcl_ends_the_thread_once() -> None:
 
 def test_rcl_outage_during_tracking_is_reported_and_sejm_tracking_goes_on() -> None:
     w = World()
-    _followed(w)
+    _followed_project(w)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
     w.clock.advance(days=1)
@@ -488,7 +490,7 @@ def test_a_handed_over_project_asks_the_sejm_for_its_druk_every_run() -> None:
     """Sejm discovery stamps the print number only on the run that first sees the druk; without
     a second chance a project whose process carries no `rclNum` stays at "sent to the Sejm"."""
     w = World()
-    project = _followed(w)
+    project = _followed_project(w)
     w.rcl.put(
         _moved(
             project,

@@ -5,7 +5,7 @@ from lexinform.models import PublicationKind
 from tests.harness import WYKAZ, World, wykaz_entry
 
 
-def _followed() -> World:
+def _followed_plan() -> World:
     w = World()
     w.add_wykaz_entry()
     w.run()
@@ -13,7 +13,7 @@ def _followed() -> World:
 
 
 def test_the_government_dropping_a_project_is_told_under_the_card() -> None:
-    w = _followed()
+    w = _followed_plan()
 
     w.add_wykaz_entry(
         entry=wykaz_entry(
@@ -33,7 +33,7 @@ def test_the_government_dropping_a_project_is_told_under_the_card() -> None:
 
 
 def test_a_project_dropped_without_a_status_but_with_a_reason_is_told_too() -> None:
-    w = _followed()
+    w = _followed_plan()
 
     w.add_wykaz_entry(entry=wykaz_entry(status="Niezrealizowany"))
     w.run()
@@ -43,7 +43,7 @@ def test_a_project_dropped_without_a_status_but_with_a_reason_is_told_too() -> N
 
 
 def test_the_same_withdrawal_is_not_told_twice() -> None:
-    w = _followed()
+    w = _followed_plan()
     w.add_wykaz_entry(entry=wykaz_entry(status="Wycofany"))
     w.run()
 
@@ -54,7 +54,7 @@ def test_the_same_withdrawal_is_not_told_twice() -> None:
 
 
 def test_a_slipped_quarter_is_stored_and_not_told() -> None:
-    w = _followed()
+    w = _followed_plan()
 
     w.add_wykaz_entry(entry=wykaz_entry(planned_adoption="IV kwartał 2026 r."))
     report = w.run()
@@ -65,7 +65,7 @@ def test_a_slipped_quarter_is_stored_and_not_told() -> None:
 
 
 def test_an_entry_that_left_the_register_is_left_as_it_was() -> None:
-    w = _followed()
+    w = _followed_plan()
     w.wykaz.entries_by_number.clear()
 
     report = w.run()
@@ -77,7 +77,7 @@ def test_an_entry_that_left_the_register_is_left_as_it_was() -> None:
 def test_a_row_that_left_the_register_is_told_as_a_withdrawal() -> None:
     """The register is the only source that says the government dropped a project, and deleting
     the row says it as plainly as `Wycofany` does."""
-    w = _followed()
+    w = _followed_plan()
     w.wykaz.entries_by_number.pop(wykaz_entry().number)
     w.wykaz.put(wykaz_entry(number="UD999", title="Projekt ustawy o czymś innym"))
 
@@ -91,7 +91,7 @@ def test_a_row_that_left_the_register_is_told_as_a_withdrawal() -> None:
 
 
 def test_the_government_adopting_the_project_is_posted() -> None:
-    w = _followed()
+    w = _followed_plan()
     w.wykaz.put(wykaz_entry(status="Zrealizowany"))
 
     report = w.run()
