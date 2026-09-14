@@ -427,7 +427,11 @@ class MessageFormatter:
         if pdf is not None:
             links.append(link(pdf.url, lb.link_pdf))
         if s.rcl_link:
-            links.append(link(s.rcl_link, lb.link_rcl))
+            # The government stage the print came through, and the door to everything the card
+            # itself cannot carry once the thread is the druk's: the consultation letter with the
+            # ministry's address, the dates it ran between, the OSR. A chip labelled "RCL" was a
+            # link a reader had no reason to follow.
+            links.append(link(s.rcl_link, lb.link_rcl_project))
         return links
 
     def _card_tags(self, bill: Bill, today: dt.date) -> str:

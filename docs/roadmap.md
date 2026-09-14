@@ -303,15 +303,21 @@ Still open:
     news, which a silent edit is not. It says which of the two facts it is — «Заседание отменено»
     or «Проект снят с повестки заседания» — and never fires on a sitting that moved, started, or
     whose listing merely failed.
-  - **The print of an RCL project loses the consultation the project had.** `Linker._adopt`
-    carries the analysis and the `/bills` entry to the print row but not `rcl_json`, and
-    `Bill.consultation` reads the window from one of those two — so when the card flips to the
-    druk, «Общественные консультации: завершились 22.07.2026 · письмо о консультациях» and the
-    letter link go with it. For a government bill that is the only consultation window there ever
-    was. Carrying `rcl_json` over is not the fix: `Bill.rcl` being set would send the print down
-    `_rcl_phase`, re-title the card «Правительственный проект (RCL)» and put the row back in the
-    RCL watcher's listings. So it is either a column for the closed window or a one-line fact
-    derived from `rcl_num`, and which of those is worth a migration is a product call.
+  - ~~The print of an RCL project loses the consultation the project had.~~ **Looked at and left
+    alone, 14 Sept 2026**, with one free change instead of a migration. What the card loses when
+    the thread becomes the druk's is the consultation line («завершились 22.07.2026 · письмо о
+    консультациях»), the ministry's name and the project's RCL publication date — all of it
+    history by then: the window is shut, and at the Sejm stage the addressee is the committee and
+    not the ministry. The story itself is not lost, because it is in the thread — the
+    consultation-opened update, the three-day reminder and the results notice are all replies
+    under that same message. Carrying `rcl_json` onto the print row is not the fix either:
+    `Bill.rcl` being set sends the print down `_rcl_phase`, re-titles the card «Правительственный
+    проект (RCL)», renames it by its wykaz number and puts the row back in the RCL watcher's
+    listing — so the honest version is a `consultation_json` column, a migration for one
+    historical line. Not taken. What was taken: the print's link to its RCL project used to be a
+    chip labelled «RCL», which is not a reason to click; it is «Проект на RCL» now, the same
+    label the project's own card uses, and it is the door to the letter, the dates and the OSR.
+    Worth revisiting only if a reader actually asks where the consultation went.
   - ~~The RCL "what you can do" keeps its emphasis after the window shuts.~~ **Fixed 14 Sept
     2026.** The comment form and the zgłoszenie zainteresowania are still offered for as long as
     the project is `otwarty` — both are legally open, and art. 7 is a right — but once the

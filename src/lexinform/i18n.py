@@ -69,7 +69,6 @@ class Labels:
     stage_veto_sustained: str
     link_process: str
     link_pdf: str
-    link_rcl: str
     link_text_after3: str
     joint_prints: str
     joint_bill_header: str
@@ -274,7 +273,6 @@ RU = Labels(
     process_passed="Сейм принял закон.",
     link_process="Ход процесса в Сейме",
     link_pdf="PDF",
-    link_rcl="RCL",
     link_text_after3="Текст после III чтения",
     joint_prints="Рассматривается совместно с druk",
     joint_bill_header="Альтернативный проект того же закона",
@@ -864,7 +862,6 @@ EN = Labels(
     process_passed="The Sejm passed the bill.",
     link_process="Legislative process",
     link_pdf="Print PDF",
-    link_rcl="RCL",
     link_text_after3="Text after 3rd reading",
     joint_prints="Considered jointly with print",
     joint_bill_header="Alternative bill on the same subject",
