@@ -500,7 +500,10 @@ class MessageFormatter:
         )
         closure = self._closure_line(bill, change, event)
         consultation = self._consultation_line(bill, today)
-        over = change.withdrawn or change.discontinued
+        # `_closure_line` is the one place an update says how the road ended; `_steps_block` ends
+        # in `_ended_line`, which says it again from the bill. An RCL project closed and a plan
+        # dropped went out with the sentence twice, a blank line apart.
+        over = change.withdrawn or change.discontinued or change.closure_detected
         steps = "" if over else self._steps_block(bill, today)
 
         summary_block = ""
@@ -1401,6 +1404,11 @@ class MessageFormatter:
         if bill.discontinued_at is not None:
             carried = bill.summary.applicant_type is ApplicantType.CITIZENS
             label = lb.process_carried_over if carried else lb.process_discontinued
+        elif veto_stood(bill.stages):
+            # The API leaves `passed` true on a law the veto killed (art. 122 ust. 5 was never
+            # reached), so the closure branch below never fires and the card said nothing at all
+            # about being over — the word "вето" appeared only in the «Стадия» line.
+            label = lb.process_veto_sustained
         elif bill.wykaz is not None:
             label = lb.wykaz_process_closed
         elif bill.rcl is not None:

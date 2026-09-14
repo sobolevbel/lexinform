@@ -45,6 +45,7 @@ class TermRollover:
                 "term %d -> %d: %d government row(s) carried over", previous, current, moved
             )
         unfinished = self._repo.list_unfinished_published(previous, self._channel_id)
+        announced: list[Bill] = []
         for bill in unfinished:
             try:
                 if not self._announce(bill, result, publish=publish):
@@ -55,7 +56,11 @@ class TermRollover:
             except Exception as exc:
                 result.failed += 1
                 log.exception("announcing the end of term for %s failed: %s", bill.number, exc)
+            else:
+                announced.append(bill)
         marked = self._repo.discontinue_unfinished(previous, at=self._clock.now())
+        if publish:
+            self._close_cards(announced)
         if marked:
             log.warning(
                 "term %d -> %d: %d unfinished bill(s) lapsed, %d of them announced",
@@ -65,6 +70,25 @@ class TermRollover:
                 result.discontinued,
             )
         return True
+
+    def _close_cards(self, announced: list[Bill]) -> None:
+        """Re-render the card of every bill that lapsed, now that the row says it did.
+
+        `CardRefresher` cannot do this one: it works off `list_tracked`, which drops a row the
+        moment `discontinued_at` is set, so the card would keep «Что дальше: работа в комиссии»
+        and «направить мнение в комиссию» over a bill no Sejm is working on any more. Cosmetic
+        and best effort — the update that announced the lapse has already gone out.
+        """
+        for stale in announced:
+            bill = self._repo.get(stale.term, stale.number)
+            card = self._poster.card(stale)
+            if bill is None or card is None or card.status is not PublicationStatus.SENT:
+                continue
+            try:
+                self._poster.rerender_card(bill, card)
+            except ServiceUnavailableError as exc:
+                log.warning("cards of the lapsed term left as they are: %s", exc.describe())
+                return
 
     def _announce(self, bill: Bill, result: TrackingResult, *, publish: bool) -> bool:
         """One update under the card; False when it was posted by an earlier run already.

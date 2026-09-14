@@ -118,7 +118,7 @@ class WykazLinker:
         second card, and the card is re-rendered so that it carries both numbers."""
         linked_plan = self._repo.get(plan.term, plan.number)
         if publish and linked_plan is not None:
-            self._poster.retag_card(linked_plan, card)
+            self._poster.rerender_card(linked_plan, card)
         pub_id = self._repo.create_publication(
             Publication(
                 term=plan.term,

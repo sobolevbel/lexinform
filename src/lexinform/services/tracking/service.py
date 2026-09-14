@@ -288,13 +288,7 @@ class StatusTrackingService:
             in_force_reminders=options.in_force_reminders,
         )
         self._cards = CardRefresher(
-            gateway,
-            repo,
-            publisher,
-            clock,
-            channel_id=channel_id,
-            local_tz=options.local_tz,
-            max_edits=options.max_card_edits,
+            gateway, repo, publisher, channel_id=channel_id, max_edits=options.max_card_edits
         )
         self._rollover = TermRollover(repo, clock, poster, channel_id=channel_id)
 

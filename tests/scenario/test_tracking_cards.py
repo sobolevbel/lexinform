@@ -1,4 +1,4 @@
-"""A card that is still live is kept true; a finished one is left as it is."""
+"""A card that is still live is kept true; a finished one says so once and is then left."""
 
 import datetime as dt
 
@@ -55,8 +55,10 @@ def test_the_same_drift_is_not_edited_twice() -> None:
     assert len(w.publisher.edits) == 1
 
 
-def test_a_finished_bill_keeps_the_card_it_had() -> None:
-    """Its road is over: the card invites nothing, and the replies tell how it ended."""
+def test_a_finished_bill_says_so_on_its_card_and_is_then_left_alone() -> None:
+    """The road is over, and the card is the message a reader comes back to. It used to keep the
+    last live text it had — «дальше: III чтение», «можно сделать: написать в комиссию» — over a
+    bill nobody was working on any more, because the refresher stopped one run too early."""
     w = _followed_bill()
     w.clock.advance(days=1)
     w.repo.save_act(w.bill("3039").term, "3039", act(entry_into_force=dt.date(2026, 9, 1)))
@@ -65,8 +67,28 @@ def test_a_finished_bill_keeps_the_card_it_had() -> None:
 
     report = w.run()
 
-    assert report.cards_refreshed == 0
-    assert w.publisher.edits == []
+    assert report.cards_refreshed == 1
+    closed, _ = w.publisher.edited[-1]
+    assert "Законопроект: процесс завершён" in closed.text
+    assert "Уже действует с</b> 01.09.2026" in closed.text
+    assert "Что дальше" not in closed.text and "Что можно сделать" not in closed.text
+
+
+def test_the_finished_card_is_not_edited_again() -> None:
+    """ "Left alone" is the digest's work, not a rule of its own: a finished card is stable, so
+    every later run is a pure render and no request."""
+    w = _followed_bill()
+    w.clock.advance(days=1)
+    w.repo.save_act(w.bill("3039").term, "3039", act(entry_into_force=dt.date(2026, 9, 1)))
+    w.set_stages("3039", (*COMMITTEE_STAGES, Stage(stage_type="End", stage_name="Uchwalono")))
+    w.touch("3039", dt.datetime(2026, 9, 8, 9, tzinfo=dt.UTC))
+    w.run()
+
+    w.clock.advance(days=1)
+    again = w.run()
+
+    assert again.cards_refreshed == 0
+    assert len(w.publisher.edits) == 1
 
 
 def test_telegram_going_down_on_a_refresh_does_not_erase_what_the_phase_did() -> None:
@@ -85,8 +107,8 @@ def test_telegram_going_down_on_a_refresh_does_not_erase_what_the_phase_did() ->
 
 
 def test_the_day_a_card_is_judged_by_is_the_readers_day_not_the_runners() -> None:
-    """Between 22:00 and midnight UTC it is already tomorrow in Warsaw. The card's own text is
-    rendered for the Warsaw day, so the decision whether the bill is still running must be too."""
+    """Between 22:00 and midnight UTC it is already tomorrow in Warsaw. An act that enters into
+    force on the 20th is in force for the reader while the runner's clock still says the 19th."""
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
     w.run()
@@ -95,10 +117,11 @@ def test_the_day_a_card_is_judged_by_is_the_readers_day_not_the_runners() -> Non
     w.set_stages("3039", (*COMMITTEE_STAGES, Stage(stage_type="End", stage_name="Uchwalono")))
     w.touch("3039", dt.datetime(2026, 9, 19, 9, tzinfo=dt.UTC))
 
-    report = w.run()
+    w.run()
 
-    assert report.cards_refreshed == 0
-    assert w.publisher.edits == []
+    closed, _ = w.publisher.edited[-1]
+    assert "Уже действует с</b> 20.09.2026" in closed.text
+    assert "вступление в силу" not in closed.text
 
 
 def test_an_act_with_a_vacatio_legis_still_ahead_keeps_its_card_true() -> None:

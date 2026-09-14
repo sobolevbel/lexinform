@@ -139,6 +139,9 @@ def test_a_withdrawal_is_not_told_as_a_rejection_by_the_sejm() -> None:
     assert_telegram_html(text)
     assert "Правительство отказалось от проекта" in text
     assert "Сейм" not in text.split("#")[0].split("Что дальше")[0].replace("в Сейме", "")
+    # `_closure_line` says how the road ended; `_steps_block` used to end in `_ended_line`, which
+    # said it again from the bill, so the update went out with the sentence twice.
+    assert text.count("снят с плана работ") == 1
 
 
 def test_a_plan_card_does_not_claim_an_entry_into_force() -> None:

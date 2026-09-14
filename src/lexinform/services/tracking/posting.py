@@ -111,9 +111,14 @@ class Poster:
             )
         )
 
-    def retag_card(self, bill: Bill, card: Publication) -> bool:
-        """Re-render the card in place so it carries the tags of the whole thread; one attempt,
-        a refusal is logged and not retried (the replies carry both tags anyway)."""
+    def rerender_card(self, bill: Bill, card: Publication) -> bool:
+        """Re-render the card in place from `bill` as it stands now; one attempt, a refusal is
+        logged and not retried.
+
+        For a thread that gained a number this is the tags; for a term that ended it is the whole
+        card, which `CardRefresher` cannot reach — `list_tracked` drops a discontinued row, so
+        nothing would ever render the card that says the bill lapsed.
+        """
         if card.message_id is None or card.id is None:
             return False
         try:
@@ -121,10 +126,10 @@ class Poster:
         except ServiceUnavailableError:
             raise
         except Exception as exc:
-            log.warning("card of %s not re-tagged: %s: %s", bill.number, type(exc).__name__, exc)
+            log.warning("card of %s not re-rendered: %s: %s", bill.number, type(exc).__name__, exc)
             return False
         self._repo.set_card_digest(card.id, self._publisher.card_digest(bill))
-        log.info("card of %s re-rendered with the tags of its druk", bill.number)
+        log.info("card of %s re-rendered in place", bill.number)
         return True
 
     def hold(self, bill: Bill, change: StatusChange) -> None:

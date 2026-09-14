@@ -6,18 +6,18 @@ written once. A run re-renders the card of every bill it still follows and edits
 the text has drifted; the digest of what was last sent (`publications.rendered_sha256`) is what
 makes that cost nothing on the runs where nothing moved.
 
-A bill whose road has ended keeps the card it had: there is nothing left to invite, and the
-replies under it tell how the story ended. An act already in Dziennik Ustaw has not ended it —
-its vacatio legis can run for months, and "вступает в силу <date>" is the most useful thing the
-card ever says.
+A card that outlives its bill is re-rendered one last time and then left alone: the header
+becomes "процесс завершён", the ending line says how, and "что дальше" and "что можно сделать"
+go. The digest is what makes "and then left alone" true — a finished card is stable, so it
+settles after that one edit and every later run is a pure render. Refusing to render it at all
+was what kept a rejected bill's card inviting opinions to a committee for ever.
 """
 
 import logging
-from zoneinfo import ZoneInfo
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import Bill, BillStatus, PublicationKind, PublicationStatus, next_phase
-from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway
+from lexinform.models import Bill, BillStatus, PublicationKind, PublicationStatus
+from lexinform.ports import BillRepository, Publisher, SejmGateway
 from lexinform.services.sources import fetch_print
 from lexinform.services.tracking.result import TrackingResult
 
@@ -30,30 +30,28 @@ class CardRefresher:
         gateway: SejmGateway,
         repo: BillRepository,
         publisher: Publisher,
-        clock: Clock,
         *,
         channel_id: str,
-        local_tz: ZoneInfo,
         max_edits: int,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
         self._publisher = publisher
-        self._clock = clock
         self._channel_id = channel_id
-        self._local_tz = local_tz
         self._max_edits = max_edits
 
     def refresh(self, bills: list[Bill], result: TrackingResult, *, publish: bool) -> None:
-        """Re-render the card of every bill still running and edit the ones that have drifted.
+        """Re-render the card of every followed bill and edit the ones that have drifted.
 
         Each row is read again: the phases above may have re-analysed the bill, moved its stages
         or handed its thread to a successor since `bills` was listed.
 
-        A card is refreshed while `next_phase` still finds something ahead, which is not the same
-        as `is_over`: that calls a bill finished as soon as its act is in Dziennik Ustaw, and a
-        card frozen there would keep saying "дальше: публикация" through a vacatio legis that can
-        run for months. The card is left alone once the act actually applies.
+        Drift is the only test. There used to be a second one — stop once `next_phase` finds
+        nothing ahead — and it fired exactly one run before the card would have said the road had
+        ended, so a bill the Sejm rejected kept a card reading «дальше: III чтение» and «можно
+        сделать: написать в комиссию» for as long as the thread existed. A `LINKED` row is still
+        skipped: its card belongs to the successor that took the thread over, and that row is in
+        `bills` too.
 
         An outage is caught rather than raised: this is the last, cosmetic step of the phase, and
         letting it out would throw away the result object with everything the phase already
@@ -61,16 +59,13 @@ class CardRefresher:
         """
         if not publish:
             return
-        today = self._clock.now().astimezone(self._local_tz).date()
         edited = 0
         for stale in bills:
             if edited >= self._max_edits:
                 log.info("card refresh capped at %d edits", self._max_edits)
                 return
             bill = self._repo.get(stale.term, stale.number)
-            if bill is None or bill.analysis is None or bill.discontinued_at is not None:
-                continue
-            if bill.status is BillStatus.LINKED or next_phase(bill, today=today) is None:
+            if bill is None or bill.analysis is None or bill.status is BillStatus.LINKED:
                 continue
             card = self._repo.get_publication(
                 bill.term, bill.number, PublicationKind.NEW_BILL, self._channel_id

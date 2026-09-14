@@ -120,7 +120,7 @@ class Linker:
         second card, and it is re-rendered first so that it shows the druk's tag next to its own."""
         linked_pre = self._repo.get(pre.term, pre.number)
         if publish and linked_pre is not None:
-            self._poster.retag_card(linked_pre, card)
+            self._poster.rerender_card(linked_pre, card)
         pub_id = self._repo.create_publication(
             Publication(
                 term=pre.term,

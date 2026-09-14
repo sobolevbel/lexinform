@@ -184,18 +184,29 @@ Invariants worth keeping:
   phase, v17, `decision_reminder_days` = 7) says the date is counted from the third reading and
   so runs a few days early. The Senate action carries no date at all — art. 121 gives the Senate
   thirty days and its committee takes the act long before they are out.
-- **A live card is kept true; a finished one is left alone.** Everything the card says about
+- **A live card is kept true; a finished one says so once and is then left alone.** Everything
+  the card says about
   "now" is derived from the day it was rendered, so `tracking/cards.py::CardRefresher` re-renders
   the card of every followed bill each run and edits it in place when the text has drifted. The
   digest of what was last sent (`publications.rendered_sha256`, v16) makes a quiet run free: a
-  pure render per bill, no request. The refresher stops at `next_phase(...) is None`, **not** at
-  `is_over`: an act in Dziennik Ustaw with months of vacatio legis is still live, and freezing
-  the card there left it saying «дальше: публикация в Dz.U.» for ever. `list_tracked` has to
+  pure render per bill, no request — **and drift is the only test there is**. The refresher used
+  to stop at `next_phase(...) is None`, which fires exactly one run before the card would say the
+  road had ended, so a bill the Sejm rejected kept a card reading «дальше: III чтение» and
+  «можно сделать: написать в комиссию» for the life of the thread (product review, 2026-09-14).
+  It now renders that last state too and the digest holds it there; `is_over` was never the test
+  either — an act in Dziennik Ustaw with months of vacatio legis is still live, and freezing the
+  card there left it saying «дальше: публикация в Dz.U.» for ever. `list_tracked` has to
   agree, or the refresher never sees the bill: the grace window runs from `closure_date`, which
   the Sejm sets at the third reading, and 2699's ended 35 days before its act applied, so a
-  published act is followed until `entry_into_force`, whatever its age. The card calls itself
+  published act is followed until `entry_into_force`, whatever its age. The one ending
+  `list_tracked` cannot reach is the lapsed term — it drops a row the moment `discontinued_at` is
+  set — so `tracking/rollover.py` re-renders those cards itself (`Poster.rerender_card`, the
+  method the linkers use to re-tag a thread that gained a number). The card calls itself
   finished only when the ending line can also say *how* (`_ended_line`): `next_phase` gives up on
-  an unrecognised stage tree too, and "процесс завершён" over nothing is a guess.
+  an unrecognised stage tree too, and "процесс завершён" over nothing is a guess. A veto the Sejm
+  could not override **is** such a *how* and was missing from it: the API leaves `passed` true on
+  a law a veto killed, so the closure branch never fired and the card kept the header «Новый
+  законопроект» with no step lines at all, the word «вето» appearing only in the «Стадия» line.
 - **A bill whose road ended before we saw it gets neither an analysis nor a card.** A card
   invites action, and there is none left. `models.is_over(bill, today)` decides for every source:
   over means the act *applies*, the bill was rejected or withdrawn, the RCL

@@ -10,7 +10,7 @@ from typing import Any
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.container import Container
+from lexinform.container import LOCAL_TZ, Container
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
     ActInfo,
@@ -305,9 +305,13 @@ class World:
         self.gateway = FakeSejmGateway()
         self.llm = FakeLlm(script=llm_script, triage_script=triage_script)
         # The formatter the container and the publisher share, as in production, and it dates
-        # what it renders from the test's clock: everything a message says about "now" is the
-        # run's now, not the day the suite happens to run on.
-        self.formatter = MessageFormatter("ru", today=lambda: self.clock.now().date())
+        # what it renders from the test's clock *in Warsaw*, the way `container.py` does:
+        # everything a message says about "now" is the reader's now, not the day the suite
+        # happens to run on and not the runner's zone. Dating it in UTC here made the harness
+        # disagree with production for the ninety minutes a day when the two days differ.
+        self.formatter = MessageFormatter(
+            "ru", today=lambda: self.clock.now().astimezone(LOCAL_TZ).date()
+        )
         self.publisher = FakePublisher(fail_on=fail_publish, formatter=self.formatter)
         self.notifier = FakeNotifier()
         self.inbox = FakeInbox()

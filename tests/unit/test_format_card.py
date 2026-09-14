@@ -263,3 +263,34 @@ def test_a_stage_tree_the_model_cannot_read_is_not_called_finished(
     assert "📜 <b>Новый законопроект — druk nr 1962</b>" in text
     assert "процесс завершён" not in text
     assert "Что дальше" not in text
+
+
+def test_a_card_says_the_veto_stood_when_it_did(process_1962: ProcessDetail) -> None:
+    """The API leaves `passed` true on a law the President's veto killed, so the closure branch
+    of `_ended_line` never fired: the card kept the header «Новый законопроект» and lost its path,
+    its next step and its action line without a word about why. The only trace was the «Стадия»
+    line — a Polish procedural sentence in the row a reader scans for a stage name."""
+    vetoed = process_1962.model_copy(
+        update={
+            "stages": (
+                Stage(stage_name="Wniosek Prezydenta (weto)", stage_type="Veto"),
+                Stage(
+                    stage_name="Rozpatrywanie na forum Sejmu wniosku Prezydenta",
+                    stage_type="PresidentMotionConsideration",
+                    decision="nie uchwalona ponownie",
+                    date=dt.date(2026, 9, 11),
+                ),
+                Stage(
+                    stage_name="Ustawa nie uchwalona ponownie po wecie Prezydenta",
+                    stage_type="End",
+                ),
+            ),
+            "passed": True,
+        }
+    )
+
+    text = MessageFormatter("ru").new_bill(bill_of(vetoed), None, today=TODAY).text
+
+    assert "📜 <b>Законопроект: процесс завершён — druk nr 1962</b>" in text
+    assert "Сейм не отклонил вето Президента (нужно 3/5 голосов): закон не принят." in text
+    assert "Что дальше" not in text and "Что можно сделать" not in text
