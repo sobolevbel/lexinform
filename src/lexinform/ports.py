@@ -21,6 +21,8 @@ from lexinform.models import (
     Committee,
     CommitteeSitting,
     IncomingCommand,
+    JointContext,
+    JointRecord,
     LocatedText,
     Mp,
     Phase,
@@ -218,6 +220,11 @@ class LlmAnalyzer(Protocol):
     def digest_supplement(self, ctx: SupplementContext) -> SupplementRecord:
         """What a document filed to a print (the government's position, the OSR, an opinion)
         says about the bill as described."""
+        ...
+
+    def compare_joint(self, ctx: JointContext) -> JointRecord:
+        """How one print of a jointly considered group differs from the others, read off the
+        channel's own description of each."""
         ...
 
 
@@ -486,6 +493,10 @@ class BillRepository(Protocol):
 
     def save_seen_supplements(self, term: int, number: str, numbers: tuple[str, ...]) -> None:
         """Record which documents filed to the print the channel now knows about."""
+        ...
+
+    def save_joint_comparison(self, term: int, number: str, record: JointRecord) -> None:
+        """Store how this print differs from the others considered jointly with it."""
         ...
 
     def save_submission(self, term: int, number: str, submission: BillSubmission) -> None: ...

@@ -21,6 +21,7 @@ from lexinform.models import (
     BillSubmission,
     DocumentType,
     IncomingCommand,
+    JointComparison,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
@@ -291,6 +292,7 @@ class World:
         llm_script: dict[str, Analysis | Exception] | None = None,
         triage: bool = False,
         triage_script: dict[str, Triage | Exception] | None = None,
+        joint_script: dict[str, JointComparison | Exception] | None = None,
         triage_min_chars: int = 100,  # every fake PDF is "long" enough to be triaged
         text_prefilter: bool = True,
         extractor: TextExtractor | None = None,
@@ -303,7 +305,9 @@ class World:
         self.repo = SqliteBillRepository(":memory:")
         self.repo.migrate()
         self.gateway = FakeSejmGateway()
-        self.llm = FakeLlm(script=llm_script, triage_script=triage_script)
+        self.llm = FakeLlm(
+            script=llm_script, triage_script=triage_script, joint_script=joint_script
+        )
         # The formatter the container and the publisher share, as in production, and it dates
         # what it renders from the test's clock *in Warsaw*, the way `container.py` does:
         # everything a message says about "now" is the reader's now, not the day the suite

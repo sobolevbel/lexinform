@@ -123,6 +123,7 @@ ICON = {
     "closed": "🏁",
     "note": "ℹ️",
     "joint": "🔀",
+    "joint_diff": "↔️",
     "voting": "🗳",
     "committee": "📮",
     "consultation": "🗣",
@@ -465,8 +466,14 @@ class MessageFormatter:
         today: dt.date | None = None,
     ) -> RenderedMessage:
         """Reply under `primary`'s card: `bill` is considered jointly with it and gets no card of
-        its own. Title, who submitted it and when, links; the analysis stays the card's, which
-        is re-done when the committee's joint text appears."""
+        its own. What it does, how it differs from the prints the reader has already read about,
+        who submitted it, links.
+
+        The verdict, the importance and the category stay the card's: one thread, one score. The
+        difference is this print's own news and the reason the reply exists — a reader meeting
+        «Альтернативный проект того же закона» and nothing else cannot tell the same bill in
+        other words from a different answer to the same question.
+        """
         lb = self._labels
         s = bill.summary
         header = self._header(ICON["joint"], lb.joint_bill_header, bill)
@@ -475,13 +482,45 @@ class MessageFormatter:
         facts = f"{note}\n{self._applicant_line(bill)}"
         links_block = self._links(self._card_links(bill, print_info))
         # Its own tag first, then the card's topic and thread tags: a search for either number
-        # finds the reply, and the verdict it carries is the card's, this print having no
-        # analysis of its own in the channel.
+        # finds the reply, and the verdict it carries is the card's.
         tags = self._tags(primary, self._number_tag(bill))
         steps = self._steps_block(primary, today or self._today())
         return RenderedMessage(
-            text=self._assemble([header, facts], tail=[steps, links_block, tags])
+            text=self._assemble(
+                [header, facts],
+                flexible=[self._joint_summary(bill), self._joint_differences(bill)],
+                tail=[steps, links_block, tags],
+            )
         )
+
+    def _joint_summary(self, bill: Bill) -> str:
+        """What this print does, in its own analysis' words. Empty when it has none: a print
+        compared with nothing to say is still worth naming in the thread."""
+        if bill.analysis is None:
+            return ""
+        summary = bill.analysis.analysis.summary.strip()
+        if not summary:
+            return ""
+        return f"{ICON['about']} <b>{esc(self._labels.about)}</b>\n{esc(summary)}"
+
+    def _joint_differences(self, bill: Bill) -> str:
+        """How it differs from the others, as the model read it off the channel's descriptions.
+
+        Empty when the comparison was never made or failed — the model was down, the group had
+        nothing analysed to compare with — and then the reply is what it was before comparisons
+        existed. `same_substance` leads, because for a reader the answer "the same bill in other
+        words" is as much news as a list of differences, and it is the commoner one.
+        """
+        lb = self._labels
+        if bill.joint is None:
+            return ""
+        comparison = bill.joint.comparison
+        heading = lb.joint_same if comparison.same_substance else lb.joint_differs
+        lines = [f"{ICON['joint_diff']} <b>{esc(heading)}</b>"]
+        if comparison.summary.strip():
+            lines.append(esc(comparison.summary.strip()))
+        lines.extend(f"• {esc(d.strip())}" for d in comparison.differences if d.strip())
+        return "\n".join(lines)
 
     def status_update(
         self, bill: Bill, change: StatusChange, *, today: dt.date | None = None
@@ -1030,7 +1069,6 @@ class MessageFormatter:
                     ("triaged out: {}", report.triaged_out),
                     ("failures: {}", report.analysis_failures),
                     ("over the cost limit: {}", report.analysis_skipped_cost),
-                    ("joint prints left alone: {}", report.analysis_skipped_joint),
                 ),
                 _tokens_line(report),
                 _spenders_line(report),

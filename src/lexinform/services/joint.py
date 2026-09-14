@@ -5,10 +5,16 @@ them, their stages coinciding from the joint referral on. The channel gives such
 card and answers under it for every later print, so only one of the group's prints is ever the
 one a reader reads.
 
-Both the publisher and the analysis need that answer, and for the same reason: the publisher to
-send a reply instead of a card, the analysis not to pay for a judgement that will never be
-shown. Druk 1933 cost 305,132 input tokens — $1.53, a seventh of everything the project had
-spent — for an analysis that went out as a `joint_bill` reply, which by design carries none.
+Both the publisher and the analysis need that answer, for different reasons: the publisher to
+send a reply instead of a card, the analysis to leave the cheap pass out — the card has already
+said the subject matters, and a confident "no" from a screening model would take an alternative
+bill out of the channel for the price of one call it almost never saves.
+
+The reply is not a second card and not a second verdict: it says how this print differs from the
+ones the reader has already read about (`group_of` gathers them, `AnalysisService.compare_joint`
+asks). Until 2026-09-14 it said nothing at all beyond the title and the links, and a reader
+meeting «Альтернативный проект того же закона» had no way of telling whether it was the same
+bill in other words or a different answer to the same question.
 """
 
 from lexinform.models import Bill, PublicationKind, PublicationStatus
@@ -33,3 +39,19 @@ def primary_of(repo: BillRepository, bill: Bill, channel_id: str) -> tuple[Bill,
             continue
         return other, card.message_id
     return None
+
+
+def group_of(repo: BillRepository, bill: Bill) -> list[Bill]:
+    """The prints considered jointly with `bill` that the channel has an analysis of, in the
+    order the Sejm names them: what a comparison can be made against.
+
+    A print with no analysis of its own is left out rather than described from its title: the
+    comparison is of what the channel says about the bills, and about that one it says nothing
+    yet. When it is analysed, `compared_with` no longer matches and the group is compared again.
+    """
+    others = []
+    for number in bill.summary.prints_considered_jointly:
+        other = repo.get(bill.term, number)
+        if other is not None and other.analysis is not None:
+            others.append(other)
+    return others

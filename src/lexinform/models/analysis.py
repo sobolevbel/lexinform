@@ -153,6 +153,72 @@ class AmendmentsContext(BaseModel):
     proposal: str | None = None
 
 
+class JointComparison(BaseModel):
+    """Structured output about one print of a jointly considered group: how it differs from the
+    others, not a new analysis of it."""
+
+    same_substance: bool = Field(
+        description="True when this bill does the same thing as the others and differs only in"
+        " wording, numbering or detail."
+    )
+    summary: str = Field(
+        description="1-2 plain sentences: what this bill does that the others do not, or in what"
+        " it takes a different approach. At most ~300 characters."
+    )
+    differences: list[str] = Field(
+        default_factory=list,
+        description="Up to 5 bullets, at most ~120 characters each: one concrete difference per"
+        " bullet, naming the other print when the group has more than two.",
+    )
+    confidence: float = Field(
+        ge=0.0,
+        le=1.0,
+        description="Lower it when the descriptions are too general to tell the bills apart.",
+    )
+
+
+class JointBillDescription(BaseModel):
+    """One bill of a jointly considered group as the channel currently describes it: what the
+    comparison is made of, on both sides."""
+
+    number: str
+    title: str
+    applicant_type: ApplicantType
+    summary: str
+    key_changes: list[str] = Field(default_factory=list)
+    affected_groups: list[str] = Field(default_factory=list)
+    practical_impact: str = ""
+
+
+class JointContext(BaseModel):
+    """What the model sees to compare one print with the others considered jointly with it: the
+    channel's own description of each, and no bill text at all.
+
+    The texts were read once, each by its own analysis; asking the difference of them again would
+    cost a second full reading of every print in the group for an answer the descriptions already
+    carry. It is also the reader's own question — the card is what they read, so what they want
+    to know is how this print differs from what the card told them.
+    """
+
+    subject: JointBillDescription
+    others: list[JointBillDescription]
+
+
+class JointRecord(BaseModel):
+    """A stored comparison with its provenance. `compared_with` is what it was made against, so a
+    group that gains a print is compared again instead of showing an answer about fewer bills."""
+
+    comparison: JointComparison
+    compared_with: list[str]
+    model: str
+    prompt_version: str
+    created_at: dt.datetime
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    cache_read_input_tokens: int | None = None
+    cache_creation_input_tokens: int | None = None
+
+
 class ScannedDocument(BaseModel):
     """A document the model reads as pages, because its file carries no text to read.
 
@@ -247,7 +313,7 @@ class SupplementContext(BaseModel):
     previous_key_changes: list[str] = Field(default_factory=list)
 
 
-UsageRecord = AnalysisRecord | TriageRecord | AmendmentsRecord | SupplementRecord
+UsageRecord = AnalysisRecord | TriageRecord | AmendmentsRecord | SupplementRecord | JointRecord
 
 
 def usage_of(record: UsageRecord) -> TokenUsage:

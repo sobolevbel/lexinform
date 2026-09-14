@@ -22,7 +22,7 @@ structured-output schema is part of the cached prefix, so the entry is ~2k token
 figure and `lexinform cost` show it; `lexinform runs` lists the recorded runs.
 
 **Every model call is written down** (`RunReport.llm_calls`: bill, kind — analysis, reanalysis,
-triage, amendments, supplement — model and tokens, recorded by `AnalysisService._charge`, which
+triage, amendments, supplement, joint — model and tokens, recorded by `AnalysisService._charge`, which
 every phase that asks the model goes through). One figure per run could not be accounted for
 afterwards: the run of 2026-09-13 billed 316,767 input tokens with nothing to say which call made
 them, and the report now names the three costliest.
@@ -65,3 +65,27 @@ consulted no limit at all. A held text is not written down, so the next run offe
 document again; what it costs is that the stage update of that run goes out without its «текст
 обновился» note, and the card catches up when the refresher re-renders it.
 
+
+## What a jointly considered print costs (14 Sept 2026)
+
+Until 2026-09-14 a print whose group already held a card was not read at all: it got a reply
+naming it and nothing more, and the saving was the point — druk 1933 had cost 305,132 input
+tokens ($1.53) for an analysis that went out as such a reply. The reply now says how the print
+differs from the ones the reader has read about, which is worth a reading, and the price of that
+was measured over the whole term before it was decided.
+
+Term 10 has **938 bill processes, 53 of them in 21 groups** of jointly considered prints (16
+pairs, three triples, one four and one eight — the eight being the vetoed bills of 2026-03-27).
+**Eighteen of the 53 pass the keyword prefilter**, and only **five groups** have more than one
+candidate in them: in the other sixteen the partner never reaches the model under either rule.
+Reading every non-card candidate of those five groups costs **$4.21** of Opus input over the
+term, against the ≈$44 the term costs in full — **+10%**, before the triage, which applies to
+these prints like any other except where the group already holds a card.
+
+The comparison itself is not a second reading. `AnalysisService.compare_joint` sends the
+channel's own description of each bill in the group — summary, key changes, whom it affects,
+what changes in practice — and no text at all: a few thousand characters, about **a cent** a
+reply, some **$0.05** over the term. Sending both texts instead was measured and rejected:
+1929 + 1933 together are $1.95, which is inside the $2 per-bill guard only by accident, and the
+question a reader asks is how this print differs from the card they have read, not from a
+document they have not.

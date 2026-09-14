@@ -383,6 +383,7 @@ class Container:
                 self.clock,
                 channel_id=self.channel_id(),
                 max_attempts=self.settings.max_publish_attempts,
+                analysis=self.analysis_service(),
             ),
         )
 

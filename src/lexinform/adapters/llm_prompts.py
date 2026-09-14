@@ -7,6 +7,8 @@ from lexinform.models import (
     WYKAZ_PREFIX,
     AmendmentsContext,
     BillContext,
+    JointBillDescription,
+    JointContext,
     ScannedDocument,
     SupplementContext,
     TriageContext,
@@ -110,6 +112,60 @@ A bill the channel follows has received a document filed to its print (druk) aft
 - Keep Polish abbreviations and acronyms (MSWiA, UdSC, ZUS, NFZ, PESEL, SN, PG, KRS, …) as they are; never translate or transliterate them.
 - Do not address the reader; write neutral informational prose.
 """
+
+
+JOINT_SYSTEM_PROMPT_TEMPLATE = """You are a legal analyst for a channel that informs foreigners living in Poland about Polish legislation.
+
+The Sejm considers several bills on the same subject together (prints considered jointly): one committee works on them at once and one of them ends as the law. The channel has already described each of them; its readers have read the description of the others and now meet this one. Say how THIS bill differs from them.
+
+You are given the channel's own description of each bill, not their texts: a summary, the key changes, whom they affect and what changes in practice.
+
+## Output fields
+
+- same_substance: true when this bill does the same thing as the others and differs only in wording, numbering, dates or detail; false when it takes a different approach, covers a different scope or would leave the reader in a different position.
+- summary: 1-2 plain sentences in {language}, at most ~300 characters: what this bill does that the others do not, or in what its approach differs. When the bills are the same in substance, say so and name what little does differ.
+- differences: up to 5 bullets in {language}, each one concrete difference in at most ~120 characters. Name the other print ("druk 1933: ...") when there is more than one to compare with. Leave the list empty when the descriptions show no difference at all.
+- confidence: 0-1. Lower it when the descriptions are too general to tell the bills apart — do not invent a difference to fill the answer.
+
+## Rules
+
+- Compare only what the descriptions say. Never invent article numbers, deadlines, amounts or provisions, and never infer a difference from the applicant alone.
+- A difference the descriptions do not show is not a difference: an honest "the same in substance" with high confidence is worth more than a guess.
+- Do not repeat what the bills have in common beyond one clause of context; the reader has already read that.
+- Keep Polish names of statutes in the original, and Polish abbreviations (MSWiA, UdSC, ZUS, NFZ, PESEL, …) as they are.
+- Do not address the reader; write neutral informational prose. Never say where either bill stands in the process.
+"""
+
+
+def joint_system_prompt(language: str) -> str:
+    return JOINT_SYSTEM_PROMPT_TEMPLATE.format(
+        language=_LANGUAGE_NAMES.get(language.lower(), language)
+    )
+
+
+def _joint_description(description: JointBillDescription, *, heading: str) -> list[str]:
+    lines = [
+        f"=== {heading} ===",
+        f"Druk nr {description.number} ({description.applicant_type})",
+        f"Tytuł: {description.title}",
+        description.summary,
+    ]
+    lines.extend(f"- {change}" for change in description.key_changes)
+    if description.affected_groups:
+        lines.append(f"Kogo dotyczy: {', '.join(description.affected_groups)}")
+    if description.practical_impact:
+        lines.append(f"W praktyce: {description.practical_impact}")
+    return lines
+
+
+def build_joint_prompt(ctx: JointContext) -> str:
+    lines = _joint_description(ctx.subject, heading="PROJEKT PORÓWNYWANY")
+    for other in ctx.others:
+        lines.append("")
+        lines.extend(
+            _joint_description(other, heading="PROJEKT ROZPATRYWANY ŁĄCZNIE (dla porównania)")
+        )
+    return "\n".join(lines)
 
 
 def system_prompt(language: str) -> str:

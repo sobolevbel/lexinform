@@ -84,10 +84,12 @@ Done on 2026-09-09/10 (schema v9, v10, v12):
   identical cards: `ProcessSummary.prints_considered_jointly` names the group, the first
   candidate gets the card (the government's print goes first within a run: its text is the one
   the committee works on) and every later print becomes a short `joint_bill` reply under it —
-  title, applicant, date, links, both tags, no analysis of its own. The reply settles the bill
+  title, applicant, date, links, both tags. The reply settles the bill
   like a card would, and because it is not a `new_bill` row every tracker ignores it: the group's
   events come from the card's process. `/republish` forgets both rows and lets the normal path
-  decide again.
+  decide again. The reply carried no analysis at all until 2026-09-14 (v20), when it gained the
+  one thing it was missing: what this print does and how it differs from the ones already in the
+  thread.
 
 Done on 2026-09-10, after a review of the code base (no schema change):
 
@@ -280,6 +282,18 @@ findings and what each one cost a reader are in the commit messages; the shape o
   steps stop quoting Polish two lines above their own translation. The prompt forbids the summary
   from naming a stage (`2026-09-v7`): it is the one block of the card that is not re-derived, and
   druk 2667's says "передан в Сенат" under «уже действует с 02.09.2026».
+
+Done on 2026-09-14 (schema v20):
+
+- **The "alternative bill" reply says what the print adds to the thread.** A print considered
+  jointly with one that holds the card was not read at all, so the reply named it and stopped:
+  a reader could not tell the same bill in other words from a different answer to the same
+  question. The print is now analysed like any other (prefilter, cost guard, `min_score`; the
+  triage alone is skipped where the card has already answered its question), and a second, cheap
+  call compares the channel's own descriptions of the group — «по сути то же самое» included,
+  which is the commoner answer and as useful. Measured before it was decided: 53 prints in 21
+  groups over term 10, 18 past the prefilter, five groups with more than one candidate, $4.21 of
+  reading for the term against ≈$44 for the whole of it and about a cent a comparison.
 
 Still open:
 

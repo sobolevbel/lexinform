@@ -11,9 +11,11 @@ from lexinform.adapters.llm_prompts import (
     PROMPT_VERSION,
     amendments_system_prompt,
     build_amendments_prompt,
+    build_joint_prompt,
     build_supplement_prompt,
     build_triage_prompt,
     build_user_prompt,
+    joint_system_prompt,
     supplement_system_prompt,
     system_prompt,
     triage_system_prompt,
@@ -27,6 +29,9 @@ from lexinform.models import (
     AnalysisRecord,
     BillContext,
     DocumentDigest,
+    JointComparison,
+    JointContext,
+    JointRecord,
     ScannedDocument,
     SupplementContext,
     SupplementRecord,
@@ -83,6 +88,7 @@ class AnthropicAnalyzer:
         self._triage_system = triage_system_prompt(output_language)
         self._amendments_system = amendments_system_prompt(output_language)
         self._supplement_system = supplement_system_prompt(output_language)
+        self._joint_system = joint_system_prompt(output_language)
 
     def analyze(self, ctx: BillContext) -> AnalysisRecord:
         response = self._parse(
@@ -235,6 +241,45 @@ class AnthropicAnalyzer:
             source_kind=ctx.source_kind,
             source_url="",
             digest=digest,
+            model=self._model,
+            prompt_version=PROMPT_VERSION,
+            created_at=self._clock(),
+            input_tokens=_usage_int(usage, "input_tokens"),
+            output_tokens=_usage_int(usage, "output_tokens"),
+            cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
+            cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
+        )
+
+    def compare_joint(self, ctx: JointContext) -> JointRecord:
+        """How one print of a jointly considered group differs from the others.
+
+        The analysis model with thinking, on a prompt of a few descriptions: the input is a
+        thousandth of a bill's text, and the question — telling two bills on one subject apart —
+        is the kind a cheap model answers by inventing a difference.
+        """
+        response = self._parse(
+            self._model,
+            self._joint_system,
+            build_joint_prompt(ctx),
+            JointComparison,
+            thinking=True,
+        )
+        comparison = response.parsed_output
+        if not isinstance(comparison, JointComparison):
+            raise LlmError("model returned no parsable structured output")
+        usage = getattr(response, "usage", None)
+        log.info(
+            "LLM compared druk %s with %s: same_substance=%s, %d difference(s) in=%s out=%s",
+            ctx.subject.number,
+            ", ".join(other.number for other in ctx.others),
+            comparison.same_substance,
+            len(comparison.differences),
+            _usage_int(usage, "input_tokens"),
+            _usage_int(usage, "output_tokens"),
+        )
+        return JointRecord(
+            comparison=comparison,
+            compared_with=[other.number for other in ctx.others],
             model=self._model,
             prompt_version=PROMPT_VERSION,
             created_at=self._clock(),

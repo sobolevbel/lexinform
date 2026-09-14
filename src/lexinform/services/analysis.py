@@ -26,6 +26,9 @@ from lexinform.models import (
     BillContext,
     BillStatus,
     Category,
+    JointBillDescription,
+    JointContext,
+    JointRecord,
     LlmCall,
     LocatedText,
     ProcessSummary,
@@ -80,15 +83,13 @@ class AnalysisResult:
     """Counters and verdicts of one analysis phase.
 
     `skipped_cost` counts the texts that were over the per-bill cost limit and never reached the
-    model, `skipped_joint` the prints whose group is already carried by another print's card,
-    `usage` is counted per model, and `stopped` says the phase ended early on the per-run cost
-    limit, which is a note and not an error.
+    model, `usage` is counted per model, and `stopped` says the phase ended early on the per-run
+    cost limit, which is a note and not an error.
     """
 
     analyzed: int = 0
     triaged_out: int = 0
     skipped_cost: int = 0
-    skipped_joint: int = 0
     failed: int = 0
     verdicts: list[AnalysisVerdict] = field(default_factory=list)
     input_tokens: int = 0
@@ -134,9 +135,9 @@ class AnalysisOptions:
     length from which the cheap first pass is worth its own call (a scan is triaged whatever its
     text), `triage_scan_pages` how many opening pages of a scan that pass is shown, and
     `triage_min_confidence` how sure it must be before its "no" is taken. `channel_id` is the
-    channel the phase analyses for, and only the scheduled phase uses it, to leave a jointly
-    considered print alone when the group's card is another print's; None means the question is
-    not asked.
+    channel the phase analyses for: a print whose group already holds a card there is not put
+    through the cheap pass, the card having answered its question already. None means the
+    question is not asked and every text is triaged on its length alone.
     """
 
     max_attempts: int = 3
@@ -212,6 +213,21 @@ class _Prepared:
 
 _PAGE_NUMBER_LINE = re.compile(r"^\s*[–\-—]?\s*\d{1,4}\s*[–\-—]?\s*$", re.MULTILINE)
 _WHITESPACE = re.compile(r"\s+")
+
+
+def _describe_for_comparison(bill: Bill) -> JointBillDescription:
+    """One bill of a jointly considered group as the channel describes it today."""
+    assert bill.analysis is not None
+    analysis = bill.analysis.analysis
+    return JointBillDescription(
+        number=bill.number,
+        title=bill.summary.title,
+        applicant_type=bill.summary.applicant_type,
+        summary=analysis.summary,
+        key_changes=list(analysis.key_changes),
+        affected_groups=list(analysis.affected_groups),
+        practical_impact=analysis.practical_impact,
+    )
 
 
 def text_digest(text: str) -> str:
@@ -291,10 +307,14 @@ class AnalysisService:
             limit=limit,
             max_attempts=self._options.max_attempts,
         )
-        candidates = [
-            bill for bill in candidates if not self._carried_by_a_joint_card(bill, result)
-        ]
-        for outcome in fan_out(candidates, self._prepare_first, workers=self._options.workers):
+        # Asked here and not in `_prepare`, which runs in the worker threads and never touches
+        # the repository.
+        carried = {bill.number for bill in candidates if self._joint_card_exists(bill)}
+
+        def prepare(bill: Bill) -> _Prepared:
+            return self._prepare_first(bill, triage=bill.number not in carried)
+
+        for outcome in fan_out(candidates, prepare, workers=self._options.workers):
             bill = outcome.item
             try:
                 prepared = outcome.result()
@@ -353,46 +373,31 @@ class AnalysisService:
         """First analysis from the original text. Persists the result; raises on failure.
         `ignore_cost_limit` is the operator's explicit wish (a forced command): the per-bill
         cost guard does not apply."""
-        prepared = self._prepare_first(bill, cost_guard=not ignore_cost_limit)
+        prepared = self._prepare_first(
+            bill, cost_guard=not ignore_cost_limit, triage=not self._joint_card_exists(bill)
+        )
         return AnalysisOutcome(self._persist(prepared), prepared.triage)
 
-    def _prepare_first(self, bill: Bill, *, cost_guard: bool = True) -> _Prepared:
-        return self._prepare(bill, self._texts.locate(bill), previous=None, cost_guard=cost_guard)
+    def _prepare_first(
+        self, bill: Bill, *, cost_guard: bool = True, triage: bool = True
+    ) -> _Prepared:
+        return self._prepare(
+            bill, self._texts.locate(bill), previous=None, cost_guard=cost_guard, triage=triage
+        )
 
-    def _carried_by_a_joint_card(self, bill: Bill, result: AnalysisResult) -> bool:
-        """Whether another print of this bill's group already carries the card, so that this
-        print will be a reply that shows no analysis and the model need not be asked.
+    def _joint_card_exists(self, bill: Bill) -> bool:
+        """Whether another print of this bill's group already holds the card in the channel.
 
-        The question is the publisher's own (`services.joint.primary_of`), asked a phase earlier:
-        `PublishingService` settles the same bill as a `joint_bill` reply, which carries the
-        title, the applicant and the links but no analysis at all. Druk 1933 was analysed for
-        305,132 input tokens and published as one. If the group's card is later withdrawn or
-        rejected, `primary_of` stops finding it and `/unskip` puts the print back in the queue.
-        An operator's `/analyze` never comes through here: asking for one explicitly is a wish
-        to have it.
+        Such a print is analysed like any other — it is read, judged and paid for, and what the
+        reader gets is a reply saying how it differs from the print they read about — but it is
+        not put through the cheap pass. The card has already answered the question the triage
+        asks, of a bill on the same subject and before the same committee; what the pass can
+        still do is say a confident "no" and take the alternative bill out of the channel
+        silently, for the price of one Haiku call it almost never saves.
         """
         if self._options.channel_id is None or not bill.summary.prints_considered_jointly:
             return False
-        primary = primary_of(self._repo, bill, self._options.channel_id)
-        if primary is None:
-            return False
-        other, _ = primary
-        result.skipped_joint += 1
-        log.info(
-            "%s is considered jointly with %s, which carries the card; not analysed",
-            bill.number,
-            other.number,
-        )
-        self._repo.set_status(
-            bill.term,
-            bill.number,
-            BillStatus.SKIPPED_JOINT,
-            reason=(
-                f"considered jointly with druk {other.number}, which carries the card; "
-                "its reply shows no analysis (/unskip to analyse anyway)"
-            ),
-        )
-        return True
+        return primary_of(self._repo, bill, self._options.channel_id) is not None
 
     def reanalyze_bill(
         self, bill: Bill, document: TextDocument, *, summary: ProcessSummary | None = None
@@ -492,6 +497,30 @@ class AnalysisService:
         record.source_url = document.url
         return record
 
+    def compare_joint(self, bill: Bill, others: list[Bill]) -> JointRecord | None:
+        """How `bill` differs from the prints considered jointly with it, read off the channel's
+        own description of each. None when nothing has been analysed to compare with.
+
+        No text is loaded and nothing is downloaded: every bill in the group has been read once
+        by its own analysis, and asking the difference of the texts again would mean paying for a
+        second full reading of each. The descriptions are also the reader's side of the question
+        — the card is what they read — and they cost about a cent to compare.
+
+        Only an outage propagates; a failed call leaves the reply saying what it said before the
+        comparison existed, which is the bill, its applicant and the thread it belongs to.
+        """
+        assert bill.analysis is not None
+        described = [other for other in others if other.analysis is not None]
+        if not described:
+            return None
+        ctx = JointContext(
+            subject=_describe_for_comparison(bill),
+            others=[_describe_for_comparison(other) for other in described],
+        )
+        record = self._llm.compare_joint(ctx)
+        self._ledger.charge(record, number=bill.number, kind="joint")
+        return record
+
     def _too_expensive_to_digest(self, loaded: _Loaded) -> bool:
         """The per-bill cost limit applies to a filed document too, and here it is the whole
         answer rather than a reason to skip the bill: a reader who is told what the document is
@@ -517,6 +546,7 @@ class AnalysisService:
         *,
         previous: AnalysisRecord | None,
         cost_guard: bool = True,
+        triage: bool = True,
     ) -> _Prepared:
         """Load the text and ask the model. Network only: safe to run for several bills at once.
 
@@ -547,9 +577,9 @@ class AnalysisService:
             self._ledger.stop("the new text(s) wait for the next run")
             return _Prepared(bill, located, text, source, previous, first=False, deferred=True)
         meta = located.summary or bill.summary
-        triage: TriageRecord | None = None
-        if previous is None and self._worth_triaging(loaded):
-            triage, rejection = self._triage_verdict(bill, meta, text, loaded.scan)
+        triaged: TriageRecord | None = None
+        if previous is None and triage and self._worth_triaging(loaded):
+            triaged, rejection = self._triage_verdict(bill, meta, text, loaded.scan)
             if rejection is not None:
                 return _Prepared(bill, located, text, source, rejection, first=True)
         ctx = BillContext(
@@ -576,7 +606,9 @@ class AnalysisService:
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
         record.text_sha256 = digest
-        return _Prepared(bill, located, text, source, record, first=previous is None, triage=triage)
+        return _Prepared(
+            bill, located, text, source, record, first=previous is None, triage=triaged
+        )
 
     def _fit_to_budget(self, ctx: BillContext, loaded: _Loaded, *, first: bool) -> BillContext:
         """The context the model is actually sent: this one, or a shorter one that fits the

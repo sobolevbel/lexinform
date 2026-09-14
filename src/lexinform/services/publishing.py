@@ -9,6 +9,10 @@ one the committee works on.
 
 `CARD_KINDS` are therefore the two ways a bill can be in the channel — its own card, or that
 reply under someone else's — and a bill has one of them, never both.
+
+The reply is judged and paid for like a card: the print is analysed on its own text like any
+other, and what the reply adds to the thread is how it differs from the prints the reader has
+already read about (`_compared`, asked of the model once, a moment before the reply is rendered).
 """
 
 import logging
@@ -19,7 +23,6 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     ApplicantType,
     Bill,
-    BillStatus,
     PrintInfo,
     Publication,
     PublicationKind,
@@ -27,7 +30,8 @@ from lexinform.models import (
     is_over,
 )
 from lexinform.ports import BillRepository, Clock, Publisher, PublishResult, SejmGateway
-from lexinform.services.joint import primary_of
+from lexinform.services.analysis import AnalysisService
+from lexinform.services.joint import group_of, primary_of
 
 log = logging.getLogger(__name__)
 
@@ -100,6 +104,7 @@ class PublishingService:
         *,
         channel_id: str,
         max_attempts: int = 3,
+        analysis: AnalysisService | None = None,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -107,6 +112,7 @@ class PublishingService:
         self._clock = clock
         self._channel_id = channel_id
         self._max_attempts = max_attempts
+        self._analysis = analysis
 
     @property
     def channel_id(self) -> str:
@@ -129,20 +135,6 @@ class PublishingService:
         )
         today = self._clock.now().date()
         for bill in government_first(candidates):
-            if bill.analysis is None and self._primary_of(bill) is None:
-                # It was left unanalysed because the group's card was another print's, and that
-                # card has since gone (withdrawn, rejected, discontinued). A card of its own is
-                # the right post now, and a card needs a verdict this print has never been given.
-                log.info(
-                    "%s no longer has a joint card to reply under; back to analysis", bill.number
-                )
-                self._repo.set_status(
-                    bill.term,
-                    bill.number,
-                    BillStatus.ANALYSIS_PENDING,
-                    reason="the jointly considered print that carried the card is gone",
-                )
-                continue
             if is_over(bill, today=today):
                 log.info("%s is over: no card", bill.number)
                 self._record_skipped(bill)
@@ -242,6 +234,7 @@ class PublishingService:
         bill, print_info = plan.bill, plan.print_info
         card_bill, card_message_id = plan.primary, plan.primary_message_id
         assert card_bill is not None
+        bill = self._compared(bill)
         pub_id = self._repo.create_publication(
             Publication(
                 term=bill.term,
@@ -264,6 +257,41 @@ class PublishingService:
         result.joined += 1
         log.info("druk %s joined the thread of druk %s", bill.number, card_bill.number)
         return True
+
+    def _compared(self, bill: Bill) -> Bill:
+        """The bill with an up-to-date answer to "how does it differ from the others", asked of
+        the model once and stored on the row.
+
+        Asked here, a moment before the reply is rendered, and not in the analysis phase: the
+        common case is a group that arrives in one run, where at analysis time no print of it has
+        been read yet and there is nothing to compare with. By the time the publisher gets here,
+        every print of the run has its analysis and the card of the group is already sent.
+
+        The comparison is an embellishment of the reply, so nothing about it may stop the reply:
+        an outage of the model — which everywhere else ends a phase — is caught and the bill goes
+        out described as it was before there were comparisons at all.
+        """
+        if self._analysis is None:
+            return bill
+        others = group_of(self._repo, bill)
+        numbers = [other.number for other in others]
+        if not numbers or (bill.joint is not None and bill.joint.compared_with == numbers):
+            return bill
+        try:
+            record = self._analysis.compare_joint(bill, others)
+        except Exception as exc:
+            log.warning(
+                "%s not compared with %s (%s: %s); the reply says what it can",
+                bill.number,
+                ", ".join(numbers),
+                type(exc).__name__,
+                exc,
+            )
+            return bill
+        if record is None:
+            return bill
+        self._repo.save_joint_comparison(bill.term, bill.number, record)
+        return bill.model_copy(update={"joint": record})
 
     def _inherited_card(self, bill: Bill) -> Publication | None:
         """The sent card of the row this print continues (its RPW entry or its RCL project).

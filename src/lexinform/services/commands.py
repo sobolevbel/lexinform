@@ -511,9 +511,9 @@ class CommandService:
         there to prevent.
         """
         if bill.analysis is None:
-            # A print whose group's card is another print's is never analysed, and the reply it
-            # gets carries the card's verdict rather than one of its own: there is a message to
-            # render here, and it is the one thing a preview exists to show.
+            # A row left unanalysed before 2026-09-14 because its group's card was another
+            # print's: its reply carries the card's verdict and there is still a message to
+            # render, which is the one thing a preview exists to show.
             if primary_of(self._repo, bill, self._publishing.channel_id) is None:
                 return CommandOutcome(
                     status=OutcomeStatus.ERROR, bill=bill, note="not analysed: no card to render"
@@ -537,6 +537,10 @@ class CommandService:
                 f"considered jointly with {plan.primary.number}: a reply under its card"
                 f" (message {plan.primary_message_id}), not a card of its own"
             )
+            if plan.bill.joint is None:
+                # A read-only command spends nothing, and the comparison is a model call: it is
+                # made when the reply is actually sent, so the preview shows the reply without it.
+                note += "; what differs is compared when the reply goes out"
         return CommandOutcome(
             status=OutcomeStatus.PREVIEWED,
             bill=plan.bill,

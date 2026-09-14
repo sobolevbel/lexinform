@@ -25,6 +25,7 @@ from lexinform.models import (
     BillSubmission,
     CommandState,
     IncomingCommand,
+    JointRecord,
     ProcessSummary,
     Publication,
     PublicationKind,
@@ -220,6 +221,12 @@ MIGRATIONS: tuple[str, ...] = (
     CREATE UNIQUE INDEX ux_pub_agenda_cancelled
         ON publications(term, number, kind, channel_id, ref)
         WHERE kind = 'agenda_cancelled';
+    """,
+    # v20: how a print considered jointly with others differs from them, as the reply under
+    # their card says it — stored so that a retry, a `/preview` and a `/republish` do not pay
+    # for the same comparison again.
+    """
+    ALTER TABLE bills ADD COLUMN joint_json TEXT;
     """,
 )
 
@@ -529,15 +536,16 @@ class SqliteBillRepository:
         """Bills that still need a post. A card or an "alternative bill" reply settles the bill;
         a failed one leaves it listed until the attempts are used up.
 
-        `SKIPPED_JOINT` rows come with no analysis and are listed anyway: what they get is the
-        reply under another print's card, and that reply carries the card's verdict, its tags and
-        its next step, never one of its own — so there is nothing here for an analysis to decide.
-        The group was judged once, on the print that holds the card.
+        One bar for both shapes: a print considered jointly with one that holds the card is
+        judged on its own merits like any other, and what its analysis earns it is the reply
+        instead of a card. Until 2026-09-14 such a print was listed with no analysis at all,
+        because the reply carried the card's verdict and nothing of its own; now it carries what
+        differs, which is a reading of this print and has to be paid for and judged like one.
         """
         rows = self._conn.execute(
             """
             SELECT b.* FROM bills b
-            WHERE ((b.status = ? AND b.analysis_json IS NOT NULL) OR b.status = ?)
+            WHERE b.status = ? AND b.analysis_json IS NOT NULL
               AND b.discontinued_at IS NULL
               AND NOT EXISTS (
                   SELECT 1 FROM publications p
@@ -548,23 +556,15 @@ class SqliteBillRepository:
                          OR (p.status = 'failed' AND p.attempts >= ?))
               )
             """,
-            (
-                BillStatus.ANALYZED.value,
-                BillStatus.SKIPPED_JOINT.value,
-                channel_id,
-                max_attempts,
-            ),
+            (BillStatus.ANALYZED.value, channel_id, max_attempts),
         ).fetchall()
         bills = [self._row_to_bill(r) for r in rows]
         eligible = [
             b
             for b in bills
-            if b.status is BillStatus.SKIPPED_JOINT
-            or (
-                b.analysis is not None
-                and b.analysis.analysis.relevant
-                and b.analysis.analysis.score >= min_score
-            )
+            if b.analysis is not None
+            and b.analysis.analysis.relevant
+            and b.analysis.analysis.score >= min_score
         ]
         eligible.sort(
             key=lambda b: (
@@ -785,6 +785,12 @@ class SqliteBillRepository:
         self._conn.execute(
             "UPDATE bills SET supplements_json = ? WHERE term = ? AND number = ?",
             (json.dumps(list(numbers), ensure_ascii=False), term, number),
+        )
+
+    def save_joint_comparison(self, term: int, number: str, record: JointRecord) -> None:
+        self._conn.execute(
+            "UPDATE bills SET joint_json = ? WHERE term = ? AND number = ?",
+            (record.model_dump_json(), term, number),
         )
 
     def save_wykaz(self, term: int, number: str, entry: WykazEntry) -> None:
@@ -1280,6 +1286,9 @@ class SqliteBillRepository:
             ),
             seen_supplements=(
                 tuple(json.loads(row["supplements_json"])) if row["supplements_json"] else None
+            ),
+            joint=(
+                JointRecord.model_validate_json(row["joint_json"]) if row["joint_json"] else None
             ),
             discontinued_at=(
                 datetime.fromisoformat(row["discontinued_at"]) if row["discontinued_at"] else None

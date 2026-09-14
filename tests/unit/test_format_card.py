@@ -7,7 +7,7 @@ import pytest
 
 from lexinform.adapters.telegram_format import MESSAGE_LIMIT, MessageFormatter
 from lexinform.models import PrintInfo, ProcessDetail, Stage
-from tests.fakes import make_analysis
+from tests.fakes import joint_record, make_analysis, make_comparison
 from tests.formatting import ACT, TODAY, assert_telegram_html, bill_of, consulted
 from tests.harness import act
 
@@ -40,7 +40,9 @@ def test_joint_bill_reply_names_the_thread_and_carries_both_tags(
         }
     )
 
-    text = MessageFormatter("ru").joint_bill(bill_of(other), primary, print_3039).text
+    reply = bill_of(other, joint=joint_record(["3039"], make_comparison()))
+
+    text = MessageFormatter("ru").joint_bill(reply, primary, print_3039).text
 
     assert_telegram_html(text)
     assert text.startswith(
@@ -48,7 +50,9 @@ def test_joint_bill_reply_names_the_thread_and_carries_both_tags(
     )
     assert "Рассматривается совместно с druk 3039, 3051:" in text  # the card's print first
     assert "Инициатор:</b> правительственный\n📄 <b>Дата druku:</b> 02.09.2026" in text
-    assert "О чём проект" not in text  # the analysis stays on the card
+    # What this print does and how it differs; the score and the category stay the card's.
+    assert "О чём проект" in text and "Чем отличается от других проектов" in text
+    assert "Важность" not in text
     assert "PrzebiegProc.xsp?nr=3050" in text
     # Its own tag, the card's topic tags and the thread's: a search for any of the three
     # finds the reply, not only the card that carries the analysis.

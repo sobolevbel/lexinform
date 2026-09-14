@@ -36,10 +36,16 @@ class BillStatus(StrEnum):
     text never read; `TEXT_PREFILTER_PENDING` when the title missed but the print's text is still
     to be scanned, and `SKIPPED_TEXT_PREFILTER` when that missed too; `SKIPPED_COST` when the text
     was longer than the per-bill cost limit and `SKIPPED_CLOSED` when the road was already over
-    at first sight; `SKIPPED_JOINT` when another print of the same jointly considered group
-    already carries the group's card, so this one will be a reply that shows no analysis
-    (`lexinform reset` and `/unskip` revive any of them). `LINKED` is a row that continues under
-    another number — an RPW entry or an RCL project that became a print (`Bill.linked_number`).
+    at first sight (`lexinform reset` and `/unskip` revive any of them). `LINKED` is a row that
+    continues under another number — an RPW entry or an RCL project that became a print
+    (`Bill.linked_number`).
+
+    `SKIPPED_JOINT` is historical and nothing sets it: until 2026-09-14 a print whose group was
+    already carried by another print's card was left unread, because the reply it would get
+    showed no analysis. The reply now says how the print differs from the ones the reader knows
+    about, which is a reading of it, so such a print goes through the pipeline like any other.
+    The member stays because a dump written before that carries the word, and `/unskip` is what
+    puts such a row back in the queue.
     """
 
     DISCOVERED = "discovered"

@@ -757,6 +757,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "linked_wykaz_number",
         "wykaz_json",  # v15
         "supplements_json",  # v18
+        "joint_json",  # v20
     } <= bills
     assert {
         "ux_pub_once_per_kind",

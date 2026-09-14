@@ -40,6 +40,9 @@ from lexinform.models import (
     CommitteeSitting,
     DocumentDigest,
     IncomingCommand,
+    JointComparison,
+    JointContext,
+    JointRecord,
     Mp,
     Phase,
     PrintInfo,
@@ -447,6 +450,27 @@ def make_analysis(
     )
 
 
+def make_comparison(
+    *, same_substance: bool = False, differences: list[str] | None = None
+) -> JointComparison:
+    return JointComparison(
+        same_substance=same_substance,
+        summary="Проект распространяет льготу и на студентов.",
+        differences=differences if differences is not None else ["Срок 5 лет вместо 3"],
+        confidence=0.8,
+    )
+
+
+def joint_record(compared_with: list[str], comparison: JointComparison) -> JointRecord:
+    return JointRecord(
+        comparison=comparison,
+        compared_with=compared_with,
+        model="m",
+        prompt_version=PROMPT_VERSION,
+        created_at=datetime(2026, 9, 7, tzinfo=UTC),
+    )
+
+
 class FakeLlm:
     """Answers from a script keyed by bill number; an Exception in the script is raised."""
 
@@ -456,6 +480,7 @@ class FakeLlm:
     ANALYSIS_TOKENS = (100, 50)
     AMENDMENTS_TOKENS = (40, 20)
     SUPPLEMENT_TOKENS = (30, 15)
+    JOINT_TOKENS = (20, 10)
 
     def __init__(
         self,
@@ -464,16 +489,19 @@ class FakeLlm:
         triage_script: dict[str, Triage | Exception] | None = None,
         amendments_script: dict[str, Amendments | Exception] | None = None,
         supplement_script: dict[str, DocumentDigest | Exception] | None = None,
+        joint_script: dict[str, JointComparison | Exception] | None = None,
     ) -> None:
         self.script = script or {}
         self.default = default or make_analysis()
         self.triage_script = triage_script or {}
         self.amendments_script = amendments_script or {}
         self.supplement_script = supplement_script or {}
+        self.joint_script = joint_script or {}
         self.contexts: list[BillContext] = []
         self.triage_contexts: list[TriageContext] = []
         self.amendment_contexts: list[AmendmentsContext] = []
         self.supplement_contexts: list[SupplementContext] = []
+        self.joint_contexts: list[JointContext] = []
         self.counted: list[str] = []
         self.count_fails = False
         self.count_overshoot = 1.0
@@ -544,6 +572,21 @@ class FakeLlm:
             created_at=datetime(2026, 9, 7, tzinfo=UTC),
             input_tokens=self.SUPPLEMENT_TOKENS[0],
             output_tokens=self.SUPPLEMENT_TOKENS[1],
+        )
+
+    def compare_joint(self, ctx: JointContext) -> JointRecord:
+        self.joint_contexts.append(ctx)
+        outcome = self.joint_script.get(ctx.subject.number, make_comparison())
+        if isinstance(outcome, Exception):
+            raise outcome
+        return JointRecord(
+            comparison=outcome,
+            compared_with=[other.number for other in ctx.others],
+            model=self.MODEL,
+            prompt_version=PROMPT_VERSION,
+            created_at=datetime(2026, 9, 7, tzinfo=UTC),
+            input_tokens=self.JOINT_TOKENS[0],
+            output_tokens=self.JOINT_TOKENS[1],
         )
 
     def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:

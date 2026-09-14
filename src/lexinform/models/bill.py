@@ -11,7 +11,12 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from lexinform.models.analysis import AmendmentsRecord, AnalysisRecord, SupplementRecord
+from lexinform.models.analysis import (
+    AmendmentsRecord,
+    AnalysisRecord,
+    JointRecord,
+    SupplementRecord,
+)
 from lexinform.models.enums import BillStatus, PublicationKind, PublicationStatus
 from lexinform.models.rcl import RclProject
 from lexinform.models.sejm import (
@@ -83,6 +88,9 @@ class Bill(BaseModel):
     """The documents filed to the print that the channel already knows about. None means they
     were never recorded: the next run takes what the print has now as the starting point and
     tells none of it, the way a first sight of the stages seeds the fingerprint silently."""
+    joint: JointRecord | None = None
+    """How this print differs from the others considered jointly with it, when the channel
+    answers for it under their card rather than giving it one of its own."""
     discontinued_at: dt.datetime | None = None
     first_seen_at: dt.datetime
     last_checked_at: dt.datetime

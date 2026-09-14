@@ -151,28 +151,41 @@ Invariants worth keeping:
   becomes `unknown` and is never auto-resent. The "due" queries (`list_due_in_force`,
   `list_due_consultations`) must keep listing a bill whose post `failed`, or the retry never
   happens (`Poster.posted` decides).
-- **Jointly considered prints share one thread.** `ProcessSummary.prints_considered_jointly` names
-  the other prints on the same subject (one committee report for all of them; their stages coincide
-  from the joint referral on). `PublishingService` gives the group one card: a candidate whose
-  partner already has a `sent` card that is still followed (not discontinued, not
-  withdrawn/rejected) gets a `joint_bill` reply under that card instead
-  (`Publisher.publish_joint_bill`, `MessageFormatter.joint_bill`: title, applicant, date, links,
-  both tags; no analysis), recorded pending-before-send, unique per bill/channel (v12), and it
-  settles the bill like a card would (`list_publish_candidates` excludes both kinds). Within one
-  run the government's print goes first (`government_first`): its text is usually the one the
-  committee works on. The reply's bill has no `new_bill` row, so every tracker (they all join on a
-  `sent` card) ignores it: the group's events come from the card's process, the card's analysis is
-  redone when the joint text appears. `republish` forgets both rows and lets the normal path decide
-  again. **The print that only replies is never sent to the model**: the reply carries the card's
-  verdict, tags and next step and none of its own, so such an analysis is paid for and shown to
-  nobody — druk 1933 cost 305,132 input tokens ($1.53, a seventh of everything the project had
-  spent) for one. `services/joint.py::primary_of` is the question, asked by `PublishingService` and
-  a phase earlier by `AnalysisService`, which answers it with `SKIPPED_JOINT` instead of a call.
-  `list_publish_candidates` therefore lists these rows without an analysis; a `skipped_joint` row
-  whose card has gone before the reply went out has no verdict to carry and returns to
-  `analysis_pending` (`/unskip` and `reset` do it by hand). An operator's `/analyze` does not pass
-  through the skip — asking explicitly is a wish to have it — and `/preview` renders the reply
-  rather than refusing it for want of an analysis.
+- **Jointly considered prints share one thread, and the reply says what the print adds to it.**
+  `ProcessSummary.prints_considered_jointly` names the other prints on the same subject (one
+  committee report for all of them; their stages coincide from the joint referral on).
+  `PublishingService` gives the group one card: a candidate whose partner already has a `sent`
+  card that is still followed (not discontinued, not withdrawn/rejected) gets a `joint_bill`
+  reply under that card instead (`Publisher.publish_joint_bill`, `MessageFormatter.joint_bill`),
+  recorded pending-before-send, unique per bill/channel (v12), and it settles the bill like a
+  card would (`list_publish_candidates` excludes both kinds). Within one run the government's
+  print goes first (`government_first`): its text is usually the one the committee works on. The
+  reply's bill has no `new_bill` row, so every tracker (they all join on a `sent` card) ignores
+  it: the group's events come from the card's process, the card's analysis is redone when the
+  joint text appears. `republish` forgets both rows and lets the normal path decide again. **The
+  print that replies is read like any other and the reply says how it differs** — title,
+  applicant and links told a reader meeting «Альтернативный проект того же закона» nothing about
+  whether it was the same bill in other words or a different answer to the same question, which
+  is the only thing a second print on one subject is news for. It is judged on its own text
+  (prefilter, triage, cost guard, `min_score`: one bar for both shapes), and the difference is a
+  **second, cheap call on the descriptions and not on the texts**
+  (`AnalysisService.compare_joint`, `JointContext` → `JointComparison`, `bills.joint_json` v20,
+  `compared_with` re-asking it when the group gains a print). Measured over term 10: 53 prints in
+  21 groups, 18 past the prefilter, five groups with more than one candidate — **$4.21** for the
+  term's non-card candidates against ≈$44 for the term, and about a cent a comparison. The
+  comparison is asked in `PublishingService._compared`, a moment before the reply is rendered and
+  before its publication row exists, because the common case is a group arriving in one run,
+  where at analysis time no print of it has been read yet; it is an embellishment of the reply
+  and never stops it, so even a model outage (everywhere else the end of a phase) is caught and
+  the reply goes out as it was before comparisons existed. The verdict, importance and category
+  stay the card's — one thread, one score. **The triage alone is not asked** of a print whose
+  group already holds a card (`AnalysisService._joint_card_exists`, the publisher's own
+  `primary_of` a phase earlier): the card has answered that question of a bill on the same
+  subject before the same committee, and what the cheap pass can still do is say a confident "no"
+  and take an alternative bill out of the channel for the price of a call it almost never saves.
+  `BillStatus.SKIPPED_JOINT` is historical (nothing sets it; `/unskip` revives a row that carries
+  it), and `/preview` renders the reply without the difference block when none is stored — a
+  read-only command spends nothing, and the note says so.
 - **`/bills` rows are refreshed by tracking only.** Discovery saves a submission for new bills; the
   reconciler (`tracking/pre_print.py`) re-reads `/bills` for pending RPW entries and for bills
   awaiting consultation results and compares new with stored (print assigned, withdrawn,
@@ -573,7 +586,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS` tuple
 in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v19 as of Sept 2026). `migrate()` reads `user_version` and runs
+`SCHEMA_VERSION = len(MIGRATIONS)` (v20 as of Sept 2026). `migrate()` reads `user_version` and runs
 every later script inside its own transaction, stamping the new version at the end, so a failed
 script leaves the database at the previous version.
 
@@ -591,7 +604,9 @@ true one without asking Telegram); v17 the unique index of the constitutional-de
 the documents filed to a print after its submission — `bills.supplements_json` (which of them the
 channel has been told about) and `status_changes.supplements_json` (the digests one update
 carried); v19 the unique index of sitting retractions (per bill, channel and `ref`, so an announced
-sitting that is called off is taken back once).
+sitting that is called off is taken back once); v20 `bills.joint_json` (how a print differs from
+the others considered jointly with it, as the reply under their card says it — stored so a retry,
+a `/preview` and a `/republish` do not pay for the comparison again).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) → `db
 restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing `PRAGMA
@@ -820,7 +835,12 @@ Abbreviations (MSWiA, UdSC, ZUS, PESEL) stay Polish in the analysis, never МВ�
   no LLM; RCL cards tell readers to write in Polish and quote the wykaz number.
 - **Prints considered jointly** (2026-09-10, after druki 1929/1933 got two near-identical cards):
   one card per group, the later prints are short "alternative bill" replies under it, the
-  government's print is preferred for the card.
+  government's print is preferred for the card. **Revised 2026-09-14**: the print that replies is
+  analysed like any other and its reply says how it differs from the prints already in the thread
+  — «по сути то же самое» included, which is the commoner and equally useful answer. The
+  comparison is made of the channel's own descriptions of the group and not of their texts (about
+  a cent a reply; the term's extra reading is $4.21 against ≈$44). The reply still carries no
+  verdict of its own: one thread, one score.
 - **The wykaz prac RM** (2026-09-12): planned bills get a card of their own, headed "План
   правительства" and saying above everything else that there is no text yet; the RCL project
   inherits that card when it appears (one thread from the plan to Dz.U.); only `Projekty ustaw` are
@@ -883,8 +903,9 @@ own (a vacatio legis), and an RPW entry the listing merely stopped showing is «
 `../lexinform-corpus` and on the 46 analyses of the state branch, $10.87 spent to date of which the
 top five bills are $6.45): the per-bill limit stays **$2** and stops refusing — a text over it is
 cut down to it by the keywords and read, because the triage has already said the bill matters; a
-print that will only get a `joint_bill` reply is not analysed at all; every model call is written
-down so a run's spend can be accounted for. Three things were measured and **rejected**, and should
+print that will only get a `joint_bill` reply was not analysed at all (**reversed 2026-09-14**: it
+is read like any other and the reply says how it differs, $4.21 a term); every model call is
+written down so a run's spend can be accounted for. Three things were measured and **rejected**, and should
 not be revisited without new numbers: a diff-based re-analysis of a new RCL redaction (three
 consecutive packages differ by 63–116% of the new text's lines — the redactions are really
 rewritten, so a diff is not smaller than the text); article-level selection inside the bill body
