@@ -1,7 +1,9 @@
 """Domain models. Pure data + a few pure functions; no I/O here.
 
-Split by area (`enums`, `sejm`, `analysis`, `bill`, `report`); everything is re-exported here so
-`from lexinform.models import Bill` keeps working.
+Split by area (`enums`, `sejm`, `analysis`, `bill`, `phases`, `events`, `report`); everything is
+re-exported here so `from lexinform.models import Bill` keeps working. `bill` is the aggregate and
+the two bookkeeping rows; `phases` is the road it is on — what comes next, and whether anything
+does.
 """
 
 from lexinform.models.analysis import (
@@ -24,30 +26,14 @@ from lexinform.models.analysis import (
     usage_of,
 )
 from lexinform.models.bill import (
-    COMMITTEE_PHASES,
-    DAYS_PER_MONTH,
-    DEADLINE_GRACE_DAYS,
-    GOVERNMENT_STEPS,
-    PATH_STEPS,
-    PHASE_STEP,
     PLENARY_COMMITTEE_CODE,
-    SITTING_PHASES,
     Bill,
     ConsultationWindow,
     LocatedText,
-    Phase,
     Publication,
     StatusChange,
-    about_ukraine,
-    consultation_open,
-    deadline_overdue,
     end_names_veto_sustained,
-    government_path,
-    is_over,
-    is_urgent,
-    next_phase,
     process_stages,
-    stalled_days,
     veto_stood,
 )
 from lexinform.models.commands import (
@@ -100,6 +86,24 @@ from lexinform.models.events import (
     supplement_event,
     told_stages,
     update_event,
+)
+from lexinform.models.phases import (
+    COMMITTEE_PHASES,
+    DAYS_PER_MONTH,
+    DEADLINE_GRACE_DAYS,
+    GOVERNMENT_STEPS,
+    PATH_STEPS,
+    PHASE_STEP,
+    SITTING_PHASES,
+    Phase,
+    about_ukraine,
+    consultation_open,
+    deadline_overdue,
+    government_path,
+    is_over,
+    is_urgent,
+    next_phase,
+    stalled_days,
 )
 from lexinform.models.rcl import (
     RCL_STAGE_TYPE,

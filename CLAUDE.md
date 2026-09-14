@@ -52,8 +52,10 @@ scans), `docs/rcl-scraping.md` (RCL's markup and files, the wykaz CSV, the probe
 
 ## Architecture in one breath
 
-`models/` (pydantic + pure helpers; `enums`, `sejm`, `rcl`, `wykaz`, `analysis`, `bill` (incl.
-`next_phase`, `is_over`, `ConsultationWindow`), `report`, all re-exported from `lexinform.models`)
+`models/` (pydantic + pure helpers; `enums`, `sejm`, `rcl`, `wykaz`, `analysis`, `bill` (the
+aggregate, `ConsultationWindow`, `process_stages`/`veto_stood`, the two bookkeeping rows),
+`phases` (the road: `Phase`, `next_phase`, `is_over`, the deadlines and the patience table),
+`events`, `report`, all re-exported from `lexinform.models`)
 → `ports.py` (Protocols) → `adapters/` (Sejm API, ELI, RCL scraper `rcl_html`, the register CSV
 `wykaz_csv`, PDF, Word + format sniffing `document_text`, Anthropic, `publisher_base` (the
 `Publisher` port rendered once; Telegram and the console only deliver), Telegram (incl.
