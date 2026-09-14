@@ -12,7 +12,12 @@ import datetime as dt
 
 from lexinform.models.bill import Bill, StatusChange, veto_stood
 from lexinform.models.rcl import RCL_STAGE_TYPE
-from lexinform.models.sejm import Stage, flatten_stages, second_reading_sent_back
+from lexinform.models.sejm import (
+    Stage,
+    flatten_stages,
+    second_reading_sent_back,
+    senate_moved_rejection,
+)
 
 SERVICE_STAGE_TYPES = frozenset({"Start", "ReadingReferral", "Reading", "CommitteeWork", "End"})
 HEARING_APPLICATION_DAYS = 10
@@ -123,7 +128,11 @@ def _closure_event_of(change: StatusChange, bill: Bill) -> str:
         return "wykaz_withdrawn"
     if bill.rcl is not None:
         return "rcl_closed"
-    return "passed" if change.passed else closure_event(bill)
+    # The API leaves `passed` true on a law a veto killed, so the listing alone would head the
+    # post that closes the road «Сейм принял закон» (druk 410 of term 10 and seven like it).
+    if change.passed and not veto_stood(bill.stages):
+        return "passed"
+    return closure_event(bill)
 
 
 def closure_event(bill: Bill) -> str:
@@ -219,7 +228,7 @@ def _senate_event(stage: Stage) -> str:
     position = (stage.position or "").lower()
     if "nie wniósł" in position:
         return "senate_no_amendments"
-    if "odrzuci" in position:
+    if senate_moved_rejection(stage):
         return "senate_rejected"
     if "popraw" in position:
         return "senate_amendments"

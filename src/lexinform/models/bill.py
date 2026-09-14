@@ -20,6 +20,7 @@ from lexinform.models.sejm import (
     Stage,
     TextDocument,
     second_reading_sent_back,
+    senate_moved_rejection,
 )
 from lexinform.models.wykaz import WykazEntry
 
@@ -211,11 +212,29 @@ PLENARY_COMMITTEE_CODE = "Sejm"
 Sejm: not a committee, and nothing a reader can write to."""
 
 
+def end_names_veto_sustained(stage: Stage) -> bool:
+    """The `End` node renamed to "nie uchwalona ponownie po wecie Prezydenta": the node itself
+    says the road is over, so it is the one `End` that is not dropped as bookkeeping."""
+    return stage.stage_type == "End" and "nie uchwalona ponownie" in stage.stage_name.lower()
+
+
 def veto_stood(stages: tuple[Stage, ...]) -> bool:
-    """The Sejm voted on the President's veto and did not reach the 3/5 majority: the process
-    closes with "nie uchwalona ponownie po wecie Prezydenta" as its last node."""
+    """The Sejm voted on the President's veto and did not reach the 3/5 majority.
+
+    The Sejm's own vote is what settles it, not the `End` node: of the fifteen processes of
+    terms 8-10 whose `PresidentMotionConsideration` decided "nie uchwalona ponownie", **eight**
+    (druki 410, 643, 865, 935, 1109, 1110, 1131 and 1600 of term 10, all closed 2026-03-27) keep
+    `End` = "Uchwalono" and `passed` = true, exactly as if the law had survived. Reading the
+    rename alone left those cards with no ending line at all — `_ended_line` needs one of
+    `discontinued_at`, a veto, an act or `passed is false`, and none of them held — while the
+    closing post was headed «Сейм принял закон» over a law the veto had killed.
+    """
     return any(
-        stage.stage_type == "End" and "nie uchwalona ponownie" in stage.stage_name.lower()
+        end_names_veto_sustained(stage)
+        or (
+            stage.stage_type == "PresidentMotionConsideration"
+            and "nie uchwalon" in (stage.decision or "").lower()
+        )
         for stage in stages
     )
 
@@ -230,10 +249,13 @@ def process_stages(stages: tuple[Stage, ...]) -> list[Stage]:
     reading and kept last while the Senate, the President and Dziennik Ustaw are all still ahead
     — druk 2799, read on 2026-09-12: III czytanie "uchwalono" on 2026-09-04, `End` already there,
     no Senate stage and no act — so taking it for the current step marks the reader's last two
-    windows as passed. The `End` of a bill a veto killed says something of its own and stays.
+    windows as passed. The `End` of a bill a veto killed says something of its own and stays —
+    the node's own wording decides that, not `veto_stood`, because an `End` still reading
+    "Uchwalono" over a veto that was never overridden says nothing, and the Sejm's vote on the
+    motion, which is the node before it, says everything.
     """
     top = [st for st in stages if st.stage_type not in ASIDE_STAGE_TYPES]
-    if top and top[-1].stage_type == "End" and not veto_stood((top[-1],)):
+    if top and top[-1].stage_type == "End" and not end_names_veto_sustained(top[-1]):
         top.pop()
     return top
 
@@ -583,6 +605,8 @@ def _phase_after(
         return Phase(key="veto", committees=_committee_codes(last) or _latest_committees(top))
     if kind == "PresidentMotionConsideration":
         return _phase_after_veto_vote(last)
+    if kind == "SenatePositionConsideration" and _sejm_let_the_senate_win(last):
+        return None
     if kind in _PRESIDENT_NEXT:
         days = PRESIDENT_DAYS_URGENT if urgent else PRESIDENT_DAYS
         # `ToPresident` is the hand-over itself, so its date is the day art. 122 starts counting;
@@ -622,13 +646,26 @@ def _phase_after_veto_vote(last: Stage) -> Phase | None:
     )
 
 
+def _sejm_let_the_senate_win(stage: Stage) -> bool:
+    """Art. 121 ust. 3: the Senate moved rejection and the Sejm did not throw that motion out.
+
+    "przyjęto uchwałę Senatu" against "odrzucono uchwałę Senatu", which is the override. The
+    Senate's *amendments* are decided in words of their own ("przyjęto poprawki"), so a decision
+    that names the uchwała is one where the whole act was at stake (druk 2898 of term 9, whose
+    `End` reads "odrzucono na wniosek Senatu"). Without this the road ran on to «Президент
+    подписывает» for a law the Sejm had just let die.
+    """
+    decided = (stage.decision or "").lower()
+    return decided.startswith("przyjęto") and "uchwałę senatu" in decided
+
+
 def _phase_after_senate(last: Stage) -> Phase:
     """Amendments and a rejection are two different stakes: art. 121 ust. 3 lets a rejection
     stand unless the Sejm throws it out by an absolute majority."""
     position = (last.position or "").lower()
     if "nie wniósł" in position:
         return Phase(key="president")
-    key = "senate_rejection" if "odrzuci" in position else "senate_amendments"
+    key = "senate_rejection" if senate_moved_rejection(last) else "senate_amendments"
     return Phase(key=key, committees=_committee_codes(last))
 
 
@@ -654,9 +691,11 @@ def _phase_after_committee_work(last: Stage, top: list[Stage]) -> Phase:
 
     "Praca w komisjach nad stanowiskiem Senatu" and "…nad wnioskiem Prezydenta" are the same
     stage type as the work after the first reading, and only the tree before them tells the
-    three apart (`ANSWERED_IN_COMMITTEE`). Otherwise the committee's own report decides: one
-    carrying the bill text sends it to the second reading, an "-A" report answers amendments
-    made there, so the next vote is the third reading.
+    three apart (`ANSWERED_IN_COMMITTEE`). Otherwise the committee's own report decides, by its
+    print number and not by what it proposes: an "-A" report answers the amendments made at the
+    second reading, so the next vote is the third; any other report is the work after the first
+    reading and goes to the second, whether the committee proposes the attached text, no
+    amendments at all, or throwing the bill out.
     """
     pending = next(
         (st for st in reversed(top[:-1]) if st.stage_type in ANSWERED_IN_COMMITTEE), None
@@ -667,10 +706,10 @@ def _phase_after_committee_work(last: Stage, top: list[Stage]) -> Phase:
             return Phase(key="veto", committees=committees)
         return _phase_after_senate(pending).model_copy(update={"committees": committees})
     reports = [c for c in last.children if c.stage_type == "CommitteeReport"]
-    if any(r.carries_bill_text for r in reports):
-        return Phase(key="second_reading")
-    if reports:
+    if any(r.is_additional_report for r in reports):
         return Phase(key="third_reading")
+    if reports:
+        return Phase(key="second_reading")
     return Phase(key="committee_work", committees=_latest_committees(top))
 
 

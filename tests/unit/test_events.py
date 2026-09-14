@@ -170,6 +170,38 @@ def test_a_veto_the_sejm_could_not_override_is_not_a_rejection(
     assert "veto" in event_keys(change, event)
 
 
+def test_a_veto_that_stood_is_not_a_law_the_sejm_passed(process_1962: ProcessDetail) -> None:
+    """Druk 410 of term 10 and seven like it: the Sejm did not re-adopt them, and the listing
+    still says `passed`. Believing it headed the post that closes the road «Сейм принял закон»."""
+    veto = Stage(stage_type="Veto", stage_name="Wniosek Prezydenta (weto)")
+    motion = Stage(
+        stage_type="PresidentMotionConsideration",
+        stage_name="Rozpatrywanie na forum Sejmu wniosku Prezydenta",
+        date=dt.date(2026, 3, 27),
+        decision="nie uchwalona ponownie",
+    )
+    end = Stage(stage_type="End", stage_name="Uchwalono")
+    vetoed = _bill(process_1962).model_copy(update={"stages": (veto, motion, end)})
+
+    change = _change([end], closure_detected=True, passed=True)
+
+    assert update_event(change, vetoed) == "veto_sustained"
+
+
+def test_the_senate_moving_rejection_is_named_as_one(process_1962: ProcessDetail) -> None:
+    """The API says "wnosi o odrzucenie ustawy" and nothing else; the post used to be headed
+    with the bare "senate" event, which says only that the Senate had spoken."""
+    position = Stage(
+        stage_type="SenatePosition",
+        stage_name="Stanowisko Senatu",
+        position="wnosi o odrzucenie ustawy",
+        print_number="1352",
+    )
+    bill = _bill(process_1962).model_copy(update={"stages": (position,)})
+
+    assert update_event(_change([position]), bill) == "senate_rejected"
+
+
 def test_the_government_position_outweighs_the_other_filed_documents(
     process_1962: ProcessDetail,
 ) -> None:

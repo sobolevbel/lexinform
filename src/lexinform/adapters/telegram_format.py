@@ -45,6 +45,7 @@ from lexinform.models import (
     committee_web_url,
     consultation_open,
     deadline_overdue,
+    end_names_veto_sustained,
     event_keys,
     flatten_stages,
     government_path,
@@ -1646,7 +1647,7 @@ class MessageFormatter:
         if stage.stage_type == "SejmReading":
             match = _READING_NUMERAL.match(stage.stage_name)
             return lb.reading_stage.format(numeral=match.group(1)) if match else None
-        if stage.stage_type == "End" and veto_stood((stage,)):
+        if end_names_veto_sustained(stage):
             return lb.stage_veto_sustained
         return lb.stage_labels.get(stage.stage_type) or lb.stage_type_labels.get(stage.stage_type)
 

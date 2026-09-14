@@ -25,6 +25,7 @@ from lexinform.models import (
     next_phase,
     stage_fingerprint,
     third_reading_kept_the_text,
+    veto_stood,
     wykaz_summary,
 )
 from tests.harness import wykaz_entry
@@ -504,6 +505,128 @@ def test_a_veto_the_sejm_overrode_sends_the_act_back_to_the_president(
     assert phase is not None and phase.key == "president_after_veto"
     assert phase.deadline == dt.date(2026, 9, 11)
     assert killed is None
+
+
+def test_a_veto_that_stood_is_read_from_the_vote_not_from_the_end_node(
+    process_1962: ProcessDetail,
+) -> None:
+    """Druki 410, 643, 865, 935, 1109, 1110, 1131 and 1600 of term 10, all closed 2026-03-27:
+    the Sejm did not re-adopt them, and the API still leaves `End` = "Uchwalono" and
+    `passed` = true. Reading the rename alone left their cards saying nothing about being over.
+    """
+    veto = Stage(
+        stage_name="Wniosek Prezydenta (weto)", stage_type="Veto", date=dt.date(2026, 2, 20)
+    )
+    motion = Stage(
+        stage_name="Rozpatrywanie na forum Sejmu wniosku Prezydenta",
+        stage_type="PresidentMotionConsideration",
+        date=dt.date(2026, 3, 27),
+        decision="nie uchwalona ponownie",
+    )
+    stages = (
+        *process_1962.stages[:-1],
+        veto,
+        motion,
+        Stage(stage_name="Uchwalono", stage_type="End"),
+    )
+    bill = _bill(process_1962, stages).model_copy(
+        update={"summary": process_1962.model_copy(update={"eli": None, "display_address": None})}
+    )
+
+    assert veto_stood(stages)
+    assert next_phase(bill, today=TODAY) is None
+    assert is_over(bill, today=TODAY)
+
+
+def test_the_senate_rejects_an_act_in_the_words_the_api_uses(
+    process_1962: ProcessDetail,
+) -> None:
+    """The API's only wording is "wnosi o odrzucenie ustawy" (93 positions of terms 8-10);
+    "odrzucił ustawę" never occurs, and neither contains the "odrzuci" that used to be tested."""
+    position = next(
+        i for i, st in enumerate(process_1962.stages) if st.stage_type == "SenatePosition"
+    )
+    stages = list(process_1962.stages[: position + 1])
+    stages[-1] = stages[-1].model_copy(update={"position": "wnosi o odrzucenie ustawy"})
+
+    phase = next_phase(_bill(process_1962, tuple(stages)), today=TODAY)
+
+    assert phase is not None and phase.key == "senate_rejection"
+
+
+def test_the_sejm_accepting_the_senates_rejection_ends_the_road(
+    process_1962: ProcessDetail,
+) -> None:
+    """Druk 2898 of term 9: "przyjęto uchwałę Senatu" over a position moving rejection, and the
+    `End` reads "odrzucono na wniosek Senatu". The Sejm's override says "odrzucono uchwałę
+    Senatu" instead, and that one does go on to the President."""
+    position = next(
+        i for i, st in enumerate(process_1962.stages) if st.stage_type == "SenatePosition"
+    )
+    stages = list(process_1962.stages[: position + 1])
+    stages[-1] = stages[-1].model_copy(update={"position": "wnosi o odrzucenie ustawy"})
+    considered = Stage(
+        stage_name="Rozpatrywanie na forum Sejmu stanowiska Senatu",
+        stage_type="SenatePositionConsideration",
+        date=dt.date(2026, 6, 10),
+        decision="przyjęto uchwałę Senatu",
+    )
+    overridden = considered.model_copy(update={"decision": "odrzucono uchwałę Senatu"})
+
+    died = next_phase(_bill(process_1962, (*stages, considered)), today=TODAY)
+    stands = next_phase(_bill(process_1962, (*stages, overridden)), today=TODAY)
+
+    assert died is None
+    assert stands is not None and stands.key == "president"
+
+
+def test_a_committee_report_moving_rejection_is_not_a_new_bill_text() -> None:
+    """ "odrzucić projekt ustawy" (23 bill reports of term 10) and "uchwalić projekt ustawy bez
+    poprawek" (95) both name a projekt and neither attaches one; sending their PDF to the model
+    replaced the card's verdict with a reading of the committee's recommendation."""
+    attached = _report("2857", proposal="załączony projekt ustawy")
+    rejected = _report("1413", proposal="odrzucić projekt ustawy")
+    unchanged = _report("197", proposal="uchwalić projekt ustawy bez poprawek")
+    amendments = _report("2857-A", proposal="przyjąć część poprawek")
+
+    assert attached.carries_bill_text
+    assert not rejected.carries_bill_text
+    assert not unchanged.carries_bill_text
+    assert not amendments.carries_bill_text
+    assert latest_text_document((rejected, unchanged)) is None
+    assert latest_text_document((attached,)) is not None
+
+
+def test_the_report_after_a_first_reading_goes_to_the_second_whatever_it_proposes(
+    process_1962: ProcessDetail,
+) -> None:
+    """What follows the committee is read from the report's print number, not from its proposal:
+    every one of the 292 "Praca w komisjach po II czytaniu" stages of term 10 carries an "-A"
+    report and none of the 645 after a first reading does."""
+    after_first = (
+        _stage("Start", "2026-01-01"),
+        Stage(
+            stage_name="Praca w komisjach po I czytaniu",
+            stage_type="CommitteeWork",
+            date=dt.date(2026, 2, 1),
+            children=(_report("1413", proposal="odrzucić projekt ustawy"),),
+        ),
+    )
+    after_second = (
+        after_first[0],
+        Stage(
+            stage_name="Praca w komisjach po II czytaniu",
+            stage_type="CommitteeWork",
+            date=dt.date(2026, 3, 1),
+            children=(_report("2857-A", proposal="przyjąć część poprawek"),),
+        ),
+    )
+
+    first = next_phase(_bill(process_1962, after_first), today=TODAY)
+    second = next_phase(_bill(process_1962, after_second), today=TODAY)
+
+    assert first is not None and first.key == "second_reading"
+    assert second is not None and second.key == "third_reading"
 
 
 def test_the_committee_answering_the_veto_is_not_answering_the_senate(

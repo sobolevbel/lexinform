@@ -177,13 +177,29 @@ class Stage(BaseModel):
         """True for committee reports whose PDF contains the (amended) bill text.
 
         Additional reports ("-A" prints) answering 2nd-reading amendments contain only tables of
-        amendments; `proposal` says "załączony projekt ustawy" when the full text is attached.
+        amendments; `proposal` says "załączony projekt ustawy" when the full text is attached —
+        and only that wording does. Asking merely whether the proposal mentions "projekt" took
+        **"odrzucić projekt ustawy"** (23 bill reports of term 10, e.g. the report of process 205)
+        and **"uchwalić projekt ustawy bez poprawek"** (95) for a new text: the first is a motion
+        to throw the bill out and the second changes nothing, yet both sent their report's PDF to
+        the model as the bill and overwrote the card's verdict, score and summary with a reading
+        of a two-page recommendation — while the event under the same card correctly said the
+        committee had moved rejection.
         """
         if self.stage_type != "CommitteeReport" or not self.report_file or self.sub_committee:
             return False
         if self.proposal is not None:
-            return "projekt" in self.proposal.lower()
-        return not (self.print_number or "").upper().endswith("-A")
+            return "załączony projekt" in self.proposal.lower()
+        return not self.is_additional_report
+
+    @property
+    def is_additional_report(self) -> bool:
+        """A committee report answering the amendments tabled at the second reading: the "-A"
+        print, a table and not a text. The suffix says it exactly — over the 938 bill processes
+        of term 10 every one of the 292 "Praca w komisjach po II czytaniu" stages carries an
+        "-A" report and none of the 645 after a first reading does — which is why it, and not
+        `carries_bill_text`, is what tells the second reading from the third."""
+        return (self.print_number or "").upper().endswith("-A")
 
 
 class BillSubmission(BaseModel):
@@ -723,6 +739,21 @@ def latest_text_document(
     if report:
         return TextDocument(url=report, kind="committee_report")
     return None
+
+
+def senate_moved_rejection(stage: Stage) -> bool:
+    """The Senate resolved to reject the act as a whole (art. 121 ust. 3), not to amend it.
+
+    The API's only wording for it is **"wnosi o odrzucenie ustawy"** — 93 of the 2,206 Senate
+    positions of terms 8-10, all of them in term 9. "odrzucił ustawę", which
+    `docs/legislative-process.md` used to give, appears nowhere in the corpus, and a test for
+    `"odrzuci"` matches neither: "odrzuc-e-nie" does not contain it. So every Senate rejection
+    was read as a set of amendments — «Сенат внёс поправки» over a resolution that kills the law
+    unless the Sejm musters an absolute majority. "popraw" is excluded because a position that
+    names amendments is one, whatever else it says.
+    """
+    position = (stage.position or "").lower()
+    return "odrzuc" in position and "popraw" not in position
 
 
 _SECOND_READING_SENT_BACK = ("ponownie", "niedokończone")
