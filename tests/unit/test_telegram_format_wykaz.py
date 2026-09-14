@@ -112,6 +112,36 @@ def test_the_adoption_note_in_the_field_never_reaches_the_card() -> None:
     assert "принятие правительством: IV кв. 2026" in text
 
 
+def test_a_plan_with_a_quarter_ahead_is_never_told_how_long_it_has_been_standing() -> None:
+    """UD338 was announced in November 2025 and the government means to adopt it this quarter:
+    «принятие правительством: III кв. 2026» is the date the reader plans around, and «без
+    движения уже 9 мес.» in its place answers a question nobody asked. The rule is the one that
+    already holds for a vacatio legis: a step with a date of its own is not called idle.
+    """
+    entry = wykaz_entry(
+        published_at=dt.datetime(2025, 11, 25, 10, 0, tzinfo=dt.UTC),
+        planned_adoption="III kwartał 2026 r.",
+    )
+
+    text = MessageFormatter("ru").new_bill(wykaz_bill(entry), None, today=TODAY).text
+
+    assert "принятие правительством: III кв. 2026" in text
+    assert "без движения" not in text
+
+
+def test_a_plan_whose_quarter_has_gone_is_told_how_long_it_has_been_standing() -> None:
+    """Once the promised quarter is behind, the silence is the news again."""
+    entry = wykaz_entry(
+        published_at=dt.datetime(2025, 11, 25, 10, 0, tzinfo=dt.UTC),
+        planned_adoption="I kwartał 2026 r.",
+    )
+
+    text = MessageFormatter("ru").new_bill(wykaz_bill(entry), None, today=TODAY).text
+
+    assert "принятие правительством" not in text
+    assert "без движения уже 9 мес." in text
+
+
 def test_a_quarter_that_has_already_passed_is_not_offered_as_a_plan() -> None:
     entry = wykaz_entry(planned_adoption="II kwartał 2025 r.")
 

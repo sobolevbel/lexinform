@@ -266,7 +266,12 @@ Invariants worth keeping:
   that outlived `PHASE_PATIENCE` says how long it has been standing (`models.stalled_days`,
   `Phase.since` — for an RCL project the stage's last modification, RCL leaving "rozpoczęcie"
   empty) — but **never a step that carries a date of its own**: a vacatio legis of a year is
-  common, and «вступление в силу 01.07.2027 · без движения уже 7 мес.» inverts the message. A
+  common, and «вступление в силу 01.07.2027 · без движения уже 7 мес.» inverts the message. The
+  quarter the government names for adopting a project is such a date and was losing to the stalled
+  note (UD338, carded 2026-09-14: announced in November 2025, adoption planned for the quarter then
+  running, and the card said «без движения уже 9 мес.» in place of the date the reader could plan
+  around); `_when` asks `_planned_adoption` before `_stalled_for`, and once the quarter has gone it
+  says nothing and the silence is the news again. A
   sitting only dates a phase whose venue it matches (a committee's 08:30 slot is not a third
   reading): a phase in `COMMITTEE_PHASES`/`SITTING_PHASES` takes a sitting only from that venue and
   a phase in neither (the Senate, the President, Dz.U., a vacatio legis) takes none at all — the

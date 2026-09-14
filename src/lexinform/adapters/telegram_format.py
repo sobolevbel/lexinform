@@ -1666,8 +1666,9 @@ class MessageFormatter:
 
     def _when(self, bill: Bill, phase: Phase, today: dt.date, *, urgent: bool) -> str:
         """When the step is expected, in decreasing order of how much it is worth: a sitting
-        already on the calendar, the statutory deadline, how long the bill has been waiting
-        once it outlived the average, the planned quarter, the average."""
+        already on the calendar, the statutory deadline, the quarter the government named for
+        adopting the project, how long the bill has been waiting once it outlived the average,
+        the average."""
         lb = self._labels
         upcoming = self._upcoming(bill, today, phase)
         if upcoming is not None:
@@ -1681,10 +1682,15 @@ class MessageFormatter:
                 lb.deadline_passed_labels.get(phase.key, lb.deadline_passed)
             )
             return f" · {esc(passed)}"
+        if (planned := self._planned_adoption(bill, today)) is not None:
+            # A step with a date of its own is never told how long it has been standing: the
+            # government saying it means to adopt the project this quarter is the date a reader
+            # plans around, and «принятие правительством: III кв. 2026 · без движения уже 9 мес.»
+            # answers a question nobody asked with the one they did. Once the quarter has gone
+            # `_planned_adoption` says nothing and the silence is the news again.
+            return f" · {planned}"
         if (stalled := self._stalled_for(phase, today)) is not None:
             return f" · {esc(stalled)}"
-        if (planned := self._planned_adoption(bill, today)) is not None:
-            return f" · {planned}"
         usual = (lb.urgent_durations.get(phase.key) if urgent else None) or (
             lb.typical_durations.get(phase.key)
         )
