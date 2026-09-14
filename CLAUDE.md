@@ -264,11 +264,19 @@ Invariants worth keeping:
   druk 703 is 155 pages with text on three (6,865 characters, diacritics gone:
   "norki amerykanskiej"), druk 204 is 268 pages with ten, druk 348 is 362 with sixteen, each read
   by the model as that fragment with nothing on the card to say so. They are scans now
-  (`SCANNED_TEXT_CEILING` bounds nothing and is kept only for the record); the separation is
-  clean without it, the thinnest real document running 314 characters a page against 215 for the
-  thickest of the 30. Two of them (druki 204 and 348) are more pages than
-  `LEXINFORM_MAX_ANALYSIS_COST_USD` buys and are now refused rather than half-read, which is the
-  price of the rule and was decided with that in view. The gate
+  (`SCANNED_TEXT_CEILING` bounds nothing and is kept only for the record). Two of them (druki 204
+  and 348) are more pages than `LEXINFORM_MAX_ANALYSIS_COST_USD` buys and are refused rather than
+  half-read, which is the price of the rule and was decided with that in view.
+  **`MIN_CHARS_PER_PAGE` is a proxy and the prints crowd right against it** — 306.2 characters a
+  page for the thinnest kept (druk 1625) and 299.9 for the densest rejected (druk 205) — so the
+  threshold was checked at that seam by a second signal that does not depend on it: walking the
+  page's `/XObject` tree recursively, 205 carries a full-page raster on 6 of its first 10 pages
+  and 1625 on none. The same check confirms druk 386 (278.6, and its OCR text reads like clean
+  Polish) is really a scan, which reading the text cannot tell you. It does **not** catch druk
+  348, 362 pages with text on 16 and no raster at all — vector or a font pypdf will not decode —
+  so density stays the broader net and structure is the confirmation, not the replacement. The
+  corpus holds both cases if this is ever worth building properly (`pdf_scan_classification_en.md`
+  there sets out how; PyMuPDF is AGPL, which is its own decision). The gate
   sits in `AnalysisService._load_text`, the one place every document the model reads passes
   through, so the rule is one and not four. A file with no text but with pages goes to the model
   as pages instead (`ScannedDocument`, `text_source="scan"`, the API's document block — ~1,600
