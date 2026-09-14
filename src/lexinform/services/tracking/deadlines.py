@@ -25,6 +25,14 @@ from lexinform.services.tracking.result import TrackingResult
 log = logging.getLogger(__name__)
 
 REMINDED_PHASES = frozenset({"senate", "president"})
+"""The two phases whose deadline is worth a reply of its own.
+
+`president_after_veto` carries a deadline too — the seven days of art. 122 ust. 5 — and is
+deliberately not here: the whole phase is shorter than `decision_reminder_days`, so the reminder
+would go out in the same run as the update announcing the Sejm's vote on the motion, saying the
+same thing twice. Measured over terms 8-10: all fifteen `PresidentMotionConsideration` nodes
+decided "nie uchwalona ponownie", so no bill has reached this phase yet at all.
+"""
 
 
 class DeadlineReminder:
