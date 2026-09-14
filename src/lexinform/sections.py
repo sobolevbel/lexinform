@@ -52,6 +52,13 @@ _BILL_HEADING_RE = re.compile(r"^\s*U\s?S\s?T\s?A\s?W\s?A\s*$", re.IGNORECASE | 
 _OSR_RE = re.compile(
     r"^\s*(Nazwa|Tytuł)\s+projektu\b(?!\s+dokumentu)|^\s*DEKLAROWANE\s+SKUTKI", re.MULTILINE
 )
+# The deputies' DSR form is itself an attachment to a resolution of the Presidium of the Sejm, so
+# it opens "Załącznik do uchwały nr 51 Prezydium Sejmu z dnia 26 sierpnia 2024 r." and the annex
+# pattern swallowed it on its own masthead. Measured over term 10 (14 Sept 2026): 14 of the 173
+# prints carrying a DSR were read as an appendix that way, and `trim_print` then dropped the form
+# — 40,758 characters of druk 1963, over half the print, and with them the one count of the
+# affected a deputies' bill gives.
+_DSR_RE = re.compile(r"^\s*DEKLAROWANE\s+SKUTKI", re.MULTILINE)
 # Point 5 of the 13-point form, not point 6. Point 5 ("Informacje na temat zakresu, czasu trwania
 # i podsumowanie wyników konsultacji") is the roll of organisations the draft was sent to — 5,136
 # characters in druk 1677, 10,187 in druk 1479 — and names nobody the bill affects. Point 4
@@ -144,6 +151,7 @@ _KINDS: tuple[tuple[Kind, re.Pattern[str]], ...] = (
     ("remarks_table", _REMARKS_RE),
     ("checklist", _CHECKLIST_RE),
     ("regulation", _REGULATION_RE),
+    ("osr", _DSR_RE),
     ("annex", _ANNEX_RE),
     ("osr", _OSR_RE),
     ("justification", _JUSTIFICATION_RE),
@@ -240,8 +248,20 @@ def page_kind(page: str, running_head: str | None = None) -> Kind:
     The whole of how a page is read, in one place, because it is one rule and the corpus is
     measured against it (`tests/fixtures/sejm/page_starts.json`). Stripping is idempotent, so a
     page `trim_print` has already stripped may be passed in as it stands.
+
+    The DSR form is the one heading looked for past the two-line window, and it has to be: the
+    deputies' form is an attachment to a resolution of the Presidium of the Sejm, so it opens
+    "Załącznik / do uchwały nr 51 / Prezydium Sejmu" and only names itself on the line after
+    that. `_ANNEX_RE` matches the first two lines — `\\s+` spans the break — so the form was read
+    as an appendix and `trim_print` dropped it: 14 of the 173 prints of term 10 that carry a DSR,
+    and 40,758 characters of druk 1963, over half the print. Widening the window instead would
+    undo what it is for (druk 810 page 40 wraps into "załącznika do rozporządzenia" on line three
+    and is the bill).
     """
-    return document_kind(_page_opening(strip_page_furniture(page, running_head)))
+    stripped = strip_page_furniture(page, running_head)
+    if _DSR_RE.search(stripped[:HEAD_CHARS]):
+        return "osr"
+    return document_kind(_page_opening(stripped))
 
 
 def _page_opening(page: str) -> str:

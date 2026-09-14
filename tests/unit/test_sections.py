@@ -347,6 +347,25 @@ def test_budget_rejects_a_non_positive_cap() -> None:
         TextBudget(0)
 
 
+def test_the_dsr_form_is_the_osr_and_not_the_resolution_it_hangs_on() -> None:
+    """The deputies' form is an attachment to a resolution of the Presidium of the Sejm, so it
+    opens with that and names itself only afterwards. Read by its first two lines it is an
+    appendix, and `trim_print` then drops the one document that counts who a deputies' bill
+    affects: 14 of the 173 prints of term 10 that carry a DSR, 40,758 characters of druk 1963.
+
+    A page that hangs on a resolution and says nothing else is still an appendix — that branch of
+    the rule is not what went wrong, and removing it is not the fix.
+    """
+    dsr = (
+        "Załącznik\ndo uchwały nr 51\nPrezydium Sejmu\nz dnia 26 sierpnia 2024 r.\n"
+        "DEKLAROWANE SKUTKI REGULACJI (DSR)\nprojektu ustawy\n" + "t" * 300
+    )
+    plain = "Załącznik\ndo uchwały nr 51\nPrezydium Sejmu\nz dnia 26 sierpnia 2024 r.\n" + "t" * 300
+
+    assert page_kind(dsr) == "osr"
+    assert page_kind(plain) == "annex"
+
+
 def test_every_page_of_the_corpus_opens_the_section_it_should() -> None:
     """The pages that decided the rule, as they really are in the prints and in the RCL packages
     (`page_starts.json`): the top of the page, and the kind `page_kind` must read there. A new

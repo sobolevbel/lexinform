@@ -295,15 +295,14 @@ Still open:
   days. Now that `_phase_started` reaches the RCL fallback the thresholds are worth measuring
   against the state branch rather than guessed at.
 
-- Found by the widened corpus (14 Sept 2026), all three measured over the whole of term 10 rather
-  than the 45-print sample the rules were written on:
+- Found by the widened corpus (14 Sept 2026), measured over the whole of term 10 rather than the
+  45-print sample the rules were written on. (The third of them, the DSR form dropped as an
+  appendix on 14 prints, is fixed: `page_kind` now looks past the two-line window for that one
+  heading.)
   - `SCANNED_TEXT_CEILING` (4,000 characters) turns the thinness test off, so **26 of the 804
     prints classified `text`** run under 300 characters a page — druk 703 is 155 pages with text
     on three. They go to the model as that fragment and the card says nothing. Either the ceiling
     should yield to a pages-vs-characters ratio, or such a print should be read as a scan.
-  - **173 prints carry the DSR form**, not the three the sample showed, and `document_kind` reads
-    **14 of those pages as `annex`** — the kind `_section_start` latches on, dropping the rest of
-    the document. Worth checking what those 14 open with.
   - **Ten filed documents carry real text** (four OSRs of 56k–80k characters, three government
     positions), against the "none of 66" the older sample gave. `digest_supplement` can read them
     instead of paying per page.

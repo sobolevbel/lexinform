@@ -584,9 +584,15 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   carry **"DEKLAROWANE SKUTKI REGULACJI (DSR)"** instead of the OSR form — the deputies' version,
   unknown to the pattern until now, 15 pages of 60 in druk 2673 — and one heads its OSR
   "Tytuł projektu". Three was the sample: over all 938 bill prints of term 10 (14 Sept 2026,
-  `page_index.json.gz` in the corpus) **173** open a page with the DSR, 159 of which
-  `document_kind` reads as `osr` and **14 as `annex`** — the kind `_section_start` latches on,
-  dropping everything after it. So this is a form every fifth print carries, not a curiosity.
+  `page_index.json.gz` in the corpus) **173** open a page with the DSR — a form every fifth print
+  carries, not a curiosity. **And the form was being dropped on 14 of them**: it is itself an
+  attachment to a resolution of the Presidium of the Sejm, so it opens "Załącznik / do uchwały
+  nr 51 / Prezydium Sejmu" and names itself only on the line after, while `_ANNEX_RE` matches the
+  first two lines (`\s+` spans the break). `page_kind` therefore looks for the DSR heading past
+  the two-line window — the one heading it does, because widening the window is what druk 810
+  page 40 forbids — and the fix moved exactly 21 pages of 84,422 (14 `annex`, 7 `unknown`), costs
+  +0.25% of the text sent over the whole term, and kept 40,758 characters of druk 1963 that used
+  to go. In the whole corpus every "Załącznik do uchwały" is this masthead and nothing else.
   The DSR is recognised as the OSR section but **not cut**, on purpose: it has
   no fixed thirteen points and so no "point 6" to cut at, and its own headings are where its
   substance is ("Podmioty, na które wpływa projekt", "Wpływ projektu na wskazane podmioty" in
