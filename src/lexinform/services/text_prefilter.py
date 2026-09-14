@@ -18,7 +18,8 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.keywords import WEAK_PATTERNS, KeywordPrefilter, accept_text_hits
 from lexinform.models import Bill, BillStatus
 from lexinform.ports import BillRepository, TextSource
-from lexinform.services.documents import LoadedFile, TextLoader
+from lexinform.sections import carries_the_document
+from lexinform.services.documents import MIN_TEXT_CHARS, LoadedFile, TextLoader
 
 log = logging.getLogger(__name__)
 
@@ -180,6 +181,15 @@ class TextPrefilterService:
         file = self._loader.read(located.document.url)
         if file.text is None:
             return _Loaded(None, _no_text(file), pages=file.pages)
+        if not carries_the_document(file.text, min_chars=MIN_TEXT_CHARS, pages=file.pages):
+            # The same question the analysis asks, and it has to be the same question. `TextLoader`
+            # calls a file textless only under `MIN_TEXT_CHARS`, so a print whose text layer is
+            # the letter that hands it to the Marshal — 700-1,200 characters — arrived here
+            # looking like a document, was searched for keywords that a transmittal note never
+            # contains, and was skipped. Measured over term 10 (14 Sept 2026): **91 of the 938
+            # prints** are that case, every one with pages the model could have read, and the
+            # invariant says a file keywords cannot search is not a file to drop.
+            return _Loaded(None, _no_document(file), pages=file.pages)
         return _Loaded(file.text, None)
 
 
@@ -193,6 +203,15 @@ def _miss(counts: dict[str, int], min_distinct: int) -> str:
     if all(name in WEAK_PATTERNS for name in counts):
         return f"text prefilter: weak patterns only ({found})"
     return f"text prefilter: under the threshold of {min_distinct} distinct patterns ({found})"
+
+
+def _no_document(file: LoadedFile) -> str:
+    """Why the text that was there is not the document: the covering letter, or an OCR layer too
+    thin for the paper it came from. Told apart from an empty file because an operator reads
+    these and the two are different things to look at."""
+    if file.pages > 0:
+        return f"text prefilter: text layer is not the document, {file.pages} page(s) for the model"
+    return "text prefilter: text layer is not the document and there are no pages to read"
 
 
 def _no_text(file: LoadedFile) -> str:

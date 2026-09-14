@@ -61,18 +61,71 @@ class DocxTextExtractor:
             xml = archive.read("word/document.xml")
         if _declares_entities(xml):
             return ""
-        root = ET.fromstring(xml)
-        namespace, local = _split_tag(root.tag)
-        if local != "document" or namespace not in _WORDML_NAMESPACES:
-            log.warning("not a WordprocessingML document (root %s); no text", root.tag)
+        return _wordml_text(ET.fromstring(xml))
+
+
+def _wordml_text(root: ET.Element) -> str:
+    """Text of a `w:document` element, wherever it came from: `word/document.xml` inside a .docx
+    or the same element inlined in a Flat OPC file."""
+    namespace, local = _split_tag(root.tag)
+    if local != "document" or namespace not in _WORDML_NAMESPACES:
+        log.warning("not a WordprocessingML document (root %s); no text", root.tag)
+        return ""
+    reader = _WordMl(namespace)
+    body = root.find(reader.tag("body"))
+    if body is None:
+        log.warning("Word document without a body; no text")
+        return ""
+    text = "\n".join(reader.blocks(body))
+    return _TIDY_PAGE_BREAK.sub(PAGE_BREAK, text)
+
+
+_PKG = "{http://schemas.microsoft.com/office/2006/xmlPackage}"
+_FLAT_OPC_MARKERS = (b"xmlPackage", b'progid="Word.Document"')
+
+
+def _is_flat_opc(head: bytes) -> bool:
+    return head.lstrip()[:6] == b"<?xml " and any(m in head for m in _FLAT_OPC_MARKERS)
+
+
+class FlatOpcTextExtractor:
+    """Word's "Word XML Document" (Flat OPC): the whole OOXML package inlined in one XML file.
+
+    Ministries save a draft this way and file it as `projekt ustawy.xml`, and the router saw an
+    opening `<?xml` it had no reader for. Measured over the corpus (14 Sept 2026): **52 of the 53
+    XML members of RCL packages are Flat OPC**, and they are the bill, its uzasadnienie and its
+    OSR — `2020.10.26_UC44_projekt ustawy.xml`, `Uzasadnienie.xml`, `OSR.xml`. Three packages
+    yielded no text at all because of it, among them the bill of the kooperatywy mieszkaniowe
+    project, whose only other member is the letter that transmits it.
+
+    The parts are `pkg:part` elements keyed by their path in the package, so the document is the
+    one named `/word/document.xml` and its content is a `w:document` element like any other.
+    """
+
+    def pages(self, data: bytes) -> int:
+        return 0
+
+    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
+        return data
+
+    def extract(self, data: bytes) -> str:
+        if _declares_entities(data):
             return ""
-        reader = _WordMl(namespace)
-        body = root.find(reader.tag("body"))
-        if body is None:
-            log.warning("Word document without a body; no text")
+        try:
+            root = ET.fromstring(data)
+        except ET.ParseError as exc:
+            log.warning("Flat OPC file not parsed (%s); no text", exc)
             return ""
-        text = "\n".join(reader.blocks(body))
-        return _TIDY_PAGE_BREAK.sub(PAGE_BREAK, text)
+        for part in root.iter(f"{_PKG}part"):
+            if part.get(f"{_PKG}name") != "/word/document.xml":
+                continue
+            payload = part.find(f"{_PKG}xmlData")
+            if payload is None or len(payload) == 0:
+                log.warning("Flat OPC document part carries no XML; no text")
+                return ""
+            return _wordml_text(payload[0])
+        log.warning("Flat OPC file without a /word/document.xml part; no text")
+        return ""
 
 
 def _split_tag(tag: str) -> tuple[str, str]:
@@ -248,6 +301,7 @@ class DocumentTextExtractor:
         self._docx = docx
         self._doc = doc
         self._odt = odt or OdtTextExtractor()
+        self._flat_opc = FlatOpcTextExtractor()
         self._max_member_bytes = max_member_bytes
         self._max_part_chars = max_part_chars
 
@@ -277,6 +331,8 @@ class DocumentTextExtractor:
             return self._doc.extract(data)
         if head.startswith(_ZIP_MAGIC):
             return self._zip(data, depth=depth)
+        if _is_flat_opc(head):
+            return self._flat_opc.extract(data)
         if b"%PDF-" in head:  # a PDF behind a preamble; checked after the containers, whose
             return self._pdf.extract(data)  # stored members may hold a PDF near the start
         log.warning("document of unknown format (starts with %r); no text", data[:8])

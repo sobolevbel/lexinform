@@ -142,3 +142,34 @@ def test_text_prefilter_can_be_disabled() -> None:
 
     assert w.bill("4100").status is BillStatus.SKIPPED_PREFILTER
     assert not any(c.startswith("download:") for c in w.gateway.calls)
+
+
+COVER_LETTER = (
+    "Druk nr 604       Warszawa, 23 lipca 2024 r.\n"
+    "SEJM\nRZECZYPOSPOLITEJ POLSKIEJ\nX kadencja\n"
+    "Na podstawie art. 118 ust. 1 Konstytucji Rzeczypospolitej Polskiej i na podstawie\n"
+    "art. 32 ust. 2 regulaminu Sejmu niżej podpisani posłowie wnoszą projekt ustawy:\n"
+    " - o zmianie ustawy o Krajowej Administracji Skarbowej.\n"
+    "Do reprezentowania wnioskodawców upoważniamy pana posła Ryszarda Petru.\n"
+    " (-)  Elżbieta Burkiewicz;  (-)  Żaneta Cwalina-Śliwowska;  (-)  Sławomir Ćwik\n"
+)
+
+
+def test_a_print_that_is_only_its_covering_letter_goes_to_the_model_unsearched() -> None:
+    """The prefilter has to ask the same question the analysis asks.
+
+    `TextLoader` calls a file textless only under `MIN_TEXT_CHARS`, so a print whose text layer
+    is the letter that hands it to the Marshal — 700-1,200 characters — arrived looking like a
+    document, was searched for keywords that a transmittal note never contains, and was skipped
+    for good. Measured over term 10: **91 of the 938 prints** are that case, every one of them
+    with pages the model could have read, and the invariant is that a file keywords cannot
+    search is not a file to drop.
+    """
+    w = World(extractor=FakeTextExtractor(COVER_LETTER, page_count=37))
+    w.add_bill("4100", "Poselski projekt ustawy o zmianie niektórych ustaw")
+
+    report = w.run()
+
+    assert (report.text_prefilter_checked, report.text_prefilter_scans) == (1, 1)
+    assert report.text_prefilter_hits == 0  # nothing was searched: there was nothing to search
+    assert w.bill("4100").status is not BillStatus.SKIPPED_TEXT_PREFILTER

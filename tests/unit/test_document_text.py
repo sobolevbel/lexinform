@@ -451,3 +451,53 @@ def test_a_long_member_that_names_itself_as_nothing_is_not_taken_for_the_bill() 
 
     assert guarded.extract(package) == ""
     assert _router().extract(package).startswith("xxx")  # no guard configured: read as before
+
+
+_PKG_NS = 'xmlns:pkg="http://schemas.microsoft.com/office/2006/xmlPackage"'
+
+
+def _flat_opc(body_xml: str, *, part: str = "/word/document.xml") -> bytes:
+    """Word's "Word XML Document": the OOXML package inlined as `pkg:part` elements."""
+    return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        '<?mso-application progid="Word.Document"?>\n'
+        f"<pkg:package {_PKG_NS}>"
+        '<pkg:part pkg:name="/_rels/.rels"><pkg:xmlData><Relationships/></pkg:xmlData></pkg:part>'
+        f'<pkg:part pkg:name="{part}"><pkg:xmlData>'
+        f"<w:document {_NS}><w:body>{body_xml}</w:body></w:document>"
+        "</pkg:xmlData></pkg:part>"
+        "</pkg:package>"
+    ).encode()
+
+
+def test_a_bill_filed_as_word_flat_opc_is_read() -> None:
+    """Ministries save a draft as "Word XML Document" and file it as `projekt ustawy.xml`.
+
+    Measured over the corpus (14 Sept 2026): 52 of the 53 XML members of RCL packages are Flat
+    OPC and they are the bill, its uzasadnienie and its OSR. Three packages yielded no text at
+    all — dokument 575888 is the kooperatywy mieszkaniowe bill, 185,112 characters, whose only
+    other member is the letter that transmits it.
+    """
+    data = _flat_opc("<w:p><w:r><w:t>USTAWA o kooperatywach</w:t></w:r></w:p>")
+
+    assert _router().extract(data) == "USTAWA o kooperatywach"
+
+
+def test_a_flat_opc_file_without_the_document_part_yields_nothing() -> None:
+    data = _flat_opc("<w:p><w:r><w:t>tekst</w:t></w:r></w:p>", part="/word/styles.xml")
+
+    assert _router().extract(data) == ""
+
+
+def test_a_bill_flat_opc_inside_a_package_is_found() -> None:
+    """Dokument 575888's package is the bill as XML plus the letter that transmits it, and the
+    letter is not a bill text, so without the XML the archive gave nothing at all."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr(
+            "Kooperatywy, projekt ustawy.xml",
+            _flat_opc("<w:p><w:r><w:t>USTAWA o kooperatywach mieszkaniowych</w:t></w:r></w:p>"),
+        )
+        archive.writestr("Pismo przesyłające.pdf", b"%PDF-1.4 letter")
+
+    assert "USTAWA o kooperatywach" in _router().extract(buffer.getvalue())

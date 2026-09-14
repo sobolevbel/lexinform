@@ -24,7 +24,8 @@ from lexinform.models.sejm import ProcessSummary, Stage
 
 RCL_BASE_URL = "https://legislacja.rcl.gov.pl"
 RCL_STAGE_TYPE = "RclStage"
-READABLE_EXTENSIONS = frozenset({"pdf", "docx", "docm", "doc", "odt", "zip"})
+# `xml` is Word's Flat OPC, which ministries file a draft as; see `FlatOpcTextExtractor`.
+READABLE_EXTENSIONS = frozenset({"pdf", "docx", "docm", "doc", "odt", "xml", "zip"})
 OPEN_STATUS = "otwarty"
 
 StageState = Literal["not_started", "reached", "active"]
@@ -318,7 +319,7 @@ _TAGGED_ROLE: dict[str, TextRole] = {
     "osr": "osr",
 }
 _BILL_RE = re.compile(r"projekt|ustaw")
-_FORMAT_RANK = {"pdf": 0, "docx": 1, "docm": 2, "doc": 3, "odt": 4, "zip": 8}
+_FORMAT_RANK = {"pdf": 0, "docx": 1, "docm": 2, "doc": 3, "odt": 4, "xml": 5, "zip": 8}
 
 
 def text_role(name: str) -> TextRole | None:
