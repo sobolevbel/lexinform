@@ -109,12 +109,37 @@ Invariants worth keeping:
   `AgendaWatcher._retract_gone` posts one `agenda_cancelled` reply per announced sitting that is
   gone (v19, unique per bill/channel/`ref` — the announcement's own key). Three things it is
   not: a sitting that merely **moved** keeps its `sitting_key` and is told as a new agenda post
-  saying where it moved from; a sitting that has **started or passed** is never retracted
+  saying what it moved from; a sitting that has **started or passed** is never retracted
   (`_already_happened`, the same test that stops it being announced); and a listing that
   **failed** is not an absence (`_Listings.kept` puts those items back, for a Sejm sitting whose
   `/proceedings/{n}` was refused as well as for a committee's). The reader is told *which* fact
   it is — the sitting is off, or it meets without this bill (`_Listings.announced`) — and only if
   the announcement was actually `sent`. The tag is the announcement's, so one search finds both.
+- **A sitting is what the agenda says it is, and the agenda does not always say the druk.**
+  Three things the calendar was blind to, all measured over the 4,387 committee sittings and 75
+  Sejm sittings of term 10 (coverage audit, 14 Sept 2026). **Past the third reading the agenda
+  stops naming the bill**: "Rozpatrzenie uchwały Senatu w sprawie ustawy o zmianie ustawy o
+  cudzoziemcach (druk nr 1935)" is druk 1630 and "o wniosku Prezydenta o ponowne rozpatrzenie
+  (druk nr 2378)" is druk 643 — 211 committee items and 160 plenary ones, which is the whole
+  Senate and veto stretch, the reader's last windows. `_items_for` therefore matches on
+  `derived_print_numbers(bill.stages)` too — the committee's report, the Senate's resolution, the
+  President's motion, all prints of this bill's own process and of nobody else's (of the 991 in
+  term 10 not one is a process number in its own right). No request is added: the numbers are in
+  the stages the run already read. **A joint sitting is listed once under every committee in
+  it** (938 sittings, 546 pairs), each with a `num` of its own, so a bill referred to two of them
+  was announced twice — 328 (bill, day) pairs, druk 2699 among them (ASW + SPC, 2026-07-02) and
+  druk 347 three times. `jointWith` is parsed and `CommitteeSitting.meeting_key` (day, hour, the
+  sorted codes) collapses the group; `Poster.told_jointly` does not help here, it keys on joint
+  *prints*. **The hour and the room move on their own**: of the 886 sittings whose `comments`
+  record a change, 204 say "zmiana godziny", 97 "zmiana sali" and 61 both — and the `ref` was the
+  day, so the run wrote the new hour to `bill.agenda` and said nothing while the post the reader
+  planned a day around named the old one. The `ref`'s last segment now carries day, hour and room
+  (`_when_and_where`); `sitting_key` is the `ref` without it, so the sitting is still the same
+  sitting and is not retracted, and `moved_from` is the item as last announced rather than a bare
+  date — «перенесено с 17.09.2026» over an unchanged date told the reader nothing. Refs already
+  in the state dump name only the day, so one announced under an old ref keeps it
+  (`_keep_told_ref`), or the first run after the change would announce every standing sitting
+  again; that rule can go once no dump carries a day-only agenda ref.
 - **Pending-before-send.** Every Telegram post gets a `publications` row (`pending`) first, unique
   per kind/bill/channel (agenda posts: per kind/bill/channel/`ref`, one per sitting;
   the retraction of one: the same); failed posts
@@ -161,7 +186,9 @@ Invariants worth keeping:
   Senate → President segment into `publication`, so the card marked «Сенат ✓ → Президент ✓» and
   offered «пока ничего» over the reader's last two windows, and the `SenatePosition`,
   `ToPresident`, `Veto` and `PresidentToTribunal` branches were dead code. The `End` of a bill a
-  veto killed ("nie uchwalona ponownie", `models.veto_stood`) stays and ends the road.
+  veto killed ("nie uchwalona ponownie", `models.end_names_veto_sustained`) stays and ends the
+  road — that narrow question, asked of the node itself, is what `process_stages` and the stage
+  line use, and it is not the same question as `veto_stood`.
   `Bill.last_stage` is that top-level stage and never a child of it: children are the paperwork
   that followed the decision, so the newest node of a *flattened* tree is one of them — druk
   2842's card named the referral under the `Veto` node («направлен в комиссию ENM») and the word
@@ -180,6 +207,16 @@ Invariants worth keeping:
   overridden veto back at «Сейм рассматривает поправки Сената». There is no such fallback now:
   an unrecognised last stage gives no phase, and `_ended_line` only says «закон не принят» when
   the listing says `passed=false`.
+  **That vote is the only witness, because the rename does not always happen.** Of the fifteen
+  processes of terms 8–10 whose motion decided "nie uchwalona ponownie", **eight keep `End` =
+  "Uchwalono" and `passed` = true** — druki 410, 643, 865, 935, 1109, 1110, 1131 and 1600 of
+  term 10, seven of them closed 2026-03-27 — so the API says of a law the veto killed exactly
+  what it says of one that lived. Reading the rename alone, `_ended_line` found no branch that
+  held (no act, no `discontinued_at`, no veto, `passed` not false) and returned **nothing**: the
+  card ended without a sentence saying the bill was over, and the digest froze it there; and
+  `_closure_event_of`, seeing `change.passed`, headed the post that closes the road «Сейм принял
+  закон». `models.veto_stood` therefore asks the `PresidentMotionConsideration` as well as the
+  `End`, which is the question `_phase_after_veto_vote` was already asking a line away.
 - **"What comes next" is derived, not stored.** `models.next_phase(bill, today)` reads the
   top-level stages, submission and act; the formatter dates it from `bill.agenda` (upcoming
   sittings, refreshed every run for every followed bill, not only the changed ones) or from the
@@ -211,6 +248,35 @@ Invariants worth keeping:
   apologising for an exact date teaches the reader to discount it. The Senate action carries no
   date at all — art. 121 gives the Senate thirty days and its committee takes the act long
   before they are out.
+- **The Senate rejects an act in the API's words, not the textbook's.** `SenatePosition.position`
+  takes exactly four values over terms 8–10: "nie wniósł poprawek" (1 364), "wniósł poprawki"
+  (722), "wniósł poprawkę" (27) and **"wnosi o odrzucenie ustawy"** (93). "odrzucił ustawę",
+  which `docs/legislative-process.md` gave until 2026-09-14, appears **nowhere** — and neither
+  wording contains the `"odrzuci"` both `_phase_after_senate` and `_senate_event` were testing
+  for, because "odrzuce-nie" does not. So every Senate rejection came out as `senate_amendments`
+  and its post under the bare "senate" event: «Сенат внёс поправки» over a resolution that kills
+  the law unless the Sejm throws it out by an absolute majority (art. 121 ust. 3). All 93 are of
+  term 9 — the Sejm and the Senate of term 10 share a majority — so the branch is dead today and
+  wakes with the next configuration, the way the veto road already has.
+  `models.senate_moved_rejection` ("odrzuc" and not "popraw") is the one test both ask, and the
+  committee working on the Senate's position asks it through `_phase_after_senate` as well. The
+  Sejm's own answer is read too: "odrzucono uchwałę Senatu" (85) is the override and goes on to
+  the President, "przyjęto uchwałę Senatu" (druk 2898 of term 9, `End` = "odrzucono na wniosek
+  Senatu") is the rejection standing and ends the road — `SenatePositionConsideration` used to
+  give `president` whatever it decided.
+- **A reading the Sejm broke off decided nothing, and the Tribunal's ruling is an answer.**
+  A `SejmReading` whose `decision` is "niedokończone … czytanie" is adjourned, not decided: druk
+  2985 of term 8 stood at "nie dokończone III czytanie" with its process open, and taking that
+  for a decision gave no phase, so `is_over` was true — no card for such a bill, and a followed
+  one frozen where it stood. And the Sejm has spelled the word both ways: term 10 writes
+  "niedokończone" (36 decisions), terms 8 and 9 wrote "nie dokończone" (58), so
+  `models.reading_decision` normalises the space for every rule that reads a decision —
+  `second_reading_sent_back` knew only the current spelling. `ConstitutionalTribunalRuling`
+  ("Wyrok Trybunału Konstytucyjnego", with a `verdict` and an M.P. address) was in neither the
+  phase map, the event map nor the labels: three nodes in the corpus, all term 8, while ten
+  bills of term 10 sit at `PresidentToTribunal` waiting for one. It ends the road and says so.
+  Replayed over all 5,533 processes of terms 8–10, every `next_phase is None` is now accounted
+  for by a closure the listing states or a veto that stood; before this, eight were not.
 - **A term the Constitution makes zawity is a step, not a note.** Art. 121 ust. 2: thirty days
   gone with no uchwała from the Senate and the act counts as adopted in the Sejm's wording, and
   the Senate can neither extend nor suspend them — so `next_phase` moves the bill on
@@ -402,6 +468,19 @@ Invariants worth keeping:
   the newest document when the stages do not name it (`models.supplement_event`): the government's
   position has a stage but no name of its own, and «Обновление» over the government's verdict
   was telling the reader nothing.
+- **A committee report is the bill only when it attaches one.** `Stage.carries_bill_text` asked
+  whether the `proposal` mentions a *projekt*, which takes in "odrzucić projekt ustawy" (23 bill
+  reports of term 10) and "uchwalić projekt ustawy bez poprawek" (95) beside the 528 that really
+  are the text. `latest_text_document` then handed the report's PDF to `SejmTextSource` as a new
+  bill text, so a bill the committee had moved to **throw out** was re-analysed on the two-page
+  motion to throw it out — paid for, and the card's verdict, score and summary overwritten by a
+  reading of the recommendation, with «текст обновился» under it, while the event on the same
+  card correctly said `committee_rejects`. Only "załączony projekt" attaches one. What follows
+  the committee is then read from the report's print number instead (`Stage.is_additional_report`
+  — over term 10 every one of the 292 "Praca w komisjach po II czytaniu" stages carries an "-A"
+  report and none of the 645 after a first reading does), because a report proposing rejection or
+  no amendments still goes to the second reading, and keying that on `carries_bill_text` would
+  have sent it to the third.
 - **A re-analysis needs a new text, not a new URL.** `AnalysisRecord.text_sha256` is the digest
   of the normalised text the model saw (`services/analysis.py::text_digest`: page numbers and
   whitespace ignored). `reanalyze_bill` returns None and only repoints `source_url` /
@@ -611,6 +690,26 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   "druk nr 3035" / "druki nr 3010 i 3055"), `video[].playerLink`, `jointWith`. `/proceedings`
   lists sittings (`number` 0 for planned ones without agenda); `/proceedings/{n}` adds `agenda`
   (HTML `<li>` items with `PrzebiegProc.xsp?nr=` links that are not reliable: match the text).
+  Measured over all 4,387 committee sittings of term 10 (14 Sept 2026): `status` is only
+  **PLANNED or FINISHED** — a cancelled sitting vanishes from the listing rather than being
+  marked, which is why "gone from the listing" is the right test for a retraction. `jointWith`
+  is on 938 of them and a joint sitting is listed under **every** committee in it, with a `num`
+  of its own. Three fields are not read and two of them carry facts nothing else does:
+  `comments` records the change that happened ("Nastąpiła zmiana godziny/sali/porządku
+  posiedzenia", 886 sittings); `notes` (226) is the only place an application address and
+  deadline for a przesłuchanie appears ("Zgłoszenia udziału … na adres e-mail: … w terminie do
+  12 listopada", 4 sittings) and the only warning that a sitting is conditional ("Posiedzenie
+  aktualne w przypadku zgłoszenia poprawek w czasie drugiego czytania", 5); and `closed` is true
+  for 279, a sitting the public may not enter though the card names its room. `/proceedings` of
+  the current sitting also carries `schedule`, the approximate hour of each agenda point **per
+  day**, which is the only way to say which day of a four-day sitting a bill is taken on.
+- **The agenda names the print that is before the house, which after the third reading is not
+  the bill.** "Rozpatrzenie uchwały Senatu w sprawie ustawy … (druk nr 1935)" and "Sprawozdanie
+  … o wniosku Prezydenta o ponowne rozpatrzenie (druk nr 2378)" name the Senate's resolution and
+  the President's motion: 211 committee items and 160 plenary ones of term 10. Matching is by
+  text and not by the `PrzebiegProc` link, and `-A` is stripped, so an additional report counts
+  as its base print. Otherwise the numbers are reliable — 981 of the 1,150 plenary items naming
+  a projekt give one, and the single miss (`sejm/64`) is the API printing "druki nr i ".
 - `modifiedSince`/`changeDate` are naive **Europe/Warsaw** times; `Z` is rejected. `sort_by`,
   `passed` filters are ignored; paginate by `offset` until an empty page. `documentType` needs
   the Polish display string ("projekt ustawy"), the enum `BILL` does not filter.
@@ -654,8 +753,32 @@ There is no downgrade. To roll back, revert the code and restore the previous du
   genuinely not on RCL). A probe that keeps only the `Location` header cannot tell those apart:
   record the status beside it, or "throttled" reads as "not on RCL".
 - Committee reports with print `…-A` (proposal "przyjąć poprawki") are amendment tables, not
-  bill text; only `proposal` containing "projekt" carries the text. `SenatePosition` reports via
-  `position`, not `decision`. `UE` enum is NO|ADAPTATION|ENFORCEMENT.
+  bill text; only `proposal` "załączony projekt …" carries it — "odrzucić projekt ustawy" and
+  "uchwalić projekt ustawy bez poprawek" name a projekt and attach none. `SenatePosition` reports
+  via `position`, not `decision`. `UE` enum is NO|ADAPTATION|ENFORCEMENT.
+- **Some stage types are not where the document says.** Over the 5,533 stage trees of terms 8–10:
+  `PublicHearing` is **always a child of `CommitteeWork`**, never top-level (15 nodes), which is
+  why `events.open_hearing` and `hearings_due` walk `flatten_stages`; and `PublicHearing` in
+  `_phase_after` is therefore unreachable. `ConstitutionalTribunalRuling` exists (3 nodes, term
+  8) and was in no list. 995 top-level nodes carry **no `stageType` at all**, all of them
+  "Rozpatrywanie na forum Sejmu" — but only on `wniosek`, `lista kandydatów`, `informacja` and
+  `zawiadomienie` documents and on **no** `projekt ustawy`, so this bot never meets one.
+  Whether the `PublicHearing` node appears *before* the hearing, which is what
+  `HearingReminder` needs to be worth anything, cannot be settled from a snapshot: 47 committee
+  agendas of term 10 mention "wysłuchanie" against 9 such nodes, so the hearing is announced
+  mostly through the sittings listing. One observation in production would settle it.
+- **An autopoprawka is a print of the bill's own number, and nothing else points at it.** The
+  applicant amending its own bill before the first reading files `72-A`, `128-A`, `128-B`,
+  `128-BA`, `128-C` — 29 in term 10, and `{druk}-A` is never anything else. It is **not** in the
+  base print's `additionalPrints` (1 of 29, and that one is the withdrawal of an autopoprawka),
+  the base print's detail does not name it (`processPrint` only points the other way), and the
+  base print's own PDF does not change — so `SejmTextSource.newer`, `_remember_supplements` and
+  the stage tree are all blind to it and the card keeps describing a text the applicant has
+  rewritten. `/bills` is the one place it shows: `submissionType: BILL_AMENDMENT` (49 rows),
+  carrying the **base** druk in `print`. Two consequences, neither handled yet: discovery is
+  right to skip these rows (`not sub.is_bill`, or they would open a second card), and
+  `find_submission` takes the first `/bills` row matching a print, which for such a bill can be
+  the autopoprawka rather than the bill itself.
 - `Voting` stage embeds totals; per-club breakdown needs `/votings/{sitting}/{n}` (per-MP votes).
   Signatories are not in the API: parse the print's cover letter and match against `/MP`.
 - Polish text is ~2 characters per token for Claude; the 1M context takes any print whole.
@@ -1079,3 +1202,18 @@ Open items are listed under "Still open" in `docs/roadmap.md`. The audit of 14 S
 the whole corpus closed six defects and left nothing of its own open. Its record is
 `../lexinform-corpus/checks/`: `FINDINGS.md` for the findings with their numbers, `README.md`
 for how it was run, which of the methods paid and what to do next time.
+
+A second audit the same day asked a different question — whether every event of the legislative
+process is detected, read, stored and told — and answered it the same way, by replaying the
+production code over the corpus rather than reading it: `next_phase`, `process_stages` and
+`veto_stood` over all 5,533 stage trees of terms 8–10, and `agenda.print_numbers` over the 4,387
+committee sittings and 75 Sejm sittings of term 10, each result checked against the bill's own
+tree. It found three errors and three uncovered cases, all fixed above and each with the corpus
+example it was found on. **Five things it left open, because each needs a decision rather than a
+fix**: the autopoprawka (detection is one `/bills` query, but an autopoprawka amends the bill
+without replacing it, so re-analysing on its PDF would repeat the `carries_bill_text` mistake —
+the supplement path is probably right); the committee sitting's `notes` and `closed`; the
+`Opinion` stage, which is substantive and so posts «Обновление» although the decision of
+2026-09-12 says filed opinions are not this channel's genre — the same fact arriving through a
+different door; the plenary `schedule`, which would name the day within a four-day sitting; and
+the measurement that would tell whether a `PublicHearing` node ever appears before its hearing.
