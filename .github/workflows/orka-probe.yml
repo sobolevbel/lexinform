@@ -168,3 +168,25 @@ jobs:
           except Exception as exc:
               print(f"  OrkaClient: {type(exc).__name__}: {exc}")
           PY
+
+      - name: Twelve fresh sessions, with the WAF's own words when it refuses
+        run: |
+          set +e
+          TERM=$(cat /tmp/term)
+          NUM=$(head -1 /tmp/rpw.txt)
+          uv run python - "$TERM" "$NUM" <<'PY'
+          import sys, time
+          import httpx2 as httpx
+          from lexinform.adapters.browser_identity import BROWSER_HEADERS
+          from lexinform.models import submission_pdf_url
+
+          url = submission_pdf_url(int(sys.argv[1]), sys.argv[2])
+          for attempt in range(1, 13):
+              with httpx.Client(headers=BROWSER_HEADERS, follow_redirects=True, timeout=60) as c:
+                  r = c.get(url)
+              note = ""
+              if r.status_code != 200 or "pdf" not in r.headers.get("content-type", ""):
+                  note = " | " + r.headers.get("x-iinfo", "no x-iinfo") + " | " + r.text[:300].replace("\n", " ")
+              print(f"{attempt:2d} http={r.status_code} type={r.headers.get('content-type')} bytes={len(r.content)}{note}", flush=True)
+              time.sleep(3)
+          PY
