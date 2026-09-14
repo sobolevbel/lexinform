@@ -238,3 +238,31 @@ def test_a_bill_withdrawn_after_its_print_is_not_told_as_rejected(
     event = update_event(_change([], closure_detected=True, passed=False), withdrawn)
 
     assert event == "withdrawn_by_applicant"
+
+
+def test_the_governments_position_names_the_post_even_when_its_document_was_not_read(
+    process_1962: ProcessDetail,
+) -> None:
+    """`supplement_event` can only name the post when the filing was digested, and a scan, a
+    refusal or a text over the per-bill limit all leave the digest empty. The stage arrives
+    either way: 73 of the 6,260 stage transitions of term 10 went out as «Обновление» over the
+    government's verdict on a bill it did not write."""
+    bill = _bill(process_1962)
+    position = Stage(stage_name="Wpłynęło stanowisko rządu", stage_type="GovermentPosition")
+
+    assert update_event(_change([position]), bill) == "government_position"
+    assert update_event(_change([position], supplements=[_filed("government_position")]), bill) == (
+        "government_position"
+    )
+
+
+def test_an_opinion_filed_by_another_body_is_held_and_not_a_post_of_its_own() -> None:
+    """Filed opinions are not this channel's genre (decided 2026-09-12), and `process_stages`
+    already drops the stage as one that arrives beside the process — but it counted as news and
+    got a post of its own, headed «Обновление»: 149 transitions of term 10, on 192 prints."""
+    opinion = Stage(stage_name="Opinia organizacji samorządowej", stage_type="Opinion")
+    referral = Stage(stage_name="Skierowano do komisji", stage_type="Referral")
+
+    assert not is_substantive(opinion)
+    assert not has_news(_change([opinion]))
+    assert has_news(_change([opinion, referral]))

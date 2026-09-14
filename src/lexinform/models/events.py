@@ -20,7 +20,12 @@ from lexinform.models.sejm import (
     senate_moved_rejection,
 )
 
-SERVICE_STAGE_TYPES = frozenset({"Start", "ReadingReferral", "Reading", "CommitteeWork", "End"})
+# `Opinion` frames nothing, but a body filing one is not this channel's genre (decided
+# 2026-09-12), and it is held for the same reason: told with the next update that has something
+# to say, never a post of its own.
+SERVICE_STAGE_TYPES = frozenset(
+    {"Start", "ReadingReferral", "Reading", "CommitteeWork", "End", "Opinion"}
+)
 HEARING_APPLICATION_DAYS = 10
 
 
@@ -172,6 +177,9 @@ _EVENT_BY_STAGE_TYPE = {
     "ConstitutionalTribunalRuling": "tribunal_ruled",
     "PublicHearing": "hearing",
     "Start": "start",
+    # Same key as the digest uses: the stage arrives even when the document behind it could not
+    # be read, and then `supplement_event` has nothing to name the post with.
+    "GovermentPosition": "government_position",
 }
 
 
