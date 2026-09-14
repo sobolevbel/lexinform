@@ -96,6 +96,7 @@ class Labels:
     consultation: str
     consultation_until: str
     consultation_closed_on: str
+    consultation_closed_undated: str
     consultation_hint: str
     print_assigned: str
     process_withdrawn: str
@@ -160,6 +161,7 @@ class Labels:
     action_email_ministry: str
     action_in_polish: str
     action_rcl_comment: str
+    action_rcl_window_closed: str
     rcl_results_hint: str
     rcl_sent_to_sejm: str
     link_rcl_project: str
@@ -299,6 +301,7 @@ RU = Labels(
     consultation="Общественные консультации",
     consultation_until="до",
     consultation_closed_on="завершились",
+    consultation_closed_undated="завершились — срок был указан в письме",
     consultation_hint="мнение подаётся анкетой (ankieta) на сайте Сейма",
     print_assigned="Проекту присвоен номер druku",
     process_withdrawn="Проект отозван до присвоения номера druku.",
@@ -378,6 +381,9 @@ RU = Labels(
     action_email_ministry="направить замечания на {email}",
     action_in_polish="(на польском, с номером {wykaz})",
     action_rcl_comment="оставить комментарий через форму на RCL",
+    action_rcl_window_closed=(
+        "публичные консультации уже закрыты, но пока проект в правительстве остаётся:"
+    ),
     rcl_results_hint=(
         "поданные мнения (stanowiska) и ответ министерства опубликованы на странице проекта на RCL"
     ),
@@ -874,6 +880,7 @@ EN = Labels(
     consultation="Public consultation",
     consultation_until="until",
     consultation_closed_on="closed on",
+    consultation_closed_undated="closed — the deadline was in the letter",
     consultation_hint="opinions go in through the survey form (ankieta) on the Sejm website",
     print_assigned="Print number assigned",
     process_withdrawn="The bill was withdrawn before receiving a print number.",
@@ -949,6 +956,10 @@ EN = Labels(
     action_email_ministry="send comments to {email}",
     action_in_polish="(in Polish, quoting {wykaz})",
     action_rcl_comment="leave a comment through the RCL form",
+    action_rcl_window_closed=(
+        "the public consultation has closed; while the draft is still with the government there"
+        " remains:"
+    ),
     rcl_results_hint=(
         "the opinions submitted (stanowiska) and the ministry's answer are on the project page"
         " on RCL"

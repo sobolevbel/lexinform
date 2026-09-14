@@ -1323,12 +1323,17 @@ class MessageFormatter:
         if window is None:
             return ""
         lb = self._labels
+        # A date range, like a bare "until <date>", reads as an invitation; a consultation that
+        # is over says so and drops the ways to send an opinion (the letter stays: it names the
+        # ministry and its e-mail). The end date is what the reader needs, so the range collapses
+        # to it — and when the letter gave none, the timeline is what says the stage is behind.
         if window.end is not None and not window.is_open(today):
-            # A date range, like a bare "until <date>", reads as an invitation; a consultation
-            # that is over says so and drops the ways to send an opinion (the letter stays: it
-            # names the ministry and its e-mail). The end date is what the reader needs, so the
-            # range collapses to it.
-            closed = f"{esc(lb.consultation_closed_on)} {self.fmt_date(window.end)}"
+            closed: str | None = f"{esc(lb.consultation_closed_on)} {self.fmt_date(window.end)}"
+        elif window.end is None and not consultation_open(bill, today):
+            closed = esc(lb.consultation_closed_undated)
+        else:
+            closed = None
+        if closed is not None:
             where = ""
             if window.source == "sejm" and window.form_url:
                 # The page stays (the opinions that were sent appear there), the invitation goes.
@@ -1638,7 +1643,7 @@ class MessageFormatter:
         if bill.wykaz is not None:
             actions.extend(self._wykaz_actions(bill.wykaz))
         elif bill.rcl is not None:
-            actions.extend(self._rcl_actions(bill.rcl, window, today))
+            actions.extend(self._rcl_actions(bill, today))
         elif window is not None and window.is_open(today) and window.end is not None:
             page = window.survey_url or window.form_url
             where = (
@@ -1702,25 +1707,45 @@ class MessageFormatter:
         organ = entry.organ or lb.wykaz_organ_unknown
         return [esc(lb.action_wykaz_interest.format(organ=organ))]
 
-    def _rcl_actions(
-        self, project: RclProject, window: ConsultationWindow | None, today: dt.date
-    ) -> list[str]:
-        """E-mail to the ministry while the consultation is open (or its deadline unknown), and
-        the RCL comment form for as long as the project is with the government."""
+    def _rcl_actions(self, bill: Bill, today: dt.date) -> list[str]:
+        """What a reader of a government project can do, and with how much weight.
+
+        Two of the three moves outlive the consultation: the comment form and the zgłoszenie
+        zainteresowania stay open for as long as the project is with the government, through the
+        committees of the Council of Ministers and the Komisja Prawnicza. They are not nothing —
+        art. 7 of the lobbying act is a right, and the form forwards to the ministry — but a
+        project at `rcl_council` presented them with exactly the emphasis an open consultation
+        had, and the sentence written for that moment (`no_action_labels["rcl_council"]`) was
+        never reached, because a non-empty action list is what suppresses it. So once the window
+        that mattered has shut they are offered as what is left, in one line that says so.
+        """
+        project = bill.rcl
+        assert project is not None
         lb = self._labels
+        window = bill.consultation
+        open_now = consultation_open(bill, today)
         actions: list[str] = []
-        polish = lb.action_in_polish.format(wykaz=project.wykaz_number or project.number)
-        if window is not None and window.email and (window.end is None or window.is_open(today)):
+        if window is not None and window.email and open_now:
+            polish = lb.action_in_polish.format(wykaz=project.wykaz_number or project.number)
             text = esc(lb.action_email_ministry.format(email=window.email))
             if window.end is not None:
                 text += f" {esc(lb.consultation_until)} {self.fmt_date(window.end)}"
             else:
                 text += f" ({esc(lb.consultation_deadline_in_letter)})"
             actions.append(f"{text} {esc(polish)}")
-        if project.is_open and not project.sent_to_sejm:
-            actions.append(link(project.comment_url, lb.action_rcl_comment))
-            organ = project.applicant or lb.wykaz_organ_unknown
-            actions.append(esc(lb.action_rcl_interest.format(organ=organ)))
+        if not (project.is_open and not project.sent_to_sejm):
+            return actions
+        organ = project.applicant or lb.wykaz_organ_unknown
+        residual = [
+            link(project.comment_url, lb.action_rcl_comment),
+            esc(lb.action_rcl_interest.format(organ=organ)),
+        ]
+        # A project that never had a public consultation (a quarter of them skip the stage) has
+        # no window that shut, so there is nothing to say it did.
+        if window is None or open_now:
+            actions.extend(residual)
+        else:
+            actions.append(f"{esc(lb.action_rcl_window_closed)} " + "; ".join(residual))
         return actions
 
     def _upcoming(

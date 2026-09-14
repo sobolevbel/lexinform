@@ -314,13 +314,13 @@ Still open:
     `_rcl_phase`, re-title the card «Правительственный проект (RCL)» and put the row back in the
     RCL watcher's listings. So it is either a column for the closed window or a one-line fact
     derived from `rcl_num`, and which of those is worth a migration is a product call.
-  - **The RCL "what you can do" keeps its emphasis after the window shuts.** `_rcl_actions`
-    offers the comment form and the zgłoszenie zainteresowania for as long as the project is
-    `otwarty` — through the Council of Ministers and the Komisja Prawnicza. Both are legally
-    still open, so this is not wrong; but a project at `rcl_council` presents them exactly as an
-    open consultation did, and the `no_action_labels["rcl_council"]` sentence written for that
-    moment is never reached. Whether the channel should distinguish "you can still act" from
-    "you can still act, but the window that mattered has shut" is the owner's call.
+  - ~~The RCL "what you can do" keeps its emphasis after the window shuts.~~ **Fixed 14 Sept
+    2026.** The comment form and the zgłoszenie zainteresowania are still offered for as long as
+    the project is `otwarty` — both are legally open, and art. 7 is a right — but once the
+    consultation has closed they are offered as what is *left*, in one line that says so
+    («публичные консультации уже закрыты, но пока проект в правительстве остаётся: …»). A project
+    that never had a consultation (a quarter of them skip the stage) has no window that shut and
+    keeps the plain wording.
 
 - Found by the widened corpus (14 Sept 2026), measured over the whole of term 10 rather than the
   45-print sample the rules were written on. Two of the three are fixed: the DSR form dropped as

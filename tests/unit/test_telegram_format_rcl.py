@@ -89,20 +89,52 @@ def test_card_after_the_deadline_keeps_only_the_comment_form_and_says_what_follo
     )
     assert "dep.prawny@mswia.gov.pl" not in text
     assert "направить замечания" not in text
-    assert f'Что можно сделать сейчас:</b> <a href="{COMMENT_FORM}">оставить комментарий' in text
+    # The comment form and the zgłoszenie outlive the consultation, but they are what is left,
+    # not what the window was: offering them with the same weight read as an open invitation.
+    assert "Что можно сделать сейчас:</b> публичные консультации уже закрыты, но пока проект" in (
+        text
+    )
+    assert f'остаётся: <a href="{COMMENT_FORM}">оставить комментарий' in text
     assert "Что дальше:</b> межведомственные согласования и сбор мнений, затем комитеты" in text
     assert "#консультации" not in text
 
 
 def test_card_without_a_readable_deadline_points_to_the_letter() -> None:
+    """The letter carried an electronic time stamp instead of a date and no relative term, so the
+    timeline is what says the consultation is running: here it is, the project standing on the
+    stage itself."""
+    stages = tuple(
+        st.model_copy(update={"state": "active" if st.number == 3 else "not_started"})
+        if st.number in (3, 4)
+        else st
+        for st in rcl_project().stages
+    )
     project = rcl_project(
-        consultation=RclConsultation(letter_url=CONSULTATION_LETTER.url, email="uwagi@mswia.gov.pl")
+        stages=stages,
+        consultation=RclConsultation(
+            letter_url=CONSULTATION_LETTER.url, email="uwagi@mswia.gov.pl"
+        ),
     )
 
     text = MessageFormatter("ru").new_bill(rcl_bill(project), None, today=TODAY).text
 
     assert "Общественные консультации:</b> срок указан в письме · замечания на e-mail" in text
     assert "направить замечания на uwagi@mswia.gov.pl (срок указан в письме) (на польском" in text
+
+
+def test_an_undated_consultation_the_project_has_moved_past_stops_inviting() -> None:
+    """Same letter, but the timeline has the project on "Opiniowanie": the window is behind it,
+    and there is no date to print. Saying «срок указан в письме» there invited an opinion into a
+    stage that had closed, and the e-mail sat under it in the action line."""
+    project = rcl_project(
+        consultation=RclConsultation(letter_url=CONSULTATION_LETTER.url, email="uwagi@mswia.gov.pl")
+    )
+
+    text = MessageFormatter("ru").new_bill(rcl_bill(project), None, today=TODAY).text
+
+    assert "Общественные консультации:</b> завершились — срок был указан в письме" in text
+    assert "направить замечания" not in text
+    assert "#консультации" not in text
 
 
 def test_card_from_metadata_only_explains_the_unreadable_text() -> None:
