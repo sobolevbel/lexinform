@@ -11,7 +11,7 @@ import re
 from dataclasses import dataclass, field
 
 from lexinform.concurrency import fan_out
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
     AMENDMENT_SOURCES,
@@ -83,7 +83,8 @@ class AnalysisResult:
     """Counters and verdicts of one analysis phase.
 
     `skipped_cost` counts the texts that were over the per-bill cost limit and never reached the
-    model, `revived_joint` the prints a prefilter had skipped that the channel's own card of a
+    model, `unanswered` the bills whose host would not hand the file over and which wait for the
+    next run, `revived_joint` the prints a prefilter had skipped that the channel's own card of a
     jointly considered print put back in the queue, `usage` is counted per model, and `stopped`
     says the phase ended early on the per-run cost limit, which is a note and not an error.
     """
@@ -91,6 +92,7 @@ class AnalysisResult:
     analyzed: int = 0
     triaged_out: int = 0
     skipped_cost: int = 0
+    unanswered: int = 0
     revived_joint: int = 0
     failed: int = 0
     verdicts: list[AnalysisVerdict] = field(default_factory=list)
@@ -329,6 +331,20 @@ class AnalysisService:
                 result.fatal_error = exc.describe()
                 log.error("aborting analysis phase: %s", result.fatal_error)
                 break
+            except OrkaUnreachableError as exc:
+                # The file was not read because the host would not hand it over today, which
+                # says nothing about the bill. Analysing the metadata instead would write down
+                # a verdict nothing ever revisits (RPW/30695/2026, 2026-09-14): the bill waits
+                # for the next run instead, and the attempt is not one of its three.
+                result.unanswered += 1
+                log.warning("analysis of %s waits for the file: %s", bill.number, exc)
+                self._repo.set_status(
+                    bill.term,
+                    bill.number,
+                    BillStatus.ANALYSIS_PENDING,
+                    reason=f"analysis: {type(exc).__name__}: {exc}",
+                )
+                continue
             except TooExpensiveError as exc:
                 result.skipped_cost += 1
                 log.warning("analysis of %s skipped: %s", bill.number, exc)
@@ -561,7 +577,16 @@ class AnalysisService:
         we decline to read would keep a card describing the old one.
         """
         document = located.document
-        loaded = self._load_text(document)
+        try:
+            loaded = self._load_text(document)
+        except OrkaUnreachableError:
+            if previous is None:
+                raise
+            # A bill that already has an analysis keeps it, the same as for any other document
+            # that could not be read: the card goes on describing the text it was written from.
+            return _Prepared(
+                bill, located, "", "metadata_only", previous, first=False, unreadable=True
+            )
         text, truncated, source = loaded.text, loaded.truncated, loaded.source
         if previous is not None and source not in FULL_TEXT_SOURCES:
             return _Prepared(bill, located, text, source, previous, first=False, unreadable=True)
@@ -819,8 +844,10 @@ class AnalysisService:
         under the letter are still resolved; the prompt shows the model the text only when it is
         the document.
 
-        Only an outage of the document's host propagates: a missing or broken file falls back to
-        the metadata instead of costing the bill an analysis attempt. `trim=False` keeps the
+        An outage of the document's host propagates, and so does orka refusing us the file: a
+        refusal is about our address on the day, and an analysis of the metadata must never be
+        what a bill with a text ends up with. A file that is missing or broken falls back to the
+        metadata instead of costing the bill an analysis attempt. `trim=False` keeps the
         whole text (an amendments document has no appendices to drop, and its uzasadnienie
         explains the amendments; a document filed to a print is one such document end to end).
         """
@@ -830,6 +857,13 @@ class AnalysisService:
             file = self._loader.read_document(document)
         except ServiceUnavailableError:
             raise
+        except OrkaUnreachableError as exc:
+            if not exc.file_is_missing:
+                # The WAF's decision about our address on the day. Falling back to the metadata
+                # would turn it into a verdict on a text nobody has read; the caller waits.
+                raise
+            log.warning("%s is not there (%s); using metadata only", document.url, exc)
+            return _Loaded("", False, "metadata_only")
         except Exception as exc:
             log.warning(
                 "%s unreadable (%s: %s); using metadata only",

@@ -14,7 +14,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.models import (
     Bill,
     BillStatus,
@@ -395,10 +395,18 @@ class CommandService:
         """Ask the model, and count the triage too: the operator pays for both.
 
         A text over the per-bill limit gets the answer the analysis phase gives it, so that the
-        queue looks the same whoever hit the guard.
+        queue looks the same whoever hit the guard, and so does a file the host would not hand
+        over: the operator is told to ask again rather than being given a verdict on a text
+        nobody read, and `force` is no answer to a WAF.
         """
         try:
             analysed = self._analysis.analyze_bill(bill, ignore_cost_limit=force)
+        except OrkaUnreachableError as exc:
+            return bill, CommandOutcome(
+                status=OutcomeStatus.SKIPPED,
+                bill=self._reload(bill),
+                note=f"{exc}; the bill stays queued, send the command again later",
+            )
         except TooExpensiveError as exc:
             self._repo.set_status(
                 bill.term,

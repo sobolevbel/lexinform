@@ -10,9 +10,18 @@ Imperva, built for people with browsers. Three things follow, and all three were
   gives up — which is what "the file is not downloadable" turned out to mean all along;
 - every failure is an `OrkaUnreachableError`, a per-bill problem: this host judges callers by
   address as well as identity, and everything else the analysis reads comes from api.sejm.gov.pl.
+
+A refusal is about the moment and not about us: on 2026-09-14 every request of three production
+runs (10:47, 20:19, 20:37 UTC) was answered 403, while curl and this very client, from ten
+GitHub runners and ten different addresses, got the same file 44 times out of 44 five minutes
+later. So a refusal is retried like a server error, and it carries the WAF's own identifiers —
+Imperva's incident id, F5's support id, `x-iinfo` — because with those the next refusal can be
+asked about instead of guessed at. Only a 404 is about the bill: the address is built by
+convention and can simply be wrong.
 """
 
 import logging
+import re
 import time
 from collections.abc import Callable
 
@@ -26,6 +35,10 @@ __all__ = ["OrkaClient"]
 log = logging.getLogger(__name__)
 
 _CHALLENGE_MARKERS = (b"incapsula", b"<title>loading</title>", b"request unsuccessful")
+# Imperva names its refusal "Incapsula incident ID: 12-65176297-65176299"; the F5 in front of
+# the Domino server names its own "Your support ID is: 1234567890".
+_INCIDENT_ID = re.compile(rb"incident id:?\s*([0-9a-z\-]+)", re.IGNORECASE)
+_SUPPORT_ID = re.compile(rb"support id is:?\s*([0-9]+)", re.IGNORECASE)
 
 
 class OrkaClient:
@@ -54,7 +67,8 @@ class OrkaClient:
         """The file, streamed, stopping as soon as `max_bytes` is exceeded.
 
         A challenge page is not a file, and it arrives with HTTP 200 and `text/html`, so the
-        answer is judged by what it is rather than by its status.
+        answer is judged by what it is rather than by its status. Every refusal but a 404 is
+        tried again: the same address is served the file one minute and refused the next.
         """
         attempt = 0
         while True:
@@ -68,23 +82,26 @@ class OrkaClient:
                     ) from exc
                 self._wait(attempt, f"GET {url}: {exc}")
                 continue
+            status = response.status_code
             try:
-                if response.status_code >= 500 or response.status_code == 429:
-                    if attempt <= self._max_retries:
-                        self._wait(attempt, f"GET {url}: HTTP {response.status_code}")
-                        continue
-                    raise OrkaUnreachableError(
-                        f"GET {url}: HTTP {response.status_code} after {attempt} attempts",
-                        status_code=response.status_code,
-                    )
-                if response.status_code >= 400:
-                    raise OrkaUnreachableError(
-                        f"GET {url}: HTTP {response.status_code}",
-                        status_code=response.status_code,
-                    )
-                return self._body(url, response, max_bytes)
+                if status == 404:
+                    raise OrkaUnreachableError(f"GET {url}: HTTP 404", status_code=404)
+                if status >= 400:
+                    refusal = f"HTTP {status} ({_waf_marks(response)})"
+                else:
+                    body = self._body(url, response, max_bytes)
+                    if not _is_challenge(response, body):
+                        return body
+                    marks = _waf_marks(response, body)
+                    refusal = f"the WAF answered with its challenge page ({marks})"
             finally:
                 response.close()
+            if attempt <= self._max_retries:
+                self._wait(attempt, f"GET {url}: {refusal}")
+                continue
+            raise OrkaUnreachableError(
+                f"GET {url}: {refusal} after {attempt} attempts", status_code=status
+            )
 
     def close(self) -> None:
         self._client.close()
@@ -97,10 +114,7 @@ class OrkaClient:
             if max_bytes is not None and received > max_bytes:
                 raise AttachmentTooLargeError(url, max_bytes)
             chunks.append(chunk)
-        body = b"".join(chunks)
-        if _is_challenge(response, body):
-            raise OrkaUnreachableError(f"GET {url}: the WAF answered with its challenge page")
-        return body
+        return b"".join(chunks)
 
     def _wait(self, attempt: int, reason: str) -> None:
         delay = self._backoff * (2 ** (attempt - 1))
@@ -118,3 +132,26 @@ def _is_challenge(response: httpx.Response, body: bytes) -> bool:
         return False
     head = body[:4096].lower()
     return any(marker in head for marker in _CHALLENGE_MARKERS)
+
+
+def _waf_marks(response: httpx.Response, body: bytes | None = None) -> str:
+    """What the refusal says about itself, for the log and for the bill's `last_error`.
+
+    Two boxes stand in front of this host and either can be the one refusing us; each stamps its
+    answer with an identifier its operator can look up, and `x-iinfo` is Imperva's even when the
+    page carries no incident id. Without them a 403 is a fact with nothing to ask about it.
+    """
+    if body is None:
+        try:
+            body = response.read()
+        except Exception:  # the refusal is the news; failing to read its body is not
+            body = b""
+    marks = [
+        f"{label} {match.group(1).decode('ascii', 'replace')}"
+        for pattern, label in ((_INCIDENT_ID, "incident"), (_SUPPORT_ID, "support id"))
+        if (match := pattern.search(body[:8192])) is not None
+    ]
+    iinfo = response.headers.get("x-iinfo")
+    if iinfo:
+        marks.append(f"x-iinfo {iinfo}")
+    return ", ".join(marks) or "the answer names no incident"

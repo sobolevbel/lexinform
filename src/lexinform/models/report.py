@@ -67,11 +67,12 @@ class RunReport(BaseModel):
     paper — pages and no text layer — `text_prefilter_unreadable` those skipped with nothing
     to read at all (no file, no pages either, or a download that failed), and
     `text_prefilter_unanswered` those left pending because the host would not hand the file over,
-    which says nothing about the bill. `held` counts stage
-    changes kept back for the next post
-    (service stages only), `rehomed` the government's own rows carried over to a new Sejm term,
-    `joint_published` the "alternative bill" replies under the card of a jointly considered
-    print and `joint_revived` the prints a prefilter had skipped that such a card brought back.
+    which says nothing about the bill; `analysis_unanswered` is the same refusal a phase later,
+    where the bill keeps its place in the queue rather than being judged on its metadata.
+    `held` counts stage changes kept back for the next post (service stages only), `rehomed` the
+    government's own rows carried over to a new Sejm term, `joint_published` the "alternative
+    bill" replies under the card of a jointly considered print and `joint_revived` the prints a
+    prefilter had skipped that such a card brought back.
     `notes` are worth telling without being errors (a cost budget that stopped a phase),
     `commands` one line per operator command, `rejected` the bills that were analysed and not
     published.
@@ -113,6 +114,7 @@ class RunReport(BaseModel):
     triaged_out: int = 0
     analysis_failures: int = 0
     analysis_skipped_cost: int = 0
+    analysis_unanswered: int = 0
     joint_revived: int = 0
     notes: list[str] = Field(default_factory=list)
     rejected: list[AnalysisVerdict] = Field(default_factory=list)

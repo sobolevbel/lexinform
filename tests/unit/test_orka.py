@@ -21,6 +21,13 @@ CHALLENGE = (
 )
 
 
+# Imperva's refusal from a home connection: HTTP 403, and the incident id is all it leaves.
+REFUSAL = (
+    b"<html><head><title>Request unsuccessful. Incapsula incident ID: "
+    b"12-65176297-65176299</title></head><body>Incapsula</body></html>"
+)
+
+
 def _client(handler: Handler) -> OrkaClient:
     return OrkaClient(transport=httpx.MockTransport(handler), sleep=lambda s: None)
 
@@ -67,6 +74,53 @@ def test_the_challenge_page_is_not_a_file_although_it_answers_200() -> None:
         return httpx.Response(200, content=CHALLENGE, headers={"content-type": "text/html"})
 
     with pytest.raises(OrkaUnreachableError, match="challenge"):
+        _client(handler).download(URL)
+
+
+def test_a_refusal_is_tried_again_because_it_is_about_the_moment() -> None:
+    # Measured on 2026-09-14: three production runs were answered 403 while the same client from
+    # ten other runners got the file 44 times out of 44 five minutes later.
+    answers: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        answers.append(1)
+        if len(answers) == 1:
+            return httpx.Response(403, content=REFUSAL, headers={"content-type": "text/html"})
+        return httpx.Response(200, content=b"%PDF", headers={"content-type": "application/pdf"})
+
+    assert _client(handler).download(URL) == b"%PDF"
+    assert len(answers) == 2
+
+
+def test_a_refusal_that_stands_names_what_the_waf_called_it() -> None:
+    """The incident id is the only thing a refusal leaves to ask about: without it a 403 is a
+    fact with nothing behind it, and the last three were diagnosed by re-running the whole bot."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            403,
+            content=REFUSAL,
+            headers={"content-type": "text/html", "x-iinfo": "12-65176297-65176299 NNNN"},
+        )
+
+    with pytest.raises(OrkaUnreachableError) as refused:
+        _client(handler).download(URL)
+
+    assert "incident 12-65176297-65176299" in str(refused.value)
+    assert "x-iinfo 12-65176297-65176299 NNNN" in str(refused.value)
+    assert refused.value.status_code == 403 and not refused.value.file_is_missing
+
+
+def test_the_f5_in_front_of_the_domino_server_is_named_too() -> None:
+    # Two boxes stand in front of this host and either can be the one refusing us.
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            403,
+            content=b"<html><body>The requested URL was rejected. Your support ID is: 8765 </body></html>",
+            headers={"content-type": "text/html"},
+        )
+
+    with pytest.raises(OrkaUnreachableError, match="support id 8765"):
         _client(handler).download(URL)
 
 

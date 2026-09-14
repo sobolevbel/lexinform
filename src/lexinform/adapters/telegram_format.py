@@ -1069,6 +1069,7 @@ class MessageFormatter:
                     ("triaged out: {}", report.triaged_out),
                     ("failures: {}", report.analysis_failures),
                     ("over the cost limit: {}", report.analysis_skipped_cost),
+                    ("file refused, still queued: {}", report.analysis_unanswered),
                     ("joint prints revived: {}", report.joint_revived),
                 ),
                 _tokens_line(report),

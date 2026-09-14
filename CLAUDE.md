@@ -667,7 +667,23 @@ branch history; the state branch is the backup.
   this host. Verified from a GitHub runner too (`.github/workflows/orka-probe.yml`), where the
   refusal arrives as **HTTP 200 text/html**, not 403, so the body decides and not the status. A
   failure of this host is a per-bill problem on purpose (`OrkaUnreachableError`): it is WAF-guarded
-  and address-judged, and everything else the analysis reads is api.sejm.gov.pl. Every outgoing
+  and address-judged, and everything else the analysis reads is api.sejm.gov.pl. **A refusal is
+  about the moment, not about us**: on 2026-09-14 every orka request of three production runs
+  (10:47, 20:19 and 20:37 UTC) was answered **403**, and minutes later the same file came back 44
+  times out of 44 — curl and `OrkaClient` itself, from ten runners with ten different Azure
+  addresses, over HTTP/2 and HTTP/1.1 alike — so neither the address pool, the protocol nor the
+  client fingerprint is what decided. Three things follow, all of them in place since: the client
+  **retries** a refusal like a server error (only a 404 is about the bill — the address is built by
+  convention and can be wrong); the error carries the WAF's own identifiers (`_waf_marks`: Imperva's
+  incident id, the F5's support id, `x-iinfo`), because a 403 with nothing to quote costs a whole
+  session to diagnose; and **no phase turns a refusal into a verdict**. The text prefilter leaves
+  the bill `text_prefilter_pending`, and the analysis leaves it `analysis_pending` without
+  spending one of its three attempts (`AnalysisResult.unanswered`, `report.analysis_unanswered`) —
+  RPW/30695/2026 was analysed on its `/bills` description on 2026-09-14 and closed as `analyzed`,
+  `text_source: metadata_only`, which nothing ever revisits: no `text_sha256` to compare, no
+  `newer` on `SubmissionTextSource`, and the reconciler only re-reads `/bills`. An analysis of the
+  metadata must never be what a bill with a text ends up with — the rule `_prepare` already applied
+  to a re-analysis, now applied to the first one. Every outgoing
   client says the same thing about itself (`adapters/browser_identity.py`, Chrome 140 on Windows;
   measured: the WAFs score the kind of client, not the version), `Accept` aside, which each client
   sets for what it asks for. The API carries no link to the opinion form; the Sejm page is

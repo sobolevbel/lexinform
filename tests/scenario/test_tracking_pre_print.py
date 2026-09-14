@@ -27,9 +27,13 @@ def test_pre_print_bill_is_analysed_from_its_own_text_and_published() -> None:
     assert record is not None and record.source_url == submission_url()
 
 
-def test_pre_print_bill_falls_back_to_its_description_when_orka_refuses_the_file() -> None:
-    # Imperva judges the client by its address and can start refusing us; that must cost this
-    # bill its text and nothing else — least of all the analysis of the prints in the same run.
+def test_a_file_the_waf_refuses_leaves_the_bill_queued_for_the_next_run() -> None:
+    """Imperva judges the client by its address and can start refusing us: measured on
+    2026-09-14, three production runs were answered 403 while the same client from ten other
+    runners got the file 44 times out of 44 minutes later. So the bill keeps its place in the
+    queue — an analysis of the metadata would be a verdict on a text nobody read, and nothing
+    ever revisits one — and the refusal costs the prints in the same run nothing.
+    """
     w = World()
     w.gateway.submissions.append(submission())
     w.add_bill("3100", "Rządowy projekt ustawy o cudzoziemcach")
@@ -38,13 +42,27 @@ def test_pre_print_bill_falls_back_to_its_description_when_orka_refuses_the_file
 
     report = w.run()
 
-    assert (report.analyzed, report.published, report.analysis_failures) == (2, 2, 0)
-    assert not report.errors
-    sources = {ctx.number: ctx.text_source for ctx in w.llm.contexts}
-    assert sources == {RPW: "metadata_only", "3100": "pdf"}
-    entry = next(bill for bill, _ in w.publisher.new_bills if bill.is_pre_print)
-    assert entry.submission is not None
-    assert entry.submission.consultation_end == dt.date(2026, 9, 30)
+    assert (report.analyzed, report.published, report.analysis_failures) == (1, 1, 0)
+    assert (report.analysis_unanswered, report.errors) == (1, [])
+    assert [ctx.number for ctx in w.llm.contexts] == ["3100"]
+    entry = w.bill(RPW)
+    assert (entry.status, entry.analysis) == (BillStatus.ANALYSIS_PENDING, None)
+    assert entry.analysis_attempts == 0  # a refusal is not one of the bill's three tries
+
+
+def test_a_bill_the_waf_refused_is_analysed_on_the_next_run() -> None:
+    w = World()
+    w.gateway.submissions.append(submission())
+    w.gateway.files[submission_url()] = b"%PDF"
+    w.orka.refuses.add(submission_url())
+    w.run()
+
+    w.orka.refuses.clear()
+    report = w.run()
+
+    assert (report.analyzed, report.published) == (1, 1)
+    record = w.bill(RPW).analysis
+    assert record is not None and record.text_source == "pdf"
 
 
 def test_pre_print_card_names_the_stage_and_links_the_sejm_pdf() -> None:
