@@ -54,7 +54,7 @@ def test_a_letter_that_says_nothing_useful_yields_no_deadline() -> None:
     assert deadline_of(info, published=date(2026, 9, 3)) is None
 
 
-def test_the_first_address_is_used_when_none_follows_the_word_adres() -> None:
+def test_an_address_counts_when_something_tells_the_reader_to_send_comments_there() -> None:
     info = parse_letter("Uwagi w ciągu 21 dni prosimy kierować do: uwagi@kprm.gov.pl")
 
     assert (info.days, info.email) == (21, "uwagi@kprm.gov.pl")
@@ -73,3 +73,35 @@ def test_a_date_out_of_a_consultation_range_is_not_the_consultation_deadline() -
 
     assert (info.days, info.deadline) == (14, date(2030, 12, 31))
     assert deadline_of(info, published=date(2026, 9, 1)) == date(2026, 9, 15)
+
+
+def test_a_letterhead_is_not_an_address_for_comments() -> None:
+    """A ministry's letterhead labels its own switchboard "adres e-mail:", one word from the
+    instruction "na adres". Over the corpus that label was handed to readers as the address for
+    comments in 17 letters, and the blind fallback to the first e-mail in the letter did it in
+    426 more — always the switchboard, because the extracted text opens with the letterhead."""
+    letterhead = (
+        "Ministerstwo Cyfryzacji\n"
+        "telefon: 22 245 59 15 adres: ul. Królewska 27 adres e-mail: sekretariat.DP@cyfra.gov.pl\n"
+        "Szanowni Państwo,\n"
+        "uprzejmie proszę o przedstawienie stanowiska w terminie 21 dni.\n"
+    )
+
+    info = parse_letter(letterhead)
+
+    assert info.email is None
+    assert info.days == 21
+
+
+def test_the_instruction_is_what_gives_the_address() -> None:
+    letter = (
+        "Ministerstwo Zdrowia\n"
+        "telefon: +48 22 250 01 46 adres email: kancelaria@mz.gov.pl\n"
+        "Uprzejmie proszę o przekazanie uwag w wersji edytowalnej "
+        "na adres: dep.prawny@mswia.gov.pl w terminie 14 dni.\n"
+    )
+
+    info = parse_letter(letter)
+
+    assert info.email == "dep.prawny@mswia.gov.pl"
+    assert info.days == 14

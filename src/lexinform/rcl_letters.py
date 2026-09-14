@@ -39,8 +39,18 @@ _DAYS = re.compile(r"w\s+(?:terminie|ciągu)\s+(\d{1,3})\s+dni", re.IGNORECASE)
 _UNTIL = re.compile(rf"(?:w\s+terminie\s+)?do\s+(?:dnia\s+)?{_DATE}", re.IGNORECASE)
 MAX_CONSULTATION = timedelta(days=180)
 _EMAIL = r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
-_ADDRESS_EMAIL = re.compile(rf"adres[^@\n]{{0,80}}?({_EMAIL})", re.IGNORECASE)
-_ANY_EMAIL = re.compile(_EMAIL)
+# An address counts when something tells the reader to send comments there. The instruction is
+# the whole discriminator: a ministry's letterhead labels its own switchboard with the same noun
+# ("telefon: 22 245 59 15 adres: ul. Królewska 27 adres e-mail: sekretariat.DP@cyfra.gov.pl"),
+# and matching "adres" without a verb or the preposition handed the reader that label in 17
+# letters of the corpus. The vocabulary is wider than "na adres" because the letters are written
+# by hand — "uwagi prosimy kierować do:", "proszę o przesłanie na" — and over the 1,727 letters
+# measured (14 Sept 2026) widening it admits no letterhead at all: both the narrow and the wide
+# form find the address in exactly the same 1,060 letters.
+_INSTRUCTION = r"na\s+adres\w*|kierowa[ćc]|przes[łl]a\w*|przekaza\w*|zg[łl]asza\w*|nadsy[łl]a\w*"
+_ADDRESS_EMAIL = re.compile(
+    rf"\b(?:{_INSTRUCTION})\s*(?:do|na)?[:\s][^@\n]{{0,80}}?({_EMAIL})", re.IGNORECASE
+)
 
 
 @dataclass(frozen=True)
@@ -58,16 +68,28 @@ class LetterInfo:
 
 
 def parse_letter(text: str) -> LetterInfo:
+    """What the letter says about the consultation. Only what it says: a field left unknown is
+    the honest answer, and for the address it is the only safe one.
+
+    There used to be a fallback to the first e-mail anywhere in the letter, for a letter that
+    words the instruction differently. Measured over the 1,727 letters of the corpus (14 Sept
+    2026) it fired 426 times and was the ministry's switchboard every time — `kontakt@ms.gov.pl`,
+    `kancelaria@mf.gov.pl`, `esp@kultura.gov.pl` — because the extracted text opens with the
+    letterhead and 394 of those 426 addresses stood in its first 600 characters. These are
+    letters addressed to named bodies (courts, unions, the Rada Dialogu) that give no address for
+    comments at all, and the card printed «замечания на e-mail …» over a switchboard and told the
+    reader to write there. A guessed address is worse than none: the reader acts on it.
+    """
     flat = " ".join(text.split())
     letter_date = _date_of(_LETTER_DATE.search(flat))
     days_match = _DAYS.search(flat)
     until = _UNTIL.search(flat)
-    address = _ADDRESS_EMAIL.search(flat) or _ANY_EMAIL.search(flat)
+    address = _ADDRESS_EMAIL.search(flat)
     return LetterInfo(
         letter_date=letter_date,
         days=int(days_match.group(1)) if days_match else None,
         deadline=_date_of(until),
-        email=address.group(1) if address and address.re is _ADDRESS_EMAIL else _first_email(flat),
+        email=address.group(1) if address else None,
     )
 
 
@@ -85,11 +107,6 @@ def deadline_of(info: LetterInfo, *, published: date) -> date | None:
     if info.days is None:
         return None
     return start + timedelta(days=info.days)
-
-
-def _first_email(flat: str) -> str | None:
-    match = _ANY_EMAIL.search(flat)
-    return match.group(0) if match else None
 
 
 def _date_of(match: re.Match[str] | None) -> date | None:
