@@ -182,8 +182,17 @@ class BillLookup:
     def _fetch_plan(self, term: int, number: str) -> Bill:
         """An entry of the wykaz prac RM: the government's own words about a bill it has not
         drafted yet. The whole register is one download, so this costs nothing extra in a run
-        that already read it."""
+        that already read it.
+
+        Unless the project is already out, that is: the numbers RCL has published are written
+        down for every row of its listing, and a project carrying this one is the bill with the
+        text. Only a project created since the plan was announced counts — the register reuses
+        its numbers — and the operator gets the same answer discovery would give itself.
+        """
         entry = self.read_wykaz_entry(number)
+        project_id = self._repo.find_rcl_project_of_plan(entry.number, entry.published_at.date())
+        if project_id is not None:
+            return self._fetch_project(term, rcl_number(project_id))
         summary = wykaz_summary(entry, term=term)
         bill = self._repo.upsert_summary(summary, now=self._clock.now())
         self._repo.save_wykaz(bill.term, bill.number, entry)

@@ -194,6 +194,24 @@ def test_a_wykaz_number_names_the_project_once_it_is_out_and_the_plan_before_tha
     assert published.bill is not None and published.bill.number == RCL
 
 
+def test_a_wykaz_number_names_the_project_even_before_this_bot_has_walked_it() -> None:
+    """The index of what RCL has listed answers for the operator too: asking after a plan whose
+    project came out gives the row with the text, not a plan card promising one."""
+    w = World()
+    w.add_wykaz_entry()
+    project = rcl_project(wykaz_number="UD408", created=dt.date(2026, 9, 2))
+    w.add_rcl_project(project)
+    w.rcl.listing.clear()  # never walked: the listing has not shown it as changed
+    w.repo.remember_rcl_wykaz_number("UD408", project.id, project.created)
+    w.command("/analyze UD408")
+
+    _commands_only(w)
+
+    ((_, outcome),) = w.replier.replies
+    assert outcome.bill is not None and outcome.bill.number == RCL
+    assert w.repo.find_wykaz(WYKAZ) is None  # no plan row, no second thread
+
+
 def test_show_reads_the_database_only() -> None:
     w = World()
     w.add_bill("3039", TITLE)
