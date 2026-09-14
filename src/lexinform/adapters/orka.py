@@ -11,12 +11,14 @@ Imperva, built for people with browsers. Three things follow, and all three were
 - every failure is an `OrkaUnreachableError`, a per-bill problem: this host judges callers by
   address as well as identity, and everything else the analysis reads comes from api.sejm.gov.pl.
 
-A refusal is about the moment and not about us: on 2026-09-14 every request of three production
-runs (10:47, 20:19, 20:37 UTC) was answered 403, while curl and this very client, from ten
-GitHub runners and ten different addresses, got the same file 44 times out of 44 five minutes
-later. So a refusal is retried like a server error, and it carries the WAF's own identifiers —
-Imperva's incident id, F5's support id, `x-iinfo` — because with those the next refusal can be
-asked about instead of guessed at. Only a 404 is about the bill: the address is built by
+What this host refuses is a request that does not look like a browser's, and the **order** of
+the headers is part of that (`browser_identity`): on 2026-09-14 four production runs were each
+answered 403 while curl from the same runners was served the file, and the difference was httpx
+naming `Accept-Encoding` and `Connection` before `User-Agent`. A refusal is retried all the
+same — a WAF decision can also be momentary, and the first answer from an address that has just
+been served the file is not the answer it gives a cold one — and it carries the WAF's own
+identifiers (Imperva's incident id, the F5's support id, `x-iinfo`), because a 403 with nothing
+to quote costs a session to diagnose. Only a 404 is about the bill: the address is built by
 convention and can simply be wrong.
 """
 

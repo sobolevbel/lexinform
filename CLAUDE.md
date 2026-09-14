@@ -667,23 +667,38 @@ branch history; the state branch is the backup.
   this host. Verified from a GitHub runner too (`.github/workflows/orka-probe.yml`), where the
   refusal arrives as **HTTP 200 text/html**, not 403, so the body decides and not the status. A
   failure of this host is a per-bill problem on purpose (`OrkaUnreachableError`): it is WAF-guarded
-  and address-judged, and everything else the analysis reads is api.sejm.gov.pl. **A refusal is
-  about the moment, not about us**: on 2026-09-14 every orka request of three production runs
-  (10:47, 20:19 and 20:37 UTC) was answered **403**, and minutes later the same file came back 44
-  times out of 44 — curl and `OrkaClient` itself, from ten runners with ten different Azure
-  addresses, over HTTP/2 and HTTP/1.1 alike — so neither the address pool, the protocol nor the
-  client fingerprint is what decided. Three things follow, all of them in place since: the client
-  **retries** a refusal like a server error (only a 404 is about the bill — the address is built by
-  convention and can be wrong); the error carries the WAF's own identifiers (`_waf_marks`: Imperva's
-  incident id, the F5's support id, `x-iinfo`), because a 403 with nothing to quote costs a whole
-  session to diagnose; and **no phase turns a refusal into a verdict**. The text prefilter leaves
-  the bill `text_prefilter_pending`, and the analysis leaves it `analysis_pending` without
-  spending one of its three attempts (`AnalysisResult.unanswered`, `report.analysis_unanswered`) —
-  RPW/30695/2026 was analysed on its `/bills` description on 2026-09-14 and closed as `analyzed`,
-  `text_source: metadata_only`, which nothing ever revisits: no `text_sha256` to compare, no
-  `newer` on `SubmissionTextSource`, and the reconciler only re-reads `/bills`. An analysis of the
-  metadata must never be what a bill with a text ends up with — the rule `_prepare` already applied
-  to a re-analysis, now applied to the first one. Every outgoing
+  and address-judged, and everything else the analysis reads is api.sejm.gov.pl. **What this host refuses is a
+  request that is not shaped like a browser's, and the header order is part of the shape.** On
+  2026-09-14 every orka request of four production runs was answered **403** while curl from the
+  same runners was served the file, and the measurement took a matrix of cold runners to get
+  right, because *the first client to be served vouches for the address and everything from it is
+  served afterwards* — which is why a probe that ran curl first showed 44 successes out of 44 and
+  proved nothing. Ruled out, each on its own cold address: the address pool (ten runners, ten
+  Azure addresses, all refused), the protocol (HTTP/2 refused too), the cookies and the 302 (the
+  403 comes first, there is nothing to follow), the browser hint headers (`Sec-Fetch-*`,
+  `sec-ch-ua`), the cipher list, and the TLS hello itself — **a raw socket on Python's own `ssl`
+  sending curl's bytes was let through** (302, the cookie step). What decided was that httpx
+  writes its own defaults first, so the request said `Accept-Encoding` and `Connection` before
+  `User-Agent`, which no Chrome does. `BROWSER_HEADERS` is therefore an **ordered** mapping in
+  Chrome's own order (`Connection`, `Upgrade-Insecure-Requests`, `User-Agent`, `Accept`,
+  `Accept-Encoding`, `Accept-Language`) and httpx keeps what it is given — 3 cold addresses, 3
+  files out of 3 — while `browser_headers(accept=…)` replaces that one header in place, because
+  moving it would undo the shape (`test_the_request_is_shaped_like_a_browser_and_not_like_a_client_library`
+  is what stops a later edit from reordering it). Two guards stand behind that: the client
+  **retries** a refusal, a WAF decision being momentary as well as structural (only a 404 is about
+  the bill — the address is built by convention and can be wrong), and the error carries the WAF's
+  own identifiers (`_waf_marks`: Imperva's incident id, the F5's support id, `x-iinfo`), because a
+  403 with nothing to quote costs a session to diagnose. And **no phase turns a refusal into a
+  verdict**: the text prefilter leaves the bill `text_prefilter_pending`, and the analysis leaves
+  it `analysis_pending` without spending one of its three attempts (`AnalysisResult.unanswered`,
+  `report.analysis_unanswered`) — RPW/30695/2026 was analysed on its `/bills` description on
+  2026-09-14 and closed as `analyzed`, `text_source: metadata_only`, which nothing ever revisits:
+  no `text_sha256` to compare, no `newer` on `SubmissionTextSource`, and the reconciler only
+  re-reads `/bills`. An analysis of the metadata must never be what a bill with a text ends up
+  with — the rule `_prepare` already applied to a re-analysis, now applied to the first one.
+  The EU proxy is **not** the answer to this host (`403 Filtered` until 2026-09-14, when
+  orka.sejm.gov.pl was added to the tinyproxy allowlist on the VPS): a CONNECT tunnel carries our
+  request unchanged, and the VPS's own address was refused exactly like a runner's. Every outgoing
   client says the same thing about itself (`adapters/browser_identity.py`, Chrome 140 on Windows;
   measured: the WAFs score the kind of client, not the version), `Accept` aside, which each client
   sets for what it asks for. The API carries no link to the opinion form; the Sejm page is

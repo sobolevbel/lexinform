@@ -21,7 +21,7 @@ from zoneinfo import ZoneInfo
 
 import httpx2 as httpx
 
-from lexinform.adapters.browser_identity import BROWSER_HEADERS
+from lexinform.adapters.browser_identity import browser_headers
 from lexinform.errors import WykazUnavailableError
 from lexinform.models import WykazEntry, normalize_wykaz_number
 
@@ -165,7 +165,7 @@ class WykazClient:
         self._client = httpx.Client(
             base_url=base_url.rstrip("/"),
             timeout=timeout,
-            headers={**BROWSER_HEADERS, "Accept": "text/csv,text/html;q=0.9,*/*;q=0.8"},
+            headers=browser_headers(accept="text/csv,text/html;q=0.9,*/*;q=0.8"),
             proxy=proxy,
             transport=transport,
             follow_redirects=True,

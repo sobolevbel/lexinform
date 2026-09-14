@@ -69,6 +69,36 @@ def test_the_request_says_it_is_a_browser() -> None:
     assert "curl" not in agents[0].lower()
 
 
+def test_the_request_is_shaped_like_a_browser_and_not_like_a_client_library() -> None:
+    """The order and the casing are the identity as much as the name is.
+
+    Measured on 2026-09-14: Imperva refused every request that named `Accept-Encoding` and
+    `Connection` before `User-Agent` — httpx's own order, which no Chrome has — and served the
+    same client on three cold addresses three times out of three once the browser's order was
+    sent. httpx fills in those two headers only when the caller has not, so this holds as long
+    as `BROWSER_HEADERS` names them itself.
+    """
+    sent: list[list[str]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        sent.append([name.decode() for name, _ in request.headers.raw])
+        return httpx.Response(200, content=b"%PDF", headers={"content-type": "application/pdf"})
+
+    _client(handler).download(URL)
+
+    assert sent == [
+        [
+            "Host",
+            "Connection",
+            "Upgrade-Insecure-Requests",
+            "User-Agent",
+            "Accept",
+            "Accept-Encoding",
+            "Accept-Language",
+        ]
+    ]
+
+
 def test_the_challenge_page_is_not_a_file_although_it_answers_200() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, content=CHALLENGE, headers={"content-type": "text/html"})
