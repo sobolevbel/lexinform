@@ -358,6 +358,25 @@ Still open:
   link is not at the same URL pattern there), and the backlog — an entry rewritten into relevance
   long after publication stays invisible, because `Data publikacji` does not move on an edit;
   `lexinform scan --since …` is the way in.
+- Left open by the audit of the cold places (14 Sept 2026, `../lexinform-corpus/checks/COLD.md`,
+  probes `10`–`14`), which asked what in the project had never been re-read and what was broken
+  there. Four defects fixed (the representative of a deputies' bill, a signature wrapped at a page
+  break, the spacing pypdf leaves inside a surname, the print number pushed past the clip of an
+  agenda item), the register's quarter, three silent failures of the relay, and seven slices
+  measured and found sound — among them the discontinuation rule, which makes **no** false
+  announcement over the two real ends of terms 8 and 9 (0 of 299 and 0 of 306 lapsed processes
+  later got an act). What it left:
+  - **A conditional sitting is announced as a certainty.** `notes` says so on 18 sittings of term
+    10 ("Posiedzenie aktualne w przypadku zgłoszenia poprawek w czasie drugiego czytania"), and
+    the agenda post states the sitting as a fact a reader plans a day around. One regex; the field
+    is already in the response. The same field carries the application address for a przesłuchanie
+    on 4 sittings — the only place the API has it, and one hearing in a whole term.
+  - **A scanned deputies' print shows no clubs at all**: 11 prints of term 10 have an empty text
+    layer, and `SejmAuthorsResolver` is handed `text` while the analysis already reads the pages.
+    A structural limit until scans were readable; it is one call away from not being one.
+  - **22 prints carry the covering letter in the PDF and not in its text layer** (the text starts
+    at "projekt | USTAWA"). Worth checking against `prints.json` whether these are mixed PDFs — a
+    scanned first page over a digital body.
 - Ukrainian-language channel; weekly digest; static site from the state dump.
 - Committee e-mail addresses in "what you can do now" (the Sejm API has none; the committee page
   is linked instead) and the Senate committee that received the act (the Senate API is not

@@ -656,7 +656,17 @@ branch history; the state branch is the backup.
   Matching is by text and not by the `PrzebiegProc` link, and `-A` is stripped, so an additional
   report counts as its base print. Otherwise the numbers are reliable — 981 of the 1,150 plenary
   items naming a projekt give one, and the single miss (`sejm/64`) is the API printing "druki nr
-  i".
+  i". **The Sejm names the print last, so a long title pushes it past the clip**: of the 4,040
+  agenda items of term 10 that name a print, 111 are over `ITEM_MAX_CHARS` and 65 were quoted to
+  the reader with the number gone — and the quoted item is the whole content of a sitting post.
+  `items_mentioning` keeps a window around the reference beside the head where that happens. Two
+  fields of a committee sitting are read by nothing and were measured in the same pass (cold-places
+  audit, `../lexinform-corpus/checks/12_agenda.py`): of the 225 sittings with `notes`, 181 say in
+  what procedure the sitting was called, **18 say the sitting or one of its items happens only if
+  something else does** ("Posiedzenie aktualne w przypadku zgłoszenia poprawek…") and **4** carry
+  the application address and deadline for a przesłuchanie — the only place in the API where that
+  address appears, and one hearing in a whole term. `closed` is true for 279 sittings, of which 23
+  name a print and one of those had not yet happened.
 - `modifiedSince`/`changeDate` are naive **Europe/Warsaw** times; `Z` is rejected. `sort_by`,
   `passed` filters are ignored; paginate by `offset` until an empty page. `documentType` needs the
   Polish display string ("projekt ustawy"), the enum `BILL` does not filter.
@@ -727,6 +737,23 @@ branch history; the state branch is the backup.
   `/bills` row matching a print, which for such a bill can be the autopoprawka and not the bill.
 - `Voting` stage embeds totals; per-club breakdown needs `/votings/{sitting}/{n}` (per-MP votes).
   Signatories are not in the API: parse the print's cover letter and match against `/MP`.
+- **The cover letter names the representative in the accusative, and the extractor breaks names
+  in two ways.** Measured over the 367 deputies' and committee prints of term 10 (cold-places
+  audit, 14 Sept 2026, `../lexinform-corpus/checks/10_authors.py`). The formula is «Do
+  reprezentowania wnioskodawców … **upoważniamy pana posła Krzysztofa Gadowskiego**» — the
+  honorific between the verb and "posła", the name declined, sometimes two or three people («Pawła
+  Śliza i Michała Gramatykę», the card names the first) and sometimes a committee's nominative
+  («została upoważniona posłanka Wanda Nowicka») or a colon («panie posłanki: Anitę…»). Asking
+  only for the nominative found the representative on **33 of the 334 prints whose letter names
+  one**. Of the two ways a name arrives broken, one is the `\f` of the previous audit — a
+  signature wrapped at the foot of a page reads as "(-)  Barbara\n\n\fOliwiecka", and the
+  blank-line rule cut it to "Barbara" (18 bare first names over the term) — and the other is
+  pypdf's spacing inside a surname ("Osma lak", "Siekiersk i"), which `MpDirectory` answers with a
+  second pass on the name with its spaces gone: over 499 members no two squashed names collide,
+  and it carries 130 of the 152 signatures that did not resolve. The term now ends with **3
+  unresolved signatures of 11,259** and a representative on all 334. What no rule reaches: the 11
+  prints whose text layer is empty (a scan — `signatories` is given `text` only, while the
+  analysis reads the pages) and the 22 whose covering letter is in the PDF but not in its text.
 - Polish text is ~2 characters per token for Claude; the 1M context takes any print whole.
 - `HEAD` on a print attachment returns no `Content-Length` and takes 5–15 s on a file the server
   has not rendered yet (the following `GET` is fast). Never probe sizes: stream the `GET` and stop
