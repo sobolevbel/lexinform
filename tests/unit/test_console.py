@@ -13,7 +13,9 @@ from lexinform.models import (
     Bill,
     BillStatus,
     BillSubmission,
+    Phase,
     ProcessSummary,
+    Stage,
     StatusChange,
 )
 from tests.fakes import make_analysis
@@ -64,7 +66,15 @@ CHANGE = StatusChange(
 )
 
 
+HEARING = Stage(
+    stage_name="Wysłuchanie publiczne", stage_type="PublicHearing", date=date(2026, 9, 20)
+)
+SENATE_DECISION = Phase(key="senate", deadline=date(2026, 10, 4))
+
+
 def test_every_kind_is_printed_with_an_increasing_message_id() -> None:
+    """`run --dry-run` is the documented way to read what a run would post before it posts it, so
+    a kind this publisher cannot print is a kind nobody can check."""
     stream = io.StringIO()
     publisher = ConsolePublisher(MessageFormatter("ru"), stream=stream)
 
@@ -77,10 +87,14 @@ def test_every_kind_is_printed_with_an_increasing_message_id() -> None:
         publisher.publish_act_published(BILL, 1).message_id,
         publisher.publish_in_force(BILL, 1, today=date(2026, 9, 7)).message_id,
         publisher.publish_joint_bill(BILL, BILL, None, 1).message_id,
+        publisher.publish_hearing_deadline(BILL, HEARING, 1, today=date(2026, 9, 7)).message_id,
+        publisher.publish_decision_deadline(
+            BILL, SENATE_DECISION, 1, today=date(2026, 9, 27)
+        ).message_id,
     ]
 
     out = stream.getvalue()
-    assert ids == [1, 2, 3, 4, 5, 6, 7, 8]
+    assert ids == list(range(1, 11))
     assert "NEW BILL druk RPW/1/2026" in out
     assert "JOINT BILL druk RPW/1/2026 under druk RPW/1/2026 (reply to 1)" in out
     assert "STATUS UPDATE druk RPW/1/2026 (reply to 1)" in out
@@ -90,3 +104,20 @@ def test_every_kind_is_printed_with_an_increasing_message_id() -> None:
     assert "AGENDA druk RPW/1/2026 ASW/1/2026-09-17 (reply to 1)" in out
     assert "ACT PUBLISHED druk RPW/1/2026" in out
     assert "IN FORCE druk RPW/1/2026" in out and "С сегодняшнего дня действует" in out
+    assert "HEARING DEADLINE druk RPW/1/2026 (reply to 1)" in out
+    # The phase is on the line, because the Senate's 30 days and the President's 21 are two
+    # different warnings and each bill gets one of each.
+    assert "DECISION DEADLINE druk RPW/1/2026 senate (reply to 1)" in out
+
+
+def test_a_card_edited_in_place_says_which_message_it_replaces() -> None:
+    """The refresher edits cards that have drifted; on a dry run nothing is edited, so the line
+    printed is the only way to see what the channel would have been given instead."""
+    stream = io.StringIO()
+    publisher = ConsolePublisher(MessageFormatter("ru"), stream=stream)
+
+    publisher.edit_new_bill(BILL, None, message_id=101)
+
+    out = stream.getvalue()
+    assert "EDIT CARD druk RPW/1/2026 (message #101)" in out
+    assert "PDF проекта (сайт Сейма)" in out  # the card itself, not only the line above it

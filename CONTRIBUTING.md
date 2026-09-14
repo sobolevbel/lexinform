@@ -127,8 +127,8 @@ Rules that keep this honest:
 ## Tests
 
 ```bash
-uv run pytest                          # unit (default: -m 'not integration and not llm')
-uv run pytest -m integration           # live Sejm API, network
+uv run pytest                          # unit + scenario (default: -m 'not integration')
+uv run pytest -m integration           # live external systems, network
 uv run pytest tests/scenario/test_tracking.py -k closure -vv
 uv run pytest --cov --cov-report=term-missing
 ```
@@ -239,8 +239,10 @@ history of the `state` branch.
   optionally `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` and `LEXINFORM_RCL_PROXY_URL` — without the
   proxy the RCL phase fails on every scheduled run, because RCL drops connections from
   GitHub-hosted runners (`docs/rcl-proxy.md`). Do not protect the `state` branch.
-- `.github/workflows/integration.yml` runs the live API checks weekly and pings the log channel
-  when the API changed under us.
+- `.github/workflows/integration.yml` runs the live checks weekly and pings the log channel when
+  something changed under us: the Sejm API (`test_sejm_live.py`) and the three hosts this project
+  has been wrong about before — orka's WAF, the register CSV on gov.pl and a print's attachments
+  (`test_live_hosts.py`). RCL is not among them: a GitHub runner cannot reach it at all.
 - Operator commands: `lexinform republish NUMBER` (post a card again), `lexinform reset NUMBER
   --to analysis_pending` (re-analyse), `--to skipped_prefilter` (silence a false positive); the
   same from the technical channel (`/analyze`, `/show`, `/skip`, `/republish`) through the relay

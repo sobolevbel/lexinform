@@ -100,11 +100,14 @@ def test_consultation_results_notice(process_3039: ProcessDetail) -> None:
 
 
 def test_consultation_messages_need_a_consultation(process_3039: ProcessDetail) -> None:
+    """The formatter raises seven different `ValueError`s over a bill that is missing something,
+    so the message is what says the refusal is the right one: a bill with no consultation must
+    not fail for want of an analysis and count as tested."""
     bill = bill_of(process_3039)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="had no public consultation"):
         MessageFormatter("ru").consultation_results(bill)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="has no consultation end date"):
         MessageFormatter("ru").consultation_deadline(bill, today=TODAY)
 
 
@@ -147,7 +150,7 @@ def test_act_notice_names_the_journal_the_date_and_the_staged_entry_caveat(
 def test_in_force_reminder_needs_a_date(process_3039: ProcessDetail) -> None:
     undated = bill_of(process_3039, act=ACT.model_copy(update={"entry_into_force": None}))
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="has no entry-into-force date"):
         MessageFormatter("ru").in_force(undated)
 
 

@@ -79,10 +79,9 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-m 'not integration and not llm' -q"
+addopts = "-m 'not integration' -q"
 markers = [
-  "integration: tests that call the live Sejm API (network)",
-  "llm: tests that call the real LLM API (costs money)",
+  "integration: tests that call a live external system (network)",
 ]
 
 [tool.coverage.run]

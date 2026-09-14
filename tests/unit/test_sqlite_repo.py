@@ -12,6 +12,7 @@ from lexinform.models import (
     ActInfo,
     AgendaItem,
     AmendmentsRecord,
+    AnalysisRecord,
     ApplicantType,
     BillContext,
     BillStatus,
@@ -934,3 +935,73 @@ def test_a_command_is_recorded_once_and_marked_executed_then_handled(
     handled = repo.command_state(5)
     assert handled is not None and handled.handled_at == now
     assert repo.command_state(6) is None  # unknown updates have no state
+
+
+def test_a_v1_dump_keeps_its_rows_and_their_values_through_every_migration(
+    tmp_path: Path, process_3039: ProcessDetail, now: datetime
+) -> None:
+    """The schema test above proves the columns arrive; this one proves the rows do.
+
+    `MIGRATIONS` is allowed to rebuild a table — SQLite cannot change a column's type or its
+    constraints any other way — and a rebuild that drops the `INSERT … SELECT` loses the state
+    branch. The columns would still be there, so only reading the rows back can tell.
+    """
+    analysis = AnalysisRecord(
+        analysis=FakeLlm().default,
+        model="claude-opus-5",
+        prompt_version="2026-01-v1",
+        input_chars=12_345,
+        truncated=True,
+        text_source="pdf",
+        created_at=now,
+    )
+    legacy = sqlite3.connect(tmp_path / "v1.db")
+    legacy.executescript(f"BEGIN;{MIGRATIONS[0]}PRAGMA user_version = 1;COMMIT;")
+    legacy.execute(
+        "INSERT INTO bills (term, number, title, change_date, status, prefilter_hits,"
+        " summary_json, analysis_json, analysis_attempts, last_error, first_seen_at,"
+        " last_checked_at) VALUES (10, '3039', ?, ?, 'analyzed', ?, ?, ?, 2, 'boom', ?, ?)",
+        (
+            process_3039.title,
+            process_3039.change_date.isoformat(),
+            '["cudzoziemcy"]',
+            process_3039.model_dump_json(),
+            analysis.model_dump_json(),
+            now.isoformat(),
+            now.isoformat(),
+        ),
+    )
+    legacy.execute(
+        "INSERT INTO status_changes (id, term, number, old_fingerprint, new_fingerprint,"
+        " new_stages_json, closure_detected, passed, detected_at)"
+        " VALUES (7, 10, '3039', 'a', 'b', '[]', 0, NULL, ?)",
+        (now.isoformat(),),
+    )
+    legacy.execute(
+        "INSERT INTO publications (term, number, kind, status, channel_id, message_id,"
+        " created_at, sent_at) VALUES (10, '3039', 'new_bill', 'sent', ?, 4242, ?, ?)",
+        (CHANNEL, now.isoformat(), now.isoformat()),
+    )
+    dump = "\n".join(legacy.iterdump()) + "\n"
+    legacy.close()
+    repo = SqliteBillRepository(tmp_path / "current.db")
+    repo.migrate()
+
+    repo.restore(dump)
+
+    bill = repo.get(10, "3039")
+    assert bill is not None
+    assert (bill.status, bill.analysis_attempts, bill.last_error) == (
+        BillStatus.ANALYZED,
+        2,
+        "boom",
+    )
+    assert bill.prefilter_hits == ["cudzoziemcy"]
+    assert bill.summary.title == process_3039.title
+    record = bill.analysis
+    assert record is not None
+    assert (record.model, record.input_chars, record.truncated) == ("claude-opus-5", 12_345, True)
+    assert record.analysis.score == FakeLlm().default.score
+    card = repo.get_publication(10, "3039", PublicationKind.NEW_BILL, CHANNEL)
+    assert card is not None and card.message_id == 4242
+    assert card.status is PublicationStatus.SENT

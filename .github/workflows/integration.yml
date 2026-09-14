@@ -1,5 +1,6 @@
-# Weekly live checks against api.sejm.gov.pl.
-name: Integration (live Sejm API)
+# Weekly live checks against api.sejm.gov.pl, orka.sejm.gov.pl and the register on gov.pl.
+# Not legislacja.rcl.gov.pl: a GitHub-hosted runner cannot open a connection to it.
+name: Integration (live external systems)
 
 on:
   schedule:
@@ -14,7 +15,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7
       - run: uv sync --frozen
       - run: uv run pytest -m integration -q
-      - name: Tell the log channel when the live API changed under us
+      - name: Tell the log channel when something changed under us
         if: failure() && env.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID != ''
         env:
           LEXINFORM_TELEGRAM_BOT_TOKEN: ${{ secrets.LEXINFORM_TELEGRAM_BOT_TOKEN }}
@@ -24,4 +25,4 @@ jobs:
           curl -sS -o /dev/null -X POST \
             "https://api.telegram.org/bot${LEXINFORM_TELEGRAM_BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${LEXINFORM_TELEGRAM_LOG_CHANNEL_ID}" \
-            --data-urlencode "text=❌ lexinform: live Sejm API checks failed: ${RUN_URL}"
+            --data-urlencode "text=❌ lexinform: live external-system checks failed: ${RUN_URL}"
