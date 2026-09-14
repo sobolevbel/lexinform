@@ -255,3 +255,56 @@ jobs:
           except Exception as exc:
               print(f"  httpx {sys.argv[2]}: {type(exc).__name__}: {exc}")
           PY
+
+  # Which part of the client is the WAF reading? Each variant gets a runner of its own, because
+  # the first answer vouches for the address and every later request from it is served.
+  variant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [plain, http2, headers, http2headers, curl]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: One variant, first request of this address
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set +e
+          echo "variant=$VARIANT ip=$(curl -sS --max-time 10 https://api.ipify.org)"
+          URL='https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-30771-2026/$file/10-RPW-30771-2026.pdf'
+          if [ "$VARIANT" = "curl" ]; then
+            curl -sS -L -o /tmp/b -w "  result: http=%{http_code} type=%{content_type} bytes=%{size_download}\n" \
+              --max-time 90 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" \
+              -H 'Accept: text/html,application/xhtml+xml,*/*;q=0.8' -H 'Accept-Language: pl-PL,pl;q=0.9' "$URL"
+            exit 0
+          fi
+          uv run --frozen --no-dev --with h2 python - "$VARIANT" "$URL" <<'PY'
+          import sys
+          import httpx2 as httpx
+          from lexinform.adapters.browser_identity import BROWSER_HEADERS
+
+          variant, url = sys.argv[1], sys.argv[2]
+          headers = dict(BROWSER_HEADERS)
+          if "headers" in variant:
+              headers |= {
+                  "Accept-Encoding": "gzip, deflate, br, zstd",
+                  "Upgrade-Insecure-Requests": "1",
+                  "Sec-Fetch-Dest": "document",
+                  "Sec-Fetch-Mode": "navigate",
+                  "Sec-Fetch-Site": "none",
+                  "Sec-Fetch-User": "?1",
+                  "sec-ch-ua": '"Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"',
+                  "sec-ch-ua-mobile": "?0",
+                  "sec-ch-ua-platform": '"Windows"',
+              }
+          with httpx.Client(headers=headers, follow_redirects=True, timeout=60,
+                            http2="http2" in variant) as client:
+              r = client.get(url)
+          print(f"  result: http={r.status_code} type={r.headers.get('content-type')}"
+                f" proto={r.http_version} bytes={len(r.content)}")
+          PY
