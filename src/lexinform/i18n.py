@@ -66,6 +66,7 @@ class Labels:
     process_passed: str
     process_not_enacted: str
     process_veto_sustained: str
+    process_tribunal_ruled: str
     stage_veto_sustained: str
     link_process: str
     link_pdf: str
@@ -270,6 +271,7 @@ RU = Labels(
     process_veto_sustained=(
         "Сейм не отклонил вето Президента (нужно 3/5 голосов): закон не принят."
     ),
+    process_tribunal_ruled="Конституционный трибунал вынес решение по закону.",
     stage_veto_sustained="закон не принят повторно после вето Президента",
     process_passed="Сейм принял закон.",
     link_process="Ход процесса в Сейме",
@@ -543,6 +545,7 @@ RU = Labels(
         "signed": "Президент подписал закон",
         "veto": "Президент наложил вето",
         "tribunal": "Закон направлен в Конституционный трибунал",
+        "tribunal_ruled": "Конституционный трибунал вынес решение",
         "text_changed": "Новая версия текста",
         "government_position": "Правительство высказалось о проекте",
         "impact_assessment": "Появилась оценка последствий проекта",
@@ -796,6 +799,7 @@ RU = Labels(
         "PresidentSignature": "✍️ Президент подписал закон",
         "Veto": "⛔ Президент наложил вето",
         "PresidentToTribunal": "⚖️ Президент направил закон в Конституционный трибунал",
+        "ConstitutionalTribunalRuling": "⚖️ Решение Конституционного трибунала",
         "PublicHearing": "📢 Публичные слушания (wysłuchanie publiczne)",
         "SenatePositionConsideration": "Сейм рассмотрел позицию Сената",
         "PresidentMotionConsideration": "Сейм рассмотрел вето Президента",
@@ -860,6 +864,7 @@ EN = Labels(
     process_veto_sustained=(
         "The Sejm did not override the veto (a 3/5 majority is needed): no law was enacted."
     ),
+    process_tribunal_ruled="The Constitutional Tribunal has ruled on the act.",
     stage_veto_sustained="not passed again after the President's veto",
     process_passed="The Sejm passed the bill.",
     link_process="Legislative process",
@@ -1129,6 +1134,7 @@ EN = Labels(
         "signed": "The President signed the act",
         "veto": "The President vetoed the act",
         "tribunal": "Referred to the Constitutional Tribunal",
+        "tribunal_ruled": "The Constitutional Tribunal has ruled",
         "text_changed": "New version of the text",
         "government_position": "The government has spoken on the bill",
         "impact_assessment": "An assessment of the bill's effects was filed",
@@ -1388,6 +1394,7 @@ EN = Labels(
         "PresidentSignature": "✍️ Signed by the President",
         "Veto": "⛔ Vetoed by the President",
         "PresidentToTribunal": "⚖️ Referred by the President to the Constitutional Tribunal",
+        "ConstitutionalTribunalRuling": "⚖️ Ruling of the Constitutional Tribunal",
         "PublicHearing": "📢 Public hearing (wysłuchanie publiczne)",
         "SenatePositionConsideration": "Sejm considered the Senate position",
         "PresidentMotionConsideration": "Sejm considered the President's veto",

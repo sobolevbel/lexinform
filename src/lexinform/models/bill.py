@@ -19,6 +19,8 @@ from lexinform.models.sejm import (
     ProcessSummary,
     Stage,
     TextDocument,
+    reading_adjourned,
+    reading_decision,
     second_reading_sent_back,
     senate_moved_rejection,
 )
@@ -605,6 +607,10 @@ def _phase_after(
         return Phase(key="veto", committees=_committee_codes(last) or _latest_committees(top))
     if kind == "PresidentMotionConsideration":
         return _phase_after_veto_vote(last)
+    if kind == "ConstitutionalTribunalRuling":
+        # The Tribunal has answered and the road stops here whichever way it went: what the
+        # President does with an act found unconstitutional in part is a fresh Sejm process.
+        return None
     if kind == "SenatePositionConsideration" and _sejm_let_the_senate_win(last):
         return None
     if kind in _PRESIDENT_NEXT:
@@ -674,11 +680,16 @@ def _phase_after_reading(
 ) -> Phase | None:
     name = last.stage_name.lower()
     if "iii czytanie" in name:
-        decided = (last.decision or "").lower()
+        decided = reading_decision(last)
         if decided.startswith("uchwal") or passed:
             deadline = _days_after(last.date, senate_days) if senate_days is not None else None
             return Phase(key="senate", deadline=deadline)
-        return None if decided else Phase(key="third_reading")
+        # A reading the Sejm broke off decided nothing and is resumed: druk 2985 of term 8 stood
+        # at "nie dokończone III czytanie" with the process still open, and reading that as a
+        # decision made `is_over` true — no card, and a followed bill's card frozen for good.
+        if not decided or reading_adjourned(last):
+            return Phase(key="third_reading")
+        return None
     if "ii czytanie" in name:
         if second_reading_sent_back(last):
             return Phase(key="second_reading_committee", committees=_latest_committees(top))

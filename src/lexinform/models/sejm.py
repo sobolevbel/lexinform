@@ -795,12 +795,27 @@ def senate_moved_rejection(stage: Stage) -> bool:
 _SECOND_READING_SENT_BACK = ("ponownie", "niedokończone")
 
 
+def reading_decision(stage: Stage) -> str:
+    """The reading's decision, with the Sejm's two spellings of an adjournment made one.
+
+    Term 10 writes "niedokończone I czytanie" and terms 8 and 9 wrote "nie dokończone" with a
+    space (49 and 6 decisions, plus three "nie dokończone III czytanie"). The editors have used
+    both, so a rule that knows only the current spelling is one waiting to break.
+    """
+    return (stage.decision or "").lower().replace("nie dokończone", "niedokończone")
+
+
+def reading_adjourned(stage: Stage) -> bool:
+    """The reading did not finish and the Sejm will come back to it — not a decision at all."""
+    return "niedokończone" in reading_decision(stage)
+
+
 def second_reading_sent_back(stage: Stage) -> bool:
     """True when the second reading did not hand the bill on to the third: it left it with the
     committee, which works the amendments into an additional ("-A") report before the Sejm votes.
     Observed decisions: "skierowano ponownie do komisji…", "niedokończone II czytanie"
     (druk 1929)."""
-    decided = (stage.decision or "").lower()
+    decided = reading_decision(stage)
     return any(marker in decided for marker in _SECOND_READING_SENT_BACK)
 
 

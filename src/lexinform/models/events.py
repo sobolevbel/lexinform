@@ -15,6 +15,7 @@ from lexinform.models.rcl import RCL_STAGE_TYPE
 from lexinform.models.sejm import (
     Stage,
     flatten_stages,
+    reading_decision,
     second_reading_sent_back,
     senate_moved_rejection,
 )
@@ -37,7 +38,7 @@ def is_substantive(stage: Stage) -> bool:
     if stage.stage_type == "SejmReading":
         if _reading_numeral(stage) == "III":
             return True
-        return "odrzuc" in (stage.decision or "").lower() or second_reading_sent_back(stage)
+        return "odrzuc" in reading_decision(stage) or second_reading_sent_back(stage)
     return True
 
 
@@ -152,7 +153,7 @@ def closure_event(bill: Bill) -> str:
 
 def _rejects(stage: Stage) -> bool:
     if stage.stage_type == "SejmReading":
-        return "odrzuc" in (stage.decision or "").lower()
+        return "odrzuc" in reading_decision(stage)
     if stage.stage_type == "CommitteeReport":
         proposal = (stage.proposal or "").lower()
         return "odrzuc" in proposal and "popraw" not in proposal
@@ -168,6 +169,7 @@ _EVENT_BY_STAGE_TYPE = {
     "PresidentSignature": "signed",
     "Veto": "veto",
     "PresidentToTribunal": "tribunal",
+    "ConstitutionalTribunalRuling": "tribunal_ruled",
     "PublicHearing": "hearing",
     "Start": "start",
 }
@@ -204,7 +206,7 @@ def _veto_vote_event(stage: Stage) -> str:
 
 
 def _reading_event(stage: Stage) -> str:
-    decided = (stage.decision or "").lower()
+    decided = reading_decision(stage)
     if "odrzuc" in decided:
         return "rejected"
     numeral = _reading_numeral(stage)
@@ -273,6 +275,7 @@ _EVENT_TAG = {
     "subcommittee_report": "committee",
     "hearing": "hearing",
     "tribunal": "tribunal",
+    "tribunal_ruled": "tribunal",
 }
 _SENATE_STAGES = frozenset({"SenatePosition", "SenatePositionConsideration"})
 _PRESIDENT_STAGES = frozenset({"ToPresident", "PresidentSignature"})

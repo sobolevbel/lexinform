@@ -1496,6 +1496,10 @@ class MessageFormatter:
         if bill.discontinued_at is not None:
             carried = bill.summary.applicant_type is ApplicantType.CITIZENS
             label = lb.process_carried_over if carried else lb.process_discontinued
+        elif any(st.stage_type == "ConstitutionalTribunalRuling" for st in bill.stages):
+            # The listing leaves `passed` as it was, so without this the card of an act the
+            # Tribunal struck down said nothing at all about being over.
+            label = lb.process_tribunal_ruled
         elif veto_stood(bill.stages):
             # The API leaves `passed` true on a law the veto killed (art. 122 ust. 5 was never
             # reached), so the closure branch below never fires and the card said nothing at all

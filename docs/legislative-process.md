@@ -192,7 +192,10 @@ The Senate has **30 days** from receipt (14 if pilny) to adopt the law unchanged
 amendments, or reject it as a whole; silence means adoption. Senate committees work on the text
 and accept opinions too (the Senate publishes its own consultation pages per print). The Senate's
 resolution comes back to the Sejm as a Sejm print (`SenatePosition` with `position`: "nie wniósł
-poprawek", "wniósł poprawki"/"wniósł poprawkę", "odrzucił ustawę", and `printNumber`).
+poprawek", "wniósł poprawki"/"wniósł poprawkę", "wnosi o odrzucenie ustawy", and `printNumber`).
+Those four are the whole vocabulary over terms 8–10 (1 364 / 722 + 27 / 93); "odrzucił ustawę",
+which this document gave until 2026-09-14, occurs nowhere, and all 93 rejections are of term 9 —
+the Sejm and the Senate of term 10 share a majority. `models.senate_moved_rejection` is the test.
 
 Amendments or a rejection are considered by the Sejm committee (`CommitteeWork` "Praca w komisjach
 nad stanowiskiem Senatu" + `CommitteeReport` "przyjąć/odrzucić (część) poprawek") and voted on
@@ -323,7 +326,7 @@ SejmReading                  I/II/III czytanie na posiedzeniu Sejmu    sittingNu
   Voting                     Głosowanie (III czytanie)                 voting{yes,no,abstain,…}
 CommitteeWork                Praca w komisjach po I/II czytaniu / nad stanowiskiem Senatu
   CommitteeReport            Sprawozdanie komisji                      printNumber, reportFile, proposal
-PublicHearing                Wysłuchanie publiczne                     date
+  PublicHearing              Wysłuchanie publiczne                     date
 SenatePosition               Stanowisko Senatu                         position, printNumber
 SenatePositionConsideration  Rozpatrywanie na forum Sejmu stanowiska Senatu   decision
 ToPresident                  Ustawę przekazano Prezydentowi do podpisu
@@ -331,10 +334,20 @@ PresidentSignature           Prezydent podpisał ustawę
 Veto                         Wniosek Prezydenta (weto)                 children: Referral per committee
 PresidentMotionConsideration Rozpatrywanie na forum Sejmu wniosku Prezydenta  decision, child Voting
 PresidentToTribunal          Prezydent skierował ustawę do Trybunału
+ConstitutionalTribunalRuling Wyrok Trybunału Konstytucyjnego           verdict, publisher, links
 GovermentPosition            Stanowisko rządu (the API's own misspelling)
 Opinion                      Opinia (a body's opinion, filed beside the process)
 End                          Uchwalono
 ```
+
+Two of those were read off the whole corpus on 2026-09-14 and not from a fixture.
+**`PublicHearing` is a child of `CommitteeWork`**, never a top-level stage: all fifteen of terms
+8–10 are, which is why `events.open_hearing` and `hearings_due` walk `flatten_stages`.
+**`ConstitutionalTribunalRuling`** was missing from this list altogether (3 nodes, all term 8;
+ten bills of term 10 stand at `PresidentToTribunal` waiting for one). There is also a node with
+**no `stageType` at all**, "Rozpatrywanie na forum Sejmu" — 995 of them over the three terms —
+but it belongs only to `wniosek`, `lista kandydatów`, `informacja` and `zawiadomienie` documents
+and to no `projekt ustawy`, so nothing this bot follows ever meets one.
 
 `models.next_phase` turns the last top-level stage into the reader-facing "what comes next" —
 last as `models.process_stages` counts it, which drops `GovermentPosition` and `Opinion` (they

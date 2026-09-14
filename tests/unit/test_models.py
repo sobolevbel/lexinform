@@ -629,6 +629,38 @@ def test_the_report_after_a_first_reading_goes_to_the_second_whatever_it_propose
     assert second is not None and second.key == "third_reading"
 
 
+def test_an_adjourned_reading_decided_nothing(process_1962: ProcessDetail) -> None:
+    """Druk 2985 of term 8 stood at "nie dokończone III czytanie" with the process open: reading
+    that as a decision made `is_over` true, so the bill got no card and a followed one froze.
+    Term 10 writes the same thing without the space, and the editors have used both."""
+    third = Stage(
+        stage_name="III czytanie na posiedzeniu Sejmu",
+        stage_type="SejmReading",
+        date=dt.date(2026, 8, 20),
+        decision="nie dokończone III czytanie",
+    )
+    bill = _bill(process_1962, (*process_1962.stages[:-1], third))
+
+    phase = next_phase(bill, today=TODAY)
+
+    assert phase is not None and phase.key == "third_reading"
+    assert not is_over(bill, today=TODAY)
+
+
+def test_the_tribunal_ruling_ends_the_road(process_1962: ProcessDetail) -> None:
+    """Ten bills of term 10 stand at `PresidentToTribunal`; the ruling that answers them is a
+    top-level stage the code did not know, so the tree came out unrecognised."""
+    ruling = Stage(
+        stage_name="Wyrok Trybunału Konstytucyjnego",
+        stage_type="ConstitutionalTribunalRuling",
+        date=dt.date(2026, 8, 20),
+    )
+    bill = _bill(process_1962, (*process_1962.stages[:-1], ruling))
+
+    assert next_phase(bill, today=TODAY) is None
+    assert is_over(bill, today=TODAY)
+
+
 def test_the_committee_answering_the_veto_is_not_answering_the_senate(
     process_1962: ProcessDetail,
 ) -> None:

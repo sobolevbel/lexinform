@@ -294,3 +294,57 @@ def test_a_card_says_the_veto_stood_when_it_did(process_1962: ProcessDetail) -> 
     assert "📜 <b>Законопроект: процесс завершён — druk nr 1962</b>" in text
     assert "Сейм не отклонил вето Президента (нужно 3/5 голосов): закон не принят." in text
     assert "Что дальше" not in text and "Что можно сделать" not in text
+
+
+def test_a_card_says_the_veto_stood_even_when_the_end_node_denies_it(
+    process_1962: ProcessDetail,
+) -> None:
+    """Eight of the fifteen processes of term 10 the Sejm failed to re-adopt keep `End` =
+    "Uchwalono" beside `passed` = true — druki 410, 643, 865, 935, 1109, 1110, 1131 and 1600.
+    Reading the rename alone left them with no ending line at all."""
+    vetoed = process_1962.model_copy(
+        update={
+            "stages": (
+                Stage(stage_name="Wniosek Prezydenta (weto)", stage_type="Veto"),
+                Stage(
+                    stage_name="Rozpatrywanie na forum Sejmu wniosku Prezydenta",
+                    stage_type="PresidentMotionConsideration",
+                    decision="nie uchwalona ponownie",
+                    date=dt.date(2026, 3, 27),
+                ),
+                Stage(stage_name="Uchwalono", stage_type="End"),
+            ),
+            "passed": True,
+        }
+    )
+
+    text = MessageFormatter("ru").new_bill(bill_of(vetoed), None, today=TODAY).text
+
+    assert "Сейм не отклонил вето Президента (нужно 3/5 голосов): закон не принят." in text
+
+
+def test_a_card_names_the_tribunals_ruling(process_1962: ProcessDetail) -> None:
+    """Ten bills of term 10 stand at `PresidentToTribunal`. The ruling that answers them was an
+    unrecognised stage, so the card said nothing at all about the road having ended."""
+    ruled = process_1962.model_copy(
+        update={
+            "stages": (
+                Stage(
+                    stage_name="Prezydent skierował ustawę do Trybunału Konstytucyjnego",
+                    stage_type="PresidentToTribunal",
+                    date=dt.date(2026, 6, 1),
+                ),
+                Stage(
+                    stage_name="Wyrok Trybunału Konstytucyjnego",
+                    stage_type="ConstitutionalTribunalRuling",
+                    date=dt.date(2026, 8, 20),
+                ),
+            ),
+            "passed": True,
+        }
+    )
+
+    text = MessageFormatter("ru").new_bill(bill_of(ruled), None, today=TODAY).text
+
+    assert "Законопроект: процесс завершён" in text
+    assert "Конституционный трибунал вынес решение по закону." in text
