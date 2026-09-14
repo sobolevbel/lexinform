@@ -95,10 +95,11 @@ def test_assigned_print_number_continues_the_thread_under_the_new_number() -> No
     assert "#kadencja10druk3100 #RPW_29075_2026" in text  # either tag finds the thread
     pre = w.bill(RPW)
     assert (pre.status, pre.linked_number) == (BillStatus.LINKED, "3100")
-    edited, edited_message = w.publisher.edits[0]  # the card now carries the druk's tag too
-    assert (edited.number, edited_message) == (RPW, card_id)
+    # The card is the print's own now, in the entry's message, and carries both tags.
+    edited, edited_message = w.publisher.edits[0]
+    assert (edited.number, edited_message) == ("3100", card_id)
     assert (
-        "#RPW_29075_2026 #kadencja10druk3100" in MessageFormatter("ru").new_bill(edited, None).text
+        "#kadencja10druk3100 #RPW_29075_2026" in MessageFormatter("ru").new_bill(edited, None).text
     )
     analysis = w.bill("3100").analysis
     assert analysis is not None and analysis.revision == 2

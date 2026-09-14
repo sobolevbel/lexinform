@@ -53,9 +53,15 @@ def _report(print_number: str, **fields: Any) -> Stage:
 
 
 def _bill(process: ProcessDetail, stages: tuple[Stage, ...], **fields: Any) -> Bill:
-    """A bill whose process is still open, whatever the fixture says."""
+    """A bill whose process is still open, whatever the fixture says.
+
+    The ELI goes with the closure date: a fixture taken from a finished process carries the act's
+    address, and `next_phase` reads that as the road being over before it looks at a stage.
+    """
     return Bill(
-        summary=process.model_copy(update={"closure_date": None, "passed": None}),
+        summary=process.model_copy(
+            update={"closure_date": None, "passed": None, "eli": None, "display_address": None}
+        ),
         status=BillStatus.ANALYZED,
         stages=stages,
         first_seen_at=NOW,

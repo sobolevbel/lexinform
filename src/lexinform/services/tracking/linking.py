@@ -22,6 +22,7 @@ from lexinform.models import (
 from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.sources import SejmTextSource, fetch_print
+from lexinform.services.tracking.acts import ActWatcher
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.result import TrackingResult
 from lexinform.services.tracking.stages import StageEnricher, change_key
@@ -37,6 +38,7 @@ class Linker:
         clock: Clock,
         poster: Poster,
         enricher: StageEnricher,
+        acts: ActWatcher,
         *,
         channel_id: str,
         analysis: AnalysisService | None,
@@ -47,6 +49,7 @@ class Linker:
         self._clock = clock
         self._poster = poster
         self._enricher = enricher
+        self._acts = acts
         self._channel_id = channel_id
         self._analysis = analysis
         self._text_prefilter = text_prefilter
@@ -72,6 +75,13 @@ class Linker:
 
         An entry whose card was never posted has no thread to continue: its print goes through
         the normal publishing path instead.
+
+        The act comes before the announcement, as it does in the daily loop: a project can be
+        found long after the Sejm was done with it — RCL project 12405609 was picked up on
+        2026-09-13 and its druk 2172 had been Dz.U. 2026 poz. 203 since February — and nothing
+        else would ever fetch that act. `list_tracked` follows a bill for 90 days from its
+        closure (180 when it is passed and has no act), and a print adopted after that is past
+        every one of those windows the moment it is created, so this is its only chance.
         """
         now = self._clock.now()
         detail = self._gateway.get_process(pre.term, print_number)
@@ -82,10 +92,13 @@ class Linker:
         card = self._poster.card(pre)
         if card is None or card.status is not PublicationStatus.SENT:
             return
-        self._inherit_card(pre, print_number, card, now=now, publish=publish)
+        alias = self._inherit_card(pre, print_number, card, now=now)
         bill = self._repo.get(pre.term, print_number)
-        if bill is not None:
-            self._announce_print(bill, pre, detail, result, now=now, publish=publish)
+        if bill is None:
+            return
+        self._acts.check(bill, detail, result, publish=publish)
+        self._announce_print(bill, pre, detail, result, now=now, publish=publish)
+        self._render_card(pre.term, print_number, alias, publish=publish)
 
     def _adopt(self, pre: Bill, print_number: str, detail: ProcessDetail, *, now: datetime) -> None:
         """The print takes over everything the entry knew about the bill."""
@@ -114,25 +127,41 @@ class Linker:
         )
 
     def _inherit_card(
-        self, pre: Bill, print_number: str, card: Publication, *, now: datetime, publish: bool
-    ) -> None:
+        self, pre: Bill, print_number: str, card: Publication, *, now: datetime
+    ) -> Publication:
         """The card stays the root of the thread: the print is aliased to it instead of getting a
-        second card, and it is re-rendered first so that it shows the druk's tag next to its own."""
-        linked_pre = self._repo.get(pre.term, pre.number)
-        if publish and linked_pre is not None:
-            self._poster.rerender_card(linked_pre, card)
-        pub_id = self._repo.create_publication(
-            Publication(
-                term=pre.term,
-                number=print_number,
-                kind=PublicationKind.NEW_BILL,
-                status=PublicationStatus.SENT,
-                channel_id=self._channel_id,
-                message_id=card.message_id,
-                created_at=now,
-            )
+        second card. The alias comes back so that `_render_card` can write the print's own text
+        into that message and keep the digest on the print's row."""
+        alias = Publication(
+            term=pre.term,
+            number=print_number,
+            kind=PublicationKind.NEW_BILL,
+            status=PublicationStatus.SENT,
+            channel_id=self._channel_id,
+            message_id=card.message_id,
+            created_at=now,
         )
-        self._repo.mark_publication(pub_id, PublicationStatus.SENT, message_id=card.message_id)
+        alias.id = self._repo.create_publication(alias)
+        self._repo.mark_publication(alias.id, PublicationStatus.SENT, message_id=card.message_id)
+        return alias
+
+    def _render_card(
+        self, term: int, print_number: str, alias: Publication, *, publish: bool
+    ) -> None:
+        """Write the print's own card into the thread's root message, once, at the end.
+
+        The card used to be rendered from the entry the moment the alias was made, which showed
+        the druk's tag but nothing else the print knows: not its act, not the text the
+        re-analysis had just read. Nothing rendered it again either — `CardRefresher` works from
+        the list of followed bills taken before the tracking phase, and this row did not exist
+        then — so the thread kept its predecessor's card until the next run, or for ever when the
+        print is too old for `list_tracked` to return it.
+        """
+        if not publish:
+            return
+        bill = self._repo.get(term, print_number)
+        if bill is not None:
+            self._poster.rerender_card(bill, alias)
 
     def _announce_print(
         self,

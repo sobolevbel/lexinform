@@ -7,9 +7,11 @@ from lexinform.models import BillStatus, PublicationKind, RclProject
 from tests.fakes import FakeTextExtractor
 from tests.harness import (
     CONSULTATION_FOLDERS,
+    ELI,
     RCL,
     START,
     World,
+    act,
     detail,
     rcl_document,
     rcl_folder,
@@ -17,6 +19,9 @@ from tests.harness import (
     rcl_stage,
     summary,
 )
+
+RM_DATE = dt.date(2026, 9, 8)
+"""The day the project was handed to the Sejm on the fake RCL page."""
 
 UZGODNIENIA_ONLY = (
     rcl_stage(2, "Uzgodnienia", "active"),
@@ -428,11 +433,12 @@ def test_hand_over_to_the_sejm_then_the_druk_continues_the_thread() -> None:
     stored = w.bill("3100")
     assert stored.analysis is not None and stored.rcl is None
     assert stored.linked_wykaz_number == "UC164"
-    # Every edit lands on the card: first the hand-over to the Sejm, then the druk's tag.
+    # Every edit lands on the card: first the hand-over to the Sejm, then the druk's own card
+    # in the same message, carrying both tags.
     assert {message for _, message in w.publisher.edits} == {card_id}
     edited, _ = w.publisher.edits[-1]
-    assert edited.number == RCL
-    assert "#RCL_UC164 #kadencja10druk3100" in MessageFormatter("ru").new_bill(edited, None).text
+    assert edited.number == "3100"
+    assert "#kadencja10druk3100 #RCL_UC164" in MessageFormatter("ru").new_bill(edited, None).text
 
 
 def test_druk_of_a_skipped_project_goes_the_normal_way() -> None:
@@ -519,3 +525,50 @@ def test_a_handed_over_project_asks_the_sejm_for_its_druk_every_run() -> None:
     assert w.bill(RCL).status is BillStatus.LINKED
     assert w.publication("3100", PublicationKind.NEW_BILL) is not None
     assert w.card_id("3100") == card_id
+
+
+def test_the_druk_of_a_project_whose_act_is_out_brings_the_act_with_it() -> None:
+    """RCL project 12405609 was picked up on 2026-09-13; its druk 2172 had been Dz.U. 2026
+    poz. 203 since February and in force since March. Nothing fetched that act — the print is
+    created during the tracking phase, after the list `_check_processes` and `CardRefresher`
+    work from was taken, and it is past every window `list_tracked` follows a closed bill for —
+    so the thread was told «дальше: публикация в Dziennik Ustaw · без движения уже 6 мес.» over
+    a law that had been applying for half a year, and nothing would ever have corrected it.
+    """
+    w = World()
+    project = _followed_project(w)
+    w.rcl.put(
+        _moved(
+            project,
+            *project.stages[:6],
+            rcl_stage(14, "Skierowanie projektu ustawy do Sejmu", "active", modified=RM_DATE),
+            modified=RM_DATE,
+            rm_number="RM-0610-139-26",
+        )
+    )
+    w.run()
+    w.clock.advance(days=1)
+    druk = summary("3100", project.title, change="2026-09-09T09:00:00").model_copy(
+        update={
+            "rcl_num": "RM-0610-139-26",
+            "closure_date": dt.date(2026, 2, 3),
+            "passed": True,
+            "eli": ELI,
+            "display_address": "Dz.U. 2026 poz. 1099",
+        }
+    )
+    w.gateway.processes.append(druk)
+    w.gateway.details["3100"] = detail(druk, START)
+    w.gateway.acts[ELI] = act(entry_into_force=dt.date(2026, 3, 5), in_force="IN_FORCE")
+
+    report = w.run()
+
+    assert (report.linked, report.acts_published) == (1, 1)
+    stored = w.bill("3100")
+    assert stored.act is not None and stored.act.entry_into_force == dt.date(2026, 3, 5)
+    edited, message_id = w.publisher.edits[-1]
+    assert (edited.number, message_id) == ("3100", w.card_id(RCL))
+    card = MessageFormatter("ru").new_bill(edited, None).text
+    assert "Dz.U. 2026 poz. 1099" in card
+    assert "публикация в Dziennik Ustaw" not in card
+    assert "без движения" not in card

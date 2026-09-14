@@ -243,12 +243,24 @@ class StatusTrackingService:
         )
         enricher = StageEnricher(gateway, club_breakdown=options.club_breakdown)
         consultations = _consultation_reminder(repo, clock, poster, options)
+        # The act watcher is built before the linker, which asks it for the act of a print it
+        # adopts: a project handed over long ago becomes a print whose act nothing else fetches.
+        acts = ActWatcher(
+            eli,
+            repo,
+            clock,
+            poster,
+            channel_id=channel_id,
+            local_tz=options.local_tz,
+            in_force_reminders=options.in_force_reminders,
+        )
         linker = Linker(
             gateway,
             repo,
             clock,
             poster,
             enricher,
+            acts,
             channel_id=channel_id,
             analysis=analysis,
             text_prefilter=options.text_prefilter,
@@ -278,15 +290,7 @@ class StatusTrackingService:
         )
         self._wykaz = _wykaz_watcher(wykaz, rcl_reader, repo, clock, poster, analysis, options)
         self._agenda = _agenda_watcher(gateway, repo, clock, poster, enricher, options)
-        self._acts = ActWatcher(
-            eli,
-            repo,
-            clock,
-            poster,
-            channel_id=channel_id,
-            local_tz=options.local_tz,
-            in_force_reminders=options.in_force_reminders,
-        )
+        self._acts = acts
         self._cards = CardRefresher(
             gateway, repo, publisher, channel_id=channel_id, max_edits=options.max_card_edits
         )

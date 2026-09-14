@@ -484,9 +484,20 @@ def _phase_started(bill: Bill) -> dt.date | None:
 
 def _phase_of(bill: Bill, today: dt.date) -> Phase | None:
     """The source the bill belongs to decides which road it is on; a lapsed term ends every one
-    of them, because a new Sejm must receive the bill again."""
+    of them, because a new Sejm must receive the bill again.
+
+    An ELI on the process is the Sejm saying the act is out, and it is read before the stages
+    even when the act itself has not been fetched: `is_over` has always taken it for the end of
+    the road, and the two must not disagree. They did, and the reader was told the opposite of
+    the truth — druk 2172 was adopted from an RCL project on 2026-09-14 carrying `DU/2026/203`,
+    its act was never fetched, and the stage road ran out at `PresidentSignature`, so the card
+    said «дальше: публикация в Dziennik Ustaw · без движения уже 6 мес.» and «пока ничего —
+    ждём публикации» over a law that had been in force since 2026-03-05.
+    """
     if bill.act is not None:
         return _act_phase(bill.act, today)
+    if bill.summary.eli is not None:
+        return Phase(key="in_force_unknown")
     if bill.discontinued_at is not None:
         return None
     if bill.wykaz is not None:
