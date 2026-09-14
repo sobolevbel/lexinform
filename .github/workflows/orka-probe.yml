@@ -459,3 +459,54 @@ jobs:
               r = client.get(f"https://{HOST}{PATH}")
           print(f"  result: http={r.status_code} type={r.headers.get('content-type')} bytes={len(r.content)}")
           PY
+
+  # The raw socket with curl's bytes was let through on Python's own TLS, so what the WAF reads
+  # is the shape of the request. httpx keeps the order and the casing it is given — if all of
+  # its defaults are given too. Three draws of the browser's shape against today's control.
+  shape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        shape: [chrome-1, chrome-2, chrome-3, curl-shape, control]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: One shape, first request of this address
+        env:
+          SHAPE: ${{ matrix.shape }}
+        run: |
+          set +e
+          echo "shape=$SHAPE ip=$(curl -sS --max-time 10 https://api.ipify.org)"
+          uv run --frozen --no-dev python - "$SHAPE" <<'PY'
+          import sys
+          import httpx2 as httpx
+          from lexinform.adapters.browser_identity import BROWSER_HEADERS
+
+          URL = ("https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-30771-2026/"
+                 "$file/10-RPW-30771-2026.pdf")
+          UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
+                " Chrome/140.0.0.0 Safari/537.36")
+          CHROME = {
+              "Connection": "keep-alive",
+              "Upgrade-Insecure-Requests": "1",
+              "User-Agent": UA,
+              "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+              "Accept-Encoding": "gzip, deflate",
+              "Accept-Language": "pl-PL,pl;q=0.9",
+          }
+          shape = sys.argv[1]
+          headers = BROWSER_HEADERS if shape == "control" else CHROME
+          with httpx.Client(headers=headers, follow_redirects=True, timeout=60) as client:
+              request = client.build_request("GET", URL)
+              if shape == "curl-shape":
+                  del request.headers["accept-encoding"]
+                  del request.headers["connection"]
+                  del request.headers["upgrade-insecure-requests"]
+              r = client.send(request)
+          print(f"  result: http={r.status_code} type={r.headers.get('content-type')} bytes={len(r.content)}")
+          print("  sent: " + " | ".join(f"{k}: {v}" for k, v in request.headers.items()))
+          PY
