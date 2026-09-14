@@ -327,3 +327,32 @@ def test_a_skipped_print_stays_skipped_while_its_group_has_no_card() -> None:
     assert report.joint_revived == 0
     assert w.bill("1426").status is BillStatus.SKIPPED_PREFILTER
     assert [ctx.number for ctx in w.llm.contexts] == ["1404"]
+
+
+def test_a_reply_goes_into_the_thread_even_under_the_score_threshold() -> None:
+    """The bar decides whether a bill is worth a card in everyone's feed. A reply is a message in
+    a thread its readers chose, and by then the print has been read and judged: dropping it under
+    the bar would mean paying for the reading and throwing the answer away."""
+    w = World(llm_script={"1929": make_analysis(score=2)})
+    w.add_bill("1933", DEPUTIES)
+    w.run()
+    _joint(w, "1929", GOVERNMENT, "1933")
+
+    report = w.run()
+
+    assert (report.published, report.joint_published) == (0, 1)
+    assert [(b.number, p.number) for b, p, _ in w.publisher.joint_bills] == [("1929", "1933")]
+
+
+def test_a_print_under_the_threshold_with_no_card_to_reply_under_stays_silent() -> None:
+    """The bar is lifted for the thread, not for the bill: a print whose group has no card would
+    be a card of its own, and under the threshold the channel does not want one."""
+    w = World(llm_script={"1933": make_analysis(relevant=False), "1929": make_analysis(score=2)})
+    w.add_bill("1933", DEPUTIES)
+    w.run()
+    _joint(w, "1929", GOVERNMENT, "1933")
+
+    report = w.run()
+
+    assert (report.published, report.joint_published) == (0, 0)
+    assert w.publication("1929") is None

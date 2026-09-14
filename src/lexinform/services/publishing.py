@@ -133,8 +133,9 @@ class PublishingService:
             limit=limit,
             max_attempts=self._max_attempts,
         )
+        candidates += self._replies_under_the_bar(candidates, limit=limit)
         today = self._clock.now().date()
-        for bill in government_first(candidates):
+        for bill in government_first(candidates[:limit]):
             if is_over(bill, today=today):
                 log.info("%s is over: no card", bill.number)
                 self._record_skipped(bill)
@@ -154,6 +155,28 @@ class PublishingService:
             if not ok:
                 result.failed += 1
         return result
+
+    def _replies_under_the_bar(self, carded: list[Bill], *, limit: int) -> list[Bill]:
+        """Prints that will reply under a card of their own group and did not clear `min_score`.
+
+        The bar decides whether a bill is worth a card — a message in the feed of every reader of
+        the channel. A reply is a message in a thread they have already chosen to follow, and by
+        the time it is asked for the print has been read and judged: dropping the answer under
+        the bar would mean paying for a reading and throwing it away. Druk 1929's card scores
+        exactly 3, so its group sits on the threshold in production.
+
+        `primary_of` is still the whole decision, so a print that turns out to have no card to
+        hang under is not here and gets no card of its own below the bar.
+        """
+        known = {(bill.term, bill.number) for bill in carded}
+        under = []
+        for bill in self._repo.list_joint_reply_candidates(
+            self._channel_id, limit=limit, max_attempts=self._max_attempts
+        ):
+            if (bill.term, bill.number) in known or self._primary_of(bill) is None:
+                continue
+            under.append(bill)
+        return under
 
     def card_of(self, bill: Bill) -> Publication | None:
         """How the bill is in this channel: its card, or its reply under a joint print's card.

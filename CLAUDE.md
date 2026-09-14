@@ -166,8 +166,16 @@ Invariants worth keeping:
   print that replies is read like any other and the reply says how it differs** — title,
   applicant and links told a reader meeting «Альтернативный проект того же закона» nothing about
   whether it was the same bill in other words or a different answer to the same question, which
-  is the only thing a second print on one subject is news for. It is judged on its own text
-  (cost guard and `min_score` as for a card), and the difference is a
+  is the only thing a second print on one subject is news for. It is judged on its own text like
+  any other bill, **but `min_score` is the bar for a card and not for a reply**: the bar decides
+  whether a bill is worth a message in the feed of every reader, while a reply goes into a thread
+  its readers have chosen, and by the time it is asked for the print has been read and judged —
+  dropping the answer under the bar would mean paying for a reading and throwing it away (druk
+  1929's card scores exactly 3, so its group sits on the threshold in production). The publisher
+  asks for those two sets separately (`list_publish_candidates` with the bar,
+  `list_joint_reply_candidates` without it) and `primary_of` is still the whole decision, so a
+  print with no card to hang under never gets a card of its own below the bar. The difference
+  itself is a
   **second, cheap call on the descriptions and not on the texts**
   (`AnalysisService.compare_joint`, `JointContext` → `JointComparison`, `bills.joint_json` v20,
   `compared_with` re-asking it when the group gains a print). Measured over term 10: 53 prints in

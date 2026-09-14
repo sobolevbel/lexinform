@@ -39,6 +39,19 @@ from lexinform.models import (
     WykazEntry,
 )
 
+_NO_CARD_YET = """
+                  NOT EXISTS (
+                      SELECT 1 FROM publications p
+                      WHERE p.term = b.term AND p.number = b.number
+                        AND p.kind IN ('new_bill', 'joint_bill')
+                        AND p.channel_id = ?
+                        AND (p.status IN ('sent', 'skipped', 'pending', 'unknown')
+                             OR (p.status = 'failed' AND p.attempts >= ?))
+                  )"""
+"""The bill has no post in this channel yet: no card, no reply, and no failed attempt left to
+retry. Both candidate queries take `channel_id` and `max_attempts` where it appears."""
+
+
 MIGRATIONS: tuple[str, ...] = (
     # v1
     """
@@ -562,28 +575,19 @@ class SqliteBillRepository:
     def list_publish_candidates(
         self, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
     ) -> list[Bill]:
-        """Bills that still need a post. A card or an "alternative bill" reply settles the bill;
+        """Bills that still need a card. A card or an "alternative bill" reply settles the bill;
         a failed one leaves it listed until the attempts are used up.
 
-        One bar for both shapes: a print considered jointly with one that holds the card is
-        judged on its own merits like any other, and what its analysis earns it is the reply
-        instead of a card. Until 2026-09-14 such a print was listed with no analysis at all,
-        because the reply carried the card's verdict and nothing of its own; now it carries what
-        differs, which is a reading of this print and has to be paid for and judged like one.
+        `min_score` is the bar for a card, which is a message in the feed of every reader. The
+        reply a jointly considered print gets is a message in a thread they already follow, so it
+        is asked for separately (`list_joint_reply_candidates`) and only relevance decides it.
         """
         rows = self._conn.execute(
-            """
+            f"""
             SELECT b.* FROM bills b
             WHERE b.status = ? AND b.analysis_json IS NOT NULL
               AND b.discontinued_at IS NULL
-              AND NOT EXISTS (
-                  SELECT 1 FROM publications p
-                  WHERE p.term = b.term AND p.number = b.number
-                    AND p.kind IN ('new_bill', 'joint_bill')
-                    AND p.channel_id = ?
-                    AND (p.status IN ('sent', 'skipped', 'pending', 'unknown')
-                         OR (p.status = 'failed' AND p.attempts >= ?))
-              )
+              AND {_NO_CARD_YET}
             """,
             (BillStatus.ANALYZED.value, channel_id, max_attempts),
         ).fetchall()
@@ -602,6 +606,35 @@ class SqliteBillRepository:
             )
         )
         return eligible[:limit]
+
+    def list_joint_reply_candidates(
+        self, channel_id: str, *, limit: int, max_attempts: int = 3
+    ) -> list[Bill]:
+        """Analysed, relevant bills that name prints considered jointly with them and have no
+        post yet, whatever their own score.
+
+        Whether any of them is really a reply is `services.joint.primary_of`'s answer and the
+        publisher's to ask: this only widens what the publisher may see. The score is left out
+        because the print has already been read and judged — dropping the answer under the bar
+        would mean paying for a reading and throwing it away, and the reply goes into a thread
+        its readers chose, not into everyone's feed.
+        """
+        rows = self._conn.execute(
+            f"""
+            SELECT b.* FROM bills b
+            WHERE b.status = ? AND b.analysis_json IS NOT NULL
+              AND b.discontinued_at IS NULL
+              AND json_array_length(
+                      json_extract(b.summary_json, '$.prints_considered_jointly')
+                  ) > 0
+              AND {_NO_CARD_YET}
+            ORDER BY b.term, b.number
+            LIMIT ?
+            """,
+            (BillStatus.ANALYZED.value, channel_id, max_attempts, limit),
+        ).fetchall()
+        bills = [self._row_to_bill(r) for r in rows]
+        return [b for b in bills if b.analysis is not None and b.analysis.analysis.relevant]
 
     def list_tracked(
         self,

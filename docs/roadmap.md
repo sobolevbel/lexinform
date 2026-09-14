@@ -288,9 +288,10 @@ Done on 2026-09-14 (schema v20):
 - **The "alternative bill" reply says what the print adds to the thread.** A print considered
   jointly with one that holds the card was not read at all, so the reply named it and stopped:
   a reader could not tell the same bill in other words from a different answer to the same
-  question. The print is now analysed like any other (cost guard, `min_score`), with **neither**
+  question. The print is now analysed like any other, with **neither**
   relevance gate deciding it where the card has already answered their question — the triage is
-  not asked and a print the prefilter had skipped is put back in the queue — and a second, cheap
+  not asked, a print the prefilter had skipped is put back in the queue, and `min_score` bars a
+  card and not a reply into a thread its readers chose — and a second, cheap
   call compares the channel's own descriptions of the group — «по сути то же самое» included,
   which is the commoner answer and as useful. Measured before it was decided: 53 prints in 21
   groups over term 10, 18 past the prefilter, five groups with more than one candidate, $4.21 of

@@ -422,6 +422,14 @@ class BillRepository(Protocol):
         """Bills whose title or number contains `text`, newest change first."""
         ...
 
+    def list_joint_reply_candidates(
+        self, channel_id: str, *, limit: int, max_attempts: int = 3
+    ) -> list[Bill]:
+        """Analysed, relevant bills that name prints considered jointly with them and have no
+        post yet, whatever their own score: the publisher decides which of them is really a
+        reply."""
+        ...
+
     def list_publish_candidates(
         self, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
     ) -> list[Bill]: ...
