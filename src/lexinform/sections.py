@@ -375,11 +375,17 @@ both sides, because what it separates is a text layer from a photograph of paper
 """
 
 SCANNED_TEXT_CEILING = 4_000
-"""Above this many characters the text is the document whatever its density.
+"""Kept for the record: density is now judged whatever the length, and this bounds nothing.
 
-A print can be appendix-heavy — hundreds of pages of tables that extract to little — and text
-that long is still text to read, not a caption on an image. Only a short text can be the stray
-header, stamp or title page that the page count then exposes for what it is.
+It used to mean "above this many characters the text is the document whatever its density", on
+the reasoning that a print can be appendix-heavy and text that long is still text to read. Over
+the whole of term 10 that reasoning does not hold: it is the OCR layer of a scan that runs long
+and thin, not an appendix-heavy document. Of the 804 prints classified `text` that are PDFs,
+**26 ran under 300 characters a page** — druk 703 is 155 pages with text on three (6,865
+characters, and the diacritics gone: "norki amerykanskiej"), druk 204 is 268 pages with ten,
+druk 348 is 362 with sixteen — and each went to the model as that fragment with nothing on the
+card to say so. The separation is clean without a ceiling: the thinnest print that is really a
+document runs 314 characters a page, the thickest of the 26 runs 215.
 """
 
 
@@ -416,7 +422,10 @@ def carries_the_document(text: str, *, min_chars: int, pages: int = 0) -> bool:
 
 
 def _too_thin_for_its_pages(body: str, pages: int) -> bool:
-    if pages <= 0 or len(body) >= SCANNED_TEXT_CEILING:
+    # No ceiling: a long thin text is a long scan, not an appendix-heavy document (see
+    # SCANNED_TEXT_CEILING). `pages` is 0 for a format that has none, and then there is nothing
+    # to measure the text against.
+    if pages <= 0:
         return False
     return len(body) / pages < MIN_CHARS_PER_PAGE
 

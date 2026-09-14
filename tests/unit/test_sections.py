@@ -225,6 +225,24 @@ def test_a_print_that_is_a_scan_of_its_cover_letter_carries_no_document() -> Non
     assert not carries_the_document(GOVERNMENT_LETTER, min_chars=200)
 
 
+def test_a_long_thin_text_is_a_long_scan_and_not_an_appendix_heavy_print() -> None:
+    """Druk 703 is 155 pages whose text layer covers three: 6,865 characters, the diacritics
+    gone. It used to pass as a document because a ceiling of 4,000 characters turned the density
+    test off above it, and the model then read the whole bill as that fragment with nothing on
+    the card to say so. Over term 10 that ceiling let 30 prints through, druk 204 (268 pages with
+    ten) and druk 348 (362 with sixteen) among them.
+
+    The separation is clean without it: the thinnest print that really is a document runs 314
+    characters a page, and the thickest of the 30 runs 215.
+    """
+    body = "t" * 7_000
+    thin = body + PAGE_BREAK.join("" for _ in range(155))
+    dense = body + PAGE_BREAK.join("" for _ in range(10))
+
+    assert not carries_the_document(thin, min_chars=200, pages=155)
+    assert carries_the_document(dense, min_chars=200, pages=10)
+
+
 def test_the_same_letter_followed_by_the_bill_carries_the_document() -> None:
     whole = DEPUTIES_COVER + PAGE_BREAK + BILL + PAGE_BREAK + JUSTIFICATION
 
