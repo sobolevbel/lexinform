@@ -87,6 +87,12 @@ class Settings(BaseSettings):
         default=20_000, description="Shorter texts go straight to the full analysis."
     )
     triage_min_confidence: float = Field(default=0.8, ge=0.0, le=1.0)
+    triage_scan_pages: int = Field(
+        default=8,
+        ge=1,
+        description="How many opening pages of a scanned document the cheap pass is shown."
+        " The cost of the call then does not depend on how thick the paper is.",
+    )
     max_analysis_cost_usd: float = Field(
         default=2.0,
         ge=0.0,

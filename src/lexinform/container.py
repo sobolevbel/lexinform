@@ -237,6 +237,7 @@ class Container:
             keywords=self.prefilter,
             triage=self.prefilter if self.settings.llm_triage_model else None,
             triage_min_chars=self.settings.triage_min_chars,
+            triage_scan_pages=self.settings.triage_scan_pages,
             triage_min_confidence=self.settings.triage_min_confidence,
             channel_id=self.channel_id(),
         )

@@ -229,15 +229,21 @@ Invariants worth keeping:
   price of that is worth knowing, and it has been measured: the scans of the term are **317
   documents and 7,763 pages**, $62 on Opus, against the ~$44 the rest of it costs — and **a scan
   bypasses the triage**, because `_triage_verdict` wants `len(text) >= triage_min_chars` and a
-  scan's `text` is the letter, so it goes straight to the expensive model. Giving the triage the
-  scan's first pages is the open item, and the numbers are in: the triage cost stops depending on
-  the document's length (**$0.013 for any scan**, 11 pages or 362), it breaks even at a **7%**
-  rejection rate, and asked of 18 real scans through the production path on Haiku it rejected
-  **18 of 18 correctly** at a mean confidence of 0.93 — animal protection, drink-driving, hunting
-  law, four commemorative resolutions. An eight-page window would take the scans' bill from $62 to
-  $27 at the conservative 62% rate and to $16 at the lower bound the sample supports. What the
-  sample cannot show is a false rejection, since it met no relevant scan; the structural mitigation
-  is that an unsure verdict passes through, so only a *confident* wrong "no" loses a bill.
+  scan's `text` used to be the letter and that is what the gate measured, so the most expensive
+  documents the project reads went straight to the most expensive model. **`_worth_triaging` now
+  says yes to a scan whatever its text**, and the scan is shown `triage_scan_pages` (8) opening
+  pages rather than all of them — cut from the bytes already downloaded
+  (`TextLoader.first_pages`), so the file is never fetched twice. That is what makes the pass
+  cheap on exactly the documents that are dear: the cost of the cheap call stops depending on how
+  thick the paper is — **$0.013 for any scan**, eleven pages or three hundred and sixty-two — and
+  it breaks even at a **7%** rejection rate. Asked of 18 real scans through this path on Haiku it
+  rejected **18 of 18 correctly** at a mean confidence of 0.93: animal protection, drink-driving,
+  hunting law, four commemorative resolutions. The window takes the scans' bill from $62 to $27 at
+  the conservative 62% rate and to $16 at the lower bound the sample supports. What the sample
+  cannot show is a false rejection, since it met no relevant scan; what guards against one is
+  structural — the prompt says how many pages of how many are attached and asks for lower
+  confidence rather than a guess, and an unsure verdict passes the bill on, so only a *confident*
+  wrong "no" loses one.
 - **Not every stage is a post.** `models/events.py`: `is_substantive` separates the events a
   reader cares about (referral, committee report, vote, Senate, President, hearing, a decided
   reading) from the frame nodes (`Start`, `ReadingReferral`, `Reading`, `CommitteeWork`,
@@ -995,6 +1001,6 @@ hits to 50 and **changes no outcome at all**, because 50 still clears a threshol
 keyword stage is over-inclusive on purpose — a false hit costs one call, a miss loses a bill for
 good — and druk 1861 is rejected by the triage for about two cents anyway.
 
-Open items are listed under "Still open" in `docs/roadmap.md`. The audit of 14 Sept 2026 over the
-whole corpus (`../lexinform-corpus/checks/FINDINGS.md`, with a runnable script per phase) closed
-five defects; what it leaves open is giving the triage a scan's first pages.
+Open items are listed under "Still open" in `docs/roadmap.md`. The audit of 14 Sept 2026 over
+the whole corpus (`../lexinform-corpus/checks/FINDINGS.md`, with a runnable script per phase)
+closed six defects and left nothing of its own open.

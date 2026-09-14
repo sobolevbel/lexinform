@@ -155,6 +155,24 @@ class TextLoader:
             sha256=hashlib.sha256(data).hexdigest(),
         )
 
+    def first_pages(self, scan: ScannedDocument, count: int) -> ScannedDocument | None:
+        """The opening pages of a scan already loaded, for the cheap pass to read.
+
+        Cut from the bytes in hand rather than downloaded again: the file is the expensive thing
+        about a scan and it has just been fetched. None when there is nothing to cut — the scan
+        is already that short, or the extractor could not select pages — and the caller then
+        shows the cheap model what it has.
+        """
+        if count <= 0 or scan.pages <= count:
+            return None
+        data = base64.standard_b64decode(scan.data)
+        selected = self._extractor.select_pages(data, first=0, count=count)
+        if selected is data or len(selected) >= len(data):
+            return None
+        return scan.model_copy(
+            update={"data": base64.standard_b64encode(selected).decode("ascii"), "pages": count}
+        )
+
     def _fetch(self, url: str) -> LoadedFile:
         data = self._download(url)
         if data is None:

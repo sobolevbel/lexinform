@@ -227,6 +227,7 @@ class AnalysisService:
         triage: KeywordPrefilter | None = None,
         triage_min_chars: int = 20_000,
         triage_min_confidence: float = 0.8,
+        triage_scan_pages: int = 8,
         channel_id: str | None = None,
     ) -> None:
         self._repo = repo
@@ -245,6 +246,7 @@ class AnalysisService:
         self._triage = triage
         self._triage_min_chars = triage_min_chars
         self._triage_min_confidence = triage_min_confidence
+        self._triage_scan_pages = triage_scan_pages
         self._channel_id = channel_id
         self._spent = 0.0
         self._calls: list[LlmCall] = []
@@ -580,8 +582,8 @@ class AnalysisService:
             return _Prepared(bill, located, text, source, previous, first=False, deferred=True)
         meta = located.summary or bill.summary
         triage: TriageRecord | None = None
-        if previous is None and source in FULL_TEXT_SOURCES and len(text) >= self._triage_min_chars:
-            triage, rejection = self._triage_verdict(bill, meta, text)
+        if previous is None and self._worth_triaging(loaded):
+            triage, rejection = self._triage_verdict(bill, meta, text, loaded.scan)
             if rejection is not None:
                 return _Prepared(bill, located, text, source, rejection, first=True)
         ctx = BillContext(
@@ -693,23 +695,52 @@ class AnalysisService:
             return None
         return excerpts(text, self._keywords.spans(text), head_chars=target // 4, max_chars=target)
 
+    def _worth_triaging(self, loaded: _Loaded) -> bool:
+        """Whether the cheap pass has something to judge.
+
+        A text is worth it when there is enough of it that the full analysis would be dear —
+        that is what `triage_min_chars` measures. **A scan is worth it whatever its text says**,
+        and for years it was the one thing that skipped the pass: the gate asked how long the
+        text was, and a scan's text is the letter that hands it to the Marshal, so the most
+        expensive documents the project reads went straight to the most expensive model. Over
+        term 10 that is 317 documents and 7,763 pages, $62 on Opus against the ~$44 the rest of
+        the term costs.
+        """
+        if loaded.scan is not None:
+            return True
+        return loaded.source in FULL_TEXT_SOURCES and len(loaded.text) >= self._triage_min_chars
+
     def _triage_verdict(
-        self, bill: Bill, meta: ProcessSummary, text: str
+        self, bill: Bill, meta: ProcessSummary, text: str, scan: ScannedDocument | None = None
     ) -> tuple[TriageRecord | None, AnalysisRecord | None]:
-        """Ask the cheap model about excerpts; a confident "no" becomes the final record.
+        """Ask the cheap model about excerpts, or about the first pages of a scan; a confident
+        "no" becomes the final record.
 
         Returns the triage record and, when it rejects the bill, a non-relevant analysis record
         (its `text_source="excerpts"` says how it was decided).
+
+        A scan is shown `triage_scan_pages` pages and not all of them, because that is what makes
+        the pass cheap on exactly the documents that are dear: the cost of the cheap call then
+        stops depending on the document's length — **$0.013 for any scan**, eleven pages or three
+        hundred and sixty-two — and it breaks even at a 7% rejection rate. The prompt says how
+        many pages of how many are attached and asks for lower confidence rather than a guess
+        when they do not settle the question, and an unsure verdict passes the bill on, so the
+        only way to lose one here is a confident wrong "no".
         """
         if self._triage is None:
             return None, None
+        window = (
+            self._loader.first_pages(scan, self._triage_scan_pages) if scan is not None else None
+        )
+        shown = window or scan
         ctx = TriageContext(
             number=bill.number,
             title=meta.title or bill.summary.title,
             description=meta.description or bill.summary.description,
             applicant_type=meta.applicant_type,
-            excerpts=excerpts(text, self._triage.spans(text)),
+            excerpts="" if shown is not None else excerpts(text, self._triage.spans(text)),
             text_chars=len(text),
+            scan=shown,
         )
         verdict = self._llm.triage(ctx)
         self._charge(verdict, number=bill.number, kind="triage")

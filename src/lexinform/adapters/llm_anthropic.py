@@ -146,6 +146,7 @@ class AnthropicAnalyzer:
             build_triage_prompt(ctx),
             Triage,
             thinking=False,
+            scan=ctx.scan,
         )
         triage = response.parsed_output
         if not isinstance(triage, Triage):

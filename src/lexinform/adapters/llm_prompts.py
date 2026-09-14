@@ -217,6 +217,21 @@ def build_triage_prompt(ctx: TriageContext) -> str:
     ]
     if ctx.description:
         lines.append(f"Opis: {ctx.description}")
+    if ctx.scan is not None:
+        # A scan has no text to excerpt, and saying how much of the paper is attached is what
+        # keeps the model from reading a few pages as the whole bill: the answer to "is this
+        # about foreigners" may stand on a page it was not shown, and then the honest verdict is
+        # an unsure one, which passes the bill on to the full analysis.
+        lines.append(
+            f"Dokument zeskanowany, bez warstwy tekstowej: w załączeniu"
+            f" {ctx.scan.pages} z {ctx.scan.of_pages} stron(y)."
+        )
+        if ctx.scan.pages < ctx.scan.of_pages:
+            lines.append(
+                "Jeśli załączone strony nie wystarczają do rozstrzygnięcia, obniż pewność"
+                " zamiast zgadywać."
+            )
+        return "\n".join(lines)
     lines.append(f"Pełny tekst: {ctx.text_chars} znaków; poniżej wybrane fragmenty.")
     lines.append("")
     lines.append("=== FRAGMENTY TEKSTU ===")

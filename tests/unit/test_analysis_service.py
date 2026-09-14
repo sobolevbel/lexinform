@@ -404,3 +404,81 @@ def test_run_cost_limit_stops_the_phase_and_leaves_the_rest_pending() -> None:
         "the remaining candidates wait for the next run"
     ]
     assert w.bill("3040").status is BillStatus.ANALYSIS_PENDING
+
+
+def test_a_scanned_print_is_triaged_before_the_expensive_model_reads_it() -> None:
+    """The cheap pass was gated on how long the text is, and a scan's text is the letter that
+    hands it to the Marshal — so the most expensive documents the project reads were the one
+    thing that skipped it. Over term 10 that is 317 documents and 7,763 pages, $62 on Opus
+    against the ~$44 the rest of the term costs.
+    """
+    cover = DEPUTIES_LETTER.split("Tłoczono z polecenia Marszałka Sejmu")[0]
+    w = World(
+        extractor=FakeTextExtractor(cover, page_count=37),
+        triage=True,
+        # Production's threshold, because that is what used to shut the scan out: the letter is
+        # 800 characters and the gate wanted 20,000 of them.
+        triage_min_chars=20_000,
+        triage_script={
+            "4200": Triage(affects_foreigners=False, confidence=0.95, rationale="o zwierzętach")
+        },
+    )
+    w.add_bill("4200", "Poselski projekt ustawy o ochronie zwierząt")
+
+    report = w.run()
+
+    assert [c.number for c in w.llm.triage_contexts] == ["4200"]
+    assert w.llm.contexts == []  # the expensive model never saw the pages
+    assert (report.analyzed, report.triaged_out) == (0, 1)
+    analysis = w.bill("4200").analysis
+    assert analysis is not None and analysis.model == w.llm.TRIAGE_MODEL
+    assert not analysis.analysis.relevant
+
+
+def test_the_triage_is_shown_the_opening_pages_of_a_scan_and_not_all_of_them() -> None:
+    """What makes the pass cheap on the documents that are dear: the cost of the cheap call stops
+    depending on how thick the paper is. Druk 348 is 362 pages and costs $2.90 read whole; eight
+    pages cost $0.013 whatever the document."""
+    cover = DEPUTIES_LETTER.split("Tłoczono z polecenia Marszałka Sejmu")[0]
+    extractor = FakeTextExtractor(cover, page_count=37)
+    w = World(extractor=extractor, triage=True, triage_min_chars=20_000)
+    w.add_bill("4200", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
+
+    w.run()
+
+    triaged = w.llm.triage_contexts[0]
+    assert triaged.scan is not None
+    assert (triaged.scan.pages, triaged.scan.of_pages) == (8, 37)
+    assert triaged.excerpts == ""  # there is no text to excerpt; the pages are the evidence
+    analysed = w.llm.contexts[0]
+    assert analysed.scan is not None and analysed.scan.pages == 36  # the full reading is intact
+
+
+def test_a_scan_short_enough_to_read_whole_is_triaged_whole() -> None:
+    """Nothing to cut: below the window the scan goes to the cheap model as it stands."""
+    cover = DEPUTIES_LETTER.split("Tłoczono z polecenia Marszałka Sejmu")[0]
+    w = World(
+        extractor=FakeTextExtractor(cover, page_count=4), triage=True, triage_min_chars=20_000
+    )
+    w.add_bill("4200", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
+
+    w.run()
+
+    triaged = w.llm.triage_contexts[0]
+    assert triaged.scan is not None and (triaged.scan.pages, triaged.scan.of_pages) == (3, 4)
+
+
+def test_a_short_readable_text_still_skips_the_triage() -> None:
+    """The gate on `triage_min_chars` is unchanged for a text: a short one is cheap to analyse
+    whole and the cheap pass would only add a call."""
+    w = World(
+        extractor=FakeTextExtractor("Art. 1. Cudzoziemiec składa wniosek osobiście. " * 14),
+        triage=True,
+        triage_min_chars=10_000,
+    )
+    w.add_bill("4300", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
+
+    w.run()
+
+    assert w.llm.triage_contexts == []
+    assert [c.number for c in w.llm.contexts] == ["4300"]

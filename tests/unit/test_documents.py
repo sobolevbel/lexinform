@@ -103,3 +103,34 @@ def test_document_without_a_readable_main_file_has_no_text() -> None:
     loaded = _loader(gateway, max_bytes=1000).read_document(document)
 
     assert (loaded.text, loaded.oversize) == (None, True)
+
+
+def test_the_opening_pages_of_a_scan_are_cut_from_the_bytes_in_hand() -> None:
+    """The cheap pass is shown a few pages, and the file has just been downloaded: cutting it
+    again from the network would pay the expensive part of a scan twice."""
+    gateway = FakeSejmGateway(files={URL: b"%PDF-" + b"x" * 400})
+    loader = TextLoader(
+        {HOST: gateway.download}, FakeTextExtractor("", page_count=30), max_bytes=10_000
+    )
+    scan = loader.load_scan(URL, cover_letter=False)
+    assert scan is not None and scan.pages == 30
+
+    window = loader.first_pages(scan, 8)
+
+    assert window is not None
+    assert (window.pages, window.of_pages) == (8, 30)
+    assert len(window.data) < len(scan.data)
+    assert window.sha256 == scan.sha256  # the same document, fewer pages of it
+    assert sum(c.startswith("download") for c in gateway.calls) == 1  # not fetched again
+
+
+def test_a_scan_already_within_the_window_is_not_cut() -> None:
+    gateway = FakeSejmGateway(files={URL: b"%PDF-" + b"x" * 40})
+    loader = TextLoader(
+        {HOST: gateway.download}, FakeTextExtractor("", page_count=3), max_bytes=10_000
+    )
+    scan = loader.load_scan(URL, cover_letter=False)
+    assert scan is not None and scan.pages == 3
+
+    assert loader.first_pages(scan, 8) is None
+    assert loader.first_pages(scan, 0) is None

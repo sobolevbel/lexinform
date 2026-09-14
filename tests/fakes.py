@@ -267,8 +267,15 @@ class FakeTextExtractor:
         return max(1, len(self.by_content.get(data, self.text)) // 2000)
 
     def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
+        """A shorter, distinct payload, the way a real selection is.
+
+        Returning `data` itself would model the failure path: `PypdfTextExtractor.select_pages`
+        hands back the original object when it cannot rewrite the file, and callers tell the two
+        apart by identity — `TextLoader.first_pages` refuses to call a full file a window.
+        """
         self.selections.append((first, count))
-        return data
+        pages = max(self.pages(data), 1)
+        return data[: max(1, len(data) * min(count, pages) // pages)]
 
 
 @dataclass
