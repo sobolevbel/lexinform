@@ -160,6 +160,8 @@ def test_an_unreadable_document_is_still_named_and_linked() -> None:
     text = MessageFormatter("ru").status_update(*w.publisher.updates[0][:2]).text
     assert "📄 <b>Позиция правительства по проекту</b>" in text
     assert GOVERNMENT_POSITION in text and f'href="{url}"' in text
+    # A heading, a Polish title and nothing under it read as a post that lost its body.
+    assert "Документ не удалось прочитать" in text
 
 
 def test_a_document_over_the_cost_limit_is_told_without_a_digest() -> None:

@@ -161,3 +161,46 @@ def test_consultation_reminder_and_results_point_to_the_ministry_and_the_project
     assert_telegram_html(results)
     assert "Опубликованы мнения из консультаций — UC164" in results
     assert 'projekt/12414100">поданные мнения (stanowiska) и ответ министерства' in results
+
+
+def _consulting_now(**consultation: object) -> RclProject:
+    """The project standing on its "Konsultacje publiczne" stage, as the timeline shows it."""
+    stages = tuple(
+        st.model_copy(update={"state": "active" if st.number == 3 else "not_started"})
+        if st.number in (3, 4)
+        else st
+        for st in rcl_project().stages
+    )
+    return rcl_project(stages=stages, consultation=RclConsultation(**consultation))
+
+
+def test_a_consultation_whose_letter_gave_no_date_is_still_a_consultation() -> None:
+    """RCL letters sometimes carry an electronic time stamp instead of a date and no relative
+    term either, so `ConsultationWindow.is_open` — which needs an end date — said no to every
+    question at once: the phase skipped to «сбор мнений», the card lost its #консультации tag,
+    and the action line went on inviting an e-mail to the ministry three lines below. The
+    timeline is what answers when the letter does not."""
+    bill = rcl_bill(
+        _consulting_now(letter_url=CONSULTATION_LETTER.url, email="dep.prawny@mswia.gov.pl")
+    )
+
+    text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
+
+    assert_telegram_html(text)
+    assert "Что дальше:</b> общественные консультации (срок указан в письме)" in text
+    assert "межведомственные согласования и сбор мнений" not in text
+    assert "направить замечания на dep.prawny@mswia.gov.pl (срок указан в письме)" in text
+    assert "#консультации" in text
+
+
+def test_the_consultation_reminder_says_how_to_write_as_the_card_does() -> None:
+    """This is the reply a reader acts on — three days before the window shuts, with the card
+    weeks up the thread — and it used to give the address without the two things that make a
+    comment land: the language and the number to quote."""
+    bill = rcl_bill(rcl_project())
+
+    text = MessageFormatter("ru").consultation_deadline(bill, today=dt.date(2026, 9, 5)).text
+
+    assert_telegram_html(text)
+    assert "замечания на e-mail dep.prawny@mswia.gov.pl" in text
+    assert "(на польском, с номером UC164)" in text

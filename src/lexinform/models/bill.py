@@ -392,8 +392,21 @@ def is_urgent(bill: Bill) -> bool:
 
 
 def consultation_open(bill: Bill, today: dt.date) -> bool:
+    """Whether an opinion can still be sent.
+
+    A window with an end date answers for itself. One without is the RCL case where the letter
+    carries an electronic time stamp instead of a date and no relative term either
+    (`rcl_letters.parse_letter`): the project's own timeline is then what says the consultation is
+    running, and `_rcl_phase` reads it. Without this the card of such a project invited an e-mail
+    to the ministry in its action line and, three lines up, put the consultation stage behind it.
+    """
     window = bill.consultation
-    return window is not None and window.is_open(today)
+    if window is None:
+        return False
+    if window.is_open(today):
+        return True
+    phase = next_phase(bill, today=today)
+    return phase is not None and phase.key == "rcl_consultation"
 
 
 def about_ukraine(bill: Bill) -> bool:
@@ -709,11 +722,20 @@ def _rcl_phase(bill: Bill, today: dt.date) -> Phase | None:
     if project.sent_to_sejm:
         return Phase(key="rcl_to_sejm")
     window = bill.consultation
-    if window is not None and window.is_open(today):
+    if window is not None and _consulting(project, window, today):
         return Phase(key="rcl_consultation", date=window.end)
     current = project.current_stage
     group = current.group if current else "opinions"
     return Phase(key=f"rcl_{group}")
+
+
+def _consulting(project: RclProject, window: ConsultationWindow, today: dt.date) -> bool:
+    """The public consultation is running. The deadline says so when the letter gave one; when it
+    did not, the timeline does — the stage the project is on is the consultation itself."""
+    if window.end is not None:
+        return window.is_open(today)
+    current = project.current_stage
+    return current is not None and current.is_consultation
 
 
 def _days_after(start: dt.date | None, days: int) -> dt.date | None:

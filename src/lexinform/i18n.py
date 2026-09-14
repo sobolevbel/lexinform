@@ -210,6 +210,7 @@ class Labels:
     amendments_committee: str
     link_amendments: str
     link_supplement: str
+    supplement_unreadable: str
     supplement_headers: dict[str, str] = field(default_factory=dict)
     """What a document filed to the print is called in the block that carries its digest."""
     supplement_supports: dict[str, str] = field(default_factory=dict)
@@ -415,7 +416,7 @@ RU = Labels(
     action_rcl_interest=(
         "подать в {organ} zgłoszenie zainteresowania pracami nad projektem — это может любой, и"
         " подавший получает право участвовать в публичном слушании в Сейме, если оно будет"
-        " назначено (ст. 7 и 8 ust. 2 ustawy o działalności lobbingowej; заявка на сами слушания"
+        " назначено (ст. 7 и ст. 8 ч. 2 ustawy o działalności lobbingowej; заявка на сами слушания"
         " подаётся отдельно, не позднее чем за 10 дней до них)"
     ),
     link_wykaz_entry="Запись в плане работ",
@@ -472,6 +473,7 @@ RU = Labels(
     amendments_committee="Что меняют поправки (по отчёту комиссии)",
     link_amendments="Текст поправок (PDF)",
     link_supplement="Документ (PDF)",
+    supplement_unreadable="Документ не удалось прочитать — он есть по ссылке ниже.",
     supplement_headers={
         "government_position": "Позиция правительства по проекту",
         "impact_assessment": "Оценка последствий (OSR)",
@@ -609,7 +611,7 @@ RU = Labels(
         ),
         "president_after_veto": (
             "подпись Президента — после отклонения вето у него 7 дней и права на вето или"
-            " обращение в трибунал больше нет (ст. 122 ust. 5), затем публикация в Dziennik Ustaw"
+            " обращение в трибунал больше нет (ст. 122 ч. 5), затем публикация в Dziennik Ustaw"
         ),
         "publication": "публикация в Dziennik Ustaw",
         "in_force": "вступление в силу {date}",
@@ -629,6 +631,10 @@ RU = Labels(
         "rcl_consultation": (
             "общественные консультации до {date}, затем сбор мнений (opiniowanie), комитеты"
             " Совета министров, Rada Ministrów и внесение в Сейм"
+        ),
+        "rcl_consultation_undated": (
+            "общественные консультации (срок указан в письме), затем сбор мнений (opiniowanie),"
+            " комитеты Совета министров, Rada Ministrów и внесение в Сейм"
         ),
         "rcl_opinions": (
             "межведомственные согласования и сбор мнений, затем комитеты Совета министров,"
@@ -1037,6 +1043,7 @@ EN = Labels(
     amendments_committee="What the amendments change (per the committee's report)",
     link_amendments="Amendments (PDF)",
     link_supplement="Document (PDF)",
+    supplement_unreadable="The document could not be read — it is at the link below.",
     supplement_headers={
         "government_position": "The government's position on the bill",
         "impact_assessment": "Assessment of the effects (OSR)",
@@ -1196,6 +1203,10 @@ EN = Labels(
         "rcl_consultation": (
             "public consultation until {date}, then opinions, the committees of the Council of"
             " Ministers, the Council and submission to the Sejm"
+        ),
+        "rcl_consultation_undated": (
+            "public consultation (the deadline is in the letter), then opinions, the committees"
+            " of the Council of Ministers, the Council and submission to the Sejm"
         ),
         "rcl_opinions": (
             "inter-ministerial agreement and opinions, then the committees of the Council of"

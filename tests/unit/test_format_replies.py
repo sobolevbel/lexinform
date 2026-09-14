@@ -142,8 +142,9 @@ def test_act_notice_names_the_journal_the_date_and_the_staged_entry_caveat(
     assert "Отдельные положения могут вступать в силу" in text
     assert "дата вступления в силу пока не указана" in no_date
     # The moment to diarise the date, and the card is months up the thread: one sentence of the
-    # summary and what is left to do, like every other reply carries.
-    assert "<b>Суть проекта:</b>" in text
+    # summary and what is left to do, like every other reply carries. What the Sejm passed is an
+    # ustawa, so the heading says so.
+    assert "<b>Суть закона:</b>" in text
     assert "остаётся подготовиться к вступлению в силу" in text
 
 

@@ -616,6 +616,7 @@ class MessageFormatter:
             digest = record.digest
             if digest is None:
                 lines.append(esc(record.title))
+                lines.append(f"<i>{esc(lb.supplement_unreadable)}</i>")
                 blocks.append("\n".join(lines))
                 continue
             verdict = lb.supplement_supports.get(_supports_key(digest.supports))
@@ -673,7 +674,9 @@ class MessageFormatter:
         # under a Polish act title, and the card it replies to is months up the thread.
         summary_block = ""
         if bill.analysis is not None:
-            summary_block = self._summary_reminder(bill.analysis.analysis.summary, full=False)
+            summary_block = self._summary_reminder(
+                bill.analysis.analysis.summary, full=False, law=True
+            )
         links_block = self._links(self._act_links(bill, act))
         tags = self._tag_line(lb.tag_published, bill)
         text = self._assemble(
@@ -723,6 +726,12 @@ class MessageFormatter:
             raise ValueError(f"bill {bill.number} has no consultation end date")
         header = self._header(ICON["consultation"], lb.consultation_deadline_header, bill)
         where = self._consultation_where(window, sejm_label=lb.consultation_hint)
+        if bill.rcl is not None:
+            # The card says how to write to a ministry; this reply is the one a reader acts on,
+            # three days before the window shuts and weeks below the card in the thread.
+            project = bill.rcl
+            polish = lb.action_in_polish.format(wykaz=project.wykaz_number or project.number)
+            where = f"{where} {esc(polish)}"
         until = (
             f"{esc(lb.consultation_until)} {self.fmt_date(window.end)} · "
             f"{self._countdown((window.end - today).days)}"
@@ -852,7 +861,9 @@ class MessageFormatter:
             links.append(link(SENATE_BILLS_URL, lb.link_senate_bills))
         summary_block = ""
         if bill.analysis is not None:
-            summary_block = self._summary_reminder(bill.analysis.analysis.summary, full=False)
+            summary_block = self._summary_reminder(
+                bill.analysis.analysis.summary, full=False, law=True
+            )
         text = self._assemble(
             [header, facts],
             flexible=[summary_block],
@@ -1173,15 +1184,21 @@ class MessageFormatter:
                 return label[0].upper() + label[1:]
         return lb.update_headers.get(event) or lb.update_header
 
-    def _summary_reminder(self, summary: str, *, full: bool) -> str:
-        """`📝 Суть проекта: <first sentence>` or, after a re-analysis, the whole summary."""
+    def _summary_reminder(self, summary: str, *, full: bool, law: bool = False) -> str:
+        """`📝 Суть проекта: <first sentence>` or, after a re-analysis, the whole summary.
+
+        `law` for the messages that come after the third reading — the Dziennik Ustaw notice and
+        the two constitutional deadlines, whose own headers already say «Закон в Сенате». What
+        the Sejm passed is an ustawa, and «Суть проекта» said of it is one word behind the story.
+        """
         lb = self._labels
         text = summary.strip()
         if not text:
             return ""
+        label = lb.act_summary if law else lb.current_summary
         if full:
-            return f"{ICON['about']} <b>{esc(lb.current_summary)}</b>\n{esc(text)}"
-        return f"{ICON['about']} <b>{esc(lb.current_summary)}:</b> {esc(lead(text))}"
+            return f"{ICON['about']} <b>{esc(label)}</b>\n{esc(text)}"
+        return f"{ICON['about']} <b>{esc(label)}:</b> {esc(lead(text))}"
 
     def _number_label(self, bill: Bill) -> str:
         if bill.wykaz is not None:
@@ -1478,14 +1495,21 @@ class MessageFormatter:
                 parts.append(label)
         return f"{ICON['path']} <b>{esc(lb.path)}:</b> {esc(' → '.join(parts))}"
 
-    def _step_template(self, key: str, *, named: bool, overdue: bool = False) -> str | None:
-        """The phase's wording, in the variant the moment calls for: `_unnamed` when there is no
-        committee to name (`{committee}` left empty would render a dangling dash), `_overdue` once
-        the constitutional term is out, because "(до 21 дня)" next to «срок истёк» in the same
-        line says both things at once."""
+    def _step_template(
+        self, key: str, *, named: bool, overdue: bool = False, dated: bool = True
+    ) -> str | None:
+        """The phase's wording, in the variant the moment calls for.
+
+        `_overdue` once the constitutional term is out, because "(до 21 дня)" next to «срок истёк»
+        in the same line says both things at once; `_unnamed` when there is no committee to name
+        and `_undated` when the phase has no date, since `{committee}` and `{date}` left empty
+        render a dangling dash and «консультации до , затем…».
+        """
         labels = self._labels.next_step_labels
         if overdue and (late := labels.get(f"{key}_overdue")) is not None:
             return late
+        if not dated and (open_ended := labels.get(f"{key}_undated")) is not None:
+            return open_ended
         if not named and (plain := labels.get(f"{key}_unnamed")) is not None:
             return plain
         return labels.get(key)
@@ -1503,7 +1527,7 @@ class MessageFormatter:
         shortened = lb.urgent_step_labels.get(phase.key) if urgent and not overdue else None
         committees = self._committee_names(bill, phase.committees)
         template = shortened or self._step_template(
-            phase.key, named=bool(committees), overdue=overdue
+            phase.key, named=bool(committees), overdue=overdue, dated=phase.date is not None
         )
         if template is None:
             return ""
