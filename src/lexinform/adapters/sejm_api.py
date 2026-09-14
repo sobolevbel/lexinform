@@ -510,6 +510,11 @@ def parse_committee_sitting(item: dict[str, Any], *, code: str) -> CommitteeSitt
         status=str(item.get("status") or "PLANNED"),
         agenda=str(item.get("agenda") or ""),
         video_url=str(player) if player else None,
+        joint_with=tuple(
+            str(j["code"])
+            for j in item.get("jointWith") or ()
+            if isinstance(j, dict) and j.get("code")
+        ),
     )
 
 

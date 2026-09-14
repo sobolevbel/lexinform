@@ -248,7 +248,15 @@ class AgendaWatcher:
     def _items_for(self, term: int, bill: Bill, listings: _Listings) -> tuple[AgendaItem, ...]:
         """Agenda items naming the bill — by its own druk, by a print considered jointly with it,
         or by one of the prints its process produced (`derived_print_numbers`), which is the only
-        name a sitting on the Senate's resolution or the President's motion gives it."""
+        name a sitting on the Senate's resolution or the President's motion gives it.
+
+        Committees that sit together are listed once each, under a `num` of their own, so a bill
+        referred to two of them produced two items for one meeting and the channel announced it
+        twice — 328 (bill, day) pairs of term 10, druk 2699 among them, which sat before ASW and
+        SPC on 2026-07-02 and would have said so twice. `meeting_key` collapses the group; the
+        item already told stays the one we keep, so a committee joining the bill later cannot
+        move the `ref` and make `_retract_gone` take back a sitting that is still on.
+        """
         numbers = {
             bill.number,
             *bill.summary.prints_considered_jointly,
@@ -256,25 +264,29 @@ class AgendaWatcher:
         }
         items: list[AgendaItem] = []
         codes = _committee_codes(bill)
+        told = {old.ref for old in bill.agenda}
+        meetings: dict[tuple[dt.date, dt.time | None, str], AgendaItem] = {}
         for code in sorted(codes & listings.committee.keys()):
             for sitting in listings.committee[code]:
                 texts = items_mentioning(sitting.agenda, numbers)
                 if not texts:
                     continue
-                items.append(
-                    AgendaItem(
-                        kind="committee",
-                        ref=f"{code}/{sitting.num}/{sitting.date.isoformat()}",
-                        date=sitting.date,
-                        start_time=sitting.start_time,
-                        committee_code=code,
-                        committee_name=self._enricher.committee_name_or_none(term, code),
-                        sitting_number=sitting.num,
-                        room=sitting.room,
-                        text=" ".join(texts),
-                        video_url=sitting.video_url,
-                    )
+                item = AgendaItem(
+                    kind="committee",
+                    ref=f"{code}/{sitting.num}/{sitting.date.isoformat()}",
+                    date=sitting.date,
+                    start_time=sitting.start_time,
+                    committee_code=code,
+                    committee_name=self._enricher.committee_name_or_none(term, code),
+                    sitting_number=sitting.num,
+                    room=sitting.room,
+                    text=" ".join(texts),
+                    video_url=sitting.video_url,
                 )
+                kept = meetings.get(sitting.meeting_key)
+                if kept is None or (item.ref in told and kept.ref not in told):
+                    meetings[sitting.meeting_key] = item
+        items.extend(meetings.values())
         for plenary in listings.sejm:
             texts = items_mentioning(plenary.agenda, numbers)
             first, last = plenary.first_date, plenary.last_date

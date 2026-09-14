@@ -67,6 +67,38 @@ def test_committee_sitting_naming_the_bill_is_posted_once() -> None:
     assert again.agenda_posted == 0 and len(w.publisher.agendas) == 1
 
 
+def test_committees_sitting_together_are_announced_once() -> None:
+    """One meeting is listed under every committee that sits in it, with a `num` of its own —
+    938 of the 4,387 sittings of term 10. A bill referred to two of them got two identical
+    posts: druk 2699 («o nabywaniu nieruchomości przez cudzoziemców») sat before ASW and SPC on
+    2026-07-02, and would have said so twice."""
+    w = _referred_bill()
+    spc = Committee(term=10, code="SPC", name="Komisja Sprawiedliwości i Praw Człowieka")
+    w.gateway.committees["SPC"] = spc
+    referral = Stage(
+        stage_name="Skierowanie",
+        stage_type="Referral",
+        date=dt.date(2026, 9, 3),
+        committee_code="SPC",
+    )
+    referrals = COMMITTEE_STAGES[-1]
+    w.set_stages(
+        "3039",
+        COMMITTEE_STAGES[:-1]
+        + (referrals.model_copy(update={"children": (*referrals.children, referral)}),),
+    )
+    together = _sitting()
+    w.gateway.committee_sittings["ASW"] = (together.model_copy(update={"joint_with": ("SPC",)}),)
+    w.gateway.committee_sittings["SPC"] = (
+        together.model_copy(update={"code": "SPC", "num": 92, "joint_with": ("ASW",)}),
+    )
+
+    report = w.run()
+
+    assert report.agenda_posted == 1
+    assert _refs(w) == [SITTING_REF]
+
+
 def test_the_sitting_on_the_senates_resolution_is_found_by_its_own_print() -> None:
     """Past the third reading the agenda stops naming the bill: "Rozpatrzenie uchwały Senatu w
     sprawie ustawy o zmianie ustawy o cudzoziemcach (druk nr 1935)" is druk 1630 of term 10, and

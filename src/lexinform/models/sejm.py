@@ -262,7 +262,10 @@ class CommitteeSitting(BaseModel):
     """An item of GET /committees/{code}/sittings.
 
     `start_time` is wall clock in Warsaw, as the API gives it, `status` PLANNED or FINISHED, and
-    `agenda` an HTML fragment `lexinform.agenda` reads.
+    `agenda` an HTML fragment `lexinform.agenda` reads. `joint_with` names the other committees
+    sitting together with this one: the same meeting is listed once under every one of them
+    (938 of the 4,387 sittings of term 10, in 546 pairs), so without it a bill referred to two
+    of them was announced twice for one meeting.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -275,6 +278,17 @@ class CommitteeSitting(BaseModel):
     status: str = "PLANNED"
     agenda: str = ""
     video_url: str | None = None
+    joint_with: tuple[str, ...] = ()
+
+    @property
+    def meeting_key(self) -> tuple[dt.date, dt.time | None, str]:
+        """What makes two listings the same meeting: the committees that sit in it, and when.
+
+        The codes are what identify it — one sitting has a different `num` in each committee's
+        own listing — and they are sorted so that every committee of the group derives the same
+        key from its own row.
+        """
+        return (self.date, self.start_time, ",".join(sorted({self.code, *self.joint_with})))
 
 
 class SejmSitting(BaseModel):
