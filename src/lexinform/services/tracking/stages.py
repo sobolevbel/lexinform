@@ -96,3 +96,10 @@ def change_key(stage_fp: str, bill: Bill, *, closed: bool, supplements: Iterable
     if filed:
         key = f"{key}|{filed}"
     return hashlib.sha256(key.encode()).hexdigest()
+
+
+def synthetic_key(event: str, number: str) -> str:
+    """Dedupe key for a change no stage tree explains: a term that lapsed, an entry the Sejm
+    stopped listing. `change_key` has nothing to work with there — no new fingerprint, and the
+    bill's own analysis has not moved — so the event names itself."""
+    return hashlib.sha256(f"{event}|{number}".encode()).hexdigest()

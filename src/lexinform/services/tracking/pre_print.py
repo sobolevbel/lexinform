@@ -7,7 +7,6 @@ listing tells when the Sejm publishes the opinions received in a consultation
 (`consultationResults`), which is announced once.
 """
 
-import hashlib
 import logging
 
 from lexinform.errors import ServiceUnavailableError
@@ -17,6 +16,7 @@ from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.linking import Linker
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.result import TrackingResult
+from lexinform.services.tracking.stages import synthetic_key
 
 log = logging.getLogger(__name__)
 
@@ -172,24 +172,21 @@ class PrePrintReconciler:
         With publishing off the change is held rather than dropped: the change row alone would
         look like something that had been announced.
         """
-        change = StatusChange(
-            term=bill.term,
-            number=bill.number,
-            old_fingerprint=bill.stages_fingerprint,
-            new_fingerprint=hashlib.sha256(f"withdrawn|{bill.number}".encode()).hexdigest(),
-            new_stages=[],
-            closure_detected=True,
-            passed=False,
-            withdrawn=True,
-            detected_at=self._clock.now(),
+        change = self._poster.record_change(
+            StatusChange(
+                term=bill.term,
+                number=bill.number,
+                old_fingerprint=bill.stages_fingerprint,
+                new_fingerprint=synthetic_key("withdrawn", bill.number),
+                new_stages=[],
+                closure_detected=True,
+                passed=False,
+                withdrawn=True,
+                detected_at=self._clock.now(),
+            )
         )
-        change_id = self._repo.add_status_change(change)
-        if change_id is None:
+        if change is None:
             return
-        change.id = change_id
         result.changed += 1
         log.info("%s withdrawn before getting a print number", bill.number)
-        if publish:
-            result.count_post(self._poster.status_update(bill, change))
-        else:
-            self._poster.hold(bill, change)
+        self._poster.tell(bill, change, result, publish=publish)

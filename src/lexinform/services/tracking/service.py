@@ -45,7 +45,7 @@ from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.deadlines import DeadlineReminder
 from lexinform.services.tracking.hearings import HearingReminder
 from lexinform.services.tracking.linking import Linker
-from lexinform.services.tracking.posting import Poster
+from lexinform.services.tracking.posting import Poster, Told
 from lexinform.services.tracking.pre_print import PrePrintReconciler
 from lexinform.services.tracking.rcl import RclWatcher
 from lexinform.services.tracking.result import TrackingResult
@@ -415,10 +415,8 @@ class StatusTrackingService:
         if change is None:
             return
         announced = self._poster.sent(bill, PublicationKind.ACT_PUBLISHED)
-        if publish and has_news(change, act_published=announced):
-            result.count_post(self._poster.status_update(bill, change))
-        else:
-            self._poster.hold(bill, change)
+        news = publish and has_news(change, act_published=announced)
+        if self._poster.tell(bill, change, result, publish=news) is Told.HELD:
             result.held += 1
 
     def _remind_and_refresh(
@@ -468,7 +466,12 @@ class StatusTrackingService:
         )
 
     def _retry_failed(self, result: TrackingResult) -> bool:
-        """Re-send status updates whose post failed earlier. False if Telegram is down."""
+        """Re-send status updates whose post failed earlier. False if Telegram is down.
+
+        The one place that sends an update without going through `Poster.tell`, and the reason
+        is that there is nothing to decide: the change was recorded and told long ago, this run
+        only repeats a send that failed, and `check_updates` calls this only when publishing.
+        """
         for change in self._repo.list_failed_status_changes(
             self._options.channel_id, max_attempts=self._options.max_publish_attempts
         ):
@@ -625,10 +628,10 @@ class StatusTrackingService:
             content_changed=content_changed,
             detected_at=now,
         )
-        change_id = self._repo.add_status_change(change)
-        if change_id is None:
+        recorded = self._poster.record_change(change)
+        if recorded is None:
             return None
-        change.id = change_id
+        change = recorded
         if found.amendments is not None:
             self._attach_amendments(change, bill, found.amendments, result)
         if filed:

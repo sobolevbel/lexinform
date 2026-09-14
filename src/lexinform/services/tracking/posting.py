@@ -11,6 +11,7 @@ stages before its own and releases them (their rows become `sent` with its messa
 import logging
 from collections.abc import Callable
 from datetime import date
+from enum import StrEnum
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
@@ -24,11 +25,23 @@ from lexinform.models import (
     StatusChange,
 )
 from lexinform.ports import BillRepository, Clock, Publisher
+from lexinform.services.tracking.result import TrackingResult
 
 log = logging.getLogger(__name__)
 
 Send = Callable[[int | None], int]
 """Sends one post under an optional reply-to message and answers with its message id."""
+
+
+class Told(StrEnum):
+    """What became of a recorded change. There is no fourth value on purpose: every change that
+    was written down is either told now, held for the next post, or failed and retried later —
+    a change that is written down and then neither told nor held is lost for good, because the
+    row is what stops it being detected a second time."""
+
+    SENT = "sent"
+    HELD = "held"
+    FAILED = "failed"
 
 
 class Poster:
@@ -131,6 +144,38 @@ class Poster:
         self._repo.set_card_digest(card.id, self._publisher.card_digest(bill))
         log.info("card of %s re-rendered in place", bill.number)
         return True
+
+    def record_change(self, change: StatusChange) -> StatusChange | None:
+        """Write the change down before anything is said about it; None when an earlier run
+        recorded it already (the row is unique per bill and fingerprint), which is what keeps
+        the same news from going out twice.
+
+        The change comes back carrying its `id`, so the caller never has to fill it in — which
+        is half of a prologue that stood in seven places, each free to forget a piece of it.
+        (`record` is the same idea for a publication row and is a different table.)
+        """
+        change_id = self._repo.add_status_change(change)
+        if change_id is None:
+            return None
+        change.id = change_id
+        return change
+
+    def tell(
+        self, bill: Bill, change: StatusChange, result: TrackingResult, *, publish: bool
+    ) -> Told:
+        """Tell a recorded change now, or hold it for the next post — one of the two, always.
+
+        Never neither: with publishing off the row already exists, so a change that is dropped
+        here is a change nothing will ever detect again. `result` counts the post, because every
+        caller counted it the same way; what a caller does with the answer is its own business
+        (the term rollover counts the bills it laid to rest, the stage loop the changes it held).
+        """
+        if not publish:
+            self.hold(bill, change)
+            return Told.HELD
+        sent = self.status_update(bill, change)
+        result.count_post(sent)
+        return Told.SENT if sent else Told.FAILED
 
     def hold(self, bill: Bill, change: StatusChange) -> None:
         """Keep a service-stage change for the next post instead of sending it now."""

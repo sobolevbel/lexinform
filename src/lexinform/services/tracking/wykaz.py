@@ -94,24 +94,21 @@ class WykazLinker:
             return
         content_changed = self._reanalyse(bill, result)
         fresh = self._repo.get(plan.term, summary.number) or bill
-        change = StatusChange(
-            term=plan.term,
-            number=summary.number,
-            old_fingerprint=plan.number,
-            new_fingerprint=rcl_fingerprint(project),
-            new_stages=list(rcl_stages(project)),
-            content_changed=content_changed,
-            detected_at=now,
+        change = self._poster.record_change(
+            StatusChange(
+                term=plan.term,
+                number=summary.number,
+                old_fingerprint=plan.number,
+                new_fingerprint=rcl_fingerprint(project),
+                new_stages=list(rcl_stages(project)),
+                content_changed=content_changed,
+                detected_at=now,
+            )
         )
-        change_id = self._repo.add_status_change(change)
-        if change_id is None:
+        if change is None:
             return
-        change.id = change_id
         result.changed += 1
-        if publish:
-            result.count_post(self._poster.status_update(fresh, change))
-        else:
-            self._poster.hold(fresh, change)
+        self._poster.tell(fresh, change, result, publish=publish)
 
     def _inherit_card(self, plan: Bill, number: str, card: Publication, *, publish: bool) -> None:
         """The plan's card stays the thread root; the project inherits it instead of getting a
@@ -211,10 +208,7 @@ class WykazWatcher:
             return True
         fresh = self._repo.get(bill.term, bill.number) or bill
         try:
-            if publish:
-                result.count_post(self._poster.status_update(fresh, change))
-            else:
-                self._poster.hold(fresh, change)
+            self._poster.tell(fresh, change, result, publish=publish)
         except ServiceUnavailableError as exc:
             result.abort(exc, failed=True)
             return False
@@ -260,20 +254,20 @@ class WykazWatcher:
         adopted = entry.is_adopted and not bill.wykaz.is_adopted
         if not dropped and not adopted:
             return None
-        change = StatusChange(
-            term=bill.term,
-            number=bill.number,
-            old_fingerprint=bill.stages_fingerprint,
-            new_fingerprint=new_fp,
-            new_stages=[],
-            closure_detected=dropped,
-            passed=False,
-            detected_at=self._clock.now(),
+        change = self._poster.record_change(
+            StatusChange(
+                term=bill.term,
+                number=bill.number,
+                old_fingerprint=bill.stages_fingerprint,
+                new_fingerprint=new_fp,
+                new_stages=[],
+                closure_detected=dropped,
+                passed=False,
+                detected_at=self._clock.now(),
+            )
         )
-        change_id = self._repo.add_status_change(change)
-        if change_id is None:
+        if change is None:
             return None
-        change.id = change_id
         result.changed += 1
         what = "dropped" if dropped else "adopted"
         log.info("%s: the government %s the project (%s)", bill.number, what, entry.status)

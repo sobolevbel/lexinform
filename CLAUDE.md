@@ -365,7 +365,13 @@ Invariants worth keeping:
   `End`); `has_news` decides whether a detected change is posted now. A change of frame nodes only
   is *held*: its `status_changes` row exists (dedupe) with a `skipped` `status_update` publication,
   and `Poster.status_update` prepends the held stages to the next post and marks their rows `sent`
-  with its message id. A closure detected in the same run as the act's ELI is held too: the
+  with its message id. **Recording and telling are one pair of methods**, because a change that is
+  written down and then neither told nor held is lost for good — the row is what stops it being
+  detected again: `Poster.record_change` writes the row and hands the change back with its id,
+  `Poster.tell` posts it or holds it and answers `Told.SENT`/`HELD`/`FAILED`, and there is no
+  fourth outcome. Every watcher goes through them; the one exception is
+  `StatusTrackingService._retry_failed`, which re-sends a post that failed and has nothing to
+  decide. A closure detected in the same run as the act's ELI is held too: the
   Dziennik Ustaw notice tells it. `update_event` names the header after the newest stage
   (`Labels.update_headers`); the closure line is dropped when the header already says it.
   Amendments (Senate resolution print, a committee report whose proposal is about poprawki) are

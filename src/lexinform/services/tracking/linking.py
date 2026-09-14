@@ -177,27 +177,24 @@ class Linker:
         publishing off the change is held, to be told with the next update of the print."""
         content_changed = self._reanalyze_print(bill, detail, result)
         fresh = self._repo.get(bill.term, bill.number) or bill
-        change = StatusChange(
-            term=bill.term,
-            number=bill.number,
-            old_fingerprint=pre.number,
-            new_fingerprint=change_key(stage_fingerprint(detail.stages), fresh, closed=False),
-            new_stages=[
-                self._enricher.enrich(bill.term, st) for st in diff_stages((), detail.stages)
-            ],
-            passed=detail.passed,
-            content_changed=content_changed,
-            detected_at=now,
+        change = self._poster.record_change(
+            StatusChange(
+                term=bill.term,
+                number=bill.number,
+                old_fingerprint=pre.number,
+                new_fingerprint=change_key(stage_fingerprint(detail.stages), fresh, closed=False),
+                new_stages=[
+                    self._enricher.enrich(bill.term, st) for st in diff_stages((), detail.stages)
+                ],
+                passed=detail.passed,
+                content_changed=content_changed,
+                detected_at=now,
+            )
         )
-        change_id = self._repo.add_status_change(change)
-        if change_id is None:
+        if change is None:
             return
-        change.id = change_id
         result.changed += 1
-        if publish:
-            result.count_post(self._poster.status_update(fresh, change))
-        else:
-            self._poster.hold(fresh, change)
+        self._poster.tell(fresh, change, result, publish=publish)
 
     def _reanalyze_print(self, bill: Bill, detail: ProcessDetail, result: TrackingResult) -> bool:
         """True when the print carries a text the model had not seen under the entry's number."""

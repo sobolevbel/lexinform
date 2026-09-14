@@ -88,10 +88,7 @@ class RclWatcher:
             try:
                 if change is not None:
                     result.changed += 1
-                    if publish:
-                        result.count_post(self._poster.status_update(fresh, change))
-                    else:
-                        self._poster.hold(fresh, change)
+                    self._poster.tell(fresh, change, result, publish=publish)
                 if results_due and self._consultations is not None:
                     self._consultations.results_published(fresh, result, publish=publish)
             except ServiceUnavailableError as exc:
@@ -191,22 +188,22 @@ class RclWatcher:
         if not (new_stages or content_changed or closure or consultation_opened):
             return None
         fresh = self._repo.get(bill.term, bill.number) or bill
-        change = StatusChange(
-            term=bill.term,
-            number=bill.number,
-            old_fingerprint=bill.stages_fingerprint,
-            new_fingerprint=change_key(new_fp, fresh, closed=closure),
-            new_stages=new_stages,
-            closure_detected=closure,
-            passed=False if closure else None,
-            content_changed=content_changed,
-            consultation_opened=consultation_opened,
-            detected_at=now,
+        change = self._poster.record_change(
+            StatusChange(
+                term=bill.term,
+                number=bill.number,
+                old_fingerprint=bill.stages_fingerprint,
+                new_fingerprint=change_key(new_fp, fresh, closed=closure),
+                new_stages=new_stages,
+                closure_detected=closure,
+                passed=False if closure else None,
+                content_changed=content_changed,
+                consultation_opened=consultation_opened,
+                detected_at=now,
+            )
         )
-        change_id = self._repo.add_status_change(change)
-        if change_id is None:
+        if change is None:
             return None
-        change.id = change_id
         log.info(
             "%s: %s%s%s",
             bill.number,

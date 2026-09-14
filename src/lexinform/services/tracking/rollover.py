@@ -14,14 +14,14 @@ Idempotent and safe to repeat every run: the posts are recorded before the rows 
 a Telegram outage half-way leaves the rest for the next run.
 """
 
-import hashlib
 import logging
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import Bill, PublicationStatus, StatusChange
 from lexinform.ports import BillRepository, Clock
-from lexinform.services.tracking.posting import Poster
+from lexinform.services.tracking.posting import Poster, Told
 from lexinform.services.tracking.result import TrackingResult
+from lexinform.services.tracking.stages import synthetic_key
 
 log = logging.getLogger(__name__)
 
@@ -99,28 +99,25 @@ class TermRollover:
         card = self._poster.card(bill)
         if card is None or card.status is not PublicationStatus.SENT:
             return False
-        change = StatusChange(
-            term=bill.term,
-            number=bill.number,
-            old_fingerprint=bill.stages_fingerprint,
-            new_fingerprint=hashlib.sha256(f"discontinued|{bill.number}".encode()).hexdigest(),
-            new_stages=[],
-            closure_detected=True,
-            passed=False,
-            discontinued=True,
-            detected_at=self._clock.now(),
+        change = self._poster.record_change(
+            StatusChange(
+                term=bill.term,
+                number=bill.number,
+                old_fingerprint=bill.stages_fingerprint,
+                new_fingerprint=synthetic_key("discontinued", bill.number),
+                new_stages=[],
+                closure_detected=True,
+                passed=False,
+                discontinued=True,
+                detected_at=self._clock.now(),
+            )
         )
-        change_id = self._repo.add_status_change(change)
-        if change_id is None:
+        if change is None:
             return False
-        change.id = change_id
         result.changed += 1
         log.info("%s lapsed with the end of term %d", bill.number, bill.term)
-        if publish:
-            sent = self._poster.status_update(bill, change)
-            result.count_post(sent)
-            result.discontinued += int(sent)
-        else:
-            self._poster.hold(bill, change)
-            result.discontinued += 1
+        # A bill whose last word is held counts as laid to rest all the same: the row is there
+        # and the next post carries it; only a failed send leaves it for another run.
+        told = self._poster.tell(bill, change, result, publish=publish)
+        result.discontinued += int(told is not Told.FAILED)
         return True
