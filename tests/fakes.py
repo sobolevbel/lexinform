@@ -12,6 +12,7 @@ from datetime import UTC, date, datetime, timedelta
 
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
 from lexinform.adapters.publisher_base import Outgoing, RenderingPublisher
+from lexinform.adapters.sejm_api import rcl_key
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import (
     AttachmentTooLargeError,
@@ -62,6 +63,7 @@ from lexinform.models import (
     WykazEntry,
 )
 from lexinform.ports import PublishResult
+from lexinform.sections import MIN_CHARS_PER_PAGE
 
 
 class FixedClock:
@@ -116,6 +118,9 @@ class FakeSejmGateway:
     def iter_processes(
         self, term: int, *, modified_since: datetime | None = None, document_type: str | None = None
     ) -> Iterator[ProcessSummary]:
+        # `modified_since` is a server-side filter in the real client (`modifiedSince` on the
+        # query), so what is written here stands in for the API and not for adapter code: it is
+        # the API's behaviour recorded in `docs/roadmap.md`, and no test can prove it.
         self._called("iter_processes", str(term))
         for p in self.processes:
             if p.term != term:
@@ -143,14 +148,23 @@ class FakeSejmGateway:
     def find_process_by_rcl_num(
         self, term: int, rcl_num: str, *, since: date | None = None
     ) -> ProcessSummary | None:
+        """The print an RCL project became — the one method of this gateway whose answer the real
+        client works out itself rather than asking the API for, so the two are held to the same
+        answer by `tests/unit/test_gateway_contract.py`: the number is normalised by the
+        adapter's own `rcl_key`, and the window is the hand-over less a week, dated from the
+        print or, failing that, from when the listing last changed."""
         self._called("find_process_by_rcl_num", rcl_num)
+        wanted = rcl_key(rcl_num)
+        if not wanted:  # or "" would equal the "" of every print that carries no number
+            return None
+        start = since - timedelta(days=7) if since is not None else None
         return next(
             (
                 p
                 for p in self.processes
                 if p.term == term
-                and p.rcl_num == rcl_num
-                and (since is None or (p.document_date or since) >= since - timedelta(days=7))
+                and rcl_key(p.rcl_num) == wanted
+                and (start is None or (p.document_date or p.change_date.date()) >= start)
             ),
             None,
         )
@@ -255,16 +269,24 @@ class FakeTextExtractor:
             raise self.error
         return self.by_content.get(data, self.text)
 
+    CHARS_PER_PAGE = MIN_CHARS_PER_PAGE * 7
+    """What a page of a real print holds: the median over term 10 is ~2,200 characters.
+
+    Written as a multiple of the threshold the analysis judges by, not as a bare 2,000, because
+    the two have to stay on the same side of each other: a text this fake calls one page must
+    read as a document and never as a scan. A test that wants the other side of the rule says
+    so with `page_count`.
+    """
+
     def pages(self, data: bytes) -> int:
         """As many pages as the text would really fill, unless the test says otherwise.
 
-        A page of a Polish print holds some 2,000 characters (measured over term 10), and the
-        analysis tells a scan from a document by that density — so a fixture whose pages and
-        text do not match would put every test on the wrong side of the rule.
+        The analysis tells a scan from a document by characters per page, so a fixture whose
+        pages and text do not match would put every test on the wrong side of that rule.
         """
         if self.page_count is not None:
             return self.page_count
-        return max(1, len(self.by_content.get(data, self.text)) // 2000)
+        return max(1, len(self.by_content.get(data, self.text)) // self.CHARS_PER_PAGE)
 
     def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
         """A shorter, distinct payload, the way a real selection is.
@@ -308,9 +330,16 @@ class FakeRclGateway:
                 yield row
 
     def get_project(self, project_id: int) -> RclProject:
+        """The project page: the timeline and nothing under it.
+
+        Stripping the folders here is this fake standing in for the site's shape, not for
+        `rcl_html`: what the page really carries is pinned by the saved pages in
+        `tests/fixtures/rcl/` and read by `test_rcl_html.py`. Folders come one catalog at a time
+        from `get_stage`, and a service that forgets to ask for them sees none — which is the
+        whole point of answering this way.
+        """
         self._called("get_project", str(project_id))
         project = self.projects[project_id]
-        # The page shows the timeline only; folders come from the catalog pages.
         return project.model_copy(
             update={
                 "stages": tuple(st.model_copy(update={"folders": ()}) for st in project.stages),

@@ -182,7 +182,7 @@ class SejmApiClient:
         listing, so the listing is walked once (cheap) and details are read one by one, oldest
         first among the bills dated on or after `since` (the hand-over to the Sejm; a print
         follows it within days). At most `MAX_RCL_LOOKUPS` details, then None."""
-        wanted = _rcl_key(rcl_num)
+        wanted = rcl_key(rcl_num)
         if not wanted:
             return None
         start = since - timedelta(days=7) if since is not None else None
@@ -197,7 +197,7 @@ class SejmApiClient:
                 detail = self.get_process(term, summary.number)
             except SejmApiError:  # a print the API cannot render must not stop the search
                 continue
-            if _rcl_key(detail.rcl_num) == wanted:
+            if rcl_key(detail.rcl_num) == wanted:
                 return detail
         return None
 
@@ -309,8 +309,12 @@ class SejmApiClient:
         self._sleep(delay)
 
 
-def _rcl_key(value: str | None) -> str:
-    """`RM-0610-7-26` written with other spacing or case still names the same project."""
+def rcl_key(value: str | None) -> str:
+    """`RM-0610-7-26` written with other spacing or case still names the same project.
+
+    Public because the test double for this gateway has to answer the same question the same
+    way, and a second spelling of the rule in `tests/fakes.py` is a rule that drifts.
+    """
     return "".join((value or "").split()).upper()
 
 

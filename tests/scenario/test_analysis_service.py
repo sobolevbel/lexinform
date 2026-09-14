@@ -482,3 +482,17 @@ def test_a_short_readable_text_still_skips_the_triage() -> None:
 
     assert w.llm.triage_contexts == []
     assert [c.number for c in w.llm.contexts] == ["4300"]
+
+
+def test_the_default_fixture_text_is_read_as_a_document_and_not_as_a_scan() -> None:
+    """Every scenario test that does not say otherwise gets `FakeTextExtractor`'s default text and
+    the page count it implies, and the analysis judges a scan from a document by characters per
+    page. If the two ever drift apart, three hundred tests quietly change what they are about —
+    so the one that fixes the default says which side of the rule it is on."""
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+
+    w.run()
+
+    ctx = w.llm.contexts[0]
+    assert ctx.text_source == "pdf" and ctx.scan is None
