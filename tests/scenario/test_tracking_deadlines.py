@@ -122,3 +122,44 @@ def test_an_urgent_bill_is_reminded_in_its_own_terms() -> None:
     assert "Сенат должен решить до 18.09.2026" in text
     assert "у Сената 14 дней вместо обычных 30" in text
     assert "задолго до этого срока" not in text
+
+
+def test_the_presidents_reminder_does_not_apologise_for_a_date_that_is_exact() -> None:
+    """`ToPresident` is the hand-over itself, so art. 122's twenty-one days run from a date the
+    API gives. The note that the term "really starts a few days later" is true of the Senate's
+    thirty, counted from the third reading, and of a President's whose bill came through a vote
+    on the Senate's amendments — saying it over an exact date teaches the reader to discount it.
+    """
+    w = _passed()
+    w.clock.advance(days=21)
+    w.run()  # the Senate's reminder
+    w.set_stages("3039", (*PASSED[:-1], TO_PRESIDENT, END))
+    w.touch("3039", dt.datetime(2026, 9, 29, 9, tzinfo=dt.UTC))
+    w.clock.advance(days=7)
+    w.run()
+
+    bill, phase, _, today = w.publisher.decision_deadlines[-1]
+    text = MessageFormatter("ru").decision_deadline(bill, phase, today=today).text
+
+    assert phase.deadline_exact
+    assert "Президент должен решить до 11.10.2026" in text
+    assert "фактический на несколько дней позже" not in text
+
+
+def test_an_urgent_bill_is_not_told_the_ordinary_term_ran_out() -> None:
+    """Art. 123 halves the President's twenty-one days, and the expiry note used to quote the
+    ordinary number to every bill alike."""
+    w = _passed(urgent=True)
+    w.set_stages("3039", (*PASSED[:-1], TO_PRESIDENT, END))
+    w.touch("3039", dt.datetime(2026, 9, 21, 9, tzinfo=dt.UTC))
+    w.clock.advance(days=30)  # 2026-10-07: the 7 days from 2026-09-20 are out, grace included
+    w.run()
+
+    text = MessageFormatter("ru").new_bill(w.bill("3039"), None, today=w.clock.now().date()).text
+
+    assert "7 дней на подпись истекли" in text
+    assert "21 день" not in text
+    # And the step itself stops promising a term that is behind the reader, while still saying
+    # which mode the bill was in.
+    assert "подпись Президента, затем публикация в Dziennik Ustaw (срочный режим" in text
+    assert "до 7 дней" not in text

@@ -182,8 +182,29 @@ Invariants worth keeping:
   deadline is shown as the deadline of the body that is under it, never as a window the reader
   has: «решение до 04.10.2026», and the reminder (`tracking/deadlines.py`, one reply per bill and
   phase, v17, `decision_reminder_days` = 7) says the date is counted from the third reading and
-  so runs a few days early. The Senate action carries no date at all — art. 121 gives the Senate
-  thirty days and its committee takes the act long before they are out.
+  so runs a few days early — **but only where it is** (`Phase.deadline_exact`): `ToPresident` is
+  the hand-over itself, so art. 122's twenty-one days run from a date the API gives, and
+  apologising for an exact date teaches the reader to discount it. The Senate action carries no
+  date at all — art. 121 gives the Senate thirty days and its committee takes the act long
+  before they are out.
+- **A term the Constitution makes zawity is a step, not a note.** Art. 121 ust. 2: thirty days
+  gone with no uchwała from the Senate and the act counts as adopted in the Sejm's wording, and
+  the Senate can neither extend nor suspend them — so `next_phase` moves the bill on
+  (`_after_senate_silence` → `president_after_senate_silence`, no deadline of its own: the
+  President's twenty-one days run from a receipt the API does not date, and a guess stacked on a
+  guess is not worth a reminder). Annotating the Senate step instead made one line say both
+  things: «рассмотрение в Сенате (до 30 дней) · 30 дней Сената истекли: закон считается принятым
+  без поправок». This is the one place the bot names a step the Sejm has not published, so the
+  wording says so, and it unwinds on the next run if the Senate did act and the listing was
+  behind. Two bills get no Senate deadline from us at all (`_senate_days`,
+  `_SENATE_SPECIAL_TERM`): the budget, where art. 223 gives twenty days, and a constitutional
+  amendment, where art. 235 gives sixty — neither is in reach of this channel's keywords, but a
+  date computed at thirty would be wrong and the silence rule would then fire too early. A step
+  whose term is out never keeps a wording that promises it: `next_step_labels` takes an
+  `_overdue` variant (and the urgent wording of art. 123, which names the shortened term, is
+  dropped for it, `urgent_mode` still saying which mode the bill was in), and the expiry note
+  itself comes from `urgent_deadline_passed_labels` first — it used to quote «21 день» to a bill
+  the Sejm had measured in seven.
 - **A live card is kept true; a finished one says so once and is then left alone.** Everything
   the card says about
   "now" is derived from the day it was rendered, so `tracking/cards.py::CardRefresher` re-renders

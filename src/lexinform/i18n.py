@@ -215,8 +215,8 @@ class Labels:
     """The government's verdict, when its position states one."""
     deadline_passed_labels: dict[str, str] = field(default_factory=dict)
     """What a constitutional term running out means, by phase; `deadline_passed` otherwise."""
-    no_action_after_deadline: dict[str, str] = field(default_factory=dict)
-    """Why there is nothing to do once that term is out, by phase."""
+    urgent_deadline_passed_labels: dict[str, str] = field(default_factory=dict)
+    """The same for a bill declared pilny, whose term was half as long (art. 123)."""
     update_headers: dict[str, str] = field(default_factory=dict)
     decision_labels: dict[str, str] = field(default_factory=dict)
     proposal_labels: dict[str, str] = field(default_factory=dict)
@@ -476,12 +476,11 @@ RU = Labels(
         "no": "правительство против проекта",
     },
     deadline_passed_labels={
-        "senate": "30 дней Сената истекли: закон считается принятым без поправок (ст. 121 ust. 2)",
         "president": "21 день на подпись истёк",
         "president_after_veto": "7 дней на подпись истекли",
     },
-    no_action_after_deadline={
-        "senate": ("пока ничего — срок Сената вышел, закон уходит к Президенту"),
+    urgent_deadline_passed_labels={
+        "president": "7 дней на подпись истекли",
     },
     update_headers={
         "update": "Обновление",
@@ -596,6 +595,12 @@ RU = Labels(
             " Сейм отклонит это решение абсолютным большинством"
         ),
         "president": "подпись Президента (до 21 дня), затем публикация в Dziennik Ustaw",
+        "president_overdue": "подпись Президента, затем публикация в Dziennik Ustaw",
+        "president_after_senate_silence": (
+            "Сенат не принял решения за 30 дней — по ст. 121 ч. 2 Конституции закон считается"
+            " принятым в редакции Сейма и уходит к Президенту (подпись до 21 дня), затем"
+            " публикация в Dziennik Ustaw. В базе Сейма передача Президенту ещё не отмечена"
+        ),
         "president_after_veto": (
             "подпись Президента — после отклонения вето у него 7 дней и права на вето или"
             " обращение в трибунал больше нет (ст. 122 ust. 5), затем публикация в Dziennik Ustaw"
@@ -698,6 +703,7 @@ RU = Labels(
         "senate_amendments": "пока ничего — Сейм решает по поправкам Сената",
         "senate_rejection": "пока ничего — Сейм решает, отклонить ли решение Сената",
         "president": "пока ничего — закон у Президента",
+        "president_after_senate_silence": "пока ничего — закон у Президента",
         "president_after_veto": "пока ничего — Президент обязан подписать закон в 7 дней",
         "publication": "пока ничего — ждём публикации в Dziennik Ustaw",
         "in_force": "пока ничего — закон принят, остаётся подготовиться к вступлению в силу",
@@ -1030,12 +1036,11 @@ EN = Labels(
         "no": "the government is against the bill",
     },
     deadline_passed_labels={
-        "senate": "the Senate's 30 days are out: the act counts as passed unamended (art. 121)",
         "president": "the 21 days for the signature are out",
         "president_after_veto": "the 7 days for the signature are out",
     },
-    no_action_after_deadline={
-        "senate": "nothing yet — the Senate's term is out, the act goes to the President",
+    urgent_deadline_passed_labels={
+        "president": "the 7 days for the signature are out",
     },
     update_headers={
         "update": "Update",
@@ -1152,6 +1157,12 @@ EN = Labels(
         "president": (
             "the President's signature (up to 21 days), then publication in Dziennik Ustaw"
         ),
+        "president_overdue": "the President's signature, then publication in Dziennik Ustaw",
+        "president_after_senate_silence": (
+            "the Senate let its 30 days pass — under art. 121 ust. 2 the act counts as passed in"
+            " the Sejm's wording and goes to the President (signature within 21 days), then"
+            " publication in Dziennik Ustaw. The Sejm has not recorded the hand-over yet"
+        ),
         "president_after_veto": (
             "the President's signature — once the veto is overridden he has 7 days and no"
             " veto or Tribunal left (art. 122 ust. 5), then publication in Dziennik Ustaw"
@@ -1255,6 +1266,7 @@ EN = Labels(
         "senate_amendments": "nothing yet — the Sejm decides on the Senate's amendments",
         "senate_rejection": "nothing yet — the Sejm decides whether to throw out the rejection",
         "president": "nothing yet — the act is with the President",
+        "president_after_senate_silence": "nothing yet — the act is with the President",
         "president_after_veto": "nothing yet — the President must sign within 7 days",
         "publication": "nothing yet — waiting for publication in Dziennik Ustaw",
         "in_force": "nothing yet — the act is passed, prepare for its entry into force",

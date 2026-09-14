@@ -14,7 +14,6 @@ from lexinform.i18n import Labels, labels_for
 from lexinform.models import (
     COMMITTEE_PHASES,
     DAYS_PER_MONTH,
-    DEADLINE_GRACE_DAYS,
     GOVERNMENT_STEPS,
     PATH_STEPS,
     PHASE_STEP,
@@ -45,6 +44,7 @@ from lexinform.models import (
     about_ukraine,
     committee_web_url,
     consultation_open,
+    deadline_overdue,
     event_keys,
     flatten_stages,
     government_path,
@@ -837,9 +837,14 @@ class MessageFormatter:
         facts = (
             f"{ICON['effective']} <b>{esc(line)}</b> · "
             f"{self._countdown((phase.deadline - today).days)}\n"
-            f"{esc(body)}\n"
-            f"{ICON['note']} <i>{esc(lb.deadline_counted_from_vote)}</i>"
+            f"{esc(body)}"
         )
+        if not phase.deadline_exact:
+            # Only the Senate's thirty days and a President's whose bill came through a vote on
+            # the Senate's amendments are counted from the stage before the hand-over. After
+            # `ToPresident` the API dates the hand-over itself, and apologising for a date that
+            # is exact teaches the reader to discount it.
+            facts += f"\n{ICON['note']} <i>{esc(lb.deadline_counted_from_vote)}</i>"
         links = [link(bill.summary.web_url, lb.link_process)]
         if senate:
             links.append(link(SENATE_BILLS_URL, lb.link_senate_bills))
@@ -1471,10 +1476,14 @@ class MessageFormatter:
                 parts.append(label)
         return f"{ICON['path']} <b>{esc(lb.path)}:</b> {esc(' → '.join(parts))}"
 
-    def _step_template(self, key: str, *, named: bool) -> str | None:
-        """The phase's wording, in the variant that names no committee when there is none to
-        name: `{committee}` left empty would render a dangling dash."""
+    def _step_template(self, key: str, *, named: bool, overdue: bool = False) -> str | None:
+        """The phase's wording, in the variant the moment calls for: `_unnamed` when there is no
+        committee to name (`{committee}` left empty would render a dangling dash), `_overdue` once
+        the constitutional term is out, because "(до 21 дня)" next to «срок истёк» in the same
+        line says both things at once."""
         labels = self._labels.next_step_labels
+        if overdue and (late := labels.get(f"{key}_overdue")) is not None:
+            return late
         if not named and (plain := labels.get(f"{key}_unnamed")) is not None:
             return plain
         return labels.get(key)
@@ -1485,9 +1494,15 @@ class MessageFormatter:
         if phase is None:
             return ""
         urgent = is_urgent(bill)
-        shortened = lb.urgent_step_labels.get(phase.key) if urgent else None
+        overdue = deadline_overdue(phase, today)
+        # The urgent wording of art. 123 names the shortened term ("срочный режим: до 7 дней"),
+        # which is the half of the line an expired term must not keep; the `_overdue` variant
+        # names no term at all and suits both, with `urgent_mode` added below saying which it was.
+        shortened = lb.urgent_step_labels.get(phase.key) if urgent and not overdue else None
         committees = self._committee_names(bill, phase.committees)
-        template = shortened or self._step_template(phase.key, named=bool(committees))
+        template = shortened or self._step_template(
+            phase.key, named=bool(committees), overdue=overdue
+        )
         if template is None:
             return ""
         text = template.format(
@@ -1508,11 +1523,14 @@ class MessageFormatter:
         if upcoming is not None:
             return f" · {self._agenda_when(upcoming)}"
         if (deadline := phase.deadline) is not None:
-            if not _deadline_overdue(phase, today):
+            if not deadline_overdue(phase, today):
                 return f" · {esc(lb.deadline_until)} {self.fmt_date(deadline)}"
-            # What a passed term means is not the same for every step, and for the Senate it is
-            # the opposite of "expired": art. 121 ust. 2 makes silence an adoption.
-            return f" · {esc(lb.deadline_passed_labels.get(phase.key, lb.deadline_passed))}"
+            # What a passed term means is not the same for every step, and the number of days it
+            # was is not the same for every bill: art. 123 halves the President's twenty-one.
+            passed = (lb.urgent_deadline_passed_labels.get(phase.key) if urgent else None) or (
+                lb.deadline_passed_labels.get(phase.key, lb.deadline_passed)
+            )
+            return f" · {esc(passed)}"
         if (stalled := self._stalled_for(phase, today)) is not None:
             return f" · {esc(stalled)}"
         if (planned := self._planned_adoption(bill, today)) is not None:
@@ -1628,31 +1646,25 @@ class MessageFormatter:
                 if deadline is not None:
                     text += f" {esc(lb.consultation_until)} {self.fmt_date(deadline)}"
                 actions.append(text)
-        if phase is not None and phase.key == "senate" and not _deadline_overdue(phase, today):
+        if phase is not None and phase.key == "senate":
             # No date: art. 121 gives the *Senate* thirty days, and its committee takes the act
             # long before they are out — "until 04.10" would read as a window that stays open.
-            # Once they are out the window is shut, whatever the process tree still shows.
+            # Once they are out `next_phase` has moved the bill to the President already.
             where = link(SENATE_BILLS_URL, lb.link_senate_bills)
             actions.append(f"{esc(lb.action_senate)} ({where})")
         if not actions:
             # Say so, and name the next window, rather than leave the reader guessing.
-            nothing = self._nothing_to_do(phase, today) if when_none else None
+            nothing = self._nothing_to_do(phase) if when_none else None
             return (
                 f"{ICON['action']} <b>{esc(lb.action_now)}:</b> {esc(nothing)}" if nothing else ""
             )
         return f"{ICON['action']} <b>{esc(lb.action_now)}:</b> " + "; ".join(actions)
 
-    def _nothing_to_do(self, phase: Phase | None, today: dt.date) -> str | None:
-        """Why there is nothing to do, and what comes after it. The Senate has two answers: one
-        while its thirty days run and the bill is with its committee, one once they are out."""
+    def _nothing_to_do(self, phase: Phase | None) -> str | None:
+        """Why there is nothing to do, and what comes after it."""
         if phase is None:
             return None
-        lb = self._labels
-        if _deadline_overdue(phase, today):
-            passed = lb.no_action_after_deadline.get(phase.key)
-            if passed is not None:
-                return passed
-        return lb.no_action_labels.get(phase.key)
+        return self._labels.no_action_labels.get(phase.key)
 
     def _wykaz_actions(self, entry: WykazEntry) -> list[str]:
         """What a reader can do about a plan: art. 7 of the lobbying act lets anyone file a
@@ -1858,13 +1870,6 @@ class MessageFormatter:
                 budget -= length(block) + 2
         text = "\n\n".join(kept_head + shrunk + kept_tail)
         return text if length(text) <= MESSAGE_LIMIT else _cut_lines(text, MESSAGE_LIMIT)
-
-
-def _deadline_overdue(phase: Phase, today: dt.date) -> bool:
-    """The step's constitutional term has run out, grace included. Our Senate and President
-    deadlines are counted from the Sejm's vote and so fall a few days early, which is what
-    `DEADLINE_GRACE_DAYS` covers; past that the date is no longer something to promise."""
-    return phase.deadline is not None and (today - phase.deadline).days > DEADLINE_GRACE_DAYS
 
 
 def _quoted(value: str | None) -> str:

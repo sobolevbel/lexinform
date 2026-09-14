@@ -2,6 +2,7 @@
 act and authors, plus the two bookkeeping rows (publications and detected status changes)."""
 
 import datetime as dt
+import re
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -184,7 +185,9 @@ class Phase(BaseModel):
     into force when the key has one, `since` the day the bill reached this step. `deadline` is
     the constitutional term of the step where there is one: the Senate has 30 days from receiving
     the act (art. 121), the President 21 (art. 122), 14 and 7 for an urgent bill (art. 123),
-    counted from the dates the Sejm API shows.
+    counted from the dates the Sejm API shows. Two bills get neither, because the term is not the
+    one we model (`_senate_days`): the budget, where art. 223 gives the Senate twenty days, and a
+    constitutional amendment, where art. 235 gives sixty.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -193,6 +196,11 @@ class Phase(BaseModel):
     committees: tuple[str, ...] = ()
     date: dt.date | None = None
     deadline: dt.date | None = None
+    deadline_exact: bool = False
+    """Whether `deadline` is counted from the step that actually starts it. `ToPresident` is the
+    hand-over itself, so the twenty-one days of art. 122 run from a date the API gives; the
+    Senate's thirty are counted from the third reading, days before the Marszałek sends the act.
+    A message that apologises for being early must not do it over an exact date."""
     since: dt.date | None = None
 
 
@@ -229,6 +237,13 @@ def process_stages(stages: tuple[Stage, ...]) -> list[Stage]:
         top.pop()
     return top
 
+
+_SENATE_SPECIAL_TERM = re.compile(r"ustaw\w*\s+bud[żz]etow|zmianie\s+Konstytucji", re.IGNORECASE)
+"""Bills whose Senate term is not the thirty days of art. 121: art. 223 gives twenty for the
+budget and art. 235 sixty for a constitutional amendment. Neither is in reach of this channel's
+keywords, but a date computed at thirty days would be wrong on the reader's screen, and the
+silence rule of `_after_senate_silence` would then move the bill on while the Senate still had
+it."""
 
 SENATE_DAYS, SENATE_DAYS_URGENT = 30, 14
 PRESIDENT_DAYS, PRESIDENT_DAYS_URGENT = 21, 7
@@ -269,6 +284,7 @@ PHASE_STEP = {
     "senate_rejection": "senate",
     "president": "president",
     "president_after_veto": "president",
+    "president_after_senate_silence": "president",
     "veto": "president",
     "tribunal": "president",
     "publication": "journal",
@@ -296,6 +312,16 @@ PHASE_PATIENCE = {
 }
 DEFAULT_PATIENCE_DAYS = 180
 DAYS_PER_MONTH = 30
+
+
+def deadline_overdue(phase: Phase, today: dt.date) -> bool:
+    """The step's constitutional term has run out, grace included.
+
+    The Senate's thirty days and the President's twenty-one are counted from the stage before the
+    hand-over unless `deadline_exact` says otherwise, so they fall a few days early; that is what
+    `DEADLINE_GRACE_DAYS` covers. Past it the date is no longer something to promise a reader.
+    """
+    return phase.deadline is not None and (today - phase.deadline).days > DEADLINE_GRACE_DAYS
 
 
 def stalled_days(phase: Phase, today: dt.date) -> int | None:
@@ -385,7 +411,30 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
     veto, tribunal.
     """
     phase = _phase_of(bill, today)
-    return phase if phase is None else phase.model_copy(update={"since": _phase_started(bill)})
+    if phase is None:
+        return None
+    phase = _after_senate_silence(bill, phase, today)
+    return phase.model_copy(update={"since": _phase_started(bill)})
+
+
+def _after_senate_silence(bill: Bill, phase: Phase, today: dt.date) -> Phase:
+    """Art. 121 ust. 2: thirty days gone with no uchwała from the Senate and the act counts as
+    adopted in the wording the Sejm passed, so it is with the President.
+
+    The term is *zawity* — the Senate can neither extend nor suspend it — which is why the step
+    has really moved on and not merely gone quiet. Annotating the Senate step instead made one
+    line say both things at once: «рассмотрение в Сенате (до 30 дней) · 30 дней Сената истекли:
+    закон считается принятым без поправок» (product review, 2026-09-14).
+
+    The derived phase carries no deadline of its own: the President's twenty-one days run from a
+    receipt the API does not date, and a guess stacked on a guess is not worth a reminder. This is
+    the one place the bot names a step the Sejm has not published, so the wording says so — and if
+    the Senate did act and the listing is merely behind, its stage arrives and this unwinds on the
+    next run.
+    """
+    if phase.key != "senate" or not deadline_overdue(phase, today):
+        return phase
+    return Phase(key="president_after_senate_silence")
 
 
 def _phase_started(bill: Bill) -> dt.date | None:
@@ -460,7 +509,22 @@ def _sejm_phase(bill: Bill, today: dt.date) -> Phase | None:
     top = process_stages(bill.stages)
     if not top:
         return Phase(key="first_reading")
-    return _phase_after(top[-1], top, urgent=is_urgent(bill), passed=summary.passed)
+    return _phase_after(
+        top[-1],
+        top,
+        urgent=is_urgent(bill),
+        passed=summary.passed,
+        senate_days=_senate_days(bill),
+    )
+
+
+def _senate_days(bill: Bill) -> int | None:
+    """How long the Senate has, or None when the Constitution gives it a term we do not model
+    (`_SENATE_SPECIAL_TERM`). Art. 121 ust. 2 is thirty days, art. 123 ust. 3 fourteen for a bill
+    the government declared pilny."""
+    if _SENATE_SPECIAL_TERM.search(bill.summary.title):
+        return None
+    return SENATE_DAYS_URGENT if is_urgent(bill) else SENATE_DAYS
 
 
 _PHASE_AFTER_STAGE_TYPE = {
@@ -474,7 +538,7 @@ resolution. The newest of them decides, because a bill can carry both."""
 
 
 def _phase_after(
-    last: Stage, top: list[Stage], *, urgent: bool, passed: bool | None
+    last: Stage, top: list[Stage], *, urgent: bool, passed: bool | None, senate_days: int | None
 ) -> Phase | None:
     """The step that follows the stage the process stands on. `_PHASE_AFTER_STAGE_TYPE` holds the
     stages whose successor needs nothing but the stage's own type; the rest read the stage's
@@ -491,11 +555,17 @@ def _phase_after(
         return _phase_after_veto_vote(last)
     if kind in _PRESIDENT_NEXT:
         days = PRESIDENT_DAYS_URGENT if urgent else PRESIDENT_DAYS
-        return Phase(key="president", deadline=_days_after(last.date, days))
+        # `ToPresident` is the hand-over itself, so its date is the day art. 122 starts counting;
+        # after the Sejm's vote on the Senate's amendments the hand-over is still days away.
+        return Phase(
+            key="president",
+            deadline=_days_after(last.date, days),
+            deadline_exact=kind == "ToPresident",
+        )
     if kind == "SenatePosition":
         return _phase_after_senate(last)
     if kind == "SejmReading":
-        return _phase_after_reading(last, top, urgent=urgent, passed=passed)
+        return _phase_after_reading(last, top, passed=passed, senate_days=senate_days)
     if kind == "CommitteeWork":
         return _phase_after_committee_work(last, top)
     if kind in ("Reading", "PublicHearing"):
@@ -514,8 +584,11 @@ def _phase_after_veto_vote(last: Stage) -> Phase | None:
     """
     if "nie uchwalon" in (last.decision or "").lower():
         return None
+    # Art. 122 ust. 5 counts the seven days from this vote, which is the stage's own date.
     return Phase(
-        key="president_after_veto", deadline=_days_after(last.date, PRESIDENT_DAYS_AFTER_VETO)
+        key="president_after_veto",
+        deadline=_days_after(last.date, PRESIDENT_DAYS_AFTER_VETO),
+        deadline_exact=True,
     )
 
 
@@ -530,14 +603,14 @@ def _phase_after_senate(last: Stage) -> Phase:
 
 
 def _phase_after_reading(
-    last: Stage, top: list[Stage], *, urgent: bool, passed: bool | None
+    last: Stage, top: list[Stage], *, passed: bool | None, senate_days: int | None
 ) -> Phase | None:
     name = last.stage_name.lower()
     if "iii czytanie" in name:
         decided = (last.decision or "").lower()
         if decided.startswith("uchwal") or passed:
-            days = SENATE_DAYS_URGENT if urgent else SENATE_DAYS
-            return Phase(key="senate", deadline=_days_after(last.date, days))
+            deadline = _days_after(last.date, senate_days) if senate_days is not None else None
+            return Phase(key="senate", deadline=deadline)
         return None if decided else Phase(key="third_reading")
     if "ii czytanie" in name:
         if second_reading_sent_back(last):

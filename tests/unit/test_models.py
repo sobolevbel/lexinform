@@ -228,6 +228,11 @@ def test_consultation_url_exists_only_for_consulted_submissions() -> None:
     )
 
 
+IN_THE_SENATE_WINDOW = dt.date(2026, 7, 20)
+"""Three days after druk 1962's third reading: inside the Senate's thirty days, so a walk of the
+stage tree sees the Senate step rather than what art. 121 ust. 2 makes of its silence."""
+
+
 def test_next_phase_walks_a_bill_amended_by_the_senate(process_1962: ProcessDetail) -> None:
     expected = [
         "first_reading",  # Start
@@ -246,10 +251,11 @@ def test_next_phase_walks_a_bill_amended_by_the_senate(process_1962: ProcessDeta
     assert end.stage_type == "End"
     prefixes = [process_1962.stages[:i] for i in range(1, len(process_1962.stages))]
 
-    phases = [next_phase(_bill(process_1962, stages), today=TODAY) for stages in prefixes]
+    day = IN_THE_SENATE_WINDOW
+    phases = [next_phase(_bill(process_1962, stages), today=day) for stages in prefixes]
     # The Sejm appends "Uchwalono" at the third reading and keeps it last, so every prefix from
     # then on really arrives with that node; it must not move the bill one step further.
-    with_end = [next_phase(_bill(process_1962, (*stages, end)), today=TODAY) for stages in prefixes]
+    with_end = [next_phase(_bill(process_1962, (*stages, end)), today=day) for stages in prefixes]
 
     assert [p.key for p in phases if p] == expected
     assert [p.key for p in with_end if p] == expected
@@ -354,14 +360,62 @@ def test_senate_and_president_phases_carry_their_constitutional_deadline(
     )
     with_president = _bill(process_1962, (*process_1962.stages[:-1], to_president))
 
-    senate = next_phase(in_senate, today=TODAY)
-    senate_urgent = next_phase(urgent, today=TODAY)
+    senate = next_phase(in_senate, today=IN_THE_SENATE_WINDOW)
+    senate_urgent = next_phase(urgent, today=dt.date(2026, 7, 20))
     president = next_phase(with_president, today=TODAY)
 
     assert senate is not None and (senate.key, senate.deadline) == ("senate", dt.date(2026, 8, 16))
     assert senate_urgent is not None and senate_urgent.deadline == dt.date(2026, 7, 31)
     assert president is not None
     assert (president.key, president.deadline) == ("president", dt.date(2026, 9, 28))
+    # `ToPresident` is the hand-over itself, so those 21 days are counted from the day they start.
+    assert president.deadline_exact and not senate.deadline_exact
+
+
+def test_a_senate_that_let_its_thirty_days_pass_puts_the_bill_with_the_president(
+    process_1962: ProcessDetail,
+) -> None:
+    """Art. 121 ust. 2: the term is zawity — the Senate can neither extend nor suspend it — so
+    silence is an adoption and the step has really moved on. Annotating the Senate step instead
+    made one line promise «рассмотрение в Сенате (до 30 дней)» and deny it in the same breath."""
+    third = next(
+        i
+        for i, st in enumerate(process_1962.stages)
+        if st.stage_type == "SejmReading" and "III" in st.stage_name
+    )
+    in_senate = _bill(process_1962, process_1962.stages[: third + 1])  # passed 2026-07-17
+
+    inside = next_phase(in_senate, today=dt.date(2026, 8, 16))
+    in_grace = next_phase(in_senate, today=dt.date(2026, 8, 22))
+    after = next_phase(in_senate, today=dt.date(2026, 8, 24))
+
+    assert inside is not None and inside.key == "senate"
+    assert in_grace is not None and in_grace.key == "senate"  # DEADLINE_GRACE_DAYS
+    assert after is not None and (after.key, after.deadline) == (
+        "president_after_senate_silence",
+        None,  # the President's 21 days run from a receipt the API does not date
+    )
+
+
+def test_the_budget_and_the_constitution_get_no_senate_deadline_of_ours(
+    process_1962: ProcessDetail,
+) -> None:
+    """Art. 223 gives the Senate twenty days for the budget and art. 235 sixty for an amendment
+    to the Constitution. Neither is in reach of this channel's keywords, but a date computed at
+    thirty days would be wrong, and the silence rule would then move the bill on too early."""
+    third = next(
+        i
+        for i, st in enumerate(process_1962.stages)
+        if st.stage_type == "SejmReading" and "III" in st.stage_name
+    )
+    stages = process_1962.stages[: third + 1]
+    budget = _bill(
+        process_1962.model_copy(update={"title": "Ustawa budżetowa na rok 2026"}), stages
+    )
+
+    phase = next_phase(budget, today=dt.date(2026, 9, 30))
+
+    assert phase is not None and (phase.key, phase.deadline) == ("senate", None)
 
 
 def test_first_reading_at_a_plenary_sitting_is_not_a_committee_referral(

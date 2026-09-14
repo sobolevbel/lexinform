@@ -234,12 +234,15 @@ def test_withdrawn_bill_gets_no_next_step(process_3039: ProcessDetail) -> None:
     assert "Что дальше" not in text and "Проект отозван" in text
 
 
-def test_a_senate_term_that_has_run_out_says_what_that_means(
+def test_a_senate_term_that_has_run_out_moves_the_bill_to_the_president(
     process_1962: ProcessDetail,
 ) -> None:
     """Art. 121 ust. 2: the Senate saying nothing within its thirty days *is* an adoption, so
     «срок истёк» said the opposite of what had happened — and the card went on inviting an
-    opinion to a committee that no longer had the act."""
+    opinion to a committee that no longer had the act. Annotating the step was not enough either:
+    «рассмотрение в Сенате (до 30 дней) · 30 дней Сената истекли» said both things in one line.
+    The term is zawity, so the step has really moved on, and the wording says the Sejm has not
+    recorded the hand-over."""
     third_reading = next(
         i
         for i, st in enumerate(process_1962.stages)
@@ -251,11 +254,12 @@ def test_a_senate_term_that_has_run_out_says_what_that_means(
 
     text = MessageFormatter("ru").new_bill(bill_of(in_senate), None, today=TODAY).text
 
-    assert "закон считается принятым без поправок (ст. 121 ust. 2)" in text
+    assert "закон считается принятым в редакции Сейма и уходит к Президенту" in text
+    assert "передача Президенту ещё не отмечена" in text
+    assert "рассмотрение в Сенате" not in text
     assert "16.08.2026" not in text  # a date that is behind the reader promises nothing
     assert "направить мнение в профильную комиссию Сената" not in text
-    assert "срок Сената вышел, закон уходит к Президенту" in text
-    assert "решение до 16.08.2026" not in text
+    assert "пока ничего — закон у Президента" in text
 
 
 def test_a_step_that_outlived_its_usual_duration_says_how_long(
