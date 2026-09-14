@@ -380,3 +380,29 @@ def test_a_second_run_over_a_world_that_did_not_move_says_nothing() -> None:
         assert w.publisher.snapshot() == posted
 
     assert first.published == 4
+
+
+def test_the_whole_run_gives_the_same_result_on_four_workers() -> None:
+    """`concurrency.fan_out` is only ever wrapped around a network step, and every repository
+    write happens in the calling thread in input order — so four workers must give the same
+    output as one. Only RCL discovery has been checked at four until now; this is the daily run,
+    where the Sejm lookups, the downloads and the model calls all fan out."""
+
+    def run(workers: int) -> tuple[tuple[int, int, int], list[str], list[str]]:
+        w = World(workers=workers)
+        for number in ("3039", "3040", "3041"):
+            w.add_bill(number, f"Poselski projekt ustawy o cudzoziemcach ({number})")
+        w.add_bill("4000", "Rządowy projekt ustawy o podatku VAT")
+        w.add_rcl_project()
+        report = w.run()
+        return (
+            (report.discovered, report.analyzed, report.published),
+            [b.number for b, _ in w.publisher.new_bills],
+            [call.model for call in report.llm_calls],
+        )
+
+    one, four = run(1), run(4)
+
+    assert one[0] == (4, 4, 4)
+    assert one[1] == ["3039", "3040", "3041", "RCL/12414100"]
+    assert four == one
