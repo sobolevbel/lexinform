@@ -16,6 +16,7 @@ PostCounter = Literal[
     "consultation_reminders",
     "consultation_results_posted",
     "agenda_posted",
+    "agenda_cancelled",
     "hearing_reminders",
     "decision_reminders",
 ]
@@ -42,6 +43,7 @@ class TrackingResult:
     consultation_reminders: int = 0
     consultation_results_posted: int = 0
     agenda_posted: int = 0
+    agenda_cancelled: int = 0
     hearing_reminders: int = 0
     decision_reminders: int = 0
     cards_refreshed: int = 0

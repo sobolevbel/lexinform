@@ -823,6 +823,50 @@ class MessageFormatter:
         )
         return RenderedMessage(text=text)
 
+    def agenda_cancelled(
+        self, bill: Bill, item: AgendaItem, *, still_meets: bool, today: dt.date | None = None
+    ) -> RenderedMessage:
+        """Reply under the card: a sitting the channel announced is not happening as announced.
+
+        Two different facts, and the reader planned a day around one of them — the sitting itself
+        is off (called off, or no longer announced as planned), or it goes ahead and this bill is
+        no longer on its agenda. A sitting that only changed *date* is neither: it keeps its
+        `sitting_key` and is told as a new agenda post that says where it moved from.
+
+        The tag is the announcement's, so one search finds a sitting and its retraction together.
+        """
+        lb = self._labels
+        today = today or self._today()
+        is_committee = item.kind == "committee"
+        header = self._header(
+            ICON["calendar"],
+            lb.agenda_dropped_header if still_meets else lb.agenda_cancelled_header,
+            bill,
+        )
+        lines: list[str] = []
+        if is_committee:
+            name = self._committee_display(bill, item.committee_code or "", item.committee_name)
+            lines.append(f"{ICON['committee']} <b>{esc(name)}</b>")
+        lines.append(f"{ICON['effective']} {esc(lb.agenda_was_planned)} {self._agenda_when(item)}")
+        lines.append(
+            f"{ICON['note']} {esc(lb.agenda_dropped_note if still_meets else lb.agenda_off_note)}"
+        )
+        facts = "\n".join(lines)
+        links = [link(bill.summary.web_url, lb.link_process)]
+        if is_committee and item.committee_code:
+            links.append(
+                link(committee_web_url(bill.summary.term, item.committee_code), lb.link_committee)
+            )
+        tags = self._tag_line(
+            lb.tag_committee_sitting if is_committee else lb.tag_sejm_sitting, bill
+        )
+        return RenderedMessage(
+            text=self._assemble(
+                [header, facts],
+                tail=[self._next_step_line(bill, today), self._links(links), tags],
+            )
+        )
+
     def decision_deadline(self, bill: Bill, phase: Phase, *, today: dt.date) -> RenderedMessage:
         """Reply under the card as the Senate's or the President's constitutional term runs out.
 
@@ -986,6 +1030,7 @@ class MessageFormatter:
                     ("consultation reminders: {}", report.consultation_reminders),
                     ("results: {}", report.consultation_results_posted),
                     ("agenda: {}", report.agenda_posted),
+                    ("sittings called off: {}", report.agenda_cancelled),
                     ("hearings: {}", report.hearing_reminders),
                     ("Senate/President deadline: {}", report.decision_reminders),
                 ),

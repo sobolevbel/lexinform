@@ -597,6 +597,8 @@ class FakePublisher(RenderingPublisher):
         self.consultations: list[tuple[Bill, int | None, date]] = []
         self.consultation_results: list[tuple[Bill, int | None]] = []
         self.agendas: list[tuple[Bill, AgendaItem, int | None]] = []
+        # retractions: (bill, the sitting taken back, whether it still meets)
+        self.agenda_cancellations: list[tuple[Bill, AgendaItem, bool]] = []
         self.hearings: list[tuple[Bill, Stage, int | None, date]] = []
         self.fail_on = fail_on or set()  # bill numbers whose post fails (per-bill error)
         self.outage_on = outage_on or set()  # bill numbers whose post finds Telegram down
@@ -641,6 +643,7 @@ class FakePublisher(RenderingPublisher):
             "consultation_results": [b.number for b, _ in self.consultation_results],
             "decision_deadlines": [b.number for b, _, _, _ in self.decision_deadlines],
             "agendas": [b.number for b, _, _ in self.agendas],
+            "agenda_cancellations": [b.number for b, _, _ in self.agenda_cancellations],
             "hearings": [b.number for b, _, _, _ in self.hearings],
         }
 
@@ -696,6 +699,13 @@ class FakePublisher(RenderingPublisher):
     ) -> PublishResult:
         result = super().publish_agenda(bill, item, reply_to, moved_from)
         self.agendas.append((bill, item, reply_to))
+        return result
+
+    def publish_agenda_cancelled(
+        self, bill: Bill, item: AgendaItem, reply_to: int | None, *, still_meets: bool
+    ) -> PublishResult:
+        result = super().publish_agenda_cancelled(bill, item, reply_to, still_meets=still_meets)
+        self.agenda_cancellations.append((bill, item, still_meets))
         return result
 
     def publish_hearing_deadline(

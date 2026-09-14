@@ -248,3 +248,112 @@ def test_a_committee_sitting_later_today_is_announced() -> None:
     report = w.run()
 
     assert report.agenda_posted == 1
+
+
+def test_a_sitting_that_is_called_off_is_taken_back() -> None:
+    """The agenda post is the message a reader plans a day around. A sitting that left `PLANNED`
+    used to vanish from `bill.agenda` in silence: the card quietly went back to «обычно 2–6
+    недель» while the post naming the room and the hour stood unchanged, and the reader turned
+    up."""
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (_sitting(status="CANCELLED"),)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.agenda_cancelled == 1
+    assert _refs(w) == []
+    bill, item, still_meets = w.publisher.agenda_cancellations[0]
+    assert (bill.number, item.ref, still_meets) == ("3039", SITTING_REF, False)
+    text = (
+        MessageFormatter("ru")
+        .agenda_cancelled(bill, item, still_meets=still_meets, today=dt.date(2026, 9, 8))
+        .text
+    )
+    assert "🗓 <b>Заседание отменено — druk nr 3039</b>" in text
+    assert "было запланировано на 17.09.2026, 09:00" in text
+    assert "Новая дата пока не назначена" in text
+    assert "#заседаниекомиссии" in text  # one search finds the sitting and its retraction
+
+
+def test_the_sitting_goes_ahead_without_the_bill_and_says_so() -> None:
+    """Two different facts for someone who booked the morning: the committee is not meeting, or
+    it is meeting about something else."""
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (_sitting(agenda="Inne sprawy (druk nr 1111)"),)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.agenda_cancelled == 1
+    _, item, still_meets = w.publisher.agenda_cancellations[0]
+    assert still_meets
+    text = (
+        MessageFormatter("ru")
+        .agenda_cancelled(w.bill("3039"), item, still_meets=True, today=dt.date(2026, 9, 8))
+        .text
+    )
+    assert "🗓 <b>Проект снят с повестки заседания — druk nr 3039</b>" in text
+    assert "Заседание состоится, но этого проекта в его повестке больше нет" in text
+
+
+def test_a_sitting_is_taken_back_only_once() -> None:
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (_sitting(status="CANCELLED"),)
+    w.clock.advance(days=1)
+    w.run()
+
+    w.clock.advance(days=1)
+    again = w.run()
+
+    assert again.agenda_cancelled == 0
+    assert len(w.publisher.agenda_cancellations) == 1
+
+
+def test_a_rescheduled_sitting_is_not_taken_back() -> None:
+    """It keeps its `sitting_key`, and the new post says where it moved from — a retraction next
+    to it would contradict the correction instead of being one."""
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (_sitting(136, dt.date(2026, 9, 24)),)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.agenda_posted, report.agenda_cancelled) == (1, 0)
+    assert w.publisher.agenda_cancellations == []
+
+
+def test_a_committee_listing_that_failed_is_not_a_cancellation() -> None:
+    """The item is missing because the request was refused, not because the sitting is off."""
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run()
+    del w.gateway.committee_sittings["ASW"]  # the fake raises for an unknown committee
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.agenda_cancelled == 0
+    assert _refs(w) == [SITTING_REF]
+
+
+def test_a_sitting_the_reader_was_never_told_about_is_not_taken_back() -> None:
+    """Publishing was off when it was announced, so there is nothing standing to correct."""
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run(publish=False)
+    w.gateway.committee_sittings["ASW"] = (_sitting(status="CANCELLED"),)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.agenda_cancelled == 0
+    assert w.publisher.agenda_cancellations == []

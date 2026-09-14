@@ -411,6 +411,7 @@ class DailyPipeline:
         report.cards_refreshed += tracked.cards_refreshed
         report.consultation_results_posted += tracked.consultation_results_posted
         report.agenda_posted += tracked.agenda_posted
+        report.agenda_cancelled += tracked.agenda_cancelled
         report.discontinued += tracked.discontinued
         report.rehomed += tracked.rehomed
         report.llm_input_tokens += tracked.input_tokens

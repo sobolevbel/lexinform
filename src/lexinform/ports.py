@@ -272,6 +272,13 @@ class Publisher(Protocol):
         """`moved_from` is the date the same sitting was announced under before."""
         ...
 
+    def publish_agenda_cancelled(
+        self, bill: Bill, item: AgendaItem, reply_to: int | None, *, still_meets: bool
+    ) -> PublishResult:
+        """Take back an announced sitting. `still_meets` when the sitting goes ahead without the
+        bill on its agenda, rather than being called off itself."""
+        ...
+
     def publish_hearing_deadline(
         self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date
     ) -> PublishResult:

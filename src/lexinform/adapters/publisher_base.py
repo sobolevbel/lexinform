@@ -99,6 +99,14 @@ class RenderingPublisher(ABC):
         text = self._formatter.agenda(bill, item, moved_from=moved_from).text
         return self._deliver(Outgoing(PublicationKind.AGENDA, bill, text, reply_to, item.ref))
 
+    def publish_agenda_cancelled(
+        self, bill: Bill, item: AgendaItem, reply_to: int | None, *, still_meets: bool
+    ) -> PublishResult:
+        text = self._formatter.agenda_cancelled(bill, item, still_meets=still_meets).text
+        return self._deliver(
+            Outgoing(PublicationKind.AGENDA_CANCELLED, bill, text, reply_to, item.ref)
+        )
+
     def publish_hearing_deadline(
         self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date
     ) -> PublishResult:

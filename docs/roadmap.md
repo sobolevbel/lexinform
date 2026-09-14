@@ -297,14 +297,12 @@ Still open:
 
 - Left open by the product review of 14 Sept 2026 (findings and the fixes that were made:
   `/Users/sobaleu/.claude/plans/starry-baking-willow.md`, and the commits of that day):
-  - **A sitting that is called off is never retracted.** `AgendaWatcher._post_new` posts a new
-    `(bill, sitting)` pair and `_moved_from` covers one that changed *date*; a sitting whose
-    status leaves `PLANNED`, or an agenda the bill drops out of, simply disappears from
-    `bill.agenda`. The card quietly reverts to «обычно 2–6 недель», but the reply that told the
-    reader «Заседание комиссии 15.09.2026, 08:30 · зал 24» stands unchanged, and that reply is
-    the most time-critical thing the channel sends. Needs a decision before it is built: a
-    cancellation reply of its own (a new `PublicationKind`, one formatter method and labels), or
-    an edit of the original agenda post in place the way a card is edited.
+  - ~~A sitting that is called off is never retracted.~~ **Fixed 14 Sept 2026** as a reply of its
+    own (`PublicationKind.AGENDA_CANCELLED`, schema v19), the owner's choice over editing the
+    original post: the announcement stays where the reader saw it and the correction arrives as
+    news, which a silent edit is not. It says which of the two facts it is — «Заседание отменено»
+    or «Проект снят с повестки заседания» — and never fires on a sitting that moved, started, or
+    whose listing merely failed.
   - **The print of an RCL project loses the consultation the project had.** `Linker._adopt`
     carries the analysis and the `/bills` entry to the print row but not `rcl_json`, and
     `Bill.consultation` reads the window from one of those two — so when the card flips to the

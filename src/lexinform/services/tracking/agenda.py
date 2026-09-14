@@ -8,6 +8,7 @@ say "II чтение — 15–18.09.2026") and every new (bill, sitting) pair is
 
 import datetime as dt
 import logging
+from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
 from lexinform.agenda import items_mentioning
@@ -32,13 +33,38 @@ log = logging.getLogger(__name__)
 PLANNED = "PLANNED"
 
 
-def _kept_from_failed(bill: Bill, failed_codes: set[str], today: dt.date) -> tuple[AgendaItem, ...]:
-    """A committee whose listing failed keeps what we already knew about it."""
-    return tuple(
-        old
-        for old in bill.agenda
-        if old.kind == "committee" and old.committee_code in failed_codes and old.date >= today
-    )
+@dataclass(frozen=True)
+class _Listings:
+    """What one term's sittings look like this run, and what could not be read.
+
+    The failures matter as much as the listings: an item that is missing because a request failed
+    must not read as a sitting that was called off, so `kept` puts those items back.
+    """
+
+    committee: dict[str, list[CommitteeSitting]]
+    sejm: list[SejmSitting]
+    failed_codes: set[str]
+    failed_sittings: set[int]
+
+    def kept(self, bill: Bill, today: dt.date) -> tuple[AgendaItem, ...]:
+        """What we already knew about a committee or a Sejm sitting whose listing failed."""
+        return tuple(
+            old
+            for old in bill.agenda
+            if old.last_date >= today
+            and (
+                old.committee_code in self.failed_codes
+                if old.kind == "committee"
+                else old.sitting_number in self.failed_sittings
+            )
+        )
+
+    def announced(self, item: AgendaItem) -> bool:
+        """The sitting is still announced, whatever became of this bill's place on its agenda."""
+        if item.kind == "committee":
+            listed = self.committee.get(item.committee_code or "", [])
+            return any(s.num == item.sitting_number for s in listed)
+        return any(s.number == item.sitting_number for s in self.sejm)
 
 
 def _committee_codes(bill: Bill) -> set[str]:
@@ -86,30 +112,24 @@ class AgendaWatcher:
         for term in sorted({b.term for b in followed}):
             of_term = [b for b in followed if b.term == term]
             try:
-                committee_sittings, failed_codes = self._committee_sittings(term, of_term, today)
-                sejm_sittings = self._sejm_sittings(term, today)
+                listings = self._listings(term, of_term, today)
             except ServiceUnavailableError as exc:
                 result.partial_errors.append(f"sittings: {exc.describe()}")
                 log.error("agenda watch stopped for term %d: %s", term, exc.describe())
                 continue
-            if not self._check_term(
-                of_term,
-                committee_sittings,
-                failed_codes,
-                sejm_sittings,
-                result,
-                today,
-                publish=publish,
-            ):
+            if not self._check_term(of_term, listings, result, today, publish=publish):
                 return False
         return True
+
+    def _listings(self, term: int, bills: list[Bill], today: dt.date) -> _Listings:
+        committee, failed_codes = self._committee_sittings(term, bills, today)
+        sejm, failed_sittings = self._sejm_sittings(term, today)
+        return _Listings(committee, sejm, failed_codes, failed_sittings)
 
     def _check_term(
         self,
         bills: list[Bill],
-        committee_sittings: dict[str, list[CommitteeSitting]],
-        failed_codes: set[str],
-        sejm_sittings: list[SejmSitting],
+        listings: _Listings,
         result: TrackingResult,
         today: dt.date,
         *,
@@ -117,9 +137,11 @@ class AgendaWatcher:
     ) -> bool:
         for bill in bills:
             try:
-                items = self._items_for(bill.term, bill, committee_sittings, sejm_sittings)
-                items += _kept_from_failed(bill, failed_codes, today)
+                items = self._items_for(bill.term, bill, listings)
+                items += listings.kept(bill, today)
                 items = tuple(sorted(items, key=lambda i: (i.date, i.ref)))
+                if publish:
+                    self._retract_gone(bill, items, listings, result)
                 if items != bill.agenda:
                     self._repo.save_agenda(bill.term, bill.number, items)
                 if publish:
@@ -131,6 +153,43 @@ class AgendaWatcher:
                 result.failed += 1
                 log.exception("agenda check for druk %s failed: %s", bill.number, exc)
         return True
+
+    def _retract_gone(
+        self, bill: Bill, items: tuple[AgendaItem, ...], listings: _Listings, result: TrackingResult
+    ) -> None:
+        """Take back a sitting the channel announced that is not on the agenda any more.
+
+        The agenda post is the most time-critical thing the channel sends — it is what a reader
+        plans a day around, and what the card's "what comes next" is dated from. When a sitting
+        dropped out, the card quietly went back to «обычно 2–6 недель» and the post that named the
+        room and the hour stood unchanged.
+
+        Only a `sitting_key` that has disappeared is a retraction: a sitting that merely moved
+        keeps its key and is told as a new post that says where it moved from. A sitting that has
+        started or is behind us is never retracted (`_already_happened`, the same test that stops
+        it being announced), nor is one whose listing failed — `_Listings.kept` has put those
+        items back before this runs.
+        """
+        now = self._clock.now().astimezone(self._local_tz)
+        keys = {item.sitting_key for item in items}
+        for old in bill.agenda:
+            if old.sitting_key in keys or _already_happened(old, now):
+                continue
+            if not self._poster.sent(bill, PublicationKind.AGENDA, ref=old.ref):
+                continue  # the reader was never told about this sitting
+            if self._poster.posted(bill, PublicationKind.AGENDA_CANCELLED, ref=old.ref):
+                continue
+            still_meets = listings.announced(old)
+            log.info(
+                "druk %s: %s is off (%s)",
+                bill.number,
+                old.ref,
+                "the bill left its agenda" if still_meets else "the sitting is not announced",
+            )
+            result.count_post(
+                self._poster.agenda_cancelled(bill, old, still_meets=still_meets),
+                "agenda_cancelled",
+            )
 
     def _committee_sittings(
         self, term: int, bills: list[Bill], today: dt.date
@@ -160,41 +219,38 @@ class AgendaWatcher:
             ]
         return upcoming, failed
 
-    def _sejm_sittings(self, term: int, today: dt.date) -> list[SejmSitting]:
-        """Sejm sittings that are not over yet, with their agendas (one request each)."""
+    def _sejm_sittings(self, term: int, today: dt.date) -> tuple[list[SejmSitting], set[int]]:
+        """Sejm sittings that are not over yet, with their agendas (one request each), and the
+        numbers whose agenda could not be read — those must not read as a cancellation."""
         current = [
             s
             for s in self._gateway.list_sittings(term)
             if s.number > 0 and s.last_date is not None and s.last_date >= today
         ]
         detailed: list[SejmSitting] = []
+        failed: set[int] = set()
         for sitting in sorted(current, key=lambda s: s.number):
             try:
                 full = self._gateway.get_sitting(term, sitting.number)
             except ServiceUnavailableError:
                 raise
             except Exception as exc:
+                failed.add(sitting.number)
                 log.warning("agenda of Sejm sitting %d unavailable: %s", sitting.number, exc)
                 continue
             if full.agenda:
                 detailed.append(
                     full if full.dates else full.model_copy(update={"dates": sitting.dates})
                 )
-        return detailed
+        return detailed, failed
 
-    def _items_for(
-        self,
-        term: int,
-        bill: Bill,
-        committee_sittings: dict[str, list[CommitteeSitting]],
-        sejm_sittings: list[SejmSitting],
-    ) -> tuple[AgendaItem, ...]:
+    def _items_for(self, term: int, bill: Bill, listings: _Listings) -> tuple[AgendaItem, ...]:
         """Agenda items naming the bill (or a print considered jointly with it)."""
         numbers = {bill.number, *bill.summary.prints_considered_jointly}
         items: list[AgendaItem] = []
         codes = _committee_codes(bill)
-        for code in sorted(codes & committee_sittings.keys()):
-            for sitting in committee_sittings[code]:
+        for code in sorted(codes & listings.committee.keys()):
+            for sitting in listings.committee[code]:
                 texts = items_mentioning(sitting.agenda, numbers)
                 if not texts:
                     continue
@@ -212,7 +268,7 @@ class AgendaWatcher:
                         video_url=sitting.video_url,
                     )
                 )
-        for plenary in sejm_sittings:
+        for plenary in listings.sejm:
             texts = items_mentioning(plenary.agenda, numbers)
             first, last = plenary.first_date, plenary.last_date
             if not texts or first is None:

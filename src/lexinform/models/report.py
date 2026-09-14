@@ -102,6 +102,7 @@ class RunReport(BaseModel):
     cards_refreshed: int = 0
     consultation_results_posted: int = 0
     agenda_posted: int = 0
+    agenda_cancelled: int = 0
     discontinued: int = 0
     rehomed: int = 0
     analyzed: int = 0

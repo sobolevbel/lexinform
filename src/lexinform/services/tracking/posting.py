@@ -234,6 +234,20 @@ class Poster:
             ref=item.ref,
         )
 
+    def agenda_cancelled(self, bill: Bill, item: AgendaItem, *, still_meets: bool) -> bool:
+        """Take back one announced sitting; keyed by the same `ref` the announcement used, so a
+        sitting is retracted exactly once."""
+        return self._once(
+            bill,
+            PublicationKind.AGENDA_CANCELLED,
+            lambda reply_to: (
+                self._publisher.publish_agenda_cancelled(
+                    bill, item, reply_to, still_meets=still_meets
+                ).message_id
+            ),
+            ref=item.ref,
+        )
+
     def decision_deadline(self, bill: Bill, phase: Phase, *, today: date) -> bool:
         """One reminder per (bill, phase): the Senate's term and the President's are told apart
         by the phase key, and each is told once."""

@@ -87,7 +87,9 @@ class ApplicantType(StrEnum):
 class PublicationKind(StrEnum):
     """What a Telegram post is: the card of a new bill, or one of the replies under it.
 
-    `AGENDA` is sent once per sitting the bill appears on, `CONSULTATION_DEADLINE` and
+    `AGENDA` is sent once per sitting the bill appears on and `AGENDA_CANCELLED` retracts one
+    that is not happening as announced (same `ref`: a sitting that only moved keeps its key and is
+    told as a new `AGENDA` post instead). `CONSULTATION_DEADLINE` and
     `HEARING_DEADLINE` a few days before those windows close, `CONSULTATION_RESULTS` when the
     Sejm publishes the opinions it received, `IN_FORCE` on the day the act starts to apply.
     `DECISION_DEADLINE` warns that the Senate's 30 days (art. 121) or the President's 21
@@ -103,6 +105,7 @@ class PublicationKind(StrEnum):
     CONSULTATION_DEADLINE = "consultation_deadline"
     CONSULTATION_RESULTS = "consultation_results"
     AGENDA = "agenda"
+    AGENDA_CANCELLED = "agenda_cancelled"
     HEARING_DEADLINE = "hearing_deadline"
     DECISION_DEADLINE = "decision_deadline"
     JOINT_BILL = "joint_bill"

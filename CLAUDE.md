@@ -101,8 +101,23 @@ Invariants worth keeping:
   Sejm and RCL discovery/joins look the project up by its term-less id. Idempotent, repeats
   every run. Citizens' bills get a different wording (they are taken over, and return as a new
   druk with a new card).
+- **An announced sitting is taken back when it goes.** The agenda post is the most
+  time-critical thing the channel sends — what a reader plans a day around, and what the card's
+  "what comes next" is dated from — and a sitting that left `PLANNED`, or an agenda the bill
+  dropped out of, used to vanish from `bill.agenda` in silence: the card went back to «обычно 2–6
+  недель» and the post naming the room and the hour stood unchanged.
+  `AgendaWatcher._retract_gone` posts one `agenda_cancelled` reply per announced sitting that is
+  gone (v19, unique per bill/channel/`ref` — the announcement's own key). Three things it is
+  not: a sitting that merely **moved** keeps its `sitting_key` and is told as a new agenda post
+  saying where it moved from; a sitting that has **started or passed** is never retracted
+  (`_already_happened`, the same test that stops it being announced); and a listing that
+  **failed** is not an absence (`_Listings.kept` puts those items back, for a Sejm sitting whose
+  `/proceedings/{n}` was refused as well as for a committee's). The reader is told *which* fact
+  it is — the sitting is off, or it meets without this bill (`_Listings.announced`) — and only if
+  the announcement was actually `sent`. The tag is the announcement's, so one search finds both.
 - **Pending-before-send.** Every Telegram post gets a `publications` row (`pending`) first, unique
-  per kind/bill/channel (agenda posts: per kind/bill/channel/`ref`, one per sitting); failed posts
+  per kind/bill/channel (agenda posts: per kind/bill/channel/`ref`, one per sitting;
+  the retraction of one: the same); failed posts
   are retried up to `max_publish_attempts`; `pending` left by a crash becomes `unknown` and is
   never auto-resent. The "due" queries (`list_due_in_force`, `list_due_consultations`) must keep
   listing a bill whose post `failed`, otherwise the retry never happens (`Poster.posted` decides).
@@ -518,7 +533,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v18 as of Sept 2026). `migrate()` reads `user_version` and
+`SCHEMA_VERSION = len(MIGRATIONS)` (v19 as of Sept 2026). `migrate()` reads `user_version` and
 runs every later script inside its own transaction, stamping the new version at the end, so a
 failed script leaves the database at the previous version. v8 (Sept 2026) added `rcl_json`, v9
 `bills.discontinued_at` and `status_changes.discontinued` (end of a Sejm term), v10
@@ -534,7 +549,9 @@ drifted from one that is still true without asking Telegram), v17 the unique ind
 constitutional-deadline reminders (per bill, channel and phase: the Senate's 30 days and the
 President's 21 are each told once), v18 (Sept 2026) the documents filed to a print after its
 submission — `bills.supplements_json` (which of them the channel has been told about) and
-`status_changes.supplements_json` (the digests one update carried).
+`status_changes.supplements_json` (the digests one update carried), v19 (Sept 2026) the unique
+index of sitting retractions (per bill, channel and `ref`, so an announced sitting that is called
+off is taken back once).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) →
 `db restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing

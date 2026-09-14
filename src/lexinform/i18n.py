@@ -140,6 +140,11 @@ class Labels:
     agenda_committee_header: str
     agenda_sejm_header: str
     agenda_item: str
+    agenda_cancelled_header: str
+    agenda_dropped_header: str
+    agenda_was_planned: str
+    agenda_off_note: str
+    agenda_dropped_note: str
     sitting_moved_from: str
     sejm_sitting: str
     link_video: str
@@ -356,6 +361,17 @@ RU = Labels(
     agenda_committee_header="Заседание комиссии",
     agenda_sejm_header="В повестке заседания Сейма",
     agenda_item="Пункт повестки",
+    agenda_cancelled_header="Заседание отменено",
+    agenda_dropped_header="Проект снят с повестки заседания",
+    agenda_was_planned="было запланировано на",
+    agenda_off_note=(
+        "Заседание, о котором сообщалось выше, не состоится. Новая дата пока не назначена —"
+        " сообщим, когда она появится."
+    ),
+    agenda_dropped_note=(
+        "Заседание состоится, но этого проекта в его повестке больше нет. Сообщим, когда он"
+        " снова в неё попадёт."
+    ),
     sitting_moved_from="Заседание перенесено с",
     sejm_sitting="заседание Сейма №",
     link_video="Трансляция",
@@ -933,6 +949,17 @@ EN = Labels(
     agenda_committee_header="Committee sitting",
     agenda_sejm_header="On the agenda of a Sejm sitting",
     agenda_item="Agenda item",
+    agenda_cancelled_header="Sitting called off",
+    agenda_dropped_header="Bill taken off the sitting's agenda",
+    agenda_was_planned="was planned for",
+    agenda_off_note=(
+        "The sitting announced above is not taking place. No new date has been set yet — we will"
+        " say so when there is one."
+    ),
+    agenda_dropped_note=(
+        "The sitting goes ahead, but this bill is no longer on its agenda. We will say so when it"
+        " is back on."
+    ),
     sitting_moved_from="The sitting was moved from",
     sejm_sitting="Sejm sitting no.",
     link_video="Live stream",

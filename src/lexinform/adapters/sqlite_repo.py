@@ -214,6 +214,13 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE bills ADD COLUMN supplements_json TEXT;
     ALTER TABLE status_changes ADD COLUMN supplements_json TEXT;
     """,
+    # v19: one retraction per bill, channel and sitting (`ref` = the announced sitting, as the
+    # `agenda` post keys it), so a sitting that is called off is taken back exactly once
+    """
+    CREATE UNIQUE INDEX ux_pub_agenda_cancelled
+        ON publications(term, number, kind, channel_id, ref)
+        WHERE kind = 'agenda_cancelled';
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
