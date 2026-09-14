@@ -226,10 +226,18 @@ Invariants worth keeping:
   to 1,200 characters) arrived looking like a document, was searched for keywords a transmittal
   note never contains, and was skipped for good — **91 of the 938 prints of term 10**, every one
   with pages the model could have read. `carries_the_document` is now what both stages ask. The
-  price of that is worth knowing: those 119 prints carry 4,874 pages, $39 on Opus for the term
-  against the ~$44 the rest of it costs, and **a scan still bypasses the triage** —
-  `_triage_verdict` wants `len(text) >= triage_min_chars` and a scan's `text` is the letter, so
-  it goes straight to the expensive model. Giving the triage a scan's pages is the open item.
+  price of that is worth knowing, and it has been measured: the scans of the term are **317
+  documents and 7,763 pages**, $62 on Opus, against the ~$44 the rest of it costs — and **a scan
+  bypasses the triage**, because `_triage_verdict` wants `len(text) >= triage_min_chars` and a
+  scan's `text` is the letter, so it goes straight to the expensive model. Giving the triage the
+  scan's first pages is the open item, and the numbers are in: the triage cost stops depending on
+  the document's length (**$0.013 for any scan**, 11 pages or 362), it breaks even at a **7%**
+  rejection rate, and asked of 18 real scans through the production path on Haiku it rejected
+  **18 of 18 correctly** at a mean confidence of 0.93 — animal protection, drink-driving, hunting
+  law, four commemorative resolutions. An eight-page window would take the scans' bill from $62 to
+  $27 at the conservative 62% rate and to $16 at the lower bound the sample supports. What the
+  sample cannot show is a false rejection, since it met no relevant scan; the structural mitigation
+  is that an unsure verdict passes through, so only a *confident* wrong "no" loses a bill.
 - **Not every stage is a post.** `models/events.py`: `is_substantive` separates the events a
   reader cares about (referral, committee report, vote, Senate, President, hearing, a decided
   reading) from the frame nodes (`Start`, `ReadingReferral`, `Reading`, `CommitteeWork`,
@@ -974,7 +982,19 @@ Article-level selection stays rejected on new numbers: over all 268 candidates t
 **median 27%** of what is kept (quartiles 16% and 42%), which is the 14–68% of the old sample
 confirmed, not overturned.
 
+Two of the audit's three questions were settled on 14 Sept 2026. **The uzasadnienie is not
+thinned**: it is the largest single line of the bill ($53.53 of $118.83) and it restates the act
+article by article, but it is also where the card gets "what this is for", and there is no
+measurement of what cutting it would lose. **`azyl` keeps matching "azyle dla zwierząt"**: over
+the term the pattern decides the outcome for exactly two prints — druk 1861 (the Centralny Azyl
+dla Zwierząt bill, a false positive worth $0.14) and druk 1268 ("osoby ubiegające się o azyl"
+among vulnerable groups, a true one) — and both narrowings were measured and are worse than the
+disease. Proximity to "cudzoziem|uchod|ochron" zeroes `azyl` on druk 1812, "o czasowym zakazie
+wjazdu obywateli", which is a bill squarely on topic; excluding the named institution cuts 365
+hits to 50 and **changes no outcome at all**, because 50 still clears a threshold of 3. The
+keyword stage is over-inclusive on purpose — a false hit costs one call, a miss loses a bill for
+good — and druk 1861 is rejected by the triage for about two cents anyway.
+
 Open items are listed under "Still open" in `docs/roadmap.md`. The audit of 14 Sept 2026 over the
 whole corpus (`../lexinform-corpus/checks/FINDINGS.md`, with a runnable script per phase) closed
-five defects and left three questions: giving the triage a scan's pages, whether the uzasadnienie
-can be thinned at all, and whether `azyl` should stop matching "azyle dla zwierząt".
+five defects; what it leaves open is giving the triage a scan's first pages.
