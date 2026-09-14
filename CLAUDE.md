@@ -132,6 +132,11 @@ Invariants worth keeping:
   the reconciler (`tracking/pre_print.py`) re-reads `/bills` for pending RPW entries and for bills
   awaiting consultation results and compares new with stored (print assigned, withdrawn,
   `consultationResults` flipped). If discovery overwrote the row first, the flip would be lost.
+  An entry the listing has simply *stopped* showing is a different fact, and the row is what tells
+  them apart (`events._listing_says_withdrawn`): the reconciler reads the end of such an entry off
+  its age (`_long_gone`, a year), and an entry can wait months in the Marszałek's "freezer", so
+  «Проект отозван» stated a decision the applicant may never have taken. It is headed «Проект
+  больше не отслеживается» and says the Sejm published no decision.
 - **The last stage is not the last node.** `models.process_stages` is what `next_phase` and
   `Bill.last_stage` read: top-level stages minus `ASIDE_STAGE_TYPES` (`GovermentPosition`,
   `Opinion` — they arrive beside the process) **and minus a trailing `End`**. The Sejm appends
@@ -168,12 +173,16 @@ Invariants worth keeping:
   (`models.is_urgent`, art. 123) is told in its own words throughout: `Labels.urgent_step_labels`
   and `urgent_durations` override the normal entries, so the card never promises a reader weeks
   where the Sejm measured days. **No date is printed once it has passed**: a deadline past
-  `DEADLINE_GRACE_DAYS` says what its running out *meant* (`Labels.deadline_passed_labels`: for
-  the Senate art. 121 ust. 2 makes silence an adoption, so «срок истёк» said the opposite of what
-  had happened, and the action line stops offering the Senate's committee with it), a step that
+  `DEADLINE_GRACE_DAYS` says what its running out *meant* (`Labels.deadline_passed_labels`, and
+  `urgent_deadline_passed_labels` first for a bill the Sejm measured in seven days rather than
+  twenty-one) and the step drops the wording that promised it (`next_step_labels`' `_overdue`
+  variant); a step that
   outlived `PHASE_PATIENCE` says how long it has been standing (`models.stalled_days`,
   `Phase.since` — which for an RCL project falls back to the stage's last modification, RCL
-  leaving "rozpoczęcie" empty), and a sitting only dates a phase whose venue it matches: a
+  leaving "rozpoczęcie" empty) — but **never a step that carries a date of its own**: a vacatio
+  legis of a year is common, and «вступление в силу 01.07.2027 · без движения уже 7 мес.» said of
+  a law that is published, final and dated inverts the message. And a sitting only dates a phase
+  whose venue it matches: a
   committee's 08:30 slot is not a third reading, and a phase in `COMMITTEE_PHASES`/`SITTING_PHASES`
   takes a sitting only from that venue while a phase in neither (the Senate, the President, Dz.U.,
   a vacatio legis) takes none at all — the fallback to "the next item on the calendar" printed

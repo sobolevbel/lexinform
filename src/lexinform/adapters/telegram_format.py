@@ -169,6 +169,7 @@ EVENT_ICON = {
     "government_position": "🏛",
     "impact_assessment": "📊",
     "withdrawn": "🏁",
+    "abandoned": "🏁",
     "discontinued": "🏁",
     "rcl_to_sejm": "🔢",
     "rcl_closed": "🏁",
@@ -561,7 +562,8 @@ class MessageFormatter:
                 lb.process_carried_over if carried else lb.process_discontinued
             )
         elif change.withdrawn:
-            closure = f"{ICON['closed']} {esc(lb.process_withdrawn)}"
+            told = lb.process_withdrawn if event == "withdrawn" else lb.process_abandoned
+            closure = f"{ICON['closed']} {esc(told)}"
         elif change.closure_detected and bill.wykaz is not None:
             closure = f"{ICON['closed']} {esc(lb.wykaz_process_closed)}"
         elif change.closure_detected and bill.rcl is not None:

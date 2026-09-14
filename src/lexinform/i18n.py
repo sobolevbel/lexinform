@@ -99,6 +99,7 @@ class Labels:
     consultation_hint: str
     print_assigned: str
     process_withdrawn: str
+    process_abandoned: str
     process_discontinued: str
     process_carried_over: str
     link_submission_pdf: str
@@ -300,6 +301,10 @@ RU = Labels(
     consultation_hint="мнение подаётся анкетой (ankieta) на сайте Сейма",
     print_assigned="Проекту присвоен номер druku",
     process_withdrawn="Проект отозван до присвоения номера druku.",
+    process_abandoned=(
+        "Сейм больше не показывает проект среди внесённых, и номера druku он так и не получил"
+        " за год. Скорее всего работа над ним прекращена; формального решения Сейм не публиковал."
+    ),
     process_discontinued=(
         "Каденция Сейма закончилась, проект не был рассмотрен до конца и прекращён"
         " (zasada dyskontynuacji). Чтобы вернуться к нему, проект нужно внести заново в новый Сейм."
@@ -518,6 +523,7 @@ RU = Labels(
         "government_position": "Правительство высказалось о проекте",
         "impact_assessment": "Появилась оценка последствий проекта",
         "withdrawn": "Проект отозван",
+        "abandoned": "Проект больше не отслеживается",
         "discontinued": "Проект прекращён с концом каденции",
         "rcl_stage": "Новая стадия на RCL",
         "consultation_opened": "Открылись публичные консультации",
@@ -865,6 +871,10 @@ EN = Labels(
     consultation_hint="opinions go in through the survey form (ankieta) on the Sejm website",
     print_assigned="Print number assigned",
     process_withdrawn="The bill was withdrawn before receiving a print number.",
+    process_abandoned=(
+        "The Sejm no longer lists the bill among those submitted, and it never received a print"
+        " number in a year. Work on it has most likely stopped; the Sejm published no decision."
+    ),
     process_discontinued=(
         "The Sejm term ended before the bill was finished: it lapsed (zasada dyskontynuacji)."
         " To come back, it must be submitted to the new Sejm again."
@@ -1078,6 +1088,7 @@ EN = Labels(
         "government_position": "The government has spoken on the bill",
         "impact_assessment": "An assessment of the bill's effects was filed",
         "withdrawn": "Bill withdrawn",
+        "abandoned": "Bill no longer followed",
         "discontinued": "Bill lapsed with the end of the term",
         "rcl_stage": "New stage on RCL",
         "consultation_opened": "The public consultation is open",

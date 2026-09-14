@@ -331,9 +331,15 @@ def stalled_days(phase: Phase, today: dt.date) -> int | None:
     `PHASE_PATIENCE` is deliberately two to three times the upper end of the durations the card
     quotes (90 days against "2–6 недель" for a first reading): a step that runs a fortnight over
     its average is still ordinary, and "без движения уже 7 нед." said of it would cry wolf.
+
+    A phase that carries a `date` of its own is never stalled, whatever its age: the date is a
+    certainty the reader can diarise — the day an act enters into force, the end of a
+    consultation window — and a vacatio legis of a year is common in the acts we follow
+    (`docs/legislative-process.md` §7). «вступление в силу 01.07.2027 · без движения уже 7 мес.»
+    said of a law that is published, final and dated inverts the message.
     """
     since = phase.since
-    if since is None:
+    if since is None or phase.date is not None:
         return None
     waited = (today - since).days
     patience = PHASE_PATIENCE.get(phase.key, DEFAULT_PATIENCE_DAYS)

@@ -53,7 +53,7 @@ def update_event(change: StatusChange, bill: Bill) -> str:
     if change.discontinued:
         return "discontinued"
     if change.withdrawn:
-        return "withdrawn"
+        return "withdrawn" if _listing_says_withdrawn(bill) else "abandoned"
     if _is_first_update_of_successor(change, bill):
         return "print_assigned" if bill.has_process else "rcl_started"
     named = _newest_stage_event(change.new_stages)
@@ -74,6 +74,18 @@ def update_event(change: StatusChange, bill: Bill) -> str:
     if bill.wykaz is not None and bill.wykaz.is_adopted:
         return "wykaz_adopted"
     return "update"
+
+
+def _listing_says_withdrawn(bill: Bill) -> bool:
+    """The `/bills` row really says the bill is off: WITHDRAWN, NOT_PROCEEDED or OBSOLETE.
+
+    A pre-print entry the Sejm has simply stopped listing says nothing of the kind — the
+    reconciler reads the end off its age (`PrePrintReconciler._long_gone`), and an entry can wait
+    months for a print number in the Marszałek's "freezer". «Проект отозван» would state a
+    decision by the applicant that may never have been taken.
+    """
+    submission = bill.submission
+    return submission is not None and submission.is_closed
 
 
 def supplement_event(change: StatusChange) -> str | None:

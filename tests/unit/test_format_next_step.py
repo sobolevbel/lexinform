@@ -18,6 +18,7 @@ from tests.formatting import (
     consulted,
     sitting,
 )
+from tests.harness import act
 
 
 def test_card_links_the_consultation_form_and_names_the_next_step(
@@ -228,10 +229,28 @@ def test_public_hearing_names_the_application_deadline(process_3039: ProcessDeta
 
 def test_withdrawn_bill_gets_no_next_step(process_3039: ProcessDetail) -> None:
     change = change_of("3039", [], withdrawn=True, closure_detected=True)
+    taken_back = bill_of(process_3039, submission=consulted(status="WITHDRAWN"))
 
-    text = MessageFormatter("ru").status_update(bill_of(process_3039), change).text
+    text = MessageFormatter("ru").status_update(taken_back, change).text
 
     assert "Что дальше" not in text and "Проект отозван" in text
+
+
+def test_an_entry_the_sejm_stopped_listing_is_not_called_withdrawn(
+    process_3039: ProcessDetail,
+) -> None:
+    """The reconciler reads the end of such an entry off its age, not off a decision: `/bills`
+    no longer lists it and no print number came in a year. An entry can wait months in the
+    Marszałek's "freezer", so «Проект отозван» stated something the applicant may never have
+    done — and the mark it left behind would then suppress a real closure."""
+    change = change_of("3039", [], withdrawn=True, closure_detected=True)
+    still_active = bill_of(process_3039, submission=consulted(status="ACTIVE"))
+
+    text = MessageFormatter("ru").status_update(still_active, change).text
+
+    assert "🏁 <b>Проект больше не отслеживается — druk nr 3039</b>" in text
+    assert "Проект отозван" not in text
+    assert "формального решения Сейм не публиковал" in text
 
 
 def test_a_senate_term_that_has_run_out_moves_the_bill_to_the_president(
@@ -274,6 +293,22 @@ def test_a_step_that_outlived_its_usual_duration_says_how_long(
     assert "обычно 2–6 недель после поступления" in fresh
     assert "обычно 2–6 недель" not in stale
     assert "без движения уже 18 мес." in stale
+
+
+def test_a_vacatio_legis_is_a_date_to_diarise_and_never_a_step_standing_still(
+    process_1962: ProcessDetail,
+) -> None:
+    """A staged entry into force a year out is common in the acts we follow, and it is the one
+    stretch where the reader has a fixed date to prepare for. `PHASE_PATIENCE` has no entry for
+    `in_force`, so the default 180 days applied and the card added «без движения уже 7 мес.» to a
+    law that is published, final and dated — counted from the President's signature."""
+    published = process_1962.model_copy(update={"eli": "DU/2026/1100"})
+    bill = bill_of(published, act=act(entry_into_force=dt.date(2027, 7, 1)))
+
+    text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2027, 3, 20)).text
+
+    assert "Что дальше:</b> вступление в силу 01.07.2027" in text
+    assert "без движения" not in text
 
 
 def test_an_undated_stage_is_not_read_as_no_movement_since_the_bill_arrived(
