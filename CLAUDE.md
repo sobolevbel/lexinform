@@ -548,9 +548,18 @@ Invariants worth keeping:
   action left to invite), and neither does one whose project is already on RCL. The card says there
   is no text yet, and the one action it offers is the art. 7 zgłoszenie zainteresowania — which
   anyone may file, and which is the ticket to the Sejm's wysłuchanie publiczne (art. 8 ust. 2). The
+  card says **how**, because «подать zgłoszenie» is not an instruction: the form from the
+  ministry's BIP page under "Działalność lobbingowa", carrying the name, the address, the interest
+  and the legal solution sought (art. 7 ust. 4), sent to the ministry that puts the bill before the
+  Council of Ministers (ust. 2), published in BIP with the project's papers, a private address
+  excepted (ust. 3). Checked against the consolidated text of 13 July 2026 (Dz.U. 2026 poz. 936):
+  **Dz.U. 2026 poz. 160 repealed art. 3–4 on 2026-08-28**, so the wykaz prac legislacyjnych now
+  rests on art. 8a–8b ustawy o Radzie Ministrów and the regulation carrying the official form
+  (Dz.U. 2011/1080) lapsed with the delegation — no replacement is in ELI, and the ministries go on
+  publishing the old form, which is why the card names the BIP page and not a Dz.U. number. The
   register is also the only source that says the government **dropped** a project (`Status
-  realizacji`, `Informacja o rezygnacji`, art. 3 ust. 3): that is posted, a slipped quarter or a
-  rewritten "istota" is only stored. `Planowane przyjęcie przez RM` is free text and half of it
+  realizacji`, `Informacja o rezygnacji` — the columns are still in the CSV; the duty behind them
+  moved with art. 3): that is posted, a slipped quarter or a rewritten "istota" is only stored. `Planowane przyjęcie przez RM` is free text and half of it
   carries the adoption note: only the quarter is ever rendered.
 - **A plan's project is stamped, not ingested.** RCL discovery has the wykaz number on the list
   page: when it names a followed `WPL/` row it writes `rcl_project_id` on that row and skips the

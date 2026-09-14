@@ -72,9 +72,10 @@ def test_the_card_names_the_ministry_the_stage_and_the_planned_quarter() -> None
 def test_the_card_tells_the_reader_what_the_law_lets_them_do_at_this_stage() -> None:
     text = MessageFormatter("ru").new_bill(wykaz_bill(), None, today=TODAY).text
 
-    assert "подать в MSWiA zgłoszenie zainteresowania pracami nad projektem" in text
-    # Who may, and what it buys: both, or the reader has no reason to act.
-    assert "Это может любой: гражданство и юридическое лицо не нужны" in text
+    assert "подать zgłoszenie zainteresowania pracami nad projektem" in text
+    # Who may, how it is done, and what it buys: all three, or the reader cannot act on it.
+    assert "это может любой" in text
+    assert "Бланк — на сайте BIP министерства" in text and "отправить в MSWiA" in text
     assert "какой интерес защищаете и какого решения добиваетесь" in text
     assert "участвовать в публичном слушании" in text
 

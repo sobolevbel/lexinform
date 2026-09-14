@@ -432,20 +432,21 @@ RU = Labels(
     ),
     wykaz_organ_unknown="профильное министерство",
     action_wykaz_interest=(
-        "подать в {organ} zgłoszenie zainteresowania pracami nad projektem — заявить, что вы"
-        " следите за проектом. Это может любой: гражданство и юридическое лицо не нужны, частное"
-        " лицо подаёт от своего имени (ст. 7 ustawy o działalności lobbingowej). Зачем: в"
-        " заявлении вы пишете, какой интерес защищаете и какого решения добиваетесь, — и оно"
-        " попадает в BIP к документам проекта ещё до того, как текст написан, то есть когда его"
-        " проще всего изменить; кроме того, подавший получает право участвовать в публичном"
-        " слушании проекта в Сейме — но заявиться на сами слушания нужно отдельно, не позднее"
-        " чем за 10 дней до них"
+        "подать zgłoszenie zainteresowania pracami nad projektem — это может любой, и сейчас"
+        " действеннее всего: текста ещё нет. Бланк — на сайте BIP министерства (раздел"
+        " «Działalność lobbingowa»); в нём имя и адрес, какой интерес защищаете и какого решения"
+        " добиваетесь, отправить в {organ}. Заявление публикуется в BIP при документах проекта"
+        " (адрес частного лица — нет) и даёт право участвовать в публичном слушании в Сейме,"
+        " если его назначат: заявка на слушание — отдельно, не позднее чем за 10 дней"
+        " (ст. 7 и 8 ust. 2 ustawy o działalności lobbingowej)"
     ),
     action_rcl_interest=(
-        "подать в {organ} zgłoszenie zainteresowania pracami nad projektem — это может любой, и"
-        " подавший получает право участвовать в публичном слушании в Сейме, если оно будет"
-        " назначено (ст. 7 и ст. 8 ч. 2 ustawy o działalności lobbingowej; заявка на сами слушания"
-        " подаётся отдельно, не позднее чем за 10 дней до них)"
+        "подать zgłoszenie zainteresowania pracami nad projektem — это может любой. Бланк на"
+        " сайте BIP {organ} (раздел «Działalność lobbingowa»): имя и адрес, какой интерес"
+        " защищаете и какого решения добиваетесь. Заявление публикуется в BIP при документах"
+        " проекта и даёт право участвовать в публичном слушании в Сейме, если его назначат:"
+        " заявка на слушание — отдельно, не позднее чем за 10 дней (ст. 7 и 8 ust. 2 ustawy"
+        " o działalności lobbingowej)"
     ),
     link_wykaz_entry="Запись в плане работ",
     tag_wykaz="wykazRM",
@@ -1023,20 +1024,19 @@ EN = Labels(
     wykaz_metadata_note=("Scored from the register entry: the draft text does not exist yet."),
     wykaz_organ_unknown="the responsible ministry",
     action_wykaz_interest=(
-        "file a zgłoszenie zainteresowania pracami nad projektem with {organ} — a declaration"
-        " that you are following the project. Anyone may: no citizenship and no legal entity"
-        " needed, a private individual files on their own behalf (art. 7 of the lobbying act)."
-        " What it is for: you state the interest you want to protect and the solution you will"
-        " seek, and it goes into the BIP file of the project before the text is written, when it"
-        " is easiest to change; it also entitles you to take part in the Sejm's public hearing"
-        " of the bill — but the hearing itself is applied for separately, no later than 10 days"
-        " before it"
+        "file a zgłoszenie zainteresowania pracami nad projektem — anyone may, and now is when"
+        " it counts: there is no text yet. The form is on the ministry's BIP page («Działalność"
+        " lobbingowa»): your name and address, the interest you protect and the solution you"
+        " seek; send it to {organ}. It is published in the project's BIP file (a private address"
+        " is not) and entitles you to the Sejm's public hearing should one be held — applied for"
+        " separately, no later than 10 days before it (art. 7 and 8 ust. 2 of the lobbying act)"
     ),
     action_rcl_interest=(
-        "file a zgłoszenie zainteresowania pracami nad projektem with {organ} — anyone may, and"
-        " whoever does may take part in the public hearing in the Sejm should one be held"
-        " (art. 7 and 8 ust. 2 of the lobbying act; the hearing itself is applied for"
-        " separately, no later than 10 days before it)"
+        "file a zgłoszenie zainteresowania pracami nad projektem — anyone may. The form is on"
+        " {organ}'s BIP page («Działalność lobbingowa»): your name and address, the interest you"
+        " protect and the solution you seek. It is published in the project's BIP file and"
+        " entitles you to the public hearing in the Sejm should one be held — applied for"
+        " separately, no later than 10 days before it (art. 7 and 8 ust. 2 of the lobbying act)"
     ),
     link_wykaz_entry="Register entry",
     tag_wykaz="wykazRM",
