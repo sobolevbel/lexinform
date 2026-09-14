@@ -138,7 +138,7 @@ class AgendaWatcher:
     ) -> bool:
         for bill in bills:
             try:
-                items = self._items_for(bill.term, bill, listings)
+                items = self._items_for(bill, listings)
                 items += listings.kept(bill, today)
                 items = tuple(sorted(items, key=lambda i: (i.date, i.ref)))
                 if publish:
@@ -245,7 +245,7 @@ class AgendaWatcher:
                 )
         return detailed, failed
 
-    def _items_for(self, term: int, bill: Bill, listings: _Listings) -> tuple[AgendaItem, ...]:
+    def _items_for(self, bill: Bill, listings: _Listings) -> tuple[AgendaItem, ...]:
         """Agenda items naming the bill — by its own druk, by a print considered jointly with it,
         or by one of the prints its process produced (`derived_print_numbers`), which is the only
         name a sitting on the Senate's resolution or the President's motion gives it.
@@ -271,17 +271,10 @@ class AgendaWatcher:
                 texts = items_mentioning(sitting.agenda, numbers)
                 if not texts:
                     continue
-                item = AgendaItem(
-                    kind="committee",
-                    ref=f"{code}/{sitting.num}/{_when_and_where(sitting)}",
-                    date=sitting.date,
-                    start_time=sitting.start_time,
-                    committee_code=code,
-                    committee_name=self._enricher.committee_name_or_none(term, code),
-                    sitting_number=sitting.num,
-                    room=sitting.room,
+                item = AgendaItem.for_committee(
+                    sitting,
+                    committee_name=self._enricher.committee_name_or_none(bill.term, code),
                     text=" ".join(texts),
-                    video_url=sitting.video_url,
                 )
                 item = _keep_told_ref(item, told)
                 kept = meetings.get(sitting.meeting_key)
@@ -290,19 +283,10 @@ class AgendaWatcher:
         items.extend(meetings.values())
         for plenary in listings.sejm:
             texts = items_mentioning(plenary.agenda, numbers)
-            first, last = plenary.first_date, plenary.last_date
+            first = plenary.first_date
             if not texts or first is None:
                 continue
-            items.append(
-                AgendaItem(
-                    kind="sejm",
-                    ref=f"sejm/{plenary.number}/{first.isoformat()}",
-                    date=first,
-                    end_date=last,
-                    sitting_number=plenary.number,
-                    text=" ".join(texts),
-                )
-            )
+            items.append(AgendaItem.for_sejm(plenary, first=first, text=" ".join(texts)))
         return tuple(items)
 
     def _post_new(self, bill: Bill, items: tuple[AgendaItem, ...], result: TrackingResult) -> None:
@@ -343,34 +327,12 @@ class AgendaWatcher:
 
 
 def _keep_told_ref(item: AgendaItem, told: set[str]) -> AgendaItem:
-    """Keep the `ref` a sitting was announced under when it named only the day.
-
-    Refs written before the hour and the room joined them are the day alone, so on the first run
-    after this change every sitting already on a bill's agenda would look new and be announced a
-    second time — the deploy hazard the stage fingerprint is guarded against for the same reason.
-    A sitting announced under the old key keeps it to the end; the new key starts with the next
-    one. This can go once no state dump carries a day-only agenda ref.
-    """
-    legacy = f"{item.committee_code}/{item.sitting_number}/{item.date.isoformat()}"
+    """Keep the `ref` a sitting was announced under when it named only the day
+    (`AgendaItem.legacy_ref`, which says why)."""
+    legacy = item.legacy_ref
     if item.ref != legacy and legacy in told:
         return item.model_copy(update={"ref": legacy})
     return item
-
-
-def _when_and_where(sitting: CommitteeSitting) -> str:
-    """The last segment of a committee sitting's `ref`: everything the announcement asserts about
-    when and where it meets, so that moving any of it makes a post of its own.
-
-    `AgendaItem.sitting_key` is the `ref` without this segment, so the sitting stays the same
-    sitting across a move and is not taken back as called off. Slashes are dropped because that
-    is the separator the key is split on.
-    """
-    parts = [sitting.date.isoformat()]
-    if sitting.start_time is not None:
-        parts.append(sitting.start_time.strftime("%H:%M"))
-    if sitting.room:
-        parts.append(sitting.room.replace("/", " "))
-    return "+".join(parts)
 
 
 def _already_happened(item: AgendaItem, now: dt.datetime) -> bool:

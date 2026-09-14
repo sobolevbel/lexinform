@@ -316,8 +316,15 @@ AgendaKind = Literal["committee", "sejm"]
 class AgendaItem(BaseModel):
     """A future sitting whose agenda names the bill: the dated "what happens next".
 
-    `ref` is the dedupe key of the post ("ASW/136/2026-09-17", "sejm/65/2026-09-15"), `text` the
-    agenda item in plain text, and `end_date` the last day of a Sejm sitting, which spans several.
+    `ref` is the dedupe key of the post ("ASW/136/2026-09-17+08:30+ks", "sejm/65/2026-09-15"),
+    `text` the agenda item in plain text, and `end_date` the last day of a Sejm sitting, which
+    spans several.
+
+    The `ref`'s grammar is this class's own: `for_committee` and `for_sejm` write it,
+    `sitting_key` reads it back, and `legacy_ref` is the shape it had before the hour and the
+    room joined it. The three used to live a module away from each other, held together by a
+    comment about a separator — and the separator is load-bearing, because a `sitting_key` that
+    stopped matching would make `AgendaWatcher._retract_gone` take back every sitting still on.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -334,6 +341,60 @@ class AgendaItem(BaseModel):
     text: str = ""
     video_url: str | None = None
 
+    @classmethod
+    def for_committee(
+        cls, sitting: CommitteeSitting, *, committee_name: str | None, text: str
+    ) -> AgendaItem:
+        """One committee sitting as the channel will announce it.
+
+        The `ref`'s last segment carries everything the announcement asserts about when and
+        where the committee meets, so that moving any of it makes a post of its own: of the 886
+        committee sittings of term 10 whose `comments` record a change, 204 say "zmiana godziny",
+        97 "zmiana sali" and 61 both, and while the `ref` was the day alone the run wrote the new
+        hour to the bill and said nothing, leaving the standing post naming the old one.
+        """
+        when = [sitting.date.isoformat()]
+        if sitting.start_time is not None:
+            when.append(sitting.start_time.strftime("%H:%M"))
+        if sitting.room:
+            when.append(sitting.room.replace("/", " "))  # "/" separates the ref's own segments
+        return cls(
+            kind="committee",
+            ref=f"{sitting.code}/{sitting.num}/{'+'.join(when)}",
+            date=sitting.date,
+            start_time=sitting.start_time,
+            committee_code=sitting.code,
+            committee_name=committee_name,
+            sitting_number=sitting.num,
+            room=sitting.room,
+            text=text,
+            video_url=sitting.video_url,
+        )
+
+    @classmethod
+    def for_sejm(cls, sitting: SejmSitting, *, first: dt.date, text: str) -> AgendaItem:
+        """One sitting of the whole Sejm, which spans several days and has no hour of its own
+        until `/proceedings` publishes the current sitting's `schedule`."""
+        return cls(
+            kind="sejm",
+            ref=f"sejm/{sitting.number}/{first.isoformat()}",
+            date=first,
+            end_date=sitting.last_date,
+            sitting_number=sitting.number,
+            text=text,
+        )
+
+    @property
+    def legacy_ref(self) -> str:
+        """The `ref` as it was written before the hour and the room joined the last segment.
+
+        A sitting announced under that shape keeps it to the end, or the first run after the
+        change would announce every standing sitting a second time — the deploy hazard the stage
+        fingerprint is seeded against for the same reason. This goes once no state dump carries
+        a day-only agenda ref.
+        """
+        return f"{self.committee_code}/{self.sitting_number}/{self.date.isoformat()}"
+
     @property
     def last_date(self) -> dt.date:
         """The day the sitting ends: a Sejm sitting spans several, a committee's one."""
@@ -341,8 +402,8 @@ class AgendaItem(BaseModel):
 
     @property
     def sitting_key(self) -> str:
-        """The sitting itself, without the date `ref` carries: what tells a moved sitting from
-        a different one."""
+        """The sitting itself, without the when-and-where the `ref` ends on: what tells a sitting
+        that moved from a different sitting, and so what stops a move reading as a cancellation."""
         return self.ref.rsplit("/", 1)[0]
 
 
