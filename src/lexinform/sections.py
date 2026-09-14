@@ -30,6 +30,21 @@ from typing import Literal
 
 PAGE_BREAK = "\f"
 
+# A page break is a line break, and Python's `^`/`$` do not know it: in MULTILINE they turn on
+# `\n` alone, so a heading that opens a page is invisible the moment the pages are joined. It is
+# the commonest layout there is — the extractor emits the page's text from its first glyph, so
+# "UZASADNIENIE" as the first line of its page stands in the joined text as `…\fUZASADNIENIE\n`,
+# with no `\n` in front of it for `^` to match. Measured over term 10 (14 Sept 2026): 683 of the
+# 819 prints with a text layer hide at least one heading behind the form feed this way, and in
+# **279 of them `_JUSTIFICATION_RE` then finds no justification at all** — so `excerpts` hands
+# the model the head of the bill and not one line of the reasons for it, which is what the
+# triage judges on and what the per-bill cost guard cuts a long text down to. Adding the page
+# break to both anchors recovers the justification in all 279 and 744,693 characters with it.
+# The same holds for 525 documents of RCL, where DOCX is worse still: `document_text` collapses
+# `\n\f\n` to `\f` on purpose, removing the very newline that would have saved the match.
+_BOL = r"(?:^|(?<=\f))"
+_EOL = r"(?:$|(?=\f))"
+
 _OPENING_LINES = 2
 """How many lines of a page may carry the heading that opens a section.
 
@@ -43,14 +58,18 @@ already enough to reach druk 810's wrapped line.
 """
 
 _JUSTIFICATION_RE = re.compile(
-    r"^\s*u\s?z\s?a\s?s\s?a\s?d\s?n\s?i\s?e\s?n\s?i\s?e\s*$", re.IGNORECASE | re.MULTILINE
+    rf"{_BOL}\s*u\s?z\s?a\s?s\s?a\s?d\s?n\s?i\s?e\s?n\s?i\s?e\s*{_EOL}",
+    re.IGNORECASE | re.MULTILINE,
 )
 # Two of the six bills measured head themselves "Ustawa" rather than "USTAWA" (UD439, UC145).
 # The whole-line anchor is what keeps it honest: the word is everywhere in a bill's prose and
 # nowhere alone on a line but in its title.
-_BILL_HEADING_RE = re.compile(r"^\s*U\s?S\s?T\s?A\s?W\s?A\s*$", re.IGNORECASE | re.MULTILINE)
+_BILL_HEADING_RE = re.compile(
+    rf"{_BOL}\s*U\s?S\s?T\s?A\s?W\s?A\s*{_EOL}", re.IGNORECASE | re.MULTILINE
+)
 _OSR_RE = re.compile(
-    r"^\s*(Nazwa|Tytuł)\s+projektu\b(?!\s+dokumentu)|^\s*DEKLAROWANE\s+SKUTKI", re.MULTILINE
+    rf"{_BOL}\s*(Nazwa|Tytuł)\s+projektu\b(?!\s+dokumentu)|{_BOL}\s*DEKLAROWANE\s+SKUTKI",
+    re.MULTILINE,
 )
 # The deputies' DSR form is itself an attachment to a resolution of the Presidium of the Sejm, so
 # it opens "Załącznik do uchwały nr 51 Prezydium Sejmu z dnia 26 sierpnia 2024 r." and the annex
@@ -58,7 +77,7 @@ _OSR_RE = re.compile(
 # prints carrying a DSR were read as an appendix that way, and `trim_print` then dropped the form
 # — 40,758 characters of druk 1963, over half the print, and with them the one count of the
 # affected a deputies' bill gives.
-_DSR_RE = re.compile(r"^\s*DEKLAROWANE\s+SKUTKI", re.MULTILINE)
+_DSR_RE = re.compile(rf"{_BOL}\s*DEKLAROWANE\s+SKUTKI", re.MULTILINE)
 # Point 5 of the 13-point form, not point 6. Point 5 ("Informacje na temat zakresu, czasu trwania
 # i podsumowanie wyników konsultacji") is the roll of organisations the draft was sent to — 5,136
 # characters in druk 1677, 10,187 in druk 1479 — and names nobody the bill affects. Point 4
@@ -66,8 +85,8 @@ _DSR_RE = re.compile(r"^\s*DEKLAROWANE\s+SKUTKI", re.MULTILINE)
 # survives in all 26 prints of the corpus that have a point 5 (measured 13 Sept 2026). Point 6
 # stays as the fallback for a form that words point 5 differently or does not carry it.
 _OSR_CUT_RE = re.compile(
-    r"^\s*(?:5\.\s*)?Informacje\s+na\s+temat\s+zakresu"
-    r"|^\s*(?:6\.\s*)?Wpływ na sektor finans",
+    rf"{_BOL}\s*(?:5\.\s*)?Informacje\s+na\s+temat\s+zakresu"
+    rf"|{_BOL}\s*(?:6\.\s*)?Wpływ na sektor finans",
     re.MULTILINE,
 )
 # What makes this safe is the anchor, not the case: the justification of every act implementing
@@ -76,37 +95,43 @@ _OSR_CUT_RE = re.compile(
 # document, and it moves it right — a draft headed "Rozporządzenie" that had passed for a bill's
 # uzasadnienie because its file name said so.
 _REGULATION_RE = re.compile(
-    r"^\s*R\s?O\s?Z\s?P\s?O\s?R\s?Z\s?Ą\s?D\s?Z\s?E\s?N\s?I\s?E\s*$", re.IGNORECASE | re.MULTILINE
+    rf"{_BOL}\s*R\s?O\s?Z\s?P\s?O\s?R\s?Z\s?Ą\s?D\s?Z\s?E\s?N\s?I\s?E\s*{_EOL}",
+    re.IGNORECASE | re.MULTILINE,
 )
 _CONSULTATION_RE = re.compile(
-    r"^\s*Raport\s+z\s+(konsultacji|opiniowania|uzgodnie)"
+    rf"{_BOL}\s*Raport\s+z\s+(konsultacji|opiniowania|uzgodnie)"
     r"|Zgodnie\s+z\s+art\.\s*5\s+ustawy.{0,120}?działalności\s+lobbingowej",
     re.I | re.M | re.S,
 )
 _REMARKS_RE = re.compile(
-    r"^\s*(Zestawienie|Tabela)\s+(z\s+)?(uwag|nieuwzględnionych|uzgodnień)", re.IGNORECASE | re.M
+    rf"{_BOL}\s*(Zestawienie|Tabela)\s+(z\s+)?(uwag|nieuwzględnionych|uzgodnień)",
+    re.IGNORECASE | re.M,
 )
 _COMPLIANCE_RE = re.compile(
-    r"^\s*(Odwrócona\s+)?Tabela\s+zgodności\b"
-    r"|^\s*Tabelaryczne\s+zestawienie\s+przepisów"
+    rf"{_BOL}\s*(Odwrócona\s+)?Tabela\s+zgodności\b"
+    rf"|{_BOL}\s*Tabelaryczne\s+zestawienie\s+przepisów"
     # The columns of a table of provisions, whatever it calls itself. Druk 1430 heads its
     # derivation table "Tabelaryczne zestawienie przepisów …" and then, further down the same
     # page, "Tytuł projektu:" — which is how an OSR form opens, and it was read as one.
-    r"|^\s*Jedn\.\s*red\b|Treść\s+przepisu",
+    rf"|{_BOL}\s*Jedn\.\s*red\b|Treść\s+przepisu",
     re.IGNORECASE | re.M,
 )
 # Case-sensitive on purpose, and the one discriminator there is: the compliance table opens with
 # "TYTUŁ PROJEKTU" as a column header, the OSR form with "Tytuł projektu" as a field label
 # (UD439's OSR, 13 Sept 2026). A digit may be glued to the header by the table's numbering.
-_COMPLIANCE_HEADER_RE = re.compile(r"^\s*\d*\s*TYTUŁ\s+PROJEKTU\b", re.MULTILINE)
-_DISCREPANCIES_RE = re.compile(r"^\s*Protok[oó][łl]\s+rozbie[żz]no[śs]ci", re.IGNORECASE | re.M)
-_LEGISLATIVE_TABLE_RE = re.compile(r"^\s*Nazwa\s+projektu\s+dokumentu\b", re.IGNORECASE | re.M)
-_CHECKLIST_RE = re.compile(r"^\s*(WZ[ÓO]R\s*)?LISTA\s+KONTROLNA\b", re.MULTILINE)
+_COMPLIANCE_HEADER_RE = re.compile(rf"{_BOL}\s*\d*\s*TYTUŁ\s+PROJEKTU\b", re.MULTILINE)
+_DISCREPANCIES_RE = re.compile(
+    rf"{_BOL}\s*Protok[oó][łl]\s+rozbie[żz]no[śs]ci", re.IGNORECASE | re.M
+)
+_LEGISLATIVE_TABLE_RE = re.compile(
+    rf"{_BOL}\s*Nazwa\s+projektu\s+dokumentu\b", re.IGNORECASE | re.M
+)
+_CHECKLIST_RE = re.compile(rf"{_BOL}\s*(WZ[ÓO]R\s*)?LISTA\s+KONTROLNA\b", re.MULTILINE)
 # "Załącznik do …" names what it hangs on; a bare "Załącznik nr 2" is deliberately not here,
 # because a bill carries its own schedules under that heading and dropping from one would take
 # the rest of the bill with it (druk 2673 has one on page 25 of 60).
 _ANNEX_RE = re.compile(
-    r"^\s*Załącznik\w*\s+do\s+(uchwały|rozporządzenia|raportu)\b", re.IGNORECASE | re.M
+    rf"{_BOL}\s*Załącznik\w*\s+do\s+(uchwały|rozporządzenia|raportu)\b", re.IGNORECASE | re.M
 )
 
 KEEP = "keep"
@@ -337,11 +362,11 @@ _TRANSMITTAL_RE = re.compile(
     re.IGNORECASE,
 )
 _BODY_RE = re.compile(
-    r"^\s*U\s?S\s?T\s?A\s?W\s?A\b"
-    r"|^\s*Art\.\s*1\s*[.)]"
-    r"|^\s*u\s?z\s?a\s?s\s?a\s?d\s?n\s?i\s?e\s?n\s?i\s?e\s*$"
-    r"|^\s*Nazwa projektu\b"
-    r"|^\s*Projekt\s*$",
+    rf"{_BOL}\s*U\s?S\s?T\s?A\s?W\s?A\b"
+    rf"|{_BOL}\s*Art\.\s*1\s*[.)]"
+    rf"|{_BOL}\s*u\s?z\s?a\s?s\s?a\s?d\s?n\s?i\s?e\s?n\s?i\s?e\s*{_EOL}"
+    rf"|{_BOL}\s*Nazwa projektu\b"
+    rf"|{_BOL}\s*Projekt\s*{_EOL}",
     re.IGNORECASE | re.MULTILINE,
 )
 

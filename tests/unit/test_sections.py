@@ -7,6 +7,7 @@ import pytest
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.keywords import KeywordPrefilter
 from lexinform.sections import (
+    _JUSTIFICATION_RE,
     PAGE_BREAK,
     TextBudget,
     carries_the_document,
@@ -473,3 +474,32 @@ def test_a_running_head_does_not_hide_what_a_page_opens() -> None:
 
     assert "Art. 1." in result.text and "Projekt ma na celu" in result.text
     assert [d.name for d in result.dropped] == ["raport z konsultacji", "tabela zgodności"]
+
+
+def test_a_heading_that_opens_a_page_is_found_after_the_pages_are_joined() -> None:
+    """`^` in MULTILINE turns on `\\n` alone, and the pages are joined with a form feed.
+
+    The extractor emits a page from its first glyph, so a print whose justification starts a page
+    reads `…\\fUZASADNIENIE\\n` with no newline in front of the heading. Over term 10 that layout
+    hides a heading in 683 of the 819 prints with a text layer, and in 279 of them it hides the
+    justification entirely — `excerpts` then sends the triage the head of the bill and not one
+    line of the reasons for it. Druk 545 is one: page 4 opens "UZASADNIENIE" with nothing above
+    it.
+    """
+    text = BILL + PAGE_BREAK + "UZASADNIENIE\nI. CEL PROJEKTOWANEJ USTAWY\n" + "Cel. " * 200
+
+    digest = excerpts(text, [], head_chars=300, max_chars=2000)
+
+    assert _JUSTIFICATION_RE.search(text) is not None
+    assert "UZASADNIENIE\nI. CEL PROJEKTOWANEJ USTAWY" in digest
+
+
+def test_a_heading_that_ends_a_page_is_found_too() -> None:
+    """The other anchor: a heading may be the last line of its page, and then `$` has a form feed
+    after it rather than a newline."""
+    text = "Projekt ustawy\n\nUZASADNIENIE" + PAGE_BREAK + "Cel projektu. " * 100
+
+    assert _JUSTIFICATION_RE.search(text) is not None
+    assert document_kind("Strona tytułowa" + PAGE_BREAK + "R O Z P O R Z Ą D Z E N I E\n") == (
+        "regulation"
+    )
