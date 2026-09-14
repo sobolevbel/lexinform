@@ -501,6 +501,27 @@ class SqliteBillRepository:
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
+    def list_skipped_with_joint_prints(self) -> list[Bill]:
+        """Rows a prefilter skipped that name prints considered jointly with them.
+
+        The group comes from the `/processes` listing itself (`printsConsideredJointly` is on 117
+        of the 1,665 rows of term 10), so a row the keywords dropped before its text was ever
+        read still knows it has one. `json_array_length` of a missing key is NULL, which the
+        comparison filters out along with the empty arrays.
+        """
+        rows = self._conn.execute(
+            """
+            SELECT * FROM bills
+            WHERE status IN (?, ?) AND discontinued_at IS NULL
+              AND json_array_length(
+                      json_extract(summary_json, '$.prints_considered_jointly')
+                  ) > 0
+            ORDER BY term, number
+            """,
+            (BillStatus.SKIPPED_PREFILTER.value, BillStatus.SKIPPED_TEXT_PREFILTER.value),
+        ).fetchall()
+        return [self._row_to_bill(r) for r in rows]
+
     def count_by_status(self) -> dict[str, int]:
         rows = self._conn.execute(
             "SELECT status, count(*) FROM bills WHERE discontinued_at IS NULL GROUP BY status"

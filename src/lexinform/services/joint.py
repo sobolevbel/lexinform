@@ -17,8 +17,12 @@ meeting «Альтернативный проект того же закона»
 bill in other words or a different answer to the same question.
 """
 
-from lexinform.models import Bill, PublicationKind, PublicationStatus
+import logging
+
+from lexinform.models import Bill, BillStatus, PublicationKind, PublicationStatus
 from lexinform.ports import BillRepository
+
+log = logging.getLogger(__name__)
 
 
 def primary_of(repo: BillRepository, bill: Bill, channel_id: str) -> tuple[Bill, int] | None:
@@ -39,6 +43,47 @@ def primary_of(repo: BillRepository, bill: Bill, channel_id: str) -> tuple[Bill,
             continue
         return other, card.message_id
     return None
+
+
+def revive_prefilter_skips(repo: BillRepository, channel_id: str) -> list[str]:
+    """Prints a prefilter skipped whose group already holds a card, put back in the queue.
+
+    The keywords are a guess about a text; that a committee is working on this print together
+    with one the channel has carded is a fact the Sejm states. Measured over term 10: eight
+    groups have a print the prefilter drops beside one it keeps, and in all eight it is the same
+    bill by another applicant — druk 1426 is the government's Kodeks pracy against the deputies'
+    1404, druk 316 the President's asystencja osobista beside druki 1929 and 1933, druk 2530 the
+    same rynek kryptoaktywów as 2529. Reading every one of them costs **$0.71 for the whole
+    term**, and each is one reply in a thread whose readers are waiting for exactly that bill.
+
+    The same reason as the triage, one gate earlier: what the prefilter can still do here is drop
+    an alternative bill for want of a keyword the card's own text had. Order does not matter —
+    the print may be skipped before the card exists or discovered long after it — because every
+    run asks the question again of every skipped row that names a group, and `/processes` carries
+    `printsConsideredJointly` in the listing, so even a row that was never read has its group.
+    """
+    revived = []
+    for bill in repo.list_skipped_with_joint_prints():
+        primary = primary_of(repo, bill, channel_id)
+        if primary is None:
+            continue
+        other, _ = primary
+        repo.set_status(
+            bill.term,
+            bill.number,
+            BillStatus.ANALYSIS_PENDING,
+            reason=(
+                f"considered jointly with druk {other.number}, which the channel carries:"
+                " the keywords do not decide an alternative bill"
+            ),
+        )
+        log.info(
+            "%s was skipped by the prefilter but is considered jointly with %s, which has a card",
+            bill.number,
+            other.number,
+        )
+        revived.append(bill.number)
+    return revived
 
 
 def group_of(repo: BillRepository, bill: Bill) -> list[Bill]:

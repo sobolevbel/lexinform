@@ -71,7 +71,8 @@ class RunReport(BaseModel):
     changes kept back for the next post
     (service stages only), `rehomed` the government's own rows carried over to a new Sejm term,
     `joint_published` the "alternative bill" replies under the card of a jointly considered
-    print. `notes` are worth telling without being errors (a cost budget that stopped a phase),
+    print and `joint_revived` the prints a prefilter had skipped that such a card brought back.
+    `notes` are worth telling without being errors (a cost budget that stopped a phase),
     `commands` one line per operator command, `rejected` the bills that were analysed and not
     published.
     """
@@ -112,6 +113,7 @@ class RunReport(BaseModel):
     triaged_out: int = 0
     analysis_failures: int = 0
     analysis_skipped_cost: int = 0
+    joint_revived: int = 0
     notes: list[str] = Field(default_factory=list)
     rejected: list[AnalysisVerdict] = Field(default_factory=list)
     commands_handled: int = 0

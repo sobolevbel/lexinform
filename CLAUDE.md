@@ -167,7 +167,7 @@ Invariants worth keeping:
   applicant and links told a reader meeting «Альтернативный проект того же закона» nothing about
   whether it was the same bill in other words or a different answer to the same question, which
   is the only thing a second print on one subject is news for. It is judged on its own text
-  (prefilter, triage, cost guard, `min_score`: one bar for both shapes), and the difference is a
+  (cost guard and `min_score` as for a card), and the difference is a
   **second, cheap call on the descriptions and not on the texts**
   (`AnalysisService.compare_joint`, `JointContext` → `JointComparison`, `bills.joint_json` v20,
   `compared_with` re-asking it when the group gains a print). Measured over term 10: 53 prints in
@@ -178,11 +178,21 @@ Invariants worth keeping:
   where at analysis time no print of it has been read yet; it is an embellishment of the reply
   and never stops it, so even a model outage (everywhere else the end of a phase) is caught and
   the reply goes out as it was before comparisons existed. The verdict, importance and category
-  stay the card's — one thread, one score. **The triage alone is not asked** of a print whose
-  group already holds a card (`AnalysisService._joint_card_exists`, the publisher's own
-  `primary_of` a phase earlier): the card has answered that question of a bill on the same
-  subject before the same committee, and what the cheap pass can still do is say a confident "no"
-  and take an alternative bill out of the channel for the price of a call it almost never saves.
+  stay the card's — one thread, one score. **Neither relevance gate decides an alternative
+  bill**, for one reason asked at two moments: the card has already answered their question, of a
+  bill on the same subject before the same committee, and all they can still do is take that bill
+  out of the channel silently. The triage is not asked at all
+  (`AnalysisService._joint_card_exists`, the publisher's own `primary_of` a phase earlier), and a
+  print a prefilter had already skipped is put back in the queue
+  (`joint.revive_prefilter_skips`, run at the head of the analysis phase so the print is read in
+  the same run; `list_skipped_with_joint_prints` finds it because `/processes` carries
+  `printsConsideredJointly` in the **listing** — 117 of the 1,665 rows of term 10 — so a row whose
+  text was never read still knows its group). Order does not matter: the question is asked again
+  every run, whichever came first, the card or the print. Measured: eight groups of term 10 have
+  a print the prefilter drops beside one it keeps, **in all eight the same bill by another
+  applicant** (druk 1426 the government's Kodeks pracy against the deputies' 1404, druk 316 the
+  President's asystencja osobista beside 1929 and 1933, druk 2530 the same rynek kryptoaktywów as
+  2529), and reading all of them costs **$0.71 for the term**.
   `BillStatus.SKIPPED_JOINT` is historical (nothing sets it; `/unskip` revives a row that carries
   it), and `/preview` renders the reply without the difference block when none is stored — a
   read-only command spends nothing, and the note says so.

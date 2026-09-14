@@ -4,6 +4,7 @@ others a short "alternative bill" reply under it, and the group is followed thro
 import datetime as dt
 
 from lexinform.models import (
+    BillStatus,
     Committee,
     CommitteeSitting,
     PublicationKind,
@@ -289,3 +290,40 @@ def test_a_joint_print_whose_partner_has_no_card_is_analysed_as_usual() -> None:
     assert [ctx.number for ctx in w.llm.contexts] == ["1933", "1929"]
     assert (report.published, report.joint_published) == (1, 0)
     assert w.llm.joint_contexts == []
+
+
+def test_a_print_the_keywords_missed_is_read_when_its_group_has_a_card() -> None:
+    """The keywords are a guess about a text; that the committee works on this print together
+    with one the channel has carded is a fact the Sejm states. Over term 10 eight groups have a
+    print the prefilter drops beside one it keeps, and in all eight it is the same bill by
+    another applicant — druk 1426 is the government's Kodeks pracy against the deputies' 1404.
+    """
+    w = World(text_prefilter=False)  # the title is the only gate, so a miss is a miss
+    w.add_bill("1404", DEPUTIES)
+    w.run()
+    w.add_bill("1426", "Rządowy projekt ustawy o zmianie ustawy - Kodeks pracy")
+    w.run()
+    assert w.bill("1426").status is BillStatus.SKIPPED_PREFILTER
+
+    w.touch("1426", LATER, prints_considered_jointly=("1404",))
+    report = w.run()
+
+    assert report.joint_revived == 1
+    assert [ctx.number for ctx in w.llm.contexts] == ["1404", "1426"]
+    assert report.joint_published == 1
+
+
+def test_a_skipped_print_stays_skipped_while_its_group_has_no_card() -> None:
+    """The revival is about the card, not about the group: nothing in the channel is waiting for
+    this bill, so the keywords' "no" stands and the run spends nothing."""
+    w = World(text_prefilter=False, llm_script={"1404": make_analysis(relevant=False)})
+    w.add_bill("1404", DEPUTIES)
+    w.add_bill("1426", "Rządowy projekt ustawy o zmianie ustawy - Kodeks pracy")
+    w.run()
+    w.touch("1426", LATER, prints_considered_jointly=("1404",))
+
+    report = w.run()
+
+    assert report.joint_revived == 0
+    assert w.bill("1426").status is BillStatus.SKIPPED_PREFILTER
+    assert [ctx.number for ctx in w.llm.contexts] == ["1404"]

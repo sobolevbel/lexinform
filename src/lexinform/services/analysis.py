@@ -62,7 +62,7 @@ from lexinform.sections import (
 )
 from lexinform.services.cost import CostLedger
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
-from lexinform.services.joint import primary_of
+from lexinform.services.joint import primary_of, revive_prefilter_skips
 
 log = logging.getLogger(__name__)
 
@@ -83,13 +83,15 @@ class AnalysisResult:
     """Counters and verdicts of one analysis phase.
 
     `skipped_cost` counts the texts that were over the per-bill cost limit and never reached the
-    model, `usage` is counted per model, and `stopped` says the phase ended early on the per-run
-    cost limit, which is a note and not an error.
+    model, `revived_joint` the prints a prefilter had skipped that the channel's own card of a
+    jointly considered print put back in the queue, `usage` is counted per model, and `stopped`
+    says the phase ended early on the per-run cost limit, which is a note and not an error.
     """
 
     analyzed: int = 0
     triaged_out: int = 0
     skipped_cost: int = 0
+    revived_joint: int = 0
     failed: int = 0
     verdicts: list[AnalysisVerdict] = field(default_factory=list)
     input_tokens: int = 0
@@ -302,6 +304,10 @@ class AnalysisService:
         result = AnalysisResult()
         if limit <= 0:
             return result
+        if self._options.channel_id is not None:
+            # Before the candidates are listed, so a print the keywords dropped beside one the
+            # channel carded is analysed in this run and not the next.
+            result.revived_joint = len(revive_prefilter_skips(self._repo, self._options.channel_id))
         candidates = self._repo.list_by_status(
             [BillStatus.ANALYSIS_PENDING, BillStatus.ANALYSIS_FAILED],
             limit=limit,

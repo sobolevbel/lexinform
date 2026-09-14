@@ -80,7 +80,12 @@ pairs, three triples, one four and one eight — the eight being the vetoed bill
 candidate in them: in the other sixteen the partner never reaches the model under either rule.
 Reading every non-card candidate of those five groups costs **$4.21** of Opus input over the
 term, against the ≈$44 the term costs in full — **+10%**, before the triage, which applies to
-these prints like any other except where the group already holds a card.
+these prints like any other except where the group already holds a card — as does the keyword
+prefilter, and for the same reason: a print it drops beside one the channel has carded is, in all
+**eight** groups of the term where that happens, the same bill by another applicant (druk 1426
+the government's Kodeks pracy against the deputies' 1404, druk 316 the President's asystencja
+osobista beside 1929 and 1933, druk 2530 the same rynek kryptoaktywów as 2529). Reading all of
+them is **$0.71** for the term, so the whole change is ≈**$5** on ≈$44.
 
 The comparison itself is not a second reading. `AnalysisService.compare_joint` sends the
 channel's own description of each bill in the group — summary, key changes, whom it affects,
