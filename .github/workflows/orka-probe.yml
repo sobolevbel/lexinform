@@ -308,3 +308,45 @@ jobs:
           print(f"  result: http={r.status_code} type={r.headers.get('content-type')}"
                 f" proto={r.http_version} bytes={len(r.content)}")
           PY
+
+  # Neither the protocol nor the headers moved the WAF, so what is left is the address and the
+  # TLS hello. A forward proxy changes only the address: if that is enough, the ручка already
+  # exists (LEXINFORM_RCL_PROXY_URL). The refusal's own body is kept for the record.
+  proxy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        route: [direct, proxied]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: httpx over one route, first request of this address
+        env:
+          ROUTE: ${{ matrix.route }}
+          PROXY: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
+        run: |
+          set +e
+          echo "route=$ROUTE ip=$(curl -sS --max-time 10 https://api.ipify.org) proxy_configured=$([ -n "$PROXY" ] && echo yes || echo no)"
+          URL='https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-30771-2026/$file/10-RPW-30771-2026.pdf'
+          uv run --frozen --no-dev python - "$ROUTE" "$URL" <<'PY'
+          import os, sys
+          import httpx2 as httpx
+          from lexinform.adapters.browser_identity import BROWSER_HEADERS
+
+          route, url = sys.argv[1], sys.argv[2]
+          proxy = os.environ["PROXY"] if route == "proxied" else None
+          if route == "proxied" and not proxy:
+              print("  result: no proxy configured")
+              raise SystemExit(0)
+          with httpx.Client(headers=BROWSER_HEADERS, follow_redirects=True, timeout=90,
+                            proxy=proxy) as client:
+              r = client.get(url)
+          print(f"  result: http={r.status_code} type={r.headers.get('content-type')} bytes={len(r.content)}")
+          print(f"  x-iinfo: {r.headers.get('x-iinfo', '(none)')}")
+          if "pdf" not in (r.headers.get("content-type") or ""):
+              print("  body: " + " ".join(r.text.split())[:400])
+          PY
