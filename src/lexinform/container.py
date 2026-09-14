@@ -49,7 +49,7 @@ from lexinform.ports import (
 )
 from lexinform.pricing import price_of
 from lexinform.sections import TextBudget
-from lexinform.services.analysis import AnalysisService
+from lexinform.services.analysis import AnalysisOptions, AnalysisService
 from lexinform.services.commands import CommandService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.documents import TextLoader
@@ -227,19 +227,21 @@ class Container:
             self.text_loader(),
             self.analyzer(),
             self.clock,
+            AnalysisOptions(
+                max_attempts=self.settings.max_analysis_attempts,
+                workers=self.settings.llm_concurrency,
+                input_price_usd_per_mtok=price[0] if price is not None else None,
+                max_bill_cost_usd=self.settings.max_analysis_cost_usd,
+                max_run_cost_usd=self.settings.max_run_cost_usd,
+                triage_min_chars=self.settings.triage_min_chars,
+                triage_scan_pages=self.settings.triage_scan_pages,
+                triage_min_confidence=self.settings.triage_min_confidence,
+                channel_id=self.channel_id(),
+            ),
             text_budget=TextBudget(self.settings.text_budget_chars),
             authors=SejmAuthorsResolver(self.gateway),
-            max_attempts=self.settings.max_analysis_attempts,
-            workers=self.settings.llm_concurrency,
-            input_price_usd_per_mtok=price[0] if price is not None else None,
-            max_bill_cost_usd=self.settings.max_analysis_cost_usd,
-            max_run_cost_usd=self.settings.max_run_cost_usd,
             keywords=self.prefilter,
             triage=self.prefilter if self.settings.llm_triage_model else None,
-            triage_min_chars=self.settings.triage_min_chars,
-            triage_scan_pages=self.settings.triage_scan_pages,
-            triage_min_confidence=self.settings.triage_min_confidence,
-            channel_id=self.channel_id(),
         )
 
     def discovery_service(self) -> BillDiscoveryService:

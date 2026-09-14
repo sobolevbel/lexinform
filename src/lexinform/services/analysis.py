@@ -8,7 +8,6 @@ the model so it can say what changed. Where the text comes from is the `TextSour
 import hashlib
 import logging
 import re
-import threading
 from dataclasses import dataclass, field
 
 from lexinform.concurrency import fan_out
@@ -26,7 +25,6 @@ from lexinform.models import (
     Bill,
     BillContext,
     BillStatus,
-    CallKind,
     Category,
     LlmCall,
     LocatedText,
@@ -39,14 +37,12 @@ from lexinform.models import (
     TokenUsage,
     TriageContext,
     TriageRecord,
-    UsageRecord,
     add_usage,
     stage_fingerprint,
 )
 from lexinform.ports import AuthorsResolver, BillRepository, Clock, LlmAnalyzer
 from lexinform.ports import TextSource as TextSourcePort
 from lexinform.pricing import (
-    cost_usd,
     estimate_input_cost,
     estimate_scan_cost,
     format_usd,
@@ -61,6 +57,7 @@ from lexinform.sections import (
     has_cover_letter,
     trim_print,
 )
+from lexinform.services.cost import CostLedger
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 from lexinform.services.joint import primary_of
 
@@ -126,6 +123,31 @@ class TooExpensiveError(Exception):
             f"{format_usd(estimate)} of input for {measure} exceeds the {format_usd(limit)} limit"
         )
         self.estimate = estimate
+
+
+@dataclass(frozen=True)
+class AnalysisOptions:
+    """The knobs of the analysis phase, as `Settings` sets them (cf. `TrackingOptions`).
+
+    Both cost guards are off when their limit is 0, and the per-bill estimate needs the model's
+    input price — without it a text is never refused and never cut. `triage_min_chars` is the
+    length from which the cheap first pass is worth its own call (a scan is triaged whatever its
+    text), `triage_scan_pages` how many opening pages of a scan that pass is shown, and
+    `triage_min_confidence` how sure it must be before its "no" is taken. `channel_id` is the
+    channel the phase analyses for, and only the scheduled phase uses it, to leave a jointly
+    considered print alone when the group's card is another print's; None means the question is
+    not asked.
+    """
+
+    max_attempts: int = 3
+    workers: int = 1
+    input_price_usd_per_mtok: float | None = None
+    max_bill_cost_usd: float = 0.0
+    max_run_cost_usd: float = 0.0
+    triage_min_chars: int = 20_000
+    triage_min_confidence: float = 0.8
+    triage_scan_pages: int = 8
+    channel_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -202,12 +224,11 @@ def text_digest(text: str) -> str:
 class AnalysisService:
     """First analyses of candidates and re-analyses of bills whose text changed.
 
-    The cost guards are off when their limit is 0, and the per-bill estimate needs the model's
-    input price; `keywords` holds the patterns that pick what survives when a text has to be cut
-    down to the limit, and `triage` the same patterns again when the cheap first pass is on —
-    None there disables that pass. `channel_id` is the channel the phase is analysing for,
-    and only the scheduled phase uses it, to leave a jointly considered print alone when the
-    group's card is another print's; None means the question is not asked.
+    `options` holds the knobs (`AnalysisOptions`); what the run has spent and what it may still
+    spend is the `CostLedger`, which every phase that asks the model reaches through this one
+    service. `keywords` holds the patterns that pick what survives when a text has to be cut down
+    to the per-bill limit, and `triage` the same patterns again when the cheap first pass is on —
+    None there disables that pass.
     """
 
     def __init__(
@@ -217,96 +238,43 @@ class AnalysisService:
         loader: TextLoader,
         llm: LlmAnalyzer,
         clock: Clock,
+        options: AnalysisOptions,
         *,
         text_budget: TextBudget,
         authors: AuthorsResolver | None = None,
-        max_attempts: int = 3,
-        workers: int = 1,
-        input_price_usd_per_mtok: float | None = None,
-        max_bill_cost_usd: float = 0.0,
-        max_run_cost_usd: float = 0.0,
         keywords: KeywordPrefilter | None = None,
         triage: KeywordPrefilter | None = None,
-        triage_min_chars: int = 20_000,
-        triage_min_confidence: float = 0.8,
-        triage_scan_pages: int = 8,
-        channel_id: str | None = None,
     ) -> None:
         self._repo = repo
         self._texts = texts
         self._loader = loader
         self._llm = llm
         self._clock = clock
+        self._options = options
         self._budget = text_budget
         self._authors = authors
-        self._max_attempts = max_attempts
-        self._workers = workers
-        self._input_price = input_price_usd_per_mtok
-        self._max_bill_cost = max_bill_cost_usd
-        self._max_run_cost = max_run_cost_usd
         self._keywords = keywords or KeywordPrefilter()
         self._triage = triage
-        self._triage_min_chars = triage_min_chars
-        self._triage_min_confidence = triage_min_confidence
-        self._triage_scan_pages = triage_scan_pages
-        self._channel_id = channel_id
-        self._spent = 0.0
-        self._calls: list[LlmCall] = []
-        self._spent_lock = threading.Lock()
-        self._stopped: str | None = None
+        self._ledger = CostLedger(max_run_usd=options.max_run_cost_usd)
 
     def start_run(self) -> None:
-        """A run is one budget. In production the container is built once per process, so the
-        counter would be run-scoped anyway; a test drives several runs through one container."""
-        with self._spent_lock:
-            self._spent = 0.0
-            self._calls.clear()
-        self._stopped = None
+        self._ledger.start_run()
 
     @property
     def spent_usd(self) -> float:
         """What the model has cost this run, over every phase that asks it something."""
-        return self._spent
+        return self._ledger.spent_usd
 
     @property
     def stopped(self) -> str | None:
         """Set once the per-run limit has held a re-analysis back, for the run report to say so.
         The analysis phase says it for itself (`AnalysisResult.stopped`)."""
-        return self._stopped
-
-    def _charge(self, record: UsageRecord | None, *, number: str, kind: CallKind) -> None:
-        """Count what a model call cost towards the run's budget, and write down which call it
-        was. Called from the worker threads of `fan_out`, so both are locked.
-
-        The run reported one tokens figure for everything and it could not be accounted for
-        afterwards; `calls` is what answers "where did the money go" without reading the logs.
-        """
-        if record is None:
-            return
-        usage: dict[str, TokenUsage] = {}
-        add_usage(usage, record)
-        spent = cost_usd(usage)
-        with self._spent_lock:
-            self._calls.append(
-                LlmCall(
-                    number=number,
-                    kind=kind,
-                    model=record.model,
-                    input_tokens=record.input_tokens or 0,
-                    output_tokens=record.output_tokens or 0,
-                )
-            )
-            if spent is not None:
-                self._spent += spent
+        return self._ledger.stopped
 
     @property
     def calls(self) -> list[LlmCall]:
         """Every model call this run has made, in the order they were charged."""
-        with self._spent_lock:
-            return list(self._calls)
-
-    def _run_budget_reached(self) -> bool:
-        return bool(self._max_run_cost) and self._spent >= self._max_run_cost
+        return self._ledger.calls
 
     def analyze_pending(self, *, limit: int) -> AnalysisResult:
         """Analyse up to `limit` candidates; an outage stops the phase, a bill's own error
@@ -321,12 +289,12 @@ class AnalysisService:
         candidates = self._repo.list_by_status(
             [BillStatus.ANALYSIS_PENDING, BillStatus.ANALYSIS_FAILED],
             limit=limit,
-            max_attempts=self._max_attempts,
+            max_attempts=self._options.max_attempts,
         )
         candidates = [
             bill for bill in candidates if not self._carried_by_a_joint_card(bill, result)
         ]
-        for outcome in fan_out(candidates, self._prepare_first, workers=self._workers):
+        for outcome in fan_out(candidates, self._prepare_first, workers=self._options.workers):
             bill = outcome.item
             try:
                 prepared = outcome.result()
@@ -373,11 +341,9 @@ class AnalysisService:
                 result.input_tokens += prepared.triage.input_tokens or 0
                 result.output_tokens += prepared.triage.output_tokens or 0
                 add_usage(result.usage, prepared.triage)
-            if self._run_budget_reached():
+            if self._ledger.exhausted:
                 result.stopped = (
-                    f"run cost limit reached (≈{format_usd(self._spent)} ≥ "
-                    f"{format_usd(self._max_run_cost)}); "
-                    "the remaining candidates wait for the next run"
+                    f"{self._ledger.over_budget}; the remaining candidates wait for the next run"
                 )
                 log.warning("analysis phase stopped: %s", result.stopped)
                 break
@@ -405,9 +371,9 @@ class AnalysisService:
         An operator's `/analyze` never comes through here: asking for one explicitly is a wish
         to have it.
         """
-        if self._channel_id is None or not bill.summary.prints_considered_jointly:
+        if self._options.channel_id is None or not bill.summary.prints_considered_jointly:
             return False
-        primary = primary_of(self._repo, bill, self._channel_id)
+        primary = primary_of(self._repo, bill, self._options.channel_id)
         if primary is None:
             return False
         other, _ = primary
@@ -442,7 +408,7 @@ class AnalysisService:
         located = LocatedText(summary=summary, document=document)
         prepared = self._prepare(bill, located, previous=bill.analysis)
         if prepared.deferred:
-            log.warning("%s: %s", bill.number, self._stopped)
+            log.warning("%s: %s", bill.number, self._ledger.stopped)
             return None
         if prepared.unreadable:
             log.warning(
@@ -487,7 +453,7 @@ class AnalysisService:
             proposal=proposal,
         )
         record = self._llm.summarize_amendments(ctx)
-        self._charge(record, number=bill.number, kind="amendments")
+        self._ledger.charge(record, number=bill.number, kind="amendments")
         record.source_url = document.url
         return record
 
@@ -521,7 +487,7 @@ class AnalysisService:
             previous_key_changes=list(bill.analysis.analysis.key_changes),
         )
         record = self._llm.digest_supplement(ctx)
-        self._charge(record, number=bill.number, kind="supplement")
+        self._ledger.charge(record, number=bill.number, kind="supplement")
         record.number = number
         record.source_url = document.url
         return record
@@ -531,9 +497,10 @@ class AnalysisService:
         answer rather than a reason to skip the bill: a reader who is told what the document is
         and where it lies has lost little. A bill's own text is worth its price; the assessment
         of it is worth a bounded one."""
-        if not self._max_bill_cost or self._input_price is None:
+        limit, price = self._options.max_bill_cost_usd, self._options.input_price_usd_per_mtok
+        if not limit or price is None:
             return False
-        return loaded.estimate(self._input_price) > self._max_bill_cost
+        return loaded.estimate(price) > limit
 
     def bare_supplement(
         self, document: TextDocument, *, number: str, title: str
@@ -573,15 +540,11 @@ class AnalysisService:
                 }
             )
             return _Prepared(bill, located, text, source, pointer, first=False, unchanged=True)
-        if previous is not None and self._run_budget_reached():
+        if previous is not None and self._ledger.exhausted:
             # The per-bill guard does not apply to a re-analysis, but the run's budget does: a
             # bill whose text is not read now keeps the analysis and the `source_url` it had, so
             # the next run sees the same new document and reads it then.
-            self._stopped = (
-                f"run cost limit reached (≈{format_usd(self._spent)} ≥"
-                f" {format_usd(self._max_run_cost)});"
-                " the new text(s) wait for the next run"
-            )
+            self._ledger.stop("the new text(s) wait for the next run")
             return _Prepared(bill, located, text, source, previous, first=False, deferred=True)
         meta = located.summary or bill.summary
         triage: TriageRecord | None = None
@@ -606,7 +569,7 @@ class AnalysisService:
         if cost_guard:
             ctx = self._fit_to_budget(ctx, loaded, first=previous is None)
         record = self._llm.analyze(ctx)
-        self._charge(
+        self._ledger.charge(
             record, number=bill.number, kind="analysis" if previous is None else "reanalysis"
         )
         record.source_url = document.url if document else None
@@ -639,27 +602,28 @@ class AnalysisService:
         every run, with no `skipped_cost` row and no `reset` to undo, and keep a card that
         describes the text before this one.
         """
-        if not self._max_bill_cost or self._input_price is None:
+        limit, price = self._options.max_bill_cost_usd, self._options.input_price_usd_per_mtok
+        if not limit or price is None:
             return ctx
         if loaded.scan is not None:
-            cost = loaded.estimate(self._input_price)
-            if cost > self._max_bill_cost and first:
-                raise TooExpensiveError(cost, self._max_bill_cost, measure=loaded.measure(None))
+            cost = loaded.estimate(price)
+            if cost > limit and first:
+                raise TooExpensiveError(cost, limit, measure=loaded.measure(None))
             return ctx
         tokens = self._llm.count_input_tokens(ctx)
         if tokens is None:
-            cost = loaded.estimate(self._input_price)
-            if cost > self._max_bill_cost and first:
-                raise TooExpensiveError(cost, self._max_bill_cost, measure=loaded.measure(None))
+            cost = loaded.estimate(price)
+            if cost > limit and first:
+                raise TooExpensiveError(cost, limit, measure=loaded.measure(None))
             return ctx
-        cost = input_cost(tokens, self._input_price)
-        if cost <= self._max_bill_cost:
+        cost = input_cost(tokens, price)
+        if cost <= limit:
             return ctx
-        shorter = self._shorten(ctx.text, over_by=cost / self._max_bill_cost)
+        shorter = self._shorten(ctx.text, over_by=cost / limit)
         if shorter is None:
             if not first:
                 return ctx
-            raise TooExpensiveError(cost, self._max_bill_cost, measure=loaded.measure(tokens))
+            raise TooExpensiveError(cost, limit, measure=loaded.measure(tokens))
         reduced = ctx.model_copy(update={"text": shorter, "truncated": True})
         counted = self._llm.count_input_tokens(reduced)
         log.info(
@@ -667,18 +631,14 @@ class AnalysisService:
             ctx.number,
             tokens,
             format_usd(cost),
-            format_usd(self._max_bill_cost),
+            format_usd(limit),
             len(shorter),
             len(ctx.text),
         )
-        if (
-            first
-            and counted is not None
-            and input_cost(counted, self._input_price) > self._max_bill_cost
-        ):
+        if first and counted is not None and input_cost(counted, price) > limit:
             raise TooExpensiveError(
-                input_cost(counted, self._input_price),
-                self._max_bill_cost,
+                input_cost(counted, price),
+                limit,
                 measure=f"{counted} tokens after trimming to {len(shorter)} chars",
             )
         return reduced
@@ -711,7 +671,8 @@ class AnalysisService:
         """
         if loaded.scan is not None:
             return True
-        return loaded.source in FULL_TEXT_SOURCES and len(loaded.text) >= self._triage_min_chars
+        long_enough = len(loaded.text) >= self._options.triage_min_chars
+        return loaded.source in FULL_TEXT_SOURCES and long_enough
 
     def _triage_verdict(
         self, bill: Bill, meta: ProcessSummary, text: str, scan: ScannedDocument | None = None
@@ -733,7 +694,9 @@ class AnalysisService:
         if self._triage is None:
             return None, None
         window = (
-            self._loader.first_pages(scan, self._triage_scan_pages) if scan is not None else None
+            self._loader.first_pages(scan, self._options.triage_scan_pages)
+            if scan is not None
+            else None
         )
         shown = window or scan
         ctx = TriageContext(
@@ -746,8 +709,8 @@ class AnalysisService:
             scan=shown,
         )
         verdict = self._llm.triage(ctx)
-        self._charge(verdict, number=bill.number, kind="triage")
-        if not verdict.rejects(min_confidence=self._triage_min_confidence):
+        self._ledger.charge(verdict, number=bill.number, kind="triage")
+        if not verdict.rejects(min_confidence=self._options.triage_min_confidence):
             log.info(
                 "%s passes triage (%s, %.2f): full analysis",
                 bill.number,
