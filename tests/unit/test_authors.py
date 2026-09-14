@@ -19,6 +19,27 @@ Projekt
 U S T AWA
 """
 
+# Друк 72 term 10, как его отдаёт pypdf: письмо называет представителя в винительном падеже с
+# «pana posła», подпись Barbary Oliwieckiej перенесена через конец страницы, а «Pietrzc zyk» и
+# «Okła -Drewnowicz» — разрядка, которую экстрактор оставляет внутри фамилии.
+DEPUTIES_LETTER = """Do reprezentowania wnioskodawców w pracach nad projektem ustawy
+upoważniamy pana posła Krzysztofa Gadowskiego.
+
+ (-)  Marzena Okła -Drewnowicz;  (-)  Barbara Okuła;  (-)  Barbara
+
+\x0cOliwiecka;  (-)  Łukasz Osma lak;  (-)  Lucjan
+Marek Pietrzc zyk.
+
+                Tłoczono z polecenia  Marszałka Sejmu Rzeczypospolitej Polskiej
+"""
+
+# Друк 92 term 10: письмо уполномочивает двоих, карточка называет первого.
+TWO_REPRESENTATIVES = """Do reprezentowania wnioskodawców w pracach nad projektem ustawy
+upoważniamy panów posłów Pawła Śliza i Michała Gramatykę.
+
+(-) Paweł Śliz.
+"""
+
 MPS = (
     Mp(
         id=1,
@@ -46,6 +67,18 @@ MPS = (
         id=4, first_name="Paweł", last_name="Śliz", accusative_name="Pawła Śliza", club="Polska2050"
     ),
     Mp(id=5, first_name="Jan", last_name="Kowalski", club="KO"),
+    Mp(
+        id=6,
+        first_name="Krzysztof",
+        last_name="Gadowski",
+        accusative_name="Krzysztofa Gadowskiego",
+        club="KO",
+    ),
+    Mp(id=7, first_name="Barbara", last_name="Oliwiecka", club="Polska2050"),
+    Mp(id=8, first_name="Łukasz", last_name="Osmalak", club="Polska2050"),
+    Mp(id=9, first_name="Lucjan", second_name="Marek", last_name="Pietrzczyk", club="KO"),
+    Mp(id=10, first_name="Marzena", last_name="Okła-Drewnowicz", club="KO"),
+    Mp(id=11, first_name="Barbara", last_name="Okuła", club="KO"),
 )
 
 
@@ -80,3 +113,33 @@ def test_directory_resolves_clubs_middle_names_and_accusative_forms() -> None:
     assert authors.representative_club == "Lewica"
     assert authors.clubs == (("Lewica", 3), ("KO", 1))
     assert authors.signatories == 5 and authors.unresolved == 1
+
+
+def test_the_representative_is_named_the_way_the_letters_name_him() -> None:
+    """«upoważniamy pana posła X» in the accusative is the formula 332 of the 334 letters of
+    term 10 use; the nominative «upoważniony poseł X» the committee's letter uses is the other."""
+    letter = parse_cover_letter(DEPUTIES_LETTER)
+    assert letter.representative == "Krzysztofa Gadowskiego"
+    authors = MpDirectory.from_mps(MPS).resolve(letter)
+    assert authors.representative == "Krzysztof Gadowski"
+    assert authors.representative_club == "KO"
+
+
+def test_the_first_of_several_representatives_is_the_one_named() -> None:
+    letter = parse_cover_letter(TWO_REPRESENTATIVES)
+    assert letter.representative == "Pawła Śliza"
+    assert MpDirectory.from_mps(MPS).resolve(letter).representative == "Paweł Śliz"
+
+
+def test_a_signature_wrapped_at_the_end_of_a_page_keeps_its_surname() -> None:
+    letter = parse_cover_letter(DEPUTIES_LETTER)
+    assert "Barbara Oliwiecka" in letter.signatories
+    assert "Barbara" not in letter.signatories
+
+
+def test_a_surname_the_extractor_split_still_finds_its_club() -> None:
+    """pypdf leaves a space inside a surname; 130 signatures of term 10 are only resolved by
+    matching the name with its spaces gone."""
+    authors = MpDirectory.from_mps(MPS).resolve(parse_cover_letter(DEPUTIES_LETTER))
+    assert authors.signatories == 5 and authors.unresolved == 0
+    assert dict(authors.clubs) == {"KO": 3, "Polska2050": 2}
