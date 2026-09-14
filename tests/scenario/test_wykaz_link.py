@@ -1,5 +1,7 @@
 """A plan's project appears on RCL: one thread, one card, and the text is finally read."""
 
+import datetime as dt
+
 from lexinform.models import BillStatus, PublicationKind
 from tests.fakes import make_analysis
 from tests.harness import RCL, WYKAZ, World, rcl_project, wykaz_entry
@@ -23,6 +25,31 @@ def test_the_project_of_a_followed_plan_inherits_its_card_instead_of_getting_one
     # The card is re-rendered once so that the thread's root carries both numbers.
     assert [number for _, number in ((b.number, m) for b, m in w.publisher.edits)] == [card]
     assert w.publisher.edits[0][0].number == WYKAZ
+
+
+def test_a_plan_claims_a_project_the_listing_no_longer_shows_as_changed() -> None:
+    """The listing shows a project when it moves, and RCL discovery is what hands it to the plan
+    — so a project published before the plan was followed, or quiet since, would never reach it
+    and the card would go on saying there is no text. The numbers RCL has published are written
+    down for every row of the listing (`index-rcl-numbers` fills in the years before the bot),
+    and the plan claims its own in tracking, whatever the listing shows today.
+    """
+    w = World()
+    w.add_wykaz_entry()
+    w.run()
+    card = w.card_id(WYKAZ)
+    project = rcl_project(wykaz_number="UD408", created=dt.date(2026, 9, 2))
+    w.add_rcl_project(project)
+    w.rcl.listing.clear()  # it has not moved since; the walk of this run will not show it
+    w.repo.remember_rcl_wykaz_number("UD408", project.id, project.created)
+
+    report = w.run()
+
+    assert report.linked == 1
+    inherited = w.publication(RCL)
+    assert inherited is not None and inherited.message_id == card
+    assert len(w.publisher.new_bills) == 1  # no second card for the same bill
+    assert w.bill(WYKAZ).status is BillStatus.LINKED
 
 
 def test_the_text_is_analysed_when_the_project_brings_one() -> None:

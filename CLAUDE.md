@@ -553,7 +553,26 @@ Invariants worth keeping:
   with the same `message_id`) and **re-analyses from the documents** — the plan was judged on an
   announcement, and that judgement must not decide the fate of the row that has the text. Ingesting
   the project in discovery instead would post a second card: `publishing`'s inheritance keys on a
-  link that does not exist until the linker runs.
+  link that does not exist until the linker runs. **The listing is the only place that join is
+  published, so every row of it is written down, followed or not** (v22 `rcl_wykaz_numbers`,
+  filled by `RclDiscoveryService._remember_number` at no extra request, and by
+  `lexinform index-rcl-numbers --since` for the years before this bot — listing pages only, no
+  timeline, no catalog, no tokens; the daily workflow takes it as `index_rcl_since`). Two rules
+  read it. A plan whose project is **already out gets no card**: the card says "there is no text
+  yet" and nothing ever takes that back, because the linker only sees a project the listing shows
+  as *changed* — and a project can sit untouched for a year (UD344's since January 2026). And a
+  followed plan **claims a project the listing no longer shows**
+  (`WykazWatcher._stamp_projects_already_listed`), which is how a project published before the
+  plan was followed reaches its thread at all. **The number alone does not identify the project:
+  the register reuses its numbers** — UD368 named a Centralny Port Komunikacyjny project in 2018
+  and the Karta Polaka plan in 2026, and 61 of the 659 numbers RCL has listed since 2025 carry
+  more than one project — so a plan takes only a project created on or after the day it was
+  announced, and a row whose creation date the listing did not give matches nothing. Measured on
+  the register of 14 Sept 2026: of the 56 entries the keywords accept, 34 are already realised or
+  withdrawn, 7 are projects this bot follows, **12 have a project on RCL it does not follow** (the
+  ones this rule stops) and 3 are still plans — UD368, UD338 and UD431, which are the three in the
+  channel. The 12 are an RCL question, not a wykaz one: they are projects with a text that the
+  bot never walked.
 - **RCL markup is parsed, not matched.** `adapters/rcl_html.py` uses CSS selectors; a missing
   detail (date, folder, link) is tolerated, a missing structural element (timeline, table with rows
   announced, every stage label) raises `RclPageError`, which the run report shows. The WAF's
@@ -605,7 +624,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS` tuple
 in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v21 as of Sept 2026). `migrate()` reads `user_version` and runs
+`SCHEMA_VERSION = len(MIGRATIONS)` (v22 as of Sept 2026). `migrate()` reads `user_version` and runs
 every later script inside its own transaction, stamping the new version at the end, so a failed
 script leaves the database at the previous version.
 
@@ -627,7 +646,10 @@ sitting that is called off is taken back once); v20 `bills.joint_json` (how a pr
 the others considered jointly with it, as the reply under their card says it — stored so a retry,
 a `/preview` and a `/republish` do not pay for the comparison again); v21 the end of the
 `skipped_joint` status — the rule that set it is gone, so a row of an older dump that carries the
-word goes back to `analysis_pending` rather than failing to load.
+word goes back to `analysis_pending` rather than failing to load; v22 `rcl_wykaz_numbers` (which
+RCL project carries which number of the wykaz prac RM, for every row of the listing and not only
+for the projects this bot follows, with the project's creation date because the register reuses
+its numbers).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) → `db
 restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing `PRAGMA

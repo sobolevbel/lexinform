@@ -549,6 +549,18 @@ class BillRepository(Protocol):
 
     def save_wykaz(self, term: int, number: str, entry: WykazEntry) -> None: ...
 
+    def remember_rcl_wykaz_number(
+        self, wykaz_number: str, project_id: int, created: date | None
+    ) -> None:
+        """Note that this RCL project carries this number of the wykaz prac RM — for every row
+        of the listing, followed or not: it is the only join between a plan and its project."""
+        ...
+
+    def find_rcl_project_of_plan(self, wykaz_number: str, announced: date) -> int | None:
+        """The project published under a plan's number since the plan was announced, if any.
+        The register reuses its numbers, so the date is part of the question."""
+        ...
+
     def list_wykaz_awaiting_link(self) -> list[Bill]:
         """Wykaz rows whose project RCL discovery has seen but that are not linked to it yet."""
         ...

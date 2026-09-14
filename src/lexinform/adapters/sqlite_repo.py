@@ -249,6 +249,21 @@ MIGRATIONS: tuple[str, ...] = (
     UPDATE bills SET status = 'analysis_pending', analysis_attempts = 0
         WHERE status = 'skipped_joint';
     """,
+    # v22: which RCL project carries which number of the wykaz prac RM, for every row of the
+    # listing and not only for the projects this bot follows — the join that tells a plan still
+    # worth a card from one whose project has been public for a year. The number alone does not
+    # identify the project (the register reuses its numbers: UD368 named a CPK project in 2018
+    # and a Karta Polaka plan in 2026), so the row keeps the project's creation date and a plan
+    # only takes a project created on or after the day the plan was announced.
+    """
+    CREATE TABLE rcl_wykaz_numbers (
+        wykaz_number TEXT NOT NULL,
+        project_id INTEGER NOT NULL,
+        created TEXT,
+        PRIMARY KEY (wykaz_number, project_id)
+    );
+    CREATE INDEX ix_rcl_wykaz_numbers_number ON rcl_wykaz_numbers(wykaz_number);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -883,6 +898,30 @@ class SqliteBillRepository:
 
     def find_by_wykaz_number(self, wykaz_number: str) -> Bill | None:
         return self._find_rcl("$.wykaz_number", wykaz_number)
+
+    def remember_rcl_wykaz_number(
+        self, wykaz_number: str, project_id: int, created: date | None
+    ) -> None:
+        self._conn.execute(
+            "INSERT INTO rcl_wykaz_numbers(wykaz_number, project_id, created) VALUES (?, ?, ?)"
+            " ON CONFLICT(wykaz_number, project_id)"
+            " DO UPDATE SET created = COALESCE(excluded.created, created)",
+            (wykaz_number, project_id, created.isoformat() if created else None),
+        )
+
+    def find_rcl_project_of_plan(self, wykaz_number: str, announced: date) -> int | None:
+        """The newest project published under this number since the plan was announced.
+
+        A project older than the plan is a different bill that held the number before it, and a
+        row whose creation date the listing did not give matches nothing: the price of a wrong
+        link is a thread about one bill under the card of another.
+        """
+        row = self._conn.execute(
+            "SELECT project_id FROM rcl_wykaz_numbers WHERE wykaz_number = ? AND created >= ?"
+            " ORDER BY created DESC, project_id DESC LIMIT 1",
+            (wykaz_number, announced.isoformat()),
+        ).fetchone()
+        return int(row[0]) if row else None
 
     def _find_rcl(self, path: str, value: str) -> Bill | None:
         row = self._conn.execute(

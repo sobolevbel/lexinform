@@ -77,6 +77,7 @@ class RclDiscoveryService:
         new_rows: list[RclProjectSummary] = []
         for row in self._rcl.list_projects(modified_since=since.date()):
             result.seen += 1
+            self._remember_number(row)
             existing = self._repo.find_rcl(rcl_number(row.id))
             if existing is None:
                 if self._continues_a_plan(row, result):
@@ -110,6 +111,26 @@ class RclDiscoveryService:
             result.failed,
         )
         return result
+
+    def index_numbers(self, since: dt.date) -> int:
+        """Walk the listing and only write down which project carries which wykaz number.
+
+        The listing is the one place that join is published, and reading it costs nothing beyond
+        the pages themselves — no timeline, no catalog. A run does this as it goes; this is the
+        way to fill in the years before the bot, which is what tells a plan still worth a card
+        from one whose project has been on RCL since 2025.
+        """
+        seen = 0
+        for row in self._rcl.list_projects(modified_since=since):
+            seen += 1
+            self._remember_number(row)
+        log.info("RCL numbers indexed: %d row(s) since %s", seen, since)
+        return seen
+
+    def _remember_number(self, row: RclProjectSummary) -> None:
+        number = normalize_wykaz_number(row.wykaz_number)
+        if number is not None:
+            self._repo.remember_rcl_wykaz_number(number, row.id, row.created)
 
     def _continues_a_plan(self, row: RclProjectSummary, result: RclDiscoveryResult) -> bool:
         """A project published under the number of a plan we follow: stamp it on the plan and

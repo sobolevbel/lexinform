@@ -96,6 +96,20 @@ those; the invariants that govern *when* they run stay in `CLAUDE.md`.
   `/projekt/{id}/komentarz` (captcha).
 - Join: `/processes` `rclNum="RM-0610-81-26"`, `rclLink=…/getIdFromLegislacja?number=…` → 302 to
   `/projekt/{id}`.
+- **The join to a plan of the wykaz is the listing's own column and nothing else** (14 Sept 2026).
+  The search form has a `number` field and `/lista?typeId=2&number=UD344` answers, but it is not
+  that column and it is not exact: it returned two rows for UD344 and **missed** the projects of
+  UD263 (12413302) and UD329 (12407104) that a plain walk of the listing finds under exactly those
+  numbers. So the join is read where the parser already reads it — `RclProjectSummary.wykaz_number`
+  on every row — and kept in `rcl_wykaz_numbers` (v22); `lexinform index-rcl-numbers --since`
+  walks the listing for that and nothing else (725 rows back to 2025-01-01 in ~2 minutes, no
+  timeline, no catalog).
+- **The register reuses its numbers, so a number names a project only together with a date.**
+  UD368 is a Centralny Port Komunikacyjny project of 2018, a ubezpieczenia społeczne one of 2022
+  and the Karta Polaka plan of 2026; UD344 names a Służba Więzienna project of 2018 beside the
+  Kodeks karny project of 2025. Over the 720 listed rows since 2025-01-01, 61 of the 659 numbers
+  carry more than one project. A plan therefore takes only a project **created on or after the day
+  the plan was announced**.
 
 
 ## Wykaz prac RM lessons (verified live, 12 Sept 2026)

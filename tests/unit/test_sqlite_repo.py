@@ -777,6 +777,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert "supplements_json" in changes  # v18
     assert "commands" in tables  # v13
     assert "executed_at" in commands  # v14
+    assert "rcl_wykaz_numbers" in tables  # v22
     # v9: the flag is stored, so a retried post renders the same message
     when = datetime(2026, 9, 7, 6, 0, tzinfo=UTC)
     assert repo.add_status_change(_change("1", when, discontinued=True)) is not None
@@ -1020,7 +1021,11 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
     source.upsert_summary(process, now=now)
     with sqlite3.connect(tmp_path / "old.db") as conn:
         conn.execute("UPDATE bills SET status = 'skipped_joint', analysis_attempts = 2")
-        conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION - 1}")
+        # A database of that day, and not one of today with an older number written on it:
+        # v20 is the version v21 was written against, and the table v22 adds is not in it, or
+        # the restore would replay that migration over a table the dump had already created.
+        conn.execute("DROP TABLE rcl_wykaz_numbers")
+        conn.execute("PRAGMA user_version = 20")
     dump = source.dump()
     source.close()
     repo = SqliteBillRepository(tmp_path / "current.db")

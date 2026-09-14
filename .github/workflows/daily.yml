@@ -44,6 +44,10 @@ on:
         description: "Before the run, scan the texts of up to N bills the title prefilter skipped (0 = off)"
         required: false
         default: "0"
+      index_rcl_since:
+        description: "Before the run, read the RCL listing back to this date (YYYY-MM-DD) and write down which project carries which wykaz number. Listing pages only, no tokens."
+        required: false
+        default: ""
 
 # One run at a time so two runs never race on the state branch. A pending run is replaced by a
 # newer one (GitHub keeps one pending run per group): harmless, because every run drains the
@@ -142,12 +146,18 @@ jobs:
           LEXINFORM_RCL_PROXY_URL: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
           LEXINFORM_LOG_LEVEL: INFO
           INPUT_SINCE: ${{ inputs.since }}
+          INPUT_INDEX_RCL_SINCE: ${{ inputs.index_rcl_since }}
           INPUT_DRY_RUN: ${{ inputs.dry_run }}
           EVENT_NAME: ${{ github.event_name }}
           INBOX_PRESENT: ${{ steps.inbox.outputs.present }}
         run: |
           set -euo pipefail
           if [ "$INBOX_PRESENT" != "true" ]; then unset LEXINFORM_INBOX_DIR; fi
+          # The join between a plan of the wykaz and its project on RCL is published in the
+          # listing and nowhere else, so the years before this bot have to be read once.
+          if [ -n "${INPUT_INDEX_RCL_SINCE:-}" ]; then
+            uv run --frozen --no-dev lexinform index-rcl-numbers --since "$INPUT_INDEX_RCL_SINCE"
+          fi
           if [ "$EVENT_NAME" = "repository_dispatch" ]; then
             uv run --frozen --no-dev lexinform commands
             exit 0

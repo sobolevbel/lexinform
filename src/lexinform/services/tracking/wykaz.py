@@ -164,6 +164,7 @@ class WykazWatcher:
     def check(self, bills: list[Bill], result: TrackingResult, *, publish: bool) -> bool:
         """Re-read the register for the followed plans and post what the government decided;
         link the ones whose project is out. False when Telegram is down."""
+        self._stamp_projects_already_listed(bills)
         if not self._link_pending(result, publish=publish):
             return False
         followed = [b for b in bills if b.wykaz is not None]
@@ -213,6 +214,29 @@ class WykazWatcher:
             result.abort(exc, failed=True)
             return False
         return True
+
+    def _stamp_projects_already_listed(self, bills: list[Bill]) -> None:
+        """Plans whose project RCL has listed but never shown as changed since we started.
+
+        `RclDiscoveryService._continues_a_plan` stamps a project the listing hands it, and the
+        listing only hands it the projects modified since the watermark — so a project published
+        before this bot, or one untouched for months, would never reach the plan it continues
+        and the card would go on saying there is no text. The numbers RCL has published are
+        written down for every row of the listing, and this is where a plan claims its own.
+        """
+        for bill in bills:
+            entry = bill.wykaz
+            if entry is None or entry.rcl_project_id is not None:
+                continue
+            project_id = self._repo.find_rcl_project_of_plan(
+                entry.number, entry.published_at.date()
+            )
+            if project_id is None:
+                continue
+            self._repo.save_wykaz(
+                bill.term, bill.number, entry.model_copy(update={"rcl_project_id": project_id})
+            )
+            log.info("RCL %d is the project of the planned bill %s", project_id, bill.number)
 
     def _link_pending(self, result: TrackingResult, *, publish: bool) -> bool:
         """Plans whose project the RCL discovery has seen: the project takes over the thread."""

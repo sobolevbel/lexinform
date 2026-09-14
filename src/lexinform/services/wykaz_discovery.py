@@ -28,6 +28,7 @@ class WykazDiscoveryResult:
     prefilter_hits: int = 0
     backlog: int = 0
     over: int = 0
+    on_rcl: int = 0
 
 
 class WykazDiscoveryService:
@@ -73,14 +74,26 @@ class WykazDiscoveryService:
             if self._repo.find_by_wykaz_number(entry.number) is not None:
                 log.info("wykaz %s: already followed as an RCL project", entry.number)
                 continue
+            project_id = self._repo.find_rcl_project_of_plan(
+                entry.number, entry.published_at.date()
+            )
+            if project_id is not None:
+                log.info(
+                    "wykaz %s: its project is out on RCL (%d), the plan is not followed",
+                    entry.number,
+                    project_id,
+                )
+                result.on_rcl += 1
+                continue
             self._ingest(term, entry, hits, result)
         log.info(
-            "wykaz discovery: seen=%d new=%d prefilter_hits=%d backlog=%d over=%d",
+            "wykaz discovery: seen=%d new=%d prefilter_hits=%d backlog=%d over=%d on_rcl=%d",
             result.seen,
             result.new,
             result.prefilter_hits,
             result.backlog,
             result.over,
+            result.on_rcl,
         )
         return result
 

@@ -239,6 +239,37 @@ def reprefilter(
     typer.echo(f"scanned={len(skipped)} accepted={accepted}")
 
 
+@app.command(name="index-rcl-numbers")
+def index_rcl_numbers(
+    since: Annotated[
+        datetime,
+        typer.Option(
+            "--since",
+            formats=["%Y-%m-%d"],
+            help="Read the listing back to this date (the register's numbers are reused, so the"
+            " oldest date worth indexing is the oldest plan that could still be waiting).",
+        ),
+    ],
+) -> None:
+    """Write down which RCL project carries which number of the wykaz prac RM.
+
+    Listing pages only — no timeline, no catalog, so this costs minutes and no tokens. A run
+    does it for the projects it walks anyway; this fills in the years before the bot, which is
+    what stops a plan whose project has been public since 2025 from getting a card that says
+    there is no text yet.
+    """
+    c = _container()
+    try:
+        service = c.rcl_discovery_service()
+        if service is None:
+            typer.echo("RCL is disabled (LEXINFORM_RCL_ENABLED)", err=True)
+            raise typer.Exit(code=2)
+        seen = service.index_numbers(since.date())
+    finally:
+        c.close()
+    typer.echo(f"indexed={seen}")
+
+
 def _with_rcl_text(c: Container, bill: Bill) -> Bill:
     """A skipped RCL row keeps only the project's skeleton: read its newest text again."""
     reader = c.rcl_reader()

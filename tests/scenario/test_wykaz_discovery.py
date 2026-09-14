@@ -3,7 +3,7 @@
 import datetime as dt
 
 from lexinform.models import BillStatus
-from tests.harness import RCL, WYKAZ, World, rcl_project, wykaz_entry
+from tests.harness import RCL, RCL_ID, WYKAZ, World, rcl_project, wykaz_entry
 
 OLD = dt.datetime(2026, 5, 12, 15, 21, tzinfo=dt.UTC)  # published before the run's watermark
 
@@ -85,6 +85,50 @@ def test_a_plan_whose_project_is_already_followed_on_rcl_does_not_start_a_second
     assert report.wykaz_discovered == 0
     assert w.repo.find_wykaz(WYKAZ) is None
     assert w.publication(RCL) is not None
+
+
+def test_the_numbers_rcl_has_published_are_written_down_from_the_listing_alone() -> None:
+    """The listing is the one place that join is published, and reading it costs nothing beyond
+    the pages: no timeline, no catalog, no row in the database."""
+    w = World()
+    w.add_rcl_project(rcl_project(wykaz_number="UD408", created=dt.date(2026, 9, 2)))
+    service = w.container.rcl_discovery_service()
+    assert service is not None
+
+    indexed = service.index_numbers(dt.date(2026, 1, 1))
+
+    assert indexed == 1
+    assert w.repo.find_rcl_project_of_plan("UD408", dt.date(2026, 9, 1)) == RCL_ID
+    assert w.repo.find_rcl(RCL) is None  # the walk stores no bill
+    assert w.rcl.calls == ["list_projects"]
+
+
+def test_a_plan_whose_project_rcl_published_already_gets_no_card() -> None:
+    """A card for a plan says there is no text yet, and nothing ever takes that back: the linker
+    only sees a project the listing shows as changed, and a project can sit untouched for a year
+    (UD344's has since January 2026). So the question is asked of every number RCL has published,
+    not only of the projects this bot follows."""
+    w = World()
+    w.repo.remember_rcl_wykaz_number("UD408", RCL_ID, dt.date(2026, 9, 2))
+    w.add_wykaz_entry()  # announced 2026-09-01, the day before the project came out
+
+    report = w.run()
+
+    assert (report.wykaz_discovered, report.published) == (0, 0)
+    assert w.repo.find_wykaz(WYKAZ) is None
+
+
+def test_a_project_older_than_the_plan_held_the_number_before_it() -> None:
+    """The register reuses its numbers: UD368 named a Centralny Port Komunikacyjny project in
+    2018 and the Karta Polaka plan in 2026. Only a project published since the plan was announced
+    can be the project of that plan."""
+    w = World()
+    w.repo.remember_rcl_wykaz_number("UD408", 12310959, dt.date(2018, 4, 27))
+    w.add_wykaz_entry()
+
+    report = w.run()
+
+    assert (report.wykaz_discovered, report.published) == (1, 1)
 
 
 def test_rozporzadzenia_and_programmes_are_read_but_not_followed() -> None:
