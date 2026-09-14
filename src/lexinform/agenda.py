@@ -65,17 +65,49 @@ def items_mentioning(fragment: str, numbers: set[str] | frozenset[str]) -> list[
     """Agenda items naming any of `numbers`, clipped for a Telegram post."""
     wanted = {n.split("-")[0] for n in numbers}
     return [
-        _clip(item, ITEM_MAX_CHARS)
+        _clip(item, ITEM_MAX_CHARS, keeping=wanted)
         for item in agenda_items(fragment)
         if print_numbers(item) & wanted
     ]
 
 
-def _clip(text: str, limit: int) -> str:
+def _clip(text: str, limit: int, *, keeping: set[str] | None = None) -> str:
+    """The item cut to `limit`, with the print reference that made it worth showing still in it.
+
+    The Sejm names the print at the end of the item ("… oraz niektórych innych ustaw (druk nr
+    1234)"), and a long title pushes it past the cut: 65 of the 4,040 agenda items of term 10 that
+    name a print were shown to the reader with the number gone, so the quoted line no longer said
+    what the post was about. Where that happens the tail is kept beside the head.
+    """
     if len(text) <= limit:
         return text
-    cut = text[: limit - 1]
+    head = _cut_at_a_space(text, limit)
+    if not keeping or print_numbers(head) & keeping:
+        return head.rstrip(" ,;:") + "…"
+    tail = _tail_with_a_number(text, keeping, limit // 2)
+    if not tail:
+        return head.rstrip(" ,;:") + "…"
+    head = _cut_at_a_space(text, limit - len(tail) - 2)
+    return f"{head.rstrip(' ,;:')}… {tail}"
+
+
+def _cut_at_a_space(text: str, limit: int) -> str:
+    cut = text[: max(limit - 1, 1)]
     space = cut.rfind(" ")
-    if space > limit // 2:
-        cut = cut[:space]
-    return cut.rstrip(" ,;:") + "…"
+    return cut[:space] if space > limit // 2 else cut
+
+
+def _tail_with_a_number(text: str, wanted: set[str], limit: int) -> str:
+    """A window of at most `limit` characters around the first wanted print reference."""
+    for match in _DRUK.finditer(text):
+        if not {n.split("-")[0] for n in _NUMBER.findall(match.group(1))} & wanted:
+            continue
+        start = max(0, match.start() - limit // 3)
+        space = text.find(" ", start)
+        if 0 <= space < match.start():
+            start = space + 1
+        window = text[start : start + limit]
+        if start + limit >= len(text):
+            return window
+        return _cut_at_a_space(window, limit).rstrip(" ,;:") + "…"
+    return ""

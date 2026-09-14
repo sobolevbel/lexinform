@@ -55,3 +55,28 @@ def test_long_items_are_clipped_at_a_word_boundary() -> None:
     long_item = "<li>Sprawozdanie (druk nr 1) " + "słowo " * 200 + "</li>"
     [clipped] = items_mentioning(long_item, {"1"})
     assert len(clipped) <= 401 and clipped.endswith("…") and not clipped.endswith(" …")
+
+
+def test_a_print_named_at_the_end_of_a_long_item_survives_the_clip() -> None:
+    """The Sejm names the print last, and a long title used to push it past the cut: 65 of the
+    4,040 agenda items of term 10 that name a print were quoted without it."""
+    item = (
+        "<li>Pierwsze czytanie projektu ustawy " + "o zmianie ustawy " * 40 + "(druk nr 1486)</li>"
+    )
+    [clipped] = items_mentioning(item, {"1486"})
+    assert len(clipped) <= 401
+    assert print_numbers(clipped) == {"1486"}
+    assert clipped.startswith("Pierwsze czytanie projektu") and "… " in clipped
+
+
+def test_a_print_named_in_the_middle_of_a_long_item_survives_with_what_follows_it() -> None:
+    item = (
+        "<li>Rozpatrzenie sprawozdania "
+        + "o zmianie ustawy " * 30
+        + "(druk nr 232) "
+        + "oraz innych ustaw " * 30
+        + "</li>"
+    )
+    [clipped] = items_mentioning(item, {"232"})
+    assert len(clipped) <= 401 and print_numbers(clipped) == {"232"}
+    assert clipped.endswith("…")
