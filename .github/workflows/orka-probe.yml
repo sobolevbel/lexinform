@@ -125,3 +125,46 @@ jobs:
         run: |
           curl -sS -o /dev/null -w "sejm api http=%{http_code} total=%{time_total}s\n" \
             --max-time 30 -A "$OURS" https://api.sejm.gov.pl/sejm/term
+
+      # 2026-09-14: from this runner curl still gets the PDF, while the production client (httpx,
+      # HTTP/1.1) is answered 403 from the same address. These steps separate the two axes:
+      # the protocol (curl --http1.1 against the default HTTP/2) and the client itself.
+      - name: The same file over HTTP/1.1, which is what our client speaks
+        run: |
+          set +e
+          TERM=$(cat /tmp/term)
+          NUM=$(head -1 /tmp/rpw.txt)
+          SLUG="$TERM-$(echo "$NUM" | tr '/' '-')"
+          URL="https://orka.sejm.gov.pl/Druki${TERM}ka.nsf/Projekty/$SLUG/\$file/$SLUG.pdf"
+          for proto in --http2 --http1.1; do
+            rm -f /tmp/jar
+            echo "--- $proto"
+            curl -sS -L $proto -c /tmp/jar -b /tmp/jar -o /tmp/body -w "  $FMT" --max-time 120 \
+              -A "$BROWSER" -H 'Accept: text/html,application/xhtml+xml,*/*;q=0.8' \
+              -H 'Accept-Language: pl-PL,pl;q=0.9' "$URL"
+            echo "  first bytes: $(head -c 4 /tmp/body | tr -d '\0')"
+          done
+
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: The production client itself
+        run: |
+          set +e
+          uv sync --frozen
+          TERM=$(cat /tmp/term)
+          NUM=$(head -1 /tmp/rpw.txt)
+          uv run python - "$TERM" "$NUM" <<'PY'
+          import sys
+          from lexinform.adapters.orka import OrkaClient
+          from lexinform.models import submission_pdf_url
+          term, number = int(sys.argv[1]), sys.argv[2]
+          url = submission_pdf_url(term, number)
+          print(url)
+          try:
+              body = OrkaClient().download(url)
+              print("  OrkaClient:", len(body), body[:4])
+          except Exception as exc:
+              print(f"  OrkaClient: {type(exc).__name__}: {exc}")
+          PY
