@@ -67,7 +67,9 @@ linking, acts, consultations, agenda, posting, stages), pipeline) → `container
 incl. `TextBudget`, `agenda`, `authors`, `rcl_letters`, `concurrency`), never adapters; the
 generic services (analysis, text prefilter, formatter, `next_phase`) never branch on the source:
 they read `Bill.has_process`, `Bill.consultation`, `Bill.rcl`, `Bill.wykaz` and the
-`TextSource` port. Tests
+`TextSource` port. `tests/unit/` is one
+module under test, `tests/scenario/` the whole pipeline over the fakes (a test that calls
+`World()` belongs there, whatever it is about), `tests/integration/` the live systems. Tests
 use fakes in `tests/fakes.py` and the `World` harness in `tests/harness.py`, which builds the real
 `Container` from a `Settings` naming the fake hosts, so the wiring under test is the daily run's
 (`container.py` is typed on the ports and builds each service once; `llm`, `extractor`,
