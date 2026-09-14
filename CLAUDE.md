@@ -983,6 +983,20 @@ committee is named and not coded on the card, that a status update carries the t
 every other reply, that the Dz.U. address belongs on the card and a sentence of the summary on
 the Dz.U. notice, and that the analysis never states where the bill stands — the card does, and
 only the card is re-rendered (`PROMPT_VERSION` `2026-09-v7`; old cards keep their analysis).
+The product review of 2026-09-14 read the whole road of all three sources against
+`docs/legislative-process.md` and settled four things about how a story *ends* and how a term is
+told. **A finished card says so, once**: "a finished one is left alone" now means it settles into
+«Законопроект: процесс завершён» with the ending line and no invitation, and the digest holds it
+there — the refresher used to stop one run before that, so a rejected bill's card kept «дальше:
+III чтение» and «написать в комиссию» for the life of the thread. **The Senate's silence is a
+step, not a note**: art. 121 ust. 2 makes the thirty days *zawity*, so the bill moves to the
+President rather than the card saying «рассмотрение в Сенате (до 30 дней) · 30 дней Сената
+истекли» in one line; it is the one place the bot names a stage the Sejm has not published, so
+the wording says so and the phase carries no deadline. **A date that is exact needs no apology**
+(`ToPresident` is the hand-over) and **an urgent bill is told its own term** when one runs out.
+And two messages stopped asserting what the data does not carry: «без движения» is never said of
+a step with a date of its own (a vacatio legis), and an RPW entry the listing merely stopped
+showing is «больше не отслеживается», not «отозван».
 The product review of 2026-09-12 settled the rest: a live card is
 edited in place when what it says has drifted and a finished one is not; the «Важность» line
 shows the score without the scale's legend, which read as a statement about the bill; a

@@ -295,6 +295,33 @@ Still open:
   days. Now that `_phase_started` reaches the RCL fallback the thresholds are worth measuring
   against the state branch rather than guessed at.
 
+- Left open by the product review of 14 Sept 2026 (findings and the fixes that were made:
+  `/Users/sobaleu/.claude/plans/starry-baking-willow.md`, and the commits of that day):
+  - **A sitting that is called off is never retracted.** `AgendaWatcher._post_new` posts a new
+    `(bill, sitting)` pair and `_moved_from` covers one that changed *date*; a sitting whose
+    status leaves `PLANNED`, or an agenda the bill drops out of, simply disappears from
+    `bill.agenda`. The card quietly reverts to «обычно 2–6 недель», but the reply that told the
+    reader «Заседание комиссии 15.09.2026, 08:30 · зал 24» stands unchanged, and that reply is
+    the most time-critical thing the channel sends. Needs a decision before it is built: a
+    cancellation reply of its own (a new `PublicationKind`, one formatter method and labels), or
+    an edit of the original agenda post in place the way a card is edited.
+  - **The print of an RCL project loses the consultation the project had.** `Linker._adopt`
+    carries the analysis and the `/bills` entry to the print row but not `rcl_json`, and
+    `Bill.consultation` reads the window from one of those two — so when the card flips to the
+    druk, «Общественные консультации: завершились 22.07.2026 · письмо о консультациях» and the
+    letter link go with it. For a government bill that is the only consultation window there ever
+    was. Carrying `rcl_json` over is not the fix: `Bill.rcl` being set would send the print down
+    `_rcl_phase`, re-title the card «Правительственный проект (RCL)» and put the row back in the
+    RCL watcher's listings. So it is either a column for the closed window or a one-line fact
+    derived from `rcl_num`, and which of those is worth a migration is a product call.
+  - **The RCL "what you can do" keeps its emphasis after the window shuts.** `_rcl_actions`
+    offers the comment form and the zgłoszenie zainteresowania for as long as the project is
+    `otwarty` — through the Council of Ministers and the Komisja Prawnicza. Both are legally
+    still open, so this is not wrong; but a project at `rcl_council` presents them exactly as an
+    open consultation did, and the `no_action_labels["rcl_council"]` sentence written for that
+    moment is never reached. Whether the channel should distinguish "you can still act" from
+    "you can still act, but the window that mattered has shut" is the owner's call.
+
 - Found by the widened corpus (14 Sept 2026), measured over the whole of term 10 rather than the
   45-print sample the rules were written on. Two of the three are fixed: the DSR form dropped as
   an appendix on 14 prints (`page_kind` now looks past the two-line window for that one heading),
