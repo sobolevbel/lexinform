@@ -14,7 +14,7 @@ import logging
 from dataclasses import dataclass
 
 from lexinform.concurrency import fan_out
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.keywords import WEAK_PATTERNS, KeywordPrefilter, accept_text_hits
 from lexinform.models import Bill, BillStatus
 from lexinform.ports import BillRepository, TextSource
@@ -32,13 +32,15 @@ class TextPrefilterResult:
 
     `scans` counts the bills sent on to the model because their file has pages but no text to
     search, `unreadable` those with no document, no pages either, or a download or extraction
-    that failed.
+    that failed, and `unanswered` those whose host refused to hand the file over, which is not a
+    finding about the bill and leaves it pending.
     """
 
     checked: int = 0
     hits: int = 0
     scans: int = 0
     unreadable: int = 0
+    unanswered: int = 0
     failed: int = 0
     fatal_error: str | None = None
 
@@ -48,12 +50,15 @@ class _Loaded:
     """What the prefilter has to scan: the text, or why there is none and what is there instead.
 
     `pages` is what the file holds when its text layer does not: a scan the model can still be
-    shown. `problem` is the reason there is no text, for the bill's record.
+    shown. `problem` is the reason there is no text, for the bill's record. `unanswered` says the
+    host did not hand the file over at all, which is not a fact about the bill: the row keeps its
+    pending status and the next run asks again.
     """
 
     text: str | None
     problem: str | None
     pages: int = 0
+    unanswered: bool = False
 
     @property
     def is_scan(self) -> bool:
@@ -96,22 +101,40 @@ class TextPrefilterService:
                 result.fatal_error = exc.describe()
                 log.error("aborting text prefilter phase: %s", result.fatal_error)
                 break
+            except OrkaUnreachableError as exc:
+                # The WAF in front of orka.sejm.gov.pl judges our address as well as our
+                # identity and can start refusing us with nothing changed on our side. Written
+                # off as a keyword miss, one such refusal loses the bill for good: RPW/30695/2026
+                # was skipped on 2026-09-14 by a 403 that had cleared by the afternoon, and only
+                # `reprefilter --include-text-skipped` would ever have looked at it again. A
+                # refusal is about the day, not about the bill; a 404 is about the bill, because
+                # the address is built by convention and can simply be wrong.
+                result.failed += 1
+                log.warning("text prefilter for druk %s: %s", bill.number, exc)
+                loaded = _Loaded(
+                    None,
+                    f"text prefilter: {type(exc).__name__}: {exc}",
+                    unanswered=not exc.file_is_missing,
+                )
             except Exception as exc:
                 result.failed += 1
                 log.warning("text prefilter for druk %s failed: %s", bill.number, exc)
                 loaded = _Loaded(None, f"text prefilter failed: {type(exc).__name__}: {exc}")
-            if loaded.is_scan:
+            if loaded.unanswered:
+                result.unanswered += 1
+            elif loaded.is_scan:
                 result.scans += 1
             elif loaded.text is None:
                 result.unreadable += 1
             if self._decide(bill, loaded) and not loaded.is_scan:
                 result.hits += 1
         log.info(
-            "text prefilter: checked=%d hits=%d scans=%d unreadable=%d failed=%d",
+            "text prefilter: checked=%d hits=%d scans=%d unreadable=%d unanswered=%d failed=%d",
             result.checked,
             result.hits,
             result.scans,
             result.unreadable,
+            result.unanswered,
             result.failed,
         )
         return result
@@ -126,7 +149,19 @@ class TextPrefilterService:
 
         A file with pages and no text goes on to the model unsearched — there is nothing here
         that can read it, and the per-bill cost guard is what bounds the decision.
+
+        A file the host would not hand over is neither: the bill stays pending with the reason on
+        file, and the next run asks again.
         """
+        if loaded.unanswered:
+            self._repo.set_status(
+                bill.term,
+                bill.number,
+                BillStatus.TEXT_PREFILTER_PENDING,
+                reason=loaded.problem,
+            )
+            log.info("druk %s stays pending: %s", bill.number, loaded.problem)
+            return False
         if loaded.is_scan:
             self._repo.set_status(
                 bill.term,

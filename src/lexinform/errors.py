@@ -38,7 +38,21 @@ class OrkaUnreachableError(RuntimeError):
     stop the whole analysis phase, every run. A bill whose file cannot be read falls back to the
     analysis of its official description — what every bill without a print number got before this
     host was reachable at all.
+
+    `status_code` is what tells a file that is not there (404 — the address is built by
+    convention, so it can be wrong) from the host refusing us, which is every other answer and
+    every connection that failed. A caller that would otherwise write the bill off for good has
+    to know the difference: the WAF's refusal is a decision about our address on the day, not
+    about the bill.
     """
+
+    def __init__(self, message: str, *, status_code: int | None = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+    @property
+    def file_is_missing(self) -> bool:
+        return self.status_code == 404
 
 
 class AttachmentTooLargeError(RuntimeError):

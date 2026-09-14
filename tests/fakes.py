@@ -237,9 +237,11 @@ class FakeOrkaDownloader:
     def __call__(self, url: str, *, max_bytes: int | None = None) -> bytes:
         self.calls.append(url)
         if url in self.refuses:
-            raise OrkaUnreachableError(f"GET {url}: the WAF answered with its challenge page")
+            raise OrkaUnreachableError(
+                f"GET {url}: HTTP 403", status_code=403
+            )  # the WAF, judging our address
         if url not in self.files:
-            raise OrkaUnreachableError(f"GET {url}: HTTP 404")
+            raise OrkaUnreachableError(f"GET {url}: HTTP 404", status_code=404)
         data = self.files[url]
         if max_bytes is not None and len(data) > max_bytes:
             raise AttachmentTooLargeError(url, max_bytes)

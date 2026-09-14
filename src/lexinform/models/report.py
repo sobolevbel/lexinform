@@ -64,8 +64,10 @@ class RunReport(BaseModel):
     road already over — the act published, the bill rejected or withdrawn, a project dropped on
     RCL, a plan realised or taken off the wykaz — which are stored and never posted.
     `text_prefilter_scans` counts bills sent to the model unsearched because their file is
-    paper — pages and no text layer — and `text_prefilter_unreadable` those skipped with nothing
-    to read at all: no file, no pages either, or a download that failed. `held` counts stage
+    paper — pages and no text layer — `text_prefilter_unreadable` those skipped with nothing
+    to read at all (no file, no pages either, or a download that failed), and
+    `text_prefilter_unanswered` those left pending because the host would not hand the file over,
+    which says nothing about the bill. `held` counts stage
     changes kept back for the next post
     (service stages only), `rehomed` the government's own rows carried over to a new Sejm term,
     `joint_published` the "alternative bill" replies under the card of a jointly considered
@@ -93,6 +95,7 @@ class RunReport(BaseModel):
     text_prefilter_hits: int = 0
     text_prefilter_scans: int = 0
     text_prefilter_unreadable: int = 0
+    text_prefilter_unanswered: int = 0
     acts_published: int = 0
     in_force_posted: int = 0
     consultation_reminders: int = 0

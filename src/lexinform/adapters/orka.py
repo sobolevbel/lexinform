@@ -74,10 +74,14 @@ class OrkaClient:
                         self._wait(attempt, f"GET {url}: HTTP {response.status_code}")
                         continue
                     raise OrkaUnreachableError(
-                        f"GET {url}: HTTP {response.status_code} after {attempt} attempts"
+                        f"GET {url}: HTTP {response.status_code} after {attempt} attempts",
+                        status_code=response.status_code,
                     )
                 if response.status_code >= 400:
-                    raise OrkaUnreachableError(f"GET {url}: HTTP {response.status_code}")
+                    raise OrkaUnreachableError(
+                        f"GET {url}: HTTP {response.status_code}",
+                        status_code=response.status_code,
+                    )
                 return self._body(url, response, max_bytes)
             finally:
                 response.close()

@@ -980,7 +980,12 @@ class MessageFormatter:
                 "discovery",
                 _counters(
                     ("Sejm: {} new", report.discovered),
-                    ("+{} without print number", report.pre_print_discovered),
+                    # Spelled out, because this counter is usually the only one on the line and
+                    # "+1 without print number" said neither where the bill is nor what it is.
+                    (
+                        "{} submitted to the Sejm, no druk number yet (RPW)",
+                        report.pre_print_discovered,
+                    ),
                     ("prefilter hits: {}", report.prefilter_hits),
                 ),
                 _counters(
@@ -999,6 +1004,7 @@ class MessageFormatter:
                     ("hits {}", report.text_prefilter_hits),
                     ("scans to the model {}", report.text_prefilter_scans),
                     ("unreadable {}", report.text_prefilter_unreadable),
+                    ("file refused, still pending {}", report.text_prefilter_unanswered),
                 ),
                 empty="nothing new",
             ),

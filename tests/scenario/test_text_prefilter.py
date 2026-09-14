@@ -3,7 +3,7 @@
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import BillStatus
 from tests.fakes import FakeTextExtractor
-from tests.harness import World
+from tests.harness import RPW, World, submission, submission_url
 
 FOREIGNER_TEXT = (
     "Art. 1. W ustawie o cudzoziemcach wprowadza się zmiany. "
@@ -173,3 +173,36 @@ def test_a_print_that_is_only_its_covering_letter_goes_to_the_model_unsearched()
     assert (report.text_prefilter_checked, report.text_prefilter_scans) == (1, 1)
     assert report.text_prefilter_hits == 0  # nothing was searched: there was nothing to search
     assert w.bill("4100").status is not BillStatus.SKIPPED_TEXT_PREFILTER
+
+
+def test_a_file_the_waf_refuses_leaves_the_bill_pending() -> None:
+    """A refusal from orka.sejm.gov.pl is a decision about our address on the day, not about the
+    bill: RPW/30695/2026 was written off on 2026-09-14 by a 403 that had cleared by the
+    afternoon, and `skipped_text_prefilter` is where a bill stays until an operator digs it out.
+    """
+    w = World()
+    w.gateway.submissions.append(submission(title="Rządowy projekt ustawy o ubezpieczeniach"))
+    w.orka.refuses.add(submission_url())
+
+    report = w.run()
+
+    assert (report.text_prefilter_checked, report.text_prefilter_unanswered) == (1, 1)
+    assert report.text_prefilter_unreadable == 0
+    bill = w.bill(RPW)
+    assert bill.status is BillStatus.TEXT_PREFILTER_PENDING
+    assert bill.last_error == (
+        f"text prefilter: OrkaUnreachableError: GET {submission_url()}: HTTP 403"
+    )
+
+
+def test_a_file_that_is_not_there_is_still_a_skip() -> None:
+    """A 404 is about the bill: the address is built by convention and can simply be wrong, so
+    retrying it every run would queue the bill for ever."""
+    w = World()
+    w.gateway.submissions.append(submission(title="Rządowy projekt ustawy o ubezpieczeniach"))
+    assert submission_url() not in w.gateway.files  # the Sejm never published it there
+
+    report = w.run()
+
+    assert (report.text_prefilter_unanswered, report.text_prefilter_unreadable) == (0, 1)
+    assert w.bill(RPW).status is BillStatus.SKIPPED_TEXT_PREFILTER

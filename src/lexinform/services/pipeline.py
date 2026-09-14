@@ -329,6 +329,7 @@ class DailyPipeline:
         report.text_prefilter_hits = checked.hits
         report.text_prefilter_scans = checked.scans
         report.text_prefilter_unreadable = checked.unreadable
+        report.text_prefilter_unanswered = checked.unanswered
         if checked.fatal_error:
             report.errors.append(f"text prefilter: {checked.fatal_error}")
 
