@@ -213,3 +213,45 @@ jobs:
             echo "draw=${{ matrix.draw }} ip=$IP try=$i $code first=$(head -c 4 /tmp/body | tr -d '\0')"
             sleep 2
           done
+
+  # Every earlier probe ran curl against orka before the production client, from the same
+  # address. This one asks the question in the order a run asks it: httpx first, on an address
+  # that has said nothing to this host yet, then curl, then httpx again.
+  order:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        draw: [1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: httpx first, then curl, then httpx again
+        run: |
+          set +e
+          IP=$(curl -sS --max-time 10 https://api.ipify.org)
+          echo "draw=${{ matrix.draw }} ip=$IP"
+          uv sync --frozen --no-dev >/dev/null 2>&1
+          URL='https://orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-30771-2026/$file/10-RPW-30771-2026.pdf'
+          uv run --frozen --no-dev python - "$URL" "first" <<'PY'
+          import sys
+          from lexinform.adapters.orka import OrkaClient
+          try:
+              print(f"  httpx {sys.argv[2]}: {len(OrkaClient(max_retries=0).download(sys.argv[1]))} bytes")
+          except Exception as exc:
+              print(f"  httpx {sys.argv[2]}: {type(exc).__name__}: {exc}")
+          PY
+          curl -sS -L -o /tmp/b -w "  curl: http=%{http_code} type=%{content_type} bytes=%{size_download}\n" --max-time 90 \
+            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36" \
+            -H 'Accept: text/html,application/xhtml+xml,*/*;q=0.8' -H 'Accept-Language: pl-PL,pl;q=0.9' "$URL"
+          uv run --frozen --no-dev python - "$URL" "after curl" <<'PY'
+          import sys
+          from lexinform.adapters.orka import OrkaClient
+          try:
+              print(f"  httpx {sys.argv[2]}: {len(OrkaClient(max_retries=0).download(sys.argv[1]))} bytes")
+          except Exception as exc:
+              print(f"  httpx {sys.argv[2]}: {type(exc).__name__}: {exc}")
+          PY
