@@ -303,6 +303,18 @@ Still open:
   - **Ten filed documents carry real text** (four OSRs of 56k–80k characters, three government
     positions), against the "none of 66" the older sample gave. `digest_supplement` can read them
     instead of paying per page.
+- The document audit of 14 Sept 2026 (`../lexinform-corpus/checks/`, findings in `FINDINGS.md`,
+  method and what to do next in `README.md`) closed six defects and left three things worth doing
+  when the corpus is next touched:
+  - **Re-collect the corpus and replay.** Its labels now lag the code by those six fixes —
+    `document_kind` on 81 RCL files, `carries_document` on 3 orka bills, the parse of 642 letters.
+    Harmless while it is remembered; in six months the drift will read as a bug.
+  - **Test the scan triage against a scan that *is* relevant.** The probe rejected 18 of 18
+    correctly, but met no relevant scan, so it says nothing about false rejections — and that is
+    the only way the window can lose a bill.
+  - **Measure what trimming the uzasadnienie would cost.** It is 45% of the bill ($53.53 of
+    $118.83) and the largest lever left; "do not touch" was decided without measuring the loss,
+    which an A/B of cards analysed with and without it would give.
 - RCL leftovers: consultations of draft regulations (rozporządzenia, `typeId=10`); the
   zgłoszenie zainteresowania is offered on the card but the declarations already filed
   ("zgłoszenia lobbingowe") are not read.

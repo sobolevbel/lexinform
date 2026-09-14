@@ -1002,5 +1002,6 @@ keyword stage is over-inclusive on purpose — a false hit costs one call, a mis
 good — and druk 1861 is rejected by the triage for about two cents anyway.
 
 Open items are listed under "Still open" in `docs/roadmap.md`. The audit of 14 Sept 2026 over
-the whole corpus (`../lexinform-corpus/checks/FINDINGS.md`, with a runnable script per phase)
-closed six defects and left nothing of its own open.
+the whole corpus closed six defects and left nothing of its own open. Its record is
+`../lexinform-corpus/checks/`: `FINDINGS.md` for the findings with their numbers, `README.md`
+for how it was run, which of the methods paid and what to do next time.
