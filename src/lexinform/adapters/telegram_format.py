@@ -438,7 +438,12 @@ class MessageFormatter:
     def _card_tags(self, bill: Bill, today: dt.date) -> str:
         """Each tag answers one search: this bill's whole thread, by importance, by topic, where
         an opinion can still be sent, about citizens of Ukraine, government projects before the
-        Sejm, and the bills of the term."""
+        Sejm, and the bills of the term.
+
+        The only tag line not built by `_tags`: the card leads with the thread rather than
+        ending on it, and the four tags after the topics are the card's alone (a reply is not a
+        place to advertise the term). The two halves every message shares are the same calls.
+        """
         lb = self._labels
         return " ".join(
             [
@@ -469,11 +474,10 @@ class MessageFormatter:
         note = f"{ICON['note']} {esc(lb.joint_bill_note.format(numbers=', '.join(others)))}"
         facts = f"{note}\n{self._applicant_line(bill)}"
         links_block = self._links(self._card_links(bill, print_info))
-        # Its own tag and the thread's: a search for either finds the reply. The topic tags are
-        # the card's — this print has no analysis of its own in the channel.
-        tags = " ".join(
-            [self._number_tag(bill), *self._topic_tags(primary), self._thread_tags(primary)]
-        )
+        # Its own tag first, then the card's topic and thread tags: a search for either number
+        # finds the reply, and the verdict it carries is the card's, this print having no
+        # analysis of its own in the channel.
+        tags = self._tags(primary, self._number_tag(bill))
         steps = self._steps_block(primary, today or self._today())
         return RenderedMessage(
             text=self._assemble([header, facts], tail=[steps, links_block, tags])
@@ -531,13 +535,15 @@ class MessageFormatter:
                 else:
                     changes_block = f"{ICON['note']} <i>{esc(lb.reanalyzed_note)}</i>"
 
-        # Event tags only when the reply carries the event a reader would search for; the topic
-        # tags are on every reply, so that a reader following #легализация finds the moments to
-        # act and not only the card that opened the thread.
-        tags = " ".join(
-            [f"#{lb.event_tags[key]}" for key in event_keys(change, event) if key in lb.event_tags]
-            + self._topic_tags(bill)
-            + [self._thread_tags(bill)]
+        # Event tags only when the reply carries the event a reader would search for; `_tags`
+        # adds the two halves every reply has.
+        tags = self._tags(
+            bill,
+            *(
+                f"#{lb.event_tags[key]}"
+                for key in event_keys(change, event)
+                if key in lb.event_tags
+            ),
         )
 
         # The new stages are what the post is for, and stages held since the last one are listed
@@ -683,7 +689,7 @@ class MessageFormatter:
                 bill.analysis.analysis.summary, full=False, law=True
             )
         links_block = self._links(self._act_links(bill, act))
-        tags = self._tag_line(lb.tag_published, bill)
+        tags = self._tags(bill, f"#{lb.tag_published}")
         text = self._assemble(
             [header, facts],
             flexible=[summary_block],
@@ -717,7 +723,7 @@ class MessageFormatter:
                     ICON["practical"], lb.practical_impact, esc(a.practical_impact.strip())
                 )
         links_block = self._links(self._act_links(bill, act))
-        tags = self._tag_line(lb.tag_in_force, bill)
+        tags = self._tags(bill, f"#{lb.tag_in_force}")
         text = self._assemble(
             [header, facts], flexible=[summary_block, practical], tail=[links_block, tags]
         )
@@ -750,7 +756,7 @@ class MessageFormatter:
             a = bill.analysis.analysis
             summary_block = f"{ICON['about']} <b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
         links_block = self._links(self._consultation_links(bill, window))
-        tags = self._tag_line(lb.tag_consultations, bill)
+        tags = self._tags(bill, f"#{lb.tag_consultations}")
         text = self._assemble(
             [header, facts], flexible=[summary_block], tail=[next_step, links_block, tags]
         )
@@ -778,7 +784,7 @@ class MessageFormatter:
             facts = f"{self._field(ICON['effective'], lb.consultation, closed)}\n{facts}"
         steps = self._steps_block(bill, today or self._today())
         links_block = self._links(self._consultation_links(bill, window))
-        tags = self._tag_line(lb.tag_consultation_results, bill)
+        tags = self._tags(bill, f"#{lb.tag_consultation_results}")
         return RenderedMessage(text=self._assemble([header, facts, steps, links_block, tags]))
 
     def agenda(
@@ -824,8 +830,8 @@ class MessageFormatter:
         if is_committee and item.committee_code:
             links.append(link(committee_web_url(s.term, item.committee_code), lb.link_committee))
         links_block = self._links(links)
-        tags = self._tag_line(
-            lb.tag_committee_sitting if is_committee else lb.tag_sejm_sitting, bill
+        tags = self._tags(
+            bill, f"#{lb.tag_committee_sitting if is_committee else lb.tag_sejm_sitting}"
         )
         summary_block = ""
         if bill.analysis is not None:
@@ -869,8 +875,8 @@ class MessageFormatter:
             links.append(
                 link(committee_web_url(bill.summary.term, item.committee_code), lb.link_committee)
             )
-        tags = self._tag_line(
-            lb.tag_committee_sitting if is_committee else lb.tag_sejm_sitting, bill
+        tags = self._tags(
+            bill, f"#{lb.tag_committee_sitting if is_committee else lb.tag_sejm_sitting}"
         )
         return RenderedMessage(
             text=self._assemble(
@@ -926,7 +932,7 @@ class MessageFormatter:
             tail=[
                 self._action_line(bill, today, when_none=False),
                 self._links(links),
-                self._tag_line(lb.event_tags["senate" if senate else "president"], bill),
+                self._tags(bill, f"#{lb.event_tags['senate' if senate else 'president']}"),
             ],
         )
         return RenderedMessage(text=text)
@@ -954,7 +960,7 @@ class MessageFormatter:
         for code in phase.committees if phase else ():
             links.append(link(committee_web_url(bill.term, code), lb.link_committee))
         links_block = self._links(links)
-        tags = self._tag_line(lb.tag_hearing, bill)
+        tags = self._tags(bill, f"#{lb.tag_hearing}")
         summary_block = ""
         if bill.analysis is not None:
             summary_block = self._summary_reminder(bill.analysis.analysis.summary, full=False)
@@ -1210,12 +1216,18 @@ class MessageFormatter:
     def _links(links: list[str]) -> str:
         return f"{ICON['links']} " + " | ".join(links)
 
-    def _tag_line(self, tag: str, bill: Bill) -> str:
-        """The message kind's tag, what the bill is about, and the thread's.
+    def _tags(self, bill: Bill, *lead: str) -> str:
+        """Every reply's tag line: what the reply is about, then what the bill is about and its
+        thread. `bill` is the bill the thread belongs to, which for a reply under another print's
+        card is that card's bill — the verdict and the thread are its, not the reply's.
 
-        A reader who follows a topic must find the moments to act, not only the card that
-        opened the thread; the topic tags are what a search on the channel matches."""
-        return " ".join([f"#{tag}", *self._topic_tags(bill), self._thread_tags(bill)])
+        The last two halves are why this is one method. A reader who follows a topic must find
+        the moments to act and not only the card that opened the thread, and the two replies that
+        built their line by hand — the status update and the joint-bill reply — were the two that
+        had forgotten them. The card builds its own (`_card_tags`): it puts the thread first and
+        carries tags no reply has.
+        """
+        return " ".join([*lead, *self._topic_tags(bill), self._thread_tags(bill)])
 
     def _topic_tags(self, bill: Bill) -> list[str]:
         lb = self._labels
