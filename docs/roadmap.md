@@ -15,22 +15,14 @@ and are in git.
   zainteresowania, how to answer a public consultation, how to write to a committee, how a public
   hearing works, and what the bot and the channel are. They wait for a home: a URL, a design and
   short links from the messages («как подать?») in place of the paragraphs the cards carry today.
-- **The RCL backlog: twelve live projects the bot has never walked.** Replaying wykaz discovery
-  over the whole register with the watermark pushed back to 2015 (15 Sept 2026, against a
-  restored production dump) ingests **nothing**: of the 56 entries the keywords accept, 34 are
-  realised or withdrawn, 3 are the plans in the channel, 7 are followed as RCL projects and 12
-  have a project on RCL this bot does not follow. So `report.wykaz_backlog` is a count and not a
-  queue, and there is nothing to take in from the register.
-  The twelve are the finding, and they are an RCL question: every one is **open**, pre-Sejm or
-  just handed over, with fourteen stages reached — UD387 (zawód pielęgniarki, 12410308), UD384
-  (zawody lekarza, 12411050), UD237 (mediatorzy sądowi, 12400301), UC82 (kredyt konsumencki,
-  12399650), UDER87 and UD263 (Prawo o ruchu drogowym, 12409801 and 12413302), UD344 (Kodeks
-  karny, 12405503), UD337 (rejestry, 12405805), UD329, UD334, UDER49, UPRO10. They were missed
-  because RCL discovery walks the listing by modification date and the bot's watermark starts on
-  2026-09-09: a project not touched since then is invisible, and there is no sweep. Two ways in,
-  both existing: `/analyze RCL/<id>` one at a time (the prefilter still decides, so only what
-  passes costs tokens), or one `run --since` far enough back, which walks the RCL listing to that
-  date — and re-scans the Sejm term with it.
+- **The seven projects the register had been pointing at.** Fixed on 2026-09-15: the wykaz
+  phase now judges every entry of the register every run and hands the project of a plan it will
+  not card to the RCL phase, which takes it. Run against a restored production dump, that takes
+  in 12 projects the listing never showed as changed, and 7 of them pass the text prefilter —
+  zawód pielęgniarki (14 keyword families), zawody lekarza, rejestry publiczne, sprawy
+  obywatelskie, praca na morzu, Kodeks karny and rybołówstwo morskie. They will be analysed and
+  carded by the first scheduled runs after the deploy; watch what the channel gets, and what it
+  costs.
 
 ## Next — decided, designed, not built
 
@@ -65,14 +57,14 @@ What it touches, in the order it has to be built:
 A domain, a static site, the guides and the page about the bot on it, and short links from the
 cards («как подать?»). Until then the texts live in `docs/guides/`.
 
-### Both government sources are read by date, and neither has a sweep
+### RCL has no sweep of its own
 
-- **A register entry rewritten into relevance after publication is invisible**: `Data publikacji`
-  does not move when an entry is edited. `wykaz_fingerprint` exists for exactly this and nothing
-  reads it across the watermark.
-- **An RCL project untouched since the bot's first run is invisible too** — the listing is walked
-  by modification date. Twelve are known (see "Now"); a periodic sweep over a long window, or a
-  one-off `run --since`, is the choice to make.
+The register now names the projects it knows of, which is how the twelve of 15 Sept 2026 came
+in, and an entry rewritten into relevance is caught too: the whole register is judged every run.
+What is left uncovered is a project the register never names — no wykaz number, or a number the
+index does not carry — and untouched since this bot's first run: the listing is walked by
+modification date and nothing else looks. One `run --since` far enough back would find them;
+whether that is worth its Sejm re-scan is the open question.
 
 ## Later — worth doing when there is a reason or a measurement
 

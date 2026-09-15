@@ -9,6 +9,7 @@ looks at them.
 
 import datetime as dt
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from lexinform.concurrency import fan_out
@@ -65,13 +66,21 @@ class RclDiscoveryService:
         self._text_prefilter = text_prefilter
         self._workers = workers
 
-    def discover(self, term: int, since: dt.datetime) -> RclDiscoveryResult:
-        """Projects modified since `since`; an RCL outage propagates (the phase is over).
+    def discover(
+        self, term: int, since: dt.datetime, *, from_register: Sequence[int] = ()
+    ) -> RclDiscoveryResult:
+        """Projects modified since `since`, plus the ones the register named; an RCL outage
+        propagates (the phase is over).
 
         A project is looked up without a term, because RCL ids are not bound to one: a project
         joined to a druk of the previous term stays stored under that term and must not come back
         as new. One that continues a plan we already follow is left to the tracking phase, where
         the wykaz row hands its thread over.
+
+        `from_register` is what the wykaz phase found: a plan whose project is already out on RCL
+        gets no card of its own, and until now nothing took the project either — the listing is
+        walked by modification date, so a project untouched since this bot's first run is
+        invisible to the walk. Twelve of them were live on 15 Sept 2026.
         """
         result = RclDiscoveryResult()
         new_rows: list[RclProjectSummary] = []
@@ -101,6 +110,8 @@ class RclDiscoveryService:
                 log.warning("RCL project %s not read: %s", outcome.item.id, exc)
                 continue
             self._ingest(term, project, result)
+        for project_id in from_register:
+            self._take(term, project_id, result)
         log.info(
             "RCL discovery: seen=%d new=%d refreshed=%d prefilter_hits=%d over=%d failed=%d",
             result.seen,
@@ -111,6 +122,27 @@ class RclDiscoveryService:
             result.failed,
         )
         return result
+
+    def _take(self, term: int, project_id: int, result: RclDiscoveryResult) -> None:
+        """One project by its id, read and judged exactly as the walk of the listing would.
+
+        A project already stored is left alone: the watcher, not discovery, refreshes it. A
+        single project that cannot be read is a warning and not the end of the phase, as in the
+        walk itself — only an outage propagates.
+        """
+        if self._repo.find_rcl(rcl_number(project_id)) is not None:
+            return
+        result.seen += 1
+        try:
+            project = self._deepen(self._reader.timeline(project_id))
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            result.failed += 1
+            log.warning("RCL project %s named by the register not read: %s", project_id, exc)
+            return
+        log.info("RCL %s: named by the register, not seen by the listing", project_id)
+        self._ingest(term, project, result)
 
     def index_numbers(self, since: dt.date) -> int:
         """Walk the listing and only write down which project carries which wykaz number.
@@ -156,14 +188,21 @@ class RclDiscoveryService:
 
         A project that is already over is read no further: `_ingest` records the skip.
         """
-        project = self._reader.timeline(row.id)
+        return self._deepen(self._reader.timeline(row.id))
+
+    def _deepen(self, project: RclProject) -> RclProject:
+        """How much of a project is read is what its title's verdict decides."""
         if project.is_over:
             return project
         if accept_title_hits(self._hits(project, term=0)):
-            log.info("RCL %s (%s): candidate, reading its catalogs", row.id, row.wykaz_number)
+            log.info(
+                "RCL %s (%s): candidate, reading its catalogs", project.id, project.wykaz_number
+            )
             return self._reader.complete(project)
         if self._text_prefilter:
-            log.info("RCL %s (%s): title miss, reading its newest text", row.id, row.wykaz_number)
+            log.info(
+                "RCL %s (%s): title miss, reading its newest text", project.id, project.wykaz_number
+            )
             return self._reader.with_text(project)
         return project
 

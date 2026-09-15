@@ -36,29 +36,32 @@ def test_a_plan_that_says_nothing_about_foreigners_is_not_even_stored() -> None:
 
     report = w.run()
 
-    assert (report.wykaz_discovered, report.wykaz_backlog) == (0, 0)
+    assert report.wykaz_discovered == 0
     assert w.repo.find_wykaz("WPL/UD500") is None
 
 
-def test_an_older_entry_is_reported_as_backlog_and_left_alone() -> None:
+def test_an_entry_older_than_the_watermark_is_judged_like_every_other() -> None:
+    """The register arrives whole every run and `Data publikacji` never moves, so a date gate
+    hid an entry rewritten into relevance for ever — and filled the report with a backlog that
+    yielded nothing."""
     w = World()
     w.add_wykaz_entry(published_at=OLD)
 
     report = w.run()
 
-    assert (report.wykaz_discovered, report.wykaz_backlog) == (0, 1)
-    assert w.repo.find_wykaz(WYKAZ) is None
-    assert w.publisher.new_bills == []
-
-
-def test_a_backlog_entry_is_taken_when_the_run_is_told_to_look_that_far_back() -> None:
-    w = World()
-    w.add_wykaz_entry(published_at=OLD)
-
-    report = w.run(since=dt.datetime(2026, 5, 1, tzinfo=dt.UTC))
-
     assert report.wykaz_discovered == 1
     assert w.repo.find_wykaz(WYKAZ) is not None
+
+
+def test_a_plan_the_government_finished_with_long_ago_is_not_this_run_s_news() -> None:
+    """It is judged (and gets no card), but `over_on_arrival` counts the bills a run *met*."""
+    w = World()
+    w.add_wykaz_entry(published_at=OLD, status="Zrealizowany")
+
+    report = w.run()
+
+    assert (report.wykaz_discovered, report.over_on_arrival) == (0, 0)
+    assert w.repo.find_wykaz(WYKAZ) is None
 
 
 def test_a_plan_the_government_has_already_finished_with_gets_no_card() -> None:
@@ -103,19 +106,25 @@ def test_the_numbers_rcl_has_published_are_written_down_from_the_listing_alone()
     assert w.rcl.calls == ["list_projects"]
 
 
-def test_a_plan_whose_project_rcl_published_already_gets_no_card() -> None:
+def test_a_plan_whose_project_rcl_published_already_hands_over_the_project() -> None:
     """A card for a plan says there is no text yet, and nothing ever takes that back: the linker
     only sees a project the listing shows as changed, and a project can sit untouched for a year
-    (UD344's has since January 2026). So the question is asked of every number RCL has published,
-    not only of the projects this bot follows."""
+    (UD344's has since January 2026). So the plan gets no card — and the project it names is
+    taken, because the walk of the listing will never reach it either."""
     w = World()
+    quiet = rcl_project(wykaz_number="UD408", created=dt.date(2026, 9, 2), modified=OLD.date())
+    w.add_rcl_project(quiet)
+    w.rcl.listing = []  # untouched since the watermark: the listing does not show it
     w.repo.remember_rcl_wykaz_number("UD408", RCL_ID, dt.date(2026, 9, 2))
     w.add_wykaz_entry()  # announced 2026-09-01, the day before the project came out
 
     report = w.run()
 
-    assert (report.wykaz_discovered, report.published) == (0, 0)
+    assert report.wykaz_discovered == 0
     assert w.repo.find_wykaz(WYKAZ) is None
+    followed = w.repo.find_rcl(RCL)
+    assert followed is not None and followed.rcl is not None
+    assert (report.rcl_discovered, report.published) == (1, 1)
 
 
 def test_a_project_older_than_the_plan_held_the_number_before_it() -> None:
@@ -141,7 +150,7 @@ def test_rozporzadzenia_and_programmes_are_read_but_not_followed() -> None:
 
     report = w.run()
 
-    assert (report.wykaz_discovered, report.wykaz_backlog) == (0, 0)
+    assert report.wykaz_discovered == 0
     assert w.repo.find_wykaz("WPL/RD238") is None
 
 

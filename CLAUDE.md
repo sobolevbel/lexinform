@@ -544,10 +544,19 @@ Invariants worth keeping:
 - **The wykaz is the earliest source and the thinnest: an intention, not a bill.** The whole
   register arrives as one CSV per run (`adapters/wykaz_csv.py`; the id in the URL is read from the
   page, columns are matched by prefix because their statutory wording gets repunctuated), so the
-  prefilter sees all of it, but only entries published since the watermark are stored: `Data
-  publikacji` never moves on an edit, so a rejected entry is never revisited, and storing the 775
-  bill entries with their paragraphs would add ~2.3 MB to a state dump that is 822 KB. The rest is
-  `report.wykaz_backlog`, and `scan --since` is the way to take it. Only `Projekty ustaw` are
+  prefilter sees all of it, and **every entry is judged every run** — the gates are a keyword match
+  and two indexed lookups, so the watermark decides only what the report counts as news. Until
+  2026-09-15 it decided what was judged, and what it held back was counted: «53 older entries
+  match, not followed» in every report. Replayed over the whole register with the watermark pushed
+  back to 2015, those 53 ingest **nothing** (34 realised or withdrawn, 3 the plans in the channel,
+  7 followed as their projects) — but 12 named a live project on RCL that nothing was taking, and
+  reading them found **seven candidates**, zawód pielęgniarki (14 keyword families) and zawody
+  lekarza among them. So a plan whose project is out hands that project to RCL discovery
+  (`WykazDiscoveryResult.on_rcl` → `RclDiscoveryService.discover(from_register=…)` →
+  `_take`), which is also the only way in for a project the listing does not show as changed —
+  it is walked by modification date, and this bot's watermark starts on 2026-09-09. A rejected
+  entry is still not stored: the 775 bill entries with their paragraphs would add ~2.3 MB to a
+  state dump that is 822 KB. Only `Projekty ustaw` are
   followed; a plan already realised or withdrawn on first sight never gets a card (there is no
   action left to invite), and neither does one whose project is already on RCL. The card says there
   is no text yet, and the one action it offers is the art. 7 zgłoszenie zainteresowania — which

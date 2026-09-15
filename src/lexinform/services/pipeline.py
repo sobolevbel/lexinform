@@ -246,12 +246,22 @@ class DailyPipeline:
             self._phase(report, "commands", lambda: self._handle_commands(opts, report))
         if opts.discover:
             self._phase(report, "discovery", lambda: self._discover(current, since, report))
+        # The register names projects the RCL listing does not show as changed; the RCL phase
+        # takes them, so that a gov.pl outage costs RCL nothing and an RCL outage costs the
+        # register nothing.
+        named_by_register: list[int] = []
         if opts.discover and opts.wykaz and self._wykaz_discovery is not None:
             self._phase(
-                report, "wykaz discovery", lambda: self._discover_wykaz(current, since, report)
+                report,
+                "wykaz discovery",
+                lambda: named_by_register.extend(self._discover_wykaz(current, since, report)),
             )
         if opts.discover and opts.rcl and self._rcl_discovery is not None:
-            self._phase(report, "rcl discovery", lambda: self._discover_rcl(current, since, report))
+            self._phase(
+                report,
+                "rcl discovery",
+                lambda: self._discover_rcl(current, since, report, named_by_register),
+            )
         if self._text_prefilter is not None:
             self._phase(report, "text prefilter", lambda: self._prefilter_text(opts, report))
         self._phase(report, "analysis", lambda: self._analyse(opts, report))
@@ -306,21 +316,23 @@ class DailyPipeline:
         report.prefilter_hits = discovered.prefilter_hits
         report.over_on_arrival += discovered.over
 
-    def _discover_rcl(self, term: int, since: datetime, report: RunReport) -> None:
+    def _discover_rcl(
+        self, term: int, since: datetime, report: RunReport, from_register: Sequence[int] = ()
+    ) -> None:
         assert self._rcl_discovery is not None
-        discovered = self._rcl_discovery.discover(term, since)
+        discovered = self._rcl_discovery.discover(term, since, from_register=from_register)
         report.rcl_discovered = discovered.new
         report.rcl_prefilter_hits = discovered.prefilter_hits
         report.over_on_arrival += discovered.over
         if discovered.failed:
             report.errors.append(f"{discovered.failed} RCL project(s) could not be read")
 
-    def _discover_wykaz(self, term: int, since: datetime, report: RunReport) -> None:
+    def _discover_wykaz(self, term: int, since: datetime, report: RunReport) -> list[int]:
         assert self._wykaz_discovery is not None
         discovered = self._wykaz_discovery.discover(term, since)
         report.wykaz_discovered = discovered.new
-        report.wykaz_backlog = discovered.backlog
         report.over_on_arrival += discovered.over
+        return discovered.on_rcl
 
     def _prefilter_text(self, opts: RunOptions, report: RunReport) -> None:
         assert self._text_prefilter is not None

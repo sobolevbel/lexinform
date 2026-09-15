@@ -162,15 +162,16 @@ def scan(since: SinceOpt = None) -> None:
         result = c.discovery_service().discover(term, effective)
         over = result.over
         wykaz_service = c.wykaz_discovery_service()
-        wykaz_new = wykaz_backlog = 0
+        wykaz_new = 0
+        named_by_register: list[int] = []
         if wykaz_service is not None:
             wykaz_result = wykaz_service.discover(term, effective)
-            wykaz_new, wykaz_backlog = wykaz_result.new, wykaz_result.backlog
+            wykaz_new, named_by_register = wykaz_result.new, wykaz_result.on_rcl
             over += wykaz_result.over
         rcl_service = c.rcl_discovery_service()
         rcl_new = rcl_hits = 0
         if rcl_service is not None:
-            rcl_result = rcl_service.discover(term, effective)
+            rcl_result = rcl_service.discover(term, effective, from_register=named_by_register)
             rcl_new, rcl_hits = rcl_result.new, rcl_result.prefilter_hits
             over += rcl_result.over
         text_service = c.text_prefilter_service()
@@ -186,7 +187,7 @@ def scan(since: SinceOpt = None) -> None:
         f"term={term} since={effective.isoformat()} seen={result.seen} new={result.new} "
         f"pre_print={result.pre_print_new} title_hits={result.prefilter_hits} "
         f"rcl_new={rcl_new} rcl_hits={rcl_hits} text_hits={text_hits} "
-        f"wykaz_new={wykaz_new} wykaz_backlog={wykaz_backlog} over={over}"
+        f"wykaz_new={wykaz_new} over={over}"
     )
     for bill in pending:
         label = bill.number if not bill.has_process else f"druk {bill.number}"

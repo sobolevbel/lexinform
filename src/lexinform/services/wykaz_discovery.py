@@ -2,15 +2,22 @@
 
 The whole register arrives as one file, so every run sees all of it and the prefilter runs on
 the title and on what art. 3 ust. 2 obliges the entry to say (the reasons and the essence of the
-planned solutions). Only entries published since the watermark are stored: an entry we reject is
-never revisited — `Data publikacji` does not move when the register is edited — so storing the
-misses would grow the state dump by megabytes and buy nothing. The rest of the register is
-counted as a backlog in the report, and `lexinform scan --since …` takes it when it is wanted.
+planned solutions). Every entry is judged every run: the gates below are a keyword match and two
+indexed lookups, so there is nothing to save by skipping the older ones, and an entry that is
+rejected is not stored — storing the 775 bill entries with their paragraphs would grow the state
+dump by megabytes and buy nothing.
+
+The watermark decides only what counts as news in the report. Until 15 Sept 2026 it decided what
+was *judged*, and the entries it held back were counted as a backlog: «53 older entries match,
+not followed» in every report, of a backlog that yields nothing — replayed over the whole
+register with the watermark pushed back to 2015, the gates below ingest zero. Worse, `Data
+publikacji` does not move when an entry is edited, so an entry rewritten into relevance stayed
+behind that gate for ever.
 """
 
 import datetime as dt
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from lexinform.keywords import KeywordPrefilter, accept_title_hits
 from lexinform.models import BillStatus, WykazEntry, wykaz_fingerprint, wykaz_summary
@@ -21,14 +28,13 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class WykazDiscoveryResult:
-    """Counters of one wykaz discovery phase."""
+    """Counters of one wykaz discovery phase; `on_rcl` names the projects RCL discovery takes."""
 
     seen: int = 0
     new: int = 0
     prefilter_hits: int = 0
-    backlog: int = 0
     over: int = 0
-    on_rcl: int = 0
+    on_rcl: list[int] = field(default_factory=list)
 
 
 class WykazDiscoveryService:
@@ -45,14 +51,18 @@ class WykazDiscoveryService:
         self._clock = clock
 
     def discover(self, term: int, since: dt.datetime) -> WykazDiscoveryResult:
-        """Entries published since `since`; a gov.pl outage propagates (the phase is over).
+        """Every entry of the register; a gov.pl outage propagates (the phase is over).
 
-        Only bills are followed, not rozporządzenia or government programmes, and only entries
-        published since the watermark: the rest are counted as `backlog`, which `scan --since`
-        takes. A plan that was realised or withdrawn before we ever saw it gets no card — there
-        is no action left to invite — and neither does one whose project is already on RCL under
-        the same number: that row is the bill, with its text, and a second thread for the plan
-        behind it would only repeat it.
+        Only bills are followed, not rozporządzenia or government programmes. A plan that was
+        realised or withdrawn before we ever saw it gets no card — there is no action left to
+        invite — and neither does one whose project is already on RCL under the same number: that
+        row is the bill, with its text, and a second thread for the plan behind it would only
+        repeat it.
+
+        `since` decides what is *news*, not what is judged: an entry published before the
+        watermark is put through the same gates, but a plan realised two years ago is not a bill
+        this run met, and counting it as one filled the report with a backlog that yields
+        nothing.
         """
         result = WykazDiscoveryResult()
         for entry in self._wykaz.entries():
@@ -64,12 +74,11 @@ class WykazDiscoveryService:
                 continue
             if self._repo.find_wykaz(entry.bill_number) is not None:
                 continue
-            if entry.published_at < since:
-                result.backlog += 1
-                continue
+            news = entry.published_at >= since
             if not entry.is_open:
-                log.info("wykaz %s: %s already, not followed", entry.number, entry.status)
-                result.over += 1
+                if news:
+                    log.info("wykaz %s: %s already, not followed", entry.number, entry.status)
+                    result.over += 1
                 continue
             if self._repo.find_by_wykaz_number(entry.number) is not None:
                 log.info("wykaz %s: already followed as an RCL project", entry.number)
@@ -79,21 +88,21 @@ class WykazDiscoveryService:
             )
             if project_id is not None:
                 log.info(
-                    "wykaz %s: its project is out on RCL (%d), the plan is not followed",
+                    "wykaz %s: its project is out on RCL (%d); the plan gets no card and the"
+                    " project is handed to RCL discovery",
                     entry.number,
                     project_id,
                 )
-                result.on_rcl += 1
+                result.on_rcl.append(project_id)
                 continue
             self._ingest(term, entry, hits, result)
         log.info(
-            "wykaz discovery: seen=%d new=%d prefilter_hits=%d backlog=%d over=%d on_rcl=%d",
+            "wykaz discovery: seen=%d new=%d prefilter_hits=%d over=%d on_rcl=%d",
             result.seen,
             result.new,
             result.prefilter_hits,
-            result.backlog,
             result.over,
-            result.on_rcl,
+            len(result.on_rcl),
         )
         return result
 

@@ -115,8 +115,10 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
 1. **Discover** bills modified since the last run (`/processes`, with one day of overlap), bills
    submitted without a print number (`/bills`), government projects modified on RCL (the HTML
    list sorted by modification date; one project page per new project, its stage catalogs only
-   for candidates) and entries published in the wykaz prac RM (one CSV with the whole register;
-   entries older than the watermark are counted in the report and left alone). A bill met for
+   for candidates) and the wykaz prac RM (one CSV with the whole register, every entry of it
+   judged every run; a plan whose project is already out on RCL gets no card of its own and
+   hands that project to the RCL phase, which is the only way in for a project the listing does
+   not show as changed). A bill met for
    the first time when its road is already over — the act is in Dziennik Ustaw, the bill was
    rejected or withdrawn, the project or the plan was dropped — is recorded and left there: a
    card invites action, and there is none. The Sejm's `closureDate` is not that point (it is

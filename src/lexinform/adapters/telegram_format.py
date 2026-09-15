@@ -1049,7 +1049,6 @@ class MessageFormatter:
                 ),
                 _counters(
                     ("wykaz prac RM: {} new", report.wykaz_discovered),
-                    ("{} older entries match, not followed", report.wykaz_backlog),
                 ),
                 _counters(
                     ("{} already over when first seen, not followed", report.over_on_arrival),

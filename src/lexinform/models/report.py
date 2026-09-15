@@ -59,10 +59,9 @@ class RunReport(BaseModel):
     """The counters one run reports to the log channel and stores in the `runs` table.
 
     `discovery_ok` says discovery finished, which is what lets the watermark advance past
-    `started_at`. `wykaz_backlog` counts older register entries that match the keywords and were
-    left unfollowed (`scan --since` takes them), `over_on_arrival` bills first seen with their
-    road already over — the act published, the bill rejected or withdrawn, a project dropped on
-    RCL, a plan realised or taken off the wykaz — which are stored and never posted.
+    `started_at`. `over_on_arrival` counts bills first seen with their road already over — the
+    act published, the bill rejected or withdrawn, a project dropped on RCL, a plan realised or
+    taken off the wykaz — which are stored and never posted.
     `text_prefilter_scans` counts bills sent to the model unsearched because their file is
     paper — pages and no text layer — `text_prefilter_unreadable` those skipped with nothing
     to read at all (no file, no pages either, or a download that failed), and
@@ -89,7 +88,6 @@ class RunReport(BaseModel):
     rcl_discovered: int = 0
     rcl_prefilter_hits: int = 0
     wykaz_discovered: int = 0
-    wykaz_backlog: int = 0
     over_on_arrival: int = 0
     linked: int = 0
     prefilter_hits: int = 0
