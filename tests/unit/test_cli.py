@@ -34,7 +34,7 @@ from lexinform.models import (
 from lexinform.services.lookup import BillNotFoundError
 from tests.conftest import FIXTURES
 from tests.fakes import make_analysis
-from tests.harness import rcl_project, submission, wykaz_entry
+from tests.harness import rcl_project, submission, summary, wykaz_entry
 
 runner = CliRunner()
 
@@ -380,6 +380,59 @@ def test_reprefilter_says_so_when_the_text_prefilter_is_switched_off(db: Path) -
 
     assert result.exit_code == 2
     assert "LEXINFORM_TEXT_PREFILTER_ENABLED" in result.output
+
+
+def _four_title_misses(path: Path, process_3039: ProcessDetail) -> Path:
+    """Four prints waiting for the backfill; only 3039 is one the stub API can answer."""
+    repo = SqliteBillRepository(path)
+    repo.migrate()
+    now = datetime(2026, 9, 7, tzinfo=UTC)
+    repo.upsert_summary(process_3039, now=now)
+    for number in ("3040", "3041", "3042"):
+        repo.upsert_summary(summary(number, f"Projekt ustawy o zmianie ustawy {number}"), now=now)
+    for number in ("3039", "3040", "3041", "3042"):
+        repo.reset_bill(10, number, BillStatus.SKIPPED_PREFILTER)
+    repo.close()
+    return path
+
+
+def _backfilled(path: Path, process_3039: ProcessDetail, api: str, workers: str) -> object:
+    db = _four_title_misses(path, process_3039)
+    env = {**_env(db, api=api), "LEXINFORM_SEJM_CONCURRENCY": workers}
+
+    result = runner.invoke(app, ["reprefilter"], env=env)
+
+    assert result.exit_code == 0, result.output
+    assert "scanned=4" in result.output, result.output
+    said = [ln for ln in result.output.splitlines() if ln.startswith(("  ", "scanned="))]
+    repo = SqliteBillRepository(db)
+    stored = [(n, b.status) for n in ("3039", "3040", "3041", "3042") if (b := repo.get(10, n))]
+    repo.close()
+    return said, stored
+
+
+def test_reprefilter_gives_the_same_result_on_four_workers_as_on_one(
+    tmp_path: Path, process_3039: ProcessDetail, api: str
+) -> None:
+    """The backfill fans out over the network and writes in the calling thread in input order, so
+    four workers must say and store exactly what one does — the invariant `fan_out` exists for."""
+    one = _backfilled(tmp_path / "one.db", process_3039, api, "1")
+    four = _backfilled(tmp_path / "four.db", process_3039, api, "4")
+
+    assert one == four
+
+
+def test_reprefilter_keeps_what_it_scanned_when_the_source_goes_down(
+    tmp_path: Path, process_3039: ProcessDetail
+) -> None:
+    """An outage ends the backfill instead of raising through it: the summary is printed and the
+    rows already scanned stay written, which is what `_tell_the_log_channel` is there to say."""
+    db = _four_title_misses(tmp_path / "down.db", process_3039)
+
+    result = runner.invoke(app, ["reprefilter"], env=_env(db, api=NOWHERE))
+
+    assert result.exit_code == 0, result.output
+    assert "scanned=" in result.output
 
 
 def test_show_prints_the_process_its_stages_and_what_the_database_knows(db: Path, api: str) -> None:

@@ -12,7 +12,9 @@ import typer
 from lexinform import __version__
 from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier
 from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.concurrency import fan_out
 from lexinform.container import Container, build_container
+from lexinform.errors import ServiceUnavailableError
 from lexinform.logging_setup import configure_logging
 from lexinform.models import (
     SILENCED_BY_OPERATOR,
@@ -36,6 +38,8 @@ from lexinform.models import (
 from lexinform.pricing import cost_usd, format_tokens, format_usd
 from lexinform.services.lookup import BillNotFoundError
 from lexinform.services.pipeline import RunOptions
+from lexinform.services.rcl_projects import RclProjectReader
+from lexinform.services.text_prefilter import PrefilterLoad
 from lexinform.settings import Settings
 
 log = logging.getLogger(__name__)
@@ -233,12 +237,33 @@ def reprefilter(
             if (b.has_process or (b.is_rcl and c.rcl is not None))
             and b.last_error != SILENCED_BY_OPERATOR
         ]
-        for bill in skipped:
-            if bill.is_rcl:
-                bill = _with_rcl_text(c, bill)
-            ok = service.check(bill)
+        # `Container._once` memoises on a plain dict: a worker must never ask it for a service.
+        reader = c.rcl_reader() if c.rcl is not None else None
+        workers = c.settings.sejm_concurrency
+
+        def scanned(bill: Bill) -> tuple[Bill, PrefilterLoad]:
+            """Network only: the text a skipped RCL row no longer keeps, then the file to scan."""
+            if bill.is_rcl and reader is not None:
+                bill = bill.model_copy(update={"rcl": _rcl_text(reader, bill.number)})
+            return bill, service.load(bill)
+
+        passed: list[Bill] = []
+        for outcome in fan_out(skipped, scanned, workers=workers):
+            bill = outcome.item
+            try:
+                bill, loaded = outcome.result()
+            except ServiceUnavailableError as exc:
+                report.errors.append(exc.describe())
+                log.error("aborting the backfill: %s", exc.describe())
+                break
+            except Exception as exc:
+                loaded = service.problem(bill, exc)
+            else:
+                if bill.is_rcl and bill.rcl is not None:
+                    c.repo.save_rcl(bill.term, bill.number, bill.rcl)
+            ok = service.decide(bill, loaded)
             if ok and bill.is_rcl:
-                c.repo.save_rcl(bill.term, bill.number, _read_rcl_project(c, bill.number))
+                passed.append(bill)
             fresh = c.repo.get(bill.term, bill.number)
             hits = tuple(fresh.prefilter_hits) if fresh else ()
             report.outcomes.append(
@@ -252,6 +277,7 @@ def reprefilter(
             )
             verdict = "PASS" if ok else "skip"
             typer.echo(f"  {verdict}  {bill.number:>14}  [{', '.join(hits)}]  {bill.summary.title}")
+        _complete_rcl_projects(c, passed, workers=workers)
         report.finished_at = c.clock.now()
         _tell_the_log_channel(c, report)
     finally:
@@ -305,12 +331,27 @@ def index_rcl_numbers(
     typer.echo(f"indexed={seen}")
 
 
-def _with_rcl_text(c: Container, bill: Bill) -> Bill:
-    """A skipped RCL row keeps only the project's skeleton: read its newest text again."""
-    reader = c.rcl_reader()
-    project = reader.with_text(reader.timeline(rcl_project_id(bill.number)))
-    c.repo.save_rcl(bill.term, bill.number, project)
-    return c.repo.get(bill.term, bill.number) or bill
+def _rcl_text(reader: RclProjectReader, number: str) -> RclProject:
+    """Network only: the newest text of a skipped RCL row, whose stored skeleton keeps none."""
+    return reader.with_text(reader.timeline(rcl_project_id(number)))
+
+
+def _complete_rcl_projects(c: Container, bills: list[Bill], *, workers: int) -> None:
+    """Store the whole project of every row the scan passed: it was read for its text alone."""
+    if not bills:
+        return
+    lookup = c.bill_lookup()
+    for outcome in fan_out(bills, lambda b: lookup.read_rcl_project(b.number), workers=workers):
+        bill = outcome.item
+        try:
+            project = outcome.result()
+        except ServiceUnavailableError as exc:
+            log.error("RCL went down before %s was read whole: %s", bill.number, exc.describe())
+            return
+        except Exception as exc:
+            log.warning("%s was not read whole: %s", bill.number, exc)
+            continue
+        c.repo.save_rcl(bill.term, bill.number, project)
 
 
 @app.command()

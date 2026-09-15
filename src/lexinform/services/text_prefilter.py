@@ -45,7 +45,7 @@ class TextPrefilterResult:
 
 
 @dataclass(frozen=True)
-class _Loaded:
+class PrefilterLoad:
     """What the prefilter has to scan: the text, or why there is none and what is there instead.
 
     `pages` is what the file holds when its text layer does not: a scan the model can still be
@@ -91,7 +91,7 @@ class TextPrefilterService:
         if limit <= 0:
             return result
         pending = self._repo.list_by_status([BillStatus.TEXT_PREFILTER_PENDING], limit=limit)
-        for outcome in fan_out(pending, self._load, workers=self._workers):
+        for outcome in fan_out(pending, self.load, workers=self._workers):
             bill = outcome.item
             result.checked += 1
             try:
@@ -100,32 +100,16 @@ class TextPrefilterService:
                 result.fatal_error = exc.describe()
                 log.error("aborting text prefilter phase: %s", result.fatal_error)
                 break
-            except OrkaUnreachableError as exc:
-                # The WAF in front of orka.sejm.gov.pl judges our address as well as our
-                # identity and can start refusing us with nothing changed on our side. Written
-                # off as a keyword miss, one such refusal loses the bill for good: RPW/30695/2026
-                # was skipped on 2026-09-14 by a 403 that had cleared by the afternoon, and only
-                # `reprefilter --include-text-skipped` would ever have looked at it again. A
-                # refusal is about the day, not about the bill; a 404 is about the bill, because
-                # the address is built by convention and can simply be wrong.
-                result.failed += 1
-                log.warning("text prefilter for druk %s: %s", bill.number, exc)
-                loaded = _Loaded(
-                    None,
-                    f"text prefilter: {type(exc).__name__}: {exc}",
-                    unanswered=not exc.file_is_missing,
-                )
             except Exception as exc:
                 result.failed += 1
-                log.warning("text prefilter for druk %s failed: %s", bill.number, exc)
-                loaded = _Loaded(None, f"text prefilter failed: {type(exc).__name__}: {exc}")
+                loaded = self.problem(bill, exc)
             if loaded.unanswered:
                 result.unanswered += 1
             elif loaded.is_scan:
                 result.scans += 1
             elif loaded.text is None:
                 result.unreadable += 1
-            if self._decide(bill, loaded) and not loaded.is_scan:
+            if self.decide(bill, loaded) and not loaded.is_scan:
                 result.hits += 1
         log.info(
             "text prefilter: checked=%d hits=%d scans=%d unreadable=%d unanswered=%d failed=%d",
@@ -140,9 +124,24 @@ class TextPrefilterService:
 
     def check(self, bill: Bill) -> bool:
         """Scan the bill text; True when the bill is sent on to analysis."""
-        return self._decide(bill, self._load(bill))
+        return self.decide(bill, self.load(bill))
 
-    def _decide(self, bill: Bill, loaded: _Loaded) -> bool:
+    def problem(self, bill: Bill, exc: Exception) -> PrefilterLoad:
+        """A per-bill failure as a load with its reason; an outage is the caller's to stop on."""
+        if isinstance(exc, ServiceUnavailableError):
+            raise exc
+        if isinstance(exc, OrkaUnreachableError):
+            # Orka's WAF refuses by address and by the day; only its 404 is about the bill.
+            log.warning("text prefilter for druk %s: %s", bill.number, exc)
+            return PrefilterLoad(
+                None,
+                f"text prefilter: {type(exc).__name__}: {exc}",
+                unanswered=not exc.file_is_missing,
+            )
+        log.warning("text prefilter for druk %s failed: %s", bill.number, exc)
+        return PrefilterLoad(None, f"text prefilter failed: {type(exc).__name__}: {exc}")
+
+    def decide(self, bill: Bill, loaded: PrefilterLoad) -> bool:
         """Store the hits (weak ones too, for tuning), the bill's next status and, for a skip,
         the reason (`last_error`): a keyword miss and an unreadable file must stay apart.
 
@@ -192,7 +191,7 @@ class TextPrefilterService:
             log.info("druk %s skipped: %s", bill.number, reason)
         return accepted
 
-    def _load(self, bill: Bill) -> _Loaded:
+    def load(self, bill: Bill) -> PrefilterLoad:
         """Network only. The bill text alone decides, so that is all this reads.
 
         The text to scan, or the reason there is none; a 404, a damaged file or an unknown format
@@ -206,7 +205,9 @@ class TextPrefilterService:
             raise
         except Exception as exc:
             log.warning("text of %s unavailable for the prefilter: %s", bill.number, exc)
-            return _Loaded(None, f"text prefilter: text unavailable: {type(exc).__name__}: {exc}")
+            return PrefilterLoad(
+                None, f"text prefilter: text unavailable: {type(exc).__name__}: {exc}"
+            )
         if located.document is None:
             if bill.has_process:
                 # The Sejm lists a process before the print's file is attached to it. Druk 3094
@@ -216,12 +217,14 @@ class TextPrefilterService:
                 # not there yet is about the day, like the WAF's refusal above, not about the
                 # bill; the next run asks again.
                 log.info("print %s has no file yet; the prefilter asks again", bill.number)
-                return _Loaded(None, "text prefilter: the print has no file yet", unanswered=True)
+                return PrefilterLoad(
+                    None, "text prefilter: the print has no file yet", unanswered=True
+                )
             log.info("%s has no readable text; text prefilter skipped", bill.number)
-            return _Loaded(None, "text prefilter: no document to read")
+            return PrefilterLoad(None, "text prefilter: no document to read")
         file = self._loader.read(located.document.url)
         if file.text is None:
-            return _Loaded(None, _no_text(file), pages=file.pages)
+            return PrefilterLoad(None, _no_text(file), pages=file.pages)
         if not carries_the_document(file.text, min_chars=MIN_TEXT_CHARS, pages=file.pages):
             # The same question the analysis asks, and it has to be the same question. `TextLoader`
             # calls a file textless only under `MIN_TEXT_CHARS`, so a print whose text layer is
@@ -230,8 +233,8 @@ class TextPrefilterService:
             # contains, and was skipped. Measured over term 10 (14 Sept 2026): **91 of the 938
             # prints** are that case, every one with pages the model could have read, and the
             # invariant says a file keywords cannot search is not a file to drop.
-            return _Loaded(None, _no_document(file), pages=file.pages)
-        return _Loaded(file.text, None)
+            return PrefilterLoad(None, _no_document(file), pages=file.pages)
+        return PrefilterLoad(file.text, None)
 
 
 def _miss(counts: dict[str, int], min_distinct: int) -> str:
