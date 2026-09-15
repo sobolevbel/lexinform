@@ -165,3 +165,24 @@ def test_a_project_standing_still_is_dated_from_the_stage_that_stopped_moving() 
 
     assert phase is not None and phase.since == stale
     assert stalled_days(phase, TODAY) == (TODAY - stale).days
+
+
+def test_a_consultation_with_no_deadline_in_the_letter_can_stand_still() -> None:
+    """The consultation phase carries the window's end when the letter gave one, and a phase with
+    a date of its own is never stalled — so `PHASE_PATIENCE["rcl_consultation"]` is measured only
+    against a letter that named no term, where the timeline alone says the window is open. At the
+    default patience such a project stood half a year before the card said so."""
+    stale = dt.date(2026, 5, 1)
+    project = rcl_project(
+        consultation=RclConsultation(email="a@b.pl", letter_url="https://x/pismo.pdf"),
+        stages=(rcl_stage(3, "Konsultacje publiczne", "active", modified=stale),),
+    )
+
+    phase = next_phase(rcl_bill(project), today=TODAY)
+    dated = next_phase(rcl_bill(rcl_project()), today=TODAY)
+
+    assert phase is not None and (phase.key, phase.date) == ("rcl_consultation", None)
+    assert stalled_days(phase, TODAY) == (TODAY - stale).days
+    assert stalled_days(phase, dt.date(2026, 7, 1)) is None
+    assert dated is not None and dated.key == "rcl_consultation"
+    assert stalled_days(dated, dt.date(2027, 1, 1)) is None

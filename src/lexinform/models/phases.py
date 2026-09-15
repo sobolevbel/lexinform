@@ -130,6 +130,11 @@ PHASE_PATIENCE = {
     "first_reading": 90,
     "first_reading_committee": 90,
     "first_reading_sitting": 90,
+    # Only a consultation whose letter gave no deadline is ever measured against this: with one
+    # the phase carries a `date` and `stalled_days` leaves it alone. Three times the longest
+    # usual window of thirty days, and the 90th percentile of the 514 consultation stages of the
+    # corpus (84 days from the stage's last modification to the next stage's).
+    "rcl_consultation": 90,
     "rcl_council": 90,
     "rcl_committees": 120,
     "wykaz": 210,
