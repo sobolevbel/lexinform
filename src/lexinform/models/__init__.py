@@ -134,6 +134,8 @@ from lexinform.models.rcl import (
 )
 from lexinform.models.report import (
     AnalysisVerdict,
+    BackfillOutcome,
+    BackfillReport,
     CallKind,
     LlmCall,
     RunReport,
@@ -217,6 +219,8 @@ __all__ = [
     "Analysis",
     "AnalysisRecord",
     "AnalysisVerdict",
+    "BackfillOutcome",
+    "BackfillReport",
     "DocumentDigest",
     "ScannedDocument",
     "SupplementContext",

@@ -137,6 +137,10 @@ jobs:
           LEXINFORM_RCL_PROXY_URL: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
           LEXINFORM_LOG_LEVEL: INFO
           TEXT_SKIPPED: ${{ inputs.reprefilter_text_skipped && '--include-text-skipped' || '' }}
+          # Only the log channel, and only to say what the backfill queued: this step posts
+          # nothing to the readers' channel and never reaches the model.
+          LEXINFORM_TELEGRAM_BOT_TOKEN: ${{ secrets.LEXINFORM_TELEGRAM_BOT_TOKEN }}
+          LEXINFORM_TELEGRAM_LOG_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID }}
         run: uv run --frozen --no-dev lexinform reprefilter --limit "${{ inputs.reprefilter_limit }}" $TEXT_SKIPPED
 
       # The run exits 1 when it had errors, but whatever it did publish is recorded in the

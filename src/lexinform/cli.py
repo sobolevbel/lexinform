@@ -16,6 +16,8 @@ from lexinform.container import Container, build_container
 from lexinform.logging_setup import configure_logging
 from lexinform.models import (
     SILENCED_BY_OPERATOR,
+    BackfillOutcome,
+    BackfillReport,
     Bill,
     BillStatus,
     BillSubmission,
@@ -35,6 +37,8 @@ from lexinform.pricing import cost_usd, format_tokens, format_usd
 from lexinform.services.lookup import BillNotFoundError
 from lexinform.services.pipeline import RunOptions
 from lexinform.settings import Settings
+
+log = logging.getLogger(__name__)
 
 app = typer.Typer(
     help="Tracks Polish Sejm bills that affect foreigners and posts summaries to Telegram.",
@@ -217,6 +221,9 @@ def reprefilter(
     is how that decision is taken back, one bill at a time and by the person who made it.
     """
     c = _container()
+    report = BackfillReport(
+        started_at=c.clock.now(), limit=limit, include_text_skipped=include_text_skipped
+    )
     try:
         service = c.text_prefilter_service()
         if service is None:
@@ -231,21 +238,44 @@ def reprefilter(
             if (b.has_process or (b.is_rcl and c.rcl is not None))
             and b.last_error != SILENCED_BY_OPERATOR
         ]
-        accepted = 0
         for bill in skipped:
             if bill.is_rcl:
                 bill = _with_rcl_text(c, bill)
             ok = service.check(bill)
-            accepted += int(ok)
             if ok and bill.is_rcl:
                 c.repo.save_rcl(bill.term, bill.number, _read_rcl_project(c, bill.number))
             fresh = c.repo.get(bill.term, bill.number)
-            hits = ", ".join(fresh.prefilter_hits) if fresh else ""
+            hits = tuple(fresh.prefilter_hits) if fresh else ()
+            report.outcomes.append(
+                BackfillOutcome(
+                    number=bill.number,
+                    title=bill.summary.title,
+                    accepted=ok,
+                    hits=hits,
+                    reason=None if ok else (fresh.last_error if fresh else None),
+                )
+            )
             verdict = "PASS" if ok else "skip"
-            typer.echo(f"  {verdict}  {bill.number:>14}  [{hits}]  {bill.summary.title}")
+            typer.echo(f"  {verdict}  {bill.number:>14}  [{', '.join(hits)}]  {bill.summary.title}")
+        report.finished_at = c.clock.now()
+        _tell_the_log_channel(c, report)
     finally:
         c.close()
-    typer.echo(f"scanned={len(skipped)} accepted={accepted}")
+    typer.echo(f"scanned={report.scanned} accepted={len(report.accepted)}")
+
+
+def _tell_the_log_channel(c: Container, report: BackfillReport) -> None:
+    """The backfill is a step of its own before the run and writes to the same database, so its
+    work reaches no report: run 69 of 15 Sept 2026 spent 29 of its 32 minutes here and queued 14
+    bills, while the channel was told "text prefilter: checked 1" and shown 14 candidates from
+    nowhere. A failure to say so must not fail the backfill, whose work is already written down."""
+    notifier = c.run_notifier(dry_run=False)
+    if notifier is None:
+        return
+    try:
+        notifier.notify_backfill(report)
+    except Exception as exc:
+        log.warning("the backfill report did not reach the log channel: %s", exc)
 
 
 @app.command(name="index-rcl-numbers")

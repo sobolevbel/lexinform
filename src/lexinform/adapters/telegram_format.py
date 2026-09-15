@@ -26,6 +26,7 @@ from lexinform.models import (
     AgendaItem,
     AnalysisVerdict,
     ApplicantType,
+    BackfillReport,
     Bill,
     CommandOutcome,
     ConsultationWindow,
@@ -1136,6 +1137,48 @@ class MessageFormatter:
         text = self._assemble([head, "\n\n".join(sections)], flexible=[rejected_text, logs])
         return RenderedMessage(text=text)
 
+    def backfill_report(self, report: BackfillReport) -> RenderedMessage:
+        """What the text-prefilter backfill did, for the log channel.
+
+        It runs as a step of its own before `lexinform run` and writes to the same database, so
+        nothing it does shows in the run's report: run 69 of 15 Sept 2026 spent 29 of its 32
+        minutes here and queued 14 bills, while the report said "text prefilter: checked 1" and
+        listed 14 analysis candidates out of nowhere. The accepted rows are the point — they are
+        what the run that follows will pay to read.
+        """
+        status = "✅" if report.ok else "❌"
+        duration = report.duration_seconds
+        scope = "title and text skips" if report.include_text_skipped else "title skips"
+        head = f"<b>{status} lexinform backfill</b>\nscope: {esc(scope)} · limit {report.limit}" + (
+            f" · {duration}s" if duration is not None else ""
+        )
+        counts = _section(
+            "🔁",
+            "re-scanned",
+            _counters(
+                ("scanned: {}", report.scanned),
+                ("queued for analysis: {}", len(report.accepted)),
+            ),
+            empty="nothing was skipped",
+        )
+        queued = ""
+        if report.accepted:
+            queued = _section(
+                "📥",
+                "queued — the next run reads these",
+                *(
+                    f"• {_number_ref(o.number)}"
+                    + (f" · {esc(', '.join(o.hits))}" if o.hits else " · no keywords (a scan)")
+                    + f" · {esc(_clip(o.title, 110))}"
+                    for o in report.accepted
+                ),
+            )
+        errors = (
+            _section("❌", "errors", *(_bullet(e) for e in report.errors)) if report.errors else ""
+        )
+        text = self._assemble([head, counts], flexible=[queued, errors])
+        return RenderedMessage(text=text)
+
     def command_reply(self, command: IncomingCommand, outcome: CommandOutcome) -> RenderedMessage:
         """The answer to an operator command, English like the run report: what the bot knows
         about the bill, the verdict, and what happened to the card."""
@@ -2236,15 +2279,19 @@ def _counters(*items: tuple[str, int]) -> str:
     return " · ".join(template.format(value) for template, value in items if value)
 
 
-def _verdict_ref(verdict: AnalysisVerdict) -> str:
-    """`druk 2695` / `RCL/12414402` / `RPW/29075/2026`, linked to the process page when the term
-    is known (reports stored before the field existed have none)."""
-    number = verdict.number
+def _number_ref(number: str) -> str:
+    """`druk 2695` / `RCL/12414402` / `RPW/29075/2026`: how a report names a bill."""
     plain = is_rcl_number(number) or is_pre_print_number(number)
-    label = esc(number) if plain else f"druk {esc(number)}"
+    return esc(number) if plain else f"druk {esc(number)}"
+
+
+def _verdict_ref(verdict: AnalysisVerdict) -> str:
+    """The same, linked to the process page when the term is known (reports stored before the
+    field existed have none)."""
+    label = _number_ref(verdict.number)
     if verdict.term is None:
         return label
-    return link(process_web_url(verdict.term, number), label)
+    return link(process_web_url(verdict.term, verdict.number), label)
 
 
 def _clip(text: str, limit: int) -> str:

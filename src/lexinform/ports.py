@@ -10,6 +10,7 @@ from lexinform.models import (
     AmendmentsContext,
     AmendmentsRecord,
     AnalysisRecord,
+    BackfillReport,
     Bill,
     BillAuthors,
     BillContext,
@@ -306,6 +307,11 @@ class Publisher(Protocol):
 
 class RunNotifier(Protocol):
     def notify(self, report: RunReport, log_lines: list[str]) -> None: ...
+
+    def notify_backfill(self, report: BackfillReport) -> None:
+        """What `lexinform reprefilter` did. A step of its own before the run and writing to the
+        same database, it left no trace in the run's report at all."""
+        ...
 
 
 class CommandInbox(Protocol):

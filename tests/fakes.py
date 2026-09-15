@@ -30,6 +30,7 @@ from lexinform.models import (
     AmendmentsRecord,
     Analysis,
     AnalysisRecord,
+    BackfillReport,
     Bill,
     BillContext,
     BillSubmission,
@@ -778,9 +779,13 @@ class FakePublisher(RenderingPublisher):
 class FakeNotifier:
     def __init__(self) -> None:
         self.calls: list[tuple[RunReport, list[str]]] = []
+        self.backfills: list[BackfillReport] = []
 
     def notify(self, report: RunReport, log_lines: list[str]) -> None:
         self.calls.append((report, log_lines))
+
+    def notify_backfill(self, report: BackfillReport) -> None:
+        self.backfills.append(report)
 
 
 class FakeInbox:

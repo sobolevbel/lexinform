@@ -140,3 +140,49 @@ class RunReport(BaseModel):
         if self.finished_at is None:
             return None
         return int((self.finished_at - self.started_at).total_seconds())
+
+
+class BackfillOutcome(BaseModel):
+    """One bill the text-prefilter backfill looked at again, and what it decided."""
+
+    number: str
+    title: str
+    accepted: bool
+    hits: tuple[str, ...] = ()
+    reason: str | None = None
+
+
+class BackfillReport(BaseModel):
+    """What `lexinform reprefilter` did, for the log channel.
+
+    The backfill runs as a step of its own before `lexinform run` and writes to the same database,
+    so nothing it does reaches the run's report: run 69 of 15 Sept 2026 spent 29 of its 32 minutes
+    here, rescanned 110 rows and queued 14, and the report that reached the channel said "text
+    prefilter: checked 1" and showed 14 analysis candidates with no account of where they came
+    from.
+    """
+
+    started_at: dt.datetime
+    finished_at: dt.datetime | None = None
+    limit: int = 0
+    include_text_skipped: bool = False
+    outcomes: list[BackfillOutcome] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+
+    @property
+    def scanned(self) -> int:
+        return len(self.outcomes)
+
+    @property
+    def accepted(self) -> list[BackfillOutcome]:
+        return [o for o in self.outcomes if o.accepted]
+
+    @property
+    def ok(self) -> bool:
+        return not self.errors
+
+    @property
+    def duration_seconds(self) -> int | None:
+        if self.finished_at is None:
+            return None
+        return int((self.finished_at - self.started_at).total_seconds())

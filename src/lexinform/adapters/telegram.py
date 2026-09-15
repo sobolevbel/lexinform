@@ -12,7 +12,13 @@ import httpx2 as httpx
 from lexinform.adapters.publisher_base import Outgoing, RenderingPublisher
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import TelegramUnavailableError
-from lexinform.models import ChannelPost, CommandOutcome, IncomingCommand, RunReport
+from lexinform.models import (
+    BackfillReport,
+    ChannelPost,
+    CommandOutcome,
+    IncomingCommand,
+    RunReport,
+)
 
 log = logging.getLogger(__name__)
 _EPOCH = datetime.fromtimestamp(0, tz=UTC)
@@ -185,6 +191,10 @@ class TelegramRunNotifier:
 
     def notify(self, report: RunReport, log_lines: list[str]) -> None:
         rendered = self._formatter.run_report(report, log_lines)
+        self._client.send_message(self._channel_id, rendered.text)
+
+    def notify_backfill(self, report: BackfillReport) -> None:
+        rendered = self._formatter.backfill_report(report)
         self._client.send_message(self._channel_id, rendered.text)
 
 
