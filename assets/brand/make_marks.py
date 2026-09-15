@@ -22,6 +22,8 @@ DIDOT = ("/System/Library/Fonts/Supplemental/Didot.ttc", 0)
 INK = "#10161F"
 PAPER = "#F4EFE6"
 RED = "#C0362C"
+SLATE = "#2B3443"
+SLATE_MUTED = "#9AA4B4"
 
 SIZE = 512.0
 MID = SIZE / 2
@@ -30,6 +32,8 @@ SURFACES = {
     "channel": (INK, PAPER, RED),
     "chat": (PAPER, INK, RED),
     "bot": (RED, PAPER, INK),
+    # The technical channel is the only surface with the accent off: nothing here is for readers.
+    "tech": (SLATE, PAPER, SLATE_MUTED),
 }
 
 
