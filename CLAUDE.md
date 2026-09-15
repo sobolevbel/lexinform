@@ -39,6 +39,9 @@ scans), `docs/rcl-scraping.md` (RCL's markup and files, the wykaz CSV, the probe
 - Commit after each finished part. Do not push unless asked. No `Co-Authored-By` trailers. A push
   of `main` deploys everything: the bot (every `daily.yml` run checks out `main`) and, after a
   green CI, the relay on the VPS (`deploy-relay.yml` → `deploy/update.sh` over SSH).
+- **Commit messages are English**, subject and body alike — the code, the comments and every
+  document in the repository are English, and the history is read beside them. Messages to
+  readers are the exception and are Russian, which is what `i18n.py` is for.
 - `.env` holds real secrets and is untracked; never print values. `.env.example` mirrors keys.
   `Settings()` reads it, so a test that builds the real container would reach the real Telegram or
   model: `tests/conftest.py` blanks every credential for every test (autouse). Keep it that way; a

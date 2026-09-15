@@ -26,7 +26,8 @@ uv run pytest                 # unit tests, a few seconds, offline
 ```
 
 All three must be clean. CI (`.github/workflows/ci.yml`) runs the same on Python 3.12 and 3.13.
-Commit after each finished part; do not push unless asked.
+Commit after each finished part; do not push unless asked. Commit messages are English, subject
+and body alike.
 
 Comments carry what the code cannot: a fact from outside the repo (an API quirk, a legal deadline,
 a measured number), an invariant a later edit would silently break, or why the obvious way was not
