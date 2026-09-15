@@ -1,11 +1,7 @@
-"""What the Sejm API tells us: processes, prints, stages, votes, submissions, acts, MPs, and
-the pure helpers over them (URLs, stage fingerprints and diffs, the latest bill text).
+"""What the Sejm API tells us: processes, prints, stages, votes, submissions, acts, MPs, and the
+pure helpers over them (URLs, stage fingerprints and diffs, the latest bill text).
 
-`Stage` and `PrintInfo` are trees that refer to themselves, hence the postponed annotations.
-
-The Senate has no API of its own, so `SENATE_BILLS_URL` — where it lists the laws the Sejm has
-passed, with the committee that has each one — is the only address a reader can be given for that
-stretch of the road.
+The Senate has no API, so `SENATE_BILLS_URL` is the only address a reader can be given for it.
 """
 
 from __future__ import annotations
@@ -145,13 +141,8 @@ class Committee(BaseModel):
 class Stage(BaseModel):
     """One node of the legislative process tree returned by /processes/{n}.
 
-    Some fields belong to one kind of stage only: `position` is what the Senate did,
-    `proposal` what a committee proposes, `sub_committee` marks a subcommittee's report and
-    `minority_motions` the motions attached to it (voted at the third reading; None when the
-    report could not be parsed), `voting` the results of a vote and `committee_name` the name we
-    resolved from `/committees`. The four that are rendering only — `position`, `voting`,
-    `committee_name` and `proposal` — stay out of `_stage_key`, or every tracked bill would post
-    a spurious update after a deploy.
+    `position`, `voting`, `committee_name` and `proposal` are rendering only and stay out of
+    `_stage_key`, or every tracked bill posts a spurious update after a deploy.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -175,18 +166,9 @@ class Stage(BaseModel):
 
     @property
     def carries_bill_text(self) -> bool:
-        """True for committee reports whose PDF contains the (amended) bill text.
-
-        Additional reports ("-A" prints) answering 2nd-reading amendments contain only tables of
-        amendments; `proposal` says "załączony projekt ustawy" when the full text is attached —
-        and only that wording does. Asking merely whether the proposal mentions "projekt" took
-        **"odrzucić projekt ustawy"** (23 bill reports of term 10, e.g. the report of process 205)
-        and **"uchwalić projekt ustawy bez poprawek"** (95) for a new text: the first is a motion
-        to throw the bill out and the second changes nothing, yet both sent their report's PDF to
-        the model as the bill and overwrote the card's verdict, score and summary with a reading
-        of a two-page recommendation — while the event under the same card correctly said the
-        committee had moved rejection.
-        """
+        """True for committee reports whose PDF contains the (amended) bill text: only
+        "załączony projekt ustawy" attaches one. "odrzucić projekt ustawy" (23 reports of term 10)
+        and "uchwalić projekt ustawy bez poprawek" (95) name a projekt and attach none."""
         if self.stage_type != "CommitteeReport" or not self.report_file or self.sub_committee:
             return False
         if self.proposal is not None:
@@ -195,23 +177,19 @@ class Stage(BaseModel):
 
     @property
     def is_additional_report(self) -> bool:
-        """A committee report answering the amendments tabled at the second reading: the "-A"
-        print, a table and not a text. The suffix says it exactly — over the 938 bill processes
-        of term 10 every one of the 292 "Praca w komisjach po II czytaniu" stages carries an
-        "-A" report and none of the 645 after a first reading does — which is why it, and not
-        `carries_bill_text`, is what tells the second reading from the third."""
+        """A committee report answering the second reading's amendments: the "-A" print, a table
+        and not a text. Over term 10 all 292 "Praca w komisjach po II czytaniu" stages carry one
+        and none of the 645 after a first reading does, so this tells the 2nd reading from the
+        3rd."""
         return (self.print_number or "").upper().endswith("-A")
 
 
 class BillSubmission(BaseModel):
-    """An item of GET /bills: a submitted bill, possibly before it gets a print (druk) number.
+    """An item of GET /bills: a submitted bill, possibly before it gets a print (druk) number,
+    and the only place carrying the public consultation dates.
 
-    This is the earliest public trace of a bill and the only place that carries the public
-    consultation dates, so it is what lets readers act before the Sejm even starts working.
-
-    `number` is the RPW number ("RPW/29075/2026"), `status` one of ACTIVE, WITHDRAWN,
-    NOT_PROCEEDED, OBSOLETE, ADOPTED, and `submission_type` one of BILL, DRAFT_RESOLUTION,
-    BILL_AMENDMENT, RESOLUTION_AMENDMENT.
+    `status` is ACTIVE|WITHDRAWN|NOT_PROCEEDED|OBSOLETE|ADOPTED, `submission_type`
+    BILL|DRAFT_RESOLUTION|BILL_AMENDMENT|RESOLUTION_AMENDMENT.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -260,18 +238,12 @@ class BillSubmission(BaseModel):
 
 
 class CommitteeSitting(BaseModel):
-    """An item of GET /committees/{code}/sittings.
+    """An item of GET /committees/{code}/sittings. `start_time` is Warsaw wall clock, `status`
+    PLANNED or FINISHED, `agenda` an HTML fragment `lexinform.agenda` reads.
 
-    `start_time` is wall clock in Warsaw, as the API gives it, `status` PLANNED or FINISHED, and
-    `agenda` an HTML fragment `lexinform.agenda` reads. `joint_with` names the other committees
-    sitting together with this one: the same meeting is listed once under every one of them
-    (938 of the 4,387 sittings of term 10, in 546 pairs), so without it a bill referred to two
-    of them was announced twice for one meeting.
-
-    `notes` is free prose the committee adds, and two of the things it says are said nowhere
-    else: that the sitting happens only if the Sejm refers something to the committee first (21
-    sittings of term 10), and the address and deadline for applying to a przesłuchanie (4).
-    `closed` is a sitting the public may not enter (279), while the announcement names its room.
+    `joint_with` stops one meeting being announced twice (938 of the term's 4,387 sittings, 546
+    pairs). `notes` is free prose carrying two facts said nowhere else: a sitting conditional on a
+    referral (21), and the address for a przesłuchanie (4). `closed` (279) the public cannot enter.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -324,15 +296,10 @@ AgendaKind = Literal["committee", "sejm"]
 class AgendaItem(BaseModel):
     """A future sitting whose agenda names the bill: the dated "what happens next".
 
-    `ref` is the dedupe key of the post ("ASW/136/2026-09-17+08:30+ks", "sejm/65/2026-09-15"),
-    `text` the agenda item in plain text, and `end_date` the last day of a Sejm sitting, which
-    spans several.
-
-    The `ref`'s grammar is this class's own: `for_committee` and `for_sejm` write it,
-    `sitting_key` reads it back, and `legacy_ref` is the shape it had before the hour and the
-    room joined it. The three used to live a module away from each other, held together by a
-    comment about a separator — and the separator is load-bearing, because a `sitting_key` that
-    stopped matching would make `AgendaWatcher._retract_gone` take back every sitting still on.
+    `ref` is the post's dedupe key ("ASW/136/2026-09-17+08:30+ks", "sejm/65/2026-09-15"). Its
+    grammar belongs to this class — `for_committee`/`for_sejm` write it, `sitting_key` reads it
+    back — because a `sitting_key` that stopped matching would make `AgendaWatcher._retract_gone`
+    take back every sitting still on.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -371,11 +338,9 @@ class AgendaItem(BaseModel):
     ) -> AgendaItem:
         """One committee sitting as the channel will announce it.
 
-        The `ref`'s last segment carries everything the announcement asserts about when and
-        where the committee meets, so that moving any of it makes a post of its own: of the 886
-        committee sittings of term 10 whose `comments` record a change, 204 say "zmiana godziny",
-        97 "zmiana sali" and 61 both, and while the `ref` was the day alone the run wrote the new
-        hour to the bill and said nothing, leaving the standing post naming the old one.
+        The `ref`'s last segment carries day, hour and room, so that moving any of them makes a
+        post of its own: of the 886 term-10 sittings whose `comments` record a change, 204 say
+        "zmiana godziny", 97 "zmiana sali" and 61 both.
         """
         when = [sitting.date.isoformat()]
         if sitting.start_time is not None:
@@ -441,11 +406,9 @@ POLAND_TZ = ZoneInfo("Europe/Warsaw")
 class ActInfo(BaseModel):
     """The published act, from the ELI API (GET /eli/acts/{publisher}/{year}/{pos}).
 
-    Every date here is a Polish legal date, read in `POLAND_TZ`: `act_date` is the
-    `announcementDate` the act carries in its title, `promulgation_date` the day it appeared in
-    Dziennik Ustaw, and `entry_into_force` the single day it starts to apply — provisions that
-    enter in stages are not modelled. `eli` is the identifier ("DU/2026/1099") and
-    `display_address` how it is cited ("Dz.U. 2026 poz. 1099").
+    Dates are Polish legal dates read in `POLAND_TZ`: `act_date` is the one in the act's title,
+    `promulgation_date` the Dziennik Ustaw day, `entry_into_force` the single day it starts to
+    apply — provisions entering in stages are not modelled.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -604,12 +567,10 @@ class PrintInfo(BaseModel):
     def main_pdf(self) -> Attachment | None:
         """The bill text itself: `{number}.pdf`, else the first PDF that is this print's own.
 
-        The fallback is for a print that publishes its text under a name of its own ("125-ustawa i
-        załączniki do ustawy.pdf", "2872 (z autopoprawką).pdf"), and it must not reach past this
-        print: for druki 599, 1768 and 2821 of term 10 the API answers `/prints/{n}` with the
-        record of a document filed *to* that number, its own PDF being 404. A filing's file is
-        named after the print it was filed to (`{n}-004.pdf`, `{n}-s.pdf`) and over term 10 that
-        shape occurs exactly three times, on those three prints, always as the only file.
+        The fallback is for a print publishing its text under a name of its own ("2872 (z
+        autopoprawką).pdf"), and must not reach past this print: for druki 599, 1768 and 2821 the
+        API answers `/prints/{n}` with a document filed *to* that number. A filing's file is named
+        `{n}-004.pdf` or `{n}-s.pdf`, which over term 10 occurs on those three prints alone.
         """
         preferred = f"{self.number}.pdf".lower()
         pdfs = [a for a in self.attachments if a.is_pdf]
@@ -621,17 +582,12 @@ class PrintInfo(BaseModel):
 
 
 def supplement_kind(title: str) -> SourceKind | None:
-    """What a document filed to a print after its submission is, or None when it is not worth
-    a word to a reader.
+    """What a document filed to a print after its submission is, or None when it is not worth a
+    word to a reader.
 
-    Measured over term 10 (3282 prints, 2339 additional prints, 2026-09-12): 82 are the
-    government's position on a bill it did not write, 289 the OSR the Marshal asked the applicant
-    for, and 1732 are opinions. The first two decide things and arrive once per bill; the
-    opinions are 1.4 per print on average and 16 at the most, and telling a reader that yet
-    another body has written something is the chronicle this channel is not. What is left is
-    housekeeping — a changed representative of the applicants, an extra list of supporting
-    signatures, an errata — and amendments tabled at the second reading, which reach the reader
-    through the committee's report instead (`amendments_stage`), never twice.
+    Of term 10's 2,339 filings, 82 are the government's position and 289 the OSR — both decide
+    things and arrive once. The 1,732 opinions, the housekeeping and the second reading's
+    amendments (told through the committee's report) are not this channel's genre.
     """
     low = " ".join(title.lower().split())
     if "stanowisko rządu" in low:
@@ -864,14 +820,11 @@ the committee's report, the Senate's resolution, the President's motion."""
 
 
 def derived_print_numbers(stages: tuple[Stage, ...] | list[Stage]) -> set[str]:
-    """The prints a sitting agenda may name this bill by, other than its own druk.
+    """The prints a sitting agenda may name this bill by, other than its own druk: past the third
+    reading it names the derived print instead.
 
-    Past the third reading the agenda stops naming the bill at all: "Rozpatrzenie uchwały Senatu
-    w sprawie ustawy o zmianie ustawy o cudzoziemcach (druk nr 1935)" is druk 1630, and
-    "Sprawozdanie … o wniosku Prezydenta o ponowne rozpatrzenie" is the veto's print. Over term
-    10 that is 211 committee items and 160 plenary ones, and it covers the whole Senate and veto
-    stretch — the reader's last windows. The numbers are the bill's own (of the 991 in term 10
-    not one is a process number in its own right), so matching on them adds no stranger.
+    211 committee items and 160 plenary ones of term 10, the whole Senate and veto stretch. Of the
+    991 such numbers not one is a process number in its own right, so they add no stranger.
     """
     return {
         stage.print_number.split("-")[0]
@@ -883,13 +836,9 @@ def derived_print_numbers(stages: tuple[Stage, ...] | list[Stage]) -> set[str]:
 def senate_moved_rejection(stage: Stage) -> bool:
     """The Senate resolved to reject the act as a whole (art. 121 ust. 3), not to amend it.
 
-    The API's only wording for it is **"wnosi o odrzucenie ustawy"** — 93 of the 2,206 Senate
-    positions of terms 8-10, all of them in term 9. "odrzucił ustawę", which
-    `docs/legislative-process.md` used to give, appears nowhere in the corpus, and a test for
-    `"odrzuci"` matches neither: "odrzuc-e-nie" does not contain it. So every Senate rejection
-    was read as a set of amendments — «Сенат внёс поправки» over a resolution that kills the law
-    unless the Sejm musters an absolute majority. "popraw" is excluded because a position that
-    names amendments is one, whatever else it says.
+    The API's only wording is "wnosi o odrzucenie ustawy" (93 of 2,206 Senate positions of terms
+    8-10, all in term 9); "odrzuci" matches none of it, because "odrzuc-e-nie" does not contain
+    it. "popraw" is excluded: a position naming amendments is one, whatever else it says.
     """
     position = (stage.position or "").lower()
     return "odrzuc" in position and "popraw" not in position
