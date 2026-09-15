@@ -444,9 +444,8 @@ class MessageFormatter:
         an opinion can still be sent, about citizens of Ukraine, government projects before the
         Sejm, and the bills of the term.
 
-        The only tag line not built by `_tags`: the card leads with the thread rather than
-        ending on it, and the four tags after the topics are the card's alone (a reply is not a
-        place to advertise the term). The two halves every message shares are the same calls.
+        The only tag line not built by `_tags`: the card leads with the thread and carries four
+        tags a reply has no place for.
         """
         lb = self._labels
         return " ".join(
@@ -473,9 +472,7 @@ class MessageFormatter:
         who submitted it, links.
 
         The verdict, the importance and the category stay the card's: one thread, one score. The
-        difference is this print's own news and the reason the reply exists — a reader meeting
-        «Альтернативный проект того же закона» and nothing else cannot tell the same bill in
-        other words from a different answer to the same question.
+        difference is this print's own news and the reason the reply exists.
         """
         lb = self._labels
         s = bill.summary
@@ -839,11 +836,9 @@ class MessageFormatter:
     ) -> RenderedMessage:
         """Reply under the card: the bill is on the agenda of a committee or Sejm sitting.
 
-        `moved_from` is the sitting as the channel last announced it. It moves to another day,
-        but it also keeps the day and moves the hour or the room — 302 of the 886 committee
-        sittings of term 10 whose `comments` record a change do exactly that — and «перенесено с
-        17.09.2026» printed over an unchanged date would tell the reader nothing. So the line
-        names what actually changed.
+        `moved_from` is the sitting as last announced, not a bare date: 302 of the 886 committee
+        sittings of term 10 that changed kept the day and moved the hour or the room, and
+        «перенесено с 17.09.2026» over an unchanged date tells the reader nothing.
         """
         lb = self._labels
         s = bill.summary
@@ -889,12 +884,9 @@ class MessageFormatter:
     ) -> RenderedMessage:
         """Reply under the card: a sitting the channel announced is not happening as announced.
 
-        Two different facts, and the reader planned a day around one of them — the sitting itself
-        is off (called off, or no longer announced as planned), or it goes ahead and this bill is
-        no longer on its agenda. A sitting that only changed *date* is neither: it keeps its
-        `sitting_key` and is told as a new agenda post that says where it moved from.
-
-        The tag is the announcement's, so one search finds a sitting and its retraction together.
+        Two different facts: the sitting is off, or it meets without this bill. A sitting that
+        merely moved is neither — it keeps its `sitting_key` and is told as a new agenda post. The
+        tag is the announcement's, so one search finds a sitting and its retraction together.
         """
         lb = self._labels
         today = today or self._today()
@@ -1298,14 +1290,9 @@ class MessageFormatter:
 
     def _tags(self, bill: Bill, *lead: str) -> str:
         """Every reply's tag line: what the reply is about, then what the bill is about and its
-        thread. `bill` is the bill the thread belongs to, which for a reply under another print's
-        card is that card's bill — the verdict and the thread are its, not the reply's.
-
-        The last two halves are why this is one method. A reader who follows a topic must find
-        the moments to act and not only the card that opened the thread, and the two replies that
-        built their line by hand — the status update and the joint-bill reply — were the two that
-        had forgotten them. The card builds its own (`_card_tags`): it puts the thread first and
-        carries tags no reply has.
+        thread. `bill` is the bill the thread belongs to — for a reply under another print's card,
+        that card's bill. One method because a reader following a topic must find the moments to
+        act and not only the card; the card builds its own (`_card_tags`).
         """
         return " ".join([*lead, *self._topic_tags(bill), self._thread_tags(bill)])
 
@@ -1569,14 +1556,10 @@ class MessageFormatter:
 
     def _steps_block(self, bill: Bill, today: dt.date, *, road: Bill | None = None) -> str:
         """Where the bill is on its path, "what comes next" (dated when a sitting is scheduled,
-        else with the usual duration) and "what you can do" (or why nothing, for now) — or, when
-        the road has ended, the one sentence that says so.
-
-        `road` is whose road it is, when that is not whose step it is: a reply under the card of
-        a jointly considered print takes the thread's step from the card (the group moves as
-        one from the joint referral) but the shape of the road from the print it is about —
-        druk 316 is the President's and never passed through a government plan or RCL, and the
-        card's «план ✓ → RCL ✓» said it had.
+        else with the usual duration) and "what you can do" — or, when the road has ended, the one
+        sentence that says so. `road` is whose road it is when that is not whose step it is: a
+        reply under a joint print's card takes the step from the card and the road from its own
+        print, or the President's druk 316 inherits a «план ✓ → RCL ✓» it never passed through.
         """
         lines = [
             self._path_line(bill, today, road=road or bill),
@@ -1904,14 +1887,9 @@ class MessageFormatter:
     def _rcl_actions(self, bill: Bill, today: dt.date) -> list[str]:
         """What a reader of a government project can do, and with how much weight.
 
-        Two of the three moves outlive the consultation: the comment form and the zgłoszenie
-        zainteresowania stay open for as long as the project is with the government, through the
-        committees of the Council of Ministers and the Komisja Prawnicza. They are not nothing —
-        art. 7 of the lobbying act is a right, and the form forwards to the ministry — but a
-        project at `rcl_council` presented them with exactly the emphasis an open consultation
-        had, and the sentence written for that moment (`no_action_labels["rcl_council"]`) was
-        never reached, because a non-empty action list is what suppresses it. So once the window
-        that mattered has shut they are offered as what is left, in one line that says so.
+        The comment form and the zgłoszenie outlive the consultation — they stay open while the
+        project is with the government — but offering them with an open window's emphasis is
+        wrong, so once that window has shut they are offered as what is left, in a line saying so.
         """
         project = bill.rcl
         assert project is not None
@@ -1947,13 +1925,10 @@ class MessageFormatter:
     ) -> AgendaItem | None:
         """The soonest future sitting naming the bill, in the venue the phase implies.
 
-        A phase dates nothing unless a sitting of *its own* venue is scheduled: a committee's
-        08:30 slot is not the date of a third reading, and a phase that happens in neither house
-        — the Senate's thirty days, the President's twenty-one, the wait for Dziennik Ustaw, a
-        vacatio legis — has no venue in the Sejm at all. Taking the next item on the calendar
-        for those read «подпись Президента … · заседание Сейма № 65, 16–18.09.2026», and did it
-        over the constitutional deadline `_when` had just computed, because a print considered
-        jointly with the bill was still being read while this one sat in the Senate.
+        A phase dates nothing unless a sitting of its own venue is scheduled: a committee's 08:30
+        slot is not a third reading, and a phase outside both houses has no venue at all. The
+        fallback to the next calendar item printed «подпись Президента · заседание Сейма № 65»
+        over the constitutional deadline.
         """
         future = sorted((i for i in bill.agenda if i.date >= today), key=lambda i: i.date)
         if kind is not None:
@@ -1983,11 +1958,10 @@ class MessageFormatter:
     def _sitting_notes(self, item: AgendaItem) -> list[str]:
         """What the committee's `notes` say about the sitting itself, above its agenda.
 
-        The condition comes first because it decides whether there is a day to plan at all: 21
-        sittings of term 10 happen only if the Sejm refers something to the committee, and the
-        channel announced them the way it announces a settled date. The application address is
-        the other way round — it is the rarest line the channel can print (4 sittings in a whole
-        term) and the only one that lets a reader into a hearing.
+        The condition comes first because it decides whether there is a day to plan at all (21
+        sittings of term 10 happen only if the Sejm refers something first). The application
+        address is the rarest line the channel prints — 4 sittings in a term — and the only one
+        that lets a reader into a hearing.
         """
         lb = self._labels
         lines: list[str] = []
@@ -2338,9 +2312,8 @@ def shrink_block(block: str, allowed: int) -> str:
     """Trim a block to `allowed` chars keeping its HTML well-formed.
 
     Blocks are "<b>header</b>\n<body>"; cutting is only allowed inside the body, so the header is
-    never split. A body that carries markup of its own (a rendered card, a list of links, one
-    heading per document filed to a print) is cut between lines and nowhere else — no tag or
-    entity is ever split. A block that cannot keep its header is dropped.
+    never split. A body carrying markup of its own is cut between lines and nowhere else, so no
+    tag or entity is ever split. A block that cannot keep its header is dropped.
     """
     if block.endswith("</pre>"):
         opening = block.index("<pre>") + len("<pre>")
