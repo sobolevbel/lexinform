@@ -13,7 +13,7 @@ Read `README.md` for product context, `CONTRIBUTING.md` before changing code, an
 
 - Python 3.14; use `uv`.
 - Before committing, run `uv run pytest -q && uv run mypy && uv run ruff check src tests`, then `uv run ruff format src tests`. Mypy is strict: no `type: ignore`, no local imports, and fully typed tests.
-- Commit each completed, coherent part. Do not push unless asked; never add `Co-Authored-By` trailers.
+- Comments and docstrings state only a non-obvious external fact or invariant; keep them to one line. Commit messages are English. Commit each completed, coherent part; do not push unless asked or add `Co-Authored-By` trailers.
 - `.env` contains real secrets: do not read or print it. Keep `.env.example` aligned when adding settings.
 - Reader-facing wording is Russian (labels live in `i18n.py`); retain Polish legal titles and abbreviations unchanged.
 - Production state is the SQLite dump on the `state` branch, maintained by `.github/workflows/daily.yml`. Real-data dry runs must use a copy of that dump and `lexinform run --dry-run`; they still make real LLM calls.
@@ -29,6 +29,7 @@ Dependencies flow only in this direction:
 - `container.py` is the real manual wiring. Keep it type-safe and build each service once.
 - Test through `tests/harness.py::World` and fakes in `tests/fakes.py`: arrange with public helpers, run the pipeline, assert reports/publications/models. Do not access private state. HTTP adapters use `httpx2.MockTransport`.
 - Parallelise network-only work with `concurrency.fan_out`; make repository writes in input order on the calling thread. `workers=4` must behave identically to `workers=1`.
+- Take time in services from the `Clock`, never `datetime.now()`.
 
 ## Invariants to preserve
 
