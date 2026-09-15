@@ -160,7 +160,7 @@ def test_replies_of_a_linked_print_carry_the_tag_of_the_card_they_continue(
     from_rcl_unnumbered = bill_of(process_1962, linked_number="RCL/12414100")
     from_rpw = bill_of(process_1962, linked_number="RPW/29075/2026")
 
-    assert fmt.status_update(from_rcl, change).text.endswith("#kadencja10druk1962 #RCL_UC164")
+    assert fmt.status_update(from_rcl, change).text.endswith("#kadencja10druk1962 #UC164")
     assert fmt.status_update(from_rcl_unnumbered, change).text.endswith("#RCL_12414100")
     assert fmt.act_published(from_rpw.model_copy(update={"act": ACT})).text.endswith(
         "#kadencja10druk1962 #RPW_29075_2026"

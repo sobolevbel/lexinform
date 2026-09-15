@@ -428,7 +428,7 @@ def test_hand_over_to_the_sejm_then_the_druk_continues_the_thread() -> None:
     assert (bill.number, bill.linked_number, reply_to) == ("3100", RCL, card_id)
     update_text = MessageFormatter("ru").status_update(bill, change).text
     assert "Проекту присвоен номер druku: <b>3100</b>" in update_text
-    assert "#kadencja10druk3100 #RCL_UC164" in update_text  # both tags find the thread
+    assert "#kadencja10druk3100 #UC164" in update_text  # both tags find the thread
     assert w.bill(RCL).status is BillStatus.LINKED
     stored = w.bill("3100")
     assert stored.analysis is not None and stored.rcl is None
@@ -438,7 +438,7 @@ def test_hand_over_to_the_sejm_then_the_druk_continues_the_thread() -> None:
     assert {message for _, message in w.publisher.edits} == {card_id}
     edited, _ = w.publisher.edits[-1]
     assert edited.number == "3100"
-    assert "#kadencja10druk3100 #RCL_UC164" in MessageFormatter("ru").new_bill(edited, None).text
+    assert "#kadencja10druk3100 #UC164" in MessageFormatter("ru").new_bill(edited, None).text
 
 
 def test_druk_of_a_skipped_project_goes_the_normal_way() -> None:

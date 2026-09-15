@@ -86,7 +86,7 @@ def test_the_card_links_the_entry_and_the_register_and_tags_the_thread_once() ->
     assert "Запись в плане работ</a>" in text
     assert "https://www.gov.pl/web/premier/wplip-rm" in text
     # The same tag the RCL card and the druk will carry: one search, one thread.
-    assert text.count("#RCL_UD408") == 1
+    assert text.count("#UD408") == 1
     # Latin, like `#RCL` and like "wykaz prac RM" in the card's own text: a Cyrillic "РМ" would
     # look the same and be a different string.
     assert "#wykazRM" in text

@@ -46,6 +46,18 @@ def rcl_bill(project: RclProject, *, text_source: TextSource = "documents") -> B
     )
 
 
+def test_the_project_that_continues_a_plan_is_tagged_once_and_by_the_wykaz_number() -> None:
+    bill = rcl_bill(rcl_project()).model_copy(
+        update={"linked_number": "WPL/UC164", "linked_wykaz_number": "UC164"}
+    )
+
+    text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
+
+    # The plan and the project are one thread, so both rows resolve to the same tag.
+    assert text.count("#UC164") == 1
+    assert "#RCL_" not in text
+
+
 def test_card_names_the_ministry_the_letter_deadline_and_both_ways_to_react() -> None:
     bill = rcl_bill(rcl_project())
 
@@ -74,7 +86,7 @@ def test_card_names_the_ministry_the_letter_deadline_and_both_ways_to_react() ->
     assert ">Текст проекта (DOCX)</a> | <a href=" in text and ">OSR</a> | <a href=" in text
     assert ">Uzasadnienie</a> | <a href=" in text  # the legacy .doc is readable too
     assert ">Wykaz prac RM</a>" in text
-    assert "#RCL_UC164" in text and "#RCL" in text and "#консультации" in text
+    assert "#UC164" in text and "#RCL" in text and "#консультации" in text
 
 
 def test_card_after_the_deadline_keeps_only_the_comment_form_and_says_what_follows() -> None:
@@ -172,7 +184,7 @@ def test_update_lists_the_new_stage_and_announces_the_hand_over_to_the_sejm() ->
     assert "• 02.09.2026: <i>14. Skierowanie projektu ustawy do Sejmu</i>" in text
     assert "Проект направлен в Сейм — ждём номер druku" in text
     assert "Что дальше:</b> присвоение номера druku в Сейме, затем I чтение" in text
-    assert ">Проект на RCL</a>" in text and "#RCL_UC164" in text
+    assert ">Проект на RCL</a>" in text and "#UC164" in text
 
 
 def test_consultation_reminder_and_results_point_to_the_ministry_and_the_project_page() -> None:

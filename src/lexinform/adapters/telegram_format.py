@@ -1342,7 +1342,9 @@ class MessageFormatter:
         tags = [MessageFormatter._number_tag(bill)]
         if bill.linked_number:
             tags.append(_number_tag(bill.term, bill.linked_number, bill.linked_wykaz_number))
-        return " ".join(tags)
+        # Both rows of a linked pair carry the wykaz number, so their tags coincide: the project
+        # and the plan it continues are one thread and must not be tagged twice.
+        return " ".join(dict.fromkeys(tags))
 
     def _authors_suffix(self, bill: Bill) -> str:
         """ " (KO 17, Lewica 12 · представитель: Jan Kowalski, KO)" for deputies' bills."""
@@ -2219,15 +2221,19 @@ def _tag_safe(number: str) -> str:
 
 
 def _number_tag(term: int, number: str, wykaz_number: str | None) -> str:
-    """`#RCL_UC104` (the project id when the wykaz number is unknown), `#RPW_29075_2026`,
+    """`#UC104` (`#RCL_12414402` when the wykaz number is unknown), `#RPW_29075_2026`,
     `#kadencja10druk3039`.
 
-    A planned bill takes the same `#RCL_UD408`: the wykaz number is the government project's
-    identity from the plan through RCL to the druk, and one search finds the whole thread."""
+    A government project is tagged with its number in the wykaz prac RM: that number is the
+    project's identity from the plan through RCL to the druk, so one search finds the whole
+    thread. It is not the RCL id, which is why the tag does not say `RCL`; only a project the
+    register does not number is tagged by the id of its page."""
     if is_wykaz_number(number):
-        return "#RCL_" + _tag_safe(wykaz_entry_number(number))
+        return "#" + _tag_safe(wykaz_entry_number(number))
     if is_rcl_number(number):
-        return "#RCL_" + _tag_safe(wykaz_number or number.removeprefix(RCL_PREFIX))
+        if wykaz_number:
+            return "#" + _tag_safe(wykaz_number)
+        return "#RCL_" + _tag_safe(number.removeprefix(RCL_PREFIX))
     if is_pre_print_number(number):
         return "#" + _tag_safe(number.replace("/", "_"))
     return f"#kadencja{term}druk{_tag_safe(number)}"

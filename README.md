@@ -93,7 +93,7 @@ card. Government bills are caught earlier still, on legislacja.rcl.gov.pl (Rząd
 Legislacyjny), where the ministry consults them months before the Sejm: the card names the
 deadline and the e-mail from the consultation letter, the RCL comment form, and follows the project
 through the committees of the Council of Ministers until the druk appears and takes over the
-thread. Once linked, the replies carry both tags (`#RCL_UC104 #kadencja10druk3055`, or the
+thread. Once linked, the replies carry both tags (`#UC104 #kadencja10druk3055`, or the
 `#RPW_…` one) and the card is edited in place to carry the druk's tag, so a search for either
 finds the whole thread. Earliest of all is the government's own register of planned legislation
 (wykaz prac legislacyjnych RM): an entry there is an intention, months before any text — UD408
