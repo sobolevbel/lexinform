@@ -1,16 +1,12 @@
 """Client for the official Sejm REST API (https://api.sejm.gov.pl).
 
-Verified behaviour of the API (September 2026):
-- `/processes` honours `limit`, `offset`, `modifiedSince` (full ISO datetime, date-only is an
-  error) and `documentType` (the Polish display string, e.g. "projekt ustawy"); `sort_by` and
-  `passed` are ignored, results come in ascending print-number order. We therefore paginate by
-  offset until an empty page.
-- All timestamps (`changeDate`, `modifiedSince`) are naive local time of the Sejm servers
-  (Europe/Warsaw); `Z` or an offset suffix is rejected. `SEJM_TZ` converts both ways.
-- `/prints` ignores `limit`/`modifiedSince`, so we never list it; we only fetch single prints.
-- Attachments are served from `/prints/{number}/{attachment name}`. `HEAD` on them returns no
-  `Content-Length` and takes 5-15 s on a file the server has not rendered yet, so sizes are
-  enforced while streaming the `GET` instead.
+Verified behaviour (September 2026):
+- `/processes` ignores `sort_by` and `passed`, so pagination is by `offset` until an empty page;
+  `documentType` needs the Polish display string and `modifiedSince` a full ISO datetime.
+- Timestamps are naive Europe/Warsaw and reject `Z`; `SEJM_TZ` converts both ways.
+- `/prints` ignores `limit`/`modifiedSince`, so single prints are fetched instead.
+- `HEAD` on an attachment returns no `Content-Length` and takes 5-15 s on a file the server has
+  not rendered, so sizes are enforced while streaming the `GET`.
 """
 
 import logging

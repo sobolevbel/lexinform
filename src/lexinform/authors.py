@@ -1,13 +1,11 @@
 """Who signed a deputies' bill: parsed from the cover letter on the first page of the print.
 
-The Sejm API does not expose signatories, but every print starts with a letter to the Marshal:
-"niżej podpisani posłowie wnoszą projekt ustawy ... Do reprezentowania wnioskodawców ...
-upoważniamy posła X. (-) A; (-) B; ...". Names are matched against the MP directory (/MP) to
-show which clubs stand behind a bill.
+The API does not expose signatories, but every print opens with a letter to the Marshal: "niżej
+podpisani posłowie wnoszą projekt ustawy … upoważniamy posła X. (-) A; (-) B; …". Names are
+matched against /MP to show which clubs stand behind a bill.
 
-A signature ends at a ";", at a final ".", at a blank line, at the end of the letter, or at the
-next "(-)"; a single line break inside a name, which is how a PDF wraps one, does not end it,
-and neither does a page break, which is how a PDF wraps one at the foot of a page.
+A signature ends at ";", a final ".", a blank line, the end of the letter or the next "(-)" —
+never at a single line break or a page break, which is how a PDF wraps a name.
 """
 
 import re

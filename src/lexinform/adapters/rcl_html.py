@@ -178,13 +178,10 @@ class RclClient:
     ) -> httpx.Response:
         """One request with retries; a `probe` gets one attempt with the short timeout.
 
-        A client that has already found the host unreachable keeps probing until one request
-        gets through: full patience for every later request is patience spent on a question the
-        run has answered. The run of 2026-09-14 declared RCL down on the discovery probe at 20 s
-        and then spent 247 s of its 516 proving it again, four project pages at four 60-second
-        attempts each — the tracking phase asking what the discovery phase had just been told.
-        One short attempt per request costs 20 s instead, and the host coming back mid-run is
-        still noticed, which a flag set for the whole run would not be.
+        A client that has found the host unreachable keeps probing until one request gets
+        through: full patience for every later request is spent on a question the run has already
+        answered — one run spent 247 s of its 516 proving RCL down a second time. A short attempt
+        costs 20 s, and the host coming back mid-run is still noticed.
         """
         probe = probe or self._unreachable_since is not None
         retries = 0 if probe else self._max_retries

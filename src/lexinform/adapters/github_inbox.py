@@ -1,14 +1,11 @@
-"""The inbox branch written from outside git: one file per command through the GitHub
-Contents API (`PUT /repos/{owner}/{repo}/contents/{path}`), which commits and pushes in one
-call, followed by a `repository_dispatch` that starts the workflow on the default branch (a
-push of the inbox branch itself would start nothing: GitHub reads a push event's workflow from
-the pushed branch, and the inbox branch carries no workflow). The kick is a courtesy: a
-command that is filed but not kicked is answered by the next scheduled run.
+"""The inbox branch written from outside git: one file per command through the Contents API, which
+commits and pushes in one call, then a `repository_dispatch` to start the workflow (a push of the
+inbox branch would start nothing — GitHub reads a push event's workflow from the pushed branch).
+The kick is a courtesy: an unkicked command is answered by the next scheduled run.
 
-`/run` is the exception and goes out as a `workflow_dispatch` instead: it is not a command a
-run executes but the run itself, with the inputs `daily.yml` declares. That endpoint needs a
-token with **Actions: read and write**, one scope more than filing a command asks for, and says
-so when it is missing — a 403 there is about the token and not about the workflow.
+`/run` goes out as a `workflow_dispatch` instead, being the run itself and not a command a run
+executes. That endpoint needs **Actions: read and write**, one scope more, and says so when it is
+missing: a 403 there is about the token and not the workflow.
 """
 
 import base64
@@ -38,10 +35,8 @@ def _asks_for_a_sha(response: httpx.Response) -> bool:
     """Whether a 422 means "this path is already there", which GitHub says as `"sha" wasn't
     supplied`.
 
-    The question is asked of the `message` field and not of the raw body: any other 422 whose
-    text happened to contain "sha" was swallowed as "filed already", and the command then
-    vanished — `put` returned success, the relay moved its offset past it and nothing was left
-    to notice.
+    Asked of the `message` field and not the raw body, or any other 422 whose text contains "sha"
+    is swallowed as "filed already" and the command vanishes with `put` reporting success.
     """
     try:
         body = response.json()

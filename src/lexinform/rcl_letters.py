@@ -1,14 +1,12 @@
 """The consultation letter (pismo kierujące projekt do konsultacji publicznych), read for the
 deadline and the address for comments.
 
-Ministries write these letters by hand, but the phrasing is fixed by the Regulamin pracy Rady
-Ministrów: "w terminie 14 dni od dnia otrzymania niniejszego pisma" (relative to the letter,
-whose date is in its heading or, with an electronic signature, missing) or "do dnia 30 września
-2026 r." (absolute), and "na adres: sekretariat@ministerstwo.gov.pl". Pure text parsing; no I/O.
+Ministries write them by hand but the Regulamin pracy RM fixes the phrasing: "w terminie 14 dni
+od dnia otrzymania niniejszego pisma" (relative to a date that an electronic signature leaves
+out), "do dnia 30 września 2026 r.", "na adres: sekretariat@ministerstwo.gov.pl". No I/O.
 
-`MAX_CONSULTATION` is what a parsed deadline is measured against: the longest term the ministries
-set is 30 days, 60 for a few big projects, so six months is far outside that — and inside any
-sunset clause a bill is likely to quote.
+`MAX_CONSULTATION` bounds a parsed deadline: the longest term set is 30 days, 60 for a few big
+projects, so six months is outside it and inside any sunset clause a bill might quote.
 """
 
 import re
@@ -71,14 +69,10 @@ def parse_letter(text: str) -> LetterInfo:
     """What the letter says about the consultation. Only what it says: a field left unknown is
     the honest answer, and for the address it is the only safe one.
 
-    There used to be a fallback to the first e-mail anywhere in the letter, for a letter that
-    words the instruction differently. Measured over the 1,727 letters of the corpus (14 Sept
-    2026) it fired 426 times and was the ministry's switchboard every time — `kontakt@ms.gov.pl`,
-    `kancelaria@mf.gov.pl`, `esp@kultura.gov.pl` — because the extracted text opens with the
-    letterhead and 394 of those 426 addresses stood in its first 600 characters. These are
-    letters addressed to named bodies (courts, unions, the Rada Dialogu) that give no address for
-    comments at all, and the card printed «замечания на e-mail …» over a switchboard and told the
-    reader to write there. A guessed address is worse than none: the reader acts on it.
+    A fallback to the first e-mail anywhere in the letter fired 426 times over the corpus's 1,727
+    letters and was the ministry's switchboard every time, 394 of them inside the letterhead's
+    first 600 characters: those letters give no address for comments at all. A guessed address is
+    worse than none, because the reader acts on it.
     """
     flat = " ".join(text.split())
     letter_date = _date_of(_LETTER_DATE.search(flat))
