@@ -215,7 +215,7 @@ def _channel_post(update: dict[str, Any]) -> ChannelPost | None:
             text=post.get("text"),
             date=datetime.fromtimestamp(int(post.get("date", 0)), tz=UTC),
         )
-    except (KeyError, TypeError, ValueError):
+    except KeyError, TypeError, ValueError:
         log.warning("getUpdates: update %s has no readable post", update_id)
         return None
 

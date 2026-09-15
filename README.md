@@ -1,7 +1,7 @@
 # lexinform
 
 [![CI](https://github.com/sobolevbel/lexinform/actions/workflows/ci.yml/badge.svg)](https://github.com/sobolevbel/lexinform/actions/workflows/ci.yml)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue)](pyproject.toml)
+[![Python 3.14](https://img.shields.io/badge/python-3.14-blue)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A daily bot that watches bills in the Polish Sejm, picks out the ones that matter to foreigners
@@ -19,7 +19,7 @@ publication in Dziennik Ustaw, so readers learn about changes while they can sti
 - Runs twice a day on weekdays and once at midday on the weekend in GitHub Actions; state is a
   SQLite dump in the `state` branch. The bot itself needs no server; only the optional relay that
   carries operator commands does.
-- Python 3.12+, `uv`, `pydantic`, `anthropic` SDK, `httpx2`, `beautifulsoup4`, `pypdf`, `typer`,
+- Python 3.14, `uv`, `pydantic`, `anthropic` SDK, `httpx2`, `beautifulsoup4`, `pypdf`, `typer`,
   SQLite.
 
 ## What readers get

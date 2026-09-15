@@ -153,7 +153,9 @@ daily run's analysis phase leaves it.
 
 ### The server (the relay)
 
-Needs Python 3.12, git, ~50 MB of RAM and outbound HTTPS; nothing inbound. On Ubuntu 24.04:
+Needs git, ~50 MB of RAM and outbound HTTPS; nothing inbound. Python 3.14 is `uv sync`'s own
+business — it downloads a standalone build (~70 MB of disk), so the distribution's Python does
+not matter. On Ubuntu 24.04:
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh          # uv into ~/.local/bin

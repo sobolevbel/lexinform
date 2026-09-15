@@ -9,7 +9,7 @@ Product and domain background lives in `README.md`, `docs/roadmap.md` and
 
 ```bash
 git clone https://github.com/sobolevbel/lexinform && cd lexinform
-uv sync                       # Python 3.12+, all dependencies incl. the dev group
+uv sync                       # Python 3.14, all dependencies incl. the dev group
 uv run pre-commit install     # ruff, mypy and `uv lock --check` on every commit
 cp .env.example .env          # keys are only needed for `analyze`, `preview --to` and `run`
 ```
@@ -25,7 +25,9 @@ uv run mypy                   # strict, over src and tests
 uv run pytest                 # unit tests, a few seconds, offline
 ```
 
-All three must be clean. CI (`.github/workflows/ci.yml`) runs the same on Python 3.12 and 3.13.
+All three must be clean. CI (`.github/workflows/ci.yml`) runs the same on Python 3.14, the only
+version this project is built and tested on: `uv` fetches it wherever it is missing, so nothing
+depends on what a distribution ships.
 Commit after each finished part; do not push unless asked. Commit messages are English, subject
 and body alike.
 

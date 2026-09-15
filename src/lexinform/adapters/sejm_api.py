@@ -417,7 +417,7 @@ def parse_stage(item: dict[str, Any]) -> Stage:
 def _int(value: Any) -> int | None:
     try:
         return int(value) if value is not None else None
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
 
 

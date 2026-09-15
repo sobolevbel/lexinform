@@ -17,7 +17,7 @@ scans), `docs/rcl-scraping.md` (RCL's markup and files, the wykaz CSV, the probe
 
 ## Working rules
 
-- Python 3.12, `uv`. `uv run pytest -q && uv run mypy && uv run ruff check src tests` and `uv run
+- Python 3.14, `uv`. `uv run pytest -q && uv run mypy && uv run ruff check src tests` and `uv run
   ruff format src tests` — all clean before a commit. mypy is strict over `src` and `tests`: no
   `type: ignore`, no local imports, tests fully typed.
 - **IMPORTANT — COMMENTS AND DOCSTRINGS ARE ONE LINE. ALWAYS. YOU MUST NEVER WRITE A MULTI-LINE

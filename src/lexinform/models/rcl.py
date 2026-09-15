@@ -278,12 +278,12 @@ class RclProject(BaseModel):
     def sent_to_sejm(self) -> bool:
         return self.rm_number is not None or any(st.is_sejm and st.reached for st in self.stages)
 
-    def with_stage(self, stage: RclStage) -> "RclProject":
+    def with_stage(self, stage: RclStage) -> RclProject:
         """A copy with one timeline node replaced by its catalog version."""
         stages = tuple(stage if st.id == stage.id else st for st in self.stages)
         return self.model_copy(update={"stages": stages})
 
-    def without_documents(self) -> "RclProject":
+    def without_documents(self) -> RclProject:
         """The skeleton kept for a project the pipeline gave up on: timeline, metadata and the
         consultation, but no folders or documents (most of the bytes, never read again)."""
         stages = tuple(st.model_copy(update={"folders": ()}) for st in self.stages)

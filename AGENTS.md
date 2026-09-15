@@ -11,7 +11,7 @@ Read `README.md` for product context, `CONTRIBUTING.md` before changing code, an
 
 ## Working rules
 
-- Python 3.12; use `uv`.
+- Python 3.14; use `uv`.
 - Before committing, run `uv run pytest -q && uv run mypy && uv run ruff check src tests`, then `uv run ruff format src tests`. Mypy is strict: no `type: ignore`, no local imports, and fully typed tests.
 - Commit each completed, coherent part. Do not push unless asked; never add `Co-Authored-By` trailers.
 - `.env` contains real secrets: do not read or print it. Keep `.env.example` aligned when adding settings.
