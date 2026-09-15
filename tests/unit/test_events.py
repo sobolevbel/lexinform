@@ -14,6 +14,7 @@ from lexinform.models import (
     SupplementRecord,
     amendments_stage,
     event_keys,
+    fills_in_the_past,
     flatten_stages,
     has_news,
     hearing_application_deadline,
@@ -266,3 +267,62 @@ def test_an_opinion_filed_by_another_body_is_held_and_not_a_post_of_its_own() ->
     assert not is_substantive(opinion)
     assert not has_news(_change([opinion]))
     assert has_news(_change([opinion, referral]))
+
+
+def _reading(decision: str) -> Stage:
+    return Stage(
+        stage_name="II czytanie na posiedzeniu Sejmu",
+        stage_type="SejmReading",
+        decision=decision,
+        date=dt.date(2026, 9, 15),
+    )
+
+
+def _committee_work() -> Stage:
+    return Stage(
+        stage_name="Praca w komisjach po II czytaniu",
+        stage_type="CommitteeWork",
+        date=dt.date(2026, 9, 15),
+        children=(
+            Stage(
+                stage_name="Sprawozdanie komisji",
+                stage_type="CommitteeReport",
+                proposal="przyjąć część poprawek",
+                date=dt.date(2026, 9, 15),
+            ),
+        ),
+    )
+
+
+def test_a_stage_that_arrives_behind_one_already_told_fills_in_the_past() -> None:
+    """Druk 1929, 15 Sept 2026: the committee's work after the second reading reached the tree at
+    11:32 and the second reading itself at 12:29, standing before it. Named after its own newest
+    stage, the second post announced the cause of the first."""
+    start = Stage(stage_name="Projekt wpłynął", stage_type="Start", date=dt.date(2025, 11, 4))
+    told = (start, _committee_work())
+    found = (start, _reading("skierowano ponownie do komisji"), _committee_work())
+
+    assert fills_in_the_past(told, found)
+
+
+def test_a_stage_that_follows_what_was_told_is_told_at_once() -> None:
+    """The same two nodes in the order the Sejm's tree puts them: nothing is held."""
+    start = Stage(stage_name="Projekt wpłynął", stage_type="Start", date=dt.date(2025, 11, 4))
+    reading = _reading("skierowano ponownie do komisji")
+
+    assert not fills_in_the_past((start,), (start, reading))
+    assert not fills_in_the_past((start, reading), (start, reading, _committee_work()))
+
+
+def test_the_governments_position_is_not_a_stage_that_fills_in_the_past() -> None:
+    """It arrives beside the process and lands in the tree wherever its date puts it — 196 of the
+    241 such nodes of term 10 stand before a road stage dated later. Read as part of the road it
+    would hold back the one filing this channel does tell."""
+    reading = _reading("skierowano ponownie do komisji")
+    position = Stage(
+        stage_name="Stanowisko rządu",
+        stage_type="GovermentPosition",
+        date=dt.date(2026, 3, 1),
+    )
+
+    assert not fills_in_the_past((reading,), (position, reading))

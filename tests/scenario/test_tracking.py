@@ -676,3 +676,66 @@ def test_an_act_notice_a_crash_lost_does_not_also_swallow_the_closure() -> None:
     assert report.updates == 1
     _, change, _ = w.publisher.updates[0]
     assert change.closure_detected and change.passed
+
+
+SECOND_READING = Stage(
+    stage_name="II czytanie na posiedzeniu Sejmu",
+    stage_type="SejmReading",
+    decision="skierowano ponownie do komisji w celu przedstawienia sprawozdania",
+    date=dt.date(2026, 9, 8),
+)
+WORK_AFTER_SECOND_READING = Stage(
+    stage_name="Praca w komisjach po II czytaniu",
+    stage_type="CommitteeWork",
+    date=dt.date(2026, 9, 8),
+    children=(
+        Stage(
+            stage_name="Sprawozdanie komisji",
+            stage_type="CommitteeReport",
+            proposal="przyjąć część poprawek",
+            date=dt.date(2026, 9, 8),
+            print_number="2689-A",
+        ),
+    ),
+)
+
+
+def test_a_stage_the_sejm_publishes_late_is_held_and_told_with_the_next_post() -> None:
+    """Druk 1929, 15 Sept 2026: the committee's work after the second reading was published to
+    the tree an hour before the reading that sent the bill there, so the second post announced
+    the cause of the first and repeated seven of its eleven lines."""
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=WITH_REPORT)
+    w.run()
+    w.set_stages("3039", WITH_REPORT + (WORK_AFTER_SECOND_READING,))
+    w.clock.advance(days=1)
+    told = w.run()
+    w.set_stages("3039", WITH_REPORT + (SECOND_READING, WORK_AFTER_SECOND_READING))
+    w.clock.advance(days=1)
+
+    backfilled = w.run()
+
+    assert (told.updates, told.held) == (1, 0)
+    assert (backfilled.updates, backfilled.held) == (0, 1)
+    assert len(w.publisher.updates) == 1
+
+    w.set_stages(
+        "3039",
+        WITH_REPORT
+        + (
+            SECOND_READING,
+            WORK_AFTER_SECOND_READING,
+            Stage(
+                stage_name="III czytanie na posiedzeniu Sejmu",
+                stage_type="SejmReading",
+                decision="uchwalono",
+                date=dt.date(2026, 9, 10),
+            ),
+        ),
+    )
+    w.clock.advance(days=1)
+    w.run()
+
+    _, change, _ = w.publisher.updates[1]
+    assert "II czytanie na posiedzeniu Sejmu" in [st.stage_name for st in change.new_stages]
+    assert w.repo.list_held_status_changes(10, "3039", "@test") == []

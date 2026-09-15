@@ -424,14 +424,38 @@ Invariants worth keeping:
   **`_worth_triaging` now says yes to a scan whatever its text**, and the scan is shown
   `triage_scan_pages` (8) opening pages, cut from the bytes already downloaded
   (`TextLoader.first_pages`), so the file is never fetched twice and the cheap call stops depending
-  on how thick the paper is — **$0.013 for any scan**, eleven pages or three hundred and sixty-two,
-  breaking even at a **7%** rejection rate. Asked of 18 real scans through this path on Haiku it
+  on how thick the paper is — **$0.013 for any scan** on Haiku, eleven pages or three hundred and
+  sixty-two, breaking even at a **7%** rejection rate. Production triages on `llm_triage_model`,
+  which is Sonnet 5 at twice Haiku's price, and eight pages are not always the 1,600 tokens
+  measured on druk 1273: druki 2007 and 2010 (197 pages each, 15 Sept 2026) cost 21.9k and 21.6k
+  input tokens, **$0.044 a scan**. Three times the Haiku figure and still insurance rather than
+  expense — the reading it replaced was ~530k tokens on Opus, which only the per-bill guard kept
+  under $2. Asked of 18 real scans through this path on Haiku it
   rejected **18 of 18 correctly** at a mean confidence of 0.93 (animal protection, drink-driving,
   hunting law, four commemorative resolutions), taking the scans' bill from $62 to $27 at the
   conservative 62% rate and to $16 at the lower bound the sample supports. What the sample cannot
   show is a false rejection, since it met no relevant scan; the guard is structural — the prompt
   says how many pages of how many are attached and asks for lower confidence rather than a guess,
   and an unsure verdict passes the bill on, so only a *confident* wrong "no" loses one.
+- **The Sejm does not publish the road in order, and a post that fills in the past is held.** Druk
+  1929 was read twice on 15 Sept 2026: at 11:32 the tree had gained "Praca w komisjach po II
+  czytaniu" with the committee's report on the amendments, and at 12:29 it gained the II czytanie
+  that sent the bill there — a node standing *before* the work already told. `update_event` names
+  a post after its own newest stage and nothing asked whether that stage was newer than the last
+  one told, so the second post announced the cause of the first and **seven of its eleven lines
+  were the first post again**. `models.fills_in_the_past(known, found)` compares the two readings
+  and `_post_news` holds such a change instead of sending it, which lists its stages before the
+  next post rather than dropping them — the row is what stops them being detected again. Tree
+  order is the road's order and not a guess: over the 938 bill processes of term 10 **no** road
+  stage stands before one with an earlier date, while **521** of them have a day carrying several
+  road stages, so which node a run sees first on such a day is chance — the shape at hand
+  (`SejmReading` then `CommitteeWork` on one date) occurs 122 times. Replayed in date order over
+  all **6,260** transitions of the term the rule holds **nothing**; replayed with each such day
+  split the way two runs would split it, it catches all **131**, most often
+  `SenatePositionConsideration` arriving behind `ToPresident` (67) — the reader's last windows.
+  Only the road is read (`process_stages`), because **196 of the 241** `GovermentPosition` and
+  `Opinion` nodes of the term stand before a road stage dated later, and counting those would
+  hold back the government's position, which is the one filing this channel does tell.
 - **Not every stage is a post.** `models/events.py`: `is_substantive` separates the events a reader
   cares about (referral, committee report, vote, Senate, President, hearing, a decided reading)
   from the frame nodes (`Start`, `ReadingReferral`, `Reading`, `CommitteeWork`, `End`, `Opinion`

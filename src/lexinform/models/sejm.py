@@ -774,20 +774,19 @@ def _stage_key(stage: Stage, depth: int) -> tuple[object, ...]:
     )
 
 
-def _stage_keys(
-    stages: tuple[Stage, ...] | list[Stage], depth: int = 0
-) -> list[tuple[object, ...]]:
+def stage_keys(stages: tuple[Stage, ...] | list[Stage], depth: int = 0) -> list[tuple[object, ...]]:
+    """One identity per node, in the order `flatten_stages` walks them."""
     keys: list[tuple[object, ...]] = []
     for stage in stages:
         keys.append(_stage_key(stage, depth))
         if stage.children:
-            keys.extend(_stage_keys(stage.children, depth + 1))
+            keys.extend(stage_keys(stage.children, depth + 1))
     return keys
 
 
 def stage_fingerprint(stages: tuple[Stage, ...] | list[Stage]) -> str:
     """Stable hash of the stage tree. Excludes volatile fields (URLs, vote counts)."""
-    payload = json.dumps(_stage_keys(stages), ensure_ascii=False, sort_keys=True)
+    payload = json.dumps(stage_keys(stages), ensure_ascii=False, sort_keys=True)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
@@ -799,10 +798,10 @@ def diff_stages(
     Because the key includes the date, a stage that existed with `date: None` and now has a
     date is reported once more (as the dated version): for the reader it just "happened".
     """
-    old_keys = set(_stage_keys(old))
+    old_keys = set(stage_keys(old))
     return [
         stage
-        for stage, key in zip(flatten_stages(new), _stage_keys(new), strict=True)
+        for stage, key in zip(flatten_stages(new), stage_keys(new), strict=True)
         if key not in old_keys
     ]
 
