@@ -91,6 +91,12 @@ from lexinform.models.events import (
     told_stages,
     update_event,
 )
+from lexinform.models.ministries import (
+    MINISTRIES,
+    Ministry,
+    ministry_name,
+    ministry_url,
+)
 from lexinform.models.phases import (
     COMMITTEE_PHASES,
     DAYS_PER_MONTH,
@@ -236,6 +242,8 @@ __all__ = [
     "JointContext",
     "JointRecord",
     "LocatedText",
+    "MINISTRIES",
+    "Ministry",
     "Mp",
     "PRE_PRINT_PREFIX",
     "GOVERNMENT_STEPS",
@@ -310,6 +318,8 @@ __all__ = [
     "is_urgent",
     "is_wykaz_number",
     "latest_text_document",
+    "ministry_name",
+    "ministry_url",
     "new_supplements",
     "supplement_kind",
     "next_phase",

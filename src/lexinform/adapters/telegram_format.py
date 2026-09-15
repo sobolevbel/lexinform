@@ -54,6 +54,8 @@ from lexinform.models import (
     is_rcl_number,
     is_urgent,
     is_wykaz_number,
+    ministry_name,
+    ministry_url,
     next_phase,
     open_hearing,
     process_web_url,
@@ -1386,7 +1388,11 @@ class MessageFormatter:
             entry = bill.wykaz
             who = applicant
             if entry.organ:
-                who += f" — {esc(entry.organ)}"
+                # The register abbreviates the ministry and nothing else names it: a reader who
+                # has to write there needs the office's name and its site, not "MSWiA".
+                name = esc(ministry_name(entry.organ))
+                url = ministry_url(entry.organ)
+                who += f" — {link(url, name) if url else name}"
             who += f" · {esc(lb.rcl_wykaz)}: {esc(entry.number)}"
             when = esc(self.fmt_date(entry.published_at.date()))
             return (
@@ -1845,7 +1851,14 @@ class MessageFormatter:
             return []
         lb = self._labels
         organ = entry.organ or lb.wykaz_organ_unknown
-        return [esc(lb.action_wykaz_interest.format(organ=organ))]
+        action = esc(lb.action_wykaz_interest.format(organ=organ))
+        # gov.pl has no page of its own for the art. 7 zgłoszenie (every ministry's «Działalność
+        # lobbingowa» page is about the annual reports on professional lobbyists), so the link is
+        # the ministry's site, where its address and its papers are.
+        site = ministry_url(entry.organ) if entry.organ else None
+        if site is not None:
+            action += f" · {link(site, esc(lb.action_ministry_site))}"
+        return [action]
 
     def _rcl_actions(self, bill: Bill, today: dt.date) -> list[str]:
         """What a reader of a government project can do, and with how much weight.

@@ -188,6 +188,7 @@ class Labels:
     wykaz_metadata_note: str
     wykaz_organ_unknown: str
     action_wykaz_interest: str
+    action_ministry_site: str
     action_rcl_interest: str
     link_wykaz_entry: str
     tag_wykaz: str
@@ -433,13 +434,13 @@ RU = Labels(
     wykaz_organ_unknown="профильное министерство",
     action_wykaz_interest=(
         "подать zgłoszenie zainteresowania pracami nad projektem — это может любой, и сейчас"
-        " действеннее всего: текста ещё нет. Бланк — на сайте BIP министерства (раздел"
-        " «Działalność lobbingowa»); в нём имя и адрес, какой интерес защищаете и какого решения"
-        " добиваетесь, отправить в {organ}. Заявление публикуется в BIP при документах проекта"
-        " (адрес частного лица — нет) и даёт право участвовать в публичном слушании в Сейме,"
-        " если его назначат: заявка на слушание — отдельно, не позднее чем за 10 дней"
-        " (ст. 7 и 8 ust. 2 ustawy o działalności lobbingowej)"
+        " действеннее всего: текста ещё нет. В заявлении — имя и адрес, какой интерес защищаете"
+        " и какого решения добиваетесь; отправить в {organ}. Оно публикуется вместе с"
+        " документами проекта (адрес частного лица — нет) и даёт право участвовать в публичном"
+        " слушании в Сейме, если его назначат: заявка на слушание — отдельно, не позднее чем"
+        " за 10 дней (ст. 7 и 8 ust. 2 ustawy o działalności lobbingowej)"
     ),
+    action_ministry_site="адрес и бланк — на сайте министерства",
     action_rcl_interest=(
         "подать zgłoszenie zainteresowania pracami nad projektem — это может любой. Бланк на"
         " сайте BIP {organ} (раздел «Działalność lobbingowa»): имя и адрес, какой интерес"
@@ -1025,12 +1026,13 @@ EN = Labels(
     wykaz_organ_unknown="the responsible ministry",
     action_wykaz_interest=(
         "file a zgłoszenie zainteresowania pracami nad projektem — anyone may, and now is when"
-        " it counts: there is no text yet. The form is on the ministry's BIP page («Działalność"
-        " lobbingowa»): your name and address, the interest you protect and the solution you"
-        " seek; send it to {organ}. It is published in the project's BIP file (a private address"
-        " is not) and entitles you to the Sejm's public hearing should one be held — applied for"
-        " separately, no later than 10 days before it (art. 7 and 8 ust. 2 of the lobbying act)"
+        " it counts: there is no text yet. It states your name and address, the interest you"
+        " protect and the solution you seek; send it to {organ}. It is published with the"
+        " project's papers (a private address is not) and entitles you to the Sejm's public"
+        " hearing should one be held — applied for separately, no later than 10 days before it"
+        " (art. 7 and 8 ust. 2 of the lobbying act)"
     ),
+    action_ministry_site="the address and the form are on the ministry's site",
     action_rcl_interest=(
         "file a zgłoszenie zainteresowania pracami nad projektem — anyone may. The form is on"
         " {organ}'s BIP page («Działalność lobbingowa»): your name and address, the interest you"
