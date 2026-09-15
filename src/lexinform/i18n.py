@@ -147,6 +147,11 @@ class Labels:
     agenda_was_planned: str
     agenda_off_note: str
     agenda_dropped_note: str
+    agenda_conditional: str
+    agenda_conditional_short: str
+    agenda_closed_note: str
+    agenda_apply: str
+    agenda_apply_by: str
     sitting_moved_from: str
     sitting_moved_within_day: str
     sejm_sitting: str
@@ -230,6 +235,9 @@ class Labels:
     """What a constitutional term running out means, by phase; `deadline_passed` otherwise."""
     urgent_deadline_passed_labels: dict[str, str] = field(default_factory=dict)
     """The same for a bill declared pilny, whose term was half as long (art. 123)."""
+    agenda_conditions: dict[str, str] = field(default_factory=dict)
+    """What a conditional sitting waits for, by `agenda.sitting_condition` kind; the sitting is
+    announced with `agenda_conditional` and this, or with `agenda_conditional` alone."""
     update_headers: dict[str, str] = field(default_factory=dict)
     decision_labels: dict[str, str] = field(default_factory=dict)
     proposal_labels: dict[str, str] = field(default_factory=dict)
@@ -378,6 +386,11 @@ RU = Labels(
         "Заседание состоится, но этого проекта в его повестке больше нет. Сообщим, когда он"
         " снова в неё попадёт."
     ),
+    agenda_conditional="Заседание объявлено условно: состоится, только если",
+    agenda_conditional_short="условно",
+    agenda_closed_note="Заседание закрытое — публику на него не пускают.",
+    agenda_apply="Заявка на участие в слушании — на адрес",
+    agenda_apply_by="срок подачи — до",
     sitting_moved_from="Заседание перенесено с",
     sitting_moved_within_day="Изменились время или зал; ранее было объявлено:",
     sejm_sitting="заседание Сейма №",
@@ -518,6 +531,14 @@ RU = Labels(
     },
     urgent_deadline_passed_labels={
         "president": "7 дней на подпись истекли",
+    },
+    agenda_conditions={
+        "second_reading_amendments": (
+            "во втором чтении будут внесены поправки и Сейм направит их в эту комиссию"
+        ),
+        "first_reading_referral": ("Сейм закончит первое чтение и направит проект в эту комиссию"),
+        "senate_amendments": "Сенат примет поправки и Сейм направит их в эту комиссию",
+        "referral": "Сейм направит проект в эту комиссию",
     },
     update_headers={
         "update": "Обновление",
@@ -972,6 +993,11 @@ EN = Labels(
         "The sitting goes ahead, but this bill is no longer on its agenda. We will say so when it"
         " is back on."
     ),
+    agenda_conditional="The sitting is announced conditionally: it happens only if",
+    agenda_conditional_short="conditional",
+    agenda_closed_note="The sitting is closed — the public is not admitted.",
+    agenda_apply="To take part in the hearing, write to",
+    agenda_apply_by="applications are open until",
     sitting_moved_from="The sitting was moved from",
     sitting_moved_within_day="The time or the room changed; it was announced as:",
     sejm_sitting="Sejm sitting no.",
@@ -1109,6 +1135,18 @@ EN = Labels(
     },
     urgent_deadline_passed_labels={
         "president": "the 7 days for the signature are out",
+    },
+    agenda_conditions={
+        "second_reading_amendments": (
+            "amendments are tabled at the second reading and the Sejm refers them to this committee"
+        ),
+        "first_reading_referral": (
+            "the Sejm finishes the first reading and refers the bill to this committee"
+        ),
+        "senate_amendments": (
+            "the Senate adopts amendments and the Sejm refers them to this committee"
+        ),
+        "referral": "the Sejm refers the bill to this committee",
     },
     update_headers={
         "update": "Update",

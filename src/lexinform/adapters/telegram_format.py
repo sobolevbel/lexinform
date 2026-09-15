@@ -861,6 +861,7 @@ class MessageFormatter:
             lines.append(f"{ICON['stage']} {self._agenda_when(item)}")
         if moved_from is not None:
             lines.append(f"{ICON['note']} {self._moved_line(moved_from, item)}")
+        lines.extend(self._sitting_notes(item))
         if item.text:
             lines.append(self._field(ICON["agenda"], lb.agenda_item, esc(item.text)))
         facts = "\n".join(lines)
@@ -1692,7 +1693,10 @@ class MessageFormatter:
         lb = self._labels
         upcoming = self._upcoming(bill, today, phase)
         if upcoming is not None:
-            return f" · {self._agenda_when(upcoming)}"
+            # The card's most-read line must not promise a day the committee itself announced
+            # conditionally; the agenda post under it says what the condition is.
+            mark = f" ({esc(lb.agenda_conditional_short)})" if upcoming.condition else ""
+            return f" · {self._agenda_when(upcoming)}{mark}"
         if (deadline := phase.deadline) is not None:
             if not deadline_overdue(phase, today):
                 return f" · {esc(lb.deadline_until)} {self.fmt_date(deadline)}"
@@ -1937,6 +1941,30 @@ class MessageFormatter:
         if was.room and was.room != now.room:
             before.append(was.room)
         return f"{esc(lb.sitting_moved_within_day)} {esc(' · '.join(before))}"
+
+    def _sitting_notes(self, item: AgendaItem) -> list[str]:
+        """What the committee's `notes` say about the sitting itself, above its agenda.
+
+        The condition comes first because it decides whether there is a day to plan at all: 21
+        sittings of term 10 happen only if the Sejm refers something to the committee, and the
+        channel announced them the way it announces a settled date. The application address is
+        the other way round — it is the rarest line the channel can print (4 sittings in a whole
+        term) and the only one that lets a reader into a hearing.
+        """
+        lb = self._labels
+        lines: list[str] = []
+        if item.condition is not None:
+            what = lb.agenda_conditions.get(item.condition)
+            condition = f"{lb.agenda_conditional} {what}." if what else f"{lb.agenda_conditional}…"
+            lines.append(f"{ICON['note']} {esc(condition)}")
+        if item.closed:
+            lines.append(f"{ICON['note']} {esc(lb.agenda_closed_note)}")
+        if item.apply_email:
+            apply = f"{lb.agenda_apply} {item.apply_email}"
+            if item.apply_by is not None:
+                apply += f" · {lb.agenda_apply_by} {self.fmt_date(item.apply_by)}"
+            lines.append(f"{ICON['action']} {esc(apply)}")
+        return lines
 
     def _agenda_when(self, item: AgendaItem) -> str:
         lb = self._labels

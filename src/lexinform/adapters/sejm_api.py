@@ -515,6 +515,8 @@ def parse_committee_sitting(item: dict[str, Any], *, code: str) -> CommitteeSitt
             for j in item.get("jointWith") or ()
             if isinstance(j, dict) and j.get("code")
         ),
+        notes=str(item.get("notes") or "").strip(),
+        closed=bool(item.get("closed")),
     )
 
 

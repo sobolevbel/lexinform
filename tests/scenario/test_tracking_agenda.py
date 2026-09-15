@@ -3,7 +3,13 @@
 import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import Committee, CommitteeSitting, SejmSitting, Stage
+from lexinform.models import (
+    Committee,
+    CommitteeSitting,
+    PublicationKind,
+    SejmSitting,
+    Stage,
+)
 from tests.harness import COMMITTEE_STAGES, REFERRED, World
 
 ASW = Committee(term=10, code="ASW", name="Komisja Administracji i Spraw Wewnętrznych")
@@ -469,3 +475,65 @@ def test_a_sitting_the_reader_was_never_told_about_is_not_taken_back() -> None:
 
     assert report.agenda_cancelled == 0
     assert w.publisher.agenda_cancellations == []
+
+
+def test_a_sitting_the_committee_called_conditionally_is_not_announced_as_a_fact() -> None:
+    """Twenty-one sittings of term 10 happen only if the Sejm refers something to the committee
+    first — four of them were still ahead on 2026-09-15 — and the channel announced every one of
+    them the way it announces a settled date. The same note is the only place the API publishes
+    an address for applying to a przesłuchanie, and `closed` says the room named in the post is
+    one the public may not enter."""
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (
+        _sitting().model_copy(
+            update={
+                "closed": True,
+                "notes": (
+                    "Posiedzenie aktualne w przypadku zakończenia pierwszego czytania na"
+                    " posiedzeniu plenarnym Sejmu i skierowania projektu do Komisji."
+                    " Zgłoszenia udziału w przesłuchaniu należy przesyłać na adres e-mail:"
+                    " zgloszenie.RF@sejm.gov.pl w terminie do 16 września 2026 r."
+                ),
+            }
+        ),
+    )
+
+    report = w.run()
+
+    assert report.agenda_posted == 1
+    _, item, _ = w.publisher.agendas[0]
+    assert item.condition == "first_reading_referral"
+    assert (item.closed, item.apply_email) == (True, "zgloszenie.RF@sejm.gov.pl")
+    assert item.apply_by == dt.date(2026, 9, 16)
+    [text] = w.publisher.texts(PublicationKind.AGENDA)
+    assert "Заседание объявлено условно" in text and "первое чтение" in text
+    assert "Заседание закрытое" in text
+    assert "zgloszenie.RF@sejm.gov.pl" in text and "16.09.2026" in text
+
+
+def test_a_condition_on_another_point_of_the_agenda_leaves_our_sitting_a_fact() -> None:
+    """Eleven of the 21 name the points they cover, and on two the point carries none of our
+    prints (FPB/86, SPC/52): a hedge there would be as wrong as the fact the others were."""
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (
+        _sitting(
+            agenda=(
+                '<div class="agenda-indent-0">I. Pierwsze czytanie projektu (druk nr 3039)</div>'
+                '<div class="agenda-indent-0">II. Rozpatrzenie planu pracy Komisji.</div>'
+            )
+        ).model_copy(
+            update={
+                "notes": (
+                    "Pkt II aktualny w przypadku zakończenia pierwszego czytania na posiedzeniu"
+                    " Sejmu i skierowania projektu do Komisji"
+                )
+            }
+        ),
+    )
+
+    report = w.run()
+
+    assert report.agenda_posted == 1
+    _, item, _ = w.publisher.agendas[0]
+    assert item.condition is None
+    assert "условно" not in w.publisher.texts(PublicationKind.AGENDA)[0]

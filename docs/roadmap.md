@@ -15,14 +15,14 @@ and are in git.
   zainteresowania, how to answer a public consultation, how to write to a committee, how a public
   hearing works, and what the bot and the channel are. They wait for a home: a URL, a design and
   short links from the messages («как подать?») in place of the paragraphs the cards carry today.
-- **The seven projects the register had been pointing at.** Fixed on 2026-09-15: the wykaz
-  phase now judges every entry of the register every run and hands the project of a plan it will
-  not card to the RCL phase, which takes it. Run against a restored production dump, that takes
-  in 12 projects the listing never showed as changed, and 7 of them pass the text prefilter —
-  zawód pielęgniarki (14 keyword families), zawody lekarza, rejestry publiczne, sprawy
-  obywatelskie, praca na morzu, Kodeks karny and rybołówstwo morskie. They will be analysed and
-  carded by the first scheduled runs after the deploy; watch what the channel gets, and what it
-  costs.
+- **The seven projects the register had been pointing at — done, and it cost $3.39.** The first
+  run after the deploy (run 61, 2026-09-15 01:37 UTC) took in all 12 projects the listing never
+  showed as changed; 7 passed the text prefilter, exactly as predicted. Six were analysed and
+  three carded — zawód pielęgniarki (4/5), praca na morzu and rejestry publiczne (3/5) — and the
+  seventh, RCL/12409801 (Prawo o ruchu drogowym), was the combined-file project fixed the same
+  day and carded by run 65. The queue is clean afterwards. What the observation
+  also found is in the item on the consultation letter below: all four cards went out without a
+  window and were repaired by hand.
 
 ## Next — decided, designed, not built
 
@@ -68,10 +68,6 @@ whether that is worth its Sejm re-scan is the open question.
 
 ## Later — worth doing when there is a reason or a measurement
 
-- **A conditional sitting is announced as a fact.** `notes` says otherwise on 18 sittings of term
-  10 ("Posiedzenie aktualne w przypadku zgłoszenia poprawek…"); the same field carries the only
-  application address for a przesłuchanie the API has (4 sittings). One regex, and the field is in
-  the response already.
 - **A scanned deputies' print shows no clubs.** `SejmAuthorsResolver.resolve` is handed `text`
   while the analysis already reads the pages; 11 prints of term 10 have an empty text layer.
 - **22 prints carry the covering letter in the PDF and not in its text layer** — worth checking
@@ -81,9 +77,17 @@ whether that is worth its Sejm re-scan is the open question.
   with it is the question, since re-analysing on its PDF would repeat the `carries_bill_text`
   mistake — the supplement path is probably right.
 - **The plenary `schedule`** would say which day of a four-day sitting a bill is taken on.
-- **`Analysis.confidence`** is asked for, stored, and read by nothing.
-- **`PHASE_PATIENCE` has no entry for `rcl_opinions` or `rcl_consultation`**, so both fall back to
-  the default patience.
+- **`Analysis.confidence`** is asked for, stored, and read by nothing but `lexinform show`.
+- **Two counters mislead the operator**: `lexinform runs` prints only `discovered` in its `disc`
+  column, so run 61 — the largest RCL haul so far, 12 projects — reads as a zero; and `/refresh`
+  answers "card refreshed" while `RunReport.cards_refreshed` stays 0.
+- **The consultation letter is read late for a row that is already `analyzed`, and never.**
+  `RclDiscoveryService.read_consultations` covers `ANALYSIS_PENDING` rows only, so a project whose
+  letter could not be fetched in that phase (`rcl_discovery.py`'s `except Exception: continue`)
+  goes on to the analysis and is carded with no deadline, no address and the wording of an open
+  window — for good. All four cards of 15 Sept 2026 went out that way and were repaired by hand
+  with `/refresh`. Widening the query is not the fix on its own: a project that genuinely has no
+  letter would then be fetched every run for ever, so the repair needs a "tried and failed" mark.
 - **A card published before `PROMPT_VERSION 2026-09-v7`** keeps the analysis it was published with
   (decided 2026-09-08). Only `/republish` changes that, one bill at a time.
 - **Druki 1929/1933 were carded separately** before the joint rule; merging them retroactively is

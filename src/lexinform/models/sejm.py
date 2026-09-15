@@ -266,6 +266,11 @@ class CommitteeSitting(BaseModel):
     sitting together with this one: the same meeting is listed once under every one of them
     (938 of the 4,387 sittings of term 10, in 546 pairs), so without it a bill referred to two
     of them was announced twice for one meeting.
+
+    `notes` is free prose the committee adds, and two of the things it says are said nowhere
+    else: that the sitting happens only if the Sejm refers something to the committee first (21
+    sittings of term 10), and the address and deadline for applying to a przesłuchanie (4).
+    `closed` is a sitting the public may not enter (279), while the announcement names its room.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -279,6 +284,8 @@ class CommitteeSitting(BaseModel):
     agenda: str = ""
     video_url: str | None = None
     joint_with: tuple[str, ...] = ()
+    notes: str = ""
+    closed: bool = False
 
     @property
     def meeting_key(self) -> tuple[dt.date, dt.time | None, str]:
@@ -340,10 +347,26 @@ class AgendaItem(BaseModel):
     room: str | None = None
     text: str = ""
     video_url: str | None = None
+    condition: str | None = None
+    """What the sitting waits for, when the committee announced it as conditional
+    (`agenda.sitting_condition`); None when it is settled. It is deliberately not part of the
+    `ref`: a condition lifted before the day would otherwise read as a sitting that moved, and
+    `_retract_gone` would take back a meeting that is still on. The card re-renders every run
+    and self-heals; only the standing announcement keeps the hedge it was sent with."""
+    closed: bool = False
+    apply_email: str | None = None
+    apply_by: dt.date | None = None
 
     @classmethod
     def for_committee(
-        cls, sitting: CommitteeSitting, *, committee_name: str | None, text: str
+        cls,
+        sitting: CommitteeSitting,
+        *,
+        committee_name: str | None,
+        text: str,
+        condition: str | None = None,
+        apply_email: str | None = None,
+        apply_by: dt.date | None = None,
     ) -> AgendaItem:
         """One committee sitting as the channel will announce it.
 
@@ -369,6 +392,10 @@ class AgendaItem(BaseModel):
             room=sitting.room,
             text=text,
             video_url=sitting.video_url,
+            condition=condition,
+            closed=sitting.closed,
+            apply_email=apply_email,
+            apply_by=apply_by,
         )
 
     @classmethod

@@ -149,6 +149,28 @@ Invariants worth keeping:
   the reader nothing. A sitting announced under an old day-only `ref` keeps it (`_keep_told_ref`),
   or the first run after the change would announce every standing sitting again; that rule goes
   once no dump carries a day-only agenda ref.
+- **A sitting the committee called conditionally is not a date, and the room is not always one the
+  reader may enter.** A committee's `notes` is free prose and 181 of the 226 that carry it only
+  record the procedure the sitting was called under (art. 152 ust. 2), but **21 sittings of term
+  10 say the sitting, or some of its points, happens only if the Sejm refers something to the
+  committee first** — and four of those were still ahead on 15 Sept 2026. The channel announced
+  every one of them the way it announces a settled date, which is the one thing an agenda post
+  exists to get right. `agenda.sitting_condition` reads the note into a kind
+  (`second_reading_amendments`, `first_reading_referral`, `senate_amendments`, `referral`, and
+  `other` for the subcommittee waiting to be created — those five cover all 21) and the points it
+  covers, because **eleven of the notes name their points** ("Pkt III aktualny…", "Pkt. II-IV
+  aktualne…") and on two of them the point carries none of our prints (FPB/86, SPC/52): hedging
+  those would be exactly as wrong as the fact the others were stated as. `condition_covers` reads
+  the point off the item's own numeral where the committee numbers them and off its position where
+  it does not — both shapes occur. The condition is **not** part of the `ref`: a condition lifted
+  before the day would otherwise read as a sitting that moved and `_retract_gone` would take back
+  a meeting that is still on; the card re-renders every run and self-heals, only the standing
+  announcement keeps the hedge it was sent with, and the card's step line marks the day «условно»
+  rather than promising it. The same note is the **only place the API publishes an address for
+  applying to a przesłuchanie** (4 sittings, all of the Rzecznik Finansowy hearing of Nov 2025) and
+  its prose is the consultation letter's, so `rcl_letters.parse_letter` reads it and no second
+  parser of Polish dates exists. `closed` (279 sittings) is a sitting the public may not enter
+  while the post names its room, and it is now said.
 - **Pending-before-send.** Every Telegram post gets a `publications` row (`pending`) first, unique
   per kind/bill/channel (agenda posts and their retractions: per kind/bill/channel/`ref`, one per
   sitting); failed posts are retried up to `max_publish_attempts`; `pending` left by a crash
@@ -820,15 +842,13 @@ branch history; the state branch is the backup.
   over all 4,387 committee sittings of term 10 (14 Sept 2026): `status` is only **PLANNED or
   FINISHED** — a cancelled sitting vanishes from the listing rather than being marked, which is why
   "gone from the listing" is the right test for a retraction. `jointWith` is on 938 of them, and a
-  joint sitting is listed under **every** committee in it with a `num` of its own. Three fields are
-  not read and two carry facts nothing else does: `comments` records the change that happened
-  ("Nastąpiła zmiana godziny/sali/porządku posiedzenia", 886 sittings); `notes` (226) is the only
-  place an application address and deadline for a przesłuchanie appears ("Zgłoszenia udziału … na
-  adres e-mail: … w terminie do 12 listopada", 4 sittings) and the only warning that a sitting is
-  conditional ("Posiedzenie aktualne w przypadku zgłoszenia poprawek w czasie drugiego czytania",
-  5); `closed` is true for 279, a sitting the public may not enter though the card names its room.
+  joint sitting is listed under **every** committee in it with a `num` of its own. `comments`
+  records the change that happened ("Nastąpiła zmiana godziny/sali/porządku posiedzenia", 886
+  sittings) and is read through the `ref`; `notes` (226) and `closed` (279) are read by
+  `agenda.sitting_condition` / `hearing_application` (see the invariant below).
   `/proceedings` of the current sitting also carries `schedule`, the approximate hour of each
-  agenda point **per day**, the only way to say which day of a four-day sitting a bill is taken on.
+  agenda point **per day**, the only way to say which day of a four-day sitting a bill is taken on;
+  nothing reads it.
 - **The agenda names the print that is before the house, which after the third reading is not the
   bill** (211 committee items and 160 plenary ones of term 10 — see the calendar invariant).
   Matching is by text and not by the `PrzebiegProc` link, and `-A` is stripped, so an additional
@@ -837,14 +857,7 @@ branch history; the state branch is the backup.
   i". **The Sejm names the print last, so a long title pushes it past the clip**: of the 4,040
   agenda items of term 10 that name a print, 111 are over `ITEM_MAX_CHARS` and 65 were quoted to
   the reader with the number gone — and the quoted item is the whole content of a sitting post.
-  `items_mentioning` keeps a window around the reference beside the head where that happens. Two
-  fields of a committee sitting are read by nothing and were measured in the same pass (cold-places
-  audit, `checks/12_agenda.py`): of the 225 sittings with `notes`, 181 say in
-  what procedure the sitting was called, **18 say the sitting or one of its items happens only if
-  something else does** ("Posiedzenie aktualne w przypadku zgłoszenia poprawek…") and **4** carry
-  the application address and deadline for a przesłuchanie — the only place in the API where that
-  address appears, and one hearing in a whole term. `closed` is true for 279 sittings, of which 23
-  name a print and one of those had not yet happened.
+  `items_mentioning` keeps a window around the reference beside the head where that happens.
 - `modifiedSince`/`changeDate` are naive **Europe/Warsaw** times; `Z` is rejected. `sort_by`,
   `passed` filters are ignored; paginate by `offset` until an empty page. `documentType` needs the
   Polish display string ("projekt ustawy"), the enum `BILL` does not filter.
@@ -1105,10 +1118,12 @@ production code over the corpus rather than reading it: `next_phase`, `process_s
 `veto_stood` over all 5,533 stage trees of terms 8–10, and `agenda.print_numbers` over the 4,387
 committee sittings and 75 Sejm sittings of term 10, each result checked against the bill's own
 tree. It found three errors and three uncovered cases, all fixed above and each with the corpus
-example it was found on. **Five things it left open, because each needs a decision rather than a
-fix**: the autopoprawka (detection is one `/bills` query, but an autopoprawka amends the bill
-without replacing it, so re-analysing on its PDF would repeat the `carries_bill_text` mistake — the
-supplement path is probably right); the committee sitting's `notes` and `closed`; the `Opinion`
+example it was found on. It left five things open, because each needed a decision rather than a
+fix; the committee sitting's `notes` and `closed` were taken on 15 Sept 2026 (the invariant
+above), and **four remain**: the autopoprawka (detection is one `/bills` query, but an
+autopoprawka amends the bill without replacing it, so re-analysing on its PDF would repeat the
+`carries_bill_text` mistake — the
+supplement path is probably right); the `Opinion`
 stage, which is substantive and so posts «Обновление» although the decision of 2026-09-12 says
 filed opinions are not this channel's genre — the same fact arriving through a different door; the
 plenary `schedule`, which would name the day within a four-day sitting; and the measurement that

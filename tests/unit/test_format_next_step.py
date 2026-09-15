@@ -65,6 +65,21 @@ def test_next_step_carries_the_scheduled_committee_sitting(process_3039: Process
     assert "⏭ <b>What comes next:</b> first reading in committee — Komisja" in en
 
 
+def test_a_conditionally_announced_sitting_does_not_date_the_step_as_a_fact(
+    process_3039: ProcessDetail,
+) -> None:
+    """The card's most-read line quoted the day of a sitting that happens only if the Sejm
+    refers the bill to the committee first — 21 sittings of term 10 carry such a note. The
+    agenda post under the card says what the condition is; the step line only marks it."""
+    bill = bill_of(process_3039, agenda=(sitting(condition="first_reading_referral"),))
+
+    text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
+    en = MessageFormatter("en").new_bill(bill, None, today=TODAY).text
+
+    assert "· 17.09.2026, 09:00 (условно)" in text
+    assert "(conditional)" in en
+
+
 def test_past_sitting_is_ignored(process_3039: ProcessDetail) -> None:
     bill = bill_of(process_3039, agenda=(sitting(),))
 

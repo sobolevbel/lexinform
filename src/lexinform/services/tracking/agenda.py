@@ -11,7 +11,12 @@ import logging
 from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
-from lexinform.agenda import items_mentioning
+from lexinform.agenda import (
+    condition_covers,
+    hearing_application,
+    items_mentioning,
+    sitting_condition,
+)
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     PLENARY_COMMITTEE_CODE,
@@ -271,10 +276,14 @@ class AgendaWatcher:
                 texts = items_mentioning(sitting.agenda, numbers)
                 if not texts:
                     continue
+                apply = hearing_application(sitting.notes)
                 item = AgendaItem.for_committee(
                     sitting,
                     committee_name=self._enricher.committee_name_or_none(bill.term, code),
                     text=" ".join(texts),
+                    condition=_condition_on(sitting, numbers),
+                    apply_email=apply.email if apply else None,
+                    apply_by=apply.deadline if apply else None,
                 )
                 item = _keep_told_ref(item, told)
                 kept = meetings.get(sitting.meeting_key)
@@ -324,6 +333,19 @@ class AgendaWatcher:
             if old.sitting_key == item.sitting_key and old.ref != item.ref
         ]
         return max(previous, key=lambda old: old.date, default=None)
+
+
+def _condition_on(sitting: CommitteeSitting, numbers: set[str]) -> str | None:
+    """What the sitting waits for, but only where the condition reaches this bill.
+
+    Eleven of the 21 conditional notes of term 10 name the points they cover, and on two of them
+    the point carries no print of ours (FPB/86, SPC/52): hedging those announcements would be
+    exactly as wrong as the fact the others were stated as.
+    """
+    condition = sitting_condition(sitting.notes)
+    if condition is None:
+        return None
+    return condition.kind if condition_covers(sitting.agenda, numbers, condition.points) else None
 
 
 def _keep_told_ref(item: AgendaItem, told: set[str]) -> AgendaItem:
