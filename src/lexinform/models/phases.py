@@ -1,12 +1,8 @@
 """What the legislative process holds next for a bill, and when its road has ended.
 
-`next_phase` reads the top-level stages, the submission and the act and answers with a `Phase`:
-which step the bill is on, which committees have it, the constitutional term of the step where
-there is one, and the day the bill reached it. `is_over` is the same question asked the other way
-round — whether there is anything left for a reader to act on. The formatter dates the phase from
-`bill.agenda` or from the deadline; nothing here does I/O and nothing here renders a word.
-
-The road itself, its deadlines and the public's windows are in `docs/legislative-process.md`.
+`next_phase` answers with a `Phase`; `is_over` asks the same question the other way round —
+whether there is anything left for a reader to act on. No I/O, no rendering. The road itself,
+its deadlines and the public's windows are in `docs/legislative-process.md`.
 """
 
 import datetime as dt
@@ -37,13 +33,9 @@ from lexinform.models.sejm import (
 class Phase(BaseModel):
     """What the legislative process holds next for a bill (see `next_phase`).
 
-    `committees` names the committees the bill sits in, `date` the consultation end or the entry
-    into force when the key has one, `since` the day the bill reached this step. `deadline` is
-    the constitutional term of the step where there is one: the Senate has 30 days from receiving
-    the act (art. 121), the President 21 (art. 122), 14 and 7 for an urgent bill (art. 123),
-    counted from the dates the Sejm API shows. Two bills get neither, because the term is not the
-    one we model (`_senate_days`): the budget, where art. 223 gives the Senate twenty days, and a
-    constitutional amendment, where art. 235 gives sixty.
+    `deadline` is the step's constitutional term where it has one: Senate 30 days (art. 121),
+    President 21 (art. 122), 14 and 7 when urgent (art. 123). Two bills get none (`_senate_days`):
+    the budget, where art. 223 gives twenty days, and a constitutional amendment, art. 235 sixty.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -161,15 +153,10 @@ def stalled_days(phase: Phase, today: dt.date) -> int | None:
     """How long the bill has been on this step, once that outlived what the step usually takes;
     None while the step is still running on schedule or its start is unknown.
 
-    `PHASE_PATIENCE` is deliberately two to three times the upper end of the durations the card
-    quotes (90 days against "2–6 недель" for a first reading): a step that runs a fortnight over
-    its average is still ordinary, and "без движения уже 7 нед." said of it would cry wolf.
-
-    A phase that carries a `date` of its own is never stalled, whatever its age: the date is a
-    certainty the reader can diarise — the day an act enters into force, the end of a
-    consultation window — and a vacatio legis of a year is common in the acts we follow
-    (`docs/legislative-process.md` §7). «вступление в силу 01.07.2027 · без движения уже 7 мес.»
-    said of a law that is published, final and dated inverts the message.
+    `PHASE_PATIENCE` is two to three times the upper end of what the card quotes, so a step a
+    fortnight over its average does not cry wolf. A phase carrying a `date` of its own is never
+    stalled whatever its age: a vacatio legis of a year is common, and «вступление в силу
+    01.07.2027 · без движения уже 7 мес.» inverts the message.
     """
     since = phase.since
     if since is None or phase.date is not None:
@@ -228,10 +215,8 @@ def consultation_open(bill: Bill, today: dt.date) -> bool:
     """Whether an opinion can still be sent.
 
     A window with an end date answers for itself. One without is the RCL case where the letter
-    carries an electronic time stamp instead of a date and no relative term either
-    (`rcl_letters.parse_letter`): the project's own timeline is then what says the consultation is
-    running, and `_rcl_phase` reads it. Without this the card of such a project invited an e-mail
-    to the ministry in its action line and, three lines up, put the consultation stage behind it.
+    gives an electronic time stamp and no term (`rcl_letters.parse_letter`); the project's own
+    timeline then says whether the consultation is running, and `_rcl_phase` reads it.
     """
     window = bill.consultation
     if window is None:
@@ -255,12 +240,7 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
     """The next step of the process, derived from the top-level stages, the submission and the
     act; None when the process is over (in force, rejected, withdrawn) or unknown.
 
-    Keys: rcl_consultation, rcl_opinions, rcl_committees, rcl_council, rcl_to_sejm (government
-    projects before the Sejm), wykaz, wykaz_to_rcl, wykaz_adopted, pre_print,
-    pre_print_consultation, first_reading, first_reading_committee, first_reading_sitting,
-    committee_work, second_reading, second_reading_committee, third_reading, senate,
-    senate_amendments, senate_rejection, president, publication, in_force, in_force_unknown,
-    veto, tribunal.
+    The keys are the ones `PHASE_STEP` and `Labels.next_step_labels` are written against.
     """
     phase = _phase_of(bill, today)
     if phase is None:
@@ -273,16 +253,10 @@ def _after_senate_silence(bill: Bill, phase: Phase, today: dt.date) -> Phase:
     """Art. 121 ust. 2: thirty days gone with no uchwała from the Senate and the act counts as
     adopted in the wording the Sejm passed, so it is with the President.
 
-    The term is *zawity* — the Senate can neither extend nor suspend it — which is why the step
-    has really moved on and not merely gone quiet. Annotating the Senate step instead made one
-    line say both things at once: «рассмотрение в Сенате (до 30 дней) · 30 дней Сената истекли:
-    закон считается принятым без поправок» (product review, 2026-09-14).
-
-    The derived phase carries no deadline of its own: the President's twenty-one days run from a
-    receipt the API does not date, and a guess stacked on a guess is not worth a reminder. This is
-    the one place the bot names a step the Sejm has not published, so the wording says so — and if
-    the Senate did act and the listing is merely behind, its stage arrives and this unwinds on the
-    next run.
+    The term is *zawity* — the Senate can neither extend nor suspend it — so the step has really
+    moved on. No deadline of its own: the President's 21 days run from a receipt the API does not
+    date. This is the one place the bot names a step the Sejm has not published, so the wording
+    says so, and it unwinds on the next run if the listing was merely behind.
     """
     if phase.key != "senate" or not deadline_overdue(phase, today):
         return phase
@@ -293,13 +267,9 @@ def _phase_started(bill: Bill) -> dt.date | None:
     """When the bill reached the step it is on, so that "what comes next" can say how long it has
     been waiting instead of quoting an average that ran out long ago.
 
-    A stage the API left undated started on an unknown day, not on the day the bill was submitted:
-    reading it as the latter would age the step by the whole life of the bill. RCL leaves
-    "rozpoczęcie" empty for most stages, so the stage's last modification stands in — it is what
-    the page shows, and what stops moving when a project stalls. That fallback used to sit behind
-    `if last is not None`, which an RCL project never fails: seven of the ten projects in the
-    state dump of 2026-09-13 had an undated stage and therefore no start at all, so «без движения
-    уже N мес.» could not fire on the one source where a project really does stand for a year.
+    An undated stage started on an unknown day, not on the day the bill was submitted, which would
+    age the step by the bill's whole life. RCL leaves "rozpoczęcie" empty for most stages, so the
+    stage's last modification stands in: it is what the page shows and what stops moving.
     """
     last = bill.last_stage
     if last is not None and last.date is not None:
@@ -319,13 +289,9 @@ def _phase_of(bill: Bill, today: dt.date) -> Phase | None:
     """The source the bill belongs to decides which road it is on; a lapsed term ends every one
     of them, because a new Sejm must receive the bill again.
 
-    An ELI on the process is the Sejm saying the act is out, and it is read before the stages
-    even when the act itself has not been fetched: `is_over` has always taken it for the end of
-    the road, and the two must not disagree. They did, and the reader was told the opposite of
-    the truth — druk 2172 was adopted from an RCL project on 2026-09-14 carrying `DU/2026/203`,
-    its act was never fetched, and the stage road ran out at `PresidentSignature`, so the card
-    said «дальше: публикация в Dziennik Ustaw · без движения уже 6 мес.» and «пока ничего —
-    ждём публикации» over a law that had been in force since 2026-03-05.
+    An ELI on the process is the Sejm saying the act is out, and it is read before the stages even
+    when the act itself was never fetched: `is_over` has always taken it for the end of the road,
+    and the two must not disagree.
     """
     if bill.act is not None:
         return _act_phase(bill.act, today)
@@ -464,11 +430,9 @@ def _phase_after_veto_vote(last: Stage) -> Phase | None:
 def _sejm_let_the_senate_win(stage: Stage) -> bool:
     """Art. 121 ust. 3: the Senate moved rejection and the Sejm did not throw that motion out.
 
-    "przyjęto uchwałę Senatu" against "odrzucono uchwałę Senatu", which is the override. The
-    Senate's *amendments* are decided in words of their own ("przyjęto poprawki"), so a decision
-    that names the uchwała is one where the whole act was at stake (druk 2898 of term 9, whose
-    `End` reads "odrzucono na wniosek Senatu"). Without this the road ran on to «Президент
-    подписывает» for a law the Sejm had just let die.
+    "przyjęto uchwałę Senatu" against "odrzucono uchwałę Senatu", the override. Amendments are
+    decided in words of their own ("przyjęto poprawki"), so a decision naming the uchwała is one
+    where the whole act was at stake.
     """
     decided = (stage.decision or "").lower()
     return decided.startswith("przyjęto") and "uchwałę senatu" in decided
@@ -509,13 +473,10 @@ def _phase_after_reading(
 def _phase_after_committee_work(last: Stage, top: list[Stage]) -> Phase:
     """What the committee is working on decides what follows it.
 
-    "Praca w komisjach nad stanowiskiem Senatu" and "…nad wnioskiem Prezydenta" are the same
-    stage type as the work after the first reading, and only the tree before them tells the
-    three apart (`ANSWERED_IN_COMMITTEE`). Otherwise the committee's own report decides, by its
-    print number and not by what it proposes: an "-A" report answers the amendments made at the
-    second reading, so the next vote is the third; any other report is the work after the first
-    reading and goes to the second, whether the committee proposes the attached text, no
-    amendments at all, or throwing the bill out.
+    The work on the Senate's position and on the President's motion share a stage type with the
+    work after the first reading, and only the tree before them tells the three apart
+    (`ANSWERED_IN_COMMITTEE`). Otherwise the report's print number decides, not its proposal: an
+    "-A" report answers the second reading's amendments, so the next vote is the third.
     """
     pending = next(
         (st for st in reversed(top[:-1]) if st.stage_type in ANSWERED_IN_COMMITTEE), None
@@ -543,17 +504,13 @@ def _phase_after_referral(last: Stage) -> Phase:
 def is_over(bill: Bill, *, today: dt.date) -> bool:
     """True when the road has ended: nothing is left that a reader could act on.
 
-    The Sejm's `closureDate` does not say this on its own — it is set at the third reading,
-    while the Senate (30 days), the President (21) and Dziennik Ustaw are still ahead: druk
-    2799 is closed on 2026-09-04, `passed`, with no act yet. What ends the road is the act
-    *applying*, a rejection or a withdrawal, a project closed on RCL, a plan taken off the
-    wykaz, a lapsed term — and the stages are what tell those apart, so a Sejm bill whose
-    stages were never read is not over but unknown.
-
-    An act in Dziennik Ustaw does not end it either: its vacatio legis runs for weeks or months
-    (druk 2699: promulgated 2026-08-18, in force 2026-11-19), and that is the span in which a
-    reader has a known date to prepare for. Deciding that needs the act, so a bill whose ELI has
-    not been fetched yet is taken as over: callers that can fetch it (discovery) do.
+    `closureDate` alone does not say it: the Sejm sets it at the third reading with the Senate,
+    the President and Dziennik Ustaw still ahead. The road ends when the act *applies*, the bill
+    is rejected or withdrawn, the project is closed on RCL, the plan taken off the wykaz or the
+    term lapses — the stages tell those apart, so a bill whose stages were never read is unknown
+    and not over. An act in Dziennik Ustaw does not end it either while its vacatio legis runs,
+    which is the one span with a known date to prepare for; deciding that needs the act, so a
+    bill whose ELI was never fetched counts as over and callers that can fetch it do.
     """
     if bill.act is not None:
         return next_phase(bill, today=today) is None
