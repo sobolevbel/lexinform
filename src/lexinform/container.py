@@ -29,7 +29,7 @@ from lexinform.adapters.telegram import (
     TelegramPublisher,
     TelegramRunNotifier,
 )
-from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.adapters.telegram_format import APPROVE_DIGEST, MessageFormatter
 from lexinform.adapters.wykaz_csv import WykazClient
 from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
@@ -51,6 +51,7 @@ from lexinform.pricing import price_of
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisOptions, AnalysisService
 from lexinform.services.commands import CommandService
+from lexinform.services.digest import DigestService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.documents import TextLoader
 from lexinform.services.listener import CommandListener
@@ -371,6 +372,7 @@ class Container:
                 self.clock,
                 text_prefilter=self.text_prefilter_service(),
                 tracking=self.tracking_service(dry_run=dry_run),
+                digest=self.digest_service(dry_run=dry_run),
                 publisher_for=lambda chat: self.publisher_for(chat, dry_run=dry_run),
             ),
         )
@@ -394,6 +396,48 @@ class Container:
                 max_attempts=self.settings.max_publish_attempts,
                 analysis=self.analysis_service(),
             ),
+        )
+
+    def digest_service(self, *, dry_run: bool) -> DigestService | None:
+        """None when the digest is switched off, or when there is no technical channel to draft
+        into: nothing reaches readers unread, so without a drafter there is no digest at all."""
+        s = self.settings
+        if not s.digest_enabled or not self._has_drafts_channel(dry_run=dry_run):
+            return None
+        return self._once(
+            f"digest:{dry_run}",
+            lambda: DigestService(
+                self.repo,
+                self.publisher(dry_run=dry_run),
+                self.drafts_publisher(dry_run=dry_run),
+                self.clock,
+                channel_id=self.channel_id(),
+                draft_channel_id=self.drafts_channel_id(),
+                approve_label=APPROVE_DIGEST,
+                weekday=s.digest_weekday,
+                local_tz=LOCAL_TZ,
+                closed_grace_days=s.track_closed_grace_days,
+                passed_max_days=s.track_passed_max_days,
+                pending_decision_max_days=s.track_pending_decision_max_days,
+            ),
+        )
+
+    def _has_drafts_channel(self, *, dry_run: bool) -> bool:
+        """Whether a draft has anywhere to go; asked of the settings alone, so that deciding it
+        never builds a Telegram client."""
+        return dry_run or self.publisher_override is not None or bool(self.drafts_channel_id())
+
+    def drafts_channel_id(self) -> str:
+        return self.settings.telegram_log_channel_id or "console"
+
+    def drafts_publisher(self, *, dry_run: bool) -> Publisher:
+        """Where a digest is drafted: the technical channel, or this run's publisher when there
+        is no real one (a dry run, a test's override)."""
+        if dry_run or self.publisher_override is not None:
+            return self.publisher(dry_run=dry_run)
+        return self._once(
+            "drafts_publisher",
+            lambda: self.telegram_publisher(channel_id=self.settings.telegram_log_channel_id),
         )
 
     def tracking_service(self, *, dry_run: bool) -> StatusTrackingService:
@@ -451,6 +495,7 @@ class Container:
                 rcl_discovery=self.rcl_discovery_service(),
                 wykaz_discovery=self.wykaz_discovery_service(),
                 commands=self.command_service(dry_run=dry_run),
+                digest=self.digest_service(dry_run=dry_run),
                 first_run_lookback_days=self.settings.first_run_lookback_days,
                 rerun_overlap_days=self.settings.rerun_overlap_days,
                 runs_retention_days=self.settings.runs_retention_days,
@@ -513,7 +558,11 @@ def build_container(settings: Settings) -> Container:
         repo=repo,
         gateway=gateway,
         formatter=MessageFormatter(
-            settings.output_language, today=lambda: clock.now().astimezone(LOCAL_TZ).date()
+            settings.output_language,
+            today=lambda: clock.now().astimezone(LOCAL_TZ).date(),
+            channel=settings.telegram_channel_id,
+            support_url=settings.digest_support_url,
+            sponsor_url=settings.digest_sponsor_url,
         ),
         prefilter=KeywordPrefilter(),
         terms=TermResolver(gateway, repo, pinned=settings.term),

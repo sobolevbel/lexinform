@@ -55,8 +55,20 @@ from lexinform.models.commands import (
     RefKind,
     SpendSnapshot,
     StatusSnapshot,
+    command_for_callback,
     parse_command,
     parse_reference,
+)
+from lexinform.models.digest import (
+    DIGEST_NUMBER,
+    Digest,
+    DigestEntry,
+    MonthFigures,
+    Upcoming,
+    is_first_digest_of_month,
+    iso_week,
+    previous_week,
+    week_bounds,
 )
 from lexinform.models.enums import (
     AMENDMENT_SOURCES,
@@ -198,6 +210,16 @@ from lexinform.models.wykaz import (
 )
 
 __all__ = [
+    "command_for_callback",
+    "DIGEST_NUMBER",
+    "Digest",
+    "DigestEntry",
+    "MonthFigures",
+    "Upcoming",
+    "is_first_digest_of_month",
+    "iso_week",
+    "previous_week",
+    "week_bounds",
     "parse_reference",
     "parse_command",
     "RefKind",

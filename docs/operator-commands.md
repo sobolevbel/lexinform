@@ -39,6 +39,9 @@ terminal, has no twin either: posting the command *is* the confirmation.
 /status                       the queues, what is stuck, what the last 7 days of runs cost
 /runs days=7                  what each recorded run found, posted and cost (default 30 days)
 /cost days=7 top=3            the model spend: per model, the dearest run, the dearest bills
+/digest                       draft the week that has just ended, here, with a publish button
+/digest ref=2026-W38            some other week, by its ISO number
+/digest publish ref=2026-W38    send it to the readers' channel — what the button does
 /help                         this list
 ```
 
@@ -183,6 +186,20 @@ it is part of the same bill. A command that never calls the model (`/show`, `/fi
 a bill whose verdict is already stored) shows the time alone; `/refresh` counts what a
 re-analysis of a new text cost, because that is the run's spending done under the operator's
 hand.
+
+### The weekly digest and its button
+
+On the digest's weekday (Sunday in Warsaw, `LEXINFORM_DIGEST_WEEKDAY`) the run drafts the week
+into the technical channel and posts nothing to readers. The draft carries one inline button;
+pressing it is not a second way into the bot but the command `/digest publish ref=…`, filed into
+the inbox like any typed one and executed by the run the relay starts. Telegram delivers a press
+as a `callback_query`, so the relay answers it through `answerCallbackQuery` — the button stops
+spinning — rather than with a "queued" post, a press having no message of its own to reply
+under. The week is built again from the database at the moment it is published, so a draft left
+standing for a day cannot go stale, and a second press changes nothing: the command row is
+answered rather than executed again, and the digest's publication row is unique per week and
+channel. `/digest` on any other day drafts that week all the same, and spends nothing either way
+— the digest never asks the model.
 
 An outage of the Sejm API, RCL, the model or Telegram ends the phase and leaves the command for
 the next run; a mistake in the command (unknown bill, bad link) is answered as such. A text

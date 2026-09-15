@@ -264,6 +264,13 @@ MIGRATIONS: tuple[str, ...] = (
     );
     CREATE INDEX ix_rcl_wykaz_numbers_number ON rcl_wykaz_numbers(wykaz_number);
     """,
+    # v23: the weekly digest, one per week and channel (the draft in the technical channel,
+    # the published one in the reader's), keyed on the week because it is about no bill.
+    """
+    CREATE UNIQUE INDEX ux_pub_digest ON publications(channel_id, kind, ref)
+        WHERE kind = 'digest';
+    CREATE INDEX ix_pub_sent_at ON publications(sent_at);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -276,6 +283,12 @@ def _iso(value: datetime | None) -> str | None:
 
 def _parse_dt(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value) if value else None
+
+
+def _utc_iso(value: datetime) -> str:
+    """A range bound spelled as the column holds it: `sent_at` comes from the clock, which is
+    UTC-aware, so a naive bound would sort beside the rows instead of among them."""
+    return (value if value.tzinfo else value.replace(tzinfo=UTC)).astimezone(UTC).isoformat()
 
 
 def _dump_version(script: str) -> int:
@@ -1107,6 +1120,23 @@ class SqliteBillRepository:
         row = self._conn.execute(sql + " ORDER BY id DESC LIMIT 1", params).fetchone()
         return self._row_to_publication(row) if row else None
 
+    def list_publications_between(
+        self, channel_id: str, *, since: datetime, until: datetime
+    ) -> list[Publication]:
+        """Every post the channel sent in the half-open window, oldest first; `sent` rows
+        alone, the digest being a reading of the channel and not of the database."""
+        rows = self._conn.execute(
+            "SELECT * FROM publications WHERE channel_id = ? AND status = ?"
+            " AND sent_at >= ? AND sent_at < ? ORDER BY sent_at, id",
+            (
+                channel_id,
+                PublicationStatus.SENT.value,
+                _utc_iso(since),
+                _utc_iso(until),
+            ),
+        ).fetchall()
+        return [self._row_to_publication(row) for row in rows]
+
     def delete_publication(
         self, term: int, number: str, kind: PublicationKind, channel_id: str
     ) -> int:
@@ -1215,6 +1245,13 @@ class SqliteBillRepository:
             (term, number, channel_id),
         ).fetchall()
         return [self._row_to_status_change(r) for r in rows]
+
+    def get_status_change(self, change_id: int) -> StatusChange | None:
+        """The change one update post was about; None when the row is gone."""
+        row = self._conn.execute(
+            "SELECT * FROM status_changes WHERE id = ?", (change_id,)
+        ).fetchone()
+        return self._row_to_status_change(row) if row else None
 
     def release_held_status_changes(
         self, term: int, number: str, channel_id: str, *, message_id: int, sent_at: datetime

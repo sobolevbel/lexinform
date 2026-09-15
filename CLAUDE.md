@@ -72,7 +72,7 @@ aggregate, `ConsultationWindow`, `process_stages`/`veto_stood`, the two bookkeep
 `get_updates` and the command replier), SQLite, `inbox_files` (the command inbox as a directory),
 `github_inbox` (the relay's writer)) → `services/` (commands (the operator's `/analyze`, `/show`,
 `/preview`, `/refresh`, `/skip`, `/unskip`, `/reset`, `/republish`, `/forget`, `/find`,
-`/status`, `/runs`, `/cost`), lookup
+`/status`, `/runs`, `/cost`, `/digest`), digest (the week's post, drafted and published), lookup
 (one bill by number or reference, fetched and prefiltered on first sight; the CLI and the commands
 share it), listener (the relay on the VPS), discovery, rcl_discovery + rcl_projects,
 wykaz_discovery, sources (`TextSources` routes a bill to `SejmTextSource`, `RclTextSource`,
@@ -782,6 +782,33 @@ Invariants worth keeping:
   `min_score`; `publish` overrides, `force` bypasses the prefilter, a previous analysis and the
   per-bill cost guard). Replies are English (the operator's channel), rendered by
   `MessageFormatter.command_reply`.
+- **Nothing reaches readers unread, and the button is a command like any other.** The weekly
+  digest (`services/digest.py`, its own phase after tracking so the week's own posts are in it)
+  is the one message about no bill: `Outgoing.bill` is None for it, its `publications` row takes
+  the sentinel number `DIGEST` and is keyed on the ISO week (v23), and `Digest.ref` — `2026-W38`
+  — is that week everywhere, in the row, in the callback data and in `/digest ref=…`. The run
+  only ever **drafts** it, into the technical channel, on the digest's weekday **in Warsaw time**
+  (`DigestService.today`, not the run's UTC clock the way `_full_day` compares it); the reader's
+  copy is posted by `/digest publish ref=…`, which is exactly what the draft's one inline button
+  files. So a press is not a second way into the bot: `command_for_callback` turns the callback
+  data into that command's own text, it is filed into the inbox, recorded, executed once and
+  answered like a typed one — and because a press carries no message of its own, the relay
+  answers it with `answerCallbackQuery` (`CommandAcknowledger.pressed`) instead of a "queued"
+  post. The week is **built again from the database at the moment it is published**, so a draft
+  left standing overnight cannot go stale, and a second press changes nothing (the command row is
+  answered rather than re-run, and the digest's row is unique per week and channel). It costs
+  nothing: no phase of it asks the model. What it says is the week's `sent` posts
+  (`list_publications_between`, `sent` only — the digest is a reading of the channel, not of the
+  database) as cards and updates, plus what a reader can still act on, which the reminders and
+  the agenda posts of the past week cannot be: each was about a date that has gone, so those
+  kinds are left out and "what is ahead" comes from the followed bills instead. An update is
+  named by the change it was **written for** (`get_status_change`, then `update_event`) and not
+  by the bill's state today, which has moved on. The first digest of a month carries the month
+  **just ended** (`is_first_digest_of_month` reads the week's Sunday, so a week straddling the
+  turn belongs to the month it ends in and the figures are whole) and the ask for support —
+  counting rows *taken in*, never a phase's `seen`: the register is downloaded whole every run
+  and the Sejm listing is re-read with a day of overlap, so summing what the runs looked at
+  would count one entry sixty times.
 - **Parallelism only around the network.** `concurrency.fan_out` runs one network step (download,
   process lookup, model call) for many items; that step never touches the repository. Outcomes are
   consumed in the calling thread, in input order, and that is where every DB write happens.
@@ -791,7 +818,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS` tuple
 in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v22 as of Sept 2026). `migrate()` reads `user_version` and runs
+`SCHEMA_VERSION = len(MIGRATIONS)` (v23 as of Sept 2026). `migrate()` reads `user_version` and runs
 every later script inside its own transaction, stamping the new version at the end, so a failed
 script leaves the database at the previous version.
 
@@ -816,7 +843,10 @@ a `/preview` and a `/republish` do not pay for the comparison again); v21 the en
 word goes back to `analysis_pending` rather than failing to load; v22 `rcl_wykaz_numbers` (which
 RCL project carries which number of the wykaz prac RM, for every row of the listing and not only
 for the projects this bot follows, with the project's creation date because the register reuses
-its numbers).
+its numbers); v23 the weekly digest — one row per week and channel (`ux_pub_digest` on
+`(channel_id, kind, ref)`, the draft in the technical channel and the published copy in the
+reader's) and the first index `publications.sent_at` has ever had, which is how the digest asks
+for the posts of one week.
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) → `db
 restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing `PRAGMA
@@ -1100,6 +1130,12 @@ Abbreviations (MSWiA, UdSC, ZUS, PESEL) stay Polish in the analysis, never МВ�
   beside `/run`, and `/runs`, `/cost`, `/reset`, `/analyze … json` and `/preview … to=` in the
   commands phase. What is left out is named in the help rather than silently missing, because
   "why is there no /db" is a question the operator would otherwise ask the source.
+- **The weekly digest** (2026-09-15): one post a week (Sunday, Warsaw), saying what the channel
+  carried — new cards, what changed, the consultations still open and the sittings of the next
+  fortnight — and, in the first digest of a month, what the month caught and cost, with the ask
+  for support. It is drafted into the technical channel with a publish button and never goes out
+  unread; it asks the model nothing, so a week costs nothing. A quiet week is still told: silence
+  is news in a channel about deadlines, and a reader must not have to guess whether the bot lives.
 - **Bills found when their road is already over** (2026-09-12): no card and no analysis, whatever
   the source — but only when there is really nothing ahead (the act is out, the bill was rejected
   or withdrawn, the project or the plan was dropped), and a bill the Sejm has merely passed keeps

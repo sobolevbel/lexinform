@@ -12,8 +12,10 @@ from datetime import date
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import (
+    DIGEST_NUMBER,
     AgendaItem,
     Bill,
+    Digest,
     Phase,
     PrintInfo,
     PublicationKind,
@@ -25,13 +27,22 @@ from lexinform.ports import PublishResult
 
 @dataclass(frozen=True)
 class Outgoing:
-    """A rendered message on its way out: what it is about, its text, where it replies."""
+    """A rendered message on its way out: what it is about, its text, where it replies.
+
+    `bill` is None for the digest, the one message about no bill; `action` is its button in the
+    technical channel — a label and the data a press sends back (`digest:2026-W38`)."""
 
     kind: PublicationKind
-    bill: Bill
+    bill: Bill | None
     text: str
     reply_to: int | None = None
     detail: str = ""  # a word for logs and dry runs: the thread joined, the sitting
+    action: tuple[str, str] | None = None
+
+    @property
+    def number(self) -> str:
+        """What the post is about, for a log line or a dry run's title."""
+        return self.bill.number if self.bill is not None else DIGEST_NUMBER
 
 
 class RenderingPublisher(ABC):
@@ -124,4 +135,11 @@ class RenderingPublisher(ABC):
         detail = phase.key
         return self._deliver(
             Outgoing(PublicationKind.DECISION_DEADLINE, bill, text, reply_to, detail)
+        )
+
+    def publish_digest(self, digest: Digest, *, approve: str = "") -> PublishResult:
+        text = self._formatter.digest(digest, draft=bool(approve)).text
+        action = (approve, f"{PublicationKind.DIGEST.value}:{digest.ref}") if approve else None
+        return self._deliver(
+            Outgoing(PublicationKind.DIGEST, None, text, detail=digest.ref, action=action)
         )

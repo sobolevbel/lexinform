@@ -19,6 +19,7 @@ from lexinform.models import RunMode, RunReport, TokenUsage
 from lexinform.ports import BillRepository, Clock, RunNotifier
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.commands import CommandService
+from lexinform.services.digest import DigestService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.publishing import PublishingService
 from lexinform.services.rcl_discovery import RclDiscoveryService
@@ -54,6 +55,7 @@ class RunOptions(BaseModel):
     min_score: int = 3
     full_track: bool = False
     commands: bool = True
+    digest: bool = True
     mode: RunMode = RunMode.RUN
 
 
@@ -79,6 +81,7 @@ class DailyPipeline:
         rcl_discovery: RclDiscoveryService | None = None,
         wykaz_discovery: WykazDiscoveryService | None = None,
         commands: CommandService | None = None,
+        digest: DigestService | None = None,
         first_run_lookback_days: int = 1,
         rerun_overlap_days: int = 1,
         runs_retention_days: int | None = 90,
@@ -97,6 +100,7 @@ class DailyPipeline:
         self._rcl_discovery = rcl_discovery
         self._wykaz_discovery = wykaz_discovery
         self._commands = commands
+        self._digest = digest
         self._first_run_lookback = timedelta(days=first_run_lookback_days)
         self._overlap = timedelta(days=rerun_overlap_days)
         self._runs_retention = (
@@ -269,6 +273,10 @@ class DailyPipeline:
         self._phase(report, "publishing", lambda: self._publish(opts, report))
         if opts.track:
             self._phase(report, "tracking", lambda: self._track(opts, report))
+        # After tracking, so that the week's own posts are in it; the service decides whether
+        # today is the day, and it asks the Warsaw calendar and not the runner's.
+        if opts.digest and opts.publish and self._digest is not None:
+            self._phase(report, "digest", lambda: self._draft_digest(report))
 
     @staticmethod
     def _phase(report: RunReport, name: str, action: Callable[[], None]) -> None:
@@ -407,6 +415,15 @@ class DailyPipeline:
             report.errors.append(f"tracking: {tracked.fatal_error}")
         elif failed:
             report.errors.append(f"{failed} status update(s) failed")
+
+    def _draft_digest(self, report: RunReport) -> None:
+        assert self._digest is not None
+        result = self._digest.run()
+        report.digest_drafted = result.drafted
+        if result.drafted:
+            report.notes.append(f"digest {result.ref} drafted, waiting for the button")
+        elif result.fatal_error:
+            report.errors.append(f"digest: {result.fatal_error}")
 
     def _full_day(self) -> bool:
         return (

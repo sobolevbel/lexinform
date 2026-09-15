@@ -79,7 +79,8 @@ class PublicationKind(StrEnum):
     `AGENDA` is sent once per sitting and `AGENDA_CANCELLED` retracts one under the same `ref`
     (a sitting that only moved keeps its key and is told as a new `AGENDA`). `DECISION_DEADLINE`
     warns the Senate's 30 days or the President's 21 are running out, its `ref` the phase key so
-    each is told once. `JOINT_BILL` replaces the card of a jointly considered print.
+    each is told once. `JOINT_BILL` replaces the card of a jointly considered print. `DIGEST`
+    is the one kind about no bill: its `ref` is the ISO week.
     """
 
     NEW_BILL = "new_bill"
@@ -93,6 +94,7 @@ class PublicationKind(StrEnum):
     HEARING_DEADLINE = "hearing_deadline"
     DECISION_DEADLINE = "decision_deadline"
     JOINT_BILL = "joint_bill"
+    DIGEST = "digest"
 
 
 class PublicationStatus(StrEnum):

@@ -18,6 +18,7 @@ from lexinform.models import (
     CommandOutcome,
     IncomingCommand,
     RunReport,
+    command_for_callback,
 )
 
 log = logging.getLogger(__name__)
@@ -50,13 +51,26 @@ class TelegramBotClient:
         )
         self._sleep = sleep
 
-    def send_message(self, chat_id: str, html: str, *, reply_to: int | None = None) -> int:
+    def send_message(
+        self,
+        chat_id: str,
+        html: str,
+        *,
+        reply_to: int | None = None,
+        button: tuple[str, str] | None = None,
+    ) -> int:
+        """`button` is (label, callback data): one inline button under the message, which comes
+        back as a `callback_query` when it is pressed."""
         payload: dict[str, Any] = {
             "chat_id": chat_id,
             "text": html,
             "parse_mode": "HTML",
             "link_preview_options": {"is_disabled": True},
         }
+        if button is not None:
+            payload["reply_markup"] = {
+                "inline_keyboard": [[{"text": button[0], "callback_data": button[1]}]]
+            }
         if reply_to is not None:
             payload["reply_parameters"] = {
                 "message_id": reply_to,
@@ -80,10 +94,21 @@ class TelegramBotClient:
             if "message is not modified" not in exc.description.lower():
                 raise
 
+    def answer_callback(self, callback_id: str, text: str = "") -> None:
+        """Stop the pressed button spinning; Telegram forgets a callback id within a minute."""
+        try:
+            self._call("answerCallbackQuery", json={"callback_query_id": callback_id, "text": text})
+        except (TelegramError, TelegramUnavailableError) as exc:
+            log.warning("answerCallbackQuery: %s", exc)
+
     def get_updates(self, *, offset: int | None, timeout: int) -> list[ChannelPost]:
-        """Long-poll `getUpdates` for channel posts; `offset` confirms every update below it.
-        Only one consumer may poll at a time (Telegram answers 409 to the older one)."""
-        payload: dict[str, Any] = {"timeout": timeout, "allowed_updates": ["channel_post"]}
+        """Long-poll `getUpdates` for channel posts and button presses; `offset` confirms every
+        update below it. Only one consumer may poll at a time (Telegram answers 409 to the
+        older one)."""
+        payload: dict[str, Any] = {
+            "timeout": timeout,
+            "allowed_updates": ["channel_post", "callback_query"],
+        }
         if offset is not None:
             payload["offset"] = offset
         result = self._call("getUpdates", json=payload, timeout=timeout + 15.0)
@@ -171,7 +196,7 @@ class TelegramPublisher(RenderingPublisher):
 
     def _deliver(self, message: Outgoing) -> TelegramPublishResult:
         message_id = self._client.send_message(
-            self._channel_id, message.text, reply_to=message.reply_to
+            self._channel_id, message.text, reply_to=message.reply_to, button=message.action
         )
         return TelegramPublishResult(message_id=message_id)
 
@@ -202,6 +227,8 @@ def _channel_post(update: dict[str, Any]) -> ChannelPost | None:
     """The channel post in one `getUpdates` item; None for other kinds of update. A post
     without text (a photo, a poll) still comes back, so that the offset moves past it."""
     update_id = update.get("update_id")
+    if isinstance(update_id, int) and isinstance(update.get("callback_query"), dict):
+        return _button_press(update_id, update["callback_query"])
     post = update.get("channel_post") or update.get("message")
     if not isinstance(update_id, int) or not isinstance(post, dict):
         return None
@@ -220,6 +247,33 @@ def _channel_post(update: dict[str, Any]) -> ChannelPost | None:
         return None
 
 
+def _button_press(update_id: int, query: dict[str, Any]) -> ChannelPost | None:
+    """A pressed button as the command it stands for, under the message it hangs on: the run
+    then answers there, exactly as it answers a typed command."""
+    message = query.get("message")
+    data = query.get("data")
+    if not isinstance(message, dict) or not isinstance(data, str):
+        return None
+    text = command_for_callback(data)
+    if text is None:
+        log.warning("callback %s: no command behind %r", update_id, data)
+        return None
+    chat = message.get("chat") or {}
+    try:
+        return ChannelPost(
+            update_id=update_id,
+            chat_id=int(chat["id"]),
+            chat_username=chat.get("username"),
+            message_id=int(message["message_id"]),
+            text=text,
+            date=datetime.fromtimestamp(int(message.get("date", 0)), tz=UTC),
+            callback_id=str(query.get("id", "")) or None,
+        )
+    except KeyError, TypeError, ValueError:
+        log.warning("callback %s has no readable message", update_id)
+        return None
+
+
 class TelegramAcknowledger:
     """`⏳ queued` under the command, so the operator knows the relay took it."""
 
@@ -235,6 +289,9 @@ class TelegramAcknowledger:
     def started(self, command: IncomingCommand, note: str) -> None:
         """`/run` is answered by the relay itself: nothing was filed for a run to report on."""
         self._client.send_message(self._channel_id, f"▶️ {note}", reply_to=command.message_id)
+
+    def pressed(self, callback_id: str) -> None:
+        self._client.answer_callback(callback_id, self.TEXT)
 
 
 class TelegramOperatorReplier:

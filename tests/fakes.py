@@ -656,23 +656,23 @@ class FakePublisher(RenderingPublisher):
         self.outage_on_edit: set[str] = set()
         self._next_id = 100
 
-    def _send(self, bill: Bill) -> FakePublishResult:
-        if bill.number in self.outage_on:
+    def _send(self, number: str) -> FakePublishResult:
+        if number in self.outage_on:
             raise TelegramUnavailableError("sendMessage: ConnectError after 3 attempts")
-        if bill.number in self.fail_on:
+        if number in self.fail_on:
             raise RuntimeError("telegram rejected the message")
         self._next_id += 1
         return FakePublishResult(message_id=self._next_id)
 
     def _deliver(self, message: Outgoing) -> FakePublishResult:
-        result = self._send(message.bill)
+        result = self._send(message.number)
         self.sent.append(message)
         return result
 
     def _edit(self, message: Outgoing, *, message_id: int) -> None:
-        if message.bill.number in self.outage_on_edit:
+        if message.number in self.outage_on_edit:
             raise TelegramUnavailableError("editMessageText: ConnectError after 3 attempts")
-        self._send(message.bill)
+        self._send(message.number)
         self.edited.append((message, message_id))
 
     def texts(self, kind: PublicationKind) -> list[str]:
@@ -873,6 +873,7 @@ class FakeAcknowledger:
     def __init__(self) -> None:
         self.acknowledged: list[int] = []
         self.started_notes: list[str] = []
+        self.presses: list[str] = []
 
     def queued(self, command: IncomingCommand) -> None:
         self.acknowledged.append(command.update_id)
@@ -880,6 +881,17 @@ class FakeAcknowledger:
     def started(self, command: IncomingCommand, note: str) -> None:
         self.acknowledged.append(command.update_id)
         self.started_notes.append(note)
+
+    def pressed(self, callback_id: str) -> None:
+        self.presses.append(callback_id)
+
+
+def button_press(update_id: int, text: str, *, chat_id: int = -1001) -> ChannelPost:
+    """A pressed inline button as the relay sees it: the command it stands for, with a callback
+    id to answer so the button stops spinning."""
+    return channel_post(update_id, text, chat_id=chat_id).model_copy(
+        update={"callback_id": f"cb{update_id}"}
+    )
 
 
 def channel_post(update_id: int, text: str | None, *, chat_id: int = -1001) -> ChannelPost:

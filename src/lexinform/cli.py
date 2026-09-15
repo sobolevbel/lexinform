@@ -624,6 +624,38 @@ def runs(days: DaysOpt = 30) -> None:
 
 
 @app.command()
+def digest(
+    ref: Annotated[
+        str | None, typer.Option("--ref", help="ISO week (2026-W38); the week just ended.")
+    ] = None,
+    publish: Annotated[
+        bool, typer.Option("--publish", help="Post it to the readers' channel, not as a draft.")
+    ] = False,
+) -> None:
+    """Draft the week's digest into the technical channel, or publish an approved one.
+
+    The draft carries a button; pressing it in the channel files this same command with
+    `--publish`, and the week is built again from the database before it goes out.
+    """
+    c = _container()
+    try:
+        service = c.digest_service(dry_run=False)
+        if service is None:
+            typer.echo(
+                "the digest is off (LEXINFORM_DIGEST_ENABLED) or has no technical channel to"
+                " draft into (LEXINFORM_TELEGRAM_LOG_CHANNEL_ID)",
+                err=True,
+            )
+            raise typer.Exit(code=2)
+        week = ref or service.current_ref()
+        done = service.publish(week) if publish else service.draft(week)
+    finally:
+        c.close()
+    where = "channel" if publish else "technical channel"
+    typer.echo(done.note or f"{done.ref} posted to the {where} as message {done.message_id}")
+
+
+@app.command()
 def cost(
     days: DaysOpt = 30,
     top: Annotated[int, typer.Option("--top", min=0, help="Most expensive analyses.")] = 5,

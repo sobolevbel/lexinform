@@ -6,7 +6,13 @@ import pytest
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.services.listener import CommandListener
-from tests.fakes import FakeAcknowledger, FakeInboxWriter, FakeUpdates, channel_post
+from tests.fakes import (
+    FakeAcknowledger,
+    FakeInboxWriter,
+    FakeUpdates,
+    button_press,
+    channel_post,
+)
 from tests.harness import World
 
 CHANNEL = "-1001"
@@ -195,6 +201,21 @@ def test_the_back_off_is_capped_and_forgotten_once_a_poll_gets_through() -> None
     assert slept[:5] == [15.0, 30.0, 60.0, 120.0, 240.0]
     assert slept[5:9] == [240.0, 240.0, 240.0, 240.0]  # capped
     assert slept[9:] == [15.0]  # the empty poll cleared the count, the next one stalled again
+
+
+def test_a_pressed_button_is_filed_as_the_command_it_stands_for_and_answered_as_a_press() -> None:
+    """A press has no message of its own to reply under, so it is answered through Telegram's
+    callback and not with a post; everything else is the road a typed command takes."""
+    updates = FakeUpdates([button_press(7, "/digest publish ref=2026-W38")])
+    writer = FakeInboxWriter()
+    ack = FakeAcknowledger()
+
+    filed = _listener(updates, writer, ack).poll_once()
+
+    assert filed == 1
+    assert [c.text for c in writer.filed] == ["/digest publish ref=2026-W38"]
+    assert ack.presses == ["cb7"]
+    assert ack.acknowledged == []  # no "queued" post under a message that is not a command
 
 
 def test_the_container_builds_the_relay_from_the_bot_token_and_the_log_channel_alone() -> None:

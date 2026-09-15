@@ -92,6 +92,7 @@ class RunReport(BaseModel):
     decision_reminders: int = 0
     held: int = 0
     cards_refreshed: int = 0
+    digest_drafted: bool = False
     consultation_results_posted: int = 0
     agenda_posted: int = 0
     agenda_cancelled: int = 0

@@ -30,10 +30,14 @@ from lexinform.models import (
     Bill,
     CommandOutcome,
     ConsultationWindow,
+    Digest,
+    DigestEntry,
     IncomingCommand,
+    MonthFigures,
     OutcomeStatus,
     Phase,
     PrintInfo,
+    PublicationKind,
     RclProject,
     RunReport,
     SpendSnapshot,
@@ -41,6 +45,7 @@ from lexinform.models import (
     StatusChange,
     StatusSnapshot,
     TokenUsage,
+    Upcoming,
     VotingSummary,
     WykazEntry,
     about_ukraine,
@@ -100,6 +105,8 @@ COMMAND_HELP = (
     "• <code>/status</code> — the queues, what is stuck, what the last runs cost\n"
     "• <code>/runs [days=N]</code> — what each recorded run found, posted and cost\n"
     "• <code>/cost [days=N] [top=N]</code> — the model spend, per model, run and bill\n"
+    "• <code>/digest [ref=2026-W38] [publish]</code> — draft the week's digest here, or send"
+    " it to the channel; the draft's button is the same command\n"
     "\n<b>a run</b> — these start the workflow instead of waiting for it:\n"
     "• <code>/run [since=DATE] [dry] [reprefilter=N] [text_skipped] [index_rcl_since=DATE]"
     " [no_publish] [no_track] [no_rcl] [full_track] [max_publish=N] [max_analyze=N]"
@@ -115,6 +122,15 @@ COMMAND_HELP = (
 # The commands whose answer is a dossier and not a verdict: they get the status, the last stage
 # and the consultation window as well as the bill's title and score.
 FULL_FACTS = frozenset({OutcomeStatus.SHOWN, OutcomeStatus.REFRESHED})
+
+DIGEST_TITLE_CHARS = 90
+# The button under the draft, in the operator's language like everything else in that channel.
+APPROVE_DIGEST = "📣 Publish to the channel"
+# English, like every other line the technical channel gets; the digest under it is the reader's.
+DIGEST_DRAFT_NOTE = (
+    "<b>📝 draft</b> — press the button to publish it to the channel, or leave it and nothing"
+    " goes out. It is rebuilt from the database when it is published, so it cannot go stale here."
+)
 
 FILLED = "●"
 EMPTY = "○"
@@ -158,6 +174,9 @@ ICON = {
     "hearing": "📢",
     "wykaz": "⏳",
     "deadline": "⏳",
+    "digest": "🗞",
+    "month": "📊",
+    "support": "☕️",
 }
 # The header icon of a status update, by event (see `models.update_event`); 🔄 otherwise.
 EVENT_ICON = {
@@ -299,13 +318,25 @@ class MessageFormatter:
     """Renders every message kind in one output language; see `i18n.Labels`."""
 
     def __init__(
-        self, language: str = "ru", *, today: Callable[[], dt.date] = dt.date.today
+        self,
+        language: str = "ru",
+        *,
+        today: Callable[[], dt.date] = dt.date.today,
+        channel: str = "",
+        support_url: str = "",
+        sponsor_url: str = "",
     ) -> None:
         """`today` dates "what comes next", the countdowns and the consultation tag when a
         message method is not given the day explicitly: production passes the run's clock in
-        Warsaw time, so a post never depends on the machine's zone."""
+        Warsaw time, so a post never depends on the machine's zone.
+
+        `channel` is the reader's channel as the settings spell it, and only an `@name` lets the
+        digest link to the posts it lists; the two addresses are the digest's own ask."""
         self._labels: Labels = labels_for(language)
         self._today = today
+        self._channel = channel
+        self._support_url = support_url
+        self._sponsor_url = sponsor_url
 
     def new_bill(
         self, bill: Bill, print_info: PrintInfo | None, *, today: dt.date | None = None
@@ -1181,6 +1212,102 @@ class MessageFormatter:
         )
         text = self._assemble([head, counts], flexible=[queued, errors])
         return RenderedMessage(text=text)
+
+    def digest(self, week: Digest, *, draft: bool = False) -> RenderedMessage:
+        """The week in the channel; `draft` adds the note only the technical channel's copy has."""
+        lb = self._labels
+        head = (
+            f"{ICON['digest']} <b>{esc(lb.digest_header)}</b>\n"
+            f"{self.fmt_date(week.since)} — {self.fmt_date(week.until)}"
+        )
+        body = [
+            _block(lb.digest_cards, [self._digest_card(e) for e in week.cards]),
+            _block(lb.digest_updates, [self._digest_update(e) for e in week.updates]),
+            _block(lb.digest_consultations, [self._digest_window(w) for w in week.consultations]),
+            _block(lb.digest_sittings, [self._digest_sitting(w) for w in week.sittings]),
+        ]
+        if week.is_empty:
+            body = [esc(lb.digest_quiet)]
+        tail = [self._month_block(week.month), self._support_block(), esc(lb.tag_digest)]
+        head_blocks = [head, DIGEST_DRAFT_NOTE] if draft else [head]
+        return RenderedMessage(text=self._assemble(head_blocks, flexible=body, tail=tail))
+
+    def _digest_card(self, entry: DigestEntry) -> str:
+        score = f"{score_icon(entry.score)} {entry.score}/5 " if entry.score is not None else ""
+        return f"• {score}{self._digest_ref(entry)} — {esc(_clip(entry.title, DIGEST_TITLE_CHARS))}"
+
+    def _digest_update(self, entry: DigestEntry) -> str:
+        """What the reply said, by its event where it has one and by its kind where it has not."""
+        lb = self._labels
+        by_kind = {
+            PublicationKind.ACT_PUBLISHED: lb.act_published_header,
+            PublicationKind.IN_FORCE: lb.in_force_header,
+            PublicationKind.CONSULTATION_RESULTS: lb.consultation_results_header,
+        }
+        said = lb.update_headers.get(entry.event) or by_kind.get(entry.kind) or lb.update_header
+        return f"• {self._digest_ref(entry)} — {esc(said)}"
+
+    def _digest_window(self, window: Upcoming) -> str:
+        left = ""
+        if window.deadline is not None:
+            days = (window.deadline - self._today()).days
+            left = f" — {self.fmt_date(window.deadline)}{self._countdown(days)}"
+        return f"• {self._digest_ref(window)}{left}"
+
+    def _digest_sitting(self, window: Upcoming) -> str:
+        item = window.sitting
+        if item is None:
+            return ""
+        where = item.committee_name or item.committee_code or self._labels.sejm_sitting
+        return f"• {self._digest_ref(window)} — {esc(where)}, {self._agenda_when(item)}"
+
+    def _digest_ref(self, entry: DigestEntry | Upcoming) -> str:
+        """How the digest names a bill: its number, linked to its own post where it has one."""
+        label = _number_ref(entry.number)
+        if entry.wykaz_number and is_rcl_number(entry.number):
+            label = esc(entry.wykaz_number)
+        url = self._post_url(entry.message_id)
+        return f'<a href="{html.escape(url, quote=True)}">{label}</a>' if url else label
+
+    def _post_url(self, message_id: int | None) -> str | None:
+        """A post of the channel by its id; only a channel with a public name has one."""
+        if message_id is None or not self._channel.startswith("@"):
+            return None
+        return f"https://t.me/{self._channel[1:]}/{message_id}"
+
+    def _month_block(self, month: MonthFigures | None) -> str:
+        """What the month caught and what it cost; the first digest of a month carries it."""
+        if month is None:
+            return ""
+        lb = self._labels
+        rows = [
+            f"{esc(lb.digest_month_discovered)}: {month.discovered}",
+            f"{esc(lb.digest_month_dropped)}: {month.dropped_by_keywords}",
+            f"{esc(lb.digest_month_analyzed)}: {month.analyzed}",
+            f"{esc(lb.digest_month_published)}: {month.published}",
+        ]
+        cost = cost_usd(month.usage)
+        if cost is not None and month.usage:
+            rows.append(f"{esc(lb.digest_month_cost)}: ≈ {format_usd(cost)}")
+        return (
+            f"{ICON['month']} <b>{esc(lb.digest_month)}</b> · {month.month:%m.%Y}\n"
+            + " · ".join(rows)
+        )
+
+    def _support_block(self) -> str:
+        """The ask, and only where there is somewhere to send it."""
+        lb = self._labels
+        links = [
+            link(url, label)
+            for url, label in (
+                (self._support_url, lb.digest_support_coffee),
+                (self._sponsor_url, lb.digest_support_sponsor),
+            )
+            if url
+        ]
+        if not links:
+            return ""
+        return f"{ICON['support']} {esc(lb.digest_support)} " + " · ".join(links)
 
     def command_reply(self, command: IncomingCommand, outcome: CommandOutcome) -> RenderedMessage:
         """The answer to an operator command, English like the run report: what the bot knows
@@ -2319,6 +2446,12 @@ def _section(icon: str, title: str, *lines: str, empty: str = "") -> str:
     when there are none."""
     rows = [line for line in lines if line] or ([empty] if empty else [])
     return "\n".join([f"{icon} <b>{esc(title)}</b>", *rows])
+
+
+def _block(title: str, rows: list[str]) -> str:
+    """A titled list of rows, or nothing at all when the week held none of them."""
+    kept = [row for row in rows if row]
+    return "\n".join([f"<b>{esc(title)}</b>", *kept]) if kept else ""
 
 
 def _counters(*items: tuple[str, int]) -> str:

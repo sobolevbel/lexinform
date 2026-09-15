@@ -21,6 +21,7 @@ from lexinform.models import (
     CommandState,
     Committee,
     CommitteeSitting,
+    Digest,
     IncomingCommand,
     JointContext,
     JointRecord,
@@ -304,6 +305,10 @@ class Publisher(Protocol):
         """The Senate's or the President's constitutional term is running out."""
         ...
 
+    def publish_digest(self, digest: Digest, *, approve: str = "") -> PublishResult:
+        """The week's digest; `approve` labels the button only the draft carries."""
+        ...
+
 
 class RunNotifier(Protocol):
     def notify(self, report: RunReport, log_lines: list[str]) -> None: ...
@@ -362,6 +367,10 @@ class CommandAcknowledger(Protocol):
 
     def started(self, command: IncomingCommand, note: str) -> None:
         """A `/run` the relay has already acted on: what it started and where to watch it."""
+        ...
+
+    def pressed(self, callback_id: str) -> None:
+        """Stop a pressed inline button spinning; what it asked for is filed like any command."""
         ...
 
 
@@ -492,6 +501,12 @@ class BillRepository(Protocol):
         ref: str | None = None,
     ) -> Publication | None:
         """The latest post of this kind for the bill; `ref` narrows to one sitting (agenda)."""
+        ...
+
+    def list_publications_between(
+        self, channel_id: str, *, since: datetime, until: datetime
+    ) -> list[Publication]:
+        """Every post the channel sent in the half-open window, oldest first (the digest)."""
         ...
 
     def delete_publication(
@@ -628,6 +643,10 @@ class BillRepository(Protocol):
         self, term: int, number: str, channel_id: str
     ) -> list[StatusChange]:
         """Changes held back as service stages (their update row is `skipped`), oldest first."""
+        ...
+
+    def get_status_change(self, change_id: int) -> StatusChange | None:
+        """The change one update post was about; None when the row is gone."""
         ...
 
     def release_held_status_changes(

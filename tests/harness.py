@@ -59,6 +59,7 @@ from tests.fakes import (
 )
 
 CHANNEL = "@test"
+SUPPORT_URL = "https://example.test/coffee"
 TERM = 10
 RPW = "RPW/29075/2026"
 ELI = "DU/2026/1099"
@@ -314,7 +315,10 @@ class World:
         # happens to run on and not the runner's zone. Dating it in UTC here made the harness
         # disagree with production for the ninety minutes a day when the two days differ.
         self.formatter = MessageFormatter(
-            "ru", today=lambda: self.clock.now().astimezone(LOCAL_TZ).date()
+            "ru",
+            today=lambda: self.clock.now().astimezone(LOCAL_TZ).date(),
+            channel=CHANNEL,
+            support_url=SUPPORT_URL,
         )
         self.publisher = FakePublisher(fail_on=fail_publish, formatter=self.formatter)
         self.notifier = FakeNotifier()

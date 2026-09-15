@@ -15,6 +15,11 @@ class ConsolePublishResult:
     document_message_ids: list[int] = field(default_factory=list)
 
 
+def _about(message: Outgoing) -> str:
+    """What the dry run's title says the message is about; the digest is about no bill."""
+    return f"druk {message.bill.number}" if message.bill is not None else message.number
+
+
 class ConsolePublisher(RenderingPublisher):
     """The messages the base class renders are printed with a title naming the kind."""
 
@@ -30,15 +35,17 @@ class ConsolePublisher(RenderingPublisher):
         return self._counter
 
     def _deliver(self, message: Outgoing) -> ConsolePublishResult:
-        title = f"{message.kind.replace('_', ' ').upper()} druk {message.bill.number}"
+        title = f"{message.kind.replace('_', ' ').upper()} {_about(message)}"
         if message.detail:
             title += f" {message.detail}"
         if message.reply_to is not None:
             title += f" (reply to {message.reply_to})"
+        if message.action is not None:
+            title += f" [button: {message.action[0]}]"
         return ConsolePublishResult(message_id=self._emit(title, message.text))
 
     def _edit(self, message: Outgoing, *, message_id: int) -> None:
-        self._emit(f"EDIT CARD druk {message.bill.number} (message #{message_id})", message.text)
+        self._emit(f"EDIT CARD {_about(message)} (message #{message_id})", message.text)
 
 
 class ConsoleRunNotifier:

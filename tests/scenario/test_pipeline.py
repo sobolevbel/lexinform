@@ -316,6 +316,7 @@ def test_report_carries_phase_timings() -> None:
         "analysis",
         "publishing",
         "tracking",
+        "digest",
     }
 
 

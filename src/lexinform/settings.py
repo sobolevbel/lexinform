@@ -230,6 +230,26 @@ class Settings(BaseSettings):
         description="Post when a followed bill appears on a committee or Sejm sitting agenda.",
     )
 
+    digest_enabled: bool = Field(
+        default=True,
+        description="Draft a weekly digest into the technical channel; it reaches readers only"
+        " when the operator presses its button. Off without a log channel either way.",
+    )
+    digest_weekday: int = Field(
+        default=6,
+        ge=0,
+        le=6,
+        description="Weekday of the digest in Warsaw time, 0 being Monday; it covers the week"
+        " that ends on it.",
+    )
+    digest_support_url: str = Field(
+        default="",
+        description="Where the monthly figures ask for support (buymeacoffee); empty says nothing.",
+    )
+    digest_sponsor_url: str = Field(
+        default="", description="The second address of the same ask (GitHub Sponsors)."
+    )
+
     log_level: str = "INFO"
     log_json: bool = False
 

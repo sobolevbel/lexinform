@@ -102,7 +102,14 @@ card says plainly that there is no draft yet and names the one thing the law all
 stage: anyone, a private individual included, may file a zgłoszenie zainteresowania pracami nad
 projektem with the ministry (art. 7 of the lobbying act), which is also the ticket to the Sejm's
 public hearing. When the project appears on RCL it takes over that thread, and when the
-government drops a project — which only this register records — the thread is told so. A second, technical channel can receive a report after every run (counters, tokens,
+government drops a project — which only this register records — the thread is told so.
+
+Once a week (Sunday, Warsaw time) the channel gets a digest: the cards and updates of the week,
+the consultations still open, the sittings of the next fortnight, and — in the first digest of a
+month — what that month caught and cost, with an ask for support. It is drafted into the
+technical channel first, with one button; pressing it publishes the digest, and nothing reaches
+readers unread. A quiet week is told as a quiet week: in a channel about deadlines, silence is
+news too. A second, technical channel can receive a report after every run (counters, tokens,
 errors).
 
 ## How it works
@@ -288,6 +295,7 @@ The rubric is in `src/lexinform/adapters/llm_prompts.py`; `PROMPT_VERSION` is st
 | `lexinform reset NUMBER [--to STATUS] [-y]` | Put a bill back into a status with a clean retry budget |
 | `lexinform runs [--days N]` | The recorded runs of the last days: counters, errors, tokens, cost |
 | `lexinform cost [--days N] [--top N]` | LLM spend per model and per run, the dearest run and analyses |
+| `lexinform digest [--ref 2026-W38] [--publish]` | Draft the week's digest into the technical channel, or publish an approved one |
 | `lexinform db init / dump FILE / restore FILE [--missing-ok]` | Database maintenance |
 
 ## Code layout
@@ -295,7 +303,7 @@ The rubric is in `src/lexinform/adapters/llm_prompts.py`; `PROMPT_VERSION` is st
 ```
 src/lexinform/
   models/, ports.py          domain models (enums, sejm, rcl, analysis, bill, events, commands,
-                             report), the Protocols every service depends on
+                             report, digest), the Protocols every service depends on
   keywords.py, authors.py    keyword prefilter, cover-letter parsing
   rcl_letters.py             deadline and e-mail out of an RCL consultation letter
   sections.py, pricing.py    print structure (trimming, excerpts), model list prices
@@ -309,9 +317,10 @@ src/lexinform/
                              inbox and the relay's writer)
   services/                  terms, discovery, rcl_discovery (+ rcl_projects), sources (where a
                              bill's text comes from), documents (loader), text_prefilter,
-                             analysis, signatories, publishing, lookup, commands, listener (the
-                             relay), pipeline, tracking/ (service, stages, pre_print, rcl,
-                             linking, acts, consultations, hearings, agenda, rollover, posting)
+                             analysis, signatories, publishing, lookup, commands, digest (the
+                             week's post), listener (the relay), pipeline, tracking/ (service,
+                             stages, pre_print, rcl, linking, acts, consultations, hearings,
+                             agenda, rollover, posting)
   container.py, cli.py       composition root, typer commands
 tests/                       fakes.py (ports in memory), harness.py (the real Container over the fakes),
                              unit/ on fakes + recorded API fixtures; `-m integration` hits the live API

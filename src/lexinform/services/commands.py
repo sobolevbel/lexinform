@@ -37,6 +37,7 @@ from lexinform.models import (
 from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier, Publisher
 from lexinform.pricing import cost_usd
 from lexinform.services.analysis import AnalysisService, TooExpensiveError
+from lexinform.services.digest import DigestService
 from lexinform.services.joint import primary_of
 from lexinform.services.lookup import BillLookup, BillNotFoundError
 from lexinform.services.publishing import PublishingService
@@ -141,6 +142,7 @@ class CommandService:
         *,
         text_prefilter: TextPrefilterService | None = None,
         tracking: StatusTrackingService | None = None,
+        digest: DigestService | None = None,
         publisher_for: Callable[[str], Publisher] | None = None,
         status_days: int = 7,
         status_bills: int = 10,
@@ -154,6 +156,7 @@ class CommandService:
         self._clock = clock
         self._text_prefilter = text_prefilter
         self._tracking = tracking
+        self._digest = digest
         self._publisher_for = publisher_for
         self._status_days = status_days
         self._status_bills = status_bills
@@ -332,6 +335,8 @@ class CommandService:
         if command.name is CommandName.FIND:
             assert command.query is not None
             return self._find(command.query)
+        if command.name is CommandName.DIGEST:
+            return self._digest_command(command, publish=publish)
         if command.name in DISPATCHED:
             # The relay starts the workflow itself and files nothing, so this can only be an
             # old file or a hand-written one; either way there is nothing here to execute.
@@ -699,6 +704,32 @@ class CommandService:
             found=tuple(found),
             note=f"{len(found)} match(es) for {query!r}",
         )
+
+    def _digest_command(self, command: Command, *, publish: bool) -> CommandOutcome:
+        """`/digest` drafts the week into this channel; `publish` is what the button presses.
+
+        A press that arrives twice costs nothing: the command row is answered rather than run a
+        second time, and the digest's own publication row would refuse a second post anyway.
+        """
+        if self._digest is None:
+            return CommandOutcome(
+                status=OutcomeStatus.DIGESTED,
+                note="the digest is off (LEXINFORM_DIGEST_ENABLED) or has no technical channel",
+            )
+        ref = command.options.get("ref") or self._digest.current_ref()
+        if not command.publish:
+            done = self._digest.draft(ref)
+            note = done.note or f"draft of {ref} is in this channel; press the button to send it"
+            return CommandOutcome(
+                status=OutcomeStatus.DIGESTED, note=note, message_id=done.message_id
+            )
+        if not publish:
+            return CommandOutcome(
+                status=OutcomeStatus.DIGESTED, note=f"{ref} not posted: this run does not publish"
+            )
+        done = self._digest.publish(ref)
+        note = done.note or f"{ref} posted to the channel"
+        return CommandOutcome(status=OutcomeStatus.DIGESTED, note=note, message_id=done.message_id)
 
     def _over_note(self, bill: Bill) -> str | None:
         """Why no card may be posted for this bill, when its road has ended. A card is an

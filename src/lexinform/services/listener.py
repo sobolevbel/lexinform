@@ -189,7 +189,12 @@ class CommandListener:
         log.info("filed update %d: %s", post.update_id, post.text)
         if self._ack is not None:
             try:
-                self._ack.queued(command)
+                if post.callback_id is not None:
+                    # A press has no message of its own to reply under, only the draft it hangs
+                    # on, and the button spins until Telegram is told it arrived.
+                    self._ack.pressed(post.callback_id)
+                else:
+                    self._ack.queued(command)
             except Exception as exc:
                 log.warning("could not acknowledge update %d: %s", post.update_id, exc)
         return True

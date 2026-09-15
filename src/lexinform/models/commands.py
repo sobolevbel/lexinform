@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.models.analysis import TokenUsage
 from lexinform.models.bill import Bill
+from lexinform.models.digest import week_bounds
 from lexinform.models.enums import PRE_PRINT_PREFIX, RCL_PREFIX, WYKAZ_PREFIX, BillStatus
 from lexinform.models.rcl import normalize_wykaz_number
 from lexinform.models.report import RunReport
@@ -64,6 +65,8 @@ class ChannelPost(BaseModel):
     message_id: int
     text: str | None = None
     date: dt.datetime
+    callback_id: str | None = None
+    """A button press rather than a post: `text` is the command it stands for."""
 
     def is_from(self, channel: str) -> bool:
         """Whether the post comes from `channel`: a numeric id (`-100…`) or `@username`."""
@@ -83,6 +86,20 @@ class ChannelPost(BaseModel):
             text=self.text,
             received_at=self.date,
         )
+
+
+CALLBACKS: dict[str, str] = {"digest": "/digest publish ref={}"}
+"""What a pressed button stands for, by the prefix of its callback data: a button is a command
+the operator did not have to type, and it takes the same road as one that was."""
+
+
+def command_for_callback(data: str) -> str | None:
+    """`digest:2026-W38` -> `/digest publish ref=2026-W38`; None for data no button of ours sent."""
+    prefix, _, argument = data.partition(":")
+    template = CALLBACKS.get(prefix)
+    if template is None or not argument:
+        return None
+    return template.format(argument)
 
 
 class RefKind(StrEnum):
@@ -137,6 +154,7 @@ class CommandName(StrEnum):
     RUNS = "runs"
     COST = "cost"
     STATUS = "status"
+    DIGEST = "digest"
     HELP = "help"
 
 
@@ -174,13 +192,14 @@ _COMMAND_NAMES: dict[str, CommandName] = {name.value: name for name in CommandNa
 
 
 class OptionKind(StrEnum):
-    """A bare word (`force`), or `key=value` checked as a date, a count, a chat or a status."""
+    """A bare word (`force`), or `key=value` checked as a date, count, chat, status or ISO week."""
 
     FLAG = "flag"
     DATE = "date"
     COUNT = "count"
     CHAT = "chat"
     STATUS = "status"
+    WEEK = "week"
 
 
 @dataclass(frozen=True)
@@ -249,6 +268,11 @@ OPTIONS: dict[CommandName, dict[str, Option]] = {
     CommandName.RESET: {"to": Option("to", OptionKind.STATUS)},
     CommandName.RUNS: {"days": _DAYS},
     CommandName.COST: {"days": _DAYS, "top": Option("top", OptionKind.COUNT, high=50)},
+    CommandName.DIGEST: {
+        "ref": Option("ref", OptionKind.WEEK),
+        "week": Option("ref", OptionKind.WEEK),
+        "publish": Option("publish"),
+    },
 }
 
 REQUIRED: dict[CommandName, str] = {CommandName.INDEX_RCL_NUMBERS: "since"}
@@ -340,6 +364,7 @@ class OutcomeStatus(StrEnum):
     REPORTED = "status"
     LISTED = "runs"
     SPENT = "cost"
+    DIGESTED = "digest"
     HELP = "help"
     EXECUTED_EARLIER = "executed earlier"
     NOT_FOUND = "not_found"
@@ -536,6 +561,12 @@ def _checked(name: CommandName, key: str, option: Option, raw: str) -> tuple[str
         if _CHAT.match(raw):
             return raw, ""
         return None, f"/{name}: {key} takes a chat id (-100…) or @name, not {raw!r}"
+    if option.kind is OptionKind.WEEK:
+        try:
+            week_bounds(raw.upper())
+        except ValueError:
+            return None, f"/{name}: {key} takes an ISO week (2026-W38), not {raw!r}"
+        return raw.upper(), ""
     try:
         return BillStatus(raw.lower()).value, ""
     except ValueError:

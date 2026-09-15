@@ -11,6 +11,12 @@ and are in git.
 
 ## Now
 
+- **The weekly digest — built on 2026-09-15**, as designed here and with one change: the monthly
+  figures count entries *taken in* and not a phase's `seen`, because the register is downloaded
+  whole every run and a sum of what the runs looked at would count one entry sixty times. What is
+  unobserved is the first real Sunday: whether a week's cards, updates and open consultations make
+  a post worth reading, and whether the operator wants "sittings ahead" over fourteen days or
+  seven (`SITTINGS_AHEAD_DAYS`).
 - **Reader guides** (`docs/guides/`): written on 2026-09-15 — how to file a zgłoszenie
   zainteresowania, how to answer a public consultation, how to write to a committee, how a public
   hearing works, and what the bot and the channel are. They wait for a home: a URL, a design and
@@ -25,32 +31,6 @@ and are in git.
   window and were repaired by hand.
 
 ## Next — decided, designed, not built
-
-### Weekly digest and the monthly report
-
-A post every Sunday saying what happened in the channel that week — new cards, updates,
-consultations that opened, sittings ahead — and, in the first digest of a month, what the month
-cost and what it caught: entries seen, dropped by the keywords, read by the model, published, the
-LLM spend in dollars, and a request for support (buymeacoffee, GitHub Sponsors).
-
-The draft goes to the technical channel first, with an inline "publish" button; the press comes
-back to the relay as a `callback_query`, is filed into the inbox like any operator command, and
-the next run posts it to the public channel. Nothing reaches readers unread.
-
-What it touches, in the order it has to be built:
-
-- a `digest` phase in `services/pipeline.py`, after tracking so the week's own posts count, gated
-  on the weekday **in Warsaw time** (`_full_day` compares UTC — do not copy that);
-- the week's own content: there is no query for "publications between two dates" and no index on
-  `publications.sent_at`; the monthly figures need neither, `repo.list_runs(since=…)` already
-  returns every counter of `RunReport` and `llm_usage` (retention is 90 days);
-- the first message that is not about one bill: `Outgoing.bill` is required, `publications.term`
-  and `number` are NOT NULL and every unique index is keyed on them, so either the field relaxes
-  or the row takes a sentinel number with a new partial unique index on `(channel_id, kind, ref)`,
-  `ref` being the ISO week;
-- `callback_query` handling in `lexinform listen`, and a command that publishes a digest by `ref`;
-- `RunReport` has no "dropped by the keywords" counter — it is `discovered - prefilter_hits`
-  unless one is added.
 
 ### The guides get a home
 

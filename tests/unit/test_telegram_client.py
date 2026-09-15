@@ -138,6 +138,55 @@ def test_publisher_sends_the_card_as_one_message(
     assert (result.message_id, result.document_message_ids) == (1, [])
 
 
+def test_a_button_carries_its_label_and_callback_data_under_the_message() -> None:
+    bodies: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(json.loads(request.content))
+        return _ok(7)
+
+    _client(handler).send_message("@log", "draft", button=("Publish", "digest:2026-W38"))
+
+    assert bodies[0]["reply_markup"] == {
+        "inline_keyboard": [[{"text": "Publish", "callback_data": "digest:2026-W38"}]]
+    }
+
+
+def test_a_pressed_button_comes_back_as_the_command_it_stands_for() -> None:
+    """The press takes the command's road: `chat_id` and `message_id` are the draft it hangs on,
+    so the run answers there, and `callback_id` is what stops the button spinning."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "ok": True,
+                "result": [
+                    {
+                        "update_id": 20,
+                        "callback_query": {
+                            "id": "4382",
+                            "data": "digest:2026-W38",
+                            "message": {
+                                "message_id": 42,
+                                "date": 1789200000,
+                                "chat": {"id": -1001, "type": "channel", "username": "lexlog"},
+                            },
+                        },
+                    },
+                    {"update_id": 21, "callback_query": {"id": "9", "data": "delete:everything"}},
+                ],
+            },
+        )
+
+    posts = _client(handler).get_updates(offset=None, timeout=0)
+
+    pressed = posts[0]
+    assert pressed.text == "/digest publish ref=2026-W38"
+    assert (pressed.chat_id, pressed.message_id, pressed.callback_id) == (-1001, 42, "4382")
+    assert posts[1].text is None  # data no button of ours sent; the offset still moves past it
+
+
 def test_get_updates_long_polls_for_channel_posts_and_parses_them() -> None:
     bodies: list[dict[str, object]] = []
 
@@ -169,7 +218,11 @@ def test_get_updates_long_polls_for_channel_posts_and_parses_them() -> None:
 
     posts = _client(handler).get_updates(offset=7, timeout=50)
 
-    assert bodies[0] == {"timeout": 50, "allowed_updates": ["channel_post"], "offset": 7}
+    assert bodies[0] == {
+        "timeout": 50,
+        "allowed_updates": ["channel_post", "callback_query"],
+        "offset": 7,
+    }
     assert [p.update_id for p in posts] == [10, 11, 12]  # every update moves the offset
     first = posts[0]
     assert (first.chat_id, first.chat_username, first.message_id) == (-1001, "lexlog", 42)

@@ -9,6 +9,7 @@ import pytest
 
 from lexinform.adapters.sqlite_repo import MIGRATIONS, SCHEMA_VERSION, SqliteBillRepository
 from lexinform.models import (
+    DIGEST_NUMBER,
     ActInfo,
     AgendaItem,
     AmendmentsRecord,
@@ -1022,9 +1023,11 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
     with sqlite3.connect(tmp_path / "old.db") as conn:
         conn.execute("UPDATE bills SET status = 'skipped_joint', analysis_attempts = 2")
         # A database of that day, and not one of today with an older number written on it:
-        # v20 is the version v21 was written against, and the table v22 adds is not in it, or
-        # the restore would replay that migration over a table the dump had already created.
+        # v20 is the version v21 was written against, so everything the later migrations create
+        # goes, or the restore would replay them over objects the dump had already made.
         conn.execute("DROP TABLE rcl_wykaz_numbers")
+        conn.execute("DROP INDEX ux_pub_digest")
+        conn.execute("DROP INDEX ix_pub_sent_at")
         conn.execute("PRAGMA user_version = 20")
     dump = source.dump()
     source.close()
@@ -1036,3 +1039,49 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
     restored = repo.get(process.term, process.number)
     assert restored is not None
     assert (restored.status, restored.analysis_attempts) == (BillStatus.ANALYSIS_PENDING, 0)
+
+
+def test_the_posts_of_a_week_are_the_sent_ones_inside_its_window(now: datetime) -> None:
+    """What the digest reads: `sent` rows alone, and the window's end is not in it."""
+    repo = SqliteBillRepository(":memory:")
+    repo.migrate()
+    monday = datetime(2026, 9, 7, 0, 0, tzinfo=UTC)
+    for number, when, status in (
+        ("3038", monday - timedelta(seconds=1), PublicationStatus.SENT),  # the week before
+        ("3039", monday, PublicationStatus.SENT),
+        ("3040", monday + timedelta(days=3), PublicationStatus.SENT),
+        ("3041", monday + timedelta(days=3), PublicationStatus.FAILED),  # nobody saw it
+        ("3042", monday + timedelta(days=7), PublicationStatus.SENT),  # the week after
+    ):
+        pub_id = repo.create_publication(
+            _publication(number, PublicationKind.NEW_BILL, now, status=PublicationStatus.PENDING)
+        )
+        repo.mark_publication(pub_id, status, message_id=1, sent_at=when)
+
+    found = repo.list_publications_between(CHANNEL, since=monday, until=monday + timedelta(days=7))
+
+    assert [p.number for p in found] == ["3039", "3040"]
+
+
+def test_a_digest_row_is_one_per_week_and_channel_and_is_about_no_bill(now: datetime) -> None:
+    repo = SqliteBillRepository(":memory:")
+    repo.migrate()
+    row = _publication(
+        DIGEST_NUMBER,
+        PublicationKind.DIGEST,
+        now,
+        ref="2026-W37",
+        status=PublicationStatus.PENDING,
+    )
+
+    first = repo.create_publication(row)
+    again = repo.create_publication(row)
+    other_week = repo.create_publication(row.model_copy(update={"ref": "2026-W38"}))
+
+    assert first == again  # the same week upserts its own row
+    assert other_week != first
+    stored = repo.get_publication(
+        10, DIGEST_NUMBER, PublicationKind.DIGEST, CHANNEL, ref="2026-W37"
+    )
+    assert stored is not None and stored.id == first
+    assert _tracked(repo, now) == []  # the sentinel joins no bill, so no tracker ever sees it

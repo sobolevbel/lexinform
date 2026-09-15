@@ -205,6 +205,22 @@ class Labels:
     link_amendments: str
     link_supplement: str
     supplement_unreadable: str
+    digest_header: str
+    digest_cards: str
+    digest_updates: str
+    digest_consultations: str
+    digest_sittings: str
+    digest_quiet: str
+    digest_month: str
+    digest_month_discovered: str
+    digest_month_dropped: str
+    digest_month_analyzed: str
+    digest_month_published: str
+    digest_month_cost: str
+    digest_support: str
+    digest_support_coffee: str
+    digest_support_sponsor: str
+    tag_digest: str
     supplement_headers: dict[str, str] = field(default_factory=dict)
     """What a document filed to the print is called in the block that carries its digest."""
     supplement_supports: dict[str, str] = field(default_factory=dict)
@@ -495,6 +511,22 @@ RU = Labels(
     link_amendments="Текст поправок (PDF)",
     link_supplement="Документ (PDF)",
     supplement_unreadable="Документ не удалось прочитать — он есть по ссылке ниже.",
+    digest_header="Итоги недели",
+    digest_cards="Новые законопроекты",
+    digest_updates="Что изменилось",
+    digest_consultations="Идут консультации — можно успеть",
+    digest_sittings="Ближайшие заседания",
+    digest_quiet="На этой неделе в канале не было публикаций.",
+    digest_month="Итоги месяца",
+    digest_month_discovered="просмотрено записей",
+    digest_month_dropped="отсеяно по ключевым словам",
+    digest_month_analyzed="прочитано моделью",
+    digest_month_published="опубликовано карточек",
+    digest_month_cost="расходы на модель",
+    digest_support="Канал бесплатный и без рекламы. Если он вам полезен — можно поддержать:",
+    digest_support_coffee="Buy me a coffee",
+    digest_support_sponsor="GitHub Sponsors",
+    tag_digest="#дайджест",
     supplement_headers={
         "government_position": "Позиция правительства по проекту",
         "impact_assessment": "Оценка последствий (OSR)",
@@ -1099,6 +1131,22 @@ EN = Labels(
     link_amendments="Amendments (PDF)",
     link_supplement="Document (PDF)",
     supplement_unreadable="The document could not be read — it is at the link below.",
+    digest_header="The week in the channel",
+    digest_cards="New bills",
+    digest_updates="What changed",
+    digest_consultations="Consultations still open",
+    digest_sittings="Sittings ahead",
+    digest_quiet="Nothing was posted in the channel this week.",
+    digest_month="The month in figures",
+    digest_month_discovered="entries seen",
+    digest_month_dropped="dropped by the keywords",
+    digest_month_analyzed="read by the model",
+    digest_month_published="cards published",
+    digest_month_cost="spent on the model",
+    digest_support="The channel is free and carries no advertising. If it helps you:",
+    digest_support_coffee="Buy me a coffee",
+    digest_support_sponsor="GitHub Sponsors",
+    tag_digest="#digest",
     supplement_headers={
         "government_position": "The government's position on the bill",
         "impact_assessment": "Assessment of the effects (OSR)",
