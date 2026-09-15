@@ -4,14 +4,11 @@ legislacja.rcl.gov.pl and orka.sejm.gov.pl judge their clients, and both score t
 client and not its version: Chrome 128, Chrome 140 and Firefox 142 all get the document. A stale
 version is not what breaks; sending no browser is.
 
-**The header order is part of the identity.** Four production runs were answered 403 while curl
-from the same runners was served the file, and it was neither the address, the protocol, the
-cookies nor the TLS hello: httpx wrote its own defaults first, so the request said
+**The header order is part of the identity**, and it was neither the address, the protocol, the
+cookies nor the TLS hello: httpx wrote its own defaults first, so the request named
 `Accept-Encoding` and `Connection` before `User-Agent`, which no Chrome does. So `BROWSER_HEADERS`
-is an **ordered** mapping, and `browser_headers(accept=…)` replaces that one header in place
-rather than moving it. `Accept-Encoding` names only what httpx can decode unaided.
-
-api.sejm.gov.pl and www.gov.pl would take any identity and are told the same one anyway.
+is an **ordered** mapping and `browser_headers(accept=…)` replaces that header in place rather
+than moving it; `Accept-Encoding` names only what httpx can decode unaided.
 """
 
 BROWSER_USER_AGENT = (

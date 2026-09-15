@@ -9,10 +9,9 @@ Imperva, built for people with browsers. Three things follow (`.github/workflows
 - every failure is an `OrkaUnreachableError`, a per-bill problem: this host judges callers by
   address as well as identity, and everything else the analysis reads is api.sejm.gov.pl.
 
-A refusal is retried, a WAF decision being momentary as well as structural, and it carries the
-WAF's own identifiers (Imperva's incident id, the F5's support id, `x-iinfo`), because a 403 with
-nothing to quote costs a session to diagnose. Only a 404 is about the bill: the address is built
-by convention and can simply be wrong.
+A refusal is retried, a WAF decision being momentary as well as structural, and carries the WAF's
+own identifiers, a 403 with nothing to quote costing a session to diagnose. Only a 404 is about
+the bill: the address is built by convention and can be wrong.
 """
 
 import logging

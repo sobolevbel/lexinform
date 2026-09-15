@@ -4,17 +4,13 @@ Patterns are Polish word stems anchored with word boundaries so that e.g. `wiz` 
 `wizja` and `granic` does not match `ograniczeniu`. The LLM makes the final relevance call, so
 false positives here only cost an LLM request, while false negatives lose a bill forever.
 
-Some patterns name a group of people without the word "cudzoziemcy" (EU citizens, third-country
-nationals) and some name work only foreigners do (a work permit, an employer's declaration).
-
 `WEAK_PATTERNS` are the authorities and places that turn up in customs, policing and inspection
-bills that touch no foreigner — a food-quality bill lists Straż Graniczna among its inspectors —
-plus "legalizacja", which in Polish law usually means excise stamps or unpermitted buildings. In
-a full text they count only next to a strong pattern; in a title they decide nothing alone.
+bills touching no foreigner, plus "legalizacja", which usually means excise stamps or unpermitted
+buildings: in a text they count only beside a strong pattern, in a title they decide nothing.
 
-PESEL, mObywatel, NFZ, świadczenia (800+), prawo jazdy and Kodeks wyborczy are deliberately no
-patterns: a bill changing those *for foreigners* says so and the text stage catches it, while as
-title patterns each would cost 4 to 14 full analyses of unrelated bills per term.
+PESEL, mObywatel, NFZ, świadczenia, prawo jazdy and Kodeks wyborczy are deliberately no patterns
+— a bill changing those *for foreigners* says so and the text stage catches it, while each would
+cost 4 to 14 full analyses of unrelated bills per term.
 """
 
 import re

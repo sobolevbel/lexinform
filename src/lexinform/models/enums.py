@@ -1,17 +1,12 @@
 """Enumerations and literal types shared by every other model.
 
-A bill's number says which source it came from: `PRE_PRINT_PREFIX` for bills the Sejm has
-received but not yet given a print (druk) number, `RCL_PREFIX` for government projects on
-legislacja.rcl.gov.pl (keyed by the RCL project id) and `WYKAZ_PREFIX` for entries of the wykaz
-prac legislacyjnych RM (keyed by their own number, UD408). A bare number is a druk.
+A bill's number says its source: `PRE_PRINT_PREFIX` before a druk number, `RCL_PREFIX` for a
+government project, `WYKAZ_PREFIX` for a register entry. A bare number is a druk.
 
-`TextSource` says how an analysis was made: one PDF, a set of documents, the pages of a scan,
-keyword excerpts (the triage rejected it) or metadata only. `SourceKind` says which document it
-read. `AMENDMENT_SOURCES` carry amendments and no bill text; `SUPPLEMENT_SOURCES` are the
-documents filed to a print afterwards, which say what others make of the text already there.
-
-`BILL_DOCUMENT_TYPE` is the Polish display string the Sejm API filters `documentType` on; the
-enum value `BILL` does not filter.
+`TextSource` says how an analysis was made, `SourceKind` which document it read.
+`AMENDMENT_SOURCES` carry amendments and no bill text; `SUPPLEMENT_SOURCES` are filed afterwards
+and say what others make of the text. `BILL_DOCUMENT_TYPE` is the display string the API filters
+`documentType` on; the enum value `BILL` does not filter.
 """
 
 from enum import StrEnum
@@ -27,16 +22,10 @@ class DocumentType(StrEnum):
 class BillStatus(StrEnum):
     """How far a bill got through our own pipeline.
 
-    The skips say where it stopped: `SKIPPED_PREFILTER` on the title and description, with the
-    text never read; `TEXT_PREFILTER_PENDING` when the title missed but the print's text is still
-    to be scanned, and `SKIPPED_TEXT_PREFILTER` when that missed too; `SKIPPED_COST` when the text
-    was longer than the per-bill cost limit and `SKIPPED_CLOSED` when the road was already over
-    at first sight (`lexinform reset` and `/unskip` revive any of them). `LINKED` is a row that
-    continues under another number — an RPW entry or an RCL project that became a print
-    (`Bill.linked_number`).
-
-    A `SKIPPED_JOINT` is gone with the rule that set it; v21 turns a row of an older dump that
-    carries the word into `ANALYSIS_PENDING`.
+    The skips say where it stopped — on the title, on the text, on the per-bill cost limit, or on
+    a road already over at first sight — and `reset`/`/unskip` revive any of them. `LINKED`
+    continues under another number (`Bill.linked_number`). A `SKIPPED_JOINT` is gone with the rule
+    that set it; v21 turns such a row into `ANALYSIS_PENDING`.
     """
 
     DISCOVERED = "discovered"

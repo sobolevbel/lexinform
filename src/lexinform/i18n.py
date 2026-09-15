@@ -13,15 +13,10 @@ from lexinform.models import ApplicantType, Category
 class Labels:
     """Every piece of text the formatter can put around a bill, in one language.
 
-    The fields follow the shape of a card: the Sejm's process first, then the government's two
-    earlier sources — the RCL project, and the entry in the wykaz prac legislacyjnych RM whose
-    `wykaz_intention` says above everything else that there is no text yet — and then the replies:
-    status updates, consultation and hearing reminders, the constitutional deadlines, and the
-    summaries of amendments.
-
-    `update_headers` and `event_tags` are keyed by event key (`models.update_event`);
-    `next_step_labels`, `typical_durations` and `no_action_labels` by phase key
-    (`models.next_phase`), with `urgent_step_labels` and `urgent_durations` consulted first for an
+    The fields follow the shape of a card: the Sejm's process, then the government's two earlier
+    sources, then the replies. `update_headers` and `event_tags` are keyed by event key
+    (`models.update_event`); `next_step_labels`, `typical_durations` and `no_action_labels` by
+    phase key, with `urgent_step_labels` and `urgent_durations` consulted first for an
     urgent bill. `stage_labels` goes by `Stage.stage_type`, and `rcl_stage_labels`,
     `decision_labels` and `proposal_labels` by a lower-case fragment, first match winning; a value
     none of them knows passes through in Polish.
