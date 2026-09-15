@@ -748,8 +748,9 @@ class AnalysisService:
 
         A scan is shown `triage_scan_pages` pages and not all of them, because that is what makes
         the pass cheap on exactly the documents that are dear: the cost of the cheap call then
-        stops depending on the document's length — **$0.013 for any scan**, eleven pages or three
-        hundred and sixty-two — and it breaks even at a 7% rejection rate. The prompt says how
+        stops depending on the document's length — $0.013 for any scan on Haiku, $0.044 on the
+        Sonnet production triages on, eleven pages or three hundred and sixty-two — and it breaks
+        even at a 7% rejection rate. The prompt says how
         many pages of how many are attached and asks for lower confidence rather than a guess
         when they do not settle the question, and an unsure verdict passes the bill on, so the
         only way to lose one here is a confident wrong "no".
