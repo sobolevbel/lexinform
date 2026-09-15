@@ -1,25 +1,16 @@
 """What a Sejm print (druk) is made of, and which parts the model needs to see.
 
-A government print is the bill itself, its justification (uzasadnienie), the regulatory impact
-assessment (OSR, a fixed 13-point form) and then hundreds of pages of appendices: the report from
-public consultations with tables of comments, EU compliance tables (tabela zgodności) and drafts
-of executive regulations, each with its own justification and OSR. Measured on real prints the
-appendices are 55-80% of the text and say nothing about who the bill affects. `trim_print` drops
-them and keeps the bill, the justification and OSR points 1-4 (problem, solution, affected
-parties).
+A print is the bill, its uzasadnienie, the OSR (a 13-point form) and then hundreds of pages of
+appendices — 55-80% of the text, and nothing about who the bill affects. `trim_print` drops those
+and keeps the bill, the uzasadnienie and OSR points 1-4. `excerpts` builds the short digest the
+cheap triage reads; `TextBudget` is the last cap before the model call.
 
-`excerpts` builds the short digest used for the cheap relevance triage: the beginning of the bill,
-the beginning of the justification and windows of text around every keyword hit. `TextBudget` is
-the last safety cap before the model call.
+`carries_the_document` comes before all of them: whether the file holds the document at all. Much
+of what the Sejm publishes is scanned paper whose only text layer is the transmittal letter.
 
-`carries_the_document` asks the question that comes before all of them: whether the file has the
-document in it at all. Much of what the Sejm publishes is scanned paper whose only text layer is
-the letter that hands it to the Marshal.
-
-The PDF extractor separates pages with a form feed, which is what `PAGE_BREAK` is, and a section
-header opens a page rather than sitting somewhere inside it. The OSR form's point 5 is where the
-trim cuts; RCL's Word files carry that number as list formatting rather than as text, so the
-heading is accepted without it.
+`PAGE_BREAK` is the form feed the PDF extractor puts between pages, and a section header opens a
+page rather than sitting inside it. RCL's Word files carry the OSR's point number as list
+formatting rather than text, so the heading is accepted without it.
 """
 
 import re
@@ -187,27 +178,18 @@ _KINDS: tuple[tuple[Kind, re.Pattern[str]], ...] = (
 def document_kind(text: str) -> Kind:
     """What a document is, read from its own opening rather than from its file name.
 
-    The name is what a ministry typed; the opening is what the document says it is. Measured
-    over the packages of six followed projects (13 Sept 2026), every appendix published beside
-    a bill names itself in its first lines, and the drafts of executive regulations that travel
-    with a bill — filed as `projekt.docx`, `uzasadnienie.docx`, `OSR.doc`, indistinguishable
-    from the bill's own files by name — say ROZPORZĄDZENIE where the bill says USTAWA.
+    The name is what a ministry typed; the opening is what the document says it is. Drafts of
+    executive regulations travel with a bill under the same file names and say ROZPORZĄDZENIE
+    where the bill says USTAWA.
 
-    **The opening is a page, and the first page that speaks wins.** `HEAD_CHARS` is a budget,
-    not the window: a bill's first page on RCL runs 550-1,150 characters, so a flat window of
-    1,200 reads on into the second page, where the uzasadnienie begins — and `_KINDS` tries
-    `justification` before `bill`, so the second page's heading outranked the first page's.
-    Measured over the 9,208 documents of the corpus (14 Sept 2026) that cost **94 bills**, every
-    one of them headed USTAWA on its own first page: `Projekt ustawy … (UD51)`, `Załącznik 1
-    projekt ustawy z uzasadnieniem`, whole packages read as their own justification. Page order
-    beats pattern order because a document announces itself before it argues for itself.
+    **The opening is a page, and the first page that speaks wins.** `HEAD_CHARS` is a budget, not
+    the window: a flat 1,200 reads into the second page where the uzasadnienie begins, and
+    `_KINDS` tries `justification` first, which cost 94 bills of the corpus. A page saying nothing
+    about itself is not an opening, so the budget carries to the next (26 documents open on a
+    stamp).
 
-    A page that says nothing about itself is not an opening, so the budget carries to the next
-    one — 26 documents open on a stamp or a title sheet and name themselves on the page after.
-
-    The all-caps headings are matched case-sensitively and anchored to their whole line: a
-    justification wrapped so that a line begins "rozporządzenia 2018/1240" is not a regulation.
-    `unknown` is the honest answer for a layout not seen before, and callers treat it as such.
+    Headings are matched case-sensitively and anchored to the whole line, so a wrapped line
+    beginning "rozporządzenia 2018/1240" is not a regulation. `unknown` is the honest answer.
     """
     budget = HEAD_CHARS
     for page in text.split(PAGE_BREAK):
@@ -270,14 +252,11 @@ def _section_start(page: str, current: str, *, after_osr: bool = False) -> str:
     """The section a page opens, or the one it continues: everything after the first draft
     regulation belongs to the drafts.
 
-    `after_osr` says the OSR form has already been reached, and then no page is the bill or its
-    justification again: a print runs letter, bill, uzasadnienie, OSR, appendices, in that order
-    and once each. The rule is what the word "Uzasadnienie" costs otherwise — a table of
-    submitted comments labels every row with it, so a page of one reads as the bill's own
-    justification and re-opens the kept run. Druk 1424 sent 270,989 characters of a consultation
-    table to the model that way and druk 1677 sent 317,546. It is tied to the OSR and not to the
-    first dropped section on purpose: druk 810's uzasadnienie stands *before* its OSR, with an
-    appendix wrongly detected in front of it, and a blunter rule would lose it.
+    `after_osr` says the OSR has been reached, and then no page is the bill or its justification
+    again: a print runs letter, bill, uzasadnienie, OSR, appendices, once each in that order.
+    Otherwise a consultation table, which labels every row "Uzasadnienie", re-opens the kept run —
+    druki 1424 and 1677 sent 270,989 and 317,546 characters of one. It is tied to the OSR and not
+    to the first dropped section because druk 810's uzasadnienie stands before its OSR.
     """
     if current == REGULATIONS:
         return REGULATIONS
@@ -288,18 +267,13 @@ def _section_start(page: str, current: str, *, after_osr: bool = False) -> str:
 def page_kind(page: str, running_head: str | None = None) -> Kind:
     """What a page announces itself as: the printer's furniture off the top, then its opening.
 
-    The whole of how a page is read, in one place, because it is one rule and the corpus is
-    measured against it (`tests/fixtures/sejm/page_starts.json`). Stripping is idempotent, so a
-    page `trim_print` has already stripped may be passed in as it stands.
+    One rule in one place, measured against `tests/fixtures/sejm/page_starts.json`. Stripping is
+    idempotent, so an already stripped page may be passed in as it stands.
 
-    The DSR form is the one heading looked for past the two-line window, and it has to be: the
-    deputies' form is an attachment to a resolution of the Presidium of the Sejm, so it opens
-    "Załącznik / do uchwały nr 51 / Prezydium Sejmu" and only names itself on the line after
-    that. `_ANNEX_RE` matches the first two lines — `\\s+` spans the break — so the form was read
-    as an appendix and `trim_print` dropped it: 14 of the 173 prints of term 10 that carry a DSR,
-    and 40,758 characters of druk 1963, over half the print. Widening the window instead would
-    undo what it is for (druk 810 page 40 wraps into "załącznika do rozporządzenia" on line three
-    and is the bill).
+    The DSR form is the one heading looked for past the two-line window: the deputies' form opens
+    "Załącznik / do uchwały nr 51 / Prezydium Sejmu" and names itself only on the next line, so
+    `_ANNEX_RE` read it as an appendix and `trim_print` dropped it (14 of the 173 DSR prints of
+    term 10). Widening the window would undo what it is for.
     """
     stripped = strip_page_furniture(page, running_head)
     if _DSR_RE.search(stripped[:HEAD_CHARS]):
@@ -392,11 +366,8 @@ _BODY_RE = re.compile(
 def without_cover_letter(text: str) -> str:
     """The document itself: what follows the letter that hands it to the Marshal.
 
-    Every print and every document filed to one opens with such a letter — "na podstawie
-    art. 118 ust. 1 Konstytucji … wnoszą projekt ustawy", "przekazuję przyjęte przez Radę
-    Ministrów stanowisko" — and the document proper starts on the next page or at its own
-    heading, whichever comes first. A text with no such opening (a committee report, an RCL
-    file) is its own document from the first line and is returned unchanged.
+    The document proper starts on the next page or at its own heading, whichever comes first. A
+    text with no such opening (a committee report, an RCL file) is returned unchanged.
     """
     match = _TRANSMITTAL_RE.search(text[:_COVER_LIMIT])
     if match is None:
@@ -445,18 +416,11 @@ def has_cover_letter(text: str) -> bool:
 def carries_the_document(text: str, *, min_chars: int, pages: int = 0) -> bool:
     """Whether the extracted text is the document at all, or a scrap of paper around it.
 
-    Sejm papers are scanned, signed on paper and filed as images: of 66 documents filed to
-    prints (term 10, 12 Sept 2026) 55 have no text layer whatsoever and the remaining 11 carry
-    the Prime Minister's covering letter and nothing else — 700-820 characters that name the
-    bill and say who will present the government's position, never what the position is. Of 39
-    prints, 11 are scans and one (druk 604) is its cover letter and the signatures under it.
-
-    Those 800 characters are the trap this answers: they read as a document, they pass any
-    length threshold, and a model asked what the government makes of a bill would answer from
-    a polite transmittal note. A covering letter is not the only such scrap, though — a title
-    page, a running head, whatever a stray OCR pass left behind — so a short text is measured
-    against the paper it came from as well: `pages` (0 for a format that has none) turns
-    "long enough to read" into "enough for a document of this many pages".
+    Sejm papers are scanned and filed as images: of 66 documents filed to prints, 55 have no text
+    layer and the other 11 carry the covering letter alone — 700-820 characters that read as a
+    document and pass any length threshold. A letter is not the only such scrap (a title page, a
+    running head), so a short text is measured against `pages` as well: "long enough to read"
+    becomes "enough for a document of this many pages".
     """
     body = without_cover_letter(text).strip()
     if len(body) < min_chars:
@@ -484,11 +448,9 @@ class PageWindow:
 def scan_page_window(pages: int, *, cover_letter: bool) -> PageWindow:
     """Which pages of a scanned document to put before the model.
 
-    The letter that hands the document to the Marshal is one page — in all 15 government prints
-    measured on 12 Sept 2026 — and says nothing the model needs, so it goes when the text layer
-    proved it is there. Everything else goes: the documents that reach us as scans are their own
-    substance from the first page to the last (druk 1273's OSR quantifies the affected on page
-    10 of 30), and nothing short of reading them can tell which page is chaff.
+    The transmittal letter is one page (all 15 government prints measured) and goes when the text
+    layer proved it is there. Nothing else does: a scan is substance from the first page to the
+    last, and nothing short of reading it can tell which page is chaff.
     """
     first = 1 if cover_letter and pages > 1 else 0
     return PageWindow(first, pages - first)
@@ -556,14 +518,10 @@ def excerpts(
 ) -> str:
     """The start of the bill, the start of the justification and text around each keyword hit.
 
-    Segments are merged when they overlap and returned in document order, separated by an
-    ellipsis marker. Keyword windows are added in order until `max_chars` is reached; the two
-    heads are always included.
-
-    `fill_head` gives whatever the windows left unspent back to the head, and only a cap asks
-    for it: `TextBudget` must hand over the whole budget it was given, while the triage digest is
-    paid for by the character and a text whose keywords are few is one the cheap model should
-    read less of, not more.
+    Segments are merged when they overlap and returned in document order. Windows are added until
+    `max_chars` is reached; the two heads are always included. `fill_head` gives what the windows
+    left unspent back to the head, and only a cap asks for it — the triage digest is paid for by
+    the character, so few keywords should mean less read, not more.
     """
     merged: list[tuple[int, int]] = [(0, min(head_chars, len(text)))]
     if match := _JUSTIFICATION_RE.search(text):
@@ -613,15 +571,10 @@ class BudgetedText:
 class TextBudget:
     """Safety cap on the characters sent to the model.
 
-    A text over the cap is cut down by `excerpts`: the head (the act), the start of the
-    justification, which explains the purpose in plain language, and a window around each of
-    `spans`. Passing the keyword hits as `spans` is what makes the cut a choice rather than a
-    guillotine — the passages a bill is relevant for are usually not in its first pages — and
-    with none it degrades to the head and the justification, which is what the cap used to keep.
-
-    Half the cap goes to the two heads so that the windows have the other half to fill, and each
-    window is narrowed with the cap: a full-sized one is wider than a small cap has left over, so
-    a fixed width would mean no window ever fits and the cut would be the head and nothing else.
+    `excerpts` keeps the head, the start of the justification and a window around each of
+    `spans`; passing the keyword hits as `spans` makes the cut a choice rather than a guillotine,
+    the relevant passages usually not being in the first pages. Half the cap goes to the two
+    heads, and each window is narrowed with the cap, or a fixed width would never fit a small one.
     """
 
     def __init__(self, max_chars: int) -> None:
