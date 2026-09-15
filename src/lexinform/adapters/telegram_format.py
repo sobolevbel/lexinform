@@ -1138,14 +1138,9 @@ class MessageFormatter:
         return RenderedMessage(text=text)
 
     def backfill_report(self, report: BackfillReport) -> RenderedMessage:
-        """What the text-prefilter backfill did, for the log channel.
-
-        It runs as a step of its own before `lexinform run` and writes to the same database, so
-        nothing it does shows in the run's report: run 69 of 15 Sept 2026 spent 29 of its 32
-        minutes here and queued 14 bills, while the report said "text prefilter: checked 1" and
-        listed 14 analysis candidates out of nowhere. The accepted rows are the point — they are
-        what the run that follows will pay to read.
-        """
+        """What the text-prefilter backfill did, for the log channel: a step of its own before
+        the run, so nothing it does shows in the run's report. The accepted rows are the point —
+        they are what the run that follows pays to read."""
         status = "✅" if report.ok else "❌"
         duration = report.duration_seconds
         scope = "title and text skips" if report.include_text_skipped else "title skips"

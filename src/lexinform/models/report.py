@@ -153,14 +153,8 @@ class BackfillOutcome(BaseModel):
 
 
 class BackfillReport(BaseModel):
-    """What `lexinform reprefilter` did, for the log channel.
-
-    The backfill runs as a step of its own before `lexinform run` and writes to the same database,
-    so nothing it does reaches the run's report: run 69 of 15 Sept 2026 spent 29 of its 32 minutes
-    here, rescanned 110 rows and queued 14, and the report that reached the channel said "text
-    prefilter: checked 1" and showed 14 analysis candidates with no account of where they came
-    from.
-    """
+    """What `lexinform reprefilter` did, for the log channel: it is a step of its own before the
+    run and writes to the same database, so nothing it does reaches the run's report."""
 
     started_at: dt.datetime
     finished_at: dt.datetime | None = None

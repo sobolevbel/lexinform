@@ -214,11 +214,9 @@ def reprefilter(
     Bills that pass become analysis candidates for the next `run` (use `run --no-publish` after a
     large backfill to avoid flooding the channel).
 
-    A bill the operator silenced is left alone. `/skip` writes `SKIPPED_PREFILTER` like a keyword
-    miss, so every listing that skips one skips the other — and a backfill that re-scanned it put
-    druki 1039 and 1040 back into the analysis queue on the state of 15 Sept 2026, which is the
-    one thing `/skip` promises will not happen ("it will not be analysed or posted"). `/unskip`
-    is how that decision is taken back, one bill at a time and by the person who made it.
+    A bill the operator silenced is left alone: `/skip` writes `SKIPPED_PREFILTER` like a keyword
+    miss, and re-scanning it is the one thing `/skip` promises will not happen. `/unskip` is the
+    way back.
     """
     c = _container()
     report = BackfillReport(
@@ -265,10 +263,7 @@ def reprefilter(
 
 
 def _tell_the_log_channel(c: Container, report: BackfillReport) -> None:
-    """The backfill is a step of its own before the run and writes to the same database, so its
-    work reaches no report: run 69 of 15 Sept 2026 spent 29 of its 32 minutes here and queued 14
-    bills, while the channel was told "text prefilter: checked 1" and shown 14 candidates from
-    nowhere. A failure to say so must not fail the backfill, whose work is already written down."""
+    """A failure to say so must not fail the backfill, whose work is already written down."""
     notifier = c.run_notifier(dry_run=False)
     if notifier is None:
         return

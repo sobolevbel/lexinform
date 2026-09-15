@@ -411,13 +411,9 @@ class StatusTrackingService:
         would have told it really went out; ELI can be a day behind the process, and the change
         row is unique, so a suppressed closure is never detected again. A change with no news is
         held rather than dropped for the same reason: with publishing off the row already exists,
-        so nothing would ever detect those stages again. A change that only fills in the road
-        *behind* what the channel has already shown is held for the same reason and by the same
-        means: told now it would announce the cause of the last post (`fills_in_the_past`).
-
-        `bill.stages` is still the tree as the previous run left it — `_detect` saves the new one
-        to the repository without touching the object in hand — so the two readings can be
-        compared here.
+        so nothing would ever detect those stages again, and so is one that only fills in the road
+        behind what the channel has shown (`fills_in_the_past`). `bill.stages` is still the tree
+        the previous run left, `_detect` having saved the new one without touching this object.
         """
         self._acts.check(bill, detail, result, publish=publish)
         if change is None:

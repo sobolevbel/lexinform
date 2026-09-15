@@ -127,18 +127,14 @@ jobs:
 
       # Backfill: bills skipped by title before the text prefilter existed (or while a file type
       # was unreadable) get their text scanned; the run below analyses and posts the hits.
-      # `reprefilter_text_skipped` widens it to the bills the text stage itself rejected — the one
-      # skip nothing reopens on its own (only a changed title or `/unskip` does), so a row whose
-      # reason was never recorded, or whose file was simply not uploaded yet, is closed for good
-      # until a run is asked for this.
+      # `reprefilter_text_skipped` widens it to text-stage skips, which nothing else reopens.
       - name: Re-run the text prefilter on skipped bills
         if: ${{ inputs.reprefilter_limit != '' && inputs.reprefilter_limit != '0' }}
         env:
           LEXINFORM_RCL_PROXY_URL: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
           LEXINFORM_LOG_LEVEL: INFO
           TEXT_SKIPPED: ${{ inputs.reprefilter_text_skipped && '--include-text-skipped' || '' }}
-          # Only the log channel, and only to say what the backfill queued: this step posts
-          # nothing to the readers' channel and never reaches the model.
+          # The log channel only: this step posts to no readers' channel and reaches no model.
           LEXINFORM_TELEGRAM_BOT_TOKEN: ${{ secrets.LEXINFORM_TELEGRAM_BOT_TOKEN }}
           LEXINFORM_TELEGRAM_LOG_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID }}
         run: uv run --frozen --no-dev lexinform reprefilter --limit "${{ inputs.reprefilter_limit }}" $TEXT_SKIPPED

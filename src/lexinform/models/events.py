@@ -63,23 +63,11 @@ def has_news(change: StatusChange, *, act_published: bool = False) -> bool:
 def fills_in_the_past(known: tuple[Stage, ...], found: tuple[Stage, ...]) -> bool:
     """Every stage this reading adds stands, in the tree, before one the channel already has.
 
-    The Sejm does not publish the road in order. Druk 1929 was read twice on 15 Sept 2026: at
-    11:32 the tree had gained "Praca w komisjach po II czytaniu" with the committee's report on
-    the amendments, and at 12:29 it gained the II czytanie that sent the bill there — a node
-    standing *before* the work already told. Named after its own newest stage, the second post
-    announced the cause of the first, and seven of its eleven lines were the first post again.
-
-    Tree order is the road's order and not a guess: over the 938 bill processes of term 10 no
-    road stage stands before one with an earlier date, while 521 of them have a day carrying
-    several road stages — so which of two runs on that day sees which node is chance, and the
-    shape at hand ("SejmReading" then "CommitteeWork" on one date) occurs 122 times.
-
-    Only the road is read (`process_stages`): 196 of the 241 `GovermentPosition` and `Opinion`
-    nodes of the term stand before a road stage dated later, and counting those would hold back
-    the government's position on a bill, which is the one filing this channel does tell.
-
-    A back-filled change is *held*, not dropped — `Poster.hold` lists its stages before the next
-    post — because the row is what stops it being detected again.
+    The Sejm does not publish the road in order, and such a change is held rather than told: named
+    after its own newest stage it would announce the cause of the last post. Tree order is the
+    road's order — over term 10 no road stage stands before one with an earlier date, while 521 of
+    938 processes have a day carrying several. Only the road counts (`process_stages`): 196 of the
+    241 `GovermentPosition` and `Opinion` nodes stand before a road stage dated later.
     """
     road = process_stages(found)
     already = set(stage_keys(process_stages(known)))

@@ -60,10 +60,8 @@ class BillStatus(StrEnum):
 
 
 SILENCED_BY_OPERATOR = "silenced by the operator (/skip)"
-"""The reason `/skip` writes on a row, and the one `skipped_prefilter` that is a decision rather
-than a miss: nothing that revisits skips in bulk may undo it. Kept beside `BillStatus` because
-the status alone cannot say it — `/skip` reuses `SKIPPED_PREFILTER` so every listing that already
-excludes a skipped bill excludes a silenced one too."""
+"""The reason `/skip` writes: the one `skipped_prefilter` that is a decision and not a miss, which
+nothing revisiting skips in bulk may undo. The status cannot say it — `/skip` reuses that one."""
 
 PRE_PRINT_PREFIX = "RPW/"
 RCL_PREFIX = "RCL/"

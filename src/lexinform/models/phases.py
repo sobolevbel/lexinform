@@ -135,12 +135,8 @@ PHASE_PATIENCE = {
     # usual window of thirty days, and the 90th percentile of the 514 consultation stages of the
     # corpus (84 days from the stage's last modification to the next stage's).
     "rcl_consultation": 90,
-    # The 90th percentile of the 1,475 opinion stages of the corpus (146 days from the stage's
-    # last modification to the next stage's; median 0, third quartile 59 — the stage is mostly
-    # instant and occasionally endless). Close to `DEFAULT_PATIENCE_DAYS`, which is what it used
-    # to fall through to, but this is the group `_rcl_phase` also falls back on when a project
-    # has no current stage, so the commonest step on the government path is not left to follow
-    # a default meant for the steps nobody measured.
+    # The 90th percentile of the 1,475 opinion stages of the corpus (146 days); also the group
+    # `_rcl_phase` falls back on when a project has no current stage.
     "rcl_opinions": 150,
     "rcl_council": 90,
     "rcl_committees": 120,
