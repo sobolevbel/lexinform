@@ -1,21 +1,14 @@
 """Who the register means by `MSWiA`.
 
-The wykaz prac RM names the responsible organ by an abbreviation and by nothing else — not in the
-CSV, not on the entry's page — and «отправить в MSWiA» tells a reader who has never dealt with a
-Polish ministry neither what the office is called nor where to find it. The names and the
-addresses below are the government's own list of ministries (`gov.pl/web/gov/ministerstwa`, read
-15 Sept 2026), checked one by one against the sites they point at.
+The register names the responsible organ by an abbreviation and nothing else, and «отправить в
+MSWiA» tells a reader neither what the office is called nor where to find it. The names and
+addresses are the government's own list (`gov.pl/web/gov/ministerstwa`, 15 Sept 2026).
 
-Two things the table deliberately does not do. An organ that is not a ministry — "Pełnomocnik
-Rządu do spraw Centralnego Portu Komunikacyjnego", "Prezes UOKiK", "Minister do spraw Równości" —
-the register already names in full, and it passes through unchanged. And an abbreviation from a
-government that has been reorganised since (`MP`, `MN`) keeps its name without an address: the
-site is gone, and a dead link is worse than none.
-
-There is no per-ministry page for the art. 7 zgłoszenie zainteresowania: every ministry's
-"Działalność lobbingowa" page on gov.pl is about the annual reports on professional lobbyists
-(art. 18), and the official form lapsed with the delegation in August 2026 (see CLAUDE.md). The
-address here is the ministry's own site, which is where its address and its papers are.
+An organ that is not a ministry the register already names in full and it passes through
+unchanged; an abbreviation from a government reorganised since (`MP`, `MN`) keeps its name
+without an address, a dead link being worse than none. There is no per-ministry page for the
+art. 7 zgłoszenie — "Działalność lobbingowa" is about art. 18 reports — so the address is the
+ministry's own site.
 """
 
 from typing import NamedTuple

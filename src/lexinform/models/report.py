@@ -58,23 +58,12 @@ class LlmCall(BaseModel):
 class RunReport(BaseModel):
     """The counters one run reports to the log channel and stores in the `runs` table.
 
-    `discovery_ok` says discovery finished, which is what lets the watermark advance past
-    `started_at`. `over_on_arrival` counts bills first seen with their road already over — the
-    act published, the bill rejected or withdrawn, a project dropped on RCL, a plan realised or
-    taken off the wykaz — which are stored and never posted.
-    `text_prefilter_scans` counts bills sent to the model unsearched because their file is
-    paper — pages and no text layer — `text_prefilter_unreadable` those skipped with nothing
-    to read at all (no file, no pages either, or a download that failed), and
-    `text_prefilter_unanswered` those left pending because the host would not hand the file over,
-    which says nothing about the bill; `analysis_unanswered` is the same refusal a phase later,
-    where the bill keeps its place in the queue rather than being judged on its metadata.
-    `held` counts stage changes kept back for the next post (service stages only), `rehomed` the
-    government's own rows carried over to a new Sejm term, `joint_published` the "alternative
-    bill" replies under the card of a jointly considered print and `joint_revived` the prints a
-    prefilter had skipped that such a card brought back.
-    `notes` are worth telling without being errors (a cost budget that stopped a phase),
-    `commands` one line per operator command, `rejected` the bills that were analysed and not
-    published.
+    `discovery_ok` says discovery finished, which is what lets the watermark advance.
+    `over_on_arrival`: first seen with the road already over, stored and never posted.
+    `text_prefilter_scans`: sent to the model unsearched, the file being paper. `*_unanswered`:
+    the host would not hand the file over, which says nothing about the bill, so the row keeps
+    its place in the queue. `held`: stage changes kept for the next post. `notes` are worth
+    telling without being errors; `rejected` the bills analysed and not published.
     """
 
     started_at: dt.datetime

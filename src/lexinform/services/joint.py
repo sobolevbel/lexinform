@@ -1,20 +1,12 @@
 """Which of the prints considered jointly with a bill already carries the group's card.
 
-The Sejm considers several prints on the same subject together: one committee report for all of
-them, their stages coinciding from the joint referral on. The channel gives such a group one
-card and answers under it for every later print, so only one of the group's prints is ever the
-one a reader reads.
+The Sejm considers several prints on the same subject together, their stages coinciding from the
+joint referral on, and the channel gives such a group one card with a reply under it for every
+later print. The publisher needs that answer to send a reply instead of a card, and the analysis
+to leave the cheap pass out: the card has already said the subject matters.
 
-Both the publisher and the analysis need that answer, for different reasons: the publisher to
-send a reply instead of a card, the analysis to leave the cheap pass out — the card has already
-said the subject matters, and a confident "no" from a screening model would take an alternative
-bill out of the channel for the price of one call it almost never saves.
-
-The reply is not a second card and not a second verdict: it says how this print differs from the
-ones the reader has already read about (`group_of` gathers them, `AnalysisService.compare_joint`
-asks). Until 2026-09-14 it said nothing at all beyond the title and the links, and a reader
-meeting «Альтернативный проект того же закона» had no way of telling whether it was the same
-bill in other words or a different answer to the same question.
+The reply is neither a second card nor a second verdict — it says how this print differs from the
+ones the reader knows (`group_of` gathers them, `AnalysisService.compare_joint` asks).
 """
 
 import logging
@@ -48,19 +40,12 @@ def primary_of(repo: BillRepository, bill: Bill, channel_id: str) -> tuple[Bill,
 def revive_prefilter_skips(repo: BillRepository, channel_id: str) -> list[str]:
     """Prints a prefilter skipped whose group already holds a card, put back in the queue.
 
-    The keywords are a guess about a text; that a committee is working on this print together
-    with one the channel has carded is a fact the Sejm states. Measured over term 10: eight
-    groups have a print the prefilter drops beside one it keeps, and in all eight it is the same
-    bill by another applicant — druk 1426 is the government's Kodeks pracy against the deputies'
-    1404, druk 316 the President's asystencja osobista beside druki 1929 and 1933, druk 2530 the
-    same rynek kryptoaktywów as 2529. Reading every one of them costs **$0.71 for the whole
-    term**, and each is one reply in a thread whose readers are waiting for exactly that bill.
-
-    The same reason as the triage, one gate earlier: what the prefilter can still do here is drop
-    an alternative bill for want of a keyword the card's own text had. Order does not matter —
-    the print may be skipped before the card exists or discovered long after it — because every
-    run asks the question again of every skipped row that names a group, and `/processes` carries
-    `printsConsideredJointly` in the listing, so even a row that was never read has its group.
+    The keywords guess about a text; that a committee works on this print together with a carded
+    one is a fact the Sejm states. Over term 10 eight groups have a print the prefilter drops
+    beside one it keeps, and in all eight it is the same bill by another applicant; reading them
+    all costs $0.71 for the term. Order does not matter — every run asks again of every skipped
+    row naming a group, and `printsConsideredJointly` is in the listing, so a row that was never
+    read still knows its group.
     """
     revived = []
     for bill in repo.list_skipped_with_joint_prints():

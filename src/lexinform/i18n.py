@@ -19,28 +19,11 @@ class Labels:
     status updates, consultation and hearing reminders, the constitutional deadlines, and the
     summaries of amendments.
 
-    Some of them carry a fact of their own. `consultation_link` names the Sejm's survey (verified
-    on 2026-09-13 for RPW/29075/2026: the project page carries "Link do ankiety: Ankieta", and
-    "Liczba ankiet" once the window has shut), and `consultation_page` names the same page
-    neutrally once the consultation is over. `action_wykaz_interest` is the zgłoszenie
-    zainteresowania of art. 7 of the lobbying act, which anyone may file, and
-    `action_rcl_interest` says it in short, because the RCL card already offers other moves.
-    `stalled_for_weeks` and `stalled_for_months` are said instead of the usual duration once a
-    step has outlived it (`models.stalled_days`), and `urgent_mode` marks "what comes next" for a
-    bill the government declared pilny (art. 123). The `senate_deadline_*` and
-    `president_deadline_*` labels are the last two constitutional windows — thirty days
-    (art. 121) and twenty-one (art. 122) — both counted from the stage before the hand-over,
-    which the API does not date, so `deadline_counted_from_vote` says so rather than letting the
-    reader trust a date that is a few days early.
-
-    The dictionaries are keyed as their names suggest. `update_headers` and `event_tags` go by
-    event key (`models.update_event`); `next_step_labels`, `typical_durations` and
-    `no_action_labels` by phase key (`models.next_phase`), with `urgent_step_labels` and
-    `urgent_durations` consulted first for an urgent bill and the normal entries filling the
-    phases the urgent mode does not change; `path_steps` holds the steps of the path line in
-    order. `stage_labels` goes by `Stage.stage_type` and `rcl_stage_labels` by a lower-case
-    fragment of an RCL stage name, first match winning, as do `decision_labels` and
-    `proposal_labels` over a `SejmReading.decision` and a `CommitteeReport.proposal`; a value
+    `update_headers` and `event_tags` are keyed by event key (`models.update_event`);
+    `next_step_labels`, `typical_durations` and `no_action_labels` by phase key
+    (`models.next_phase`), with `urgent_step_labels` and `urgent_durations` consulted first for an
+    urgent bill. `stage_labels` goes by `Stage.stage_type`, and `rcl_stage_labels`,
+    `decision_labels` and `proposal_labels` by a lower-case fragment, first match winning; a value
     none of them knows passes through in Polish.
     """
 
