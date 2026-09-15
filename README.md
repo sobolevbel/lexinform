@@ -324,6 +324,7 @@ adapter.
 | [`docs/operator-commands.md`](docs/operator-commands.md) | The technical channel's commands, how one travels to a run, the relay's setup |
 | [`docs/rcl-proxy.md`](docs/rcl-proxy.md) | Why RCL needs an EU egress and how the proxy is built |
 | [`docs/roadmap.md`](docs/roadmap.md) | What is not done yet: what is being built now, what is next, what waits for a measurement |
+| [`docs/guides/`](docs/guides/) | Guides for the channel's readers (Russian): how to file a zgłoszenie zainteresowania, answer a consultation, write to a committee, take part in a public hearing, and what the bot is |
 
 ## License
 

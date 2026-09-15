@@ -11,10 +11,10 @@ and are in git.
 
 ## Now
 
-- **Reader guides** (`docs/guides/`): how to file a zgłoszenie zainteresowania, how to write to a
-  committee, how to answer a public consultation, how a public hearing works — and one text
-  describing the bot and the channel for readers. Written as texts first; they get a URL, a
-  design and short links from the messages («как подать?») when there is a site to put them on.
+- **Reader guides** (`docs/guides/`): written on 2026-09-15 — how to file a zgłoszenie
+  zainteresowania, how to answer a public consultation, how to write to a committee, how a public
+  hearing works, and what the bot and the channel are. They wait for a home: a URL, a design and
+  short links from the messages («как подать?») in place of the paragraphs the cards carry today.
 - **The 53 register entries older than the watermark.** `report.wykaz_backlog` counts register
   rows that pass the keywords but were published before the run's watermark. On the measurement
   of 14 Sept 2026, of the 56 entries the keywords accept 34 are realised or withdrawn, 7 are
