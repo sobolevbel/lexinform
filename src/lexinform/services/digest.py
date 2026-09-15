@@ -47,6 +47,15 @@ MAX_PER_SECTION = 10
 SITTINGS_AHEAD_DAYS = 14
 
 
+def _wykaz_number(bill: Bill) -> str | None:
+    """The number a government row is known by, the same one its card's header uses."""
+    if bill.wykaz is not None:
+        return bill.wykaz.number
+    if bill.rcl is not None:
+        return bill.rcl.wykaz_number
+    return bill.linked_wykaz_number
+
+
 @dataclass
 class DigestResult:
     """What one digest phase or command did; `ref` is the week it was about."""
@@ -192,7 +201,7 @@ class DigestService:
             message_id=post.message_id,
             score=analysis.score if analysis is not None else None,
             category=analysis.category if analysis is not None else None,
-            wykaz_number=bill.linked_wykaz_number,
+            wykaz_number=_wykaz_number(bill),
             event=self._event(post, bill),
         )
 
@@ -240,7 +249,7 @@ class DigestService:
             number=bill.number,
             title=bill.summary.title,
             message_id=card.message_id if card is not None else None,
-            wykaz_number=bill.linked_wykaz_number,
+            wykaz_number=_wykaz_number(bill),
             **what,
         )
 

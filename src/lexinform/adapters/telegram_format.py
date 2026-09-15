@@ -1262,9 +1262,11 @@ class MessageFormatter:
         return f"• {self._digest_ref(window)} — {esc(where)}, {self._agenda_when(item)}"
 
     def _digest_ref(self, entry: DigestEntry | Upcoming) -> str:
-        """How the digest names a bill: its number, linked to its own post where it has one."""
+        """How the digest names a bill: its number as its own card names it (a government
+        project by its wykaz number), linked to its post where the channel has a public name."""
         label = _number_ref(entry.number)
-        if entry.wykaz_number and is_rcl_number(entry.number):
+        government = is_rcl_number(entry.number) or is_wykaz_number(entry.number)
+        if entry.wykaz_number and government:
             label = esc(entry.wykaz_number)
         url = self._post_url(entry.message_id)
         return f'<a href="{html.escape(url, quote=True)}">{label}</a>' if url else label
@@ -2461,8 +2463,10 @@ def _counters(*items: tuple[str, int]) -> str:
 
 
 def _number_ref(number: str) -> str:
-    """`druk 2695` / `RCL/12414402` / `RPW/29075/2026`: how a report names a bill."""
-    plain = is_rcl_number(number) or is_pre_print_number(number)
+    """`druk 2695` / `RCL/12414402` / `RPW/29075/2026` / `WPL/UD368`: how a bill is named.
+
+    Only a Sejm print is a druk; the register's own rows were being called one too."""
+    plain = is_rcl_number(number) or is_pre_print_number(number) or is_wykaz_number(number)
     return esc(number) if plain else f"druk {esc(number)}"
 
 

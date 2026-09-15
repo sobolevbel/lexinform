@@ -142,6 +142,32 @@ def test_a_numeric_channel_gets_no_links_because_it_has_no_public_address() -> N
     assert "druk 3039" in text and "t.me" not in text
 
 
+def test_a_government_row_is_named_by_its_wykaz_number_and_a_print_by_its_druk() -> None:
+    """The card's own header rule: only a Sejm print is a druk, and a project or a plan is the
+    number the ministries use, which is also what the thread's tag carries."""
+    week = Digest(
+        ref="2026-W37",
+        term=10,
+        since=dt.date(2026, 9, 7),
+        until=dt.date(2026, 9, 13),
+        cards=(
+            _entry("3039"),
+            _entry("RCL/12412103", wykaz_number="UC104"),
+            _entry("WPL/UD368", wykaz_number="UD368"),
+            _entry("RCL/12414402"),  # a project the register does not number
+            _entry("RPW/29075/2026"),
+        ),
+    )
+
+    text = MessageFormatter("ru").digest(week).text
+
+    assert "druk 3039" in text
+    assert "UC104" in text and "RCL/12412103" not in text
+    assert "UD368" in text and "WPL/UD368" not in text
+    assert "RCL/12414402" in text  # named by its page, never called a druk
+    assert "RPW/29075/2026" in text and "druk RPW" not in text
+
+
 def test_an_open_consultation_is_dated_and_counted_down() -> None:
     week = Digest(
         ref="2026-W37",
