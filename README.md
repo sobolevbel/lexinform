@@ -323,7 +323,7 @@ adapter.
 | [`docs/database.html`](docs/database.html) | The database on one page: tables, relations, indexes and the migration ledger (Russian, open it in a browser) |
 | [`docs/operator-commands.md`](docs/operator-commands.md) | The technical channel's commands, how one travels to a run, the relay's setup |
 | [`docs/rcl-proxy.md`](docs/rcl-proxy.md) | Why RCL needs an EU egress and how the proxy is built |
-| [`docs/roadmap.md`](docs/roadmap.md) | What is done, what is still open, and the API facts verified with curl |
+| [`docs/roadmap.md`](docs/roadmap.md) | What is not done yet: what is being built now, what is next, what waits for a measurement |
 
 ## License
 

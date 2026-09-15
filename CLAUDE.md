@@ -28,8 +28,9 @@ scans), `docs/rcl-scraping.md` (RCL's markup and files, the wykaz CSV, the probe
   it; a comment that opens a function body and says what the function does is a docstring written
   in the wrong place.
 - Developer guide (setup, tests, migrations, where a change goes): `CONTRIBUTING.md`.
-- **Every measured claim below can be re-run**: `../lexinform-corpus` (not a git repo, 11 GB) — all
-  938 bill prints of term 10 with their text, 825 RCL projects with every reached stage and 9,208
+- **Every measured claim below can be re-run** against the corpus — a separate 11 GB checkout, not
+  a git repo, beside this one as `lexinform-corpus`; the paths below are relative to it. It holds
+  all 938 bill prints of term 10 with their text, 825 RCL projects with every reached stage and 9,208
   of their files, the whole wykaz register, 826 orka submissions, and the stage tree of all 5,533
   processes of terms 8–10. Start at `INDEX.json`: it maps a druk number, an RCL id, a wykaz number
   (`wpl:UC104`) or an RPW number to the files, the labels and each other, and its `cases` are the
@@ -404,7 +405,7 @@ Invariants worth keeping:
   — `ToPresident` is *not* one of them, it starts the 21 days of art. 122); `has_news` decides
   whether a detected change is posted now. **Both nodes that arrive beside the process are named
   or held explicitly**, and neither was: replaying every one of the 6,260 stage transitions of
-  term 10 (cold-places audit, `../lexinform-corpus/checks/16_updates.py`), 222 went out under the
+  term 10 (cold-places audit, `checks/16_updates.py`), 222 went out under the
   one header that says nothing. `Opinion` is `SERVICE_STAGE_TYPES` now — `process_stages` already
   drops it as beside the road and the decision of 2026-09-12 says filed opinions are not this
   channel's genre, so it is held and listed with the next update that has something to say (149
@@ -784,7 +785,7 @@ branch history; the state branch is the backup.
   the reader with the number gone — and the quoted item is the whole content of a sitting post.
   `items_mentioning` keeps a window around the reference beside the head where that happens. Two
   fields of a committee sitting are read by nothing and were measured in the same pass (cold-places
-  audit, `../lexinform-corpus/checks/12_agenda.py`): of the 225 sittings with `notes`, 181 say in
+  audit, `checks/12_agenda.py`): of the 225 sittings with `notes`, 181 say in
   what procedure the sitting was called, **18 say the sitting or one of its items happens only if
   something else does** ("Posiedzenie aktualne w przypadku zgłoszenia poprawek…") and **4** carry
   the application address and deadline for a przesłuchanie — the only place in the API where that
@@ -862,7 +863,7 @@ branch history; the state branch is the backup.
   Signatories are not in the API: parse the print's cover letter and match against `/MP`.
 - **The cover letter names the representative in the accusative, and the extractor breaks names
   in two ways.** Measured over the 367 deputies' and committee prints of term 10 (cold-places
-  audit, 14 Sept 2026, `../lexinform-corpus/checks/10_authors.py`). The formula is «Do
+  audit, 14 Sept 2026, `checks/10_authors.py`). The formula is «Do
   reprezentowania wnioskodawców … **upoważniamy pana posła Krzysztofa Gadowskiego**» — the
   honorific between the verb and "posła", the name declined, sometimes two or three people («Pawła
   Śliza i Michała Gramatykę», the card names the first) and sometimes a committee's nominative
@@ -997,7 +998,7 @@ own (a vacatio legis), and an RPW entry the listing merely stopped showing is «
 отслеживается», not «отозван».
 
 **Text selection and cost** (2026-09-13, measured on the 45 prints and 10 RCL packages of
-`../lexinform-corpus` and on the 46 analyses of the state branch, $10.87 spent to date of which the
+the corpus and on the 46 analyses of the state branch, $10.87 spent to date of which the
 top five bills are $6.45): the per-bill limit stays **$2** and stops refusing — a text over it is
 cut down to it by the keywords and read, because the triage has already said the bill matters; a
 print that will only get a `joint_bill` reply was not analysed at all (**reversed 2026-09-14**: it
@@ -1039,9 +1040,9 @@ obywateli", a bill squarely on topic; excluding the named institution cuts 365 h
 over-inclusive on purpose — a false hit costs one call, a miss loses a bill for good — and druk
 1861 is rejected by the triage for about two cents anyway.
 
-Open items are listed under "Still open" in `docs/roadmap.md`. The audit of 14 Sept 2026 over the
+Open items are listed in `docs/roadmap.md`. The audit of 14 Sept 2026 over the
 whole corpus closed six defects and left nothing of its own open. Its record is
-`../lexinform-corpus/checks/`: `FINDINGS.md` for the findings with their numbers, `README.md` for
+`checks/`: `FINDINGS.md` for the findings with their numbers, `README.md` for
 how it was run, which of the methods paid and what to do next time.
 
 A second audit the same day asked a different question — whether every event of the legislative

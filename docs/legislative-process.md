@@ -6,7 +6,7 @@ and individuals can submit an opinion, and how each step shows up in the Sejm AP
 models. Sources: Constitution of 2 April 1997 (arts. 118–123, 235), Regulamin Sejmu, Regulamin
 Senatu, Regulamin pracy Rady Ministrów (uchwała nr 190 of 2013), ustawa o ogłaszaniu aktów
 normatywnych, ustawa o działalności lobbingowej, ustawa o petycjach; API facts verified live in
-September 2026 (see `roadmap.md`). Paragraph numbers are given only where we are sure of them.
+September 2026 (see `CLAUDE.md`). Paragraph numbers are given only where we are sure of them.
 
 ## 0. The map
 

@@ -168,7 +168,8 @@ Updates are automatic: `.github/workflows/deploy-relay.yml` runs after every gre
 secret `MIKRUS_SSH_KEY` and runs `deploy/update.sh` on the server (fetch, reset to
 `origin/main`, `uv sync`, restart). The key is bound to that script in `authorized_keys`
 (`command="/opt/lexinform/deploy/update.sh",no-pty,…`), so it can do nothing else; the server's
-host key is pinned in the workflow. By hand: `ssh mikrus /opt/lexinform/deploy/update.sh`.
+host key is pinned in the workflow. By hand, against the host the workflow names (`HOST` in
+`deploy-relay.yml`): `ssh root@… /opt/lexinform/deploy/update.sh`.
 The bot itself needs no deploy: every run of `daily.yml` checks out `main`.
 
 To rotate the key: `ssh-keygen -t ed25519 -N "" -f deploy_key -C lexinform-deploy`, replace the

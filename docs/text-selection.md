@@ -2,7 +2,7 @@
 
 Extracted from `CLAUDE.md` on 2026-09-14 so that the rules of `sections.py`, `document_text.py` and
 `AnalysisService._load_text` are read when those modules are touched and not in every session.
-Nothing here is new; every number was measured on `../lexinform-corpus` (`CLAUDE.md` says what the
+Nothing here is new; every number was measured on the corpus (`CLAUDE.md` says what the
 corpus holds and how to re-run a measurement).
 
 ## Scanned paper, and a covering letter is not the document it transmits
@@ -157,8 +157,8 @@ few dozen pages that is substance throughout.
 - **Net over the 45 prints (13 Sept 2026): 6,437,943 characters kept → 5,929,867.** The sum is not
   the point: it is ~588k of appendices out and ~157k of real bill text back in. The pages these
   rules were measured on are checked in as `tests/fixtures/sejm/page_starts.json` — **21 rows**,
-  the individual pages each rule was derived from, not a page corpus. The page corpus is
-  `../lexinform-corpus/sejm/term10/page_index.json.gz`: 84,422 pages of 914 prints, one row each
+  the individual pages each rule was derived from, not a page corpus. The page corpus is the
+  corpus's `sejm/term10/page_index.json.gz`: 84,422 pages of 914 prints, one row each
   with the kind `page_kind` gives it, built by the same call the fixture is (druk 810's pages 40,
   113, 182 and 388 come out identical). Asked of it (14 Sept 2026), **no print of term 10 now has
   an appendix detected before its uzasadnienie** — the druk 810 failure is closed across the term

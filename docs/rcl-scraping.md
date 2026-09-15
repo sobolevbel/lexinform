@@ -86,7 +86,7 @@ those; the invariants that govern *when* they run stay in `CLAUDE.md`.
 - **What the rule was measured on is checked in.** `tests/fixtures/rcl/openings.json` holds the
   opening of 147 real documents with the kind each must be recognised as, and one table test runs
   `document_kind` over the lot. A new case is one row. It is a regression set and not the corpus:
-  `../lexinform-corpus/candidates/openings-candidate.json` holds all 21,071 openings collected,
+  the corpus's own `candidates/openings-candidate.json` holds all 21,071 openings collected,
   labelled by the current code — which is why they are copied in by hand and read first, never
   generated into the repo.
 - Consultation letters give a relative deadline ("w terminie 7/14 dni od dnia otrzymania

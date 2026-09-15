@@ -4,7 +4,7 @@
 
 Read `README.md` for product context, `CONTRIBUTING.md` before changing code, and:
 
-- `docs/roadmap.md` for verified API facts and open work;
+- `docs/roadmap.md` for the open work;
 - `docs/legislative-process.md` for stages, legal deadlines and public participation windows;
 - `docs/operator-commands.md` for the technical channel's commands and the relay that carries them;
 - `docs/database.html` for the schema, its indexes and the migration ledger on one page.
