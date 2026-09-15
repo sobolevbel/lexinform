@@ -82,11 +82,9 @@ _FIT_MIN_CHARS = 20_000
 class AnalysisResult:
     """Counters and verdicts of one analysis phase.
 
-    `skipped_cost` counts the texts that were over the per-bill cost limit and never reached the
-    model, `unanswered` the bills whose host would not hand the file over and which wait for the
-    next run, `revived_joint` the prints a prefilter had skipped that the channel's own card of a
-    jointly considered print put back in the queue, `usage` is counted per model, and `stopped`
-    says the phase ended early on the per-run cost limit, which is a note and not an error.
+    `skipped_cost`: over the per-bill limit. `unanswered`: the host would not hand the file over,
+    so the bill waits. `revived_joint`: prints a prefilter skipped that a group's card put back.
+    `stopped`: the per-run limit ended the phase, which is a note and not an error.
     """
 
     analyzed: int = 0
@@ -134,14 +132,9 @@ class TooExpensiveError(Exception):
 class AnalysisOptions:
     """The knobs of the analysis phase, as `Settings` sets them (cf. `TrackingOptions`).
 
-    Both cost guards are off when their limit is 0, and the per-bill estimate needs the model's
-    input price — without it a text is never refused and never cut. `triage_min_chars` is the
-    length from which the cheap first pass is worth its own call (a scan is triaged whatever its
-    text), `triage_scan_pages` how many opening pages of a scan that pass is shown, and
-    `triage_min_confidence` how sure it must be before its "no" is taken. `channel_id` is the
-    channel the phase analyses for: a print whose group already holds a card there is not put
-    through the cheap pass, the card having answered its question already. None means the
-    question is not asked and every text is triaged on its length alone.
+    Both cost guards are off at 0, and the per-bill estimate needs the model's input price.
+    `triage_min_chars` is the length from which the cheap pass pays (a scan is triaged whatever
+    its text). `channel_id`: a print whose group already holds a card there skips that pass.
     """
 
     max_attempts: int = 3
@@ -194,13 +187,10 @@ class _Prepared:
     """Everything an analysis needs to be written down: produced without touching the database,
     so several bills can be prepared at the same time.
 
-    `first` marks a first analysis, which seeds the stages; a re-analysis leaves them to
-    tracking. `triage` is a triage the bill passed, whose tokens count too. Three flags say the
-    model was not asked at all: `unchanged`, when a re-analysis found the same text under a new
-    URL and `record` is the previous one pointing at the new source, `unreadable`, when the
-    new document could not be read and `record` is the previous one kept as it is — an analysis
-    of the metadata must never replace one of a text — and `deferred`, when the run had spent
-    its budget before the re-analysis and the text waits for the next one.
+    `first` marks a first analysis, which seeds the stages. Three flags say the model was not
+    asked: `unchanged` (a re-analysis found the analysed text under a new URL), `unreadable` (the
+    new document could not be read — an analysis of the metadata must never replace one of a
+    text) and `deferred` (the run's budget was spent; the text waits for the next run).
     """
 
     bill: Bill
@@ -244,11 +234,9 @@ def text_digest(text: str) -> str:
 class AnalysisService:
     """First analyses of candidates and re-analyses of bills whose text changed.
 
-    `options` holds the knobs (`AnalysisOptions`); what the run has spent and what it may still
-    spend is the `CostLedger`, which every phase that asks the model reaches through this one
-    service. `keywords` holds the patterns that pick what survives when a text has to be cut down
-    to the per-bill limit, and `triage` the same patterns again when the cheap first pass is on —
-    None there disables that pass.
+    The `CostLedger` is how every phase that asks the model reaches the run's budget. `keywords`
+    picks what survives when a text is cut to the per-bill limit; `triage` None disables the
+    cheap pass.
     """
 
     def __init__(
@@ -410,12 +398,9 @@ class AnalysisService:
     def _joint_card_exists(self, bill: Bill) -> bool:
         """Whether another print of this bill's group already holds the card in the channel.
 
-        Such a print is analysed like any other — it is read, judged and paid for, and what the
-        reader gets is a reply saying how it differs from the print they read about — but it is
-        not put through the cheap pass. The card has already answered the question the triage
-        asks, of a bill on the same subject and before the same committee; what the pass can
-        still do is say a confident "no" and take the alternative bill out of the channel
-        silently, for the price of one Haiku call it almost never saves.
+        Such a print is read and judged like any other but skips the cheap pass: the card has
+        already answered the question the triage asks, and all the pass could do is take an
+        alternative bill out of the channel silently.
         """
         if self._options.channel_id is None or not bill.summary.prints_considered_jointly:
             return False
@@ -523,13 +508,9 @@ class AnalysisService:
         """How `bill` differs from the prints considered jointly with it, read off the channel's
         own description of each. None when nothing has been analysed to compare with.
 
-        No text is loaded and nothing is downloaded: every bill in the group has been read once
-        by its own analysis, and asking the difference of the texts again would mean paying for a
-        second full reading of each. The descriptions are also the reader's side of the question
-        — the card is what they read — and they cost about a cent to compare.
-
-        Only an outage propagates; a failed call leaves the reply saying what it said before the
-        comparison existed, which is the bill, its applicant and the thread it belongs to.
+        The descriptions and not the texts: each has been read once already, they are what the
+        reader sees, and they cost about a cent. Only an outage propagates — a failed call leaves
+        the reply as it was before comparisons existed.
         """
         assert bill.analysis is not None
         described = [other for other in others if other.analysis is not None]
@@ -645,25 +626,16 @@ class AnalysisService:
         """The context the model is actually sent: this one, or a shorter one that fits the
         per-bill cost limit.
 
-        For a text the model counts the input itself — free, and exact where two characters per
-        token is a rule of thumb. A scan is priced from its pages instead (1,600 tokens each,
-        measured): asking the tokenizer would mean uploading the whole file, tens of megabytes,
-        to learn a number we can multiply out. When the counting request fails, the estimate
-        from the text length stands in.
+        The model counts a text's input itself, free and exact; a scan is priced from its pages
+        (1,600 tokens each, measured) rather than uploading tens of megabytes to learn a number.
 
-        A text over the limit is cut down rather than refused. The triage has already said the
-        bill matters, and dropping it there left the reader with nothing and the operator with a
-        `reset` to run by hand; a text read with gaps is worth more than a bill not read at all,
-        and the card says «неполный текст» either way. What a scan cannot do is be thinned: its
-        pages are substance from the first to the last, so there the answer is still to refuse.
+        A text over the limit is cut down, not refused — the triage has already said the bill
+        matters, and the card says «неполный текст» either way. A scan cannot be thinned, its
+        pages being substance throughout, so there the answer is still to refuse.
 
-        `first` is what every refusal turns on, and a re-analysis is never one: it is cut to fit
-        like any other text, but where a first analysis raises — a scan, a text with nothing
-        left to cut, an excerpt that tokenizes worse than the whole document's ratio predicted —
-        a re-analysis is sent as it stands. Raising there would land in the tracking loop's
-        per-bill `except`, which has nowhere to put it: the bill would fail on the same text
-        every run, with no `skipped_cost` row and no `reset` to undo, and keep a card that
-        describes the text before this one.
+        `first` is what every refusal turns on: a re-analysis is cut to fit but never raises, or
+        it would land in the tracking loop's per-bill `except`, fail on the same text every run
+        and keep a card describing the text before this one.
         """
         limit, price = self._options.max_bill_cost_usd, self._options.input_price_usd_per_mtok
         if not limit or price is None:
@@ -710,11 +682,9 @@ class AnalysisService:
         """The text cut to what the cost limit pays for: the head of the bill, the head of the
         justification and a window around every keyword hit, in document order.
 
-        The target is measured, not assumed: `over_by` is how many times the counted input
-        overshot the limit, so the same ratio applied to the characters lands inside it whatever
-        the text tokenizes at. `_FIT_MARGIN` leaves room for the prompt and the schema, which
-        the count included and the ratio therefore over-charges the text for. None when there is
-        not enough left to be a document.
+        `over_by` is how many times the counted input overshot the limit, so the same ratio on
+        the characters lands inside it whatever the text tokenizes at; `_FIT_MARGIN` leaves room
+        for the prompt and schema. None when too little is left to be a document.
         """
         target = int(len(text) / over_by * _FIT_MARGIN)
         if target < _FIT_MIN_CHARS:
@@ -724,13 +694,9 @@ class AnalysisService:
     def _worth_triaging(self, loaded: _Loaded) -> bool:
         """Whether the cheap pass has something to judge.
 
-        A text is worth it when there is enough of it that the full analysis would be dear —
-        that is what `triage_min_chars` measures. **A scan is worth it whatever its text says**,
-        and for years it was the one thing that skipped the pass: the gate asked how long the
-        text was, and a scan's text is the letter that hands it to the Marshal, so the most
-        expensive documents the project reads went straight to the most expensive model. Over
-        term 10 that is 317 documents and 7,763 pages, $62 on Opus against the ~$44 the rest of
-        the term costs.
+        `triage_min_chars` measures when a full analysis would be dear enough to be worth it. A
+        scan is worth it whatever its text says: its text is the transmittal letter, so the gate
+        used to send the term's 317 scans — 7,763 pages, $62 on Opus — straight to Opus.
         """
         if loaded.scan is not None:
             return True
@@ -743,17 +709,11 @@ class AnalysisService:
         """Ask the cheap model about excerpts, or about the first pages of a scan; a confident
         "no" becomes the final record.
 
-        Returns the triage record and, when it rejects the bill, a non-relevant analysis record
-        (its `text_source="excerpts"` says how it was decided).
-
-        A scan is shown `triage_scan_pages` pages and not all of them, because that is what makes
-        the pass cheap on exactly the documents that are dear: the cost of the cheap call then
-        stops depending on the document's length — $0.013 for any scan on Haiku, $0.044 on the
-        Sonnet production triages on, eleven pages or three hundred and sixty-two — and it breaks
-        even at a 7% rejection rate. The prompt says how
-        many pages of how many are attached and asks for lower confidence rather than a guess
-        when they do not settle the question, and an unsure verdict passes the bill on, so the
-        only way to lose one here is a confident wrong "no".
+        The rejection becomes a non-relevant analysis record whose `text_source="excerpts"` says
+        how it was decided. A scan is shown `triage_scan_pages` pages, so the cheap call costs the
+        same whatever the document's length: $0.044 on Sonnet, breaking even at a 7% rejection
+        rate. The prompt says how many pages of how many are attached and an unsure verdict passes
+        the bill on, so only a confident wrong "no" loses one.
         """
         if self._triage is None:
             return None, None
@@ -838,19 +798,13 @@ class AnalysisService:
     def _load_text(self, document: TextDocument | None, *, trim: bool = True) -> _Loaded:
         """Trimmed, budgeted text of the document — or its pages, when the file has no text in it.
 
-        Much of what the Sejm publishes is signed paper, filed as images: the text layer is empty
-        or holds only the letter that hands the document to the Marshal. Such a file goes to the
-        model as pages instead (`scan`), with the letter's page and, for an OSR, the tail of the
-        13-point form left behind. The extracted text comes back either way, so the signatures
-        under the letter are still resolved; the prompt shows the model the text only when it is
-        the document.
+        Much of what the Sejm publishes is signed paper filed as images, whose text layer is
+        empty or holds only the transmittal letter. Such a file goes to the model as pages
+        (`scan`); the extracted text comes back either way, so the signatures are still resolved.
 
-        An outage of the document's host propagates, and so does orka refusing us the file: a
-        refusal is about our address on the day, and an analysis of the metadata must never be
-        what a bill with a text ends up with. A file that is missing or broken falls back to the
-        metadata instead of costing the bill an analysis attempt. `trim=False` keeps the
-        whole text (an amendments document has no appendices to drop, and its uzasadnienie
-        explains the amendments; a document filed to a print is one such document end to end).
+        An outage propagates, and so does orka refusing the file: an analysis of the metadata must
+        never be what a bill with a text ends up with. A missing or broken file falls back to the
+        metadata without costing an attempt. `trim=False` keeps the whole text.
         """
         if document is None:
             return _Loaded("", False, "metadata_only")

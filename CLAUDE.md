@@ -20,10 +20,12 @@ scans), `docs/rcl-scraping.md` (RCL's markup and files, the wykaz CSV, the probe
 - Python 3.12, `uv`. `uv run pytest -q && uv run mypy && uv run ruff check src tests` and `uv run
   ruff format src tests` — all clean before a commit. mypy is strict over `src` and `tests`: no
   `type: ignore`, no local imports, tests fully typed.
-- **COMMENTS: ONE LINE. ONLY THE MOST IMPORTANT. A MULTI-LINE COMMENT ONLY WHEN THERE IS NO
-  FUCKING WAY AROUND IT. IF YOU ARE WRITING A THIRD LINE, STOP AND CUT IT.** Say the measured
-  number, the API quirk, the deadline — never how it was discovered, what went wrong before, or
-  which bill it was found on. That belongs in the commit message and in the invariants below.
+- **IMPORTANT — COMMENTS AND DOCSTRINGS ARE ONE LINE. ALWAYS. YOU MUST NEVER WRITE A MULTI-LINE
+  COMMENT UNLESS THERE IS NO FUCKING WAY AROUND IT. IF YOU ARE WRITING A THIRD LINE, STOP AND CUT
+  IT.** CRITICAL: say the measured number, the API quirk, the deadline — NEVER how it was
+  discovered, what went wrong before, or which bill it was found on. That belongs in the commit
+  message and in the invariants below. The long docstrings still left in this repo are NOT the
+  model to copy.
 - A comment earns its place only where the code cannot speak: a fact from outside the repo (an API
   quirk, a legal deadline, a measured number), an invariant a later edit would silently break, or
   why the obvious way was not taken. Never a restatement of the line below it, a divider (`# ----
