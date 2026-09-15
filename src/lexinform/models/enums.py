@@ -5,15 +5,10 @@ received but not yet given a print (druk) number, `RCL_PREFIX` for government pr
 legislacja.rcl.gov.pl (keyed by the RCL project id) and `WYKAZ_PREFIX` for entries of the wykaz
 prac legislacyjnych RM (keyed by their own number, UD408). A bare number is a druk.
 
-`TextSource` says how an analysis was made: the full text of one PDF, the full text of a set of
-documents (RCL: projekt + uzasadnienie + OSR), the pages of a scan read as images (`scan`, for
-the signed paper much of the Sejm publishes), keyword excerpts (the triage rejected it) or
-metadata only. `SourceKind` says which document it read, and `AMENDMENT_SOURCES` are the two that
-carry no bill text but amendments — the Senate's resolution print, and the committee report that
-answers amendments rather than attaching a new text. `SUPPLEMENT_SOURCES` are the documents
-filed to a print after it was submitted (`PrintInfo.additional_prints`): they carry no bill text
-either, but say what the government and its assessment of the effects make of the text there
-already is.
+`TextSource` says how an analysis was made: one PDF, a set of documents, the pages of a scan,
+keyword excerpts (the triage rejected it) or metadata only. `SourceKind` says which document it
+read. `AMENDMENT_SOURCES` carry amendments and no bill text; `SUPPLEMENT_SOURCES` are the
+documents filed to a print afterwards, which say what others make of the text already there.
 
 `BILL_DOCUMENT_TYPE` is the Polish display string the Sejm API filters `documentType` on; the
 enum value `BILL` does not filter.
@@ -40,11 +35,8 @@ class BillStatus(StrEnum):
     continues under another number — an RPW entry or an RCL project that became a print
     (`Bill.linked_number`).
 
-    There was a `SKIPPED_JOINT` until 2026-09-14, for a print whose group was already carried by
-    another print's card: it was left unread, because the reply it would get showed no analysis.
-    The reply now says how the print differs from the ones the reader knows about, which is a
-    reading of it, so such a print goes through the pipeline like any other and the status has
-    gone (v21 turns a row of an older dump that still carries the word into `ANALYSIS_PENDING`).
+    A `SKIPPED_JOINT` is gone with the rule that set it; v21 turns a row of an older dump that
+    carries the word into `ANALYSIS_PENDING`.
     """
 
     DISCOVERED = "discovered"
@@ -95,15 +87,10 @@ class ApplicantType(StrEnum):
 class PublicationKind(StrEnum):
     """What a Telegram post is: the card of a new bill, or one of the replies under it.
 
-    `AGENDA` is sent once per sitting the bill appears on and `AGENDA_CANCELLED` retracts one
-    that is not happening as announced (same `ref`: a sitting that only moved keeps its key and is
-    told as a new `AGENDA` post instead). `CONSULTATION_DEADLINE` and
-    `HEARING_DEADLINE` a few days before those windows close, `CONSULTATION_RESULTS` when the
-    Sejm publishes the opinions it received, `IN_FORCE` on the day the act starts to apply.
-    `DECISION_DEADLINE` warns that the Senate's 30 days (art. 121) or the President's 21
-    (art. 122) are running out — the `ref` is the phase key, so each of the two is told once.
-    `JOINT_BILL` is the short reply a bill gets instead of a card of its own when it is
-    considered jointly with one that already has one; the group is followed through that card.
+    `AGENDA` is sent once per sitting and `AGENDA_CANCELLED` retracts one under the same `ref`
+    (a sitting that only moved keeps its key and is told as a new `AGENDA`). `DECISION_DEADLINE`
+    warns the Senate's 30 days or the President's 21 are running out, its `ref` the phase key so
+    each is told once. `JOINT_BILL` replaces the card of a jointly considered print.
     """
 
     NEW_BILL = "new_bill"

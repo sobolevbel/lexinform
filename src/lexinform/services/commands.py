@@ -1,12 +1,9 @@
 """Operator commands from the technical channel, executed by a run.
 
-Every command in the inbox gets a `commands` row before anything runs, is executed, marked
-executed, answered under its own message in the technical channel, marked handled and taken
-out of the inbox. The two marks are what a re-read inbox file is measured against: answered
-means the file is only dropped, executed but unanswered means the answer is repeated and the
-command is *not* run again (a second `/republish` would post a second card). An outage of a
-source system or of the channel ends the phase and leaves the command for the next run; any
-other failure is the command's own and is answered as such.
+Every command gets a `commands` row before anything runs, is executed, marked executed, answered
+under its own message, marked handled and taken out of the inbox. A re-read file is measured
+against the two marks: answered means drop it, executed but unanswered means repeat the answer
+and do *not* run it again. An outage ends the phase and leaves the command for the next run.
 """
 
 import datetime as dt
@@ -518,12 +515,8 @@ class CommandService:
         """The message as the channel would get it, rendered into the technical channel alone:
         what `/republish` would send, before it is sent.
 
-        It is `PublishingService.plan` that decides, not this method: a bill in a group of
-        jointly considered prints gets a short reply and not a card, a print continuing an
-        RCL or wykaz thread gets no message of its own at all, and a card carries the public
-        consultation dates from the `/bills` entry. Rendering a plain card for all three would
-        show the operator a message the channel would never send — the one thing a preview is
-        there to prevent.
+        `PublishingService.plan` decides and not this method, or the operator would be shown a
+        plain card where the channel sends a joint reply, or nothing at all.
         """
         if bill.analysis is None:
             # A print whose group already holds a card is a reply, and a reply is a message a
@@ -570,11 +563,8 @@ class CommandService:
         """Everything the next run would look at for this bill, now: its stages, its source's
         watcher and its card. The reader waits for the Sejm, not for our schedule.
 
-        A bill with no card in the channel is refused: a scheduled run only ever tracks the rows
-        of `list_tracked`, which all have a `sent` card, and every poster reads that card for the
-        message to reply under (`Poster._send` falls back to a top-level post). Tracking a bill
-        analysed below `min_score` would answer the operator with a status update or a Dziennik
-        Ustaw notice standing alone in the reader's channel.
+        A bill with no card is refused: every poster reads that card for the message to reply
+        under, so tracking one would drop a status update into the channel on its own.
         """
         if self._tracking is None:
             return CommandOutcome(
@@ -674,16 +664,10 @@ class CommandService:
     def _forget(self, bill: Bill, *, min_score: int) -> CommandOutcome:
         """`/forget`: drop what the channel remembers of the card and post nothing in its place.
 
-        The way out of a card whose message was deleted by hand. The row goes on saying `sent`,
-        so `list_tracked` keeps joining on it, the refresher keeps editing a message that is not
-        there ("message to edit not found", once a run, for ever) and any update would reply
-        under nothing. `/republish` also clears that, by sending the card again — which is the
-        wrong answer when the message was deleted on purpose.
-
-        What happens next is the publishing rule's to decide, and the reply says which way it
-        went: an analysed, relevant, important enough bill is a candidate again and the next run
-        posts a fresh card, while a silenced or below-threshold one simply stops being followed.
-        Unlike `/republish`, running it twice changes nothing the first run did not.
+        The way out of a card deleted by hand: the `sent` row keeps the bill followed and the
+        refresher keeps editing a message that is not there. `/republish` clears that too, but by
+        sending the card again, which is wrong when it was deleted on purpose. What happens next
+        is the publishing rule's decision, and running this twice changes nothing.
         """
         card = self._card(bill)
         if self._publishing.card_of(bill) is None:

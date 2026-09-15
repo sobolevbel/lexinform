@@ -1,14 +1,11 @@
 """Text of Word and OpenDocument files, of zip packages of them, and the extractor that picks the
 right reader by the file's magic bytes.
 
-On RCL (40 projects, September 2026) the "Projekt" folders hold PDF 40%, DOCX/DOCM 43%, ZIP 7%
-(the whole package in one archive), legacy DOC 6% (see `doc_text.py`); ODT is rare, RTF, XLSX,
-MSG and signature files (.xades) are not bill texts.
+On RCL the "Projekt" folders hold PDF 40%, DOCX/DOCM 43%, ZIP 7%, legacy DOC 6%; ODT is rare and
+RTF, XLSX, MSG and .xades are not bill texts.
 
-Both XML readers walk the tree themselves instead of `Element.iter()`: text boxes come twice in
-a .docx (`mc:Choice` and `mc:Fallback`), a table nested in a cell would be read once as part of
-the cell and once as rows of its own, and in ODT the tail text of an element belongs after its
-children, not before.
+Both XML readers walk the tree themselves instead of `Element.iter()`: a .docx gives text boxes
+twice, a nested table would be read twice, and in ODT tail text belongs after the children.
 """
 
 import io
@@ -101,20 +98,10 @@ def _is_word_xml(head: bytes) -> bool:
 class WordXmlTextExtractor:
     """A Word document saved as one XML file, in either of the two shapes Word writes.
 
-    Ministries save a draft this way and file it as `projekt ustawy.xml`, and the router saw an
-    opening `<?xml` it had no reader for. Measured over the corpus (14 Sept 2026): of the 53 XML
-    members of RCL packages **52 are Flat OPC**, and they are the bill, its uzasadnienie and its
-    OSR — `2020.10.26_UC44_projekt ustawy.xml`, `Uzasadnienie.xml`, `OSR.xml`. Three packages
-    yielded no text at all because of it, among them the bill of the kooperatywy mieszkaniowe
-    project, whose only other member is the letter that transmits it.
-
-    **Flat OPC** (2006) inlines the whole OOXML package as `pkg:part` elements keyed by their
-    path, so the document is the one named `/word/document.xml`. **Word 2003 XML** is the older
-    single-file form and needs no unwrapping at all: its root *is* the document, and its element
-    names are OOXML's, so the same walk reads it. Four of the standalone XML files on RCL are
-    this older shape, among them `Projekt ustawy o zmianie ustawy - Prawo o prokuraturze.xml`
-    and its OSR — which is why "no `/word/document.xml` part" is not the same finding as "no
-    text".
+    Of the 53 XML members of RCL packages, 52 are **Flat OPC**, which inlines the OOXML package as
+    `pkg:part` elements so the document is `/word/document.xml`. The other shape is **Word 2003
+    XML**, whose root *is* the document with OOXML element names, so the same walk reads it —
+    which is why "no `/word/document.xml` part" is not the same finding as "no text".
     """
 
     def pages(self, data: bytes) -> int:
@@ -366,11 +353,9 @@ class DocumentTextExtractor:
     def _zip_members(self, data: bytes, *, depth: int) -> str:
         """The bill, its uzasadnienie and its OSR, chosen after reading every member.
 
-        An archive is never handed on as one opaque thing: it is unpacked, each member is read
-        and asked what it is, and only what the model needs is kept. A nested archive is opened
-        only when the bill is not out here — the three seen on RCL (13 Sept 2026) were bundles
-        of draft regulations, whose members are named `projekt.docx`, `uzasadnienie.docx` and
-        `OSR.doc` and are told from the bill's own files by their text alone.
+        Every member is read and asked what it is, and only what the model needs is kept. A nested
+        archive is opened only when the bill is not out here: the three seen on RCL were bundles
+        of draft regulations, told from the bill's own files by their text alone.
         """
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             names = set(archive.namelist())
