@@ -598,6 +598,21 @@ Invariants worth keeping:
   documents are most of the row and are never read again; `lexinform reset … --to analysis_pending`
   re-reads them. Run records older than `LEXINFORM_RUNS_RETENTION_DAYS` (90) are deleted at the
   start of a run.
+- **The stage a project ends on does not carry its text.** `with_text` reads the newest reached
+  stage's catalog on the assumption that every stage republishes the current text in its own
+  "Projekt" folder. True of the stages that *work* on a project, false of the one it ends on:
+  "Skierowanie projektu ustawy do Sejmu" carries the covering letter to the Marshal and no
+  "Projekt" folder at all. With `TEXT_STAGE_ATTEMPTS` at 1 the reader stopped there, found
+  nothing, and the text prefilter wrote the **verdict** "no document to read" — which for an RCL
+  row is final (the invariant above allows it only for a project that cannot have a file later).
+  One backfill closed **nine** projects that way (production run 69, 15 Sept 2026): RCL/12400301,
+  RCL/12410100 and RCL/12405302 were probed afterwards and all three have a readable bill two
+  catalogs down, in "Rada Ministrów". Measured over the 796 projects of the corpus that carry a
+  readable "Projekt" folder anywhere, the newest reached stage has it for **209 (26%)**, the next
+  brings it to **99.25%** and a third to 99.75%; `TEXT_STAGE_ATTEMPTS` is therefore **3**, and the
+  loop stops at the first catalog that has the text, so the extra pages are paid only where the
+  answer used to be wrong. The 12 rows the state carries with that reason are to be revived by
+  hand (`lexinform reset … --to analysis_pending`, or `/unskip`).
 - **A project taken by its text is read for the text alone, so its letter is fetched in a phase of
   its own.** `_deepen` gives a title hit `complete()` (every reached catalog and the consultation
   letter) and a title miss `with_text()` (one catalog, the newest text) — and nothing opens the
