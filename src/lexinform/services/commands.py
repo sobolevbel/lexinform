@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.models import (
+    SILENCED_BY_OPERATOR,
     Bill,
     BillStatus,
     Command,
@@ -466,7 +467,7 @@ class CommandService:
             bill.term,
             bill.number,
             BillStatus.SKIPPED_PREFILTER,
-            reason="silenced by the operator (/skip)",
+            reason=SILENCED_BY_OPERATOR,
         )
         card = self._card(bill)
         note = "silenced: it will not be analysed or posted"

@@ -15,6 +15,7 @@ from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.container import Container, build_container
 from lexinform.logging_setup import configure_logging
 from lexinform.models import (
+    SILENCED_BY_OPERATOR,
     Bill,
     BillStatus,
     BillSubmission,
@@ -208,6 +209,12 @@ def reprefilter(
 
     Bills that pass become analysis candidates for the next `run` (use `run --no-publish` after a
     large backfill to avoid flooding the channel).
+
+    A bill the operator silenced is left alone. `/skip` writes `SKIPPED_PREFILTER` like a keyword
+    miss, so every listing that skips one skips the other — and a backfill that re-scanned it put
+    druki 1039 and 1040 back into the analysis queue on the state of 15 Sept 2026, which is the
+    one thing `/skip` promises will not happen ("it will not be analysed or posted"). `/unskip`
+    is how that decision is taken back, one bill at a time and by the person who made it.
     """
     c = _container()
     try:
@@ -221,7 +228,8 @@ def reprefilter(
         skipped = [
             b
             for b in c.repo.list_by_status(statuses, limit=limit)
-            if b.has_process or (b.is_rcl and c.rcl is not None)
+            if (b.has_process or (b.is_rcl and c.rcl is not None))
+            and b.last_error != SILENCED_BY_OPERATOR
         ]
         accepted = 0
         for bill in skipped:

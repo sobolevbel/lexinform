@@ -20,6 +20,7 @@ from typer.testing import CliRunner
 from lexinform.adapters.sqlite_repo import SCHEMA_VERSION, SqliteBillRepository
 from lexinform.cli import app
 from lexinform.models import (
+    SILENCED_BY_OPERATOR,
     AnalysisRecord,
     BillStatus,
     ProcessDetail,
@@ -338,6 +339,24 @@ def test_reprefilter_has_nothing_to_do_when_no_bill_was_skipped(db: Path, api: s
 
     assert result.exit_code == 0, result.output
     assert "scanned=0 accepted=0" in result.output
+
+
+def test_reprefilter_leaves_a_bill_the_operator_silenced_alone(db: Path, api: str) -> None:
+    """`/skip` writes `SKIPPED_PREFILTER` like a keyword miss, so a backfill scanned it and put
+    it back in the analysis queue — druki 1039 and 1040 on the state of 15 Sept 2026, which is
+    the one thing `/skip` promises will not happen."""
+    repo = SqliteBillRepository(db)
+    repo.reset_bill(10, "3039", BillStatus.SKIPPED_PREFILTER, reason=SILENCED_BY_OPERATOR)
+    repo.close()
+
+    result = runner.invoke(app, ["reprefilter"], env=_env(db, api=api))
+
+    assert result.exit_code == 0, result.output
+    assert "scanned=0 accepted=0" in result.output
+    repo = SqliteBillRepository(db)
+    bill = repo.get(10, "3039")
+    repo.close()
+    assert bill is not None and bill.status is BillStatus.SKIPPED_PREFILTER
 
 
 def test_reprefilter_says_so_when_the_text_prefilter_is_switched_off(db: Path) -> None:
