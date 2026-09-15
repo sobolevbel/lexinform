@@ -663,22 +663,14 @@ class SqliteBillRepository:
     ) -> list[Bill]:
         """Published bills still worth polling, whichever term they belong to.
 
-        Closed bills are followed for `closed_grace_days`; bills passed by the Sejm whose act has
-        not appeared in Dziennik Ustaw yet are followed longer (`passed_max_days`), because the
-        Senate, the President and publication take weeks. A bill waiting for the Sejm to answer a
-        veto or for the Constitutional Tribunal is followed for `pending_decision_max_days`: every
-        window counts from `closure_date`, which the Sejm sets at the third reading, long before
-        either of those begins. A bill whose act is in Dziennik Ustaw is kept whatever its age
-        until the act applies: a vacatio legis can outrun `closed_grace_days` (druk 2699 closed
-        2026-07-17, in force 2026-11-19, 35 days past the window), and a card dropped here is a
-        card that stops being re-rendered over the one stretch where it has a fixed date to give.
-        An entry into force the ELI API has not indexed yet keeps the bill for the same reason:
-        only a later fetch can fill that date in.
+        Every window counts from `closure_date`, which the Sejm sets at the third reading, long
+        before the Senate, the President or a veto vote begin — hence the three of them. A bill
+        whose act is in Dziennik Ustaw is kept whatever its age until the act applies: a vacatio
+        legis outruns `closed_grace_days`, and that is the one stretch with a fixed date to give.
+        An entry into force the ELI API has not indexed yet keeps the bill for the same reason.
 
-        With `changed_since`, only bills whose `change_date` (refreshed by discovery from the
-        API's `modifiedSince` listing) is at least that recent are returned, plus bills passed
-        by the Sejm that still wait for their act: the ELI address may appear without a visible
-        change of the process.
+        `changed_since` narrows to bills whose `change_date` is that recent, plus bills passed and
+        still waiting for their act: an ELI can appear with no visible change of the process.
         """
         cutoff = (now - timedelta(days=closed_grace_days)).date().isoformat()
         passed_cutoff = (now - timedelta(days=passed_max_days)).date().isoformat()

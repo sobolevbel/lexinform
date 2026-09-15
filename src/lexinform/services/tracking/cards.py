@@ -1,16 +1,12 @@
 """Keeping a card true after it was posted.
 
-Everything the card says about *now* — where the bill stands, what comes next, what a reader can
-still do, how many days are left — is derived from the day it was rendered, and the message was
-written once. A run re-renders the card of every bill it still follows and edits it in place when
-the text has drifted; the digest of what was last sent (`publications.rendered_sha256`) is what
-makes that cost nothing on the runs where nothing moved.
+Everything the card says about *now* is derived from the day it was rendered, and the message was
+written once. A run re-renders every followed bill's card and edits it where the text has
+drifted; the digest of what was last sent (`publications.rendered_sha256`) makes a quiet run free.
 
-A card that outlives its bill is re-rendered one last time and then left alone: the header
-becomes "процесс завершён", the ending line says how, and "что дальше" and "что можно сделать"
-go. The digest is what makes "and then left alone" true — a finished card is stable, so it
-settles after that one edit and every later run is a pure render. Refusing to render it at all
-was what kept a rejected bill's card inviting opinions to a committee for ever.
+A card that outlives its bill is re-rendered one last time and then left alone — the digest is
+what makes that true, a finished card being stable. Refusing to render it at all kept a rejected
+bill's card inviting opinions to a committee for ever.
 """
 
 import logging
@@ -44,18 +40,12 @@ class CardRefresher:
         """Re-render the card of every followed bill and edit the ones that have drifted.
 
         Each row is read again: the phases above may have re-analysed the bill, moved its stages
-        or handed its thread to a successor since `bills` was listed.
-
-        Drift is the only test. There used to be a second one — stop once `next_phase` finds
-        nothing ahead — and it fired exactly one run before the card would have said the road had
-        ended, so a bill the Sejm rejected kept a card reading «дальше: III чтение» and «можно
-        сделать: написать в комиссию» for as long as the thread existed. A `LINKED` row is still
-        skipped: its card belongs to the successor that took the thread over, and that row is in
-        `bills` too.
+        or handed its thread to a successor since `bills` was listed. Drift is the only test — a
+        second one on `next_phase` fired a run before the card would have said the road ended. A
+        `LINKED` row is skipped, its card belonging to the successor.
 
         An outage is caught rather than raised: this is the last, cosmetic step of the phase, and
-        letting it out would throw away the result object with everything the phase already
-        posted and spent.
+        letting it out would throw away everything the phase already posted and spent.
         """
         if not publish:
             return

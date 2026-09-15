@@ -1,18 +1,12 @@
 """Finds bills the government has announced but not yet drafted, in the wykaz prac RM.
 
-The whole register arrives as one file, so every run sees all of it and the prefilter runs on
-the title and on what art. 3 ust. 2 obliges the entry to say (the reasons and the essence of the
-planned solutions). Every entry is judged every run: the gates below are a keyword match and two
-indexed lookups, so there is nothing to save by skipping the older ones, and an entry that is
-rejected is not stored — storing the 775 bill entries with their paragraphs would grow the state
-dump by megabytes and buy nothing.
+The whole register arrives as one file, so every run sees all of it and judges every entry: the
+gates are a keyword match and two indexed lookups, so skipping the older ones saves nothing. A
+rejected entry is not stored — the 775 bill entries with their paragraphs would add megabytes to
+the state dump.
 
-The watermark decides only what counts as news in the report. Until 15 Sept 2026 it decided what
-was *judged*, and the entries it held back were counted as a backlog: «53 older entries match,
-not followed» in every report, of a backlog that yields nothing — replayed over the whole
-register with the watermark pushed back to 2015, the gates below ingest zero. Worse, `Data
-publikacji` does not move when an entry is edited, so an entry rewritten into relevance stayed
-behind that gate for ever.
+The watermark decides only what counts as news in the report. Deciding what was *judged* left an
+entry rewritten into relevance behind it for ever, `Data publikacji` never moving on an edit.
 """
 
 import datetime as dt
@@ -53,16 +47,10 @@ class WykazDiscoveryService:
     def discover(self, term: int, since: dt.datetime) -> WykazDiscoveryResult:
         """Every entry of the register; a gov.pl outage propagates (the phase is over).
 
-        Only bills are followed, not rozporządzenia or government programmes. A plan that was
-        realised or withdrawn before we ever saw it gets no card — there is no action left to
-        invite — and neither does one whose project is already on RCL under the same number: that
-        row is the bill, with its text, and a second thread for the plan behind it would only
-        repeat it.
-
-        `since` decides what is *news*, not what is judged: an entry published before the
-        watermark is put through the same gates, but a plan realised two years ago is not a bill
-        this run met, and counting it as one filled the report with a backlog that yields
-        nothing.
+        Only bills are followed, not rozporządzenia or programmes. A plan realised or withdrawn
+        before we saw it gets no card, there being no action left to invite, and neither does one
+        whose project is already on RCL: that row is the bill, with its text. `since` decides what
+        is *news* and not what is judged.
         """
         result = WykazDiscoveryResult()
         for entry in self._wykaz.entries():

@@ -1,18 +1,13 @@
 """Planned bills: the wykaz prac legislacyjnych i programowych Rady Ministrów (KPRM, gov.pl).
 
-The register is what art. 3 of the ustawa o działalności lobbingowej obliges the government to
-publish before it drafts anything: the number (UD408, UC164), the reasons, the essence of the
-planned solutions, the responsible ministry and the quarter in which the Council of Ministers
-means to adopt it. There is no text yet, so an entry is an intention, not a bill — and the
-earliest public trace of one: UD408 (o zmianie ustawy o cudzoziemcach) was entered on 2026-05-12
-and appeared on RCL on 2026-07-06, 55 days later.
+What art. 3 of the ustawa o działalności lobbingowej obliges the government to publish before it
+drafts anything: the number, the reasons, the essence of the planned solutions, the ministry and
+the quarter of the planned adoption. An entry is an intention and not a bill, and the earliest
+public trace of one — UD408 was entered 55 days before it appeared on RCL.
 
-Only `BILL_KIND` is followed: the register also plans rozporządzenia and programmes. A project
-the government gives up on is either taken off the plan or left unrealised (`DROPPED_STATUSES`),
-and art. 3 ust. 3 of the lobbying act obliges the register to say so, with the reason in
-`Informacja o rezygnacji z prac nad projektem`.
-
-Nothing here does I/O: the CSV is turned into these models by `adapters/wykaz_csv.py`.
+Only `BILL_KIND` is followed. A project the government gives up on is taken off the plan or left
+unrealised (`DROPPED_STATUSES`), with the reason in `Informacja o rezygnacji`. No I/O here:
+`adapters/wykaz_csv.py` turns the CSV into these models.
 """
 
 import datetime as dt
@@ -55,13 +50,9 @@ def wykaz_entry_number(number: str) -> str:
 class WykazEntry(BaseModel):
     """One row of the register, as published (art. 3 ust. 2 of the lobbying act).
 
-    The fields are the register's own columns: `number` normalised (UD408, UC164, UDER12), `kind`
-    is `Rodzaj dokumentu`, `doc_type` the `Typ dokumentu` ("C – projekty implementujące UE"),
-    `goals` and `essence` the two statutory paragraphs, `organ` the ministry a zgłoszenie is filed
-    with, `planned_adoption` the free-text `Planowane przyjęcie przez RM`, `status` the `Status
-    realizacji` and `resignation` the note about giving the project up. `published_at` is the
-    *first* publication and never moves when the entry is edited, `web_url` the entry's own page
-    on gov.pl. `rcl_project_id` is stamped by RCL discovery when the project appears there.
+    The fields are the register's own columns, `number` normalised. `published_at` is the *first*
+    publication and never moves when the entry is edited; `rcl_project_id` is stamped by RCL
+    discovery when the project appears there.
     """
 
     model_config = ConfigDict(frozen=True)
