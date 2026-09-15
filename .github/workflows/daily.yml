@@ -134,8 +134,10 @@ jobs:
           LEXINFORM_RCL_PROXY_URL: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
           LEXINFORM_LOG_LEVEL: INFO
           TEXT_SKIPPED: ${{ inputs.reprefilter_text_skipped && '--include-text-skipped' || '' }}
-          # The log channel only: this step posts to no readers' channel and reaches no model.
+          # For the backfill's own report. It posts to the log channel only, but the Telegram
+          # client is built through `require_telegram`, which wants the readers' channel too.
           LEXINFORM_TELEGRAM_BOT_TOKEN: ${{ secrets.LEXINFORM_TELEGRAM_BOT_TOKEN }}
+          LEXINFORM_TELEGRAM_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_CHANNEL_ID }}
           LEXINFORM_TELEGRAM_LOG_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID }}
         run: uv run --frozen --no-dev lexinform reprefilter --limit "${{ inputs.reprefilter_limit }}" $TEXT_SKIPPED
 

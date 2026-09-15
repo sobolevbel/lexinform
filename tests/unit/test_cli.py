@@ -341,6 +341,20 @@ def test_reprefilter_has_nothing_to_do_when_no_bill_was_skipped(db: Path, api: s
     assert "scanned=0 accepted=0" in result.output
 
 
+def test_reprefilter_survives_a_log_channel_it_cannot_reach(db: Path, api: str) -> None:
+    """The report is the last thing the backfill does and its work is already written down, so a
+    notifier that cannot even be built must not fail it. On 15 Sept 2026 one did, and 36 minutes
+    of scanning went with it: the step had the log channel's credentials and not the readers',
+    which `require_telegram` asks for all the same."""
+    env = {**_env(db, api=api), "LEXINFORM_TELEGRAM_LOG_CHANNEL_ID": "@log"}
+    env["LEXINFORM_TELEGRAM_CHANNEL_ID"] = ""
+
+    result = runner.invoke(app, ["reprefilter"], env=env)
+
+    assert result.exit_code == 0, result.output
+    assert "scanned=0 accepted=0" in result.output
+
+
 def test_reprefilter_leaves_a_bill_the_operator_silenced_alone(db: Path, api: str) -> None:
     """`/skip` writes `SKIPPED_PREFILTER` like a keyword miss, so a backfill scanned it and put
     it back in the analysis queue — druki 1039 and 1040 on the state of 15 Sept 2026, which is

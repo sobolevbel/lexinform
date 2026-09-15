@@ -260,12 +260,16 @@ def reprefilter(
 
 
 def _tell_the_log_channel(c: Container, report: BackfillReport) -> None:
-    """A failure to say so must not fail the backfill, whose work is already written down."""
-    notifier = c.run_notifier(dry_run=False)
-    if notifier is None:
-        return
+    """A failure to say so must not fail the backfill, whose work is already written down.
+
+    Building the notifier is inside the guard and not above it: `telegram_client` asks
+    `require_telegram`, which wants the readers' channel too, so a step given only the log
+    channel's credentials raised here and threw away 36 minutes of scanning (run of 15 Sept 2026).
+    """
     try:
-        notifier.notify_backfill(report)
+        notifier = c.run_notifier(dry_run=False)
+        if notifier is not None:
+            notifier.notify_backfill(report)
     except Exception as exc:
         log.warning("the backfill report did not reach the log channel: %s", exc)
 
