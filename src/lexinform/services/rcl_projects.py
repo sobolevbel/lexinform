@@ -8,7 +8,7 @@ whether a project matters, the catalogs of a candidate, the newest text of a tit
 import logging
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import RclConsultation, RclProject, RclStage
+from lexinform.models import RclConsultation, RclDocument, RclProject, RclStage
 from lexinform.ports import RclGateway
 from lexinform.rcl_letters import deadline_of, parse_letter
 from lexinform.services.documents import TextLoader
@@ -88,7 +88,7 @@ class RclProjectReader:
         stage = project.consultation_stage
         if stage is None or not any(f.documents for f in stage.folders):
             return None
-        letter = next((d for d in stage.documents("letters") if d.readable), None)
+        letter = stage.consultation_letter()
         facts = {
             "positions": len(stage.documents("positions")),
             "response_published": bool(stage.documents("response")),
@@ -97,10 +97,12 @@ class RclProjectReader:
             return known.model_copy(update=facts)
         if letter is None:
             return RclConsultation(**facts)
-        return self._read_letter(letter.url, stage, project).model_copy(update=facts)
+        return self._read_letter(letter, stage, project).model_copy(update=facts)
 
-    def _read_letter(self, url: str, stage: RclStage, project: RclProject) -> RclConsultation:
-        letter = next(d for d in stage.documents("letters") if d.url == url)
+    def _read_letter(
+        self, letter: RclDocument, stage: RclStage, project: RclProject
+    ) -> RclConsultation:
+        url = letter.url
         try:
             text = self._loader.load(url)
         except ServiceUnavailableError:

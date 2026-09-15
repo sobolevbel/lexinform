@@ -324,3 +324,48 @@ def test_numbering_and_wykaz_normalisation() -> None:
     assert rcl_project_id("RCL/12414100") == 12414100
     assert normalize_wykaz_number("UD 247") == "UD247"
     assert normalize_wykaz_number("  ") is None
+
+
+def test_the_consultation_letter_is_taken_from_its_own_folder() -> None:
+    letters = RclFolder(
+        id=20,
+        name="Pisma kierujące projekt do konsultacji publicznych",
+        documents=(_doc(2, "Pismo kierujące.pdf"),),
+    )
+    project = RclFolder(id=10, name="Projekt", documents=(_doc(1, "Pismo - konsultacje.pdf"),))
+    stage = _stage(3, "Konsultacje publiczne", "reached", project, letters)
+
+    letter = stage.consultation_letter()
+
+    assert letter is not None and letter.id == 2
+
+
+def test_a_letter_filed_in_the_project_folder_is_still_the_letter() -> None:
+    """UDER87, UD275 and UD362 leave "Pisma kierujące" empty and put the pismo beside the bill;
+    without this the card has no deadline, no address for remarks and no reminder."""
+    folder = RclFolder(
+        id=10,
+        name="Projekt",
+        documents=(
+            _doc(1, "Projekt ustawy_Uzasadnienie_OSR_ust o zm PRD_UDER87.docx"),
+            _doc(2, "Pismo MC_Konsultacje_pr zm ust PRD_UDER87.pdf"),
+        ),
+    )
+    stage = _stage(3, "Konsultacje publiczne", "reached", folder)
+
+    letter = stage.consultation_letter()
+
+    assert letter is not None and letter.id == 2
+
+
+def test_the_fallback_refuses_a_bill_whose_name_says_pismo() -> None:
+    """ "załącznik do pismo 07.08.2026 uzgodnienia [projekt].pdf" is the bill, and taken for the
+    letter it would be parsed for a deadline it does not carry."""
+    folder = RclFolder(
+        id=10,
+        name="Projekt",
+        documents=(_doc(1, "załącznik do pismo 07.08.2026 uzgodnienia [projekt].pdf"),),
+    )
+    stage = _stage(3, "Konsultacje publiczne", "reached", folder)
+
+    assert stage.consultation_letter() is None

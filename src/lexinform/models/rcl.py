@@ -159,6 +159,30 @@ class RclStage(BaseModel):
         folder = self.folder(kind)
         return folder.documents if folder else ()
 
+    def consultation_letter(self) -> RclDocument | None:
+        """The pismo kierujące projekt do konsultacji, wherever the ministry filed it.
+
+        Its own folder first. Three of the 603 corpus projects whose consultation catalog was
+        read leave "Pisma kierujące" empty and put the letter in "Projekt" beside the bill —
+        UD275, UD362 and UDER87 — and then the card goes out without the two facts the letter
+        carries and nothing else does: the day the window shuts and the address remarks are sent
+        to (RCL/12409801, carded 15 Sept 2026 with neither, while its letter of 30 April gave
+        thirty days and sekretariat.dp@cyfra.gov.pl). The fallback asks `text_role` and not the
+        name alone, because a name that says "pismo" can be the bill: "załącznik do pismo
+        07.08.2026 uzgodnienia [projekt].pdf" is one.
+        """
+        letter = next((d for d in self.documents("letters") if d.readable), None)
+        if letter is not None:
+            return letter
+        return next(
+            (
+                d
+                for d in self.documents("project")
+                if d.readable and "pismo" in d.name.lower() and text_role(d.name) is None
+            ),
+            None,
+        )
+
 
 class RclConsultation(BaseModel):
     """What the consultation letter (pismo kierujące) told us, plus what the folders show."""

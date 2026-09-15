@@ -115,6 +115,18 @@ those; the invariants that govern *when* they run stay in `CLAUDE.md`.
   for comments ("na adres: …"). `rcl_letters.parse_letter` reads them; the deadline counts from the
   letter date or the day the letter appeared on RCL. Every project also has a comment form
   `/projekt/{id}/komentarz` (captcha).
+- **The letter is not always in the folder named after it.** Of the 603 corpus projects whose
+  "Konsultacje publiczne" catalog was read, 24 leave "Pisma kierujące projekt do konsultacji
+  publicznych" empty, and **three** of those put the pismo in "Projekt" beside the bill instead:
+  UD275 (four of them, one per addressee), UD362 and UDER87. Reading only the letters folder,
+  `consultation()` returned an empty `RclConsultation` and the card went out with no deadline, no
+  address for remarks and no consultation reminder, while the letter said all of it — RCL/12409801
+  was carded that way on 15 Sept 2026 over a letter of 30 April giving thirty days and
+  `sekretariat.dp@cyfra.gov.pl`. `RclStage.consultation_letter` falls back to a readable "pismo"
+  in "Projekt", and only when the letters folder is empty: the two projects that have such a file
+  *and* a filled letters folder keep the proper one. The fallback asks `text_role` and not the
+  name, because "załącznik do pismo 07.08.2026 uzgodnienia [projekt].pdf" is the bill. The other
+  21 have no letter anywhere, and there `consultation_open` reads the window off the timeline.
 - Join: `/processes` `rclNum="RM-0610-81-26"`, `rclLink=…/getIdFromLegislacja?number=…` → 302 to
   `/projekt/{id}`.
 - **The join to a plan of the wykaz is the listing's own column and nothing else** (14 Sept 2026).
