@@ -35,6 +35,27 @@ nothing reaches outside the inscribed circle — the square PNGs upload as they 
 The site mark is set larger and its bar thicker than the avatars': at 16 px the hairlines of
 a Didone grey out and the bar is what stays recognisable.
 
+## In the page
+
+```html
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon-180.png">
+<link rel="manifest" href="/site.webmanifest">
+```
+
+`favicon.svg` carries a `prefers-color-scheme: dark` rule that swaps the ground for the
+glyph — an ink tile all but disappears in a dark tab strip, and this is the one thing a PNG
+cannot do. It is what SVG is here for; sharpness is not, because a browser rasterises it at
+16 px like anything else. A browser that takes the SVG prefers it over every PNG size, so
+the small-size tuning has to live in the SVG itself, which is where it is.
+
+The ICO stays: browsers request `/favicon.ico` from the root with no markup at all, and
+bookmarks, readers and crawlers use it. The Apple touch icon and the manifest icons must be
+PNG. Only the dark rule is CSS, so a rasteriser that ignores the stylesheet still gets the
+light colours off the `fill` attributes — and the PNGs are deliberately rasterised from the
+light mark, or they would follow the appearance setting of whichever machine ran the script.
+
 ## Regenerating
 
 ```sh

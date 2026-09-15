@@ -54,7 +54,15 @@ def _outline(spec: tuple[str, int], char: str) -> tuple[str, tuple[float, float,
     return pen.getCommands(), tuple(v * 1000 / upm for v in bounds.bounds)
 
 
-def mark(bg: str, fg: str, hot: str, height: float = 282, bar: float = 30, gap: float = 52) -> str:
+def mark(
+    bg: str,
+    fg: str,
+    hot: str,
+    height: float = 282,
+    bar: float = 30,
+    gap: float = 52,
+    dark: tuple[str, str, str] | None = None,
+) -> str:
     """The knot: a Didone section sign beside the margin bar that flags an amended provision."""
     path, (x0, y0, x1, y1) = _outline(DIDOT, "§")
     scale = height / (y1 - y0)
@@ -62,13 +70,22 @@ def mark(bg: str, fg: str, hot: str, height: float = 282, bar: float = 30, gap: 
     total = bar + gap + glyph_w
     cx = MID + total / 2 - glyph_w / 2
     bar_h = height * 0.84
+    # Only the dark rule lives in CSS: a rasteriser that ignores the stylesheet still gets the
+    # light colours off the fill attributes, which a stylesheet rule overrides where one applies.
+    style = ""
+    if dark is not None:
+        style = (
+            "<style>@media (prefers-color-scheme: dark){"
+            f".bg{{fill:{dark[0]}}}.fg{{fill:{dark[1]}}}.hot{{fill:{dark[2]}}}}}</style>"
+        )
     return (
         '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">'
-        f'<rect width="512" height="512" fill="{bg}"/>'
-        f'<path fill="{fg}" d="{path}" transform="translate('
+        f"{style}"
+        f'<rect class="bg" width="512" height="512" fill="{bg}"/>'
+        f'<path class="fg" fill="{fg}" d="{path}" transform="translate('
         f"{cx - (x0 + x1) / 2 * scale:.2f} {MID + (y0 + y1) / 2 * scale:.2f}) "
         f'scale({scale:.5f})"/>'
-        f'<rect x="{MID - total / 2:.2f}" y="{MID - bar_h / 2:.2f}" width="{bar}" '
+        f'<rect class="hot" x="{MID - total / 2:.2f}" y="{MID - bar_h / 2:.2f}" width="{bar}" '
         f'height="{bar_h:.2f}" rx="{bar / 2}" fill="{hot}"/>'
         "</svg>"
     )
@@ -100,9 +117,15 @@ def main() -> None:
         save(render(path), f"{name}-512.png", 512)
 
     # The site mark is set larger and the bar thicker: at 16 px the bar is what stays legible.
-    favicon = HERE / "favicon.svg"
-    favicon.write_text(mark(INK, PAPER, RED, height=360, bar=40, gap=44))
-    art = render(favicon)
+    # It also carries the dark theme, because an ink tile all but vanishes in a dark tab strip.
+    site = {"height": 360, "bar": 40, "gap": 44}
+    light = mark(INK, PAPER, RED, **site)
+    (HERE / "favicon.svg").write_text(mark(INK, PAPER, RED, **site, dark=(PAPER, INK, RED)))
+    # Rasterise the light mark: QuickLook honours prefers-color-scheme, and the PNGs must not.
+    with tempfile.TemporaryDirectory() as tmp:
+        flat = pathlib.Path(tmp) / "favicon-light.svg"
+        flat.write_text(light)
+        art = render(flat)
     for size in (16, 32, 48):
         save(art, f"favicon-{size}.png", size)
     save(art, "apple-touch-icon-180.png", 180)
