@@ -59,11 +59,9 @@ class Linker:
         """The print copies the entry's status, except a prefilter skip: the print's own PDF is
         scanned instead of the skip being inherited.
 
-        The entry has a text of its own now (its file on orka.sejm.gov.pl), so the skip may mean
-        the keywords missed it — but it may equally mean that file was a scan, or that the WAF
-        refused us. The print is served by api.sejm.gov.pl, it is the text the Sejm works from,
-        and scanning it again costs a download and no tokens. Inheriting a skip we cannot read
-        the reason of would lose the bill for good.
+        The skip may mean the keywords missed the entry's own file, or that the file was a scan,
+        or that the WAF refused us, and the status cannot say which. The print comes from
+        api.sejm.gov.pl and costs a download and no tokens, so it is scanned instead.
         """
         skipped = (BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER)
         if pre.status in skipped and self._text_prefilter:
@@ -73,15 +71,10 @@ class Linker:
     def link(self, pre: Bill, print_number: str, result: TrackingResult, *, publish: bool) -> None:
         """Continue `pre` under the print, in the same thread.
 
-        An entry whose card was never posted has no thread to continue: its print goes through
-        the normal publishing path instead.
-
-        The act comes before the announcement, as it does in the daily loop: a project can be
-        found long after the Sejm was done with it — RCL project 12405609 was picked up on
-        2026-09-13 and its druk 2172 had been Dz.U. 2026 poz. 203 since February — and nothing
-        else would ever fetch that act. `list_tracked` follows a bill for 90 days from its
-        closure (180 when it is passed and has no act), and a print adopted after that is past
-        every one of those windows the moment it is created, so this is its only chance.
+        An entry whose card was never posted has no thread to continue and takes the normal
+        publishing path. The act comes before the announcement, as in the daily loop: a project
+        can be found long after the Sejm was done with it, and a print that old is past every
+        `list_tracked` window the moment it is created, so this is its only chance at the act.
         """
         now = self._clock.now()
         detail = self._gateway.get_process(pre.term, print_number)
@@ -150,12 +143,9 @@ class Linker:
     ) -> None:
         """Write the print's own card into the thread's root message, once, at the end.
 
-        The card used to be rendered from the entry the moment the alias was made, which showed
-        the druk's tag but nothing else the print knows: not its act, not the text the
-        re-analysis had just read. Nothing rendered it again either — `CardRefresher` works from
-        the list of followed bills taken before the tracking phase, and this row did not exist
-        then — so the thread kept its predecessor's card until the next run, or for ever when the
-        print is too old for `list_tracked` to return it.
+        Rendered from the entry at the moment of the alias, the card showed the druk's tag and
+        nothing else the print knows. Nothing renders it again either: `CardRefresher` works from
+        the list taken before the tracking phase, where this row did not yet exist.
         """
         if not publish:
             return

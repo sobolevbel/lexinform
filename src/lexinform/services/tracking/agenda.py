@@ -165,16 +165,10 @@ class AgendaWatcher:
     ) -> None:
         """Take back a sitting the channel announced that is not on the agenda any more.
 
-        The agenda post is the most time-critical thing the channel sends — it is what a reader
-        plans a day around, and what the card's "what comes next" is dated from. When a sitting
-        dropped out, the card quietly went back to «обычно 2–6 недель» and the post that named the
-        room and the hour stood unchanged.
-
-        Only a `sitting_key` that has disappeared is a retraction: a sitting that merely moved
-        keeps its key and is told as a new post that says where it moved from. A sitting that has
-        started or is behind us is never retracted (`_already_happened`, the same test that stops
-        it being announced), nor is one whose listing failed — `_Listings.kept` has put those
-        items back before this runs.
+        Only a `sitting_key` that has disappeared is a retraction: one that merely moved keeps its
+        key and is told as a new post saying where it moved from. A sitting that has started or
+        passed is never retracted (`_already_happened`), nor is one whose listing failed —
+        `_Listings.kept` puts those items back before this runs.
         """
         now = self._clock.now().astimezone(self._local_tz)
         keys = {item.sitting_key for item in items}
@@ -255,12 +249,10 @@ class AgendaWatcher:
         or by one of the prints its process produced (`derived_print_numbers`), which is the only
         name a sitting on the Senate's resolution or the President's motion gives it.
 
-        Committees that sit together are listed once each, under a `num` of their own, so a bill
-        referred to two of them produced two items for one meeting and the channel announced it
-        twice — 328 (bill, day) pairs of term 10, druk 2699 among them, which sat before ASW and
-        SPC on 2026-07-02 and would have said so twice. `meeting_key` collapses the group; the
-        item already told stays the one we keep, so a committee joining the bill later cannot
-        move the `ref` and make `_retract_gone` take back a sitting that is still on.
+        Committees sitting together are listed once each under a `num` of their own, so a bill
+        before two of them was announced twice — 328 (bill, day) pairs of term 10. `meeting_key`
+        collapses the group, keeping the item already told so that a committee joining later
+        cannot move the `ref` and make `_retract_gone` take back a sitting still on.
         """
         numbers = {
             bill.number,
@@ -319,13 +311,9 @@ class AgendaWatcher:
     def _moved_from(self, bill: Bill, item: AgendaItem) -> AgendaItem | None:
         """The same sitting as the channel last announced it, when anything it named has changed.
 
-        The `ref` carries the day, the hour and the room, so a sitting that moves is a new post;
-        without it the new one would contradict the one still standing above it instead of
-        correcting it. The hour and the room are in there because they move on their own and
-        often: of the 886 committee sittings of term 10 whose `comments` record a change, 204
-        say "Nastąpiła zmiana godziny posiedzenia", 97 "zmiana sali" and 61 both. Until they
-        were part of the key the run saw every one of those, wrote the new hour to the bill and
-        said nothing, leaving the post the reader plans a day around naming the old one.
+        The `ref` carries day, hour and room, so a sitting that moves is a new post. The hour and
+        the room are in there because they move on their own: of the 886 term-10 sittings whose
+        `comments` record a change, 204 say "zmiana godziny", 97 "zmiana sali" and 61 both.
         """
         previous = [
             old

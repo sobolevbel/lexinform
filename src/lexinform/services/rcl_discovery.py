@@ -72,15 +72,12 @@ class RclDiscoveryService:
         """Projects modified since `since`, plus the ones the register named; an RCL outage
         propagates (the phase is over).
 
-        A project is looked up without a term, because RCL ids are not bound to one: a project
-        joined to a druk of the previous term stays stored under that term and must not come back
-        as new. One that continues a plan we already follow is left to the tracking phase, where
-        the wykaz row hands its thread over.
+        A project is looked up without a term, RCL ids not being bound to one. One that continues
+        a followed plan is left to the tracking phase, where the wykaz row hands its thread over.
 
-        `from_register` is what the wykaz phase found: a plan whose project is already out on RCL
-        gets no card of its own, and until now nothing took the project either — the listing is
-        walked by modification date, so a project untouched since this bot's first run is
-        invisible to the walk. Twelve of them were live on 15 Sept 2026.
+        `from_register` is the wykaz phase's find and the only way in for a project the listing
+        does not show as changed: the walk is by modification date, so a project untouched since
+        this bot's first run is invisible to it (twelve were live on 15 Sept 2026).
         """
         result = RclDiscoveryResult()
         new_rows: list[RclProjectSummary] = []
@@ -147,17 +144,13 @@ class RclDiscoveryService:
     def read_consultations(self, *, limit: int) -> int:
         """The consultation letter of every project waiting to be analysed and missing one.
 
-        A project taken by its **text** is read for that text alone (`_deepen` → `with_text`), so
-        the letter is in a catalog nobody opened — and nothing opens it later: the watcher only
-        refreshes a project the listing shows as changed, and a project can stand untouched for
-        months. All three cards of 15 Sept 2026 went out that way, with no deadline, no address
-        and no reminder, while the action line offered the RCL form with the emphasis of an open
-        consultation: UD387's window had shut on 13 June, UPRO10's on 19 July, UD337's on 2
-        February, and `action_rcl_window_closed` cannot be reached while the window is unknown.
+        A project taken by its text is read for that text alone (`_deepen` → `with_text`), so the
+        letter sits in a catalog nobody opened and nothing opens later — the watcher only refreshes
+        a project the listing shows as changed. Without it the card goes out with no deadline, no
+        address and no reminder, and `action_rcl_window_closed` cannot be reached at all.
 
-        One page per project, and only while it waits for an analysis that costs a dollar, so the
-        queue drains itself. An unreadable project is a warning: the analysis is what matters and
-        it has its own text already.
+        One page per project and only while it waits for an analysis that costs a dollar, so the
+        queue drains itself. An unreadable project is a warning: the analysis has its own text.
         """
         read = 0
         for bill in self._repo.list_by_status([BillStatus.ANALYSIS_PENDING], limit=limit):
