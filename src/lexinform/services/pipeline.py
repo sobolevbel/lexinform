@@ -264,6 +264,10 @@ class DailyPipeline:
             )
         if self._text_prefilter is not None:
             self._phase(report, "text prefilter", lambda: self._prefilter_text(opts, report))
+        # After the text prefilter, because what it promotes is exactly what is still missing a
+        # consultation letter, and before the analysis, because the card is written from both.
+        if opts.rcl and self._rcl_discovery is not None:
+            self._phase(report, "rcl consultations", lambda: self._read_rcl_consultations(opts))
         self._phase(report, "analysis", lambda: self._analyse(opts, report))
         self._phase(report, "publishing", lambda: self._publish(opts, report))
         if opts.track:
@@ -333,6 +337,10 @@ class DailyPipeline:
         report.wykaz_discovered = discovered.new
         report.over_on_arrival += discovered.over
         return discovered.on_rcl
+
+    def _read_rcl_consultations(self, opts: RunOptions) -> None:
+        assert self._rcl_discovery is not None
+        self._rcl_discovery.read_consultations(limit=opts.max_analyze)
 
     def _prefilter_text(self, opts: RunOptions, report: RunReport) -> None:
         assert self._text_prefilter is not None

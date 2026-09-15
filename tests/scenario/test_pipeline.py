@@ -312,6 +312,7 @@ def test_report_carries_phase_timings() -> None:
         "wykaz discovery",
         "rcl discovery",
         "text prefilter",
+        "rcl consultations",
         "analysis",
         "publishing",
         "tracking",

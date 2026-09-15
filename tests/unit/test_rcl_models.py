@@ -221,6 +221,58 @@ def test_skeleton_keeps_the_timeline_and_drops_the_folders() -> None:
     assert len(skeleton.model_dump_json()) < len(project.model_dump_json())
 
 
+def test_one_file_that_is_the_bill_and_its_uzasadnienie_is_the_bill() -> None:
+    """Six of the nine projects of the corpus that ended with no bill text publish both under one
+    name, and the word "uzasadnienie" in it made the whole project unreadable."""
+    folder = RclFolder(
+        id=10,
+        name="Projekt",
+        documents=(
+            _doc(1, "Projekt ustawy+uzasadnienie+OSR_podpisane przez DP.pdf"),
+            _doc(2, "Zał. 1 do OSR_Zbiorcze wyniki ankiet.pdf"),
+        ),
+    )
+    project = _project(_stage(3, "Konsultacje publiczne", "reached", folder))
+
+    picked = project.text_documents()
+
+    # One file, one role: the same document handed over twice would be read (and paid for) twice.
+    assert {role: d.id for role, d in picked.items()} == {"bill": 1}
+
+
+def test_the_bill_filed_as_a_numbered_appendix_is_still_the_bill() -> None:
+    folder = RclFolder(
+        id=10,
+        name="Projekt",
+        documents=(
+            _doc(1, "Załącznik nr 1 Projekt ustawy - Prawo własności przemysłowej UC81.pdf"),
+            _doc(2, "Załącznik nr 2 Uzasadnienie UC81.pdf"),
+            _doc(3, "TABELA ZBIEŻNOŚCI 2015_2436 UC81.docx"),
+        ),
+    )
+    project = _project(_stage(4, "Opiniowanie", "reached", folder))
+
+    picked = project.text_documents()
+
+    assert {role: d.id for role, d in picked.items()} == {"bill": 1, "justification": 2}
+
+
+def test_the_last_resort_never_takes_a_table_or_a_letter_for_the_bill() -> None:
+    """It is reached only where nothing calls itself the bill, and there it still refuses what
+    `text_role` refuses: an appendix mark is forgiven, a tabela zgodności is not."""
+    folder = RclFolder(
+        id=10,
+        name="Projekt",
+        documents=(
+            _doc(1, "tabela zgodności do projektu ustawy.docx"),
+            _doc(2, "Pismo przewodnie - projekt ustawy.pdf"),
+            _doc(3, "autopoprawka do projektu ustawy.pdf"),
+        ),
+    )
+
+    assert _project(_stage(3, "Konsultacje publiczne", "reached", folder)).text_documents() == {}
+
+
 def test_no_readable_document_means_no_text() -> None:
     folder = RclFolder(id=10, name="Projekt", documents=(_doc(1, "projekt.rtf"),))
 

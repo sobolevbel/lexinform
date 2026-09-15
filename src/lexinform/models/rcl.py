@@ -292,7 +292,47 @@ def _classify(documents: list[RclDocument]) -> dict[TextRole, RclDocument]:
             picked[role] = min(candidates, key=_rank)
         else:
             picked[role] = min(candidates, key=_format_rank)
-    return picked
+    if "bill" in picked:
+        return picked
+    fallback = _bill_of_last_resort(documents)
+    if fallback is None:
+        return picked
+    # One file can be all three documents at once, and then it is the bill: handing it to the
+    # analysis a second time as an "extra" would pay for the same text twice.
+    kept = {role: d for role, d in picked.items() if d.url != fallback.url}
+    kept["bill"] = fallback
+    return kept
+
+
+def _bill_of_last_resort(documents: list[RclDocument]) -> RclDocument | None:
+    """The bill when no file in the folder calls itself one.
+
+    Measured over the 824 projects of the corpus whose newest "Projekt" folder holds readable
+    files (15 Sept 2026): nine end with no bill text at all, and the ministry named it in one of
+    two ways. Six publish the bill together with its uzasadnienie, often the OSR too, as **one
+    file** — "Projekt ustawy+uzasadnienie+OSR_podpisane przez DP.pdf", "Projekt z
+    uzasadnieniem.pdf", "Projekt ustawy_Uzasadnienie_OSR_ust o zm PRD (UDER87).docx" — and
+    `text_role` reads them as the uzasadnienie, that word being tested first. Three file the bill
+    as a numbered appendix to the covering letter ("Załącznik nr 1 Projekt ustawy - Prawo
+    własności przemysłowej UC81"), which the appendix rule drops. Either way the project has no
+    text, and a project with no text is dropped whole: the text prefilter writes "no document to
+    read" and the row is closed for good (RCL/12409801, 15 Sept 2026).
+
+    It is the last resort and nothing else — reached only where the answer today is nothing at
+    all, so it cannot change what any project with a recognised bill is read from.
+    """
+    candidates = [d for d in documents if _names_a_bill(d.name)]
+    return min(candidates, key=_rank) if candidates else None
+
+
+def _names_a_bill(name: str) -> bool:
+    """Whether a name not taken for the bill still says it carries one. The appendix mark is
+    ignored, because the bill can be an appendix; everything else `text_role` refuses stands — a
+    tabela zgodności, a pismo or an autopoprawka is not the bill, whatever else its name says."""
+    lowered = name.lower()
+    return bool(_BILL_RE.search(lowered)) and not _NOT_A_TEXT_RE.search(
+        _APPENDIX_RE.sub(" ", lowered)
+    )
 
 
 _OSR_RE = re.compile(r"(?:^|[^a-ząćęłńóśźż])osr(?:$|[^a-ząćęłńóśźż])|ocena skutk")
@@ -312,6 +352,7 @@ _NOT_A_TEXT_RE = re.compile(
 # A ministry that files the bill as an attachment to its letter says which is which in a tag at
 # the end of the name: "załącznik do pismo 07.08.2026 uzgodnienia [projekt].pdf". The tag is the
 # one part of such a name that is about the document rather than about its envelope.
+_APPENDIX_RE = re.compile(r"załącznik|zalacznik|zał\.")
 _ROLE_TAG_RE = re.compile(r"\[\s*(projekt|uzasadnienie|osr)\s*\]")
 _TAGGED_ROLE: dict[str, TextRole] = {
     "projekt": "bill",

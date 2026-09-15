@@ -374,6 +374,14 @@ Invariants worth keeping:
   the wykaz from the entry's status. Bills already followed are untouched: they keep their card and
   their updates to the end. The last gate is `PublishingService.publish_new`, for a bill analysed
   while it was still running.
+- **A file that is not there yet is not a verdict.** The Sejm lists a process before the print's
+  file is attached to it: druk 3094 was judged at 10:11 UTC on 15 Sept 2026 and its PDF appeared
+  at 10:16, by which time the row read `skipped_text_prefilter`, "no document to read" — and a
+  text skip is revisited only when the *title* changes (`discovery._ingest`) or by hand
+  (`reprefilter --include-text-skipped`, `/unskip`). So a print with no document leaves the row
+  `text_prefilter_pending` and is counted as `unanswered`, exactly like the WAF's refusal on orka:
+  the fact is about the day, not about the bill. Only a source that cannot have a file later (an
+  RCL project whose "Projekt" folder holds nothing readable) still gets the skip.
 - **A file keywords cannot search is not a file to drop.** The text prefilter scans the print of a
   title miss; when the file has no text layer but has pages, the bill goes to `analysis_pending`
   unsearched (`TextPrefilterResult.scans`, told apart in the run report from `unreadable`, which is
@@ -541,6 +549,36 @@ Invariants worth keeping:
   documents are most of the row and are never read again; `lexinform reset … --to analysis_pending`
   re-reads them. Run records older than `LEXINFORM_RUNS_RETENTION_DAYS` (90) are deleted at the
   start of a run.
+- **A project taken by its text is read for the text alone, so its letter is fetched in a phase of
+  its own.** `_deepen` gives a title hit `complete()` (every reached catalog and the consultation
+  letter) and a title miss `with_text()` (one catalog, the newest text) — and nothing opens the
+  letter afterwards, because the watcher only refreshes a project the *listing* shows as changed
+  and a project can stand untouched for months. All three cards of 15 Sept 2026 went out that way:
+  no deadline, no address for remarks, no consultation reminder, `_results_due` blind to published
+  stanowiska, the phase `rcl_opinions` instead of `rcl_consultation` — and, because
+  `_rcl_actions` reads `window is None` as "this project never had a consultation", the comment
+  form and the zgłoszenie were offered with the emphasis of an open window over consultations that
+  had closed on 13 June (UD387), 19 July (UPRO10) and 2 February (UD337);
+  `action_rcl_window_closed` is unreachable while the window is unknown.
+  `RclDiscoveryService.read_consultations` (phase "rcl consultations", between the text prefilter
+  and the analysis) reads the one catalog that carries the letter
+  (`RclProjectReader.with_consultation`) for every RCL row waiting to be analysed and missing a
+  window: one page against a reading that costs a dollar, and the queue drains itself. **Reading
+  the letter late is not an event**: `consultation_opened` is news only while the window is open
+  (`models.consultation_open`), or the run that repairs an old row would announce «Открылись
+  публичные консультации» over a door that shut in June.
+- **The bill can be one file with its uzasadnienie, or an appendix to the letter.** `text_role`
+  tests "uzasad" before anything else and drops what calls itself a `załącznik`, so "Projekt
+  ustawy+uzasadnienie+OSR_podpisane przez DP.pdf" is read as the uzasadnienie and "Załącznik nr 1
+  Projekt ustawy — Prawo własności przemysłowej UC81" as an appendix — and the project is then left
+  with **no bill at all**, which the text prefilter records as "no document to read" and the row is
+  closed for good (RCL/12409801, 15 Sept 2026: a Prawo o ruchu drogowym project whose only text is
+  one combined .docx). Measured over the 824 projects of the corpus whose newest "Projekt" folder
+  holds readable files: **nine** end with no bill, six of them one combined file and three the bill
+  as a numbered appendix. `_bill_of_last_resort` is reached only where the answer would otherwise
+  be nothing — so it cannot change what any other project is read from — and it still refuses what
+  `text_role` refuses (a tabela, a pismo, an autopoprawka); a combined file is stored as the bill
+  and dropped from the extras, or the analysis would pay for the same text twice.
 - **The wykaz is the earliest source and the thinnest: an intention, not a bill.** The whole
   register arrives as one CSV per run (`adapters/wykaz_csv.py`; the id in the URL is read from the
   page, columns are matched by prefix because their statutory wording gets repunctuated), so the

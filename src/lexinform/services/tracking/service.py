@@ -144,6 +144,7 @@ def _rcl_watcher(
         gateway,
         analysis=analysis,
         consultations=consultations,
+        local_tz=options.local_tz,
         workers=options.workers,
     )
 

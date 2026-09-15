@@ -141,6 +141,38 @@ def test_a_consultation_that_opens_without_a_new_stage_is_still_named() -> None:
     assert "направить замечания на dep.prawny@mswia.gov.pl до 08.09.2026" in text
 
 
+def test_a_window_that_has_already_shut_is_not_announced_as_opening() -> None:
+    """Reading the letter late is not an event: a project taken by its text arrives with no
+    window at all, and the run that finally reads one must not invite the reader to a door that
+    closed weeks ago. The data is still repaired, quietly — the card is written from it."""
+    w = World()
+    reached = rcl_stage(3, "Konsultacje publiczne", "reached")
+    early = rcl_project(consultation=None, stages=(rcl_stage(2, "Uzgodnienia"), reached))
+    _followed_project(w, early)
+    w.clock.advance(days=30)  # the letter gave seven days from 01.09
+    w.add_rcl_project(
+        _moved(
+            early,
+            early.stages[0],
+            rcl_stage(
+                3,
+                "Konsultacje publiczne",
+                "reached",
+                *CONSULTATION_FOLDERS,
+                modified=dt.date(2026, 10, 8),
+            ),
+            modified=dt.date(2026, 10, 8),
+        )
+    )
+
+    w.run()
+
+    stored = w.bill(RCL)
+    assert stored.rcl is not None and stored.rcl.consultation is not None
+    assert stored.rcl.consultation.deadline == dt.date(2026, 9, 8)
+    assert not any(change.consultation_opened for _, change, _ in w.publisher.updates)
+
+
 def test_deadline_reminder_uses_the_letter_and_is_sent_once() -> None:
     w = World()  # clock: 2026-09-07; the letter gives 7 days from 2026-09-01
     _followed_project(

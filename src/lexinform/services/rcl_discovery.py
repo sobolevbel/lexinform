@@ -144,6 +144,40 @@ class RclDiscoveryService:
         log.info("RCL %s: named by the register, not seen by the listing", project_id)
         self._ingest(term, project, result)
 
+    def read_consultations(self, *, limit: int) -> int:
+        """The consultation letter of every project waiting to be analysed and missing one.
+
+        A project taken by its **text** is read for that text alone (`_deepen` → `with_text`), so
+        the letter is in a catalog nobody opened — and nothing opens it later: the watcher only
+        refreshes a project the listing shows as changed, and a project can stand untouched for
+        months. All three cards of 15 Sept 2026 went out that way, with no deadline, no address
+        and no reminder, while the action line offered the RCL form with the emphasis of an open
+        consultation: UD387's window had shut on 13 June, UPRO10's on 19 July, UD337's on 2
+        February, and `action_rcl_window_closed` cannot be reached while the window is unknown.
+
+        One page per project, and only while it waits for an analysis that costs a dollar, so the
+        queue drains itself. An unreadable project is a warning: the analysis is what matters and
+        it has its own text already.
+        """
+        read = 0
+        for bill in self._repo.list_by_status([BillStatus.ANALYSIS_PENDING], limit=limit):
+            project = bill.rcl
+            if project is None or project.consultation is not None:
+                continue
+            if project.consultation_stage is None:
+                continue
+            try:
+                complete = self._reader.with_consultation(project)
+            except ServiceUnavailableError:
+                raise
+            except Exception as exc:
+                log.warning("consultation of %s not read: %s", bill.number, exc)
+                continue
+            self._repo.save_rcl(bill.term, bill.number, complete)
+            read += 1
+            log.info("%s: consultation %s", bill.number, complete.consultation)
+        return read
+
     def index_numbers(self, since: dt.date) -> int:
         """Walk the listing and only write down which project carries which wykaz number.
 

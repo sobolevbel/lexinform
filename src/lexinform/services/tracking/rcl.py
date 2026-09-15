@@ -5,6 +5,7 @@ An RCL outage stops only this part of the tracking phase: the Sejm side of the r
 """
 
 import logging
+from zoneinfo import ZoneInfo
 
 from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
@@ -14,6 +15,7 @@ from lexinform.models import (
     RclProject,
     Stage,
     StatusChange,
+    consultation_open,
     diff_stages,
     process_summary,
     rcl_fingerprint,
@@ -45,6 +47,7 @@ class RclWatcher:
         analysis: AnalysisService | None,
         max_print_lookups: int = 3,
         consultations: ConsultationReminder | None,
+        local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
         workers: int = 1,
     ) -> None:
         self._reader = reader
@@ -56,6 +59,7 @@ class RclWatcher:
         self._analysis = analysis
         self._max_print_lookups = max_print_lookups
         self._consultations = consultations
+        self._local_tz = local_tz
         self._texts = RclTextSource()
         self._workers = workers
 
@@ -184,7 +188,18 @@ class RclWatcher:
             and not self._repo.closure_announced(bill.term, bill.number)
         )
         new_stages = diff_stages(bill.stages, stages)
-        consultation_opened = stored.consultation is None and project.consultation is not None
+        # Reading the letter late is not an event. A project taken by its text arrives with no
+        # window at all (`RclDiscoveryService.read_consultations` fills it in), and a window
+        # that shut in June is nothing a reader can act on: «Открылись публичные консультации»
+        # over it invites them to a door that is closed.
+        consultation_opened = (
+            stored.consultation is None
+            and project.consultation is not None
+            and consultation_open(
+                bill.model_copy(update={"rcl": project}),
+                now.astimezone(self._local_tz).date(),
+            )
+        )
         if not (new_stages or content_changed or closure or consultation_opened):
             return None
         fresh = self._repo.get(bill.term, bill.number) or bill

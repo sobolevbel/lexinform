@@ -106,6 +106,37 @@ def test_title_miss_is_caught_by_the_text_prefilter() -> None:
     assert any(h.startswith("text:") for h in w.bill(RCL).prefilter_hits)
 
 
+def test_a_project_taken_by_its_text_still_gets_its_consultation_letter() -> None:
+    """The letter sits in a catalog the text prefilter has no reason to open, and nothing opens
+    it afterwards: the watcher only refreshes a project the listing shows as changed. All three
+    cards of 15 Sept 2026 went out without a deadline and without the address remarks are sent
+    to, and offered the RCL form as though the window were open."""
+    w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT))
+    w.add_rcl_project(rcl_project(title="Projekt ustawy o zmianie niektórych ustaw", keywords=()))
+
+    report = w.run()
+
+    assert (report.text_prefilter_hits, report.published) == (1, 1)
+    bill = w.bill(RCL)
+    assert bill.rcl is not None and bill.rcl.consultation is not None
+    assert (bill.rcl.consultation.deadline, bill.rcl.consultation.email) == (
+        dt.date(2026, 9, 8),
+        "dep.prawny@mswia.gov.pl",
+    )
+    text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 9, 7)).text
+    assert "направить замечания на dep.prawny@mswia.gov.pl до 08.09.2026" in text
+
+
+def test_the_letter_of_a_project_with_a_window_already_read_is_not_fetched_again() -> None:
+    w = World()
+    project = w.add_rcl_project()  # a title hit: its catalogs and letter are read at discovery
+
+    w.run(track=False)
+
+    reads = [c for c in w.rcl.calls if c.startswith(f"get_stage:{project.id}/")]
+    assert len(reads) == len(set(reads)) == 3  # the reached stages, each once
+
+
 def test_weak_title_hit_of_a_project_reads_its_text_not_its_catalogs() -> None:
     fuel_quality = "Art. 1. Straż Graniczna kontroluje jakość paliw na przejściach. " * 20
     w = World(extractor=FakeTextExtractor(fuel_quality))

@@ -44,6 +44,19 @@ class RclProjectReader:
                 break
         return project
 
+    def with_consultation(self, project: RclProject) -> RclProject:
+        """The consultation stage's catalog and the letter in it, for a project read for its
+        newest text alone (`with_text`).
+
+        One page, and it is the page with the two facts the card is written around: the day the
+        window shuts and the address remarks are sent to.
+        """
+        stage = project.consultation_stage
+        if stage is None:
+            return project
+        project = project.with_stage(self._rcl.get_stage(project.id, stage.id))
+        return project.model_copy(update={"consultation": self.consultation(project)})
+
     def refresh(self, stored: RclProject) -> RclProject:
         """The timeline again, and only the catalogs whose stage changed since `stored`."""
         project = self._rcl.get_project(stored.id)

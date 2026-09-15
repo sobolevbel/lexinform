@@ -80,7 +80,11 @@ def test_single_stray_mention_is_rejected_but_kept_for_tuning() -> None:
     )
 
 
-def test_missing_or_broken_pdf_skips_the_bill_quietly() -> None:
+def test_a_broken_pdf_is_a_verdict_and_a_file_not_there_yet_is_not() -> None:
+    """The Sejm lists a process before the print's file is attached to it, so "no file" is a
+    fact about the day: druk 3094 was judged five minutes before its PDF appeared (15 Sept 2026)
+    and the skip closed the row for good. A file that downloads and cannot be read is the other
+    thing, and stays a verdict."""
     w = World(extractor=FakeTextExtractor(error=ValueError("not a PDF")))
     w.add_bill("4100", "Rządowy projekt ustawy o podatku")
     w.add_bill("4101", "Rządowy projekt ustawy o lasach", with_pdf=False)
@@ -88,12 +92,13 @@ def test_missing_or_broken_pdf_skips_the_bill_quietly() -> None:
     report = w.run()
 
     assert report.text_prefilter_checked == 2 and not report.errors
-    assert report.text_prefilter_unreadable == 2
+    assert (report.text_prefilter_unreadable, report.text_prefilter_unanswered) == (1, 1)
     broken, missing = w.bill("4100"), w.bill("4101")
-    assert broken.status is missing.status is BillStatus.SKIPPED_TEXT_PREFILTER
     # The reason is on record: a skip for lack of a text is not a keyword miss.
+    assert broken.status is BillStatus.SKIPPED_TEXT_PREFILTER
     assert broken.last_error == "text prefilter failed: ValueError: not a PDF"
-    assert missing.last_error == "text prefilter: no document to read"
+    assert missing.status is BillStatus.TEXT_PREFILTER_PENDING
+    assert missing.last_error == "text prefilter: the print has no file yet"
 
 
 def test_a_scanned_print_goes_to_the_model_instead_of_being_skipped() -> None:

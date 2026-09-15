@@ -211,6 +211,15 @@ class TextPrefilterService:
             log.warning("text of %s unavailable for the prefilter: %s", bill.number, exc)
             return _Loaded(None, f"text prefilter: text unavailable: {type(exc).__name__}: {exc}")
         if located.document is None:
+            if bill.has_process:
+                # The Sejm lists a process before the print's file is attached to it. Druk 3094
+                # was judged at 10:11 UTC on 15 Sept 2026 and its PDF appeared at 10:16, five
+                # minutes later — by then the row said "no document to read", which is a verdict,
+                # and the only way back was `reprefilter --include-text-skipped`. A file that is
+                # not there yet is about the day, like the WAF's refusal above, not about the
+                # bill; the next run asks again.
+                log.info("print %s has no file yet; the prefilter asks again", bill.number)
+                return _Loaded(None, "text prefilter: the print has no file yet", unanswered=True)
             log.info("%s has no readable text; text prefilter skipped", bill.number)
             return _Loaded(None, "text prefilter: no document to read")
         file = self._loader.read(located.document.url)
