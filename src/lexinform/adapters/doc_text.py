@@ -1,17 +1,13 @@
 """Text of legacy Word documents (.doc, the Word 97-2003 binary format).
 
-RCL still publishes about a tenth of its files this way. The format ([MS-DOC]) keeps the text in
-the `WordDocument` stream of an OLE container, but not in order: the *piece table* in the table
-stream lists runs of characters ("pieces") with their file positions, each either 8-bit
-Windows-1252 or UTF-16LE. This module reads exactly that, which is what every text extractor for
-the format does (Apache POI, wvWare, antiword); formatting, pictures and fields are not needed.
+RCL still publishes about a tenth of its files this way. [MS-DOC] keeps the text in the
+`WordDocument` stream of an OLE container but not in order: the *piece table* lists runs of
+characters with their file positions, each Windows-1252 or UTF-16LE. Formatting, pictures and
+fields are not needed — except the table row mark, without which a tabela zgodności arrives as one
+line of tabs tens of thousands of characters long.
 
-The one property it does read is the table row mark, because without it a table is unreadable:
-Word writes the end of a cell and the end of a row as the same character, so a bill's tabela
-zgodności arrived as one line of tabs tens of thousands of characters long.
-
-Anything the parser does not understand (Word 6/95, encrypted files, damaged streams) yields an
-empty string with a warning, so such a document is analysed from its metadata, as before.
+Anything the parser does not understand yields an empty string with a warning, so the document is
+analysed from its metadata.
 """
 
 import io
@@ -216,13 +212,9 @@ def _mark_rows(chunk: str, fc: int, width: int, row_ends: frozenset[int]) -> str
 def _row_end_marks(word: bytes, table: bytes, data: bytes) -> frozenset[int]:
     """The file position just past every cell mark that ends a table row.
 
-    Word writes the end of a cell and the end of a row as the same character (0x07) and only the
-    paragraph properties tell them apart, by `sprmPFTtp`. They live in the PAPX bin table:
-    `PlcBtePapx` names the 512-byte `PapxFkp` pages of the WordDocument stream, and each page
-    holds the file positions of the paragraphs that end in it together with their properties.
-
-    Properties are decoration, so nothing here refuses a document: a bin table that is missing or
-    does not parse leaves the marks unknown and a table reads as it did before, tabs only.
+    Word writes the end of a cell and the end of a row as the same character (0x07), and only
+    `sprmPFTtp` in the PAPX bin table tells them apart. Properties are decoration, so a bin table
+    that is missing or does not parse leaves the marks unknown and the table reads as tabs only.
     """
     fc, lcb = struct.unpack_from("<II", word, _FIB_FC_PLCF_BTE_PAPX)
     if lcb < 12 or fc + lcb > len(table):

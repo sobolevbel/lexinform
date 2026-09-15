@@ -136,16 +136,10 @@ class BillDiscoveryService:
         """Whether a bill we have never seen has nothing left to act on: then it gets no
         analysis and no card, because a card invites action and there is none.
 
-        The listing's `closureDate` is not the answer: the Sejm sets it at the third reading,
-        with the Senate, the President and Dziennik Ustaw still ahead. Neither is the ELI: an
-        act published with months of vacatio legis is the one moment a reader has a date to
-        prepare for. Both are read once, here — a bill whose detail cannot be read takes the
-        normal path.
-
-        An act that exists but cannot be read counts as the end: unlike an unread stage tree, an
-        unread act is not a reason to assume the road is still open. The act that *was* read is
-        stored whatever the verdict, because the publishing gate asks the same question a phase
-        later and without it would answer "over" and drop the card after all.
+        Neither `closureDate` (set at the third reading) nor the ELI (a vacatio legis is the one
+        stretch with a date to prepare for) answers it alone, so both are read once, here. An act
+        that exists but cannot be read counts as the end; one that *was* read is stored whatever
+        the verdict, the publishing gate asking the same question a phase later.
         """
         if bill.summary.eli is not None:
             act = None if self._eli is None else self._act_of(bill.summary.eli)
@@ -211,10 +205,8 @@ class BillDiscoveryService:
         """Upsert the summary; prefilter new bills (and re-prefilter skipped ones whose title
         changed). True when the bill is new.
 
-        A print that continues a row we already follow — an RPW entry, or an RCL project — is not
-        ingested here: tracking links the two and keeps the Telegram thread, and a second card
-        would duplicate it. A row in `NOT_FOLLOWED` has no thread of its own, so the druk that
-        continues it takes the normal path instead, with its own prefilter and its own card.
+        A print continuing a row we follow is not ingested here: tracking links the two and keeps
+        the thread. A row in `NOT_FOLLOWED` has no thread, so its druk takes the normal path.
         """
         existing = self._repo.get(summary.term, summary.number)
         now = self._clock.now()

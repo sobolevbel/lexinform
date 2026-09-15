@@ -32,18 +32,13 @@ class WykazUnavailableError(ServiceUnavailableError):
 class OrkaUnreachableError(RuntimeError):
     """orka.sejm.gov.pl did not hand over the file — deliberately a per-bill problem.
 
-    The host is fronted by Imperva, which judges a client by its address as well as its identity
-    and can start refusing us without anything changing on our side. Everything else the analysis
-    reads comes from api.sejm.gov.pl, so as a `ServiceUnavailableError` one WAF decision would
-    stop the whole analysis phase, every run. A bill whose file cannot be read falls back to the
-    analysis of its official description — what every bill without a print number got before this
-    host was reachable at all.
+    Imperva judges a client by its address as well as its identity and can start refusing us with
+    nothing changed on our side; everything else the analysis reads is api.sejm.gov.pl, so as a
+    `ServiceUnavailableError` one WAF decision would stop the whole phase every run.
 
-    `status_code` is what tells a file that is not there (404 — the address is built by
-    convention, so it can be wrong) from the host refusing us, which is every other answer and
-    every connection that failed. A caller that would otherwise write the bill off for good has
-    to know the difference: the WAF's refusal is a decision about our address on the day, not
-    about the bill.
+    `status_code` tells a file that is not there (404 — the address is built by convention) from
+    the host refusing us, which is every other answer: a caller that would write the bill off for
+    good has to know the difference.
     """
 
     def __init__(self, message: str, *, status_code: int | None = None) -> None:

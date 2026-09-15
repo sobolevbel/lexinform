@@ -1,15 +1,12 @@
 """The two constitutional terms a reader can still act inside: the Senate's 30 days (art. 121)
 and the President's 21 (art. 122).
 
-Between the Sejm's vote and the act in Dziennik Ustaw nothing happens that the stage tree records,
-so the channel goes quiet for up to seven weeks — exactly over the Senate's committee stage, where
-opinions are still taken, and the President's, where a veto is still possible. The card carries
-the date from the moment the Sejm passes the bill; this is the reply that comes back once the term
-is nearly out.
+Between the Sejm's vote and the act in Dziennik Ustaw the stage tree records nothing, so the
+channel goes quiet for up to seven weeks — over the Senate's committee stage, where opinions are
+still taken, and the President's, where a veto is still possible.
 
-The deadline is derived, not stored, so there is no "due" query: the bills are the ones tracking
-already holds, and `list_tracked` always returns those the Sejm has passed and whose act has not
-appeared yet, whatever the run's `changed_since`.
+The deadline is derived and not stored, so there is no "due" query: `list_tracked` always returns
+the bills the Sejm has passed whose act has not appeared, whatever the run's `changed_since`.
 """
 
 import datetime as dt

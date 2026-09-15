@@ -1,17 +1,14 @@
 """The end of a Sejm term (kadencja): what happens to the bills of the old one.
 
-Zasada dyskontynuacji: a bill the Sejm has not finished with when the term ends lapses; a new Sejm
-must receive it again (citizens' bills are the statutory exception and are taken over). Nothing
-in the API says so, the processes just stop moving, so the bot draws the line itself the first
-time it runs in the new term: every published, unfinished bill of the old term gets one last
-update under its card and is marked discontinued, which takes it out of every listing (tracking,
-reminders, analysis and publishing queues). Bills the Sejm passed stay followed: the Senate, the
-President and Dziennik Ustaw do not care about the term. Government projects on RCL are not bound
-to a term either: the rows still waiting for their druk move to the new term, so that the druk
-which appears there can take over their thread.
+Zasada dyskontynuacji: a bill the Sejm has not finished with lapses when the term ends, citizens'
+bills excepted. Nothing in the API says so — the processes just stop moving — so the first run of
+a new term draws the line: every published, unfinished bill of the old one gets a last update and
+is marked discontinued, which takes it out of every listing. Passed bills stay followed, the
+Senate and the President not caring about the term, and RCL rows still waiting for their druk
+move to the new term so that druk can take their thread.
 
-Idempotent and safe to repeat every run: the posts are recorded before the rows are marked, so
-a Telegram outage half-way leaves the rest for the next run.
+Idempotent: the posts are recorded before the rows are marked, so an outage half-way leaves the
+rest for the next run.
 """
 
 import logging
