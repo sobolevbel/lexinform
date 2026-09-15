@@ -897,13 +897,26 @@ branch history; the state branch is the backup.
   `closureDate` and `passed`; an open process never has the date. `End` ("Uchwalono") is appended
   at the third reading and stays last, so it says nothing about how far the bill got — read the
   stages before it.
-- **The `/prints` listing is not authoritative about attachments; the print's own detail is.** For
-  druki 599, 1768 and 2821 of term 10 (14 Sept 2026) every file the listing names answers 404,
-  while the detail names one that downloads (`599.pdf` is gone, `599-s.pdf` is there). Three of
-  3282 is nothing until a run builds its download URL from the listing and loses the print whole;
-  the only way to notice is to ask the detail when the listing's files all fail. The listing does
-  carry `additionalPrints` for all 847 prints that have any, so the whole catalogue of 2339 filings
-  costs one request.
+- **For a few prints the API answers `/prints/{n}` with somebody else's document, and the file it
+  offers is not the bill.** Read the other way round until 2026-09-15: the listing's files for
+  druki 599, 1768 and 2821 of term 10 all answer 404 while the detail names one that downloads,
+  which was taken to mean the detail is authoritative about attachments. It is not — it is a
+  *different record*. `GET /prints/2821` returns `title` "Do druku nr 2821 - opinia NBP (nie
+  zgłoszono uwag)" with `attachments` `["2821-004.pdf"]`, and 599 and 1768 return "Stanowisko
+  Rządu do druku nr N." with `{n}-s.pdf`; the bill's own PDF is genuinely gone from the server.
+  So `PrintInfo.main_pdf`, which falls back to the first PDF when `{number}.pdf` is absent, handed
+  druk 2821 to the model as a **one-page "no remarks" scan from the National Bank**, and the
+  triage judged and closed the row on it (production, run 69, 15 Sept 2026). The fallback itself
+  is needed — of the nine prints of term 10 whose detail carries PDFs but no `{number}.pdf`, six
+  publish their text under a name of their own (the budget bills' "125-ustawa i załączniki do
+  ustawy.pdf", a print amended before the first reading as "2872 (z autopoprawką).pdf") — so what
+  is refused is a file *named after a filing*: `{n}-<digits>.pdf` (an `additionalPrints` entry) or
+  `{n}-s.pdf` (the government's position). Over all 938 prints of the term that shape occurs
+  **exactly three times, on exactly those three prints, always as the only file**
+  (`models.sejm._names_a_filing`). Refused, the print reports no text and the bill stays
+  `text_prefilter_pending` — a broken record is about the day, like the WAF's refusal, not about
+  the bill. The listing does carry `additionalPrints` for all 847 prints that have any, so the
+  whole catalogue of 2339 filings still costs one request.
 - `additionalPrints` in a print's detail are the documents filed to it after its submission, each a
   print of its own (`1273-001`, `1273-s`) with `title`, `documentDate`, `deliveryDate` and its own
   PDF, served from api.sejm.gov.pl like any attachment (no WAF, unlike the RPW PDFs on orka). Term

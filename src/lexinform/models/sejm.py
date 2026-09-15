@@ -13,6 +13,7 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import re
 from collections.abc import Iterable
 from typing import Literal, Self
 from zoneinfo import ZoneInfo
@@ -575,6 +576,16 @@ class Attachment(BaseModel):
         return self.name.lower().endswith(".pdf")
 
 
+def _names_a_filing(name: str, number: str) -> bool:
+    """The file belongs to a document filed to print `number`, not to the print itself.
+
+    `{n}-001.pdf` is an `additionalPrints` entry's attachment and `{n}-s.pdf` the government's
+    position; `{n}-A` is an additional committee report, a print in its own right that is fetched
+    under its own number and never appears among these attachments.
+    """
+    return re.fullmatch(rf"{re.escape(number)}-(\d+|s)\.[a-z0-9]+", name.strip(), re.I) is not None
+
+
 class PrintInfo(BaseModel):
     """GET /prints/{number}."""
 
@@ -595,13 +606,33 @@ class PrintInfo(BaseModel):
 
     @property
     def main_pdf(self) -> Attachment | None:
-        """The bill text itself: `{number}.pdf`, else the first PDF attachment."""
+        """The bill text itself: `{number}.pdf`, else the first PDF that is this print's own.
+
+        The fallback exists because a print can publish its text under a name of its own — the
+        budget bills split it across "125-ustawa i załączniki do ustawy.pdf" and its neighbours,
+        and a print amended before the first reading appears as "2872 (z autopoprawką).pdf". It
+        must not reach past this print, and it did: for druki 599, 1768 and 2821 of term 10 the
+        API answers `/prints/{n}` with the record of a document filed *to* that number — its
+        `title` is "Stanowisko Rządu do druku nr 599." or "Do druku nr 2821 - opinia NBP (nie
+        zgłoszono uwag)" and its only attachment is that filing's file, the bill's own PDF being
+        404 on the server. Taking the first PDF there handed druk 2821 to the model as a
+        one-page "no remarks" scan from the National Bank, which it judged and closed for good
+        (production, 15 Sept 2026).
+
+        A filing's file is named after the print it was filed to — `{n}-004.pdf` for an
+        `additionalPrints` entry, `{n}-s.pdf` for the government's position — and over all 938
+        prints of term 10 that shape occurs exactly three times, on those three prints, always as
+        the only file. So it is refused, the print reports no text, and the bill stays pending
+        (`text prefilter: the print has no file yet`) rather than being judged on somebody else's
+        document: the API's record is broken, which is about the day and not about the bill.
+        """
         preferred = f"{self.number}.pdf".lower()
         pdfs = [a for a in self.attachments if a.is_pdf]
         for a in pdfs:
             if a.name.lower() == preferred:
                 return a
-        return pdfs[0] if pdfs else None
+        own = [a for a in pdfs if not _names_a_filing(a.name, self.number)]
+        return own[0] if own else None
 
 
 def supplement_kind(title: str) -> SourceKind | None:

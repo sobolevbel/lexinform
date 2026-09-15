@@ -11,7 +11,7 @@ import pytest
 
 from lexinform.adapters.sejm_api import SejmApiClient, SejmApiError
 from lexinform.errors import AttachmentTooLargeError
-from lexinform.models import ApplicantType, DocumentType, current_term
+from lexinform.models import ApplicantType, Attachment, DocumentType, PrintInfo, current_term
 from tests.conftest import FIXTURES
 
 Handler = Callable[[httpx.Request], httpx.Response]
@@ -95,6 +95,44 @@ def test_process_and_print_parse_from_fixtures() -> None:
     # Attachments are downloaded from the client's own host (a proxy or a mock included).
     assert info.main_pdf.url == "https://api.test/sejm/term10/prints/3039/3039.pdf"
     assert info.additional_prints[0].number == "3039-001"
+
+
+def _print_with(number: str, *names: str) -> PrintInfo:
+    return PrintInfo(
+        term=10,
+        number=number,
+        title="Rządowy projekt ustawy",
+        attachments=tuple(
+            Attachment(print_number=number, name=n, url=f"https://api.test/{n}") for n in names
+        ),
+    )
+
+
+def test_a_document_filed_to_the_print_is_never_taken_for_the_bill() -> None:
+    """For druki 599, 1768 and 2821 of term 10 the API answers `/prints/{n}` with the record of a
+    document filed to that number — "Do druku nr 2821 - opinia NBP" and its one-page scan — while
+    the bill's own PDF is 404. Taking the first PDF there handed 2821 to the model as somebody's
+    "no remarks" note, which it judged and closed for good (production, 15 Sept 2026)."""
+    assert _print_with("2821", "2821-004.pdf").main_pdf is None
+    assert _print_with("599", "599-s.pdf").main_pdf is None
+
+
+def test_a_print_publishing_its_text_under_a_name_of_its_own_is_still_read() -> None:
+    """The fallback exists for these: the budget bills split the text across named files, and a
+    print amended before the first reading appears as "2872 (z autopoprawką).pdf". Six of the nine
+    prints of term 10 whose detail carries no `{number}.pdf` are this shape, not the broken one."""
+    budget = _print_with("125", "125-ustawa i załączniki do ustawy.pdf", "125-uzasadnienie.pdf")
+    amended = _print_with("2872", "2872 (z autopoprawką).pdf")
+
+    assert budget.main_pdf is not None
+    assert budget.main_pdf.name == "125-ustawa i załączniki do ustawy.pdf"
+    assert amended.main_pdf is not None
+
+
+def test_the_prints_own_pdf_wins_over_everything_else() -> None:
+    info = _print_with("3039", "3039-001.pdf", "3039.pdf")
+
+    assert info.main_pdf is not None and info.main_pdf.name == "3039.pdf"
 
 
 def test_change_dates_are_converted_from_warsaw_time_and_ue_status_parsed() -> None:
