@@ -183,6 +183,17 @@ def test_run_takes_the_workflows_own_inputs() -> None:
     }
 
 
+def test_the_text_skipped_backfill_rides_on_reprefilter() -> None:
+    """The only way back for a bill the text stage rejected: nothing else reopens that skip."""
+    command = parse_command("/run reprefilter=200 text_skipped")
+
+    assert command is not None and command.error is None
+    assert command.inputs == {
+        "reprefilter_limit": "200",
+        "reprefilter_text_skipped": "true",
+    }
+
+
 def test_run_alone_starts_the_ordinary_run() -> None:
     command = parse_command("/run")
 

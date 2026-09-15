@@ -149,11 +149,15 @@ RUN_INPUTS: dict[str, str] = {
     "dry_run": "dry_run",
     "reprefilter": "reprefilter_limit",
     "reprefilter_limit": "reprefilter_limit",
+    "text_skipped": "reprefilter_text_skipped",
+    "reprefilter_text_skipped": "reprefilter_text_skipped",
     "index_rcl_since": "index_rcl_since",
     "index": "index_rcl_since",
 }
 _DATE_INPUTS = frozenset({"since", "index_rcl_since"})
 _COUNT_INPUTS = frozenset({"reprefilter_limit"})
+# Written as a bare word, not `key=value`: `/run reprefilter=200 text_skipped`.
+_FLAG_INPUTS = frozenset({"dry_run", "reprefilter_text_skipped"})
 
 
 class Command(BaseModel):
@@ -347,6 +351,9 @@ def _sejm_url_ref(path: str, query: Query) -> BillRef | None:
 def _parse_run(args: list[str]) -> Command:
     """`/run`, `/run dry`, `/run since=2026-09-01 reprefilter=50 index_rcl_since=2023-11-01`.
 
+    `text_skipped` rides on `reprefilter` and widens it to the bills the text stage itself
+    rejected — the skip nothing reopens on its own.
+
     Every value is checked here rather than by the workflow, which would answer a typo hours
     later with a job that did the wrong thing — or nothing, `since` being free text to it.
     """
@@ -357,9 +364,12 @@ def _parse_run(args: list[str]) -> Command:
         if name is None:
             return Command(
                 name=CommandName.RUN,
-                error=f"/run: unknown option {word} (since, dry, reprefilter, index_rcl_since)",
+                error=(
+                    f"/run: unknown option {word} "
+                    "(since, dry, reprefilter, text_skipped, index_rcl_since)"
+                ),
             )
-        if name == "dry_run":
+        if name in _FLAG_INPUTS:
             inputs[name] = "true"
             continue
         if not value:

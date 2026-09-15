@@ -44,6 +44,10 @@ on:
         description: "Before the run, scan the texts of up to N bills the title prefilter skipped (0 = off)"
         required: false
         default: "0"
+      reprefilter_text_skipped:
+        description: "Let that scan also revisit bills already rejected by their text (a skip nothing else ever reopens)"
+        type: boolean
+        default: false
       index_rcl_since:
         description: "Before the run, read the RCL listing back to this date (YYYY-MM-DD) and write down which project carries which wykaz number. Listing pages only, no tokens."
         required: false
@@ -123,12 +127,17 @@ jobs:
 
       # Backfill: bills skipped by title before the text prefilter existed (or while a file type
       # was unreadable) get their text scanned; the run below analyses and posts the hits.
+      # `reprefilter_text_skipped` widens it to the bills the text stage itself rejected — the one
+      # skip nothing reopens on its own (only a changed title or `/unskip` does), so a row whose
+      # reason was never recorded, or whose file was simply not uploaded yet, is closed for good
+      # until a run is asked for this.
       - name: Re-run the text prefilter on skipped bills
         if: ${{ inputs.reprefilter_limit != '' && inputs.reprefilter_limit != '0' }}
         env:
           LEXINFORM_RCL_PROXY_URL: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
           LEXINFORM_LOG_LEVEL: INFO
-        run: uv run --frozen --no-dev lexinform reprefilter --limit "${{ inputs.reprefilter_limit }}"
+          TEXT_SKIPPED: ${{ inputs.reprefilter_text_skipped && '--include-text-skipped' || '' }}
+        run: uv run --frozen --no-dev lexinform reprefilter --limit "${{ inputs.reprefilter_limit }}" $TEXT_SKIPPED
 
       # The run exits 1 when it had errors, but whatever it did publish is recorded in the
       # database, so the state must be saved anyway (otherwise the next run would post duplicates).

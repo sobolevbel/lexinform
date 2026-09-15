@@ -23,6 +23,7 @@ later. Any administrator of that channel can command; nobody else reaches the bo
 /run since=2026-09-01           discover from this date instead of the watermark
 /run dry                        print what would be posted, persist and publish nothing
 /run reprefilter=50             first scan the texts of up to N bills the title prefilter skipped
+/run reprefilter=200 text_skipped   …and the bills the text stage itself rejected (see below)
 /run index_rcl_since=2023-11-01 first read the RCL listing back to this date for the wykaz join
 /help                         this list
 ```
@@ -36,6 +37,14 @@ later with a job that did the wrong thing. Two things follow from `workflow_disp
 token needs **Actions: read and write** on the repository (filing a command only needs
 Contents), and a dry run persists nothing at all — not even an index it was asked to build,
 since the state branch is only pushed by a real run.
+
+`text_skipped` rides on `reprefilter` and is the only way back for a bill the **text** stage
+rejected. That skip is revisited by nothing: not by a later run, only by a changed title
+(`discovery._ingest`) or by `/unskip`, one bill at a time. So a row whose reason was never
+recorded, and a print whose PDF the Sejm had simply not uploaded when the run asked
+("no document to read"), stay closed until a run is asked for this. It costs downloads and
+keyword matching, no tokens — but a bill that passes becomes an analysis candidate, so the run
+after it pays for the readings and posts the cards; give it a `limit` you are willing to read.
 
 `/preview` answers with the card itself, links and tags and all, so the wording can be read
 before `/republish` sends it — and so that a bill held under the score threshold can be looked
