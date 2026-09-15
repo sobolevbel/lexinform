@@ -12,7 +12,7 @@ import time
 from collections.abc import Callable
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import ChannelPost, Command, CommandName, parse_command
+from lexinform.models import DISPATCHED, ChannelPost, Command, parse_command
 from lexinform.ports import CommandAcknowledger, InboxWriter, UpdatesSource, WorkflowStarter
 
 log = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ class CommandListener:
             if command is not None:
                 handled = (
                     self._start_run(post, command)
-                    if command.name is CommandName.RUN
+                    if command.name in DISPATCHED
                     else self._file(post)
                 )
                 if not handled:
@@ -124,12 +124,12 @@ class CommandListener:
         return parse_command(post.text) if post.text is not None else None
 
     def _start_run(self, post: ChannelPost, command: Command) -> bool:
-        """`/run` is not filed: it is the run. The relay asks GitHub to start the workflow with
-        the inputs the operator named, and says so under the command.
+        """A command that *is* a run is not filed: `/run`, and the four phases a run is made of.
 
-        True when the offset may move. A misspelled option is answered and passed over — leaving
-        it unhandled would make Telegram deliver it again for ever — while an outage is not: the
-        command is worth trying again, and nothing was started.
+        The relay asks GitHub to start the workflow with the inputs the operator named, and says
+        so under the command. True when the offset may move: a misspelled option is answered and
+        passed over — leaving it unhandled would make Telegram deliver it again for ever — while
+        an outage is not, the command being worth trying again with nothing started.
         """
         acted = post.as_command()
         if command.error is not None:
@@ -155,7 +155,7 @@ class CommandListener:
         named = ", ".join(f"{k}={v}" for k, v in command.inputs.items()) or "no inputs"
         self.filed.append(post)
         log.info("update %d started the workflow (%s)", post.update_id, named)
-        self._say(lambda ack: ack.started(acted, f"run started ({named}) — {where}"))
+        self._say(lambda ack: ack.started(acted, f"{command.name} started ({named}) — {where}"))
         return True
 
     def _say(self, tell: Callable[[CommandAcknowledger], None]) -> None:

@@ -36,6 +36,7 @@ from lexinform.models import (
     PrintInfo,
     RclProject,
     RunReport,
+    SpendSnapshot,
     Stage,
     StatusChange,
     StatusSnapshot,
@@ -64,6 +65,7 @@ from lexinform.models import (
     stalled_days,
     told_stages,
     update_event,
+    usage_of,
     veto_stood,
     wykaz_entry_number,
 )
@@ -76,24 +78,38 @@ QUARTERS = {1: "I", 2: "II", 3: "III", 4: "IV"}
 
 # What the technical channel accepts (English, like the run report; the operator's language).
 COMMAND_HELP = (
-    "<b>commands</b> (a bill is a druk number, RPW/…, RCL/…, UC164, RM-… or a link to"
-    " sejm.gov.pl / api.sejm.gov.pl / legislacja.rcl.gov.pl):\n"
-    "• <code>/analyze BILL</code> — fetch, prefilter, analyse; post the card when relevant"
-    " and important enough, then follow it\n"
-    "• <code>/analyze BILL force</code> — analyse past the prefilter, a previous analysis"
-    " and the cost guard\n"
-    "• <code>/analyze BILL publish</code> — post a relevant card even below the score threshold\n"
+    "<b>one bill</b> (a druk number, RPW/…, RCL/…, UC164, RM-… or a link to sejm.gov.pl /"
+    " api.sejm.gov.pl / legislacja.rcl.gov.pl):\n"
+    "• <code>/analyze BILL [force] [publish] [json]</code> — fetch, prefilter, analyse; post the"
+    " card when relevant and important enough, then follow it. <code>force</code> gets past the"
+    " prefilter, a previous analysis and the cost guard, <code>publish</code> past the score"
+    " threshold, <code>json</code> adds the raw verdict\n"
     "• <code>/show BILL</code> — what the database knows\n"
-    "• <code>/preview BILL</code> — the card as the channel would get it, rendered here only\n"
+    "• <code>/preview BILL [to=CHAT]</code> — the card as the channel would get it, rendered"
+    " here only, or sent to a test chat\n"
     "• <code>/refresh BILL</code> — check this bill now: stages, act, sittings, its card\n"
     "• <code>/skip BILL</code> — silence a false positive (no analysis, no card)\n"
     "• <code>/unskip BILL</code> — put it back in the queue for the next run\n"
+    "• <code>/reset BILL [to=STATUS]</code> — any status with a clean budget of attempts"
+    " (default <code>analysis_pending</code>)\n"
     "• <code>/republish BILL</code> — post the card again\n"
     "• <code>/forget BILL</code> — drop the card the channel remembers, post nothing"
     " (a card deleted by hand)\n"
+    "\n<b>the database</b>, answered here and now:\n"
     "• <code>/find WORDS</code> — bills whose title or number contains the words\n"
     "• <code>/status</code> — the queues, what is stuck, what the last runs cost\n"
-    "• <code>/help</code>"
+    "• <code>/runs [days=N]</code> — what each recorded run found, posted and cost\n"
+    "• <code>/cost [days=N] [top=N]</code> — the model spend, per model, run and bill\n"
+    "\n<b>a run</b> — these start the workflow instead of waiting for it:\n"
+    "• <code>/run [since=DATE] [dry] [reprefilter=N] [text_skipped] [index_rcl_since=DATE]"
+    " [no_publish] [no_track] [no_rcl] [full_track] [max_publish=N] [max_analyze=N]"
+    " [min_score=N]</code>\n"
+    "• <code>/scan [since=DATE]</code> — discover and keyword-filter only: no model, no posts\n"
+    "• <code>/track [dry]</code> — the tracking phase over every followed bill\n"
+    "• <code>/reprefilter [limit=N] [text_skipped]</code> — scan the texts of skipped bills\n"
+    "• <code>/index-rcl-numbers since=DATE</code> — read the RCL listing for the wykaz join\n"
+    "\n• <code>/help</code>. <code>listen</code>, <code>commands</code> and <code>db</code> are"
+    " not commands: they are this relay, this phase and the state branch around every run."
 )
 
 # The commands whose answer is a dossier and not a verdict: they get the status, the last stage
@@ -1175,12 +1191,15 @@ class MessageFormatter:
             OutcomeStatus.SHOWN: "🔎",
             OutcomeStatus.SILENCED: "🔇",
             OutcomeStatus.QUEUED: "🔁",
+            OutcomeStatus.RESET: "🔁",
             OutcomeStatus.REPUBLISHED: "📣",
             OutcomeStatus.FORGOTTEN: "🗑",
             OutcomeStatus.PREVIEWED: "👁",
             OutcomeStatus.REFRESHED: "🔄",
             OutcomeStatus.FOUND: "🔍",
             OutcomeStatus.REPORTED: "📊",
+            OutcomeStatus.LISTED: "🏃",
+            OutcomeStatus.SPENT: "💸",
             OutcomeStatus.HELP: "🛠",
             OutcomeStatus.EXECUTED_EARLIER: "🕗",
         }.get(outcome.status, "❌")
@@ -1211,11 +1230,51 @@ class MessageFormatter:
             if outcome.joint_primary is not None:
                 return [self.joint_bill(bill, outcome.joint_primary, outcome.print_info).text]
             return [self.new_bill(bill, outcome.print_info).text]
+        if outcome.as_json and bill is not None and bill.analysis is not None:
+            return [f"<pre>{esc(bill.analysis.model_dump_json(indent=2))}</pre>"]
         if outcome.found:
             return ["\n".join(f"• {self._bill_line(b)}" for b in outcome.found)]
         if outcome.snapshot is not None:
             return [self._snapshot_body(outcome.snapshot)]
+        if outcome.runs:
+            return ["\n".join(_run_line(report) for report in outcome.runs)]
+        if outcome.spend is not None:
+            return [self._spend_body(outcome.spend)]
         return []
+
+    def _spend_body(self, spend: SpendSnapshot) -> str:
+        """What `/cost` shows: the total, the models behind it, the dearest run and bills."""
+        total = cost_usd(spend.usage)
+        per_run = total / spend.runs if total is not None and spend.runs else None
+        lines = [
+            f"💸 <b>{format_usd(total)}</b> over {spend.runs} run(s) in {spend.days} days"
+            f" · {format_usd(per_run)} per run"
+        ]
+        lines += [
+            f"• <b>{esc(model.removeprefix('claude-'))}</b>: in {format_tokens(spent.input)}"
+            f" · cache {format_tokens(spent.cache_read)}/{format_tokens(spent.cache_creation)}"
+            f" · out {format_tokens(spent.output)} · {format_usd(cost_usd({model: spent}))}"
+            for model, spent in sorted(spend.usage.items())
+        ]
+        if (dearest := spend.dearest) is not None:
+            lines.append(
+                f"🔺 dearest run {dearest.started_at:%d.%m %H:%M} UTC ·"
+                f" {format_usd(cost_usd(dearest.llm_usage))} · {dearest.analyzed} analysed"
+            )
+        lines += [f"• {self._priciest_line(bill)}" for bill in spend.priciest]
+        return "\n".join(lines)
+
+    def _priciest_line(self, bill: Bill) -> str:
+        """One of `/cost`'s dearest analyses: what was read for the bill, and what it cost."""
+        record = bill.analysis
+        if record is None:
+            return self._bill_line(bill)
+        spent = format_usd(cost_usd({record.model: usage_of(record)}))
+        return (
+            f"<b>{self._number_label(bill)}</b> · {format_tokens(record.input_tokens or 0)} in"
+            f" · {spent} · "
+            + link(process_web_url(bill.term, bill.number), _clip(bill.summary.title, 60))
+        )
 
     def _bill_line(self, bill: Bill) -> str:
         """One bill in a list: its number, where our pipeline left it, and its title as a link."""
@@ -2170,6 +2229,26 @@ def _counts(counts: dict[str, int]) -> str:
         return "none"
     ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))
     return " · ".join(f"{esc(name)} {value}" for name, value in ordered)
+
+
+def _run_line(report: RunReport) -> str:
+    """One row of `/runs`: the columns `lexinform runs` prints, as one line of a message.
+
+    A run recorded before the per-model breakdown existed carries tokens but no usage: its cost
+    is unknown, not zero, and `format_usd` says so.
+    """
+    cost = cost_usd(report.llm_usage) if report.llm_usage or not report.llm_input_tokens else None
+    counters = (
+        f"{report.discovered}/{report.analyzed}/{report.published}/{report.updates}"
+        " disc·anal·publ·upd"
+    )
+    errors = f" · {len(report.errors)} error(s)" if report.errors else ""
+    verdict = "ok" if report.ok else "ERR"
+    return (
+        f"• <b>{report.started_at:%d.%m %H:%M}</b> {esc(report.mode)} {verdict}"
+        f" · {counters} · {format_tokens(report.llm_input_tokens)}"
+        f"/{format_tokens(report.llm_output_tokens)} · {format_usd(cost)}{errors}"
+    )
 
 
 def _runs_line(snapshot: StatusSnapshot) -> str:

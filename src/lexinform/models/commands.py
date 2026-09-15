@@ -8,6 +8,7 @@ legislacja.rcl.gov.pl. Nothing here does I/O.
 
 import datetime as dt
 import re
+from dataclasses import dataclass
 from enum import StrEnum
 from urllib.parse import parse_qs, urlparse
 
@@ -15,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.models.analysis import TokenUsage
 from lexinform.models.bill import Bill
-from lexinform.models.enums import PRE_PRINT_PREFIX, RCL_PREFIX, WYKAZ_PREFIX
+from lexinform.models.enums import PRE_PRINT_PREFIX, RCL_PREFIX, WYKAZ_PREFIX, BillStatus
 from lexinform.models.rcl import normalize_wykaz_number
 from lexinform.models.report import RunReport
 from lexinform.models.sejm import PrintInfo
@@ -111,16 +112,30 @@ class BillRef(BaseModel):
 
 
 class CommandName(StrEnum):
+    """Every `lexinform` subcommand the technical channel can reach, under its own CLI name.
+
+    Three are missing on purpose: `listen` is the relay reading this channel, `commands` is the
+    phase that answers what is written in it, and `db` is the workflow's handling of the state
+    branch around every run — none of them is a thing to ask a run for.
+    """
+
     RUN = "run"
+    SCAN = "scan"
+    TRACK = "track"
+    REPREFILTER = "reprefilter"
+    INDEX_RCL_NUMBERS = "index-rcl-numbers"
     ANALYZE = "analyze"
     SHOW = "show"
     SKIP = "skip"
     UNSKIP = "unskip"
+    RESET = "reset"
     REPUBLISH = "republish"
     FORGET = "forget"
     PREVIEW = "preview"
     REFRESH = "refresh"
     FIND = "find"
+    RUNS = "runs"
+    COST = "cost"
     STATUS = "status"
     HELP = "help"
 
@@ -131,6 +146,7 @@ NEEDS_REFERENCE = frozenset(
         CommandName.SHOW,
         CommandName.SKIP,
         CommandName.UNSKIP,
+        CommandName.RESET,
         CommandName.REPUBLISH,
         CommandName.FORGET,
         CommandName.PREVIEW,
@@ -140,32 +156,110 @@ NEEDS_REFERENCE = frozenset(
 NEEDS_QUERY = frozenset({CommandName.FIND})
 MIN_QUERY_CHARS = 3
 
-# `/run` is the one command a run cannot execute, because it *is* the run: the relay asks
-# GitHub to start the workflow instead of filing it. These are its inputs, as `daily.yml`
-# declares them; the operator writes them as `key=value`, and `dry` alone is the flag.
-RUN_INPUTS: dict[str, str] = {
-    "since": "since",
-    "dry": "dry_run",
-    "dry_run": "dry_run",
-    "reprefilter": "reprefilter_limit",
-    "reprefilter_limit": "reprefilter_limit",
-    "text_skipped": "reprefilter_text_skipped",
-    "reprefilter_text_skipped": "reprefilter_text_skipped",
-    "index_rcl_since": "index_rcl_since",
-    "index": "index_rcl_since",
+DISPATCHED = frozenset(
+    {
+        CommandName.RUN,
+        CommandName.SCAN,
+        CommandName.TRACK,
+        CommandName.REPREFILTER,
+        CommandName.INDEX_RCL_NUMBERS,
+    }
+)
+"""The commands no run executes, because each *is* a run: the relay starts `daily.yml` on them
+instead of filing them, and an inbox file naming one is answered rather than obeyed."""
+
+_COMMAND_NAMES: dict[str, CommandName] = {name.value: name for name in CommandName} | {
+    "index": CommandName.INDEX_RCL_NUMBERS
 }
-_DATE_INPUTS = frozenset({"since", "index_rcl_since"})
-_COUNT_INPUTS = frozenset({"reprefilter_limit"})
-# Written as a bare word, not `key=value`: `/run reprefilter=200 text_skipped`.
-_FLAG_INPUTS = frozenset({"dry_run", "reprefilter_text_skipped"})
+
+
+class OptionKind(StrEnum):
+    """A bare word (`force`), or `key=value` checked as a date, a count, a chat or a status."""
+
+    FLAG = "flag"
+    DATE = "date"
+    COUNT = "count"
+    CHAT = "chat"
+    STATUS = "status"
+
+
+@dataclass(frozen=True)
+class Option:
+    """One option of one command: what it is called here and what it becomes.
+
+    `input` is a named input of `daily.yml`, `flag` a flag of the CLI command the workflow runs;
+    an option with neither is read by the run that executes the command.
+    """
+
+    name: str
+    kind: OptionKind = OptionKind.FLAG
+    input: str | None = None
+    flag: str | None = None
+    low: int = 0
+    high: int = 1_000_000
+
+
+_SINCE = Option("since", OptionKind.DATE, input="since")
+_DRY = Option("dry_run", OptionKind.FLAG, input="dry_run")
+_REPREFILTER = Option("reprefilter_limit", OptionKind.COUNT, input="reprefilter_limit")
+_TEXT_SKIPPED = Option(
+    "reprefilter_text_skipped", OptionKind.FLAG, input="reprefilter_text_skipped"
+)
+_INDEX_SINCE = Option("index_rcl_since", OptionKind.DATE, input="index_rcl_since")
+_SCAN_SINCE = Option("since", OptionKind.DATE, flag="--since")
+_LIMIT = Option("limit", OptionKind.COUNT, flag="--limit", low=1)
+_INCLUDE_TEXT_SKIPPED = Option("include_text_skipped", flag="--include-text-skipped")
+_DAYS = Option("days", OptionKind.COUNT, low=1, high=3650)
+
+OPTIONS: dict[CommandName, dict[str, Option]] = {
+    CommandName.RUN: {
+        "since": _SINCE,
+        "dry": _DRY,
+        "dry_run": _DRY,
+        "reprefilter": _REPREFILTER,
+        "reprefilter_limit": _REPREFILTER,
+        "text_skipped": _TEXT_SKIPPED,
+        "reprefilter_text_skipped": _TEXT_SKIPPED,
+        "index": _INDEX_SINCE,
+        "index_rcl_since": _INDEX_SINCE,
+        "no_publish": Option("no_publish", flag="--no-publish"),
+        "no_track": Option("no_track", flag="--no-track"),
+        "no_rcl": Option("no_rcl", flag="--no-rcl"),
+        "full_track": Option("full_track", flag="--full-track"),
+        "max_publish": Option("max_publish", OptionKind.COUNT, flag="--max-publish"),
+        "max_analyze": Option("max_analyze", OptionKind.COUNT, flag="--max-analyze"),
+        "min_score": Option("min_score", OptionKind.COUNT, flag="--min-score", low=1, high=5),
+    },
+    CommandName.SCAN: {"since": _SCAN_SINCE},
+    # `track` takes the workflow's own `dry_run`, which is also what keeps the state unpushed;
+    # the workflow turns it into the `--dry-run` the CLI wants.
+    CommandName.TRACK: {"dry": _DRY, "dry_run": _DRY},
+    CommandName.REPREFILTER: {
+        "limit": _LIMIT,
+        "text_skipped": _INCLUDE_TEXT_SKIPPED,
+        "include_text_skipped": _INCLUDE_TEXT_SKIPPED,
+    },
+    CommandName.INDEX_RCL_NUMBERS: {"since": _SCAN_SINCE},
+    CommandName.ANALYZE: {
+        "force": Option("force"),
+        "publish": Option("publish"),
+        "json": Option("json"),
+    },
+    CommandName.PREVIEW: {"to": Option("to", OptionKind.CHAT)},
+    CommandName.RESET: {"to": Option("to", OptionKind.STATUS)},
+    CommandName.RUNS: {"days": _DAYS},
+    CommandName.COST: {"days": _DAYS, "top": Option("top", OptionKind.COUNT, high=50)},
+}
+
+REQUIRED: dict[CommandName, str] = {CommandName.INDEX_RCL_NUMBERS: "since"}
 
 
 class Command(BaseModel):
     """A parsed command line; `error` says what is wrong with it (the reply repeats it).
 
-    `force` analyses past the prefilter, a previous analysis and the cost guard; `publish` posts
-    the card of a relevant bill even below the score threshold. `query` is what `/find` searches
-    for — the one command that names words instead of a bill.
+    `options` holds what the operator wrote beside the bill, under the canonical name of each
+    option and already checked; `query` is what `/find` searches for — the one command that
+    names words instead of a bill.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -173,10 +267,51 @@ class Command(BaseModel):
     name: CommandName
     ref: BillRef | None = None
     query: str | None = None
-    force: bool = False
-    publish: bool = False
-    inputs: dict[str, str] = Field(default_factory=dict)  # `/run` only: the workflow's inputs
+    options: dict[str, str] = Field(default_factory=dict)
     error: str | None = None
+
+    @property
+    def force(self) -> bool:
+        """`/analyze BILL force`: past the prefilter, a previous analysis and the cost guard."""
+        return "force" in self.options
+
+    @property
+    def publish(self) -> bool:
+        """`/analyze BILL publish`: post a relevant card even below the score threshold."""
+        return "publish" in self.options
+
+    @property
+    def as_json(self) -> bool:
+        return "json" in self.options
+
+    def count(self, option: str, default: int) -> int:
+        """A checked `key=N` option, or `default` when the operator did not name it."""
+        value = self.options.get(option)
+        return default if value is None else int(value)
+
+    @property
+    def inputs(self) -> dict[str, str]:
+        """The `daily.yml` inputs for a command the relay starts instead of filing.
+
+        Each option is either an input of its own or a flag of the CLI command the workflow runs;
+        `command` is left out of an ordinary `/run`, which is the workflow's default.
+        """
+        spec = {option.name: option for option in OPTIONS.get(self.name, {}).values()}
+        inputs: dict[str, str] = {}
+        flags: list[str] = []
+        for name, value in self.options.items():
+            option = spec[name]
+            if option.input is not None:
+                inputs[option.input] = value
+            elif option.flag is not None:
+                flags.append(
+                    option.flag if option.kind is OptionKind.FLAG else f"{option.flag} {value}"
+                )
+        if self.name is not CommandName.RUN:
+            inputs["command"] = self.name.value
+        if flags:
+            inputs["options"] = " ".join(flags)
+        return inputs
 
 
 class OutcomeStatus(StrEnum):
@@ -196,12 +331,15 @@ class OutcomeStatus(StrEnum):
     SHOWN = "shown"
     SILENCED = "silenced"
     QUEUED = "queued"
+    RESET = "reset"
     REPUBLISHED = "republished"
     FORGOTTEN = "forgotten"
     PREVIEWED = "preview"
     REFRESHED = "refreshed"
     FOUND = "found"
     REPORTED = "status"
+    LISTED = "runs"
+    SPENT = "cost"
     HELP = "help"
     EXECUTED_EARLIER = "executed earlier"
     NOT_FOUND = "not_found"
@@ -227,6 +365,22 @@ class StatusSnapshot(BaseModel):
     days: int = 0
 
 
+class SpendSnapshot(BaseModel):
+    """What `/cost` answers: the window's model spend per model, its dearest run and bills.
+
+    `runs` counts the reports the window holds, because a total says nothing without them; the
+    priciest analyses are the bills as `most_expensive_analyses` ranks them.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    days: int = 0
+    runs: int = 0
+    usage: dict[str, TokenUsage] = Field(default_factory=dict)
+    dearest: RunReport | None = None
+    priciest: tuple[Bill, ...] = ()
+
+
 class CommandOutcome(BaseModel):
     """What happened to a command; the replier renders it under the command's message.
 
@@ -249,6 +403,9 @@ class CommandOutcome(BaseModel):
     joint_primary: Bill | None = None
     found: tuple[Bill, ...] = ()
     snapshot: StatusSnapshot | None = None
+    runs: tuple[RunReport, ...] = ()
+    spend: SpendSnapshot | None = None
+    as_json: bool = False
     run_started_at: dt.datetime | None = None
     seconds: float | None = None
     usage: dict[str, TokenUsage] = Field(default_factory=dict)
@@ -275,7 +432,8 @@ _RM = re.compile(r"^RM-\d{3,4}-\d+-\d{2}$", re.IGNORECASE)
 _SEJM_TERM_PATH = re.compile(r"/Sejm(\d+)\.nsf/", re.IGNORECASE)
 _API_PATH = re.compile(r"^/sejm/term(\d+)/(?:processes|prints)/(\d+)", re.IGNORECASE)
 _RCL_PATH = re.compile(r"/projekt/(\d+)")
-_MODIFIERS = {"force": "force", "--force": "force", "publish": "publish", "--publish": "publish"}
+# Where `/preview BILL to=…` may send the card: a channel or group id, or a public @username.
+_CHAT = re.compile(r"^(-?\d{5,}|@[A-Za-z0-9_]{4,})$")
 
 
 def parse_reference(text: str) -> BillRef | None:
@@ -348,46 +506,63 @@ def _sejm_url_ref(path: str, query: Query) -> BillRef | None:
     return None
 
 
-def _parse_run(args: list[str]) -> Command:
-    """`/run`, `/run dry`, `/run since=2026-09-01 reprefilter=50 index_rcl_since=2023-11-01`.
-
-    `text_skipped` rides on `reprefilter` and widens it to the bills the text stage itself
-    rejected — the skip nothing reopens on its own.
-
-    Every value is checked here rather than by the workflow, which would answer a typo hours
-    later with a job that did the wrong thing — or nothing, `since` being free text to it.
-    """
-    inputs: dict[str, str] = {}
-    for word in args:
-        key, _, value = word.partition("=")
-        name = RUN_INPUTS.get(key.lower().lstrip("-"))
-        if name is None:
-            return Command(
-                name=CommandName.RUN,
-                error=(
-                    f"/run: unknown option {word} "
-                    "(since, dry, reprefilter, text_skipped, index_rcl_since)"
-                ),
-            )
-        if name in _FLAG_INPUTS:
-            inputs[name] = "true"
-            continue
-        if not value:
-            return Command(name=CommandName.RUN, error=f"/run: {key} needs a value ({key}=…)")
-        if name in _DATE_INPUTS and not _is_date(value):
-            return Command(name=CommandName.RUN, error=f"/run: {key} takes a date, not {value!r}")
-        if name in _COUNT_INPUTS and not value.isdigit():
-            return Command(name=CommandName.RUN, error=f"/run: {key} takes a number, not {value!r}")
-        inputs[name] = value
-    return Command(name=CommandName.RUN, inputs=inputs)
-
-
 def _is_date(value: str) -> bool:
     try:
         dt.date.fromisoformat(value)
     except ValueError:
         return False
     return True
+
+
+def _checked(name: CommandName, key: str, option: Option, raw: str) -> tuple[str | None, str]:
+    """The option's value in the form the workflow or the run wants, or the error to answer with.
+
+    Every value is checked here rather than by the workflow, which would answer a typo hours
+    later with a job that did the wrong thing — or nothing, `since` being free text to it.
+    """
+    if option.kind is OptionKind.FLAG:
+        return "true", ""
+    if not raw:
+        return None, f"/{name}: {key} needs a value ({key}=…)"
+    if option.kind is OptionKind.DATE:
+        return (raw, "") if _is_date(raw) else (None, f"/{name}: {key} takes a date, not {raw!r}")
+    if option.kind is OptionKind.COUNT:
+        if not raw.isdigit():
+            return None, f"/{name}: {key} takes a number, not {raw!r}"
+        if not option.low <= int(raw) <= option.high:
+            return None, f"/{name}: {key} takes {option.low}–{option.high}, not {raw}"
+        return raw, ""
+    if option.kind is OptionKind.CHAT:
+        if _CHAT.match(raw):
+            return raw, ""
+        return None, f"/{name}: {key} takes a chat id (-100…) or @name, not {raw!r}"
+    try:
+        return BillStatus(raw.lower()).value, ""
+    except ValueError:
+        known = ", ".join(status.value for status in BillStatus)
+        return None, f"/{name}: {key} takes a status ({known}), not {raw!r}"
+
+
+def _parse_options(name: CommandName, words: list[str]) -> tuple[dict[str, str], list[str], str]:
+    """The command's own options, what is left for the bill or the query, and the first error.
+
+    A word is an option when its key is one this command knows; everything else is passed on
+    untouched, so a reference carrying an `=` (a Sejm link) is never read as one.
+    """
+    spec = OPTIONS.get(name, {})
+    options: dict[str, str] = {}
+    rest: list[str] = []
+    for word in words:
+        key, _, raw = word.partition("=")
+        option = spec.get(key.lower().lstrip("-").replace("-", "_"))
+        if option is None:
+            rest.append(word)
+            continue
+        value, error = _checked(name, key, option, raw)
+        if value is None:
+            return options, rest, error
+        options[option.name] = value
+    return options, rest, ""
 
 
 def parse_command(text: str) -> Command | None:
@@ -400,36 +575,44 @@ def parse_command(text: str) -> Command | None:
     if not words or not words[0].startswith("/"):
         return None
     head = words[0][1:].split("@", 1)[0].lower()
-    try:
-        name = CommandName(head)
-    except ValueError:
+    name = _COMMAND_NAMES.get(head.replace("_", "-"))
+    if name is None:
         return Command(name=CommandName.HELP, error=f"unknown command /{head}")
-    force = publish = False
-    args: list[str] = []
-    for word in words[1:]:
-        modifier = _MODIFIERS.get(word.lower())
-        if modifier == "force":
-            force = True
-        elif modifier == "publish":
-            publish = True
-        else:
-            args.append(word)
-    if name is CommandName.RUN:
-        return _parse_run(args)
+    options, rest, error = _parse_options(name, words[1:])
+    if error:
+        return Command(name=name, error=error)
+    if (needed := REQUIRED.get(name)) is not None and needed not in options:
+        return Command(name=name, error=f"/{name} needs {needed}=… ({needed} is not optional)")
     if name in NEEDS_QUERY:
-        query = " ".join(args).strip()
+        query = " ".join(rest).strip()
         if len(query) < MIN_QUERY_CHARS:
             return Command(
                 name=name, error=f"/{name} needs at least {MIN_QUERY_CHARS} characters to look for"
             )
-        return Command(name=name, query=query)
-    if name not in NEEDS_REFERENCE:
-        return Command(name=name)
-    if not args:
-        return Command(name=name, error=f"/{name} needs a bill number or a link")
-    ref = parse_reference(" ".join(args))
-    if ref is None:
-        return Command(
-            name=name, error=f"cannot read a bill number or a link in {' '.join(args)!r}"
-        )
-    return Command(name=name, ref=ref, force=force, publish=publish)
+        return Command(name=name, query=query, options=options)
+    if name in NEEDS_REFERENCE:
+        if not rest:
+            return Command(name=name, error=f"/{name} needs a bill number or a link")
+        ref = parse_reference(" ".join(rest))
+        if ref is None:
+            # An option of another command is named rather than dropped in silence, which is how
+            # an operator comes to believe that `/show BILL force` did something.
+            if len(rest) > 1 and parse_reference(rest[0]) is not None:
+                return _unknown_option(name, rest[1])
+            return Command(
+                name=name, error=f"cannot read a bill number or a link in {' '.join(rest)!r}"
+            )
+        return Command(name=name, ref=ref, options=options)
+    if rest and name is not CommandName.HELP:
+        return _unknown_option(name, rest[0])
+    return Command(name=name, options=options)
+
+
+def _unknown_option(name: CommandName, word: str) -> Command:
+    """What a command does not understand, with what it does: the spellings it accepts, once
+    each and in the order they are declared."""
+    known = ", ".join(dict.fromkeys(OPTIONS.get(name, {})))
+    return Command(
+        name=name,
+        error=f"/{name}: unknown option {word} — it takes {known or 'none'}",
+    )

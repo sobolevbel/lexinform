@@ -3,40 +3,83 @@
 Post a command in the technical (log) channel and the bot answers under it a few minutes
 later. Any administrator of that channel can command; nobody else reaches the bot this way.
 
+**Every `lexinform` command is here**, under its own name and with its own options. Three are
+not, and could not be: `listen` is this relay, `commands` is the phase that answers what it
+files, and `db init|dump|restore` is the workflow's handling of the state branch around every
+run — none of them is a thing to ask a run for, and a `db restore` from a channel would replace
+the database under a running channel. `--yes`, which `republish`, `forget` and `reset` take on a
+terminal, has no twin either: posting the command *is* the confirmation.
+
+### One bill
+
 ```
 /analyze 3039                 fetch the bill, prefilter it (title, then text), analyse it, post
                               the card when it is relevant and important enough, follow it
 /analyze 3039 force           analyse past the prefilter, a previous analysis and the cost guard
 /analyze 3039 publish         post the card of a relevant bill even below the score threshold
+/analyze 3039 json            add the stored analysis as raw JSON under the verdict
 /show 3039                    what the database knows: status, hits, verdict, card, last stage
 /preview 3039                 the card as the channel would get it, rendered here and posted
                               nowhere else
+/preview 3039 to=-1001234567  …and sent to that chat instead (a test channel, or @name)
 /refresh 3039                 check this bill now: stages, act, sittings, its card — what the
                               next scheduled run would have found
 /skip 3039                    silence a false positive: no analysis, no card (the card stays)
 /unskip 3039                  the way back: the bill queues for the next run's analysis
+/reset 3039 to=skipped_cost   any status at all, with a clean budget of attempts
+                              (`to=` defaults to `analysis_pending`, which is `/unskip`)
 /republish 3039               post the card again (after a lost or failed post)
 /forget 3039                  drop the card the channel remembers, post nothing (deleted by hand)
+```
+
+### The database, answered here and now
+
+```
 /find cudzoziemc              bills whose title or number carries the words
 /status                       the queues, what is stuck, what the last 7 days of runs cost
-/run                          start the daily workflow now, with its own inputs:
+/runs days=7                  what each recorded run found, posted and cost (default 30 days)
+/cost days=7 top=3            the model spend: per model, the dearest run, the dearest bills
+/help                         this list
+```
+
+### A run, or one phase of it
+
+```
+/run                          the whole day: discover, prefilter, analyse, publish, track
 /run since=2026-09-01           discover from this date instead of the watermark
 /run dry                        print what would be posted, persist and publish nothing
 /run reprefilter=50             first scan the texts of up to N bills the title prefilter skipped
 /run reprefilter=200 text_skipped   …and the bills the text stage itself rejected (see below)
 /run index_rcl_since=2023-11-01 first read the RCL listing back to this date for the wykaz join
-/help                         this list
+/run no_publish no_track no_rcl full_track      the run's own switches
+/run max_publish=5 max_analyze=3 min_score=4    and its caps
+/scan since=2026-09-01        discover and keyword-filter only: no model, no posts, no tokens
+/track                        the tracking phase over every followed bill (`dry` to see it only)
+/reprefilter limit=200 text_skipped   the backfill on its own, without the run behind it
+/index-rcl-numbers since=2023-11-01   the RCL listing for the wykaz join (`/index` for short)
 ```
 
-`/run` is the one command a run does not execute, because it **is** the run: the relay asks
+These five are the commands a run does not execute, because each **is** a run: the relay asks
 GitHub to start `daily.yml` (`workflow_dispatch` on `main`) with the inputs named after it and
-answers «▶️ run started …» with a link, instead of filing anything into the inbox. Its options
-are the workflow's own and may be combined (`/run dry since=2026-09-01`); a value is checked
-before it is sent, because the workflow would take `since=вчера` as free text and answer hours
-later with a job that did the wrong thing. Two things follow from `workflow_dispatch`: the
-token needs **Actions: read and write** on the repository (filing a command only needs
-Contents), and a dry run persists nothing at all — not even an index it was asked to build,
-since the state branch is only pushed by a real run.
+answers «▶️ scan started …» with a link, instead of filing anything into the inbox. The workflow
+takes a `command` — which `lexinform` subcommand this run is — and an `options` string carrying
+its flags; every value in it is checked by the relay first, because the workflow would take
+`since=вчера` as free text and answer hours later with a job that did the wrong thing. `dry_run`
+stays an input of its own rather than one more flag in `options`, since it is also what keeps
+the state branch unpushed, and the two must never disagree about what a run persisted. Options
+may be combined in any order (`/run dry since=2026-09-01 min_score=4`). Two things follow from
+`workflow_dispatch`: the token needs **Actions: read and write** on the repository (filing a
+command only needs Contents), and a dry run persists nothing at all — not even an index it was
+asked to build, since the state branch is only pushed by a real run.
+
+`/run reprefilter=N` and `/reprefilter limit=N` are not the same thing: the first is a backfill
+*and then* a whole run, which is what the composition is for (two dispatches would be two runs,
+and the concurrency group keeps only the newest pending one), the second is the backfill alone.
+
+An option a command does not know is answered rather than ignored, including one that belongs to
+another command: `/show 3039 force` used to do nothing and say nothing, which reads exactly like
+it did something. A `key=value` is only read as an option where the command knows the key, so a
+Sejm link full of them (`…druk.xsp?nr=3039`) is still just a link.
 
 `text_skipped` rides on `reprefilter` and is the only way back for a bill the **text** stage
 rejected. That skip is revisited by nothing: not by a later run, only by a changed title
@@ -56,9 +99,20 @@ for the Sejm, not for 05:23 UTC, and an update the Sejm published an hour ago ca
 It leaves the reminders to the scheduled run — those are due-date queries over the whole
 channel, not about the bill that was named. `/unskip` clears the skip and the spent attempts and
 puts the bill back in the queue; an RCL project keeps only its skeleton while it is skipped, so
-its documents are read again first. `/status` is what no single run report says: the queues as
-they stand, the posts that are stuck (`pending` left by a crash, `failed` still retrying), how
-many bills are followed and what the recent runs did and cost.
+its documents are read again first, and `/reset` does the same for whichever status it is given.
+`to=` names a `BillStatus` and the reply repeats what the row was, attempts and all — the one
+command that can put a bill anywhere, which is why it says where it came from.
+
+`/preview BILL to=CHAT` sends the card to that chat and records nothing: no `publications` row,
+so the bill is no more published afterwards than before and the channel's own card is untouched.
+The bot has to be able to post there, and a failure is answered as one.
+
+`/status`, `/runs` and `/cost` are what no single run report says. `/status` is the state
+between the runs: the queues as they stand, the posts that are stuck (`pending` left by a crash,
+`failed` still retrying), how many bills are followed. `/runs` is the row per run that
+`lexinform runs` prints — what each found, posted and cost — and `/cost` breaks the window's
+spend down by model, names the dearest run and the dearest analyses. All three read the database
+and nothing else: no request, no token, whatever the window.
 
 `/forget` is `/republish` without the post, for a card deleted from the channel by hand. The row
 goes on saying `sent` until something clears it, and everything downstream believes it: the bill

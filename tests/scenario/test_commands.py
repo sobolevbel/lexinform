@@ -859,6 +859,94 @@ def test_status_counts_the_queues_the_posts_and_the_runs() -> None:
     assert len(snapshot.runs) == 2 and snapshot.runs[0].published == 0
 
 
+def test_runs_answers_what_each_recorded_run_did() -> None:
+    """`lexinform runs` in the channel: the operator has a phone, not a production dump."""
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    w.clock.advance(days=1)
+    w.command("/runs days=7")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.LISTED
+    assert [report.published for report in outcome.runs] == [1]
+    assert outcome.note == "1 run(s) in 7 days"
+
+
+def test_cost_adds_up_the_window_per_model_and_names_the_dearest_bills() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    w.command("/cost days=7 top=1")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    spend = outcome.spend
+    assert outcome.status is OutcomeStatus.SPENT and spend is not None
+    assert (spend.days, spend.runs) == (7, 1) and spend.usage
+    assert spend.dearest is not None and [b.number for b in spend.priciest] == ["3039"]
+
+
+def test_reset_puts_a_bill_into_any_status_with_a_clean_budget() -> None:
+    """`/unskip` is the one status worth a word of its own; `/reset` is every other."""
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    w.command("/reset 3039 to=skipped_prefilter")
+    w.command("/reset 3039")
+
+    _commands_only(w)
+
+    (_, silenced), (_, queued) = w.replier.replies
+    assert silenced.status is OutcomeStatus.RESET
+    assert silenced.note == "was analyzed (attempts 0), now skipped_prefilter"
+    assert queued.note == "was skipped_prefilter (attempts 0), now analysis_pending"
+    assert w.bill("3039").status is BillStatus.ANALYSIS_PENDING
+
+
+def test_a_phase_that_reaches_the_inbox_is_answered_and_not_obeyed() -> None:
+    """The relay starts these itself, so a file naming one is an old one or a hand-written one;
+    a run asking itself for its own discovery phase is not a thing that can happen."""
+    w = World()
+    w.command("/scan since=2026-09-01")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.status is OutcomeStatus.HELP
+    assert "/scan is the relay's own command" in outcome.note
+
+
+def test_preview_sends_the_card_to_the_chat_it_names_and_records_nothing() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.command("/analyze 3039")
+    _commands_only(w)
+    w.command("/preview 3039 to=-1009999999")
+
+    _commands_only(w)
+
+    (_, _), (_, preview) = w.replier.replies
+    assert preview.status is OutcomeStatus.PREVIEWED
+    assert "sent to -1009999999" in preview.note and "nothing was recorded" in preview.note
+    assert w.card_id("3039") == 101  # the channel's own card, untouched by the preview
+
+
+def test_analyze_can_be_asked_for_the_raw_verdict() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.command("/analyze 3039 json")
+
+    _commands_only(w)
+
+    (command, outcome), *_ = w.replier.replies
+    assert outcome.as_json and outcome.bill is not None
+    assert '"score"' in w.formatter.command_reply(command, outcome).text
+
+
 def test_a_bill_the_sejm_has_just_passed_still_gets_a_card() -> None:
     """`closureDate` is set at the third reading, with the Senate's 30 days still to come."""
     w = World()

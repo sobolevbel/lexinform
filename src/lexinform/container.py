@@ -371,8 +371,16 @@ class Container:
                 self.clock,
                 text_prefilter=self.text_prefilter_service(),
                 tracking=self.tracking_service(dry_run=dry_run),
+                publisher_for=lambda chat: self.publisher_for(chat, dry_run=dry_run),
             ),
         )
+
+    def publisher_for(self, channel_id: str, *, dry_run: bool) -> Publisher:
+        """Where `/preview BILL to=…` sends the card: that chat, or wherever this run's publisher
+        goes when there is no real one (a dry run, a test's override)."""
+        if dry_run or self.publisher_override is not None:
+            return self.publisher(dry_run=dry_run)
+        return self.telegram_publisher(channel_id=channel_id)
 
     def publishing_service(self, *, dry_run: bool) -> PublishingService:
         return self._once(

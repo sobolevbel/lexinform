@@ -71,7 +71,8 @@ aggregate, `ConsultationWindow`, `process_stages`/`veto_stood`, the two bookkeep
 `Publisher` port rendered once; Telegram and the console only deliver), Telegram (incl.
 `get_updates` and the command replier), SQLite, `inbox_files` (the command inbox as a directory),
 `github_inbox` (the relay's writer)) → `services/` (commands (the operator's `/analyze`, `/show`,
-`/preview`, `/refresh`, `/skip`, `/unskip`, `/republish`, `/forget`, `/find`, `/status`), lookup
+`/preview`, `/refresh`, `/skip`, `/unskip`, `/reset`, `/republish`, `/forget`, `/find`,
+`/status`, `/runs`, `/cost`), lookup
 (one bill by number or reference, fetched and prefiltered on first sight; the CLI and the commands
 share it), listener (the relay on the VPS), discovery, rcl_discovery + rcl_projects,
 wykaz_discovery, sources (`TextSources` routes a bill to `SejmTextSource`, `RclTextSource`,
@@ -713,15 +714,36 @@ Invariants worth keeping:
   detail (date, folder, link) is tolerated, a missing structural element (timeline, table with rows
   announced, every stage label) raises `RclPageError`, which the run report shows. The WAF's
   "Request Rejected" page (HTTP 200) is `RclUnavailableError`.
-- **`/run` is the one command a run does not execute, because it is the run.** The relay asks
-  GitHub for a `workflow_dispatch` of `daily.yml` on `main` with the inputs the operator named
-  (`since`, `dry`, `reprefilter`, `index_rcl_since` — `models.RUN_INPUTS`), answers «▶️ run
-  started …» with a link and files nothing: an inbox file is a thing *for* a run, and there is no
-  run yet. The values are checked in `_parse_run` and not by the workflow, which reads `since` as
-  free text and would answer a typo hours later with a job that did the wrong thing. That endpoint
-  needs a token with **Actions: read and write** (filing a command needs only Contents), and the
-  403/404 it answers otherwise is reported as the missing scope, because the operator cannot tell
-  the two apart. A `/run` that somehow reaches a run through the inbox is answered, not executed.
+- **Every CLI command is a channel command, and the five that *are* runs are not executed by
+  one.** The technical channel reaches every `lexinform` subcommand under its own name and with
+  its own options (`docs/operator-commands.md`); the exceptions are the machinery itself and
+  could not be otherwise — `listen` is the relay reading that channel, `commands` the phase that
+  answers what it files, `db init|dump|restore` the workflow's handling of the state branch
+  around every run. `models.OPTIONS` is the whole grammar, one table of `Option`s per command:
+  each says whether it is written as a bare flag or `key=value`, how its value is checked (a
+  date, a count with a range, a chat id, a `BillStatus`) and what it becomes — a named input of
+  `daily.yml` or a flag of the CLI command the workflow runs. So an option is checked where it
+  is written and never by the workflow, which reads `since` as free text and would answer a typo
+  hours later with a job that did the wrong thing, and an option the command does not know is
+  answered rather than dropped: `/show BILL force` did nothing and said nothing, which reads
+  exactly like it did something. A `key=value` is read as an option only where the command knows
+  the key, so a Sejm link full of them is still a link. **`models.DISPATCHED`** — `/run`,
+  `/scan`, `/track`, `/reprefilter`, `/index-rcl-numbers` — are the ones the relay starts
+  instead of filing: a `workflow_dispatch` of `daily.yml` on `main` carrying `command` (which
+  subcommand this run is, a `type: choice` the parsing test keeps in step with the enum) and
+  `options` (its flags, built only out of values already checked and passed to the shell through
+  the environment, never interpolated into it). `dry_run` stays an input of its own rather than
+  one more flag, because it is also what keeps the state branch unpushed and the two must never
+  disagree about what a run persisted. The answer is «▶️ scan started …» with a link and nothing
+  is filed: an inbox file is a thing *for* a run, and there is no run yet. That endpoint needs a
+  token with **Actions: read and write** (filing a command needs only Contents), and the 403/404
+  it answers otherwise is reported as the missing scope, because the operator cannot tell the two
+  apart. One of these reaching a run through the inbox is answered, not executed. `/run
+  reprefilter=N` is still not `/reprefilter limit=N`: the first is a backfill *and then* a whole
+  run, and splitting it into two dispatches would lose one — the concurrency group keeps a single
+  pending run. `/runs`, `/cost` and `/status` are the read-only three that spend nothing whatever
+  their window, and `/reset BILL to=STATUS` is the general form of `/unskip`, which keeps its own
+  name for the one status worth a word.
 - **Operator commands are recorded before they run, and the relay confirms only what is filed.**
   The technical channel's commands (`docs/operator-commands.md`) reach a run as `{update_id}.json`
   files in the `inbox` branch (checked out by `daily.yml`, `LEXINFORM_INBOX_DIR`); the relay's
@@ -1071,7 +1093,13 @@ Abbreviations (MSWiA, UdSC, ZUS, PESEL) stay Polish in the analysis, never МВ�
 - **Operator commands** (2026-09-11): from the technical channel, any admin of it; delivered by a
   relay on the owner's mikrus VPS (384 MB: enough for a getUpdates loop, not for the bot itself)
   into the `inbox` branch, executed by GitHub Actions so the state branch stays the only database
-  writer; a manual `/analyze` publishes under the daily rule unless told `publish`.
+  writer; a manual `/analyze` publishes under the daily rule unless told `publish`. **Widened
+  2026-09-15 to the whole CLI**: the channel is the operator's only interface — a phone, not a
+  production dump — so every subcommand and every option of it is a command, the four phases a
+  run is made of (`/scan`, `/track`, `/reprefilter`, `/index-rcl-numbers`) as workflow dispatches
+  beside `/run`, and `/runs`, `/cost`, `/reset`, `/analyze … json` and `/preview … to=` in the
+  commands phase. What is left out is named in the help rather than silently missing, because
+  "why is there no /db" is a question the operator would otherwise ask the source.
 - **Bills found when their road is already over** (2026-09-12): no card and no analysis, whatever
   the source — but only when there is really nothing ahead (the act is out, the bill was rejected
   or withdrawn, the project or the plan was dropped), and a bill the Sejm has merely passed keeps

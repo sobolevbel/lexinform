@@ -9,10 +9,12 @@ and do *not* run it again. An outage ends the phase and leaves the command for t
 import datetime as dt
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.models import (
+    DISPATCHED,
     SILENCED_BY_OPERATOR,
     Bill,
     BillStatus,
@@ -22,15 +24,18 @@ from lexinform.models import (
     CommandState,
     IncomingCommand,
     OutcomeStatus,
+    PrintInfo,
     PublicationKind,
     PublicationStatus,
+    SpendSnapshot,
     StatusSnapshot,
     TokenUsage,
     closure_event,
     is_over,
     parse_command,
 )
-from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier
+from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier, Publisher
+from lexinform.pricing import cost_usd
 from lexinform.services.analysis import AnalysisService, TooExpensiveError
 from lexinform.services.joint import primary_of
 from lexinform.services.lookup import BillLookup, BillNotFoundError
@@ -136,6 +141,7 @@ class CommandService:
         *,
         text_prefilter: TextPrefilterService | None = None,
         tracking: StatusTrackingService | None = None,
+        publisher_for: Callable[[str], Publisher] | None = None,
         status_days: int = 7,
         status_bills: int = 10,
     ) -> None:
@@ -148,6 +154,7 @@ class CommandService:
         self._clock = clock
         self._text_prefilter = text_prefilter
         self._tracking = tracking
+        self._publisher_for = publisher_for
         self._status_days = status_days
         self._status_bills = status_bills
 
@@ -318,21 +325,27 @@ class CommandService:
             return CommandOutcome(status=OutcomeStatus.HELP, note=command.error or "")
         if command.name is CommandName.STATUS:
             return self._status()
+        if command.name is CommandName.RUNS:
+            return self._runs(command.count("days", 30))
+        if command.name is CommandName.COST:
+            return self._cost(command.count("days", 30), command.count("top", 5))
         if command.name is CommandName.FIND:
             assert command.query is not None
             return self._find(command.query)
-        if command.name is CommandName.RUN:
+        if command.name in DISPATCHED:
             # The relay starts the workflow itself and files nothing, so this can only be an
             # old file or a hand-written one; either way there is nothing here to execute.
             return CommandOutcome(
                 status=OutcomeStatus.HELP,
-                note="/run is the relay's own command: it starts this workflow, not the other way",
+                note=f"/{command.name} is the relay's own command: it starts this workflow with"
+                " that phase, and a run cannot ask itself for one",
             )
         assert command.ref is not None
         try:
             if command.name is CommandName.ANALYZE:
                 bill = self._lookup.load_ref(command.ref)
-                return self._analyze(bill, command, spent, min_score=min_score, publish=publish)
+                done = self._analyze(bill, command, spent, min_score=min_score, publish=publish)
+                return done.model_copy(update={"as_json": command.as_json})
             bill_or_none = self._lookup.find_ref(command.ref)
         except BillNotFoundError as exc:
             return CommandOutcome(status=OutcomeStatus.NOT_FOUND, note=str(exc))
@@ -347,8 +360,11 @@ class CommandService:
             return self._skip(bill_or_none)
         if command.name is CommandName.UNSKIP:
             return self._unskip(bill_or_none)
+        if command.name is CommandName.RESET:
+            wanted = command.options.get("to", BillStatus.ANALYSIS_PENDING.value)
+            return self._reset(bill_or_none, BillStatus(wanted))
         if command.name is CommandName.PREVIEW:
-            return self._preview(bill_or_none)
+            return self._preview(bill_or_none, command.options.get("to"))
         if command.name is CommandName.REFRESH:
             return self._refresh(bill_or_none, spent, publish=publish)
         if command.name is CommandName.FORGET:
@@ -496,9 +512,7 @@ class CommandService:
                 note="linked: its card belongs to"
                 f" {bill.linked_number or 'the bill that continues it'}, ask for that one",
             )
-        if bill.rcl is not None and not bill.rcl.text_documents():
-            project = self._lookup.read_rcl_project(bill.number)
-            self._repo.save_rcl(bill.term, bill.number, project)
+        self._revive_rcl(bill, BillStatus.ANALYSIS_PENDING)
         self._repo.reset_bill(
             bill.term,
             bill.number,
@@ -511,7 +525,32 @@ class CommandService:
             note=f"was {bill.status}; the next run analyses it",
         )
 
-    def _preview(self, bill: Bill) -> CommandOutcome:
+    def _reset(self, bill: Bill, to: BillStatus) -> CommandOutcome:
+        """`/reset BILL to=STATUS`: any status with a clean budget of attempts, what `/unskip`
+        does for the one status worth a word of its own.
+
+        Analyses and posts are untouched, so a bill reset to `analysis_pending` is read again
+        and one reset to `skipped_prefilter` is silenced while its card stays.
+        """
+        was = bill.status
+        read_again = self._revive_rcl(bill, to)
+        self._repo.reset_bill(bill.term, bill.number, to, reason="reset by the operator (/reset)")
+        note = f"was {was} (attempts {bill.analysis_attempts}), now {to}"
+        return CommandOutcome(
+            status=OutcomeStatus.RESET,
+            bill=self._reload(bill),
+            note=f"{note}; project documents re-read from RCL" if read_again else note,
+        )
+
+    def _revive_rcl(self, bill: Bill, to: BillStatus) -> bool:
+        """A skipped RCL row keeps only the project's skeleton: read its documents again before
+        the status is cleared, or an unreachable RCL leaves the bill queued on its metadata."""
+        if to is not BillStatus.ANALYSIS_PENDING or bill.rcl is None or bill.rcl.text_documents():
+            return False
+        self._repo.save_rcl(bill.term, bill.number, self._lookup.read_rcl_project(bill.number))
+        return True
+
+    def _preview(self, bill: Bill, to: str | None = None) -> CommandOutcome:
         """The message as the channel would get it, rendered into the technical channel alone:
         what `/republish` would send, before it is sent.
 
@@ -549,6 +588,8 @@ class CommandService:
                 # A read-only command spends nothing, and the comparison is a model call: it is
                 # made when the reply is actually sent, so the preview shows the reply without it.
                 note += "; what differs is compared when the reply goes out"
+        if to is not None:
+            note = self._preview_to(plan.bill, plan.print_info, to)
         return CommandOutcome(
             status=OutcomeStatus.PREVIEWED,
             bill=plan.bill,
@@ -556,6 +597,17 @@ class CommandService:
             print_info=plan.print_info,
             joint_primary=plan.primary,
         )
+
+    def _preview_to(self, bill: Bill, print_info: PrintInfo | None, chat: str) -> str:
+        """`/preview BILL to=CHAT`: the card into a test chat, `lexinform preview --to`'s twin.
+
+        It is a card and not a publication: no `publications` row, so nothing about the channel
+        changes and the bill is no more published afterwards than before.
+        """
+        if self._publisher_for is None:
+            return f"cannot send to {chat}: this run publishes nowhere but its own channel"
+        result = self._publisher_for(chat).publish_new_bill(bill, print_info)
+        return f"sent to {chat} as message {result.message_id}; nothing was recorded"
 
     def _refresh(
         self, bill: Bill, spent: dict[str, TokenUsage], *, publish: bool
@@ -602,6 +654,38 @@ class CommandService:
             status=OutcomeStatus.REPORTED,
             snapshot=snapshot,
             note=f"{snapshot.followed} bills followed",
+        )
+
+    def _runs(self, days: int) -> CommandOutcome:
+        """`/runs`: what each recorded run of the window found, posted and cost — `lexinform
+        runs` in the channel, for the operator who has no shell open."""
+        reports = self._repo.list_runs(since=self._clock.now() - dt.timedelta(days=days))
+        return CommandOutcome(
+            status=OutcomeStatus.LISTED,
+            runs=tuple(reports),
+            note=f"{len(reports)} run(s) in {days} days"
+            if reports
+            else f"no runs recorded in the last {days} days",
+        )
+
+    def _cost(self, days: int, top: int) -> CommandOutcome:
+        """`/cost`: the window's model spend, per model, its dearest run and its dearest bills."""
+        reports = self._repo.list_runs(since=self._clock.now() - dt.timedelta(days=days))
+        usage: dict[str, TokenUsage] = {}
+        for report in reports:
+            for model, spent in report.llm_usage.items():
+                usage[model] = usage.get(model, TokenUsage()).plus(spent)
+        snapshot = SpendSnapshot(
+            days=days,
+            runs=len(reports),
+            usage=usage,
+            dearest=max(reports, key=lambda r: cost_usd(r.llm_usage) or 0.0) if reports else None,
+            priciest=tuple(self._repo.most_expensive_analyses(limit=top)) if top else (),
+        )
+        return CommandOutcome(
+            status=OutcomeStatus.SPENT,
+            spend=snapshot,
+            note=f"{len(reports)} run(s) in {days} days",
         )
 
     def _find(self, query: str) -> CommandOutcome:

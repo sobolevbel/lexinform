@@ -32,6 +32,15 @@ on:
     types: [inbox]
   workflow_dispatch:
     inputs:
+      command:
+        description: "Which lexinform command this run is. `run` is the whole day; the others are one phase of it."
+        type: choice
+        options: [run, scan, track, reprefilter, index-rcl-numbers]
+        default: run
+      options:
+        description: "Its own flags, exactly as the CLI takes them (--no-publish --min-score 4). The relay checks every value before it sends one."
+        required: false
+        default: ""
       since:
         description: "Only bills modified since (YYYY-MM-DD). Leave empty for the automatic watermark."
         required: false
@@ -159,6 +168,10 @@ jobs:
           INPUT_SINCE: ${{ inputs.since }}
           INPUT_INDEX_RCL_SINCE: ${{ inputs.index_rcl_since }}
           INPUT_DRY_RUN: ${{ inputs.dry_run }}
+          # Through the environment and never interpolated into the script: the Actions tab lets
+          # a human type anything here, and `${{ }}` in a `run:` block is that text becoming code.
+          INPUT_COMMAND: ${{ inputs.command }}
+          INPUT_OPTIONS: ${{ inputs.options }}
           EVENT_NAME: ${{ github.event_name }}
           INBOX_PRESENT: ${{ steps.inbox.outputs.present }}
         run: |
@@ -173,10 +186,19 @@ jobs:
             uv run --frozen --no-dev lexinform commands
             exit 0
           fi
+          # The relay names one phase of a run the way the operator asked for it (/scan, /track,
+          # /reprefilter, /index-rcl-numbers); the schedule and the button name nothing and get
+          # the whole day. `$INPUT_OPTIONS` is split into words on purpose: it is a flag list.
+          COMMAND="${INPUT_COMMAND:-run}"
           ARGS=()
-          if [ -n "$INPUT_SINCE" ]; then ARGS+=(--since "$INPUT_SINCE"); fi
-          if [ "$INPUT_DRY_RUN" = "true" ]; then ARGS+=(--dry-run); fi
-          uv run --frozen --no-dev lexinform run "${ARGS[@]}"
+          if [ -n "${INPUT_OPTIONS:-}" ]; then ARGS+=($INPUT_OPTIONS); fi
+          if [ "$COMMAND" = "run" ] && [ -n "$INPUT_SINCE" ]; then ARGS+=(--since "$INPUT_SINCE"); fi
+          # Only `run` and `track` take a dry run, and it is the same input that keeps the
+          # state branch unpushed, so the two can never disagree about what this run persisted.
+          if [ "$INPUT_DRY_RUN" = "true" ] && { [ "$COMMAND" = "run" ] || [ "$COMMAND" = "track" ]; }; then
+            ARGS+=(--dry-run)
+          fi
+          uv run --frozen --no-dev lexinform "$COMMAND" "${ARGS[@]}"
 
       # Runs even when the run step was cancelled by the job timeout: whatever was posted is in the
       # database and must be saved, otherwise the next run would post it again.

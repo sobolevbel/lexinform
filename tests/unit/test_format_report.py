@@ -10,12 +10,14 @@ from lexinform.adapters.telegram_format import MessageFormatter, fit, length, sh
 from lexinform.models import (
     AnalysisVerdict,
     BillStatus,
+    CommandName,
     CommandOutcome,
     IncomingCommand,
     OutcomeStatus,
     ProcessDetail,
     RunMode,
     RunReport,
+    SpendSnapshot,
     StatusSnapshot,
     TokenUsage,
 )
@@ -280,6 +282,34 @@ def test_forget_reply_names_the_message_that_was_dropped(process_3039: ProcessDe
     assert "card posted" not in text  # nothing went out in its place
 
 
+def test_runs_reply_gives_each_run_its_own_row() -> None:
+    formatter = MessageFormatter("ru")
+    outcome = CommandOutcome(status=OutcomeStatus.LISTED, runs=(_report(),), note="1 run(s)")
+
+    text = formatter.command_reply(_incoming("/runs days=7"), outcome).text
+
+    assert_telegram_html(text)
+    assert text.startswith("🏃 <b>runs</b>")
+    assert "77/2/2/1 disc·anal·publ·upd" in text and "1 error(s)" in text
+
+
+def test_cost_reply_breaks_the_spend_down_by_model_and_by_bill(
+    process_3039: ProcessDetail,
+) -> None:
+    report = _report()
+    snapshot = SpendSnapshot(
+        days=7, runs=1, usage=report.llm_usage, dearest=report, priciest=(bill_of(process_3039),)
+    )
+    outcome = CommandOutcome(status=OutcomeStatus.SPENT, spend=snapshot)
+
+    text = MessageFormatter("ru").command_reply(_incoming("/cost days=7"), outcome).text
+
+    assert_telegram_html(text)
+    assert "over 1 run(s) in 7 days" in text
+    assert "<b>opus-5</b>" in text and "<b>sonnet-5</b>" in text
+    assert "dearest run" in text and "<b>druk nr 3039</b>" in text
+
+
 def test_help_reply_lists_the_commands_after_the_complaint() -> None:
     formatter = MessageFormatter("ru")
     outcome = CommandOutcome(status=OutcomeStatus.HELP, note="unknown command /delete")
@@ -288,7 +318,9 @@ def test_help_reply_lists_the_commands_after_the_complaint() -> None:
 
     assert_telegram_html(text)
     assert "unknown command /delete" in text
-    assert "<code>/analyze BILL force</code>" in text and "<code>/help</code>" in text
+    assert "<code>/help</code>" in text
+    for name in CommandName:
+        assert f"/{name}" in text, f"the help does not name /{name}"
 
 
 def test_run_report_lists_the_commands_handled() -> None:

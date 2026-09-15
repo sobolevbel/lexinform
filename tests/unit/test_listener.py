@@ -73,6 +73,29 @@ def test_run_starts_the_workflow_instead_of_being_filed() -> None:
     assert "since=2026-09-01, dry_run=true" in ack.started_notes[0]
 
 
+def test_every_phase_of_a_run_starts_the_workflow_and_is_not_filed() -> None:
+    """`/scan`, `/track`, `/reprefilter` and `/index-rcl-numbers` are runs like `/run` is: each
+    names the CLI command `daily.yml` executes, so none of them ever reaches the inbox."""
+    posts = [
+        channel_post(1, "/scan since=2026-09-01"),
+        channel_post(2, "/track dry"),
+        channel_post(3, "/reprefilter limit=200 text_skipped"),
+        channel_post(4, "/index-rcl-numbers since=2023-11-01"),
+    ]
+    writer, ack = FakeInboxWriter(), FakeAcknowledger()
+
+    filed = _listener(FakeUpdates(posts), writer, ack).poll_once()
+
+    assert filed == 4 and writer.filed == []
+    assert writer.started == [
+        {"command": "scan", "options": "--since 2026-09-01"},
+        {"command": "track", "dry_run": "true"},
+        {"command": "reprefilter", "options": "--limit 200 --include-text-skipped"},
+        {"command": "index-rcl-numbers", "options": "--since 2023-11-01"},
+    ]
+    assert ack.started_notes[0].startswith("scan started")
+
+
 def test_a_misspelled_run_option_is_answered_and_starts_nothing() -> None:
     """Telegram redelivers an update until the offset moves past it, so a command that can never
     succeed has to be answered rather than retried."""
