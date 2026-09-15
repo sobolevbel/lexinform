@@ -15,16 +15,8 @@ from lexinform.services.documents import TextLoader
 
 log = logging.getLogger(__name__)
 
-# How many catalogs back from the newest reached stage the bill text is looked for. Measured over
-# the 796 projects of the corpus that carry a readable "Projekt" folder anywhere: the newest
-# reached stage has it for only **209 of them (26%)**, the one below covers **99.25%**, and three
-# cover 99.75% (four would be 100%, for two projects). One was the old value, on the assumption
-# that every stage republishes the current text — true of the stages that work on it, and false of
-# the stage the project ends on: "Skierowanie projektu ustawy do Sejmu" carries the covering letter
-# to the Marshal and no "Projekt" folder at all. Nine projects were closed as "no document to read"
-# by a single run because of it (production, 15 Sept 2026; RCL/12400301, RCL/12410100 and
-# RCL/12405302 all have a bill two catalogs down). The loop stops at the first catalog that has the
-# text, so the extra pages are paid only where the answer used to be wrong.
+# Over the 796 corpus projects with a readable "Projekt" folder, the newest reached stage has it
+# for 209 (26%), the one below brings it to 99.25%, a third to 99.75%.
 TEXT_STAGE_ATTEMPTS = 3
 
 
@@ -47,12 +39,10 @@ class RclProjectReader:
         """The newest stage that carries the bill text, reading at most `TEXT_STAGE_ATTEMPTS`
         catalogs backwards and stopping at the first that has it.
 
-        The stages that *work* on a project republish the current text in their own "Projekt"
-        folder, so the newest of those is enough — but the stage a project ends on does not: the
-        hand-over to the Sejm carries the covering letter to the Marshal and nothing else. See
-        `TEXT_STAGE_ATTEMPTS` for how far back that is worth looking and what it cost to find out;
-        a page takes some ten seconds, which is why it is a small number and not the whole
-        timeline (`complete`)."""
+        The stages that work on a project republish the current text in their own "Projekt"
+        folder; the one it ends on does not — the hand-over to the Sejm carries the covering
+        letter to the Marshal and nothing else. A page takes some ten seconds, which is why this
+        is a few catalogs and not the whole timeline (`complete`)."""
         for stage in list(reversed(project.reached_stages))[:TEXT_STAGE_ATTEMPTS]:
             read = self._rcl.get_stage(project.id, stage.id)
             project = project.with_stage(read)
