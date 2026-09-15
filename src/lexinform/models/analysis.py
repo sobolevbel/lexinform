@@ -58,11 +58,9 @@ class TokenUsage(BaseModel):
 class AnalysisRecord(BaseModel):
     """A stored analysis: the model's answer plus how it was obtained (model, text, tokens).
 
-    `text_sha256` is the digest of the trimmed, budgeted, whitespace-normalised text the model
-    saw, so that a document republished under a new URL with the same text is not analysed again.
-    `source_checked_at` is when the source was last found unchanged — a print re-dated by an
-    attachment, a republished RCL file — and the print's `changeDate` is compared with it, not
-    with `created_at`.
+    `text_sha256` is the digest of the normalised text the model saw, so a document republished
+    under a new URL is not analysed again. `source_checked_at` is when the source was last found
+    unchanged, and the print's `changeDate` is compared with it rather than with `created_at`.
     """
 
     analysis: Analysis
@@ -194,10 +192,8 @@ class JointContext(BaseModel):
     """What the model sees to compare one print with the others considered jointly with it: the
     channel's own description of each, and no bill text at all.
 
-    The texts were read once, each by its own analysis; asking the difference of them again would
-    cost a second full reading of every print in the group for an answer the descriptions already
-    carry. It is also the reader's own question — the card is what they read, so what they want
-    to know is how this print differs from what the card told them.
+    Each text was read once already, and the card is what the reader has: the question is how this
+    print differs from what the card told them, which the descriptions carry.
     """
 
     subject: JointBillDescription
@@ -278,9 +274,8 @@ class SupplementRecord(BaseModel):
     carries it: what the document is (`number` and `title` are the additional print's own), and
     what the model made of it.
 
-    `digest` is None when the document could not be read or the model call failed. The reply then
-    names the document and links it — a scan of an opinion is still news, and dropping it would
-    lose it for good, since the run records it as told either way.
+    `digest` is None when the document could not be read or the call failed; the reply still names
+    and links it, the run recording it as told either way.
     """
 
     number: str
@@ -334,12 +329,9 @@ class TriageContext(BaseModel):
     """What the triage model sees: metadata plus excerpts of the text, never the whole print;
     `text_chars` is the length of the full (trimmed) text they were taken from.
 
-    `scan` is the first pages of a document that has no text to excerpt. Much of what the Sejm
-    files is signed paper, and such a print used to skip the cheap pass entirely and go straight
-    to the expensive model, because the pass is gated on how long the text is and a scan's text
-    is the letter that hands it to the Marshal. A few pages are enough for the question the
-    triage asks — measured over the term (14 Sept 2026): 317 scanned documents, 7,763 pages, and
-    18 of 18 asked through this path were rejected correctly at a mean confidence of 0.93.
+    `scan` is the first pages of a document with no text to excerpt. A few are enough for the
+    question the triage asks: of 18 real scans asked this way, 18 were rejected correctly at a
+    mean confidence of 0.93.
     """
 
     number: str

@@ -58,14 +58,10 @@ class ConsultationWindow(BaseModel):
 class Bill(BaseModel):
     """One row of the `bills` table: everything we know and decided about a bill.
 
-    `submission` is the `/bills` entry (consultation dates, applicant, RPW number), `rcl` the
-    project followed before the Sejm, `wykaz` the register entry of a bill the government has
-    only announced, `act` the published act once Dziennik Ustaw has it. A row keeps the numbers
-    of its other lives: `linked_number` is the print an RPW entry or an RCL project became (and
-    the other way round), `linked_wykaz_number` the wykaz number a print carries on so that the
-    card keeps its tag. `discontinued_at` is stamped when a Sejm term ended with the bill
-    unfinished (zasada dyskontynuacji): nothing more can happen to it under this number, so it is
-    neither tracked nor analysed again.
+    A row keeps the numbers of its other lives: `linked_number` is the print an RPW entry or an
+    RCL project became and the other way round, `linked_wykaz_number` the wykaz number a print
+    carries on so the card keeps its tag. `discontinued_at` is stamped when a term ended with the
+    bill unfinished (zasada dyskontynuacji): nothing more can happen to it under this number.
     """
 
     summary: ProcessSummary
@@ -123,12 +119,9 @@ class Bill(BaseModel):
     def last_stage(self) -> Stage | None:
         """Where the bill stands; `process_stages` names the nodes that do not answer that.
 
-        The *top-level* stage, never a child of it: what the Sejm did to the bill is the parent,
-        and its children are the paperwork that followed. Druk 2842, read on 2026-09-13: the
-        President vetoed it on 28.08 and the Sejm referred his motion to two committees on 03.09,
-        as children of the `Veto` node — so the newest node of the flattened tree is
-        "Skierowanie", and a card that named it said "направлен в комиссию ENM" over a bill whose
-        news was the veto, without the word appearing anywhere.
+        The *top-level* stage, never a child of it: what the Sejm did is the parent, its children
+        the paperwork that followed. The newest node of a flattened tree is one of those, so druk
+        2842's card said «направлен в комиссию ENM» over a bill whose news was a veto.
         """
         top = process_stages(self.stages)
         return top[-1] if top else None
@@ -203,13 +196,9 @@ def end_names_veto_sustained(stage: Stage) -> bool:
 def veto_stood(stages: tuple[Stage, ...]) -> bool:
     """The Sejm voted on the President's veto and did not reach the 3/5 majority.
 
-    The Sejm's own vote is what settles it, not the `End` node: of the fifteen processes of
-    terms 8-10 whose `PresidentMotionConsideration` decided "nie uchwalona ponownie", **eight**
-    (druki 410, 643, 865, 935, 1109, 1110, 1131 and 1600 of term 10, all closed 2026-03-27) keep
-    `End` = "Uchwalono" and `passed` = true, exactly as if the law had survived. Reading the
-    rename alone left those cards with no ending line at all — `_ended_line` needs one of
-    `discontinued_at`, a veto, an act or `passed is false`, and none of them held — while the
-    closing post was headed «Сейм принял закон» over a law the veto had killed.
+    The Sejm's vote settles it, not the `End` node: of the fifteen processes of terms 8-10 whose
+    `PresidentMotionConsideration` decided "nie uchwalona ponownie", eight keep `End` =
+    "Uchwalono" and `passed` = true, exactly as if the law had survived.
     """
     return any(
         end_names_veto_sustained(stage)
@@ -224,17 +213,12 @@ def veto_stood(stages: tuple[Stage, ...]) -> bool:
 def process_stages(stages: tuple[Stage, ...]) -> list[Stage]:
     """The top-level stages that say where the bill stands.
 
-    Two kinds of node are dropped. `ASIDE_STAGE_TYPES` — the government's position on a deputies'
-    bill, an opinion of local-government bodies — arrive beside the process without moving it,
-    and land last in the tree while the bill sits in committee, so taking one for the current
-    step loses "what comes next" entirely. And `End` ("Uchwalono") is appended at the third
-    reading and kept last while the Senate, the President and Dziennik Ustaw are all still ahead
-    — druk 2799, read on 2026-09-12: III czytanie "uchwalono" on 2026-09-04, `End` already there,
-    no Senate stage and no act — so taking it for the current step marks the reader's last two
-    windows as passed. The `End` of a bill a veto killed says something of its own and stays —
-    the node's own wording decides that, not `veto_stood`, because an `End` still reading
-    "Uchwalono" over a veto that was never overridden says nothing, and the Sejm's vote on the
-    motion, which is the node before it, says everything.
+    Two kinds of node are dropped. `ASIDE_STAGE_TYPES` arrive beside the process without moving
+    it and land last in the tree while the bill sits in committee. And `End` ("Uchwalono") is
+    appended at the third reading and kept last while the Senate, the President and Dziennik
+    Ustaw are all still ahead, so taking it for the current step marks the reader's last two
+    windows as passed. The `End` of a bill a veto killed says something of its own and stays,
+    decided by the node's own wording and not by `veto_stood`.
     """
     top = [st for st in stages if st.stage_type not in ASIDE_STAGE_TYPES]
     if top and top[-1].stage_type == "End" and not end_names_veto_sustained(top[-1]):
