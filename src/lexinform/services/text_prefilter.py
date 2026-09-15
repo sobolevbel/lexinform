@@ -4,10 +4,9 @@ Bills like "o zmianie niektórych ustaw w związku z ..." hide their scope in th
 the PDF costs bandwidth, not tokens, so every title miss gets its text scanned; only bills with
 enough distinct topics or repeated mentions go on to the (paid) LLM analysis.
 
-A file with no text layer is the one case keywords cannot answer, and it is not a reason to drop
-the bill: the model reads such a document as pages. Much of what the Sejm publishes is signed
-paper, and it is the deputies' bills — the ones whose titles say "o zmianie niektórych ustaw"
-most often — that arrive that way, so refusing them here was refusing them at both ends.
+A file with no text layer is the one case keywords cannot answer, and not a reason to drop the
+bill: the model reads it as pages. The prints that arrive as scanned paper are the deputies'
+bills, which are the ones whose titles say "o zmianie niektórych ustaw".
 """
 
 import logging
@@ -147,11 +146,9 @@ class TextPrefilterService:
         """Store the hits (weak ones too, for tuning), the bill's next status and, for a skip,
         the reason (`last_error`): a keyword miss and an unreadable file must stay apart.
 
-        A file with pages and no text goes on to the model unsearched — there is nothing here
-        that can read it, and the per-bill cost guard is what bounds the decision.
-
-        A file the host would not hand over is neither: the bill stays pending with the reason on
-        file, and the next run asks again.
+        A file with pages and no text goes to the model unsearched, bounded by the per-bill cost
+        guard. A file the host would not hand over is neither: the bill stays pending and the next
+        run asks again.
         """
         if loaded.unanswered:
             self._repo.set_status(

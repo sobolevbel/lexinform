@@ -229,13 +229,10 @@ class DailyPipeline:
         """New bills come from the current Sejm; the queues and the tracking are not scoped to a
         term, because every row carries its own.
 
-        The order is what the phases need of each other. The end of a term comes first, before
-        discovery sees the old rows: the unfinished bills of the older terms lapsed (announced
-        once) and the government's rows follow the Sejm — idempotent, so it runs every time. The
-        commands come before discovery, so that a card one of them posts is followed by this
-        run's tracking. The wykaz comes before RCL, so that a project published today joins the
-        thread of its own plan, and RCL is a phase of its own so that an outage there costs the
-        Sejm discovery nothing.
+        The order is what the phases need of each other: the end of a term before discovery sees
+        the old rows, the commands before discovery so a card one posts is tracked by this run,
+        the wykaz before RCL so a project joins its own plan's thread, and RCL a phase of its own
+        so an outage there costs the Sejm discovery nothing.
         """
         previous = [term for term in self._repo.known_terms() if term < current]
         if previous:

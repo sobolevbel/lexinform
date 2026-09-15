@@ -211,12 +211,9 @@ def reprefilter(
     newest text on legislacja.rcl.gov.pl (a skipped project keeps no documents, they are read
     again).
 
-    Bills that pass become analysis candidates for the next `run` (use `run --no-publish` after a
-    large backfill to avoid flooding the channel).
-
-    A bill the operator silenced is left alone: `/skip` writes `SKIPPED_PREFILTER` like a keyword
-    miss, and re-scanning it is the one thing `/skip` promises will not happen. `/unskip` is the
-    way back.
+    Bills that pass become analysis candidates for the next `run`. A bill the operator silenced is
+    left alone: `/skip` writes `SKIPPED_PREFILTER` like a keyword miss, and re-scanning it is the
+    one thing `/skip` promises will not happen (`/unskip` is the way back).
     """
     c = _container()
     report = BackfillReport(
@@ -636,11 +633,9 @@ def republish(
 ) -> None:
     """Post the card of a bill again (after a failed, unknown or accidentally deleted post).
 
-    Forgets the channel's `new_bill` publication row and sends the card through the normal
-    path, so the pending-before-send protocol and the retry bookkeeping still apply. Updates,
-    act notices and reminders keep replying to the new card from now on. A bill considered
-    jointly with one that has a card gets its "alternative bill" reply again rather than a card:
-    both rows are forgotten, and the normal path decides which it is.
+    Forgets the channel's `new_bill` row and sends the card through the normal path, so the
+    pending-before-send protocol still applies and later replies hang under the new card. A print
+    considered jointly with a carded one gets its reply again: the normal path decides which.
     """
     c = _container()
     try:
@@ -672,10 +667,9 @@ def forget(
 ) -> None:
     """Drop the card the channel remembers for a bill, and post nothing in its place.
 
-    For a card whose message was deleted from the channel by hand: the row goes on saying
-    `sent`, so the bill stays followed, the refresher edits a message that is not there once a
-    run, and an update would reply under nothing. `republish` clears the same rows by sending
-    the card again, which is the wrong answer when the message was deleted on purpose.
+    For a card deleted from the channel by hand: the `sent` row keeps the bill followed and the
+    refresher edits a message that is not there once a run. `republish` clears the same rows by
+    sending the card again, which is wrong when it was deleted on purpose.
 
     Both card kinds go, the card and the "alternative bill" reply, so what the bill gets next
     is the publishing rule's decision: an analysed, relevant, important enough bill is a

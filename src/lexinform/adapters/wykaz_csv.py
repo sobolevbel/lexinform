@@ -1,13 +1,11 @@
 """The wykaz prac legislacyjnych i programowych RM, as gov.pl publishes it: one CSV.
 
-`https://www.gov.pl/web/premier/wplip-rm` renders the register client-side and offers the whole
-of it as `/register-file/Rejestr_{id}.csv` (10.5 MB, 2.8 MB compressed, 1454 rows in September
-2026). The id is in the page (`registerVue-20874195`); it is read from there so that a new
-register does not need a release, and falls back to the known one when the page cannot be read.
+`gov.pl/web/premier/wplip-rm` renders the register client-side and offers the whole of it as
+`/register-file/Rejestr_{id}.csv` (10.5 MB, 1454 rows). The id is read from the page so a new
+register needs no release, falling back to the known one.
 
-Semicolon-separated, quoted, with multi-line paragraphs in two of the columns. The header names
-are the statutory wording of art. 3 ust. 2 of the lobbying act and are matched by prefix, because
-they are long and the register's editors have changed their punctuation before.
+Semicolon-separated and quoted, with multi-line paragraphs in two columns. The header names are
+the statutory wording of art. 3 ust. 2 and are matched by prefix: the editors repunctuate them.
 """
 
 import csv
