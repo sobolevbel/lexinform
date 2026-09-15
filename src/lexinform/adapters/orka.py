@@ -1,25 +1,18 @@
 """Downloads from orka.sejm.gov.pl: the file of a bill the Sejm has received but not numbered.
 
 Its own client rather than the Sejm API's, because it is its own site: Lotus Domino behind
-Imperva, built for people with browsers. Three things follow, and all three were measured on
-2026-09-12 (`.github/workflows/orka-probe.yml`):
+Imperva, built for people with browsers. Three things follow (`.github/workflows/orka-probe.yml`):
 
-- it is told a browser's identity (`browser_identity`), the one legislacja.rcl.gov.pl is told;
-- it is given a cookie jar and follows redirects, because the first answer is a 302 to the same
-  URL that sets `visid_incap_*` / `incap_ses_*`, and a client that keeps neither loops until it
-  gives up — which is what "the file is not downloadable" turned out to mean all along;
+- it is told a browser's identity, header order included (`browser_identity`);
+- it is given a cookie jar and follows redirects: the first answer is a 302 to the same URL that
+  sets `visid_incap_*` / `incap_ses_*`, and a client keeping neither loops until it gives up;
 - every failure is an `OrkaUnreachableError`, a per-bill problem: this host judges callers by
-  address as well as identity, and everything else the analysis reads comes from api.sejm.gov.pl.
+  address as well as identity, and everything else the analysis reads is api.sejm.gov.pl.
 
-What this host refuses is a request that does not look like a browser's, and the **order** of
-the headers is part of that (`browser_identity`): on 2026-09-14 four production runs were each
-answered 403 while curl from the same runners was served the file, and the difference was httpx
-naming `Accept-Encoding` and `Connection` before `User-Agent`. A refusal is retried all the
-same — a WAF decision can also be momentary, and the first answer from an address that has just
-been served the file is not the answer it gives a cold one — and it carries the WAF's own
-identifiers (Imperva's incident id, the F5's support id, `x-iinfo`), because a 403 with nothing
-to quote costs a session to diagnose. Only a 404 is about the bill: the address is built by
-convention and can simply be wrong.
+A refusal is retried, a WAF decision being momentary as well as structural, and it carries the
+WAF's own identifiers (Imperva's incident id, the F5's support id, `x-iinfo`), because a 403 with
+nothing to quote costs a session to diagnose. Only a 404 is about the bill: the address is built
+by convention and can simply be wrong.
 """
 
 import logging

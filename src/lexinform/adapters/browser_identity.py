@@ -1,31 +1,17 @@
 """The identity this bot presents to every Polish government site it reads: a browser's.
 
-Two of the four hosts judge their clients. legislacja.rcl.gov.pl answers a client it dislikes
-with "Request Rejected" under HTTP 200, and orka.sejm.gov.pl, behind Imperva, answers the name of
-a tool ("curl/8.x") with 403 from a home address and with its challenge page — again HTTP 200,
-text/html — from a GitHub runner. What those WAFs look at is the kind of client, not its version:
-measured against both hosts on 2026-09-12, Chrome 128, Chrome 140 and Firefox 142 all get the
-document. A version going stale is therefore not a thing that breaks; sending no browser is.
+legislacja.rcl.gov.pl and orka.sejm.gov.pl judge their clients, and both score the *kind* of
+client and not its version: Chrome 128, Chrome 140 and Firefox 142 all get the document. A stale
+version is not what breaks; sending no browser is.
 
-**The shape of the request is part of the identity, and the header order is the shape.** Measured
-on 2026-09-14, when every orka request of four production runs was answered 403 while curl from
-the same runners was served the file: it is not the address (ten runners, ten addresses, all
-refused), not the protocol (HTTP/2 refused too), not the cookies or the redirect, and not the TLS
-hello — a raw socket on Python's own `ssl`, sending curl's bytes, was let through. It is that
-httpx puts its own defaults first, so the request said `Accept-Encoding` and `Connection` before
-`User-Agent`, which no Chrome has ever done. Sent in the browser's own order and casing, the same
-client on three cold addresses was served the file three times out of three.
+**The header order is part of the identity.** Four production runs were answered 403 while curl
+from the same runners was served the file, and it was neither the address, the protocol, the
+cookies nor the TLS hello: httpx wrote its own defaults first, so the request said
+`Accept-Encoding` and `Connection` before `User-Agent`, which no Chrome does. So `BROWSER_HEADERS`
+is an **ordered** mapping, and `browser_headers(accept=…)` replaces that one header in place
+rather than moving it. `Accept-Encoding` names only what httpx can decode unaided.
 
-So `BROWSER_HEADERS` is an **ordered** mapping and the order is the point: httpx only fills in
-`Accept-Encoding` and `Connection` when the caller has not, and it keeps what it is given where
-it is given. `browser_headers(accept=...)` replaces `Accept` in place, because that one header is
-each client's own business (the API speaks JSON, the register is a CSV) and moving it would undo
-the shape. `Accept-Encoding` names only what httpx can decode without another dependency; a
-browser also offers `br`, and an answer we cannot read is worse than one byte of difference.
-
-The other two hosts (api.sejm.gov.pl, www.gov.pl) have nothing in front of them and would take
-any identity. They are told the same one all the same: one string to keep current, and no host
-that starts scoring its callers can catch this bot out for the sake of a line of code.
+api.sejm.gov.pl and www.gov.pl would take any identity and are told the same one anyway.
 """
 
 BROWSER_USER_AGENT = (
