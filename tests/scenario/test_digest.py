@@ -2,9 +2,20 @@
 
 from typing import Any
 
-from lexinform.models import PublicationKind, RunMode, RunReport, iso_week
+from lexinform.container import Container
+from lexinform.keywords import KeywordPrefilter
+from lexinform.models import (
+    DIGEST_NUMBER,
+    DIGEST_TERM,
+    PublicationKind,
+    RunMode,
+    RunReport,
+    iso_week,
+)
 from lexinform.services.digest import DigestService
-from tests.harness import CHANNEL, COMMITTEE_STAGES, SUPPORT_URL, TERM, World
+from lexinform.services.terms import TermResolver
+from lexinform.settings import Settings
+from tests.harness import CHANNEL, COMMITTEE_STAGES, SUPPORT_URL, World
 
 TITLE = "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach"
 # The World's clock starts on Monday 2026-09-07; the digest's day is the Sunday that ends it.
@@ -64,7 +75,9 @@ def test_the_draft_carries_the_button_and_the_channel_has_nothing_yet() -> None:
         "📣 Publish to the channel",
         f"digest:{iso_week(w.clock.now().date())}",
     )
-    assert w.repo.get_publication(TERM, "DIGEST", PublicationKind.DIGEST, CHANNEL) is None
+    assert (
+        w.repo.get_publication(DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, CHANNEL) is None
+    )
 
 
 def test_the_week_is_drafted_once_however_many_runs_the_sunday_has() -> None:
@@ -94,7 +107,9 @@ def test_the_button_publishes_the_week_to_the_readers_channel() -> None:
     assert report.commands == [
         f"/digest publish ref={ref} → digest (message 103): {ref} posted to the channel"
     ]
-    published = w.repo.get_publication(TERM, "DIGEST", PublicationKind.DIGEST, CHANNEL, ref=ref)
+    published = w.repo.get_publication(
+        DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, CHANNEL, ref=ref
+    )
     assert published is not None and published.message_id is not None
     assert len(_drafts(w)) == 2  # the draft, and the copy the readers got
 
@@ -167,6 +182,78 @@ def test_a_week_without_a_month_behind_it_carries_no_figures() -> None:
 
     (draft,) = _drafts(w)
     assert "Итоги месяца" not in draft
+
+
+def test_without_a_technical_channel_there_is_no_digest_at_all() -> None:
+    """The draft must never land in the readers' channel: `telegram_publisher("")` aims there,
+    so "no log channel" has to mean "no digest", not "draft to whoever is left"."""
+    w = World()
+    real = Container(
+        settings=Settings(
+            _env_file=None,
+            telegram_bot_token="TOKEN",
+            telegram_channel_id="-100999",
+            telegram_log_channel_id="",
+        ),
+        clock=w.clock,
+        repo=w.repo,
+        gateway=w.gateway,
+        formatter=w.formatter,
+        prefilter=KeywordPrefilter(),
+        terms=TermResolver(w.gateway, w.repo),
+    )
+
+    assert real.digest_service(dry_run=False) is None
+
+
+def test_a_draft_that_telegram_refuses_is_reported_as_failed_not_as_sent() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    _sunday(w)
+    w.publisher.fail_on = {DIGEST_NUMBER}
+
+    report = w.run()
+
+    assert report.digest_drafted is False
+    assert any("digest" in e and "not posted" in e for e in report.errors)
+    assert _drafts(w) == []
+
+
+def test_a_digest_the_command_could_not_post_says_so() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    _sunday(w)
+    ref = iso_week(w.clock.now().date())
+    w.publisher.fail_on = {DIGEST_NUMBER}
+    w.command(f"/digest publish ref={ref}")
+
+    report = _commands_only(w)
+
+    assert report.commands == [
+        f"/digest publish ref={ref} → error: {ref} was not posted, see the log"
+    ]
+    assert report.commands_failed == 1
+
+
+def test_the_week_asked_for_is_the_last_one_that_ended_whatever_day_the_digest_goes_out() -> None:
+    """An ISO week ends on a Sunday whatever `digest_weekday` says; a Monday digest was drafting
+    the week that had just begun."""
+    w = World()
+    service = DigestService(
+        w.repo,
+        w.publisher,
+        w.publisher,
+        w.clock,
+        channel_id=CHANNEL,
+        draft_channel_id="console",
+        approve_label="publish",
+        weekday=0,  # Monday, which the settings allow
+    )
+
+    assert w.clock.now().weekday() == 0  # the World starts on a Monday
+    assert service.current_ref() == "2026-W36"  # the week that ended yesterday, not today's
 
 
 def test_the_service_answers_for_the_week_that_has_just_ended() -> None:

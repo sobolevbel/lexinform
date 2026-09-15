@@ -124,6 +124,7 @@ COMMAND_HELP = (
 FULL_FACTS = frozenset({OutcomeStatus.SHOWN, OutcomeStatus.REFRESHED})
 
 DIGEST_TITLE_CHARS = 90
+DIGEST_MAX_PER_SECTION = 10
 # The button under the draft, in the operator's language like everything else in that channel.
 APPROVE_DIGEST = "📣 Publish to the channel"
 # English, like every other line the technical channel gets; the digest under it is the reader's.
@@ -1221,16 +1222,27 @@ class MessageFormatter:
             f"{self.fmt_date(week.since)} — {self.fmt_date(week.until)}"
         )
         body = [
-            _block(lb.digest_cards, [self._digest_card(e) for e in week.cards]),
-            _block(lb.digest_updates, [self._digest_update(e) for e in week.updates]),
-            _block(lb.digest_consultations, [self._digest_window(w) for w in week.consultations]),
-            _block(lb.digest_sittings, [self._digest_sitting(w) for w in week.sittings]),
+            self._digest_block(lb.digest_cards, week.cards, self._digest_card),
+            self._digest_block(lb.digest_updates, week.updates, self._digest_update),
+            self._digest_block(lb.digest_consultations, week.consultations, self._digest_window),
+            self._digest_block(lb.digest_sittings, week.sittings, self._digest_sitting),
         ]
         if week.is_empty:
             body = [esc(lb.digest_quiet)]
         tail = [self._month_block(week.month), self._support_block(), esc(lb.tag_digest)]
         head_blocks = [head, DIGEST_DRAFT_NOTE] if draft else [head]
         return RenderedMessage(text=self._assemble(head_blocks, flexible=body, tail=tail))
+
+    def _digest_block[T](self, title: str, items: Sequence[T], row: Callable[[T], str]) -> str:
+        """One section, capped, and saying how many it left out: a week of 14 cards showed ten
+        and told the reader nothing about the other four."""
+        lines = [text for item in items[:DIGEST_MAX_PER_SECTION] if (text := row(item))]
+        if not lines:
+            return ""
+        left = len(items) - len(lines)
+        if left > 0:
+            lines.append(f"• {esc(self._labels.digest_and_more.format(left))}")
+        return "\n".join([f"<b>{esc(title)}</b>", *lines])
 
     def _digest_card(self, entry: DigestEntry) -> str:
         score = f"{score_icon(entry.score)} {entry.score}/5 " if entry.score is not None else ""
@@ -1248,18 +1260,28 @@ class MessageFormatter:
         return f"• {self._digest_ref(entry)} — {esc(said)}"
 
     def _digest_window(self, window: Upcoming) -> str:
+        """The section a reader acts on, so it says what the bill is: a bare number and a date
+        told them nothing, and a numeric channel gives the number no link either."""
         left = ""
         if window.deadline is not None:
             days = (window.deadline - self._today()).days
-            left = f" — {self.fmt_date(window.deadline)}{self._countdown(days)}"
-        return f"• {self._digest_ref(window)}{left}"
+            left = f" · {self.fmt_date(window.deadline)}{self._countdown(days)}"
+        title = esc(_clip(window.title, DIGEST_TITLE_CHARS))
+        return f"• {self._digest_ref(window)} — {title}{left}"
 
     def _digest_sitting(self, window: Upcoming) -> str:
+        """A sitting the committee called conditionally is marked as the card marks it: 21 of
+        term 10 happen only if the Sejm refers something first, and a digest that states one as
+        a settled date is the reason the rule exists. A plenary sitting names itself in
+        `_agenda_when`, so naming it here as well said «Заседание Сейма, Заседание Сейма 65»."""
         item = window.sitting
         if item is None:
             return ""
-        where = item.committee_name or item.committee_code or self._labels.sejm_sitting
-        return f"• {self._digest_ref(window)} — {esc(where)}, {self._agenda_when(item)}"
+        where = (
+            f"{esc(item.committee_name or item.committee_code)}, " if item.committee_code else ""
+        )
+        mark = f" ({esc(self._labels.agenda_conditional_short)})" if item.condition else ""
+        return f"• {self._digest_ref(window)} — {where}{self._agenda_when(item)}{mark}"
 
     def _digest_ref(self, entry: DigestEntry | Upcoming) -> str:
         """How the digest names a bill: its number as its own card names it (a government
@@ -2448,12 +2470,6 @@ def _section(icon: str, title: str, *lines: str, empty: str = "") -> str:
     when there are none."""
     rows = [line for line in lines if line] or ([empty] if empty else [])
     return "\n".join([f"{icon} <b>{esc(title)}</b>", *rows])
-
-
-def _block(title: str, rows: list[str]) -> str:
-    """A titled list of rows, or nothing at all when the week held none of them."""
-    kept = [row for row in rows if row]
-    return "\n".join([f"<b>{esc(title)}</b>", *kept]) if kept else ""
 
 
 def _counters(*items: tuple[str, int]) -> str:

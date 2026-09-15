@@ -1027,7 +1027,7 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         # goes, or the restore would replay them over objects the dump had already made.
         conn.execute("DROP TABLE rcl_wykaz_numbers")
         conn.execute("DROP INDEX ux_pub_digest")
-        conn.execute("DROP INDEX ix_pub_sent_at")
+        conn.execute("DROP INDEX ix_pub_channel_sent")
         conn.execute("PRAGMA user_version = 20")
     dump = source.dump()
     source.close()

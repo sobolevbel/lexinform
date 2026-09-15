@@ -218,6 +218,7 @@ class Labels:
     digest_month_published: str
     digest_month_cost: str
     digest_support: str
+    digest_and_more: str
     digest_support_coffee: str
     digest_support_sponsor: str
     tag_digest: str
@@ -524,6 +525,7 @@ RU = Labels(
     digest_month_published="опубликовано карточек",
     digest_month_cost="расходы на модель",
     digest_support="Канал бесплатный и без рекламы. Если он вам полезен — можно поддержать:",
+    digest_and_more="и ещё {} — смотрите в канале",
     digest_support_coffee="Buy me a coffee",
     digest_support_sponsor="GitHub Sponsors",
     tag_digest="#дайджест",
@@ -1144,6 +1146,7 @@ EN = Labels(
     digest_month_published="cards published",
     digest_month_cost="spent on the model",
     digest_support="The channel is free and carries no advertising. If it helps you:",
+    digest_and_more="and {} more — see the channel",
     digest_support_coffee="Buy me a coffee",
     digest_support_sponsor="GitHub Sponsors",
     tag_digest="#digest",

@@ -651,8 +651,14 @@ def digest(
         done = service.publish(week) if publish else service.draft(week)
     finally:
         c.close()
+    if done.failed:
+        typer.echo(done.note, err=True)
+        raise typer.Exit(code=1)
     where = "channel" if publish else "technical channel"
-    typer.echo(done.note or f"{done.ref} posted to the {where} as message {done.message_id}")
+    sent = done.published or done.drafted
+    typer.echo(
+        f"{done.ref} posted to the {where} as message {done.message_id}" if sent else done.note
+    )
 
 
 @app.command()

@@ -11,8 +11,12 @@ from lexinform.models.report import RunReport
 from lexinform.models.sejm import AgendaItem
 
 DIGEST_NUMBER = "DIGEST"
-"""The sentinel a digest's publication row carries: `term`/`number` are NOT NULL and every other
-unique index of the table is keyed on them, so the digest gets its own on `(channel, kind, ref)`."""
+DIGEST_TERM = 0
+"""The sentinels a digest's publication row carries, both meaning "no bill": `term`/`number` are
+NOT NULL, so the row fills them with values no bill has and is keyed on `(channel, kind, ref)`
+instead. The term is a constant and not the current kadencja on purpose — `create_publication`
+looks its row up by term, so a term that moved between two drafts of one week found no row where
+the unique index had just updated one, and asserted."""
 
 WEEK_REF_FORMAT = "%G-W%V"
 
@@ -129,7 +133,6 @@ class Digest(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     ref: str
-    term: int
     since: dt.date
     until: dt.date
     cards: tuple[DigestEntry, ...] = ()

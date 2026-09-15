@@ -37,7 +37,7 @@ from lexinform.models import (
 from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier, Publisher
 from lexinform.pricing import cost_usd
 from lexinform.services.analysis import AnalysisService, TooExpensiveError
-from lexinform.services.digest import DigestService
+from lexinform.services.digest import DigestResult, DigestService
 from lexinform.services.joint import primary_of
 from lexinform.services.lookup import BillLookup, BillNotFoundError
 from lexinform.services.publishing import PublishingService
@@ -719,17 +719,27 @@ class CommandService:
         ref = command.options.get("ref") or self._digest.current_ref()
         if not command.publish:
             done = self._digest.draft(ref)
-            note = done.note or f"draft of {ref} is in this channel; press the button to send it"
-            return CommandOutcome(
-                status=OutcomeStatus.DIGESTED, note=note, message_id=done.message_id
+            return self._digest_outcome(
+                done,
+                done.drafted,
+                f"draft of {ref} is in this channel; press the button to send it",
             )
         if not publish:
             return CommandOutcome(
                 status=OutcomeStatus.DIGESTED, note=f"{ref} not posted: this run does not publish"
             )
         done = self._digest.publish(ref)
-        note = done.note or f"{ref} posted to the channel"
-        return CommandOutcome(status=OutcomeStatus.DIGESTED, note=note, message_id=done.message_id)
+        return self._digest_outcome(done, done.published, f"{ref} posted to the channel")
+
+    @staticmethod
+    def _digest_outcome(done: DigestResult, sent: bool, said: str) -> CommandOutcome:
+        """A send that failed says so: the note is empty on success, so answering `note or said`
+        told the operator the digest was posted when nothing had been."""
+        return CommandOutcome(
+            status=OutcomeStatus.ERROR if done.failed else OutcomeStatus.DIGESTED,
+            note=said if sent else done.note,
+            message_id=done.message_id,
+        )
 
     def _over_note(self, bill: Bill) -> str | None:
         """Why no card may be posted for this bill, when its road has ended. A card is an

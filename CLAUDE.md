@@ -785,8 +785,12 @@ Invariants worth keeping:
 - **Nothing reaches readers unread, and the button is a command like any other.** The weekly
   digest (`services/digest.py`, its own phase after tracking so the week's own posts are in it)
   is the one message about no bill: `Outgoing.bill` is None for it, its `publications` row takes
-  the sentinel number `DIGEST` and is keyed on the ISO week (v23), and `Digest.ref` — `2026-W38`
-  — is that week everywhere, in the row, in the callback data and in `/digest ref=…`. The run
+  the sentinels `DIGEST_NUMBER` **and `DIGEST_TERM` = 0** and is keyed on the ISO week (v23), and
+  `Digest.ref` — `2026-W38` — is that week everywhere, in the row, in the callback data and in
+  `/digest ref=…`. The term is a constant and not the current kadencja because
+  `create_publication` looks a row up by term while `ux_pub_digest` does not carry one: a term
+  that moved between two drafts of one week found no row where the index had just updated one,
+  and the bare `assert` there fired. The run
   only ever **drafts** it, into the technical channel, on the digest's weekday **in Warsaw time**
   (`DigestService.today`, not the run's UTC clock the way `_full_day` compares it); the reader's
   copy is posted by `/digest publish ref=…`, which is exactly what the draft's one inline button
@@ -794,14 +798,24 @@ Invariants worth keeping:
   data into that command's own text, it is filed into the inbox, recorded, executed once and
   answered like a typed one — and because a press carries no message of its own, the relay
   answers it with `answerCallbackQuery` (`CommandAcknowledger.pressed`) instead of a "queued"
-  post. The week is **built again from the database at the moment it is published**, so a draft
+  post. **No technical channel means no digest at all**, and that is asked of
+  `telegram_log_channel_id` itself: `drafts_channel_id` falls back to a placeholder, and
+  `telegram_publisher("")` aims at the *readers'* channel, so a guard on the fallback would have
+  sent the draft, note and button included, to every reader. The week is **built again from the
+  database at the moment it is published**, so a draft
   left standing overnight cannot go stale, and a second press changes nothing (the command row is
   answered rather than re-run, and the digest's row is unique per week and channel). It costs
   nothing: no phase of it asks the model. What it says is the week's `sent` posts
   (`list_publications_between`, `sent` only — the digest is a reading of the channel, not of the
   database) as cards and updates, plus what a reader can still act on, which the reminders and
   the agenda posts of the past week cannot be: each was about a date that has gone, so those
-  kinds are left out and "what is ahead" comes from the followed bills instead. An update is
+  kinds are left out and "what is ahead" comes from the followed bills instead. `Digest` carries
+  **everything** the week held and the renderer caps each section at `DIGEST_MAX_PER_SECTION`
+  and says how many it left out: week 37 of the real channel had 14 cards, and showing ten in
+  silence is the one thing a digest must not do. A sitting is marked «условно» where the card
+  marks it, the consultations say what the bill is, and the week a digest is about is the last
+  ISO one that **ended** (`current_ref` asks the calendar, not `digest_weekday`: a week ends on
+  a Sunday whatever day the post goes out on). An update is
   named by the change it was **written for** (`get_status_change`, then `update_event`) and not
   by the bill's state today, which has moved on. The first digest of a month carries the month
   **just ended** (`is_first_digest_of_month` reads the week's Sunday, so a week straddling the
@@ -845,8 +859,9 @@ RCL project carries which number of the wykaz prac RM, for every row of the list
 for the projects this bot follows, with the project's creation date because the register reuses
 its numbers); v23 the weekly digest — one row per week and channel (`ux_pub_digest` on
 `(channel_id, kind, ref)`, the draft in the technical channel and the published copy in the
-reader's) and the first index `publications.sent_at` has ever had, which is how the digest asks
-for the posts of one week.
+reader's) and `ix_pub_channel_sent` on `(channel_id, status, sent_at)`, which is the index the
+digest's "posts of this week" query actually takes: on `sent_at` alone SQLite preferred
+`ix_pub_status` and never touched it.
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) → `db
 restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing `PRAGMA

@@ -7,6 +7,7 @@ import pytest
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import (
+    AgendaItem,
     Category,
     Digest,
     DigestEntry,
@@ -105,7 +106,6 @@ def test_a_month_sums_the_spend_per_model() -> None:
 def test_the_digest_names_the_week_its_cards_and_its_tag() -> None:
     week = Digest(
         ref="2026-W37",
-        term=10,
         since=dt.date(2026, 9, 7),
         until=dt.date(2026, 9, 13),
         cards=(_entry("3039"),),
@@ -121,7 +121,7 @@ def test_the_digest_names_the_week_its_cards_and_its_tag() -> None:
 
 
 def test_only_the_draft_carries_the_button_note() -> None:
-    week = Digest(ref="2026-W37", term=10, since=dt.date(2026, 9, 7), until=dt.date(2026, 9, 13))
+    week = Digest(ref="2026-W37", since=dt.date(2026, 9, 7), until=dt.date(2026, 9, 13))
     formatter = MessageFormatter("ru")
 
     assert "press the button" in formatter.digest(week, draft=True).text
@@ -131,7 +131,6 @@ def test_only_the_draft_carries_the_button_note() -> None:
 def test_a_numeric_channel_gets_no_links_because_it_has_no_public_address() -> None:
     week = Digest(
         ref="2026-W37",
-        term=10,
         since=dt.date(2026, 9, 7),
         until=dt.date(2026, 9, 13),
         cards=(_entry("3039"),),
@@ -147,7 +146,6 @@ def test_a_government_row_is_named_by_its_wykaz_number_and_a_print_by_its_druk()
     number the ministries use, which is also what the thread's tag carries."""
     week = Digest(
         ref="2026-W37",
-        term=10,
         since=dt.date(2026, 9, 7),
         until=dt.date(2026, 9, 13),
         cards=(
@@ -168,10 +166,37 @@ def test_a_government_row_is_named_by_its_wykaz_number_and_a_print_by_its_druk()
     assert "RPW/29075/2026" in text and "druk RPW" not in text
 
 
+def test_a_busy_week_is_capped_and_says_how_many_it_left_out() -> None:
+    """Week 37 of the real channel carried 14 cards; showing ten and saying nothing about the
+    other four is the one thing a digest must not do."""
+    week = Digest(
+        ref="2026-W37",
+        since=dt.date(2026, 9, 7),
+        until=dt.date(2026, 9, 13),
+        cards=tuple(_entry(str(3000 + i)) for i in range(14)),
+    )
+
+    text = MessageFormatter("ru").digest(week).text
+
+    assert_telegram_html(text)
+    assert "druk 3009" in text and "druk 3010" not in text  # ten of them, in order
+    assert "и ещё 4" in text
+
+
+def test_a_section_that_fits_says_nothing_about_a_remainder() -> None:
+    week = Digest(
+        ref="2026-W37",
+        since=dt.date(2026, 9, 7),
+        until=dt.date(2026, 9, 13),
+        cards=tuple(_entry(str(3000 + i)) for i in range(10)),
+    )
+
+    assert "и ещё" not in MessageFormatter("ru").digest(week).text
+
+
 def test_an_open_consultation_is_dated_and_counted_down() -> None:
     week = Digest(
         ref="2026-W37",
-        term=10,
         since=dt.date(2026, 9, 7),
         until=dt.date(2026, 9, 13),
         consultations=(
@@ -192,8 +217,77 @@ def test_an_open_consultation_is_dated_and_counted_down() -> None:
     assert "UC164" in text  # a government project is named by its wykaz number, as its card is
 
 
+def _sitting(**overrides: object) -> AgendaItem:
+    facts: dict[str, object] = {
+        "kind": "committee",
+        "ref": "ASW/136/2026-09-17",
+        "date": dt.date(2026, 9, 17),
+        "start_time": dt.time(9, 0),
+        "committee_code": "ASW",
+        "committee_name": "Komisja Administracji i Spraw Wewnętrznych",
+    }
+    return AgendaItem.model_validate(facts | overrides)
+
+
+def _ahead(*sittings: AgendaItem) -> Digest:
+    return Digest(
+        ref="2026-W37",
+        since=dt.date(2026, 9, 7),
+        until=dt.date(2026, 9, 13),
+        sittings=tuple(
+            Upcoming(term=10, number="3039", title="Projekt", sitting=s) for s in sittings
+        ),
+    )
+
+
+def test_a_conditional_sitting_is_marked_and_not_stated_as_a_date() -> None:
+    """21 committee sittings of term 10 happen only if the Sejm refers something first; the card
+    marks them «условно» and a digest that promises the day instead is the same old bug."""
+    text = MessageFormatter("ru").digest(_ahead(_sitting(condition="referral"))).text
+
+    assert_telegram_html(text)
+    assert "17.09.2026" in text and "(условно)" in text
+
+
+def test_a_settled_sitting_carries_no_hedge() -> None:
+    assert "условно" not in MessageFormatter("ru").digest(_ahead(_sitting())).text
+
+
+def test_a_plenary_sitting_names_itself_once() -> None:
+    plenary = _sitting(
+        kind="sejm", committee_code=None, committee_name=None, sitting_number=65, start_time=None
+    )
+
+    text = MessageFormatter("ru").digest(_ahead(plenary)).text
+
+    # `_agenda_when` names it and numbers it; naming it again gave «Заседание Сейма, ... № 65».
+    assert text.lower().count("заседание сейма") == 1
+    assert "№ 65" in text
+
+
+def test_an_open_consultation_says_what_the_bill_is() -> None:
+    """The one section a reader acts on: a bare number and a date named nothing."""
+    week = Digest(
+        ref="2026-W37",
+        since=dt.date(2026, 9, 7),
+        until=dt.date(2026, 9, 13),
+        consultations=(
+            Upcoming(
+                term=10,
+                number="RCL/12414100",
+                title="Projekt ustawy o zmianie ustawy o cudzoziemcach",
+                deadline=dt.date(2026, 9, 20),
+            ),
+        ),
+    )
+
+    text = MessageFormatter("ru", today=lambda: dt.date(2026, 9, 13)).digest(week).text
+
+    assert "Projekt ustawy o zmianie ustawy o cudzoziemcach" in text
+
+
 def test_the_ask_is_silent_when_there_is_nowhere_to_send_it() -> None:
-    week = Digest(ref="2026-W37", term=10, since=dt.date(2026, 9, 7), until=dt.date(2026, 9, 13))
+    week = Digest(ref="2026-W37", since=dt.date(2026, 9, 7), until=dt.date(2026, 9, 13))
 
     assert "поддержать" not in MessageFormatter("ru").digest(week).text
     with_url = MessageFormatter("ru", support_url="https://example.test/c").digest(week).text

@@ -91,7 +91,12 @@ whether that is worth its Sejm re-scan is the open question.
 
 ## Not code — with the owner
 
-- Chat and comments under the channel, with Rose moderating who joins.
+- ~~Chat and comments under the channel, with Rose moderating who joins.~~ **Done 2026-09-15**:
+  the chat is created, Rose moderates who joins, and it is linked to the channel as its
+  discussion group, so every card and every reply now takes comments. Nothing in the code knows
+  the chat exists, and it does not need to: a comment is a message in the chat, while every post
+  the bot makes is a post in the channel, so no run reads or answers one. Whether the bot should
+  ever see them is a product question, not a missing feature.
 - Avatars for the channel, the group and the bot.
 - A domain (see "The guides get a home").
 - Telling people about the channel, once the bot is finished.

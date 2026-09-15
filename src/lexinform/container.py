@@ -423,9 +423,15 @@ class Container:
         )
 
     def _has_drafts_channel(self, *, dry_run: bool) -> bool:
-        """Whether a draft has anywhere to go; asked of the settings alone, so that deciding it
-        never builds a Telegram client."""
-        return dry_run or self.publisher_override is not None or bool(self.drafts_channel_id())
+        """Whether a draft has anywhere of its own to go; asked of the raw setting, because
+        `drafts_channel_id` falls back to a placeholder and would answer yes to everything —
+        and `telegram_publisher("")` then aims at the readers' channel, which is the one place
+        a draft must never land."""
+        return (
+            dry_run
+            or self.publisher_override is not None
+            or bool(self.settings.telegram_log_channel_id)
+        )
 
     def drafts_channel_id(self) -> str:
         return self.settings.telegram_log_channel_id or "console"

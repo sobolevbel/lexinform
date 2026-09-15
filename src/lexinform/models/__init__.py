@@ -61,6 +61,7 @@ from lexinform.models.commands import (
 )
 from lexinform.models.digest import (
     DIGEST_NUMBER,
+    DIGEST_TERM,
     Digest,
     DigestEntry,
     MonthFigures,
@@ -212,6 +213,7 @@ from lexinform.models.wykaz import (
 __all__ = [
     "command_for_callback",
     "DIGEST_NUMBER",
+    "DIGEST_TERM",
     "Digest",
     "DigestEntry",
     "MonthFigures",

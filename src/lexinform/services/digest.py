@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     DIGEST_NUMBER,
+    DIGEST_TERM,
     Bill,
     Digest,
     DigestEntry,
@@ -43,8 +44,9 @@ UPDATE_KINDS = (
 """The replies a week is worth telling again. The reminders and the agenda posts are not: each
 was about a date, and by Sunday that date has either passed or is in "what is ahead" below."""
 
-MAX_PER_SECTION = 10
 SITTINGS_AHEAD_DAYS = 14
+SUNDAY = 6
+"""The day an ISO week ends on, which is not the same question as the day a digest goes out."""
 
 
 def _wykaz_number(bill: Bill) -> str | None:
@@ -63,9 +65,9 @@ class DigestResult:
     ref: str = ""
     drafted: bool = False
     published: bool = False
+    failed: bool = False
     note: str = ""
     message_id: int | None = None
-    fatal_error: str | None = None
 
 
 class DigestService:
@@ -105,9 +107,13 @@ class DigestService:
         return self._clock.now().astimezone(self._tz).date()
 
     def current_ref(self) -> str:
-        """The week a digest sent now is about: the one that has just ended."""
+        """The last ISO week that has ended, which is what a digest sent now is about.
+
+        Asked of the calendar and not of `digest_weekday`: an ISO week ends on a Sunday whatever
+        day the digest goes out on, so a Monday digest was drafting the week that had just begun.
+        """
         today = self.today()
-        return iso_week(today) if today.weekday() == self._weekday else previous_week(today)
+        return iso_week(today) if today.weekday() == SUNDAY else previous_week(today)
 
     def run(self) -> DigestResult:
         """The digest phase of a run: draft the week on its day, and nothing on any other."""
@@ -123,7 +129,7 @@ class DigestService:
         if drafter is None:
             return DigestResult(ref=ref, note="no technical channel to draft into")
         existing = self._repo.get_publication(
-            self._term(), DIGEST_NUMBER, PublicationKind.DIGEST, self._draft_channel_id, ref=ref
+            DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, self._draft_channel_id, ref=ref
         )
         if existing is not None and existing.status is PublicationStatus.SENT:
             return DigestResult(ref=ref, message_id=existing.message_id, note="drafted already")
@@ -133,12 +139,14 @@ class DigestService:
             week,
             lambda: drafter.publish_digest(week, approve=self._approve).message_id,
         )
-        return DigestResult(ref=ref, drafted=message_id is not None, message_id=message_id)
+        if message_id is None:
+            return DigestResult(ref=ref, failed=True, note=f"{ref} was not posted, see the log")
+        return DigestResult(ref=ref, drafted=True, message_id=message_id)
 
     def publish(self, ref: str) -> DigestResult:
         """Post the week's digest to the readers' channel, rebuilt from the database first."""
         existing = self._repo.get_publication(
-            self._term(), DIGEST_NUMBER, PublicationKind.DIGEST, self._channel_id, ref=ref
+            DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, self._channel_id, ref=ref
         )
         if existing is not None and existing.status is PublicationStatus.SENT:
             return DigestResult(
@@ -148,7 +156,9 @@ class DigestService:
         message_id = self._send(
             self._channel_id, week, lambda: self._publisher.publish_digest(week).message_id
         )
-        return DigestResult(ref=ref, published=message_id is not None, message_id=message_id)
+        if message_id is None:
+            return DigestResult(ref=ref, failed=True, note=f"{ref} was not posted, see the log")
+        return DigestResult(ref=ref, published=True, message_id=message_id)
 
     def build(self, ref: str) -> Digest:
         """The week as the channel lived it, plus what a reader can still act on."""
@@ -172,13 +182,14 @@ class DigestService:
         consultations, sittings = self._ahead()
         return Digest(
             ref=ref,
-            term=self._term(),
             since=since,
             until=until,
-            cards=tuple(cards[:MAX_PER_SECTION]),
-            updates=tuple(updates[:MAX_PER_SECTION]),
-            consultations=tuple(consultations[:MAX_PER_SECTION]),
-            sittings=tuple(sittings[:MAX_PER_SECTION]),
+            # Everything the week held: how much of it fits one message is the renderer's
+            # business, and only the renderer can say how many it left out.
+            cards=tuple(cards),
+            updates=tuple(updates),
+            consultations=tuple(consultations),
+            sittings=tuple(sittings),
             month=self._month(ref),
         )
 
@@ -271,11 +282,6 @@ class DigestService:
         ]
         return MonthFigures.of(last_month, reports)
 
-    def _term(self) -> int:
-        """The term a digest's bookkeeping row carries: the newest the database knows."""
-        terms = self._repo.known_terms()
-        return terms[-1] if terms else 0
-
     def _midnight(self, day: dt.date) -> dt.datetime:
         """The start of a Warsaw day, in the UTC the `sent_at` column holds."""
         return dt.datetime.combine(day, dt.time(), tzinfo=self._tz).astimezone(dt.UTC)
@@ -284,7 +290,7 @@ class DigestService:
         """Record the row before sending it, and the outcome after; the message id on success."""
         pub_id = self._repo.create_publication(
             Publication(
-                term=week.term,
+                term=DIGEST_TERM,
                 number=DIGEST_NUMBER,
                 kind=PublicationKind.DIGEST,
                 status=PublicationStatus.PENDING,

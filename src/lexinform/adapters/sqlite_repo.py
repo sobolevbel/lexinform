@@ -265,11 +265,13 @@ MIGRATIONS: tuple[str, ...] = (
     CREATE INDEX ix_rcl_wykaz_numbers_number ON rcl_wykaz_numbers(wykaz_number);
     """,
     # v23: the weekly digest, one per week and channel (the draft in the technical channel,
-    # the published one in the reader's), keyed on the week because it is about no bill.
+    # the published one in the reader's), keyed on the week because it is about no bill. The
+    # second index is the one the digest's "posts of this week" query actually takes: on
+    # `sent_at` alone SQLite preferred `ix_pub_status` and never touched it.
     """
     CREATE UNIQUE INDEX ux_pub_digest ON publications(channel_id, kind, ref)
         WHERE kind = 'digest';
-    CREATE INDEX ix_pub_sent_at ON publications(sent_at);
+    CREATE INDEX ix_pub_channel_sent ON publications(channel_id, status, sent_at);
     """,
 )
 

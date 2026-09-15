@@ -422,8 +422,8 @@ class DailyPipeline:
         report.digest_drafted = result.drafted
         if result.drafted:
             report.notes.append(f"digest {result.ref} drafted, waiting for the button")
-        elif result.fatal_error:
-            report.errors.append(f"digest: {result.fatal_error}")
+        elif result.failed:
+            report.errors.append(f"digest: {result.note}")
 
     def _full_day(self) -> bool:
         return (
