@@ -236,6 +236,11 @@ class RclWatcher:
         if now is None or not now.results_published:
             return False
         before = bill.rcl.consultation if bill.rcl else None
-        if before is None or not before.results_published:
+        if before is None:
+            # The first sight of a window is not news about it: a project taken by its text
+            # arrives with none at all, and the stanowiska such a project already carries were
+            # published while nobody here was watching. What appears under our eyes is told.
+            return False
+        if not before.results_published:
             return True
         return self._poster.retry_due(bill, PublicationKind.CONSULTATION_RESULTS)

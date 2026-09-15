@@ -10,6 +10,7 @@ from tests.harness import (
     ELI,
     RCL,
     START,
+    TERM,
     World,
     act,
     detail,
@@ -139,6 +140,33 @@ def test_a_consultation_that_opens_without_a_new_stage_is_still_named() -> None:
     text = MessageFormatter("ru").status_update(bill, change, today=dt.date(2026, 9, 8)).text
     assert "🗣 <b>Открылись публичные консультации — UC164</b>" in text
     assert "направить замечания на dep.prawny@mswia.gov.pl до 08.09.2026" in text
+
+
+def test_a_catalog_nobody_opened_is_read_on_the_next_refresh() -> None:
+    """A stage the timeline filled in is not a stage that was read, and its own date never moves
+    to say so. A project taken by its text keeps every catalog but one closed, and `refresh` used
+    to take the stored copy for a reading of it — so the consultation letter of such a row stayed
+    invisible for its whole life, and so does that of every row stored before `catalog_read`."""
+    w = World()
+    project = _followed_project(w)
+    stored = w.bill(RCL).rcl
+    assert stored is not None
+    as_with_text_left_it = tuple(
+        st.model_copy(update={"folders": (), "catalog_read": False}) if st.is_consultation else st
+        for st in stored.stages
+    )
+    w.repo.save_rcl(
+        TERM,
+        RCL,
+        stored.model_copy(update={"stages": as_with_text_left_it, "consultation": None}),
+    )
+    w.rcl.put(project.model_copy(update={"modified": dt.date(2026, 9, 8)}))
+
+    w.run()
+
+    repaired = w.bill(RCL).rcl
+    assert repaired is not None and repaired.consultation is not None
+    assert repaired.consultation.email == "dep.prawny@mswia.gov.pl"
 
 
 def test_a_window_that_has_already_shut_is_not_announced_as_opening() -> None:

@@ -347,14 +347,17 @@ class FakeRclGateway:
         project = self.projects[project_id]
         return project.model_copy(
             update={
-                "stages": tuple(st.model_copy(update={"folders": ()}) for st in project.stages),
+                "stages": tuple(
+                    st.model_copy(update={"folders": (), "catalog_read": False})
+                    for st in project.stages
+                ),
                 "consultation": None,
             }
         )
 
     def get_stage(self, project_id: int, stage_id: int) -> RclStage:
         self._called("get_stage", f"{project_id}/{stage_id}")
-        return self.stages[stage_id]
+        return self.stages[stage_id].model_copy(update={"catalog_read": True})
 
     def resolve_project_id(self, rm_number: str) -> int | None:
         self._called("resolve_project_id", rm_number)

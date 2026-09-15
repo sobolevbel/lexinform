@@ -62,6 +62,27 @@ those; the invariants that govern *when* they run stay in `CLAUDE.md`.
   appendix is refused at the other end too (`AnalysisService._load_text`): describing a compliance
   table would describe the wrong document with every appearance of describing the right one. A
   *letter* is not refused there — every print opens with one.
+- **The bill can be one file with its uzasadnienie, or an appendix to the covering letter, and
+  then no name calls it the bill at all.** `text_role` answers "uzasadnienie" to any name carrying
+  that word and refuses anything called a `załącznik`, so "Projekt ustawy+uzasadnienie+OSR_podpisane
+  przez DP.pdf" and "Załącznik nr 1 Projekt ustawy - Prawo własności przemysłowej UC81" both leave
+  the folder with a justification, an OSR and **no bill** — and a project with no bill is dropped
+  whole at the text prefilter ("no document to read", a skip nothing revisits). Measured over the
+  824 projects of the corpus whose newest "Projekt" folder holds readable files (15 Sept 2026):
+  nine end that way, **six** a combined file and **three** the bill as a numbered appendix.
+  `_bill_of_last_resort` is reached only where the answer would otherwise be nothing at all, so it
+  cannot move what any other project is read from; it forgives the appendix mark and nothing else,
+  and a combined file is then the bill alone — handed over twice, the same text would be paid for
+  twice.
+- **A stage that was read and a stage nobody opened look alike, so the reading is recorded.**
+  1,098 of the 4,307 reached stages of the corpus have no folders at all after being read whole
+  (Komisja Prawnicza, Notyfikacja, Skierowanie do Sejmu usually publish nothing), so emptiness
+  cannot stand for "unread". `RclStage.catalog_read` is set in `parse_stage_catalog` and nowhere
+  else, and `RclProjectReader.refresh` keeps a stored stage only when it carries it. Without that
+  a project read for its newest text alone (`with_text`) kept every other catalog closed for the
+  life of the row: the consultation letter was invisible, `/refresh` could not repair it, and only
+  a stage whose *state* changed was ever fetched. Stages of an older dump read as unread and are
+  fetched once, which is the repair.
 - **A heading is matched on its whole line, and where the case is data it is respected.**
   `document_kind` reads the first 1,200 characters. `USTAWA` and `ROZPORZĄDZENIE` are matched in
   either case but **anchored at both ends**, and the anchor is what does the work: the

@@ -63,7 +63,12 @@ class RclProjectReader:
         known = {st.id: st for st in stored.stages}
         for stage in project.reached_stages:
             before = known.get(stage.id)
-            if before is not None and before.reached and before.modified == stage.modified:
+            # `catalog_read` and not `folders`: a quarter of the reached stages of the corpus
+            # publish nothing at all, so an empty stage says nothing about whether it was opened.
+            # A project read for its newest text alone kept every other catalog closed for the
+            # life of the row — the consultation letter among them — because this branch took the
+            # timeline's own copy for a reading of the catalog.
+            if before is not None and before.catalog_read and before.modified == stage.modified:
                 project = project.with_stage(before)
             else:
                 project = project.with_stage(self._rcl.get_stage(stored.id, stage.id))

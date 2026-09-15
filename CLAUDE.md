@@ -541,7 +541,10 @@ Invariants worth keeping:
 - **RCL rows are refreshed by the RCL watcher only.** RCL discovery reads a project once (timeline
   + catalogs for a candidate, one catalog for a title miss) and afterwards only bumps `change_date`
   from the list; `RclWatcher` re-reads the timeline and the catalogs whose "Data ostatniej
-  modyfikacji" moved, and `rcl_fingerprint` (stages reached, folders that got their first files,
+  modyfikacji" moved **or that were never read** (`RclStage.catalog_read`, set in
+  `parse_stage_catalog` alone — 1,098 of the 4,307 reached stages of the corpus have no folders
+  after being read whole, so emptiness cannot say whether anybody opened the page), and
+  `rcl_fingerprint` (stages reached, folders that got their first files,
   the newest text, status, hand-over) decides whether there is an update. Folder uploads alone are
   not news; published opinions are a separate `consultation_results` reply. A page takes ~10 s:
   never add a request per project without a reason. A project the prefilter skipped keeps only its
@@ -565,8 +568,9 @@ Invariants worth keeping:
   (`RclProjectReader.with_consultation`) for every RCL row waiting to be analysed and missing a
   window: one page against a reading that costs a dollar, and the queue drains itself. **Reading
   the letter late is not an event**: `consultation_opened` is news only while the window is open
-  (`models.consultation_open`), or the run that repairs an old row would announce «Открылись
-  публичные консультации» over a door that shut in June.
+  (`models.consultation_open`), and `_results_due` says nothing when the stored window was None,
+  or the run that repairs an old row would announce «Открылись публичные консультации» over a
+  door that shut in June and the stanowiska of a consultation nobody here was watching.
 - **The bill can be one file with its uzasadnienie, or an appendix to the letter.** `text_role`
   tests "uzasad" before anything else and drops what calls itself a `załącznik`, so "Projekt
   ustawy+uzasadnienie+OSR_podpisane przez DP.pdf" is read as the uzasadnienie and "Załącznik nr 1

@@ -105,7 +105,17 @@ class RclFolder(BaseModel):
 
 
 class RclStage(BaseModel):
-    """One node of the project timeline; `folders` are known only after the catalog was read."""
+    """One node of the project timeline; `folders` are known only after the catalog was read.
+
+    `catalog_read` is that reading, and it is not the same question as "are there folders":
+    1,098 of the 4,307 reached stages of the corpus have none after being read whole (Komisja
+    Prawnicza, Notyfikacja and Skierowanie do Sejmu usually publish nothing), so an empty stage
+    cannot say whether anybody opened it. Without the flag `RclProjectReader.refresh` trusted a
+    stage the timeline alone had filled in and never fetched its catalog — and a project read for
+    its newest text only (`with_text`) kept every other stage empty for the life of the row,
+    letter and stanowiska included. A stage from an older dump reads as unread and is fetched
+    once, which is the repair.
+    """
 
     model_config = ConfigDict(frozen=True)
 
@@ -117,6 +127,7 @@ class RclStage(BaseModel):
     ended: dt.date | None = None
     modified: dt.date | None = None
     folders: tuple[RclFolder, ...] = ()
+    catalog_read: bool = False
 
     @property
     def reached(self) -> bool:
