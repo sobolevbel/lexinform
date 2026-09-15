@@ -1,18 +1,12 @@
 """Publishes analysed, relevant bills exactly once per channel.
 
-Bills the Sejm considers jointly (`ProcessSummary.prints_considered_jointly`: several prints on
-the same subject, one committee report for all of them) share one thread: the first of them to
-be published gets the card, every later one a short "alternative bill" reply under it, and the
-group is followed through the card's bill (the stages of the joint prints coincide from the
-joint referral on). Within one run the government's print goes first: its text is usually the
-one the committee works on.
+Prints the Sejm considers jointly share one thread: the first published gets the card, every
+later one a short "alternative bill" reply under it, and the group is followed through the card's
+bill. Within one run the government's print goes first, its text being the one the committee
+usually works on. `CARD_KINDS` are the two ways a bill can be in the channel, never both.
 
-`CARD_KINDS` are therefore the two ways a bill can be in the channel — its own card, or that
-reply under someone else's — and a bill has one of them, never both.
-
-The reply is judged and paid for like a card: the print is analysed on its own text like any
-other, and what the reply adds to the thread is how it differs from the prints the reader has
-already read about (`_compared`, asked of the model once, a moment before the reply is rendered).
+The reply is judged and paid for like a card, and what it adds to the thread is how the print
+differs from the ones the reader has already read about (`_compared`).
 """
 
 import logging
@@ -44,11 +38,9 @@ class CardPlan:
     """What the channel would get for a bill, decided once and used twice: by `publish_bill` to
     send it and by the operator's `/preview` to render it first.
 
-    `bill` carries everything the message needs that the stored row lacks (the `/bills` entry
-    with the consultation dates), and `print_info` the files the message links. `primary` is the
-    jointly considered print whose card this bill replies under instead of getting one of its
-    own, and `inherited` the sent card of the row this print continues — there the channel gets
-    no new message at all, only the card re-rendered with both tags.
+    `primary` is the jointly considered print whose card this bill replies under instead of
+    getting one of its own; `inherited` the sent card of the row this print continues, where the
+    channel gets no new message at all, only the card re-rendered with both tags.
     """
 
     bill: Bill
@@ -159,14 +151,10 @@ class PublishingService:
     def _replies_under_the_bar(self, carded: list[Bill], *, limit: int) -> list[Bill]:
         """Prints that will reply under a card of their own group and did not clear `min_score`.
 
-        The bar decides whether a bill is worth a card — a message in the feed of every reader of
-        the channel. A reply is a message in a thread they have already chosen to follow, and by
-        the time it is asked for the print has been read and judged: dropping the answer under
-        the bar would mean paying for a reading and throwing it away. Druk 1929's card scores
-        exactly 3, so its group sits on the threshold in production.
-
-        `primary_of` is still the whole decision, so a print that turns out to have no card to
-        hang under is not here and gets no card of its own below the bar.
+        The bar decides whether a bill earns a card in every reader's feed; a reply goes into a
+        thread they already follow, and by then the print has been read and judged, so dropping it
+        would mean paying for a reading and throwing it away. `primary_of` is still the whole
+        decision, so a print with no card to hang under gets none of its own below the bar.
         """
         known = {(bill.term, bill.number) for bill in carded}
         under = []
@@ -199,11 +187,9 @@ class PublishingService:
         """Send one bill: a card, or a reply under the card of a print it is considered jointly
         with. Returns True on success and counts the post in `result`.
 
-        What it sends is `plan`'s decision, so that `/preview` can render the same message before
-        it goes out. The pending publication row is written after that decision and before the
-        post, so that a crash cannot cause a duplicate one and an outage of the Sejm API leaves
-        no row behind — a stale pending row becomes `unknown` and is never sent, so the bill has
-        to be simply a candidate again on the next run.
+        What it sends is `plan`'s decision, so `/preview` renders the same message beforehand. The
+        pending row is written after that decision and before the post, so a crash cannot cause a
+        duplicate and an outage of the Sejm API leaves no row behind.
         """
         result = result if result is not None else PublishingResult()
         plan = self.plan(bill)
@@ -285,14 +271,9 @@ class PublishingService:
         """The bill with an up-to-date answer to "how does it differ from the others", asked of
         the model once and stored on the row.
 
-        Asked here, a moment before the reply is rendered, and not in the analysis phase: the
-        common case is a group that arrives in one run, where at analysis time no print of it has
-        been read yet and there is nothing to compare with. By the time the publisher gets here,
-        every print of the run has its analysis and the card of the group is already sent.
-
-        The comparison is an embellishment of the reply, so nothing about it may stop the reply:
-        an outage of the model — which everywhere else ends a phase — is caught and the bill goes
-        out described as it was before there were comparisons at all.
+        Asked here and not in the analysis phase: a group commonly arrives in one run, where at
+        analysis time no print of it has been read yet. The comparison only embellishes the reply,
+        so even a model outage — everywhere else the end of a phase — is caught and the reply goes.
         """
         if self._analysis is None:
             return bill

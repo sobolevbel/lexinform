@@ -1,14 +1,8 @@
 """Government bills before the Sejm: the Rządowy Proces Legislacyjny (legislacja.rcl.gov.pl).
 
-A project page lists up to 14 stages (uzgodnienia, konsultacje publiczne, opiniowanie, the
-committees of the Council of Ministers, Komisja Prawnicza, Rada Ministrów, skierowanie do Sejmu);
-each reached stage has a catalog of folders with documents. Nothing here does I/O: the HTML is
-turned into these models by `adapters/rcl_html.py`.
-
-`RCL_STAGE_TYPE` is the `Stage.stage_type` such a stage carries once it is stored in
-`Bill.stages`, and `StageGroup` says where in the government path it sits: consultations and
-opinions, the committees of the Council of Ministers (Komisja Prawnicza among them), the Council
-itself, the hand-over to the Sejm.
+A project page lists up to 14 stages, each reached one with a catalog of folders. No I/O here:
+`adapters/rcl_html.py` turns the HTML into these models. `StageGroup` says where in the
+government path a stage sits.
 """
 
 import datetime as dt
@@ -107,14 +101,10 @@ class RclFolder(BaseModel):
 class RclStage(BaseModel):
     """One node of the project timeline; `folders` are known only after the catalog was read.
 
-    `catalog_read` is that reading, and it is not the same question as "are there folders":
-    1,098 of the 4,307 reached stages of the corpus have none after being read whole (Komisja
-    Prawnicza, Notyfikacja and Skierowanie do Sejmu usually publish nothing), so an empty stage
-    cannot say whether anybody opened it. Without the flag `RclProjectReader.refresh` trusted a
-    stage the timeline alone had filled in and never fetched its catalog — and a project read for
-    its newest text only (`with_text`) kept every other stage empty for the life of the row,
-    letter and stanowiska included. A stage from an older dump reads as unread and is fetched
-    once, which is the repair.
+    `catalog_read` is that reading, and not the same question as "are there folders": 1,098 of the
+    corpus's 4,307 reached stages have none after being read whole, so emptiness cannot say
+    whether anybody opened the page. A stage from an older dump reads as unread and is fetched
+    once.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -162,14 +152,10 @@ class RclStage(BaseModel):
     def consultation_letter(self) -> RclDocument | None:
         """The pismo kierujące projekt do konsultacji, wherever the ministry filed it.
 
-        Its own folder first. Three of the 603 corpus projects whose consultation catalog was
-        read leave "Pisma kierujące" empty and put the letter in "Projekt" beside the bill —
-        UD275, UD362 and UDER87 — and then the card goes out without the two facts the letter
-        carries and nothing else does: the day the window shuts and the address remarks are sent
-        to (RCL/12409801, carded 15 Sept 2026 with neither, while its letter of 30 April gave
-        thirty days and sekretariat.dp@cyfra.gov.pl). The fallback asks `text_role` and not the
-        name alone, because a name that says "pismo" can be the bill: "załącznik do pismo
-        07.08.2026 uzgodnienia [projekt].pdf" is one.
+        Its own folder first, then "Projekt": 3 of the 603 corpus projects whose consultation
+        catalog was read leave "Pisma kierujące" empty and file the letter beside the bill, and
+        the card then goes out with neither the deadline nor the address. The fallback asks
+        `text_role` and not the name, because a name saying "pismo" can be the bill.
         """
         letter = next((d for d in self.documents("letters") if d.readable), None)
         if letter is not None:
@@ -342,19 +328,10 @@ def _classify(documents: list[RclDocument]) -> dict[TextRole, RclDocument]:
 def _bill_of_last_resort(documents: list[RclDocument]) -> RclDocument | None:
     """The bill when no file in the folder calls itself one.
 
-    Measured over the 824 projects of the corpus whose newest "Projekt" folder holds readable
-    files (15 Sept 2026): nine end with no bill text at all, and the ministry named it in one of
-    two ways. Six publish the bill together with its uzasadnienie, often the OSR too, as **one
-    file** — "Projekt ustawy+uzasadnienie+OSR_podpisane przez DP.pdf", "Projekt z
-    uzasadnieniem.pdf", "Projekt ustawy_Uzasadnienie_OSR_ust o zm PRD (UDER87).docx" — and
-    `text_role` reads them as the uzasadnienie, that word being tested first. Three file the bill
-    as a numbered appendix to the covering letter ("Załącznik nr 1 Projekt ustawy - Prawo
-    własności przemysłowej UC81"), which the appendix rule drops. Either way the project has no
-    text, and a project with no text is dropped whole: the text prefilter writes "no document to
-    read" and the row is closed for good (RCL/12409801, 15 Sept 2026).
-
-    It is the last resort and nothing else — reached only where the answer today is nothing at
-    all, so it cannot change what any project with a recognised bill is read from.
+    Of the corpus's 824 projects with readable files in their newest "Projekt" folder, nine end
+    with no bill: six publish it in one file with the uzasadnienie, which `text_role` tests first,
+    and three file it as a numbered appendix, which the appendix rule drops. Reached only where
+    the answer would otherwise be nothing, so it changes no project with a recognised bill.
     """
     candidates = [d for d in documents if _names_a_bill(d.name)]
     return min(candidates, key=_rank) if candidates else None
@@ -400,13 +377,9 @@ _FORMAT_RANK = {"pdf": 0, "docx": 1, "docm": 2, "doc": 3, "odt": 4, "xml": 5, "z
 
 def text_role(name: str) -> TextRole | None:
     """What a file of a "Projekt" folder (or of a zip package) is, by its name: the bill, its
-    uzasadnienie, the OSR, or None for what is not a bill text (compliance tables, letters,
-    consultation reports, draft regulations, appendices). A name that says nothing is taken for
-    the bill.
-
-    An appendix is ruled out before the OSR is recognised: "załącznik do OSR" and "Wyliczenia do
-    OSR" name the OSR they hang on, and taken for it they would stand in its place. A tag in
-    brackets beats everything: it is the ministry saying what the file is.
+    uzasadnienie, the OSR, or None for what is not one. A name saying nothing is taken for the
+    bill. An appendix is ruled out before the OSR is recognised, or "załącznik do OSR" would
+    stand in the OSR's place; a tag in brackets beats everything, being the ministry saying so.
     """
     lowered = name.lower()
     tagged = _ROLE_TAG_RE.search(lowered)
