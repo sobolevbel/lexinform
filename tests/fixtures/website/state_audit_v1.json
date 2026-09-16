@@ -1,0 +1,90 @@
+{
+  "fixture_version": 1,
+  "source": {
+    "commit": "b2c4893e83d689a58be1c0c4f666cbcc3e8345bb",
+    "committed_at": "2026-09-15T19:44:34Z",
+    "dump_bytes": 1811553,
+    "dump_sha256": "1e6df1f97e871c45c36e279e3905a4b4c7c0a031971303eefc64d86048c6e48a",
+    "dump_schema_version": 22,
+    "validated_schema_version": 23
+  },
+  "validation": {
+    "integrity_check": "ok",
+    "bill_rows": 193,
+    "validated_bill_rows": 193,
+    "analysis_records": 97,
+    "validated_analysis_records": 97
+  },
+  "candidate_policy": {
+    "primary_status": "analyzed",
+    "candidate_rows": 93,
+    "by_source": {
+      "sejm": 55,
+      "rcl": 35,
+      "rpw": 0,
+      "wykaz": 3
+    },
+    "relevant": 38,
+    "not_relevant": 55,
+    "score_at_least_3": 20,
+    "with_sent_telegram_card": 21
+  },
+  "identities": {
+    "linked_rows": 4,
+    "linked_to_candidate": 3,
+    "linked_to_non_candidate": 1,
+    "candidate_aliases_by_source": {
+      "rcl": 1,
+      "rpw": 2
+    },
+    "joint_group_sizes": [2, 3, 2, 4],
+    "analyzed_joint_members": 9,
+    "unanalysed_joint_members": 2,
+    "representative_links": [
+      {
+        "source": "rcl",
+        "alias": "RCL/12405609",
+        "target": "2172",
+        "target_status": "analyzed"
+      },
+      {
+        "source": "rpw",
+        "alias": "RPW/30695/2026",
+        "target": "3094",
+        "target_status": "analyzed"
+      },
+      {
+        "source": "rpw",
+        "alias": "RPW/31041/2026",
+        "target": "3100",
+        "target_status": "text_prefilter_pending"
+      }
+    ]
+  },
+  "history": {
+    "status_changes": 9,
+    "candidate_matters_with_status_changes": 5
+  },
+  "freshness_gaps": {
+    "candidates_without_analysis_source_checked_at": 93,
+    "candidates_without_text_sha256": 67,
+    "candidates_without_analysis_source_url": 53,
+    "last_checked_at_is_not_aspect_freshness": true
+  },
+  "preserved_non_candidates": [
+    {
+      "number": "1039",
+      "status": "skipped_prefilter",
+      "reason": "silenced by the operator (/skip)",
+      "has_analysis": true,
+      "has_sent_telegram_card": true
+    },
+    {
+      "number": "1040",
+      "status": "skipped_prefilter",
+      "reason": "silenced by the operator (/skip)",
+      "has_analysis": true,
+      "has_sent_telegram_card": true
+    }
+  ]
+}
