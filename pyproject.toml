@@ -49,13 +49,16 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.uv.workspace]
+members = ["web"]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/lexinform"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py314"
-src = ["src", "tests"]
+src = ["src", "tests", "web/src", "web/tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "N", "W"]

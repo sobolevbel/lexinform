@@ -24,3 +24,40 @@ jobs:
         run: uv run mypy
       - name: Test
         run: uv run pytest --cov --cov-report=term-missing
+
+  web:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_DB: lexinform_web
+          POSTGRES_PASSWORD: lexinform_web
+          POSTGRES_USER: lexinform_web
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lexinform_web -d lexinform_web"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Install workspace
+        run: uv sync --frozen --all-packages --all-groups --python 3.14
+      - name: Check Django and migrations
+        run: |
+          uv run --frozen python web/manage.py check
+          uv run --frozen python web/manage.py makemigrations --check --dry-run
+          uv run --frozen python web/manage.py migrate --noinput
+          uv run --frozen python web/manage.py web_doctor
+      - name: Lint and type-check web
+        run: |
+          uv run --frozen ruff check web/src web/tests web/stubs
+          uv run --frozen ruff format --check web/src web/tests web/stubs
+          uv run --frozen mypy --config-file web/pyproject.toml web/src web/tests
+      - name: Test web
+        run: uv run --frozen pytest -c web/pyproject.toml web/tests -q

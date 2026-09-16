@@ -7,16 +7,28 @@ when its acceptance result and checks are recorded here.
 ## Current position
 
 - Started: 2026-09-16
-- Active task: WEB-02a — uv workspace and web skeleton
-- Next task: WEB-02b — complex dependency spike
+- Active task: WEB-02b — complex dependency spike
+- Next task: WEB-03 — identity model and import contract
 - Release target: A — public library in five languages
+
+## Implementation rules
+
+- HTTP views, task functions and management commands remain thin entry points.
+- Application services orchestrate use cases; selectors own non-trivial ORM reads.
+- Repositories and ports isolate external state or a persistence boundary that tests genuinely
+  replace. No generic repository layer is added around straightforward Django ORM operations.
+- Domain decisions stay out of templates and framework callbacks. Dependencies point from entry
+  points to services and from services to explicit protocols or pure models.
+- Prefer small, typed abstractions with one reason to change. Do not add a layer until it removes
+  duplication, isolates an external system or makes a meaningful scenario test possible.
+- Local and production container names use the `lexinform-web` / `lexinform-db` convention.
 
 ## Task status
 
 | Task | Status | Result |
 | --- | --- | --- |
 | WEB-01 | Complete | Pinned state audited; launch corpus and v1 audit fixture recorded |
-| WEB-02a | Not started | — |
+| WEB-02a | Complete | Workspace, Django/Wagtail skeleton, PostgreSQL and first User migration |
 | WEB-02b | Not started | — |
 | WEB-03 | Not started | — |
 | WEB-04a | Not started | — |
@@ -78,3 +90,39 @@ Checks performed:
 - Parse every bill and stored analysis with current models: passed.
 - Candidate, alias, joint-group, history, publication and freshness counts: recorded in the v1
   fixture.
+
+### 2026-09-16 — WEB-02a workspace and web skeleton
+
+Added `web/` as the `lexinform-web` member of the root uv workspace. The lock now fixes Django
+6.1.1, Wagtail 8.0.0, psycopg 3.3.5 and django-stubs 6.1.1 while preserving mypy 2.3.1 for the
+existing bot gate. The website package depends on the root `lexinform` package through the
+workspace boundary; the root package has no dependency on Django.
+
+The initial project includes split local/test/production settings, five configured locales,
+Wagtail's PostgreSQL search backend, admin/documents/i18n routes and a production WSGI entry point.
+Production has no fallback for its secret key, base URL, database host, database name, database
+user or database password.
+
+Created the custom `accounts.User` in the first web migration. Staff emails are normalized and
+case-insensitively unique at the database level; interface language is constrained to the same
+five-language definition used by Django and Wagtail. Added narrow local typing boundaries for the
+untyped Wagtail/modelcluster/treebeard modules reached by the Django mypy plugin instead of
+weakening strict mode for the web package.
+
+Added a local PostgreSQL 17.6 Compose service named `lexinform-db`, a `web_doctor` command that
+checks framework versions, PostgreSQL major version and pending migrations, and a separate web CI
+job backed by PostgreSQL 17. The future application containers will use the `lexinform-web` name.
+
+The initially active Python was the free-threaded `cp314t` build, for which psycopg-binary has no
+macOS wheel. The supported project environment now uses standard CPython 3.14.7 (`cp314`); all
+locked web dependencies install there. Free-threaded Python is not a deployment target.
+
+Checks performed:
+
+- Full Wagtail and project migrations on PostgreSQL 17: passed.
+- `web_doctor`: Django 6.1.1, Wagtail 8.0.0, PostgreSQL 17; no pending migrations.
+- Web tests: 2 passed on PostgreSQL.
+- Web strict mypy: 20 files, no issues.
+- Ruff check and format check for web source, tests and stubs: passed.
+- Existing bot tests: passed; existing strict mypy and Ruff gates: passed.
+- `uv lock --check`: passed.

@@ -1,0 +1,43 @@
+[project]
+name = "lexinform-web"
+version = "0.1.0"
+description = "Public website and editorial CMS for lexinform"
+requires-python = ">=3.14"
+dependencies = [
+  "Django>=6.1,<6.2",
+  "lexinform",
+  "psycopg[binary]>=3.2,<4",
+  "wagtail>=8.0,<8.1",
+]
+
+[dependency-groups]
+dev = [
+  "django-stubs[compatible-mypy]>=6.1.1,<6.2",
+  "pytest-django>=4.11,<5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lexinform_web"]
+
+[tool.uv.sources]
+lexinform = { workspace = true }
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "lexinform_web.config.test"
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+files = ["src", "tests"]
+mypy_path = ["$MYPY_CONFIG_FILE_DIR/stubs"]
+plugins = ["mypy_django_plugin.main"]
+warn_unreachable = true
+
+[tool.django-stubs]
+django_settings_module = "lexinform_web.config.test"
