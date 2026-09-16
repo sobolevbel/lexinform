@@ -739,3 +739,47 @@ def test_a_stage_the_sejm_publishes_late_is_held_and_told_with_the_next_post() -
     _, change, _ = w.publisher.updates[1]
     assert "II czytanie na posiedzeniu Sejmu" in [st.stage_name for st in change.new_stages]
     assert w.repo.list_held_status_changes(10, "3039", "@test") == []
+
+
+def test_a_law_the_senate_held_past_the_window_is_still_followed() -> None:
+    """Druk 210 of term 9: the Sejm passed it on 2020-02-14 and answered the Senate on
+    2020-08-14, 182 days later — two days after the window measured from `closureDate`, which
+    the Sejm sets at the third reading. The bill left `list_tracked` while its road ran, so the
+    override, the hand-over, the signature and the act were all lost, and the card kept saying
+    the Senate had rejected a law that was in force.
+    """
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=SENATE_AMENDED)
+    w.run()
+    w.touch("3039", w.clock.now(), closure_date=dt.date(2026, 9, 10), passed=True)
+    w.run()
+    told = len(w.publisher.updates)
+
+    w.clock.advance(days=190)
+    w.set_stages(
+        "3039",
+        SENATE_AMENDED
+        + (
+            Stage(
+                stage_name="Rozpatrywanie na forum Sejmu stanowiska Senatu",
+                stage_type="SenatePositionConsideration",
+                date=dt.date(2027, 3, 16),
+                decision="odrzucono uchwałę Senatu",
+            ),
+            Stage(
+                stage_name="Ustawę przekazano Prezydentowi do podpisu",
+                stage_type="ToPresident",
+                date=dt.date(2027, 3, 16),
+            ),
+        ),
+    )
+    w.touch("3039", w.clock.now(), closure_date=dt.date(2026, 9, 10), passed=True)
+
+    report = w.run()
+
+    assert report.updates == 1
+    _, change, _ = w.publisher.updates[told]
+    assert [st.stage_type for st in change.new_stages] == [
+        "SenatePositionConsideration",
+        "ToPresident",
+    ]

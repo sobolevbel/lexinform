@@ -43,7 +43,34 @@ a candidate is a lead, not a finding, and the first suspicion goes to the probe,
 
 ## Fixed
 
-*(nothing yet in this round)*
+| # | rank | module | what was wrong | how it was found | fix |
+|---|---|---|---|---|---|
+| 20 | P0 | `adapters/sqlite_repo.py` `list_tracked` | a passed bill with no act left `list_tracked` 180 days after `closure_date`, which the Sejm sets at the third reading — druk 210 of term 9 was dropped two days before the Sejm overrode the Senate, so the override, the hand-over, the signature and the act were never told and the card stayed at «Сенат отклонил закон» over a law in force | `checks/31_tracker.py`: the only bill of 3,266 across terms 8–10 to lose a stage; 1 of 2,380 bills with a closure date | the wait ends with the act and nothing else, so the passed-with-no-act arm takes `pending_decision_max_days` and `track_passed_max_days` is gone; measured cost, one extra bill of term 10 |
+
+### 20. A passed bill was dropped while its road still ran
+
+Replaying every process of terms 8–10 through the real tracker one day at a time
+(`checks/31_tracker.py`) told 21,123 posts over 3,266 bills and lost exactly one bill's worth of
+road. Druk 210 of term 9:
+
+```
+2020-02-14 SejmReading  III czytanie «uchwalono»   ← closureDate
+2020-03-13 SenatePosition
+2020-08-14 SenatePositionConsideration  «odrzucono uchwałę Senatu»   ← +182 days
+2020-08-14 ToPresident
+2020-08-25 PresidentSignature
+```
+
+`track_passed_max_days` was 180 days from `closure_date`, so the bill left `list_tracked` on
+2020-08-12 and nothing after that was read. The reasoning for the fix was already in the
+neighbouring test: "`closure_date` is set at the third reading, long before the President sends the
+act on; dropping the bill at 180 days loses the Dziennik Ustaw notice for good" — it had only been
+applied to a veto and a referral to the Tribunal.
+
+| | before | after |
+|---|---|---|
+| bills of terms 8–10 losing a stage | 1 | 0 |
+| bills of term 10 polled past day 180 | 42 (all held by the veto clause) | 43 |
 
 ## Classes we have already had
 

@@ -671,24 +671,28 @@ class SqliteBillRepository:
         channel_id: str,
         *,
         closed_grace_days: int,
-        passed_max_days: int,
         pending_decision_max_days: int,
         now: datetime,
         changed_since: datetime | None = None,
     ) -> list[Bill]:
         """Published bills still worth polling, whichever term they belong to.
 
-        Every window counts from `closure_date`, which the Sejm sets at the third reading, long
-        before the Senate, the President or a veto vote begin — hence the three of them. A bill
-        whose act is in Dziennik Ustaw is kept whatever its age until the act applies: a vacatio
-        legis outruns `closed_grace_days`, and that is the one stretch with a fixed date to give.
-        An entry into force the ELI API has not indexed yet keeps the bill for the same reason.
+        Both windows count from `closure_date`, which the Sejm sets at the third reading, long
+        before the Senate, the President or a veto vote begin — hence the second of them. A law
+        the Sejm has passed has an act ahead of it and nothing but the act ends that wait, so it
+        is followed for `pending_decision_max_days` however quiet it goes: druk 210 of term 9 was
+        answered by the Sejm 182 days after its closure, and a 180-day cap dropped it two days
+        before its own override, signature and act. The cost of the long window is one bill of
+        term 10. A bill whose act is in Dziennik Ustaw is kept whatever its age until the act
+        applies: a vacatio legis outruns `closed_grace_days`, and that is the one stretch with a
+        fixed date to give. An entry into force the ELI API has not indexed yet keeps the bill for
+        the same reason.
 
         `changed_since` narrows to bills whose `change_date` is that recent, plus bills passed and
         still waiting for their act: an ELI can appear with no visible change of the process.
         """
         cutoff = (now - timedelta(days=closed_grace_days)).date().isoformat()
-        passed_cutoff = (now - timedelta(days=passed_max_days)).date().isoformat()
+        decision_cutoff = (now - timedelta(days=pending_decision_max_days)).date().isoformat()
         sql = f"""
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
@@ -706,7 +710,7 @@ class SqliteBillRepository:
             channel_id,
             BillStatus.LINKED.value,
             cutoff,
-            passed_cutoff,
+            decision_cutoff,
             now.date().isoformat(),
             (now - timedelta(days=pending_decision_max_days)).date().isoformat(),
         ]

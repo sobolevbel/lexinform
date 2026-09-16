@@ -86,7 +86,6 @@ class DigestService:
         weekday: int = 6,
         local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
         closed_grace_days: int = 90,
-        passed_max_days: int = 180,
         pending_decision_max_days: int = 1095,
     ) -> None:
         self._repo = repo
@@ -99,7 +98,6 @@ class DigestService:
         self._weekday = weekday
         self._tz = local_tz
         self._closed_grace_days = closed_grace_days
-        self._passed_max_days = passed_max_days
         self._pending_decision_max_days = pending_decision_max_days
 
     def today(self) -> dt.date:
@@ -246,7 +244,6 @@ class DigestService:
         return self._repo.list_tracked(
             self._channel_id,
             closed_grace_days=self._closed_grace_days,
-            passed_max_days=self._passed_max_days,
             pending_decision_max_days=self._pending_decision_max_days,
             now=self._clock.now(),
         )

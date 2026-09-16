@@ -112,7 +112,7 @@ whether that is worth its Sejm re-scan is the open question.
 | Publication notice merged with a stage update | no, separate message |
 | Club breakdown | `voting_club_breakdown`, on since 2026-09-07 |
 | "Today" for reminders | Europe/Warsaw |
-| Tracking cap for passed bills without an act | 180 days |
+| Tracking cap for passed bills without an act | 1095 days, the same as a veto or the Tribunal |
 | In-force reminder repeats the summary | yes |
 | Re-fetch ELI metadata | only while `entry_into_force` is null |
 | Probability that a bill passes | never estimated (the owner's decision) |

@@ -67,7 +67,6 @@ class TrackingOptions:
 
     channel_id: str
     closed_grace_days: int = 90
-    passed_max_days: int = 180
     pending_decision_max_days: int = 1095
     max_publish_attempts: int = 3
     club_breakdown: bool = True
@@ -465,7 +464,6 @@ class StatusTrackingService:
         return self._repo.list_tracked(
             options.channel_id,
             closed_grace_days=options.closed_grace_days,
-            passed_max_days=options.passed_max_days,
             pending_decision_max_days=options.pending_decision_max_days,
             now=self._clock.now(),
             changed_since=changed_since,

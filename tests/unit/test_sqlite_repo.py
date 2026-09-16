@@ -42,7 +42,6 @@ def _tracked(repo: SqliteBillRepository, now: datetime) -> list[str]:
     bills = repo.list_tracked(
         CHANNEL,
         closed_grace_days=30,
-        passed_max_days=180,
         pending_decision_max_days=1095,
         now=now,
     )
@@ -418,7 +417,6 @@ def test_only_bills_with_a_sent_card_are_tracked(
     after = repo.list_tracked(
         CHANNEL,
         closed_grace_days=30,
-        passed_max_days=180,
         pending_decision_max_days=1095,
         now=now,
     )
@@ -452,15 +450,18 @@ def test_passed_bills_stay_tracked_until_their_act_applies(
     assert vacatio_over == []  # the act applies: the reminder query takes over
 
 
-def test_passed_bill_without_an_act_is_dropped_after_passed_max_days(
+def test_a_passed_bill_without_an_act_is_followed_however_quiet_it_goes(
     repo: SqliteBillRepository, process_3039: ProcessDetail
 ) -> None:
+    """Druk 210 of term 9 was answered by the Sejm 182 days after its closure, and a 180-day cap
+    dropped it two days before its own override, signature and act."""
     closed = process_3039.model_copy(update={"closure_date": date(2026, 7, 17), "passed": True})
-    now = datetime(2027, 3, 1, tzinfo=UTC)  # 200+ days and nothing says why
+    now = datetime(2027, 3, 1, tzinfo=UTC)  # 226 days, and the Senate can take longer than that
     repo.upsert_summary(closed, now=now)
     _card_sent(repo, "3039", now)
 
-    assert _tracked(repo, now) == []
+    assert _tracked(repo, now) == ["3039"]
+    assert _tracked(repo, datetime(2029, 9, 1, tzinfo=UTC)) == []  # past the three years
 
 
 def test_a_bill_at_the_tribunal_is_followed_past_the_passed_window(
@@ -527,7 +528,6 @@ def test_list_tracked_filters_by_change_date_but_keeps_passed_bills(
         bills = repo.list_tracked(
             CHANNEL,
             closed_grace_days=90,
-            passed_max_days=180,
             pending_decision_max_days=1095,
             now=now,
             changed_since=changed_since,

@@ -417,7 +417,6 @@ class Container:
                 weekday=s.digest_weekday,
                 local_tz=LOCAL_TZ,
                 closed_grace_days=s.track_closed_grace_days,
-                passed_max_days=s.track_passed_max_days,
                 pending_decision_max_days=s.track_pending_decision_max_days,
             ),
         )
@@ -467,7 +466,6 @@ class Container:
         return TrackingOptions(
             channel_id=self.channel_id(),
             closed_grace_days=settings.track_closed_grace_days,
-            passed_max_days=settings.track_passed_max_days,
             pending_decision_max_days=settings.track_pending_decision_max_days,
             max_publish_attempts=settings.max_publish_attempts,
             club_breakdown=settings.voting_club_breakdown,

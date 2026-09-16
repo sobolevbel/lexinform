@@ -193,13 +193,10 @@ class Settings(BaseSettings):
         default=90,
         description="Publication in Dziennik Ustaw follows the Sejm's closure by 30 to 40 days.",
     )
-    track_passed_max_days: int = Field(
-        default=180, description="Follow passed bills without a published act this long."
-    )
     track_pending_decision_max_days: int = Field(
         default=1095,
-        description="A veto or a referral to the Tribunal can hold a law for years before an act"
-        " appears.",
+        description="A law the Sejm has passed has an act ahead of it: the Senate, a veto or a"
+        " referral to the Tribunal can hold it for years before one appears.",
     )
     track_full_weekday: int = Field(
         default=0, ge=0, le=6, description="Weekday of the full check; 0 is Monday."

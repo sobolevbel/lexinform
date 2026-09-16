@@ -378,7 +378,13 @@ Invariants worth keeping:
   still live, and freezing the card there left it saying «дальше: публикация в Dz.U.» for ever.
   `list_tracked` has to agree, or the refresher never sees the bill: the grace window runs from
   `closure_date`, which the Sejm sets at the third reading, and 2699's ended 35 days before its act
-  applied, so a published act is followed until `entry_into_force`, whatever its age. The one
+  applied, so a published act is followed until `entry_into_force`, whatever its age. **A law the
+  Sejm has passed has an act ahead of it and nothing but the act ends that wait**, so it keeps the
+  three years a veto gets rather than a window of its own: druk 210 of term 9 was answered by the
+  Sejm 182 days after its closure, and the 180-day cap dropped it two days before its own override,
+  hand-over, signature and act — the card stayed at «Сенат отклонил закон» over a law in force. The
+  long window costs one extra bill of term 10, 42 of the 43 past 180 days being held by the veto
+  clause already. The one
   ending `list_tracked` cannot reach is the lapsed term — it drops a row the moment
   `discontinued_at` is set — so `tracking/rollover.py` re-renders those cards itself
   (`Poster.rerender_card`, the method the linkers use to re-tag a thread that gained a number). The
