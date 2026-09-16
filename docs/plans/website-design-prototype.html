@@ -198,6 +198,19 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
   .row__id{grid-column:5;grid-row:1;display:block}
 }
 
+/* ── Вкладки состояния ── */
+.states{display:flex;flex-wrap:wrap;gap:6px;font-family:var(--sans);font-size:15px;margin-bottom:12px}
+.states a{padding:8px 14px;border:1px solid var(--hairline);border-radius:8px;text-decoration:none;min-height:40px;display:inline-flex;align-items:center;gap:8px}
+.states a:hover{border-color:var(--ink);color:var(--ink)}
+.states a[aria-current="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink);font-weight:600}
+.states .num{color:inherit;opacity:.65}
+
+/* ── Ведомость охвата ── */
+.ledger{list-style:none;margin:0;padding:0;display:grid}
+.ledger li{display:grid;grid-template-columns:var(--rail) 72px 1fr;column-gap:var(--gap);padding-block:12px;border-bottom:1px solid var(--hairline);align-items:baseline}
+.ledger span[aria-hidden]{grid-row:1/-1;align-self:stretch}
+.ledger b{font-family:var(--sans);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+
 /* ── Карточка дела ── */
 .bill{display:grid;gap:36px;margin-top:32px}
 @media (min-width:1000px){.bill{grid-template-columns:minmax(0,1fr) 264px;gap:44px}}
@@ -269,6 +282,8 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
 #t-bill:checked  ~ .main #s-bill,
 #t-guide:checked ~ .main #s-guide,
 #t-search:checked~ .main #s-search,
+#t-reach:checked ~ .main #s-reach,
+#t-ends:checked  ~ .main #s-ends,
 #t-states:checked~ .main #s-states,
 #t-tokens:checked~ .main #s-tokens{display:block}
 #t-home:checked  ~ .top .tabs label[for="t-home"],
@@ -276,6 +291,8 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
 #t-bill:checked  ~ .top .tabs label[for="t-bill"],
 #t-guide:checked ~ .top .tabs label[for="t-guide"],
 #t-search:checked~ .top .tabs label[for="t-search"],
+#t-reach:checked ~ .top .tabs label[for="t-reach"],
+#t-ends:checked  ~ .top .tabs label[for="t-ends"],
 #t-states:checked~ .top .tabs label[for="t-states"],
 #t-tokens:checked~ .top .tabs label[for="t-tokens"]{color:var(--ink);font-weight:600;background:var(--paper-sunken)}
 #t-home:focus-visible  ~ .top .tabs label[for="t-home"],
@@ -283,6 +300,8 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
 #t-bill:focus-visible  ~ .top .tabs label[for="t-bill"],
 #t-guide:focus-visible ~ .top .tabs label[for="t-guide"],
 #t-search:focus-visible~ .top .tabs label[for="t-search"],
+#t-reach:focus-visible ~ .top .tabs label[for="t-reach"],
+#t-ends:focus-visible  ~ .top .tabs label[for="t-ends"],
 #t-states:focus-visible~ .top .tabs label[for="t-states"],
 #t-tokens:focus-visible~ .top .tabs label[for="t-tokens"]{outline:2px solid var(--ink);outline-offset:2px}
 
@@ -300,6 +319,8 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
 <input class="vh" type="radio" name="scr" id="t-bill">
 <input class="vh" type="radio" name="scr" id="t-guide">
 <input class="vh" type="radio" name="scr" id="t-search">
+<input class="vh" type="radio" name="scr" id="t-reach">
+<input class="vh" type="radio" name="scr" id="t-ends">
 <input class="vh" type="radio" name="scr" id="t-states">
 <input class="vh" type="radio" name="scr" id="t-tokens">
 
@@ -313,7 +334,9 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
       <label for="t-bill">Дело</label>
       <label for="t-guide">Гайды</label>
       <label for="t-search">Поиск</label>
+      <label for="t-reach">Охват</label>
       <span class="sep" aria-hidden="true"></span>
+      <label for="t-ends">Концовки</label>
       <label for="t-states">Состояния</label>
       <label for="t-tokens">Токены</label>
     </nav>
@@ -430,46 +453,51 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
     <label class="vh" for="q-cat">Поиск по каталогу</label>
     <input id="q-cat" type="search" placeholder="Тема, название, druk 1630, UC104">
     <button class="btn btn--2" type="button">Тема</button>
-    <button class="btn btn--2" type="button">Статус</button>
-    <button class="btn btn--2" type="button">Открыто участие</button>
     <button class="btn btn--2" type="button">Источник</button>
   </form>
-  <p class="ap muted" style="margin-bottom:20px">Сортировка: <a href="#" aria-current="true"><b>по обновлению</b></a> · <a href="#">по сроку</a> · <a href="#">по важности</a></p>
+
+  <nav class="states" aria-label="Состояние дела">
+    <a href="#" aria-current="true">Идёт <span class="num">38</span></a>
+    <a href="#">Принято <span class="num">47</span></a>
+    <a href="#">Не состоялось <span class="num">32</span></a>
+    <a href="#">Всё <span class="num">124</span></a>
+  </nav>
+  <p class="ap muted" style="margin-bottom:20px"><b style="color:var(--ink)">Сначала то, что касается большинства</b> · <a href="#">по дате</a> · <a href="#">по сроку</a></p>
 
   <div class="rows">
     <div class="row r-open">
       <span class="row__rail" aria-hidden="true"></span>
       <p class="row__date">до 21.09</p>
       <p class="row__main"><a class="row__t" href="#">Срок рассмотрения карты побыту сокращают до 60 дней</a><span class="pl" lang="pl">Ustawa o zmianie ustawy o cudzoziemcach</span></p>
-      <p class="row__state">Консультации в Сейме<br><span class="muted">Пребывание</span></p>
+      <p class="row__state">Консультации в Сейме<br><span class="muted">касается многих</span></p>
       <p class="row__id">druk 1630<br><span class="muted">UC104</span></p>
     </div>
     <div class="row r-fact">
       <span class="row__rail" aria-hidden="true"></span>
       <p class="row__date">14.09</p>
       <p class="row__main"><a class="row__t" href="#">Легализация работы сезонных работников</a><span class="pl" lang="pl">Ustawa o zatrudnianiu cudzoziemców</span></p>
-      <p class="row__state">Опубликован в Dz.U.<br><span class="muted">Работа</span></p>
+      <p class="row__state">Опубликован в Dz.U.<br><span class="muted">касается почти всех</span></p>
       <p class="row__id">Dz.U. 2026<br><span class="muted">poz. 936</span></p>
     </div>
     <div class="row r-uncertain">
       <span class="row__rail" aria-hidden="true"></span>
       <p class="row__date">02.09</p>
       <p class="row__main"><a class="row__t" href="#">Признание дипломов: новый порядок нострификации</a><span class="pl" lang="pl">Projekt ustawy o szkolnictwie wyższym</span></p>
-      <p class="row__state">Проект в министерстве<br><span class="muted">Данные RCL от 02.09</span></p>
+      <p class="row__state">Проект в министерстве<br><span class="muted">касается части</span></p>
       <p class="row__id">UD338</p>
     </div>
     <div class="row r-fact">
       <span class="row__rail" aria-hidden="true"></span>
       <p class="row__date">28.08</p>
       <p class="row__main"><a class="row__t" href="#">Пошлина за карту побыту вырастет на 50 злотых</a><span class="pl" lang="pl">Ustawa o opłacie skarbowej</span></p>
-      <p class="row__state">Принят Сеймом<br><span class="muted">Пребывание</span></p>
+      <p class="row__state">Принят Сеймом<br><span class="muted">касается многих</span></p>
       <p class="row__id">druk 2699</p>
     </div>
     <div class="row r-ahead">
       <span class="row__rail" aria-hidden="true"></span>
       <p class="row__date muted">план</p>
       <p class="row__main"><a class="row__t" href="#">Карта Поляка: правительство объявило о пересмотре</a><span class="pl" lang="pl">Wykaz prac legislacyjnych RM</span></p>
-      <p class="row__state">Текста пока нет<br><span class="muted">Гражданство</span></p>
+      <p class="row__state">Текста пока нет<br><span class="muted">касается части</span></p>
       <p class="row__id">UD368</p>
     </div>
   </div>
@@ -550,6 +578,11 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
           <dt>RCL</dt><dd><button type="button" data-copy="12409801">12409801</button></dd>
           <dt>внесение</dt><dd><button type="button" data-copy="RPW/29075/2026">RPW/29075/2026</button></dd>
         </dl>
+      </div>
+      <div>
+        <h3>Важность</h3>
+        <p>Касается многих читателей <span class="muted num">4 из 5</span></p>
+        <p class="ap muted" style="margin-top:6px">Оценка наша, не Сейма. О шансах принятия мы не гадаем.</p>
       </div>
       <div>
         <h3>Темы</h3>
@@ -668,6 +701,120 @@ Z poważaniem,
       <p class="row__state">совпало в тексте</p>
       <p class="row__id" lang="pl">Polski</p>
     </div>
+  </div>
+</section>
+
+<!-- ══ ОХВАТ ══ -->
+<section class="screen wrap" id="s-reach">
+  <div class="stack" style="max-width:66ch">
+    <h1>Что мы читаем и чего не видим</h1>
+    <p class="lede">Страница существует ради последней секции: если ваш вопрос про rozporządzenie, ответа здесь нет, и лучше узнать это сразу.</p>
+  </div>
+
+  <div class="sec">
+    <h2>За текущую каденцию Сейма</h2>
+    <ol class="ledger" style="max-width:640px">
+      <li class="r-fact"><span class="b__rail" aria-hidden="true"></span><b>938</b><p>проектов внесено в Сейм</p></li>
+      <li class="r-fact"><span class="b__rail" aria-hidden="true"></span><b>268</b><p>прошли отбор по ключевым словам</p></li>
+      <li class="r-fact"><span class="b__rail" aria-hidden="true"></span><b>93</b><p>прочитаны моделью целиком и опубликованы здесь</p></li>
+      <li class="r-fact"><span class="b__rail" aria-hidden="true"></span><b>22</b><p>попали в Telegram-канал</p></li>
+      <li class="r-uncertain"><span class="b__rail" aria-hidden="true"></span><b>89</b><p>прочитать пока не удалось</p></li>
+    </ol>
+    <p class="ap muted">Обновляется после каждого импорта. Последний — сегодня, <span class="num">07:23</span>.</p>
+  </div>
+
+  <div class="sec">
+    <h2>Почему не удалось</h2>
+    <div class="b b--wide r-uncertain"><span class="b__rail" aria-hidden="true"></span>
+      <div class="b__body" style="grid-column:2;display:grid;gap:12px">
+        <p>Часть проектов Сейм публикует отсканированной бумагой без текстового слоя, часть файлов сервер отдаёт не с первого раза.</p>
+        <p>Такие дела остаются в очереди и пробуются заново при каждом запуске. Отклонёнными мы их не считаем и из счётчика не убираем.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>Чего мы не отслеживаем</h2>
+    <div class="prose">
+      <p>Rozporządzenia министерств, акты местного права, индивидуальные решения воеводы и судебную практику. Мы читаем проекты законов — то, что проходит через Сейм, RCL и план работ правительства.</p>
+      <p class="ap"><a href="#">Как устроен отбор и что делает модель</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ КОНЦОВКИ ══ -->
+<section class="screen wrap" id="s-ends">
+  <div class="stack" style="max-width:66ch">
+    <h1>Концовки</h1>
+    <p class="lede">Судьбу дела говорит источник, вердикт — мы. Два измерения, которые не должны выглядеть одинаково.</p>
+  </div>
+
+  <div class="sec">
+    <h2>Закрытое дело</h2>
+    <div class="b b--wide r-fact draw" style="--i:0">
+      <span class="b__rail" aria-hidden="true"></span>
+      <div class="b__body" style="grid-column:2;display:grid;gap:12px">
+        <h3 style="font-size:29px">Взносы ZUS за umowa zlecenie считают по-новому</h3>
+        <p class="pl" lang="pl" style="font-size:18px">Projekt ustawy o systemie ubezpieczeń społecznych</p>
+        <p class="ap">Сейм отклонил проект 27 марта 2026 <span class="muted">· Проверено сегодня, <span class="num">07:23</span></span></p>
+      </div>
+    </div>
+    <div class="prose" style="margin-top:8px">
+      <h3>Что это значит</h3>
+      <p>Порядок начисления взносов не изменился: действует прежняя редакция <span lang="pl">ustawy o systemie ubezpieczeń społecznych</span>. Пересчитывать ничего не нужно.</p>
+      <p class="ap muted">Блока «что можно сделать сейчас» на такой карточке нет вообще. Выключенная кнопка обещала бы, что когда-нибудь она включится.</p>
+    </div>
+    <ol class="tl" style="margin-top:8px">
+      <li class="r-fact"><span class="tl__rail" aria-hidden="true"></span><p class="tl__d">12&nbsp;янв.</p><p class="tl__e">Внесён в Сейм</p></li>
+      <li class="r-fact"><span class="tl__rail" aria-hidden="true"></span><p class="tl__d">3&nbsp;февр.</p><p class="tl__e">Первое чтение</p></li>
+      <li class="r-fact"><span class="tl__rail" aria-hidden="true"></span><p class="tl__d">27&nbsp;марта</p><p class="tl__e">Сейм отклонил проект в первом чтении</p></li>
+    </ol>
+    <p class="ap muted" style="margin-top:10px">Хронология не обрывается: у закрытого дела будущего нет.</p>
+  </div>
+
+  <div class="sec">
+    <h2>Семь концовок, и они не взаимозаменяемы</h2>
+    <p class="prose">Читателю важно одно: вернётся ли дело. Поэтому каждая концовка получает своё предложение, а не общее «процесс завершён».</p>
+    <div class="stack" style="gap:14px">
+      <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">Сейм</p><p class="b__body">Сейм отклонил проект 27 марта 2026</p></div>
+      <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">заявитель</p><p class="b__body">Проект отозван заявителем. Может быть внесён заново</p></div>
+      <div class="b r-uncertain"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">реестр</p><p class="b__body">Дело больше не отслеживается. Сейм не опубликовал решения — что произошло, мы не знаем</p></div>
+      <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">RCL</p><p class="b__body">Проект закрыт на этапе министерства, в Сейм не внесён</p></div>
+      <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">план РМ</p><p class="b__body">Правительство отказалось от планов</p></div>
+      <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">вето</p><p class="b__body">Президент наложил вето, Сейм его не преодолел</p></div>
+      <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">каденция</p><p class="b__body">Дело закрыто вместе с каденцией Сейма. Внесут заново — свяжем с новым делом</p></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>Мы это прочитали — вас, скорее всего, не касается</h2>
+    <p class="prose">Семьдесят одно дело из девяноста трёх не попало в канал. Молчание о них хуже страницы: человек, который ищет их по названию, должен получить ответ, а не пустоту.</p>
+
+    <div class="b b--wide r-uncertain" style="margin-top:8px">
+      <span class="b__rail" aria-hidden="true"></span>
+      <div class="b__body" style="grid-column:2;display:grid;gap:12px">
+        <h3 style="font-size:29px">Изменения в порядке выдачи виз для водителей-международников</h3>
+        <p class="pl" lang="pl" style="font-size:18px">Ustawa o zmianie ustawy o transporcie drogowym <span class="num">· druk 2814</span></p>
+      </div>
+    </div>
+
+    <div class="prose" style="margin-top:20px">
+      <p class="ap">Мы прочитали это дело и не нашли, чем оно касается читателей.</p>
+      <p>Проект меняет порядок выдачи виз перевозчикам из третьих стран по заявкам работодателя. На карту побыту, работу по <span lang="pl">umowa zlecenie</span> и воссоединение семьи он не влияет.</p>
+    </div>
+
+    <div class="stack" style="margin-top:22px;gap:12px">
+      <p class="ap muted">Где дело сейчас</p>
+      <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field">4&nbsp;сент.</p><p class="b__body">Принят Сеймом, ждёт Сената</p></div>
+      <p class="ap muted" style="max-width:66ch">Судьба дела показана отдельной строкой со своей линейкой: дело живо, отрицателен наш вердикт, а не его шансы. Пунктир на заголовке — про нашу оценку, и она может быть неверной.</p>
+    </div>
+
+    <div class="raised" style="margin-top:22px;max-width:560px;display:grid;gap:12px">
+      <p>Если это всё-таки про вас — напишите, мы пересмотрим.</p>
+      <p><a class="btn btn--2" href="#">Сообщить</a></p>
+    </div>
+
+    <p class="ap muted" style="margin-top:22px;max-width:66ch">Чего на этой странице нет: «что можно сделать сейчас», подробной хронологии, «что дальше» и приглашения следить. Страница при этом индексируется — в этом весь смысл.</p>
   </div>
 </section>
 
