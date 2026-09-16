@@ -73,7 +73,9 @@ class _StubApi(BaseHTTPRequestHandler):
 @pytest.fixture(scope="module")
 def api() -> Iterator[str]:
     server = ThreadingHTTPServer(("127.0.0.1", 0), _StubApi)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
+    # `shutdown()` waits for the serve loop's next poll, half a second by default.
+    loop = {"poll_interval": 0.01}
+    threading.Thread(target=server.serve_forever, kwargs=loop, daemon=True).start()
     yield f"http://127.0.0.1:{server.server_address[1]}"
     server.shutdown()
     server.server_close()
