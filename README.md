@@ -134,7 +134,8 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
 2. **Prefilter** by Polish word stems on title and description (for RCL: title, hasła and
    działy); misses get their text scanned with the same patterns (accepted on two distinct topics
    or three hits).
-3. **Analyse** the bill with Claude through a structured-output schema (relevance, score,
+3. **Analyse** the current bill text (latest adopted text, then a committee's amended text,
+   otherwise the original print) with Claude through a structured-output schema (relevance, score,
    category, summary, key changes, affected groups, practical impact, effective date). The print
    is trimmed first: the bill, its justification and the core of the regulatory impact assessment
    go in; consultation reports, EU compliance tables and draft regulations (55–80% of a government

@@ -51,6 +51,8 @@ class CostLedger:
                     model=record.model,
                     input_tokens=record.input_tokens or 0,
                     output_tokens=record.output_tokens or 0,
+                    cache_read_input_tokens=record.cache_read_input_tokens or 0,
+                    cache_creation_input_tokens=record.cache_creation_input_tokens or 0,
                 )
             )
             if spent is not None:

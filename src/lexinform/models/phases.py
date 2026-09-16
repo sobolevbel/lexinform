@@ -16,9 +16,10 @@ from lexinform.models.bill import (
     Bill,
     ConsultationWindow,
     process_stages,
+    veto_decision,
     veto_stood,
 )
-from lexinform.models.enums import ApplicantType
+from lexinform.models.enums import ApplicantType, VetoOutcome
 from lexinform.models.rcl import RclProject
 from lexinform.models.sejm import (
     ActInfo,
@@ -416,8 +417,11 @@ def _phase_after_veto_vote(last: Stage) -> Phase | None:
     has already answered before this is reached; what is left is the override, after which
     art. 122 ust. 5 gives the President seven days to sign and no way back to the Tribunal.
     """
-    if "nie uchwalon" in (last.decision or "").lower():
+    outcome = veto_decision(last)
+    if outcome is VetoOutcome.SUSTAINED:
         return None
+    if outcome is VetoOutcome.PENDING:
+        return Phase(key="veto")
     # Art. 122 ust. 5 counts the seven days from this vote, which is the stage's own date.
     return Phase(
         key="president_after_veto",

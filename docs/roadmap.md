@@ -11,6 +11,13 @@ and are in git.
 
 ## Now
 
+- **Reliability of process decisions — incident 2111, 16 Sept 2026.** The immediate fixes
+  separate the observed closure from discovery metadata, select the current text on first
+  analysis, and require explicit evidence of a veto outcome. The next architectural work is
+  one interpretation of source facts, immutable observation snapshots, and a publication plan
+  committed with its observation checkpoint. See [the incident review](incident-2111.md) for
+  the evidence, remaining risks and acceptance criteria; the wider redesign is not implemented.
+
 - **The weekly digest — built on 2026-09-15**, as designed here and with one change: the monthly
   figures count entries *taken in* and not a phase's `seen`, because the register is downloaded
   whole every run and a sum of what the runs looked at would count one entry sixty times. What is

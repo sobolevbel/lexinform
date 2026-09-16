@@ -102,6 +102,7 @@ class Linker:
             self._enricher.name_committees(pre.term, detail.stages),
             stage_fingerprint(detail.stages),
         )
+        self._repo.save_observed_closure(pre.term, print_number, detail.closure_date)
         status = self._status_of_print(pre)
         self._repo.set_status(pre.term, print_number, status, prefilter_hits=pre.prefilter_hits)
         if status is not pre.status:

@@ -1,0 +1,187 @@
+{
+  "term": 10,
+  "number": "2111",
+  "title": "Rządowy projekt ustawy - Przepisy wprowadzające ustawę o statusie osoby najbliższej w związku i umowie o wspólnym pożyciu",
+  "description": "projekt dotyczy nowelizacji wszystkich ustaw, których zmiana jest konieczna w związku z wprowadzeniem ustawy o statusie osoby najbliższej w związku i umowie o wspólnym pożyciu, na mocy której strony umowy uzyskują status osoby najbliższej w związku, mającej zapewnić ochronę prawną związkom nieformalnym",
+  "document_type": "projekt ustawy",
+  "document_type_enum": "BILL",
+  "process_start_date": "2025-12-30",
+  "document_date": "2025-12-30",
+  "change_date": "2026-09-16T16:18:30Z",
+  "closure_date": "2026-05-29",
+  "passed": true,
+  "urgency_status": "NORMAL",
+  "rcl_num": "RM-0610-243-25",
+  "rcl_link": "https://legislacja.rcl.gov.pl/getIdFromLegislacja?number=RM-0610-243-25",
+  "stages": [
+    {
+      "stage_name": "Projekt wpłynął do Sejmu",
+      "stage_type": "Start",
+      "date": "2025-12-30",
+      "print_number": "2111"
+    },
+    {
+      "stage_name": "Skierowano do I czytania na posiedzeniu Sejmu",
+      "stage_type": "ReadingReferral",
+      "date": "2025-12-31",
+      "children": [
+        {
+          "stage_name": "Skierowanie",
+          "stage_type": "Referral",
+          "date": "2025-12-31",
+          "committee_code": "Sejm"
+        }
+      ]
+    },
+    {
+      "stage_name": "I czytanie na posiedzeniu Sejmu",
+      "stage_type": "SejmReading",
+      "date": "2026-02-13",
+      "sitting_num": 51,
+      "children": [
+        {
+          "stage_name": "Skierowanie",
+          "stage_type": "Referral",
+          "date": "2026-02-13",
+          "committee_code": "NON",
+          "committee_name": "Komisja Nadzwyczajna do rozpatrzenia projektów ustaw dotyczących statusu osoby najbliższej w związku i umowy o wspólnym pożyciu"
+        },
+        {
+          "stage_name": "Głosowanie",
+          "stage_type": "Voting",
+          "date": "2026-02-13",
+          "voting": {
+            "yes": 202,
+            "no": 232,
+            "abstain": 2,
+            "not_participating": 24,
+            "sitting": 51,
+            "voting_number": 73,
+            "date": "2026-02-13T09:40:14Z",
+            "pdf_url": "https://api.sejm.gov.pl/sejm/term10/votings/51/73/pdf"
+          }
+        }
+      ]
+    },
+    {
+      "stage_name": "Praca w komisjach po I czytaniu",
+      "stage_type": "CommitteeWork",
+      "date": "2026-05-26",
+      "children": [
+        {
+          "stage_name": "Sprawozdanie komisji",
+          "stage_type": "CommitteeReport",
+          "date": "2026-05-26",
+          "print_number": "2594",
+          "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/2594/2594.pdf",
+          "proposal": "załączony projekt ustawy",
+          "minority_motions": 3
+        }
+      ]
+    },
+    {
+      "stage_name": "II czytanie na posiedzeniu Sejmu",
+      "stage_type": "SejmReading",
+      "date": "2026-05-27",
+      "sitting_num": 58,
+      "decision": "skierowano ponownie do komisji w celu przedstawienia sprawozdania",
+      "children": [
+        {
+          "stage_name": "Skierowanie",
+          "stage_type": "Referral",
+          "date": "2026-05-27",
+          "committee_code": "NON",
+          "committee_name": "Komisja Nadzwyczajna do rozpatrzenia projektów ustaw dotyczących statusu osoby najbliższej w związku i umowy o wspólnym pożyciu"
+        }
+      ]
+    },
+    {
+      "stage_name": "Praca w komisjach po II czytaniu",
+      "stage_type": "CommitteeWork",
+      "date": "2026-05-28",
+      "children": [
+        {
+          "stage_name": "Sprawozdanie komisji",
+          "stage_type": "CommitteeReport",
+          "date": "2026-05-28",
+          "print_number": "2594-A",
+          "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/2594-A/2594-A.pdf",
+          "proposal": "odrzucić wniosek i przyjąć część poprawek",
+          "minority_motions": 0
+        }
+      ]
+    },
+    {
+      "stage_name": "III czytanie na posiedzeniu Sejmu",
+      "stage_type": "SejmReading",
+      "date": "2026-05-29",
+      "sitting_num": 58,
+      "decision": "uchwalono",
+      "text_after3": "https://api.sejm.gov.pl/sejm/term10/processes/2111/attachment/2111_u3.pdf",
+      "children": [
+        {
+          "stage_name": "Głosowanie",
+          "stage_type": "Voting",
+          "date": "2026-05-29",
+          "voting": {
+            "yes": 230,
+            "no": 200,
+            "abstain": 1,
+            "not_participating": 29,
+            "sitting": 58,
+            "voting_number": 103,
+            "date": "2026-05-29T08:22:28Z",
+            "pdf_url": "https://api.sejm.gov.pl/sejm/term10/votings/58/103/pdf"
+          }
+        }
+      ]
+    },
+    {
+      "stage_name": "Stanowisko Senatu",
+      "stage_type": "SenatePosition",
+      "date": "2026-06-25",
+      "position": "nie wniósł poprawek"
+    },
+    {
+      "stage_name": "Ustawę przekazano Prezydentowi do podpisu",
+      "stage_type": "ToPresident",
+      "date": "2026-06-26"
+    },
+    {
+      "stage_name": "Wniosek Prezydenta (weto)",
+      "stage_type": "Veto",
+      "date": "2026-07-17",
+      "print_number": "2864",
+      "children": [
+        {
+          "stage_name": "Skierowanie",
+          "stage_type": "Referral",
+          "date": "2026-07-29",
+          "committee_code": "NON",
+          "committee_name": "Komisja Nadzwyczajna do rozpatrzenia projektów ustaw dotyczących statusu osoby najbliższej w związku i umowy o wspólnym pożyciu"
+        }
+      ]
+    },
+    {
+      "stage_name": "Praca w komisjach nad wnioskiem Prezydenta",
+      "stage_type": "CommitteeWork",
+      "date": "2026-09-16",
+      "children": [
+        {
+          "stage_name": "Sprawozdanie komisji",
+          "stage_type": "CommitteeReport",
+          "date": "2026-09-16",
+          "print_number": "3111",
+          "report_file": "https://api.sejm.gov.pl/sejm/term10/prints/3111/3111.pdf",
+          "proposal": "uchwalić ponownie",
+          "minority_motions": 0
+        }
+      ]
+    },
+    {
+      "stage_name": "Uchwalono",
+      "stage_type": "End"
+    }
+  ],
+  "title_final": "Przepisy wprowadzające ustawę o statusie osoby najbliższej w związku i umowie o wspólnym pożyciu"
+}

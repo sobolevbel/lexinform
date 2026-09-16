@@ -273,6 +273,10 @@ MIGRATIONS: tuple[str, ...] = (
         WHERE kind = 'digest';
     CREATE INDEX ix_pub_channel_sent ON publications(channel_id, status, sent_at);
     """,
+    """
+    ALTER TABLE bills ADD COLUMN observed_closure_date TEXT;
+    UPDATE bills SET observed_closure_date = closure_date WHERE stages_fingerprint IS NOT NULL;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -495,6 +499,12 @@ class SqliteBillRepository:
                 term,
                 number,
             ),
+        )
+
+    def save_observed_closure(self, term: int, number: str, closed: date | None) -> None:
+        self._conn.execute(
+            "UPDATE bills SET observed_closure_date = ? WHERE term = ? AND number = ?",
+            (closed.isoformat() if closed is not None else None, term, number),
         )
 
     def save_analysis(self, term: int, number: str, record: AnalysisRecord) -> None:
@@ -1405,6 +1415,11 @@ class SqliteBillRepository:
             prefilter_hits=json.loads(row["prefilter_hits"] or "[]"),
             stages=stages,
             stages_fingerprint=row["stages_fingerprint"],
+            observed_closure_date=(
+                date.fromisoformat(row["observed_closure_date"])
+                if row["observed_closure_date"]
+                else None
+            ),
             analysis=analysis,
             analysis_attempts=int(row["analysis_attempts"]),
             last_error=row["last_error"],

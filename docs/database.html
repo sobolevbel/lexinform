@@ -500,7 +500,8 @@
             <tr><td>number<span class="tag pk">PK</span></td><td>TEXT</td><td>Номер друка (<code>2699</code>), либо <code>RPW/29075/2026</code> до его присвоения, либо <code>RCL/12401251</code> для проекта на legislacja.rcl.gov.pl.</td></tr>
             <tr><td>title</td><td>TEXT</td><td>Заголовок, продублированный из <code>summary_json</code> ради человекочитаемого дампа и ручных SQL-запросов; модель читает JSON.</td></tr>
             <tr><td>change_date<span class="tag idx">idx</span></td><td>TEXT</td><td>Момент изменения по данным API. По нему сортируются очереди и отсекается <code>changed_since</code> в трекинге.</td></tr>
-            <tr><td>closure_date</td><td>TEXT</td><td>Дата закрытия процесса. Закрытые ведутся ещё <code>closed_grace_days</code>, принятые — дольше, пока не выйдет акт.</td></tr>
+            <tr><td>closure_date</td><td>TEXT</td><td>Дата закрытия по API: для принятого проекта это III чтение, а не завершение всего пути.</td></tr>
+            <tr><td>observed_closure_date</td><td>TEXT</td><td>Добавлено в v24: дата закрытия из последнего обработанного снимка. Discovery её не меняет; первоначальный анализ и связывание с друком задают исходное значение, трекер обновляет после регистрации изменения.</td></tr>
             <tr><td>passed</td><td>INTEGER</td><td>Принят парламентом (не «вступил в силу»): у ветированных тоже 1.</td></tr>
             <tr><td>status<span class="tag idx">idx</span></td><td>TEXT</td><td><code>BillStatus</code>: discovered → skipped_prefilter / text_prefilter_pending → analysis_pending → analyzed, плюс analysis_failed, skipped_cost, skipped_closed (процесс завершился до того, как мы впервые увидели законопроект), linked.</td></tr>
             <tr><td>entry_into_force<span class="tag idx">idx</span></td><td>TEXT</td><td>Дата вступления акта в силу, вынутая из <code>act_json</code> ради запроса «кому сегодня напомнить».</td></tr>
@@ -712,6 +713,7 @@
       <div class="mig"><span class="v">v12</span><span class="what"><b>ux_pub_joint</b> — совместно рассматриваемые друки делят одну карточку.</span></div>
       <div class="mig"><span class="v">v13</span><span class="what"><b>commands</b> — команды оператора по <code>update_id</code> Telegram, записанные до выполнения.</span></div>
       <div class="mig"><span class="v">v14</span><span class="what"><b>commands.executed_at</b> — команда, чей ответ не дошёл, отвечается повторно, а не выполняется повторно.</span></div>
+      <div class="mig"><span class="v">v24</span><span class="what"><b>bills.observed_closure_date</b> — отдельная база сравнения для трекера. Заполняется из <code>closure_date</code> у строк с известным отпечатком стадий, чтобы обновление кода не объявляло старые решения новыми. Версии v15–v23 перечислены в <code>MIGRATIONS</code>; схема выше отражает первоначальную v14 с этим дополнением.</span></div>
     </div>
   </section>
 

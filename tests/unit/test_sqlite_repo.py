@@ -129,6 +129,61 @@ def test_upsert_keeps_status_and_hits_of_a_known_bill(
     assert again.prefilter_hits == ["cudzoziemcy"]
 
 
+def test_discovery_cannot_overwrite_the_tracking_closure_baseline(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)
+    closed = date(2026, 9, 10)
+    repo.save_observed_closure(10, "3039", closed)
+
+    changed = repo.upsert_summary(
+        process_3039.model_copy(update={"closure_date": date(2026, 9, 11)}), now=now
+    )
+    copy = SqliteBillRepository(":memory:")
+    copy.restore(repo.dump())
+    restored = copy.get(10, "3039")
+
+    assert changed.observed_closure_date == closed
+    assert changed.summary.closure_date == date(2026, 9, 11)
+    assert restored is not None and restored.observed_closure_date == closed
+
+
+def test_v24_backfills_only_previously_observed_processes(
+    tmp_path: Path, process_3039: ProcessDetail, now: datetime
+) -> None:
+    legacy = sqlite3.connect(tmp_path / "v23.db")
+    for migration in MIGRATIONS[:23]:
+        legacy.executescript(migration)
+    closed = date(2026, 5, 29)
+    for number, fingerprint in (("2111", "known"), ("2110", None)):
+        summary = process_3039.model_copy(update={"number": number, "closure_date": closed})
+        legacy.execute(
+            "INSERT INTO bills (term, number, title, change_date, closure_date, status,"
+            " summary_json, stages_fingerprint, first_seen_at, last_checked_at)"
+            " VALUES (10, ?, ?, ?, ?, 'analyzed', ?, ?, ?, ?)",
+            (
+                number,
+                summary.title,
+                now.isoformat(),
+                closed.isoformat(),
+                summary.model_dump_json(),
+                fingerprint,
+                now.isoformat(),
+                now.isoformat(),
+            ),
+        )
+    dump = "\n".join(legacy.iterdump()) + "\nPRAGMA user_version = 23;\n"
+    legacy.close()
+    repo = SqliteBillRepository(":memory:")
+
+    repo.restore(dump)
+    known, unread = repo.get(10, "2111"), repo.get(10, "2110")
+
+    assert repo.schema_version == SCHEMA_VERSION
+    assert known is not None and known.observed_closure_date == closed
+    assert unread is not None and unread.observed_closure_date is None
+
+
 def test_analysed_bill_is_a_publish_candidate_until_its_channel_has_a_row(
     repo: SqliteBillRepository, processes_page: list[ProcessSummary], now: datetime
 ) -> None:
@@ -772,6 +827,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "wykaz_json",  # v15
         "supplements_json",  # v18
         "joint_json",  # v20
+        "observed_closure_date",  # v24
     } <= bills
     assert {
         "ux_pub_once_per_kind",
@@ -1041,6 +1097,7 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("DROP TABLE rcl_wykaz_numbers")
         conn.execute("DROP INDEX ux_pub_digest")
         conn.execute("DROP INDEX ix_pub_channel_sent")
+        conn.execute("ALTER TABLE bills DROP COLUMN observed_closure_date")
         conn.execute("PRAGMA user_version = 20")
     dump = source.dump()
     source.close()

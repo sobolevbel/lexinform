@@ -37,6 +37,8 @@ Dependencies flow only in this direction:
 - Publishing is pending-before-send. Create a unique pending publication before delivery; retry `failed`, never automatically resend stale `pending` (they become `unknown`).
 - Prints considered jointly receive one main card; later related prints are `joint_bill` replies. Prefer the government print as the initial card.
 - Discovery must not overwrite existing `/bills` rows. Only the pre-print tracker refreshes them, so changes such as a print assignment or consultation result remain detectable.
+- Discovery must not overwrite `observed_closure_date`: analysis and linking seed it, tracking advances it after recording the change. A closure present in the initial snapshot is not news.
+- Unknown decisions are not successful decisions. Use the shared `VetoOutcome` evidence for veto headers, process completion and deadlines; committee proposals are not Sejm decisions.
 - Derive “what comes next” from stages, agenda and statutory deadlines; never persist it as independent state.
 - Not every stage merits a message. Frame-only transitions are held and included with the next substantive event. Keep rendering-only `Stage` fields out of the stage fingerprint.
 - Reanalyse only after normalized document text changes, not merely after a URL or attachment date changes. After a third reading, avoid a download only when the known conditions prove the adopted text is unchanged.

@@ -69,7 +69,9 @@ class SejmTextSource:
 
     def locate(self, bill: Bill) -> LocatedText:
         detail = self._gateway.get_process(bill.term, bill.number)
-        document = original_document(fetch_print(self._gateway, bill))
+        document = latest_text_document(detail.stages)
+        if document is None:
+            document = original_document(fetch_print(self._gateway, bill))
         return LocatedText(summary=detail, stages=detail.stages, document=document)
 
     def newer(

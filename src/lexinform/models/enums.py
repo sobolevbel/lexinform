@@ -19,6 +19,12 @@ class DocumentType(StrEnum):
     OTHER = "OTHER"
 
 
+class VetoOutcome(StrEnum):
+    PENDING = "pending"
+    OVERRIDDEN = "overridden"
+    SUSTAINED = "sustained"
+
+
 class BillStatus(StrEnum):
     """How far a bill got through our own pipeline.
 

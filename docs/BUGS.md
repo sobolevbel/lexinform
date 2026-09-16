@@ -41,14 +41,18 @@ a candidate is a lead, not a finding, and the first suspicion goes to the probe,
 | 18 | P3 | candidate | `models/events.py:334` | `impact_assessment` gets a header and an icon but no searchable event tag, while `government_position` gets one | 2026-09-16 |
 | 22 | P1 | measured | `services/tracking/service.py` `_post_news` | a substantive change detected by a run with publishing off is held, and a held change is released only by a later post — so a bill that goes quiet afterwards never tells it. 11 bills of the 830 of term 10 lose their referral to the first reading this way (`checks/32_idempotence.py`, one dark day mid-road). The fix is not "flush what has news": `fills_in_the_past` holds exactly such a change on purpose (`db8bd85`), and flushing would undo it. Either the hold records why it was made, or a run that cannot publish does not move the fingerprint either — a product decision, not a patch | 2026-09-16 |
 | 19 | P3 | candidate | `adapters/telegram_format.py:183` | `tribunal_ruled` has an `update_headers` entry and no `EVENT_ICON`, so the Tribunal's ruling is posted under the generic 🔄 while `tribunal` gets ⚖️ | 2026-09-16 |
-| 23 | P0 | candidate | `models/events.py:160` | `_closure_event_of` reads `not veto_stood(bill.stages)` as "the veto was overridden", but `veto_stood` is also `False` before any override vote has happened at all — a bill whose veto is still with committee gets headed «Сейм принял закон» off nothing but a committee report (druk 2111, 16 Sept 2026: committee filed "uchwalić ponownie", no `PresidentMotionConsideration` node exists yet, no vote to show a club breakdown for) | 2026-09-16 |
-| 24 | P1 | candidate | `services/tracking/service.py:611` | `closure_detected` fires whenever `closure_date is not None` and we have never announced it, which is true by construction on a bill's first-ever tracking pass — a `closure_date` set months before we discovered the bill (a veto pending since July) reads as fresh news the moment an old backlogged bill is first tracked, feeding #23 | 2026-09-16 |
-| 25 | P2 | candidate | `services/sources.py:70` | `SejmTextSource.locate()` always returns `original_document(print_info)` (the print's base PDF), skipping the staging check `.newer()` applies two lines later in the same phase (`latest_text_document` / `third_reading_kept_the_text`) — a bill first discovered after its 3rd reading amended the text gets its first analysis off the original submission and is immediately superseded by a paid reanalysis in the same run (druk 2111, 16 Sept 2026: $1.99 then $1.77, the published card briefly carried the analysis of the wrong text) | 2026-09-16 |
 
 ## Fixed
 
 | # | rank | module | what was wrong | how it was found | fix |
 |---|---|---|---|---|---|
+| 23 | P0 | `models/events.py`, `adapters/telegram_format.py` | a pending veto was called an adopted act; correcting the headline alone left the false claim in the body | run 79, 2111, change 10 with zero new stages; `test_veto_evidence.py` | shared explicit veto outcome; no adoption claim without the corresponding evidence |
+| 24 | P1 | `services/tracking/service.py` | an old closure became news on the first tracking pass | `test_late_discovery.py`, including a same-day initial closure and delayed tracking | v24 persists the observed closure separately from discovery metadata; analysis/linking seed it, tracking advances it |
+| 25 | P2 | `services/sources.py` | a late-discovered bill was analysed from the original print, then immediately from its adopted text | real 2111 snapshot, workers 1/4, one initial run and an identical repeat | initial selection uses `latest_text_document`, just as tracking does |
+| 26 | P0 | `models/events.py`, `models/phases.py` | a motion with no/unknown decision meant “veto overridden” and started the signature deadline | `test_veto_evidence.py` | pending is a separate `VetoOutcome`, shared by event and next-step logic |
+| 27 | P0 | `models/events.py` | a committee's recommendation to reject was evidence of a Sejm rejection | `test_veto_evidence.py` | only a reading decision proves rejection; otherwise the closure reason stays unspecified |
+| 28 | P2 | `adapters/telegram_format.py` | any `closure_detected` removed next-step guidance, including III reading with the Senate/President still ahead | `test_veto_evidence.py`, `test_format_updates.py` | check whether a next phase exists before suppressing it |
+| 29 | P3 | `services/cost.py`, `models/report.py` | itemized call costs omitted cache reads/writes although the run total included them | `test_cost_ledger.py` | persist both cache counters on each call; old records default to zero |
 | 21 | P1 | `services/tracking/hearings.py` | the reminder read the bills as `check_updates` loaded them, before this run's own stage loop stored the `PublicHearing` node, so a hearing announced today was told twelve hours late — on a window art. 70b measures in ten days | `checks/32_idempotence.py`: 9 bills of the 830 of term 10 were told only by a second run on the same data | each row is read again, the idiom `DeadlineReminder` already used for the same reason |
 | 20 | P0 | `adapters/sqlite_repo.py` `list_tracked` | a passed bill with no act left `list_tracked` 180 days after `closure_date`, which the Sejm sets at the third reading — druk 210 of term 9 was dropped two days before the Sejm overrode the Senate, so the override, the hand-over, the signature and the act were never told and the card stayed at «Сенат отклонил закон» over a law in force | `checks/31_tracker.py`: the only bill of 3,266 across terms 8–10 to lose a stage; 1 of 2,380 bills with a closure date | the wait ends with the act and nothing else, so the passed-with-no-act arm takes `pending_decision_max_days` and `track_passed_max_days` is gone; measured cost, one extra bill of term 10 |
 
@@ -76,6 +80,12 @@ applied to a veto and a referral to the Tribunal.
 |---|---|---|
 | bills of terms 8–10 losing a stage | 1 | 0 |
 | bills of term 10 polled past day 180 | 42 (all held by the veto clause) | 43 |
+
+### 23–29. Late discovery, false decisions and duplicate cost
+
+See [the incident review](incident-2111.md) for the production evidence, exact spending,
+architectural diagnosis, migration and the staged redesign. The sent historical reply still
+needs an explicit correction; a code fix does not edit old Telegram replies.
 
 ## Classes we have already had
 

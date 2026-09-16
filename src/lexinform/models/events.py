@@ -10,7 +10,15 @@ listed with the next substantive one) and `update_event` names the post: the rea
 
 import datetime as dt
 
-from lexinform.models.bill import Bill, StatusChange, process_stages, veto_stood
+from lexinform.models.bill import (
+    Bill,
+    StatusChange,
+    process_stages,
+    veto_decision,
+    veto_outcome,
+    veto_stood,
+)
+from lexinform.models.enums import VetoOutcome
 from lexinform.models.rcl import RCL_STAGE_TYPE
 from lexinform.models.sejm import (
     Stage,
@@ -157,7 +165,12 @@ def _closure_event_of(change: StatusChange, bill: Bill) -> str:
         return "rcl_closed"
     # The API leaves `passed` true on a law a veto killed, so the listing alone would head the
     # post that closes the road «Сейм принял закон» (druk 410 of term 10 and seven like it).
-    if change.passed and not veto_stood(bill.stages):
+    outcome = veto_outcome(bill.stages)
+    if outcome is VetoOutcome.PENDING:
+        return "text_changed" if change.content_changed else "update"
+    if outcome is VetoOutcome.OVERRIDDEN:
+        return "veto_overridden"
+    if change.passed and outcome is None:
         return "passed"
     return closure_event(bill)
 
@@ -180,9 +193,6 @@ def closure_event(bill: Bill) -> str:
 def _rejects(stage: Stage) -> bool:
     if stage.stage_type == "SejmReading":
         return "odrzuc" in reading_decision(stage)
-    if stage.stage_type == "CommitteeReport":
-        proposal = (stage.proposal or "").lower()
-        return "odrzuc" in proposal and "popraw" not in proposal
     return False
 
 
@@ -229,9 +239,11 @@ def _stage_event(stage: Stage) -> str | None:
 def _veto_vote_event(stage: Stage) -> str:
     """The Sejm voted on the President's motion: "uchwalono ponownie" (the 3/5 majority was
     there, the law stands) or "nie uchwalona ponownie" (the veto ended it)."""
-    return (
-        "veto_sustained" if "nie uchwalon" in (stage.decision or "").lower() else "veto_overridden"
-    )
+    return {
+        VetoOutcome.PENDING: "veto",
+        VetoOutcome.SUSTAINED: "veto_sustained",
+        VetoOutcome.OVERRIDDEN: "veto_overridden",
+    }[veto_decision(stage)]
 
 
 def _reading_event(stage: Stage) -> str:

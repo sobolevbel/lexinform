@@ -380,7 +380,7 @@ class AnalysisService:
         return result
 
     def analyze_bill(self, bill: Bill, *, ignore_cost_limit: bool = False) -> AnalysisOutcome:
-        """First analysis from the original text. Persists the result; raises on failure.
+        """First analysis from the current text. Persists the result; raises on failure.
         `ignore_cost_limit` is the operator's explicit wish (a forced command): the per-bill
         cost guard does not apply."""
         prepared = self._prepare_first(
@@ -774,6 +774,9 @@ class AnalysisService:
         if prepared.first and located.stages is not None:
             self._repo.save_stages(
                 bill.term, bill.number, located.stages, stage_fingerprint(located.stages)
+            )
+            self._repo.save_observed_closure(
+                bill.term, bill.number, (located.summary or bill.summary).closure_date
             )
         document = located.document
         # A scanned print is still signed on its first page: the letter is the one part of it

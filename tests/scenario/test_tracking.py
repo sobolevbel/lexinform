@@ -327,7 +327,7 @@ def test_text_after_third_reading_is_not_read_when_the_sejm_adopted_the_report_a
     w = World(extractor=FakeTextExtractor(by_content={b"%PDF-report": REPORT_TEXT}))
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=FULL_REPORT)
     w.gateway.files[REPORT_URL] = b"%PDF-report"
-    w.run()  # card from the print, then the report's text is analysed
+    w.run()
     w.set_stages("3039", ADOPTED_AS_REPORTED)
     w.gateway.files[AFTER3_URL] = b"%PDF-after3"
     w.clock.advance(days=1)

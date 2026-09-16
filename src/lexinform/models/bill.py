@@ -17,7 +17,7 @@ from lexinform.models.analysis import (
     JointRecord,
     SupplementRecord,
 )
-from lexinform.models.enums import BillStatus, PublicationKind, PublicationStatus
+from lexinform.models.enums import BillStatus, PublicationKind, PublicationStatus, VetoOutcome
 from lexinform.models.rcl import RclProject
 from lexinform.models.sejm import (
     ActInfo,
@@ -69,6 +69,7 @@ class Bill(BaseModel):
     prefilter_hits: list[str] = Field(default_factory=list)
     stages: tuple[Stage, ...] = ()
     stages_fingerprint: str | None = None
+    observed_closure_date: dt.date | None = None
     analysis: AnalysisRecord | None = None
     analysis_attempts: int = 0
     last_error: str | None = None
@@ -200,14 +201,29 @@ def veto_stood(stages: tuple[Stage, ...]) -> bool:
     `PresidentMotionConsideration` decided "nie uchwalona ponownie", eight keep `End` =
     "Uchwalono" and `passed` = true, exactly as if the law had survived.
     """
-    return any(
-        end_names_veto_sustained(stage)
-        or (
-            stage.stage_type == "PresidentMotionConsideration"
-            and "nie uchwalon" in (stage.decision or "").lower()
-        )
-        for stage in stages
-    )
+    return veto_outcome(stages) is VetoOutcome.SUSTAINED
+
+
+def veto_decision(stage: Stage) -> VetoOutcome:
+    """A motion's presence is not evidence that the Sejm has voted on it."""
+    decision = (stage.decision or "").strip().lower()
+    if "nie uchwalon" in decision:
+        return VetoOutcome.SUSTAINED
+    if decision.startswith("uchwalono ponownie"):
+        return VetoOutcome.OVERRIDDEN
+    return VetoOutcome.PENDING
+
+
+def veto_outcome(stages: tuple[Stage, ...]) -> VetoOutcome | None:
+    outcome = None
+    for stage in stages:
+        if stage.stage_type == "Veto":
+            outcome = VetoOutcome.PENDING
+        elif stage.stage_type == "PresidentMotionConsideration":
+            outcome = veto_decision(stage)
+        elif end_names_veto_sustained(stage):
+            outcome = VetoOutcome.SUSTAINED
+    return outcome
 
 
 def process_stages(stages: tuple[Stage, ...]) -> list[Stage]:

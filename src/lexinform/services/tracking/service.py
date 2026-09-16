@@ -577,6 +577,7 @@ class StatusTrackingService:
         named = self._enricher.name_committees(bill.term, detail.stages)
         if new_fp != bill.stages_fingerprint or named != bill.stages:
             self._repo.save_stages(bill.term, bill.number, named, new_fp)
+        self._repo.save_observed_closure(bill.term, bill.number, detail.closure_date)
         self._remember_supplements(bill, found.print_info)
         return change
 
@@ -596,9 +597,8 @@ class StatusTrackingService:
         """The one change worth a post, or None when there is nothing to tell.
 
         A first sight of the stages seeds them silently: there is no "before" to compare with.
-        Closure is detected against what was announced rather than against the stored closure
-        date, because discovery refreshes the stored summary before tracking runs. New stages
-        that are gone again (a stage edited or removed upstream) leave nothing to tell either,
+        Closure is compared with the tracking baseline, which discovery must never overwrite.
+        Stages that are gone again (edited or removed upstream) leave nothing to tell either,
         and neither does a change an earlier run already recorded.
         """
         detail = found.detail
@@ -608,8 +608,10 @@ class StatusTrackingService:
         old_fp = bill.stages_fingerprint
         if old_fp is None:
             return None
-        closure_detected = detail.closure_date is not None and not self._repo.closure_announced(
-            bill.term, bill.number
+        closure_detected = (
+            detail.closure_date is not None
+            and detail.closure_date != bill.observed_closure_date
+            and not self._repo.closure_announced(bill.term, bill.number)
         )
         new_stages = diff_stages(bill.stages, detail.stages) if new_fp != old_fp else []
         filed = found.supplements

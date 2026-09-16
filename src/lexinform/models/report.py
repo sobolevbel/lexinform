@@ -47,12 +47,21 @@ class LlmCall(BaseModel):
     model: str
     input_tokens: int = 0
     output_tokens: int = 0
+    cache_read_input_tokens: int = 0
+    cache_creation_input_tokens: int = 0
 
     @property
     def usage(self) -> dict[str, TokenUsage]:
         """What it cost, in the shape `pricing.cost_usd` prices (which cannot be imported here:
         `pricing` reads these models)."""
-        return {self.model: TokenUsage(input=self.input_tokens, output=self.output_tokens)}
+        return {
+            self.model: TokenUsage(
+                input=self.input_tokens,
+                output=self.output_tokens,
+                cache_read=self.cache_read_input_tokens,
+                cache_creation=self.cache_creation_input_tokens,
+            )
+        }
 
 
 class RunReport(BaseModel):

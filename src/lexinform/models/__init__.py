@@ -38,6 +38,8 @@ from lexinform.models.bill import (
     StatusChange,
     end_names_veto_sustained,
     process_stages,
+    veto_decision,
+    veto_outcome,
     veto_stood,
 )
 from lexinform.models.commands import (
@@ -90,6 +92,7 @@ from lexinform.models.enums import (
     RunMode,
     SourceKind,
     TextSource,
+    VetoOutcome,
 )
 from lexinform.models.events import (
     FRAME_STAGE_TYPES,
@@ -379,7 +382,10 @@ __all__ = [
     "told_stages",
     "update_event",
     "process_stages",
+    "veto_decision",
+    "veto_outcome",
     "veto_stood",
+    "VetoOutcome",
     "usage_of",
     "BILL_KIND",
     "REGISTER_PAGE_URL",

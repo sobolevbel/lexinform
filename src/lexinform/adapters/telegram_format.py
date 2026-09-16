@@ -71,6 +71,7 @@ from lexinform.models import (
     told_stages,
     update_event,
     usage_of,
+    veto_outcome,
     veto_stood,
     wykaz_entry_number,
 )
@@ -600,7 +601,11 @@ class MessageFormatter:
         # `_closure_line` is the one place an update says how the road ended; `_steps_block` ends
         # in `_ended_line`, which says it again from the bill. An RCL project closed and a plan
         # dropped went out with the sentence twice, a blank line apart.
-        over = change.withdrawn or change.discontinued or change.closure_detected
+        over = (
+            change.withdrawn
+            or change.discontinued
+            or (change.closure_detected and next_phase(bill, today=today) is None)
+        )
         steps = "" if over else self._steps_block(bill, today)
 
         summary_block = ""
@@ -669,7 +674,11 @@ class MessageFormatter:
         elif event == "veto_sustained":
             # The header names the outcome; the majority the Sejm needed is what explains it.
             closure = f"{ICON['closed']} {esc(lb.process_veto_sustained)}"
-        elif change.closure_detected and event not in _SELF_EXPLAINING_CLOSURES:
+        elif (
+            change.closure_detected
+            and event not in _SELF_EXPLAINING_CLOSURES
+            and veto_outcome(bill.stages) is None
+        ):
             icon = ICON["passed"] if change.passed else ICON["closed"]
             closure = f"{icon} {esc(lb.process_passed if change.passed else lb.process_closed)}"
         if event == "print_assigned":
