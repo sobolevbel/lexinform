@@ -39,12 +39,14 @@ a candidate is a lead, not a finding, and the first suspicion goes to the probe,
 | 16 | P2 | candidate | `services/tracking/posting.py:336` | a reply falls back to a top-level post when the bill has no card, so a thread reply can appear in the channel as a rootless message | 2026-09-16 |
 | 17 | P3 | candidate | `services/publishing.py:418` | `_safe_print` swallows `ServiceUnavailableError` while every other `except Exception` in the chain re-raises it first — an outage is recorded as a per-bill failure | 2026-09-16 |
 | 18 | P3 | candidate | `models/events.py:334` | `impact_assessment` gets a header and an icon but no searchable event tag, while `government_position` gets one | 2026-09-16 |
+| 22 | P1 | measured | `services/tracking/service.py` `_post_news` | a substantive change detected by a run with publishing off is held, and a held change is released only by a later post — so a bill that goes quiet afterwards never tells it. 11 bills of the 830 of term 10 lose their referral to the first reading this way (`checks/32_idempotence.py`, one dark day mid-road). The fix is not "flush what has news": `fills_in_the_past` holds exactly such a change on purpose (`db8bd85`), and flushing would undo it. Either the hold records why it was made, or a run that cannot publish does not move the fingerprint either — a product decision, not a patch | 2026-09-16 |
 | 19 | P3 | candidate | `adapters/telegram_format.py:183` | `tribunal_ruled` has an `update_headers` entry and no `EVENT_ICON`, so the Tribunal's ruling is posted under the generic 🔄 while `tribunal` gets ⚖️ | 2026-09-16 |
 
 ## Fixed
 
 | # | rank | module | what was wrong | how it was found | fix |
 |---|---|---|---|---|---|
+| 21 | P1 | `services/tracking/hearings.py` | the reminder read the bills as `check_updates` loaded them, before this run's own stage loop stored the `PublicHearing` node, so a hearing announced today was told twelve hours late — on a window art. 70b measures in ten days | `checks/32_idempotence.py`: 9 bills of the 830 of term 10 were told only by a second run on the same data | each row is read again, the idiom `DeadlineReminder` already used for the same reason |
 | 20 | P0 | `adapters/sqlite_repo.py` `list_tracked` | a passed bill with no act left `list_tracked` 180 days after `closure_date`, which the Sejm sets at the third reading — druk 210 of term 9 was dropped two days before the Sejm overrode the Senate, so the override, the hand-over, the signature and the act were never told and the card stayed at «Сенат отклонил закон» over a law in force | `checks/31_tracker.py`: the only bill of 3,266 across terms 8–10 to lose a stage; 1 of 2,380 bills with a closure date | the wait ends with the act and nothing else, so the passed-with-no-act arm takes `pending_decision_max_days` and `track_passed_max_days` is gone; measured cost, one extra bill of term 10 |
 
 ### 20. A passed bill was dropped while its road still ran

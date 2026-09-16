@@ -112,11 +112,29 @@ def test_a_hearing_on_jointly_considered_prints_is_told_once_for_the_group() -> 
         w.touch(
             number, dt.datetime(2026, 9, 7, 5, tzinfo=dt.UTC), prints_considered_jointly=(other,)
         )
-    announced = w.run()  # the reminders read the bills as they were before this run stored them
+    announced = w.run()  # the run that stores the hearing is the run that tells it
 
     report = w.run()
 
-    assert (announced.hearing_reminders, report.hearing_reminders) == (0, 1)
+    assert (announced.hearing_reminders, report.hearing_reminders) == (1, 0)
     assert [bill.number for bill, _, _, _ in w.publisher.hearings] == ["3039"]
     once = w.publication("3050", PublicationKind.HEARING_DEADLINE)
     assert once is not None and once.status is PublicationStatus.SKIPPED
+
+
+def test_a_hearing_that_arrives_in_this_run_is_reminded_in_this_run() -> None:
+    """The stage loop is what puts the hearing on the bill and it runs before the reminders, so
+    reading the bills as they were loaded made the reminder a run — twelve hours — late, on a
+    window art. 70b measures in ten days."""
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
+    w.run()
+    w.set_stages("3039", COMMITTEE_STAGES + (HEARING,))
+    w.clock.advance(days=1)
+    w.touch("3039", w.clock.now())
+
+    report = w.run()
+
+    assert report.hearing_reminders == 1
+    bill, hearing, _reply_to, _today = w.publisher.hearings[0]
+    assert (bill.number, hearing.date) == ("3039", dt.date(2026, 9, 20))

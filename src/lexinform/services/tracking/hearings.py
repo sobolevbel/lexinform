@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import Bill, PublicationKind, PublicationStatus, hearings_due
-from lexinform.ports import Clock
+from lexinform.ports import BillRepository, Clock
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.result import TrackingResult
 
@@ -19,8 +19,15 @@ log = logging.getLogger(__name__)
 
 class HearingReminder:
     def __init__(
-        self, clock: Clock, poster: Poster, *, local_tz: ZoneInfo, days_before: int
+        self,
+        repo: BillRepository,
+        clock: Clock,
+        poster: Poster,
+        *,
+        local_tz: ZoneInfo,
+        days_before: int,
     ) -> None:
+        self._repo = repo
         self._clock = clock
         self._poster = poster
         self._local_tz = local_tz
@@ -28,9 +35,16 @@ class HearingReminder:
 
     def remind(self, bills: list[Bill], result: TrackingResult) -> None:
         """One reply per hearing whose application deadline is `days_before` days away or less
-        and not over (Warsaw time)."""
+        and not over (Warsaw time).
+
+        Each row is read again, because the stage loop that ran before this is what puts the
+        hearing on the bill; reading the list as it was loaded made the reminder a run late.
+        """
         today = self._clock.now().astimezone(self._local_tz).date()
-        for bill in bills:
+        for stale in bills:
+            bill = self._repo.get(stale.term, stale.number)
+            if bill is None:
+                continue
             card = self._poster.card(bill)
             if card is None or card.status is not PublicationStatus.SENT:
                 continue

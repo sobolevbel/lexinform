@@ -96,11 +96,12 @@ def _consultation_reminder(
 
 
 def _hearing_reminder(
-    clock: Clock, poster: Poster, options: TrackingOptions
+    repo: BillRepository, clock: Clock, poster: Poster, options: TrackingOptions
 ) -> HearingReminder | None:
     if options.consultation_reminder_days is None:
         return None
     return HearingReminder(
+        repo,
         clock,
         poster,
         local_tz=options.local_tz,
@@ -275,7 +276,7 @@ class StatusTrackingService:
         self._enricher = enricher
         self._texts = SejmTextSource(gateway)
         self._consultations = consultations
-        self._hearings = _hearing_reminder(clock, poster, options)
+        self._hearings = _hearing_reminder(repo, clock, poster, options)
         self._deadlines = _deadline_reminder(repo, clock, poster, options)
         self._pre_print = PrePrintReconciler(
             gateway,
