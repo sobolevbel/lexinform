@@ -104,6 +104,7 @@ PHASE_STEP = {
     "president_after_senate_silence": "president",
     "veto": "president",
     "tribunal": "president",
+    "tribunal_after_ruling": "president",
     "publication": "journal",
     "in_force": "in_force",
     "in_force_unknown": "in_force",
@@ -383,9 +384,7 @@ def _phase_after(
     if kind == "PresidentMotionConsideration":
         return _phase_after_veto_vote(last)
     if kind == "ConstitutionalTribunalRuling":
-        # The Tribunal has answered and the road stops here whichever way it went: what the
-        # President does with an act found unconstitutional in part is a fresh Sejm process.
-        return None
+        return Phase(key="tribunal_after_ruling")
     if kind == "SenatePositionConsideration" and _sejm_let_the_senate_win(last):
         return None
     if kind in _PRESIDENT_NEXT:

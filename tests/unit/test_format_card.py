@@ -263,7 +263,7 @@ def test_a_card_for_a_bill_already_in_force_says_so_and_links_the_act(
 
     assert "Законопроект: процесс завершён — druk nr 1962" in text
     assert "Уже действует с</b> 01.09.2026" in text
-    assert "Что дальше" not in text and "Что можно сделать" not in text
+    assert "Что можно сделать сейчас:</b> закон уже применяется" in text
     assert "Текст закона (PDF)" in text
 
 
@@ -380,5 +380,5 @@ def test_a_card_names_the_tribunals_ruling(process_1962: ProcessDetail) -> None:
 
     text = MessageFormatter("ru").new_bill(bill_of(ruled), None, today=TODAY).text
 
-    assert "Законопроект: процесс завершён" in text
-    assert "Конституционный трибунал вынес решение по закону." in text
+    assert "дальнейший шаг после решения Конституционного трибунала" in text
+    assert "Решение Конституционного трибунала" in text

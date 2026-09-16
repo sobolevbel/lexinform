@@ -213,6 +213,7 @@ def test_show_reply_adds_status_stage_and_the_last_error(process_3039: ProcessDe
     assert "status: skipped_text_prefilter · prefilter hits: cudzoziemcy" in text
     assert "last error: text prefilter: no hits" in text
     assert "last stage: " in text and "not analysed" in text
+    assert "Что дальше:</b>" in text and "Что можно сделать сейчас:</b>" in text
 
 
 def test_preview_reply_carries_the_card_itself(process_3039: ProcessDetail) -> None:

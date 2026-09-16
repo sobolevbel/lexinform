@@ -80,7 +80,11 @@ class RclProjectReader:
                 project = project.with_stage(self._rcl.get_stage(stored.id, stage.id))
         consultation = self.consultation(project, known=stored.consultation)
         return project.model_copy(
-            update={"consultation": consultation, "print_number": stored.print_number}
+            update={
+                "consultation": consultation,
+                "consultation_attempts": stored.consultation_attempts,
+                "print_number": stored.print_number,
+            }
         )
 
     def consultation(

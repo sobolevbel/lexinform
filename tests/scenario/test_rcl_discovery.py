@@ -127,6 +127,30 @@ def test_a_project_taken_by_its_text_still_gets_its_consultation_letter() -> Non
     assert "направить замечания на dep.prawny@mswia.gov.pl до 08.09.2026" in text
 
 
+def test_a_letter_that_failed_once_is_retried_after_the_project_is_analysed() -> None:
+    w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT))
+    project = w.add_rcl_project(
+        rcl_project(title="Projekt ustawy o zmianie niektórych ustaw", keywords=())
+    )
+    consultation_stage = next(stage for stage in project.stages if stage.is_consultation)
+    del w.rcl.stages[consultation_stage.id]
+
+    w.run()
+
+    first = w.bill(RCL)
+    assert first.status is BillStatus.ANALYZED
+    assert first.rcl is not None and first.rcl.consultation is None
+    assert first.rcl.consultation_attempts == 1
+    w.rcl.stages[consultation_stage.id] = consultation_stage
+
+    w.clock.advance(days=1)
+    w.run()
+
+    repaired = w.bill(RCL)
+    assert repaired.rcl is not None and repaired.rcl.consultation is not None
+    assert repaired.rcl.consultation.email == "dep.prawny@mswia.gov.pl"
+
+
 def test_the_letter_of_a_project_with_a_window_already_read_is_not_fetched_again() -> None:
     w = World()
     project = w.add_rcl_project()  # a title hit: its catalogs and letter are read at discovery

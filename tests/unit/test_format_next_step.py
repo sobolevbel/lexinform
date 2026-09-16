@@ -242,6 +242,24 @@ def test_public_hearing_names_the_application_deadline(process_3039: ProcessDeta
     assert "#слушания #важность5 #легализация #kadencja10druk3039" in reminder
 
 
+def test_public_hearing_reminder_uses_the_application_address_from_the_agenda(
+    process_3039: ProcessDetail,
+) -> None:
+    hearing = Stage(
+        stage_name="Wysłuchanie publiczne",
+        stage_type="PublicHearing",
+        date=dt.date(2026, 9, 30),
+    )
+    bill = bill_of(
+        process_3039.model_copy(update={"stages": (*process_3039.stages, hearing)}),
+        agenda=(sitting(apply_email="hearing@sejm.gov.pl", apply_by=dt.date(2026, 9, 20)),),
+    )
+
+    text = MessageFormatter("ru").hearing_deadline(bill, hearing, today=dt.date(2026, 9, 18)).text
+
+    assert "Заявка на участие в слушании — на адрес hearing@sejm.gov.pl" in text
+
+
 def test_withdrawn_bill_gets_no_next_step(process_3039: ProcessDetail) -> None:
     change = change_of("3039", [], withdrawn=True, closure_detected=True)
     taken_back = bill_of(process_3039, submission=consulted(status="WITHDRAWN"))

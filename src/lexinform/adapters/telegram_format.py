@@ -812,7 +812,9 @@ class MessageFormatter:
         links_block = self._links(self._act_links(bill, act))
         tags = self._tags(bill, f"#{lb.tag_in_force}")
         text = self._assemble(
-            [header, facts], flexible=[summary_block, practical], tail=[links_block, tags]
+            [header, facts],
+            flexible=[summary_block, practical],
+            tail=[self._action_line(bill, today or self._today()), links_block, tags],
         )
         return RenderedMessage(text=text)
 
@@ -1038,6 +1040,9 @@ class MessageFormatter:
                 f"{self._countdown((deadline - today).days)}\n"
                 f"{ICON['action']} {esc(lb.hearing_hint)}"
             )
+            details = self._hearing_application_details(bill, hearing, deadline)
+            if details:
+                facts += f"\n{ICON['action']} {details}"
         links = [link(bill.summary.web_url, lb.link_process)]
         phase = next_phase(bill, today=today)
         for code in phase.committees if phase else ():
@@ -1465,6 +1470,17 @@ class MessageFormatter:
             window = bill.consultation
             if window is not None and window.end is not None:
                 lines.append(f"consultation until {window.end}")
+            last = bill.last_stage
+            if last is not None:
+                lines.append(
+                    self._field(ICON["stage"], self._labels.stage, self._current_stage(bill, last))
+                )
+            today = self._today()
+            lines.extend(
+                line
+                for line in (self._next_step_line(bill, today), self._action_line(bill, today))
+                if line
+            )
         record = bill.analysis
         if record is None:
             lines.append("not analysed")
@@ -1757,6 +1773,21 @@ class MessageFormatter:
             links.insert(0, link(window.survey_url, lb.consultation_link))
         return links
 
+    def _hearing_application_details(self, bill: Bill, hearing: Stage, deadline: dt.date) -> str:
+        """The filing route published in the committee agenda, when the API supplies one."""
+        item = next(
+            (
+                agenda
+                for agenda in bill.agenda
+                if agenda.apply_email
+                and (agenda.apply_by == deadline or agenda.date == hearing.date)
+            ),
+            None,
+        )
+        if item is None:
+            return esc(self._labels.hearing_application_details)
+        return esc(f"{self._labels.agenda_apply} {item.apply_email}")
+
     def _consultation_period(self, window: ConsultationWindow) -> str:
         lb = self._labels
         assert window.end is not None
@@ -2018,6 +2049,12 @@ class MessageFormatter:
         say something — the constitutional-deadline reminder, whose body lists the three things
         the President may do — reads worse for ending in «пока ничего»."""
         lb = self._labels
+        if (
+            bill.act is not None
+            and bill.act.entry_into_force is not None
+            and bill.act.entry_into_force <= today
+        ):
+            return f"{ICON['action']} <b>{esc(lb.action_now)}:</b> {esc(lb.action_in_force)}"
         actions: list[str] = []
         window = bill.consultation
         if bill.wykaz is not None:
@@ -2078,17 +2115,13 @@ class MessageFormatter:
         return self._labels.no_action_labels.get(phase.key)
 
     def _wykaz_actions(self, entry: WykazEntry) -> list[str]:
-        """What a reader can do about a plan: art. 7 of the lobbying act lets anyone file a
-        zgłoszenie zainteresowania with the ministry from the moment the entry is published, and
-        art. 8 ust. 2 makes that the ticket to the Sejm's public hearing of the bill."""
+        """What a reader can do while a government plan has no published draft."""
         if not entry.is_open:
             return []
         lb = self._labels
         organ = entry.organ or lb.wykaz_organ_unknown
         action = esc(lb.action_wykaz_interest.format(organ=organ))
-        # gov.pl has no page of its own for the art. 7 zgłoszenie (every ministry's «Działalność
-        # lobbingowa» page is about the annual reports on professional lobbyists), so the link is
-        # the ministry's site, where its address and its papers are.
+        # The register does not supply a filing endpoint; point to the responsible body's contacts.
         site = ministry_url(entry.organ) if entry.organ else None
         if site is not None:
             action += f" · {link(site, esc(lb.action_ministry_site))}"

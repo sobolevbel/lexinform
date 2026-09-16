@@ -153,6 +153,7 @@ class Labels:
     action_in_polish: str
     action_rcl_comment: str
     action_rcl_window_closed: str
+    action_in_force: str
     rcl_results_hint: str
     rcl_sent_to_sejm: str
     link_rcl_project: str
@@ -190,6 +191,7 @@ class Labels:
     hearing_apply_until: str
     hearing_applications_closed: str
     hearing_hint: str
+    hearing_application_details: str
     tag_hearing: str
     senate_deadline_header: str
     president_deadline_header: str
@@ -415,6 +417,10 @@ RU = Labels(
     action_rcl_window_closed=(
         "публичные консультации уже закрыты, но пока проект в правительстве остаётся:"
     ),
+    action_in_force=(
+        "закон уже применяется: проверьте, касается ли вас изменение, и сверьте сроки и"
+        " документы с текстом Dz.U."
+    ),
     rcl_results_hint=(
         "поданные мнения (stanowiska) и ответ министерства опубликованы на странице проекта на RCL"
     ),
@@ -441,21 +447,14 @@ RU = Labels(
     ),
     wykaz_organ_unknown="профильное министерство",
     action_wykaz_interest=(
-        "подать zgłoszenie zainteresowania pracami nad projektem — это может любой, и сейчас"
-        " действеннее всего: текста ещё нет. В заявлении — имя и адрес, какой интерес защищаете"
-        " и какого решения добиваетесь; отправить в {organ}. Оно публикуется вместе с"
-        " документами проекта (адрес частного лица — нет) и даёт право участвовать в публичном"
-        " слушании в Сейме, если его назначат: заявка на слушание — отдельно, не позднее чем"
-        " за 10 дней (ст. 7 и 8 ust. 2 ustawy o działalności lobbingowej)"
+        "можно заявить интерес к работам над проектом (zgłoszenie zainteresowania): закон"
+        " допускает это с публикации плана. Актуальный порядок и адрес подачи уточните у {organ}"
+        " по официальным контактам"
     ),
-    action_ministry_site="адрес и бланк — на сайте министерства",
+    action_ministry_site="официальные контакты органа",
     action_rcl_interest=(
-        "подать zgłoszenie zainteresowania pracami nad projektem — это может любой. Бланк на"
-        " сайте BIP {organ} (раздел «Działalność lobbingowa»): имя и адрес, какой интерес"
-        " защищаете и какого решения добиваетесь. Заявление публикуется в BIP при документах"
-        " проекта и даёт право участвовать в публичном слушании в Сейме, если его назначат:"
-        " заявка на слушание — отдельно, не позднее чем за 10 дней (ст. 7 и 8 ust. 2 ustawy"
-        " o działalności lobbingowej)"
+        "можно заявить интерес к работам над проектом (zgłoszenie zainteresowania); актуальный"
+        " порядок подачи уточните по официальным контактам {organ}"
     ),
     link_wykaz_entry="Запись в плане работ",
     tag_wykaz="wykazRM",
@@ -478,6 +477,7 @@ RU = Labels(
         " слушаний (рег. Сейма, ст. 70b); если места в зале не хватает, участников ограничивают,"
         " и решает порядок подачи — поэтому заявку стоит подать сразу"
     ),
+    hearing_application_details="способ подачи смотрите в объявлении комиссии по ссылке ниже",
     tag_hearing="слушания",
     senate_deadline_header="Закон в Сенате",
     president_deadline_header="Закон у Президента",
@@ -686,6 +686,10 @@ RU = Labels(
         ),
         "veto_unnamed": "голосование в Сейме по вето: отклонить его можно 3/5 голосов",
         "tribunal": "решение Конституционного трибунала",
+        "tribunal_after_ruling": (
+            "дальнейший шаг после решения Конституционного трибунала: подпись Президента,"
+            " новый druk или публикация в Dziennik Ustaw"
+        ),
         "wykaz": (
             "публикация проекта на RCL и общественные консультации, затем комитеты Совета"
             " министров, Rada Ministrów и внесение в Сейм"
@@ -786,6 +790,10 @@ RU = Labels(
         "in_force_unknown": "пока ничего — закон принят, дата вступления в силу ещё не известна",
         "veto": "пока ничего — решение за Сеймом",
         "tribunal": "пока ничего — решение за Конституционным трибуналом",
+        "tribunal_after_ruling": (
+            "пока ничего — дальнейший шаг зависит от решения Трибунала; следим за подписью"
+            " Президента, новым druk или публикацией в Dz.U."
+        ),
         "wykaz_to_rcl": (
             "пока ничего — ждём публикации проекта на RCL, тогда откроются консультации"
         ),
@@ -1038,6 +1046,10 @@ EN = Labels(
         "the public consultation has closed; while the draft is still with the government there"
         " remains:"
     ),
+    action_in_force=(
+        "the law now applies: check whether the change affects you, and verify deadlines and"
+        " documents in the Dz.U. text"
+    ),
     rcl_results_hint=(
         "the opinions submitted (stanowiska) and the ministry's answer are on the project page"
         " on RCL"
@@ -1063,20 +1075,14 @@ EN = Labels(
     wykaz_metadata_note=("Scored from the register entry: the draft text does not exist yet."),
     wykaz_organ_unknown="the responsible ministry",
     action_wykaz_interest=(
-        "file a zgłoszenie zainteresowania pracami nad projektem — anyone may, and now is when"
-        " it counts: there is no text yet. It states your name and address, the interest you"
-        " protect and the solution you seek; send it to {organ}. It is published with the"
-        " project's papers (a private address is not) and entitles you to the Sejm's public"
-        " hearing should one be held — applied for separately, no later than 10 days before it"
-        " (art. 7 and 8 ust. 2 of the lobbying act)"
+        "you may register an interest in work on the draft (zgłoszenie zainteresowania): the law"
+        " permits this once the plan is published. Confirm the current procedure and delivery"
+        " address with {organ} through its official contacts"
     ),
-    action_ministry_site="the address and the form are on the ministry's site",
+    action_ministry_site="official contacts for the responsible body",
     action_rcl_interest=(
-        "file a zgłoszenie zainteresowania pracami nad projektem — anyone may. The form is on"
-        " {organ}'s BIP page («Działalność lobbingowa»): your name and address, the interest you"
-        " protect and the solution you seek. It is published in the project's BIP file and"
-        " entitles you to the public hearing in the Sejm should one be held — applied for"
-        " separately, no later than 10 days before it (art. 7 and 8 ust. 2 of the lobbying act)"
+        "you may register an interest in work on the draft (zgłoszenie zainteresowania); confirm"
+        " the current filing procedure through {organ}'s official contacts"
     ),
     link_wykaz_entry="Register entry",
     tag_wykaz="wykazRM",
@@ -1099,6 +1105,7 @@ EN = Labels(
         " hearing (Regulamin Sejmu art. 70b); if the room cannot hold everyone, participation is"
         " capped in the order applications arrived — so it is worth applying at once"
     ),
+    hearing_application_details="see the committee announcement below for how to apply",
     tag_hearing="hearing",
     senate_deadline_header="The act is with the Senate",
     president_deadline_header="The act is with the President",
@@ -1313,6 +1320,10 @@ EN = Labels(
         ),
         "veto_unnamed": "the Sejm votes on the veto: overriding it takes a 3/5 majority",
         "tribunal": "ruling of the Constitutional Tribunal",
+        "tribunal_after_ruling": (
+            "the next step after the Tribunal's ruling: the President's signature, a new print"
+            " or publication in Dziennik Ustaw"
+        ),
         "wykaz": (
             "the draft published on RCL with a public consultation, then the committees of the"
             " Council of Ministers, the Council itself and the Sejm"
@@ -1414,6 +1425,10 @@ EN = Labels(
         "in_force_unknown": "nothing yet — the act is passed, the entry-into-force date is unknown",
         "veto": "nothing yet — the Sejm decides",
         "tribunal": "nothing yet — the Constitutional Tribunal decides",
+        "tribunal_after_ruling": (
+            "nothing yet — the next step depends on the ruling; watching for the President's"
+            " signature, a new print or publication in Dz.U."
+        ),
         "wykaz": "nothing yet — waiting for the draft on RCL, which opens the consultation",
         "rcl_consultation": "nothing yet — the consultation on this draft has closed",
         "rcl_opinions": "nothing yet — the draft is being agreed inside the government",

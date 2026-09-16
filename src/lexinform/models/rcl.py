@@ -236,6 +236,7 @@ class RclProject(BaseModel):
     print_number: str | None = None
     stages: tuple[RclStage, ...] = ()
     consultation: RclConsultation | None = None
+    consultation_attempts: int = 0
 
     @property
     def number(self) -> str:

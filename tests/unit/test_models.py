@@ -647,7 +647,9 @@ def test_an_adjourned_reading_decided_nothing(process_1962: ProcessDetail) -> No
     assert not is_over(bill, today=TODAY)
 
 
-def test_the_tribunal_ruling_ends_the_road(process_1962: ProcessDetail) -> None:
+def test_a_tribunal_ruling_keeps_the_road_open_until_its_consequence_appears(
+    process_1962: ProcessDetail,
+) -> None:
     """Ten bills of term 10 stand at `PresidentToTribunal`; the ruling that answers them is a
     top-level stage the code did not know, so the tree came out unrecognised."""
     ruling = Stage(
@@ -657,8 +659,10 @@ def test_the_tribunal_ruling_ends_the_road(process_1962: ProcessDetail) -> None:
     )
     bill = _bill(process_1962, (*process_1962.stages[:-1], ruling))
 
-    assert next_phase(bill, today=TODAY) is None
-    assert is_over(bill, today=TODAY)
+    phase = next_phase(bill, today=TODAY)
+
+    assert phase is not None and phase.key == "tribunal_after_ruling"
+    assert not is_over(bill, today=TODAY)
 
 
 def test_the_committee_answering_the_veto_is_not_answering_the_senate(

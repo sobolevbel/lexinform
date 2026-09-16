@@ -689,7 +689,6 @@ class SqliteBillRepository:
         """
         cutoff = (now - timedelta(days=closed_grace_days)).date().isoformat()
         passed_cutoff = (now - timedelta(days=passed_max_days)).date().isoformat()
-        decision_cutoff = (now - timedelta(days=pending_decision_max_days)).date().isoformat()
         sql = f"""
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
@@ -699,7 +698,9 @@ class SqliteBillRepository:
                    OR (b.passed = 1 AND b.act_json IS NULL AND b.closure_date >= ?)
                    OR (b.act_json IS NOT NULL
                        AND (b.entry_into_force IS NULL OR b.entry_into_force > ?))
-                   OR (b.act_json IS NULL AND b.closure_date >= ? AND {self._AWAITS_DECISION}))
+                   OR (b.act_json IS NULL AND b.closure_date >= ?
+                       AND {self._AWAITS_DECISION})
+                   OR (b.act_json IS NULL AND {self._AWAITS_TRIBUNAL_OUTCOME}))
             """
         params: list[object] = [
             channel_id,
@@ -707,7 +708,7 @@ class SqliteBillRepository:
             cutoff,
             passed_cutoff,
             now.date().isoformat(),
-            decision_cutoff,
+            (now - timedelta(days=pending_decision_max_days)).date().isoformat(),
         ]
         if changed_since is not None:
             # Timestamps are stored as ISO text in UTC; compare to the second. A wykaz row is
@@ -766,13 +767,20 @@ class SqliteBillRepository:
             json_extract(b.rcl_json, '$.consultation.deadline')
         )
     """
-    # The President sent the law back to the Sejm or to the Tribunal: the answer can take years,
-    # and until it comes the bill still has an act ahead of it.
+    # A veto or referral for review remains actionable while the statutory decision window is open.
     _AWAITS_DECISION = """
         EXISTS (
             SELECT 1 FROM json_tree(b.stages_json)
             WHERE json_tree.key = 'stage_type'
               AND json_tree.value IN ('Veto', 'PresidentToTribunal')
+        )
+    """
+    # A ruling can lead to signature, a fresh print, or promulgation; no legal deadline bounds it.
+    _AWAITS_TRIBUNAL_OUTCOME = """
+        EXISTS (
+            SELECT 1 FROM json_tree(b.stages_json)
+            WHERE json_tree.key = 'stage_type'
+              AND json_tree.value = 'ConstitutionalTribunalRuling'
         )
     """
     # A one-off post blocks its bill once it is sent, skipped, pending or unknown; a failed one

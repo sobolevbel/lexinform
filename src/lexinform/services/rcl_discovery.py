@@ -32,6 +32,8 @@ from lexinform.services.rcl_projects import RclProjectReader
 
 log = logging.getLogger(__name__)
 
+CONSULTATION_READ_ATTEMPTS = 2
+
 
 @dataclass
 class RclDiscoveryResult:
@@ -142,20 +144,24 @@ class RclDiscoveryService:
         self._ingest(term, project, result)
 
     def read_consultations(self, *, limit: int) -> int:
-        """The consultation letter of every project waiting to be analysed and missing one.
+        """Read a missing consultation letter before a card can lose its action window.
 
         A project taken by its text is read for that text alone (`_deepen` → `with_text`), so the
         letter sits in a catalog nobody opened and nothing opens later — the watcher only refreshes
         a project the listing shows as changed. Without it the card goes out with no deadline, no
         address and no reminder, and `action_rcl_window_closed` cannot be reached at all.
 
-        One page per project and only while it waits for an analysis that costs a dollar, so the
-        queue drains itself. An unreadable project is a warning: the analysis has its own text.
+        A project can have moved to `analyzed` after a transient failure, so that status belongs
+        in the retry queue too. Two failed reads are recorded on the project: this repairs old
+        rows without making a project that genuinely has no letter cost a request forever.
         """
         read = 0
-        for bill in self._repo.list_by_status([BillStatus.ANALYSIS_PENDING], limit=limit):
+        statuses = [BillStatus.ANALYSIS_PENDING, BillStatus.ANALYZED]
+        for bill in self._repo.list_by_status(statuses, limit=limit):
             project = bill.rcl
             if project is None or project.consultation is not None:
+                continue
+            if project.consultation_attempts >= CONSULTATION_READ_ATTEMPTS:
                 continue
             if project.consultation_stage is None:
                 continue
@@ -165,7 +171,23 @@ class RclDiscoveryService:
                 raise
             except Exception as exc:
                 log.warning("consultation of %s not read: %s", bill.number, exc)
+                self._repo.save_rcl(
+                    bill.term,
+                    bill.number,
+                    project.model_copy(
+                        update={"consultation_attempts": project.consultation_attempts + 1}
+                    ),
+                )
                 continue
+            complete = complete.model_copy(
+                update={
+                    "consultation_attempts": (
+                        CONSULTATION_READ_ATTEMPTS
+                        if complete.consultation is None
+                        else project.consultation_attempts + 1
+                    )
+                }
+            )
             self._repo.save_rcl(bill.term, bill.number, complete)
             read += 1
             log.info("%s: consultation %s", bill.number, complete.consultation)

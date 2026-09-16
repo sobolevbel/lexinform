@@ -478,6 +478,19 @@ def test_a_bill_at_the_tribunal_is_followed_past_the_passed_window(
     assert _tracked(repo, now) == ["3039"]
 
 
+def test_a_bill_after_a_tribunal_ruling_keeps_waiting_for_its_consequence(
+    repo: SqliteBillRepository, process_3039: ProcessDetail
+) -> None:
+    closed = process_3039.model_copy(update={"closure_date": date(2026, 7, 17), "passed": True})
+    now = datetime(2027, 3, 1, tzinfo=UTC)
+    repo.upsert_summary(closed, now=now)
+    stages = (Stage(stage_type="ConstitutionalTribunalRuling", stage_name="Wyrok TK"),)
+    repo.save_stages(10, "3039", stages, stage_fingerprint(stages))
+    _card_sent(repo, "3039", now)
+
+    assert _tracked(repo, now) == ["3039"]
+
+
 def test_an_act_whose_entry_into_force_is_unknown_stays_tracked(
     repo: SqliteBillRepository, process_3039: ProcessDetail
 ) -> None:

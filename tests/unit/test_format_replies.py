@@ -164,3 +164,4 @@ def test_the_in_force_reminder_does_not_claim_today_when_a_run_was_missed(
 
     assert fmt.in_force(late).text.startswith("⚖️ <b>Закон вступил в силу")
     assert fmt.in_force(due).text.startswith("⚖️ <b>С сегодняшнего дня действует")
+    assert "Что можно сделать сейчас:</b> закон уже применяется" in fmt.in_force(due).text
