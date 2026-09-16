@@ -9,6 +9,7 @@ accident fails here instead of calling api.sejm.gov.pl from the suite.
 
 import json
 import threading
+import time
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -39,6 +40,12 @@ from tests.harness import rcl_project, submission, summary, wykaz_entry
 runner = CliRunner()
 
 NOWHERE = "http://127.0.0.1:9"  # the discard port: a request here is refused, never routed out
+
+
+@pytest.fixture(autouse=True)
+def instant_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A command pointed at the dead port retries three times, 1+2+4 real seconds of the suite."""
+    monkeypatch.setattr(time, "sleep", lambda _seconds: None)
 
 
 class _StubApi(BaseHTTPRequestHandler):

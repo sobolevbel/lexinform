@@ -76,7 +76,7 @@ class SejmApiClient:
         max_retries: int = 3,
         backoff_seconds: float = 1.0,
         transport: httpx.BaseTransport | None = None,
-        sleep: Callable[[float], None] = time.sleep,
+        sleep: Callable[[float], None] | None = None,
     ) -> None:
         self._client = httpx.Client(
             base_url=base_url.rstrip("/"),
@@ -89,7 +89,9 @@ class SejmApiClient:
         self._page_size = page_size
         self._max_retries = max_retries
         self._backoff = backoff_seconds
-        self._sleep = sleep
+        # Looked up here and not bound as a default: a default binds at import and no test that
+        # builds the container can then shorten the 1+2+4 seconds of a refused host.
+        self._sleep = sleep or time.sleep
 
     def list_terms(self) -> tuple[SejmTerm, ...]:
         """GET /sejm/term: every term of the Sejm; the running one is flagged `current`."""
