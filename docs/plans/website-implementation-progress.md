@@ -29,7 +29,7 @@ when its acceptance result and checks are recorded here.
 | --- | --- | --- |
 | WEB-01 | Complete | Pinned state audited; launch corpus and v1 audit fixture recorded |
 | WEB-02a | Complete | Workspace, Django/Wagtail skeleton, PostgreSQL and first User migration |
-| WEB-02b | Not started | — |
+| WEB-02b | In progress | Editorial revision/translation spike complete; MFA and task worker remain |
 | WEB-03 | Not started | — |
 | WEB-04a | Not started | — |
 | WEB-04b | Not started | — |
@@ -126,3 +126,31 @@ Checks performed:
 - Ruff check and format check for web source, tests and stubs: passed.
 - Existing bot tests: passed; existing strict mypy and Ruff gates: passed.
 - `uv lock --check`: passed.
+
+### 2026-09-16 — WEB-02b editorial prototype
+
+Added the first two planned editorial types rather than disposable spike models. `GuidePage` is a
+Wagtail page with a constrained StreamField; `Topic` is a translatable, revisioned, draft-aware and
+previewable snippet. The topic model will be reused by catalog filtering later, while the guide
+page grows into the full block set in WEB-08.
+
+The scenario tests prove that structured guide content survives publication, a second locale keeps
+the same `translation_key`, an unpublished manual edit does not change the live row, preview renders
+the draft, and publishing that revision updates the live content. Preview carries `noindex` from
+the first implementation.
+
+Strict mypy remains enabled. Wagtail 8 does not publish PEP 561 metadata, so only the concrete
+Wagtail boundaries used by the project have local stubs; the one Django-plugin error caused by
+Wagtail's runtime reverse Page relations is disabled only for the two model modules and the
+Wagtail model boundary.
+
+Checks performed:
+
+- Editorial migration generated and applied on PostgreSQL 17: passed.
+- `makemigrations --check --dry-run`: no changes.
+- Guide publication and topic translation/draft/preview scenarios: 2 passed.
+- Web strict mypy: 27 files, no issues.
+- Ruff check and format check: passed.
+
+WEB-02b remains active: staff MFA and the database task worker failure/restart spike are not yet
+implemented.

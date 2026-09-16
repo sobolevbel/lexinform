@@ -8,6 +8,7 @@ BASE_DIR = Path(__file__).resolve().parents[3]
 
 INSTALLED_APPS = [
     "lexinform_web.accounts",
+    "lexinform_web.editorial",
     "lexinform_web.operations",
     "wagtail.contrib.settings",
     "wagtail.contrib.redirects",
@@ -100,6 +101,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 WAGTAIL_SITE_NAME = "lexinform"
+WAGTAIL_PAGE_MODEL = "wagtailcore.Page"
 WAGTAILADMIN_BASE_URL = "http://localhost:8000"
 
 SECRET_KEY = ""

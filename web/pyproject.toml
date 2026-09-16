@@ -41,3 +41,8 @@ warn_unreachable = true
 
 [tool.django-stubs]
 django_settings_module = "lexinform_web.config.test"
+
+[[tool.mypy.overrides]]
+# Wagtail 8 is not PEP 561 typed; its runtime-only Page relations confuse the Django plugin.
+module = ["lexinform_web.accounts.models", "lexinform_web.editorial.models", "wagtail.models"]
+disable_error_code = ["django-manager-missing"]
