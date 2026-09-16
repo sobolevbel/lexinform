@@ -1,0 +1,839 @@
+<title>Маргиналия для lexinform</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Literata:ital,opsz,wght@0,7..72,400..700;1,7..72,400..500&display=swap">
+<style>
+/* ── Токены. Базовые — из assets/brand/README.md, производные — из §4 концепта ── */
+:root{
+  --paper:#F4EFE6;
+  --paper-raised:#FBF8F2;
+  --paper-sunken:#E9E2D5;
+  --ink:#10161F;
+  --ink-2:#4A5462;
+  --red:#C0362C;
+  --on-red:#FBF8F2;
+  --rule-uncertain:#6E7A8A;
+  --hairline:rgba(16,22,31,.14);
+  --footer-bg:#2B3443;
+  --footer-ink:#F4EFE6;
+  --footer-ink-2:#9AA4B4;
+
+  --serif:"Literata",Georgia,"Times New Roman",serif;
+  --sans:"Fira Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+
+  --rail:3px;
+  --field:68px;
+  --gap:20px;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#10161F;
+    --paper-raised:#18202C;
+    --paper-sunken:#0A0E15;
+    --ink:#EDE6DA;
+    --ink-2:#A9B2BF;
+    --red:#E4675C;
+    --on-red:#10161F;
+    --rule-uncertain:#7C8898;
+    --hairline:rgba(237,230,218,.16);
+    --footer-bg:#0A0E15;
+    --footer-ink:#EDE6DA;
+    --footer-ink-2:#8C96A5;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#10161F;
+  --paper-raised:#18202C;
+  --paper-sunken:#0A0E15;
+  --ink:#EDE6DA;
+  --ink-2:#A9B2BF;
+  --red:#E4675C;
+  --on-red:#10161F;
+  --rule-uncertain:#7C8898;
+  --hairline:rgba(237,230,218,.16);
+  --footer-bg:#0A0E15;
+  --footer-ink:#EDE6DA;
+  --footer-ink-2:#8C96A5;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--serif);
+  font-size:18px;
+  line-height:1.56;
+  -webkit-text-size-adjust:100%;
+}
+@media (max-width:719px){body{font-size:17px}}
+
+h1,h2,h3{font-weight:600;text-wrap:balance;margin:0}
+h1{font-size:40px;line-height:1.15;letter-spacing:-.01em}
+h2{font-size:29px;line-height:1.24}
+h3{font-size:23px;line-height:1.3}
+@media (max-width:719px){h1{font-size:30px;line-height:1.2}h2{font-size:24px}h3{font-size:20px}}
+p{margin:0}
+
+a{color:var(--ink);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+a:hover{color:var(--red);text-decoration-color:var(--red)}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:2px}
+
+.wrap{max-width:1240px;margin:0 auto;padding-inline:24px}
+@media (max-width:719px){.wrap{padding-inline:16px}}
+
+/* ── Аппарат: всё, что пришло из источника ── */
+.ap{font-family:var(--sans);font-size:15px;line-height:1.45;font-weight:450}
+.ap--sm{font-size:13px;letter-spacing:.01em;font-weight:500}
+.muted{color:var(--ink-2)}
+.pl{font-style:italic;color:var(--ink-2);font-size:.9em}
+.num{font-family:var(--sans);font-variant-numeric:tabular-nums lining-nums}
+
+/* ── Знак ── */
+.mark{display:inline-flex;align-items:stretch;gap:7px;text-decoration:none;color:inherit}
+.mark__bar{width:4px;background:var(--red);border-radius:0}
+.mark__sign{font-family:Didot,"Bodoni 72","Playfair Display",Georgia,serif;font-size:27px;line-height:1;font-weight:400}
+.mark__word{font-family:var(--sans);font-weight:600;font-size:19px;letter-spacing:-.01em;align-self:center}
+
+/* ── Шапка ── */
+.top{border-bottom:1px solid var(--hairline);background:var(--paper)}
+.top__in{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding-block:16px}
+.top__sp{flex:1 1 auto}
+
+.lang{font-family:var(--sans);font-size:15px}
+.lang>summary{cursor:pointer;list-style:none;padding:6px 10px;border:1px solid var(--hairline);border-radius:8px;min-height:32px;display:inline-flex;align-items:center}
+.lang>summary::-webkit-details-marker{display:none}
+.lang__menu{position:absolute;margin-top:6px;background:var(--paper-raised);border:1px solid var(--hairline);border-radius:8px;padding:6px;display:grid;gap:2px;z-index:5;box-shadow:none}
+.lang__menu a{display:block;padding:8px 12px;text-decoration:none;border-radius:6px;white-space:nowrap}
+.lang__menu a:hover{background:var(--paper-sunken)}
+.lang__menu a[aria-current="true"]{font-weight:600;text-decoration:underline;text-underline-offset:3px}
+
+/* ── Навигация экранов (она же меню сайта) ── */
+.vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.tabs{display:flex;flex-wrap:wrap;gap:4px 2px;font-family:var(--sans);font-size:16px}
+.tabs label{padding:8px 12px;border-radius:8px;cursor:pointer;min-height:40px;display:inline-flex;align-items:center;color:var(--ink-2)}
+.tabs label:hover{color:var(--ink);background:var(--paper-sunken)}
+.tabs .sep{width:1px;background:var(--hairline);margin-inline:8px;align-self:stretch}
+
+.screen{display:none;padding-block:40px 64px}
+.screen[data-open]{display:block}
+
+/* ── Блок с линейкой: единственное структурное устройство ── */
+.b{display:grid;grid-template-columns:var(--rail) 1fr;column-gap:var(--gap);align-items:start}
+.b+.b{margin-top:0}
+.b__rail{grid-column:1;grid-row:1/-1;align-self:stretch;min-height:100%;border-radius:0}
+.b__field{grid-column:2;grid-row:auto}
+.b__body{grid-column:2}
+@media (min-width:760px){
+  .b:not(.b--wide){grid-template-columns:var(--rail) var(--field) 1fr}
+  .b:not(.b--wide) .b__field{grid-column:2;grid-row:1}
+  .b:not(.b--wide) .b__body{grid-column:3;grid-row:1}
+}
+.b__field{font-family:var(--sans);font-size:15px;font-variant-numeric:tabular-nums;color:var(--ink-2);padding-top:2px}
+
+.r-open .b__rail{background:var(--red)}
+.r-fact .b__rail{background:var(--ink)}
+.r-uncertain .b__rail{background:repeating-linear-gradient(to bottom,var(--rule-uncertain) 0 6px,transparent 6px 12px)}
+.r-ahead .b__rail{background:none}
+
+@media (prefers-reduced-motion:no-preference){
+  .draw .b__rail{transform-origin:top;animation:draw .24s ease-out both;animation-delay:calc(var(--i,0)*60ms)}
+}
+@keyframes draw{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+
+/* ── Секции ── */
+.sec{display:grid;gap:18px;margin-top:44px}
+.sec:first-child{margin-top:0}
+.sec__head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+
+.stack{display:grid;gap:24px}
+.lede{font-size:23px;line-height:1.48;max-width:34ch}
+.prose{max-width:66ch;display:grid;gap:16px}
+.cols{display:grid;gap:44px;grid-template-columns:1fr}
+@media (min-width:900px){.cols{grid-template-columns:1.1fr 1fr}}
+
+/* ── Поиск ── */
+.search{display:flex;gap:8px;flex-wrap:wrap;max-width:640px}
+.search input{
+  flex:1 1 260px;min-width:0;font-family:var(--sans);font-size:17px;
+  padding:14px 16px;min-height:52px;border:1px solid var(--hairline);border-radius:8px;
+  background:var(--paper-raised);color:var(--ink);
+}
+.search input::placeholder{color:var(--ink-2)}
+
+/* ── Кнопки ── */
+.btn{
+  font-family:var(--sans);font-size:16px;font-weight:500;
+  min-height:48px;padding:12px 20px;border-radius:8px;border:1.5px solid transparent;
+  background:var(--red);color:var(--on-red);cursor:pointer;text-decoration:none;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.btn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn--2{background:transparent;color:var(--ink);border-color:var(--ink)}
+.btn--2:hover{background:var(--ink);color:var(--paper)}
+.btn--sm{min-height:36px;padding:7px 12px;font-size:14px}
+
+/* ── Поверхности ── */
+.raised{background:var(--paper-raised);border-radius:2px;padding:20px 22px}
+.sunken{background:var(--paper-sunken);border-radius:2px;padding:18px 20px}
+
+/* ── Каталог: строки, не плитки ── */
+.rows{border-top:1px solid var(--hairline)}
+.row{
+  display:grid;grid-template-columns:var(--rail) 1fr;column-gap:var(--gap);
+  padding-block:18px;border-bottom:1px solid var(--hairline);align-items:start;
+}
+.row__rail{grid-column:1;grid-row:1/-1;align-self:stretch}
+.row__date,.row__main,.row__state,.row__id{grid-column:2}
+.row__date{font-family:var(--sans);font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.row__main{margin-block:2px 6px}
+.row__t{font-size:19px;line-height:1.35;font-weight:600;display:block;text-decoration:none}
+.row:hover .row__t{color:var(--red)}
+.row__state,.row__id{font-family:var(--sans);font-size:14px;color:var(--ink-2);display:flex;gap:14px;flex-wrap:wrap}
+.row__id{font-variant-numeric:tabular-nums}
+@media (min-width:860px){
+  .row{grid-template-columns:var(--rail) 76px minmax(0,1fr) 168px 168px;align-items:start}
+  .row__date{grid-column:2;grid-row:1}
+  .row__main{grid-column:3;grid-row:1;margin:0}
+  .row__state{grid-column:4;grid-row:1;display:block}
+  .row__id{grid-column:5;grid-row:1;display:block}
+}
+
+/* ── Карточка дела ── */
+.bill{display:grid;gap:36px;margin-top:32px}
+@media (min-width:1000px){.bill{grid-template-columns:minmax(0,1fr) 264px;gap:44px}}
+.aside{display:grid;gap:26px;align-content:start;font-family:var(--sans);font-size:15px}
+@media (min-width:1000px){.aside{border-left:1px solid var(--hairline);padding-left:28px}}
+.aside h3{font-family:var(--sans);font-size:15px;font-weight:600;margin-bottom:8px}
+.ids{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0;font-variant-numeric:tabular-nums}
+.ids dt{color:var(--ink-2)}
+.ids dd{margin:0}
+.ids dd button{
+  font:inherit;font-variant-numeric:tabular-nums;background:none;border:0;padding:0;cursor:pointer;color:inherit;
+  text-decoration:underline;text-decoration-color:var(--hairline);text-underline-offset:3px;
+}
+.ids dd button:hover{text-decoration-color:var(--red);color:var(--red)}
+.aside ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+
+/* ── Хронология: линия обрывается на последнем факте ── */
+.tl{list-style:none;margin:0;padding:0;display:grid}
+.tl li{display:grid;grid-template-columns:var(--rail) 1fr;column-gap:var(--gap);padding-block:10px;position:relative}
+@media (min-width:760px){.tl li{grid-template-columns:var(--rail) var(--field) 1fr}}
+.tl__rail{grid-column:1;grid-row:1/-1;align-self:stretch;background:var(--ink)}
+.tl li.r-open .tl__rail{background:var(--red)}
+.tl__d{font-family:var(--sans);font-size:15px;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.tl__e{grid-column:2}
+@media (min-width:760px){.tl__d{grid-column:2;grid-row:1}.tl__e{grid-column:3;grid-row:1}}
+.tl__break{margin-left:0;padding-left:calc(var(--rail) + var(--gap));color:var(--ink-2);font-family:var(--sans);font-size:14px;padding-top:8px}
+.tl__break::before{content:"";display:block;width:var(--rail);height:14px;margin-left:calc(-1 * (var(--rail) + var(--gap)));background:repeating-linear-gradient(to bottom,var(--rule-uncertain) 0 3px,transparent 3px 8px);margin-bottom:6px}
+
+/* ── Гайд ── */
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:28px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:44px 1fr;column-gap:16px;align-items:start}
+.steps li::before{
+  counter-increment:s;content:counter(s);
+  font-family:var(--sans);font-size:26px;font-weight:600;line-height:1;color:var(--red);
+  font-variant-numeric:tabular-nums;padding-top:4px;
+}
+.tpl__t{white-space:pre-wrap;font-family:var(--serif);font-size:17px;line-height:1.6;margin:0}
+.tpl__bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.toc{font-family:var(--sans);font-size:16px;display:grid;gap:6px;margin:0;padding-left:20px}
+
+/* ── Состояния и токены ── */
+.state{display:grid;gap:10px;padding-block:22px;border-bottom:1px solid var(--hairline)}
+.state__n{font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:.01em;color:var(--ink-2)}
+.sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin:0;padding:0;list-style:none}
+.sw li{border:1px solid var(--hairline);border-radius:2px;overflow:hidden}
+.sw__chip{height:64px}
+.sw__t{padding:10px 12px;font-family:var(--sans);font-size:14px;display:grid;gap:2px}
+.sw__t b{font-weight:600;font-variant-numeric:tabular-nums}
+.scale{display:grid;gap:14px;margin:0;padding:0;list-style:none}
+.scale li{display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:baseline;border-bottom:1px solid var(--hairline);padding-bottom:12px}
+.scale span{font-family:var(--sans);font-size:13px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tbl{width:100%;border-collapse:collapse;font-family:var(--sans);font-size:15px;text-align:left}
+.tbl th,.tbl td{padding:10px 14px 10px 0;border-bottom:1px solid var(--hairline);vertical-align:top}
+.tbl th{font-weight:600}
+.scroll{overflow-x:auto}
+
+/* ── Заметка прототипа ── */
+.note{
+  border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);
+  padding-block:12px;font-family:var(--sans);font-size:14px;color:var(--ink-2);
+}
+.foot{background:var(--footer-bg);color:var(--footer-ink);margin-top:40px}
+.foot a{color:var(--footer-ink)}
+.foot__in{padding-block:32px;display:grid;gap:10px;font-family:var(--sans);font-size:15px}
+.foot .muted{color:var(--footer-ink-2)}
+
+#t-home:checked  ~ .main #s-home,
+#t-cat:checked   ~ .main #s-cat,
+#t-bill:checked  ~ .main #s-bill,
+#t-guide:checked ~ .main #s-guide,
+#t-search:checked~ .main #s-search,
+#t-states:checked~ .main #s-states,
+#t-tokens:checked~ .main #s-tokens{display:block}
+#t-home:checked  ~ .top .tabs label[for="t-home"],
+#t-cat:checked   ~ .top .tabs label[for="t-cat"],
+#t-bill:checked  ~ .top .tabs label[for="t-bill"],
+#t-guide:checked ~ .top .tabs label[for="t-guide"],
+#t-search:checked~ .top .tabs label[for="t-search"],
+#t-states:checked~ .top .tabs label[for="t-states"],
+#t-tokens:checked~ .top .tabs label[for="t-tokens"]{color:var(--ink);font-weight:600;background:var(--paper-sunken)}
+#t-home:focus-visible  ~ .top .tabs label[for="t-home"],
+#t-cat:focus-visible   ~ .top .tabs label[for="t-cat"],
+#t-bill:focus-visible  ~ .top .tabs label[for="t-bill"],
+#t-guide:focus-visible ~ .top .tabs label[for="t-guide"],
+#t-search:focus-visible~ .top .tabs label[for="t-search"],
+#t-states:focus-visible~ .top .tabs label[for="t-states"],
+#t-tokens:focus-visible~ .top .tabs label[for="t-tokens"]{outline:2px solid var(--ink);outline-offset:2px}
+
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  background:var(--ink);color:var(--paper);font-family:var(--sans);font-size:15px;
+  padding:12px 18px;border-radius:8px;z-index:20;
+}
+</style>
+
+<div class="app">
+
+<input class="vh" type="radio" name="scr" id="t-home" checked>
+<input class="vh" type="radio" name="scr" id="t-cat">
+<input class="vh" type="radio" name="scr" id="t-bill">
+<input class="vh" type="radio" name="scr" id="t-guide">
+<input class="vh" type="radio" name="scr" id="t-search">
+<input class="vh" type="radio" name="scr" id="t-states">
+<input class="vh" type="radio" name="scr" id="t-tokens">
+
+
+<header class="top">
+  <div class="wrap top__in">
+    <span class="mark"><span class="mark__bar"></span><span class="mark__sign">§</span><span class="mark__word">lexinform</span></span>
+    <nav class="tabs" aria-label="Разделы">
+      <label for="t-home">Главная</label>
+      <label for="t-cat">Законопроекты</label>
+      <label for="t-bill">Дело</label>
+      <label for="t-guide">Гайды</label>
+      <label for="t-search">Поиск</label>
+      <span class="sep" aria-hidden="true"></span>
+      <label for="t-states">Состояния</label>
+      <label for="t-tokens">Токены</label>
+    </nav>
+    <span class="top__sp"></span>
+    <details class="lang">
+      <summary>Русский</summary>
+      <div class="lang__menu">
+        <a href="#" lang="pl" hreflang="pl">Polski</a>
+        <a href="#" lang="en" hreflang="en">English</a>
+        <a href="#" lang="be" hreflang="be">Беларуская</a>
+        <a href="#" lang="uk" hreflang="uk">Українська</a>
+        <a href="#" lang="ru" hreflang="ru" aria-current="true">Русский</a>
+      </div>
+    </details>
+  </div>
+</header>
+
+<div class="main">
+
+<!-- ══ ГЛАВНАЯ ══ -->
+<section class="screen wrap" id="s-home" data-open>
+  <p class="note">Прототип направления «Маргиналия». Номера дел настоящие, формулировки макетные — юридических утверждений страница не содержит.</p>
+
+  <div class="stack" style="margin-top:36px">
+    <h1>Что меняется в польском праве для тех, кто здесь живёт</h1>
+    <p class="lede">Читаем проекты законов и пишем, кого они касаются и до какого числа можно повлиять.</p>
+    <form class="search" role="search" onsubmit="return false">
+      <label class="vh" for="q-home">Тема, польское название или номер дела</label>
+      <input id="q-home" type="search" placeholder="Тема, название, druk 1630, UC104">
+      <button class="btn" type="submit">Искать</button>
+    </form>
+  </div>
+
+  <div class="sec draw">
+    <div class="sec__head">
+      <h2>Сегодня можно повлиять</h2>
+      <p class="ap"><a href="#">Все открытые окна, 4</a></p>
+    </div>
+
+    <div class="b b--wide r-open raised" style="--i:0">
+      <span class="b__rail" aria-hidden="true"></span>
+      <p class="b__field">до 21&nbsp;сентября</p>
+      <div class="b__body prose">
+        <h3><a href="#" style="text-decoration:none">Срок рассмотрения карты побыту сокращают до 60 дней</a></h3>
+        <p class="pl" lang="pl">Ustawa o zmianie ustawy o cudzoziemcach</p>
+        <p>Мнение принимает комиссия Сейма. Отправить может кто угодно, гражданство не требуется.</p>
+        <p class="ap"><a href="#">Как отправить мнение — инструкция на 5 минут</a></p>
+      </div>
+    </div>
+
+    <div class="b b--wide r-open raised" style="--i:1">
+      <span class="b__rail" aria-hidden="true"></span>
+      <p class="b__field">до 30&nbsp;сентября</p>
+      <div class="b__body prose">
+        <h3><a href="#" style="text-decoration:none">Взносы ZUS за umowa zlecenie считают по-новому</a></h3>
+        <p class="pl" lang="pl">Projekt ustawy o systemie ubezpieczeń społecznych</p>
+        <p>Проект ещё в министерстве. Замечания принимают по электронной почте, ответ публикуют на RCL.</p>
+        <p class="ap"><a href="#">Как отправить замечание в министерство</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:56px">
+    <div class="cols">
+      <div class="stack">
+        <h2>Ближайшие даты</h2>
+        <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field">18&nbsp;сент.</p>
+          <p class="b__body">Комиссия ENM рассматривает поправки, 10:30, зал 24</p></div>
+        <div class="b r-uncertain"><span class="b__rail" aria-hidden="true"></span><p class="b__field">23&nbsp;сент.</p>
+          <p class="b__body">Заседание назначено условно: только если Сейм передаст проект в комиссию</p></div>
+        <div class="b r-open"><span class="b__rail" aria-hidden="true"></span><p class="b__field">30&nbsp;сент.</p>
+          <p class="b__body">Истекает срок Сената по делу о сезонной работе</p></div>
+        <div class="b r-ahead"><span class="b__rail" aria-hidden="true"></span><p class="b__field muted">не&nbsp;назн.</p>
+          <p class="b__body muted">Второе чтение по карте побыту. Дата не назначена</p></div>
+      </div>
+
+      <div class="stack">
+        <h2>Читают перед подачей документов</h2>
+        <div class="prose">
+          <h3><a href="#" style="text-decoration:none">Как отправить мнение на проект закона</a></h3>
+          <p class="ap muted">Проверено 12 сентября</p>
+        </div>
+        <div class="prose">
+          <h3><a href="#" style="text-decoration:none">Что делать, если срок карты побыту истекает при рассмотрении</a></h3>
+          <p class="ap muted">Проверено 9 сентября</p>
+        </div>
+        <div class="prose">
+          <h3><a href="#" style="text-decoration:none">Куда идти, если урядник требует документ, которого нет в списке</a></h3>
+          <p class="ap muted">Проверено 2 сентября</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:56px">
+    <div class="sec__head"><h2>Что изменилось за неделю</h2><p class="ap"><a href="#">Вся хронология канала</a></p></div>
+    <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field">15&nbsp;сент.</p>
+      <p class="b__body">Направлен в комиссию ENM — <a href="#">карта побыту, 60 дней</a></p></div>
+    <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field">14&nbsp;сент.</p>
+      <p class="b__body">Опубликован в Dz.U. — <a href="#">легализация работы сезонных работников</a></p></div>
+    <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field">11&nbsp;сент.</p>
+      <p class="b__body">Правительство сняло проект с плана — <a href="#">признание дипломов</a></p></div>
+  </div>
+</section>
+
+<!-- ══ КАТАЛОГ ══ -->
+<section class="screen wrap" id="s-cat">
+  <div class="sec__head" style="margin-bottom:22px">
+    <h1>Законопроекты</h1>
+    <p class="ap muted"><span class="num">124</span> дела</p>
+  </div>
+
+  <form class="search" onsubmit="return false" style="max-width:none;margin-bottom:18px">
+    <label class="vh" for="q-cat">Поиск по каталогу</label>
+    <input id="q-cat" type="search" placeholder="Тема, название, druk 1630, UC104">
+    <button class="btn btn--2" type="button">Тема</button>
+    <button class="btn btn--2" type="button">Статус</button>
+    <button class="btn btn--2" type="button">Открыто участие</button>
+    <button class="btn btn--2" type="button">Источник</button>
+  </form>
+  <p class="ap muted" style="margin-bottom:20px">Сортировка: <a href="#" aria-current="true"><b>по обновлению</b></a> · <a href="#">по сроку</a> · <a href="#">по важности</a></p>
+
+  <div class="rows">
+    <div class="row r-open">
+      <span class="row__rail" aria-hidden="true"></span>
+      <p class="row__date">до 21.09</p>
+      <p class="row__main"><a class="row__t" href="#">Срок рассмотрения карты побыту сокращают до 60 дней</a><span class="pl" lang="pl">Ustawa o zmianie ustawy o cudzoziemcach</span></p>
+      <p class="row__state">Консультации в Сейме<br><span class="muted">Пребывание</span></p>
+      <p class="row__id">druk 1630<br><span class="muted">UC104</span></p>
+    </div>
+    <div class="row r-fact">
+      <span class="row__rail" aria-hidden="true"></span>
+      <p class="row__date">14.09</p>
+      <p class="row__main"><a class="row__t" href="#">Легализация работы сезонных работников</a><span class="pl" lang="pl">Ustawa o zatrudnianiu cudzoziemców</span></p>
+      <p class="row__state">Опубликован в Dz.U.<br><span class="muted">Работа</span></p>
+      <p class="row__id">Dz.U. 2026<br><span class="muted">poz. 936</span></p>
+    </div>
+    <div class="row r-uncertain">
+      <span class="row__rail" aria-hidden="true"></span>
+      <p class="row__date">02.09</p>
+      <p class="row__main"><a class="row__t" href="#">Признание дипломов: новый порядок нострификации</a><span class="pl" lang="pl">Projekt ustawy o szkolnictwie wyższym</span></p>
+      <p class="row__state">Проект в министерстве<br><span class="muted">Данные RCL от 02.09</span></p>
+      <p class="row__id">UD338</p>
+    </div>
+    <div class="row r-fact">
+      <span class="row__rail" aria-hidden="true"></span>
+      <p class="row__date">28.08</p>
+      <p class="row__main"><a class="row__t" href="#">Пошлина за карту побыту вырастет на 50 злотых</a><span class="pl" lang="pl">Ustawa o opłacie skarbowej</span></p>
+      <p class="row__state">Принят Сеймом<br><span class="muted">Пребывание</span></p>
+      <p class="row__id">druk 2699</p>
+    </div>
+    <div class="row r-ahead">
+      <span class="row__rail" aria-hidden="true"></span>
+      <p class="row__date muted">план</p>
+      <p class="row__main"><a class="row__t" href="#">Карта Поляка: правительство объявило о пересмотре</a><span class="pl" lang="pl">Wykaz prac legislacyjnych RM</span></p>
+      <p class="row__state">Текста пока нет<br><span class="muted">Гражданство</span></p>
+      <p class="row__id">UD368</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ КАРТОЧКА ДЕЛА ══ -->
+<section class="screen wrap" id="s-bill">
+  <p class="ap muted" style="margin-bottom:20px"><a href="#">Законопроекты</a> → <a href="#">Пребывание</a></p>
+
+  <div class="b b--wide r-open draw" style="--i:0">
+    <span class="b__rail" aria-hidden="true"></span>
+    <div class="b__body" style="grid-column:2;display:grid;gap:12px">
+      <h1>Срок рассмотрения карты побыту сокращают до 60 дней</h1>
+      <p class="pl" lang="pl" style="font-size:19px">Ustawa o zmianie ustawy o cudzoziemcach</p>
+      <p class="ap">Рассматривает комиссия Сейма <span class="muted">· Проверено сегодня, <span class="num">07:23</span></span></p>
+    </div>
+  </div>
+
+  <div class="bill">
+    <div class="stack" style="gap:44px">
+      <div class="prose">
+        <h2>Коротко</h2>
+        <p>Воевода должен будет решить по заявлению за 60 дней вместо 90. Правило коснётся заявлений, поданных после вступления закона в силу; поданные раньше рассматривают по-старому.</p>
+      </div>
+
+      <div class="b b--wide r-open raised">
+        <span class="b__rail" aria-hidden="true"></span>
+        <div class="b__body prose" style="grid-column:2">
+          <h2>Что можно сделать сейчас</h2>
+          <p>Отправить мнение в комиссию до 21 сентября. Комиссия обязана приобщить его к материалам дела.</p>
+          <p style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+            <a class="btn" href="#">Открыть форму мнения</a>
+            <a class="ap" href="#">Как это сделать — инструкция</a>
+          </p>
+          <p class="ap muted">Основание: <span lang="pl">art. 8 ust. 2 ustawy o działalności lobbingowej</span></p>
+        </div>
+      </div>
+
+      <div class="stack">
+        <h2>Что дальше</h2>
+        <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field">18&nbsp;сент.</p>
+          <p class="b__body">Комиссия ENM, 10:30, зал 24. Заседание назначено.</p></div>
+        <div class="b r-ahead"><span class="b__rail" aria-hidden="true"></span><p class="b__field muted">дальше</p>
+          <p class="b__body muted">Второе чтение. Дата не назначена.</p></div>
+      </div>
+
+      <div class="prose">
+        <h2>Ключевые изменения</h2>
+        <ul style="margin:0;padding-left:22px;display:grid;gap:8px">
+          <li>Срок рассмотрения — 60 дней вместо 90.</li>
+          <li>Молчание ведомства перестаёт продлевать срок автоматически.</li>
+          <li>Отказ должен называть, какого документа не хватило.</li>
+        </ul>
+      </div>
+
+      <div class="prose">
+        <h2>Кого касается</h2>
+        <p>Тех, кто подаёт на карту побыту после вступления в силу: работающих по umowa o pracę и umowa zlecenie, студентов, членов семей граждан Польши.</p>
+      </div>
+
+      <div class="stack">
+        <div class="sec__head"><h2>Хронология</h2><p class="ap"><a href="#">Вся история и версии объяснения</a></p></div>
+        <ol class="tl">
+          <li class="r-fact"><span class="tl__rail" aria-hidden="true"></span><p class="tl__d">4&nbsp;сент.</p><p class="tl__e">Внесён в Сейм</p></li>
+          <li class="r-fact"><span class="tl__rail" aria-hidden="true"></span><p class="tl__d">9&nbsp;сент.</p><p class="tl__e">Первое чтение</p></li>
+          <li class="r-fact"><span class="tl__rail" aria-hidden="true"></span><p class="tl__d">15&nbsp;сент.</p><p class="tl__e">Направлен в комиссию ENM</p></li>
+        </ol>
+        <p class="tl__break">Линия обрывается здесь: дальше путь не гарантирован, и дат у него нет.</p>
+      </div>
+    </div>
+
+    <aside class="aside">
+      <div>
+        <h3>Номера дела</h3>
+        <dl class="ids">
+          <dt>druk</dt><dd><button type="button" data-copy="1630">1630</button></dd>
+          <dt>wykaz</dt><dd><button type="button" data-copy="UC104">UC104</button></dd>
+          <dt>RCL</dt><dd><button type="button" data-copy="12409801">12409801</button></dd>
+          <dt>внесение</dt><dd><button type="button" data-copy="RPW/29075/2026">RPW/29075/2026</button></dd>
+        </dl>
+      </div>
+      <div>
+        <h3>Темы</h3>
+        <ul><li><a href="#">Пребывание</a></li><li><a href="#">Работа</a></li></ul>
+      </div>
+      <div>
+        <h3>Официальные источники</h3>
+        <ul>
+          <li><a href="#">Процесс в Sejm</a></li>
+          <li><a href="#">Проект на RCL</a></li>
+          <li><a href="#">Текст проекта, PDF</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>Обсуждение</h3>
+        <ul><li><a href="#">Чат проекта в Telegram</a></li></ul>
+      </div>
+      <div>
+        <h3>Нашли ошибку?</h3>
+        <ul><li><a href="#">Сообщить об устаревших данных</a></li></ul>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ══ ГАЙД ══ -->
+<section class="screen wrap" id="s-guide">
+  <p class="ap muted" style="margin-bottom:20px"><a href="#">Гайды</a> → <a href="#">Участие</a></p>
+  <div class="stack" style="max-width:66ch">
+    <h1>Как отправить мнение на проект закона</h1>
+    <p class="ap muted">Проверено 12 сентября. Следующая проверка — 12 декабря.</p>
+    <p class="ap">Нужны: адрес электронной почты и номер дела. Времени — около 10 минут.</p>
+
+    <div class="sunken">
+      <p class="ap" style="font-weight:600;margin-bottom:8px">Содержание</p>
+      <ol class="toc">
+        <li><a href="#">Что понадобится</a></li>
+        <li><a href="#">Куда писать</a></li>
+        <li><a href="#">Что написать</a></li>
+        <li><a href="#">Что будет дальше</a></li>
+      </ol>
+    </div>
+
+    <ol class="steps" style="margin-top:16px">
+      <li><div class="prose"><h3>Что понадобится</h3><p>Номер дела и адрес комиссии. Оба есть на карточке дела в строке «Номера дела».</p></div></li>
+      <li><div class="prose"><h3>Куда писать</h3><p>В комиссию, которая ведёт проект. Адрес электронной почты публикует Сейм; для проектов, которые ещё в министерстве, адрес указан в письме о консультациях.</p></div></li>
+      <li>
+        <div class="prose">
+          <h3>Что написать</h3>
+          <p>Представьтесь, назовите проект по номеру и попросите изменить один конкретный пункт. Письмо пишется по-польски.</p>
+          <div class="b b--wide r-fact sunken tpl" style="margin-top:12px">
+            <span class="b__rail" aria-hidden="true"></span>
+            <div class="b__body" style="grid-column:2;display:grid;gap:12px">
+              <p class="tpl__t" lang="pl">Szanowni Państwo,
+
+w związku z konsultacjami projektu ustawy o zmianie ustawy o cudzoziemcach (druk nr 1630) zgłaszam uwagę do art. 112 ust. 1.
+
+Proponuję, aby termin rozpatrzenia wniosku liczony był od dnia złożenia kompletu dokumentów.
+
+Z poważaniem,
+[imię i nazwisko]</p>
+              <div class="tpl__bar">
+                <button class="btn btn--sm" type="button" id="copy-tpl" hidden>Скопировать текст</button>
+                <span class="ap muted">Текст можно выделить и скопировать вручную.</span>
+              </div>
+            </div>
+          </div>
+          <p class="ap muted" style="margin-top:10px">Что здесь сказано: вы представляетесь, называете проект по номеру и просите отсчитывать срок с подачи полного комплекта документов.</p>
+        </div>
+      </li>
+      <li><div class="prose"><h3>Что будет дальше</h3><p>Комиссия приобщает мнение к материалам дела. Ответа лично вам не будет: результат виден в протоколе заседания, ссылку мы поставим на карточке.</p></div></li>
+    </ol>
+
+    <div class="b b--wide r-open raised" style="margin-top:16px">
+      <span class="b__rail" aria-hidden="true"></span>
+      <div class="b__body" style="grid-column:2">
+        <p>Срок: до 21 сентября. После этой даты комиссия мнения не принимает.</p>
+      </div>
+    </div>
+
+    <div class="stack" style="margin-top:28px">
+      <h2>Связанные дела</h2>
+      <p class="ap"><a href="#">Срок рассмотрения карты побыту сокращают до 60 дней</a> <span class="muted">— druk 1630</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ПОИСК ══ -->
+<section class="screen wrap" id="s-search">
+  <form class="search" onsubmit="return false" style="max-width:640px">
+    <label class="vh" for="q-s">Поисковый запрос</label>
+    <input id="q-s" type="search" value="karta pobytu">
+    <button class="btn" type="submit">Искать</button>
+  </form>
+  <p class="ap muted" style="margin:16px 0 24px">Найдено <span class="num">7</span>. Искали в русском и в польских названиях. <a href="#">Искать во всех языках</a></p>
+
+  <div class="rows">
+    <div class="row r-open">
+      <span class="row__rail" aria-hidden="true"></span>
+      <p class="row__date">до 21.09</p>
+      <p class="row__main"><a class="row__t" href="#">Срок рассмотрения карты побыту сокращают до 60 дней</a><span class="pl" lang="pl">Ustawa o zmianie ustawy o cudzoziemcach</span></p>
+      <p class="row__state">совпал номер дела</p>
+      <p class="row__id">druk 1630</p>
+    </div>
+    <div class="row r-fact">
+      <span class="row__rail" aria-hidden="true"></span>
+      <p class="row__date">гайд</p>
+      <p class="row__main"><a class="row__t" href="#">Как продлить карту побыту</a><span class="ap muted">Проверено 9 сентября</span></p>
+      <p class="row__state">совпал заголовок</p>
+      <p class="row__id"></p>
+    </div>
+    <div class="row r-fact">
+      <span class="row__rail" aria-hidden="true"></span>
+      <p class="row__date">статья</p>
+      <p class="row__main"><a class="row__t" href="#" lang="pl">Zmiany w ustawie o cudzoziemcach</a><span class="ap muted">Перевода на русский пока нет</span></p>
+      <p class="row__state">совпало в тексте</p>
+      <p class="row__id" lang="pl">Polski</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ СОСТОЯНИЯ ══ -->
+<section class="screen wrap" id="s-states">
+  <div class="stack" style="max-width:66ch">
+    <h1>Состояния</h1>
+    <p class="lede">Пустой экран — приглашение, ошибка не извиняется, неточность названа словом рядом с пунктирной линейкой.</p>
+  </div>
+
+  <div style="max-width:66ch;margin-top:32px">
+    <div class="state">
+      <p class="state__n">Пустая выдача</p>
+      <p>Ничего не нашлось по запросу «karta pobytu 2027».</p>
+      <p class="ap">Попробуйте номер дела (<a href="#">druk 1630</a>), номер из wykaz (<a href="#">UC104</a>) или тему: <a href="#">Пребывание</a>, <a href="#">Работа</a>, <a href="#">Гражданство</a>.</p>
+    </div>
+
+    <div class="state">
+      <p class="state__n">Источник не отвечает</p>
+      <div class="b b--wide r-uncertain"><span class="b__rail" aria-hidden="true"></span>
+        <div class="b__body prose" style="grid-column:2">
+          <p>RCL не отвечает с 14 сентября, <span class="num">07:23</span>.</p>
+          <p class="ap muted">Данные Сейма проверены сегодня. Срок консультаций показан по последней успешной проверке.</p>
+        </div></div>
+    </div>
+
+    <div class="state">
+      <p class="state__n">Данные устарели</p>
+      <div class="b b--wide r-uncertain"><span class="b__rail" aria-hidden="true"></span>
+        <div class="b__body prose" style="grid-column:2">
+          <p>Мы не смогли проверить это дело 2 дня.</p>
+          <p class="ap muted">Срок ниже может быть неточным.</p>
+        </div></div>
+    </div>
+
+    <div class="state">
+      <p class="state__n">Нет перевода</p>
+      <p>Этой страницы пока нет на украинском.</p>
+      <p class="ap"><a href="#">Открыть по-русски</a> · <a href="#" lang="pl">Открыть по-польски</a></p>
+    </div>
+
+    <div class="state">
+      <p class="state__n">Машинный перевод</p>
+      <div class="b b--wide r-uncertain"><span class="b__rail" aria-hidden="true"></span>
+        <div class="b__body prose" style="grid-column:2">
+          <p>Переведено автоматически, без вычитки.</p>
+          <p class="ap muted">Даты, номера дел и польские названия сверены с оригиналом автоматически. Страница не индексируется до вычитки.</p>
+        </div></div>
+    </div>
+
+    <div class="state">
+      <p class="state__n">Заседание назначено условно</p>
+      <div class="b r-uncertain"><span class="b__rail" aria-hidden="true"></span><p class="b__field">23&nbsp;сент.</p>
+        <p class="b__body">Комиссия соберётся только если Сейм передаст ей проект. Дата может не состояться.</p></div>
+    </div>
+
+    <div class="state">
+      <p class="state__n">Срок истёк</p>
+      <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field">13&nbsp;июня</p>
+        <p class="b__body">Консультации закрыты. Замечания больше не принимают; что поступило, опубликовано на RCL.</p></div>
+      <p class="ap muted">Красным не отмечается: красный означает открытое окно, а это окно закрылось.</p>
+    </div>
+
+    <div class="state" style="border-bottom:0">
+      <p class="state__n">Ошибка отправки</p>
+      <p>Форма не отправилась: сервер не ответил.</p>
+      <p class="ap muted">Текст сохранён в поле. Попробуйте ещё раз.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══ ТОКЕНЫ ══ -->
+<section class="screen wrap" id="s-tokens">
+  <div class="stack" style="max-width:66ch">
+    <h1>Токены</h1>
+    <p class="lede">Этот экран становится <span class="num">tokens.css</span> и страницей-образцом в репозитории.</p>
+  </div>
+
+  <div class="sec">
+    <h2>Словарь линейки</h2>
+    <p class="prose">Один элемент, четыре значения. Смысл несёт форма линии, а не цвет: рядом с каждой всегда стоит слово.</p>
+    <div class="stack" style="gap:16px;margin-top:8px">
+      <div class="b r-open"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">красная</p><p class="b__body">Окно открыто, срок идёт</p></div>
+      <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">тёмная</p><p class="b__body">Состоявшийся факт</p></div>
+      <div class="b r-uncertain"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">пунктир</p><p class="b__body">Неточность названа</p></div>
+      <div class="b r-ahead"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap muted">нет</p><p class="b__body muted">Впереди, дата неизвестна</p></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>Цвет</h2>
+    <ul class="sw">
+      <li><div class="sw__chip" style="background:#10161F"></div><p class="sw__t"><b>#10161F</b> Ink <span class="muted">15.9 : 1 к Paper</span></p></li>
+      <li><div class="sw__chip" style="background:#F4EFE6;border-bottom:1px solid var(--hairline)"></div><p class="sw__t"><b>#F4EFE6</b> Paper <span class="muted">фон страницы</span></p></li>
+      <li><div class="sw__chip" style="background:#C0362C"></div><p class="sw__t"><b>#C0362C</b> Red <span class="muted">4.8 : 1 — проходит AA</span></p></li>
+      <li><div class="sw__chip" style="background:#2B3443"></div><p class="sw__t"><b>#2B3443</b> Slate <span class="muted">11.0 : 1</span></p></li>
+      <li><div class="sw__chip" style="background:#4A5462"></div><p class="sw__t"><b>#4A5462</b> Ink 2 <span class="muted">6.7 : 1 — вторичный текст</span></p></li>
+      <li><div class="sw__chip" style="background:#6E7A8A"></div><p class="sw__t"><b>#6E7A8A</b> Rule uncertain <span class="muted">3.8 : 1 — не текст</span></p></li>
+      <li><div class="sw__chip" style="background:#9AA4B4"></div><p class="sw__t"><b>#9AA4B4</b> Slate muted <span class="muted">2.2 : 1 — только плоскости</span></p></li>
+      <li><div class="sw__chip" style="background:#E9E2D5"></div><p class="sw__t"><b>#E9E2D5</b> Paper sunken <span class="muted">цитата, шаблон письма</span></p></li>
+    </ul>
+    <p class="ap muted" style="margin-top:14px">Slate muted не несёт ни текста, ни линеек: 2.2 : 1 не проходит даже порог 3 : 1 для нетекстовых элементов.</p>
+  </div>
+
+  <div class="sec">
+    <h2>Шкала</h2>
+    <ul class="scale">
+      <li><span>40 / 46</span><p style="font-size:40px;line-height:1.15;font-weight:600;margin:0">Заголовок дела</p></li>
+      <li><span>29 / 36</span><p style="font-size:29px;line-height:1.24;font-weight:600;margin:0">Раздел карточки</p></li>
+      <li><span>23 / 34</span><p style="font-size:23px;line-height:1.48;margin:0">Лид: что меняется и кого касается</p></li>
+      <li><span>18 / 28</span><p style="margin:0">Текст объяснения набирается Literata: засечками — то, что написали мы.</p></li>
+      <li><span>15 / 22 · sans</span><p class="ap" style="margin:0">Аппарат: даты, статусы и номера дел — Fira Sans, табличные цифры.</p></li>
+      <li style="border-bottom:0"><span>пять алфавитов</span><p style="margin:0">ą ć ę ł ń ó ś ź ż · ў і · ї є ґ · <span class="num">0123456789</span></p></li>
+    </ul>
+  </div>
+
+  <div class="sec">
+    <h2>Радиус кодирует роль</h2>
+    <div class="scroll">
+      <table class="tbl">
+        <thead><tr><th>Радиус</th><th>Что получает</th><th>Почему</th></tr></thead>
+        <tbody>
+          <tr><td class="num">0</td><td>Текст, линейки, строки каталога</td><td>Это документ, а не объект</td></tr>
+          <tr><td class="num">2</td><td>Поверхности: блок действия, цитата, шаблон</td><td>Лист бумаги, а не карточка</td></tr>
+          <tr><td class="num">8</td><td>Кнопки, поля ввода, чипы фильтра</td><td>Это нажимается</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="ap muted">Теней нет нигде: приподнятость даёт светлая поверхность и хайрлайн.</p>
+  </div>
+</section>
+
+</div>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <p><span class="mark"><span class="mark__bar"></span><span class="mark__sign">§</span><span class="mark__word">lexinform</span></span></p>
+    <p class="muted">Прототип направления «Маргиналия» к концепту дизайна lexinform.pl. Знак § показан системной антиквой; в проекте это готовые векторные контуры из <span class="num">assets/brand/</span>.</p>
+    <p class="muted">Переключение экранов сделано на радиокнопках и работает без JavaScript — как и всё, что показывает прототип. Копирование шаблона письма и меню языка — единственные улучшения поверх этого.</p>
+  </div>
+</footer>
+
+</div>
+
+<script>
+(function(){
+  function toast(text){
+    var t=document.createElement("div");
+    t.className="toast";t.setAttribute("role","status");t.textContent=text;
+    document.body.appendChild(t);
+    setTimeout(function(){t.remove()},1800);
+  }
+  async function copy(text,done){
+    try{await navigator.clipboard.writeText(text);toast(done);}
+    catch(e){toast("Скопировать не удалось. Выделите текст вручную.");}
+  }
+  document.querySelectorAll("[data-copy]").forEach(function(b){
+    b.addEventListener("click",function(){copy(b.dataset.copy,"Скопировано: "+b.dataset.copy);});
+  });
+  var btn=document.getElementById("copy-tpl");
+  if(btn&&navigator.clipboard){
+    btn.hidden=false;
+    btn.addEventListener("click",function(){
+      var el=btn.closest(".tpl").querySelector(".tpl__t");
+      copy(el.innerText,"Скопировано");
+    });
+  }
+})();
+</script>
