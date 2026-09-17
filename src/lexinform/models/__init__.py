@@ -127,7 +127,7 @@ from lexinform.models.ministries import (
     ministry_name,
     ministry_url,
 )
-from lexinform.models.observations import ObservedProcess, UpdateDelivery
+from lexinform.models.observations import DeliveryPlan, ObservedProcess
 from lexinform.models.phases import (
     COMMITTEE_PHASES,
     DAYS_PER_MONTH,
@@ -237,7 +237,7 @@ __all__ = [
     "observe",
     "plan_bill",
     "ObservedProcess",
-    "UpdateDelivery",
+    "DeliveryPlan",
     "command_for_callback",
     "DIGEST_NUMBER",
     "DIGEST_TERM",

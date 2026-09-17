@@ -15,8 +15,11 @@ from dataclasses import dataclass
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
+    SILENCED_BY_OPERATOR,
     ApplicantType,
     Bill,
+    BillStatus,
+    DeliveryPlan,
     PrintInfo,
     Publication,
     PublicationKind,
@@ -126,14 +129,32 @@ class PublishingService:
             max_attempts=self._max_attempts,
         )
         candidates += self._replies_under_the_bar(candidates, limit=limit)
+        queued = [
+            bill
+            for pub in self._repo.list_due_deliveries(
+                self._channel_id, max_attempts=self._max_attempts
+            )
+            if pub.kind in CARD_KINDS
+            and pub.delivery is not None
+            and (bill := self._repo.get(pub.term, pub.number)) is not None
+            and bill.status is not BillStatus.LINKED
+            and bill.last_error != SILENCED_BY_OPERATOR
+        ]
+        planned_keys = {(bill.term, bill.number) for bill in queued}
+        candidates = queued + [
+            bill for bill in candidates if (bill.term, bill.number) not in planned_keys
+        ]
         today = self._clock.now().date()
         for bill in government_first(candidates[:limit]):
-            if is_over(bill, today=today):
+            planned = (bill.term, bill.number) in planned_keys
+            if not planned and is_over(bill, today=today):
                 log.info("%s is over: no card", bill.number)
                 self._record_skipped(bill)
                 result.skipped += 1
                 continue
             if not publish:
+                if planned:
+                    continue
                 self._record_skipped(bill)
                 result.skipped += 1
                 continue
@@ -192,18 +213,46 @@ class PublishingService:
         duplicate and an outage of the Sejm API leaves no row behind.
         """
         result = result if result is not None else PublishingResult()
-        plan = self.plan(bill)
+        identity = bill
+        existing = self.card_of(bill)
+        if existing is not None and existing.attempts >= self._max_attempts:
+            return False
+        if existing is not None and existing.status in (
+            PublicationStatus.SENT,
+            PublicationStatus.PENDING,
+            PublicationStatus.UNKNOWN,
+            PublicationStatus.SKIPPED,
+        ):
+            return existing.status is PublicationStatus.SENT
+        if existing is not None and existing.delivery is not None:
+            delivery = existing.delivery
+            plan = CardPlan(
+                bill=Bill.model_validate_json(delivery.bill_json),
+                print_info=PrintInfo.model_validate_json(delivery.print_json)
+                if delivery.print_json
+                else None,
+                primary=Bill.model_validate_json(delivery.primary_json)
+                if delivery.primary_json
+                else None,
+                primary_message_id=delivery.reply_to,
+            )
+        else:
+            plan = self.plan(bill)
         if plan.primary is not None:
-            return self._publish_joint(plan, result)
+            return self._publish_joint(plan, result, identity)
         if plan.inherited is not None:
             return self._inherit_card(plan.bill, plan.inherited)
         bill, print_info = plan.bill, plan.print_info
         pub_id = self._repo.create_publication(
             Publication(
-                term=bill.term,
-                number=bill.number,
+                term=identity.term,
+                number=identity.number,
                 kind=PublicationKind.NEW_BILL,
-                status=PublicationStatus.PENDING,
+                delivery=DeliveryPlan(
+                    bill_json=bill.model_dump_json(),
+                    print_json=print_info.model_dump_json() if print_info else None,
+                ),
+                status=PublicationStatus.QUEUED,
                 channel_id=self._channel_id,
                 created_at=self._clock.now(),
             )
@@ -239,17 +288,27 @@ class PublishingService:
         print_info = self.print_info(bill)
         return CardPlan(bill=self._with_submission(bill), print_info=print_info)
 
-    def _publish_joint(self, plan: CardPlan, result: PublishingResult) -> bool:
+    def _publish_joint(self, plan: CardPlan, result: PublishingResult, identity: Bill) -> bool:
         bill, print_info = plan.bill, plan.print_info
         card_bill, card_message_id = plan.primary, plan.primary_message_id
         assert card_bill is not None
-        bill = self._compared(bill)
+        stored = self._repo.get_publication(
+            identity.term, identity.number, PublicationKind.JOINT_BILL, self._channel_id
+        )
+        if stored is None or stored.delivery is None:
+            bill = self._compared(bill)
         pub_id = self._repo.create_publication(
             Publication(
-                term=bill.term,
-                number=bill.number,
+                term=identity.term,
+                number=identity.number,
                 kind=PublicationKind.JOINT_BILL,
-                status=PublicationStatus.PENDING,
+                delivery=DeliveryPlan(
+                    bill_json=bill.model_dump_json(),
+                    print_json=print_info.model_dump_json() if print_info else None,
+                    primary_json=card_bill.model_dump_json(),
+                    reply_to=card_message_id,
+                ),
+                status=PublicationStatus.QUEUED,
                 channel_id=self._channel_id,
                 created_at=self._clock.now(),
             )
@@ -357,6 +416,7 @@ class PublishingService:
     def _send(self, pub_id: int, bill: Bill, send: Send) -> bool:
         """Send the post and record what became of it. An outage of the channel propagates and
         counts no attempt: the channel is down, not the post, so it keeps its retry budget."""
+        self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
         try:
             sent = send()
         except ServiceUnavailableError as exc:

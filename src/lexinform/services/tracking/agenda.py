@@ -23,6 +23,7 @@ from lexinform.models import (
     AgendaItem,
     Bill,
     CommitteeSitting,
+    Publication,
     PublicationKind,
     PublicationStatus,
     SejmSitting,
@@ -146,12 +147,16 @@ class AgendaWatcher:
                 items = self._items_for(bill, listings)
                 items += listings.kept(bill, today)
                 items = tuple(sorted(items, key=lambda i: (i.date, i.ref)))
+                with self._repo.atomic():
+                    cancelled = self._plan_retractions(bill, items, listings)
+                    if items != bill.agenda:
+                        self._repo.save_agenda(bill.term, bill.number, items)
+                    announced = self._plan_new(bill, items)
                 if publish:
-                    self._retract_gone(bill, items, listings, result)
-                if items != bill.agenda:
-                    self._repo.save_agenda(bill.term, bill.number, items)
-                if publish:
-                    self._post_new(bill, items, result)
+                    for publication in cancelled:
+                        result.count_post(self._poster.deliver(publication), "agenda_cancelled")
+                    for publication in announced:
+                        result.count_post(self._poster.deliver(publication), "agenda_posted")
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return False
@@ -160,9 +165,9 @@ class AgendaWatcher:
                 log.exception("agenda check for druk %s failed: %s", bill.number, exc)
         return True
 
-    def _retract_gone(
-        self, bill: Bill, items: tuple[AgendaItem, ...], listings: _Listings, result: TrackingResult
-    ) -> None:
+    def _plan_retractions(
+        self, bill: Bill, items: tuple[AgendaItem, ...], listings: _Listings
+    ) -> list[Publication]:
         """Take back a sitting the channel announced that is not on the agenda any more.
 
         Only a `sitting_key` that has disappeared is a retraction: one that merely moved keeps its
@@ -171,6 +176,7 @@ class AgendaWatcher:
         `_Listings.kept` puts those items back before this runs.
         """
         now = self._clock.now().astimezone(self._local_tz)
+        planned: list[Publication] = []
         keys = {item.sitting_key for item in items}
         for old in bill.agenda:
             if old.sitting_key in keys or _already_happened(old, now):
@@ -186,10 +192,16 @@ class AgendaWatcher:
                 old.ref,
                 "the bill left its agenda" if still_meets else "the sitting is not announced",
             )
-            result.count_post(
-                self._poster.agenda_cancelled(bill, old, still_meets=still_meets),
-                "agenda_cancelled",
+            planned.append(
+                self._poster.prepare_message(
+                    bill,
+                    PublicationKind.AGENDA_CANCELLED,
+                    ref=old.ref,
+                    item=old,
+                    still_meets=still_meets,
+                )
             )
+        return planned
 
     def _committee_sittings(
         self, term: int, bills: list[Bill], today: dt.date
@@ -290,8 +302,9 @@ class AgendaWatcher:
             items.append(AgendaItem.for_sejm(plenary, first=first, text=" ".join(texts)))
         return tuple(items)
 
-    def _post_new(self, bill: Bill, items: tuple[AgendaItem, ...], result: TrackingResult) -> None:
+    def _plan_new(self, bill: Bill, items: tuple[AgendaItem, ...]) -> list[Publication]:
         now = self._clock.now().astimezone(self._local_tz)
+        planned: list[Publication] = []
         for item in items:
             if _already_happened(item, now):
                 continue
@@ -304,9 +317,16 @@ class AgendaWatcher:
                 continue
             fresh = self._repo.get(bill.term, bill.number) or bill
             log.info("druk %s on the agenda: %s", bill.number, item.ref)
-            result.count_post(
-                self._poster.agenda(fresh, item, self._moved_from(bill, item)), "agenda_posted"
+            planned.append(
+                self._poster.prepare_message(
+                    fresh,
+                    PublicationKind.AGENDA,
+                    ref=item.ref,
+                    item=item,
+                    moved_from=self._moved_from(bill, item),
+                )
             )
+        return planned
 
     def _moved_from(self, bill: Bill, item: AgendaItem) -> AgendaItem | None:
         """The same sitting as the channel last announced it, when anything it named has changed.

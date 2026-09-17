@@ -22,11 +22,20 @@ class ObservedProcess(BaseModel):
         return f"{stage_fingerprint(self.stages)}:{decision_fingerprint(self.stages)}"
 
 
-class UpdateDelivery(BaseModel):
+class DeliveryPlan(BaseModel):
     """Serialized snapshots cannot be mutated by a later watcher or a delivery attempt."""
 
     model_config = ConfigDict(frozen=True)
 
     bill_json: str
-    change_json: str
+    change_json: str = ""
+    print_json: str | None = None
+    primary_json: str | None = None
+    item_json: str | None = None
+    moved_from_json: str | None = None
+    phase_json: str | None = None
+    hearing_json: str | None = None
+    today: dt.date | None = None
+    still_meets: bool = False
+    reply_to: int | None = None
     held_change_ids: tuple[int, ...] = ()

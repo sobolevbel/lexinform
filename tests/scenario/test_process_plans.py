@@ -3,11 +3,11 @@ import datetime as dt
 import pytest
 
 from lexinform.models import (
+    DeliveryPlan,
     PublicationKind,
     PublicationStatus,
     Stage,
     TextDocument,
-    UpdateDelivery,
     next_phase,
 )
 from tests.fakes import FakeTextExtractor, make_analysis
@@ -87,7 +87,7 @@ def test_checkpoint_failure_retries_news_without_repeating_the_paid_analysis(
     w.llm.script = {"3039": make_analysis(score=4)}
     w.clock.advance(days=1)
 
-    def fail_save(change_id: int, channel_id: str, delivery: UpdateDelivery) -> None:
+    def fail_save(change_id: int, channel_id: str, delivery: DeliveryPlan) -> None:
         raise RuntimeError("injected checkpoint failure")
 
     with monkeypatch.context() as patch:

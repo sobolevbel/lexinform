@@ -70,52 +70,62 @@ class WykazLinker:
         now = self._clock.now()
         project = self._reader.complete(self._reader.timeline(project_id))
         summary = process_summary(project, term=plan.term)
-        self._repo.upsert_summary(summary, now=now)
-        self._repo.save_rcl(plan.term, summary.number, project)
-        self._repo.save_stages(
-            plan.term, summary.number, rcl_stages(project), rcl_fingerprint(project)
+        bill = Bill(
+            summary=summary,
+            first_seen_at=now,
+            last_checked_at=now,
+            status=plan.status,
+            analysis=plan.analysis,
+            prefilter_hits=plan.prefilter_hits,
+            rcl=project,
+            stages=rcl_stages(project),
+            stages_fingerprint=rcl_fingerprint(project),
+            linked_number=plan.number,
         )
-        self._repo.set_status(
-            plan.term, summary.number, plan.status, prefilter_hits=plan.prefilter_hits
-        )
-        if plan.analysis is not None:
-            self._repo.save_analysis(plan.term, summary.number, plan.analysis)
-        self._repo.link_bills(
-            plan.term, plan.number, summary.number, wykaz_number=wykaz_entry_number(plan.number)
-        )
+        fresh, content_changed = self._reanalyse(bill, result)
+        card = self._poster.card(plan)
+        with self._repo.atomic():
+            self._repo.upsert_summary(summary, now=now)
+            self._repo.save_rcl(plan.term, summary.number, project)
+            self._repo.save_stages(
+                plan.term, summary.number, rcl_stages(project), rcl_fingerprint(project)
+            )
+            self._repo.set_status(
+                plan.term, summary.number, plan.status, prefilter_hits=plan.prefilter_hits
+            )
+            if fresh.analysis is not None:
+                self._repo.save_analysis(plan.term, summary.number, fresh.analysis)
+            self._repo.link_bills(
+                plan.term, plan.number, summary.number, wykaz_number=wykaz_entry_number(plan.number)
+            )
+            if card is not None and card.status is PublicationStatus.SENT:
+                self._inherit_card(plan, summary.number, card)
+            change = self._poster.record_change(
+                StatusChange(
+                    term=plan.term,
+                    number=summary.number,
+                    old_fingerprint=plan.number,
+                    new_fingerprint=rcl_fingerprint(project),
+                    new_stages=list(rcl_stages(project)),
+                    content_changed=content_changed,
+                    detected_at=now,
+                )
+            )
+            if change is not None:
+                self._poster.prepare(fresh, change)
         result.linked += 1
         log.info("%s is now a project on RCL: %s", plan.number, summary.number)
-
-        card = self._poster.card(plan)
-        if card is not None and card.status is PublicationStatus.SENT:
-            self._inherit_card(plan, summary.number, card, publish=publish)
-        bill = self._repo.get(plan.term, summary.number)
-        if bill is None:
-            return
-        content_changed = self._reanalyse(bill, result)
-        fresh = self._repo.get(plan.term, summary.number) or bill
-        change = self._poster.record_change(
-            StatusChange(
-                term=plan.term,
-                number=summary.number,
-                old_fingerprint=plan.number,
-                new_fingerprint=rcl_fingerprint(project),
-                new_stages=list(rcl_stages(project)),
-                content_changed=content_changed,
-                detected_at=now,
-            )
-        )
+        linked_plan = self._repo.get(plan.term, plan.number)
+        if publish and linked_plan is not None and card is not None:
+            self._poster.rerender_card(linked_plan, card)
         if change is None:
             return
         result.changed += 1
         self._poster.tell(fresh, change, result, publish=publish)
 
-    def _inherit_card(self, plan: Bill, number: str, card: Publication, *, publish: bool) -> None:
+    def _inherit_card(self, plan: Bill, number: str, card: Publication) -> None:
         """The plan's card stays the thread root; the project inherits it instead of getting a
         second card, and the card is re-rendered so that it carries both numbers."""
-        linked_plan = self._repo.get(plan.term, plan.number)
-        if publish and linked_plan is not None:
-            self._poster.rerender_card(linked_plan, card)
         pub_id = self._repo.create_publication(
             Publication(
                 term=plan.term,
@@ -132,18 +142,17 @@ class WykazLinker:
             pub_id, PublicationStatus.SENT, message_id=card.message_id, sent_at=card.sent_at
         )
 
-    def _reanalyse(self, bill: Bill, result: TrackingResult) -> bool:
+    def _reanalyse(self, bill: Bill, result: TrackingResult) -> tuple[Bill, bool]:
         """True when the project's documents gave the model a text to read."""
         if self._analysis is None or bill.analysis is None:
-            return False
+            return bill, False
         document = self._texts.locate(bill).document
         if document is None:
-            return False
-        record = self._analysis.reanalyze_bill(bill, document)
-        if record is None:
-            return False
-        result.count_reanalysis(record)
-        return True
+            return bill, False
+        fresh, changed = self._analysis.prepare_reanalysis(bill, document)
+        if changed and fresh.analysis is not None:
+            result.count_reanalysis(fresh.analysis)
+        return fresh, changed
 
 
 class WykazWatcher:
@@ -200,7 +209,11 @@ class WykazWatcher:
         if entry is None:
             return True
         try:
-            change = self._detect(bill, entry, result)
+            with self._repo.atomic():
+                change = self._detect(bill, entry, result)
+                if change is not None:
+                    fresh = self._repo.get(bill.term, bill.number) or bill
+                    self._poster.prepare(fresh, change)
         except Exception as exc:
             result.failed += 1
             log.exception("tracking %s failed: %s", bill.number, exc)

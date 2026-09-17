@@ -190,9 +190,7 @@ def test_a_bill_without_a_card_is_not_told_its_opinions_were_published() -> None
     assert w.publication("3039", PublicationKind.CONSULTATION_RESULTS) is None
 
 
-def test_a_run_that_does_not_publish_records_the_notice_as_skipped_instead_of_posting_it() -> None:
-    """`run --no-publish` after a backfill: the flip is seen and written down as told, so that
-    turning publishing back on does not announce a consultation that closed weeks ago."""
+def test_disabled_delivery_queues_consultation_results_until_publishing_resumes() -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.gateway.submissions.append(submission(number="RPW/26666/2026", print_number="3039"))
@@ -203,10 +201,14 @@ def test_a_run_that_does_not_publish_records_the_notice_as_skipped_instead_of_po
     w.clock.advance(days=1)
 
     report = w.run(publish=False)
+    notice = w.publication("3039", PublicationKind.CONSULTATION_RESULTS)
+    assert notice is not None and notice.status is PublicationStatus.QUEUED
+    assert notice.delivery is not None and w.publisher.consultation_results == []
     w.clock.advance(days=1)
     later = w.run()
 
-    assert (report.consultation_results_posted, w.publisher.consultation_results) == (0, [])
+    assert report.consultation_results_posted == 0
     notice = w.publication("3039", PublicationKind.CONSULTATION_RESULTS)
-    assert notice is not None and notice.status is PublicationStatus.SKIPPED
-    assert later.consultation_results_posted == 0
+    assert notice is not None and notice.status is PublicationStatus.SENT
+    assert later.consultation_results_posted == 1
+    assert w.run().consultation_results_posted == 0

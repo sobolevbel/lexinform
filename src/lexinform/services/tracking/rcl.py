@@ -11,12 +11,14 @@ from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
+    BillStatus,
     PublicationKind,
     RclProject,
     Stage,
     StatusChange,
     consultation_open,
     diff_stages,
+    observe,
     process_summary,
     rcl_fingerprint,
     rcl_stages,
@@ -73,6 +75,12 @@ class RclWatcher:
             result.partial_errors.append(f"Sejm: {exc.describe()}")
         if not self._link_pending(result, publish=publish):
             return False
+        followed = [
+            bill
+            for bill in followed
+            if (current := self._repo.get(bill.term, bill.number)) is not None
+            and current.status is not BillStatus.LINKED
+        ]
         for outcome in fan_out(followed, self._refresh, workers=self._workers):
             bill = outcome.item
             result.checked += 1
@@ -144,30 +152,8 @@ class RclWatcher:
     def _detect(
         self, bill: Bill, project: RclProject, result: TrackingResult
     ) -> StatusChange | None:
-        """What is new about the project, with the fingerprint written last: a failure above (an
-        LLM outage during the re-analysis) leaves the old one in place, so the next run sees the
-        same new stages and tells them."""
-        new_fp = rcl_fingerprint(project)
-        stages = rcl_stages(project)
-        change = self._detect_change(bill, project, stages, new_fp, result)
-        if new_fp != bill.stages_fingerprint:
-            self._repo.save_stages(bill.term, bill.number, stages, new_fp)
-        return change
-
-    def _detect_change(
-        self,
-        bill: Bill,
-        project: RclProject,
-        stages: tuple[Stage, ...],
-        new_fp: str,
-        result: TrackingResult,
-    ) -> StatusChange | None:
-        now = self._clock.now()
-        stored = bill.rcl
-        assert stored is not None
-        self._repo.save_rcl(bill.term, bill.number, project)
-        self._repo.upsert_summary(process_summary(project, term=bill.term), now=now)
-
+        """Source observations advance only with their delivery work after network preparation."""
+        fresh = bill
         content_changed = False
         document = self._texts.locate(bill.model_copy(update={"rcl": project})).document
         if (
@@ -176,12 +162,41 @@ class RclWatcher:
             and document is not None
             and document.url != bill.analysis.source_url
         ):
-            log.info("%s: new text version on RCL, re-analysing", bill.number)
-            record = self._analysis.reanalyze_bill(bill, document)
-            if record is not None:
-                result.count_reanalysis(record)
-                content_changed = True
+            fresh, content_changed = self._analysis.prepare_reanalysis(bill, document)
+            if content_changed and fresh.analysis is not None:
+                result.count_reanalysis(fresh.analysis)
+        new_fp = rcl_fingerprint(project)
+        stages = rcl_stages(project)
+        with self._repo.atomic():
+            if fresh.analysis is not None:
+                self._repo.save_analysis(bill.term, bill.number, fresh.analysis)
+            self._repo.save_rcl(bill.term, bill.number, project)
+            self._repo.upsert_summary(
+                process_summary(project, term=bill.term), now=self._clock.now()
+            )
+            self._repo.save_stages(bill.term, bill.number, stages, new_fp)
+            change = self._detect_change(bill, project, stages, new_fp, content_changed)
+            fresh = self._repo.get(bill.term, bill.number) or bill
+            if change is not None:
+                self._poster.prepare(fresh, change)
+            if self._results_due(bill, project) and self._consultations is not None:
+                self._consultations.prepare_results(fresh)
+            self._repo.save_observed_process(
+                bill.term, bill.number, observe(fresh, closure_date=fresh.observed_closure_date)
+            )
+        return change
 
+    def _detect_change(
+        self,
+        bill: Bill,
+        project: RclProject,
+        stages: tuple[Stage, ...],
+        new_fp: str,
+        content_changed: bool,
+    ) -> StatusChange | None:
+        now = self._clock.now()
+        stored = bill.rcl
+        assert stored is not None
         closure = (
             not project.is_open
             and not project.sent_to_sejm

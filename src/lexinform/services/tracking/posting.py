@@ -17,13 +17,13 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     AgendaItem,
     Bill,
+    DeliveryPlan,
     Phase,
     Publication,
     PublicationKind,
     PublicationStatus,
     Stage,
     StatusChange,
-    UpdateDelivery,
 )
 from lexinform.ports import BillRepository, Clock, Publisher
 from lexinform.services.tracking.result import TrackingResult
@@ -59,6 +59,10 @@ class Poster:
         self._clock = clock
         self._channel_id = channel_id
         self._max_attempts = max_attempts
+        self._attempted: set[int] = set()
+
+    def start_run(self) -> None:
+        self._attempted.clear()
 
     def card(self, bill: Bill) -> Publication | None:
         """The bill's card in this channel: the message every reply is attached to."""
@@ -70,6 +74,10 @@ class Poster:
         """True when this post exists and must not be attempted (again)."""
         pub = self._repo.get_publication(bill.term, bill.number, kind, self._channel_id, ref=ref)
         if pub is None:
+            return False
+        if pub.id in self._attempted:
+            return True
+        if pub.status is PublicationStatus.QUEUED:
             return False
         if pub.status is PublicationStatus.FAILED:
             return pub.attempts >= self._max_attempts
@@ -203,13 +211,15 @@ class Poster:
             pub_id,
             snapshot,
             lambda reply_to: (
-                self._publisher.publish_status_update(snapshot, planned_change, reply_to).message_id
+                self._publisher.publish_status_update(
+                    snapshot, planned_change, delivery.reply_to or reply_to
+                ).message_id
             ),
             held_change_ids=delivery.held_change_ids,
         )
         return message_id is not None
 
-    def prepare(self, bill: Bill, change: StatusChange) -> UpdateDelivery:
+    def prepare(self, bill: Bill, change: StatusChange) -> DeliveryPlan:
         assert change.id is not None
         stored = self._repo.get_update_publication(change.id, self._channel_id)
         if stored is not None and stored.delivery is not None:
@@ -218,10 +228,12 @@ class Poster:
         stages = [st for earlier in held for st in earlier.new_stages]
         planned = change.model_copy(update={"new_stages": stages + list(change.new_stages)})
         snapshot = self._repo.get(bill.term, bill.number) or bill
-        delivery = UpdateDelivery(
+        card = self.card(bill)
+        delivery = DeliveryPlan(
             bill_json=snapshot.model_dump_json(),
             change_json=planned.model_dump_json(),
             held_change_ids=tuple(c.id for c in held if c.id is not None),
+            reply_to=card.message_id if card else None,
         )
         with self._repo.atomic():
             self._repo.create_publication(
@@ -242,100 +254,166 @@ class Poster:
         )
 
     def act_published(self, bill: Bill) -> bool:
-        return self._once(
-            bill,
-            PublicationKind.ACT_PUBLISHED,
-            lambda reply_to: self._publisher.publish_act_published(bill, reply_to).message_id,
-        )
+        return self._once(bill, PublicationKind.ACT_PUBLISHED)
 
     def in_force(self, bill: Bill, *, today: date) -> bool:
-        return self._once(
-            bill,
-            PublicationKind.IN_FORCE,
-            lambda reply_to: (
-                self._publisher.publish_in_force(bill, reply_to, today=today).message_id
-            ),
-        )
+        return self._once(bill, PublicationKind.IN_FORCE, today=today)
 
     def consultation_deadline(self, bill: Bill, *, today: date) -> bool:
-        return self._once(
-            bill,
-            PublicationKind.CONSULTATION_DEADLINE,
-            lambda reply_to: (
-                self._publisher.publish_consultation_deadline(
-                    bill, reply_to, today=today
-                ).message_id
-            ),
-        )
+        return self._once(bill, PublicationKind.CONSULTATION_DEADLINE, today=today)
 
     def consultation_results(self, bill: Bill) -> bool:
-        return self._once(
-            bill,
-            PublicationKind.CONSULTATION_RESULTS,
-            lambda reply_to: (
-                self._publisher.publish_consultation_results(bill, reply_to).message_id
-            ),
-        )
+        return self._once(bill, PublicationKind.CONSULTATION_RESULTS)
 
     def agenda(self, bill: Bill, item: AgendaItem, moved_from: AgendaItem | None = None) -> bool:
-        """One post per (bill, sitting as announced): `item.ref` carries the day, the hour and the
-        room, so a sitting that moves any of them gets a new one saying what it moved from."""
         return self._once(
-            bill,
-            PublicationKind.AGENDA,
-            lambda reply_to: (
-                self._publisher.publish_agenda(bill, item, reply_to, moved_from).message_id
-            ),
-            ref=item.ref,
+            bill, PublicationKind.AGENDA, ref=item.ref, item=item, moved_from=moved_from
         )
 
     def agenda_cancelled(self, bill: Bill, item: AgendaItem, *, still_meets: bool) -> bool:
-        """Take back one announced sitting; keyed by the same `ref` the announcement used, so a
-        sitting is retracted exactly once."""
         return self._once(
             bill,
             PublicationKind.AGENDA_CANCELLED,
-            lambda reply_to: (
-                self._publisher.publish_agenda_cancelled(
-                    bill, item, reply_to, still_meets=still_meets
-                ).message_id
-            ),
             ref=item.ref,
+            item=item,
+            still_meets=still_meets,
         )
 
     def decision_deadline(self, bill: Bill, phase: Phase, *, today: date) -> bool:
-        """One reminder per (bill, phase): the Senate's term and the President's are told apart
-        by the phase key, and each is told once."""
         return self._once(
-            bill,
-            PublicationKind.DECISION_DEADLINE,
-            lambda reply_to: (
-                self._publisher.publish_decision_deadline(
-                    bill, phase, reply_to, today=today
-                ).message_id
-            ),
-            ref=phase.key,
+            bill, PublicationKind.DECISION_DEADLINE, ref=phase.key, phase=phase, today=today
         )
 
     def hearing_deadline(self, bill: Bill, hearing: Stage, *, today: date) -> bool:
-        """One reminder per (bill, hearing): the hearing date is the `ref`."""
         assert hearing.date is not None
         return self._once(
             bill,
             PublicationKind.HEARING_DEADLINE,
-            lambda reply_to: (
-                self._publisher.publish_hearing_deadline(
-                    bill, hearing, reply_to, today=today
-                ).message_id
-            ),
             ref=hearing.date.isoformat(),
+            hearing=hearing,
+            today=today,
         )
 
+    def prepare_message(
+        self,
+        bill: Bill,
+        kind: PublicationKind,
+        *,
+        ref: str | None = None,
+        today: date | None = None,
+        item: AgendaItem | None = None,
+        moved_from: AgendaItem | None = None,
+        phase: Phase | None = None,
+        hearing: Stage | None = None,
+        still_meets: bool = False,
+    ) -> Publication:
+        stored = self._repo.get_publication(bill.term, bill.number, kind, self._channel_id, ref=ref)
+        if stored is not None and stored.delivery is not None:
+            return stored
+        card = self.card(bill)
+        delivery = DeliveryPlan(
+            bill_json=bill.model_dump_json(),
+            today=today,
+            item_json=item.model_dump_json() if item else None,
+            moved_from_json=moved_from.model_dump_json() if moved_from else None,
+            phase_json=phase.model_dump_json() if phase else None,
+            hearing_json=hearing.model_dump_json() if hearing else None,
+            still_meets=still_meets,
+            reply_to=card.message_id if card else None,
+        )
+        pub = Publication(
+            term=bill.term,
+            number=bill.number,
+            kind=kind,
+            status=stored.status if stored else PublicationStatus.QUEUED,
+            channel_id=self._channel_id,
+            ref=ref,
+            delivery=delivery,
+            created_at=self._clock.now(),
+            attempts=stored.attempts if stored else 0,
+        )
+        pub.id = self._repo.create_publication(pub)
+        return pub
+
     def _once(
-        self, bill: Bill, kind: PublicationKind, send: Send, *, ref: str | None = None
+        self,
+        bill: Bill,
+        kind: PublicationKind,
+        *,
+        ref: str | None = None,
+        today: date | None = None,
+        item: AgendaItem | None = None,
+        moved_from: AgendaItem | None = None,
+        phase: Phase | None = None,
+        hearing: Stage | None = None,
+        still_meets: bool = False,
     ) -> bool:
-        pub_id = self.record(bill, kind, PublicationStatus.PENDING, ref=ref)
-        return self._send(pub_id, bill, send) is not None
+        pub = self.prepare_message(
+            bill,
+            kind,
+            ref=ref,
+            today=today,
+            item=item,
+            moved_from=moved_from,
+            phase=phase,
+            hearing=hearing,
+            still_meets=still_meets,
+        )
+        return self.deliver(pub)
+
+    def deliver(self, pub: Publication) -> bool:
+        if pub.status is PublicationStatus.SENT:
+            return True
+        if pub.status not in (PublicationStatus.QUEUED, PublicationStatus.FAILED):
+            return False
+        if pub.attempts >= self._max_attempts:
+            return False
+        assert pub.id is not None and pub.delivery is not None
+        if pub.id in self._attempted:
+            return False
+        self._attempted.add(pub.id)
+        plan = pub.delivery
+        bill = Bill.model_validate_json(plan.bill_json)
+        self._repo.mark_publication(pub.id, PublicationStatus.PENDING, count_attempt=False)
+        return self._send(pub.id, bill, lambda _: self._dispatch(pub.kind, bill, plan)) is not None
+
+    def _dispatch(self, kind: PublicationKind, bill: Bill, plan: DeliveryPlan) -> int:
+        reply = plan.reply_to
+        if kind is PublicationKind.ACT_PUBLISHED:
+            return self._publisher.publish_act_published(bill, reply).message_id
+        if kind is PublicationKind.CONSULTATION_RESULTS:
+            return self._publisher.publish_consultation_results(bill, reply).message_id
+        if kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED):
+            assert plan.item_json is not None
+            item = AgendaItem.model_validate_json(plan.item_json)
+            if kind is PublicationKind.AGENDA_CANCELLED:
+                return self._publisher.publish_agenda_cancelled(
+                    bill, item, reply, still_meets=plan.still_meets
+                ).message_id
+            moved = (
+                AgendaItem.model_validate_json(plan.moved_from_json)
+                if plan.moved_from_json
+                else None
+            )
+            return self._publisher.publish_agenda(bill, item, reply, moved).message_id
+        assert plan.today is not None
+        if kind is PublicationKind.IN_FORCE:
+            return self._publisher.publish_in_force(bill, reply, today=plan.today).message_id
+        if kind is PublicationKind.CONSULTATION_DEADLINE:
+            return self._publisher.publish_consultation_deadline(
+                bill, reply, today=plan.today
+            ).message_id
+        if kind is PublicationKind.DECISION_DEADLINE:
+            assert plan.phase_json is not None
+            phase = Phase.model_validate_json(plan.phase_json)
+            return self._publisher.publish_decision_deadline(
+                bill, phase, reply, today=plan.today
+            ).message_id
+        assert kind is PublicationKind.HEARING_DEADLINE and plan.hearing_json is not None
+        hearing = Stage.model_validate_json(plan.hearing_json)
+        return self._publisher.publish_hearing_deadline(
+            bill, hearing, reply, today=plan.today
+        ).message_id
 
     def _send(
         self, pub_id: int, bill: Bill, send: Send, *, held_change_ids: tuple[int, ...] = ()

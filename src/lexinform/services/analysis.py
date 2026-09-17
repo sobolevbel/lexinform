@@ -448,24 +448,42 @@ class AnalysisService:
         on RCL, a print re-dated by an attachment): the stored analysis then points at the new
         source and nothing else happens. None too when the run has spent its budget, and then
         nothing is written at all, so the next run offers the same document again."""
+        fresh, changed = self.prepare_reanalysis(bill, document, summary=summary)
+        if fresh is not bill:
+            assert fresh.analysis is not None
+            with self._repo.atomic():
+                self._repo.save_analysis(bill.term, bill.number, fresh.analysis)
+                if fresh.authors is not None:
+                    self._repo.save_authors(bill.term, bill.number, fresh.authors)
+        return fresh.analysis if changed else None
+
+    def prepare_reanalysis(
+        self, bill: Bill, document: TextDocument, *, summary: ProcessSummary | None = None
+    ) -> tuple[Bill, bool]:
+        """Memoize paid work without advancing the bill before its source checkpoint."""
         assert bill.analysis is not None
         located = LocatedText(summary=summary, document=document)
         prepared = self._prepare(bill, located, previous=bill.analysis)
         if prepared.deferred:
             log.warning("%s: %s", bill.number, self._ledger.stopped)
-            return None
+            return bill, False
         if prepared.unreadable:
             log.warning(
                 "%s: %s cannot be read; the analysis of the previous text is kept",
                 bill.number,
                 document.url,
             )
-            return None
+            return bill, False
         if prepared.unchanged:
             log.info("%s: %s carries the analysed text; not re-analysed", bill.number, document.url)
-            self._repo.save_analysis(bill.term, bill.number, prepared.record)
-            return None
-        return self._persist(prepared)
+            return bill.model_copy(update={"analysis": prepared.record}), False
+        if prepared.memo_key is not None:
+            self._remember_analysis(prepared.memo_key, prepared.record)
+        authors = bill.authors
+        if self._authors is not None and document.kind == "print" and prepared.text:
+            described = bill if summary is None else bill.model_copy(update={"summary": summary})
+            authors = self._authors.resolve(described, prepared.text) or authors
+        return bill.model_copy(update={"analysis": prepared.record, "authors": authors}), True
 
     def summarize_amendments(
         self, bill: Bill, document: TextDocument, *, proposal: str | None = None

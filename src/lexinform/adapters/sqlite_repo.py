@@ -26,6 +26,7 @@ from lexinform.models import (
     BillStatus,
     BillSubmission,
     CommandState,
+    DeliveryPlan,
     IncomingCommand,
     JointRecord,
     ObservedProcess,
@@ -39,7 +40,6 @@ from lexinform.models import (
     Stage,
     StatusChange,
     SupplementRecord,
-    UpdateDelivery,
     WykazEntry,
 )
 
@@ -552,9 +552,7 @@ class SqliteBillRepository:
             (key, record_json),
         )
 
-    def save_update_delivery(
-        self, change_id: int, channel_id: str, delivery: UpdateDelivery
-    ) -> None:
+    def save_update_delivery(self, change_id: int, channel_id: str, delivery: DeliveryPlan) -> None:
         self._conn.execute(
             "UPDATE publications SET delivery_json = ? WHERE status_change_id = ?"
             " AND channel_id = ? AND kind = 'status_update' AND delivery_json IS NULL",
@@ -1115,10 +1113,12 @@ class SqliteBillRepository:
         self._conn.execute(
             """
             INSERT INTO publications (term, number, kind, status, channel_id, ref, message_id,
-                document_message_ids, status_change_id, created_at, sent_at, error)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                document_message_ids, status_change_id, created_at, sent_at, error, delivery_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT DO UPDATE SET status = excluded.status, created_at = excluded.created_at,
-                                      error = NULL
+                                      error = NULL,
+                                      delivery_json = COALESCE(
+                                          publications.delivery_json, excluded.delivery_json)
             """,
             (
                 publication.term,
@@ -1133,6 +1133,7 @@ class SqliteBillRepository:
                 publication.created_at.isoformat(),
                 _iso(publication.sent_at),
                 publication.error,
+                publication.delivery.model_dump_json() if publication.delivery else None,
             ),
         )
         if publication.kind is PublicationKind.STATUS_UPDATE:
@@ -1155,6 +1156,15 @@ class SqliteBillRepository:
             ).fetchone()
         assert row is not None
         return int(row[0])
+
+    def list_due_deliveries(self, channel_id: str, *, max_attempts: int) -> list[Publication]:
+        rows = self._conn.execute(
+            "SELECT * FROM publications WHERE channel_id = ? AND delivery_json IS NOT NULL"
+            " AND kind != 'status_update'"
+            " AND (status = 'queued' OR (status = 'failed' AND attempts < ?)) ORDER BY id",
+            (channel_id, max_attempts),
+        ).fetchall()
+        return [self._row_to_publication(row) for row in rows]
 
     def mark_publication(
         self,
@@ -1562,7 +1572,7 @@ class SqliteBillRepository:
     def _row_to_publication(row: sqlite3.Row) -> Publication:
         return Publication(
             delivery=(
-                UpdateDelivery.model_validate_json(row["delivery_json"])
+                DeliveryPlan.model_validate_json(row["delivery_json"])
                 if row["delivery_json"]
                 else None
             ),

@@ -7,8 +7,7 @@ is marked discontinued, which takes it out of every listing. Passed bills stay f
 Senate and the President not caring about the term, and RCL rows still waiting for their druk
 move to the new term so that druk can take their thread.
 
-Idempotent: the posts are recorded before the rows are marked, so an outage half-way leaves the
-rest for the next run.
+Discontinuation and delivery plans commit together before any network sends.
 """
 
 import logging
@@ -33,29 +32,34 @@ class TermRollover:
     def close_term(
         self, previous: int, current: int, result: TrackingResult, *, publish: bool
     ) -> bool:
-        """Announce the lapsed bills of `previous` and carry the government's own rows over to
-        `current`. False when Telegram is down (the unposted bills are left for the next run)."""
+        """Queued announcements survive discontinuation even when Telegram is unavailable."""
         moved = self._repo.move_government_rows(previous, current)
         if moved:
             result.rehomed += moved
             log.warning(
                 "term %d -> %d: %d government row(s) carried over", previous, current, moved
             )
-        unfinished = self._repo.list_unfinished_published(previous, self._channel_id)
         announced: list[Bill] = []
-        for bill in unfinished:
+        planned: list[tuple[Bill, StatusChange]] = []
+        with self._repo.atomic():
+            unfinished = self._repo.list_unfinished_published(previous, self._channel_id)
+            for bill in unfinished:
+                change = self._announce(bill)
+                if change is not None:
+                    planned.append((bill, change))
+            marked = self._repo.discontinue_unfinished(previous, at=self._clock.now())
+            for bill, change in planned:
+                fresh = self._repo.get(bill.term, bill.number) or bill
+                self._poster.prepare(fresh, change)
+        result.changed += len(planned)
+        for bill, change in planned:
             try:
-                if not self._announce(bill, result, publish=publish):
-                    continue
+                told = self._poster.tell(bill, change, result, publish=publish)
+                result.discontinued += int(told is not Told.FAILED)
+                announced.append(bill)
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return False
-            except Exception as exc:
-                result.failed += 1
-                log.exception("announcing the end of term for %s failed: %s", bill.number, exc)
-            else:
-                announced.append(bill)
-        marked = self._repo.discontinue_unfinished(previous, at=self._clock.now())
         if publish:
             self._close_cards(announced)
         if marked:
@@ -87,15 +91,10 @@ class TermRollover:
                 log.warning("cards of the lapsed term left as they are: %s", exc.describe())
                 return
 
-    def _announce(self, bill: Bill, result: TrackingResult, *, publish: bool) -> bool:
-        """One update under the card; False when it was posted by an earlier run already.
-
-        With publishing off the change is held rather than dropped: the change row alone would
-        make the next publishing run believe the announcement had been made.
-        """
+    def _announce(self, bill: Bill) -> StatusChange | None:
         card = self._poster.card(bill)
         if card is None or card.status is not PublicationStatus.SENT:
-            return False
+            return None
         change = self._poster.record_change(
             StatusChange(
                 term=bill.term,
@@ -109,12 +108,4 @@ class TermRollover:
                 detected_at=self._clock.now(),
             )
         )
-        if change is None:
-            return False
-        result.changed += 1
-        log.info("%s lapsed with the end of term %d", bill.number, bill.term)
-        # A bill whose last word is held counts as laid to rest all the same: the row is there
-        # and the next post carries it; only a failed send leaves it for another run.
-        told = self._poster.tell(bill, change, result, publish=publish)
-        result.discontinued += int(told is not Told.FAILED)
-        return True
+        return change

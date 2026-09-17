@@ -120,32 +120,31 @@ class PrePrintReconciler:
     ) -> None:
         """What the `/bills` row says has happened to the entry since it was stored."""
         if bill.is_pre_print and sub.print_number:
-            self._repo.save_submission(bill.term, bill.number, sub)
-            self._linker.link(bill, sub.print_number, result, publish=publish)
+            self._linker.link(
+                bill.model_copy(update={"submission": sub}),
+                sub.print_number,
+                result,
+                publish=publish,
+            )
             return
         if (
             bill.is_pre_print
             and sub.is_closed
             and not self._repo.closure_announced(bill.term, bill.number)
         ):
-            self._repo.save_submission(bill.term, bill.number, sub)
-            self._announce_withdrawal(bill, result, publish=publish)
+            self._announce_withdrawal(bill, result, publish=publish, submission=sub)
             return
         if self._results_appeared(bill, sub) and self._consultations is not None:
             news = bill.model_copy(update={"submission": sub})
-            if not self._consultations.results_published(news, result, publish=publish):
-                return
-            self._repo.save_submission(bill.term, bill.number, sub)
+            with self._repo.atomic():
+                self._repo.save_submission(bill.term, bill.number, sub)
+                self._consultations.prepare_results(news)
+            self._consultations.results_published(news, result, publish=publish)
             return
         self._repo.save_submission(bill.term, bill.number, sub)
 
     @staticmethod
     def _results_appeared(bill: Bill, sub: BillSubmission) -> bool:
-        """`consultationResults` flipped to true since the stored copy of the entry.
-
-        The stored copy is left alone until the post goes out, so that a failed post is seen
-        again on the next run and retried.
-        """
         before = bill.submission
         return sub.consultation_results and not (before is not None and before.consultation_results)
 
@@ -166,27 +165,34 @@ class PrePrintReconciler:
         age = (self._clock.now().date() - submission.date_of_receipt).days
         return age > PRE_PRINT_MAX_DAYS
 
-    def _announce_withdrawal(self, bill: Bill, result: TrackingResult, *, publish: bool) -> None:
-        """Close the thread of an RPW entry that was withdrawn before getting a print number.
-
-        With publishing off the change is held rather than dropped: the change row alone would
-        look like something that had been announced.
-        """
-        change = self._poster.record_change(
-            StatusChange(
-                term=bill.term,
-                number=bill.number,
-                old_fingerprint=bill.stages_fingerprint,
-                new_fingerprint=synthetic_key("withdrawn", bill.number),
-                new_stages=[],
-                closure_detected=True,
-                passed=False,
-                withdrawn=True,
-                detected_at=self._clock.now(),
+    def _announce_withdrawal(
+        self,
+        bill: Bill,
+        result: TrackingResult,
+        *,
+        publish: bool,
+        submission: BillSubmission | None = None,
+    ) -> None:
+        with self._repo.atomic():
+            if submission is not None:
+                self._repo.save_submission(bill.term, bill.number, submission)
+                bill = bill.model_copy(update={"submission": submission})
+            change = self._poster.record_change(
+                StatusChange(
+                    term=bill.term,
+                    number=bill.number,
+                    old_fingerprint=bill.stages_fingerprint,
+                    new_fingerprint=synthetic_key("withdrawn", bill.number),
+                    new_stages=[],
+                    closure_detected=True,
+                    passed=False,
+                    withdrawn=True,
+                    detected_at=self._clock.now(),
+                )
             )
-        )
-        if change is None:
-            return
+            if change is None:
+                return
+            self._poster.prepare(bill, change)
         result.changed += 1
         log.info("%s withdrawn before getting a print number", bill.number)
         self._poster.tell(bill, change, result, publish=publish)

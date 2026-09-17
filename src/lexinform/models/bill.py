@@ -27,7 +27,7 @@ from lexinform.models.evidence import (
 from lexinform.models.evidence import (
     veto_evidence,
 )
-from lexinform.models.observations import ObservedProcess, UpdateDelivery
+from lexinform.models.observations import DeliveryPlan, ObservedProcess
 from lexinform.models.rcl import RclProject
 from lexinform.models.sejm import (
     ActInfo,
@@ -233,7 +233,7 @@ class Publication(BaseModel):
     """One Telegram post (or the decision not to send one), written before sending."""
 
     id: int | None = None
-    delivery: UpdateDelivery | None = None
+    delivery: DeliveryPlan | None = None
     term: int
     number: str
     attempts: int = 0

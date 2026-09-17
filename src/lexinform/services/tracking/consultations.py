@@ -6,7 +6,7 @@ import logging
 from zoneinfo import ZoneInfo
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import Bill, PublicationKind, PublicationStatus
+from lexinform.models import Bill, Publication, PublicationKind, PublicationStatus
 from lexinform.ports import BillRepository, Clock
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.result import TrackingResult
@@ -34,22 +34,19 @@ class ConsultationReminder:
         self._local_tz = local_tz
         self._days_before = days_before
 
-    def results_published(self, bill: Bill, result: TrackingResult, *, publish: bool) -> bool:
-        """The entry now says the opinions are published: one reply under the card.
-
-        False only when the post was attempted and failed: the caller then keeps its stored copy
-        of the entry, so that the flip is detected again on the next run and the post retried
-        (a `failed` row alone would not do: the trigger is the difference to the stored copy)."""
+    def prepare_results(self, bill: Bill) -> Publication | None:
         card = self._poster.card(bill)
         if card is None or card.status is not PublicationStatus.SENT:
-            return True
+            return None
         if self._poster.posted(bill, PublicationKind.CONSULTATION_RESULTS):
+            return None
+        return self._poster.prepare_message(bill, PublicationKind.CONSULTATION_RESULTS)
+
+    def results_published(self, bill: Bill, result: TrackingResult, *, publish: bool) -> bool:
+        publication = self.prepare_results(bill)
+        if publication is None or not publish:
             return True
-        if not publish:
-            kind = PublicationKind.CONSULTATION_RESULTS
-            self._poster.record(bill, kind, PublicationStatus.SKIPPED)
-            return True
-        sent = self._poster.consultation_results(bill)
+        sent = self._poster.deliver(publication)
         result.count_post(sent, "consultation_results_posted")
         return sent
 

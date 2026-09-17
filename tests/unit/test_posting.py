@@ -73,7 +73,9 @@ def test_failed_post_is_recorded_with_the_error_and_counted_as_an_attempt(
     row = repo.get_publication(10, "3039", PublicationKind.IN_FORCE, CHANNEL)
     assert row is not None and (row.status, row.attempts) == (PublicationStatus.FAILED, 1)
     assert row.error is not None and "rejected" in row.error
-    assert not poster.posted(bill, PublicationKind.IN_FORCE)  # still worth retrying
+    assert poster.posted(bill, PublicationKind.IN_FORCE)
+    poster.start_run()
+    assert not poster.posted(bill, PublicationKind.IN_FORCE)
 
 
 def test_post_is_blocked_once_the_attempts_are_exhausted(

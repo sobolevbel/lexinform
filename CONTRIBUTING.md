@@ -122,9 +122,10 @@ Rules that keep this honest:
   subclass when the whole system is down; anything else costs the bill one attempt.
 - **Pending before send.** Every Telegram post has a `publications` row first (see `Poster`).
 - **Time comes from the `Clock`.** No `datetime.now()` in services; tests use `FixedClock`.
-- **Process checkpoints include delivery work.** The Sejm tracker builds a pure `BillPlan`,
-  then commits its `ObservedProcess` and queued/held update atomically. Retries use saved
-  snapshots. See [process plans](docs/process-plans.md) for ownership and compatibility limits.
+- **Observation checkpoints include delivery work.** The Sejm tracker builds a pure `BillPlan`;
+  RCL, RPW, wykaz, linking, agendas and term rollover prepare source-specific changes. Each
+  commits its observation and queued/held delivery atomically. Cards, updates and reminders retry
+  from saved snapshots. See [process plans](docs/process-plans.md).
 - **A source stays behind its seam.** The analysis and the text prefilter ask a `TextSource`
   where a bill's text is; the formatter and `next_phase` read `Bill.consultation` and `Bill.rcl`,
   never `submission.*` for consultation dates. Skip logic uses `Bill.has_process` (false for

@@ -1,8 +1,8 @@
 # Process observations and delivery plans
 
-Implemented after [incident 2111](incident-2111.md). The Sejm process tracker separates source
-metadata, processed observations, analysis work and delivery. Other source watchers retain
-their detection loops and use the shared status-update delivery boundary.
+Implemented after [incident 2111](incident-2111.md). Source watchers separate source metadata,
+processed observations, analysis work and delivery. Sejm, RCL, RPW, wykaz, linking, agendas and
+term rollover commit an observation and its delivery plan in one SQLite savepoint.
 
 ## Evidence
 
@@ -42,9 +42,11 @@ old observation detects the analysed revision on the next run and still creates 
 
 ## Delivery
 
-Status-update publications store an immutable `UpdateDelivery`: serialized bill and change,
-including analysis and document provenance, and the exact IDs of included held changes. The
-payload belongs to one channel. A retry cannot use newer facts or absorb later held stages.
+Publications store an immutable `DeliveryPlan`. Status updates serialize the bill and change,
+including analysis and document provenance and the exact IDs of included held changes. Cards,
+agendas, cancellations and reminders store the bill plus the event-specific facts used to render
+them. The payload belongs to one channel. A retry cannot use newer facts, move to another thread,
+change a deadline date or absorb later held stages.
 
 - `queued`: durable work, no send started; the next publishing run drains it.
 - `pending`: sending may have started; stale pending becomes `unknown`, never retried.
@@ -52,10 +54,15 @@ payload belongs to one channel. A retry cannot use newer facts or absorb later h
 - `skipped`: editorial hold, included in the next substantive update.
 - `sent`: delivery and release of its exact held-change IDs commit together.
 
-Disabled status-update delivery queues news, which no longer waits for another legislative
-event to be sent. Non-substantive and historical additions remain held. The existing silent
-seeding of **new cards** under `run --no-publish` remains unchanged; this refactor changes the
-status-update queue, not that operator workflow.
+Disabled delivery queues detected updates, agendas and reminders, which no longer wait for
+another legislative event to be sent. Non-substantive and historical additions remain held.
+The existing silent seeding of **new cards** under `run --no-publish` remains unchanged.
+
+RCL, RPW and wykaz changes build their delivery plans in the transaction that advances the
+stored source snapshot. Linking a predecessor to its RCL project or druk commits the successor,
+card alias, analysis and update plan together. Term rollover commits discontinuation and all its
+update plans before any Telegram call. Model work remains outside these transactions; its memo is
+stored first, so a checkpoint retry does not pay for the same analysis again.
 
 ## Analysis memoization
 
@@ -80,19 +87,20 @@ deployment does not replay history.
 
 Old failed publications have no historical payload. Their first retry captures available
 facts once; overwritten metadata cannot reconstruct exact historical facts. Old skipped rows
-retain their meaning. Non-status messages and RCL/pre-print/wykaz detection transactions are
-compatibility boundaries for subsequent slices, not a completed rewrite of every watcher.
+retain their meaning.
 
 ## Verification
 
-The local release gate passed: 1,197 tests, 9 live integration tests deselected, strict mypy,
+The local release gate passed: 1,212 tests, 9 live integration tests deselected, strict mypy,
 ruff check and formatting.
 
-`test_process_plans.py` covers restored queues, immutable retry facts, checkpoint failure
-after paid analysis, unknown states, late Senate decisions, memoized amendments and ambiguous
-deliveries. `test_late_discovery.py` exercises every stage of the incident sequence, the full
-recorded 2111 snapshot, document selection and call counts, with workers 1 and 4. Posting tests
-check that retries cannot consume later held stages. Legacy dump tests cover existing versions.
+`test_process_plans.py` covers restored queues, immutable retry facts, checkpoint failure after
+paid analysis, unknown states, late Senate decisions, memoized amendments and ambiguous
+deliveries. `test_delivery_checkpoints.py` injects failures into RCL, RPW, wykaz, linking, term
+rollover and agenda checkpoints, and restores the database before retrying cards, reminders and
+agendas. `test_late_discovery.py` exercises every stage of the incident sequence, the full
+recorded 2111 snapshot, document selection and call counts, with workers 1 and 4. Legacy dump
+tests cover existing versions.
 
 A fresh production dump restored locally to v25; 2111 retained its 2026-05-29 closure baseline.
 Offline shadow comparison of all 60 stored Sejm processes with known baselines produced no

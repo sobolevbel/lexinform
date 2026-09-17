@@ -258,9 +258,7 @@ def test_a_joint_print_is_not_triaged_when_the_group_already_holds_the_card() ->
     assert [ctx.number for ctx in w.llm.contexts] == ["1933", "1929"]
 
 
-def test_a_joint_print_gets_a_card_of_its_own_when_the_group_loses_its_card() -> None:
-    """The print was analysed on its own text, so when the print holding the card is withdrawn
-    before the reply goes out there is a verdict to make a card of, and no second reading."""
+def test_a_failed_joint_reply_keeps_its_original_thread_when_the_primary_is_withdrawn() -> None:
     w = World(fail_publish={"1929"})
     w.add_bill("1933", DEPUTIES)
     w.run()
@@ -272,8 +270,9 @@ def test_a_joint_print_gets_a_card_of_its_own_when_the_group_loses_its_card() ->
     report = w.run()
 
     assert [ctx.number for ctx in w.llm.contexts] == ["1933", "1929"]
-    assert report.published == 1
-    assert [b.number for b, _ in w.publisher.new_bills] == ["1933", "1929"]
+    assert report.joint_published == 1
+    assert [b.number for b, _ in w.publisher.new_bills] == ["1933"]
+    assert w.publication("1929", PublicationKind.JOINT_BILL) is not None
 
 
 def test_a_joint_print_whose_partner_has_no_card_is_analysed_as_usual() -> None:

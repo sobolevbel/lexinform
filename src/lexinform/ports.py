@@ -22,6 +22,7 @@ from lexinform.models import (
     CommandState,
     Committee,
     CommitteeSitting,
+    DeliveryPlan,
     Digest,
     IncomingCommand,
     JointContext,
@@ -48,7 +49,6 @@ from lexinform.models import (
     SupplementRecord,
     TriageContext,
     TriageRecord,
-    UpdateDelivery,
     Vote,
     WykazEntry,
 )
@@ -433,7 +433,7 @@ class BillRepository(Protocol):
     def save_observed_process(self, term: int, number: str, observed: ObservedProcess) -> None: ...
 
     def save_update_delivery(
-        self, change_id: int, channel_id: str, delivery: UpdateDelivery
+        self, change_id: int, channel_id: str, delivery: DeliveryPlan
     ) -> None: ...
 
     def get_update_publication(self, change_id: int, channel_id: str) -> Publication | None: ...
@@ -496,6 +496,8 @@ class BillRepository(Protocol):
     ) -> list[Bill]: ...
 
     def create_publication(self, publication: Publication) -> int: ...
+
+    def list_due_deliveries(self, channel_id: str, *, max_attempts: int) -> list[Publication]: ...
 
     def mark_publication(
         self,

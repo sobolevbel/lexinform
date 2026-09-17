@@ -14,11 +14,13 @@ and are in git.
 - **Reliability of process decisions — incident 2111, 16 Sept 2026.** The immediate fixes
   separate the observed closure from discovery metadata, select the current text on first
   analysis, and require explicit evidence of a veto outcome. Shared interpretation of source
-  facts, immutable observation snapshots, and a publication plan committed with its observation
-  checkpoint are now implemented for the Sejm process slice.
-  Status-update retries use saved payloads and distinguish queued delivery from editorial
-  holds. See [the architecture and compatibility boundaries](process-plans.md); moving other
-  source watchers and non-status messages to the same transaction boundary remains open.
+  facts and immutable observation snapshots are implemented for the Sejm process slice. RCL,
+  RPW, wykaz, linking, agendas and term rollover now commit their observation together with a
+  delivery plan. Cards, status updates, agendas and reminders retry from saved facts and
+  distinguish queued delivery from editorial holds. See
+  [the architecture and compatibility boundaries](process-plans.md). Remaining work is to unify
+  readings, tribunal and other source decisions, extend the independent expected-results corpus,
+  and add persistent scan and triage memoization.
 
 - **The weekly digest — built on 2026-09-15**, as designed here and with one change: the monthly
   figures count entries *taken in* and not a phase's `seen`, because the register is downloaded

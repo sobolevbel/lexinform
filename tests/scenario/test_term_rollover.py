@@ -174,7 +174,7 @@ def test_telegram_outage_during_the_rollover_leaves_the_bills_for_the_next_run()
     w.clock.advance(days=1)
     retried = w.run(term=None)
 
-    assert failed.discontinued == 0 and marked_after_failure is None
+    assert failed.discontinued == 0 and marked_after_failure is not None
     assert any("end of term: Telegram API unavailable" in e for e in failed.errors)
     assert retried.updates == 1 and not retried.errors  # the recorded update is sent
     assert w.bill("3039").discontinued_at is not None

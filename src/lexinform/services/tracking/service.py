@@ -52,7 +52,7 @@ from lexinform.services.tracking.linking import Linker
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.pre_print import PrePrintReconciler
 from lexinform.services.tracking.rcl import RclWatcher
-from lexinform.services.tracking.result import TrackingResult
+from lexinform.services.tracking.result import PostCounter, TrackingResult
 from lexinform.services.tracking.rollover import TermRollover
 from lexinform.services.tracking.stages import StageEnricher, change_key
 from lexinform.services.tracking.wykaz import WykazLinker, WykazWatcher
@@ -318,6 +318,7 @@ class StatusTrackingService:
         of `_remind` and the card refresh see every followed bill either way.
         """
         result = TrackingResult()
+        self._poster.start_run()
         if publish and not self._retry_failed(result):
             return result
         if not self._pre_print.reconcile(result, publish=publish):
@@ -482,6 +483,28 @@ class StatusTrackingService:
         is that there is nothing to decide: the change was recorded and told long ago, this run
         only repeats a send that failed, and `check_updates` calls this only when publishing.
         """
+        counters: dict[PublicationKind, PostCounter] = {
+            PublicationKind.AGENDA: "agenda_posted",
+            PublicationKind.AGENDA_CANCELLED: "agenda_cancelled",
+            PublicationKind.HEARING_DEADLINE: "hearing_reminders",
+            PublicationKind.DECISION_DEADLINE: "decision_reminders",
+            PublicationKind.ACT_PUBLISHED: "acts_published",
+            PublicationKind.IN_FORCE: "in_force_posted",
+            PublicationKind.CONSULTATION_RESULTS: "consultation_results_posted",
+            PublicationKind.CONSULTATION_DEADLINE: "consultation_reminders",
+        }
+        for publication in self._repo.list_due_deliveries(
+            self._options.channel_id, max_attempts=self._options.max_publish_attempts
+        ):
+            if publication.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
+                continue
+            try:
+                result.count_post(
+                    self._poster.deliver(publication), counters.get(publication.kind, "published")
+                )
+            except ServiceUnavailableError as exc:
+                result.abort(exc, failed=True)
+                return False
         for change in self._repo.list_due_status_changes(
             self._options.channel_id, max_attempts=self._options.max_publish_attempts
         ):
@@ -490,7 +513,12 @@ class StatusTrackingService:
                 continue
             log.info("retrying status update for druk %s", bill.number)
             try:
-                result.count_post(self._poster.status_update(bill, change))
+                sent = self._poster.status_update(bill, change)
+                result.count_post(sent)
+                if sent and change.discontinued:
+                    card = self._poster.card(bill)
+                    if card is not None:
+                        self._poster.rerender_card(bill, card)
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return False

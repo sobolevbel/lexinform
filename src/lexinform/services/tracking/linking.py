@@ -15,6 +15,7 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    Stage,
     StatusChange,
     diff_stages,
     observe,
@@ -79,28 +80,64 @@ class Linker:
         """
         now = self._clock.now()
         detail = self._gateway.get_process(pre.term, print_number)
-        self._adopt(pre, print_number, detail, now=now)
+        stages = self._enricher.name_committees(pre.term, detail.stages)
+        card = self._poster.card(pre)
+        bill = pre.model_copy(
+            update={
+                "summary": detail,
+                "stages": stages,
+                "stages_fingerprint": stage_fingerprint(detail.stages),
+                "linked_number": pre.number,
+                "status": self._status_of_print(pre),
+            }
+        )
+        change = None
+        if card is not None and card.status is PublicationStatus.SENT:
+            bill, changed = self._reanalyze_print(bill, detail, result)
+            change = self._print_change(bill, pre, detail, content_changed=changed, now=now)
+        alias = None
+        with self._repo.atomic():
+            self._adopt(pre, print_number, detail, stages, now=now)
+            if bill.analysis is not None:
+                self._repo.save_analysis(bill.term, bill.number, bill.analysis)
+            if bill.authors is not None:
+                self._repo.save_authors(bill.term, bill.number, bill.authors)
+            if card is not None and card.status is PublicationStatus.SENT:
+                alias = self._inherit_card(pre, print_number, card, now=now)
+            if change is not None:
+                change = self._poster.record_change(change)
+                if change is not None:
+                    self._poster.prepare(bill, change)
+            fresh = self._repo.get(pre.term, print_number)
+            assert fresh is not None
+            self._repo.save_observed_process(
+                pre.term, print_number, observe(fresh, closure_date=detail.closure_date)
+            )
         result.linked += 1
         log.info("%s became druk %s", pre.number, print_number)
-
-        card = self._poster.card(pre)
-        if card is None or card.status is not PublicationStatus.SENT:
-            return
-        alias = self._inherit_card(pre, print_number, card, now=now)
-        bill = self._repo.get(pre.term, print_number)
-        if bill is None:
+        if alias is None:
             return
         self._acts.check(bill, detail, result, publish=publish)
-        self._announce_print(bill, pre, detail, result, now=now, publish=publish)
+        if change is not None:
+            result.changed += 1
+            self._poster.tell(bill, change, result, publish=publish)
         self._render_card(pre.term, print_number, alias, publish=publish)
 
-    def _adopt(self, pre: Bill, print_number: str, detail: ProcessDetail, *, now: datetime) -> None:
+    def _adopt(
+        self,
+        pre: Bill,
+        print_number: str,
+        detail: ProcessDetail,
+        stages: tuple[Stage, ...],
+        *,
+        now: datetime,
+    ) -> None:
         """The print takes over everything the entry knew about the bill."""
         self._repo.upsert_summary(detail, now=now)
         self._repo.save_stages(
             pre.term,
             print_number,
-            self._enricher.name_committees(pre.term, detail.stages),
+            stages,
             stage_fingerprint(detail.stages),
         )
         self._repo.save_observed_closure(pre.term, print_number, detail.closure_date)
@@ -119,11 +156,6 @@ class Linker:
             pre.number,
             print_number,
             wykaz_number=pre.rcl.wykaz_number if pre.rcl is not None else None,
-        )
-        fresh = self._repo.get(pre.term, print_number)
-        assert fresh is not None
-        self._repo.save_observed_process(
-            pre.term, print_number, observe(fresh, closure_date=detail.closure_date)
         )
 
     def _inherit_card(
@@ -160,25 +192,20 @@ class Linker:
         if bill is not None:
             self._poster.rerender_card(bill, alias)
 
-    def _announce_print(
+    def _print_change(
         self,
         bill: Bill,
         pre: Bill,
         detail: ProcessDetail,
-        result: TrackingResult,
         *,
         now: datetime,
-        publish: bool,
-    ) -> None:
-        """One update under the card: the print number, and what the print's text changed. With
-        publishing off the change is held, to be told with the next update of the print."""
-        content_changed = self._reanalyze_print(bill, detail, result)
-        fresh = self._repo.get(bill.term, bill.number) or bill
-        change = StatusChange(
+        content_changed: bool,
+    ) -> StatusChange:
+        return StatusChange(
             term=bill.term,
             number=bill.number,
             old_fingerprint=pre.number,
-            new_fingerprint=change_key(stage_fingerprint(detail.stages), fresh, closed=False),
+            new_fingerprint=change_key(stage_fingerprint(detail.stages), bill, closed=False),
             new_stages=[
                 self._enricher.enrich(bill.term, st) for st in diff_stages((), detail.stages)
             ],
@@ -186,26 +213,17 @@ class Linker:
             content_changed=content_changed,
             detected_at=now,
         )
-        with self._repo.atomic():
-            recorded = self._poster.record_change(change)
-            if recorded is None:
-                return
-            self._poster.prepare(fresh, recorded)
-            self._repo.save_observed_process(
-                bill.term, bill.number, observe(fresh, closure_date=detail.closure_date)
-            )
-        result.changed += 1
-        self._poster.tell(fresh, recorded, result, publish=publish)
 
-    def _reanalyze_print(self, bill: Bill, detail: ProcessDetail, result: TrackingResult) -> bool:
+    def _reanalyze_print(
+        self, bill: Bill, detail: ProcessDetail, result: TrackingResult
+    ) -> tuple[Bill, bool]:
         """True when the print carries a text the model had not seen under the entry's number."""
         if self._analysis is None or bill.analysis is None:
-            return False
+            return bill, False
         document = self._texts.newer(bill, detail, fetch_print(self._gateway, bill))
         if document is None:
-            return False
-        record = self._analysis.reanalyze_bill(bill, document, summary=detail)
-        if record is None:
-            return False
-        result.count_reanalysis(record)
-        return True
+            return bill, False
+        fresh, changed = self._analysis.prepare_reanalysis(bill, document, summary=detail)
+        if changed and fresh.analysis is not None:
+            result.count_reanalysis(fresh.analysis)
+        return fresh, changed
