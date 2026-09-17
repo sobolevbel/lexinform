@@ -8,6 +8,8 @@ a git branch with readable diffs.
 import json
 import logging
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
@@ -26,6 +28,7 @@ from lexinform.models import (
     CommandState,
     IncomingCommand,
     JointRecord,
+    ObservedProcess,
     ProcessSummary,
     Publication,
     PublicationKind,
@@ -36,6 +39,7 @@ from lexinform.models import (
     Stage,
     StatusChange,
     SupplementRecord,
+    UpdateDelivery,
     WykazEntry,
 )
 
@@ -277,6 +281,12 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE bills ADD COLUMN observed_closure_date TEXT;
     UPDATE bills SET observed_closure_date = closure_date WHERE stages_fingerprint IS NOT NULL;
     """,
+    """
+    ALTER TABLE bills ADD COLUMN observed_process_json TEXT;
+    ALTER TABLE publications ADD COLUMN delivery_json TEXT;
+    ALTER TABLE status_changes ADD COLUMN consultation_opened INTEGER NOT NULL DEFAULT 0;
+    CREATE TABLE analysis_memo (key TEXT PRIMARY KEY, record_json TEXT NOT NULL);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -333,6 +343,17 @@ class SqliteBillRepository:
 
     def close(self) -> None:
         self._conn.close()
+
+    @contextmanager
+    def atomic(self) -> Iterator[None]:
+        self._conn.execute("SAVEPOINT process_plan")
+        try:
+            yield
+        except BaseException:
+            self._conn.execute("ROLLBACK TO process_plan")
+            raise
+        finally:
+            self._conn.execute("RELEASE process_plan")
 
     def begin(self) -> None:
         """Open the transaction a dry run rolls back at the end."""
@@ -514,6 +535,48 @@ class SqliteBillRepository:
             WHERE term = ? AND number = ?
             """,
             (record.model_dump_json(), BillStatus.ANALYZED.value, term, number),
+        )
+
+    def save_observed_process(self, term: int, number: str, observed: ObservedProcess) -> None:
+        self._conn.execute(
+            "UPDATE bills SET observed_process_json = ? WHERE term = ? AND number = ?",
+            (observed.model_dump_json(), term, number),
+        )
+
+    def load_analysis_memo(self) -> dict[str, str]:
+        return dict(self._conn.execute("SELECT key, record_json FROM analysis_memo"))
+
+    def save_analysis_memo(self, key: str, record_json: str) -> None:
+        self._conn.execute(
+            "INSERT INTO analysis_memo(key, record_json) VALUES (?, ?) ON CONFLICT(key) DO NOTHING",
+            (key, record_json),
+        )
+
+    def save_update_delivery(
+        self, change_id: int, channel_id: str, delivery: UpdateDelivery
+    ) -> None:
+        self._conn.execute(
+            "UPDATE publications SET delivery_json = ? WHERE status_change_id = ?"
+            " AND channel_id = ? AND kind = 'status_update' AND delivery_json IS NULL",
+            (delivery.model_dump_json(), change_id, channel_id),
+        )
+
+    def get_update_publication(self, change_id: int, channel_id: str) -> Publication | None:
+        row = self._conn.execute(
+            "SELECT * FROM publications WHERE status_change_id = ?"
+            " AND channel_id = ? AND kind = 'status_update'",
+            (change_id, channel_id),
+        ).fetchone()
+        return self._row_to_publication(row) if row is not None else None
+
+    def release_planned_changes(
+        self, ids: tuple[int, ...], channel_id: str, *, message_id: int, sent_at: datetime
+    ) -> None:
+        self._conn.executemany(
+            "UPDATE publications SET status = 'sent', message_id = ?, sent_at = ?"
+            " WHERE status_change_id = ? AND channel_id = ?"
+            " AND kind = 'status_update' AND status = 'skipped'",
+            [(message_id, sent_at.isoformat(), change_id, channel_id) for change_id in ids],
         )
 
     def record_analysis_failure(self, term: int, number: str, error: str) -> None:
@@ -1203,8 +1266,9 @@ class SqliteBillRepository:
                 INSERT INTO status_changes (term, number, old_fingerprint, new_fingerprint,
                                             new_stages_json, closure_detected, passed,
                                             content_changed, withdrawn, discontinued,
-                                            amendments_json, supplements_json, detected_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                            amendments_json, supplements_json, detected_at,
+                                            consultation_opened)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     change.term,
@@ -1226,6 +1290,7 @@ class SqliteBillRepository:
                     ),
                     _supplements_json(change.supplements),
                     change.detected_at.isoformat(),
+                    int(change.consultation_opened),
                 ),
             )
         except sqlite3.IntegrityError:
@@ -1264,6 +1329,12 @@ class SqliteBillRepository:
             SELECT c.* FROM status_changes c
             JOIN publications p ON p.status_change_id = c.id AND p.kind = 'status_update'
             WHERE c.term = ? AND c.number = ? AND p.channel_id = ? AND p.status = 'skipped'
+              AND NOT EXISTS (
+                  SELECT 1 FROM publications planned,
+                    json_each(planned.delivery_json, '$.held_change_ids') held
+                  WHERE held.value = c.id AND planned.channel_id = p.channel_id
+                    AND planned.status != 'skipped'
+              )
             ORDER BY c.id
             """,
             (term, number, channel_id),
@@ -1291,15 +1362,14 @@ class SqliteBillRepository:
         )
         return int(cur.rowcount or 0)
 
-    def list_failed_status_changes(
-        self, channel_id: str, *, max_attempts: int
-    ) -> list[StatusChange]:
-        """Status changes whose update post failed and may be retried."""
+    def list_due_status_changes(self, channel_id: str, *, max_attempts: int) -> list[StatusChange]:
+        """Queued news and unexhausted failures are deliverable; ambiguous attempts are not."""
         rows = self._conn.execute(
             """
             SELECT c.* FROM status_changes c
             JOIN publications p ON p.status_change_id = c.id AND p.kind = 'status_update'
-            WHERE p.channel_id = ? AND p.status = 'failed' AND p.attempts < ?
+            WHERE p.channel_id = ? AND (p.status = 'queued'
+                OR (p.status = 'failed' AND p.attempts < ?))
             ORDER BY c.id
             """,
             (channel_id, max_attempts),
@@ -1420,6 +1490,11 @@ class SqliteBillRepository:
                 if row["observed_closure_date"]
                 else None
             ),
+            observed_process=(
+                ObservedProcess.model_validate_json(row["observed_process_json"])
+                if row["observed_process_json"]
+                else None
+            ),
             analysis=analysis,
             analysis_attempts=int(row["analysis_attempts"]),
             last_error=row["last_error"],
@@ -1461,6 +1536,7 @@ class SqliteBillRepository:
         return StatusChange(
             id=int(row["id"]),
             term=int(row["term"]),
+            consultation_opened=bool(row["consultation_opened"]),
             number=row["number"],
             old_fingerprint=row["old_fingerprint"],
             new_fingerprint=row["new_fingerprint"],
@@ -1485,6 +1561,11 @@ class SqliteBillRepository:
     @staticmethod
     def _row_to_publication(row: sqlite3.Row) -> Publication:
         return Publication(
+            delivery=(
+                UpdateDelivery.model_validate_json(row["delivery_json"])
+                if row["delivery_json"]
+                else None
+            ),
             id=int(row["id"]),
             term=int(row["term"]),
             number=row["number"],

@@ -133,7 +133,7 @@ def test_held_changes_go_out_with_the_next_update_and_are_released(
     assert update is not None and update.status is PublicationStatus.SENT
 
 
-def test_held_changes_are_released_when_a_failed_update_is_retried(
+def test_retry_does_not_consume_stages_held_after_the_original_plan(
     repo: SqliteBillRepository, bill: Bill, now: dt.datetime
 ) -> None:
     publisher = FakePublisher(fail_on={"3039"})
@@ -152,8 +152,8 @@ def test_held_changes_are_released_when_a_failed_update_is_retried(
 
     assert sent
     _, posted, _ = publisher.updates[0]
-    assert [st.stage_type for st in posted.new_stages] == ["Reading", "CommitteeReport"]
-    assert repo.list_held_status_changes(10, "3039", CHANNEL) == []  # released, not re-told
+    assert [st.stage_type for st in posted.new_stages] == ["CommitteeReport"]
+    assert [c.id for c in repo.list_held_status_changes(10, "3039", CHANNEL)] == [later.id]
 
 
 def _change(bill: Bill, stages: list[Stage], fingerprint: str, now: dt.datetime) -> StatusChange:

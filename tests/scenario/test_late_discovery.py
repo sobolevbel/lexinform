@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from lexinform.models import ProcessDetail, Stage
+from lexinform.models import ProcessDetail, Stage, next_phase
 from tests.fakes import FakeTextExtractor
 from tests.harness import World
 
@@ -35,6 +35,41 @@ VETO_STAGES = (
     ),
     Stage(stage_type="End", stage_name="Uchwalono"),
 )
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+@pytest.mark.parametrize(
+    "count, expected",
+    [
+        (1, "first_reading"),
+        (2, "president_after_senate_silence"),
+        (3, "veto"),
+        (4, "veto"),
+        (5, "veto"),
+    ],
+)
+def test_cold_discovery_at_each_incident_stage_is_an_introduction(
+    workers: int,
+    count: int,
+    expected: str,
+) -> None:
+    w = World(workers=workers)
+    w.add_bill("2111", "Projekt ustawy o cudzoziemcach", stages=VETO_STAGES[:count])
+    w.gateway.files[CURRENT_URL] = b"%PDF-current"
+    if count > 1:
+        w.touch("2111", w.clock.now(), closure_date=dt.date(2026, 5, 29), passed=True)
+
+    first = w.run()
+    again = w.run(full_track=True)
+
+    assert (first.analyzed, first.published, first.reanalyzed, first.updates) == (1, 1, 0, 0)
+    assert (again.analyzed, again.reanalyzed, again.updates) == (0, 0, 0)
+    assert len(w.llm.contexts) == 1
+    phase = next_phase(w.bill("2111"), today=w.clock.now().date())
+    assert phase is not None and phase.key == expected
+    record = w.bill("2111").analysis
+    assert record is not None
+    assert record.source_kind == ("print" if count == 1 else "text_after3")
 
 
 @pytest.mark.parametrize("workers", [1, 4])

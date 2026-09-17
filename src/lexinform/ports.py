@@ -1,6 +1,7 @@
 """Interfaces (typing.Protocol) that services depend on. Adapters implement them."""
 
 from collections.abc import Iterator, Mapping
+from contextlib import AbstractContextManager
 from datetime import date, datetime
 from typing import Protocol
 
@@ -27,6 +28,7 @@ from lexinform.models import (
     JointRecord,
     LocatedText,
     Mp,
+    ObservedProcess,
     Phase,
     PrintInfo,
     ProcessDetail,
@@ -46,6 +48,7 @@ from lexinform.models import (
     SupplementRecord,
     TriageContext,
     TriageRecord,
+    UpdateDelivery,
     Vote,
     WykazEntry,
 )
@@ -421,6 +424,24 @@ class BillRepository(Protocol):
 
     def save_observed_closure(self, term: int, number: str, closed: date | None) -> None: ...
 
+    def atomic(self) -> AbstractContextManager[None]: ...
+
+    def load_analysis_memo(self) -> dict[str, str]: ...
+
+    def save_analysis_memo(self, key: str, record_json: str) -> None: ...
+
+    def save_observed_process(self, term: int, number: str, observed: ObservedProcess) -> None: ...
+
+    def save_update_delivery(
+        self, change_id: int, channel_id: str, delivery: UpdateDelivery
+    ) -> None: ...
+
+    def get_update_publication(self, change_id: int, channel_id: str) -> Publication | None: ...
+
+    def release_planned_changes(
+        self, ids: tuple[int, ...], channel_id: str, *, message_id: int, sent_at: datetime
+    ) -> None: ...
+
     def save_analysis(self, term: int, number: str, record: AnalysisRecord) -> None: ...
 
     def record_analysis_failure(self, term: int, number: str, error: str) -> None: ...
@@ -636,7 +657,7 @@ class BillRepository(Protocol):
         self, channel_id: str, *, today: date, days_before: int
     ) -> list[Bill]: ...
 
-    def list_failed_status_changes(
+    def list_due_status_changes(
         self, channel_id: str, *, max_attempts: int
     ) -> list[StatusChange]: ...
 

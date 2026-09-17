@@ -20,6 +20,7 @@ from lexinform.models.bill import (
     veto_stood,
 )
 from lexinform.models.enums import ApplicantType, VetoOutcome
+from lexinform.models.evidence import DecisionState, SenateOutcome, senate_evidence, terminal_stage
 from lexinform.models.rcl import RclProject
 from lexinform.models.sejm import (
     ActInfo,
@@ -27,7 +28,6 @@ from lexinform.models.sejm import (
     reading_adjourned,
     reading_decision,
     second_reading_sent_back,
-    senate_moved_rejection,
 )
 
 
@@ -388,6 +388,11 @@ def _phase_after(
         return Phase(key="tribunal_after_ruling")
     if kind == "SenatePositionConsideration" and _sejm_let_the_senate_win(last):
         return None
+    if (
+        kind == "SenatePositionConsideration"
+        and senate_evidence(last).state is not DecisionState.KNOWN
+    ):
+        return Phase(key="decision_unknown")
     if kind in _PRESIDENT_NEXT:
         days = PRESIDENT_DAYS_URGENT if urgent else PRESIDENT_DAYS
         # `ToPresident` is the hand-over itself, so its date is the day art. 122 starts counting;
@@ -437,17 +442,18 @@ def _sejm_let_the_senate_win(stage: Stage) -> bool:
     decided in words of their own ("przyjęto poprawki"), so a decision naming the uchwała is one
     where the whole act was at stake.
     """
-    decided = (stage.decision or "").lower()
-    return decided.startswith("przyjęto") and "uchwałę senatu" in decided
+    return senate_evidence(stage).senate is SenateOutcome.REJECTION_ACCEPTED
 
 
 def _phase_after_senate(last: Stage) -> Phase:
     """Amendments and a rejection are two different stakes: art. 121 ust. 3 lets a rejection
     stand unless the Sejm throws it out by an absolute majority."""
-    position = (last.position or "").lower()
-    if "nie wniósł" in position:
+    outcome = senate_evidence(last).senate
+    if outcome is SenateOutcome.NO_AMENDMENTS:
         return Phase(key="president")
-    key = "senate_rejection" if senate_moved_rejection(last) else "senate_amendments"
+    if outcome is None:
+        return Phase(key="decision_unknown")
+    key = "senate_rejection" if outcome is SenateOutcome.REJECTION else "senate_amendments"
     return Phase(key=key, committees=_committee_codes(last))
 
 
@@ -505,23 +511,22 @@ def _phase_after_referral(last: Stage) -> Phase:
 
 
 def is_over(bill: Bill, *, today: dt.date) -> bool:
-    """True when the road has ended: nothing is left that a reader could act on.
-
-    `closureDate` alone does not say it: the Sejm sets it at the third reading with the Senate,
-    the President and Dziennik Ustaw still ahead. The road ends when the act *applies*, the bill
-    is rejected or withdrawn, the project is closed on RCL, the plan taken off the wykaz or the
-    term lapses — the stages tell those apart, so a bill whose stages were never read is unknown
-    and not over. An act in Dziennik Ustaw does not end it either while its vacatio legis runs,
-    which is the one span with a known date to prepare for; deciding that needs the act, so a
-    bill whose ELI was never fetched counts as over and callers that can fetch it do.
-    """
+    """Only positive terminal evidence ends tracking; an unknown next step never does."""
     if bill.act is not None:
-        return next_phase(bill, today=today) is None
+        return bill.act.entry_into_force is not None and bill.act.entry_into_force <= today
     if bill.summary.eli is not None:
-        return True
-    if bill.has_process and not bill.stages:
         return False
-    return next_phase(bill, today=today) is None
+    if bill.discontinued_at is not None:
+        return True
+    if bill.rcl is not None:
+        return bill.rcl.is_over
+    if bill.wykaz is not None:
+        return bill.wykaz.is_withdrawn
+    if bill.is_pre_print:
+        return bill.summary.closure_date is not None
+    return terminal_stage(bill.stages) is not None or (
+        bill.summary.closure_date is not None and bill.summary.passed is False
+    )
 
 
 def _wykaz_phase(bill: Bill) -> Phase | None:

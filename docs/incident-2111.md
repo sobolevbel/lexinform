@@ -93,7 +93,11 @@ tracker replay starts processes near their beginning, so it never covered the la
 sequence that failed here. A corpus whose labels are produced by the implementation is a
 regression sample, not an independent oracle.
 
-## Proposed next architecture, not yet implemented
+## Proposed next architecture
+
+The first implementation, verification and compatibility boundaries are now described in
+[Process observations and delivery plans](process-plans.md). The proposal below records the
+direction; it does not claim that every source watcher has already been migrated.
 
 1. **Normalize evidence once.** Interpret source snapshots into explicit process facts:
    known decision / pending decision / unavailable evidence, with the source stage attached.

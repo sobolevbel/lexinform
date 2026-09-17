@@ -661,6 +661,7 @@ RU = Labels(
         ),
         "third_reading": "III чтение и голосование в Сейме",
         "senate": "рассмотрение в Сенате (до 30 дней)",
+        "decision_unknown": "решение пока не указано в данных Сейма; следующий шаг уточняется",
         "senate_amendments": "Сейм рассматривает поправки Сената",
         "senate_rejection": (
             "Сейм голосует по решению Сената отклонить закон: закон будет принят, только если"
@@ -756,6 +757,9 @@ RU = Labels(
     },
     no_action_labels={
         "pre_print": "пока ничего — следующая возможность: замечания в комиссию после I чтения",
+        "decision_unknown": (
+            "проверить документы по ссылке на Сейм; срок следующего действия пока неизвестен"
+        ),
         "pre_print_consultation": (
             "пока ничего — следующая возможность: замечания в комиссию после I чтения"
         ),
@@ -1293,6 +1297,9 @@ EN = Labels(
         ),
         "third_reading": "third reading and the vote in the Sejm",
         "senate": "consideration by the Senate (up to 30 days)",
+        "decision_unknown": (
+            "the Sejm data does not yet give the decision; the next step is unknown"
+        ),
         "senate_amendments": "the Sejm considers the Senate's amendments",
         "senate_rejection": (
             "the Sejm votes on the Senate's rejection: the law passes only if the Sejm throws"
@@ -1390,6 +1397,9 @@ EN = Labels(
     },
     no_action_labels={
         "pre_print": "nothing yet — next chance: comments to the committee after the first reading",
+        "decision_unknown": (
+            "check the documents linked on the Sejm website; the next action's deadline is unknown"
+        ),
         "pre_print_consultation": (
             "nothing yet — next chance: comments to the committee after the first reading"
         ),

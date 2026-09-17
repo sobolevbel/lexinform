@@ -6,9 +6,12 @@ the model so it can say what changed. Where the text comes from is the `TextSour
 """
 
 import hashlib
+import json
 import logging
 import re
 from dataclasses import dataclass, field
+
+from pydantic import BaseModel
 
 from lexinform.concurrency import fan_out
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
@@ -22,9 +25,11 @@ from lexinform.models import (
     Analysis,
     AnalysisRecord,
     AnalysisVerdict,
+    ApplicantType,
     Bill,
     BillContext,
     BillStatus,
+    CallKind,
     Category,
     JointBillDescription,
     JointContext,
@@ -41,6 +46,7 @@ from lexinform.models import (
     TriageContext,
     TriageRecord,
     add_usage,
+    observe,
     stage_fingerprint,
 )
 from lexinform.ports import AuthorsResolver, BillRepository, Clock, LlmAnalyzer
@@ -203,6 +209,7 @@ class _Prepared:
     unchanged: bool = False
     unreadable: bool = False
     deferred: bool = False
+    memo_key: str | None = None
 
 
 _PAGE_NUMBER_LINE = re.compile(r"^\s*[–\-—]?\s*\d{1,4}\s*[–\-—]?\s*$", re.MULTILINE)
@@ -229,6 +236,29 @@ def text_digest(text: str) -> str:
     bill text rendered by another layout (a republished file, a re-dated print) hashes alike."""
     normalised = _WHITESPACE.sub(" ", _PAGE_NUMBER_LINE.sub("", text)).strip()
     return hashlib.sha256(normalised.encode("utf-8")).hexdigest()
+
+
+def _memo_key(bill: Bill, purpose: str, context: BaseModel) -> str:
+    data = context.model_dump(mode="json", exclude={"scan", "text"})
+    payload = context.model_dump()
+    text = str(payload.get("text", ""))
+    data["text_sha256"] = text_digest(text)
+    data["term"] = bill.term
+    data["purpose"] = purpose
+    encoded = json.dumps(data, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+def _reused[Record: BaseModel](record: Record) -> Record:
+    return record.model_copy(
+        deep=True,
+        update={
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 0,
+        },
+    )
 
 
 class AnalysisService:
@@ -264,9 +294,11 @@ class AnalysisService:
         self._keywords = keywords or KeywordPrefilter()
         self._triage = triage
         self._ledger = CostLedger(max_run_usd=options.max_run_cost_usd)
+        self._memo = repo.load_analysis_memo()
 
     def start_run(self) -> None:
         self._ledger.start_run()
+        self._memo = self._repo.load_analysis_memo()
 
     @property
     def spent_usd(self) -> float:
@@ -464,8 +496,15 @@ class AnalysisService:
             previous_key_changes=list(bill.analysis.analysis.key_changes),
             proposal=proposal,
         )
-        record = self._llm.summarize_amendments(ctx)
-        self._ledger.charge(record, number=bill.number, kind="amendments")
+        key = _memo_key(bill, "amendments", ctx)
+        cached = self._memo.get(key)
+        if cached is None:
+            record = self._llm.summarize_amendments(ctx)
+            self._ledger.charge(record, number=bill.number, kind="amendments")
+            record.source_url = document.url
+            self._remember_analysis(key, record)
+        else:
+            record = _reused(AmendmentsRecord.model_validate_json(cached))
         record.source_url = document.url
         return record
 
@@ -498,8 +537,17 @@ class AnalysisService:
             previous_summary=bill.analysis.analysis.summary,
             previous_key_changes=list(bill.analysis.analysis.key_changes),
         )
-        record = self._llm.digest_supplement(ctx)
-        self._ledger.charge(record, number=bill.number, kind="supplement")
+        key = _memo_key(bill, "supplement", ctx) if loaded.scan is None else None
+        cached = self._memo.get(key) if key is not None else None
+        if cached is None:
+            record = self._llm.digest_supplement(ctx)
+            self._ledger.charge(record, number=bill.number, kind="supplement")
+            record.number = number
+            record.source_url = document.url
+            if key is not None:
+                self._remember_analysis(key, record)
+        else:
+            record = _reused(SupplementRecord.model_validate_json(cached))
         record.number = number
         record.source_url = document.url
         return record
@@ -610,16 +658,28 @@ class AnalysisService:
         )
         if cost_guard:
             ctx = self._fit_to_budget(ctx, loaded, first=previous is None)
-        record = self._llm.analyze(ctx)
-        self._ledger.charge(
-            record, number=bill.number, kind="analysis" if previous is None else "reanalysis"
-        )
+        purpose: CallKind = "analysis" if previous is None else "reanalysis"
+        key = _memo_key(bill, purpose, ctx) if loaded.scan is None and cost_guard else None
+        cached = self._memo.get(key) if key is not None else None
+        if cached is None:
+            record = self._llm.analyze(ctx)
+            self._ledger.charge(record, number=bill.number, kind=purpose)
+        else:
+            record = _reused(AnalysisRecord.model_validate_json(cached))
         record.source_url = document.url if document else None
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
         record.text_sha256 = digest
+        record.source_checked_at = self._clock.now()
         return _Prepared(
-            bill, located, text, source, record, first=previous is None, triage=triaged
+            bill,
+            located,
+            text,
+            source,
+            record,
+            first=previous is None,
+            triage=triaged,
+            memo_key=key,
         )
 
     def _fit_to_budget(self, ctx: BillContext, loaded: _Loaded, *, first: bool) -> BillContext:
@@ -771,14 +831,10 @@ class AnalysisService:
     def _persist(self, prepared: _Prepared) -> AnalysisRecord:
         """Write one prepared analysis down (stages, authors, the record). Calling thread only."""
         bill, located = prepared.bill, prepared.located
-        if prepared.first and located.stages is not None:
-            self._repo.save_stages(
-                bill.term, bill.number, located.stages, stage_fingerprint(located.stages)
-            )
-            self._repo.save_observed_closure(
-                bill.term, bill.number, (located.summary or bill.summary).closure_date
-            )
+        if prepared.memo_key is not None:
+            self._remember_analysis(prepared.memo_key, prepared.record)
         document = located.document
+        authors = None
         # A scanned print is still signed on its first page: the letter is the one part of it
         # that has a text layer, so the signatures survive an analysis made without the text.
         if (
@@ -793,10 +849,35 @@ class AnalysisService:
                 else bill.model_copy(update={"summary": located.summary})
             )
             authors = self._authors.resolve(described, prepared.text)
+        with self._repo.atomic():
+            if prepared.first and located.summary is not None:
+                summary = located.summary
+                if summary.applicant_type is ApplicantType.UNKNOWN:
+                    summary = summary.model_copy(update={"applicant": bill.summary.applicant_type})
+                self._repo.upsert_summary(summary, now=self._clock.now())
             if authors is not None:
                 self._repo.save_authors(bill.term, bill.number, authors)
-        self._repo.save_analysis(bill.term, bill.number, prepared.record)
+            self._repo.save_analysis(bill.term, bill.number, prepared.record)
+            if prepared.first and located.stages is not None:
+                self._repo.save_stages(
+                    bill.term, bill.number, located.stages, stage_fingerprint(located.stages)
+                )
+                self._repo.save_observed_closure(
+                    bill.term, bill.number, (located.summary or bill.summary).closure_date
+                )
+                fresh = self._repo.get(bill.term, bill.number)
+                assert fresh is not None
+                self._repo.save_observed_process(
+                    bill.term,
+                    bill.number,
+                    observe(fresh, closure_date=(located.summary or bill.summary).closure_date),
+                )
         return prepared.record
+
+    def _remember_analysis(self, key: str, record: BaseModel) -> None:
+        encoded = record.model_dump_json()
+        self._repo.save_analysis_memo(key, encoded)
+        self._memo.setdefault(key, encoded)
 
     def _load_text(self, document: TextDocument | None, *, trim: bool = True) -> _Loaded:
         """Trimmed, budgeted text of the document — or its pages, when the file has no text in it.

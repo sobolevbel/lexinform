@@ -643,10 +643,11 @@ def test_a_no_publish_run_does_not_swallow_the_stages_it_did_not_post() -> None:
     told = w.run()
 
     assert (silent.updates, posted_silently) == (1, [])
-    assert told.updates == 1
+    assert told.updates == 2
     _, change, _ = w.publisher.updates[0]
     kinds = {st.stage_type for st in change.new_stages}
-    assert "Voting" in kinds and "Referral" in kinds  # the held stages ride along
+    assert "Referral" in kinds and "Voting" not in kinds
+    assert [st.stage_type for st in w.publisher.updates[1][1].new_stages] == ["Voting"]
 
 
 def test_an_act_notice_a_crash_lost_does_not_also_swallow_the_closure() -> None:

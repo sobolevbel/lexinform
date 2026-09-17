@@ -15,16 +15,19 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     AmendmentsRecord,
     Bill,
+    BillPlan,
     PrintInfo,
     ProcessDetail,
     PublicationKind,
     StatusChange,
     TextDocument,
     amendments_stage,
+    decision_changes,
     diff_stages,
-    fills_in_the_past,
-    has_news,
     new_supplements,
+    observation_of,
+    observe,
+    plan_bill,
     stage_fingerprint,
     supplement_kind,
 )
@@ -46,7 +49,7 @@ from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.deadlines import DeadlineReminder
 from lexinform.services.tracking.hearings import HearingReminder
 from lexinform.services.tracking.linking import Linker
-from lexinform.services.tracking.posting import Poster, Told
+from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.pre_print import PrePrintReconciler
 from lexinform.services.tracking.rcl import RclWatcher
 from lexinform.services.tracking.result import TrackingResult
@@ -419,11 +422,13 @@ class StatusTrackingService:
         if change is None:
             return
         announced = self._poster.sent(bill, PublicationKind.ACT_PUBLISHED)
-        news = publish and has_news(change, act_published=announced)
-        if news and fills_in_the_past(bill.stages, detail.stages):
-            news = False
-        if self._poster.tell(bill, change, result, publish=news) is Told.HELD:
+        plan = plan_bill(bill, detail, analysis_document=None, closure_announced=announced)
+        news = plan.should_publish(change, act_published=announced)
+        if not news:
+            self._poster.hold(bill, change)
             result.held += 1
+        else:
+            self._poster.tell(bill, change, result, publish=publish)
 
     def _remind_and_refresh(
         self, everyone: list[Bill], result: TrackingResult, *, publish: bool
@@ -477,7 +482,7 @@ class StatusTrackingService:
         is that there is nothing to decide: the change was recorded and told long ago, this run
         only repeats a send that failed, and `check_updates` calls this only when publishing.
         """
-        for change in self._repo.list_failed_status_changes(
+        for change in self._repo.list_due_status_changes(
             self._options.channel_id, max_attempts=self._options.max_publish_attempts
         ):
             bill = self._repo.get(change.term, change.number)
@@ -526,7 +531,13 @@ class StatusTrackingService:
         the stages new since the stored tree carries amendments (network: the Senate print)."""
         if self._analysis is None or bill.analysis is None or bill.stages_fingerprint is None:
             return None
-        stage = amendments_stage(diff_stages(bill.stages, detail.stages))
+        previous = observation_of(bill)
+        known = previous.stages if previous else ()
+        changed = diff_stages(known, detail.stages)
+        changed.extend(
+            stage for stage in decision_changes(known, detail.stages) if stage not in changed
+        )
+        stage = amendments_stage(changed)
         if stage is None:
             return None
         if stage.stage_type == "SenatePosition":
@@ -566,19 +577,36 @@ class StatusTrackingService:
         return record
 
     def _detect(self, bill: Bill, found: _Found, result: TrackingResult) -> StatusChange | None:
-        """What is new about the bill, with the fingerprint written last: a failure above (an LLM
-        outage during the re-analysis) leaves the old one in place, so the next run sees the same
-        new stages and tells them instead of a bare "text changed"."""
+        """The processed snapshot and its delivery work commit together, after network work."""
         detail = found.detail
         new_fp = stage_fingerprint(detail.stages)
-        change = self._detect_change(bill, found, new_fp, result)
+        plan = plan_bill(
+            bill,
+            detail,
+            analysis_document=self._texts.newer(bill, detail, found.print_info),
+            closure_announced=self._repo.closure_announced(bill.term, bill.number),
+        )
+        change = self._detect_change(bill, found, plan, result)
         # Stored with the committees named, so the card can address them by name: the name is
         # not part of `_stage_key`, so writing it moves no fingerprint and announces nothing.
         named = self._enricher.name_committees(bill.term, detail.stages)
-        if new_fp != bill.stages_fingerprint or named != bill.stages:
+        with self._repo.atomic():
+            self._repo.upsert_summary(detail, now=self._clock.now())
             self._repo.save_stages(bill.term, bill.number, named, new_fp)
-        self._repo.save_observed_closure(bill.term, bill.number, detail.closure_date)
-        self._remember_supplements(bill, found.print_info)
+            self._repo.save_observed_closure(bill.term, bill.number, detail.closure_date)
+            self._remember_supplements(bill, found.print_info)
+            fresh = self._repo.get(bill.term, bill.number)
+            assert fresh is not None
+            self._repo.save_observed_process(
+                bill.term, bill.number, observe(fresh, closure_date=detail.closure_date)
+            )
+            if change is not None:
+                change = self._poster.record_change(change)
+                if change is not None:
+                    if plan.should_publish(change):
+                        self._poster.prepare(fresh, change)
+                    else:
+                        self._poster.hold(fresh, change)
         return change
 
     def _remember_supplements(self, bill: Bill, print_info: PrintInfo | None) -> None:
@@ -592,7 +620,7 @@ class StatusTrackingService:
             self._repo.save_seen_supplements(bill.term, bill.number, filed)
 
     def _detect_change(
-        self, bill: Bill, found: _Found, new_fp: str, result: TrackingResult
+        self, bill: Bill, found: _Found, plan: BillPlan, result: TrackingResult
     ) -> StatusChange | None:
         """The one change worth a post, or None when there is nothing to tell.
 
@@ -603,17 +631,13 @@ class StatusTrackingService:
         """
         detail = found.detail
         now = self._clock.now()
-        self._repo.upsert_summary(detail, now=now)
-        content_changed = self._reanalyze_new_text(bill, detail, found.print_info, result)
+        content_changed = self._reanalyze_new_text(bill, detail, plan.analysis_document, result)
+        content_changed = content_changed or plan.content_changed
         old_fp = bill.stages_fingerprint
-        if old_fp is None:
+        if plan.previous is None:
             return None
-        closure_detected = (
-            detail.closure_date is not None
-            and detail.closure_date != bill.observed_closure_date
-            and not self._repo.closure_announced(bill.term, bill.number)
-        )
-        new_stages = diff_stages(bill.stages, detail.stages) if new_fp != old_fp else []
+        closure_detected = plan.closure_detected
+        new_stages = plan.new_stages
         filed = found.supplements
         if not (new_stages or content_changed or closure_detected or filed):
             return None
@@ -624,7 +648,7 @@ class StatusTrackingService:
             number=bill.number,
             old_fingerprint=old_fp,
             new_fingerprint=change_key(
-                new_fp,
+                plan.observed.fingerprint,
                 fresh,
                 closed=closure_detected,
                 supplements=[s.number for s in filed],
@@ -635,10 +659,6 @@ class StatusTrackingService:
             content_changed=content_changed,
             detected_at=now,
         )
-        recorded = self._poster.record_change(change)
-        if recorded is None:
-            return None
-        change = recorded
         if found.amendments is not None:
             self._attach_amendments(change, bill, found.amendments, result)
         if filed:
@@ -650,13 +670,12 @@ class StatusTrackingService:
         self,
         bill: Bill,
         detail: ProcessDetail,
-        print_info: PrintInfo | None,
+        document: TextDocument | None,
         result: TrackingResult,
     ) -> bool:
         """True when the source published a text we had not read and the model read it now."""
         if self._analysis is None:
             return False
-        document = self._texts.newer(bill, detail, print_info)
         if document is None:
             return False
         log.info("druk %s: new text (%s), re-analysing", bill.number, document.kind)
@@ -673,10 +692,7 @@ class StatusTrackingService:
         filed: list[_Supplement],
         result: TrackingResult,
     ) -> None:
-        """Read after the change row exists, for the same reason the amendments are: a change an
-        earlier run recorded never pays for the model again. A document the model could not be
-        asked about is still announced, so nothing filed is lost."""
-        assert change.id is not None
+        """Memoized digests survive a failure before the observation checkpoint commits."""
         assert self._analysis is not None
         for supplement in filed:
             try:
@@ -693,17 +709,12 @@ class StatusTrackingService:
             if record.digest is not None:
                 result.count_usage(record)
             change.supplements.append(record)
-        self._repo.save_status_change_supplements(change.id, change.supplements)
 
     def _attach_amendments(
         self, change: StatusChange, bill: Bill, found: _Amendments, result: TrackingResult
     ) -> None:
-        """Summarised once the change row exists: a change an earlier run recorded never pays for
-        a second model call, and the summary is stored with the change it belongs to."""
-        assert change.id is not None
+        """Memoization keeps a checkpoint retry from paying for the same amendment summary."""
         change.amendments = self._summarize_amendments(bill, found, result)
-        if change.amendments is not None:
-            self._repo.save_status_change_amendments(change.id, change.amendments)
 
 
 def _log_change(bill: Bill, change: StatusChange) -> None:

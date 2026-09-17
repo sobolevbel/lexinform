@@ -18,6 +18,16 @@ from lexinform.models.analysis import (
     SupplementRecord,
 )
 from lexinform.models.enums import BillStatus, PublicationKind, PublicationStatus, VetoOutcome
+from lexinform.models.evidence import (
+    end_names_veto_sustained as end_names_veto_sustained,
+)
+from lexinform.models.evidence import (
+    veto_decision as veto_decision,
+)
+from lexinform.models.evidence import (
+    veto_evidence,
+)
+from lexinform.models.observations import ObservedProcess, UpdateDelivery
 from lexinform.models.rcl import RclProject
 from lexinform.models.sejm import (
     ActInfo,
@@ -70,6 +80,7 @@ class Bill(BaseModel):
     stages: tuple[Stage, ...] = ()
     stages_fingerprint: str | None = None
     observed_closure_date: dt.date | None = None
+    observed_process: ObservedProcess | None = None
     analysis: AnalysisRecord | None = None
     analysis_attempts: int = 0
     last_error: str | None = None
@@ -188,12 +199,6 @@ PLENARY_COMMITTEE_CODE = "Sejm"
 Sejm: not a committee, and nothing a reader can write to."""
 
 
-def end_names_veto_sustained(stage: Stage) -> bool:
-    """The `End` node renamed to "nie uchwalona ponownie po wecie Prezydenta": the node itself
-    says the road is over, so it is the one `End` that is not dropped as bookkeeping."""
-    return stage.stage_type == "End" and "nie uchwalona ponownie" in stage.stage_name.lower()
-
-
 def veto_stood(stages: tuple[Stage, ...]) -> bool:
     """The Sejm voted on the President's veto and did not reach the 3/5 majority.
 
@@ -204,26 +209,8 @@ def veto_stood(stages: tuple[Stage, ...]) -> bool:
     return veto_outcome(stages) is VetoOutcome.SUSTAINED
 
 
-def veto_decision(stage: Stage) -> VetoOutcome:
-    """A motion's presence is not evidence that the Sejm has voted on it."""
-    decision = (stage.decision or "").strip().lower()
-    if "nie uchwalon" in decision:
-        return VetoOutcome.SUSTAINED
-    if decision.startswith("uchwalono ponownie"):
-        return VetoOutcome.OVERRIDDEN
-    return VetoOutcome.PENDING
-
-
 def veto_outcome(stages: tuple[Stage, ...]) -> VetoOutcome | None:
-    outcome = None
-    for stage in stages:
-        if stage.stage_type == "Veto":
-            outcome = VetoOutcome.PENDING
-        elif stage.stage_type == "PresidentMotionConsideration":
-            outcome = veto_decision(stage)
-        elif end_names_veto_sustained(stage):
-            outcome = VetoOutcome.SUSTAINED
-    return outcome
+    return veto_evidence(stages).veto
 
 
 def process_stages(stages: tuple[Stage, ...]) -> list[Stage]:
@@ -246,6 +233,7 @@ class Publication(BaseModel):
     """One Telegram post (or the decision not to send one), written before sending."""
 
     id: int | None = None
+    delivery: UpdateDelivery | None = None
     term: int
     number: str
     attempts: int = 0
@@ -281,9 +269,6 @@ class StatusChange(BaseModel):
     discontinued: bool = False
     """The term ended before the Sejm finished with the bill."""
     consultation_opened: bool = False
-    """The project's public consultation opened with this change (RCL). Not stored: a retried
-    post takes its wording from the row, and by then the window is on the bill either way — what
-    this decides is only the header of the post that announces it."""
     amendments: AmendmentsRecord | None = None
     """What the amendments announced by this change do (Senate resolution, "-A" report), when
     their document could be read and summarised."""

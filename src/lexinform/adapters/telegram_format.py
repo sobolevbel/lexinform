@@ -57,6 +57,7 @@ from lexinform.models import (
     flatten_stages,
     government_path,
     hearing_application_deadline,
+    is_over,
     is_pre_print_number,
     is_rcl_number,
     is_urgent,
@@ -604,7 +605,7 @@ class MessageFormatter:
         over = (
             change.withdrawn
             or change.discontinued
-            or (change.closure_detected and next_phase(bill, today=today) is None)
+            or (change.closure_detected and is_over(bill, today=today))
         )
         steps = "" if over else self._steps_block(bill, today)
 
@@ -1824,7 +1825,7 @@ class MessageFormatter:
         """How the road ended. Without it a finished bill's card loses its last three lines and
         says nothing at all about being over (a card posted for a bill whose act was already in
         force, or one revived by `/republish`)."""
-        if next_phase(bill, today=today) is not None:
+        if not is_over(bill, today=today) or next_phase(bill, today=today) is not None:
             return ""
         lb = self._labels
         act = bill.act

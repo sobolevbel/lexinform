@@ -17,6 +17,7 @@ from lexinform.models import (
     PublicationStatus,
     StatusChange,
     diff_stages,
+    observe,
     stage_fingerprint,
 )
 from lexinform.ports import BillRepository, Clock, SejmGateway
@@ -119,6 +120,11 @@ class Linker:
             print_number,
             wykaz_number=pre.rcl.wykaz_number if pre.rcl is not None else None,
         )
+        fresh = self._repo.get(pre.term, print_number)
+        assert fresh is not None
+        self._repo.save_observed_process(
+            pre.term, print_number, observe(fresh, closure_date=detail.closure_date)
+        )
 
     def _inherit_card(
         self, pre: Bill, print_number: str, card: Publication, *, now: datetime
@@ -168,24 +174,28 @@ class Linker:
         publishing off the change is held, to be told with the next update of the print."""
         content_changed = self._reanalyze_print(bill, detail, result)
         fresh = self._repo.get(bill.term, bill.number) or bill
-        change = self._poster.record_change(
-            StatusChange(
-                term=bill.term,
-                number=bill.number,
-                old_fingerprint=pre.number,
-                new_fingerprint=change_key(stage_fingerprint(detail.stages), fresh, closed=False),
-                new_stages=[
-                    self._enricher.enrich(bill.term, st) for st in diff_stages((), detail.stages)
-                ],
-                passed=detail.passed,
-                content_changed=content_changed,
-                detected_at=now,
-            )
+        change = StatusChange(
+            term=bill.term,
+            number=bill.number,
+            old_fingerprint=pre.number,
+            new_fingerprint=change_key(stage_fingerprint(detail.stages), fresh, closed=False),
+            new_stages=[
+                self._enricher.enrich(bill.term, st) for st in diff_stages((), detail.stages)
+            ],
+            passed=detail.passed,
+            content_changed=content_changed,
+            detected_at=now,
         )
-        if change is None:
-            return
+        with self._repo.atomic():
+            recorded = self._poster.record_change(change)
+            if recorded is None:
+                return
+            self._poster.prepare(fresh, recorded)
+            self._repo.save_observed_process(
+                bill.term, bill.number, observe(fresh, closure_date=detail.closure_date)
+            )
         result.changed += 1
-        self._poster.tell(fresh, change, result, publish=publish)
+        self._poster.tell(fresh, recorded, result, publish=publish)
 
     def _reanalyze_print(self, bill: Bill, detail: ProcessDetail, result: TrackingResult) -> bool:
         """True when the print carries a text the model had not seen under the entry's number."""

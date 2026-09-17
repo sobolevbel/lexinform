@@ -445,13 +445,13 @@ def test_failed_status_updates_are_listed_for_retry_until_the_attempts_run_out(
     )
 
     repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
-    listed = repo.list_failed_status_changes(CHANNEL, max_attempts=3)
+    listed = repo.list_due_status_changes(CHANNEL, max_attempts=3)
     repo.mark_publication(pub_id, PublicationStatus.FAILED, error="down", count_attempt=False)
     repo.mark_publication(pub_id, PublicationStatus.FAILED, error="down", count_attempt=False)
-    after_outages = repo.list_failed_status_changes(CHANNEL, max_attempts=3)
+    after_outages = repo.list_due_status_changes(CHANNEL, max_attempts=3)
     repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
     repo.mark_publication(pub_id, PublicationStatus.FAILED, error="boom")
-    exhausted = repo.list_failed_status_changes(CHANNEL, max_attempts=3)
+    exhausted = repo.list_due_status_changes(CHANNEL, max_attempts=3)
 
     assert [c.id for c in listed] == [change_id]
     assert listed[0].content_changed is True
@@ -814,7 +814,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         publications = {r[1] for r in conn.execute("PRAGMA table_info(publications)")}
         bills = {r[1] for r in conn.execute("PRAGMA table_info(bills)")}
         indexes = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")}
-    assert {"attempts", "ref", "rendered_sha256"} <= publications  # v16
+    assert {"attempts", "ref", "rendered_sha256", "delivery_json"} <= publications
     assert {
         "submission_json",
         "linked_number",
@@ -828,6 +828,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "supplements_json",  # v18
         "joint_json",  # v20
         "observed_closure_date",  # v24
+        "observed_process_json",
     } <= bills
     assert {
         "ux_pub_once_per_kind",
@@ -845,6 +846,8 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         commands = {r[1] for r in conn.execute("PRAGMA table_info(commands)")}
     assert "amendments_json" in changes  # v11
     assert "supplements_json" in changes  # v18
+    assert "consultation_opened" in changes
+    assert "analysis_memo" in tables
     assert "commands" in tables  # v13
     assert "executed_at" in commands  # v14
     assert "rcl_wykaz_numbers" in tables  # v22
@@ -1098,6 +1101,10 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("DROP INDEX ux_pub_digest")
         conn.execute("DROP INDEX ix_pub_channel_sent")
         conn.execute("ALTER TABLE bills DROP COLUMN observed_closure_date")
+        conn.execute("ALTER TABLE bills DROP COLUMN observed_process_json")
+        conn.execute("ALTER TABLE publications DROP COLUMN delivery_json")
+        conn.execute("ALTER TABLE status_changes DROP COLUMN consultation_opened")
+        conn.execute("DROP TABLE analysis_memo")
         conn.execute("PRAGMA user_version = 20")
     dump = source.dump()
     source.close()

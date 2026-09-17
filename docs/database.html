@@ -714,6 +714,7 @@
       <div class="mig"><span class="v">v13</span><span class="what"><b>commands</b> — команды оператора по <code>update_id</code> Telegram, записанные до выполнения.</span></div>
       <div class="mig"><span class="v">v14</span><span class="what"><b>commands.executed_at</b> — команда, чей ответ не дошёл, отвечается повторно, а не выполняется повторно.</span></div>
       <div class="mig"><span class="v">v24</span><span class="what"><b>bills.observed_closure_date</b> — отдельная база сравнения для трекера. Заполняется из <code>closure_date</code> у строк с известным отпечатком стадий, чтобы обновление кода не объявляло старые решения новыми. Версии v15–v23 перечислены в <code>MIGRATIONS</code>; схема выше отражает первоначальную v14 с этим дополнением.</span></div>
+      <div class="mig"><span class="v">v25</span><span class="what"><b>bills.observed_process_json</b> — обработанное наблюдение; <b>publications.delivery_json</b> — неизменяемый план сообщения для повтора; <b>status_changes.consultation_opened</b> — сохранённый факт открытия консультаций; <b>analysis_memo</b> — результаты анализа по содержимому и цели. Состояние <b>queued</b> отделяет ожидающую доставку обновления от редакционного удержания. <a href="process-plans.md">Архитектура и границы совместимости</a>.</span></div>
     </div>
   </section>
 

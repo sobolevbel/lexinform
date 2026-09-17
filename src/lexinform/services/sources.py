@@ -31,6 +31,8 @@ def fetch_print(gateway: SejmGateway, bill: Bill) -> PrintInfo | None:
     """The print, or None when the API has none for this number (a warning, not a failure)."""
     try:
         return gateway.get_print(bill.term, bill.number)
+    except ServiceUnavailableError:
+        raise
     except Exception as exc:
         log.warning("print %s unavailable: %s", bill.number, exc)
         return None

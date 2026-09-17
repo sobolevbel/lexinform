@@ -104,6 +104,7 @@ class PublicationKind(StrEnum):
 
 
 class PublicationStatus(StrEnum):
+    QUEUED = "queued"
     PENDING = "pending"
     SENT = "sent"
     SKIPPED = "skipped"

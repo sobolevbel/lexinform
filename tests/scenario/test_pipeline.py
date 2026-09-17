@@ -131,17 +131,16 @@ def test_an_act_whose_vacatio_legis_is_still_ahead_gets_its_card() -> None:
     assert "вступление в силу 19.11.2026" in MessageFormatter("ru").new_bill(posted, None).text
 
 
-def test_an_act_the_eli_api_has_not_indexed_yet_is_left_alone() -> None:
-    """Nothing contradicts the ELI address the listing carries, and an unread act is not a
-    reason to assume the road is still open."""
+def test_an_act_the_eli_api_has_not_indexed_yet_is_not_assumed_in_force() -> None:
     w = World()
     w.add_bill("2695", FOREIGNERS, stages=PASSED_STAGES)
     w.publish_act("2695")
 
     report = w.run()
 
-    assert report.over_on_arrival == 1
-    assert w.bill("2695").status is BillStatus.SKIPPED_CLOSED
+    assert report.over_on_arrival == 0
+    assert report.published == 1
+    assert w.bill("2695").status is BillStatus.ANALYZED
 
 
 def test_a_bill_rejected_before_we_saw_it_is_skipped_after_reading_its_stages() -> None:

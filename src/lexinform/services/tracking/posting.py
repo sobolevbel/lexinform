@@ -23,6 +23,7 @@ from lexinform.models import (
     PublicationStatus,
     Stage,
     StatusChange,
+    UpdateDelivery,
 )
 from lexinform.ports import BillRepository, Clock, Publisher
 from lexinform.services.tracking.result import TrackingResult
@@ -34,14 +35,11 @@ Send = Callable[[int | None], int]
 
 
 class Told(StrEnum):
-    """What became of a recorded change. There is no fourth value on purpose: every change that
-    was written down is either told now, held for the next post, or failed and retried later —
-    a change that is written down and then neither told nor held is lost for good, because the
-    row is what stops it being detected a second time."""
+    """Disabled delivery queues news; only an explicit editorial hold suppresses it."""
 
     SENT = "sent"
-    HELD = "held"
     FAILED = "failed"
+    QUEUED = "queued"
 
 
 class Poster:
@@ -163,16 +161,10 @@ class Poster:
     def tell(
         self, bill: Bill, change: StatusChange, result: TrackingResult, *, publish: bool
     ) -> Told:
-        """Tell a recorded change now, or hold it for the next post — one of the two, always.
-
-        Never neither: with publishing off the row already exists, so a change that is dropped
-        here is a change nothing will ever detect again. `result` counts the post, because every
-        caller counted it the same way; what a caller does with the answer is its own business
-        (the term rollover counts the bills it laid to rest, the stage loop the changes it held).
-        """
+        """A recorded substantive event must have durable delivery work even with publishing off."""
         if not publish:
-            self.hold(bill, change)
-            return Told.HELD
+            self.prepare(bill, change)
+            return Told.QUEUED
         sent = self.status_update(bill, change)
         result.count_post(sent)
         return Told.SENT if sent else Told.FAILED
@@ -195,30 +187,48 @@ class Poster:
         a later held row would be the newest one.
         """
         assert change.id is not None
+        existing = self._repo.get_update_publication(change.id, self._channel_id)
+        if existing is not None:
+            if existing.status is PublicationStatus.SENT:
+                return True
+            if existing.status in (PublicationStatus.PENDING, PublicationStatus.UNKNOWN):
+                return False
+        delivery = self.prepare(bill, change)
         pub_id = self._repo.create_publication(
             self._update_row(bill, change.id, PublicationStatus.PENDING)
         )
-        held = self._repo.list_held_status_changes(bill.term, bill.number, self._channel_id)
-        if held:
-            stages: list[Stage] = [st for earlier in held for st in earlier.new_stages]
-            change = change.model_copy(update={"new_stages": stages + list(change.new_stages)})
-        fresh = self._repo.get(bill.term, bill.number) or bill
+        snapshot = Bill.model_validate_json(delivery.bill_json)
+        planned_change = StatusChange.model_validate_json(delivery.change_json)
         message_id = self._send(
             pub_id,
-            bill,
+            snapshot,
             lambda reply_to: (
-                self._publisher.publish_status_update(fresh, change, reply_to).message_id
+                self._publisher.publish_status_update(snapshot, planned_change, reply_to).message_id
             ),
+            held_change_ids=delivery.held_change_ids,
         )
-        if message_id is not None and held:
-            self._repo.release_held_status_changes(
-                bill.term,
-                bill.number,
-                self._channel_id,
-                message_id=message_id,
-                sent_at=self._clock.now(),
-            )
         return message_id is not None
+
+    def prepare(self, bill: Bill, change: StatusChange) -> UpdateDelivery:
+        assert change.id is not None
+        stored = self._repo.get_update_publication(change.id, self._channel_id)
+        if stored is not None and stored.delivery is not None:
+            return stored.delivery
+        held = self._repo.list_held_status_changes(bill.term, bill.number, self._channel_id)
+        stages = [st for earlier in held for st in earlier.new_stages]
+        planned = change.model_copy(update={"new_stages": stages + list(change.new_stages)})
+        snapshot = self._repo.get(bill.term, bill.number) or bill
+        delivery = UpdateDelivery(
+            bill_json=snapshot.model_dump_json(),
+            change_json=planned.model_dump_json(),
+            held_change_ids=tuple(c.id for c in held if c.id is not None),
+        )
+        with self._repo.atomic():
+            self._repo.create_publication(
+                self._update_row(bill, change.id, PublicationStatus.QUEUED)
+            )
+            self._repo.save_update_delivery(change.id, self._channel_id, delivery)
+        return delivery
 
     def _update_row(self, bill: Bill, change_id: int, status: PublicationStatus) -> Publication:
         return Publication(
@@ -327,7 +337,9 @@ class Poster:
         pub_id = self.record(bill, kind, PublicationStatus.PENDING, ref=ref)
         return self._send(pub_id, bill, send) is not None
 
-    def _send(self, pub_id: int, bill: Bill, send: Send) -> int | None:
+    def _send(
+        self, pub_id: int, bill: Bill, send: Send, *, held_change_ids: tuple[int, ...] = ()
+    ) -> int | None:
         """Send and record the outcome; the message id on success, None on a per-bill failure.
 
         An outage of the channel propagates and does not count an attempt: it is the channel that
@@ -348,7 +360,14 @@ class Poster:
                 pub_id, PublicationStatus.FAILED, error=f"{type(exc).__name__}: {exc}"
             )
             return None
-        self._repo.mark_publication(
-            pub_id, PublicationStatus.SENT, message_id=message_id, sent_at=self._clock.now()
-        )
+        with self._repo.atomic():
+            self._repo.mark_publication(
+                pub_id, PublicationStatus.SENT, message_id=message_id, sent_at=self._clock.now()
+            )
+            self._repo.release_planned_changes(
+                held_change_ids,
+                self._channel_id,
+                message_id=message_id,
+                sent_at=self._clock.now(),
+            )
         return message_id

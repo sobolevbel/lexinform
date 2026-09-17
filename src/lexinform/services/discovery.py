@@ -133,18 +133,11 @@ class BillDiscoveryService:
         return bill
 
     def _ended_before_first_sight(self, bill: Bill, now: datetime) -> bool:
-        """Whether a bill we have never seen has nothing left to act on: then it gets no
-        analysis and no card, because a card invites action and there is none.
-
-        Neither `closureDate` (set at the third reading) nor the ELI (a vacatio legis is the one
-        stretch with a date to prepare for) answers it alone, so both are read once, here. An act
-        that exists but cannot be read counts as the end; one that *was* read is stored whatever
-        the verdict, the publishing gate asking the same question a phase later.
-        """
+        """ELI publication alone cannot prove that the act is already in force."""
         if bill.summary.eli is not None:
             act = None if self._eli is None else self._act_of(bill.summary.eli)
             if act is None:
-                return True
+                return False
             self._repo.save_act(bill.term, bill.number, act)
             bill = bill.model_copy(update={"act": act})
         elif bill.has_process:

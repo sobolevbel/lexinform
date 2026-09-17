@@ -100,21 +100,24 @@ def test_unfinished_bills_lapse_with_the_term_and_passed_ones_stay_followed() ->
     assert "get_process:3039" not in w.gateway.calls  # lapsed: not polled any more
 
 
-def test_rollover_without_publishing_records_the_lapse_as_skipped() -> None:
+def test_rollover_without_publishing_queues_the_lapse_for_the_next_run() -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
     w.run()
     _sejm_moves_on(w)
 
     silent = w.run(term=None, publish=False)
+    assert w.publisher.updates == []
+    queued = w.publication("3039", PublicationKind.STATUS_UPDATE)
+    assert queued is not None and queued.status is PublicationStatus.QUEUED
     w.clock.advance(days=1)
     again = w.run(term=None)
 
-    assert silent.discontinued == 1 and w.publisher.updates == []
+    assert silent.discontinued == 1
     assert w.bill("3039").discontinued_at is not None
     row = w.publication("3039", PublicationKind.STATUS_UPDATE)
-    assert row is not None and row.status is PublicationStatus.SKIPPED  # decided, not lost
-    assert (again.discontinued, again.updates) == (0, 0) and w.publisher.updates == []
+    assert row is not None and row.status is PublicationStatus.SENT
+    assert (again.discontinued, again.updates) == (0, 1)
 
 
 def test_a_citizens_bill_is_taken_over_by_the_new_sejm() -> None:

@@ -19,13 +19,13 @@ from lexinform.models.bill import (
     veto_stood,
 )
 from lexinform.models.enums import VetoOutcome
+from lexinform.models.evidence import DecisionState, SenateOutcome, senate_evidence
 from lexinform.models.rcl import RCL_STAGE_TYPE
 from lexinform.models.sejm import (
     Stage,
     flatten_stages,
     reading_decision,
     second_reading_sent_back,
-    senate_moved_rejection,
     stage_keys,
 )
 
@@ -231,6 +231,15 @@ def _stage_event(stage: Stage) -> str | None:
         return _report_event(stage)
     if kind == "SenatePosition":
         return _senate_event(stage)
+    if kind == "SenatePositionConsideration":
+        evidence = senate_evidence(stage)
+        if evidence.state is not DecisionState.KNOWN:
+            return "senate"
+        return (
+            "rejected"
+            if evidence.senate is SenateOutcome.REJECTION_ACCEPTED
+            else "senate_considered"
+        )
     if kind == "PresidentMotionConsideration":
         return _veto_vote_event(stage)
     return _EVENT_BY_STAGE_TYPE.get(kind)
@@ -268,14 +277,14 @@ def _report_event(stage: Stage) -> str:
 
 
 def _senate_event(stage: Stage) -> str:
-    position = (stage.position or "").lower()
-    if "nie wniósł" in position:
-        return "senate_no_amendments"
-    if senate_moved_rejection(stage):
-        return "senate_rejected"
-    if "popraw" in position:
-        return "senate_amendments"
-    return "senate"
+    outcome = senate_evidence(stage).senate
+    if outcome is None:
+        return "senate"
+    return {
+        SenateOutcome.NO_AMENDMENTS: "senate_no_amendments",
+        SenateOutcome.REJECTION: "senate_rejected",
+        SenateOutcome.AMENDMENTS: "senate_amendments",
+    }.get(outcome, "senate")
 
 
 def _reading_numeral(stage: Stage) -> str:
