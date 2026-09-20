@@ -283,9 +283,10 @@ def test_a_bill_waiting_only_for_its_vacatio_legis_is_not_called_finished(
 def test_a_stage_tree_the_model_cannot_read_is_not_called_finished(
     process_1962: ProcessDetail,
 ) -> None:
-    """`next_phase` gives up on a stage type it does not know, and there is then nothing to say
-    about how the road ended. A header claiming it ended would be a guess, so the card keeps its
-    own and simply leaves the three step lines out."""
+    """`next_phase` gives up on a stage type it does not know, and that unknown must not be read
+    as "finished": a header claiming the process ended would be a guess. The step line says so
+    explicitly (`decision_unknown`) instead of silently omitting it, which used to collapse
+    "the Sejm data does not say" and "nothing more to tell" into the same blank line."""
     unknown = Stage(stage_name="Nowy etap", stage_type="SomethingNew", date=dt.date(2026, 9, 4))
     running = process_1962.model_copy(
         update={"stages": (unknown,), "closure_date": None, "passed": None}
@@ -296,7 +297,7 @@ def test_a_stage_tree_the_model_cannot_read_is_not_called_finished(
 
     assert "📜 <b>Новый законопроект — druk nr 1962</b>" in text
     assert "процесс завершён" not in text
-    assert "Что дальше" not in text
+    assert "Что дальше:</b> решение пока не указано в данных Сейма" in text
 
 
 def test_a_card_says_the_veto_stood_when_it_did(process_1962: ProcessDetail) -> None:

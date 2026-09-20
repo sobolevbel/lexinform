@@ -847,6 +847,15 @@ def senate_moved_rejection(stage: Stage) -> bool:
 _SECOND_READING_SENT_BACK = ("ponownie", "niedokończone")
 
 
+def reading_numeral(stage: Stage) -> str:
+    """ "I"/"II"/"III", or "" for a stage name that does not open with one."""
+    name = stage.stage_name.strip().upper()
+    for numeral in ("III", "II", "I"):
+        if name.startswith(numeral + " "):
+            return numeral
+    return ""
+
+
 def reading_decision(stage: Stage) -> str:
     """The reading's decision, with the Sejm's two spellings of an adjournment made one.
 

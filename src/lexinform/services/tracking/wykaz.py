@@ -17,12 +17,14 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    SourceOutcome,
     StatusChange,
     WykazEntry,
     process_summary,
     rcl_fingerprint,
     rcl_stages,
     wykaz_entry_number,
+    wykaz_evidence,
     wykaz_fingerprint,
     wykaz_summary,
 )
@@ -287,8 +289,10 @@ class WykazWatcher:
         self._repo.upsert_summary(wykaz_summary(entry, term=bill.term), now=self._clock.now())
         self._repo.save_wykaz(bill.term, bill.number, entry)
         self._repo.save_stages(bill.term, bill.number, (), new_fp)
-        dropped = entry.is_withdrawn and not bill.wykaz.is_withdrawn
-        adopted = entry.is_adopted and not bill.wykaz.is_adopted
+        before = wykaz_evidence(bill.wykaz).source
+        after = wykaz_evidence(entry).source
+        dropped = after is SourceOutcome.WITHDRAWN and before is not SourceOutcome.WITHDRAWN
+        adopted = after is SourceOutcome.ADOPTED and before is not SourceOutcome.ADOPTED
         if not dropped and not adopted:
             return None
         change = self._poster.record_change(

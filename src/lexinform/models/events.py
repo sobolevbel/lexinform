@@ -19,13 +19,22 @@ from lexinform.models.bill import (
     veto_stood,
 )
 from lexinform.models.enums import VetoOutcome
-from lexinform.models.evidence import DecisionState, SenateOutcome, senate_evidence
+from lexinform.models.evidence import (
+    DecisionState,
+    ReadingOutcome,
+    SenateOutcome,
+    SourceOutcome,
+    TribunalOutcome,
+    reading_evidence,
+    senate_evidence,
+    submission_evidence,
+    tribunal_evidence,
+)
 from lexinform.models.rcl import RCL_STAGE_TYPE
 from lexinform.models.sejm import (
     Stage,
     flatten_stages,
-    reading_decision,
-    second_reading_sent_back,
+    reading_numeral,
     stage_keys,
 )
 
@@ -50,9 +59,13 @@ def is_substantive(stage: Stage) -> bool:
     if stage.stage_type in SERVICE_STAGE_TYPES:
         return False
     if stage.stage_type == "SejmReading":
-        if _reading_numeral(stage) == "III":
+        evidence = reading_evidence(stage)
+        if reading_numeral(stage) == "III" and evidence.state is DecisionState.KNOWN:
             return True
-        return "odrzuc" in reading_decision(stage) or second_reading_sent_back(stage)
+        return evidence.reading in (
+            ReadingOutcome.REJECTED,
+            ReadingOutcome.SENT_TO_COMMITTEE,
+        )
     return True
 
 
@@ -125,7 +138,9 @@ def _listing_says_withdrawn(bill: Bill) -> bool:
     decision by the applicant that may never have been taken.
     """
     submission = bill.submission
-    return submission is not None and submission.is_closed
+    return (
+        submission is not None and submission_evidence(submission).source is SourceOutcome.WITHDRAWN
+    )
 
 
 def supplement_event(change: StatusChange) -> str | None:
@@ -191,9 +206,7 @@ def closure_event(bill: Bill) -> str:
 
 
 def _rejects(stage: Stage) -> bool:
-    if stage.stage_type == "SejmReading":
-        return "odrzuc" in reading_decision(stage)
-    return False
+    return reading_evidence(stage).reading is ReadingOutcome.REJECTED
 
 
 _EVENT_BY_STAGE_TYPE = {
@@ -204,8 +217,6 @@ _EVENT_BY_STAGE_TYPE = {
     "ToPresident": "to_president",
     "PresidentSignature": "signed",
     "Veto": "veto",
-    "PresidentToTribunal": "tribunal",
-    "ConstitutionalTribunalRuling": "tribunal_ruled",
     "PublicHearing": "hearing",
     "Start": "start",
     # Same key as the digest uses: the stage arrives even when the document behind it could not
@@ -227,6 +238,11 @@ def _stage_event(stage: Stage) -> str | None:
         return "referral_plenary" if stage.committee_code == "Sejm" else "referral"
     if kind == "SejmReading":
         return _reading_event(stage)
+    tribunal = tribunal_evidence(stage).tribunal
+    if tribunal is TribunalOutcome.REFERRED:
+        return "tribunal"
+    if tribunal is TribunalOutcome.RULING_ISSUED:
+        return "tribunal_ruled"
     if kind == "CommitteeReport":
         return _report_event(stage)
     if kind == "SenatePosition":
@@ -256,14 +272,18 @@ def _veto_vote_event(stage: Stage) -> str:
 
 
 def _reading_event(stage: Stage) -> str:
-    decided = reading_decision(stage)
-    if "odrzuc" in decided:
+    evidence = reading_evidence(stage)
+    if evidence.reading is ReadingOutcome.REJECTED:
         return "rejected"
-    numeral = _reading_numeral(stage)
+    numeral = reading_numeral(stage)
     if numeral == "III":
-        return "passed" if decided.startswith("uchwal") else "third_reading"
+        return "passed" if evidence.reading is ReadingOutcome.PASSED else "third_reading"
     if numeral == "II":
-        return "second_reading_amendments" if second_reading_sent_back(stage) else "second_reading"
+        return (
+            "second_reading_amendments"
+            if evidence.reading is ReadingOutcome.SENT_TO_COMMITTEE
+            else "second_reading"
+        )
     return "first_reading"
 
 
@@ -285,14 +305,6 @@ def _senate_event(stage: Stage) -> str:
         SenateOutcome.REJECTION: "senate_rejected",
         SenateOutcome.AMENDMENTS: "senate_amendments",
     }.get(outcome, "senate")
-
-
-def _reading_numeral(stage: Stage) -> str:
-    name = stage.stage_name.strip().upper()
-    for numeral in ("III", "II", "I"):
-        if name.startswith(numeral + " "):
-            return numeral
-    return ""
 
 
 def amendments_stage(stages: list[Stage]) -> Stage | None:

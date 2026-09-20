@@ -14,12 +14,14 @@ from lexinform.models import (
     BillStatus,
     PublicationKind,
     RclProject,
+    SourceOutcome,
     Stage,
     StatusChange,
     consultation_open,
     diff_stages,
     observe,
     process_summary,
+    rcl_evidence,
     rcl_fingerprint,
     rcl_stages,
 )
@@ -197,10 +199,10 @@ class RclWatcher:
         now = self._clock.now()
         stored = bill.rcl
         assert stored is not None
-        closure = (
-            not project.is_open
-            and not project.sent_to_sejm
-            and not self._repo.closure_announced(bill.term, bill.number)
+        closure = rcl_evidence(
+            project
+        ).source is SourceOutcome.WITHDRAWN and not self._repo.closure_announced(
+            bill.term, bill.number
         )
         new_stages = diff_stages(bill.stages, stages)
         # Reading the letter late is not an event. A project taken by its text arrives with no

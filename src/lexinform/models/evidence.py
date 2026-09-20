@@ -5,7 +5,17 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict
 
 from lexinform.models.enums import VetoOutcome
-from lexinform.models.sejm import Stage, reading_decision, senate_moved_rejection
+from lexinform.models.rcl import RclProject
+from lexinform.models.sejm import (
+    BillSubmission,
+    Stage,
+    reading_adjourned,
+    reading_decision,
+    reading_numeral,
+    second_reading_sent_back,
+    senate_moved_rejection,
+)
+from lexinform.models.wykaz import WykazEntry
 
 
 class DecisionState(StrEnum):
@@ -23,6 +33,27 @@ class SenateOutcome(StrEnum):
     REJECTION_ACCEPTED = "rejection_accepted"
 
 
+class ReadingOutcome(StrEnum):
+    ADJOURNED = "adjourned"
+    REJECTED = "rejected"
+    PASSED = "passed"
+    SENT_TO_COMMITTEE = "sent_to_committee"
+    COMPLETED = "completed"
+
+
+class TribunalOutcome(StrEnum):
+    REFERRED = "referred"
+    RULING_ISSUED = "ruling_issued"
+
+
+class SourceOutcome(StrEnum):
+    ACTIVE = "active"
+    WITHDRAWN = "withdrawn"
+    ADOPTED = "adopted"
+    SENT_TO_SEJM = "sent_to_sejm"
+    LINKED = "linked"
+
+
 class DecisionEvidence(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -30,6 +61,81 @@ class DecisionEvidence(BaseModel):
     stage: Stage | None = None
     veto: VetoOutcome | None = None
     senate: SenateOutcome | None = None
+    reading: ReadingOutcome | None = None
+    tribunal: TribunalOutcome | None = None
+    source: SourceOutcome | None = None
+
+
+def reading_evidence(stage: Stage) -> DecisionEvidence:
+    """A II reading's own "niedokończone" is not an adjournment to wait out: it is one of the
+    markers of `second_reading_sent_back` (druk 1929), so it is read as sent to committee before
+    the generic adjournment is asked at all — only a III reading's "niedokończone" is one."""
+    if stage.stage_type != "SejmReading":
+        return DecisionEvidence(state=DecisionState.ABSENT)
+    decision = reading_decision(stage)
+    if not decision:
+        return DecisionEvidence(state=DecisionState.UNKNOWN, stage=stage)
+    numeral = reading_numeral(stage)
+    if "odrzuc" in decision:
+        outcome = ReadingOutcome.REJECTED
+        state = DecisionState.KNOWN
+    elif numeral == "II" and second_reading_sent_back(stage):
+        outcome = ReadingOutcome.SENT_TO_COMMITTEE
+        state = DecisionState.KNOWN
+    elif numeral == "III" and decision.startswith("uchwal"):
+        outcome = ReadingOutcome.PASSED
+        state = DecisionState.KNOWN
+    elif reading_adjourned(stage):
+        outcome = ReadingOutcome.ADJOURNED
+        state = DecisionState.PENDING
+    else:
+        outcome = ReadingOutcome.COMPLETED
+        state = DecisionState.KNOWN
+    return DecisionEvidence(state=state, stage=stage, reading=outcome)
+
+
+def tribunal_evidence(stage: Stage) -> DecisionEvidence:
+    if stage.stage_type == "PresidentToTribunal":
+        return DecisionEvidence(
+            state=DecisionState.PENDING, stage=stage, tribunal=TribunalOutcome.REFERRED
+        )
+    if stage.stage_type == "ConstitutionalTribunalRuling":
+        return DecisionEvidence(
+            state=DecisionState.KNOWN, stage=stage, tribunal=TribunalOutcome.RULING_ISSUED
+        )
+    return DecisionEvidence(state=DecisionState.ABSENT)
+
+
+def submission_evidence(submission: BillSubmission) -> DecisionEvidence:
+    if submission.is_closed:
+        outcome, state = SourceOutcome.WITHDRAWN, DecisionState.KNOWN
+    elif submission.print_number:
+        outcome, state = SourceOutcome.LINKED, DecisionState.KNOWN
+    else:
+        outcome, state = SourceOutcome.ACTIVE, DecisionState.PENDING
+    return DecisionEvidence(state=state, source=outcome)
+
+
+def rcl_evidence(project: RclProject) -> DecisionEvidence:
+    if project.sent_to_sejm:
+        outcome, state = SourceOutcome.SENT_TO_SEJM, DecisionState.KNOWN
+    elif not project.is_open:
+        outcome, state = SourceOutcome.WITHDRAWN, DecisionState.KNOWN
+    else:
+        outcome, state = SourceOutcome.ACTIVE, DecisionState.PENDING
+    return DecisionEvidence(state=state, source=outcome)
+
+
+def wykaz_evidence(entry: WykazEntry) -> DecisionEvidence:
+    if entry.is_withdrawn:
+        outcome, state = SourceOutcome.WITHDRAWN, DecisionState.KNOWN
+    elif entry.is_adopted:
+        outcome, state = SourceOutcome.ADOPTED, DecisionState.KNOWN
+    elif entry.rcl_project_id is not None:
+        outcome, state = SourceOutcome.LINKED, DecisionState.KNOWN
+    else:
+        outcome, state = SourceOutcome.ACTIVE, DecisionState.PENDING
+    return DecisionEvidence(state=state, source=outcome)
 
 
 def veto_evidence(stages: tuple[Stage, ...]) -> DecisionEvidence:
@@ -96,7 +202,7 @@ def terminal_stage(stages: tuple[Stage, ...]) -> Stage | None:
     if veto.veto is VetoOutcome.SUSTAINED:
         return veto.stage
     for stage in reversed(stages):
-        if stage.stage_type == "SejmReading" and "odrzuc" in reading_decision(stage):
+        if reading_evidence(stage).reading is ReadingOutcome.REJECTED:
             return stage
         if (
             stage.stage_type == "SenatePositionConsideration"

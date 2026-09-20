@@ -10,7 +10,7 @@ listing tells when the Sejm publishes the opinions received in a consultation
 import logging
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import Bill, BillSubmission, StatusChange
+from lexinform.models import Bill, BillSubmission, SourceOutcome, StatusChange, submission_evidence
 from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.linking import Linker
@@ -119,7 +119,9 @@ class PrePrintReconciler:
         self, bill: Bill, sub: BillSubmission, result: TrackingResult, *, publish: bool
     ) -> None:
         """What the `/bills` row says has happened to the entry since it was stored."""
-        if bill.is_pre_print and sub.print_number:
+        evidence = submission_evidence(sub)
+        if bill.is_pre_print and evidence.source is SourceOutcome.LINKED:
+            assert sub.print_number is not None
             self._linker.link(
                 bill.model_copy(update={"submission": sub}),
                 sub.print_number,
@@ -129,7 +131,7 @@ class PrePrintReconciler:
             return
         if (
             bill.is_pre_print
-            and sub.is_closed
+            and evidence.source is SourceOutcome.WITHDRAWN
             and not self._repo.closure_announced(bill.term, bill.number)
         ):
             self._announce_withdrawal(bill, result, publish=publish, submission=sub)

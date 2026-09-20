@@ -1,8 +1,10 @@
 """What the model gets to see and what is stored: text sources, triage, authors."""
 
+import pytest
+
 from lexinform.adapters.llm_prompts import build_user_prompt
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import BillStatus, Mp, Triage
+from lexinform.models import AnalysisRecord, BillStatus, Mp, Triage
 from lexinform.services.analysis import text_digest
 from tests.fakes import FakeTextExtractor
 from tests.harness import World, print_url
@@ -466,6 +468,51 @@ def test_a_scan_short_enough_to_read_whole_is_triaged_whole() -> None:
 
     triaged = w.llm.triage_contexts[0]
     assert triaged.scan is not None and (triaged.scan.pages, triaged.scan.of_pages) == (3, 4)
+
+
+@pytest.mark.parametrize("reject", [False, True])
+def test_scan_and_triage_memos_survive_a_failed_write(
+    reject: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cover = DEPUTIES_LETTER.split("Tłoczono z polecenia Marszałka Sejmu")[0]
+    triage = Triage(
+        affects_foreigners=not reject,
+        confidence=0.95,
+        rationale="nie dotyczy" if reject else "dotyczy",
+    )
+    w = World(
+        extractor=FakeTextExtractor(cover, page_count=37),
+        triage=True,
+        triage_min_chars=20_000,
+        triage_script={"4200": triage},
+    )
+    w.add_bill("4200", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
+    original = w.repo.save_analysis
+    failed = False
+
+    def fail_once(term: int, number: str, record: AnalysisRecord) -> None:
+        nonlocal failed
+        if not failed:
+            failed = True
+            raise RuntimeError("checkpoint interrupted")
+        original(term, number, record)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(w.repo, "save_analysis", fail_once)
+        first = w.run()
+
+    assert first.analysis_failures == 1
+    assert len(w.llm.triage_contexts) == 1
+    assert len(w.llm.contexts) == int(not reject)
+    w.repo.restore(w.repo.dump())
+
+    second = w.run()
+
+    assert second.analysis_failures == 0
+    assert len(w.llm.triage_contexts) == 1
+    assert len(w.llm.contexts) == int(not reject)
+    assert second.triaged_out == int(reject)
+    assert second.analyzed == int(not reject)
 
 
 def test_a_short_readable_text_still_skips_the_triage() -> None:

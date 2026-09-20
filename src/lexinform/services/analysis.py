@@ -210,6 +210,7 @@ class _Prepared:
     unreadable: bool = False
     deferred: bool = False
     memo_key: str | None = None
+    triage_memo_key: str | None = None
 
 
 _PAGE_NUMBER_LINE = re.compile(r"^\s*[–\-—]?\s*\d{1,4}\s*[–\-—]?\s*$", re.MULTILINE)
@@ -243,6 +244,13 @@ def _memo_key(bill: Bill, purpose: str, context: BaseModel) -> str:
     payload = context.model_dump()
     text = str(payload.get("text", ""))
     data["text_sha256"] = text_digest(text)
+    scan = payload.get("scan")
+    if isinstance(scan, dict):
+        data["scan"] = {
+            "sha256": scan.get("sha256"),
+            "pages": scan.get("pages"),
+            "of_pages": scan.get("of_pages"),
+        }
     data["term"] = bill.term
     data["purpose"] = purpose
     encoded = json.dumps(data, sort_keys=True, ensure_ascii=False)
@@ -399,7 +407,8 @@ class AnalysisService:
             result.input_tokens += record.input_tokens or 0
             result.output_tokens += record.output_tokens or 0
             add_usage(result.usage, record)
-            if prepared.triage is not None:
+            # A rejection's record is the triage call; adding `prepared.triage` too would double it.
+            if prepared.triage is not None and record.text_source != "excerpts":
                 result.input_tokens += prepared.triage.input_tokens or 0
                 result.output_tokens += prepared.triage.output_tokens or 0
                 add_usage(result.usage, prepared.triage)
@@ -656,10 +665,22 @@ class AnalysisService:
             return _Prepared(bill, located, text, source, previous, first=False, deferred=True)
         meta = located.summary or bill.summary
         triaged: TriageRecord | None = None
+        triage_memo_key: str | None = None
         if previous is None and triage and self._worth_triaging(loaded):
-            triaged, rejection = self._triage_verdict(bill, meta, text, loaded.scan)
+            triaged, rejection, triage_memo_key = self._triage_verdict(
+                bill, meta, text, loaded.scan
+            )
             if rejection is not None:
-                return _Prepared(bill, located, text, source, rejection, first=True)
+                return _Prepared(
+                    bill,
+                    located,
+                    text,
+                    source,
+                    rejection,
+                    first=True,
+                    triage=triaged,
+                    triage_memo_key=triage_memo_key,
+                )
         ctx = BillContext(
             number=bill.number,
             title=meta.title or bill.summary.title,
@@ -677,7 +698,7 @@ class AnalysisService:
         if cost_guard:
             ctx = self._fit_to_budget(ctx, loaded, first=previous is None)
         purpose: CallKind = "analysis" if previous is None else "reanalysis"
-        key = _memo_key(bill, purpose, ctx) if loaded.scan is None and cost_guard else None
+        key = _memo_key(bill, purpose, ctx) if cost_guard else None
         cached = self._memo.get(key) if key is not None else None
         if cached is None:
             record = self._llm.analyze(ctx)
@@ -698,6 +719,7 @@ class AnalysisService:
             first=previous is None,
             triage=triaged,
             memo_key=key,
+            triage_memo_key=triage_memo_key,
         )
 
     def _fit_to_budget(self, ctx: BillContext, loaded: _Loaded, *, first: bool) -> BillContext:
@@ -783,7 +805,7 @@ class AnalysisService:
 
     def _triage_verdict(
         self, bill: Bill, meta: ProcessSummary, text: str, scan: ScannedDocument | None = None
-    ) -> tuple[TriageRecord | None, AnalysisRecord | None]:
+    ) -> tuple[TriageRecord | None, AnalysisRecord | None, str | None]:
         """Ask the cheap model about excerpts, or about the first pages of a scan; a confident
         "no" becomes the final record.
 
@@ -794,7 +816,7 @@ class AnalysisService:
         the bill on, so only a confident wrong "no" loses one.
         """
         if self._triage is None:
-            return None, None
+            return None, None, None
         window = (
             self._loader.first_pages(scan, self._options.triage_scan_pages)
             if scan is not None
@@ -810,8 +832,13 @@ class AnalysisService:
             text_chars=len(text),
             scan=shown,
         )
-        verdict = self._llm.triage(ctx)
-        self._ledger.charge(verdict, number=bill.number, kind="triage")
+        key = _memo_key(bill, "triage", ctx)
+        cached = self._memo.get(key)
+        if cached is None:
+            verdict = self._llm.triage(ctx)
+            self._ledger.charge(verdict, number=bill.number, kind="triage")
+        else:
+            verdict = _reused(TriageRecord.model_validate_json(cached))
         if not verdict.rejects(min_confidence=self._options.triage_min_confidence):
             log.info(
                 "%s passes triage (%s, %.2f): full analysis",
@@ -819,31 +846,35 @@ class AnalysisService:
                 "relevant" if verdict.triage.affects_foreigners else "unsure",
                 verdict.triage.confidence,
             )
-            return verdict, None
+            return verdict, None, key
         log.info(
             "%s rejected by triage (%.2f): %s",
             bill.number,
             verdict.triage.confidence,
             verdict.triage.rationale,
         )
-        return verdict, AnalysisRecord(
-            analysis=Analysis(
-                relevant=False,
-                score=1,
-                category=Category.NONE,
-                summary=verdict.triage.rationale,
-                practical_impact="",
-                confidence=verdict.triage.confidence,
-                rationale=verdict.triage.rationale,
+        return (
+            verdict,
+            AnalysisRecord(
+                analysis=Analysis(
+                    relevant=False,
+                    score=1,
+                    category=Category.NONE,
+                    summary=verdict.triage.rationale,
+                    practical_impact="",
+                    confidence=verdict.triage.confidence,
+                    rationale=verdict.triage.rationale,
+                ),
+                model=verdict.model,
+                prompt_version=verdict.prompt_version,
+                input_chars=len(ctx.excerpts),
+                truncated=True,
+                text_source="excerpts",
+                created_at=self._clock.now(),
+                input_tokens=verdict.input_tokens,
+                output_tokens=verdict.output_tokens,
             ),
-            model=verdict.model,
-            prompt_version=verdict.prompt_version,
-            input_chars=len(ctx.excerpts),
-            truncated=True,
-            text_source="excerpts",
-            created_at=self._clock.now(),
-            input_tokens=verdict.input_tokens,
-            output_tokens=verdict.output_tokens,
+            key,
         )
 
     def _persist(self, prepared: _Prepared) -> AnalysisRecord:
@@ -851,6 +882,8 @@ class AnalysisService:
         bill, located = prepared.bill, prepared.located
         if prepared.memo_key is not None:
             self._remember_analysis(prepared.memo_key, prepared.record)
+        if prepared.triage_memo_key is not None and prepared.triage is not None:
+            self._remember_analysis(prepared.triage_memo_key, prepared.triage)
         document = located.document
         authors = None
         # A scanned print is still signed on its first page: the letter is the one part of it

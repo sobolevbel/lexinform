@@ -20,14 +20,23 @@ from lexinform.models.bill import (
     veto_stood,
 )
 from lexinform.models.enums import ApplicantType, VetoOutcome
-from lexinform.models.evidence import DecisionState, SenateOutcome, senate_evidence, terminal_stage
+from lexinform.models.evidence import (
+    DecisionState,
+    ReadingOutcome,
+    SenateOutcome,
+    SourceOutcome,
+    TribunalOutcome,
+    rcl_evidence,
+    reading_evidence,
+    senate_evidence,
+    terminal_stage,
+    tribunal_evidence,
+    wykaz_evidence,
+)
 from lexinform.models.rcl import RclProject
 from lexinform.models.sejm import (
     ActInfo,
     Stage,
-    reading_adjourned,
-    reading_decision,
-    second_reading_sent_back,
 )
 
 
@@ -360,7 +369,6 @@ def _senate_days(bill: Bill) -> int | None:
 
 _PHASE_AFTER_STAGE_TYPE = {
     "PresidentSignature": "publication",
-    "PresidentToTribunal": "tribunal",
     "Start": "first_reading",
 }
 ANSWERED_IN_COMMITTEE = ("Veto", "SenatePosition")
@@ -375,6 +383,11 @@ def _phase_after(
     stages whose successor needs nothing but the stage's own type; the rest read the stage's
     decision, its committees or the tree before it."""
     kind = last.stage_type
+    tribunal = tribunal_evidence(last)
+    if tribunal.tribunal is TribunalOutcome.REFERRED:
+        return Phase(key="tribunal")
+    if tribunal.tribunal is TribunalOutcome.RULING_ISSUED:
+        return Phase(key="tribunal_after_ruling")
     key = _PHASE_AFTER_STAGE_TYPE.get(kind)
     if key is not None:
         return Phase(key=key)
@@ -384,8 +397,6 @@ def _phase_after(
         return Phase(key="veto", committees=_committee_codes(last) or _latest_committees(top))
     if kind == "PresidentMotionConsideration":
         return _phase_after_veto_vote(last)
-    if kind == "ConstitutionalTribunalRuling":
-        return Phase(key="tribunal_after_ruling")
     if kind == "SenatePositionConsideration" and _sejm_let_the_senate_win(last):
         return None
     if (
@@ -412,7 +423,7 @@ def _phase_after(
         return Phase(key="committee_work", committees=_latest_committees(top))
     if kind == "ReadingReferral":
         return _phase_after_referral(last)
-    return None
+    return Phase(key="decision_unknown")
 
 
 def _phase_after_veto_vote(last: Stage) -> Phase | None:
@@ -461,19 +472,19 @@ def _phase_after_reading(
     last: Stage, top: list[Stage], *, passed: bool | None, senate_days: int | None
 ) -> Phase | None:
     name = last.stage_name.lower()
+    evidence = reading_evidence(last)
     if "iii czytanie" in name:
-        decided = reading_decision(last)
-        if decided.startswith("uchwal") or passed:
+        if evidence.reading is ReadingOutcome.PASSED or passed:
             deadline = _days_after(last.date, senate_days) if senate_days is not None else None
             return Phase(key="senate", deadline=deadline)
         # A reading the Sejm broke off decided nothing and is resumed: druk 2985 of term 8 stood
         # at "nie dokończone III czytanie" with the process still open, and reading that as a
         # decision made `is_over` true — no card, and a followed bill's card frozen for good.
-        if not decided or reading_adjourned(last):
+        if evidence.state in (DecisionState.UNKNOWN, DecisionState.PENDING):
             return Phase(key="third_reading")
         return None
     if "ii czytanie" in name:
-        if second_reading_sent_back(last):
+        if evidence.reading is ReadingOutcome.SENT_TO_COMMITTEE:
             return Phase(key="second_reading_committee", committees=_latest_committees(top))
         return Phase(key="third_reading")
     return Phase(key="committee_work", committees=_latest_committees(top))
@@ -519,9 +530,9 @@ def is_over(bill: Bill, *, today: dt.date) -> bool:
     if bill.discontinued_at is not None:
         return True
     if bill.rcl is not None:
-        return bill.rcl.is_over
+        return rcl_evidence(bill.rcl).source is SourceOutcome.WITHDRAWN
     if bill.wykaz is not None:
-        return bill.wykaz.is_withdrawn
+        return wykaz_evidence(bill.wykaz).source is SourceOutcome.WITHDRAWN
     if bill.is_pre_print:
         return bill.summary.closure_date is not None
     return terminal_stage(bill.stages) is not None or (
@@ -537,11 +548,12 @@ def _wykaz_phase(bill: Bill) -> Phase | None:
     """
     entry = bill.wykaz
     assert entry is not None
-    if entry.is_withdrawn:
+    evidence = wykaz_evidence(entry)
+    if evidence.source is SourceOutcome.WITHDRAWN:
         return None
-    if entry.is_adopted:
+    if evidence.source is SourceOutcome.ADOPTED:
         return Phase(key="wykaz_adopted")
-    if entry.rcl_project_id is not None:
+    if evidence.source is SourceOutcome.LINKED:
         return Phase(key="wykaz_to_rcl")
     return Phase(key="wykaz")
 
@@ -552,9 +564,10 @@ def _rcl_phase(bill: Bill, today: dt.date) -> Phase | None:
     over was closed on RCL without ever reaching the Sejm."""
     project = bill.rcl
     assert project is not None
-    if project.is_over:
+    evidence = rcl_evidence(project)
+    if evidence.source is SourceOutcome.WITHDRAWN:
         return None
-    if project.sent_to_sejm:
+    if evidence.source is SourceOutcome.SENT_TO_SEJM:
         return Phase(key="rcl_to_sejm")
     window = bill.consultation
     if window is not None and _consulting(project, window, today):
