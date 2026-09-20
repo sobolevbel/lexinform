@@ -213,6 +213,7 @@ def terminal_stage(stages: tuple[Stage, ...]) -> Stage | None:
 
 
 def decision_changes(known: tuple[Stage, ...], found: tuple[Stage, ...]) -> tuple[Stage, ...]:
+    """Only `SenatePosition`: `position` carries its outcome and is excluded from `_stage_key`."""
     previous = {
         (stage.stage_type, stage.date, stage.print_number): senate_evidence(stage).senate
         for stage in known
