@@ -10,7 +10,7 @@ import httpx2 as httpx
 import pytest
 
 from lexinform.adapters.sejm_api import SejmApiClient, SejmApiError
-from lexinform.errors import AttachmentTooLargeError
+from lexinform.errors import AttachmentTooLargeError, SejmApiUnavailableError
 from lexinform.models import ApplicantType, Attachment, DocumentType, PrintInfo, current_term
 from tests.conftest import FIXTURES
 
@@ -345,6 +345,15 @@ def test_terms_are_listed_with_the_running_one_flagged_current() -> None:
     assert (terms[1].start, terms[1].end) == (date(2019, 11, 12), date(2023, 11, 12))
     assert terms[2].end is None  # the running term has no end yet
     assert current_term(terms) == 10
+
+
+def test_a_4xx_on_sejm_term_counts_as_the_api_being_unavailable() -> None:
+    # unlike /prints/{n}, this fixed path has no per-item 404: a 4xx here means the API is
+    # malfunctioning, and TermResolver falls back to the database only for ServiceUnavailableError
+    client = _client(lambda request: httpx.Response(404))
+
+    with pytest.raises(SejmApiUnavailableError):
+        client.list_terms()
 
 
 def test_find_process_by_rcl_num_reads_details_only_around_the_handover() -> None:

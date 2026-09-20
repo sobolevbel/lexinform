@@ -94,8 +94,16 @@ class SejmApiClient:
         self._sleep = sleep or time.sleep
 
     def list_terms(self) -> tuple[SejmTerm, ...]:
-        """GET /sejm/term: every term of the Sejm; the running one is flagged `current`."""
-        data = self._get_json("/sejm/term")
+        """GET /sejm/term: every term of the Sejm; the running one is flagged `current`.
+
+        A fixed, parameterless path: unlike a missing print or process, a 4xx here has no
+        per-item meaning and can only mean the API is malfunctioning, so it counts as unavailable
+        and lets `TermResolver` fall back to the newest term in the database.
+        """
+        try:
+            data = self._get_json("/sejm/term")
+        except SejmApiError as exc:
+            raise SejmApiUnavailableError(str(exc)) from exc
         if not isinstance(data, list):
             raise SejmApiError(f"Unexpected /sejm/term payload: {type(data).__name__}")
         return tuple(parse_term(item) for item in data)
