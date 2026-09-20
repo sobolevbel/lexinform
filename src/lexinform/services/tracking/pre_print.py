@@ -143,7 +143,8 @@ class PrePrintReconciler:
                 self._consultations.prepare_results(news)
             self._consultations.results_published(news, result, publish=publish)
             return
-        self._repo.save_submission(bill.term, bill.number, sub)
+        with self._repo.atomic():
+            self._repo.save_submission(bill.term, bill.number, sub)
 
     @staticmethod
     def _results_appeared(bill: Bill, sub: BillSubmission) -> bool:
