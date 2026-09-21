@@ -4,7 +4,7 @@ is rendered — the vote with its clubs, the Senate's position, the President's 
 import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import ClubVotes, ProcessDetail, Stage, flatten_stages
+from lexinform.models import ClubVotes, ProcessDetail, Stage, SupplementRecord, flatten_stages
 from tests.fakes import make_analysis
 from tests.formatting import ACT, assert_telegram_html, bill_of, change_of
 
@@ -209,6 +209,27 @@ def test_voting_stage_shows_totals_pdf_link_and_club_breakdown(
     assert "За: KO 152, PSL-TD 31, Lewica 21, Polska2050 13, …" in with_clubs
     assert "Против: Konfederacja 1" in with_clubs and "Воздержались: PiS 178" in with_clubs
     assert_telegram_html(with_clubs)
+
+
+def test_impact_assessment_tag_actually_renders(process_1962: ProcessDetail) -> None:
+    """`event_keys` gaining an `impact_assessment` key is only half the fix: the tag line filters
+    on `if key in lb.event_tags`, so a key with no RU/EN label there is dropped in silence rather
+    than crashing — the same shape of bug `event_keys` alone fixes but a unit test calling it
+    directly cannot see, since the rendering side of the contract is a separate lookup table."""
+    bill = bill_of(process_1962)
+    stage = Stage(stage_type="GovermentPosition", stage_name="Wpłynęło stanowisko rządu")
+    supplement = SupplementRecord(
+        number="1962-s",
+        title="OSR do druku nr 1962",
+        source_kind="impact_assessment",
+        source_url="",
+    )
+    change = change_of("1962", [stage], supplements=[supplement])
+
+    text = MessageFormatter("ru").status_update(bill, change).text
+
+    assert_telegram_html(text)
+    assert "#оценкапоследствий" in text.splitlines()[-1]
 
 
 def test_tribunal_ruling_gets_its_own_icon_not_the_generic_update_one(
