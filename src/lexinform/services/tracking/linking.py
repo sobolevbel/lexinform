@@ -172,9 +172,12 @@ class Linker:
             channel_id=self._channel_id,
             message_id=card.message_id,
             created_at=now,
+            sent_at=card.sent_at,
         )
         alias.id = self._repo.create_publication(alias)
-        self._repo.mark_publication(alias.id, PublicationStatus.SENT, message_id=card.message_id)
+        self._repo.mark_publication(
+            alias.id, PublicationStatus.SENT, message_id=card.message_id, sent_at=card.sent_at
+        )
         return alias
 
     def _render_card(

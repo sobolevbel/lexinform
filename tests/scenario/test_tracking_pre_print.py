@@ -123,6 +123,27 @@ def test_assigned_print_number_continues_the_thread_under_the_new_number() -> No
     assert analysis is not None and analysis.revision == 2
 
 
+def test_the_inherited_card_keeps_the_original_sent_at_for_the_digest() -> None:
+    """`Linker._inherit_card` is one of three places that alias a `new_bill` publication onto an
+    existing message (`publishing.py`'s and `wykaz.py`'s own linking paths are the other two, and
+    both set `sent_at`); this one left it `NULL`, so `list_publications_between`'s `sent_at`-ranged
+    week query — what the digest reads — could never return the row, and a print that inherited a
+    card this way was invisible to every week's digest for the rest of its life."""
+    w = World()
+    w.gateway.submissions.append(submission())
+    w.run()
+    original = w.publication(RPW)
+    assert original is not None and original.sent_at is not None
+    w.gateway.submissions[0] = submission(print_number="3100")
+    w.add_bill("3100", "Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony")
+    w.clock.advance(days=1)
+
+    w.run()
+
+    alias = w.publication("3100")
+    assert alias is not None and alias.sent_at == original.sent_at
+
+
 def test_after_linking_only_the_print_is_tracked() -> None:
     w = World()
     w.gateway.submissions.append(submission())
