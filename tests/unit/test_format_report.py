@@ -72,15 +72,13 @@ def test_run_report_lists_counters_costs_rejections_and_warnings() -> None:
     assert_telegram_html(text)
     assert text.startswith("<b>❌ lexinform run report</b>")
     assert "\n\n🔎 <b>discovery</b>\nSejm: 77 new · prefilter hits: 3\n\n" in text
-    assert "\n🤖 <b>analysis</b>\nanalyzed: 2 · failures: 1\ntokens" in text
+    assert "\n🤖 <b>analysis</b>\nanalyzed: 2 · failures: 1\nTotal" in text
     assert "\n📣 <b>posts</b>\nnew cards: 2 · updates: 1\n\n" in text
     assert "\n\n⏱ <b>timing</b>\ndiscovery 4.1s · text prefilter 60.0s" in text
     assert "\n\n❌ <b>errors</b>\n• 1 publication(s) failed" in text
-    # 44k*5 + 2k*0.5 + 3.9k*25 + 4k*2 + 0.1k*10 = $0.3275
-    assert (
-        "tokens in/out: 50000/4000 · cache read 2.0k · opus-5 46.0k/3.9k · sonnet-5 4.0k/100 · "
-        "≈ $0.33"
-    ) in text
+    # 44k*5 + 2k*0.5 + 3.9k*25 = $0.3185 opus, 4k*2 + 0.1k*10 = $0.009 sonnet, total $0.3275
+    assert "Total $0.33 · opus-5 $0.32 · sonnet-5 $0.009" in text
+    assert "tokens in/out: 50000/4000 · cache read 2.0k" in text
 
     druk = '<a href="https://www.sejm.gov.pl/Sejm10.nsf/PrzebiegProc.xsp?nr=2695">druk 2695</a>'
     assert f"<b>analysed, not published</b>\n• {druk} · triage · Rządowy projekt" in text
@@ -133,7 +131,8 @@ def test_run_report_cost_line_adapts_to_the_models_used() -> None:
     unknown_model = fmt.run_report(_report(llm_usage={"fake": TokenUsage(input=1)}), []).text
     clean = fmt.run_report(_report(errors=[]), []).text
 
-    assert "tokens in/out: 50000/4000 · ≈ $0.003" in one_model and "sonnet-5 1.0k" not in one_model
+    assert "Total $0.003\ntokens in/out: 50000/4000" in one_model
+    assert "sonnet-5 $0.003" not in one_model  # single model: no per-model breakdown
     assert "$" not in unknown_model
     assert clean.startswith("<b>✅") and "<pre>" not in clean
 

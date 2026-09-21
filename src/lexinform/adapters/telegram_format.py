@@ -2470,25 +2470,27 @@ def _runs_line(snapshot: StatusSnapshot) -> str:
 
 
 def _tokens_line(report: RunReport) -> str:
-    """`tokens in/out: 12345/678 · cache read 4.0k · opus-5 10.3k/0.6k · sonnet-5 5.8k/0.1k ·
-    ≈ $0.06`. Cache reads are shown apart from the uncached input: whether the prompt cache
-    ever hits is otherwise invisible. Empty when the model was never called."""
+    """`Total $0.33 · opus-5 $0.32 · sonnet-5 $0.009` then, on its own line, `tokens in/out:
+    12345/678 · cache read 4.0k` — the total leads because it is the one figure read at a
+    glance; empty when the model was never called or its price is unknown."""
     if not (report.llm_input_tokens or report.llm_output_tokens or report.llm_usage):
         return ""
-    parts = [f"tokens in/out: {report.llm_input_tokens}/{report.llm_output_tokens}"]
-    cached = sum(u.cache_read for u in report.llm_usage.values())
-    if cached:
-        parts.append(f"cache read {format_tokens(cached)}")
-    if len(report.llm_usage) > 1:
-        parts += [
-            f"{esc(model.removeprefix('claude-'))}"
-            f" {format_tokens(u.input + u.cache_read)}/{format_tokens(u.output)}"
-            for model, u in report.llm_usage.items()
-        ]
+    lines = []
     cost = cost_usd(report.llm_usage)
     if cost is not None and report.llm_usage:
-        parts.append(f"≈ {format_usd(cost)}")
-    return " · ".join(parts)
+        money = [f"Total {format_usd(cost)}"]
+        if len(report.llm_usage) > 1:
+            money += [
+                f"{esc(model.removeprefix('claude-'))} {format_usd(cost_usd({model: u}))}"
+                for model, u in report.llm_usage.items()
+            ]
+        lines.append(" · ".join(money))
+    tokens = [f"tokens in/out: {report.llm_input_tokens}/{report.llm_output_tokens}"]
+    cached = sum(u.cache_read for u in report.llm_usage.values())
+    if cached:
+        tokens.append(f"cache read {format_tokens(cached)}")
+    lines.append(" · ".join(tokens))
+    return "\n".join(lines)
 
 
 def _spenders_line(report: RunReport, *, top: int = 3) -> str:
