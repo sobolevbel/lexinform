@@ -208,6 +208,7 @@ EVENT_ICON = {
     "signed": "✍️",
     "veto": "⛔",
     "tribunal": "⚖️",
+    "tribunal_ruled": "⚖️",
     "text_changed": "🆕",
     "government_position": "🏛",
     "impact_assessment": "📊",

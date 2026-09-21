@@ -211,6 +211,25 @@ def test_voting_stage_shows_totals_pdf_link_and_club_breakdown(
     assert_telegram_html(with_clubs)
 
 
+def test_tribunal_ruling_gets_its_own_icon_not_the_generic_update_one(
+    process_1962: ProcessDetail,
+) -> None:
+    """`tribunal_ruled` had a header but no `EVENT_ICON` entry, so its post fell back to the
+    generic 🔄 while `tribunal` (the referral) already gets ⚖️ — the same scale of decision
+    losing its icon depending on which end of the Tribunal's road the post is about."""
+    ruling = Stage(
+        stage_type="ConstitutionalTribunalRuling",
+        stage_name="Wyrok Trybunału Konstytucyjnego",
+    )
+    bill = bill_of(process_1962)
+
+    text = MessageFormatter("ru").status_update(bill, change_of("1962", [ruling])).text
+
+    assert_telegram_html(text)
+    assert "⚖️ <b>Конституционный трибунал вынес решение — druk nr 1962</b>" in text
+    assert "🔄" not in text
+
+
 def test_president_stages_and_committee_referrals_have_labels(process_3039: ProcessDetail) -> None:
     signed = Stage(
         stage_name="Podpisanie", stage_type="PresidentSignature", date=dt.date(2026, 8, 13)
