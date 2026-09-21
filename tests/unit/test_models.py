@@ -772,11 +772,33 @@ def test_pre_print_bill_waits_for_its_consultation_then_its_print_number(
     assert consulted is not None and consulted.key == "pre_print"
 
 
+def test_a_numbered_druk_with_unread_stages_is_not_told_it_has_no_number(
+    process_3039: ProcessDetail,
+) -> None:
+    """`not bill.stages` used to fall to `_pre_print_phase` for *any* bill with empty stages, not
+    only a true pre-print one — discovery never calls `save_stages` for a row skipped at the text
+    prefilter, so it stays `stages=()` for as long as it is skipped. Measured on the production
+    dump (21 Sept 2026): 60 of 129 numbered term-10 bills are in exactly this state, all
+    `skipped_text_prefilter`, and every one of them answered `Phase(key="pre_print")` — «ждём
+    номер druku» for a bill that already has one."""
+    bill = _bill(process_3039, ())
+
+    phase = next_phase(bill, today=TODAY)
+
+    assert phase is not None and phase.key != "pre_print"
+
+
 def test_closed_processes_have_no_next_phase(process_3039: ProcessDetail) -> None:
+    # `closureDate` and `passed` always arrive together in the real API (CLAUDE.md's "Sejm API
+    # lessons"), so a withdrawal is `passed=False` here too, the same as the rejected case below —
+    # `closure_date` alone, with `passed` genuinely unknown, is `_phase_of`'s "unread stages"
+    # case, not this one, and must not be read as "over" either (incident 2111).
     withdrawn = _bill(process_3039, ())
     withdrawn = withdrawn.model_copy(
         update={
-            "summary": withdrawn.summary.model_copy(update={"closure_date": dt.date(2026, 9, 5)})
+            "summary": withdrawn.summary.model_copy(
+                update={"closure_date": dt.date(2026, 9, 5), "passed": False}
+            )
         }
     )
     rejected = _bill(process_3039, process_3039.stages)

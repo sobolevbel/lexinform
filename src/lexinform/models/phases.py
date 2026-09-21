@@ -314,7 +314,7 @@ def _phase_of(bill: Bill, today: dt.date) -> Phase | None:
         return _wykaz_phase(bill)
     if bill.rcl is not None:
         return _rcl_phase(bill, today)
-    if bill.is_pre_print or not bill.stages:
+    if bill.is_pre_print:
         return _pre_print_phase(bill, today)
     return _sejm_phase(bill, today)
 
