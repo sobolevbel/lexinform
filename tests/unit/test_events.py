@@ -217,6 +217,17 @@ def test_the_government_position_outweighs_the_other_filed_documents(
     assert "government_position" in event_keys(change, "government_position")
 
 
+def test_an_impact_assessment_gets_the_same_searchable_tag_as_the_government_position(
+    process_1962: ProcessDetail,
+) -> None:
+    """`impact_assessment` has its own header and icon; without a matching tag it was findable
+    by neither, unlike `government_position` a search for it always finds."""
+    stage = Stage(stage_type="GovermentPosition", stage_name="Wpłynęło stanowisko rządu")
+    change = _change([stage], supplements=[_filed("impact_assessment")])
+
+    assert "impact_assessment" in event_keys(change, "impact_assessment")
+
+
 def test_a_filed_document_alone_is_news_of_its_own(process_1962: ProcessDetail) -> None:
     change = _change([], supplements=[_filed("impact_assessment")])
 

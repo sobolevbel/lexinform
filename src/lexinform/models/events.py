@@ -366,6 +366,8 @@ def event_keys(change: StatusChange, event: str) -> list[str]:
         keys.append("amendments")
     if any(r.source_kind == "government_position" for r in change.supplements):
         keys.append("government_position")
+    if any(r.source_kind == "impact_assessment" for r in change.supplements):
+        keys.append("impact_assessment")
     if change.content_changed:
         keys.append("new_text")
     if change.consultation_opened:
