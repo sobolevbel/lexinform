@@ -623,6 +623,24 @@ class SqliteBillRepository:
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
+    def list_rcl_missing_consultation(self, *, limit: int) -> list[Bill]:
+        """RCL rows analysed or waiting to be, still missing their consultation window.
+
+        `rcl_json IS NOT NULL` is not redundant: `json_extract(NULL, …)` is NULL too, so a bare
+        `consultation IS NULL` matches every non-RCL bill as well.
+        """
+        rows = self._conn.execute(
+            """
+            SELECT * FROM bills
+            WHERE status IN (?, ?) AND discontinued_at IS NULL
+              AND rcl_json IS NOT NULL
+              AND json_extract(rcl_json, '$.consultation') IS NULL
+            ORDER BY change_date ASC LIMIT ?
+            """,
+            (BillStatus.ANALYSIS_PENDING.value, BillStatus.ANALYZED.value, limit),
+        ).fetchall()
+        return [self._row_to_bill(r) for r in rows]
+
     def list_skipped_with_joint_prints(self) -> list[Bill]:
         """Rows a prefilter skipped that name prints considered jointly with them.
 

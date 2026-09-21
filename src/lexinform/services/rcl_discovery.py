@@ -34,6 +34,10 @@ log = logging.getLogger(__name__)
 
 CONSULTATION_READ_ATTEMPTS = 2
 
+# A page's worth of network reads, not an LLM budget: kept apart from `opts.max_analyze` so this
+# phase's own batch size never depends on the analysis cost cap.
+CONSULTATION_READ_BATCH = 40
+
 
 @dataclass
 class RclDiscoveryResult:
@@ -143,7 +147,7 @@ class RclDiscoveryService:
         log.info("RCL %s: named by the register, not seen by the listing", project_id)
         self._ingest(term, project, result)
 
-    def read_consultations(self, *, limit: int) -> int:
+    def read_consultations(self, *, limit: int = CONSULTATION_READ_BATCH) -> int:
         """Read a missing consultation letter before a card can lose its action window.
 
         A project taken by its text is read for that text alone (`_deepen` → `with_text`), so the
@@ -154,12 +158,13 @@ class RclDiscoveryService:
         A project can have moved to `analyzed` after a transient failure, so that status belongs
         in the retry queue too. Two failed reads are recorded on the project: this repairs old
         rows without making a project that genuinely has no letter cost a request forever.
+        `list_rcl_missing_consultation`, not `list_by_status`: a candidate pool ordered by
+        recency could strand a stale row outside `limit` for good as newer bills piled up.
         """
         read = 0
-        statuses = [BillStatus.ANALYSIS_PENDING, BillStatus.ANALYZED]
-        for bill in self._repo.list_by_status(statuses, limit=limit):
+        for bill in self._repo.list_rcl_missing_consultation(limit=limit):
             project = bill.rcl
-            if project is None or project.consultation is not None:
+            if project is None:  # the query's own guarantee, kept for mypy's narrowing
                 continue
             if project.consultation_attempts >= CONSULTATION_READ_ATTEMPTS:
                 continue

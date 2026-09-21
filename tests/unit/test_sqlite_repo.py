@@ -673,6 +673,27 @@ def test_rcl_project_round_trips_and_is_found_by_its_numbers(
     assert repo.find_by_rm_number("RM-0610-1-26") is None
 
 
+def test_missing_consultation_query_ignores_non_rcl_bills_and_favours_the_stalest(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    """A stale RCL row must survive a crowd of newer, unrelated bills: ordering alone is not
+    enough to rule out a non-RCL bill, since `json_extract(NULL, …)` is NULL too."""
+    stale = rcl_project(modified=date(2020, 6, 1), consultation=None)
+    number = repo.upsert_summary(process_summary(stale, term=10), now=now).number
+    repo.save_rcl(10, number, stale)
+    repo.set_status(10, number, BillStatus.ANALYZED)
+    for i in range(10):  # older than the RCL row and far more numerous than the limit below
+        crowd = process_3039.model_copy(
+            update={"number": str(3040 + i), "change_date": datetime(2019, 1, 1, tzinfo=UTC)}
+        )
+        repo.upsert_summary(crowd, now=now)
+        repo.set_status(10, crowd.number, BillStatus.ANALYZED)
+
+    missing = repo.list_rcl_missing_consultation(limit=3)
+
+    assert [b.number for b in missing] == [number]
+
+
 def test_bills_awaiting_consultation_results(
     repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
 ) -> None:

@@ -461,6 +461,12 @@ class BillRepository(Protocol):
         max_attempts: int | None = None,
     ) -> list[Bill]: ...
 
+    def list_rcl_missing_consultation(self, *, limit: int) -> list[Bill]:
+        """Analysed or pending RCL rows whose consultation window was never read, oldest
+        `change_date` first: the longest-stale rows are the likeliest to have a window already
+        closed and untold."""
+        ...
+
     def count_by_status(self) -> dict[str, int]:
         """How many bills sit in each status, the empty statuses left out."""
         ...
