@@ -5,10 +5,20 @@ import datetime as dt
 from typing import Any
 
 from lexinform.errors import LlmUnavailableError
-from lexinform.models import BillStatus, OutcomeStatus, PublicationKind, RunMode, RunReport, Stage
+from lexinform.models import (
+    BillStatus,
+    OutcomeStatus,
+    Publication,
+    PublicationKind,
+    PublicationStatus,
+    RunMode,
+    RunReport,
+    Stage,
+)
 from lexinform.services.commands import FORCE_HINT
 from tests.fakes import FakeLlm, FakeTextExtractor, make_analysis
 from tests.harness import (
+    CHANNEL,
     COMMITTEE_STAGES,
     RCL,
     RCL_ID,
@@ -857,6 +867,33 @@ def test_status_counts_the_queues_the_posts_and_the_runs() -> None:
     assert snapshot.followed == 1
     assert [b.number for b in snapshot.waiting] == ["3100"]
     assert len(snapshot.runs) == 2 and snapshot.runs[0].published == 0
+
+
+def test_status_names_an_ambiguous_delivery_nothing_retries_on_its_own() -> None:
+    """`pending`/`unknown` posts are never auto-resent (BUGS.md #4): `/status` is what surfaces
+    them, since a run's own report only says what that one run did."""
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run()
+    stuck = Publication(
+        term=10,
+        number="3039",
+        kind=PublicationKind.HEARING_DEADLINE,
+        status=PublicationStatus.PENDING,
+        channel_id=CHANNEL,
+        created_at=w.clock.now(),
+    )
+    w.repo.create_publication(stuck)
+    w.command("/status")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    snapshot = outcome.snapshot
+    assert snapshot is not None
+    assert [(p.number, p.kind) for p in snapshot.stuck] == [
+        ("3039", PublicationKind.HEARING_DEADLINE)
+    ]
 
 
 def test_runs_answers_what_each_recorded_run_did() -> None:

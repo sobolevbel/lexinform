@@ -15,7 +15,7 @@ from urllib.parse import parse_qs, urlparse
 from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.models.analysis import TokenUsage
-from lexinform.models.bill import Bill
+from lexinform.models.bill import Bill, Publication
 from lexinform.models.digest import week_bounds
 from lexinform.models.enums import PRE_PRINT_PREFIX, RCL_PREFIX, WYKAZ_PREFIX, BillStatus
 from lexinform.models.rcl import normalize_wykaz_number
@@ -386,6 +386,7 @@ class StatusSnapshot(BaseModel):
     publications: dict[str, int] = Field(default_factory=dict)
     followed: int = 0
     waiting: tuple[Bill, ...] = ()
+    stuck: tuple[Publication, ...] = ()
     runs: tuple[RunReport, ...] = ()
     days: int = 0
 

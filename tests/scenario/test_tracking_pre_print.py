@@ -1,11 +1,18 @@
 """Bills followed before they have a print number (RPW entries from /bills)."""
 
 import datetime as dt
+from typing import Any
+
+import pytest
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import ApplicantType, BillStatus
+from lexinform.models import ApplicantType, BillStatus, PublicationStatus
 from tests.fakes import FakeTextExtractor
 from tests.harness import RPW, World, submission, submission_url
+
+
+def _fail_new_bill(*_args: Any, **_kwargs: Any) -> Any:
+    raise RuntimeError("telegram rejected the message")
 
 
 def test_pre_print_bill_is_analysed_from_its_own_text_and_published() -> None:
@@ -175,6 +182,37 @@ def test_withdrawn_pre_print_bill_is_announced_once() -> None:
     assert change.withdrawn and change.closure_detected
     assert "Проект отозван" in MessageFormatter("ru").status_update(bill, change).text
     assert again.updates == 0
+
+
+def test_a_withdrawal_waits_for_a_still_unsent_card_instead_of_replying_to_nothing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A card `failed` but still retriable is not `sent`: the withdrawal reply must wait for it
+    (BUGS.md #16) rather than reply to a card that was never posted. Only the card's own send is
+    made to fail here — `fail_publish` would also block the reply itself, under the same bill
+    number, and hide the bug it is meant to catch. `/bills` is read fresh every run, so the
+    withdrawal is not lost, only delayed to the run whose card finally sends."""
+    w = World()
+    w.gateway.submissions.append(submission())
+    monkeypatch.setattr(w.publisher, "publish_new_bill", _fail_new_bill)
+    w.run()
+    card = w.publication(RPW)
+    assert card is not None and card.status is PublicationStatus.FAILED
+
+    w.gateway.submissions[0] = submission(status="WITHDRAWN", withdrawn_date=dt.date(2026, 9, 5))
+    w.clock.advance(days=1)
+    report = w.run()
+
+    assert report.updates == 0
+    assert w.publisher.updates == []
+
+    monkeypatch.undo()
+    w.clock.advance(days=1)
+    again = w.run()
+
+    assert again.updates == 1
+    bill, change, _ = w.publisher.updates[0]
+    assert change.withdrawn and change.closure_detected
 
 
 def test_numbered_print_takes_consultation_dates_and_applicant_from_its_bills_entry() -> None:

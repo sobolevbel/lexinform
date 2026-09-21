@@ -10,7 +10,14 @@ listing tells when the Sejm publishes the opinions received in a consultation
 import logging
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import Bill, BillSubmission, SourceOutcome, StatusChange, submission_evidence
+from lexinform.models import (
+    Bill,
+    BillSubmission,
+    PublicationStatus,
+    SourceOutcome,
+    StatusChange,
+    submission_evidence,
+)
 from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.linking import Linker
@@ -176,6 +183,10 @@ class PrePrintReconciler:
         publish: bool,
         submission: BillSubmission | None = None,
     ) -> None:
+        """No card sent yet, no thread to reply under: `/bills` is read fresh next run (#16)."""
+        card = self._poster.card(bill)
+        if card is None or card.status is not PublicationStatus.SENT:
+            return
         with self._repo.atomic():
             if submission is not None:
                 self._repo.save_submission(bill.term, bill.number, submission)

@@ -111,8 +111,10 @@ so the bill is no more published afterwards than before and the channel's own ca
 The bot has to be able to post there, and a failure is answered as one.
 
 `/status`, `/runs` and `/cost` are what no single run report says. `/status` is the state
-between the runs: the queues as they stand, the posts that are stuck (`pending` left by a crash,
-`failed` still retrying), how many bills are followed. `/runs` is the row per run that
+between the runs: the queues as they stand, how many bills are followed, and by bill number and
+kind the posts stuck `pending`/`unknown` — nothing retries those on its own (BUGS.md #4), so this
+is what tells the operator one is there; `/republish` clears it for a card, and for any other
+kind of reply there is no command yet, only a look at the row. `/runs` is the row per run that
 `lexinform runs` prints — what each found, posted and cost — and `/cost` breaks the window's
 spend down by model, names the dearest run and the dearest analyses. All three read the database
 and nothing else: no request, no token, whatever the window.

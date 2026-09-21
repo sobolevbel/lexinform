@@ -652,6 +652,11 @@ class CommandService:
             publications=self._repo.count_publications(self._publishing.channel_id),
             followed=len(self._tracking.followed()) if self._tracking is not None else 0,
             waiting=tuple(self._repo.list_by_status(list(WAITING), limit=self._status_bills)),
+            stuck=tuple(
+                self._repo.list_stuck_publications(
+                    self._publishing.channel_id, limit=self._status_bills
+                )
+            ),
             runs=tuple(self._repo.list_runs(since=since)),
             days=self._status_days,
         )

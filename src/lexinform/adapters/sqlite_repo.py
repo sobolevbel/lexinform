@@ -675,6 +675,14 @@ class SqliteBillRepository:
         ).fetchall()
         return {str(status): int(count) for status, count in rows}
 
+    def list_stuck_publications(self, channel_id: str, *, limit: int) -> list[Publication]:
+        rows = self._conn.execute(
+            "SELECT * FROM publications WHERE channel_id = ? AND status IN ('pending', 'unknown')"
+            " ORDER BY created_at LIMIT ?",
+            (channel_id, limit),
+        ).fetchall()
+        return [self._row_to_publication(row) for row in rows]
+
     def search(self, text: str, *, limit: int) -> list[Bill]:
         """A title or number search for the operator, who remembers what a bill is about and
         not its number. SQLite folds case for ASCII only, so a Polish letter matches as it was

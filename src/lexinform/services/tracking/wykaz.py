@@ -86,6 +86,9 @@ class WykazLinker:
         )
         fresh, content_changed = self._reanalyse(bill, result)
         card = self._poster.card(plan)
+        # A reply waits for a sent card; unsent, the project falls to `_NO_CARD_YET` instead (#16).
+        inherits = card is not None and card.status is PublicationStatus.SENT
+        change = None
         with self._repo.atomic():
             self._repo.upsert_summary(summary, now=now)
             self._repo.save_rcl(plan.term, summary.number, project)
@@ -100,25 +103,27 @@ class WykazLinker:
             self._repo.link_bills(
                 plan.term, plan.number, summary.number, wykaz_number=wykaz_entry_number(plan.number)
             )
-            if card is not None and card.status is PublicationStatus.SENT:
+            if inherits:
+                assert card is not None
                 self._inherit_card(plan, summary.number, card)
-            change = self._poster.record_change(
-                StatusChange(
-                    term=plan.term,
-                    number=summary.number,
-                    old_fingerprint=plan.number,
-                    new_fingerprint=rcl_fingerprint(project),
-                    new_stages=list(rcl_stages(project)),
-                    content_changed=content_changed,
-                    detected_at=now,
+                change = self._poster.record_change(
+                    StatusChange(
+                        term=plan.term,
+                        number=summary.number,
+                        old_fingerprint=plan.number,
+                        new_fingerprint=rcl_fingerprint(project),
+                        new_stages=list(rcl_stages(project)),
+                        content_changed=content_changed,
+                        detected_at=now,
+                    )
                 )
-            )
-            if change is not None:
-                self._poster.prepare(fresh, change)
+                if change is not None:
+                    self._poster.prepare(fresh, change)
         result.linked += 1
         log.info("%s is now a project on RCL: %s", plan.number, summary.number)
         linked_plan = self._repo.get(plan.term, plan.number)
-        if publish and linked_plan is not None and card is not None:
+        if publish and inherits and linked_plan is not None:
+            assert card is not None
             self._poster.rerender_card(linked_plan, card)
         if change is None:
             return

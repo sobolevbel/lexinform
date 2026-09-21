@@ -2,7 +2,7 @@
 
 import datetime as dt
 
-from lexinform.models import BillStatus, PublicationKind
+from lexinform.models import BillStatus, PublicationKind, PublicationStatus
 from tests.fakes import make_analysis
 from tests.harness import RCL, WYKAZ, World, rcl_project, wykaz_entry
 
@@ -86,6 +86,28 @@ def test_a_plan_the_model_rejected_leaves_its_project_the_normal_path() -> None:
     assert report.published == 0  # the link happens in tracking, after this run's publishing
     assert w.run().published == 1
     assert w.publisher.new_bills[0][0].number == RCL
+
+
+def test_a_reply_waits_for_a_still_unsent_plan_card_instead_of_replying_to_nothing() -> None:
+    """A card `failed` but still retriable is not `sent`: with nothing to inherit, the project
+    is not told through a reply to it either (BUGS.md #16) — it falls to the normal publish path
+    instead, the way a plan the model rejected already does (`_NO_CARD_YET`)."""
+    w = World(fail_publish={WYKAZ})
+    w.add_wykaz_entry()
+    w.run()
+    plan_card = w.publication(WYKAZ)
+    assert plan_card is not None and plan_card.status is PublicationStatus.FAILED
+
+    w.add_rcl_project(rcl_project(wykaz_number="UD408"))
+    report = w.run()
+
+    assert report.linked == 1
+    assert w.publisher.updates == []
+    assert w.publication(RCL) is None  # no alias either: nothing to inherit yet
+    assert w.bill(WYKAZ).status is BillStatus.LINKED
+
+    assert w.run().published == 1  # a normal candidate now, per `_NO_CARD_YET`
+    assert w.publisher.new_bills[-1][0].number == RCL
 
 
 def test_a_project_under_a_number_we_do_not_follow_is_discovered_as_usual() -> None:

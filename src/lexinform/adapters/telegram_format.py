@@ -37,6 +37,7 @@ from lexinform.models import (
     OutcomeStatus,
     Phase,
     PrintInfo,
+    Publication,
     PublicationKind,
     RclProject,
     RunReport,
@@ -1462,7 +1463,18 @@ class MessageFormatter:
                 "⏳ <b>waiting</b>\n"
                 + "\n".join(f"• {self._bill_line(b)}" for b in snapshot.waiting)
             )
+        if snapshot.stuck:
+            lines.append(
+                "🛑 <b>stuck</b>\n" + "\n".join(f"• {self._stuck_line(p)}" for p in snapshot.stuck)
+            )
         return "\n".join(lines)
+
+    def _stuck_line(self, pub: Publication) -> str:
+        """A `pending`/`unknown` post nothing retries on its own (BUGS.md #4): its bill, kind and
+        age, and `/republish` where that command actually clears it — only a card's own."""
+        age = self.fmt_date(pub.created_at.date())
+        fix = f" → /republish {pub.number}" if pub.kind is PublicationKind.NEW_BILL else ""
+        return f"<b>{esc(pub.number)}</b> · {esc(pub.kind)} · {esc(pub.status)} since {age}{fix}"
 
     def _bill_facts(self, bill: Bill, *, full: bool) -> str:
         """The bill's title and link, its verdict, and (for /show) its status and last stage."""
