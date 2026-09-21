@@ -568,6 +568,47 @@ Invariants worth keeping:
 - **Stage fingerprint** (`_stage_key`) drives updates. Fields added to `Stage` for rendering
   (`voting`, `position`, `committee_name`, `proposal`) must stay *out* of the key, or every tracked
   bill posts a spurious update after deploy.
+- **First sight seeds a baseline and never replays history, and a decision needs positive
+  evidence.** Incident 2111 (run 79, 16 Sept 2026, `docs/incident-2111.md`): druk 2111 was adopted
+  at III reading 29 May, vetoed 17 July, and its committee filed a fresh recommendation on 16
+  September; discovery started from the original print (`SejmTextSource.locate` picked it while
+  `newer` picked the adopted text — the two disagreed), the stage fingerprint was seeded without a
+  closure baseline, and the event classifier read `passed and not veto_stood` as adoption — a
+  predicate that cannot tell "veto not yet voted on" from "no veto at all". The channel got a card,
+  a real agenda reply and a status reply falsely announcing the Sejm had adopted the act, with zero
+  new stages behind it. `models/evidence.py::DecisionEvidence` (`DecisionState`: absent/pending/
+  unknown/known) now normalises every ambiguous field into an explicit state instead of letting
+  `None`/`False` collapse "unknown", "not yet" and "finished" into one value —
+  `VetoOutcome`/`SenateOutcome`/`ReadingOutcome`/`TribunalOutcome` for the Sejm road,
+  `SourceOutcome` for RPW/RCL/wykaz (`submission_evidence`, `rcl_evidence`, `wykaz_evidence`, used
+  by `phases.py`'s `is_over`/`is_withdrawn` checks and by the RCL/wykaz/RPW trackers' own closure
+  detection) — and `terminal_stage` requires positive terminal evidence (a rejected reading, an
+  accepted Senate rejection, a sustained veto) before a Sejm process counts as over;
+  `next_phase=None` no longer doubles as "unknown, therefore closed". `models/observations.py::
+  ObservedProcess` is the immutable baseline (stages, closure date, `passed`, the analysed
+  document, its digest and revision, `seen_supplements`) that discovery may extend but never
+  rewrite; `models/planning.py::plan_bill` is a pure diff of the old baseline against a freshly
+  observed one, and **first sight (`previous is None`) seeds it with `new_stages=()`,
+  `closure_detected=False`, `decision_changed=False` by construction** — a bill first read already
+  deep in its process, or already closed, gets an introduction, not a backfill of every stage it
+  has ever had. `BillPlan.should_publish` adds `decision_changed` (from `decision_changes`, Senate-
+  position outcomes only, kept out of `_stage_key` the same way `position` itself is) as a second,
+  independent gate beside `fills_in_the_past`. Wired into the Sejm tracker (`tracking/service.py`),
+  the RCL tracker (`tracking/rcl.py`) and RCL/RPW→druk linking (`tracking/linking.py`, the "found
+  long after the Sejm was done with it" case its own docstring names); `services/analysis.py` calls
+  `save_observed_process` at first analysis too, so a bill never reaches tracking with a stage
+  fingerprint but no baseline to compare it against. Schema v24 adds `observed_closure_date`,
+  backfilled from `closure_date` for every row that already has a `stages_fingerprint`, so deploying
+  the fix created no retroactive closure announcements; v25 adds `observed_process_json` (the
+  baseline itself), `publications.delivery_json` (an immutable snapshot of the exact facts a retry
+  may use — never newer ones, never a later held stage), `status_changes.consultation_opened` and
+  `analysis_memo` (structured results keyed on bill identity, purpose, normalised text and context,
+  so a URL change alone never triggers a paid re-analysis; scanned inputs are excluded from this
+  memo on purpose — persistent scan/triage memoization is still open, `docs/roadmap.md`).
+  `docs/process-plans.md` is the design record; `tests/scenario/test_late_discovery.py` replays the
+  whole incident sequence cold at every stage and asserts it reads as an introduction, not a
+  duplicate or a false decision. The one thing no deploy repairs is a reply already sent before the
+  fix — 2111's own false reply was deleted by hand before this fix shipped, not by it.
 - **Migrations are append-only.** `dump()` writes `PRAGMA user_version`; `restore()` migrates old
   dumps. Test every migration against a v1 dump (see `test_sqlite_repo.py`).
 - **Outages never burn per-bill attempts.** `ServiceUnavailableError` subclasses abort a phase and
@@ -641,12 +682,19 @@ Invariants worth keeping:
   `action_rcl_window_closed` is unreachable while the window is unknown.
   `RclDiscoveryService.read_consultations` (phase "rcl consultations", between the text prefilter
   and the analysis) reads the one catalog that carries the letter
-  (`RclProjectReader.with_consultation`) for every RCL row waiting to be analysed and missing a
-  window: one page against a reading that costs a dollar, and the queue drains itself. **Reading
-  the letter late is not an event**: `consultation_opened` is news only while the window is open
-  (`models.consultation_open`), and `_results_due` says nothing when the stored window was None,
-  or the run that repairs an old row would announce «Открылись публичные консультации» over a
-  door that shut in June and the stanowiska of a consultation nobody here was watching.
+  (`RclProjectReader.with_consultation`) for every RCL row analysed or still waiting to be and
+  missing a window (`list_rcl_missing_consultation`): one page against a reading that costs a
+  dollar, and the queue drains itself. **Reading the letter late is not an event**:
+  `consultation_opened` is news only while the window is open (`models.consultation_open`), and
+  `_results_due` says nothing when the stored window was None, or the run that repairs an old row
+  would announce «Открылись публичные консультации» over a door that shut in June and the
+  stanowiska of a consultation nobody here was watching. Widening the query past
+  `ANALYSIS_PENDING` alone (16 Sept 2026, `abecc6a`) needed its own guard: `consultation_attempts`
+  caps retries at `CONSULTATION_READ_ATTEMPTS` (2), so a project that genuinely has no letter is
+  tried twice and then left alone rather than costing a request every run for ever — the "tried and
+  failed" mark this needed. The candidate pool is read `ORDER BY change_date ASC`
+  (`list_rcl_missing_consultation`, 21 Sept 2026): ordering by recency instead let newer rows keep
+  refilling the batch and starve an old stale one out of `limit` for good.
 - **The bill can be one file with its uzasadnienie, or an appendix to the letter.** `text_role`
   tests "uzasad" before anything else and drops what calls itself a `załącznik`, so "Projekt
   ustawy+uzasadnienie+OSR_podpisane przez DP.pdf" is read as the uzasadnienie and "Załącznik nr 1
@@ -840,7 +888,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS` tuple
 in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v23 as of Sept 2026). `migrate()` reads `user_version` and runs
+`SCHEMA_VERSION = len(MIGRATIONS)` (v25 as of Sept 2026). `migrate()` reads `user_version` and runs
 every later script inside its own transaction, stamping the new version at the end, so a failed
 script leaves the database at the previous version.
 
@@ -869,7 +917,14 @@ its numbers); v23 the weekly digest — one row per week and channel (`ux_pub_di
 `(channel_id, kind, ref)`, the draft in the technical channel and the published copy in the
 reader's) and `ix_pub_channel_sent` on `(channel_id, status, sent_at)`, which is the index the
 digest's "posts of this week" query actually takes: on `sent_at` alone SQLite preferred
-`ix_pub_status` and never touched it.
+`ix_pub_status` and never touched it; v24 `bills.observed_closure_date` (incident 2111's fix,
+backfilled from `closure_date` for every row that already has a `stages_fingerprint`, so the
+deploy itself announced no closure); v25 `bills.observed_process_json` (the immutable baseline
+`ObservedProcess` — stages, closure, `passed`, the analysed document and its revision, seen
+supplements — that first sight seeds and later runs only extend), `publications.delivery_json`
+(the exact facts a retry may use, frozen at send time), `status_changes.consultation_opened` and
+`analysis_memo` (memoized model results keyed on bill identity, purpose, normalised text and
+context). See the "First sight seeds a baseline" invariant above.
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) → `db
 restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing `PRAGMA

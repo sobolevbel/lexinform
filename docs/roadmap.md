@@ -18,9 +18,15 @@ and are in git.
   RPW, wykaz, linking, agendas and term rollover now commit their observation together with a
   delivery plan. Cards, status updates, agendas and reminders retry from saved facts and
   distinguish queued delivery from editorial holds. See
-  [the architecture and compatibility boundaries](process-plans.md). Remaining work is to unify
-  readings, tribunal and other source decisions, extend the independent expected-results corpus,
-  and add persistent scan and triage memoization.
+  [the architecture and compatibility boundaries](process-plans.md), now recorded as a CLAUDE.md
+  invariant ("First sight seeds a baseline…"). The false reply incident 2111 itself sent was
+  deleted by hand before this fix shipped. **Verified done, 21 Sept 2026**: reading and tribunal
+  decisions are unified into the same evidence (`reading_evidence`/`tribunal_evidence`, wired into
+  both `models/events.py` and `models/phases.py`); the RCL consultation-letter-read-late gap (was
+  listed under "Later" here) is fixed too — `abecc6a` (16 Sept) and `e749a13` (21 Sept), now
+  documented in CLAUDE.md's `read_consultations` invariant. Remaining work is to extend the
+  independent expected-results corpus and add persistent
+  scan and triage memoization (`analysis_memo` excludes scanned inputs by design).
 
 - **The weekly digest — built on 2026-09-15**, as designed here and with one change: the monthly
   figures count entries *taken in* and not a phase's `seen`, because the register is downloaded
@@ -72,13 +78,6 @@ whether that is worth its Sejm re-scan is the open question.
 - **Two counters mislead the operator**: `lexinform runs` prints only `discovered` in its `disc`
   column, so run 61 — the largest RCL haul so far, 12 projects — reads as a zero; and `/refresh`
   answers "card refreshed" while `RunReport.cards_refreshed` stays 0.
-- **The consultation letter is read late for a row that is already `analyzed`, and never.**
-  `RclDiscoveryService.read_consultations` covers `ANALYSIS_PENDING` rows only, so a project whose
-  letter could not be fetched in that phase (`rcl_discovery.py`'s `except Exception: continue`)
-  goes on to the analysis and is carded with no deadline, no address and the wording of an open
-  window — for good. All four cards of 15 Sept 2026 went out that way and were repaired by hand
-  with `/refresh`. Widening the query is not the fix on its own: a project that genuinely has no
-  letter would then be fetched every run for ever, so the repair needs a "tried and failed" mark.
 - **A card published before `PROMPT_VERSION 2026-09-v7`** keeps the analysis it was published with
   (decided 2026-09-08). Only `/republish` changes that, one bill at a time.
 - **Druki 1929/1933 were carded separately** before the joint rule; merging them retroactively is
