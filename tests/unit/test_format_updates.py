@@ -211,6 +211,21 @@ def test_voting_stage_shows_totals_pdf_link_and_club_breakdown(
     assert_telegram_html(with_clubs)
 
 
+def test_a_voting_node_with_no_decided_parent_is_not_a_bare_update(
+    process_1962: ProcessDetail,
+) -> None:
+    """`Voting` is always a child of a `SejmReading` or `PresidentMotionConsideration` whose own
+    decision already names the post (measured: 0 of 6,260 term-10 stage transitions ever have a
+    bare `Voting` with no such parent alongside it), but `_EVENT_BY_STAGE_TYPE` had no entry of
+    its own for it — a defensive gap, not one this corpus has ever hit."""
+    bill = bill_of(process_1962)
+    voting = Stage(stage_type="Voting", stage_name="Głosowanie")
+
+    text = MessageFormatter("ru").status_update(bill, change_of("1962", [voting])).text
+
+    assert "🗳 <b>Состоялось голосование — druk nr 1962</b>" in text
+
+
 def test_impact_assessment_tag_actually_renders(process_1962: ProcessDetail) -> None:
     """`event_keys` gaining an `impact_assessment` key is only half the fix: the tag line filters
     on `if key in lb.event_tags`, so a key with no RU/EN label there is dropped in silence rather

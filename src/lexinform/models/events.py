@@ -162,15 +162,25 @@ def _is_first_update_of_successor(change: StatusChange, bill: Bill) -> bool:
 
 
 def _newest_stage_event(stages: list[Stage]) -> str | None:
-    """The newest stage names the post; referrals to several committees are told as a group."""
+    """The newest stage names the post; referrals to several committees are told as a group.
+
+    `Voting` is always a child of a `SejmReading` or a `PresidentMotionConsideration` that also
+    moved and already names the post more specifically ("Сейм принял закон", not "Состоялось
+    голосование") — so it is the last resort, checked once everything else in the change has
+    been asked, not the newest node by position.
+    """
     referrals = sum(1 for st in stages if st.stage_type == "Referral")
+    fallback: str | None = None
     for stage in reversed(stages):
+        if stage.stage_type == "Voting":
+            fallback = fallback or _stage_event(stage)
+            continue
         key = _stage_event(stage)
         if key == "referral" and referrals > 1:
             return "referrals"
         if key is not None:
             return key
-    return None
+    return fallback
 
 
 def _closure_event_of(change: StatusChange, bill: Bill) -> str:
@@ -219,6 +229,11 @@ _EVENT_BY_STAGE_TYPE = {
     "Veto": "veto",
     "PublicHearing": "hearing",
     "Start": "start",
+    # Always a child of a `SejmReading` or a `PresidentMotionConsideration` whose own decision
+    # already names the post (both are in this table or handled above); kept as a fallback for
+    # the shape it never happens to have in real data — a vote with no decided parent alongside
+    # it — so it says something true instead of the bare "Обновление".
+    "Voting": "voting",
     # Same key as the digest uses: the stage arrives even when the document behind it could not
     # be read, and then `supplement_event` has nothing to name the post with.
     "GovermentPosition": "government_position",
