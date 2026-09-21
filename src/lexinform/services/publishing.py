@@ -478,6 +478,8 @@ class PublishingService:
     def _safe_print(self, bill: Bill) -> PrintInfo | None:
         try:
             return self._gateway.get_print(bill.term, bill.number)
+        except ServiceUnavailableError:
+            raise
         except Exception as exc:
             log.warning("print %s unavailable, publishing without PDF: %s", bill.number, exc)
             return None

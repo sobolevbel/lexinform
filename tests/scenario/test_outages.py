@@ -82,6 +82,25 @@ def test_sejm_api_down_while_completing_the_card_leaves_no_pending_row() -> None
     assert w.run().published == 1
 
 
+def test_sejm_api_down_fetching_the_print_stops_publishing_instead_of_posting_without_a_pdf() -> (
+    None
+):
+    """`_safe_print` used to swallow every exception, `ServiceUnavailableError` included, so an
+    outage while fetching the print's files was indistinguishable from a genuinely missing print
+    (`main_pdf` absent) and the card went out anyway, silently missing its document links."""
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run(max_publish=0)  # discovered and analysed, the card still to be sent
+    w.gateway.outages.add("get_print")
+
+    report = w.run()
+
+    assert any(e.startswith("publishing: Sejm API unavailable") for e in report.errors)
+    assert w.publication("3039") is None  # no pending row, and no card sent without its PDF
+    w.gateway.outages.clear()
+    assert w.run().published == 1
+
+
 def test_telegram_outages_do_not_use_up_the_retries_of_a_post() -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
