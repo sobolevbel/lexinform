@@ -68,6 +68,14 @@ def parse_register(text: str) -> tuple[WykazEntry, ...]:
     September 2026, two rows differing only in their `Podgląd` URL); the later publication wins,
     so that one number always names one entry.
     """
+    # A row silently dropped by `_entry` (a bad date, a blank number) says the *row* was
+    # unreadable; a response cut off mid-download says nothing was wrong with any row, because
+    # the missing rows were never in `text` to drop — the reader only ever sees the 60% of the
+    # file that arrived, parses that part cleanly, and every entry past the cut is fabricated as
+    # `Wycofany` by `wykaz.py::_removed`. A complete CSV, real or fixture, ends its last quoted
+    # field and its line; one broken off mid-field or mid-line does not.
+    if text and not text.endswith(("\n", "\r")):
+        raise WykazPageError("the register looks cut short: it does not end in a full row")
     reader = csv.DictReader(io.StringIO(text), delimiter=";")
     fields = _map_columns(reader.fieldnames or [])
     entries: dict[str, WykazEntry] = {}

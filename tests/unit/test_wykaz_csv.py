@@ -83,6 +83,20 @@ def test_a_register_with_no_readable_row_is_an_error() -> None:
         parse_register(header + "\n")
 
 
+def test_a_response_cut_off_mid_download_is_an_error_not_a_smaller_register() -> None:
+    """`wykaz.py::_removed` reads absence from the parsed register as the government dropping the
+    project; a response cut off mid-download makes rows past the cut absent too, but they were
+    never unreadable — they were never in `text` to read. Measured on the real 1,453-row register
+    (21 Sept 2026) truncated to 60% of its bytes: it still parses without error, 915 rows survive,
+    and 143 of the 296 live open bill-kind entries would be fabricated as `Wycofany`."""
+    text = _csv()
+    cut = text[: int(len(text) * 0.6)]
+    assert not cut.endswith(("\n", "\r"))  # the cut really does land inside a row
+
+    with pytest.raises(WykazPageError, match="cut short"):
+        parse_register(cut)
+
+
 def test_a_paragraph_longer_than_the_csv_modules_own_limit_is_still_read() -> None:
     """`Istota rozwiązań` is free prose; the csv module refuses a field over 128 KB."""
     huge = _csv().replace("Polska przekształciła", "X" * 200_000 + " Polska przekształciła", 1)
