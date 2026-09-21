@@ -15,7 +15,7 @@ from lexinform.models import (
 from lexinform.services.digest import DigestService
 from lexinform.services.terms import TermResolver
 from lexinform.settings import Settings
-from tests.harness import CHANNEL, COMMITTEE_STAGES, SUPPORT_URL, World
+from tests.harness import CHANNEL, COMMITTEE_STAGES, SUPPORT_URL, World, submission
 
 TITLE = "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach"
 # The World's clock starts on Monday 2026-09-07; the digest's day is the Sunday that ends it.
@@ -157,6 +157,31 @@ def test_the_digest_names_an_update_by_what_it_said() -> None:
     (draft,) = _drafts(w)
     assert "Что изменилось" in draft
     assert "Направлен в комиссию" in draft
+
+
+def test_an_inherited_card_appears_once_in_the_digest_not_under_two_numbers() -> None:
+    """`Linker._inherit_card` aliases a `new_bill` row onto the same Telegram message the
+    pre-print entry's card already used — one post, not two — so a project that gets its druk the
+    same week its card was sent must not be listed twice under two numbers, the RPW entry and the
+    druk it became. The status update naming the new druk number and the still-open consultation
+    both legitimately mention "druk 3100" too, in their own sections, so the card count is checked
+    directly on `Digest.cards` rather than by scraping the rendered text for the number."""
+    w = World()
+    w.gateway.submissions.append(submission())
+    w.run()
+    w.gateway.submissions[0] = submission(print_number="3100")
+    w.add_bill("3100", "Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony")
+    w.clock.advance(days=1)
+    w.run()
+
+    ref = iso_week(w.clock.now().date())
+    service = w.container.digest_service(dry_run=False)
+    assert service is not None
+    digest = service.build(ref)
+
+    assert [c.number for c in digest.cards] == [
+        "3100"
+    ]  # not ["3100", RPW/...] or [RPW/..., "3100"]
 
 
 def test_the_first_digest_of_a_month_carries_its_figures_and_the_ask() -> None:

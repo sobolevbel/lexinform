@@ -49,6 +49,25 @@ SUNDAY = 6
 """The day an ISO week ends on, which is not the same question as the day a digest goes out."""
 
 
+def _add_or_replace(entries: list[DigestEntry], slots: dict[int, int], entry: DigestEntry) -> None:
+    """A `new_bill` row and the alias a later link creates for it (`Linker._inherit_card` and its
+    two siblings) share one Telegram `message_id` — one post, not two — so a project that got its
+    druk the same week its card was sent must not appear twice under two numbers. `message_id` is
+    `None` only for a row that was never actually sent, which the digest's own `sent`-only query
+    should not produce; treated as never colliding, so such a row is not silently dropped either.
+    The later post wins: its bill row is the one still current, the one aliased away is not.
+    """
+    if entry.message_id is None:
+        entries.append(entry)
+        return
+    slot = slots.get(entry.message_id)
+    if slot is None:
+        slots[entry.message_id] = len(entries)
+        entries.append(entry)
+    else:
+        entries[slot] = entry
+
+
 def _wykaz_number(bill: Bill) -> str | None:
     """The number a government row is known by, the same one its card's header uses."""
     if bill.wykaz is not None:
@@ -169,14 +188,16 @@ class DigestService:
         bills: dict[tuple[int, str], Bill] = {}
         cards: list[DigestEntry] = []
         updates: list[DigestEntry] = []
+        card_slots: dict[int, int] = {}  # message_id -> index in `cards`
+        update_slots: dict[int, int] = {}
         for post in posts:
             entry = self._entry(post, bills)
             if entry is None:
                 continue
             if post.kind in CARD_KINDS:
-                cards.append(entry)
+                _add_or_replace(cards, card_slots, entry)
             elif post.kind in UPDATE_KINDS:
-                updates.append(entry)
+                _add_or_replace(updates, update_slots, entry)
         consultations, sittings = self._ahead()
         return Digest(
             ref=ref,
