@@ -15,7 +15,10 @@ cp .env.example .env          # keys are only needed for `analyze`, `preview --t
 ```
 
 `.env` is untracked and holds real secrets: never paste its values anywhere. `ANTHROPIC_API_KEY`
-is read without a prefix (the SDK wants it that way); everything else is `LEXINFORM_*`.
+and `OPENAI_API_KEY` are read without a prefix (each SDK wants its own that way); everything else
+is `LEXINFORM_*`. The full per-bill analysis runs on GPT-5.1 by default (`LEXINFORM_LLM_ANALYSIS_
+MODEL`); triage, amendments, filed-document digests and joint comparisons stay on Claude
+(`LEXINFORM_LLM_MODEL`) — both keys are needed for a real `run`.
 
 ## The check before every commit
 
@@ -242,7 +245,8 @@ history of the `state` branch.
 ## Deploy and operations
 
 - `.github/workflows/daily.yml` runs the bot twice a day on weekdays, once on weekend days, and pushes the dump to `state`.
-  Secrets: `ANTHROPIC_API_KEY`, `LEXINFORM_TELEGRAM_BOT_TOKEN`, `LEXINFORM_TELEGRAM_CHANNEL_ID`,
+  Secrets: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `LEXINFORM_TELEGRAM_BOT_TOKEN`,
+  `LEXINFORM_TELEGRAM_CHANNEL_ID`,
   optionally `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` and `LEXINFORM_RCL_PROXY_URL` — without the
   proxy the RCL phase fails on every scheduled run, because RCL drops connections from
   GitHub-hosted runners (`docs/rcl-proxy.md`). Do not protect the `state` branch.
