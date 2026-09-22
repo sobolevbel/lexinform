@@ -3,6 +3,11 @@
 # make sure its timer is enabled (it manages its own schedule — nothing here restarts it on every
 # deploy, only on a changed unit file, since a oneshot mid-run is harmless but pointless to force).
 #
+# A unit this script learns about reaches the server one deploy late: bash is already running the
+# previous version of this file when `git reset` brings the new one in (verified 2026-09-23, when
+# the poller's units sat in the checkout while /etc had only the relay's). The next deploy fixes
+# it by itself; `ssh mikrus /opt/lexinform/deploy/update.sh` does it now.
+#
 # Run by `.github/workflows/deploy-relay.yml` after a green CI on main, through an SSH key that
 # is bound to this script (`command=` in authorized_keys: the key can do nothing else), or by
 # hand: `ssh mikrus /opt/lexinform/deploy/update.sh`. The workflow passes the commit CI just
