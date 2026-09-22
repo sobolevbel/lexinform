@@ -10,7 +10,7 @@ accident fails here instead of calling api.sejm.gov.pl from the suite.
 import json
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
+from lexinform.adapters.github_inbox import GitHubError
 from lexinform.adapters.sqlite_repo import SCHEMA_VERSION, SqliteBillRepository
 from lexinform.cli import app
 from lexinform.models import (
@@ -366,9 +367,9 @@ def test_poll_batches_needs_a_github_repo_and_token(db: Path, api: str) -> None:
     assert "no GitHub repo/token" in result.output
 
 
-def test_poll_batches_asks_github_to_collect_a_finished_batch(
-    db: Path, api: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def _fake_finished_anthropic_batch(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An Anthropic whose `batches.list()` answers with one batch that has ended."""
+
     class _FakeBatch:
         processing_status = "ended"
 
@@ -384,6 +385,19 @@ def test_poll_batches_asks_github_to_collect_a_finished_batch(
             self.messages = _FakeMessages()
 
     monkeypatch.setattr("lexinform.cli.anthropic.Anthropic", _FakeAnthropic)
+
+
+def _raise(error: Exception) -> Callable[..., None]:
+    def fail(*_args: object, **_kwargs: object) -> None:
+        raise error
+
+    return fail
+
+
+def test_poll_batches_asks_github_to_collect_a_finished_batch(
+    db: Path, api: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _fake_finished_anthropic_batch(monkeypatch)
     dispatched: list[str] = []
     monkeypatch.setattr(
         "lexinform.cli.GitHubInboxWriter.dispatch",
@@ -401,6 +415,31 @@ def test_poll_batches_asks_github_to_collect_a_finished_batch(
     assert result.exit_code == 0, result.output
     assert "asked GitHub to collect" in result.output
     assert dispatched == ["batch-ready"]
+
+
+def test_poll_batches_says_so_when_github_refuses_instead_of_crashing(
+    db: Path, api: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The timer fires this every 20 minutes; a GitHub that refuses (a rotated token, a network
+    of the moment) must leave a line in the journal, not a traceback. The batch waits either
+    way: the next scheduled run collects it."""
+    _fake_finished_anthropic_batch(monkeypatch)
+    monkeypatch.setattr(
+        "lexinform.cli.GitHubInboxWriter.dispatch",
+        _raise(GitHubError("dispatch: HTTP 401: bad credentials")),
+    )
+    env = {
+        **_env(db, api=api),
+        "LEXINFORM_LLM_BATCH_ENABLED": "true",
+        "LEXINFORM_GITHUB_REPO": "owner/repo",
+        "LEXINFORM_GITHUB_TOKEN": "TOKEN",
+    }
+
+    result = runner.invoke(app, ["poll-batches"], env=env)
+
+    assert result.exit_code == 1
+    assert "could not ask GitHub" in result.output and "HTTP 401" in result.output
+    assert result.exception is None or isinstance(result.exception, SystemExit)
 
 
 def test_reprefilter_has_nothing_to_do_when_no_bill_was_skipped(db: Path, api: str) -> None:

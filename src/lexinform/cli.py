@@ -12,7 +12,11 @@ import openai
 import typer
 
 from lexinform import __version__
-from lexinform.adapters.github_inbox import GitHubInboxWriter
+from lexinform.adapters.github_inbox import (
+    GitHubError,
+    GitHubInboxWriter,
+    GitHubUnavailableError,
+)
 from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.concurrency import fan_out
@@ -595,6 +599,11 @@ def poll_batches() -> None:
     writer = GitHubInboxWriter(settings.github_repo, settings.github_token)
     try:
         writer.dispatch("batch-ready")
+    except (GitHubError, GitHubUnavailableError) as exc:
+        # A live batch waits in `llm_batches` regardless; the next scheduled run collects it, and
+        # the timer tries again in 20 minutes — a crash here would only be noise in the journal.
+        typer.echo(f"could not ask GitHub: {exc}", err=True)
+        raise typer.Exit(code=1) from None
     finally:
         writer.close()
     typer.echo("asked GitHub to collect")
