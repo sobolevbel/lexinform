@@ -207,8 +207,8 @@ class TextExtractor(Protocol):
 
 
 class AnalysisBackend(Protocol):
-    """The full per-bill analysis alone: the half of `LlmAnalyzer` that can be its own model,
-    priced and prompted apart from everything else (`llm_hybrid.py`)."""
+    """The full per-bill analysis, and the free local estimate that guards its cost — the two
+    always travel together because the guard has to price the same model it is guarding."""
 
     def analyze(self, ctx: BillContext) -> AnalysisRecord: ...
 
@@ -220,31 +220,37 @@ class AnalysisBackend(Protocol):
         ...
 
 
-class SecondaryBackend(Protocol):
-    """Triage, amendments, filed-document digests and joint comparisons: everything a full
-    `LlmAnalyzer` does besides the analysis itself."""
-
-    def triage(self, ctx: TriageContext) -> TriageRecord: ...
-
+class AmendmentsBackend(Protocol):
     def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:
         """What a set of amendments (Senate, "-A" report) changes in the bill as described."""
         ...
 
+
+class SupplementBackend(Protocol):
     def digest_supplement(self, ctx: SupplementContext) -> SupplementRecord:
         """What a document filed to a print (the government's position, the OSR, an opinion)
         says about the bill as described."""
         ...
 
+
+class JointBackend(Protocol):
     def compare_joint(self, ctx: JointContext) -> JointRecord:
         """How one print of a jointly considered group differs from the others, read off the
         channel's own description of each."""
         ...
 
 
-class LlmAnalyzer(AnalysisBackend, SecondaryBackend, Protocol):
-    """Everything a bill's analysis can ask a model for. `llm_hybrid.HybridAnalyzer` is the only
-    implementation that is not one client doing all of it — see `AnalysisBackend` /
-    `SecondaryBackend` for the two halves it is built from."""
+class TriageBackend(Protocol):
+    def triage(self, ctx: TriageContext) -> TriageRecord: ...
+
+
+class LlmAnalyzer(
+    AnalysisBackend, AmendmentsBackend, SupplementBackend, JointBackend, TriageBackend, Protocol
+):
+    """Everything a bill's analysis can ask a model for. Each of the five capabilities above can
+    be its own model, chosen independently in settings (`llm_analysis_model`,
+    `llm_amendments_model`, `llm_supplement_model`, `llm_joint_model`, `llm_triage_model`) —
+    `llm_hybrid.HybridAnalyzer` is the router that makes five backends answer as one port."""
 
 
 class PublishResult(Protocol):

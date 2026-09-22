@@ -11,8 +11,16 @@ import pytest
 
 from lexinform.adapters.llm_openai import LlmError, LlmFatalError, OpenAiAnalyzer
 from lexinform.adapters.llm_prompts import PROMPT_VERSION, gpt51_system_prompt
-from lexinform.models import ApplicantType, BillContext, ScannedDocument
-from tests.fakes import make_analysis
+from lexinform.models import (
+    AmendmentsContext,
+    ApplicantType,
+    BillContext,
+    JointBillDescription,
+    JointContext,
+    ScannedDocument,
+    SupplementContext,
+)
+from tests.fakes import make_amendments, make_analysis, make_comparison, make_digest
 
 
 @dataclass
@@ -213,3 +221,68 @@ def test_count_input_tokens_is_none_for_a_scan() -> None:
     scan = ScannedDocument(data="JVBERi0=", pages=1, of_pages=1, sha256="abc")
 
     assert analyzer.count_input_tokens(_ctx(text="", text_source="scan", scan=scan)) is None
+
+
+def test_amendments_request_uses_the_amendments_prompt() -> None:
+    client = _client(_response(make_amendments().model_dump_json(), input_tokens=800))
+    ctx = AmendmentsContext(
+        number="3039",
+        title="Projekt",
+        source_kind="senate_amendments",
+        text="Poprawka 1. W art. 5 ...",
+        truncated=False,
+        previous_summary="Проект меняет правила.",
+        previous_key_changes=["Изменение 1"],
+    )
+
+    record = _analyzer(client, output_language="ru").summarize_amendments(ctx)
+
+    call = client.responses.calls[0]
+    assert call["text"]["format"]["name"] == "amendments"
+    assert "amendments" in call["input"][0]["content"]
+    prompt = _prompt_of(call)
+    assert "uchwała Senatu z poprawkami" in prompt and "Проект меняет правила." in prompt
+    assert record.source_kind == "senate_amendments" and record.input_tokens == 800
+
+
+def test_supplement_request_carries_a_scan_when_the_filing_is_one() -> None:
+    client = _client(_response(make_digest().model_dump_json()))
+    scan = ScannedDocument(data="JVBERi0=", pages=2, of_pages=2, sha256="abc")
+    ctx = SupplementContext(
+        number="3039",
+        title="Projekt",
+        document_title="Stanowisko Rządu",
+        source_kind="government_position",
+        text="",
+        truncated=False,
+        scan=scan,
+        previous_summary="Опис.",
+    )
+
+    record = _analyzer(client).digest_supplement(ctx)
+
+    assert _files_of(client.responses.calls[0]) != []
+    assert record.title == "Stanowisko Rządu"
+
+
+def test_joint_comparison_request_compares_the_descriptions_not_the_texts() -> None:
+    client = _client(_response(make_comparison().model_dump_json()))
+    ctx = JointContext(
+        subject=JointBillDescription(
+            number="1933", title="A", applicant_type=ApplicantType.DEPUTIES, summary="Опис A."
+        ),
+        others=[
+            JointBillDescription(
+                number="1929",
+                title="B",
+                applicant_type=ApplicantType.GOVERNMENT,
+                summary="Опис B.",
+            )
+        ],
+    )
+
+    record = _analyzer(client).compare_joint(ctx)
+
+    prompt = _prompt_of(client.responses.calls[0])
+    assert "druk nr 1933" in prompt.lower() and "druk nr 1929" in prompt.lower()
+    assert record.compared_with == ["1929"]

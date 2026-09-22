@@ -76,18 +76,17 @@ class Settings(BaseSettings):
         description="Read under its plain name, without the LEXINFORM_ prefix, so that one"
         " variable serves both this app and the anthropic SDK.",
     )
-    llm_model: str = Field(
-        default="claude-opus-5",
-        description="Claude model for amendments, filed-document digests and joint-print"
-        " comparisons — the full per-bill analysis has its own `llm_analysis_model`.",
+    llm_effort: Effort = Field(
+        default="medium", description="Claude's own thinking effort, whichever call reaches it."
     )
-    llm_effort: Effort = "medium"
-    llm_max_tokens: int = 4000
+    llm_max_tokens: int = Field(
+        default=4000, description="Claude's own output cap, whichever call reaches it."
+    )
     llm_concurrency: int = Field(default=2, ge=1, description="Bills analysed at the same time.")
     llm_triage_model: str = Field(
         default="claude-sonnet-5",
         description="Cheap first pass on excerpts before the full analysis of a long print;"
-        " empty disables it.",
+        " empty disables it. Always Claude — the gate stays cheap and fast on purpose.",
     )
     openai_api_key: str | None = Field(
         default=None,
@@ -95,18 +94,32 @@ class Settings(BaseSettings):
         description="Read under its plain name, without the LEXINFORM_ prefix, so that one"
         " variable serves both this app and the openai SDK.",
     )
+    llm_openai_effort: OpenAiEffort = Field(
+        default="medium", description="GPT-5.1's own reasoning effort, whichever call reaches it."
+    )
+    llm_openai_max_tokens: int = Field(
+        default=8000,
+        description="GPT-5.1's own output cap, whichever call reaches it — it bills reasoning"
+        " tokens against this too, unlike Claude's adaptive thinking, so it sits above"
+        " `llm_max_tokens`.",
+    )
     llm_analysis_model: str = Field(
         default="gpt-5.1",
-        description="Model for the full per-bill analysis (`analyze()`), separate from"
-        " `llm_model`: measured against it on 26 real prints and one scan before the switch"
-        " (docs/llm-cost.md). A `claude-` name builds a second Anthropic client for it, with"
-        " Claude's own analysis prompt, instead of OpenAI's.",
+        description="Model for the full per-bill analysis (`analyze()`). Measured against Claude"
+        " on 26 real prints and one scan before the switch (docs/llm-cost.md). A `claude-` name"
+        " routes it back to a Claude client with Claude's own analysis prompt.",
     )
-    llm_analysis_effort: OpenAiEffort = "medium"
-    llm_analysis_max_tokens: int = Field(
-        default=8000,
-        description="GPT-5.1 bills its reasoning tokens against this cap too, unlike Claude's"
-        " adaptive thinking, so it sits above `llm_max_tokens`.",
+    llm_amendments_model: str = Field(
+        default="gpt-5.1", description="Model that summarises Senate/committee amendments."
+    )
+    llm_supplement_model: str = Field(
+        default="gpt-5.1",
+        description="Model that digests a document filed to a print (government position, OSR,"
+        " an opinion).",
+    )
+    llm_joint_model: str = Field(
+        default="gpt-5.1",
+        description="Model that compares one print of a jointly considered group with the others.",
     )
     triage_min_chars: int = Field(
         default=20_000, description="Shorter texts go straight to the full analysis."

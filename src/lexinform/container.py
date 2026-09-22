@@ -37,7 +37,6 @@ from lexinform.adapters.wykaz_csv import WykazClient
 from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
 from lexinform.ports import (
-    AnalysisBackend,
     BillRepository,
     Clock,
     CommandInbox,
@@ -208,38 +207,44 @@ class Container:
             lambda: WykazDiscoveryService(wykaz, self.repo, self.prefilter, self.clock),
         )
 
-    def analyzer(self) -> LlmAnalyzer:
-        if self.llm is not None:
-            return self.llm
-        secondary = AnthropicAnalyzer(
-            anthropic.Anthropic(api_key=self.settings.anthropic_api_key),
-            model=self.settings.llm_model,
-            triage_model=self.settings.llm_triage_model or None,
-            output_language=self.settings.output_language,
-            effort=self.settings.llm_effort,
-            max_tokens=self.settings.llm_max_tokens,
-            clock=self.clock.now,
-        )
-        analysis: AnalysisBackend
-        if self.settings.llm_analysis_model.startswith("claude-"):
-            analysis = AnthropicAnalyzer(
+    def _llm_backend(self, model: str) -> AnthropicAnalyzer | OpenAiAnalyzer:
+        """One of the four non-triage capabilities, built for whichever model its own setting
+        names. A `claude-` name is the one-setting way back to Claude for that capability alone —
+        every other capability keeps whatever it was already routed to."""
+        if model.startswith("claude-"):
+            return AnthropicAnalyzer(
                 anthropic.Anthropic(api_key=self.settings.anthropic_api_key),
-                model=self.settings.llm_analysis_model,
+                model=model,
                 output_language=self.settings.output_language,
                 effort=self.settings.llm_effort,
                 max_tokens=self.settings.llm_max_tokens,
                 clock=self.clock.now,
             )
-        else:
-            analysis = OpenAiAnalyzer(
-                lambda: openai.OpenAI(api_key=self.settings.openai_api_key),
-                model=self.settings.llm_analysis_model,
-                output_language=self.settings.output_language,
-                effort=self.settings.llm_analysis_effort,
-                max_output_tokens=self.settings.llm_analysis_max_tokens,
-                clock=self.clock.now,
-            )
-        return HybridAnalyzer(analysis, secondary)
+        return OpenAiAnalyzer(
+            lambda: openai.OpenAI(api_key=self.settings.openai_api_key),
+            model=model,
+            output_language=self.settings.output_language,
+            effort=self.settings.llm_openai_effort,
+            max_output_tokens=self.settings.llm_openai_max_tokens,
+            clock=self.clock.now,
+        )
+
+    def analyzer(self) -> LlmAnalyzer:
+        if self.llm is not None:
+            return self.llm
+        triage = AnthropicAnalyzer(
+            anthropic.Anthropic(api_key=self.settings.anthropic_api_key),
+            triage_model=self.settings.llm_triage_model or None,
+            output_language=self.settings.output_language,
+            clock=self.clock.now,
+        )
+        return HybridAnalyzer(
+            analysis=self._llm_backend(self.settings.llm_analysis_model),
+            amendments=self._llm_backend(self.settings.llm_amendments_model),
+            supplement=self._llm_backend(self.settings.llm_supplement_model),
+            joint=self._llm_backend(self.settings.llm_joint_model),
+            triage=triage,
+        )
 
     def analysis_service(self) -> AnalysisService:
         return self._once("analysis", self._build_analysis_service)

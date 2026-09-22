@@ -1,16 +1,17 @@
-"""LlmAnalyzer's full analysis on the OpenAI SDK (Responses API, structured outputs).
+"""LlmAnalyzer's per-bill work on the OpenAI SDK (Responses API, structured outputs).
 
-Only `analyze` and `count_input_tokens`: everything else (triage, amendments, filed-document
-digests, joint comparisons) stays on Claude, `llm_hybrid.py` routes between the two, and this
-class never sees those calls. Measured against Claude Opus 5 on 26 real prints and one scan
-before the switch (docs/llm-cost.md): 96% agreement on relevance, zero missed bills, ~10x
-cheaper.
+Everything but `triage`: the full analysis, amendments, filed-document digests and joint
+comparisons — `count_input_tokens` too, since it exists only to guard `analyze`'s cost. Which of
+these actually run here, as against Claude, is `llm_hybrid.py`'s decision, made per call kind
+(`llm_*_model` in settings): this class only has to answer honestly for whichever it is asked.
+The full analysis was measured against Claude Opus 5 on 26 real prints and one scan before the
+switch (docs/llm-cost.md): 96% agreement on relevance, zero missed bills, ~10x cheaper.
 """
 
 import logging
 from collections.abc import Callable
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, TypeVar
 
 import openai
 import tiktoken
@@ -20,13 +21,40 @@ from openai.types.responses.response_input_message_content_list_param import (
 )
 from openai.types.responses.response_input_param import ResponseInputParam
 from openai.types.responses.response_input_text_param import ResponseInputTextParam
+from pydantic import BaseModel
 
-from lexinform.adapters.llm_prompts import PROMPT_VERSION, build_user_prompt, gpt51_system_prompt
+from lexinform.adapters.llm_prompts import (
+    PROMPT_VERSION,
+    amendments_system_prompt,
+    build_amendments_prompt,
+    build_joint_prompt,
+    build_supplement_prompt,
+    build_user_prompt,
+    gpt51_system_prompt,
+    joint_system_prompt,
+    supplement_system_prompt,
+)
 from lexinform.errors import LlmUnavailableError
-from lexinform.models import Analysis, AnalysisRecord, BillContext, ScannedDocument
+from lexinform.models import (
+    Amendments,
+    AmendmentsContext,
+    AmendmentsRecord,
+    Analysis,
+    AnalysisRecord,
+    BillContext,
+    DocumentDigest,
+    JointComparison,
+    JointContext,
+    JointRecord,
+    ScannedDocument,
+    SupplementContext,
+    SupplementRecord,
+)
 from lexinform.settings import OpenAiEffort
 
 log = logging.getLogger(__name__)
+
+_T = TypeVar("_T", bound=BaseModel)
 
 
 class LlmError(RuntimeError):
@@ -38,11 +66,11 @@ class LlmFatalError(LlmUnavailableError):
     rate limits, connection problems, server errors, missing credentials."""
 
 
-# Mirrors `models.Analysis` field for field; strict Structured Outputs takes no `$ref` to a
-# pydantic-generated schema without the same by-hand adjustments (every property required,
-# `additionalProperties: false` at every level), so this is kept by hand like the prompt's own
-# "## Output fields" section already is (see its docstring) rather than through a converter that
-# would still need the same care to get right and would hide it in a second place.
+# Every schema below mirrors its `models.py` counterpart field for field; strict Structured
+# Outputs takes no `$ref` to a pydantic-generated schema without the same by-hand adjustments
+# (every property required, `additionalProperties: false` at every level), so these are kept by
+# hand like the prompts' own "## Output fields" sections already are, rather than through a
+# converter that would still need the same care to get right and would hide it in a second place.
 _ANALYSIS_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -77,6 +105,43 @@ _ANALYSIS_SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
 }
 
+_AMENDMENTS_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "changes": {"type": "array", "items": {"type": "string"}},
+        "affects_foreigners": {"type": "boolean"},
+        "confidence": {"type": "number"},
+    },
+    "required": ["summary", "changes", "affects_foreigners", "confidence"],
+    "additionalProperties": False,
+}
+
+_DOCUMENT_DIGEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "points": {"type": "array", "items": {"type": "string"}},
+        "supports": {"type": ["boolean", "null"]},
+        "affects_foreigners": {"type": "boolean"},
+        "confidence": {"type": "number"},
+    },
+    "required": ["summary", "points", "supports", "affects_foreigners", "confidence"],
+    "additionalProperties": False,
+}
+
+_JOINT_COMPARISON_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "same_substance": {"type": "boolean"},
+        "summary": {"type": "string"},
+        "differences": {"type": "array", "items": {"type": "string"}},
+        "confidence": {"type": "number"},
+    },
+    "required": ["same_substance", "summary", "differences", "confidence"],
+    "additionalProperties": False,
+}
+
 
 class OpenAiAnalyzer:
     def __init__(
@@ -100,6 +165,7 @@ class OpenAiAnalyzer:
         self._effort = effort
         self._max_output_tokens = max_output_tokens
         self._clock = clock
+        self._language = output_language
         self._system = gpt51_system_prompt(output_language)
 
     @property
@@ -109,20 +175,22 @@ class OpenAiAnalyzer:
         return self._client
 
     def analyze(self, ctx: BillContext) -> AnalysisRecord:
-        response = self._call(ctx)
-        analysis = _parsed_analysis(response)
-        usage = response.usage
-        input_tokens = getattr(usage, "input_tokens", None)
-        output_tokens = getattr(usage, "output_tokens", None)
-        cached = getattr(getattr(usage, "input_tokens_details", None), "cached_tokens", None)
+        analysis, usage = self._structured_call(
+            system=self._system,
+            user_prompt=build_user_prompt(ctx),
+            scan=ctx.scan,
+            schema_name="analysis",
+            schema=_ANALYSIS_SCHEMA,
+            output_model=Analysis,
+        )
         log.info(
             "LLM analysed druk %s: relevant=%s score=%d in=%s (cached %s) out=%s",
             ctx.number,
             analysis.relevant,
             analysis.score,
-            input_tokens,
-            cached or 0,
-            output_tokens,
+            usage.input_tokens,
+            usage.cached_tokens or 0,
+            usage.output_tokens,
         )
         return AnalysisRecord(
             analysis=analysis,
@@ -132,9 +200,104 @@ class OpenAiAnalyzer:
             truncated=ctx.truncated,
             text_source=ctx.text_source,
             created_at=self._clock(),
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            cache_read_input_tokens=cached,
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+            cache_read_input_tokens=usage.cached_tokens,
+            cache_creation_input_tokens=0,
+        )
+
+    def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:
+        amendments, usage = self._structured_call(
+            system=amendments_system_prompt(self._language),
+            user_prompt=build_amendments_prompt(ctx),
+            scan=None,
+            schema_name="amendments",
+            schema=_AMENDMENTS_SCHEMA,
+            output_model=Amendments,
+        )
+        log.info(
+            "LLM summarised amendments of druk %s (%s): %d change(s), affects=%s in=%s out=%s",
+            ctx.number,
+            ctx.source_kind,
+            len(amendments.changes),
+            amendments.affects_foreigners,
+            usage.input_tokens,
+            usage.output_tokens,
+        )
+        return AmendmentsRecord(
+            amendments=amendments,
+            model=self._model,
+            prompt_version=PROMPT_VERSION,
+            source_url="",  # the caller knows the document
+            source_kind=ctx.source_kind,
+            created_at=self._clock(),
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+            cache_read_input_tokens=usage.cached_tokens,
+            cache_creation_input_tokens=0,
+        )
+
+    def digest_supplement(self, ctx: SupplementContext) -> SupplementRecord:
+        digest, usage = self._structured_call(
+            system=supplement_system_prompt(self._language),
+            user_prompt=build_supplement_prompt(ctx),
+            scan=ctx.scan,
+            schema_name="document_digest",
+            schema=_DOCUMENT_DIGEST_SCHEMA,
+            output_model=DocumentDigest,
+        )
+        log.info(
+            "LLM digested %s of druk %s: %d point(s), supports=%s affects=%s in=%s out=%s",
+            ctx.source_kind,
+            ctx.number,
+            len(digest.points),
+            digest.supports,
+            digest.affects_foreigners,
+            usage.input_tokens,
+            usage.output_tokens,
+        )
+        return SupplementRecord(
+            number="",  # the caller knows which document it handed over
+            title=ctx.document_title,
+            source_kind=ctx.source_kind,
+            source_url="",
+            digest=digest,
+            model=self._model,
+            prompt_version=PROMPT_VERSION,
+            created_at=self._clock(),
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+            cache_read_input_tokens=usage.cached_tokens,
+            cache_creation_input_tokens=0,
+        )
+
+    def compare_joint(self, ctx: JointContext) -> JointRecord:
+        comparison, usage = self._structured_call(
+            system=joint_system_prompt(self._language),
+            user_prompt=build_joint_prompt(ctx),
+            scan=None,
+            schema_name="joint_comparison",
+            schema=_JOINT_COMPARISON_SCHEMA,
+            output_model=JointComparison,
+        )
+        log.info(
+            "LLM compared druk %s with %s: same_substance=%s, %d difference(s) in=%s out=%s",
+            ctx.subject.number,
+            ", ".join(other.number for other in ctx.others),
+            comparison.same_substance,
+            len(comparison.differences),
+            usage.input_tokens,
+            usage.output_tokens,
+        )
+        return JointRecord(
+            comparison=comparison,
+            compared_with=[other.number for other in ctx.others],
+            model=self._model,
+            prompt_version=PROMPT_VERSION,
+            created_at=self._clock(),
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+            cache_read_input_tokens=usage.cached_tokens,
             cache_creation_input_tokens=0,
         )
 
@@ -152,10 +315,19 @@ class OpenAiAnalyzer:
             return None
         return len(encoding.encode(self._system)) + len(encoding.encode(build_user_prompt(ctx)))
 
-    def _call(self, ctx: BillContext) -> Any:
+    def _structured_call(
+        self,
+        *,
+        system: str,
+        user_prompt: str,
+        scan: ScannedDocument | None,
+        schema_name: str,
+        schema: dict[str, Any],
+        output_model: type[_T],
+    ) -> tuple[_T, _Usage]:
         input_messages: ResponseInputParam = [
-            {"role": "system", "content": self._system},
-            {"role": "user", "content": _content(build_user_prompt(ctx), ctx.scan)},
+            {"role": "system", "content": system},
+            {"role": "user", "content": _content(user_prompt, scan)},
         ]
         try:
             response = self._resolved_client.responses.create(
@@ -166,8 +338,8 @@ class OpenAiAnalyzer:
                 text={
                     "format": {
                         "type": "json_schema",
-                        "name": "analysis",
-                        "schema": _ANALYSIS_SCHEMA,
+                        "name": schema_name,
+                        "schema": schema,
                         "strict": True,
                     }
                 },
@@ -191,7 +363,7 @@ class OpenAiAnalyzer:
         if response.status == "incomplete":
             reason = getattr(response.incomplete_details, "reason", None)
             raise LlmError(f"response incomplete: {reason}")
-        return response
+        return _parsed_output(response, output_model), _usage_of(response)
 
 
 def _content(
@@ -212,14 +384,30 @@ def _content(
     return blocks
 
 
-def _parsed_analysis(response: Any) -> Analysis:
+class _Usage(BaseModel):
+    input_tokens: int | None
+    output_tokens: int | None
+    cached_tokens: int | None
+
+
+def _usage_of(response: Any) -> _Usage:
+    usage = response.usage
+    details = getattr(usage, "input_tokens_details", None)
+    return _Usage(
+        input_tokens=getattr(usage, "input_tokens", None),
+        output_tokens=getattr(usage, "output_tokens", None),
+        cached_tokens=getattr(details, "cached_tokens", None),
+    )
+
+
+def _parsed_output[T: BaseModel](response: Any, output_model: type[T]) -> T:
     for item in getattr(response, "output", []) or []:
         if getattr(item, "type", None) == "refusal":
             raise LlmError("model refused the request")
         if getattr(item, "type", None) == "message":
             for block in item.content:
                 if getattr(block, "type", None) == "output_text":
-                    return Analysis.model_validate_json(block.text)
+                    return output_model.model_validate_json(block.text)
                 if getattr(block, "type", None) == "refusal":
                     raise LlmError("model refused the request")
     raise LlmError("model returned no parsable structured output")

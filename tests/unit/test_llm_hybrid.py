@@ -81,9 +81,19 @@ _JOINT_CTX = JointContext(
 )
 
 
+def _hybrid(calls: _Calls) -> HybridAnalyzer:
+    return HybridAnalyzer(
+        analysis=_Recording(calls, "analysis"),
+        amendments=_Recording(calls, "amendments"),
+        supplement=_Recording(calls, "supplement"),
+        joint=_Recording(calls, "joint"),
+        triage=_Recording(calls, "triage"),
+    )
+
+
 def test_analyze_and_count_input_tokens_go_to_the_analysis_backend() -> None:
     calls = _Calls()
-    hybrid = HybridAnalyzer(_Recording(calls, "analysis"), _Recording(calls, "secondary"))
+    hybrid = _hybrid(calls)
 
     hybrid.analyze(_BILL_CTX)
     hybrid.count_input_tokens(_BILL_CTX)
@@ -91,18 +101,18 @@ def test_analyze_and_count_input_tokens_go_to_the_analysis_backend() -> None:
     assert calls.seen == ["analysis.analyze", "analysis.count_input_tokens"]
 
 
-def test_triage_amendments_supplements_and_joint_go_to_the_secondary_backend() -> None:
+def test_each_secondary_capability_goes_to_its_own_backend() -> None:
     calls = _Calls()
-    hybrid = HybridAnalyzer(_Recording(calls, "analysis"), _Recording(calls, "secondary"))
+    hybrid = _hybrid(calls)
 
-    hybrid.triage(_TRIAGE_CTX)
     hybrid.summarize_amendments(_AMENDMENTS_CTX)
     hybrid.digest_supplement(_SUPPLEMENT_CTX)
     hybrid.compare_joint(_JOINT_CTX)
+    hybrid.triage(_TRIAGE_CTX)
 
     assert calls.seen == [
-        "secondary.triage",
-        "secondary.summarize_amendments",
-        "secondary.digest_supplement",
-        "secondary.compare_joint",
+        "amendments.summarize_amendments",
+        "supplement.digest_supplement",
+        "joint.compare_joint",
+        "triage.triage",
     ]

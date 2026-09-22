@@ -340,8 +340,7 @@ class World:
             rcl_enabled=True,
             wykaz_enabled=True,
             telegram_channel_id=CHANNEL,
-            llm_model="claude-opus-5",  # priced: the cost estimates use $5 per million tokens
-            llm_analysis_model="claude-opus-5",  # the guard prices analyze() off this one
+            llm_analysis_model="claude-opus-5",  # priced: the guard uses $5 per million tokens
             llm_triage_model="fake-triage" if triage else "",
             triage_min_chars=triage_min_chars,
             text_budget_chars=text_budget_chars,
