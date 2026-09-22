@@ -58,11 +58,12 @@ terminal, has no twin either: posting the command *is* the confirmation.
 /run max_publish=5 max_analyze=3 min_score=4    and its caps
 /scan since=2026-09-01        discover and keyword-filter only: no model, no posts, no tokens
 /track                        the tracking phase over every followed bill (`dry` to see it only)
+/collect-batches               write down a finished batch, then analyse/publish/track what that frees
 /reprefilter limit=200 text_skipped   the backfill on its own, without the run behind it
 /index-rcl-numbers since=2023-11-01   the RCL listing for the wykaz join (`/index` for short)
 ```
 
-These five are the commands a run does not execute, because each **is** a run: the relay asks
+These six are the commands a run does not execute, because each **is** a run: the relay asks
 GitHub to start `daily.yml` (`workflow_dispatch` on `main`) with the inputs named after it and
 answers «▶️ scan started …» with a link, instead of filing anything into the inbox. The workflow
 takes a `command` — which `lexinform` subcommand this run is — and an `options` string carrying

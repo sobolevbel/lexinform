@@ -22,7 +22,10 @@ comparisons (`LEXINFORM_LLM_ANALYSIS_MODEL` / `_AMENDMENTS_MODEL` / `_SUPPLEMENT
 `_JOINT_MODEL`) default to Claude too for now — GPT-5.1 is measured and ready (docs/llm-cost.md)
 but switched on per call only by naming `gpt-5.1` in the setting; `OPENAI_API_KEY` is only needed
 once one of them is. `ANTHROPIC_API_KEY` alone is needed for a real `run` while all five stay on
-Claude.
+Claude. `LEXINFORM_LLM_BATCH_ENABLED` files `analyze()`/a re-analysis to the batch API instead of
+calling it directly (half the price, answered a run or two later, not the manual `/analyze`);
+`LEXINFORM_LLM_BATCH_PROVIDER` picks Anthropic or OpenAI for it, independent of the model settings
+above.
 
 ## The check before every commit
 
