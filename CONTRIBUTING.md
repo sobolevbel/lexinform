@@ -18,9 +18,11 @@ cp .env.example .env          # keys are only needed for `analyze`, `preview --t
 and `OPENAI_API_KEY` are read without a prefix (each SDK wants its own that way); everything else
 is `LEXINFORM_*`. Five calls, five independent models: triage always stays on Claude
 (`LEXINFORM_LLM_TRIAGE_MODEL`); the full analysis, amendments, filed-document digests and joint
-comparisons each default to GPT-5.1 (`LEXINFORM_LLM_ANALYSIS_MODEL` / `_AMENDMENTS_MODEL` /
-`_SUPPLEMENT_MODEL` / `_JOINT_MODEL`), and any of the four reverts to Claude on its own by naming
-a `claude-` model. Both keys are needed for a real `run`.
+comparisons (`LEXINFORM_LLM_ANALYSIS_MODEL` / `_AMENDMENTS_MODEL` / `_SUPPLEMENT_MODEL` /
+`_JOINT_MODEL`) default to Claude too for now — GPT-5.1 is measured and ready (docs/llm-cost.md)
+but switched on per call only by naming `gpt-5.1` in the setting; `OPENAI_API_KEY` is only needed
+once one of them is. `ANTHROPIC_API_KEY` alone is needed for a real `run` while all five stay on
+Claude.
 
 ## The check before every commit
 
