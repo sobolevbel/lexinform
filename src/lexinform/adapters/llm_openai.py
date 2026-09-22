@@ -36,7 +36,7 @@ from lexinform.adapters.llm_prompts import (
     gpt51_supplement_system_prompt,
     gpt51_system_prompt,
 )
-from lexinform.errors import LlmUnavailableError
+from lexinform.errors import BatchNotSubmittedError, LlmUnavailableError
 from lexinform.models import (
     Amendments,
     AmendmentsContext,
@@ -367,6 +367,9 @@ class OpenAiAnalyzer:
             openai.PermissionDeniedError,
             openai.NotFoundError,
             openai.RateLimitError,
+        ) as exc:
+            raise BatchNotSubmittedError(f"{type(exc).__name__}: {_short(exc)}") from exc
+        except (
             openai.InternalServerError,
             openai.APIConnectionError,
         ) as exc:

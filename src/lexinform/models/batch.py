@@ -83,3 +83,11 @@ class LlmBatchItem(BaseModel):
     number: str
     meta: BatchItemMeta
     consumed_at: dt.datetime | None = None
+
+
+class BatchIntent(BaseModel):
+    request: BatchRequest
+    meta: BatchItemMeta
+    provider: BatchProvider
+    state: Literal["queued", "submitting"] = "queued"
+    created_at: dt.datetime

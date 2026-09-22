@@ -265,6 +265,16 @@ LEXINFORM_LLM_BATCH_ENABLED=true
 is enough for `poll-batches`' `repository_dispatch` too (see the GitHub section above). Manual
 check: `~/.local/bin/uv run --frozen --no-dev lexinform poll-batches`.
 
+Batch submission intents are stored before the provider call. `lexinform batch-intents` shows
+queued work and `submitting` requests whose acceptance is uncertain after a connection loss or
+crash. A queued intent retries on the next real run. A `submitting` intent never retries by
+itself: compare its custom ID with the provider's batch list/results first. If the provider
+accepted it, record the returned ID with
+`lexinform attach-batch-intents BATCH_ID CUSTOM_ID... --confirmed-provider-batch`. If the
+provider definitely has no batch containing that ID, use
+`lexinform recover-batch-intent CUSTOM_ID --confirmed-not-submitted`; the next run submits it.
+Both recovery commands must run against the state database that the workflow will next restore.
+
 Updates are automatic: `.github/workflows/deploy-relay.yml` runs after every green CI on
 `main` (and on demand from the Actions tab), connects with the deploy key in the repository
 secret `MIKRUS_SSH_KEY` and runs `deploy/update.sh` on the server (fetch, reset to

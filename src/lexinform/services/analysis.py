@@ -16,7 +16,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from lexinform.concurrency import fan_out
-from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
+from lexinform.errors import BatchNotSubmittedError, OrkaUnreachableError, ServiceUnavailableError
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
     AMENDMENT_SOURCES,
@@ -28,6 +28,7 @@ from lexinform.models import (
     AnalysisRecord,
     AnalysisVerdict,
     ApplicantType,
+    BatchIntent,
     BatchItemMeta,
     BatchProvider,
     BatchRequest,
@@ -325,8 +326,6 @@ class AnalysisService:
         self._triage = triage
         self._batch = batch
         self._batch_resolver = batch_resolver
-        self._queue: list[BatchRequest] = []
-        self._queue_meta: dict[str, BatchItemMeta] = {}
         self._dry_run = False
         self._ledger = CostLedger(max_run_usd=options.max_run_cost_usd)
         self._memo = repo.load_analysis_memo()
@@ -335,8 +334,6 @@ class AnalysisService:
         self._dry_run = dry_run
         self._ledger.start_run()
         self._memo = self._repo.load_analysis_memo()
-        self._queue = []
-        self._queue_meta = {}
 
     @property
     def spent_usd(self) -> float:
@@ -374,7 +371,7 @@ class AnalysisService:
             # channel carded is analysed in this run and not the next.
             result.revived_joint = len(revive_prefilter_skips(self._repo, self._options.channel_id))
         candidates = self._repo.list_by_status(
-            [BillStatus.ANALYSIS_PENDING, BillStatus.ANALYSIS_FAILED],
+            [BillStatus.ANALYSIS_PENDING, BillStatus.ANALYSIS_READY, BillStatus.ANALYSIS_FAILED],
             limit=limit,
             max_attempts=self._options.max_attempts,
         )
@@ -466,38 +463,65 @@ class AnalysisService:
         return result
 
     def submit_queued_batches(self) -> None:
-        """File everything `analyze_pending` and the tracking phase queued this run, as one
-        submission. A no-op with nothing queued, or with batching off."""
-        if not self._queue or self._batch is None:
-            return
-        requests, meta = self._queue, self._queue_meta
-        self._queue, self._queue_meta = [], {}
-        batch_id = self._batch.submit(requests)
-        provider = self._options.batch_provider or "anthropic"
-        estimate = sum(self._estimate_request_cost(req.ctx) for req in requests)
-        self._repo.save_llm_batch(
-            LlmBatch(
-                batch_id=batch_id,
-                provider=provider,
-                call_kind=requests[0].call_kind,
-                submitted_at=self._clock.now(),
-                status="submitted",
-                request_count=len(requests),
-                estimated_cost_usd=estimate,
-            ),
-            [
-                LlmBatchItem(
-                    batch_id=batch_id,
-                    custom_id=req.custom_id,
-                    call_kind=req.call_kind,
-                    term=req.term,
-                    number=req.number,
-                    meta=meta[req.custom_id],
-                )
-                for req in requests
-            ],
-        )
-        log.info("filed batch %s: %d request(s) with %s", batch_id, len(requests), provider)
+        """Submit durable queued intents; an uncertain remote outcome stays operator-visible."""
+        intents = self._repo.list_queued_batch_intents()
+        stale = [
+            intent.request.custom_id
+            for intent in intents
+            if (bill := self._repo.get(intent.request.term, intent.request.number)) is None
+            or bill.status is not BillStatus.BATCH_PENDING
+        ]
+        if stale:
+            self._repo.delete_batch_intents(stale)
+            intents = [intent for intent in intents if intent.request.custom_id not in stale]
+        for provider in ("anthropic", "openai"):
+            provider_intents = [intent for intent in intents if intent.provider == provider]
+            backend = (
+                self._batch_resolver(provider)
+                if self._batch_resolver is not None
+                else self._batch
+                if provider == self._options.batch_provider
+                else None
+            )
+            if backend is None:
+                continue
+            for offset in range(0, len(provider_intents), 100):
+                group = provider_intents[offset : offset + 100]
+                requests = [intent.request for intent in group]
+                ids = [request.custom_id for request in requests]
+                self._repo.mark_batch_intents_submitting(ids)
+                try:
+                    batch_id = backend.submit(requests)
+                except BatchNotSubmittedError:
+                    self._repo.mark_batch_intents_queued(ids)
+                    raise
+                with self._repo.atomic():
+                    self._repo.save_llm_batch(
+                        LlmBatch(
+                            batch_id=batch_id,
+                            provider=provider,
+                            call_kind=requests[0].call_kind,
+                            submitted_at=self._clock.now(),
+                            status="submitted",
+                            request_count=len(requests),
+                            estimated_cost_usd=sum(
+                                self._estimate_request_cost(req.ctx) for req in requests
+                            ),
+                        ),
+                        [
+                            LlmBatchItem(
+                                batch_id=batch_id,
+                                custom_id=intent.request.custom_id,
+                                call_kind=intent.request.call_kind,
+                                term=intent.request.term,
+                                number=intent.request.number,
+                                meta=intent.meta,
+                            )
+                            for intent in group
+                        ],
+                    )
+                    self._repo.delete_batch_intents(ids)
+                log.info("filed batch %s: %d request(s) with %s", batch_id, len(group), provider)
 
     def _estimate_request_cost(self, ctx: BillContext) -> float:
         """Conservative reservation at the selected batch model's discounted input price."""
@@ -552,6 +576,9 @@ class AnalysisService:
                     )
             self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
 
+    def uncertain_batch_intent_ids(self) -> list[str]:
+        return [intent.request.custom_id for intent in self._repo.list_submitting_batch_intents()]
+
     def _consume(self, item: LlmBatchItem, batch_result: BatchResult) -> None:
         now = self._clock.now()
         current = self._repo.get(item.term, item.number)
@@ -587,7 +614,7 @@ class AnalysisService:
             self._remember_analysis(item.custom_id, record)
             # Back to what the memo hit will finish for free: the queue, or the steady state.
             done = (
-                BillStatus.ANALYSIS_PENDING
+                BillStatus.ANALYSIS_READY
                 if item.call_kind == "analysis"
                 else BillStatus.REANALYSIS_READY
             )
@@ -1121,9 +1148,16 @@ class AnalysisService:
             return False
         if prepared.triage_memo_key is not None and prepared.triage is not None:
             self._remember_analysis(prepared.triage_memo_key, prepared.triage)
-        self._queue.append(prepared.batch_request)
-        self._queue_meta[prepared.batch_request.custom_id] = prepared.batch_meta
-        self._repo.set_status(bill.term, bill.number, BillStatus.BATCH_PENDING)
+        with self._repo.atomic():
+            self._repo.save_batch_intent(
+                BatchIntent(
+                    request=prepared.batch_request,
+                    meta=prepared.batch_meta,
+                    provider=self._options.batch_provider or "anthropic",
+                    created_at=self._clock.now(),
+                )
+            )
+            self._repo.set_status(bill.term, bill.number, BillStatus.BATCH_PENDING)
         return True
 
     def _persist(self, prepared: _Prepared) -> AnalysisRecord:

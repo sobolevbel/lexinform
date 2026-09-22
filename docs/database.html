@@ -715,6 +715,8 @@
       <div class="mig"><span class="v">v14</span><span class="what"><b>commands.executed_at</b> — команда, чей ответ не дошёл, отвечается повторно, а не выполняется повторно.</span></div>
       <div class="mig"><span class="v">v24</span><span class="what"><b>bills.observed_closure_date</b> — отдельная база сравнения для трекера. Заполняется из <code>closure_date</code> у строк с известным отпечатком стадий, чтобы обновление кода не объявляло старые решения новыми. Версии v15–v23 перечислены в <code>MIGRATIONS</code>; схема выше отражает первоначальную v14 с этим дополнением.</span></div>
       <div class="mig"><span class="v">v25</span><span class="what"><b>bills.observed_process_json</b> — обработанное наблюдение; <b>publications.delivery_json</b> — неизменяемый план карточки, обновления, повестки или напоминания для повтора; <b>status_changes.consultation_opened</b> — сохранённый факт открытия консультаций; <b>analysis_memo</b> — результаты анализа по содержимому и цели. Состояние <b>queued</b> отделяет ожидающую доставку от редакционного удержания. <a href="process-plans.md">Архитектура и границы совместимости</a>.</span></div>
+      <div class="mig"><span class="v">v26</span><span class="what"><b>llm_batches</b> и <b>llm_batch_items</b> — отправленные задания LLM, провайдер, элементы и отметки сбора ответов.</span></div>
+      <div class="mig"><span class="v">v27</span><span class="what"><b>llm_batch_intents</b> — сохранённые запросы до отправки; <code>queued</code> можно повторить, <code>submitting</code> требует сверки с провайдером.</span></div>
     </div>
   </section>
 

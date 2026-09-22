@@ -43,6 +43,7 @@ class BillStatus(StrEnum):
     SKIPPED_CLOSED = "skipped_closed"
     ANALYSIS_PENDING = "analysis_pending"
     BATCH_PENDING = "batch_pending"
+    ANALYSIS_READY = "analysis_ready"
     REANALYSIS_READY = "reanalysis_ready"
     ANALYSIS_FAILED = "analysis_failed"
     ANALYZED = "analyzed"

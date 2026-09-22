@@ -30,6 +30,7 @@ from lexinform.models.analysis import (
     usage_of,
 )
 from lexinform.models.batch import (
+    BatchIntent,
     BatchItemMeta,
     BatchProvider,
     BatchRequest,
@@ -304,6 +305,7 @@ __all__ = [
     "BackfillOutcome",
     "BackfillReport",
     "BatchItemMeta",
+    "BatchIntent",
     "BatchProvider",
     "BatchRequest",
     "BatchResult",

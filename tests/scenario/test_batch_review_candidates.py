@@ -8,7 +8,7 @@ import pytest
 from typer.testing import CliRunner
 
 from lexinform.cli import app
-from lexinform.errors import LlmUnavailableError
+from lexinform.errors import BatchNotSubmittedError, LlmUnavailableError
 from lexinform.models import BatchRequest, BatchStatus, BillStatus
 from lexinform.pricing import cost_usd
 from lexinform.services.pipeline import RunOptions
@@ -17,13 +17,12 @@ from tests.harness import RCL, TERM, World, rcl_document, rcl_folder, rcl_stage
 from tests.scenario.test_tracking import REPORT_TEXT, REPORT_URL, WITH_REPORT
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="BUGS #30: lost submission")
 def test_submit_failure_keeps_work_retryable(monkeypatch: pytest.MonkeyPatch) -> None:
     w = World(batch=True)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
 
     def unavailable(requests: Sequence[BatchRequest]) -> str:
-        raise LlmUnavailableError("injected outage before remote acceptance")
+        raise BatchNotSubmittedError("injected rejection before remote acceptance")
 
     with monkeypatch.context() as patch:
         patch.setattr(w.batch, "submit", unavailable)
@@ -34,6 +33,27 @@ def test_submit_failure_keeps_work_retryable(monkeypatch: pytest.MonkeyPatch) ->
     w.run()
 
     assert len(w.batch.submitted) == 1, w.bill("3039").status
+
+
+def test_uncertain_submission_waits_for_explicit_reconciliation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    w = World(batch=True)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+
+    def uncertain(requests: Sequence[BatchRequest]) -> str:
+        raise LlmUnavailableError("connection lost after request was sent")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(w.batch, "submit", uncertain)
+        w.run()
+    pending = w.repo.list_submitting_batch_intents()
+    assert len(pending) == 1
+
+    w.run()
+
+    assert not w.batch.submitted
+    assert w.repo.list_submitting_batch_intents() == pending
 
 
 def test_rcl_reanalysis_is_not_submitted_twice_while_in_flight() -> None:
@@ -198,19 +218,21 @@ def test_collected_tokens_are_in_the_run_totals() -> None:
     assert cost_usd(report.llm_usage) == cost_usd(report.llm_calls[0].usage)
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="BUGS #42: batch identity not moved")
 def test_government_batch_survives_a_term_rollover() -> None:
     w = World(batch=True)
     w.add_rcl_project()
     w.run()
-    assert w.repo.move_government_rows(TERM, TERM + 1) == 1
+    assert w.repo.move_government_rows(TERM, TERM + 1) == 0
     w.batch.resolve()
 
-    w.analysis.collect_batches()
+    w.run()
+    assert w.bill(RCL).status is BillStatus.ANALYZED
+    assert len(w.batch.submitted) == 1
+    assert w.repo.move_government_rows(TERM, TERM + 1) == 1
 
     moved = w.repo.get(TERM + 1, RCL)
     assert moved is not None
-    assert moved.status is BillStatus.ANALYSIS_PENDING, moved.status
+    assert moved.status is BillStatus.ANALYZED
 
 
 def test_collect_cli_respects_configured_min_score(monkeypatch: pytest.MonkeyPatch) -> None:

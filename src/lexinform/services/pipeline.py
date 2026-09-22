@@ -246,6 +246,12 @@ class DailyPipeline:
         """
         # First, so a batch an earlier run filed is written down before publishing/tracking act.
         self._phase(report, "collect batches", self._analysis.collect_batches)
+        uncertain = self._analysis.uncertain_batch_intent_ids()
+        if uncertain:
+            report.errors.append(
+                f"{len(uncertain)} batch submission(s) uncertain: "
+                f"{', '.join(uncertain[:10])}; use lexinform batch-intents"
+            )
         previous = [term for term in self._repo.known_terms() if term < current]
         if previous:
             self._phase(

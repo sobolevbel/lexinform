@@ -25,7 +25,7 @@ from lexinform.adapters.llm_prompts import (
     system_prompt,
     triage_system_prompt,
 )
-from lexinform.errors import LlmUnavailableError
+from lexinform.errors import BatchNotSubmittedError, LlmUnavailableError
 from lexinform.models import (
     Amendments,
     AmendmentsContext,
@@ -335,6 +335,9 @@ class AnthropicAnalyzer:
             anthropic.PermissionDeniedError,
             anthropic.NotFoundError,
             anthropic.RateLimitError,
+        ) as exc:
+            raise BatchNotSubmittedError(f"{type(exc).__name__}: {_short(exc)}") from exc
+        except (
             anthropic.InternalServerError,
             anthropic.APIConnectionError,
         ) as exc:

@@ -12,6 +12,7 @@ from lexinform.models import (
     AmendmentsRecord,
     AnalysisRecord,
     BackfillReport,
+    BatchIntent,
     BatchRequest,
     BatchResult,
     BatchStatus,
@@ -494,6 +495,18 @@ class BillRepository(Protocol):
         """File a submission and which bill each of its requests answers for, together: a batch
         with no items to collect it against would never be marked done."""
         ...
+
+    def save_batch_intent(self, intent: BatchIntent) -> None: ...
+
+    def list_queued_batch_intents(self) -> list[BatchIntent]: ...
+
+    def list_submitting_batch_intents(self) -> list[BatchIntent]: ...
+
+    def mark_batch_intents_submitting(self, custom_ids: Sequence[str]) -> None: ...
+
+    def mark_batch_intents_queued(self, custom_ids: Sequence[str]) -> None: ...
+
+    def delete_batch_intents(self, custom_ids: Sequence[str]) -> None: ...
 
     def list_open_llm_batches(self) -> list[LlmBatch]:
         """Batches not yet fully collected (`status != "failed"` and not every item consumed),

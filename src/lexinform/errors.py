@@ -63,5 +63,9 @@ class LlmUnavailableError(ServiceUnavailableError):
     system = "LLM API"
 
 
+class BatchNotSubmittedError(LlmUnavailableError):
+    """The provider definitively rejected a batch before accepting any work."""
+
+
 class TelegramUnavailableError(ServiceUnavailableError):
     system = "Telegram API"

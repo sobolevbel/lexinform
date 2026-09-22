@@ -21,7 +21,9 @@ from lexinform.models import (
     AgendaItem,
     AmendmentsRecord,
     AnalysisRecord,
+    BatchIntent,
     BatchItemMeta,
+    BatchRequest,
     BatchStatus,
     Bill,
     BillAuthors,
@@ -317,6 +319,17 @@ MIGRATIONS: tuple[str, ...] = (
         PRIMARY KEY (batch_id, custom_id)
     );
     CREATE INDEX ix_llm_batch_items_bill ON llm_batch_items(term, number);
+    """,
+    """
+    CREATE TABLE llm_batch_intents (
+        custom_id TEXT PRIMARY KEY,
+        provider TEXT NOT NULL,
+        request_json TEXT NOT NULL,
+        meta_json TEXT NOT NULL,
+        state TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );
+    CREATE INDEX ix_llm_batch_intents_state ON llm_batch_intents(state, created_at);
     """,
 )
 
@@ -657,6 +670,63 @@ class SqliteBillRepository:
     def save_llm_batch(self, batch: LlmBatch, items: Sequence[LlmBatchItem]) -> None:
         with self.atomic():
             self._save_llm_batch_rows(batch, items)
+
+    def save_batch_intent(self, intent: BatchIntent) -> None:
+        self._conn.execute(
+            "INSERT OR IGNORE INTO llm_batch_intents"
+            " (custom_id, provider, request_json, meta_json, state, created_at)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                intent.request.custom_id,
+                intent.provider,
+                intent.request.model_dump_json(),
+                intent.meta.model_dump_json(),
+                intent.state,
+                intent.created_at.isoformat(),
+            ),
+        )
+
+    def list_queued_batch_intents(self) -> list[BatchIntent]:
+        return self._batch_intents("queued")
+
+    def list_submitting_batch_intents(self) -> list[BatchIntent]:
+        return self._batch_intents("submitting")
+
+    def _batch_intents(self, state: str) -> list[BatchIntent]:
+        rows = self._conn.execute(
+            "SELECT * FROM llm_batch_intents WHERE state = ? ORDER BY created_at, custom_id",
+            (state,),
+        ).fetchall()
+        return [
+            BatchIntent(
+                request=BatchRequest.model_validate_json(row["request_json"]),
+                meta=BatchItemMeta.model_validate_json(row["meta_json"]),
+                provider=row["provider"],
+                state=row["state"],
+                created_at=datetime.fromisoformat(row["created_at"]),
+            )
+            for row in rows
+        ]
+
+    def mark_batch_intents_submitting(self, custom_ids: Sequence[str]) -> None:
+        self._conn.executemany(
+            "UPDATE llm_batch_intents SET state = 'submitting'"
+            " WHERE custom_id = ? AND state = 'queued'",
+            [(custom_id,) for custom_id in custom_ids],
+        )
+
+    def mark_batch_intents_queued(self, custom_ids: Sequence[str]) -> None:
+        self._conn.executemany(
+            "UPDATE llm_batch_intents SET state = 'queued'"
+            " WHERE custom_id = ? AND state = 'submitting'",
+            [(custom_id,) for custom_id in custom_ids],
+        )
+
+    def delete_batch_intents(self, custom_ids: Sequence[str]) -> None:
+        self._conn.executemany(
+            "DELETE FROM llm_batch_intents WHERE custom_id = ?",
+            [(custom_id,) for custom_id in custom_ids],
+        )
 
     def _save_llm_batch_rows(self, batch: LlmBatch, items: Sequence[LlmBatchItem]) -> None:
         self._conn.execute(
@@ -1197,10 +1267,18 @@ class SqliteBillRepository:
         numbers = [
             str(r[0])
             for r in self._conn.execute(
-                "SELECT number FROM bills WHERE term = ? AND status != ?"
+                "SELECT number FROM bills WHERE term = ? AND status NOT IN (?, ?, ?, ?)"
                 " AND ((number LIKE ? AND json_extract(rcl_json, '$.print_number') IS NULL)"
                 "      OR number LIKE ?) ORDER BY number",
-                (from_term, BillStatus.LINKED.value, f"{RCL_PREFIX}%", f"{WYKAZ_PREFIX}%"),
+                (
+                    from_term,
+                    BillStatus.LINKED.value,
+                    BillStatus.BATCH_PENDING.value,
+                    BillStatus.ANALYSIS_READY.value,
+                    BillStatus.REANALYSIS_READY.value,
+                    f"{RCL_PREFIX}%",
+                    f"{WYKAZ_PREFIX}%",
+                ),
             )
         ]
         if not numbers:

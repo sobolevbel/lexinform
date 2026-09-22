@@ -30,6 +30,8 @@ from lexinform.models import (
     Bill,
     BillStatus,
     BillSubmission,
+    LlmBatch,
+    LlmBatchItem,
     RclProject,
     RunMode,
     RunReport,
@@ -498,6 +500,103 @@ def collect_batches(
         f" updates={report.updates} errors={report.errors}"
     )
     raise typer.Exit(code=0 if report.ok else 1)
+
+
+@app.command(name="batch-intents")
+def batch_intents() -> None:
+    """Show requests awaiting submission and requests whose remote acceptance is uncertain."""
+    c = _container()
+    try:
+        for intent in (
+            *c.repo.list_queued_batch_intents(),
+            *c.repo.list_submitting_batch_intents(),
+        ):
+            typer.echo(
+                f"{intent.state} {intent.provider} {intent.request.term}/"
+                f"{intent.request.number} {intent.request.custom_id}"
+            )
+    finally:
+        c.close()
+
+
+@app.command(name="recover-batch-intent")
+def recover_batch_intent(
+    custom_id: str,
+    confirmed_not_submitted: Annotated[
+        bool,
+        typer.Option("--confirmed-not-submitted", help="Provider has no batch for this request."),
+    ] = False,
+) -> None:
+    """Queue one uncertain intent again after checking the provider's batch list."""
+    if not confirmed_not_submitted:
+        raise typer.BadParameter("--confirmed-not-submitted is required")
+    c = _container()
+    try:
+        matches = [
+            intent
+            for intent in c.repo.list_submitting_batch_intents()
+            if intent.request.custom_id == custom_id
+        ]
+        if not matches:
+            raise typer.BadParameter("no uncertain batch intent with this custom ID")
+        c.repo.mark_batch_intents_queued([custom_id])
+    finally:
+        c.close()
+    typer.echo(f"queued {custom_id}")
+
+
+@app.command(name="attach-batch-intents")
+def attach_batch_intents(
+    batch_id: str,
+    custom_ids: Annotated[list[str], typer.Argument(help="All custom IDs in the provider batch.")],
+    confirmed_provider_batch: Annotated[
+        bool,
+        typer.Option("--confirmed-provider-batch", help="These IDs belong to this provider batch."),
+    ] = False,
+) -> None:
+    """Record the provider ID after an accepted submission lost its acknowledgement."""
+    if not confirmed_provider_batch:
+        raise typer.BadParameter("--confirmed-provider-batch is required")
+    c = _container()
+    try:
+        uncertain = {
+            intent.request.custom_id: intent for intent in c.repo.list_submitting_batch_intents()
+        }
+        if not custom_ids or len(custom_ids) != len(set(custom_ids)):
+            raise typer.BadParameter("provide each custom ID exactly once")
+        if any(custom_id not in uncertain for custom_id in custom_ids):
+            raise typer.BadParameter("every custom ID must be an uncertain batch intent")
+        intents = [uncertain[custom_id] for custom_id in custom_ids]
+        provider = intents[0].provider
+        if any(intent.provider != provider for intent in intents):
+            raise typer.BadParameter("a provider batch cannot mix providers")
+        with c.repo.atomic():
+            c.repo.save_llm_batch(
+                LlmBatch(
+                    batch_id=batch_id,
+                    provider=provider,
+                    call_kind=intents[0].request.call_kind,
+                    submitted_at=min(intent.created_at for intent in intents),
+                    status="submitted",
+                    request_count=len(intents),
+                    estimated_cost_usd=0.0,
+                ),
+                [
+                    LlmBatchItem(
+                        batch_id=batch_id,
+                        custom_id=intent.request.custom_id,
+                        call_kind=intent.request.call_kind,
+                        term=intent.request.term,
+                        number=intent.request.number,
+                        meta=intent.meta,
+                    )
+                    for intent in intents
+                ],
+            )
+            c.repo.delete_batch_intents(custom_ids)
+    finally:
+        c.close()
+    typer.echo(f"attached {batch_id}: {len(custom_ids)} request(s)")
 
 
 @app.command()
