@@ -28,7 +28,8 @@ recheck and are dropped below the table, never having been a live defect. #16 mo
 21 Sept 2026 too, once tracing its actual callers turned "somewhere inside `posting.py`" into two
 named, reachable call sites. One row remains open on purpose: it needs a design decision, not a
 patch, and forcing one under time pressure risked being wrong in a way a mechanical fix would not
-have been.
+have been. This paragraph describes the 21 Sept audit; the separate batch review below adds new
+open candidates on 23 Sept.
 
 | # | rank | state | module | what is wrong | found |
 |---|---|---|---|---|---|
@@ -49,6 +50,36 @@ intercepts first — checked against all 825 corpus RCL projects, zero anomalies
 (`_DERIVED_PRINT_STAGES` omitting `PresidentMotionConsideration` changes nothing — checked all 15
 real nodes of terms 8-10 against the raw API JSON, not one carries a `printNumber` to derive from,
 and 0 of 4,462 committee/plenary sittings would have matched through this branch either way).
+
+### Batch architecture review — 23 Sept 2026
+
+Reviewed `1cafa93..3b20456`, including the provider split, batch lifecycle and collect/poll entry
+points. **All rows below are open candidates requiring verification, not fixes or claims of
+production incidents.** Their mechanisms reproduce offline; incidence in production and the
+complete recovery paths still need checking. Details, reproduction commands, limitations and
+suggested remedies: [review report](reviews/2026-09-23-batch-architecture.md).
+
+`P1`/`P3` retain the reader-impact definitions above. In particular, duplicated paid LLM work and
+a bypassed spending guard are P3 here, although they deserve early engineering attention.
+The two `test_batch_review_candidates.py` modules retain expected-behaviour assertions under
+strict `xfail`; run with `--runxfail` to see the defects. Remove the marker only with a verified fix.
+
+| # | rank | state | module | candidate and local evidence | found |
+|---|---|---|---|---|---|
+| 30 | P1 | open / candidate; needs verification | `services/analysis.py::_enqueue`, `submit_queued_batches` | Bills become `batch_pending` before durable submission exists. A rejected submission leaves no batch row and no automatic retry; another run submits nothing. Also inspect remote acceptance followed by a crash before saving the ID. [B30](reviews/2026-09-23-batch-architecture.md#b30). | 2026-09-23 |
+| 32 | P1 | open / candidate; needs verification | `services/analysis.py::_consume` | A late answer unconditionally resets the bill's status. Reproduced: `/skip` an in-flight bill, collect its answer, and its card is published anyway. Check forced analyses, linking and other superseding actions too. [B32](reviews/2026-09-23-batch-architecture.md#b32). | 2026-09-23 |
+| 35 | P1 | open / candidate; needs verification | `services/analysis.py::collect_batches`, `adapters/sqlite_repo.py::list_tracked` | A collected reanalysis only seeds memo and resets status; it does not schedule application independently of discovery. With a moved watermark, the collected bill is not tracked and retains its old analysis until a full check or new source change. [B35](reviews/2026-09-23-batch-architecture.md#b35). | 2026-09-23 |
+| 37 | P1 | open / candidate; needs verification | `services/analysis.py::collect_batches`, `_consume`, `adapters/sqlite_repo.py::save_llm_batch` | Failed status is committed before item consumption; a crash then makes unfinished items invisible to `list_open_llm_batches`. Reproduced with injected failure. Batch registration and successful consumption also lack the atomicity their multi-write transitions need. [B37](reviews/2026-09-23-batch-architecture.md#b37). | 2026-09-23 |
+| 38 | P1 | open / candidate; needs verification | `container.py::batch_backend`, `services/analysis.py::collect_batches` | The saved `batch.provider` is ignored. Switching to OpenAI polls old Anthropic IDs through OpenAI; a 404 is classified as failed and the paid work is abandoned. Reproduced with a restarted container and another backend. [B38](reviews/2026-09-23-batch-architecture.md#b38). | 2026-09-23 |
+| 39 | P1 | open / candidate; needs verification | `adapters/llm_openai.py::poll`, `fetch_results` | Only `output_file_id` is read; failed items in `error_file_id` remain unconsumed. `expired`/`cancelled` batches are treated as wholly failed even when they hold successful results. Three offline contract probes fail. [B39](reviews/2026-09-23-batch-architecture.md#b39). | 2026-09-23 |
+| 40 | P1 | open / candidate; needs verification | both batch adapters' result parsers | A malformed/truncated structured answer raises `ValidationError` through the whole iterator. Later valid items and later batches never reach consumption; the same poison row fails every collection. Reproduced for Anthropic and OpenAI. [B40](reviews/2026-09-23-batch-architecture.md#b40). | 2026-09-23 |
+| 42 | P1 | open / candidate; needs verification | `adapters/sqlite_repo.py::move_government_rows`, `services/analysis.py::_consume` | Term rollover moves government bills but not their batch item references. Collection consumes the old-term item while the new-term bill stays `batch_pending`. Reproduced through the repository's public rollover operation. [B42](reviews/2026-09-23-batch-architecture.md#b42). | 2026-09-23 |
+| 43 | P1 | open / candidate; needs verification | `cli.py::collect_batches` | The new entry point constructs `RunOptions` without configured `min_score` or run caps. Reproduced: `min_score=5`, completed score-3 answer, `collect-batches` publishes the card. [B43](reviews/2026-09-23-batch-architecture.md#b43). | 2026-09-23 |
+| 31 | P3 | open / candidate; needs verification | `services/tracking/rcl.py::_detect`, `adapters/sqlite_repo.py::save_analysis` | Saving the unchanged old analysis resets `batch_pending` to `analyzed`. The next unchanged RCL check files another paid reanalysis while the first is still running. Reproduced; audit the same pattern in linking/wykaz. [B31](reviews/2026-09-23-batch-architecture.md#b31). | 2026-09-23 |
+| 33 | P3 | open / candidate; needs verification | `services/analysis.py::analyze_pending`, `_enqueue`, `_persist` | The queued branch bypasses persistence of an accepted triage. Collection re-runs triage before reaching the full-analysis memo; one unchanged document incurs two triage calls. [B33](reviews/2026-09-23-batch-architecture.md#b33). | 2026-09-23 |
+| 34 | P3 | open / candidate; needs verification | `services/analysis.py::analyze_pending`, `submit_queued_batches` | Batch requests reserve no run budget; the queued branch also bypasses the exhaustion check. With a negligible positive budget all three candidates are submitted and no stop is reported. Inspect estimate/model routing mismatches as part of the fix. [B34](reviews/2026-09-23-batch-architecture.md#b34). | 2026-09-23 |
+| 36 | P3 | open / candidate; needs verification | `services/pipeline.py::_run_phases`, `services/analysis.py::_prepare` | Batch-enabled dry runs queue in memory but deliberately never submit: zero full analyses and no new-card preview. Reproduced through the dry-run container. This no longer tests the documented paid-analysis dry-run path. [B36](reviews/2026-09-23-batch-architecture.md#b36). | 2026-09-23 |
+| 41 | P3 | open / candidate; needs verification | batch result parsers, `services/cost.py`, pipeline/report aggregation | Collected calls contain tokens but report totals contain zero; batch discount is absent from the ledger; parsers label answers with the collecting model/prompt version. Token mismatch and wrong model reproduced; discount/provenance propagation traced in code. [B41](reviews/2026-09-23-batch-architecture.md#b41). | 2026-09-23 |
 
 ## Fixed
 
