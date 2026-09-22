@@ -31,7 +31,8 @@ class BillStatus(StrEnum):
     The skips say where it stopped — on the title, on the text, on the per-bill cost limit, or on
     a road already over at first sight — and `reset`/`/unskip` revive any of them. `LINKED`
     continues under another number (`Bill.linked_number`). A `SKIPPED_JOINT` is gone with the rule
-    that set it; v21 turns such a row into `ANALYSIS_PENDING`.
+    that set it; v21 turns such a row into `ANALYSIS_PENDING`. `BATCH_PENDING` is `ANALYSIS_PENDING`
+    once submitted: the request is with the provider, not yet collected (v26).
     """
 
     DISCOVERED = "discovered"
@@ -41,6 +42,7 @@ class BillStatus(StrEnum):
     SKIPPED_COST = "skipped_cost"
     SKIPPED_CLOSED = "skipped_closed"
     ANALYSIS_PENDING = "analysis_pending"
+    BATCH_PENDING = "batch_pending"
     ANALYSIS_FAILED = "analysis_failed"
     ANALYZED = "analyzed"
     LINKED = "linked"

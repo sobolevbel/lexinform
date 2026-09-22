@@ -306,6 +306,7 @@ def test_report_carries_phase_timings() -> None:
     report = w.run()
 
     assert set(report.phase_seconds) == {
+        "collect batches",
         "commands",
         "discovery",
         "wykaz discovery",
@@ -315,6 +316,7 @@ def test_report_carries_phase_timings() -> None:
         "analysis",
         "publishing",
         "tracking",
+        "submit batches",
         "digest",
     }
 

@@ -129,6 +129,20 @@ class Settings(BaseSettings):
         " others. GPT-5.1 is measured and ready but not yet switched on in production; see"
         " `llm_analysis_model`.",
     )
+    llm_batch_enabled: bool = Field(
+        default=False,
+        description="The full analysis and a re-analysis go through the provider's batch API"
+        " (half the price, an answer within a run or two rather than at once) instead of"
+        " `analyze()` directly. Off until a first submit/collect cycle is verified in production.",
+    )
+    llm_batch_provider: Literal["anthropic", "openai"] = Field(
+        default="anthropic",
+        description="Which provider's batch API `llm_batch_enabled` submits to — one setting for"
+        " both `analyze` and a re-analysis, not a choice per call kind: the two batch APIs are"
+        " different submissions with nothing to gain from mixing them. Uses `llm_analysis_model`"
+        " when it already names this provider, that provider's own default model otherwise — so"
+        " switching this alone is enough unless the model itself should change too.",
+    )
     triage_min_chars: int = Field(
         default=20_000, description="Shorter texts go straight to the full analysis."
     )

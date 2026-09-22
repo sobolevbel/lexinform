@@ -8,7 +8,7 @@ a git branch with readable diffs.
 import json
 import logging
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -21,6 +21,8 @@ from lexinform.models import (
     AgendaItem,
     AmendmentsRecord,
     AnalysisRecord,
+    BatchItemMeta,
+    BatchStatus,
     Bill,
     BillAuthors,
     BillStatus,
@@ -29,6 +31,8 @@ from lexinform.models import (
     DeliveryPlan,
     IncomingCommand,
     JointRecord,
+    LlmBatch,
+    LlmBatchItem,
     ObservedProcess,
     ProcessSummary,
     Publication,
@@ -287,6 +291,33 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE status_changes ADD COLUMN consultation_opened INTEGER NOT NULL DEFAULT 0;
     CREATE TABLE analysis_memo (key TEXT PRIMARY KEY, record_json TEXT NOT NULL);
     """,
+    # v26: analyze/reanalyze move to the provider's batch API (50% off); one llm_batches row per
+    # submission, llm_batch_items the bill each custom_id answers for and whether it's collected.
+    """
+    CREATE TABLE llm_batches (
+        batch_id TEXT PRIMARY KEY,
+        provider TEXT NOT NULL,
+        call_kind TEXT NOT NULL,
+        submitted_at TEXT NOT NULL,
+        status TEXT NOT NULL,
+        polled_at TEXT,
+        completed_at TEXT,
+        request_count INTEGER NOT NULL,
+        estimated_cost_usd REAL NOT NULL
+    );
+
+    CREATE TABLE llm_batch_items (
+        batch_id TEXT NOT NULL REFERENCES llm_batches(batch_id),
+        custom_id TEXT NOT NULL,
+        call_kind TEXT NOT NULL,
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        meta_json TEXT NOT NULL,
+        consumed_at TEXT,
+        PRIMARY KEY (batch_id, custom_id)
+    );
+    CREATE INDEX ix_llm_batch_items_bill ON llm_batch_items(term, number);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -299,6 +330,32 @@ def _iso(value: datetime | None) -> str | None:
 
 def _parse_dt(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value) if value else None
+
+
+def _row_to_llm_batch(row: sqlite3.Row) -> LlmBatch:
+    return LlmBatch(
+        batch_id=row["batch_id"],
+        provider=row["provider"],
+        call_kind=row["call_kind"],
+        submitted_at=_parse_dt(row["submitted_at"]) or datetime.min,
+        status=row["status"],
+        polled_at=_parse_dt(row["polled_at"]),
+        completed_at=_parse_dt(row["completed_at"]),
+        request_count=row["request_count"],
+        estimated_cost_usd=row["estimated_cost_usd"],
+    )
+
+
+def _row_to_llm_batch_item(row: sqlite3.Row) -> LlmBatchItem:
+    return LlmBatchItem(
+        batch_id=row["batch_id"],
+        custom_id=row["custom_id"],
+        call_kind=row["call_kind"],
+        term=row["term"],
+        number=row["number"],
+        meta=BatchItemMeta.model_validate_json(row["meta_json"]),
+        consumed_at=_parse_dt(row["consumed_at"]),
+    )
 
 
 def _utc_iso(value: datetime) -> str:
@@ -584,6 +641,74 @@ class SqliteBillRepository:
             WHERE term = ? AND number = ?
             """,
             (BillStatus.ANALYSIS_FAILED.value, error[:2000], term, number),
+        )
+
+    def save_llm_batch(self, batch: LlmBatch, items: Sequence[LlmBatchItem]) -> None:
+        self._conn.execute(
+            """
+            INSERT INTO llm_batches
+                (batch_id, provider, call_kind, submitted_at, status, request_count,
+                 estimated_cost_usd)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                batch.batch_id,
+                batch.provider,
+                batch.call_kind,
+                _iso(batch.submitted_at),
+                batch.status,
+                batch.request_count,
+                batch.estimated_cost_usd,
+            ),
+        )
+        self._conn.executemany(
+            """
+            INSERT INTO llm_batch_items (batch_id, custom_id, call_kind, term, number, meta_json)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            [
+                (i.batch_id, i.custom_id, i.call_kind, i.term, i.number, i.meta.model_dump_json())
+                for i in items
+            ],
+        )
+
+    def list_open_llm_batches(self) -> list[LlmBatch]:
+        rows = self._conn.execute(
+            "SELECT * FROM llm_batches WHERE status != 'failed'"
+            " AND EXISTS (SELECT 1 FROM llm_batch_items i"
+            "             WHERE i.batch_id = llm_batches.batch_id AND i.consumed_at IS NULL)"
+            " ORDER BY submitted_at"
+        ).fetchall()
+        return [_row_to_llm_batch(r) for r in rows]
+
+    def mark_llm_batch_polled(
+        self, batch_id: str, *, status: BatchStatus, polled_at: datetime
+    ) -> None:
+        self._conn.execute(
+            "UPDATE llm_batches SET status = ?, polled_at = ? WHERE batch_id = ?",
+            (status, _iso(polled_at), batch_id),
+        )
+
+    def mark_llm_batch_collected(self, batch_id: str, *, completed_at: datetime) -> None:
+        self._conn.execute(
+            "UPDATE llm_batches SET completed_at = ? WHERE batch_id = ?",
+            (_iso(completed_at), batch_id),
+        )
+
+    def list_llm_batch_items(self, batch_id: str) -> list[LlmBatchItem]:
+        rows = self._conn.execute(
+            "SELECT * FROM llm_batch_items WHERE batch_id = ? AND consumed_at IS NULL"
+            " ORDER BY custom_id",
+            (batch_id,),
+        ).fetchall()
+        return [_row_to_llm_batch_item(r) for r in rows]
+
+    def mark_llm_batch_item_consumed(
+        self, batch_id: str, custom_id: str, *, consumed_at: datetime
+    ) -> None:
+        self._conn.execute(
+            "UPDATE llm_batch_items SET consumed_at = ? WHERE batch_id = ? AND custom_id = ?",
+            (_iso(consumed_at), batch_id, custom_id),
         )
 
     def reset_bill(

@@ -1,11 +1,16 @@
 """LlmAnalyzer implementation on top of the official Anthropic SDK (structured outputs)."""
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Iterator, Sequence
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
 import anthropic
+from anthropic import transform_schema
+from anthropic.lib._parse._response import parse_response
+from anthropic.types.json_output_format_param import JSONOutputFormatParam
+from anthropic.types.messages.batch_create_params import Request as AnthropicBatchRequest
+from pydantic import TypeAdapter
 
 from lexinform.adapters.llm_prompts import (
     PROMPT_VERSION,
@@ -27,6 +32,9 @@ from lexinform.models import (
     AmendmentsRecord,
     Analysis,
     AnalysisRecord,
+    BatchRequest,
+    BatchResult,
+    BatchStatus,
     BillContext,
     DocumentDigest,
     JointComparison,
@@ -89,6 +97,7 @@ class AnthropicAnalyzer:
         self._amendments_system = amendments_system_prompt(output_language)
         self._supplement_system = supplement_system_prompt(output_language)
         self._joint_system = joint_system_prompt(output_language)
+        self._analysis_format = _json_output_format(Analysis)
 
     def analyze(self, ctx: BillContext) -> AnalysisRecord:
         response = self._parse(
@@ -289,6 +298,104 @@ class AnthropicAnalyzer:
             cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
         )
 
+    def submit(self, requests: Sequence[BatchRequest]) -> str:
+        """File one Messages Batches API submission — half of `analyze`'s price, answered within
+        a run or two rather than at once. `output_config` is built the way `messages.parse`
+        builds it internally: the Batches API takes raw request params, with no `.parse()`
+        convenience of its own, but the structured-output feature underneath is the same one."""
+        batch_requests: list[AnthropicBatchRequest] = [
+            {
+                "custom_id": req.custom_id,
+                "params": {
+                    "model": self._model,
+                    "max_tokens": self._max_tokens,
+                    "system": [
+                        {
+                            "type": "text",
+                            "text": self._system,
+                            "cache_control": {"type": "ephemeral"},
+                        }
+                    ],
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": _content(build_user_prompt(req.ctx), req.ctx.scan),
+                        }
+                    ],
+                    "thinking": {"type": "adaptive"},
+                    "output_config": {"effort": self._effort, "format": self._analysis_format},
+                },
+            }
+            for req in requests
+        ]
+        try:
+            batch = self._client.messages.batches.create(requests=batch_requests)
+        except (
+            anthropic.AuthenticationError,
+            anthropic.PermissionDeniedError,
+            anthropic.NotFoundError,
+            anthropic.RateLimitError,
+            anthropic.InternalServerError,
+            anthropic.APIConnectionError,
+        ) as exc:
+            raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
+        except anthropic.APIError as exc:
+            raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
+        log.info("submitted batch %s of %d request(s)", batch.id, len(batch_requests))
+        return batch.id
+
+    def poll(self, batch_id: str) -> BatchStatus:
+        try:
+            batch = self._client.messages.batches.retrieve(batch_id)
+        except (
+            anthropic.AuthenticationError,
+            anthropic.PermissionDeniedError,
+            anthropic.RateLimitError,
+            anthropic.InternalServerError,
+            anthropic.APIConnectionError,
+        ) as exc:
+            raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
+        except anthropic.NotFoundError:
+            return "failed"
+        return "ended" if batch.processing_status == "ended" else "submitted"
+
+    def fetch_results(self, batch_id: str) -> Iterator[BatchResult]:
+        try:
+            for item in self._client.messages.batches.results(batch_id):
+                yield self._batch_result(item)
+        except (
+            anthropic.AuthenticationError,
+            anthropic.PermissionDeniedError,
+            anthropic.RateLimitError,
+            anthropic.InternalServerError,
+            anthropic.APIConnectionError,
+        ) as exc:
+            raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
+
+    def _batch_result(self, item: Any) -> BatchResult:
+        result = item.result
+        if result.type != "succeeded":
+            return BatchResult(custom_id=item.custom_id, error=f"batch item {result.type}")
+        message = result.message
+        # Any: `parse_response` binds its generic to the class object, not an Analysis instance.
+        parsed: Any = parse_response(output_format=Analysis, response=message)
+        analysis = parsed.parsed_output
+        if not isinstance(analysis, Analysis):
+            return BatchResult(
+                custom_id=item.custom_id, error="model returned no parsable structured output"
+            )
+        usage = message.usage
+        return BatchResult(
+            custom_id=item.custom_id,
+            analysis=analysis,
+            model=self._model,
+            prompt_version=PROMPT_VERSION,
+            input_tokens=_usage_int(usage, "input_tokens"),
+            output_tokens=_usage_int(usage, "output_tokens"),
+            cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
+            cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
+        )
+
     def _parse(
         self,
         model: str,
@@ -345,6 +452,13 @@ class AnthropicAnalyzer:
         if response.stop_reason == "max_tokens":
             raise LlmError("response truncated by max_tokens")
         return response
+
+
+def _json_output_format(output_format: type[Any]) -> JSONOutputFormatParam:
+    """The raw `output_config.format` `messages.parse` builds from `output_format=`, for the
+    Batches API's plain request params, which take no `output_format=` shortcut of their own."""
+    schema = TypeAdapter(output_format).json_schema()
+    return JSONOutputFormatParam(type="json_schema", schema=transform_schema(schema))
 
 
 def _content(user_prompt: str, scan: ScannedDocument | None) -> list[Any]:

@@ -37,6 +37,7 @@ from lexinform.adapters.wykaz_csv import WykazClient
 from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
 from lexinform.ports import (
+    BatchBackend,
     BillRepository,
     Clock,
     CommandInbox,
@@ -246,6 +247,21 @@ class Container:
             triage=triage,
         )
 
+    def batch_backend(self) -> BatchBackend | None:
+        """The provider `llm_batch_provider` names, built the same way `_llm_backend` builds any
+        other capability — both `AnthropicAnalyzer` and `OpenAiAnalyzer` answer to it. None when
+        batching is off: `AnalysisService` then calls `analyze()` synchronously, as before."""
+        if not self.settings.llm_batch_enabled:
+            return None
+        return self._once("batch_backend", lambda: self._llm_backend(self._batch_model()))
+
+    def _batch_model(self) -> str:
+        analysis_model = self.settings.llm_analysis_model
+        is_claude = analysis_model.startswith("claude-")
+        if self.settings.llm_batch_provider == "anthropic":
+            return analysis_model if is_claude else "claude-opus-5"
+        return analysis_model if not is_claude else "gpt-5.1"
+
     def analysis_service(self) -> AnalysisService:
         return self._once("analysis", self._build_analysis_service)
 
@@ -269,11 +285,15 @@ class Container:
                 triage_scan_pages=self.settings.triage_scan_pages,
                 triage_min_confidence=self.settings.triage_min_confidence,
                 channel_id=self.channel_id(),
+                batch_provider=self.settings.llm_batch_provider
+                if self.settings.llm_batch_enabled
+                else None,
             ),
             text_budget=TextBudget(self.settings.text_budget_chars),
             authors=SejmAuthorsResolver(self.gateway),
             keywords=self.prefilter,
             triage=self.prefilter if self.settings.llm_triage_model else None,
+            batch=self.batch_backend(),
         )
 
     def discovery_service(self) -> BillDiscoveryService:

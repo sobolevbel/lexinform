@@ -29,6 +29,15 @@ from lexinform.models.analysis import (
     add_usage,
     usage_of,
 )
+from lexinform.models.batch import (
+    BatchItemMeta,
+    BatchProvider,
+    BatchRequest,
+    BatchResult,
+    BatchStatus,
+    LlmBatch,
+    LlmBatchItem,
+)
 from lexinform.models.bill import (
     PLENARY_COMMITTEE_CODE,
     Bill,
@@ -294,6 +303,13 @@ __all__ = [
     "AnalysisVerdict",
     "BackfillOutcome",
     "BackfillReport",
+    "BatchItemMeta",
+    "BatchProvider",
+    "BatchRequest",
+    "BatchResult",
+    "BatchStatus",
+    "LlmBatch",
+    "LlmBatchItem",
     "DocumentDigest",
     "ScannedDocument",
     "SupplementContext",

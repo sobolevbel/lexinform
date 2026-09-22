@@ -8,13 +8,15 @@ The full analysis was measured against Claude Opus 5 on 26 real prints and one s
 switch (docs/llm-cost.md): 96% agreement on relevance, zero missed bills, ~10x cheaper.
 """
 
+import json
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Iterator, Sequence
 from datetime import UTC, datetime
 from typing import Any, TypeVar
 
 import openai
 import tiktoken
+from openai.types.responses.response import Response
 from openai.types.responses.response_input_file_param import ResponseInputFileParam
 from openai.types.responses.response_input_message_content_list_param import (
     ResponseInputMessageContentListParam,
@@ -41,6 +43,9 @@ from lexinform.models import (
     AmendmentsRecord,
     Analysis,
     AnalysisRecord,
+    BatchRequest,
+    BatchResult,
+    BatchStatus,
     BillContext,
     DocumentDigest,
     JointComparison,
@@ -314,6 +319,124 @@ class OpenAiAnalyzer:
         if ctx.scan is not None:
             return None
         return len(encoding.encode(self._system)) + len(encoding.encode(build_user_prompt(ctx)))
+
+    def submit(self, requests: Sequence[BatchRequest]) -> str:
+        """File one Batches API submission against `/v1/responses` — half of the synchronous
+        price, answered within 24h at the most. One JSONL line per request, uploaded as a file
+        first: the Batches API takes a file id, never the requests inline."""
+        lines = [
+            json.dumps(
+                {
+                    "custom_id": req.custom_id,
+                    "method": "POST",
+                    "url": "/v1/responses",
+                    "body": {
+                        "model": self._model,
+                        "reasoning": None if self._effort == "none" else {"effort": self._effort},
+                        "max_output_tokens": self._max_output_tokens,
+                        "input": [
+                            {"role": "system", "content": self._system},
+                            {
+                                "role": "user",
+                                "content": _content(build_user_prompt(req.ctx), req.ctx.scan),
+                            },
+                        ],
+                        "text": {
+                            "format": {
+                                "type": "json_schema",
+                                "name": "analysis",
+                                "schema": _ANALYSIS_SCHEMA,
+                                "strict": True,
+                            }
+                        },
+                    },
+                }
+            )
+            for req in requests
+        ]
+        payload = ("\n".join(lines) + "\n").encode("utf-8")
+        try:
+            uploaded = self._resolved_client.files.create(
+                file=("batch.jsonl", payload, "application/jsonl"), purpose="batch"
+            )
+            batch = self._resolved_client.batches.create(
+                input_file_id=uploaded.id, endpoint="/v1/responses", completion_window="24h"
+            )
+        except (
+            openai.AuthenticationError,
+            openai.PermissionDeniedError,
+            openai.NotFoundError,
+            openai.RateLimitError,
+            openai.InternalServerError,
+            openai.APIConnectionError,
+        ) as exc:
+            raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
+        except openai.APIError as exc:
+            raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
+        log.info("submitted batch %s of %d request(s)", batch.id, len(lines))
+        return batch.id
+
+    def poll(self, batch_id: str) -> BatchStatus:
+        try:
+            batch = self._resolved_client.batches.retrieve(batch_id)
+        except (
+            openai.AuthenticationError,
+            openai.PermissionDeniedError,
+            openai.RateLimitError,
+            openai.InternalServerError,
+            openai.APIConnectionError,
+        ) as exc:
+            raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
+        except openai.NotFoundError:
+            return "failed"
+        if batch.status == "completed":
+            return "ended"
+        if batch.status in ("failed", "expired", "cancelled"):
+            return "failed"
+        return "submitted"
+
+    def fetch_results(self, batch_id: str) -> Iterator[BatchResult]:
+        try:
+            batch = self._resolved_client.batches.retrieve(batch_id)
+            if batch.output_file_id is None:
+                return
+            content = self._resolved_client.files.content(batch.output_file_id)
+        except (
+            openai.AuthenticationError,
+            openai.PermissionDeniedError,
+            openai.RateLimitError,
+            openai.InternalServerError,
+            openai.APIConnectionError,
+        ) as exc:
+            raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
+        for line in content.text.splitlines():
+            if line.strip():
+                yield self._batch_result_line(json.loads(line))
+
+    def _batch_result_line(self, line: dict[str, Any]) -> BatchResult:
+        custom_id = str(line["custom_id"])
+        error = line.get("error")
+        if error is not None:
+            return BatchResult(custom_id=custom_id, error=str(error))
+        body = (line.get("response") or {}).get("body")
+        if body is None:
+            return BatchResult(custom_id=custom_id, error="batch item carries no response")
+        response = Response.model_validate(body)
+        try:
+            analysis = _parsed_output(response, Analysis)
+        except LlmError as exc:
+            return BatchResult(custom_id=custom_id, error=str(exc))
+        usage = _usage_of(response)
+        return BatchResult(
+            custom_id=custom_id,
+            analysis=analysis,
+            model=self._model,
+            prompt_version=PROMPT_VERSION,
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+            cache_read_input_tokens=usage.cached_tokens,
+            cache_creation_input_tokens=0,
+        )
 
     def _structured_call(
         self,

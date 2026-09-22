@@ -238,6 +238,8 @@ class DailyPipeline:
         the wykaz before RCL so a project joins its own plan's thread, and RCL a phase of its own
         so an outage there costs the Sejm discovery nothing.
         """
+        # First, so a batch an earlier run filed is written down before publishing/tracking act.
+        self._phase(report, "collect batches", self._analysis.collect_batches)
         previous = [term for term in self._repo.known_terms() if term < current]
         if previous:
             self._phase(
@@ -273,6 +275,9 @@ class DailyPipeline:
         self._phase(report, "publishing", lambda: self._publish(opts, report))
         if opts.track:
             self._phase(report, "tracking", lambda: self._track(opts, report))
+        # Skipped on a dry run: a real batch submission has no rollback.
+        if not opts.dry_run:
+            self._phase(report, "submit batches", self._analysis.submit_queued_batches)
         # After tracking, so that the week's own posts are in it; the service decides whether
         # today is the day, and it asks the Warsaw calendar and not the runner's.
         if opts.digest and opts.publish and self._digest is not None:

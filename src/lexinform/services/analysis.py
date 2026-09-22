@@ -26,6 +26,10 @@ from lexinform.models import (
     AnalysisRecord,
     AnalysisVerdict,
     ApplicantType,
+    BatchItemMeta,
+    BatchProvider,
+    BatchRequest,
+    BatchResult,
     Bill,
     BillContext,
     BillStatus,
@@ -34,6 +38,8 @@ from lexinform.models import (
     JointBillDescription,
     JointContext,
     JointRecord,
+    LlmBatch,
+    LlmBatchItem,
     LlmCall,
     LocatedText,
     ProcessSummary,
@@ -49,7 +55,7 @@ from lexinform.models import (
     observe,
     stage_fingerprint,
 )
-from lexinform.ports import AuthorsResolver, BillRepository, Clock, LlmAnalyzer
+from lexinform.ports import AuthorsResolver, BatchBackend, BillRepository, Clock, LlmAnalyzer
 from lexinform.ports import TextSource as TextSourcePort
 from lexinform.pricing import (
     estimate_input_cost,
@@ -99,6 +105,7 @@ class AnalysisResult:
     unanswered: int = 0
     revived_joint: int = 0
     failed: int = 0
+    batched: int = 0
     verdicts: list[AnalysisVerdict] = field(default_factory=list)
     input_tokens: int = 0
     output_tokens: int = 0
@@ -141,6 +148,7 @@ class AnalysisOptions:
     Both cost guards are off at 0, and the per-bill estimate needs the model's input price.
     `triage_min_chars` is the length from which the cheap pass pays (a scan is triaged whatever
     its text). `channel_id`: a print whose group already holds a card there skips that pass.
+    `batch_provider` names who a queued request is filed under; unread while `batch` is None.
     """
 
     max_attempts: int = 3
@@ -152,6 +160,7 @@ class AnalysisOptions:
     triage_min_confidence: float = 0.8
     triage_scan_pages: int = 8
     channel_id: str | None = None
+    batch_provider: BatchProvider | None = None
 
 
 @dataclass(frozen=True)
@@ -193,22 +202,27 @@ class _Prepared:
     """Everything an analysis needs to be written down: produced without touching the database,
     so several bills can be prepared at the same time.
 
-    `first` marks a first analysis, which seeds the stages. Three flags say the model was not
+    `first` marks a first analysis, which seeds the stages. Four flags say the model was not
     asked: `unchanged` (a re-analysis found the analysed text under a new URL), `unreadable` (the
     new document could not be read — an analysis of the metadata must never replace one of a
-    text) and `deferred` (the run's budget was spent; the text waits for the next run).
+    text), `deferred` (the run's budget was spent; the text waits for the next run) and `queued`
+    (filed to the batch instead — `record` is None then, `batch_request`/`batch_meta` carry what
+    a submission needs).
     """
 
     bill: Bill
     located: LocatedText
     text: str
     source: TextSource
-    record: AnalysisRecord
+    record: AnalysisRecord | None
     first: bool
     triage: TriageRecord | None = None
     unchanged: bool = False
     unreadable: bool = False
     deferred: bool = False
+    queued: bool = False
+    batch_request: BatchRequest | None = None
+    batch_meta: BatchItemMeta | None = None
     memo_key: str | None = None
     triage_memo_key: str | None = None
 
@@ -290,6 +304,7 @@ class AnalysisService:
         authors: AuthorsResolver | None = None,
         keywords: KeywordPrefilter | None = None,
         triage: KeywordPrefilter | None = None,
+        batch: BatchBackend | None = None,
     ) -> None:
         self._repo = repo
         self._texts = texts
@@ -301,12 +316,17 @@ class AnalysisService:
         self._authors = authors
         self._keywords = keywords or KeywordPrefilter()
         self._triage = triage
+        self._batch = batch
+        self._queue: list[BatchRequest] = []
+        self._queue_meta: dict[str, BatchItemMeta] = {}
         self._ledger = CostLedger(max_run_usd=options.max_run_cost_usd)
         self._memo = repo.load_analysis_memo()
 
     def start_run(self) -> None:
         self._ledger.start_run()
         self._memo = self._repo.load_analysis_memo()
+        self._queue = []
+        self._queue_meta = {}
 
     @property
     def spent_usd(self) -> float:
@@ -348,12 +368,18 @@ class AnalysisService:
         carried = {bill.number for bill in candidates if self._joint_card_exists(bill)}
 
         def prepare(bill: Bill) -> _Prepared:
-            return self._prepare_first(bill, triage=bill.number not in carried)
+            return self._prepare_first(
+                bill, triage=bill.number not in carried, submit_batch=self._batch is not None
+            )
 
         for outcome in fan_out(candidates, prepare, workers=self._options.workers):
             bill = outcome.item
             try:
                 prepared = outcome.result()
+                if prepared.queued:
+                    self._enqueue(bill, prepared)
+                    result.batched += 1
+                    continue
                 record = self._persist(prepared)
             except ServiceUnavailableError as exc:
                 result.fatal_error = exc.describe()
@@ -420,6 +446,116 @@ class AnalysisService:
                 break
         return result
 
+    def submit_queued_batches(self) -> None:
+        """File everything `analyze_pending` and the tracking phase queued this run, as one
+        submission. A no-op with nothing queued, or with batching off."""
+        if not self._queue or self._batch is None:
+            return
+        requests, meta = self._queue, self._queue_meta
+        self._queue, self._queue_meta = [], {}
+        batch_id = self._batch.submit(requests)
+        provider = self._options.batch_provider or "anthropic"
+        estimate = sum(self._estimate_request_cost(req.ctx) for req in requests)
+        self._repo.save_llm_batch(
+            LlmBatch(
+                batch_id=batch_id,
+                provider=provider,
+                call_kind=requests[0].call_kind,
+                submitted_at=self._clock.now(),
+                status="submitted",
+                request_count=len(requests),
+                estimated_cost_usd=estimate,
+            ),
+            [
+                LlmBatchItem(
+                    batch_id=batch_id,
+                    custom_id=req.custom_id,
+                    call_kind=req.call_kind,
+                    term=req.term,
+                    number=req.number,
+                    meta=meta[req.custom_id],
+                )
+                for req in requests
+            ],
+        )
+        log.info("filed batch %s: %d request(s) with %s", batch_id, len(requests), provider)
+
+    def _estimate_request_cost(self, ctx: BillContext) -> float:
+        """Informational only (`LlmBatch.estimated_cost_usd`): half the synchronous price, since
+        nothing gates submission on it yet — the per-bill guard already ran in `_fit_to_budget`."""
+        price = self._options.input_price_usd_per_mtok
+        if price is None:
+            return 0.0
+        tokens = self._llm.count_input_tokens(ctx)
+        return (input_cost(tokens, price) if tokens is not None else 0.0) * 0.5
+
+    def collect_batches(self) -> None:
+        """Write down every batch the provider has finished. A bill whose answer landed goes
+        back to the status the normal pipeline reads: `_prepare` will find the same memo key it
+        queued and finish for free, with no new model call — this is the only place that reads
+        one back."""
+        if self._batch is None:
+            return
+        now = self._clock.now()
+        for batch in self._repo.list_open_llm_batches():
+            status = self._batch.poll(batch.batch_id)
+            self._repo.mark_llm_batch_polled(batch.batch_id, status=status, polled_at=now)
+            items = self._repo.list_llm_batch_items(batch.batch_id)
+            if status == "failed":
+                for item in items:
+                    self._consume(item, BatchResult(custom_id=item.custom_id, error="batch failed"))
+                self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
+                continue
+            if status != "ended":
+                continue
+            by_id = {item.custom_id: item for item in items}
+            for batch_result in self._batch.fetch_results(batch.batch_id):
+                found = by_id.get(batch_result.custom_id)
+                if found is not None:
+                    self._consume(found, batch_result)
+            self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
+
+    def _consume(self, item: LlmBatchItem, batch_result: BatchResult) -> None:
+        now = self._clock.now()
+        if batch_result.analysis is not None:
+            record = AnalysisRecord(
+                analysis=batch_result.analysis,
+                model=batch_result.model or "",
+                prompt_version=batch_result.prompt_version or "",
+                input_chars=item.meta.input_chars,
+                truncated=item.meta.truncated,
+                text_source=item.meta.text_source,
+                created_at=now,
+                input_tokens=batch_result.input_tokens,
+                output_tokens=batch_result.output_tokens,
+                cache_read_input_tokens=batch_result.cache_read_input_tokens,
+                cache_creation_input_tokens=batch_result.cache_creation_input_tokens,
+                source_url=item.meta.source_url,
+                source_kind=item.meta.source_kind,
+                revision=item.meta.revision,
+                text_sha256=item.meta.text_sha256,
+                source_checked_at=now,
+            )
+            self._ledger.charge(record, number=item.number, kind=item.call_kind)
+            self._remember_analysis(item.custom_id, record)
+            # Back to what the memo hit will finish for free: the queue, or the steady state.
+            done = (
+                BillStatus.ANALYSIS_PENDING if item.call_kind == "analysis" else BillStatus.ANALYZED
+            )
+            self._repo.set_status(item.term, item.number, done)
+        else:
+            log.warning(
+                "%s: batch answer (%s) is %s", item.number, item.call_kind, batch_result.error
+            )
+            if item.call_kind == "analysis":
+                self._repo.record_analysis_failure(
+                    item.term, item.number, batch_result.error or "batch: no answer"
+                )
+            else:
+                # A reanalysis that failed keeps the old analysis, same as a synchronous one would.
+                self._repo.set_status(item.term, item.number, BillStatus.ANALYZED)
+        self._repo.mark_llm_batch_item_consumed(item.batch_id, item.custom_id, consumed_at=now)
+
     def analyze_bill(self, bill: Bill, *, ignore_cost_limit: bool = False) -> AnalysisOutcome:
         """First analysis from the current text. Persists the result; raises on failure.
         `ignore_cost_limit` is the operator's explicit wish (a forced command): the per-bill
@@ -430,10 +566,20 @@ class AnalysisService:
         return AnalysisOutcome(self._persist(prepared), prepared.triage)
 
     def _prepare_first(
-        self, bill: Bill, *, cost_guard: bool = True, triage: bool = True
+        self,
+        bill: Bill,
+        *,
+        cost_guard: bool = True,
+        triage: bool = True,
+        submit_batch: bool = False,
     ) -> _Prepared:
         return self._prepare(
-            bill, self._texts.locate(bill), previous=None, cost_guard=cost_guard, triage=triage
+            bill,
+            self._texts.locate(bill),
+            previous=None,
+            cost_guard=cost_guard,
+            triage=triage,
+            submit_batch=submit_batch,
         )
 
     def _joint_card_exists(self, bill: Bill) -> bool:
@@ -471,8 +617,16 @@ class AnalysisService:
     ) -> tuple[Bill, bool]:
         """Memoize paid work without advancing the bill before its source checkpoint."""
         assert bill.analysis is not None
+        if bill.status is BillStatus.BATCH_PENDING:
+            # Already filed and not yet collected: re-detecting it now would queue it twice.
+            return bill, False
         located = LocatedText(summary=summary, document=document)
-        prepared = self._prepare(bill, located, previous=bill.analysis)
+        prepared = self._prepare(
+            bill, located, previous=bill.analysis, submit_batch=self._batch is not None
+        )
+        if prepared.queued:
+            self._enqueue(bill, prepared)
+            return bill, False
         if prepared.deferred:
             log.warning("%s: %s", bill.number, self._ledger.stopped)
             return bill, False
@@ -483,6 +637,7 @@ class AnalysisService:
                 document.url,
             )
             return bill, False
+        assert prepared.record is not None
         if prepared.unchanged:
             log.info("%s: %s carries the analysed text; not re-analysed", bill.number, document.url)
             return bill.model_copy(update={"analysis": prepared.record}), False
@@ -625,12 +780,17 @@ class AnalysisService:
         previous: AnalysisRecord | None,
         cost_guard: bool = True,
         triage: bool = True,
+        submit_batch: bool = False,
     ) -> _Prepared:
         """Load the text and ask the model. Network only: safe to run for several bills at once.
 
         The per-bill cost guard never refuses a re-analysis, only shortens it: a re-analysis
         reads a new version of a text that already passed the guard, and a bill whose new text
         we decline to read would keep a card describing the old one.
+
+        `submit_batch` files a memo miss to the batch instead of calling the model — false for a
+        manual `/analyze`, which the operator is waiting on. Still network-only: the request is
+        built and returned, not sent; `_enqueue` (the calling thread) is what touches the batch.
         """
         document = located.document
         try:
@@ -700,6 +860,31 @@ class AnalysisService:
         purpose: CallKind = "analysis" if previous is None else "reanalysis"
         key = _memo_key(bill, purpose, ctx) if cost_guard else None
         cached = self._memo.get(key) if key is not None else None
+        if cached is None and submit_batch and self._batch is not None and key is not None:
+            return _Prepared(
+                bill,
+                located,
+                text,
+                source,
+                None,
+                first=previous is None,
+                triage=triaged,
+                queued=True,
+                batch_request=BatchRequest(
+                    custom_id=key, call_kind=purpose, term=bill.term, number=bill.number, ctx=ctx
+                ),
+                batch_meta=BatchItemMeta(
+                    input_chars=len(ctx.text),
+                    truncated=ctx.truncated,
+                    text_source=source,
+                    source_kind=ctx.source_kind,
+                    source_url=document.url if document else None,
+                    revision=previous.revision + 1 if previous else 1,
+                    text_sha256=digest,
+                ),
+                memo_key=key,
+                triage_memo_key=triage_memo_key,
+            )
         if cached is None:
             record = self._llm.analyze(ctx)
             self._ledger.charge(record, number=bill.number, kind=purpose)
@@ -877,8 +1062,17 @@ class AnalysisService:
             key,
         )
 
+    def _enqueue(self, bill: Bill, prepared: _Prepared) -> None:
+        """Hand a queued request to the batch and mark the bill so nothing re-submits it while
+        it is in flight. Calling thread only, like `_persist`."""
+        assert prepared.batch_request is not None and prepared.batch_meta is not None
+        self._queue.append(prepared.batch_request)
+        self._queue_meta[prepared.batch_request.custom_id] = prepared.batch_meta
+        self._repo.set_status(bill.term, bill.number, BillStatus.BATCH_PENDING)
+
     def _persist(self, prepared: _Prepared) -> AnalysisRecord:
         """Write one prepared analysis down (stages, authors, the record). Calling thread only."""
+        assert prepared.record is not None, "a queued _Prepared must not reach _persist"
         bill, located = prepared.bill, prepared.located
         if prepared.memo_key is not None:
             self._remember_analysis(prepared.memo_key, prepared.record)

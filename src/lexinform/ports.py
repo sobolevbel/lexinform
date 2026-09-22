@@ -1,6 +1,6 @@
 """Interfaces (typing.Protocol) that services depend on. Adapters implement them."""
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager
 from datetime import date, datetime
 from typing import Protocol
@@ -12,6 +12,9 @@ from lexinform.models import (
     AmendmentsRecord,
     AnalysisRecord,
     BackfillReport,
+    BatchRequest,
+    BatchResult,
+    BatchStatus,
     Bill,
     BillAuthors,
     BillContext,
@@ -27,6 +30,8 @@ from lexinform.models import (
     IncomingCommand,
     JointContext,
     JointRecord,
+    LlmBatch,
+    LlmBatchItem,
     LocatedText,
     Mp,
     ObservedProcess,
@@ -253,6 +258,25 @@ class LlmAnalyzer(
     `llm_hybrid.HybridAnalyzer` is the router that makes five backends answer as one port."""
 
 
+class BatchBackend(Protocol):
+    """The full analysis and a re-analysis, asked of the provider's batch API (half the price of
+    `AnalysisBackend.analyze`, at the cost of an answer that is not immediate). `triage` never
+    goes through here: it stays the synchronous, per-bill `TriageBackend` above."""
+
+    def submit(self, requests: Sequence[BatchRequest]) -> str:
+        """File one submission; returns the provider's own batch id."""
+        ...
+
+    def poll(self, batch_id: str) -> BatchStatus:
+        """Whether the provider is done with this batch yet."""
+        ...
+
+    def fetch_results(self, batch_id: str) -> Iterator[BatchResult]:
+        """Every answer of an `"ended"` batch, in no particular order (`custom_id` says which
+        request each is)."""
+        ...
+
+
 class PublishResult(Protocol):
     @property
     def message_id(self) -> int: ...
@@ -465,6 +489,30 @@ class BillRepository(Protocol):
     def save_analysis(self, term: int, number: str, record: AnalysisRecord) -> None: ...
 
     def record_analysis_failure(self, term: int, number: str, error: str) -> None: ...
+
+    def save_llm_batch(self, batch: LlmBatch, items: Sequence[LlmBatchItem]) -> None:
+        """File a submission and which bill each of its requests answers for, together: a batch
+        with no items to collect it against would never be marked done."""
+        ...
+
+    def list_open_llm_batches(self) -> list[LlmBatch]:
+        """Batches not yet fully collected (`status != "failed"` and not every item consumed),
+        oldest first: what a collect run has to ask the provider about."""
+        ...
+
+    def mark_llm_batch_polled(
+        self, batch_id: str, *, status: BatchStatus, polled_at: datetime
+    ) -> None: ...
+
+    def mark_llm_batch_collected(self, batch_id: str, *, completed_at: datetime) -> None: ...
+
+    def list_llm_batch_items(self, batch_id: str) -> list[LlmBatchItem]:
+        """Every item of this batch not yet written back, oldest `custom_id` first."""
+        ...
+
+    def mark_llm_batch_item_consumed(
+        self, batch_id: str, custom_id: str, *, consumed_at: datetime
+    ) -> None: ...
 
     def reset_bill(
         self, term: int, number: str, status: BillStatus, *, reason: str | None = None
