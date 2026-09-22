@@ -485,6 +485,9 @@ def collect_batches(
                 wykaz=False,
                 commands=False,
                 digest=False,
+                min_score=s.min_score,
+                max_analyze=s.max_analyze_per_run,
+                max_publish=s.max_publish_per_run,
                 mode=RunMode.COLLECT,
             )
         )

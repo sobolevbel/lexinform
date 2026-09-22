@@ -35,7 +35,6 @@ def test_submit_failure_keeps_work_retryable(monkeypatch: pytest.MonkeyPatch) ->
     assert len(w.batch.submitted) == 1, w.bill("3039").status
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="BUGS #31: RCL clears pending")
 def test_rcl_reanalysis_is_not_submitted_twice_while_in_flight() -> None:
     w = World(batch=True)
     project = w.add_rcl_project()
@@ -67,7 +66,6 @@ def test_rcl_reanalysis_is_not_submitted_twice_while_in_flight() -> None:
     assert len(w.batch.submitted) == before, w.bill(RCL).status
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="BUGS #32: late result undoes skip")
 def test_collect_respects_an_operator_skip() -> None:
     w = World(batch=True)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
@@ -83,7 +81,6 @@ def test_collect_respects_an_operator_skip() -> None:
     assert w.bill("3039").status is BillStatus.SKIPPED_PREFILTER
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="BUGS #33: triage not memoized")
 def test_collect_does_not_pay_for_triage_again() -> None:
     w = World(batch=True, triage=True)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
@@ -133,7 +130,6 @@ def test_collected_reanalysis_is_applied_even_after_discovery_watermark_moves() 
     assert report.reanalyzed == 1, (report.tracked, w.bill("3039").status)
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="BUGS #36: dry run skips analysis")
 def test_dry_run_still_previews_a_new_analysis_without_submitting_a_batch() -> None:
     w = World(batch=True)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
@@ -144,9 +140,6 @@ def test_dry_run_still_previews_a_new_analysis_without_submitting_a_batch() -> N
     assert report.analyzed == 1, report
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError, reason="BUGS #37: failed batch lost on crash"
-)
 def test_failed_batch_remains_collectible_after_interrupted_item_consumption(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -223,7 +216,6 @@ def test_government_batch_survives_a_term_rollover() -> None:
     assert moved.status is BillStatus.ANALYSIS_PENDING, moved.status
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="BUGS #43: collect ignores min_score")
 def test_collect_cli_respects_configured_min_score(monkeypatch: pytest.MonkeyPatch) -> None:
     w = World(batch=True, batch_script={"3039": make_analysis(score=3)})
     w.container.settings.min_score = 5

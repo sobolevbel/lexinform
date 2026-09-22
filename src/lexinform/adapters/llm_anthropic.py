@@ -10,7 +10,7 @@ from anthropic import transform_schema
 from anthropic.lib._parse._response import parse_response
 from anthropic.types.json_output_format_param import JSONOutputFormatParam
 from anthropic.types.messages.batch_create_params import Request as AnthropicBatchRequest
-from pydantic import TypeAdapter
+from pydantic import TypeAdapter, ValidationError
 
 from lexinform.adapters.llm_prompts import (
     PROMPT_VERSION,
@@ -381,7 +381,10 @@ class AnthropicAnalyzer:
             return BatchResult(custom_id=item.custom_id, error=reason)
         message = result.message
         # Any: `parse_response` binds its generic to the class object, not an Analysis instance.
-        parsed: Any = parse_response(output_format=Analysis, response=message)
+        try:
+            parsed: Any = parse_response(output_format=Analysis, response=message)
+        except ValidationError as exc:
+            return BatchResult(custom_id=item.custom_id, error=str(exc))
         analysis = parsed.parsed_output
         if not isinstance(analysis, Analysis):
             return BatchResult(
@@ -391,7 +394,7 @@ class AnthropicAnalyzer:
         return BatchResult(
             custom_id=item.custom_id,
             analysis=analysis,
-            model=self._model,
+            model=message.model,
             prompt_version=PROMPT_VERSION,
             input_tokens=_usage_int(usage, "input_tokens"),
             output_tokens=_usage_int(usage, "output_tokens"),

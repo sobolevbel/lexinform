@@ -132,7 +132,7 @@ class DailyPipeline:
         captured = MemoryLogHandler()
         captured.install()
         run_id: int | None = None
-        self._analysis.start_run()
+        self._analysis.start_run(dry_run=opts.dry_run)
         try:
             self._repo.migrate()
             report.since = self.resolve_since(opts.since)

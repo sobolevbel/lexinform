@@ -6,7 +6,6 @@ from typing import Any
 
 import pytest
 from anthropic.types import Message
-from pydantic import ValidationError
 
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
@@ -68,7 +67,6 @@ def _line(custom_id: str, text: str) -> str:
     )
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="BUGS #39: error file ignored")
 def test_openai_returns_failed_items_from_the_error_file() -> None:
     client = _openai_client(
         _line("ok", make_analysis().model_dump_json()),
@@ -81,7 +79,6 @@ def test_openai_returns_failed_items_from_the_error_file() -> None:
     assert {item.custom_id for item in results} == {"ok", "bad"}, client.files.reads
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="BUGS #39: partial results discarded")
 @pytest.mark.parametrize("status", ["expired", "cancelled"])
 def test_openai_terminal_batch_with_results_is_collectible(status: str) -> None:
     client = _openai_client(_line("ok", make_analysis().model_dump_json()), status=status)
@@ -90,9 +87,6 @@ def test_openai_terminal_batch_with_results_is_collectible(status: str) -> None:
     assert backend.poll("batch-1") == "ended"
 
 
-@pytest.mark.xfail(
-    strict=True, raises=ValidationError, reason="BUGS #40: one bad result aborts all"
-)
 def test_openai_malformed_analysis_does_not_hide_the_next_item() -> None:
     client = _openai_client(
         _line("bad", '{"relevant":') + "\n" + _line("ok", make_analysis().model_dump_json())
@@ -120,9 +114,6 @@ def _anthropic_message(text: str, stop_reason: str) -> Message:
     )
 
 
-@pytest.mark.xfail(
-    strict=True, raises=ValidationError, reason="BUGS #40: one bad result aborts all"
-)
 def test_anthropic_truncated_analysis_does_not_hide_the_next_item() -> None:
     items = [
         SimpleNamespace(
@@ -145,9 +136,6 @@ def test_anthropic_truncated_analysis_does_not_hide_the_next_item() -> None:
     assert results[0].error is not None and results[1].analysis is not None
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError, reason="BUGS #41: collecting model replaces provenance"
-)
 def test_batch_result_keeps_the_model_that_answered() -> None:
     client = _openai_client(_line("ok", make_analysis().model_dump_json()))
     backend = OpenAiAnalyzer(lambda: client, model="gpt-5.1-new")

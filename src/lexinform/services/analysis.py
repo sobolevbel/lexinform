@@ -10,6 +10,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from pydantic import BaseModel
 
@@ -321,10 +322,12 @@ class AnalysisService:
         self._batch = batch
         self._queue: list[BatchRequest] = []
         self._queue_meta: dict[str, BatchItemMeta] = {}
+        self._dry_run = False
         self._ledger = CostLedger(max_run_usd=options.max_run_cost_usd)
         self._memo = repo.load_analysis_memo()
 
-    def start_run(self) -> None:
+    def start_run(self, *, dry_run: bool = False) -> None:
+        self._dry_run = dry_run
         self._ledger.start_run()
         self._memo = self._repo.load_analysis_memo()
         self._queue = []
@@ -338,7 +341,7 @@ class AnalysisService:
     @property
     def _submits_batches(self) -> bool:
         """Whether a memo miss is filed to the batch; `collect_batches` never asks."""
-        return self._batch is not None and self._options.submit_batches
+        return self._batch is not None and self._options.submit_batches and not self._dry_run
 
     @property
     def stopped(self) -> str | None:
@@ -516,14 +519,32 @@ class AnalysisService:
             if status != "ended":
                 continue
             by_id = {item.custom_id: item for item in items}
+            received: set[str] = set()
             for batch_result in self._batch.fetch_results(batch.batch_id):
                 found = by_id.get(batch_result.custom_id)
-                if found is not None:
+                if found is not None and batch_result.custom_id not in received:
                     self._consume(found, batch_result)
+                    received.add(batch_result.custom_id)
+            for custom_id, item in by_id.items():
+                if custom_id not in received:
+                    self._consume(
+                        item,
+                        BatchResult(custom_id=custom_id, error="batch item missing from results"),
+                    )
             self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
 
     def _consume(self, item: LlmBatchItem, batch_result: BatchResult) -> None:
         now = self._clock.now()
+        current = self._repo.get(item.term, item.number)
+        if current is None or current.status is not BillStatus.BATCH_PENDING:
+            self._repo.mark_llm_batch_item_consumed(item.batch_id, item.custom_id, consumed_at=now)
+            return
+        with self._repo.atomic():
+            self._consume_current(item, batch_result, now)
+
+    def _consume_current(
+        self, item: LlmBatchItem, batch_result: BatchResult, now: datetime
+    ) -> None:
         if batch_result.analysis is not None:
             record = AnalysisRecord(
                 analysis=batch_result.analysis,
@@ -1073,6 +1094,8 @@ class AnalysisService:
         """Hand a queued request to the batch and mark the bill so nothing re-submits it while
         it is in flight. Calling thread only, like `_persist`."""
         assert prepared.batch_request is not None and prepared.batch_meta is not None
+        if prepared.triage_memo_key is not None and prepared.triage is not None:
+            self._remember_analysis(prepared.triage_memo_key, prepared.triage)
         self._queue.append(prepared.batch_request)
         self._queue_meta[prepared.batch_request.custom_id] = prepared.batch_meta
         self._repo.set_status(bill.term, bill.number, BillStatus.BATCH_PENDING)

@@ -23,7 +23,7 @@ from openai.types.responses.response_input_message_content_list_param import (
 )
 from openai.types.responses.response_input_param import ResponseInputParam
 from openai.types.responses.response_input_text_param import ResponseInputTextParam
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from lexinform.adapters.llm_prompts import (
     PROMPT_VERSION,
@@ -389,18 +389,20 @@ class OpenAiAnalyzer:
             raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
         except openai.NotFoundError:
             return "failed"
-        if batch.status == "completed":
+        if batch.status in ("completed", "expired", "cancelled"):
             return "ended"
-        if batch.status in ("failed", "expired", "cancelled"):
+        if batch.status == "failed":
             return "failed"
         return "submitted"
 
     def fetch_results(self, batch_id: str) -> Iterator[BatchResult]:
         try:
             batch = self._resolved_client.batches.retrieve(batch_id)
-            if batch.output_file_id is None:
-                return
-            content = self._resolved_client.files.content(batch.output_file_id)
+            files = [
+                self._resolved_client.files.content(file_id)
+                for file_id in (batch.output_file_id, batch.error_file_id)
+                if file_id is not None
+            ]
         except (
             openai.AuthenticationError,
             openai.PermissionDeniedError,
@@ -409,9 +411,10 @@ class OpenAiAnalyzer:
             openai.APIConnectionError,
         ) as exc:
             raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
-        for line in content.text.splitlines():
-            if line.strip():
-                yield self._batch_result_line(json.loads(line))
+        for content in files:
+            for line in content.text.splitlines():
+                if line.strip():
+                    yield self._batch_result_line(json.loads(line))
 
     def _batch_result_line(self, line: dict[str, Any]) -> BatchResult:
         custom_id = str(line["custom_id"])
@@ -421,16 +424,16 @@ class OpenAiAnalyzer:
         body = (line.get("response") or {}).get("body")
         if body is None:
             return BatchResult(custom_id=custom_id, error="batch item carries no response")
-        response = Response.model_validate(body)
         try:
+            response = Response.model_validate(body)
             analysis = _parsed_output(response, Analysis)
-        except LlmError as exc:
+        except (LlmError, ValidationError) as exc:
             return BatchResult(custom_id=custom_id, error=str(exc))
         usage = _usage_of(response)
         return BatchResult(
             custom_id=custom_id,
             analysis=analysis,
-            model=self._model,
+            model=response.model,
             prompt_version=PROMPT_VERSION,
             input_tokens=usage.input_tokens,
             output_tokens=usage.output_tokens,

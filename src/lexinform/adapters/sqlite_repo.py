@@ -588,10 +588,19 @@ class SqliteBillRepository:
     def save_analysis(self, term: int, number: str, record: AnalysisRecord) -> None:
         self._conn.execute(
             """
-            UPDATE bills SET analysis_json = ?, status = ?, last_error = NULL
+            UPDATE bills SET analysis_json = ?,
+                status = CASE WHEN status = ? AND analysis_json = ? THEN status ELSE ? END,
+                last_error = NULL
             WHERE term = ? AND number = ?
             """,
-            (record.model_dump_json(), BillStatus.ANALYZED.value, term, number),
+            (
+                record.model_dump_json(),
+                BillStatus.BATCH_PENDING.value,
+                record.model_dump_json(),
+                BillStatus.ANALYZED.value,
+                term,
+                number,
+            ),
         )
 
     def save_observed_process(self, term: int, number: str, observed: ObservedProcess) -> None:
@@ -644,6 +653,10 @@ class SqliteBillRepository:
         )
 
     def save_llm_batch(self, batch: LlmBatch, items: Sequence[LlmBatchItem]) -> None:
+        with self.atomic():
+            self._save_llm_batch_rows(batch, items)
+
+    def _save_llm_batch_rows(self, batch: LlmBatch, items: Sequence[LlmBatchItem]) -> None:
         self._conn.execute(
             """
             INSERT INTO llm_batches
@@ -674,8 +687,7 @@ class SqliteBillRepository:
 
     def list_open_llm_batches(self) -> list[LlmBatch]:
         rows = self._conn.execute(
-            "SELECT * FROM llm_batches WHERE status != 'failed'"
-            " AND EXISTS (SELECT 1 FROM llm_batch_items i"
+            "SELECT * FROM llm_batches WHERE EXISTS (SELECT 1 FROM llm_batch_items i"
             "             WHERE i.batch_id = llm_batches.batch_id AND i.consumed_at IS NULL)"
             " ORDER BY submitted_at"
         ).fetchall()
