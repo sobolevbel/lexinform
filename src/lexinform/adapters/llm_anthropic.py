@@ -375,7 +375,10 @@ class AnthropicAnalyzer:
     def _batch_result(self, item: Any) -> BatchResult:
         result = item.result
         if result.type != "succeeded":
-            return BatchResult(custom_id=item.custom_id, error=f"batch item {result.type}")
+            reason = result.type
+            if result.type == "errored":
+                reason = f"errored: {result.error.error.message}"
+            return BatchResult(custom_id=item.custom_id, error=reason)
         message = result.message
         # Any: `parse_response` binds its generic to the class object, not an Analysis instance.
         parsed: Any = parse_response(output_format=Analysis, response=message)
