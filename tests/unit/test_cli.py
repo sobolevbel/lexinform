@@ -15,6 +15,8 @@ from datetime import UTC, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+import anthropic
+import httpx2 as httpx
 import pytest
 from typer.testing import CliRunner
 
@@ -415,6 +417,27 @@ def test_poll_batches_asks_github_to_collect_a_finished_batch(
     assert result.exit_code == 0, result.output
     assert "asked GitHub to collect" in result.output
     assert dispatched == ["batch-ready"]
+
+
+def test_poll_batches_says_so_when_the_provider_refuses(
+    db: Path, api: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The VPS may hold no key for the provider at all: every 20 minutes, a clean line."""
+    monkeypatch.setattr(
+        "lexinform.cli.anthropic.Anthropic",
+        _raise(anthropic.APIConnectionError(request=httpx.Request("GET", "https://api.test"))),
+    )
+    env = {
+        **_env(db, api=api),
+        "LEXINFORM_LLM_BATCH_ENABLED": "true",
+        "LEXINFORM_GITHUB_REPO": "owner/repo",
+        "LEXINFORM_GITHUB_TOKEN": "TOKEN",
+    }
+
+    result = runner.invoke(app, ["poll-batches"], env=env)
+
+    assert result.exit_code == 1
+    assert "could not ask anthropic" in result.output
 
 
 def test_poll_batches_says_so_when_github_refuses_instead_of_crashing(

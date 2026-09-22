@@ -593,7 +593,13 @@ def poll_batches() -> None:
     if not (settings.github_repo and settings.github_token):
         typer.echo("no GitHub repo/token to ask for a collect run", err=True)
         raise typer.Exit(code=2)
-    if not _a_batch_is_done(settings):
+    try:
+        finished = _a_batch_is_done(settings)
+    except (anthropic.APIError, openai.APIError) as exc:
+        # A missing key or an outage; the timer asks again in 20 minutes, the run in a few hours.
+        typer.echo(f"could not ask {settings.llm_batch_provider}: {type(exc).__name__}", err=True)
+        raise typer.Exit(code=1) from None
+    if not finished:
         typer.echo("no finished batch")
         return
     writer = GitHubInboxWriter(settings.github_repo, settings.github_token)
