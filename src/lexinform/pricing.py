@@ -1,12 +1,17 @@
-"""List prices of the Claude models (USD per million tokens), for the cost line of the run report.
+"""List prices of the Claude and GPT models (USD per million tokens), for the cost line of the
+run report.
 
-Verified against platform.claude.com/docs/en/about-claude/pricing on 2026-09-08. Cache reads cost
-0.1x the input price, cache writes 1.25x. Keys are matched as prefixes of the model id so dated
-snapshots ("claude-sonnet-5-20260601") price like their family; an unknown model yields None and
-the report simply shows no dollar figure.
+Claude prices verified against platform.claude.com/docs/en/about-claude/pricing on 2026-09-08;
+cache reads cost 0.1x the input price, cache writes 1.25x. GPT-5.1 verified against
+developers.openai.com/api/docs/pricing on 2026-09-22 ($1.25/$10 standard, cached input $0.125 —
+also 0.1x, so the same `CACHE_READ_FACTOR` prices it right; OpenAI has no billed cache-write step,
+so `cache_creation_input_tokens` is always 0 for it). Keys are matched as prefixes of the model id
+so dated snapshots ("claude-sonnet-5-20260601", "gpt-5.1-2025-11-13") price like their family; an
+unknown model yields None and the report simply shows no dollar figure.
 
 `CHARS_PER_TOKEN` is what Polish legal text measures on Claude's tokenizer, which is what the
-per-bill cost estimate is built on.
+per-bill cost estimate is built on before a model is asked to count; GPT-5.1's own tokenizer
+(`llm_openai.py`) is used instead wherever it is available, which is the normal case.
 """
 
 from collections.abc import Mapping
@@ -19,6 +24,7 @@ PRICES: dict[str, tuple[float, float]] = {
     "claude-sonnet-5": (2.0, 10.0),
     "claude-sonnet-4": (3.0, 15.0),
     "claude-haiku-4": (1.0, 5.0),
+    "gpt-5.1": (1.25, 10.0),
 }
 
 CACHE_READ_FACTOR = 0.1

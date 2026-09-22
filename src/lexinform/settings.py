@@ -11,6 +11,8 @@ from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Effort = Literal["low", "medium", "high", "xhigh", "max"]
+OpenAiEffort = Literal["none", "low", "medium", "high"]
+"""GPT-5.1's own `reasoning_effort` values; it has no `xhigh`/`max`."""
 
 
 class Settings(BaseSettings):
@@ -74,7 +76,11 @@ class Settings(BaseSettings):
         description="Read under its plain name, without the LEXINFORM_ prefix, so that one"
         " variable serves both this app and the anthropic SDK.",
     )
-    llm_model: str = "claude-opus-5"
+    llm_model: str = Field(
+        default="claude-opus-5",
+        description="Claude model for amendments, filed-document digests and joint-print"
+        " comparisons — the full per-bill analysis has its own `llm_analysis_model`.",
+    )
     llm_effort: Effort = "medium"
     llm_max_tokens: int = 4000
     llm_concurrency: int = Field(default=2, ge=1, description="Bills analysed at the same time.")
@@ -82,6 +88,25 @@ class Settings(BaseSettings):
         default="claude-sonnet-5",
         description="Cheap first pass on excerpts before the full analysis of a long print;"
         " empty disables it.",
+    )
+    openai_api_key: str | None = Field(
+        default=None,
+        validation_alias="OPENAI_API_KEY",
+        description="Read under its plain name, without the LEXINFORM_ prefix, so that one"
+        " variable serves both this app and the openai SDK.",
+    )
+    llm_analysis_model: str = Field(
+        default="gpt-5.1",
+        description="Model for the full per-bill analysis (`analyze()`), separate from"
+        " `llm_model`: measured against it on 26 real prints and one scan before the switch"
+        " (docs/llm-cost.md). A `claude-` name builds a second Anthropic client for it, with"
+        " Claude's own analysis prompt, instead of OpenAI's.",
+    )
+    llm_analysis_effort: OpenAiEffort = "medium"
+    llm_analysis_max_tokens: int = Field(
+        default=8000,
+        description="GPT-5.1 bills its reasoning tokens against this cap too, unlike Claude's"
+        " adaptive thinking, so it sits above `llm_max_tokens`.",
     )
     triage_min_chars: int = Field(
         default=20_000, description="Shorter texts go straight to the full analysis."

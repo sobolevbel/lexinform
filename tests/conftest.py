@@ -28,6 +28,7 @@ def no_real_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
     blanked for every test; the environment wins over the file."""
     for name in (
         "ANTHROPIC_API_KEY",
+        "OPENAI_API_KEY",
         "LEXINFORM_TELEGRAM_BOT_TOKEN",
         "LEXINFORM_TELEGRAM_CHANNEL_ID",
         "LEXINFORM_TELEGRAM_LOG_CHANNEL_ID",

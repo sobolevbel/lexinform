@@ -206,20 +206,28 @@ class TextExtractor(Protocol):
         ...
 
 
-class LlmAnalyzer(Protocol):
+class AnalysisBackend(Protocol):
+    """The full per-bill analysis alone: the half of `LlmAnalyzer` that can be its own model,
+    priced and prompted apart from everything else (`llm_hybrid.py`)."""
+
     def analyze(self, ctx: BillContext) -> AnalysisRecord: ...
-
-    def triage(self, ctx: TriageContext) -> TriageRecord: ...
-
-    def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:
-        """What a set of amendments (Senate, "-A" report) changes in the bill as described."""
-        ...
 
     def count_input_tokens(self, ctx: BillContext) -> int | None:
         """What this analysis will be charged for its input, counted by the model's own
         tokenizer before the call; None when the count could not be obtained. Free, and exact
         where an estimate from the text length is not — a scanned document has no text to
         measure at all."""
+        ...
+
+
+class SecondaryBackend(Protocol):
+    """Triage, amendments, filed-document digests and joint comparisons: everything a full
+    `LlmAnalyzer` does besides the analysis itself."""
+
+    def triage(self, ctx: TriageContext) -> TriageRecord: ...
+
+    def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:
+        """What a set of amendments (Senate, "-A" report) changes in the bill as described."""
         ...
 
     def digest_supplement(self, ctx: SupplementContext) -> SupplementRecord:
@@ -231,6 +239,12 @@ class LlmAnalyzer(Protocol):
         """How one print of a jointly considered group differs from the others, read off the
         channel's own description of each."""
         ...
+
+
+class LlmAnalyzer(AnalysisBackend, SecondaryBackend, Protocol):
+    """Everything a bill's analysis can ask a model for. `llm_hybrid.HybridAnalyzer` is the only
+    implementation that is not one client doing all of it — see `AnalysisBackend` /
+    `SecondaryBackend` for the two halves it is built from."""
 
 
 class PublishResult(Protocol):

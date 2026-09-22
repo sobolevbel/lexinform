@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 import anthropic
+import openai
 
 from lexinform.adapters.console import ConsolePublisher, ConsoleReplier, ConsoleRunNotifier
 from lexinform.adapters.doc_text import DocTextExtractor
@@ -17,6 +18,8 @@ from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtr
 from lexinform.adapters.github_inbox import GitHubInboxWriter
 from lexinform.adapters.inbox_files import FileInbox
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
+from lexinform.adapters.llm_hybrid import HybridAnalyzer
+from lexinform.adapters.llm_openai import OpenAiAnalyzer
 from lexinform.adapters.orka import OrkaClient
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.rcl_html import RclClient
@@ -34,6 +37,7 @@ from lexinform.adapters.wykaz_csv import WykazClient
 from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
 from lexinform.ports import (
+    AnalysisBackend,
     BillRepository,
     Clock,
     CommandInbox,
@@ -207,7 +211,7 @@ class Container:
     def analyzer(self) -> LlmAnalyzer:
         if self.llm is not None:
             return self.llm
-        return AnthropicAnalyzer(
+        secondary = AnthropicAnalyzer(
             anthropic.Anthropic(api_key=self.settings.anthropic_api_key),
             model=self.settings.llm_model,
             triage_model=self.settings.llm_triage_model or None,
@@ -216,12 +220,34 @@ class Container:
             max_tokens=self.settings.llm_max_tokens,
             clock=self.clock.now,
         )
+        analysis: AnalysisBackend
+        if self.settings.llm_analysis_model.startswith("claude-"):
+            analysis = AnthropicAnalyzer(
+                anthropic.Anthropic(api_key=self.settings.anthropic_api_key),
+                model=self.settings.llm_analysis_model,
+                output_language=self.settings.output_language,
+                effort=self.settings.llm_effort,
+                max_tokens=self.settings.llm_max_tokens,
+                clock=self.clock.now,
+            )
+        else:
+            analysis = OpenAiAnalyzer(
+                lambda: openai.OpenAI(api_key=self.settings.openai_api_key),
+                model=self.settings.llm_analysis_model,
+                output_language=self.settings.output_language,
+                effort=self.settings.llm_analysis_effort,
+                max_output_tokens=self.settings.llm_analysis_max_tokens,
+                clock=self.clock.now,
+            )
+        return HybridAnalyzer(analysis, secondary)
 
     def analysis_service(self) -> AnalysisService:
         return self._once("analysis", self._build_analysis_service)
 
     def _build_analysis_service(self) -> AnalysisService:
-        price = price_of(self.settings.llm_model)  # None: unknown model, no cost estimates
+        # The per-bill guard is about the analyze() call specifically, so its price is that
+        # model's, not the secondary one's (`llm_model`).
+        price = price_of(self.settings.llm_analysis_model)  # None: unknown model, no estimates
         return AnalysisService(
             self.repo,
             self.text_sources(),
