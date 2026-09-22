@@ -25,14 +25,14 @@ from pydantic import BaseModel
 
 from lexinform.adapters.llm_prompts import (
     PROMPT_VERSION,
-    amendments_system_prompt,
     build_amendments_prompt,
     build_joint_prompt,
     build_supplement_prompt,
     build_user_prompt,
+    gpt51_amendments_system_prompt,
+    gpt51_joint_system_prompt,
+    gpt51_supplement_system_prompt,
     gpt51_system_prompt,
-    joint_system_prompt,
-    supplement_system_prompt,
 )
 from lexinform.errors import LlmUnavailableError
 from lexinform.models import (
@@ -208,7 +208,7 @@ class OpenAiAnalyzer:
 
     def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:
         amendments, usage = self._structured_call(
-            system=amendments_system_prompt(self._language),
+            system=gpt51_amendments_system_prompt(self._language),
             user_prompt=build_amendments_prompt(ctx),
             scan=None,
             schema_name="amendments",
@@ -239,7 +239,7 @@ class OpenAiAnalyzer:
 
     def digest_supplement(self, ctx: SupplementContext) -> SupplementRecord:
         digest, usage = self._structured_call(
-            system=supplement_system_prompt(self._language),
+            system=gpt51_supplement_system_prompt(self._language),
             user_prompt=build_supplement_prompt(ctx),
             scan=ctx.scan,
             schema_name="document_digest",
@@ -273,7 +273,7 @@ class OpenAiAnalyzer:
 
     def compare_joint(self, ctx: JointContext) -> JointRecord:
         comparison, usage = self._structured_call(
-            system=joint_system_prompt(self._language),
+            system=gpt51_joint_system_prompt(self._language),
             user_prompt=build_joint_prompt(ctx),
             scan=None,
             schema_name="joint_comparison",
