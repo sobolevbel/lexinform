@@ -615,12 +615,27 @@ def poll_batches() -> None:
     typer.echo("asked GitHub to collect")
 
 
+BATCH_DONE_WINDOW = timedelta(minutes=40)
+"""How recently a batch must have ended to be worth a collect run — twice the timer's interval,
+so one missed tick still catches it. `ended` is terminal and kept for 29 days: without a window
+every tick for a month would ask for a run over the same long-collected batch."""
+
+
 def _a_batch_is_done(settings: Settings) -> bool:
+    cutoff = datetime.now(UTC) - BATCH_DONE_WINDOW
     if settings.llm_batch_provider == "anthropic":
         claude = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-        return any(b.processing_status == "ended" for b in claude.messages.batches.list(limit=20))
+        return any(
+            b.processing_status == "ended" and b.ended_at is not None and b.ended_at >= cutoff
+            for b in claude.messages.batches.list(limit=20)
+        )
     gpt = openai.OpenAI(api_key=settings.openai_api_key)
-    return any(b.status == "completed" for b in gpt.batches.list(limit=20))
+    return any(
+        b.status == "completed"
+        and b.completed_at is not None
+        and b.completed_at >= cutoff.timestamp()
+        for b in gpt.batches.list(limit=20)
+    )
 
 
 @app.command()

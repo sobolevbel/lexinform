@@ -369,11 +369,14 @@ def test_poll_batches_needs_a_github_repo_and_token(db: Path, api: str) -> None:
     assert "no GitHub repo/token" in result.output
 
 
-def _fake_finished_anthropic_batch(monkeypatch: pytest.MonkeyPatch) -> None:
-    """An Anthropic whose `batches.list()` answers with one batch that has ended."""
+def _fake_finished_anthropic_batch(
+    monkeypatch: pytest.MonkeyPatch, *, ended_minutes_ago: int = 1
+) -> None:
+    """An Anthropic whose `batches.list()` answers with one batch that ended that long ago."""
 
     class _FakeBatch:
         processing_status = "ended"
+        ended_at = datetime.now(UTC) - timedelta(minutes=ended_minutes_ago)
 
     class _FakeBatches:
         def list(self, *, limit: int) -> list[_FakeBatch]:
@@ -417,6 +420,31 @@ def test_poll_batches_asks_github_to_collect_a_finished_batch(
     assert result.exit_code == 0, result.output
     assert "asked GitHub to collect" in result.output
     assert dispatched == ["batch-ready"]
+
+
+def test_poll_batches_ignores_a_batch_that_ended_long_ago(
+    db: Path, api: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`ended` is terminal and kept for 29 days: without a window the timer would ask for a run
+    every 20 minutes for a month over one batch collected on its first tick."""
+    _fake_finished_anthropic_batch(monkeypatch, ended_minutes_ago=180)
+    dispatched: list[str] = []
+    monkeypatch.setattr(
+        "lexinform.cli.GitHubInboxWriter.dispatch",
+        lambda self, event_type, client_payload=None: dispatched.append(event_type),
+    )
+    env = {
+        **_env(db, api=api),
+        "LEXINFORM_LLM_BATCH_ENABLED": "true",
+        "LEXINFORM_GITHUB_REPO": "owner/repo",
+        "LEXINFORM_GITHUB_TOKEN": "TOKEN",
+    }
+
+    result = runner.invoke(app, ["poll-batches"], env=env)
+
+    assert result.exit_code == 0, result.output
+    assert "no finished batch" in result.output
+    assert dispatched == []
 
 
 def test_poll_batches_says_so_when_the_provider_refuses(
