@@ -102,6 +102,7 @@ class Container:
     wykaz: WykazGateway | None = None
     orka: Downloader | None = None
     llm: LlmAnalyzer | None = None
+    batch_override: BatchBackend | None = None
     extractor: TextExtractor | None = None
     publisher_override: Publisher | None = None
     notifier_override: RunNotifier | None = None
@@ -251,6 +252,8 @@ class Container:
         """The provider `llm_batch_provider` names, built the same way `_llm_backend` builds any
         other capability — both `AnthropicAnalyzer` and `OpenAiAnalyzer` answer to it. None when
         batching is off: `AnalysisService` then calls `analyze()` synchronously, as before."""
+        if self.batch_override is not None:
+            return self.batch_override
         if not self.settings.llm_batch_enabled:
             return None
         return self._once("batch_backend", lambda: self._llm_backend(self._batch_model()))
@@ -286,7 +289,7 @@ class Container:
                 triage_min_confidence=self.settings.triage_min_confidence,
                 channel_id=self.channel_id(),
                 batch_provider=self.settings.llm_batch_provider
-                if self.settings.llm_batch_enabled
+                if self.batch_backend() is not None
                 else None,
             ),
             text_budget=TextBudget(self.settings.text_budget_chars),

@@ -6,7 +6,7 @@ gateway and `outage_on` on the publisher raise the phase-fatal `ServiceUnavailab
 `fail_on` raises an ordinary per-bill error.
 """
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 
@@ -31,6 +31,9 @@ from lexinform.models import (
     Analysis,
     AnalysisRecord,
     BackfillReport,
+    BatchRequest,
+    BatchResult,
+    BatchStatus,
     Bill,
     BillContext,
     BillSubmission,
@@ -608,6 +611,48 @@ class FakeLlm:
             input_tokens=self.AMENDMENTS_TOKENS[0],
             output_tokens=self.AMENDMENTS_TOKENS[1],
         )
+
+
+class FakeBatchBackend:
+    """A batch that only answers once the test calls `resolve`: `submit` files it, `poll` says
+    `"submitted"` until then, `fetch_results` raises if asked before `resolve`."""
+
+    MODEL = "fake-batch"
+
+    def __init__(self, script: dict[str, Analysis | Exception] | None = None) -> None:
+        self.script = script or {}
+        self.batches: dict[str, list[BatchRequest]] = {}
+        self.resolved: set[str] = set()
+        self.submitted: list[BatchRequest] = []
+
+    def submit(self, requests: Sequence[BatchRequest]) -> str:
+        batch_id = f"batch-{len(self.batches) + 1}"
+        self.batches[batch_id] = list(requests)
+        self.submitted.extend(requests)
+        return batch_id
+
+    def poll(self, batch_id: str) -> BatchStatus:
+        return "ended" if batch_id in self.resolved else "submitted"
+
+    def fetch_results(self, batch_id: str) -> Iterator[BatchResult]:
+        assert batch_id in self.resolved, "fetch_results before resolve()"
+        for req in self.batches[batch_id]:
+            outcome = self.script.get(req.number, make_analysis())
+            if isinstance(outcome, Exception):
+                yield BatchResult(custom_id=req.custom_id, error=str(outcome))
+                continue
+            yield BatchResult(
+                custom_id=req.custom_id,
+                analysis=outcome,
+                model=self.MODEL,
+                prompt_version=PROMPT_VERSION,
+                input_tokens=FakeLlm.ANALYSIS_TOKENS[0],
+                output_tokens=FakeLlm.ANALYSIS_TOKENS[1],
+            )
+
+    def resolve(self, batch_id: str | None = None) -> None:
+        """Test-only: `batch_id`, or every batch filed so far, answers on the next poll/collect."""
+        self.resolved.update([batch_id] if batch_id is not None else self.batches)
 
 
 @dataclass

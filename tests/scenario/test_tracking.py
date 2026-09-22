@@ -6,6 +6,7 @@ from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import LlmUnavailableError
 from lexinform.models import (
     Attachment,
+    BillStatus,
     Committee,
     PrintInfo,
     Publication,
@@ -189,6 +190,47 @@ def test_committee_report_with_a_new_text_triggers_a_re_analysis_with_context() 
         "CommitteeWork",
         "CommitteeReport",
     ]
+
+
+def test_a_batched_re_analysis_posts_nothing_until_collected() -> None:
+    """The new text is detected and filed to the batch on the run that finds it, exactly as a
+    first analysis is; nothing is posted until it is collected, and re-detecting it on a run in
+    between must not file it a second time."""
+    w = World(batch=True, extractor=FakeTextExtractor(by_content={b"%PDF-report": REPORT_TEXT}))
+    batch = w.batch
+    assert batch is not None
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    batch.resolve()
+    w.run()  # collects the first analysis and publishes the card
+    batch.submitted.clear()
+    w.set_stages("3039", WITH_REPORT)
+    w.gateway.files[REPORT_URL] = b"%PDF-report"
+    w.clock.advance(days=1)
+
+    submitted = w.run()
+
+    # The new committee-report stage is still posted this run (it needs no LLM answer); the text
+    # itself is filed to the batch instead, and this update says nothing about its content yet.
+    assert submitted.reanalyzed == 0
+    _, first_change, _ = w.publisher.updates[-1]
+    assert not first_change.content_changed
+    assert w.bill("3039").status is BillStatus.BATCH_PENDING
+    assert len(batch.submitted) == 1
+
+    w.clock.advance(days=1)
+    resubmitted = w.run()  # a re-visit while still pending must not queue it again
+
+    assert resubmitted.reanalyzed == 0 and len(batch.submitted) == 1
+
+    batch.resolve()
+    w.clock.advance(days=1)
+    collected = w.run()
+
+    assert collected.reanalyzed == 1
+    assert w.bill("3039").status is BillStatus.ANALYZED
+    _, change, reply_to = w.publisher.updates[-1]
+    assert change.content_changed and reply_to == w.card_id("3039")
 
 
 def test_same_document_is_not_analysed_twice() -> None:

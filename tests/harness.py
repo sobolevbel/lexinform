@@ -45,6 +45,7 @@ from lexinform.services.pipeline import RunOptions
 from lexinform.services.terms import TermResolver
 from lexinform.settings import Settings
 from tests.fakes import (
+    FakeBatchBackend,
     FakeInbox,
     FakeLlm,
     FakeNotifier,
@@ -301,6 +302,8 @@ class World:
         max_bill_cost_usd: float = 0.0,  # the cost guard rails are off unless a test turns them on
         max_run_cost_usd: float = 0.0,
         text_budget_chars: int = 10_000,  # the outer cap; raise it to let the cost limit decide
+        batch: bool = False,
+        batch_script: dict[str, Analysis | Exception] | None = None,
     ) -> None:
         self.clock = FixedClock()
         self.repo = SqliteBillRepository(":memory:")
@@ -309,6 +312,7 @@ class World:
         self.llm = FakeLlm(
             script=llm_script, triage_script=triage_script, joint_script=joint_script
         )
+        self.batch = FakeBatchBackend(script=batch_script) if batch else None
         # The formatter the container and the publisher share, as in production, and it dates
         # what it renders from the test's clock *in Warsaw*, the way `container.py` does:
         # everything a message says about "now" is the reader's now, not the day the suite
@@ -355,6 +359,7 @@ class World:
             sejm_concurrency=workers,
             rcl_concurrency=workers,
             llm_concurrency=workers,
+            llm_batch_enabled=batch,
         )
         self.container = Container(
             settings=settings,
@@ -368,6 +373,7 @@ class World:
             wykaz=self.wykaz,
             orka=self.orka,
             llm=self.llm,
+            batch_override=self.batch,
             extractor=self.extractor,
             publisher_override=self.publisher,
             notifier_override=self.notifier,

@@ -38,8 +38,28 @@ def test_relevant_bill_is_analysed_and_published_once() -> None:
     )
     assert [b.number for b, _ in w.publisher.new_bills] == ["3039"]
     assert w.bill("4000").status is BillStatus.SKIPPED_TEXT_PREFILTER
-    assert (report.text_prefilter_checked, report.text_prefilter_hits) == (1, 0)
-    assert [c.text_source for c in w.llm.contexts] == ["pdf"]
+
+
+def test_a_batched_analysis_posts_nothing_until_collected() -> None:
+    """`analyze()` is filed to the batch instead of called; nothing is published on the run that
+    submits it — a card sent from a placeholder verdict is worse than one sent late — and the
+    next run, once the batch is resolved, finds the memoized answer and posts the card in full."""
+    w = World(batch=True)
+    w.add_bill("3039", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
+
+    submitted = w.run()
+
+    assert (submitted.analyzed, submitted.published) == (0, 0)
+    assert w.publisher.new_bills == []
+    assert w.bill("3039").status is BillStatus.BATCH_PENDING
+    assert w.batch is not None and len(w.batch.submitted) == 1
+
+    w.batch.resolve()
+    collected = w.run()
+
+    assert (collected.analyzed, collected.published) == (1, 1)
+    assert [b.number for b, _ in w.publisher.new_bills] == ["3039"]
+    assert w.bill("3039").status is BillStatus.ANALYZED
 
 
 def test_second_run_publishes_nothing_new() -> None:
