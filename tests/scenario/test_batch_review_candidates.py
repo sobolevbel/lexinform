@@ -10,6 +10,7 @@ from typer.testing import CliRunner
 from lexinform.cli import app
 from lexinform.errors import LlmUnavailableError
 from lexinform.models import BatchRequest, BatchStatus, BillStatus
+from lexinform.pricing import cost_usd
 from lexinform.services.pipeline import RunOptions
 from tests.fakes import FakeBatchBackend, FakeTextExtractor, make_analysis
 from tests.harness import RCL, TERM, World, rcl_document, rcl_folder, rcl_stage
@@ -93,7 +94,6 @@ def test_collect_does_not_pay_for_triage_again() -> None:
     assert len(w.llm.triage_contexts) == 1
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="BUGS #34: budget not reserved")
 def test_batch_submission_obeys_the_run_budget() -> None:
     w = World(batch=True, max_run_cost_usd=0.000001)
     for number in ("3039", "3040", "3041"):
@@ -104,9 +104,6 @@ def test_batch_submission_obeys_the_run_budget() -> None:
     assert len(w.batch.submitted) <= 1, (len(w.batch.submitted), report.notes)
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError, reason="BUGS #35: completed work not tracked"
-)
 def test_collected_reanalysis_is_applied_even_after_discovery_watermark_moves() -> None:
     w = World(batch=True, extractor=FakeTextExtractor(by_content={b"%PDF-report": REPORT_TEXT}))
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
@@ -171,7 +168,6 @@ class _OtherProvider(FakeBatchBackend):
         return "failed"
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="BUGS #38: wrong provider")
 def test_switching_provider_does_not_poll_old_ids_on_the_new_provider() -> None:
     w = World(batch=True)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
@@ -188,7 +184,6 @@ def test_switching_provider_does_not_poll_old_ids_on_the_new_provider() -> None:
     assert not other.polled
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="BUGS #41: missing aggregate usage")
 def test_collected_tokens_are_in_the_run_totals() -> None:
     w = World(batch=True)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
@@ -199,6 +194,8 @@ def test_collected_tokens_are_in_the_run_totals() -> None:
 
     assert report.llm_calls and report.llm_calls[0].input_tokens > 0
     assert report.llm_input_tokens == sum(call.input_tokens for call in report.llm_calls)
+    assert report.llm_calls[0].batched
+    assert cost_usd(report.llm_usage) == cost_usd(report.llm_calls[0].usage)
 
 
 @pytest.mark.xfail(strict=True, raises=AssertionError, reason="BUGS #42: batch identity not moved")

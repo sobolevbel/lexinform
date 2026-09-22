@@ -589,13 +589,15 @@ class SqliteBillRepository:
         self._conn.execute(
             """
             UPDATE bills SET analysis_json = ?,
-                status = CASE WHEN status = ? AND analysis_json = ? THEN status ELSE ? END,
+                status = CASE WHEN status IN (?, ?) AND analysis_json = ?
+                              THEN status ELSE ? END,
                 last_error = NULL
             WHERE term = ? AND number = ?
             """,
             (
                 record.model_dump_json(),
                 BillStatus.BATCH_PENDING.value,
+                BillStatus.REANALYSIS_READY.value,
                 record.model_dump_json(),
                 BillStatus.ANALYZED.value,
                 term,
@@ -955,10 +957,17 @@ class SqliteBillRepository:
             sql += """
               AND (substr(b.change_date, 1, 19) >= substr(?, 1, 19)
                    OR (b.passed = 1 AND b.act_json IS NULL)
+                   OR b.status = ?
                    OR b.number LIKE ?)
             """
             since = changed_since if changed_since.tzinfo is None else changed_since.astimezone(UTC)
-            params.extend([since.replace(tzinfo=None).isoformat(), f"{WYKAZ_PREFIX}%"])
+            params.extend(
+                [
+                    since.replace(tzinfo=None).isoformat(),
+                    BillStatus.REANALYSIS_READY.value,
+                    f"{WYKAZ_PREFIX}%",
+                ]
+            )
         rows = self._conn.execute(sql + " ORDER BY b.term, b.number", params).fetchall()
         return [self._row_to_bill(r) for r in rows]
 

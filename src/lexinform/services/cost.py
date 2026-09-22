@@ -9,7 +9,7 @@ the phases do not spend evenly.
 
 import threading
 
-from lexinform.models import CallKind, LlmCall, TokenUsage, UsageRecord, add_usage
+from lexinform.models import CallKind, LlmCall, UsageRecord
 from lexinform.pricing import cost_usd, format_usd
 
 
@@ -24,6 +24,7 @@ class CostLedger:
         self._max_run_usd = max_run_usd
         self._lock = threading.Lock()
         self._spent = 0.0
+        self._reserved = 0.0
         self._calls: list[LlmCall] = []
         self._stopped: str | None = None
 
@@ -32,29 +33,30 @@ class CostLedger:
         counter would be run-scoped anyway; a test drives several runs through one container."""
         with self._lock:
             self._spent = 0.0
+            self._reserved = 0.0
             self._calls.clear()
             self._stopped = None
 
-    def charge(self, record: UsageRecord | None, *, number: str, kind: CallKind) -> None:
+    def charge(
+        self, record: UsageRecord | None, *, number: str, kind: CallKind, batched: bool = False
+    ) -> None:
         """Count what one model call cost towards the run's budget, and write down which call it
         was — `calls` is what answers "where did the money go" without reading the logs."""
         if record is None:
             return
-        usage: dict[str, TokenUsage] = {}
-        add_usage(usage, record)
-        spent = cost_usd(usage)
+        call = LlmCall(
+            number=number,
+            kind=kind,
+            model=record.model,
+            input_tokens=record.input_tokens or 0,
+            output_tokens=record.output_tokens or 0,
+            cache_read_input_tokens=record.cache_read_input_tokens or 0,
+            cache_creation_input_tokens=record.cache_creation_input_tokens or 0,
+            batched=batched,
+        )
+        spent = cost_usd(call.usage)
         with self._lock:
-            self._calls.append(
-                LlmCall(
-                    number=number,
-                    kind=kind,
-                    model=record.model,
-                    input_tokens=record.input_tokens or 0,
-                    output_tokens=record.output_tokens or 0,
-                    cache_read_input_tokens=record.cache_read_input_tokens or 0,
-                    cache_creation_input_tokens=record.cache_creation_input_tokens or 0,
-                )
-            )
+            self._calls.append(call)
             if spent is not None:
                 self._spent += spent
 
@@ -62,6 +64,14 @@ class CostLedger:
     def spent_usd(self) -> float:
         """What the model has cost this run, over every phase that asks it something."""
         return self._spent
+
+    def reserve(self, estimate_usd: float) -> bool:
+        with self._lock:
+            committed = self._spent + self._reserved
+            if self._max_run_usd and committed >= self._max_run_usd:
+                return False
+            self._reserved += estimate_usd
+            return True
 
     @property
     def calls(self) -> list[LlmCall]:
@@ -71,14 +81,15 @@ class CostLedger:
 
     @property
     def exhausted(self) -> bool:
-        return bool(self._max_run_usd) and self._spent >= self._max_run_usd
+        return bool(self._max_run_usd) and self._spent + self._reserved >= self._max_run_usd
 
     @property
     def over_budget(self) -> str:
         """`run cost limit reached (≈$0.002 ≥ $0.001)`: how every message about the run's budget
         opens. What waits for the next run differs by phase, so the caller adds it."""
         return (
-            f"run cost limit reached (≈{format_usd(self._spent)} ≥ {format_usd(self._max_run_usd)})"
+            f"run cost limit reached (≈{format_usd(self._spent + self._reserved)}"
+            f" ≥ {format_usd(self._max_run_usd)})"
         )
 
     @property

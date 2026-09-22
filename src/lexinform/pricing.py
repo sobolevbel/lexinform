@@ -70,6 +70,13 @@ def cost_usd(usage_by_model: Mapping[str, TokenUsage]) -> float | None:
             + usage.cache_read * per_input * CACHE_READ_FACTOR
             + usage.cache_creation * per_input * CACHE_WRITE_FACTOR
             + usage.output * per_output
+            + (
+                usage.batch_input * per_input
+                + usage.batch_cache_read * per_input * CACHE_READ_FACTOR
+                + usage.batch_cache_creation * per_input * CACHE_WRITE_FACTOR
+                + usage.batch_output * per_output
+            )
+            * 0.5
         ) / 1_000_000
     return total
 

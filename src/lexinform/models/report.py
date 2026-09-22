@@ -49,6 +49,7 @@ class LlmCall(BaseModel):
     output_tokens: int = 0
     cache_read_input_tokens: int = 0
     cache_creation_input_tokens: int = 0
+    batched: bool = False
 
     @property
     def usage(self) -> dict[str, TokenUsage]:
@@ -60,6 +61,13 @@ class LlmCall(BaseModel):
                 output=self.output_tokens,
                 cache_read=self.cache_read_input_tokens,
                 cache_creation=self.cache_creation_input_tokens,
+            )
+            if not self.batched
+            else TokenUsage(
+                batch_input=self.input_tokens,
+                batch_output=self.output_tokens,
+                batch_cache_read=self.cache_read_input_tokens,
+                batch_cache_creation=self.cache_creation_input_tokens,
             )
         }
 

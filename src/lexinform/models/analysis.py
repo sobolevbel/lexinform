@@ -45,6 +45,10 @@ class TokenUsage(BaseModel):
     output: int = 0
     cache_read: int = 0
     cache_creation: int = 0
+    batch_input: int = 0
+    batch_output: int = 0
+    batch_cache_read: int = 0
+    batch_cache_creation: int = 0
 
     def plus(self, other: Self) -> Self:
         return type(self)(
@@ -52,6 +56,10 @@ class TokenUsage(BaseModel):
             output=self.output + other.output,
             cache_read=self.cache_read + other.cache_read,
             cache_creation=self.cache_creation + other.cache_creation,
+            batch_input=self.batch_input + other.batch_input,
+            batch_output=self.batch_output + other.batch_output,
+            batch_cache_read=self.batch_cache_read + other.batch_cache_read,
+            batch_cache_creation=self.batch_cache_creation + other.batch_cache_creation,
         )
 
 

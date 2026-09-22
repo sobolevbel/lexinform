@@ -157,6 +157,12 @@ class DailyPipeline:
             # whole run's spend, however it was reached, and it is recorded before the report is
             # stored — a run that fell over still says what it had spent by then.
             report.llm_calls = self._analysis.calls
+            report.llm_input_tokens = sum(call.input_tokens for call in report.llm_calls)
+            report.llm_output_tokens = sum(call.output_tokens for call in report.llm_calls)
+            report.llm_usage = {}
+            for call in report.llm_calls:
+                for model, usage in call.usage.items():
+                    report.llm_usage[model] = report.llm_usage.get(model, TokenUsage()).plus(usage)
             if run_id is not None:
                 try:
                     self._repo.finish_run(run_id, report)

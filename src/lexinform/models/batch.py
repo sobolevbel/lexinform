@@ -70,6 +70,7 @@ class BatchItemMeta(BaseModel):
     source_url: str | None
     revision: int
     text_sha256: str | None
+    prompt_version: str = ""
 
 
 class LlmBatchItem(BaseModel):

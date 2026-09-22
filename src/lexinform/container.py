@@ -20,6 +20,7 @@ from lexinform.adapters.inbox_files import FileInbox
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.llm_hybrid import HybridAnalyzer
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
+from lexinform.adapters.llm_prompts import PROMPT_VERSION
 from lexinform.adapters.orka import OrkaClient
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.rcl_html import RclClient
@@ -36,6 +37,7 @@ from lexinform.adapters.telegram_format import APPROVE_DIGEST, MessageFormatter
 from lexinform.adapters.wykaz_csv import WykazClient
 from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
+from lexinform.models import BatchProvider
 from lexinform.ports import (
     BatchBackend,
     BillRepository,
@@ -251,14 +253,21 @@ class Container:
     def batch_backend(self) -> BatchBackend:
         """The provider `llm_batch_provider` names, built whatever `llm_batch_enabled` says: that
         flag stops a submission, and a batch already filed has to be collected all the same."""
-        if self.batch_override is not None:
-            return self.batch_override
-        return self._once("batch_backend", lambda: self._llm_backend(self._batch_model()))
+        backend = self.batch_backend_for(self.settings.llm_batch_provider)
+        assert backend is not None
+        return backend
 
-    def _batch_model(self) -> str:
+    def batch_backend_for(self, provider: BatchProvider) -> BatchBackend | None:
+        if self.batch_override is not None:
+            return self.batch_override if provider == self.settings.llm_batch_provider else None
+        return self._once(
+            f"batch_backend:{provider}", lambda: self._llm_backend(self._batch_model(provider))
+        )
+
+    def _batch_model(self, provider: BatchProvider) -> str:
         analysis_model = self.settings.llm_analysis_model
         is_claude = analysis_model.startswith("claude-")
-        if self.settings.llm_batch_provider == "anthropic":
+        if provider == "anthropic":
             return analysis_model if is_claude else "claude-opus-5"
         return analysis_model if not is_claude else "gpt-5.1"
 
@@ -269,10 +278,13 @@ class Container:
         # The per-bill guard is about the analyze() call specifically, so its price is that
         # model's, not the secondary one's (`llm_model`).
         price = price_of(self.settings.llm_analysis_model)  # None: unknown model, no estimates
+        batch_price = price_of(self._batch_model(self.settings.llm_batch_provider))
         return AnalysisOptions(
             max_attempts=self.settings.max_analysis_attempts,
             workers=self.settings.llm_concurrency,
             input_price_usd_per_mtok=price[0] if price is not None else None,
+            batch_input_price_usd_per_mtok=batch_price[0] if batch_price is not None else None,
+            prompt_version=PROMPT_VERSION,
             max_bill_cost_usd=self.settings.max_analysis_cost_usd,
             max_run_cost_usd=self.settings.max_run_cost_usd,
             triage_min_chars=self.settings.triage_min_chars,
@@ -296,6 +308,7 @@ class Container:
             keywords=self.prefilter,
             triage=self.prefilter if self.settings.llm_triage_model else None,
             batch=self.batch_backend(),
+            batch_resolver=self.batch_backend_for,
         )
 
     def discovery_service(self) -> BillDiscoveryService:
