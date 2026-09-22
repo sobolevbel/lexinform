@@ -198,7 +198,6 @@ def test_a_batched_re_analysis_posts_nothing_until_collected() -> None:
     between must not file it a second time."""
     w = World(batch=True, extractor=FakeTextExtractor(by_content={b"%PDF-report": REPORT_TEXT}))
     batch = w.batch
-    assert batch is not None
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
     batch.resolve()

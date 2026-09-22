@@ -248,14 +248,11 @@ class Container:
             triage=triage,
         )
 
-    def batch_backend(self) -> BatchBackend | None:
-        """The provider `llm_batch_provider` names, built the same way `_llm_backend` builds any
-        other capability — both `AnthropicAnalyzer` and `OpenAiAnalyzer` answer to it. None when
-        batching is off: `AnalysisService` then calls `analyze()` synchronously, as before."""
+    def batch_backend(self) -> BatchBackend:
+        """The provider `llm_batch_provider` names, built whatever `llm_batch_enabled` says: that
+        flag stops a submission, and a batch already filed has to be collected all the same."""
         if self.batch_override is not None:
             return self.batch_override
-        if not self.settings.llm_batch_enabled:
-            return None
         return self._once("batch_backend", lambda: self._llm_backend(self._batch_model()))
 
     def _batch_model(self) -> str:
@@ -268,30 +265,32 @@ class Container:
     def analysis_service(self) -> AnalysisService:
         return self._once("analysis", self._build_analysis_service)
 
-    def _build_analysis_service(self) -> AnalysisService:
+    def analysis_options(self) -> AnalysisOptions:
         # The per-bill guard is about the analyze() call specifically, so its price is that
         # model's, not the secondary one's (`llm_model`).
         price = price_of(self.settings.llm_analysis_model)  # None: unknown model, no estimates
+        return AnalysisOptions(
+            max_attempts=self.settings.max_analysis_attempts,
+            workers=self.settings.llm_concurrency,
+            input_price_usd_per_mtok=price[0] if price is not None else None,
+            max_bill_cost_usd=self.settings.max_analysis_cost_usd,
+            max_run_cost_usd=self.settings.max_run_cost_usd,
+            triage_min_chars=self.settings.triage_min_chars,
+            triage_scan_pages=self.settings.triage_scan_pages,
+            triage_min_confidence=self.settings.triage_min_confidence,
+            channel_id=self.channel_id(),
+            batch_provider=self.settings.llm_batch_provider,
+            submit_batches=self.settings.llm_batch_enabled,
+        )
+
+    def _build_analysis_service(self) -> AnalysisService:
         return AnalysisService(
             self.repo,
             self.text_sources(),
             self.text_loader(),
             self.analyzer(),
             self.clock,
-            AnalysisOptions(
-                max_attempts=self.settings.max_analysis_attempts,
-                workers=self.settings.llm_concurrency,
-                input_price_usd_per_mtok=price[0] if price is not None else None,
-                max_bill_cost_usd=self.settings.max_analysis_cost_usd,
-                max_run_cost_usd=self.settings.max_run_cost_usd,
-                triage_min_chars=self.settings.triage_min_chars,
-                triage_scan_pages=self.settings.triage_scan_pages,
-                triage_min_confidence=self.settings.triage_min_confidence,
-                channel_id=self.channel_id(),
-                batch_provider=self.settings.llm_batch_provider
-                if self.batch_backend() is not None
-                else None,
-            ),
+            self.analysis_options(),
             text_budget=TextBudget(self.settings.text_budget_chars),
             authors=SejmAuthorsResolver(self.gateway),
             keywords=self.prefilter,

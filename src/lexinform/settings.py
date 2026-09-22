@@ -133,7 +133,8 @@ class Settings(BaseSettings):
         default=False,
         description="The full analysis and a re-analysis go through the provider's batch API"
         " (half the price, an answer within a run or two rather than at once) instead of"
-        " `analyze()` directly. Off until a first submit/collect cycle is verified in production.",
+        " `analyze()` directly. It decides what is *submitted* only: a batch already filed is"
+        " collected whatever this says, so switching it off never strands requests in flight.",
     )
     llm_batch_provider: Literal["anthropic", "openai"] = Field(
         default="anthropic",

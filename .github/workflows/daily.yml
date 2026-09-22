@@ -167,6 +167,8 @@ jobs:
           # legislacja.rcl.gov.pl drops connections from GitHub's runners: go through an EU proxy.
           LEXINFORM_RCL_PROXY_URL: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
           LEXINFORM_LOG_LEVEL: INFO
+          # "false" analyses synchronously again; batches already filed are collected either way.
+          LEXINFORM_LLM_BATCH_ENABLED: "true"
           INPUT_SINCE: ${{ inputs.since }}
           INPUT_INDEX_RCL_SINCE: ${{ inputs.index_rcl_since }}
           INPUT_DRY_RUN: ${{ inputs.dry_run }}

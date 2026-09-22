@@ -312,7 +312,8 @@ class World:
         self.llm = FakeLlm(
             script=llm_script, triage_script=triage_script, joint_script=joint_script
         )
-        self.batch = FakeBatchBackend(script=batch_script) if batch else None
+        # Always built: `batch` decides only whether this run submits to it, as in production.
+        self.batch = FakeBatchBackend(script=batch_script)
         # The formatter the container and the publisher share, as in production, and it dates
         # what it renders from the test's clock *in Warsaw*, the way `container.py` does:
         # everything a message says about "now" is the reader's now, not the day the suite

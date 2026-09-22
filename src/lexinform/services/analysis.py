@@ -148,7 +148,8 @@ class AnalysisOptions:
     Both cost guards are off at 0, and the per-bill estimate needs the model's input price.
     `triage_min_chars` is the length from which the cheap pass pays (a scan is triaged whatever
     its text). `channel_id`: a print whose group already holds a card there skips that pass.
-    `batch_provider` names who a queued request is filed under; unread while `batch` is None.
+    `submit_batches` files an analysis to the batch instead of calling the model (collecting one
+    never turns on it); `batch_provider` names who a queued request is filed under.
     """
 
     max_attempts: int = 3
@@ -161,6 +162,7 @@ class AnalysisOptions:
     triage_scan_pages: int = 8
     channel_id: str | None = None
     batch_provider: BatchProvider | None = None
+    submit_batches: bool = False
 
 
 @dataclass(frozen=True)
@@ -334,6 +336,11 @@ class AnalysisService:
         return self._ledger.spent_usd
 
     @property
+    def _submits_batches(self) -> bool:
+        """Whether a memo miss is filed to the batch; `collect_batches` never asks."""
+        return self._batch is not None and self._options.submit_batches
+
+    @property
     def stopped(self) -> str | None:
         """Set once the per-run limit has held a re-analysis back, for the run report to say so.
         The analysis phase says it for itself (`AnalysisResult.stopped`)."""
@@ -369,7 +376,7 @@ class AnalysisService:
 
         def prepare(bill: Bill) -> _Prepared:
             return self._prepare_first(
-                bill, triage=bill.number not in carried, submit_batch=self._batch is not None
+                bill, triage=bill.number not in carried, submit_batch=self._submits_batches
             )
 
         for outcome in fan_out(candidates, prepare, workers=self._options.workers):
@@ -622,7 +629,7 @@ class AnalysisService:
             return bill, False
         located = LocatedText(summary=summary, document=document)
         prepared = self._prepare(
-            bill, located, previous=bill.analysis, submit_batch=self._batch is not None
+            bill, located, previous=bill.analysis, submit_batch=self._submits_batches
         )
         if prepared.queued:
             self._enqueue(bill, prepared)

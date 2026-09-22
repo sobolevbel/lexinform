@@ -52,7 +52,7 @@ def test_a_batched_analysis_posts_nothing_until_collected() -> None:
     assert (submitted.analyzed, submitted.published) == (0, 0)
     assert w.publisher.new_bills == []
     assert w.bill("3039").status is BillStatus.BATCH_PENDING
-    assert w.batch is not None and len(w.batch.submitted) == 1
+    assert len(w.batch.submitted) == 1
 
     w.batch.resolve()
     collected = w.run()
