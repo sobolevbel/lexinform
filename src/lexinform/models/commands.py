@@ -139,6 +139,7 @@ class CommandName(StrEnum):
     RUN = "run"
     SCAN = "scan"
     TRACK = "track"
+    COLLECT_BATCHES = "collect-batches"
     REPREFILTER = "reprefilter"
     INDEX_RCL_NUMBERS = "index-rcl-numbers"
     ANALYZE = "analyze"
@@ -179,6 +180,7 @@ DISPATCHED = frozenset(
         CommandName.RUN,
         CommandName.SCAN,
         CommandName.TRACK,
+        CommandName.COLLECT_BATCHES,
         CommandName.REPREFILTER,
         CommandName.INDEX_RCL_NUMBERS,
     }
@@ -253,6 +255,7 @@ OPTIONS: dict[CommandName, dict[str, Option]] = {
     # `track` takes the workflow's own `dry_run`, which is also what keeps the state unpushed;
     # the workflow turns it into the `--dry-run` the CLI wants.
     CommandName.TRACK: {"dry": _DRY, "dry_run": _DRY},
+    CommandName.COLLECT_BATCHES: {"dry": _DRY, "dry_run": _DRY},
     CommandName.REPREFILTER: {
         "limit": _LIMIT,
         "text_skipped": _INCLUDE_TEXT_SKIPPED,

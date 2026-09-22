@@ -120,6 +120,7 @@ class RunMode(StrEnum):
     RUN = "run"
     TRACK = "track"
     COMMANDS = "commands"
+    COLLECT = "collect"
     DRY_RUN = "dry_run"
 
 

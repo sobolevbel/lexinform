@@ -456,6 +456,40 @@ def track(
     typer.echo(f"updates={report.updates} errors={report.errors}")
 
 
+@app.command(name="collect-batches")
+def collect_batches(
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Collect and finish, roll back the writes.")
+    ] = False,
+) -> None:
+    """Write down any batch a provider has finished, then analyse/publish/track what that frees.
+
+    What the next scheduled `run` would do anyway, sooner: for the mikrus poller, or by hand.
+    """
+    c = _container()
+    try:
+        s = c.settings
+        report = c.pipeline(dry_run=dry_run).run(
+            RunOptions(
+                term=s.term,
+                dry_run=dry_run,
+                discover=False,
+                rcl=False,
+                wykaz=False,
+                commands=False,
+                digest=False,
+                mode=RunMode.COLLECT,
+            )
+        )
+    finally:
+        c.close()
+    typer.echo(
+        f"analyzed={report.analyzed} published={report.published}"
+        f" updates={report.updates} errors={report.errors}"
+    )
+    raise typer.Exit(code=0 if report.ok else 1)
+
+
 @app.command()
 def commands(
     dry_run: Annotated[

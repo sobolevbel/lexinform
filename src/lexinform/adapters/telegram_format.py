@@ -116,6 +116,8 @@ COMMAND_HELP = (
     " [min_score=N]</code>\n"
     "• <code>/scan [since=DATE]</code> — discover and keyword-filter only: no model, no posts\n"
     "• <code>/track [dry]</code> — the tracking phase over every followed bill\n"
+    "• <code>/collect-batches [dry]</code> — write down a finished batch, then analyse/publish"
+    "/track what that frees\n"
     "• <code>/reprefilter [limit=N] [text_skipped]</code> — scan the texts of skipped bills\n"
     "• <code>/index-rcl-numbers since=DATE</code> — read the RCL listing for the wykaz join\n"
     "\n• <code>/help</code>. <code>listen</code>, <code>commands</code> and <code>db</code> are"

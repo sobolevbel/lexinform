@@ -343,6 +343,13 @@ def test_track_reports_what_it_posted(db: Path, api: str) -> None:
     assert "updates=0 errors=[]" in result.output
 
 
+def test_collect_batches_reports_what_it_finished(db: Path, api: str) -> None:
+    result = runner.invoke(app, ["collect-batches", "--dry-run"], env=_env(db, api=api))
+
+    assert result.exit_code == 0, result.output
+    assert "analyzed=0 published=0 updates=0 errors=[]" in result.output
+
+
 def test_reprefilter_has_nothing_to_do_when_no_bill_was_skipped(db: Path, api: str) -> None:
     result = runner.invoke(app, ["reprefilter"], env=_env(db, api=api))
 

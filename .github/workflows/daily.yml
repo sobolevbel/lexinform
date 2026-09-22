@@ -26,16 +26,17 @@ on:
     - cron: "23 16 * * 1-5"  # 18:23
     - cron: "23 10 * * 0,6"  # 12:23, Saturday and Sunday
   repository_dispatch:
-    # The relay files a command into the inbox branch and then sends this event, which starts
-    # a run within seconds (only cron is delayed). A push of the inbox branch itself would start
-    # nothing: GitHub reads a push event's workflow from the pushed branch, which has none.
-    types: [inbox]
+    # The relay files a command into the inbox branch and then sends `inbox`, which starts a run
+    # within seconds (only cron is delayed); the mikrus batch poller sends `batch-ready` the same
+    # way once a submitted batch is done. A push of the inbox branch itself would start nothing:
+    # GitHub reads a push event's workflow from the pushed branch, which has none.
+    types: [inbox, batch-ready]
   workflow_dispatch:
     inputs:
       command:
         description: "Which lexinform command this run is. `run` is the whole day; the others are one phase of it."
         type: choice
-        options: [run, scan, track, reprefilter, index-rcl-numbers]
+        options: [run, scan, track, collect-batches, reprefilter, index-rcl-numbers]
         default: run
       options:
         description: "Its own flags, exactly as the CLI takes them (--no-publish --min-score 4). The relay checks every value before it sends one."
@@ -174,6 +175,7 @@ jobs:
           INPUT_COMMAND: ${{ inputs.command }}
           INPUT_OPTIONS: ${{ inputs.options }}
           EVENT_NAME: ${{ github.event_name }}
+          EVENT_TYPE: ${{ github.event.action }}
           INBOX_PRESENT: ${{ steps.inbox.outputs.present }}
         run: |
           set -euo pipefail
@@ -183,20 +185,25 @@ jobs:
           if [ -n "${INPUT_INDEX_RCL_SINCE:-}" ]; then
             uv run --frozen --no-dev lexinform index-rcl-numbers --since "$INPUT_INDEX_RCL_SINCE"
           fi
+          if [ "$EVENT_NAME" = "repository_dispatch" ] && [ "$EVENT_TYPE" = "batch-ready" ]; then
+            uv run --frozen --no-dev lexinform collect-batches
+            exit 0
+          fi
           if [ "$EVENT_NAME" = "repository_dispatch" ]; then
             uv run --frozen --no-dev lexinform commands
             exit 0
           fi
           # The relay names one phase of a run the way the operator asked for it (/scan, /track,
-          # /reprefilter, /index-rcl-numbers); the schedule and the button name nothing and get
-          # the whole day. `$INPUT_OPTIONS` is split into words on purpose: it is a flag list.
+          # /collect-batches, /reprefilter, /index-rcl-numbers); the schedule and the button name
+          # nothing and get the whole day. `$INPUT_OPTIONS` splits into words: it is a flag list.
           COMMAND="${INPUT_COMMAND:-run}"
           ARGS=()
           if [ -n "${INPUT_OPTIONS:-}" ]; then ARGS+=($INPUT_OPTIONS); fi
           if [ "$COMMAND" = "run" ] && [ -n "$INPUT_SINCE" ]; then ARGS+=(--since "$INPUT_SINCE"); fi
-          # Only `run` and `track` take a dry run, and it is the same input that keeps the
-          # state branch unpushed, so the two can never disagree about what this run persisted.
-          if [ "$INPUT_DRY_RUN" = "true" ] && { [ "$COMMAND" = "run" ] || [ "$COMMAND" = "track" ]; }; then
+          # Only these three take a dry run, and it is the same input that keeps the state branch
+          # unpushed, so none of them can ever disagree with it about what this run persisted.
+          if [ "$INPUT_DRY_RUN" = "true" ] \
+            && { [ "$COMMAND" = "run" ] || [ "$COMMAND" = "track" ] || [ "$COMMAND" = "collect-batches" ]; }; then
             ARGS+=(--dry-run)
           fi
           uv run --frozen --no-dev lexinform "$COMMAND" "${ARGS[@]}"
