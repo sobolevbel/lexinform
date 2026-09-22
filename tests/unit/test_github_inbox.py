@@ -57,6 +57,20 @@ def test_put_creates_the_file_on_the_inbox_branch_and_starts_the_run() -> None:
     assert json.loads(dispatch.content)["event_type"] == "inbox"
 
 
+def test_dispatch_sends_a_bare_repository_dispatch_of_the_given_type() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(204)
+
+    _writer(handler).dispatch("batch-ready")
+
+    (dispatch,) = requests
+    assert dispatch.method == "POST" and dispatch.url.path == "/repos/owner/repo/dispatches"
+    assert json.loads(dispatch.content) == {"event_type": "batch-ready", "client_payload": {}}
+
+
 def _refusal(request: httpx.Request, *, status: int) -> httpx.Response:
     return httpx.Response(status, json={"message": "Not Found"})
 

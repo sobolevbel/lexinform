@@ -1,0 +1,13 @@
+# Fires lexinform-batch-poll.service every 20 minutes; harmless to fire more than once for the
+# same finished batch (see the .service file and cli.py::poll_batches).
+
+[Unit]
+Description=lexinform: check for a finished LLM batch every 20 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=20min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

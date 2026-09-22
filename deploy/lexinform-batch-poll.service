@@ -1,0 +1,20 @@
+# Asks GitHub to collect a finished LLM batch, sooner than the next scheduled run. Triggered by
+# the matching .timer, not by itself: `systemctl enable` only the timer.
+# Install: cp deploy/lexinform-batch-poll.{service,timer} /etc/systemd/system/
+#          && systemctl daemon-reload && systemctl enable --now lexinform-batch-poll.timer
+# Logs:    journalctl -u lexinform-batch-poll -f
+
+[Unit]
+Description=lexinform: ask GitHub to collect a finished batch
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/lexinform
+# Secrets live in /opt/lexinform/.env (ANTHROPIC_API_KEY/OPENAI_API_KEY, GitHub repo and token).
+# No database: this reads the provider's own list of batches, not lexinform's.
+ExecStart=/opt/lexinform/.venv/bin/lexinform poll-batches
+Environment=PYTHONUNBUFFERED=1
+Environment=LEXINFORM_LOG_LEVEL=INFO
+# One request or two, then exit: no MemoryMax needed the way the always-on relay has one.

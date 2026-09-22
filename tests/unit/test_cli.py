@@ -350,6 +350,59 @@ def test_collect_batches_reports_what_it_finished(db: Path, api: str) -> None:
     assert "analyzed=0 published=0 updates=0 errors=[]" in result.output
 
 
+def test_poll_batches_does_nothing_when_batching_is_off(db: Path, api: str) -> None:
+    result = runner.invoke(app, ["poll-batches"], env=_env(db, api=api))
+
+    assert result.exit_code == 0, result.output
+    assert "batching is off" in result.output
+
+
+def test_poll_batches_needs_a_github_repo_and_token(db: Path, api: str) -> None:
+    env = {**_env(db, api=api), "LEXINFORM_LLM_BATCH_ENABLED": "true"}
+
+    result = runner.invoke(app, ["poll-batches"], env=env)
+
+    assert result.exit_code == 2
+    assert "no GitHub repo/token" in result.output
+
+
+def test_poll_batches_asks_github_to_collect_a_finished_batch(
+    db: Path, api: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class _FakeBatch:
+        processing_status = "ended"
+
+    class _FakeBatches:
+        def list(self, *, limit: int) -> list[_FakeBatch]:
+            return [_FakeBatch()]
+
+    class _FakeMessages:
+        batches = _FakeBatches()
+
+    class _FakeAnthropic:
+        def __init__(self, *, api_key: str) -> None:
+            self.messages = _FakeMessages()
+
+    monkeypatch.setattr("lexinform.cli.anthropic.Anthropic", _FakeAnthropic)
+    dispatched: list[str] = []
+    monkeypatch.setattr(
+        "lexinform.cli.GitHubInboxWriter.dispatch",
+        lambda self, event_type, client_payload=None: dispatched.append(event_type),
+    )
+    env = {
+        **_env(db, api=api),
+        "LEXINFORM_LLM_BATCH_ENABLED": "true",
+        "LEXINFORM_GITHUB_REPO": "owner/repo",
+        "LEXINFORM_GITHUB_TOKEN": "TOKEN",
+    }
+
+    result = runner.invoke(app, ["poll-batches"], env=env)
+
+    assert result.exit_code == 0, result.output
+    assert "asked GitHub to collect" in result.output
+    assert dispatched == ["batch-ready"]
+
+
 def test_reprefilter_has_nothing_to_do_when_no_bill_was_skipped(db: Path, api: str) -> None:
     result = runner.invoke(app, ["reprefilter"], env=_env(db, api=api))
 

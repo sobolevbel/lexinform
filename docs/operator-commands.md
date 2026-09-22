@@ -248,6 +248,23 @@ systemctl daemon-reload && systemctl enable --now lexinform-listen
 journalctl -u lexinform-listen -f
 ```
 
+### The batch poller (optional, LEXINFORM_LLM_BATCH_ENABLED only)
+
+Same server, its own unit pair: a timer fires `lexinform poll-batches` every 20 minutes, which
+asks GitHub for a `collect-batches` run when the active provider (`LEXINFORM_LLM_BATCH_PROVIDER`)
+reports a finished batch — sooner than the next scheduled `daily.yml`, which would find it anyway.
+No database, no state of its own: `deploy/update.sh` installs and enables it automatically once
+its unit files are in `deploy/`, the same way it manages the relay's. Add to `.env`:
+
+```bash
+ANTHROPIC_API_KEY=...   # or OPENAI_API_KEY=..., matching LEXINFORM_LLM_BATCH_PROVIDER
+LEXINFORM_LLM_BATCH_ENABLED=true
+```
+
+`LEXINFORM_GITHUB_REPO`/`_TOKEN` are already there for the relay; the same Contents-scoped token
+is enough for `poll-batches`' `repository_dispatch` too (see the GitHub section above). Manual
+check: `~/.local/bin/uv run --frozen --no-dev lexinform poll-batches`.
+
 Updates are automatic: `.github/workflows/deploy-relay.yml` runs after every green CI on
 `main` (and on demand from the Actions tab), connects with the deploy key in the repository
 secret `MIKRUS_SSH_KEY` and runs `deploy/update.sh` on the server (fetch, reset to

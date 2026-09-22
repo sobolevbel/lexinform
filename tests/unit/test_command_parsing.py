@@ -231,14 +231,15 @@ def test_druk_label_names_the_kind() -> None:
 
 
 def test_every_cli_command_worth_asking_for_is_a_command_here() -> None:
-    """The three that are missing are the machinery itself, not a gap: `listen` is this relay,
-    `commands` the phase that answers what it files, `db` the state branch around every run."""
+    """The four that are missing are the machinery itself, not a gap: `listen` is this relay,
+    `commands` the phase that answers what it files, `db` the state branch around every run, and
+    `poll-batches` the mikrus timer that asks for a collect run early."""
     cli = {
         info.name or (info.callback.__name__.replace("_", "-") if info.callback else "")
         for info in app.registered_commands
     }
 
-    assert cli - {name.value for name in CommandName} == {"listen", "commands"}
+    assert cli - {name.value for name in CommandName} == {"listen", "commands", "poll-batches"}
     assert {group.name for group in app.registered_groups} == {"db"}
 
 

@@ -131,9 +131,10 @@ class BillRef(BaseModel):
 class CommandName(StrEnum):
     """Every `lexinform` subcommand the technical channel can reach, under its own CLI name.
 
-    Three are missing on purpose: `listen` is the relay reading this channel, `commands` is the
-    phase that answers what is written in it, and `db` is the workflow's handling of the state
-    branch around every run — none of them is a thing to ask a run for.
+    Four are missing on purpose: `listen` is the relay reading this channel, `commands` is the
+    phase that answers what is written in it, `db` is the workflow's handling of the state branch
+    around every run, and `poll-batches` is the mikrus timer that asks for `collect-batches`
+    sooner than the schedule — none of them is a thing to ask a run for.
     """
 
     RUN = "run"

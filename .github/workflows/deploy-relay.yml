@@ -1,8 +1,9 @@
-# Deploy the relay (`lexinform listen`) to the VPS after a green CI on main.
+# Deploy the always-on VPS services (`lexinform listen`, the batch poller's timer) after a green
+# CI on main.
 #
-# The bot itself needs no deploy: every run of daily.yml checks out main. Only the relay on the
-# always-on server keeps a checkout, and this workflow brings it up to date: one SSH command with
-# a key that can do nothing but run deploy/update.sh (a forced command in authorized_keys).
+# The bot itself needs no deploy: every run of daily.yml checks out main. Only the VPS keeps a
+# checkout, and this workflow brings it up to date: one SSH command with a key that can do
+# nothing but run deploy/update.sh (a forced command in authorized_keys).
 # Secrets: MIKRUS_SSH_KEY (the private key). The host and its public key are not secret.
 name: Deploy relay
 

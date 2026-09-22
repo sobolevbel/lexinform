@@ -7,9 +7,12 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Annotated
 
+import anthropic
+import openai
 import typer
 
 from lexinform import __version__
+from lexinform.adapters.github_inbox import GitHubInboxWriter
 from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.concurrency import fan_out
@@ -567,6 +570,42 @@ def listen(
     finally:
         if c is not None:
             c.close()
+
+
+@app.command(name="poll-batches")
+def poll_batches() -> None:
+    """Ask GitHub to collect a finished batch, sooner than the next scheduled run.
+
+    Meant for a systemd timer on the VPS (deploy/lexinform-batch-poll.{service,timer}), not the
+    daily job. No database, no lexinform-specific state: it asks `llm_batch_provider` for its own
+    list of batches, and a repository_dispatch is harmless to send more than once (`daily.yml`'s
+    concurrency group keeps runs from racing, and a batch already collected has nothing left for
+    `collect-batches` to do).
+    """
+    settings = _settings()
+    if not settings.llm_batch_enabled:
+        typer.echo("batching is off (LEXINFORM_LLM_BATCH_ENABLED)")
+        return
+    if not (settings.github_repo and settings.github_token):
+        typer.echo("no GitHub repo/token to ask for a collect run", err=True)
+        raise typer.Exit(code=2)
+    if not _a_batch_is_done(settings):
+        typer.echo("no finished batch")
+        return
+    writer = GitHubInboxWriter(settings.github_repo, settings.github_token)
+    try:
+        writer.dispatch("batch-ready")
+    finally:
+        writer.close()
+    typer.echo("asked GitHub to collect")
+
+
+def _a_batch_is_done(settings: Settings) -> bool:
+    if settings.llm_batch_provider == "anthropic":
+        claude = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+        return any(b.processing_status == "ended" for b in claude.messages.batches.list(limit=20))
+    gpt = openai.OpenAI(api_key=settings.openai_api_key)
+    return any(b.status == "completed" for b in gpt.batches.list(limit=20))
 
 
 @app.command()

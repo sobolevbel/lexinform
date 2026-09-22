@@ -120,8 +120,9 @@ COMMAND_HELP = (
     "/track what that frees\n"
     "• <code>/reprefilter [limit=N] [text_skipped]</code> — scan the texts of skipped bills\n"
     "• <code>/index-rcl-numbers since=DATE</code> — read the RCL listing for the wykaz join\n"
-    "\n• <code>/help</code>. <code>listen</code>, <code>commands</code> and <code>db</code> are"
-    " not commands: they are this relay, this phase and the state branch around every run."
+    "\n• <code>/help</code>. <code>listen</code>, <code>commands</code>, <code>db</code> and"
+    " <code>poll-batches</code> are not commands: they are this relay, this phase, the state"
+    " branch around every run and the mikrus timer that asks for a collect run early."
 )
 
 # The commands whose answer is a dossier and not a verdict: they get the status, the last stage

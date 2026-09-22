@@ -118,16 +118,21 @@ class GitHubInboxWriter:
         raise GitHubError(f"workflow dispatch: HTTP {response.status_code}: {response.text[:200]}")
 
     def _kick(self, command: IncomingCommand) -> None:
-        payload = {
-            "event_type": self.DISPATCH_EVENT,
-            "client_payload": {"update_id": command.update_id, "text": command.text[:200]},
-        }
+        self.dispatch(
+            self.DISPATCH_EVENT, {"update_id": command.update_id, "text": command.text[:200]}
+        )
+        log.info("inbox: run requested for update %d", command.update_id)
+
+    def dispatch(self, event_type: str, client_payload: Mapping[str, Any] | None = None) -> None:
+        """A bare `repository_dispatch`: the Contents-scoped token is enough for it, unlike
+        `start_run`'s `workflow_dispatch`. `event_type` is one of `daily.yml`'s
+        `repository_dispatch: types:`."""
+        payload = {"event_type": event_type, "client_payload": dict(client_payload or {})}
         try:
             response = self._client.post(f"/repos/{self._repo}/dispatches", json=payload)
         except httpx.TransportError as exc:
             raise GitHubUnavailableError(f"dispatch: {type(exc).__name__}") from exc
         if response.status_code == 204:
-            log.info("inbox: run requested for update %d", command.update_id)
             return
         if response.status_code >= 500:
             raise GitHubUnavailableError(f"dispatch: HTTP {response.status_code}")
