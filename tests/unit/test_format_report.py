@@ -270,7 +270,10 @@ def test_status_reply_shows_the_queues_the_posts_and_the_runs(process_3039: Proc
 def test_status_reply_names_the_open_batches_and_what_nothing_holds(
     process_3039: ProcessDetail,
 ) -> None:
-    orphan = bill_of(process_3039).model_copy(update={"status": BillStatus.BATCH_PENDING})
+    orphan = bill_of(process_3039).model_copy(
+        update={"status": BillStatus.BATCH_PENDING, "analysis": None}
+    )
+    reanalysis = bill_of(process_3039).model_copy(update={"status": BillStatus.BATCH_PENDING})
     batch = LlmBatch(
         batch_id="msgbatch_1",
         provider="anthropic",
@@ -282,7 +285,9 @@ def test_status_reply_names_the_open_batches_and_what_nothing_holds(
     )
     outcome = CommandOutcome(
         status=OutcomeStatus.REPORTED,
-        snapshot=StatusSnapshot(batches=(batch,), uncertain_intents=1, orphaned=(orphan,)),
+        snapshot=StatusSnapshot(
+            batches=(batch,), uncertain_intents=1, orphaned=(orphan, reanalysis)
+        ),
     )
 
     text = MessageFormatter("ru").command_reply(_incoming("/status"), outcome).text
@@ -291,6 +296,8 @@ def test_status_reply_names_the_open_batches_and_what_nothing_holds(
     assert "🧺 <b>batches</b>: 1 open · 1 uncertain → lexinform batch-intents" in text
     assert "anthropic <code>msgbatch_1</code> · 3 request(s) · submitted since" in text
     assert "<b>3039</b> → /reset 3039 to=analysis_pending" in text
+    # A stranded re-analysis must not be sent through a paid first analysis and triage.
+    assert "<b>3039</b> → /reset 3039 to=analyzed" in text
 
 
 def test_forget_reply_names_the_message_that_was_dropped(process_3039: ProcessDetail) -> None:

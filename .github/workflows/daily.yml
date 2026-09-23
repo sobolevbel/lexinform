@@ -210,13 +210,15 @@ jobs:
             && { [ "$COMMAND" = "run" ] || [ "$COMMAND" = "track" ] || [ "$COMMAND" = "collect-batches" ]; }; then
             ARGS+=(--dry-run)
           fi
-          uv run --frozen --no-dev lexinform "$COMMAND" "${ARGS[@]}"
-          # scan, reprefilter and index-rcl-numbers bypass the pipeline and its commands phase.
+          STATUS=0
+          uv run --frozen --no-dev lexinform "$COMMAND" "${ARGS[@]}" || STATUS=$?
+          # scan/reprefilter/index-rcl-numbers have no commands phase: drain it, even after a failure.
           if [ "$INBOX_PRESENT" = "true" ] && [ "$INPUT_DRY_RUN" != "true" ] \
             && [ "$COMMAND" != "run" ] && [ "$COMMAND" != "track" ] \
             && [ "$COMMAND" != "collect-batches" ]; then
-            uv run --frozen --no-dev lexinform commands
+            uv run --frozen --no-dev lexinform commands || STATUS=$?
           fi
+          exit "$STATUS"
 
       # Runs even when the run step was cancelled by the job timeout: whatever was posted is in the
       # database and must be saved, otherwise the next run would post it again.

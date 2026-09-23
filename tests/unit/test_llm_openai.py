@@ -302,17 +302,20 @@ def _shape(prop: dict[str, Any], defs: dict[str, Any]) -> dict[str, Any]:
         prop = defs[prop["$ref"].rsplit("/", 1)[-1]]
     if "anyOf" in prop:
         variants = [_shape(variant, defs) for variant in prop["anyOf"]]
-        enums = [variant["enum"] for variant in variants if variant["enum"] is not None]
-        return {
-            "types": sorted(t for variant in variants for t in variant["types"]),
-            "enum": enums[0] if enums else None,
-            "items": None,
-        }
+        merged: dict[str, Any] = {"types": sorted(t for v in variants for t in v["types"])}
+        for key in ("enum", "items", "properties"):
+            merged[key] = next((v[key] for v in variants if v[key] is not None), None)
+        return merged
     kind = prop["type"]
     return {
         "types": sorted(kind if isinstance(kind, list) else [kind]),
         "enum": sorted(prop["enum"]) if "enum" in prop else None,
         "items": _shape(prop["items"], defs) if "items" in prop else None,
+        "properties": (
+            {name: _shape(sub, defs) for name, sub in prop["properties"].items()}
+            if "properties" in prop
+            else None
+        ),
     }
 
 

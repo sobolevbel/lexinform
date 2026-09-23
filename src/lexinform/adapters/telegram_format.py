@@ -28,6 +28,7 @@ from lexinform.models import (
     ApplicantType,
     BackfillReport,
     Bill,
+    BillStatus,
     CommandOutcome,
     ConsultationWindow,
     Digest,
@@ -1478,10 +1479,7 @@ class MessageFormatter:
         if snapshot.orphaned:
             lines.append(
                 "⚠️ <b>batch_pending, held by no batch</b>\n"
-                + "\n".join(
-                    f"• <b>{esc(b.number)}</b> → /reset {esc(b.number)} to=analysis_pending"
-                    for b in snapshot.orphaned
-                )
+                + "\n".join(f"• {_orphan_line(b)}" for b in snapshot.orphaned)
             )
         return "\n".join(lines)
 
@@ -2489,6 +2487,12 @@ def _run_line(report: RunReport) -> str:
         f" · {counters} · {format_tokens(report.llm_input_tokens)}"
         f"/{format_tokens(report.llm_output_tokens)} · {format_usd(cost)}{errors}"
     )
+
+
+def _orphan_line(bill: Bill) -> str:
+    """A stranded re-analysis goes back to `analyzed`: `analysis_pending` pays a first analysis."""
+    status = BillStatus.ANALYZED if bill.analysis is not None else BillStatus.ANALYSIS_PENDING
+    return f"<b>{esc(bill.number)}</b> → /reset {esc(bill.number)} to={status.value}"
 
 
 def _runs_line(snapshot: StatusSnapshot) -> str:

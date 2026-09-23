@@ -655,12 +655,12 @@ class CommandService:
             for batch in batches
             for item in self._repo.list_llm_batch_items(batch.batch_id)
         }
+        bills = self._repo.count_by_status()
         in_flight = self._repo.list_by_status(
-            [BillStatus.BATCH_PENDING],
-            limit=self._repo.count_by_status().get(BillStatus.BATCH_PENDING, 0),
+            [BillStatus.BATCH_PENDING], limit=bills.get(BillStatus.BATCH_PENDING, 0)
         )
         snapshot = StatusSnapshot(
-            bills=self._repo.count_by_status(),
+            bills=bills,
             publications=self._repo.count_publications(self._publishing.channel_id),
             followed=len(self._tracking.followed()) if self._tracking is not None else 0,
             waiting=tuple(self._repo.list_by_status(list(WAITING), limit=self._status_bills)),

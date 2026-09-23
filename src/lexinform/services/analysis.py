@@ -402,7 +402,7 @@ class AnalysisService:
         if not self._submits_batches:
             return False
         if days > 0 and window_closes_within(bill, self._clock.now().date(), days):
-            log.info("%s is analysed at once: the reader's window closes soon", bill.number)
+            log.info("%s skips the batch: the reader's window closes soon", bill.number)
             return False
         return True
 
