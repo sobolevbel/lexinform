@@ -236,13 +236,13 @@ class ScannedDocument(BaseModel):
 
     media_type: str = "application/pdf"
     data: str
-    pages: int
-    """How many pages were sent."""
-    of_pages: int
-    """How many the document has."""
+    pages: int = Field(description="How many pages were sent.")
+    of_pages: int = Field(description="How many the document has.")
     sha256: str
-    cover_letter_pages: int = 0
-    """How many of the pages not sent were the letter handing the document to the Marshal."""
+    cover_letter_pages: int = Field(
+        default=0,
+        description="How many of the pages not sent were the letter handing the document to the Marshal.",
+    )
 
     @property
     def truncated(self) -> bool:
@@ -367,8 +367,12 @@ class BillContext(BaseModel):
     text: str
     truncated: bool
     text_source: TextSource
-    scan: ScannedDocument | None = None
-    """The file itself, when `text_source` is "scan" and the pages are what the model reads."""
+    scan: ScannedDocument | None = Field(
+        default=None,
+        description=(
+            "The file itself, when text_source is scan and the pages are what the model reads"
+        ),
+    )
     source_kind: SourceKind = "print"
     previous_summary: str | None = None
     previous_key_changes: list[str] = Field(default_factory=list)
