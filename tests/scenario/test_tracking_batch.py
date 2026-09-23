@@ -3,10 +3,26 @@
 import pytest
 
 from lexinform.errors import LlmUnavailableError
-from lexinform.models import Bill, PublicationKind, StatusSnapshot, SupplementRecord, TextDocument
+from lexinform.models import (
+    Attachment,
+    Bill,
+    PrintInfo,
+    PublicationKind,
+    StatusSnapshot,
+    SupplementRecord,
+    TextDocument,
+)
 from lexinform.services.analysis import Waiting
 from tests.fakes import FakeTextExtractor
-from tests.harness import COMMITTEE_STAGES, World
+from tests.harness import COMMITTEE_STAGES, REFERRED, World
+from tests.scenario.test_tracking import (
+    A_REPORT_URL,
+    REPORT_URL,
+    SENATE_AMENDED,
+    SENATE_PRINT_URL,
+    WITH_A_REPORT,
+    WITH_REPORT,
+)
 
 TITLE = "Projekt ustawy o cudzoziemcach"
 OSR = "Do druku nr 3039 - ocena skutków regulacji"
@@ -142,3 +158,54 @@ def test_wait_marker_survives_an_outage_reading_the_next_document(
     assert w.bill("3039").awaiting_batch_since is not None
     assert not w.bill("3039").seen_supplements
     assert not w.publisher.updates
+
+
+@pytest.mark.parametrize("senate", [False, True])
+@pytest.mark.parametrize("enabled", [False, True])
+@pytest.mark.parametrize("workers", [1, 4])
+def test_amendment_batches_wait_only_when_enabled(
+    senate: bool, enabled: bool, workers: int
+) -> None:
+    w = World(
+        batch=True,
+        batch_kinds=frozenset({"amendments"}) if enabled else frozenset(),
+        workers=workers,
+    )
+    w.add_bill("3039", TITLE, stages=REFERRED if senate else WITH_REPORT)
+    w.gateway.files[REPORT_URL] = b"%PDF-report"
+    w.run()
+    before = w.bill("3039").observed_process
+    if senate:
+        w.gateway.prints["2994"] = PrintInfo(
+            term=10,
+            number="2994",
+            title="Uchwała Senatu",
+            attachments=(Attachment(print_number="2994", name="2994.pdf", url=SENATE_PRINT_URL),),
+        )
+        w.gateway.files[SENATE_PRINT_URL] = b"%PDF-senat"
+        w.set_stages("3039", SENATE_AMENDED)
+    else:
+        w.gateway.files[A_REPORT_URL] = b"%PDF-A"
+        w.set_stages("3039", WITH_A_REPORT)
+    w.clock.advance(hours=1)
+
+    first = w.run()
+    if enabled:
+        assert first.batch_waiting == 1 and first.updates == 0
+        assert w.bill("3039").observed_process == before
+        assert not w.llm.amendment_contexts
+        w.batch.resolve()
+        posted = w.run()
+        assert posted.updates == 1
+    else:
+        assert first.updates == 1 and first.batch_waiting == 0
+        assert len(w.llm.amendment_contexts) == 1
+    repeated = w.run()
+
+    assert repeated.updates == 0
+    assert w.bill("3039").awaiting_batch_since is None
+    change = w.publisher.updates[0][1]
+    assert change.amendments is not None
+    assert change.amendments.source_url == (SENATE_PRINT_URL if senate else A_REPORT_URL)
+    text = w.formatter.status_update(*w.publisher.updates[0][:2]).text
+    assert "Что меняют поправки" in text

@@ -884,15 +884,15 @@ Invariants worth keeping:
   would count one entry sixty times.
 - **A batch request is written down before it is sent, and its answer before it is applied.**
   `llm_batch_enabled` (on in `daily.yml`) files the full analysis and a re-analysis to the
-  provider's batch API at half price; triage, amendments, digests and joint comparisons stay
-  synchronous, and so does a bill the reader must act on within `llm_batch_sync_within_days`
+  provider's batch API at half price. `llm_batch_kinds` selects secondary amendments, digests
+  and joint comparisons too; triage stays synchronous, and so does a bill the reader must act on within `llm_batch_sync_within_days`
   (`window_closes_within`: pilny, or a consultation ending by then) — a batch answer can take 24
   hours and the run after it. The request is frozen whole into `llm_batch_intents` (payload, model,
   prompt, output cap) with a cost reservation against the run budget, and the state branch is
   pushed before the provider is called (`GitBatchCheckpoint`), because a runner that dies after
   the call would otherwise pay again. A `submitting` intent is never resubmitted by itself: the
   operator checks the provider and uses `attach-batch-intents` or `recover-batch-intent`. The bill
-  waits as `batch_pending`; an answer applies only while `analysis_generation` still matches, so
+  for analysis/reanalysis waits as `batch_pending`; an analysis answer applies only while `analysis_generation` still matches, so
   `/skip`, `/reset` and a newer text all supersede it (it is paid for and memoized, never
   published). Each open batch is polled through the provider it was *filed* with, one failing
   item never hides the next, and a collected re-analysis waits as `reanalysis_ready` for tracking,
@@ -909,7 +909,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS` tuple
 in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v31 as of Sept 2026). `migrate()` reads `user_version` and runs
+`SCHEMA_VERSION = len(MIGRATIONS)` (v32 as of Sept 2026). `migrate()` reads `user_version` and runs
 every later script inside its own transaction, stamping the new version at the end, so a failed
 script leaves the database at the previous version.
 

@@ -601,22 +601,25 @@ class StatusTrackingService:
         return _Amendments(document, stage.proposal)
 
     def _summarize_amendments(
-        self, bill: Bill, found: _Amendments, result: TrackingResult
-    ) -> AmendmentsRecord | None:
+        self, bill: Bill, found: _Amendments, result: TrackingResult, *, may_wait: bool
+    ) -> AmendmentsRecord | Waiting | None:
         """Best effort: a failure degrades the update to the bare event; outages propagate."""
         assert self._analysis is not None, (
             "_amendments_document finds nothing without an analysis service"
         )
         try:
             record = self._analysis.summarize_amendments(
-                bill, found.document, proposal=found.proposal
+                bill, found.document, proposal=found.proposal, may_wait=may_wait
             )
         except ServiceUnavailableError:
             raise
         except Exception as exc:
             log.warning("druk %s: amendments not summarised: %s", bill.number, exc)
             return None
-        assert not isinstance(record, Waiting)
+        if isinstance(record, Waiting):
+            if bill.awaiting_batch_since is None:
+                self._repo.set_awaiting_batch(bill.term, bill.number, self._clock.now())
+            return record
         if record is not None:
             result.count_usage(record)
             log.info("druk %s: amendments summarised from %s", bill.number, found.document.url)
@@ -716,12 +719,18 @@ class StatusTrackingService:
             content_changed=content_changed,
             detected_at=now,
         )
+        waiting = None
         if found.amendments is not None:
-            self._attach_amendments(change, bill, found.amendments, result)
+            waiting = self._attach_amendments(
+                change, bill, found.amendments, result, may_wait=may_wait
+            )
         if filed:
-            waiting = self._attach_supplements(change, bill, filed, result, may_wait=may_wait)
-            if waiting is not None:
-                return waiting
+            supplement_wait = self._attach_supplements(
+                change, bill, filed, result, may_wait=may_wait
+            )
+            waiting = waiting or supplement_wait
+        if waiting is not None:
+            return waiting
         _log_change(bill, change)
         return change
 
@@ -785,10 +794,20 @@ class StatusTrackingService:
         return waiting
 
     def _attach_amendments(
-        self, change: StatusChange, bill: Bill, found: _Amendments, result: TrackingResult
-    ) -> None:
+        self,
+        change: StatusChange,
+        bill: Bill,
+        found: _Amendments,
+        result: TrackingResult,
+        *,
+        may_wait: bool,
+    ) -> Waiting | None:
         """Memoization keeps a checkpoint retry from paying for the same amendment summary."""
-        change.amendments = self._summarize_amendments(bill, found, result)
+        record = self._summarize_amendments(bill, found, result, may_wait=may_wait)
+        if isinstance(record, Waiting):
+            return record
+        change.amendments = record
+        return None
 
 
 def _log_change(bill: Bill, change: StatusChange) -> None:
