@@ -603,8 +603,8 @@ Invariants worth keeping:
   baseline itself), `publications.delivery_json` (an immutable snapshot of the exact facts a retry
   may use — never newer ones, never a later held stage), `status_changes.consultation_opened` and
   `analysis_memo` (structured results keyed on bill identity, purpose, normalised text and context,
-  so a URL change alone never triggers a paid re-analysis; scanned inputs are excluded from this
-  memo on purpose — persistent scan/triage memoization is still open, `docs/roadmap.md`).
+  so a URL change alone never triggers a paid re-analysis; a scan is keyed by the file's digest
+  and the page window sent, and a triage verdict has a key of its own).
   `docs/process-plans.md` is the design record; `tests/scenario/test_late_discovery.py` replays the
   whole incident sequence cold at every stage and asserts it reads as an introduction, not a
   duplicate or a false decision. The one thing no deploy repairs is a reply already sent before the
@@ -879,6 +879,24 @@ Invariants worth keeping:
   counting rows *taken in*, never a phase's `seen`: the register is downloaded whole every run
   and the Sejm listing is re-read with a day of overlap, so summing what the runs looked at
   would count one entry sixty times.
+- **A batch request is written down before it is sent, and its answer before it is applied.**
+  `llm_batch_enabled` (on in `daily.yml`) files the full analysis and a re-analysis to the
+  provider's batch API at half price; triage, amendments, digests and joint comparisons stay
+  synchronous, and so does a bill the reader must act on within `llm_batch_sync_within_days`
+  (`window_closes_within`: pilny, or a consultation ending by then) — a batch answer can take 24
+  hours and the run after it. The request is frozen whole into `llm_batch_intents` (payload, model,
+  prompt, output cap) with a cost reservation against the run budget, and the state branch is
+  pushed before the provider is called (`GitBatchCheckpoint`), because a runner that dies after
+  the call would otherwise pay again. A `submitting` intent is never resubmitted by itself: the
+  operator checks the provider and uses `attach-batch-intents` or `recover-batch-intent`. The bill
+  waits as `batch_pending`; an answer applies only while `analysis_generation` still matches, so
+  `/skip`, `/reset` and a newer text all supersede it (it is paid for and memoized, never
+  published). Each open batch is polled through the provider it was *filed* with, one failing
+  item never hides the next, and a collected re-analysis waits as `reanalysis_ready` for tracking,
+  whatever the discovery watermark. The VPS poller only hurries collection
+  (`repository_dispatch: batch-ready`); every run collects anyway. A dry run analyses
+  synchronously, since a submission cannot be rolled back. `/status` names the open batches and
+  any `batch_pending` bill no batch holds.
 - **Parallelism only around the network.** `concurrency.fan_out` runs one network step (download,
   process lookup, model call) for many items; that step never touches the repository. Outcomes are
   consumed in the calling thread, in input order, and that is where every DB write happens.
@@ -888,7 +906,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS` tuple
 in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v25 as of Sept 2026). `migrate()` reads `user_version` and runs
+`SCHEMA_VERSION = len(MIGRATIONS)` (v30 as of Sept 2026). `migrate()` reads `user_version` and runs
 every later script inside its own transaction, stamping the new version at the end, so a failed
 script leaves the database at the previous version.
 
@@ -924,7 +942,14 @@ deploy itself announced no closure); v25 `bills.observed_process_json` (the immu
 supplements — that first sight seeds and later runs only extend), `publications.delivery_json`
 (the exact facts a retry may use, frozen at send time), `status_changes.consultation_opened` and
 `analysis_memo` (memoized model results keyed on bill identity, purpose, normalised text and
-context). See the "First sight seeds a baseline" invariant above.
+context). See the "First sight seeds a baseline" invariant above. v26 `llm_batches` and
+`llm_batch_items` (a submission to a provider's batch API and the bill each `custom_id` answers
+for); v27 `llm_batch_intents` (a request saved before the provider is called: `queued` retries,
+`submitting` waits for reconciliation); v28 `bills.analysis_generation` (a reset makes an older
+answer stale) and `bills.ready_analysis_json` (a collected re-analysis with its source snapshot);
+v29 `llm_batch_items.result_json`/`accounted_at` (the answer stored before it is applied, its cost
+acknowledged with the run report); v30 `llm_batches.forgotten_at` (collected and deleted at the
+provider). See the batch invariant above.
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) → `db
 restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing `PRAGMA

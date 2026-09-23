@@ -24,9 +24,9 @@ and are in git.
   decisions are unified into the same evidence (`reading_evidence`/`tribunal_evidence`, wired into
   both `models/events.py` and `models/phases.py`); the RCL consultation-letter-read-late gap (was
   listed under "Later" here) is fixed too — `abecc6a` (16 Sept) and `e749a13` (21 Sept), now
-  documented in CLAUDE.md's `read_consultations` invariant. Remaining work is to extend the
-  independent expected-results corpus and add persistent
-  scan and triage memoization (`analysis_memo` excludes scanned inputs by design).
+  documented in CLAUDE.md's `read_consultations` invariant. Scan and triage memoization are in
+  `analysis_memo` since the batch work of 23 Sept (`test_scan_and_triage_memos_survive_a_failed_write`);
+  remaining work is to extend the independent expected-results corpus.
 
 - **The weekly digest — built on 2026-09-15**, as designed here and with one change: the monthly
   figures count entries *taken in* and not a phase's `seen`, because the register is downloaded

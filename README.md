@@ -241,8 +241,12 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_LISTEN_TIMEOUT_SECONDS` | `50` | How long one `getUpdates` call of the relay waits for a post |
 | `LEXINFORM_TERM` | — | Sejm term; empty = the current one from `/sejm/term` (a new kadencja is picked up by itself), a number pins an older term |
 | `LEXINFORM_DB_PATH` | `lexinform.db` | SQLite file |
-| `LEXINFORM_LLM_MODEL` / `_LLM_EFFORT` | `claude-opus-5-5` / `medium` | Model and effort |
+| `LEXINFORM_LLM_ANALYSIS_MODEL` | `claude-opus-5-5` | Model for the full analysis; a `gpt-` name routes it to OpenAI (`OPENAI_API_KEY`) |
+| `LEXINFORM_LLM_AMENDMENTS_MODEL` / `_SUPPLEMENT_MODEL` / `_JOINT_MODEL` | `claude-opus-5-5` | Models for amendment summaries, filed-document digests and joint comparisons |
+| `LEXINFORM_LLM_EFFORT` / `_LLM_MAX_TOKENS` | `medium` / `4000` | Claude's effort and output cap (`_LLM_OPENAI_EFFORT` / `_LLM_OPENAI_MAX_TOKENS` for GPT) |
 | `LEXINFORM_LLM_TRIAGE_MODEL` | `claude-sonnet-5` | Model for the cheap first pass on excerpts (`""` disables it) |
+| `LEXINFORM_LLM_BATCH_ENABLED` / `_LLM_BATCH_PROVIDER` | `false` / `anthropic` | Send the full analysis through the provider's batch API at half price (the workflow turns it on) |
+| `LEXINFORM_LLM_BATCH_SYNC_WITHIN_DAYS` | `3` | A pilny bill, or one whose consultation ends this soon, is analysed at once anyway (`0`: never) |
 | `LEXINFORM_TRIAGE_MIN_CHARS` / `_TRIAGE_MIN_CONFIDENCE` | `20000` / `0.8` | Texts shorter than this skip the triage; confidence a rejection needs |
 | `LEXINFORM_OUTPUT_LANGUAGE` | `ru` | `ru` or `en` (add more in `i18n.py`) |
 | `LEXINFORM_MIN_SCORE` | `3` | Minimum importance to publish |
@@ -257,7 +261,7 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_TEXT_PREFILTER_MAX_PER_RUN` | `20` | Texts scanned per run (a download and an extraction each) |
 | `LEXINFORM_PRE_PRINT_ENABLED` | `true` | Watch `/bills` for bills without a print number |
 | `LEXINFORM_VOTING_CLUB_BREAKDOWN` | `true` | Show how each club voted |
-| `LEXINFORM_TRACK_CLOSED_GRACE_DAYS` / `_TRACK_PASSED_MAX_DAYS` | `90` / `180` | How long closed / passed-but-unpublished bills are followed |
+| `LEXINFORM_TRACK_CLOSED_GRACE_DAYS` / `_TRACK_PENDING_DECISION_MAX_DAYS` | `90` / `1095` | How long closed bills / passed bills still waiting for their act are followed |
 | `LEXINFORM_TRACK_FULL_WEEKDAY` | `0` (Monday) | Weekday on which every followed bill is checked, not only the changed ones |
 | `LEXINFORM_IN_FORCE_REMINDERS` | `true` | Reminder on the entry-into-force day |
 | `LEXINFORM_RCL_ENABLED` / `_RCL_CONCURRENCY` | `true` / `6` | Follow government projects on legislacja.rcl.gov.pl before they reach the Sejm; projects read at once (a page takes ~10 s) |

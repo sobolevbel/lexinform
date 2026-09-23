@@ -1,4 +1,4 @@
-"""Provider-contract probes for open batch review candidates; all responses are offline."""
+"""Provider-adapter regressions of the 23 Sept batch review (docs/BUGS.md); all offline."""
 
 import json
 from types import SimpleNamespace

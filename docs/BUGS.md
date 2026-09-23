@@ -28,8 +28,8 @@ recheck and are dropped below the table, never having been a live defect. #16 mo
 21 Sept 2026 too, once tracing its actual callers turned "somewhere inside `posting.py`" into two
 named, reachable call sites. One row remains open on purpose: it needs a design decision, not a
 patch, and forcing one under time pressure risked being wrong in a way a mechanical fix would not
-have been. This paragraph describes the 21 Sept audit; the separate batch review below adds new
-open candidates on 23 Sept.
+have been. This paragraph describes the 21 Sept audit; the separate batch review below added
+fourteen candidates on 23 Sept, all of them fixed the same day.
 
 | # | rank | state | module | what is wrong | found |
 |---|---|---|---|---|---|
@@ -54,14 +54,23 @@ and 0 of 4,462 committee/plenary sittings would have matched through this branch
 ### Batch architecture review — 23 Sept 2026
 
 Reviewed `1cafa93..3b20456`, including the provider split, batch lifecycle and collect/poll entry
-points. Remaining rows are open candidates; the verified fixes are listed below. Offline
-reproduction does not establish production incidence. Details and limitations:
+points. All fourteen candidates, B30–B43, are fixed and listed in the table below; none is open.
+Offline reproduction does not establish production incidence. Details and limitations:
 [review report](reviews/2026-09-23-batch-architecture.md).
 
 `P1`/`P3` retain the reader-impact definitions above. In particular, duplicated paid LLM work and
 a bypassed spending guard are P3 here, although they deserve early engineering attention.
-The two `test_batch_review_candidates.py` modules retain expected-behaviour assertions under
-strict `xfail` only for open rows; run with `--runxfail` to see those defects.
+The two `test_batch_review_candidates.py` modules started as strict `xfail` probes and are now
+ordinary regression tests: no `xfail` marker is left.
+
+The review's list of what was not yet done was closed on 23 Sept as well: a bill the reader must
+act on within `llm_batch_sync_within_days` is analysed synchronously; `collect-batches` and
+`track` answer the inbox and the workflow runs `commands` after `scan`, `reprefilter` and
+`index-rcl-numbers`, so no dispatch that replaces a pending inbox run leaves a command waiting;
+`/status` names the open batches, the queued and uncertain intents and any `batch_pending` bill
+held by nothing; the hand-written OpenAI schemas are tested against their pydantic models.
+Payload splitting and the poller's view of uncollected batches were already done (`df63daa`,
+`0aa596e`).
 
 The original probes pass after the 23 September fixes. The initial closure was too broad:
 follow-up validation also covers runner loss, superseding jobs and missing source documents.

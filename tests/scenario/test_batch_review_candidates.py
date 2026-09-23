@@ -1,4 +1,4 @@
-"""Open review candidates; --runxfail exposes the expected-behaviour assertions."""
+"""Scenario regressions of the 23 Sept batch review (B30–B43, docs/BUGS.md)."""
 
 import datetime as dt
 from collections.abc import Iterator, Sequence
