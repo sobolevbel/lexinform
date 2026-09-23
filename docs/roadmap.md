@@ -83,9 +83,13 @@ whether that is worth its Sejm re-scan is the open question.
 - **Druki 1929/1933 were carded separately** before the joint rule; merging them retroactively is
   possible and has not been done.
 - Ukrainian-language channel; a static site built from the state dump.
-- Committee e-mail addresses in "what you can do now" (the Sejm API has none; the committee page
-  is linked instead) and the Senate committee that received the act (the Senate API is not used;
-  the card links the Senate's listing of the laws the Sejm has passed).
+- ~~Committee e-mail addresses in "what you can do now" and the Senate committee that received
+  the act.~~ **Done 2026-09-23** (`097d928`, `625693b`): a Sejm committee is written to through
+  the Sejm's "Listy do Sejmu" form with the committee preselected; the Senate's committees, their
+  secretariat e-mail and their sitting are read from the act's page on senat.gov.pl; a hearing
+  application names the Marshal's address; a zgłoszenie links the ministry's `/kontakt` page. See
+  the "Every call to action names an address" and "The Senate has no API" facts in `CLAUDE.md`.
+  Still unobserved: whether senat.gov.pl answers a GitHub runner.
 
 ## Measurements that would settle a question
 
