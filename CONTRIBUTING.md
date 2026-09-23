@@ -274,5 +274,6 @@ history of the `state` branch.
 
 ## Pull requests
 
-One topic per PR, with tests; run `uv run pre-commit run --all-files` before pushing; describe
-the user-visible effect (a changed message, a new keyword, a new setting).
+One topic per PR, with tests; run `uv run ruff format src tests && uv run ruff check src tests &&
+uv run mypy && uv run pytest -q` before pushing; describe the user-visible effect (a changed
+message, a new keyword, a new setting).
