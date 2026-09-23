@@ -353,6 +353,35 @@ def test_collect_batches_reports_what_it_finished(db: Path, api: str) -> None:
     assert "analyzed=0 published=0 updates=0 errors=[]" in result.output
 
 
+def test_collect_batches_also_answers_the_inbox(db: Path, api: str, tmp_path: Path) -> None:
+    # A batch-ready run can replace a pending inbox run in the workflow's concurrency group.
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    (inbox / "5.json").write_text(
+        json.dumps(
+            {
+                "update_id": 5,
+                "chat_id": "-1001",
+                "message_id": 9,
+                "text": "/show 3039",
+                "received_at": "2026-09-11T08:00:00+00:00",
+            }
+        ),
+        encoding="utf-8",
+    )
+    env = {
+        **_env(db, api=api),
+        "LEXINFORM_INBOX_DIR": str(inbox),
+        "LEXINFORM_TELEGRAM_BOT_TOKEN": "test-token",
+        "LEXINFORM_TELEGRAM_API_BASE_URL": "http://127.0.0.1:9",
+    }
+
+    result = runner.invoke(app, ["collect-batches"], env=env)
+
+    assert result.exit_code == 0, result.output
+    assert list(inbox.iterdir()) == []
+
+
 def test_poll_batches_does_nothing_when_batching_is_off(db: Path, api: str) -> None:
     result = runner.invoke(app, ["poll-batches"], env=_env(db, api=api))
 

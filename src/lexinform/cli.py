@@ -442,7 +442,7 @@ def track(
         bool, typer.Option("--dry-run", help="Detect changes, print updates, roll back.")
     ] = False,
 ) -> None:
-    """Check published bills for new legislative stages and post updates."""
+    """Check published bills for new stages and post updates; answers the inbox first too."""
     c = _container()
     try:
         s = c.settings
@@ -454,7 +454,6 @@ def track(
                 discover=False,
                 publish=not dry_run,
                 track=True,
-                commands=False,
                 max_analyze=0,
                 max_publish=0,
                 mode=RunMode.TRACK,
@@ -473,7 +472,7 @@ def collect_batches(
 ) -> None:
     """Write down any batch a provider has finished, then analyse/publish/track what that frees.
 
-    What the next scheduled `run` would do anyway, sooner: for the mikrus poller, or by hand.
+    Answers the inbox as well, since this run can replace a pending inbox run in the workflow.
     """
     c = _container()
     try:
@@ -485,7 +484,6 @@ def collect_batches(
                 discover=False,
                 rcl=False,
                 wykaz=False,
-                commands=False,
                 digest=False,
                 min_score=s.min_score,
                 max_analyze=s.max_analyze_per_run,
