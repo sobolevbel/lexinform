@@ -48,6 +48,8 @@ from lexinform.models import (
     TriageContext,
     TriageRecord,
 )
+from lexinform.models.batch import BatchAnswer, batch_output_model
+from lexinform.models.report import CallKind
 from lexinform.pricing import TOKENS_PER_SCANNED_PAGE, batch_reservation
 from lexinform.settings import Effort
 
@@ -303,40 +305,44 @@ class AnthropicAnalyzer:
     def prepare_request(self, request: BatchRequest) -> BatchRequest:
         if request.payload_json is not None:
             return request
-        req = request
+        ctx = request.ctx
+        model = request.model or self._model
+        scan = ctx.scan if isinstance(ctx, (BillContext, SupplementContext)) else None
+        if isinstance(ctx, BillContext):
+            system, prompt = self._system, build_user_prompt(ctx)
+        elif isinstance(ctx, AmendmentsContext):
+            system, prompt = self._amendments_system, build_amendments_prompt(ctx)
+        elif isinstance(ctx, SupplementContext):
+            system, prompt = self._supplement_system, build_supplement_prompt(ctx)
+        else:
+            system, prompt = self._joint_system, build_joint_prompt(ctx)
         payload: AnthropicBatchRequest = {
-            "custom_id": req.custom_id,
+            "custom_id": request.custom_id,
             "params": {
-                "model": self._model,
+                "model": model,
                 "max_tokens": self._max_tokens,
                 "system": [
-                    {
-                        "type": "text",
-                        "text": self._system,
-                        "cache_control": {"type": "ephemeral"},
-                    }
+                    {"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}
                 ],
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": _content(build_user_prompt(req.ctx), req.ctx.scan),
-                    }
-                ],
+                "messages": [{"role": "user", "content": _content(prompt, scan)}],
                 "thinking": {"type": "adaptive"},
-                "output_config": {"effort": self._effort, "format": self._analysis_format},
+                "output_config": {
+                    "effort": self._effort,
+                    "format": _json_output_format(batch_output_model(request.call_kind)),
+                },
             },
         }
-        tokens = self.count_input_tokens(req.ctx)
-        estimate = max(tokens or 0, len(req.ctx.text) + len(req.ctx.title) + 2_000)
-        if req.ctx.scan is not None:
-            estimate += req.ctx.scan.pages * TOKENS_PER_SCANNED_PAGE
-        return req.model_copy(
+        tokens = self.count_input_tokens(ctx) if isinstance(ctx, BillContext) else None
+        estimate = max(tokens or 0, len(prompt) + len(system) + 2_000)
+        if scan is not None:
+            estimate += scan.pages * TOKENS_PER_SCANNED_PAGE
+        return request.model_copy(
             update={
                 "payload_json": json.dumps(payload, ensure_ascii=False),
-                "model": self._model,
+                "model": model,
                 "prompt_version": PROMPT_VERSION,
                 "estimated_cost_usd": batch_reservation(
-                    self._model, input_tokens=estimate, max_output_tokens=self._max_tokens
+                    model, input_tokens=estimate, max_output_tokens=self._max_tokens
                 ),
             }
         )
@@ -383,10 +389,10 @@ class AnthropicAnalyzer:
             raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
         return "ended" if batch.processing_status == "ended" else "submitted"
 
-    def fetch_results(self, batch_id: str) -> Iterator[BatchResult]:
+    def fetch_results(self, batch_id: str, kind: CallKind = "analysis") -> Iterator[BatchResult]:
         try:
             for item in self._client.messages.batches.results(batch_id):
-                yield self._batch_result(item)
+                yield self._batch_result(item, batch_output_model(kind))
         except (
             anthropic.NotFoundError,
             anthropic.AuthenticationError,
@@ -412,7 +418,7 @@ class AnthropicAnalyzer:
             raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
         log.info("deleted collected batch %s", batch_id)
 
-    def _batch_result(self, item: Any) -> BatchResult:
+    def _batch_result(self, item: Any, output_model: type[BatchAnswer]) -> BatchResult:
         result = item.result
         if result.type != "succeeded":
             reason = result.type
@@ -432,14 +438,14 @@ class AnthropicAnalyzer:
         if message.stop_reason in ("refusal", "max_tokens"):
             return answer.model_copy(update={"error": f"response stopped: {message.stop_reason}"})
         try:
-            parsed: Any = parse_response(output_format=Analysis, response=message)
+            parsed: Any = parse_response(output_format=output_model, response=message)
         except ValidationError as exc:
             return answer.model_copy(update={"error": str(exc)})
-        if not isinstance(parsed.parsed_output, Analysis):
+        if not isinstance(parsed.parsed_output, output_model):
             return answer.model_copy(
                 update={"error": "model returned no parsable structured output"}
             )
-        return answer.model_copy(update={"analysis": parsed.parsed_output})
+        return answer.model_copy(update={"answer": parsed.parsed_output})
 
     def _parse(
         self,

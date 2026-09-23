@@ -13,9 +13,25 @@ from anthropic.types import Message
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
 from lexinform.errors import LlmUnavailableError
-from lexinform.models import ApplicantType, BatchRequest, BillContext
+from lexinform.models import (
+    AmendmentsContext,
+    ApplicantType,
+    BatchRequest,
+    BatchResult,
+    BillContext,
+    JointBillDescription,
+    JointContext,
+    SupplementContext,
+)
+from lexinform.models.batch import (
+    AmendmentsQuestion,
+    BatchAnswer,
+    BatchQuestion,
+    JointQuestion,
+    SupplementQuestion,
+)
 from lexinform.pricing import batch_reservation
-from tests.fakes import make_analysis
+from tests.fakes import make_amendments, make_analysis, make_comparison, make_digest
 
 
 class _Files:
@@ -198,21 +214,23 @@ def test_saved_request_keeps_model_prompt_and_output_limit_after_configuration_c
         if provider == "anthropic"
         else OpenAiAnalyzer(lambda: client, model="gpt-5.1-new", max_output_tokens=900)
     )
-    request = BatchRequest(
-        custom_id="stable",
-        call_kind="analysis",
-        term=10,
-        number="3039",
-        ctx=BillContext(
+    request = BatchRequest.model_validate(
+        dict(
+            custom_id="stable",
+            call_kind="analysis",
+            term=10,
             number="3039",
-            title="Projekt ustawy",
-            text="tekst",
-            description=None,
-            document_date=None,
-            applicant_type=ApplicantType.UNKNOWN,
-            truncated=False,
-            text_source="pdf",
-        ),
+            ctx=BillContext(
+                number="3039",
+                title="Projekt ustawy",
+                text="tekst",
+                description=None,
+                document_date=None,
+                applicant_type=ApplicantType.UNKNOWN,
+                truncated=False,
+                text_source="pdf",
+            ),
+        )
     )
     prepared = original.prepare_request(request)
     restored = BatchRequest.model_validate_json(prepared.model_dump_json())
@@ -226,3 +244,119 @@ def test_saved_request_keeps_model_prompt_and_output_limit_after_configuration_c
     assert prepared.estimated_cost_usd > batch_reservation(
         prepared.model, input_tokens=0, max_output_tokens=100
     )
+
+
+SECONDARY: list[tuple[BatchQuestion, BatchAnswer, str]] = [
+    (
+        AmendmentsQuestion(
+            ctx=AmendmentsContext(
+                number="3039",
+                title="Projekt",
+                source_kind="senate_amendments",
+                text="Poprawki",
+                truncated=False,
+                previous_summary="Opis",
+            )
+        ),
+        make_amendments(),
+        "amendments",
+    ),
+    (
+        SupplementQuestion(
+            ctx=SupplementContext(
+                number="3039",
+                title="Projekt",
+                document_title="OSR",
+                source_kind="impact_assessment",
+                text="Ocena",
+                truncated=False,
+                previous_summary="Opis",
+            )
+        ),
+        make_digest(),
+        "document_digest",
+    ),
+    (
+        JointQuestion(
+            ctx=JointContext(
+                subject=JointBillDescription(
+                    number="3039",
+                    title="Projekt",
+                    applicant_type=ApplicantType.UNKNOWN,
+                    summary="Opis",
+                ),
+                others=[],
+            )
+        ),
+        make_comparison(),
+        "joint_comparison",
+    ),
+]
+
+
+@pytest.mark.parametrize("provider", ["anthropic", "openai"])
+@pytest.mark.parametrize("question,answer,schema_name", SECONDARY)
+def test_secondary_batch_payload_and_result_contract(
+    provider: str, question: BatchQuestion, answer: BatchAnswer, schema_name: str
+) -> None:
+    client: Any = SimpleNamespace()
+    backend = (
+        AnthropicAnalyzer(client) if provider == "anthropic" else OpenAiAnalyzer(lambda: client)
+    )
+    model = "claude-sonnet-5" if provider == "anthropic" else "gpt-5.1"
+    request = BatchRequest(
+        custom_id="secondary", term=10, number="3039", question=question, model=model
+    )
+
+    prepared = backend.prepare_request(request)
+
+    assert prepared.payload_json is not None
+    payload = json.loads(prepared.payload_json)
+    body = payload["params" if provider == "anthropic" else "body"]
+    assert body["model"] == model
+    schema = (
+        body["output_config"]["format"]["schema"]
+        if provider == "anthropic"
+        else body["text"]["format"]["schema"]
+    )
+    assert set(schema["properties"]) == set(type(answer).model_fields)
+    if provider == "openai":
+        assert body["text"]["format"]["name"] == schema_name
+    assert BatchRequest.model_validate_json(prepared.model_dump_json()) == prepared
+    result = BatchResult(custom_id="secondary", answer=answer)
+    assert BatchResult.model_validate_json(result.model_dump_json()).answer == answer
+
+
+@pytest.mark.parametrize("provider", ["anthropic", "openai"])
+@pytest.mark.parametrize("question,answer,schema_name", SECONDARY)
+def test_invalid_secondary_answer_does_not_hide_the_next_item(
+    provider: str, question: BatchQuestion, answer: BatchAnswer, schema_name: str
+) -> None:
+    client: Any
+    if provider == "anthropic":
+        items = [
+            SimpleNamespace(
+                custom_id=key,
+                result=SimpleNamespace(
+                    type="succeeded", message=_anthropic_message(text, "end_turn")
+                ),
+            )
+            for key, text in [("bad", "{}"), ("ok", answer.model_dump_json())]
+        ]
+        client = SimpleNamespace(
+            messages=SimpleNamespace(batches=SimpleNamespace(results=lambda batch_id: iter(items)))
+        )
+        backend = AnthropicAnalyzer(client)
+        results = list(backend.fetch_results("batch", question.kind))
+    else:
+        client = _openai_client(_line("bad", "{}") + "\n" + _line("ok", answer.model_dump_json()))
+        results = list(OpenAiAnalyzer(lambda: client).fetch_results("batch", question.kind))
+    assert results[0].error
+    assert results[1].answer == answer
+
+
+def test_legacy_result_is_read_as_a_typed_answer() -> None:
+    result = BatchResult.model_validate(
+        {"custom_id": "legacy", "analysis": make_analysis().model_dump()}
+    )
+    assert result.analysis == make_analysis()

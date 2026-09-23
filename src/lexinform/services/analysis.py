@@ -28,6 +28,7 @@ from lexinform.models import (
     AMENDMENT_SOURCES,
     FULL_TEXT_SOURCES,
     SUPPLEMENT_SOURCES,
+    Amendments,
     AmendmentsContext,
     AmendmentsRecord,
     Analysis,
@@ -43,7 +44,10 @@ from lexinform.models import (
     BillContext,
     BillStatus,
     Category,
+    DigestItemMeta,
+    DocumentDigest,
     JointBillDescription,
+    JointComparison,
     JointContext,
     JointRecord,
     LlmBatch,
@@ -66,6 +70,7 @@ from lexinform.models import (
     usage_of,
     window_closes_within,
 )
+from lexinform.models.batch import AnalysisQuestion
 from lexinform.ports import AuthorsResolver, BatchBackend, BillRepository, Clock, LlmAnalyzer
 from lexinform.ports import TextSource as TextSourcePort
 from lexinform.pricing import (
@@ -532,9 +537,12 @@ class AnalysisService:
         stale = [
             intent.request.custom_id
             for intent in intents
-            if (bill := self._repo.get(intent.request.term, intent.request.number)) is None
-            or bill.status is not BillStatus.BATCH_PENDING
-            or bill.analysis_generation != intent.meta.generation
+            if isinstance(intent.meta, BatchItemMeta)
+            and (
+                (bill := self._repo.get(intent.request.term, intent.request.number)) is None
+                or bill.status is not BillStatus.BATCH_PENDING
+                or bill.analysis_generation != intent.meta.generation
+            )
         ]
         if stale:
             self._repo.delete_batch_intents(stale)
@@ -653,7 +661,7 @@ class AnalysisService:
             return False
         by_id = {item.custom_id: item for item in items}
         received: set[str] = set()
-        for batch_result in backend.fetch_results(batch.batch_id):
+        for batch_result in backend.fetch_results(batch.batch_id, batch.call_kind):
             found = by_id.get(batch_result.custom_id)
             if found is not None and batch_result.custom_id not in received:
                 self._consume(found, batch_result)
@@ -672,6 +680,9 @@ class AnalysisService:
         return [intent.request.custom_id for intent in self._repo.list_submitting_batch_intents()]
 
     def _consume(self, item: LlmBatchItem, batch_result: BatchResult) -> None:
+        if isinstance(item.meta, DigestItemMeta):
+            self._consume_digest(item, batch_result, item.meta)
+            return
         now = self._clock.now()
         current = self._repo.get(item.term, item.number)
         active = (
@@ -685,9 +696,48 @@ class AnalysisService:
         if record is not None and active:
             self._memo.setdefault(item.meta.memo_key or item.custom_id, record.model_dump_json())
 
+    def _consume_digest(
+        self, item: LlmBatchItem, result: BatchResult, meta: DigestItemMeta
+    ) -> None:
+        now = self._clock.now()
+        data = result.model_dump(exclude={"answer", "custom_id", "error"})
+        data.update(model=result.model or "", prompt_version=meta.prompt_version, created_at=now)
+        record: AmendmentsRecord | SupplementRecord | JointRecord | None = None
+        if item.call_kind == "amendments" and isinstance(result.answer, Amendments):
+            record = AmendmentsRecord.model_validate(
+                dict(data, amendments=result.answer, source_url="", source_kind=meta.source_kind)
+            )
+        elif item.call_kind == "supplement" and isinstance(result.answer, DocumentDigest):
+            record = SupplementRecord.model_validate(
+                dict(
+                    data,
+                    digest=result.answer,
+                    number="",
+                    title=meta.title,
+                    source_url="",
+                    source_kind=meta.source_kind,
+                )
+            )
+        elif item.call_kind == "joint" and isinstance(result.answer, JointComparison):
+            record = JointRecord.model_validate(
+                dict(data, comparison=result.answer, compared_with=meta.compared_with)
+            )
+        elif result.error is None:
+            result = result.model_copy(update={"error": "batch answer does not match call kind"})
+        with self._repo.atomic():
+            if record is not None:
+                self._repo.save_analysis_memo(meta.memo_key, record.model_dump_json())
+            self._repo.mark_llm_batch_item_consumed(
+                item.batch_id, item.custom_id, consumed_at=now, result=result
+            )
+        self._charge_batch_result(item, result)
+        if record is not None:
+            self._memo.setdefault(meta.memo_key, record.model_dump_json())
+
     def _consume_current(
         self, item: LlmBatchItem, batch_result: BatchResult, now: datetime, *, active: bool
     ) -> AnalysisRecord | None:
+        assert isinstance(item.meta, BatchItemMeta)
         record = None
         if batch_result.analysis is not None:
             record = AnalysisRecord(
@@ -1093,10 +1143,9 @@ class AnalysisService:
                         custom_id=hashlib.sha256(
                             f"{key}:{bill.analysis_generation}".encode()
                         ).hexdigest(),
-                        call_kind=purpose,
                         term=bill.term,
                         number=bill.number,
-                        ctx=ctx,
+                        question=AnalysisQuestion(kind=purpose, ctx=ctx),
                     )
                 ),
                 batch_meta=BatchItemMeta(
@@ -1490,6 +1539,7 @@ def _submission_groups(intents: list[BatchIntent]) -> list[list[BatchIntent]]:
             len(current) >= 100
             or size + payload_size > 100_000_000
             or current[0].request.call_kind != intent.request.call_kind
+            or current[0].request.model != intent.request.model
         ):
             groups.append(current)
             current, size = [], 0

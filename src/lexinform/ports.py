@@ -60,6 +60,7 @@ from lexinform.models import (
     Vote,
     WykazEntry,
 )
+from lexinform.models.report import CallKind
 
 
 class Clock(Protocol):
@@ -276,9 +277,7 @@ class LlmAnalyzer(
 
 
 class BatchBackend(Protocol):
-    """The full analysis and a re-analysis, asked of the provider's batch API (half the price of
-    `AnalysisBackend.analyze`, at the cost of an answer that is not immediate). `triage` never
-    goes through here: it stays the synchronous, per-bill `TriageBackend` above."""
+    """Homogeneous batches of typed analysis, amendment, document or comparison requests."""
 
     def prepare_request(self, request: BatchRequest) -> BatchRequest:
         """Freeze provider parameters and reserve the input plus maximum output cost."""
@@ -294,7 +293,7 @@ class BatchBackend(Protocol):
         """Whether the provider is done with this batch yet."""
         ...
 
-    def fetch_results(self, batch_id: str) -> Iterator[BatchResult]:
+    def fetch_results(self, batch_id: str, kind: CallKind = "analysis") -> Iterator[BatchResult]:
         """Every answer of an `"ended"` batch, in no particular order (`custom_id` says which
         request each is)."""
         ...

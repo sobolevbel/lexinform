@@ -71,6 +71,8 @@ from lexinform.models import (
     Vote,
     WykazEntry,
 )
+from lexinform.models.batch import BatchAnswer
+from lexinform.models.report import CallKind
 from lexinform.ports import PublishResult
 from lexinform.sections import MIN_CHARS_PER_PAGE
 
@@ -654,6 +656,7 @@ class FakeBatchBackend:
 
     def __init__(self, script: dict[str, Analysis | Exception] | None = None) -> None:
         self.script = script or {}
+        self.secondary_script: dict[tuple[str, CallKind], BatchAnswer | Exception] = {}
         self.batches: dict[str, list[BatchRequest]] = {}
         self.resolved: set[str] = set()
         self.submitted: list[BatchRequest] = []
@@ -681,16 +684,25 @@ class FakeBatchBackend:
     def poll(self, batch_id: str) -> BatchStatus:
         return "ended" if batch_id in self.resolved else "submitted"
 
-    def fetch_results(self, batch_id: str) -> Iterator[BatchResult]:
+    def fetch_results(self, batch_id: str, kind: CallKind = "analysis") -> Iterator[BatchResult]:
         assert batch_id in self.resolved, "fetch_results before resolve()"
         for req in self.batches[batch_id]:
-            outcome = self.script.get(req.number, make_analysis())
+            defaults: dict[CallKind, BatchAnswer] = {
+                "analysis": make_analysis(),
+                "reanalysis": make_analysis(),
+                "amendments": make_amendments(),
+                "supplement": make_digest(),
+                "joint": make_comparison(),
+            }
+            outcome = self.secondary_script.get(
+                (req.number, kind), self.script.get(req.number, defaults[kind])
+            )
             if isinstance(outcome, Exception):
                 yield BatchResult(custom_id=req.custom_id, error=str(outcome))
                 continue
             yield BatchResult(
                 custom_id=req.custom_id,
-                analysis=outcome,
+                answer=outcome,
                 model=self.MODEL,
                 prompt_version=PROMPT_VERSION,
                 input_tokens=FakeLlm.ANALYSIS_TOKENS[0],

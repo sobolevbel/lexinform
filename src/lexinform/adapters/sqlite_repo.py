@@ -22,7 +22,6 @@ from lexinform.models import (
     AmendmentsRecord,
     AnalysisRecord,
     BatchIntent,
-    BatchItemMeta,
     BatchRequest,
     BatchResult,
     BatchStatus,
@@ -51,6 +50,7 @@ from lexinform.models import (
     SupplementRecord,
     WykazEntry,
 )
+from lexinform.models.batch import batch_item_meta
 
 _NO_CARD_YET = """
                   NOT EXISTS (
@@ -386,7 +386,7 @@ def _row_to_llm_batch_item(row: sqlite3.Row) -> LlmBatchItem:
         call_kind=row["call_kind"],
         term=row["term"],
         number=row["number"],
-        meta=BatchItemMeta.model_validate_json(row["meta_json"]),
+        meta=batch_item_meta(row["call_kind"], row["meta_json"]),
         consumed_at=_parse_dt(row["consumed_at"]),
         result=BatchResult.model_validate_json(row["result_json"]) if row["result_json"] else None,
     )
@@ -732,8 +732,8 @@ class SqliteBillRepository:
         ).fetchall()
         return [
             BatchIntent(
-                request=BatchRequest.model_validate_json(row["request_json"]),
-                meta=BatchItemMeta.model_validate_json(row["meta_json"]),
+                request=(request := BatchRequest.model_validate_json(row["request_json"])),
+                meta=batch_item_meta(request.call_kind, row["meta_json"]),
                 provider=row["provider"],
                 state=row["state"],
                 created_at=datetime.fromisoformat(row["created_at"]),

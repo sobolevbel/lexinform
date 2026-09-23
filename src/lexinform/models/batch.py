@@ -1,14 +1,20 @@
-"""Submitting a full analysis or a re-analysis to a provider's batch API and collecting it later.
-
-Only `analysis`/`reanalysis` accept `BillContext`; other capabilities need their own request type.
-"""
+"""Durable typed requests and results for homogeneous provider batches."""
 
 import datetime as dt
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel
+from pydantic import AliasChoices, BaseModel, Field, model_validator
 
-from lexinform.models.analysis import Analysis, BillContext
+from lexinform.models.analysis import (
+    Amendments,
+    AmendmentsContext,
+    Analysis,
+    BillContext,
+    DocumentDigest,
+    JointComparison,
+    JointContext,
+    SupplementContext,
+)
 from lexinform.models.bill import LocatedText
 from lexinform.models.enums import SourceKind, TextSource
 from lexinform.models.report import CallKind
@@ -17,18 +23,70 @@ BatchProvider = Literal["anthropic", "openai"]
 BatchStatus = Literal["submitted", "ended", "failed"]
 
 
-class BatchRequest(BaseModel):
-    """One item of a submission; `custom_id` is how its answer finds its way back to a bill."""
+class AnalysisQuestion(BaseModel):
+    kind: Literal["analysis", "reanalysis"]
+    ctx: BillContext
 
+
+class AmendmentsQuestion(BaseModel):
+    kind: Literal["amendments"] = "amendments"
+    ctx: AmendmentsContext
+
+
+class SupplementQuestion(BaseModel):
+    kind: Literal["supplement"] = "supplement"
+    ctx: SupplementContext
+
+
+class JointQuestion(BaseModel):
+    kind: Literal["joint"] = "joint"
+    ctx: JointContext
+
+
+BatchQuestion = Annotated[
+    AnalysisQuestion | AmendmentsQuestion | SupplementQuestion | JointQuestion,
+    Field(discriminator="kind"),
+]
+BatchAnswer = Analysis | Amendments | DocumentDigest | JointComparison
+BatchKind = Literal["analysis", "reanalysis", "amendments", "supplement", "joint"]
+
+
+def batch_output_model(kind: CallKind) -> type[BatchAnswer]:
+    if kind in ("analysis", "reanalysis"):
+        return Analysis
+    if kind == "amendments":
+        return Amendments
+    if kind == "supplement":
+        return DocumentDigest
+    if kind == "joint":
+        return JointComparison
+    raise ValueError(f"Unsupported batch kind: {kind}")
+
+
+class BatchRequest(BaseModel):
     custom_id: str
-    call_kind: Literal["analysis", "reanalysis"]
     term: int
     number: str
-    ctx: BillContext
+    question: BatchQuestion
     payload_json: str | None = None
     model: str = ""
     prompt_version: str = ""
     estimated_cost_usd: float = 0.0
+
+    @model_validator(mode="before")
+    @classmethod
+    def legacy_question(cls, value: object) -> object:
+        if isinstance(value, dict) and "question" not in value:
+            return {**value, "question": {"kind": value["call_kind"], "ctx": value["ctx"]}}
+        return value
+
+    @property
+    def call_kind(self) -> BatchKind:
+        return self.question.kind
+
+    @property
+    def ctx(self) -> BillContext | AmendmentsContext | SupplementContext | JointContext:
+        return self.question.ctx
 
 
 class BatchResult(BaseModel):
@@ -37,7 +95,9 @@ class BatchResult(BaseModel):
     provider's to know; `AnalysisService.collect_batches` attaches them from `BatchItemMeta`."""
 
     custom_id: str
-    analysis: Analysis | None = None
+    answer: BatchAnswer | None = Field(
+        default=None, validation_alias=AliasChoices("answer", "analysis")
+    )
     model: str | None = None
     prompt_version: str | None = None
     input_tokens: int | None = None
@@ -45,6 +105,10 @@ class BatchResult(BaseModel):
     cache_read_input_tokens: int | None = None
     cache_creation_input_tokens: int | None = None
     error: str | None = None
+
+    @property
+    def analysis(self) -> Analysis | None:
+        return self.answer if isinstance(self.answer, Analysis) else None
 
 
 class LlmBatch(BaseModel):
@@ -82,6 +146,19 @@ class BatchItemMeta(BaseModel):
     text: str = ""
 
 
+class DigestItemMeta(BaseModel):
+    memo_key: str
+    prompt_version: str = ""
+    source_kind: SourceKind = "print"
+    title: str = ""
+    compared_with: list[str] = Field(default_factory=list)
+
+
+def batch_item_meta(kind: str, raw: str) -> BatchItemMeta | DigestItemMeta:
+    model = BatchItemMeta if kind in ("analysis", "reanalysis") else DigestItemMeta
+    return model.model_validate_json(raw)
+
+
 class LlmBatchItem(BaseModel):
     """Which bill one `custom_id` of a batch answers for, and whether it has been written back."""
 
@@ -90,14 +167,14 @@ class LlmBatchItem(BaseModel):
     call_kind: CallKind
     term: int
     number: str
-    meta: BatchItemMeta
+    meta: BatchItemMeta | DigestItemMeta
     consumed_at: dt.datetime | None = None
     result: BatchResult | None = None
 
 
 class BatchIntent(BaseModel):
     request: BatchRequest
-    meta: BatchItemMeta
+    meta: BatchItemMeta | DigestItemMeta
     provider: BatchProvider
     state: Literal["queued", "submitting"] = "queued"
     created_at: dt.datetime

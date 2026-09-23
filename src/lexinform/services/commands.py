@@ -656,6 +656,7 @@ class CommandService:
             (item.term, item.number)
             for batch in batches
             for item in self._repo.list_llm_batch_items(batch.batch_id)
+            if item.call_kind in ("analysis", "reanalysis")
         }
         bills = self._repo.count_by_status()
         in_flight = self._repo.list_by_status(

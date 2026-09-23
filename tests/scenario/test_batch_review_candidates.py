@@ -12,6 +12,7 @@ from lexinform.adapters.batch_checkpoint import GitBatchCheckpoint
 from lexinform.cli import app
 from lexinform.errors import BatchNotSubmittedError, LlmUnavailableError
 from lexinform.models import BatchRequest, BatchResult, BatchStatus, BillStatus
+from lexinform.models.report import CallKind
 from lexinform.pricing import cost_usd
 from lexinform.services.pipeline import RunOptions
 from tests.fakes import FakeBatchBackend, FakeTextExtractor, make_analysis
@@ -387,7 +388,7 @@ def test_paid_invalid_answer_is_accounted_without_a_successful_analysis(
     w.run()
     w.batch.resolve()
 
-    def invalid(batch_id: str) -> Iterator[BatchResult]:
+    def invalid(batch_id: str, kind: CallKind = "analysis") -> Iterator[BatchResult]:
         yield BatchResult(
             custom_id=w.batch.submitted[0].custom_id,
             model="claude-opus-5",

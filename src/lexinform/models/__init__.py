@@ -36,6 +36,7 @@ from lexinform.models.batch import (
     BatchRequest,
     BatchResult,
     BatchStatus,
+    DigestItemMeta,
     LlmBatch,
     LlmBatchItem,
 )
@@ -318,6 +319,7 @@ __all__ = [
     "BackfillReport",
     "BatchItemMeta",
     "BatchIntent",
+    "DigestItemMeta",
     "BatchProvider",
     "BatchRequest",
     "BatchResult",

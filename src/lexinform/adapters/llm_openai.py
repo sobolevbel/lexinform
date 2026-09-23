@@ -55,6 +55,8 @@ from lexinform.models import (
     SupplementContext,
     SupplementRecord,
 )
+from lexinform.models.batch import BatchAnswer, batch_output_model
+from lexinform.models.report import CallKind
 from lexinform.pricing import TOKENS_PER_SCANNED_PAGE, batch_reservation
 from lexinform.settings import OpenAiEffort
 
@@ -324,43 +326,63 @@ class OpenAiAnalyzer:
     def prepare_request(self, request: BatchRequest) -> BatchRequest:
         if request.payload_json is not None:
             return request
-        req = request
+        ctx = request.ctx
+        model = request.model or self._model
+        scan = ctx.scan if isinstance(ctx, (BillContext, SupplementContext)) else None
+        if isinstance(ctx, BillContext):
+            system, prompt = self._system, build_user_prompt(ctx)
+        elif isinstance(ctx, AmendmentsContext):
+            system, prompt = (
+                gpt51_amendments_system_prompt(self._language),
+                build_amendments_prompt(ctx),
+            )
+        elif isinstance(ctx, SupplementContext):
+            system, prompt = (
+                gpt51_supplement_system_prompt(self._language),
+                build_supplement_prompt(ctx),
+            )
+        else:
+            system, prompt = gpt51_joint_system_prompt(self._language), build_joint_prompt(ctx)
+        schema_name, schema = {
+            "analysis": ("analysis", _ANALYSIS_SCHEMA),
+            "reanalysis": ("analysis", _ANALYSIS_SCHEMA),
+            "amendments": ("amendments", _AMENDMENTS_SCHEMA),
+            "supplement": ("document_digest", _DOCUMENT_DIGEST_SCHEMA),
+            "joint": ("joint_comparison", _JOINT_COMPARISON_SCHEMA),
+        }[request.call_kind]
         payload = {
-            "custom_id": req.custom_id,
+            "custom_id": request.custom_id,
             "method": "POST",
             "url": "/v1/responses",
             "body": {
-                "model": self._model,
+                "model": model,
                 "reasoning": None if self._effort == "none" else {"effort": self._effort},
                 "max_output_tokens": self._max_output_tokens,
                 "input": [
-                    {"role": "system", "content": self._system},
-                    {
-                        "role": "user",
-                        "content": _content(build_user_prompt(req.ctx), req.ctx.scan),
-                    },
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": _content(prompt, scan)},
                 ],
                 "text": {
                     "format": {
                         "type": "json_schema",
-                        "name": "analysis",
-                        "schema": _ANALYSIS_SCHEMA,
+                        "name": schema_name,
+                        "schema": schema,
                         "strict": True,
                     }
                 },
             },
         }
-        tokens = self.count_input_tokens(req.ctx)
-        estimate = max(tokens or 0, len(req.ctx.text) + len(req.ctx.title) + 2_000)
-        if req.ctx.scan is not None:
-            estimate += req.ctx.scan.pages * TOKENS_PER_SCANNED_PAGE
-        return req.model_copy(
+        tokens = self.count_input_tokens(ctx) if isinstance(ctx, BillContext) else None
+        estimate = max(tokens or 0, len(prompt) + len(system) + 2_000)
+        if scan is not None:
+            estimate += scan.pages * TOKENS_PER_SCANNED_PAGE
+        return request.model_copy(
             update={
                 "payload_json": json.dumps(payload, ensure_ascii=False),
-                "model": self._model,
+                "model": model,
                 "prompt_version": PROMPT_VERSION,
                 "estimated_cost_usd": batch_reservation(
-                    self._model, input_tokens=estimate, max_output_tokens=self._max_output_tokens
+                    model, input_tokens=estimate, max_output_tokens=self._max_output_tokens
                 ),
             }
         )
@@ -413,7 +435,7 @@ class OpenAiAnalyzer:
             return "failed"
         return "submitted"
 
-    def fetch_results(self, batch_id: str) -> Iterator[BatchResult]:
+    def fetch_results(self, batch_id: str, kind: CallKind = "analysis") -> Iterator[BatchResult]:
         try:
             batch = self._resolved_client.batches.retrieve(batch_id)
             files = [
@@ -443,12 +465,14 @@ class OpenAiAnalyzer:
                     ):
                         log.warning("batch %s contains a result without custom_id", batch_id)
                         continue
-                    yield self._batch_result_line(decoded)
+                    yield self._batch_result_line(decoded, batch_output_model(kind))
 
     def forget(self, batch_id: str) -> None:
         """OpenAI has no batch delete, only cancel; `poll-batches` keeps its time window here."""
 
-    def _batch_result_line(self, line: dict[str, Any]) -> BatchResult:
+    def _batch_result_line(
+        self, line: dict[str, Any], output_model: type[BatchAnswer]
+    ) -> BatchResult:
         custom_id = str(line["custom_id"])
         error = line.get("error")
         if error is not None:
@@ -473,10 +497,10 @@ class OpenAiAnalyzer:
         try:
             if response.status != "completed":
                 raise LlmError(f"response is {response.status}")
-            analysis = _parsed_output(response, Analysis)
+            analysis = _parsed_output(response, output_model)
         except (LlmError, ValidationError) as exc:
             return answer.model_copy(update={"error": str(exc)})
-        return answer.model_copy(update={"analysis": analysis})
+        return answer.model_copy(update={"answer": analysis})
 
     def _structured_call(
         self,

@@ -571,6 +571,8 @@ def attach_batch_intents(
         provider = intents[0].provider
         if any(intent.provider != provider for intent in intents):
             raise typer.BadParameter("a provider batch cannot mix providers")
+        if any(intent.request.call_kind != intents[0].request.call_kind for intent in intents):
+            raise typer.BadParameter("a provider batch cannot mix call kinds")
         with c.repo.atomic():
             c.repo.save_llm_batch(
                 LlmBatch(

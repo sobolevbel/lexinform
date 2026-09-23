@@ -28,6 +28,7 @@ from lexinform.models import (
     ScannedDocument,
     SupplementContext,
 )
+from lexinform.models.batch import AnalysisQuestion
 from tests.fakes import make_amendments, make_analysis, make_comparison, make_digest
 
 
@@ -392,7 +393,10 @@ def test_the_hand_written_schema_matches_the_pydantic_model(model: type[BaseMode
 
 def test_the_batch_request_sends_the_same_analysis_schema_as_the_synchronous_call() -> None:
     request = BatchRequest(
-        custom_id="parity", call_kind="analysis", term=10, number="3039", ctx=_ctx()
+        custom_id="parity",
+        term=10,
+        number="3039",
+        question=AnalysisQuestion(kind="analysis", ctx=_ctx()),
     )
 
     prepared = _analyzer(_client()).prepare_request(request)
