@@ -18,7 +18,7 @@ from lexinform.models import (
     flatten_stages,
 )
 from tests.fakes import FakeTextExtractor, make_analysis
-from tests.harness import COMMITTEE_STAGES, ELI, REFERRED, START, World, act, print_url
+from tests.harness import COMMITTEE_STAGES, ELI, REFERRED, START, TERM, World, act, print_url
 
 
 def test_first_sight_of_the_stages_posts_nothing() -> None:
@@ -227,6 +227,59 @@ def test_a_batched_re_analysis_posts_nothing_until_collected() -> None:
     collected = w.run()
 
     assert collected.reanalyzed == 1
+    assert w.bill("3039").status is BillStatus.ANALYZED
+    _, change, reply_to = w.publisher.updates[-1]
+    assert change.content_changed and reply_to == w.card_id("3039")
+
+
+def test_a_stranded_re_analysis_reset_to_analyzed_is_filed_again_and_applied() -> None:
+    """The `/reset … to=analyzed` that `/status` offers must get the new text filed again."""
+    w = World(batch=True, extractor=FakeTextExtractor(by_content={b"%PDF-report": REPORT_TEXT}))
+    batch = w.batch
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    batch.resolve()
+    w.run()  # the card
+    batch.submitted.clear()
+    w.repo.set_status(TERM, "3039", BillStatus.BATCH_PENDING)  # held by no batch or intent
+    w.set_stages("3039", WITH_REPORT)
+    w.gateway.files[REPORT_URL] = b"%PDF-report"
+    w.clock.advance(days=1)
+    w.run()
+    assert batch.submitted == [] and w.bill("3039").status is BillStatus.BATCH_PENDING
+    w.command("/status")
+    w.run(discover=False, track=False, max_analyze=0, max_publish=0)
+    (_, status), *_ = w.replier.replies
+    assert status.snapshot is not None
+    assert [b.number for b in status.snapshot.orphaned] == ["3039"]
+    w.command("/reset 3039 to=analyzed")
+    w.clock.advance(days=1)
+
+    refiled = w.run()
+
+    assert refiled.reanalyzed == 0 and [r.number for r in batch.submitted] == ["3039"]
+    assert w.bill("3039").status is BillStatus.BATCH_PENDING
+    batch.resolve()
+    w.clock.advance(days=1)
+    collected = w.run()
+    assert collected.reanalyzed == 1 and w.bill("3039").status is BillStatus.ANALYZED
+    stored = w.bill("3039").analysis
+    assert stored is not None and stored.source_url == REPORT_URL
+    assert any(change.content_changed for _, change, _ in w.publisher.updates)
+
+
+def test_a_pilny_bill_is_re_analysed_at_once_even_with_batching_on() -> None:
+    w = World(batch=True, extractor=FakeTextExtractor(by_content={b"%PDF-report": REPORT_TEXT}))
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.touch("3039", dt.datetime(2026, 9, 7, 5, tzinfo=dt.UTC), urgency_status="URGENT")
+    w.run()  # the first analysis is not batched either
+    w.set_stages("3039", WITH_REPORT)
+    w.gateway.files[REPORT_URL] = b"%PDF-report"
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.reanalyzed == 1 and w.batch.submitted == []
     assert w.bill("3039").status is BillStatus.ANALYZED
     _, change, reply_to = w.publisher.updates[-1]
     assert change.content_changed and reply_to == w.card_id("3039")
