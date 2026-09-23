@@ -59,6 +59,7 @@ class LlmBatch(BaseModel):
     completed_at: dt.datetime | None = None
     request_count: int
     estimated_cost_usd: float
+    forgotten_at: dt.datetime | None = None
 
 
 class BatchItemMeta(BaseModel):

@@ -337,12 +337,14 @@ class AnalysisService:
         self._batch_resolver = batch_resolver
         self._batch_checkpoint = batch_checkpoint
         self._dry_run = False
+        self._restored_collected: set[str] = set()
         self._accounted_items: set[tuple[str, str]] = set()
         self._ledger = CostLedger(max_run_usd=options.max_run_cost_usd)
         self._memo = repo.load_analysis_memo()
 
     def start_run(self, *, dry_run: bool = False) -> None:
         self._dry_run = dry_run
+        self._restored_collected = {b.batch_id for b in self._repo.list_unforgotten_llm_batches()}
         committed = sum(batch.estimated_cost_usd for batch in self._repo.list_open_llm_batches())
         committed += sum(
             intent.request.estimated_cost_usd
@@ -582,25 +584,47 @@ class AnalysisService:
         if self._batch is None:
             return
         errors: list[str] = []
+        collected = False
         for batch in self._repo.list_open_llm_batches():
             try:
-                backend = (
-                    self._batch_resolver(batch.provider)
-                    if self._batch_resolver is not None
-                    else self._batch
-                    if batch.provider == self._options.batch_provider
-                    else None
-                )
+                backend = self._batch_backend_of(batch)
                 if backend is None:
                     log.warning("batch %s waits for %s backend", batch.batch_id, batch.provider)
                     continue
-                self._collect_batch(batch, backend)
+                collected |= self._collect_batch(batch, backend)
             except ServiceUnavailableError as exc:
                 errors.append(f"{batch.provider}/{batch.batch_id}: {exc}")
+        if not self._dry_run:
+            if collected and self._batch_checkpoint is not None:
+                self._batch_checkpoint()
+            errors.extend(self._forget_collected(checkpointed=self._batch_checkpoint is not None))
         if errors:
             raise LlmUnavailableError("; ".join(errors))
 
-    def _collect_batch(self, batch: LlmBatch, backend: BatchBackend) -> None:
+    def _batch_backend_of(self, batch: LlmBatch) -> BatchBackend | None:
+        if self._batch_resolver is not None:
+            return self._batch_resolver(batch.provider)
+        return self._batch if batch.provider == self._options.batch_provider else None
+
+    def _forget_collected(self, *, checkpointed: bool) -> list[str]:
+        """Delete at the provider every batch whose answers are already in a persisted state."""
+        errors: list[str] = []
+        for batch in self._repo.list_unforgotten_llm_batches():
+            # Unless checkpointed, this run's collections exist only until its dump is pushed.
+            if not checkpointed and batch.batch_id not in self._restored_collected:
+                continue
+            backend = self._batch_backend_of(batch)
+            if backend is None:
+                continue
+            try:
+                backend.forget(batch.batch_id)
+            except ServiceUnavailableError as exc:
+                errors.append(f"forget {batch.provider}/{batch.batch_id}: {exc}")
+                continue
+            self._repo.mark_llm_batch_forgotten(batch.batch_id, forgotten_at=self._clock.now())
+        return errors
+
+    def _collect_batch(self, batch: LlmBatch, backend: BatchBackend) -> bool:
         now = self._clock.now()
         status = backend.poll(batch.batch_id)
         self._repo.mark_llm_batch_polled(batch.batch_id, status=status, polled_at=now)
@@ -610,9 +634,9 @@ class AnalysisService:
                 self._consume(item, BatchResult(custom_id=item.custom_id, error="batch failed"))
             self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
             self._ledger.release(batch.estimated_cost_usd)
-            return
+            return True
         if status != "ended":
-            return
+            return False
         by_id = {item.custom_id: item for item in items}
         received: set[str] = set()
         for batch_result in backend.fetch_results(batch.batch_id):
@@ -628,6 +652,7 @@ class AnalysisService:
                 )
         self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
         self._ledger.release(batch.estimated_cost_usd)
+        return True
 
     def uncertain_batch_intent_ids(self) -> list[str]:
         return [intent.request.custom_id for intent in self._repo.list_submitting_batch_intents()]

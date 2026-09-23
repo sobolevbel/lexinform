@@ -253,8 +253,12 @@ journalctl -u lexinform-listen -f
 Same server, its own unit pair: a timer fires `lexinform poll-batches` every 20 minutes, which
 asks GitHub for a `collect-batches` run when the active provider (`LEXINFORM_LLM_BATCH_PROVIDER`)
 reports a finished batch — sooner than the next scheduled `daily.yml`, which would find it anyway.
-No database, no state of its own: `deploy/update.sh` installs and enables it automatically once
-its unit files are in `deploy/`, the same way it manages the relay's. Add to `.env`:
+No database, no state of its own: a run deletes an Anthropic batch at the provider once its
+answers are in a pushed state (the checkpoint, or the next run), so an `ended` batch the provider
+still lists is one not collected yet. OpenAI has no batch delete, so there only a batch completed
+within the last 40 minutes (two ticks) counts; one missed for longer waits for the scheduled run.
+`deploy/update.sh` installs and enables it automatically once its unit files are in `deploy/`, the
+same way it manages the relay's. Add to `.env`:
 
 ```bash
 ANTHROPIC_API_KEY=...   # or OPENAI_API_KEY=..., matching LEXINFORM_LLM_BATCH_PROVIDER

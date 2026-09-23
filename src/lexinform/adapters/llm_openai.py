@@ -445,6 +445,9 @@ class OpenAiAnalyzer:
                         continue
                     yield self._batch_result_line(decoded)
 
+    def forget(self, batch_id: str) -> None:
+        """OpenAI has no batch delete, only cancel; `poll-batches` keeps its time window here."""
+
     def _batch_result_line(self, line: dict[str, Any]) -> BatchResult:
         custom_id = str(line["custom_id"])
         error = line.get("error")

@@ -422,11 +422,10 @@ def test_poll_batches_asks_github_to_collect_a_finished_batch(
     assert dispatched == ["batch-ready"]
 
 
-def test_poll_batches_ignores_a_batch_that_ended_long_ago(
+def test_poll_batches_asks_for_an_anthropic_batch_that_ended_long_ago(
     db: Path, api: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """`ended` is terminal and kept for 29 days: without a window the timer would ask for a run
-    every 20 minutes for a month over one batch collected on its first tick."""
+    """A collected Anthropic batch is deleted, so one still listed is uncollected at any age."""
     _fake_finished_anthropic_batch(monkeypatch, ended_minutes_ago=180)
     dispatched: list[str] = []
     monkeypatch.setattr(
@@ -443,8 +442,54 @@ def test_poll_batches_ignores_a_batch_that_ended_long_ago(
     result = runner.invoke(app, ["poll-batches"], env=env)
 
     assert result.exit_code == 0, result.output
-    assert "no finished batch" in result.output
-    assert dispatched == []
+    assert dispatched == ["batch-ready"]
+
+
+def _fake_finished_openai_batch(
+    monkeypatch: pytest.MonkeyPatch, *, completed_minutes_ago: int
+) -> None:
+    """An OpenAI whose `batches.list()` answers with one batch completed that long ago."""
+
+    class _FakeBatch:
+        status = "completed"
+        completed_at = int(
+            (datetime.now(UTC) - timedelta(minutes=completed_minutes_ago)).timestamp()
+        )
+
+    class _FakeBatches:
+        def list(self, *, limit: int) -> list[_FakeBatch]:
+            return [_FakeBatch()]
+
+    class _FakeOpenAi:
+        def __init__(self, *, api_key: str) -> None:
+            self.batches = _FakeBatches()
+
+    monkeypatch.setattr("lexinform.cli.openai.OpenAI", _FakeOpenAi)
+
+
+@pytest.mark.parametrize(("minutes_ago", "asked"), [(5, True), (180, False)])
+def test_poll_batches_judges_an_openai_batch_by_when_it_completed(
+    db: Path, api: str, monkeypatch: pytest.MonkeyPatch, minutes_ago: int, asked: bool
+) -> None:
+    """OpenAI cannot delete a batch and keeps it listed: only a recent completion is news."""
+    _fake_finished_openai_batch(monkeypatch, completed_minutes_ago=minutes_ago)
+    dispatched: list[str] = []
+    monkeypatch.setattr(
+        "lexinform.cli.GitHubInboxWriter.dispatch",
+        lambda self, event_type, client_payload=None: dispatched.append(event_type),
+    )
+    env = {
+        **_env(db, api=api),
+        "LEXINFORM_LLM_BATCH_ENABLED": "true",
+        "LEXINFORM_GITHUB_REPO": "owner/repo",
+        "LEXINFORM_GITHUB_TOKEN": "TOKEN",
+        "LEXINFORM_LLM_BATCH_PROVIDER": "openai",
+    }
+
+    result = runner.invoke(app, ["poll-batches"], env=env)
+
+    assert result.exit_code == 0, result.output
+    assert dispatched == (["batch-ready"] if asked else [])
 
 
 def test_poll_batches_says_so_when_the_provider_refuses(

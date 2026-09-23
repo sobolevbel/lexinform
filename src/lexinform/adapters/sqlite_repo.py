@@ -341,6 +341,10 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE llm_batch_items ADD COLUMN result_json TEXT;
     ALTER TABLE llm_batch_items ADD COLUMN accounted_at TEXT;
     """,
+    # v30: a collected batch deleted at the provider, so "ended and still listed" means uncollected.
+    """
+    ALTER TABLE llm_batches ADD COLUMN forgotten_at TEXT;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -366,6 +370,7 @@ def _row_to_llm_batch(row: sqlite3.Row) -> LlmBatch:
         completed_at=_parse_dt(row["completed_at"]),
         request_count=row["request_count"],
         estimated_cost_usd=row["estimated_cost_usd"],
+        forgotten_at=_parse_dt(row["forgotten_at"]),
     )
 
 
@@ -800,6 +805,21 @@ class SqliteBillRepository:
         self._conn.execute(
             "UPDATE llm_batches SET completed_at = ? WHERE batch_id = ?",
             (_iso(completed_at), batch_id),
+        )
+
+    def list_unforgotten_llm_batches(self) -> list[LlmBatch]:
+        rows = self._conn.execute(
+            "SELECT * FROM llm_batches WHERE completed_at IS NOT NULL AND forgotten_at IS NULL"
+            " AND NOT EXISTS (SELECT 1 FROM llm_batch_items i"
+            "                 WHERE i.batch_id = llm_batches.batch_id AND i.consumed_at IS NULL)"
+            " ORDER BY submitted_at"
+        ).fetchall()
+        return [_row_to_llm_batch(r) for r in rows]
+
+    def mark_llm_batch_forgotten(self, batch_id: str, *, forgotten_at: datetime) -> None:
+        self._conn.execute(
+            "UPDATE llm_batches SET forgotten_at = ? WHERE batch_id = ?",
+            (_iso(forgotten_at), batch_id),
         )
 
     def list_llm_batch_items(self, batch_id: str) -> list[LlmBatchItem]:

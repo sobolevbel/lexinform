@@ -397,6 +397,21 @@ class AnthropicAnalyzer:
         ) as exc:
             raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
 
+    def forget(self, batch_id: str) -> None:
+        try:
+            self._client.messages.batches.delete(batch_id)
+        except anthropic.NotFoundError:
+            return
+        except (
+            anthropic.AuthenticationError,
+            anthropic.PermissionDeniedError,
+            anthropic.RateLimitError,
+            anthropic.InternalServerError,
+            anthropic.APIConnectionError,
+        ) as exc:
+            raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
+        log.info("deleted collected batch %s", batch_id)
+
     def _batch_result(self, item: Any) -> BatchResult:
         result = item.result
         if result.type != "succeeded":

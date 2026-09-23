@@ -719,6 +719,7 @@
       <div class="mig"><span class="v">v27</span><span class="what"><b>llm_batch_intents</b> — сохранённые запросы до отправки; <code>queued</code> можно повторить, <code>submitting</code> требует сверки с провайдером.</span></div>
       <div class="mig"><span class="v">v28</span><span class="what"><b>bills.analysis_generation</b> — защита от устаревшего ответа после reset; <b>bills.ready_analysis_json</b> — готовый ответ и снимок источника для применения без повторного скачивания.</span></div>
       <div class="mig"><span class="v">v29</span><span class="what"><b>llm_batch_items.result_json/accounted_at</b> — полученный ответ с billed usage; расходы подтверждаются атомарно с отчётом и восстанавливаются после сбоя.</span></div>
+      <div class="mig"><span class="v">v30</span><span class="what"><b>llm_batches.forgotten_at</b> — собранный батч удалён у провайдера (Anthropic) после того, как его ответы попали в сохранённое состояние; поллер на VPS читает «ended и ещё есть в списке» как «не собран».</span></div>
     </div>
   </section>
 

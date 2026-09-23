@@ -624,6 +624,7 @@ class FakeBatchBackend:
         self.batches: dict[str, list[BatchRequest]] = {}
         self.resolved: set[str] = set()
         self.submitted: list[BatchRequest] = []
+        self.forgotten: list[str] = []
 
     def count_input_tokens(self, ctx: BillContext) -> int | None:
         return len(ctx.text) // 2 + 2_000
@@ -662,6 +663,9 @@ class FakeBatchBackend:
                 input_tokens=FakeLlm.ANALYSIS_TOKENS[0],
                 output_tokens=FakeLlm.ANALYSIS_TOKENS[1],
             )
+
+    def forget(self, batch_id: str) -> None:
+        self.forgotten.append(batch_id)
 
     def resolve(self, batch_id: str | None = None) -> None:
         """Test-only: `batch_id`, or every batch filed so far, answers on the next poll/collect."""

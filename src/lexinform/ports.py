@@ -284,6 +284,10 @@ class BatchBackend(Protocol):
         request each is)."""
         ...
 
+    def forget(self, batch_id: str) -> None:
+        """Delete a collected batch at the provider; one already gone is not an error."""
+        ...
+
 
 class PublishResult(Protocol):
     @property
@@ -527,6 +531,12 @@ class BillRepository(Protocol):
     ) -> None: ...
 
     def mark_llm_batch_collected(self, batch_id: str, *, completed_at: datetime) -> None: ...
+
+    def list_unforgotten_llm_batches(self) -> list[LlmBatch]:
+        """Collected batches the provider has not yet been told to delete, oldest first."""
+        ...
+
+    def mark_llm_batch_forgotten(self, batch_id: str, *, forgotten_at: datetime) -> None: ...
 
     def list_llm_batch_items(self, batch_id: str) -> list[LlmBatchItem]:
         """Every item of this batch not yet written back, oldest `custom_id` first."""
