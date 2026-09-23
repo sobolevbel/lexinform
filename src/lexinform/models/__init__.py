@@ -143,6 +143,7 @@ from lexinform.models.evidence import (
 from lexinform.models.ministries import (
     MINISTRIES,
     Ministry,
+    ministry_contact_url,
     ministry_name,
     ministry_url,
 )
@@ -191,6 +192,7 @@ from lexinform.models.report import (
     RunReport,
 )
 from lexinform.models.sejm import (
+    HEARING_APPLICATION_EMAIL,
     ORKA_BASE_URL,
     SENATE_BILLS_URL,
     ActInfo,
@@ -214,6 +216,7 @@ from lexinform.models.sejm import (
     VotingSummary,
     aggregate_clubs,
     applicant_from_title,
+    committee_letter_url,
     committee_web_url,
     consultation_survey_url,
     consultation_web_url,
@@ -222,6 +225,7 @@ from lexinform.models.sejm import (
     diff_stages,
     flatten_stages,
     has_process,
+    hearing_rules_url,
     is_pre_print_number,
     is_rcl_number,
     is_wykaz_number,
@@ -404,7 +408,10 @@ __all__ = [
     "amendments_stage",
     "applicant_from_title",
     "closure_event",
+    "HEARING_APPLICATION_EMAIL",
+    "committee_letter_url",
     "committee_web_url",
+    "hearing_rules_url",
     "consultation_survey_url",
     "consultation_web_url",
     "current_term",
@@ -430,6 +437,7 @@ __all__ = [
     "is_urgent",
     "is_wykaz_number",
     "latest_text_document",
+    "ministry_contact_url",
     "ministry_name",
     "ministry_url",
     "new_supplements",

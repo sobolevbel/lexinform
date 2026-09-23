@@ -15,6 +15,7 @@ from lexinform.models import (
     COMMITTEE_PHASES,
     DAYS_PER_MONTH,
     GOVERNMENT_STEPS,
+    HEARING_APPLICATION_EMAIL,
     PATH_STEPS,
     PHASE_STEP,
     RCL_PREFIX,
@@ -51,6 +52,7 @@ from lexinform.models import (
     VotingSummary,
     WykazEntry,
     about_ukraine,
+    committee_letter_url,
     committee_web_url,
     consultation_open,
     deadline_overdue,
@@ -59,11 +61,13 @@ from lexinform.models import (
     flatten_stages,
     government_path,
     hearing_application_deadline,
+    hearing_rules_url,
     is_over,
     is_pre_print_number,
     is_rcl_number,
     is_urgent,
     is_wykaz_number,
+    ministry_contact_url,
     ministry_name,
     ministry_url,
     next_phase,
@@ -1065,7 +1069,10 @@ class MessageFormatter:
             details = self._hearing_application_details(bill, hearing, deadline)
             if details:
                 facts += f"\n{ICON['action']} {details}"
-        links = [link(bill.summary.web_url, lb.link_process)]
+        links = [
+            link(hearing_rules_url(bill.term), lb.link_hearing_rules),
+            link(bill.summary.web_url, lb.link_process),
+        ]
         phase = next_phase(bill, today=today)
         for code in phase.committees if phase else ():
             links.append(link(committee_web_url(bill.term, code), lb.link_committee))
@@ -1841,7 +1848,8 @@ class MessageFormatter:
             None,
         )
         if item is None:
-            return esc(self._labels.hearing_application_details)
+            lb = self._labels
+            return esc(lb.hearing_application_details.format(email=HEARING_APPLICATION_EMAIL))
         return esc(f"{self._labels.agenda_apply} {item.apply_email}")
 
     def _consultation_period(self, window: ConsultationWindow) -> str:
@@ -2135,6 +2143,7 @@ class MessageFormatter:
             codes = phase.committees or ((agenda_item.committee_code,) if agenda_item else ())
             targets = [
                 link(committee_web_url(bill.term, code), self._committee_display(bill, code, None))
+                + f" ({link(committee_letter_url(bill.term, code), lb.link_committee_letter)})"
                 for code in codes
                 if code
             ]
@@ -2151,7 +2160,9 @@ class MessageFormatter:
                 text = esc(lb.action_hearing)
                 if deadline is not None:
                     text += f" {esc(lb.consultation_until)} {self.fmt_date(deadline)}"
-                actions.append(text)
+                route = lb.action_hearing_route.format(email=HEARING_APPLICATION_EMAIL)
+                rules = link(hearing_rules_url(bill.term), lb.link_hearing_rules)
+                actions.append(f"{text}: {esc(route)} · {rules}")
         if phase is not None and phase.key == "senate":
             senate = self._senate_action(bill, today)
             if senate:
@@ -2196,12 +2207,11 @@ class MessageFormatter:
         if not entry.is_open:
             return []
         lb = self._labels
-        organ = entry.organ or lb.wykaz_organ_unknown
+        organ = ministry_name(entry.organ) if entry.organ else lb.wykaz_organ_unknown
         action = esc(lb.action_wykaz_interest.format(organ=organ))
-        # The register does not supply a filing endpoint; point to the responsible body's contacts.
-        site = ministry_url(entry.organ) if entry.organ else None
-        if site is not None:
-            action += f" · {link(site, esc(lb.action_ministry_site))}"
+        contacts = ministry_contact_url(entry.organ) if entry.organ else None
+        if contacts is not None:
+            action += f" · {link(contacts, lb.action_ministry_site)}"
         return [action]
 
     def _rcl_actions(self, bill: Bill, today: dt.date) -> list[str]:
@@ -2228,10 +2238,11 @@ class MessageFormatter:
         if not (project.is_open and not project.sent_to_sejm):
             return actions
         organ = project.applicant or lb.wykaz_organ_unknown
-        residual = [
-            link(project.comment_url, lb.action_rcl_comment),
-            esc(lb.action_rcl_interest.format(organ=organ)),
-        ]
+        interest = esc(lb.action_rcl_interest.format(organ=organ))
+        contacts = ministry_contact_url(project.applicant) if project.applicant else None
+        if contacts is not None:
+            interest += f" · {link(contacts, lb.action_ministry_site)}"
+        residual = [link(project.comment_url, lb.action_rcl_comment), interest]
         # A project that never had a public consultation (a quarter of them skip the stage) has
         # no window that shut, so there is nothing to say it did.
         if window is None or open_now:

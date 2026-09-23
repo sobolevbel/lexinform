@@ -673,6 +673,20 @@ def consultation_survey_url(number: str) -> str:
     return f"https://opiniowanie.sejm.gov.pl/{number.replace('/', '-')}"
 
 
+def committee_letter_url(term: int, code: str) -> str:
+    """The Sejm's "Listy do Sejmu" form with the committee already chosen as the addressee."""
+    return f"https://www.sejm.gov.pl/Sejm{term}.nsf/contact.xsp?type={code}"
+
+
+def hearing_rules_url(term: int) -> str:
+    """The Sejm's page on public hearings: the application form and where to send it."""
+    return f"https://www.sejm.gov.pl/Sejm{term}.nsf/page.xsp/wysluchanie_publiczne"
+
+
+# Where the Sejm's page sends a hearing application by e-mail (checked 23 Sept 2026).
+HEARING_APPLICATION_EMAIL = "wysluchanie.publiczne@sejm.gov.pl"
+
+
 def committee_web_url(term: int, code: str) -> str:
     return (
         f"https://www.sejm.gov.pl/Sejm{term}.nsf/agent.xsp?symbol=KOMISJAST"

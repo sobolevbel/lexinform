@@ -81,6 +81,12 @@ def test_card_names_the_ministry_the_letter_deadline_and_both_ways_to_react() ->
         "08.09.2026 (на польском, с номером UC164); "
         f'<a href="{COMMENT_FORM}">оставить комментарий через форму на RCL</a>' in text
     )
+    # RCL names the minister, the table the ministry: the zgłoszenie still gets its address.
+    assert (
+        "письмом органу, который готовит проект: Minister Spraw Wewnętrznych i Administracji · "
+        '<a href="https://www.gov.pl/web/mswia/kontakt">адреса канцелярии, ePUAP и'
+        " e-Doręczenia</a>" in text
+    )
     assert "Что дальше:</b> общественные консультации до 08.09.2026, затем сбор мнений" in text
     assert '">Проект на RCL</a> | <a href="' in text
     assert ">Текст проекта (DOCX)</a> | <a href=" in text and ">OSR</a> | <a href=" in text

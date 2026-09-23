@@ -737,7 +737,8 @@ Invariants worth keeping:
   **Dz.U. 2026 poz. 160 repealed art. 3–4 on 2026-08-28**, so the wykaz prac legislacyjnych now
   rests on art. 8a–8b ustawy o Radzie Ministrów and the regulation carrying the official form
   (Dz.U. 2011/1080) lapsed with the delegation — no replacement is in ELI, and the ministries go on
-  publishing the old form, which is why the card names the BIP page and not a Dz.U. number. The
+  publishing the old form, which is why the card names the ministry and links its `/kontakt` page (office,
+  ePUAP and e-Doręczenia addresses; `ministry_contact_url`) and not a Dz.U. number. The
   register is also the only source that says the government **dropped** a project (`Status
   realizacji`, `Informacja o rezygnacji` — the columns are still in the CSV; the duty behind them
   moved with art. 3): that is posted, a slipped quarter or a rewritten "istota" is only stored. `Planowane przyjęcie przez RM` is free text and half of it
@@ -1162,6 +1163,13 @@ branch history; the state branch is the backup.
   prints whose text layer is empty (a scan — `signatories` is given `text` only, while the
   analysis reads the pages) and the 22 whose covering letter is in the PDF but not in its text.
 - Polish text is ~2 characters per token for Claude; the 1M context takes any print whole.
+- **Every call to action names an address.** A Sejm committee is written to through the Sejm's
+  own "Listy do Sejmu" form, `contact.xsp?type={code}` with the committee preselected
+  (`committee_letter_url`; 35 of the 40 committees of term 10 are in it — the missing are
+  investigative, dissolved, and NON). A public hearing's application is the Marshal's form sent to
+  `wysluchanie.publiczne@sejm.gov.pl` with an electronic signature, as `page.xsp/
+  wysluchanie_publiczne` says (23 Sept 2026). RCL names its applicant by the minister's title,
+  the wykaz by the ministry's abbreviation; `ministry_url` reads both.
 - **The Senate has no API, but every act it receives has a page, and that page is the reader's
   address.** "Ustawy uchwalone przez Sejm" lists ten acts a page, newest first, titled "Ustawa" +
   the Sejm's `titleFinal` (the Sejm's hyphen is the Senate's en or figure dash, and `titleFinal`

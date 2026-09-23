@@ -13,7 +13,7 @@ ministry's own site.
 
 from typing import NamedTuple
 
-__all__ = ["MINISTRIES", "Ministry", "ministry_name", "ministry_url"]
+__all__ = ["MINISTRIES", "Ministry", "ministry_contact_url", "ministry_name", "ministry_url"]
 
 
 class Ministry(NamedTuple):
@@ -59,7 +59,21 @@ def ministry_name(organ: str) -> str:
     return known.name if known else organ.strip()
 
 
+# RCL names the applicant by the minister's title ("Minister Sprawiedliwości"), not the register's
+# abbreviation; "Minister Edukacji" heads what the table calls MEN.
+_BY_MINISTER: dict[str, Ministry] = {
+    m.name.replace("Ministerstwo ", "Minister ", 1): m for m in MINISTRIES.values()
+} | {"Minister Edukacji": MINISTRIES["MEN"]}
+
+
 def ministry_url(organ: str) -> str | None:
     """The organ's own site, when it is a ministry the table knows and the site is alive."""
-    known = MINISTRIES.get(organ.strip())
+    known = MINISTRIES.get(organ.strip()) or _BY_MINISTER.get(organ.strip())
     return known.url if known else None
+
+
+def ministry_contact_url(organ: str) -> str | None:
+    """The ministry's contact page: every one in the table lists its office, ePUAP and
+    e-Doręczenia addresses at `/kontakt` (checked 23 Sept 2026)."""
+    site = ministry_url(organ)
+    return f"{site}/kontakt" if site else None

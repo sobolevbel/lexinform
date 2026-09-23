@@ -75,8 +75,12 @@ def test_the_card_tells_the_reader_what_the_law_lets_them_do_at_this_stage() -> 
     text = MessageFormatter("ru").new_bill(wykaz_bill(), None, today=TODAY).text
 
     assert "заявить интерес к работам над проектом" in text
-    assert "Актуальный порядок и адрес подачи уточните у MSWiA" in text
-    assert '<a href="https://www.gov.pl/web/mswia">официальные контакты органа</a>' in text
+    # The ministry by its name, not the register's abbreviation, and its contact page itself.
+    assert (
+        "письмом органу, который готовит проект: Ministerstwo Spraw Wewnętrznych i Administracji"
+        ' · <a href="https://www.gov.pl/web/mswia/kontakt">адреса канцелярии, ePUAP и'
+        " e-Doręczenia</a>"
+    ) in text
 
 
 def test_an_organ_that_is_not_a_ministry_is_named_as_the_register_names_it() -> None:
@@ -87,7 +91,8 @@ def test_an_organ_that_is_not_a_ministry_is_named_as_the_register_names_it() -> 
     text = MessageFormatter("ru").new_bill(wykaz_bill(entry), None, today=TODAY).text
 
     assert "правительственный — Prezes UOKiK · номер в wykazie prac RM" in text
-    assert "у Prezes UOKiK по официальным контактам" in text
+    assert "письмом органу, который готовит проект: Prezes UOKiK" in text
+    assert "/kontakt" not in text
     assert "на сайте министерства" not in text
 
 

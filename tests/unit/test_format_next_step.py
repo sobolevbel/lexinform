@@ -35,6 +35,11 @@ def test_card_links_the_consultation_form_and_names_the_next_step(
     assert f'заполнить анкету (ankieta) <a href="{SURVEY}">на сайте Сейма</a> до' in action
     assert "до 30.09.2026" in action
     assert f"{COMMITTEE_PAGE}>ASW</a>" in action
+    # The Sejm's letter form with the committee already chosen: where the opinion actually goes.
+    assert (
+        '(<a href="https://www.sejm.gov.pl/Sejm10.nsf/contact.xsp?type=ASW">форма письма</a>)'
+        in action
+    )
     assert "до заседания" not in action  # nothing scheduled yet
 
 
@@ -232,7 +237,14 @@ def test_public_hearing_names_the_application_deadline(process_3039: ProcessDeta
     assert update.startswith("📢 <b>Назначены публичные слушания — druk nr 3039</b>")
     assert "• 30.09.2026: 📢 Публичные слушания (wysłuchanie publiczne)" in update
     assert "заявки на участие до 20.09.2026" in update
-    assert "подать заявку на участие в публичных слушаниях до 20.09.2026" in update
+    assert (
+        "подать заявку на участие в публичных слушаниях до 20.09.2026: бланк zgłoszenia — на"
+        " wysluchanie.publiczne@sejm.gov.pl с электронной подписью (kwalifikowany, osobisty или"
+        ' zaufany) · <a href="https://www.sejm.gov.pl/Sejm10.nsf/page.xsp/wysluchanie_publiczne">'
+        "бланк и порядок на сайте Сейма</a>"
+    ) in update
+    assert "бланк zgłoszenia — на wysluchanie.publiczne@sejm.gov.pl" in reminder
+    assert ">бланк и порядок на сайте Сейма</a>" in reminder
     assert_telegram_html(reminder)
     assert "📢 <b>Заявки на публичные слушания — druk nr 3039</b>" in reminder
     assert (

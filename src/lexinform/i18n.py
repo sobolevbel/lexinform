@@ -119,6 +119,9 @@ class Labels:
     action_committee: str
     action_before_sitting: str
     action_hearing: str
+    action_hearing_route: str
+    link_committee_letter: str
+    link_hearing_rules: str
     next_step: str
     agenda_committee_header: str
     agenda_sejm_header: str
@@ -378,6 +381,11 @@ RU = Labels(
     action_committee="направить мнение в комиссию —",
     action_before_sitting="до заседания",
     action_hearing="подать заявку на участие в публичных слушаниях",
+    action_hearing_route=(
+        "бланк zgłoszenia — на {email} с электронной подписью (kwalifikowany, osobisty или zaufany)"
+    ),
+    link_committee_letter="форма письма",
+    link_hearing_rules="бланк и порядок на сайте Сейма",
     next_step="Что дальше",
     agenda_committee_header="Заседание комиссии",
     agenda_sejm_header="В повестке заседания Сейма",
@@ -459,13 +467,12 @@ RU = Labels(
     wykaz_organ_unknown="профильное министерство",
     action_wykaz_interest=(
         "можно заявить интерес к работам над проектом (zgłoszenie zainteresowania): закон"
-        " допускает это с публикации плана. Актуальный порядок и адрес подачи уточните у {organ}"
-        " по официальным контактам"
+        " допускает это с публикации плана — письмом органу, который готовит проект: {organ}"
     ),
-    action_ministry_site="официальные контакты органа",
+    action_ministry_site="адреса канцелярии, ePUAP и e-Doręczenia",
     action_rcl_interest=(
-        "можно заявить интерес к работам над проектом (zgłoszenie zainteresowania); актуальный"
-        " порядок подачи уточните по официальным контактам {organ}"
+        "можно заявить интерес к работам над проектом (zgłoszenie zainteresowania) — письмом"
+        " органу, который готовит проект: {organ}"
     ),
     link_wykaz_entry="Запись в плане работ",
     tag_wykaz="wykazRM",
@@ -488,7 +495,10 @@ RU = Labels(
         " слушаний (рег. Сейма, ст. 70b); если места в зале не хватает, участников ограничивают,"
         " и решает порядок подачи — поэтому заявку стоит подать сразу"
     ),
-    hearing_application_details="способ подачи смотрите в объявлении комиссии по ссылке ниже",
+    hearing_application_details=(
+        "бланк zgłoszenia — на {email} с электронной подписью (kwalifikowany, osobisty или"
+        " zaufany); бланк и другие способы подачи — по ссылке ниже"
+    ),
     tag_hearing="слушания",
     senate_deadline_header="Закон в Сенате",
     president_deadline_header="Закон у Президента",
@@ -1022,6 +1032,12 @@ EN = Labels(
     action_committee="send an opinion to the committee —",
     action_before_sitting="before the sitting on",
     action_hearing="apply to take part in the public hearing",
+    action_hearing_route=(
+        "the application form goes to {email} with an electronic signature (qualified, personal"
+        " or trusted)"
+    ),
+    link_committee_letter="letter form",
+    link_hearing_rules="form and rules on the Sejm's site",
     next_step="What comes next",
     agenda_committee_header="Committee sitting",
     agenda_sejm_header="On the agenda of a Sejm sitting",
@@ -1101,13 +1117,12 @@ EN = Labels(
     wykaz_organ_unknown="the responsible ministry",
     action_wykaz_interest=(
         "you may register an interest in work on the draft (zgłoszenie zainteresowania): the law"
-        " permits this once the plan is published. Confirm the current procedure and delivery"
-        " address with {organ} through its official contacts"
+        " permits this once the plan is published — by letter to the body drafting it: {organ}"
     ),
-    action_ministry_site="official contacts for the responsible body",
+    action_ministry_site="its office, ePUAP and e-Doręczenia addresses",
     action_rcl_interest=(
-        "you may register an interest in work on the draft (zgłoszenie zainteresowania); confirm"
-        " the current filing procedure through {organ}'s official contacts"
+        "you may register an interest in work on the draft (zgłoszenie zainteresowania) — by"
+        " letter to the body drafting it: {organ}"
     ),
     link_wykaz_entry="Register entry",
     tag_wykaz="wykazRM",
@@ -1130,7 +1145,10 @@ EN = Labels(
         " hearing (Regulamin Sejmu art. 70b); if the room cannot hold everyone, participation is"
         " capped in the order applications arrived — so it is worth applying at once"
     ),
-    hearing_application_details="see the committee announcement below for how to apply",
+    hearing_application_details=(
+        "the application form goes to {email} with an electronic signature (qualified, personal"
+        " or trusted); the form and the other ways to file are at the link below"
+    ),
     tag_hearing="hearing",
     senate_deadline_header="The act is with the Senate",
     president_deadline_header="The act is with the President",
