@@ -26,7 +26,6 @@ from lexinform.models.analysis import (
     TriageContext,
     TriageRecord,
     UsageRecord,
-    add_usage,
     merge_usage,
     usage_of,
 )
@@ -403,7 +402,6 @@ __all__ = [
     "UsageRecord",
     "Vote",
     "VotingSummary",
-    "add_usage",
     "aggregate_clubs",
     "about_ukraine",
     "amendments_stage",

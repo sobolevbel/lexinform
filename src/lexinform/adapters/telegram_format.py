@@ -1455,7 +1455,7 @@ class MessageFormatter:
         record = bill.analysis
         if record is None:
             return self._bill_line(bill)
-        spent = format_usd(cost_usd({record.model: usage_of(record)}))
+        spent = format_usd(cost_usd(usage_of(record)))
         return (
             f"<b>{self._number_label(bill)}</b> · {format_tokens(record.input_tokens or 0)} in"
             f" · {spent} · "

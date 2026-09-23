@@ -60,9 +60,10 @@ from lexinform.models import (
     TokenUsage,
     TriageContext,
     TriageRecord,
-    add_usage,
+    merge_usage,
     observe,
     stage_fingerprint,
+    usage_of,
     window_closes_within,
 )
 from lexinform.ports import AuthorsResolver, BatchBackend, BillRepository, Clock, LlmAnalyzer
@@ -137,7 +138,7 @@ class AnalysisOutcome:
         tokens: dict[str, TokenUsage] = {}
         for used in (self.triage, self.record):
             if used is not None:
-                add_usage(tokens, used)
+                merge_usage(tokens, usage_of(used))
         return tokens
 
 
@@ -511,12 +512,12 @@ class AnalysisService:
             )
             result.input_tokens += record.input_tokens or 0
             result.output_tokens += record.output_tokens or 0
-            add_usage(result.usage, record)
+            merge_usage(result.usage, usage_of(record))
             # A rejection's record is the triage call; adding `prepared.triage` too would double it.
             if prepared.triage is not None and record.text_source != "excerpts":
                 result.input_tokens += prepared.triage.input_tokens or 0
                 result.output_tokens += prepared.triage.output_tokens or 0
-                add_usage(result.usage, prepared.triage)
+                merge_usage(result.usage, usage_of(prepared.triage))
             if self._ledger.exhausted:
                 result.stopped = (
                     f"{self._ledger.over_budget}; the remaining candidates wait for the next run"

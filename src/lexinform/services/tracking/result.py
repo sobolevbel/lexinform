@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import AnalysisRecord, TokenUsage, UsageRecord, add_usage
+from lexinform.models import AnalysisRecord, TokenUsage, UsageRecord, merge_usage, usage_of
 
 log = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class TrackingResult:
         """Tokens of one model call (a re-analysis, an amendments summary)."""
         self.input_tokens += record.input_tokens or 0
         self.output_tokens += record.output_tokens or 0
-        add_usage(self.usage, record)
+        merge_usage(self.usage, usage_of(record))
 
     def abort(self, exc: ServiceUnavailableError, *, failed: bool = False) -> None:
         """An external system is down: the phase stops here and the report says why."""

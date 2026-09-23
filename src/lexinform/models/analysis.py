@@ -320,24 +320,22 @@ class SupplementContext(BaseModel):
 UsageRecord = AnalysisRecord | TriageRecord | AmendmentsRecord | SupplementRecord | JointRecord
 
 
-def usage_of(record: UsageRecord) -> TokenUsage:
-    return TokenUsage(
-        input=record.input_tokens or 0,
-        output=record.output_tokens or 0,
-        cache_read=record.cache_read_input_tokens or 0,
-        cache_creation=record.cache_creation_input_tokens or 0,
-    )
+def usage_of(record: UsageRecord) -> dict[str, TokenUsage]:
+    """A record's tokens under its model, the shape `merge_usage` and `cost_usd` take."""
+    return {
+        record.model: TokenUsage(
+            input=record.input_tokens or 0,
+            output=record.output_tokens or 0,
+            cache_read=record.cache_read_input_tokens or 0,
+            cache_creation=record.cache_creation_input_tokens or 0,
+        )
+    }
 
 
 def merge_usage(target: dict[str, TokenUsage], usage: Mapping[str, TokenUsage]) -> None:
     """Add each model's tokens in `usage` to that model's total in `target`."""
     for model, tokens in usage.items():
         target[model] = target.get(model, TokenUsage()).plus(tokens)
-
-
-def add_usage(target: dict[str, TokenUsage], record: UsageRecord) -> None:
-    """Accumulate a record's tokens under its model."""
-    merge_usage(target, {record.model: usage_of(record)})
 
 
 class TriageContext(BaseModel):

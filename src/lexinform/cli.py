@@ -899,7 +899,7 @@ def cost(
         assert record is not None, "most_expensive_analyses selects only rows with an analysis"
         typer.echo(
             f"  {bill.number}: {format_tokens(record.input_tokens or 0)} in ({record.model}) "
-            f"{format_usd(cost_usd({record.model: usage_of(record)}))}  {bill.summary.title[:70]}"
+            f"{format_usd(cost_usd(usage_of(record)))}  {bill.summary.title[:70]}"
         )
 
 
