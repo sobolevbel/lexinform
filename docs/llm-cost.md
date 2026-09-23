@@ -6,7 +6,8 @@ behind them. Read it when changing `AnalysisService`, `pricing.py`,
 
 ## LLM cost model (Sept 2026)
 
-Opus 5 is $5/M input; output is ~1% of the bill. A government print is bill + uzasadnienie + OSR
+Opus 5 is $5/M input; output is ~1% of the bill. Since 2026-09-23 the analysis runs on Opus 5.5
+($4/M input, $20/M output); the figures below were measured at Opus 5's price, so read them 20% lower. A government print is bill + uzasadnienie + OSR
 (13-point form) + appendices (consultation report, tabela zgodności, draft regulations with their
 own uzasadnienie/OSR), and the appendices are 55–80% of the text. `sections.trim_print` keeps the
 bill, uzasadnienie and OSR points 1–4 (pages are separated by `\f` by the extractor and the kept

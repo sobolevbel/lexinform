@@ -241,7 +241,7 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_LISTEN_TIMEOUT_SECONDS` | `50` | How long one `getUpdates` call of the relay waits for a post |
 | `LEXINFORM_TERM` | — | Sejm term; empty = the current one from `/sejm/term` (a new kadencja is picked up by itself), a number pins an older term |
 | `LEXINFORM_DB_PATH` | `lexinform.db` | SQLite file |
-| `LEXINFORM_LLM_MODEL` / `_LLM_EFFORT` | `claude-opus-5` / `medium` | Model and effort |
+| `LEXINFORM_LLM_MODEL` / `_LLM_EFFORT` | `claude-opus-5-5` / `medium` | Model and effort |
 | `LEXINFORM_LLM_TRIAGE_MODEL` | `claude-sonnet-5` | Model for the cheap first pass on excerpts (`""` disables it) |
 | `LEXINFORM_TRIAGE_MIN_CHARS` / `_TRIAGE_MIN_CONFIDENCE` | `20000` / `0.8` | Texts shorter than this skip the triage; confidence a rejection needs |
 | `LEXINFORM_OUTPUT_LANGUAGE` | `ru` | `ru` or `en` (add more in `i18n.py`) |

@@ -269,7 +269,7 @@ class Container:
         analysis_model = self.settings.llm_analysis_model
         is_claude = analysis_model.startswith("claude-")
         if provider == "anthropic":
-            return analysis_model if is_claude else "claude-opus-5"
+            return analysis_model if is_claude else "claude-opus-5-5"
         return analysis_model if not is_claude else "gpt-5.1"
 
     def analysis_service(self) -> AnalysisService:

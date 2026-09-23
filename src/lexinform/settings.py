@@ -108,7 +108,7 @@ class Settings(BaseSettings):
         " `llm_max_tokens`.",
     )
     llm_analysis_model: str = Field(
-        default="claude-opus-5",
+        default="claude-opus-5-5",
         description="Model for the full per-bill analysis (`analyze()`). GPT-5.1 is measured and"
         " ready (96% agreement on relevance, zero missed bills, ~10x cheaper on 26 real prints"
         " and one scan — docs/llm-cost.md) but not yet switched on in production: set this to"
@@ -116,19 +116,19 @@ class Settings(BaseSettings):
         " name (the default) routes it to a Claude client with Claude's own analysis prompt.",
     )
     llm_amendments_model: str = Field(
-        default="claude-opus-5",
+        default="claude-opus-5-5",
         description="Model that summarises Senate/committee amendments. GPT-5.1 is measured and"
         " ready (docs/llm-cost.md) but not yet switched on in production; see"
         " `llm_analysis_model`.",
     )
     llm_supplement_model: str = Field(
-        default="claude-opus-5",
+        default="claude-opus-5-5",
         description="Model that digests a document filed to a print (government position, OSR,"
         " an opinion). GPT-5.1 is measured and ready but not yet switched on in production; see"
         " `llm_analysis_model`.",
     )
     llm_joint_model: str = Field(
-        default="claude-opus-5",
+        default="claude-opus-5-5",
         description="Model that compares one print of a jointly considered group with the"
         " others. GPT-5.1 is measured and ready but not yet switched on in production; see"
         " `llm_analysis_model`.",

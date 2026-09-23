@@ -1157,7 +1157,7 @@ CSV and its columns, and the probe results (RCL is unreachable from GitHub runne
 
 ## LLM cost model
 
-Opus 5 is $5/M input, output ~1% of the bill; a text ≥ `triage_min_chars` is triaged on
+Opus 5.5 is $4/M input (the measurements below were taken on Opus 5 at $5), output ~1% of the bill; a text ≥ `triage_min_chars` is triaged on
 `llm_triage_model` first, and a whole term of term-10 candidates costs ≈$44 because the triage
 rejects 62% of them. The guard rails are `LEXINFORM_MAX_ANALYSIS_COST_USD` ($2 per first analysis)
 and `LEXINFORM_MAX_RUN_COST_USD` ($15 per run); **a text over the per-bill limit is cut down to it,
@@ -1167,7 +1167,7 @@ measurements and what was tried and rejected are in `docs/llm-cost.md`.
 
 ## Product decisions already taken
 
-Default model `claude-opus-5`, `min_score` 3, text prefilter threshold 2 distinct patterns or 3
+Default model `claude-opus-5-5` (switched from `claude-opus-5` on 2026-09-23: same features, $4/$20 against $5/$25), `min_score` 3, text prefilter threshold 2 distinct patterns or 3
 hits (weak patterns such as Straż Graniczna, "legalizacja" or "nierezydent" never decide alone: in
 a text they count next to a strong pattern, in a title they send the bill to the text stage, not to
 the model; everyone's registers and benefits (PESEL, mObywatel, NFZ, 800+, prawo jazdy, Kodeks

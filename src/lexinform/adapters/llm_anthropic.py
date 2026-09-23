@@ -81,7 +81,7 @@ class AnthropicAnalyzer:
         self,
         client: anthropic.Anthropic,
         *,
-        model: str = "claude-opus-5",
+        model: str = "claude-opus-5-5",
         triage_model: str | None = None,
         output_language: str = "ru",
         effort: Effort = "medium",
