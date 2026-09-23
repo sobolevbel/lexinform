@@ -96,7 +96,7 @@ def test_the_numbers_rcl_has_published_are_written_down_from_the_listing_alone()
     w = World()
     w.add_rcl_project(rcl_project(wykaz_number="UD408", created=dt.date(2026, 9, 2)))
     service = w.container.rcl_discovery_service()
-    assert service is not None
+    assert service is not None, "World wires an RCL reader, so RCL discovery is built"
 
     indexed = service.index_numbers(dt.date(2026, 1, 1))
 

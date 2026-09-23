@@ -150,7 +150,7 @@ class BillDiscoveryService:
     def _act_of(self, eli: str) -> ActInfo | None:
         """The published act, so that its vacatio legis can be seen; None when ELI has not
         indexed it yet (an act published today often is not)."""
-        assert self._eli is not None
+        assert self._eli is not None, "_act_of is called only when an ELI client is wired"
         try:
             return self._eli.get_act(eli)
         except ServiceUnavailableError:
@@ -229,7 +229,9 @@ class BillDiscoveryService:
                 summary = summary.model_copy(update={"applicant": submission.applicant})
             project = self._rcl_project_of(summary)
             if project is not None:
-                assert project.rcl is not None
+                assert project.rcl is not None, (
+                    "_rcl_project_of returns only a row with its project"
+                )
                 self._repo.save_rcl(
                     project.term,
                     project.number,

@@ -109,7 +109,7 @@ def test_anything_else_is_not_a_reference(text: str) -> None:
 def test_analyze_with_modifiers_in_any_order() -> None:
     command = parse_command("/analyze force 3039 publish")
 
-    assert command is not None
+    assert command is not None, "parse_command returns None only for text with no leading slash"
     assert command.name is CommandName.ANALYZE
     assert command.ref == BillRef(kind=RefKind.DRUK, value="3039")
     assert command.force and command.publish and command.error is None
@@ -120,7 +120,7 @@ def test_dashed_modifiers_and_the_bot_suffix_are_accepted() -> None:
         "/analyze@lexinform_bot --force https://legislacja.rcl.gov.pl/projekt/1"
     )
 
-    assert command is not None
+    assert command is not None, "parse_command returns None only for text with no leading slash"
     assert command.name is CommandName.ANALYZE and command.force
     assert command.ref == BillRef(kind=RefKind.RCL, value="RCL/1")
 
@@ -133,14 +133,14 @@ def test_a_post_without_a_slash_is_not_a_command() -> None:
 def test_an_unknown_command_asks_for_help() -> None:
     command = parse_command("/delete 3039")
 
-    assert command is not None
+    assert command is not None, "parse_command returns None only for text with no leading slash"
     assert command.name is CommandName.HELP and command.error == "unknown command /delete"
 
 
 def test_a_command_without_a_reference_says_so() -> None:
     command = parse_command("/show")
 
-    assert command is not None
+    assert command is not None, "parse_command returns None only for text with no leading slash"
     assert command.name is CommandName.SHOW and command.ref is None
     assert command.error == "/show needs a bill number or a link"
 
@@ -148,14 +148,14 @@ def test_a_command_without_a_reference_says_so() -> None:
 def test_an_unreadable_reference_is_reported_verbatim() -> None:
     command = parse_command("/skip the bill about visas")
 
-    assert command is not None
+    assert command is not None, "parse_command returns None only for text with no leading slash"
     assert command.error == "cannot read a bill number or a link in 'the bill about visas'"
 
 
 def test_find_takes_words_and_not_a_bill() -> None:
     command = parse_command("/find ustawa o cudzoziemcach")
 
-    assert command is not None
+    assert command is not None, "parse_command returns None only for text with no leading slash"
     assert command.name is CommandName.FIND and command.ref is None
     assert command.query == "ustawa o cudzoziemcach" and command.error is None
 
@@ -163,21 +163,21 @@ def test_find_takes_words_and_not_a_bill() -> None:
 def test_find_needs_something_to_look_for() -> None:
     command = parse_command("/find ab")
 
-    assert command is not None
+    assert command is not None, "parse_command returns None only for text with no leading slash"
     assert command.error == "/find needs at least 3 characters to look for"
 
 
 def test_status_takes_no_arguments() -> None:
     command = parse_command("/status")
 
-    assert command is not None
+    assert command is not None, "parse_command returns None only for text with no leading slash"
     assert command.name is CommandName.STATUS and command.error is None
 
 
 def test_help_takes_no_arguments() -> None:
     command = parse_command("/help me")
 
-    assert command is not None
+    assert command is not None, "parse_command returns None only for text with no leading slash"
     assert command.name is CommandName.HELP and command.error is None
 
 
@@ -254,7 +254,7 @@ def test_the_workflow_offers_exactly_the_commands_the_relay_starts() -> None:
     workflow = Path(__file__).parents[2] / ".github" / "workflows" / "daily.yml"
     match = re.search(r"^\s*options: \[(.+)\]$", workflow.read_text(), re.MULTILINE)
 
-    assert match is not None
+    assert match is not None, "daily.yml lists the command input's choices as options: [...]"
     assert {choice.strip() for choice in match.group(1).split(",")} == {
         name.value for name in DISPATCHED
     }
@@ -312,7 +312,7 @@ def test_index_rcl_numbers_has_no_default_date_to_fall_back_on() -> None:
     """`--since` is the one option of a CLI command that is not optional."""
     command = parse_command("/index-rcl-numbers")
 
-    assert command is not None
+    assert command is not None, "parse_command returns None only for text with no leading slash"
     assert command.error == "/index-rcl-numbers needs since=… (since is not optional)"
 
 
@@ -360,7 +360,7 @@ def test_an_option_of_another_command_is_answered_and_not_swallowed() -> None:
     """
     command = parse_command("/show 3039 force")
 
-    assert command is not None
+    assert command is not None, "parse_command returns None only for text with no leading slash"
     assert command.error == "/show: unknown option force — it takes none"
     assert parse_command("/analyze 3039 turbo") == Command(
         name=CommandName.ANALYZE,

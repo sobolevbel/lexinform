@@ -21,7 +21,9 @@ scans), `docs/rcl-scraping.md` (RCL's markup and files, the wykaz CSV, the probe
 
 - Python 3.14, `uv`. `uv run pytest -q && uv run mypy && uv run ruff check src tests` and `uv run
   ruff format src tests` — all clean before a commit. mypy is strict over `src` and `tests`: no
-  `type: ignore`, no local imports, tests fully typed.
+  `type: ignore`, no local imports, tests fully typed. An `assert` that narrows a type states an
+  invariant whose breach is a bug and says who guarantees it (`assert x is not None, "…"`); a
+  value that can really be None is handled, not asserted.
 - **IMPORTANT — COMMENTS AND DOCSTRINGS ARE ONE LINE. ALWAYS. YOU MUST NEVER WRITE A MULTI-LINE
   COMMENT UNLESS THERE IS NO FUCKING WAY AROUND IT. IF YOU ARE WRITING A THIRD LINE, STOP AND CUT
   IT.** CRITICAL: say the measured number, the API quirk, the deadline — NEVER how it was

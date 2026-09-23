@@ -227,7 +227,7 @@ def test_analysis_failures_are_counted_and_the_last_error_kept(
     repo.record_analysis_failure(10, number, "boom again")
 
     bill = repo.get(10, number)
-    assert bill is not None
+    assert bill is not None, "the test upserted this row above"
     assert (bill.analysis_attempts, bill.status) == (2, BillStatus.ANALYSIS_FAILED)
     assert bill.last_error == "boom again"
 
@@ -242,7 +242,7 @@ def test_reset_puts_the_bill_back_with_a_clean_budget(
     repo.reset_bill(10, "3039", BillStatus.ANALYSIS_PENDING)
 
     bill = repo.get(10, "3039")
-    assert bill is not None
+    assert bill is not None, "the test upserted this row above"
     assert (bill.status, bill.analysis_attempts, bill.last_error) == (
         BillStatus.ANALYSIS_PENDING,
         0,
@@ -269,7 +269,7 @@ def test_card_row_is_unique_per_bill_and_channel(
 
     assert first == second
     stored = repo.get_publication(10, number, PublicationKind.NEW_BILL, CHANNEL)
-    assert stored is not None
+    assert stored is not None, "the test created this publication above"
     assert (stored.status, stored.message_id, stored.document_message_ids) == (
         PublicationStatus.SENT,
         42,
@@ -394,7 +394,7 @@ def test_amendments_summary_is_stored_with_its_status_change(
 ) -> None:
     repo.upsert_summary(process_3039, now=now)
     change_id = repo.add_status_change(_change("3039", now))
-    assert change_id is not None
+    assert change_id is not None, "the first change of a bill is new, so it is stored"
     record = AmendmentsRecord(
         amendments=make_amendments(),
         model="m",
@@ -937,7 +937,7 @@ def test_a_register_entry_is_stored_and_found_by_its_number(
     found = repo.find_wykaz(number)
 
     assert number == "WPL/UD408"
-    assert found is not None and found.wykaz is not None
+    assert found is not None and found.wykaz is not None, "the test stored this entry above"
     assert (found.wykaz.number, found.wykaz.organ) == ("UD408", "MSWiA")
     assert repo.find_wykaz("WPL/UD999") is None
 
@@ -956,7 +956,7 @@ def test_the_end_of_a_term_leaves_the_governments_own_rows_alone(
     assert (unfinished, marked) == ([], 0)
     assert moved == 1
     carried = repo.get(11, entry)
-    assert carried is not None and carried.wykaz is not None
+    assert carried is not None and carried.wykaz is not None, "move_government_rows moved one row"
     assert repo.get_publication(11, entry, PublicationKind.NEW_BILL, CHANNEL) is not None
 
 
@@ -1095,7 +1095,7 @@ def test_a_v1_dump_keeps_its_rows_and_their_values_through_every_migration(
     repo.restore(dump)
 
     bill = repo.get(10, "3039")
-    assert bill is not None
+    assert bill is not None, "the legacy dump carries druk 3039"
     assert (bill.status, bill.analysis_attempts, bill.last_error) == (
         BillStatus.ANALYZED,
         2,
@@ -1104,7 +1104,7 @@ def test_a_v1_dump_keeps_its_rows_and_their_values_through_every_migration(
     assert bill.prefilter_hits == ["cudzoziemcy"]
     assert bill.summary.title == process_3039.title
     record = bill.analysis
-    assert record is not None
+    assert record is not None, "the legacy dump carries the analysis of druk 3039"
     assert (record.model, record.input_chars, record.truncated) == ("claude-opus-5", 12_345, True)
     assert record.analysis.score == FakeLlm().default.score
     card = repo.get_publication(10, "3039", PublicationKind.NEW_BILL, CHANNEL)
@@ -1148,7 +1148,7 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
     repo.restore(dump)
 
     restored = repo.get(process.term, process.number)
-    assert restored is not None
+    assert restored is not None, "the dump carries the row the test stored"
     assert (restored.status, restored.analysis_attempts) == (BillStatus.ANALYSIS_PENDING, 0)
 
 

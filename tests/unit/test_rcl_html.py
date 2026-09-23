@@ -114,7 +114,7 @@ def test_project_page_gives_metadata_and_the_timeline() -> None:
         (4, "active"),
     ]
     consultation = project.consultation_stage
-    assert consultation is not None
+    assert consultation is not None, "the fixture timeline has a Konsultacje publiczne stage"
     assert (consultation.id, consultation.name) == (13223895, "Konsultacje publiczne")
     assert consultation.modified == date(2026, 9, 1)
     assert project.current_stage is not None and project.current_stage.number == 4
@@ -188,7 +188,7 @@ def test_stage_catalog_lists_folders_and_documents() -> None:
         "conference",
     ]
     project_folder = stage.folder("project")
-    assert project_folder is not None
+    assert project_folder is not None, "the folder kinds above include project"
     assert (project_folder.id, project_folder.name, project_folder.modified) == (
         13223896,
         "Projekt",

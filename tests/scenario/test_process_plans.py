@@ -47,10 +47,12 @@ def test_failed_delivery_keeps_its_analysis_and_process_snapshot(workers: int) -
     w.clock.advance(days=1)
     w.run()
     failed = w.publication("3039", PublicationKind.STATUS_UPDATE)
-    assert failed is not None and failed.delivery is not None
+    assert failed is not None and failed.delivery is not None, (
+        "a failed update keeps its row and plan"
+    )
     original = failed.delivery
     current = w.bill("3039")
-    assert current.analysis is not None
+    assert current.analysis is not None, "the bill was analysed before its card went out"
     replacement = current.analysis.model_copy(deep=True)
     replacement.analysis.summary = "Это уже совершенно другая редакция"
     replacement.revision += 1
@@ -165,7 +167,7 @@ def test_amendments_memo_survives_restore_and_does_not_charge_tokens_twice() -> 
 
     again = analysis.summarize_amendments(w.bill("3039"), moved)
 
-    assert first is not None and again is not None
+    assert first is not None and again is not None, "the report is a readable amendments PDF"
     assert first.amendments == again.amendments
     assert again.source_url == moved.url
     assert len(w.llm.amendment_contexts) == 1
@@ -234,7 +236,7 @@ def test_ambiguous_delivery_never_reenters_the_queue(status: PublicationStatus) 
     w.set_stages("3039", COMMITTEE_STAGES)
     w.run(publish=False)
     row = w.publication("3039", PublicationKind.STATUS_UPDATE)
-    assert row is not None and row.id is not None
+    assert row is not None and row.id is not None, "an unpublished run queues the status update"
     w.repo.mark_publication(row.id, status, count_attempt=False)
 
     w.run()

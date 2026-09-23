@@ -49,7 +49,7 @@ class HearingReminder:
             if card is None or card.status is not PublicationStatus.SENT:
                 continue
             for hearing in hearings_due(bill, today, days_before=self._days_before):
-                assert hearing.date is not None
+                assert hearing.date is not None, "hearings_due keeps only hearings with a date"
                 ref = hearing.date.isoformat()
                 if self._poster.posted(bill, PublicationKind.HEARING_DEADLINE, ref=ref):
                     continue

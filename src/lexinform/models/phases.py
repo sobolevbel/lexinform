@@ -560,7 +560,7 @@ def _wykaz_phase(bill: Bill) -> Phase | None:
     has adopted the project, so RCL is already behind it.
     """
     entry = bill.wykaz
-    assert entry is not None
+    assert entry is not None, "next_phase routes only a bill with a wykaz entry here"
     evidence = wykaz_evidence(entry)
     if evidence.source is SourceOutcome.WITHDRAWN:
         return None
@@ -576,7 +576,7 @@ def _rcl_phase(bill: Bill, today: dt.date) -> Phase | None:
     Ministers, the Council, the hand-over to the Sejm (then the print number). A project that is
     over was closed on RCL without ever reaching the Sejm."""
     project = bill.rcl
-    assert project is not None
+    assert project is not None, "next_phase routes only a bill with an RCL project here"
     evidence = rcl_evidence(project)
     if evidence.source is SourceOutcome.WITHDRAWN:
         return None

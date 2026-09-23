@@ -72,7 +72,7 @@ def test_in_force_reminder_is_posted_on_the_day_in_warsaw_time() -> None:
     assert day.in_force_posted == 1
     bill, reply_to = w.publisher.in_force[0]
     assert reply_to == w.card_id("3039")
-    assert bill.act is not None
+    assert bill.act is not None, "an in-force notice goes out only for a bill with its act"
     text = MessageFormatter("ru").in_force(bill, today=bill.act.entry_into_force).text
     assert "С сегодняшнего дня действует — druk nr 3039" in text
     assert (

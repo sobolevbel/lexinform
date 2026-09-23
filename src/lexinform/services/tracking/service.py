@@ -570,7 +570,9 @@ class StatusTrackingService:
         if stage is None:
             return None
         if stage.stage_type == "SenatePosition":
-            assert stage.print_number is not None
+            assert stage.print_number is not None, (
+                "amendments_stage takes a Senate position only with its print"
+            )
             try:
                 senate_print = self._gateway.get_print(bill.term, stage.print_number)
             except ServiceUnavailableError:
@@ -582,7 +584,9 @@ class StatusTrackingService:
             if pdf is None:
                 return None
             return _Amendments(TextDocument(url=pdf.url, kind="senate_amendments"), None)
-        assert stage.report_file is not None
+        assert stage.report_file is not None, (
+            "amendments_stage takes a committee report only with its file"
+        )
         document = TextDocument(url=stage.report_file, kind="committee_amendments")
         return _Amendments(document, stage.proposal)
 
@@ -590,7 +594,9 @@ class StatusTrackingService:
         self, bill: Bill, found: _Amendments, result: TrackingResult
     ) -> AmendmentsRecord | None:
         """Best effort: a failure degrades the update to the bare event; outages propagate."""
-        assert self._analysis is not None
+        assert self._analysis is not None, (
+            "_amendments_document finds nothing without an analysis service"
+        )
         try:
             record = self._analysis.summarize_amendments(
                 bill, found.document, proposal=found.proposal
@@ -625,7 +631,7 @@ class StatusTrackingService:
             self._repo.save_observed_closure(bill.term, bill.number, detail.closure_date)
             self._remember_supplements(bill, found.print_info)
             fresh = self._repo.get(bill.term, bill.number)
-            assert fresh is not None
+            assert fresh is not None, "a tracked bill's row exists and was updated just above"
             self._repo.save_observed_process(
                 bill.term, bill.number, observe(fresh, closure_date=detail.closure_date)
             )
@@ -724,7 +730,7 @@ class StatusTrackingService:
         result: TrackingResult,
     ) -> None:
         """Memoized digests survive a failure before the observation checkpoint commits."""
-        assert self._analysis is not None
+        assert self._analysis is not None, "_supplements files nothing without an analysis service"
         for supplement in filed:
             try:
                 record = self._analysis.digest_supplement(

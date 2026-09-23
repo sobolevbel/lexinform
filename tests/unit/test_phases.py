@@ -8,5 +8,5 @@ def test_an_unrecognised_last_stage_reads_as_unknown_not_over() -> None:
     2111 — `_phase_after`'s fallthrough used to be `return None`)."""
     last = Stage(stage_type="CommitteeReport", stage_name="Sprawozdanie komisji")
     phase = _phase_after(last, [last], urgent=False, passed=None, senate_days=30)
-    assert phase is not None
+    assert phase is not None, "an unrecognised last stage is an unknown decision, not the end"
     assert phase.key == "decision_unknown"

@@ -397,6 +397,6 @@ def test_the_batch_request_sends_the_same_analysis_schema_as_the_synchronous_cal
 
     prepared = _analyzer(_client()).prepare_request(request)
 
-    assert prepared.payload_json is not None
+    assert prepared.payload_json is not None, "prepare_request always fills the payload"
     body = json.loads(prepared.payload_json)["body"]
     assert body["text"]["format"]["schema"] == _sent_schemas()[Analysis]

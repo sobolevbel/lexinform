@@ -68,7 +68,7 @@ def test_cold_discovery_at_each_incident_stage_is_an_introduction(
     phase = next_phase(w.bill("2111"), today=w.clock.now().date())
     assert phase is not None and phase.key == expected
     record = w.bill("2111").analysis
-    assert record is not None
+    assert record is not None, "the first run analysed and published the bill"
     assert record.source_kind == ("print" if count == 1 else "text_after3")
 
 

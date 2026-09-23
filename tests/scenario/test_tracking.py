@@ -469,7 +469,7 @@ def test_senate_amendments_are_summarised_from_the_senate_print() -> None:
 
     assert report.updates == 1 and again.updates == 0
     _, change, _ = w.publisher.updates[0]
-    assert change.amendments is not None
+    assert change.amendments is not None, "the Senate's resolution print is summarised"
     assert change.amendments.source_kind == "senate_amendments"
     assert change.amendments.source_url == SENATE_PRINT_URL
     assert change.amendments.amendments.changes[0].startswith("Срок подачи заявления продлён")
@@ -560,7 +560,7 @@ def test_votes_get_the_club_breakdown_and_referrals_the_committee_name() -> None
     assert report.updates == 1
     _, change, _ = w.publisher.updates[0]
     voting = next(s for s in change.new_stages if s.stage_type == "Voting")
-    assert voting.voting is not None
+    assert voting.voting is not None, "the Voting stage carries its totals"
     assert [(c.club, c.yes, c.abstain) for c in voting.voting.clubs] == [
         ("KO", 1, 0),
         ("PiS", 0, 1),
@@ -582,7 +582,7 @@ def test_a_committee_is_named_on_the_card_even_when_nothing_moved() -> None:
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
     w.run()
     stored = w.bill("3039")
-    assert stored.stages_fingerprint is not None
+    assert stored.stages_fingerprint is not None, "the first analysis seeds the stage fingerprint"
     w.repo.save_stages(10, "3039", _unnamed(stored.stages), stored.stages_fingerprint)
     w.clock.advance(days=1)
 
@@ -612,7 +612,7 @@ def test_vote_detail_failure_degrades_to_totals_only() -> None:
     assert report.updates == 1 and not report.errors
     _, change, _ = w.publisher.updates[0]
     voting = next(s for s in change.new_stages if s.stage_type == "Voting")
-    assert voting.voting is not None
+    assert voting.voting is not None, "the Voting stage carries its totals"
     assert (voting.voting.clubs, voting.voting.yes) == ((), 261)
 
 

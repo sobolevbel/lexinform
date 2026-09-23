@@ -861,7 +861,7 @@ def test_status_counts_the_queues_the_posts_and_the_runs() -> None:
 
     (_, outcome), *_ = w.replier.replies
     snapshot = outcome.snapshot
-    assert snapshot is not None
+    assert snapshot is not None, "/status answers with a snapshot"
     assert snapshot.bills[BillStatus.ANALYZED] == 1
     assert snapshot.publications["sent"] == 1
     assert snapshot.followed == 1
@@ -890,7 +890,7 @@ def test_status_names_an_ambiguous_delivery_nothing_retries_on_its_own() -> None
 
     (_, outcome), *_ = w.replier.replies
     snapshot = outcome.snapshot
-    assert snapshot is not None
+    assert snapshot is not None, "/status answers with a snapshot"
     assert [(p.number, p.kind) for p in snapshot.stuck] == [
         ("3039", PublicationKind.HEARING_DEADLINE)
     ]
@@ -908,7 +908,7 @@ def test_status_shows_the_open_batch_and_a_batch_pending_bill_nothing_holds() ->
 
     (_, outcome), *_ = w.replier.replies
     snapshot = outcome.snapshot
-    assert snapshot is not None
+    assert snapshot is not None, "/status answers with a snapshot"
     assert [b.request_count for b in snapshot.batches] == [1]
     assert (snapshot.queued_intents, snapshot.uncertain_intents) == (0, 0)
     assert [b.number for b in snapshot.orphaned] == ["3100"]

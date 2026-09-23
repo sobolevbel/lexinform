@@ -218,7 +218,7 @@ def test_saved_request_keeps_model_prompt_and_output_limit_after_configuration_c
     restored = BatchRequest.model_validate_json(prepared.model_dump_json())
 
     assert changed.prepare_request(restored) == prepared
-    assert prepared.payload_json is not None
+    assert prepared.payload_json is not None, "prepare_request always fills the payload"
     payload = json.loads(prepared.payload_json)
     body = payload["params" if provider == "anthropic" else "body"]
     assert body["model"] == prepared.model

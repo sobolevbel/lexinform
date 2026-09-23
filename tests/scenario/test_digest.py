@@ -176,7 +176,7 @@ def test_an_inherited_card_appears_once_in_the_digest_not_under_two_numbers() ->
 
     ref = iso_week(w.clock.now().date())
     service = w.container.digest_service(dry_run=False)
-    assert service is not None
+    assert service is not None, "World enables the digest and names a technical channel"
     digest = service.build(ref)
 
     assert [c.number for c in digest.cards] == [

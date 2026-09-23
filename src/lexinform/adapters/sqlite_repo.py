@@ -547,7 +547,7 @@ class SqliteBillRepository:
                 ),
             )
         bill = self.get(summary.term, summary.number)
-        assert bill is not None
+        assert bill is not None, "the row was written just above on this connection"
         return bill
 
     _SKIPPED = frozenset(
@@ -1469,7 +1469,7 @@ class SqliteBillRepository:
                     publication.ref,
                 ),
             ).fetchone()
-        assert row is not None
+        assert row is not None, "the upsert above left a row under this natural key"
         return int(row[0])
 
     def list_due_deliveries(self, channel_id: str, *, max_attempts: int) -> list[Publication]:

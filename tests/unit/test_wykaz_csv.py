@@ -49,7 +49,7 @@ def test_every_row_is_read_with_its_wykaz_number_normalised() -> None:
     assert ud408.published_at == dt.datetime(2026, 5, 12, 13, 21, tzinfo=dt.UTC)  # 15:21 in Warsaw
     assert ud408.web_url.endswith("/projekt-ustawy-o-zmianie-ustawy-o-cudzoziemcach")
     assert ud408.planned_quarter == (2026, 3)
-    assert ud408.description is not None
+    assert ud408.description is not None, "the UD408 row fills its goals and essence"
     assert "milczącego zakończenia postępowania" in ud408.description
     assert ud408.is_open
 

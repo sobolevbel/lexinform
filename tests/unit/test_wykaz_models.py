@@ -47,7 +47,7 @@ def test_the_description_is_the_goals_and_the_essence() -> None:
 
     description = entry.description
 
-    assert description is not None
+    assert description is not None, "the fixture entry fills its goals and essence"
     assert description.startswith("Polska przekształciła")
     assert "milczące zakończenie" in description
 

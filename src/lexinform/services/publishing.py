@@ -291,7 +291,9 @@ class PublishingService:
     def _publish_joint(self, plan: CardPlan, result: PublishingResult, identity: Bill) -> bool:
         bill, print_info = plan.bill, plan.print_info
         card_bill, card_message_id = plan.primary, plan.primary_message_id
-        assert card_bill is not None
+        assert card_bill is not None, (
+            "publish reaches _publish_joint only for a plan with a primary"
+        )
         stored = self._repo.get_publication(
             identity.term, identity.number, PublicationKind.JOINT_BILL, self._channel_id
         )
@@ -372,7 +374,9 @@ class PublishingService:
     def _inherit_card(self, bill: Bill, card: Publication) -> bool:
         """The print joins the thread of the entry it continues: the card is already in the
         channel, only the record of it is missing (every tracker joins on the print's own row)."""
-        assert bill.linked_number is not None
+        assert bill.linked_number is not None, (
+            "_inherited_card finds a card only through linked_number"
+        )
         pub_id = self._repo.create_publication(
             Publication(
                 term=bill.term,
@@ -402,7 +406,9 @@ class PublishingService:
     def _retag(self, pre: Bill, card: Publication) -> None:
         """The card heads a thread that has a druk number now: re-render it in place so that it
         carries both tags. One attempt; a refusal is logged, the replies carry both tags anyway."""
-        assert card.message_id is not None
+        assert card.message_id is not None, (
+            "_inherited_card returns only a sent card with its message id"
+        )
         try:
             self._publisher.edit_new_bill(pre, None, message_id=card.message_id)
         except ServiceUnavailableError:

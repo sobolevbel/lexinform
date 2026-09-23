@@ -79,7 +79,7 @@ class ChannelPost(BaseModel):
         return str(self.chat_id) == wanted
 
     def as_command(self) -> IncomingCommand:
-        assert self.text is not None
+        assert self.text is not None, "the relay files only a post whose text parsed as a command"
         return IncomingCommand(
             update_id=self.update_id,
             chat_id=str(self.chat_id),

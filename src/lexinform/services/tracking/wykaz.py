@@ -68,7 +68,7 @@ class WykazLinker:
         re-analysed here: without that, a thin description would decide the fate of the row that
         finally carries the real thing.
         """
-        assert plan.wykaz is not None
+        assert plan.wykaz is not None, "list_wykaz_awaiting_link selects only plans with an entry"
         now = self._clock.now()
         project = self._reader.complete(self._reader.timeline(project_id))
         summary = process_summary(project, term=plan.term)
@@ -104,7 +104,7 @@ class WykazLinker:
                 plan.term, plan.number, summary.number, wykaz_number=wykaz_entry_number(plan.number)
             )
             if inherits:
-                assert card is not None
+                assert card is not None, "inherits is true only with a sent card"
                 self._inherit_card(plan, summary.number, card)
                 change = self._poster.record_change(
                     StatusChange(
@@ -123,7 +123,7 @@ class WykazLinker:
         log.info("%s is now a project on RCL: %s", plan.number, summary.number)
         linked_plan = self._repo.get(plan.term, plan.number)
         if publish and inherits and linked_plan is not None:
-            assert card is not None
+            assert card is not None, "inherits is true only with a sent card"
             self._poster.rerender_card(linked_plan, card)
         if change is None:
             return
@@ -210,7 +210,7 @@ class WykazWatcher:
         publish: bool,
     ) -> bool:
         """False when Telegram is down; a failure of this one plan is counted and passed over."""
-        assert bill.wykaz is not None
+        assert bill.wykaz is not None, "check() follows only the plans that carry a wykaz entry"
         result.checked += 1
         entry = entries.get(bill.wykaz.number) or self._removed(bill, entries)
         if entry is None:
@@ -261,7 +261,9 @@ class WykazWatcher:
     def _link_pending(self, result: TrackingResult, *, publish: bool) -> bool:
         """Plans whose project the RCL discovery has seen: the project takes over the thread."""
         for bill in self._repo.list_wykaz_awaiting_link():
-            assert bill.wykaz is not None and bill.wykaz.rcl_project_id is not None
+            assert bill.wykaz is not None and bill.wykaz.rcl_project_id is not None, (
+                "list_wykaz_awaiting_link selects only plans whose entry names a project"
+            )
             try:
                 self._linker.link(bill, bill.wykaz.rcl_project_id, result, publish=publish)
             except ServiceUnavailableError as exc:
@@ -276,7 +278,7 @@ class WykazWatcher:
         """A plan whose row is gone from the register: the government dropped it without saying
         so, which is the one thing only this source can tell. An empty register is a download
         that went wrong, not a government that dropped everything."""
-        assert bill.wykaz is not None
+        assert bill.wykaz is not None, "check() follows only the plans that carry a wykaz entry"
         if not entries:
             log.warning("the register came back empty: absences are not read as removals")
             return None
@@ -286,7 +288,7 @@ class WykazWatcher:
         """Store what the register says now; a change row only for a decision a reader can act
         on: the government dropping the project, or adopting it. A slipped quarter or a rewritten
         "istota" is stored and not posted."""
-        assert bill.wykaz is not None
+        assert bill.wykaz is not None, "check() follows only the plans that carry a wykaz entry"
         entry = entry.model_copy(update={"rcl_project_id": bill.wykaz.rcl_project_id})
         new_fp = wykaz_fingerprint(entry)
         if new_fp == bill.stages_fingerprint:

@@ -131,7 +131,7 @@ def test_flatten_puts_children_after_their_parent() -> None:
 
 def test_fixture_process_parses_into_the_stage_tree(process_1962: ProcessDetail) -> None:
     assert process_1962.passed is True
-    assert process_1962.last_stage is not None
+    assert process_1962.last_stage is not None, "the fixture's process has stages"
     assert process_1962.last_stage.stage_name == "Uchwalono"
     assert len(flatten_stages(process_1962.stages)) == 18
     reports = [
@@ -282,7 +282,7 @@ def test_a_second_reading_that_sent_the_bill_back_names_the_committee(
 
     phase = next_phase(_bill(process_1962, process_1962.stages[: second + 1]), today=TODAY)
 
-    assert phase is not None
+    assert phase is not None, "a bill cut at its second reading still has a road ahead"
     assert phase.key == "second_reading_committee"
     assert phase.committees == ("SPC",)
 
@@ -375,7 +375,7 @@ def test_senate_and_president_phases_carry_their_constitutional_deadline(
 
     assert senate is not None and (senate.key, senate.deadline) == ("senate", dt.date(2026, 8, 16))
     assert senate_urgent is not None and senate_urgent.deadline == dt.date(2026, 7, 31)
-    assert president is not None
+    assert president is not None, "an act handed to the President has the signature ahead"
     assert (president.key, president.deadline) == ("president", dt.date(2026, 9, 28))
     # `ToPresident` is the hand-over itself, so those 21 days are counted from the day they start.
     assert president.deadline_exact and not senate.deadline_exact
@@ -434,7 +434,9 @@ def test_first_reading_at_a_plenary_sitting_is_not_a_committee_referral(
     after_first_reading = next_phase(_bill(process_950, process_950.stages[:3]), today=TODAY)
 
     assert at_sitting is not None and at_sitting.key == "first_reading_sitting"
-    assert after_first_reading is not None
+    assert after_first_reading is not None, (
+        "a bill after its first reading has committee work ahead"
+    )
     assert (after_first_reading.key, after_first_reading.committees) == ("committee_work", ("NZC",))
 
 
@@ -720,7 +722,7 @@ def test_passed_bill_awaits_publication_then_entry_into_force(
     in_force = next_phase(passed.model_copy(update={"act": act}), today=dt.date(2026, 11, 19))
 
     assert awaiting_publication is not None and awaiting_publication.key == "publication"
-    assert awaiting_force is not None
+    assert awaiting_force is not None, "a published act before its date has entry into force ahead"
     assert (awaiting_force.key, awaiting_force.date) == ("in_force", dt.date(2026, 11, 19))
     assert undated is not None and undated.key == "in_force_unknown"
     assert in_force is None
@@ -769,7 +771,7 @@ def test_pre_print_bill_waits_for_its_consultation_then_its_print_number(
     consulting = next_phase(pre, today=TODAY)
     consulted = next_phase(pre, today=dt.date(2026, 10, 1))
 
-    assert consulting is not None
+    assert consulting is not None, "an entry with an open consultation has a road ahead"
     assert (consulting.key, consulting.date) == ("pre_print_consultation", dt.date(2026, 9, 30))
     assert consulted is not None and consulted.key == "pre_print"
 
@@ -860,7 +862,7 @@ def test_a_government_position_does_not_hide_what_comes_next(
     phase = next_phase(_bill(process_3039, (referral, aside)), today=TODAY)
     alone = next_phase(_bill(process_3039, (aside,)), today=TODAY)
 
-    assert phase is not None
+    assert phase is not None, "a referred bill has its first reading ahead"
     assert phase.key == "first_reading_committee" and phase.committees == ("ASW",)
     assert alone is not None and alone.key == "first_reading"  # nothing but asides yet
 

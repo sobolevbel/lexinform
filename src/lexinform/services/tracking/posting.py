@@ -179,7 +179,7 @@ class Poster:
 
     def hold(self, bill: Bill, change: StatusChange) -> None:
         """Keep a service-stage change for the next post instead of sending it now."""
-        assert change.id is not None
+        assert change.id is not None, "only a change record_change stored reaches the poster"
         self._repo.create_publication(self._update_row(bill, change.id, PublicationStatus.SKIPPED))
         log.info(
             "druk %s: %s held for the next update",
@@ -194,7 +194,7 @@ class Poster:
         just sent, not against "the newest update row": a retried update keeps its old row id, so
         a later held row would be the newest one.
         """
-        assert change.id is not None
+        assert change.id is not None, "only a change record_change stored reaches the poster"
         existing = self._repo.get_update_publication(change.id, self._channel_id)
         if existing is not None:
             if existing.status is PublicationStatus.SENT:
@@ -220,7 +220,7 @@ class Poster:
         return message_id is not None
 
     def prepare(self, bill: Bill, change: StatusChange) -> DeliveryPlan:
-        assert change.id is not None
+        assert change.id is not None, "only a change record_change stored reaches the poster"
         stored = self._repo.get_update_publication(change.id, self._channel_id)
         if stored is not None and stored.delivery is not None:
             return stored.delivery
@@ -285,7 +285,7 @@ class Poster:
         )
 
     def hearing_deadline(self, bill: Bill, hearing: Stage, *, today: date) -> bool:
-        assert hearing.date is not None
+        assert hearing.date is not None, "hearings_due keeps only hearings with a date"
         return self._once(
             bill,
             PublicationKind.HEARING_DEADLINE,
@@ -368,7 +368,9 @@ class Poster:
             return False
         if pub.attempts >= self._max_attempts:
             return False
-        assert pub.id is not None and pub.delivery is not None
+        assert pub.id is not None and pub.delivery is not None, (
+            "prepare_message and list_due_deliveries give only stored rows with a delivery plan"
+        )
         if pub.id in self._attempted:
             return False
         self._attempted.add(pub.id)
@@ -384,7 +386,7 @@ class Poster:
         if kind is PublicationKind.CONSULTATION_RESULTS:
             return self._publisher.publish_consultation_results(bill, reply).message_id
         if kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED):
-            assert plan.item_json is not None
+            assert plan.item_json is not None, "an agenda post is prepared with its item"
             item = AgendaItem.model_validate_json(plan.item_json)
             if kind is PublicationKind.AGENDA_CANCELLED:
                 return self._publisher.publish_agenda_cancelled(
@@ -396,7 +398,7 @@ class Poster:
                 else None
             )
             return self._publisher.publish_agenda(bill, item, reply, moved).message_id
-        assert plan.today is not None
+        assert plan.today is not None, f"a {kind} reminder is prepared with the day it is for"
         if kind is PublicationKind.IN_FORCE:
             return self._publisher.publish_in_force(bill, reply, today=plan.today).message_id
         if kind is PublicationKind.CONSULTATION_DEADLINE:
@@ -404,12 +406,14 @@ class Poster:
                 bill, reply, today=plan.today
             ).message_id
         if kind is PublicationKind.DECISION_DEADLINE:
-            assert plan.phase_json is not None
+            assert plan.phase_json is not None, "a decision reminder is prepared with its phase"
             phase = Phase.model_validate_json(plan.phase_json)
             return self._publisher.publish_decision_deadline(
                 bill, phase, reply, today=plan.today
             ).message_id
-        assert kind is PublicationKind.HEARING_DEADLINE and plan.hearing_json is not None
+        assert kind is PublicationKind.HEARING_DEADLINE and plan.hearing_json is not None, (
+            f"{kind} is not dispatched above, or a hearing reminder lacks its hearing"
+        )
         hearing = Stage.model_validate_json(plan.hearing_json)
         return self._publisher.publish_hearing_deadline(
             bill, hearing, reply, today=plan.today

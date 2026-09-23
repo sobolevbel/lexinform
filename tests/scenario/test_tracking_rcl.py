@@ -150,7 +150,7 @@ def test_a_catalog_nobody_opened_is_read_on_the_next_refresh() -> None:
     w = World()
     project = _followed_project(w)
     stored = w.bill(RCL).rcl
-    assert stored is not None
+    assert stored is not None, "a followed project row keeps its project"
     as_with_text_left_it = tuple(
         st.model_copy(update={"folders": (), "catalog_read": False}) if st.is_consultation else st
         for st in stored.stages
@@ -165,7 +165,9 @@ def test_a_catalog_nobody_opened_is_read_on_the_next_refresh() -> None:
     w.run()
 
     repaired = w.bill(RCL).rcl
-    assert repaired is not None and repaired.consultation is not None
+    assert repaired is not None and repaired.consultation is not None, (
+        "the watcher reads a catalog that was never read and finds the letter"
+    )
     assert repaired.consultation.email == "dep.prawny@mswia.gov.pl"
 
 
@@ -196,7 +198,7 @@ def test_a_window_that_has_already_shut_is_not_announced_as_opening() -> None:
     w.run()
 
     stored = w.bill(RCL)
-    assert stored.rcl is not None and stored.rcl.consultation is not None
+    assert stored.rcl is not None and stored.rcl.consultation is not None, "the letter was read"
     assert stored.rcl.consultation.deadline == dt.date(2026, 9, 8)
     assert not any(change.consultation_opened for _, change, _ in w.publisher.updates)
 
@@ -247,7 +249,7 @@ def test_failed_opinions_notice_is_retried_on_the_next_run() -> None:
     assert (failed.consultation_results_posted, retried.consultation_results_posted) == (0, 1)
     assert len(w.publisher.consultation_results) == 1
     stored = w.bill(RCL).rcl
-    assert stored is not None and stored.consultation is not None
+    assert stored is not None and stored.consultation is not None, "the letter was read"
     assert stored.consultation.positions == 1
 
 
@@ -281,7 +283,7 @@ def test_published_opinions_are_announced_once() -> None:
     assert (report.consultation_results_posted, again.consultation_results_posted) == (1, 0)
     assert report.updates == 0  # uploads into a folder are not a stage change
     bill, _ = w.publisher.consultation_results[0]
-    assert bill.rcl is not None and bill.rcl.consultation is not None
+    assert bill.rcl is not None and bill.rcl.consultation is not None, "the letter was read"
     assert bill.rcl.consultation.positions == 1
 
 
@@ -420,7 +422,7 @@ def test_republished_identical_text_is_not_analysed_again() -> None:
     w = World()
     project = _followed_project(w)
     analysed = w.bill(RCL).analysis
-    assert analysed is not None
+    assert analysed is not None, "a followed project was analysed before its card"
     consulted = next(f for st in project.stages for f in st.folders if f.kind == "project")
     # Komisja Prawnicza republishes the same three files (projekt, uzasadnienie, OSR) in its
     # own folder: new URLs, same text.

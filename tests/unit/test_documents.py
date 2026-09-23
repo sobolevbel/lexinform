@@ -117,7 +117,7 @@ def test_the_opening_pages_of_a_scan_are_cut_from_the_bytes_in_hand() -> None:
 
     window = loader.first_pages(scan, 8)
 
-    assert window is not None
+    assert window is not None, "a 30-page scan has an 8-page window to cut"
     assert (window.pages, window.of_pages) == (8, 30)
     assert len(window.data) < len(scan.data)
     assert window.sha256 == scan.sha256  # the same document, fewer pages of it

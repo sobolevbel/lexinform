@@ -289,5 +289,5 @@ class BillLookup:
 
     def _stored(self, bill: Bill) -> Bill:
         fresh = self._repo.get(bill.term, bill.number)
-        assert fresh is not None
+        assert fresh is not None, "the lookup stored this row before asking for it"
         return fresh

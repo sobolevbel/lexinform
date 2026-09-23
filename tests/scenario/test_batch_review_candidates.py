@@ -312,7 +312,7 @@ def test_government_batch_survives_a_term_rollover() -> None:
     assert w.repo.move_government_rows(TERM, TERM + 1) == 1
 
     moved = w.repo.get(TERM + 1, RCL)
-    assert moved is not None
+    assert moved is not None, "move_government_rows reported the row moved to the new term"
     assert moved.status is BillStatus.ANALYZED
 
 

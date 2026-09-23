@@ -91,7 +91,7 @@ def test_process_and_print_parse_from_fixtures() -> None:
 
     assert detail.number == "3039"
     assert detail.stages[1].children[0].committee_code
-    assert info.main_pdf is not None
+    assert info.main_pdf is not None, "the fixture print lists 3039.pdf"
     # Attachments are downloaded from the client's own host (a proxy or a mock included).
     assert info.main_pdf.url == "https://api.test/sejm/term10/prints/3039/3039.pdf"
     assert info.additional_prints[0].number == "3039-001"
@@ -124,7 +124,7 @@ def test_a_print_publishing_its_text_under_a_name_of_its_own_is_still_read() -> 
     budget = _print_with("125", "125-ustawa i załączniki do ustawy.pdf", "125-uzasadnienie.pdf")
     amended = _print_with("2872", "2872 (z autopoprawką).pdf")
 
-    assert budget.main_pdf is not None
+    assert budget.main_pdf is not None, "a PDF not named after a filing is the print's text"
     assert budget.main_pdf.name == "125-ustawa i załączniki do ustawy.pdf"
     assert amended.main_pdf is not None
 
@@ -163,7 +163,7 @@ def test_process_carries_publication_fields_and_the_eli_act_is_parsed() -> None:
     assert (detail.eli, detail.display_address) == ("DU/2026/1099", "Dz.U. 2026 poz. 1099")
     assert detail.isap_url == "https://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20260001099"
     assert detail.passed and detail.closure_date == date(2026, 7, 17)
-    assert act is not None
+    assert act is not None, "the mock serves DU/2026/1099"
     assert act.display_address == "Dz.U. 2026 poz. 1099" and act.title.startswith("Ustawa z dnia")
     assert act.act_date == date(2026, 7, 17)  # `announcementDate` is the date in the title
     assert act.promulgation_date == date(2026, 8, 18)  # the Dziennik Ustaw date

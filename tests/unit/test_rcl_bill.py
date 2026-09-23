@@ -60,7 +60,7 @@ def test_summary_of_a_project_is_a_government_bill_without_a_process() -> None:
         10,
         ApplicantType.GOVERNMENT,
     )
-    assert summary.description is not None
+    assert summary.description is not None, "the fixture project carries its keywords"
     assert summary.description.startswith("CUDZOZIEMCY; SYSTEM INFORMACYJNY SCHENGEN; sprawy")
     assert summary.change_date == dt.datetime(2026, 9, 1, tzinfo=dt.UTC)
     assert (summary.process_start_date, summary.document_date) == (
@@ -84,7 +84,7 @@ def test_consultation_window_comes_from_the_letter() -> None:
 
     window = bill.consultation
 
-    assert window is not None
+    assert window is not None, "the fixture project carries a consultation letter"
     assert (window.source, window.end, window.email) == (
         "rcl",
         dt.date(2026, 9, 8),
@@ -126,7 +126,7 @@ def test_next_phase_follows_the_government_path() -> None:
         )
     ]
 
-    assert during is not None
+    assert during is not None, "a project in consultation has a road ahead"
     assert (during.key, during.date) == ("rcl_consultation", dt.date(2026, 9, 8))
     assert after is not None and after.key == "rcl_opinions"
     assert keys == [
@@ -142,7 +142,7 @@ def test_next_phase_follows_the_government_path() -> None:
 def test_generic_stages_of_a_project_end_with_the_active_one() -> None:
     bill = rcl_bill(rcl_project())
 
-    assert bill.last_stage is not None
+    assert bill.last_stage is not None, "the fixture project has reached stages"
     assert bill.last_stage.stage_name == "4. Opiniowanie"
     assert RCL_CONSULTATION.is_open(TODAY)
 

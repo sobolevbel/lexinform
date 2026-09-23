@@ -410,7 +410,7 @@ class MessageFormatter:
     def _card_details(self, bill: Bill, today: dt.date) -> str:
         """The card's second half: the analysis' practical facts, the consultation, what comes
         next, then the compact one-line facts (stage, applicant, joint prints, notes)."""
-        assert bill.analysis is not None
+        assert bill.analysis is not None, "a card is rendered only for an analysed bill"
         a = bill.analysis.analysis
         lb = self._labels
         s = bill.summary
@@ -1789,7 +1789,7 @@ class MessageFormatter:
     def _rcl_deadline(self, bill: Bill, window: ConsultationWindow) -> str:
         """ "до 08.09.2026 (7 дн. с даты письма)"."""
         lb = self._labels
-        assert window.end is not None
+        assert window.end is not None, "the caller dates an RCL window only when its end is known"
         text = f"{esc(lb.consultation_until)} {self.fmt_date(window.end)}"
         days = bill.rcl.consultation.days if bill.rcl and bill.rcl.consultation else None
         if days is not None:
@@ -1844,7 +1844,9 @@ class MessageFormatter:
 
     def _consultation_period(self, window: ConsultationWindow) -> str:
         lb = self._labels
-        assert window.end is not None
+        assert window.end is not None, (
+            "the caller asks for a period only when the window's end is known"
+        )
         if window.start:
             return f"{self.fmt_date(window.start)} — {self.fmt_date(window.end)}"
         return f"{esc(lb.consultation_until)} {self.fmt_date(window.end)}"
@@ -2189,7 +2191,7 @@ class MessageFormatter:
         wrong, so once that window has shut they are offered as what is left, in a line saying so.
         """
         project = bill.rcl
-        assert project is not None
+        assert project is not None, "the action line routes only a bill with an RCL project here"
         lb = self._labels
         window = bill.consultation
         open_now = consultation_open(bill, today)

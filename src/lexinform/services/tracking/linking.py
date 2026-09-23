@@ -109,7 +109,7 @@ class Linker:
                 if change is not None:
                     self._poster.prepare(bill, change)
             fresh = self._repo.get(pre.term, print_number)
-            assert fresh is not None
+            assert fresh is not None, "_adopt wrote the print's row in this transaction"
             self._repo.save_observed_process(
                 pre.term, print_number, observe(fresh, closure_date=detail.closure_date)
             )

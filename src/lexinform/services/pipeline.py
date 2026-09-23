@@ -320,7 +320,7 @@ class DailyPipeline:
             log.info("%s took %.1fs", name, elapsed)
 
     def _handle_commands(self, opts: RunOptions, report: RunReport) -> None:
-        assert self._commands is not None
+        assert self._commands is not None, "run() starts this phase only with a command service"
         handled = self._commands.handle_pending(
             min_score=opts.min_score,
             run_started_at=report.started_at,
@@ -347,7 +347,9 @@ class DailyPipeline:
     def _discover_rcl(
         self, term: int, since: datetime, report: RunReport, from_register: Sequence[int] = ()
     ) -> None:
-        assert self._rcl_discovery is not None
+        assert self._rcl_discovery is not None, (
+            "run() starts the RCL phases only with RCL discovery"
+        )
         discovered = self._rcl_discovery.discover(term, since, from_register=from_register)
         report.rcl_discovered = discovered.new
         report.rcl_prefilter_hits = discovered.prefilter_hits
@@ -356,18 +358,24 @@ class DailyPipeline:
             report.errors.append(f"{discovered.failed} RCL project(s) could not be read")
 
     def _discover_wykaz(self, term: int, since: datetime, report: RunReport) -> list[int]:
-        assert self._wykaz_discovery is not None
+        assert self._wykaz_discovery is not None, (
+            "run() starts this phase only with wykaz discovery"
+        )
         discovered = self._wykaz_discovery.discover(term, since)
         report.wykaz_discovered = discovered.new
         report.over_on_arrival += discovered.over
         return discovered.on_rcl
 
     def _read_rcl_consultations(self) -> None:
-        assert self._rcl_discovery is not None
+        assert self._rcl_discovery is not None, (
+            "run() starts the RCL phases only with RCL discovery"
+        )
         self._rcl_discovery.read_consultations()
 
     def _prefilter_text(self, opts: RunOptions, report: RunReport) -> None:
-        assert self._text_prefilter is not None
+        assert self._text_prefilter is not None, (
+            "run() starts this phase only with a text prefilter"
+        )
         checked = self._text_prefilter.run(limit=opts.max_text_prefilter)
         report.text_prefilter_checked = checked.checked
         report.text_prefilter_hits = checked.hits
@@ -436,7 +444,7 @@ class DailyPipeline:
             report.errors.append(f"{failed} status update(s) failed")
 
     def _draft_digest(self, report: RunReport) -> None:
-        assert self._digest is not None
+        assert self._digest is not None, "run() starts this phase only with a digest service"
         result = self._digest.run()
         report.digest_drafted = result.drafted
         if result.drafted:

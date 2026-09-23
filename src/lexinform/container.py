@@ -255,7 +255,7 @@ class Container:
         """The provider `llm_batch_provider` names, built whatever `llm_batch_enabled` says: that
         flag stops a submission, and a batch already filed has to be collected all the same."""
         backend = self.batch_backend_for(self.settings.llm_batch_provider)
-        assert backend is not None
+        assert backend is not None, "batch_backend_for builds a backend for the configured provider"
         return backend
 
     def batch_backend_for(self, provider: BatchProvider) -> BatchBackend | None:

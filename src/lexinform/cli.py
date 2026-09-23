@@ -394,7 +394,9 @@ def analyze(
         bill = _load_bill(c, number)
     finally:
         c.close()
-    assert bill.analysis is not None
+    assert bill.analysis is not None, (
+        "an analysed bill keeps its analysis; analyze_bill stores one or raises"
+    )
     if as_json:
         typer.echo(bill.analysis.model_dump_json(indent=2))
     else:
@@ -894,7 +896,7 @@ def cost(
         typer.echo("most expensive analyses (input tokens of the stored analysis):")
     for bill in priciest:
         record = bill.analysis
-        assert record is not None
+        assert record is not None, "most_expensive_analyses selects only rows with an analysis"
         typer.echo(
             f"  {bill.number}: {format_tokens(record.input_tokens or 0)} in ({record.model}) "
             f"{format_usd(cost_usd({record.model: usage_of(record)}))}  {bill.summary.title[:70]}"

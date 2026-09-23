@@ -250,7 +250,7 @@ _WHITESPACE = re.compile(r"\s+")
 
 def _describe_for_comparison(bill: Bill) -> JointBillDescription:
     """One bill of a jointly considered group as the channel describes it today."""
-    assert bill.analysis is not None
+    assert bill.analysis is not None, "compare_joint describes only prints that were analysed"
     analysis = bill.analysis.analysis
     return JointBillDescription(
         number=bill.number,
@@ -808,7 +808,9 @@ class AnalysisService:
         nothing is written at all, so the next run offers the same document again."""
         fresh, changed = self.prepare_reanalysis(bill, document, summary=summary)
         if fresh is not bill:
-            assert fresh.analysis is not None
+            assert fresh.analysis is not None, (
+                "prepare_reanalysis returns a new bill only with its record"
+            )
             with self._repo.atomic():
                 self._repo.save_analysis(bill.term, bill.number, fresh.analysis)
                 if fresh.authors is not None:
@@ -819,7 +821,9 @@ class AnalysisService:
         self, bill: Bill, document: TextDocument, *, summary: ProcessSummary | None = None
     ) -> tuple[Bill, bool]:
         """Memoize paid work without advancing the bill before its source checkpoint."""
-        assert bill.analysis is not None
+        assert bill.analysis is not None, (
+            "only a bill with a card is re-analysed, and a card needs an analysis"
+        )
         if bill.status is BillStatus.REANALYSIS_READY and bill.ready_analysis is not None:
             return bill.model_copy(update={"analysis": _reused(bill.ready_analysis.record)}), True
         if bill.status is BillStatus.BATCH_PENDING:
@@ -842,7 +846,9 @@ class AnalysisService:
                 document.url,
             )
             return bill, False
-        assert prepared.record is not None
+        assert prepared.record is not None, (
+            "only a queued _Prepared lacks a record, and it returned above"
+        )
         if prepared.unchanged:
             log.info("%s: %s carries the analysed text; not re-analysed", bill.number, document.url)
             return bill.model_copy(update={"analysis": prepared.record}), False
@@ -861,8 +867,10 @@ class AnalysisService:
         None when the document has no readable text (a scan) or costs more to read than the
         per-bill limit allows: the update then only names the event, which is the same thing a
         failed digest degrades to. Only an outage propagates."""
-        assert bill.analysis is not None
-        assert document.kind in AMENDMENT_SOURCES
+        assert bill.analysis is not None, (
+            "the tracker looks for amendments only of an analysed bill"
+        )
+        assert document.kind in AMENDMENT_SOURCES, f"not an amendments document: {document.kind}"
         loaded = self._load_text(document, trim=False)
         if not loaded.text.strip():
             return None
@@ -901,8 +909,10 @@ class AnalysisService:
         """What the document filed to the print says about the bill, against its current
         analysis. A document with no readable text (a scan) comes back as the bare record, which
         the reply still names and links. Only an outage propagates."""
-        assert bill.analysis is not None
-        assert document.kind in SUPPLEMENT_SOURCES
+        assert bill.analysis is not None, (
+            "the tracker collects filed documents only of an analysed bill"
+        )
+        assert document.kind in SUPPLEMENT_SOURCES, f"not a filed document: {document.kind}"
         loaded = self._load_text(document, trim=False)
         if loaded.scan is None and (loaded.source == "metadata_only" or not loaded.text.strip()):
             return self.bare_supplement(document, number=number, title=title)
@@ -947,7 +957,7 @@ class AnalysisService:
         reader sees, and they cost about a cent. Only an outage propagates — a failed call leaves
         the reply as it was before comparisons existed.
         """
-        assert bill.analysis is not None
+        assert bill.analysis is not None, "a joint reply candidate is listed only once analysed"
         described = [other for other in others if other.analysis is not None]
         if not described:
             return None
@@ -1014,7 +1024,7 @@ class AnalysisService:
             return _Prepared(bill, located, text, source, previous, first=False, unreadable=True)
         digest = loaded.digest
         if previous is not None and digest is not None and digest == previous.text_sha256:
-            assert document is not None
+            assert document is not None, "a text digest comes only from a document that was read"
             pointer = previous.model_copy(
                 update={
                     "source_url": document.url,
@@ -1296,7 +1306,9 @@ class AnalysisService:
     def _enqueue(self, bill: Bill, prepared: _Prepared) -> bool:
         """Hand a queued request to the batch and mark the bill so nothing re-submits it while
         it is in flight. Calling thread only, like `_persist`."""
-        assert prepared.batch_request is not None and prepared.batch_meta is not None
+        assert prepared.batch_request is not None and prepared.batch_meta is not None, (
+            "a queued _Prepared carries its batch request and meta"
+        )
         if len((prepared.batch_request.payload_json or "").encode()) > 100_000_000:
             raise ValueError("one batch request exceeds the 100 MB payload limit")
         if not self._ledger.reserve(prepared.batch_request.estimated_cost_usd):
@@ -1361,7 +1373,7 @@ class AnalysisService:
                     bill.term, bill.number, (located.summary or bill.summary).closure_date
                 )
                 fresh = self._repo.get(bill.term, bill.number)
-                assert fresh is not None
+                assert fresh is not None, "the row was written in this transaction"
                 self._repo.save_observed_process(
                     bill.term,
                     bill.number,

@@ -176,7 +176,7 @@ def test_failed_government_card_keeps_its_plan_after_term_rollover() -> None:
     w.add_rcl_project()
     w.run()
     row = w.publication(RCL)
-    assert row is not None and row.delivery is not None
+    assert row is not None and row.delivery is not None, "a failed card keeps its row and plan"
     original = row.delivery.bill_json
     w.repo.move_government_rows(10, 11)
     w.publisher.fail_on.clear()
@@ -195,10 +195,10 @@ def test_failed_card_retries_its_saved_facts_after_restore() -> None:
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
     row = w.publication("3039")
-    assert row is not None and row.delivery is not None
+    assert row is not None and row.delivery is not None, "a failed card keeps its row and plan"
     original = row.delivery
     bill = w.bill("3039")
-    assert bill.analysis is not None
+    assert bill.analysis is not None, "the card was rendered from an analysis"
     replacement = bill.analysis.model_copy(deep=True)
     replacement.analysis.summary = "Позднейший текст"
     w.repo.save_analysis(10, "3039", replacement)
@@ -219,7 +219,7 @@ def test_failed_reminder_keeps_the_date_facts_and_thread_after_deadline() -> Non
     w.publisher.fail_on.add(RPW)
     w.run()
     row = w.publication(RPW, PublicationKind.CONSULTATION_DEADLINE)
-    assert row is not None and row.delivery is not None
+    assert row is not None and row.delivery is not None, "a failed reminder keeps its row and plan"
     snapshot = row.delivery.bill_json
     w.clock.advance(days=10)
     w.publisher.fail_on.clear()
@@ -278,7 +278,7 @@ def test_queued_agenda_is_recovered_after_the_sitting_disappears() -> None:
     w.run(publish=False)
     item = w.bill("3039").agenda[0]
     row = w.repo.get_publication(10, "3039", PublicationKind.AGENDA, CHANNEL, ref=item.ref)
-    assert row is not None and row.delivery is not None
+    assert row is not None and row.delivery is not None, "an unpublished run queues the agenda post"
     assert row.status is PublicationStatus.QUEUED
     original = Bill.model_validate_json(row.delivery.bill_json)
     w.gateway.committee_sittings["ASW"] = ()

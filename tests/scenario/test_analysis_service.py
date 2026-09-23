@@ -209,7 +209,7 @@ def test_deputies_bill_gets_its_signatories_resolved_to_clubs() -> None:
     w.run()
 
     authors = w.bill("4200").authors
-    assert authors is not None
+    assert authors is not None, "the analysis resolves the signatories of a signed deputies' print"
     assert authors.clubs == (("KO", 2), ("Lewica", 1))
     assert (authors.representative, authors.representative_club) == ("Jan Kowalski", "KO")
     assert w.gateway.calls.count("list_mps") == 1  # the directory is fetched once per process
@@ -449,7 +449,9 @@ def test_the_triage_is_shown_the_opening_pages_of_a_scan_and_not_all_of_them() -
     w.run()
 
     triaged = w.llm.triage_contexts[0]
-    assert triaged.scan is not None
+    assert triaged.scan is not None, (
+        "a print whose text is only its cover letter is triaged as a scan"
+    )
     assert (triaged.scan.pages, triaged.scan.of_pages) == (8, 37)
     assert triaged.excerpts == ""  # there is no text to excerpt; the pages are the evidence
     analysed = w.llm.contexts[0]

@@ -179,9 +179,11 @@ def test_the_comparison_is_made_of_what_the_channel_says_not_of_the_texts() -> N
 
     (ctx,) = w.llm.joint_contexts
     (other,) = ctx.others
+    card, reply = w.bill("1933").analysis, w.bill("1929").analysis
+    assert card is not None and reply is not None, "both prints are analysed before the comparison"
     assert other.number == "1933"
-    assert other.summary == w.bill("1933").analysis.analysis.summary  # type: ignore[union-attr]
-    assert ctx.subject.summary == w.bill("1929").analysis.analysis.summary  # type: ignore[union-attr]
+    assert other.summary == card.analysis.summary
+    assert ctx.subject.summary == reply.analysis.summary
 
 
 def test_the_reply_says_what_the_bill_does_and_how_it_differs() -> None:

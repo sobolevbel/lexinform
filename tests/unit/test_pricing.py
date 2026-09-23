@@ -18,7 +18,7 @@ def test_cost_adds_models_and_cache_categories() -> None:
         ),
     }
     cost = cost_usd(usage)
-    assert cost is not None
+    assert cost is not None, "both models are in the price table"
     opus = 287_711 * 5 / 1e6 + 334 * 25 / 1e6
     sonnet = (5_000 * 2 + 1_000 * 2 * 0.1 + 500 * 2 * 1.25 + 100 * 10) / 1e6
     assert abs(cost - (opus + sonnet)) < 1e-9

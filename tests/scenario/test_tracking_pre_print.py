@@ -140,7 +140,7 @@ def test_the_inherited_card_keeps_the_original_sent_at_for_the_digest() -> None:
     w.gateway.submissions.append(submission())
     w.run()
     original = w.publication(RPW)
-    assert original is not None and original.sent_at is not None
+    assert original is not None and original.sent_at is not None, "the entry's card was sent"
     w.gateway.submissions[0] = submission(print_number="3100")
     w.add_bill("3100", "Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony")
     w.clock.advance(days=1)

@@ -142,7 +142,7 @@ def _status(db: Path) -> tuple[BillStatus, int, str | None]:
     repo = SqliteBillRepository(db)
     bill = repo.get(10, "3039")
     repo.close()
-    assert bill is not None
+    assert bill is not None, "the CLI run under test stored druk 3039"
     return bill.status, bill.analysis_attempts, bill.last_error
 
 

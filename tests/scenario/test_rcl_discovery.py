@@ -33,7 +33,7 @@ def test_new_project_is_analysed_from_its_documents_and_published() -> None:
     assert ctx.text.count("Art. 1.") >= 3  # bill + uzasadnienie (legacy .doc) + OSR
     bill, print_info = w.publisher.new_bills[0]
     assert bill.is_rcl and print_info is None
-    assert bill.rcl is not None and bill.rcl.consultation is not None
+    assert bill.rcl is not None and bill.rcl.consultation is not None, "the letter was read"
     assert (bill.rcl.consultation.deadline, bill.rcl.consultation.email) == (
         dt.date(2026, 9, 8),  # 7 days from the letter published on 01-09-2026
         "dep.prawny@mswia.gov.pl",
@@ -118,7 +118,9 @@ def test_a_project_taken_by_its_text_still_gets_its_consultation_letter() -> Non
 
     assert (report.text_prefilter_hits, report.published) == (1, 1)
     bill = w.bill(RCL)
-    assert bill.rcl is not None and bill.rcl.consultation is not None
+    assert bill.rcl is not None and bill.rcl.consultation is not None, (
+        "the rcl consultations phase read the letter the text prefilter skipped"
+    )
     assert (bill.rcl.consultation.deadline, bill.rcl.consultation.email) == (
         dt.date(2026, 9, 8),
         "dep.prawny@mswia.gov.pl",
@@ -147,7 +149,9 @@ def test_a_letter_that_failed_once_is_retried_after_the_project_is_analysed() ->
     w.run()
 
     repaired = w.bill(RCL)
-    assert repaired.rcl is not None and repaired.rcl.consultation is not None
+    assert repaired.rcl is not None and repaired.rcl.consultation is not None, (
+        "the second attempt found the letter that was missing on the first"
+    )
     assert repaired.rcl.consultation.email == "dep.prawny@mswia.gov.pl"
 
 

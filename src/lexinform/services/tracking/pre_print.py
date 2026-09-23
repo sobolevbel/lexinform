@@ -128,7 +128,7 @@ class PrePrintReconciler:
         """What the `/bills` row says has happened to the entry since it was stored."""
         evidence = submission_evidence(sub)
         if bill.is_pre_print and evidence.source is SourceOutcome.LINKED:
-            assert sub.print_number is not None
+            assert sub.print_number is not None, "submission_evidence says LINKED only with a print"
             self._linker.link(
                 bill.model_copy(update={"submission": sub}),
                 sub.print_number,

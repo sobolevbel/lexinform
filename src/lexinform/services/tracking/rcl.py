@@ -122,7 +122,7 @@ class RclWatcher:
         ][: self._max_print_lookups]
         found: dict[str, Bill] = {}
         for bill in pending:
-            assert bill.rcl is not None
+            assert bill.rcl is not None, "pending is filtered on the project above"
             number = print_of_project(self._gateway, bill.rcl, bill.term)
             if number is None:
                 continue
@@ -135,7 +135,9 @@ class RclWatcher:
     def _link_pending(self, result: TrackingResult, *, publish: bool) -> bool:
         """Projects whose druk the Sejm discovery has seen: the print takes over the thread."""
         for bill in self._repo.list_rcl_awaiting_link():
-            assert bill.rcl is not None and bill.rcl.print_number is not None
+            assert bill.rcl is not None and bill.rcl.print_number is not None, (
+                "list_rcl_awaiting_link selects only projects with a print number"
+            )
             try:
                 self._linker.link(bill, bill.rcl.print_number, result, publish=publish)
             except ServiceUnavailableError as exc:
@@ -148,7 +150,7 @@ class RclWatcher:
 
     def _refresh(self, bill: Bill) -> RclProject:
         """Network only: the project as RCL shows it now."""
-        assert bill.rcl is not None
+        assert bill.rcl is not None, "check() refreshes only the bills that carry a project"
         return self._reader.refresh(bill.rcl)
 
     def _detect(
@@ -200,7 +202,7 @@ class RclWatcher:
     ) -> StatusChange | None:
         now = self._clock.now()
         stored = bill.rcl
-        assert stored is not None
+        assert stored is not None, "check() records changes only of bills that carry a project"
         closure = rcl_evidence(
             project
         ).source is SourceOutcome.WITHDRAWN and not self._repo.closure_announced(

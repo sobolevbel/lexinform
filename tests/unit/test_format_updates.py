@@ -186,7 +186,7 @@ def test_voting_stage_shows_totals_pdf_link_and_club_breakdown(
     process_1962: ProcessDetail,
 ) -> None:
     voting = next(s for s in flatten_stages(process_1962.stages) if s.stage_type == "Voting")
-    assert voting.voting is not None
+    assert voting.voting is not None, "the fixture's Voting stage carries its totals"
     clubs = (
         ClubVotes(club="KO", yes=152),
         ClubVotes(club="PSL-TD", yes=31),

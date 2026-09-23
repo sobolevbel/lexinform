@@ -333,7 +333,7 @@ class CommandService:
         if command.name is CommandName.COST:
             return self._cost(command.count("days", 30), command.count("top", 5))
         if command.name is CommandName.FIND:
-            assert command.query is not None
+            assert command.query is not None, "parse_command gives /find a query or an error"
             return self._find(command.query)
         if command.name is CommandName.DIGEST:
             return self._digest_command(command, publish=publish)
@@ -345,7 +345,9 @@ class CommandService:
                 note=f"/{command.name} is the relay's own command: it starts this workflow with"
                 " that phase, and a run cannot ask itself for one",
             )
-        assert command.ref is not None
+        assert command.ref is not None, (
+            "only a bill command is left, and parse_command gives it a ref"
+        )
         try:
             if command.name is CommandName.ANALYZE:
                 bill = self._lookup.load_ref(command.ref)
@@ -395,7 +397,7 @@ class CommandService:
             bill, too_expensive = self._analyse_now(bill, spent, force=command.force)
             if too_expensive is not None:
                 return too_expensive
-        assert bill.analysis is not None
+        assert bill.analysis is not None, "the bill was analysed before or by _analyse_now above"
         return self._card_verdict(bill, command, min_score=min_score, publish=publish)
 
     def _skipped_by_prefilter(self, bill: Bill) -> tuple[Bill, CommandOutcome | None]:
@@ -452,8 +454,8 @@ class CommandService:
         self, bill: Bill, command: Command, *, min_score: int, publish: bool
     ) -> CommandOutcome:
         """Whether the analysis earns a card now, and what to say when it does not."""
-        verdict = bill.analysis.analysis if bill.analysis is not None else None
-        assert verdict is not None
+        assert bill.analysis is not None, "_analyze asks for a verdict only of an analysed bill"
+        verdict = bill.analysis.analysis
         if not verdict.relevant:
             return CommandOutcome(
                 status=OutcomeStatus.ANALYSED, bill=bill, note="not relevant: no card"
