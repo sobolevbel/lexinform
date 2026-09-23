@@ -234,6 +234,12 @@ from lexinform.models.sejm import (
     supplement_kind,
     third_reading_kept_the_text,
 )
+from lexinform.models.senate import (
+    SENATE_BASE_URL,
+    SenateAct,
+    SenateCommittee,
+    senate_title_matches,
+)
 from lexinform.models.wykaz import (
     BILL_KIND,
     REGISTER_PAGE_URL,
@@ -361,6 +367,10 @@ __all__ = [
     "RCL_PREFIX",
     "ORKA_BASE_URL",
     "SENATE_BILLS_URL",
+    "SENATE_BASE_URL",
+    "SenateAct",
+    "SenateCommittee",
+    "senate_title_matches",
     "RCL_STAGE_TYPE",
     "RunMode",
     "RclConsultation",

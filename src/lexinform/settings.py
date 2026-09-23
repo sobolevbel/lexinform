@@ -68,6 +68,17 @@ class Settings(BaseSettings):
         " as RCL; it answers GitHub runners today.",
     )
 
+    senate_enabled: bool = Field(
+        default=True,
+        description="Name the Senate committees of an act in the Senate and their e-mail, read from"
+        " senat.gov.pl (a few pages per run, only while an act is there).",
+    )
+    senate_base_url: str = "https://www.senat.gov.pl"
+    senate_timeout_seconds: float = 30.0
+    senate_proxy_url: str = Field(
+        default="", description="An HTTP forward proxy with an EU address; empty connects directly."
+    )
+
     db_path: Path = Path("lexinform.db")
     llm_batch_state_file: Path | None = Field(
         default=None, description="Git state dump checkpoint before and after remote submission."

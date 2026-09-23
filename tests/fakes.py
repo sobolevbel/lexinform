@@ -19,6 +19,7 @@ from lexinform.errors import (
     OrkaUnreachableError,
     RclUnavailableError,
     SejmApiUnavailableError,
+    SenateUnavailableError,
     TelegramUnavailableError,
     WykazUnavailableError,
 )
@@ -59,6 +60,7 @@ from lexinform.models import (
     RunReport,
     SejmSitting,
     SejmTerm,
+    SenateAct,
     Stage,
     StatusChange,
     SupplementContext,
@@ -415,6 +417,37 @@ class FakeWykazGateway:
     def put(self, entry: WykazEntry) -> None:
         """Make the register show this entry."""
         self.entries_by_number[entry.number] = entry
+
+
+@dataclass
+class FakeSenateGateway:
+    """`SenateGateway` over the acts the Senate lists, keyed by the Sejm's `titleFinal`."""
+
+    acts: dict[str, SenateAct] = field(default_factory=dict)
+    outage: bool = False
+    calls: list[str] = field(default_factory=list)
+
+    def find_act(self, title_final: str, *, passed_on: date) -> SenateAct | None:
+        self.calls.append(f"find {title_final}")
+        if self.outage:
+            raise SenateUnavailableError("senat.gov.pl does not answer")
+        act = self.acts.get(title_final)
+        if act is None or act.received is None or act.received < passed_on:
+            return None
+        return act
+
+    def read_act(self, url: str) -> SenateAct:
+        self.calls.append(f"read {url}")
+        if self.outage:
+            raise SenateUnavailableError("senat.gov.pl does not answer")
+        return next(a for a in self.acts.values() if a.url == url)
+
+    def close(self) -> None:
+        pass
+
+    def put(self, title_final: str, act: SenateAct) -> None:
+        """Make the Senate list this act, or show it as it now stands."""
+        self.acts[title_final] = act
 
 
 def make_amendments(**overrides: object) -> Amendments:

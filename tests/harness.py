@@ -54,6 +54,7 @@ from tests.fakes import (
     FakeRclGateway,
     FakeReplier,
     FakeSejmGateway,
+    FakeSenateGateway,
     FakeTextExtractor,
     FakeWykazGateway,
     FixedClock,
@@ -111,7 +112,9 @@ def summary(number: str, title: str, *, change: str = "2026-09-06T10:00:00") -> 
 
 
 def detail(process: ProcessSummary, stages: tuple[Stage, ...]) -> ProcessDetail:
-    return ProcessDetail(**process.model_dump(), stages=stages)
+    """The process with the stages given and the title the act would carry ("o …")."""
+    title_final = process.title.partition("ustawy ")[2] or None
+    return ProcessDetail(**process.model_dump(), stages=stages, title_final=title_final)
 
 
 def print_url(number: str) -> str:
@@ -333,6 +336,7 @@ class World:
         self.rcl = FakeRclGateway()
         self.orka = FakeOrkaDownloader(self.gateway.files)
         self.wykaz = FakeWykazGateway()
+        self.senate = FakeSenateGateway()
         # The production wiring over the fakes: the settings name the fake hosts (downloads are
         # routed by host), every tuning value is the daily run's unless a test says otherwise,
         # and nothing is read from the environment or a .env file.
@@ -372,6 +376,7 @@ class World:
             terms=TermResolver(self.gateway, self.repo),
             rcl=self.rcl,
             wykaz=self.wykaz,
+            senate=self.senate,
             orka=self.orka,
             llm=self.llm,
             batch_override=self.batch,

@@ -50,6 +50,7 @@ from lexinform.models import (
     RunReport,
     SejmSitting,
     SejmTerm,
+    SenateAct,
     Stage,
     StatusChange,
     SupplementContext,
@@ -162,6 +163,20 @@ class WykazGateway(Protocol):
 
     def find(self, number: str) -> WykazEntry | None:
         """The entry with this wykaz number (`UD408`), however it is spelled."""
+        ...
+
+    def close(self) -> None: ...
+
+
+class SenateGateway(Protocol):
+    """senat.gov.pl, which has no API; `SenateUnavailableError` when it does not answer."""
+
+    def find_act(self, title_final: str, *, passed_on: date) -> SenateAct | None:
+        """The page of the act the Sejm passed on `passed_on`; None while the Senate lists none."""
+        ...
+
+    def read_act(self, url: str) -> SenateAct:
+        """The act's page read again: the committees and their sittings come days after it."""
         ...
 
     def close(self) -> None: ...
@@ -764,6 +779,8 @@ class BillRepository(Protocol):
         ...
 
     def save_act(self, term: int, number: str, act: ActInfo) -> None: ...
+
+    def save_senate(self, term: int, number: str, act: SenateAct) -> None: ...
 
     def save_authors(self, term: int, number: str, authors: BillAuthors) -> None: ...
 

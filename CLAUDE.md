@@ -71,7 +71,7 @@ aggregate, `ConsultationWindow`, `process_stages`/`veto_stood`, the two bookkeep
 `phases` (the road: `Phase`, `next_phase`, `is_over`, the deadlines and the patience table),
 `events`, `report`, all re-exported from `lexinform.models`)
 → `ports.py` (Protocols) → `adapters/` (Sejm API, ELI, RCL scraper `rcl_html`, the register CSV
-`wykaz_csv`, PDF, Word + format sniffing `document_text`, Anthropic, `publisher_base` (the
+`wykaz_csv`, the Senate's site `senat_html`, PDF, Word + format sniffing `document_text`, Anthropic, `publisher_base` (the
 `Publisher` port rendered once; Telegram and the console only deliver), Telegram (incl.
 `get_updates` and the command replier), SQLite, `inbox_files` (the command inbox as a directory),
 `github_inbox` (the relay's writer)) → `services/` (commands (the operator's `/analyze`, `/show`,
@@ -83,7 +83,7 @@ wykaz_discovery, sources (`TextSources` routes a bill to `SejmTextSource`, `RclT
 `SubmissionTextSource` (the RPW file on orka) or `MetadataOnlySource`), documents (`TextLoader`,
 downloads routed by host), text_prefilter, analysis (the bill, the triage, the amendments and the
 documents filed to a print), signatories, publishing, `tracking/` (service, pre_print, rcl, wykaz,
-linking, acts, consultations, agenda, posting, stages), pipeline) → `container.py` (manual wiring)
+linking, acts, senate, consultations, agenda, posting, stages), pipeline) → `container.py` (manual wiring)
 → `cli.py` (typer).
 
 Services import only ports, models and the pure modules (`keywords`, `sections` incl. `TextBudget`,
@@ -908,7 +908,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS` tuple
 in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v30 as of Sept 2026). `migrate()` reads `user_version` and runs
+`SCHEMA_VERSION = len(MIGRATIONS)` (v31 as of Sept 2026). `migrate()` reads `user_version` and runs
 every later script inside its own transaction, stamping the new version at the end, so a failed
 script leaves the database at the previous version.
 
@@ -951,7 +951,8 @@ for); v27 `llm_batch_intents` (a request saved before the provider is called: `q
 answer stale) and `bills.ready_analysis_json` (a collected re-analysis with its source snapshot);
 v29 `llm_batch_items.result_json`/`accounted_at` (the answer stored before it is applied, its cost
 acknowledged with the run report); v30 `llm_batches.forgotten_at` (collected and deleted at the
-provider). See the batch invariant above.
+provider). See the batch invariant above. v31 `bills.senate_json` (the act's page on senat.gov.pl:
+its Senate print, the committees it went to with their e-mail, their sittings).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) → `db
 restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing `PRAGMA
@@ -1161,6 +1162,19 @@ branch history; the state branch is the backup.
   prints whose text layer is empty (a scan — `signatories` is given `text` only, while the
   analysis reads the pages) and the 22 whose covering letter is in the PDF but not in its text.
 - Polish text is ~2 characters per token for Claude; the 1M context takes any print whole.
+- **The Senate has no API, but every act it receives has a page, and that page is the reader's
+  address.** "Ustawy uchwalone przez Sejm" lists ten acts a page, newest first, titled "Ustawa" +
+  the Sejm's `titleFinal` (the Sejm's hyphen is the Senate's en or figure dash, and `titleFinal`
+  sometimes keeps "Senacki projekt ustawy"); 68 of 70 acts of Aug–Sept 2026 match exactly, the
+  rest fall back to a card that promises the committee. Titles repeat — five acts of term 10 are
+  "o zmianie ustawy o podatku akcyzowym" — so `find_act` takes the earliest one received on or
+  after the third reading. The act's page names the committees (`p[data-komisja]`, the id of
+  `komisja,{id}.html`) and each committee sitting on it; the committee's page hides its
+  secretariat's e-mail behind Cloudflare's `data-cfemail` or a `SendTo(...)` script (all twenty
+  committees read on 23 Sept 2026). The window is days: druk 849 was received on 18 Sept,
+  referred on the 21st and through both committees on the 23rd. `SenateWatcher` reads it every
+  run while the phase is `senate`; the card says "committees, e-mail, before the sitting on …",
+  and once the sittings are behind it says nothing is left to do but the Senate's vote.
 - `HEAD` on a print attachment returns no `Content-Length` and takes 5–15 s on a file the server
   has not rendered yet (the following `GET` is fast). Never probe sizes: stream the `GET` and stop
   at the limit (`download(url, max_bytes=…)`).

@@ -45,6 +45,7 @@ from lexinform.models import (
     ReadyAnalysis,
     RunMode,
     RunReport,
+    SenateAct,
     Stage,
     StatusChange,
     SupplementRecord,
@@ -344,6 +345,10 @@ MIGRATIONS: tuple[str, ...] = (
     # v30: a collected batch deleted at the provider, so "ended and still listed" means uncollected.
     """
     ALTER TABLE llm_batches ADD COLUMN forgotten_at TEXT;
+    """,
+    # v31: the act's page on senat.gov.pl — its committees and their sittings.
+    """
+    ALTER TABLE bills ADD COLUMN senate_json TEXT;
     """,
 )
 
@@ -1134,6 +1139,12 @@ class SqliteBillRepository:
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
+    def save_senate(self, term: int, number: str, act: SenateAct) -> None:
+        self._conn.execute(
+            "UPDATE bills SET senate_json = ? WHERE term = ? AND number = ?",
+            (act.model_dump_json(), term, number),
+        )
+
     def save_act(self, term: int, number: str, act: ActInfo) -> None:
         self._conn.execute(
             "UPDATE bills SET act_json = ?, entry_into_force = ? WHERE term = ? AND number = ?",
@@ -1848,6 +1859,9 @@ class SqliteBillRepository:
             rcl=RclProject.model_validate_json(row["rcl_json"]) if row["rcl_json"] else None,
             wykaz=(
                 WykazEntry.model_validate_json(row["wykaz_json"]) if row["wykaz_json"] else None
+            ),
+            senate=(
+                SenateAct.model_validate_json(row["senate_json"]) if row["senate_json"] else None
             ),
             seen_supplements=(
                 tuple(json.loads(row["supplements_json"])) if row["supplements_json"] else None

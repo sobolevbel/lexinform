@@ -4,7 +4,7 @@ from, and the action the reader still has. No date is printed once it has passed
 import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import ProcessDetail, Stage
+from lexinform.models import ProcessDetail, SenateAct, SenateCommittee, Stage
 from tests.formatting import (
     ACT,
     COMMITTEE_PAGE,
@@ -178,7 +178,7 @@ def test_senate_stage_invites_an_opinion_to_the_senate_committee(
 
     # The 30 days count from the third reading (17.07.2026): the date, not only the rule.
     assert "Что дальше:</b> рассмотрение в Сенате (до 30 дней) · решение до 16.08.2026" in text
-    assert "Что можно сделать сейчас:</b> направить мнение в профильную комиссию Сената" in text
+    assert "Что можно сделать сейчас:</b> мнение можно будет направить в комиссию Сената" in text
     assert "→ Сенат ● → Президент" in text
 
 
@@ -310,7 +310,7 @@ def test_a_senate_term_that_has_run_out_moves_the_bill_to_the_president(
     assert "передача Президенту ещё не отмечена" in text
     assert "рассмотрение в Сенате" not in text
     assert "16.08.2026" not in text  # a date that is behind the reader promises nothing
-    assert "направить мнение в профильную комиссию Сената" not in text
+    assert "комиссию Сената" not in text
     assert "пока ничего — закон у Президента" in text
 
 
@@ -436,8 +436,10 @@ def test_a_sitting_today_is_not_a_deadline_to_write_before(process_3039: Process
     assert "до заседания" not in text
 
 
-def test_the_senate_window_gets_an_address_and_its_deadline(process_1962: ProcessDetail) -> None:
-    """The one window the reader has left, and the card used to spell out a bare domain."""
+def test_the_senate_window_names_the_committee_its_email_and_the_act(
+    process_1962: ProcessDetail,
+) -> None:
+    """The one window the reader has left, and the card used to link the list of every act."""
     third_reading = next(
         i
         for i, st in enumerate(process_1962.stages)
@@ -447,10 +449,28 @@ def test_the_senate_window_gets_an_address_and_its_deadline(process_1962: Proces
         update={"stages": process_1962.stages[: third_reading + 1], "passed": True}
     )
 
-    text = (
-        MessageFormatter("ru").new_bill(bill_of(in_senate), None, today=dt.date(2026, 7, 20)).text
+    act = SenateAct(
+        url="https://www.senat.gov.pl/prace/proces-legislacyjny-w-senacie/ustawa,2100.html",
+        title="Ustawa o cudzoziemcach",
+        print_number="801",
+        received=dt.date(2026, 7, 18),
+        committees=(
+            SenateCommittee(id=235, name="Komisja Samorządu", email="kstap@senat.gov.pl"),
+            SenateCommittee(id=228, name="Komisja Praw Człowieka", email="kpcp@senat.gov.pl"),
+        ),
+        committee_sittings=(dt.date(2026, 7, 22),),
     )
+    bill = bill_of(in_senate, senate=act)
 
-    assert "направить мнение в профильную комиссию Сената" in text
-    assert "senat.gov.pl/prace/proces-legislacyjny-w-senacie" in text
+    text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 7, 20)).text
+
+    assert (
+        "направить мнение в комиссии Сената —"
+        ' <a href="https://www.senat.gov.pl/prace/komisje-senackie/komisja,235.html">'
+        "Komisja Samorządu</a> (kstap@senat.gov.pl),"
+        ' <a href="https://www.senat.gov.pl/prace/komisje-senackie/komisja,228.html">'
+        "Komisja Praw Człowieka</a> (kpcp@senat.gov.pl) до заседания 22.07.2026"
+    ) in text
+    assert "сенатского druk nr 801" in text
+    assert f'<a href="{act.url}">закон на сайте Сената</a>' in text
     assert "до 16.08.2026" in text

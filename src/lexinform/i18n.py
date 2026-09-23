@@ -110,6 +110,9 @@ class Labels:
     consultation_page: str
     action_now: str
     action_senate: str
+    action_senate_many: str
+    action_senate_pending: str
+    action_senate_in_polish: str
     path: str
     action_send_opinion: str
     action_consultation_page: str
@@ -136,6 +139,7 @@ class Labels:
     link_video: str
     link_committee: str
     link_senate_bills: str
+    link_senate_act: str
     tag_committee_sitting: str
     tag_sejm_sitting: str
     consultation_results_header: str
@@ -361,7 +365,13 @@ RU = Labels(
     consultation_link="анкета на сайте Сейма",
     consultation_page="страница консультаций на сайте Сейма",
     action_now="Что можно сделать сейчас",
-    action_senate="направить мнение в профильную комиссию Сената",
+    action_senate="направить мнение в комиссию Сената —",
+    action_senate_many="направить мнение в комиссии Сената —",
+    action_senate_pending=(
+        "мнение можно будет направить в комиссию Сената — Сенат назначит её в ближайшие дни,"
+        " и здесь появятся её название и e-mail"
+    ),
+    action_senate_in_polish="(на польском, с номером сенатского druk nr {number})",
     path="Путь",
     action_send_opinion="заполнить анкету (ankieta)",
     action_consultation_page="на сайте Сейма",
@@ -394,6 +404,7 @@ RU = Labels(
     link_video="Трансляция",
     link_committee="Страница комиссии",
     link_senate_bills="законы в Сенате",
+    link_senate_act="закон на сайте Сената",
     tag_committee_sitting="заседаниекомиссии",
     tag_sejm_sitting="заседаниесейма",
     consultation_results_header="Опубликованы мнения из консультаций",
@@ -786,6 +797,7 @@ RU = Labels(
         "third_reading": (
             "пока ничего — после голосования в Сейме мнение можно направить в комиссию Сената"
         ),
+        "senate": "пока ничего — комиссии Сената уже рассмотрели закон, дальше голосование Сената",
         "senate_amendments": "пока ничего — Сейм решает по поправкам Сената",
         "senate_rejection": "пока ничего — Сейм решает, отклонить ли решение Сената",
         "president": "пока ничего — закон у Президента",
@@ -997,7 +1009,13 @@ EN = Labels(
     consultation_link="survey form on the Sejm site",
     consultation_page="consultation page on the Sejm website",
     action_now="What you can do now",
-    action_senate="send an opinion to the competent Senate committee",
+    action_senate="send an opinion to the Senate committee —",
+    action_senate_many="send an opinion to the Senate committees —",
+    action_senate_pending=(
+        "an opinion can go to a Senate committee — the Senate names it within days, and its name"
+        " and e-mail will appear here"
+    ),
+    action_senate_in_polish="(in Polish, quoting Senate print no. {number})",
     path="Path",
     action_send_opinion="fill in the survey form (ankieta)",
     action_consultation_page="on the Sejm website",
@@ -1030,6 +1048,7 @@ EN = Labels(
     link_video="Live stream",
     link_committee="Committee page",
     link_senate_bills="bills in the Senate",
+    link_senate_act="the act on the Senate's site",
     tag_committee_sitting="committeesitting",
     tag_sejm_sitting="sejmsitting",
     consultation_results_header="Consultation opinions published",
@@ -1429,6 +1448,7 @@ EN = Labels(
         "third_reading": (
             "nothing yet — after the Sejm vote an opinion can go to the Senate committee"
         ),
+        "senate": "nothing yet — the Senate committees have been through it, the Senate votes next",
         "senate_amendments": "nothing yet — the Sejm decides on the Senate's amendments",
         "senate_rejection": "nothing yet — the Sejm decides whether to throw out the rejection",
         "president": "nothing yet — the act is with the President",

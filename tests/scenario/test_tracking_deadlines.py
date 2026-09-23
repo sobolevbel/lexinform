@@ -104,7 +104,7 @@ def test_the_reminder_says_what_the_senate_decides_and_how_exact_the_date_is() -
     assert "осталось дней: 6" in text
     # The date is counted from the Sejm's vote, not from the hand-over the API does not give.
     assert "фактический на несколько дней позже" in text
-    assert "направить мнение в профильную комиссию Сената" in text
+    assert "мнение можно будет направить в комиссию Сената" in text
     assert "#сенат #важность5 #легализация #kadencja10druk3039" in text
 
 

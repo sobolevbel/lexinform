@@ -1024,7 +1024,9 @@ class MessageFormatter:
             # is exact teaches the reader to discount it.
             facts += f"\n{ICON['note']} <i>{esc(lb.deadline_counted_from_vote)}</i>"
         links = [link(bill.summary.web_url, lb.link_process)]
-        if senate:
+        if senate and bill.senate is not None:
+            links.append(link(bill.senate.url, lb.link_senate_act))
+        elif senate:
             links.append(link(SENATE_BILLS_URL, lb.link_senate_bills))
         summary_block = ""
         if bill.analysis is not None:
@@ -2151,11 +2153,9 @@ class MessageFormatter:
                     text += f" {esc(lb.consultation_until)} {self.fmt_date(deadline)}"
                 actions.append(text)
         if phase is not None and phase.key == "senate":
-            # No date: art. 121 gives the *Senate* thirty days, and its committee takes the act
-            # long before they are out — "until 04.10" would read as a window that stays open.
-            # Once they are out `next_phase` has moved the bill to the President already.
-            where = link(SENATE_BILLS_URL, lb.link_senate_bills)
-            actions.append(f"{esc(lb.action_senate)} ({where})")
+            senate = self._senate_action(bill, today)
+            if senate:
+                actions.append(senate)
         if not actions:
             # Say so, and name the next window, rather than leave the reader guessing.
             nothing = self._nothing_to_do(phase) if when_none else None
@@ -2163,6 +2163,27 @@ class MessageFormatter:
                 f"{ICON['action']} <b>{esc(lb.action_now)}:</b> {esc(nothing)}" if nothing else ""
             )
         return f"{ICON['action']} <b>{esc(lb.action_now)}:</b> " + "; ".join(actions)
+
+    def _senate_action(self, bill: Bill, today: dt.date) -> str | None:
+        """Where an opinion on the act goes in the Senate: its committees, their e-mail, the day
+        they meet. Never art. 121's thirty days: the committees take the act within a week."""
+        lb = self._labels
+        act = bill.senate
+        if act is None or not act.committees:
+            return esc(lb.action_senate_pending)
+        if act.committees_done(today):
+            return None
+        targets = [
+            link(c.url, c.name) + (f" ({esc(c.email)})" if c.email else "") for c in act.committees
+        ]
+        verb = lb.action_senate if len(targets) == 1 else lb.action_senate_many
+        text = f"{esc(verb)} {', '.join(targets)}"
+        sitting = act.next_committee_sitting(today)
+        if sitting is not None and sitting > today:
+            text += f" {esc(lb.action_before_sitting)} {self.fmt_date(sitting)}"
+        if act.print_number:
+            text += f" {esc(lb.action_senate_in_polish.format(number=act.print_number))}"
+        return f"{text} · {link(act.url, lb.link_senate_act)}"
 
     def _nothing_to_do(self, phase: Phase | None) -> str | None:
         """Why there is nothing to do, and what comes after it."""

@@ -38,6 +38,7 @@ from lexinform.ports import (
     EliGateway,
     Publisher,
     SejmGateway,
+    SenateGateway,
     WykazGateway,
 )
 from lexinform.services.analysis import AnalysisService
@@ -55,6 +56,7 @@ from lexinform.services.tracking.pre_print import PrePrintReconciler
 from lexinform.services.tracking.rcl import RclWatcher
 from lexinform.services.tracking.result import PostCounter, TrackingResult
 from lexinform.services.tracking.rollover import TermRollover
+from lexinform.services.tracking.senate import SenateWatcher
 from lexinform.services.tracking.stages import StageEnricher, change_key
 from lexinform.services.tracking.wykaz import WykazLinker, WykazWatcher
 
@@ -242,6 +244,7 @@ class StatusTrackingService:
         eli: EliGateway | None = None,
         rcl_reader: RclProjectReader | None = None,
         wykaz: WykazGateway | None = None,
+        senate: SenateGateway | None = None,
     ) -> None:
         channel_id = options.channel_id
         poster = Poster(
@@ -297,6 +300,11 @@ class StatusTrackingService:
         self._wykaz = _wykaz_watcher(wykaz, rcl_reader, repo, clock, poster, analysis, options)
         self._agenda = _agenda_watcher(gateway, repo, clock, poster, enricher, options)
         self._acts = acts
+        self._senate = (
+            SenateWatcher(senate, gateway, repo, clock, local_tz=options.local_tz)
+            if senate is not None
+            else None
+        )
         self._cards = CardRefresher(
             gateway, repo, publisher, channel_id=channel_id, max_edits=options.max_card_edits
         )
@@ -367,6 +375,8 @@ class StatusTrackingService:
         """
         if self._agenda is not None and not self._agenda.check(everyone, result, publish=publish):
             return False
+        if self._senate is not None:
+            self._senate.check(everyone, result)
         if self._wykaz is not None and not self._wykaz.check(tracked, result, publish=publish):
             return False
         return self._rcl is None or self._rcl.check(tracked, result, publish=publish)

@@ -26,6 +26,7 @@ from lexinform.adapters.orka import OrkaClient
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.rcl_html import RclClient
 from lexinform.adapters.sejm_api import SejmApiClient
+from lexinform.adapters.senat_html import SenateClient
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.adapters.telegram import (
     TelegramAcknowledger,
@@ -51,6 +52,7 @@ from lexinform.ports import (
     RclGateway,
     RunNotifier,
     SejmApi,
+    SenateGateway,
     TextExtractor,
     WykazGateway,
 )
@@ -88,10 +90,10 @@ class Container:
     """The wiring. Services are built once and shared (`discovery_service()` and the pipeline's
     discovery are the same object), so a test can hold a service and run the pipeline.
 
-    `LOCAL_TZ` is the readers' and the Sejm's day, whatever zone the runner is in. `rcl` and
-    `wykaz` are None when their source is switched off in the settings, and the four `*_override`
-    fields, `llm` and `extractor` are what a test or a dry run supplies instead of the real
-    adapters.
+    `LOCAL_TZ` is the readers' and the Sejm's day, whatever zone the runner is in. `rcl`,
+    `wykaz` and `senate` are None when their source is switched off in the settings, and the four
+    `*_override` fields, `llm` and `extractor` are what a test or a dry run supplies instead of
+    the real adapters.
     """
 
     settings: Settings
@@ -103,6 +105,7 @@ class Container:
     terms: TermResolver
     rcl: RclGateway | None = None
     wykaz: WykazGateway | None = None
+    senate: SenateGateway | None = None
     orka: Downloader | None = None
     llm: LlmAnalyzer | None = None
     batch_override: BatchBackend | None = None
@@ -539,6 +542,7 @@ class Container:
                 eli=self.gateway,
                 rcl_reader=self.rcl_reader() if self.rcl is not None else None,
                 wykaz=self.wykaz,
+                senate=self.senate,
             ),
         )
 
@@ -601,6 +605,8 @@ class Container:
             self.rcl.close()
         if self.wykaz is not None:
             self.wykaz.close()
+        if self.senate is not None:
+            self.senate.close()
         self.repo.close()
         if self._telegram is not None:
             self._telegram.close()
@@ -636,6 +642,15 @@ def build_container(settings: Settings) -> Container:
         if settings.wykaz_enabled
         else None
     )
+    senate = (
+        SenateClient(
+            settings.senate_base_url,
+            timeout=settings.senate_timeout_seconds,
+            proxy=settings.senate_proxy_url or None,
+        )
+        if settings.senate_enabled
+        else None
+    )
     clock = SystemClock()
     return Container(
         settings=settings,
@@ -653,4 +668,5 @@ def build_container(settings: Settings) -> Container:
         terms=TermResolver(gateway, repo, pinned=settings.term),
         rcl=rcl,
         wykaz=wykaz,
+        senate=senate,
     )

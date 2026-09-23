@@ -38,6 +38,7 @@ from lexinform.models.sejm import (
     Stage,
     TextDocument,
 )
+from lexinform.models.senate import SenateAct
 from lexinform.models.wykaz import WykazEntry
 
 
@@ -107,6 +108,7 @@ class Bill(BaseModel):
     agenda: tuple[AgendaItem, ...] = ()
     rcl: RclProject | None = None
     wykaz: WykazEntry | None = None
+    senate: SenateAct | None = None
     seen_supplements: tuple[str, ...] | None = None
     """The documents filed to the print that the channel already knows about. None means they
     were never recorded: the next run takes what the print has now as the starting point and

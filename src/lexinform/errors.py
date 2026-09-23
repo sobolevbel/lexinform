@@ -29,6 +29,12 @@ class WykazUnavailableError(ServiceUnavailableError):
     system = "wykaz prac RM"
 
 
+class SenateUnavailableError(ServiceUnavailableError):
+    """senat.gov.pl does not answer, so the Senate's committees of an act cannot be named."""
+
+    system = "senat.gov.pl"
+
+
 class OrkaUnreachableError(RuntimeError):
     """orka.sejm.gov.pl did not hand over the file — deliberately a per-bill problem.
 

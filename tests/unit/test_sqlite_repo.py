@@ -852,6 +852,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "observed_process_json",
         "analysis_generation",
         "ready_analysis_json",
+        "senate_json",  # v31
     } <= bills
     assert {
         "ux_pub_once_per_kind",
@@ -1139,6 +1140,7 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("DROP TABLE llm_batch_intents")
         conn.execute("ALTER TABLE bills DROP COLUMN analysis_generation")
         conn.execute("ALTER TABLE bills DROP COLUMN ready_analysis_json")
+        conn.execute("ALTER TABLE bills DROP COLUMN senate_json")
         conn.execute("PRAGMA user_version = 20")
     dump = source.dump()
     source.close()
