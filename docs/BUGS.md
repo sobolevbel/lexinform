@@ -75,6 +75,14 @@ consumption transaction commits. Regression coverage includes `test_batch_checkp
 `test_completed_initial_analysis_uses_its_saved_input_without_downloading_again`, and
 `test_ready_reanalysis_survives_restart_and_a_missing_document`.
 
+B34/B41 follow-up: queue entries now freeze the provider payload, model, prompt and maximum output.
+Reservations include scan input and the output cap; restored open jobs and uncertain intents count
+against the next run's budget. Requests that exceed the remaining budget wait without submission.
+The selected batch backend counts the input; batches are split at 100 requests / 100 MB.
+`test_open_batch_reserves_budget_after_a_restart` covers workers 1/4;
+`test_saved_request_keeps_model_prompt_and_output_limit_after_configuration_change` covers both
+providers. Unknown model prices require an explicit price-table update before new batch work.
+
 ## Fixed
 
 | # | rank | module | what was wrong | how it was found | fix |

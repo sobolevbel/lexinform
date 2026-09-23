@@ -9,6 +9,8 @@ from anthropic.types import Message
 
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
+from lexinform.models import ApplicantType, BatchRequest, BillContext
+from lexinform.pricing import batch_reservation
 from tests.fakes import make_analysis
 
 
@@ -143,3 +145,48 @@ def test_batch_result_keeps_the_model_that_answered() -> None:
     result = next(backend.fetch_results("batch-1"))
 
     assert result.model == "gpt-5.1-original"
+
+
+@pytest.mark.parametrize("provider", ["anthropic", "openai"])
+def test_saved_request_keeps_model_prompt_and_output_limit_after_configuration_change(
+    provider: str,
+) -> None:
+    client: Any = SimpleNamespace()
+    original = (
+        AnthropicAnalyzer(client, model="claude-opus-5", max_tokens=100)
+        if provider == "anthropic"
+        else OpenAiAnalyzer(lambda: client, model="gpt-5.1", max_output_tokens=100)
+    )
+    changed = (
+        AnthropicAnalyzer(client, model="claude-sonnet-5", max_tokens=900)
+        if provider == "anthropic"
+        else OpenAiAnalyzer(lambda: client, model="gpt-5.1-new", max_output_tokens=900)
+    )
+    request = BatchRequest(
+        custom_id="stable",
+        call_kind="analysis",
+        term=10,
+        number="3039",
+        ctx=BillContext(
+            number="3039",
+            title="Projekt ustawy",
+            text="tekst",
+            description=None,
+            document_date=None,
+            applicant_type=ApplicantType.UNKNOWN,
+            truncated=False,
+            text_source="pdf",
+        ),
+    )
+    prepared = original.prepare_request(request)
+    restored = BatchRequest.model_validate_json(prepared.model_dump_json())
+
+    assert changed.prepare_request(restored) == prepared
+    assert prepared.payload_json is not None
+    payload = json.loads(prepared.payload_json)
+    body = payload["params" if provider == "anthropic" else "body"]
+    assert body["model"] == prepared.model
+    assert body["max_tokens" if provider == "anthropic" else "max_output_tokens"] == 100
+    assert prepared.estimated_cost_usd > batch_reservation(
+        prepared.model, input_tokens=0, max_output_tokens=100
+    )

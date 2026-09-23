@@ -625,6 +625,19 @@ class FakeBatchBackend:
         self.resolved: set[str] = set()
         self.submitted: list[BatchRequest] = []
 
+    def count_input_tokens(self, ctx: BillContext) -> int | None:
+        return len(ctx.text) // 2 + 2_000
+
+    def prepare_request(self, request: BatchRequest) -> BatchRequest:
+        return request.model_copy(
+            update={
+                "payload_json": request.ctx.model_dump_json(),
+                "model": self.MODEL,
+                "prompt_version": PROMPT_VERSION,
+                "estimated_cost_usd": 0.1,
+            }
+        )
+
     def submit(self, requests: Sequence[BatchRequest]) -> str:
         batch_id = f"batch-{len(self.batches) + 1}"
         self.batches[batch_id] = list(requests)

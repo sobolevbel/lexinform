@@ -12,6 +12,7 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -36,7 +37,6 @@ from lexinform.models import (
     Bill,
     BillContext,
     BillStatus,
-    CallKind,
     Category,
     JointBillDescription,
     JointContext,
@@ -160,6 +160,7 @@ class AnalysisOptions:
     workers: int = 1
     input_price_usd_per_mtok: float | None = None
     batch_input_price_usd_per_mtok: float | None = None
+    supplement_input_price_usd_per_mtok: float | None = None
     prompt_version: str = ""
     max_bill_cost_usd: float = 0.0
     max_run_cost_usd: float = 0.0
@@ -336,7 +337,15 @@ class AnalysisService:
 
     def start_run(self, *, dry_run: bool = False) -> None:
         self._dry_run = dry_run
-        self._ledger.start_run()
+        committed = sum(batch.estimated_cost_usd for batch in self._repo.list_open_llm_batches())
+        committed += sum(
+            intent.request.estimated_cost_usd
+            for intent in [
+                *self._repo.list_queued_batch_intents(),
+                *self._repo.list_submitting_batch_intents(),
+            ]
+        )
+        self._ledger.start_run(reserved_usd=committed)
         self._memo = self._repo.load_analysis_memo()
 
     @property
@@ -393,8 +402,10 @@ class AnalysisService:
             try:
                 prepared = outcome.result()
                 if prepared.queued:
-                    if self._enqueue(bill, prepared):
-                        result.batched += 1
+                    if not self._enqueue(bill, prepared):
+                        result.stopped = self._ledger.stopped
+                        break
+                    result.batched += 1
                     if self._ledger.exhausted:
                         self._ledger.stop("the remaining candidates wait for the next run")
                         result.stopped = self._ledger.stopped
@@ -490,8 +501,7 @@ class AnalysisService:
             )
             if backend is None:
                 continue
-            for offset in range(0, len(provider_intents), 100):
-                group = provider_intents[offset : offset + 100]
+            for group in _submission_groups(provider_intents):
                 requests = [intent.request for intent in group]
                 ids = [request.custom_id for request in requests]
                 with self._repo.atomic():
@@ -512,9 +522,7 @@ class AnalysisService:
                             submitted_at=self._clock.now(),
                             status="submitted",
                             request_count=len(requests),
-                            estimated_cost_usd=sum(
-                                self._estimate_request_cost(req.ctx) for req in requests
-                            ),
+                            estimated_cost_usd=sum(req.estimated_cost_usd for req in requests),
                         ),
                         [
                             LlmBatchItem(
@@ -532,15 +540,6 @@ class AnalysisService:
                 if self._batch_checkpoint is not None:
                     self._batch_checkpoint()
                 log.info("filed batch %s: %d request(s) with %s", batch_id, len(group), provider)
-
-    def _estimate_request_cost(self, ctx: BillContext) -> float:
-        """Conservative reservation at the selected batch model's discounted input price."""
-        price = self._options.batch_input_price_usd_per_mtok
-        if price is None:
-            return 0.0
-        tokens = self._llm.count_input_tokens(ctx)
-        upper_bound = max(tokens or 0, len(ctx.text) + len(ctx.title) + 2_000)
-        return input_cost(upper_bound, price) * 0.5
 
     def collect_batches(self) -> None:
         """Write down every batch the provider has finished. A bill whose answer landed goes
@@ -568,6 +567,7 @@ class AnalysisService:
                 for item in items:
                     self._consume(item, BatchResult(custom_id=item.custom_id, error="batch failed"))
                 self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
+                self._ledger.release(batch.estimated_cost_usd)
                 continue
             if status != "ended":
                 continue
@@ -585,6 +585,7 @@ class AnalysisService:
                         BatchResult(custom_id=custom_id, error="batch item missing from results"),
                     )
             self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
+            self._ledger.release(batch.estimated_cost_usd)
 
     def uncertain_batch_intent_ids(self) -> list[str]:
         return [intent.request.custom_id for intent in self._repo.list_submitting_batch_intents()]
@@ -884,7 +885,8 @@ class AnalysisService:
         answer rather than a reason to skip the bill: a reader who is told what the document is
         and where it lies has lost little. A bill's own text is worth its price; the assessment
         of it is worth a bounded one."""
-        limit, price = self._options.max_bill_cost_usd, self._options.input_price_usd_per_mtok
+        limit = self._options.max_bill_cost_usd
+        price = self._options.supplement_input_price_usd_per_mtok
         if not limit or price is None:
             return False
         return loaded.estimate(price) > limit
@@ -981,8 +983,10 @@ class AnalysisService:
             previous_key_changes=list(previous.analysis.key_changes) if previous else [],
         )
         if cost_guard:
-            ctx = self._fit_to_budget(ctx, loaded, first=previous is None)
-        purpose: CallKind = "analysis" if previous is None else "reanalysis"
+            ctx = self._fit_to_budget(ctx, loaded, first=previous is None, batch=submit_batch)
+        purpose: Literal["analysis", "reanalysis"] = (
+            "analysis" if previous is None else "reanalysis"
+        )
         key = _memo_key(bill, purpose, ctx) if cost_guard else None
         cached = self._memo.get(key) if key is not None else None
         if cached is None and submit_batch and self._batch is not None and key is not None:
@@ -995,14 +999,16 @@ class AnalysisService:
                 first=previous is None,
                 triage=triaged,
                 queued=True,
-                batch_request=BatchRequest(
-                    custom_id=hashlib.sha256(
-                        f"{key}:{bill.analysis_generation}".encode()
-                    ).hexdigest(),
-                    call_kind=purpose,
-                    term=bill.term,
-                    number=bill.number,
-                    ctx=ctx,
+                batch_request=self._batch.prepare_request(
+                    BatchRequest(
+                        custom_id=hashlib.sha256(
+                            f"{key}:{bill.analysis_generation}".encode()
+                        ).hexdigest(),
+                        call_kind=purpose,
+                        term=bill.term,
+                        number=bill.number,
+                        ctx=ctx,
+                    )
                 ),
                 batch_meta=BatchItemMeta(
                     input_chars=len(ctx.text),
@@ -1043,7 +1049,9 @@ class AnalysisService:
             triage_memo_key=triage_memo_key,
         )
 
-    def _fit_to_budget(self, ctx: BillContext, loaded: _Loaded, *, first: bool) -> BillContext:
+    def _fit_to_budget(
+        self, ctx: BillContext, loaded: _Loaded, *, first: bool, batch: bool = False
+    ) -> BillContext:
         """The context the model is actually sent: this one, or a shorter one that fits the
         per-bill cost limit.
 
@@ -1058,7 +1066,15 @@ class AnalysisService:
         it would land in the tracking loop's per-bill `except`, fail on the same text every run
         and keep a card describing the text before this one.
         """
-        limit, price = self._options.max_bill_cost_usd, self._options.input_price_usd_per_mtok
+        limit = self._options.max_bill_cost_usd
+        price = (
+            self._options.batch_input_price_usd_per_mtok
+            if batch
+            else self._options.input_price_usd_per_mtok
+        )
+        counter = self._batch if batch and self._batch is not None else self._llm
+        if batch and price is not None:
+            price *= 0.5
         if not limit or price is None:
             return ctx
         if loaded.scan is not None:
@@ -1066,7 +1082,7 @@ class AnalysisService:
             if cost > limit and first:
                 raise TooExpensiveError(cost, limit, measure=loaded.measure(None))
             return ctx
-        tokens = self._llm.count_input_tokens(ctx)
+        tokens = counter.count_input_tokens(ctx)
         if tokens is None:
             cost = loaded.estimate(price)
             if cost > limit and first:
@@ -1081,7 +1097,7 @@ class AnalysisService:
                 return ctx
             raise TooExpensiveError(cost, limit, measure=loaded.measure(tokens))
         reduced = ctx.model_copy(update={"text": shorter, "truncated": True})
-        counted = self._llm.count_input_tokens(reduced)
+        counted = counter.count_input_tokens(reduced)
         log.info(
             "%s: %d tokens is %s, over the %s limit; sending %d of %d chars instead",
             ctx.number,
@@ -1202,7 +1218,9 @@ class AnalysisService:
         """Hand a queued request to the batch and mark the bill so nothing re-submits it while
         it is in flight. Calling thread only, like `_persist`."""
         assert prepared.batch_request is not None and prepared.batch_meta is not None
-        if not self._ledger.reserve(self._estimate_request_cost(prepared.batch_request.ctx)):
+        if len((prepared.batch_request.payload_json or "").encode()) > 100_000_000:
+            raise ValueError("one batch request exceeds the 100 MB payload limit")
+        if not self._ledger.reserve(prepared.batch_request.estimated_cost_usd):
             self._ledger.stop("the batch analysis waits for the next run")
             return False
         if prepared.triage_memo_key is not None and prepared.triage is not None:
@@ -1211,7 +1229,11 @@ class AnalysisService:
             self._repo.save_batch_intent(
                 BatchIntent(
                     request=prepared.batch_request,
-                    meta=prepared.batch_meta,
+                    meta=prepared.batch_meta.model_copy(
+                        update={
+                            "prompt_version": prepared.batch_request.prompt_version,
+                        }
+                    ),
                     provider=self._options.batch_provider or "anthropic",
                     created_at=self._clock.now(),
                 )
@@ -1361,3 +1383,23 @@ class AnalysisService:
             scan.of_pages,
         )
         return _Loaded(text, scan.truncated, "scan", scan)
+
+
+def _submission_groups(intents: list[BatchIntent]) -> list[list[BatchIntent]]:
+    groups: list[list[BatchIntent]] = []
+    current: list[BatchIntent] = []
+    size = 0
+    for intent in intents:
+        payload_size = len(
+            (intent.request.payload_json or intent.request.model_dump_json()).encode()
+        )
+        if payload_size > 100_000_000:
+            raise BatchNotSubmittedError("one batch request exceeds the 100 MB payload limit")
+        if current and (len(current) >= 100 or size + payload_size > 100_000_000):
+            groups.append(current)
+            current, size = [], 0
+        current.append(intent)
+        size += payload_size + 2
+    if current:
+        groups.append(current)
+    return groups

@@ -1,9 +1,10 @@
 """LlmAnalyzer implementation on top of the official Anthropic SDK (structured outputs)."""
 
+import json
 import logging
 from collections.abc import Callable, Iterator, Sequence
 from datetime import UTC, datetime
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 import anthropic
 from anthropic import transform_schema
@@ -47,6 +48,7 @@ from lexinform.models import (
     TriageContext,
     TriageRecord,
 )
+from lexinform.pricing import TOKENS_PER_SCANNED_PAGE, batch_reservation
 from lexinform.settings import Effort
 
 log = logging.getLogger(__name__)
@@ -298,34 +300,54 @@ class AnthropicAnalyzer:
             cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
         )
 
+    def prepare_request(self, request: BatchRequest) -> BatchRequest:
+        if request.payload_json is not None:
+            return request
+        req = request
+        payload: AnthropicBatchRequest = {
+            "custom_id": req.custom_id,
+            "params": {
+                "model": self._model,
+                "max_tokens": self._max_tokens,
+                "system": [
+                    {
+                        "type": "text",
+                        "text": self._system,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": _content(build_user_prompt(req.ctx), req.ctx.scan),
+                    }
+                ],
+                "thinking": {"type": "adaptive"},
+                "output_config": {"effort": self._effort, "format": self._analysis_format},
+            },
+        }
+        tokens = self.count_input_tokens(req.ctx)
+        estimate = max(tokens or 0, len(req.ctx.text) + len(req.ctx.title) + 2_000)
+        if req.ctx.scan is not None:
+            estimate += req.ctx.scan.pages * TOKENS_PER_SCANNED_PAGE
+        return req.model_copy(
+            update={
+                "payload_json": json.dumps(payload, ensure_ascii=False),
+                "model": self._model,
+                "prompt_version": PROMPT_VERSION,
+                "estimated_cost_usd": batch_reservation(
+                    self._model, input_tokens=estimate, max_output_tokens=self._max_tokens
+                ),
+            }
+        )
+
     def submit(self, requests: Sequence[BatchRequest]) -> str:
         """File one Messages Batches API submission — half of `analyze`'s price, answered within
         a run or two rather than at once. `output_config` is built the way `messages.parse`
         builds it internally: the Batches API takes raw request params, with no `.parse()`
         convenience of its own, but the structured-output feature underneath is the same one."""
-        batch_requests: list[AnthropicBatchRequest] = [
-            {
-                "custom_id": req.custom_id,
-                "params": {
-                    "model": self._model,
-                    "max_tokens": self._max_tokens,
-                    "system": [
-                        {
-                            "type": "text",
-                            "text": self._system,
-                            "cache_control": {"type": "ephemeral"},
-                        }
-                    ],
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": _content(build_user_prompt(req.ctx), req.ctx.scan),
-                        }
-                    ],
-                    "thinking": {"type": "adaptive"},
-                    "output_config": {"effort": self._effort, "format": self._analysis_format},
-                },
-            }
+        batch_requests = [
+            cast(AnthropicBatchRequest, json.loads(self.prepare_request(req).payload_json or "{}"))
             for req in requests
         ]
         try:

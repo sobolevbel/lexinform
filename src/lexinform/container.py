@@ -279,12 +279,16 @@ class Container:
         # The per-bill guard is about the analyze() call specifically, so its price is that
         # model's, not the secondary one's (`llm_model`).
         price = price_of(self.settings.llm_analysis_model)  # None: unknown model, no estimates
+        supplement_price = price_of(self.settings.llm_supplement_model)
         batch_price = price_of(self._batch_model(self.settings.llm_batch_provider))
         return AnalysisOptions(
             max_attempts=self.settings.max_analysis_attempts,
             workers=self.settings.llm_concurrency,
             input_price_usd_per_mtok=price[0] if price is not None else None,
             batch_input_price_usd_per_mtok=batch_price[0] if batch_price is not None else None,
+            supplement_input_price_usd_per_mtok=(
+                supplement_price[0] if supplement_price is not None else None
+            ),
             prompt_version=PROMPT_VERSION,
             max_bill_cost_usd=self.settings.max_analysis_cost_usd,
             max_run_cost_usd=self.settings.max_run_cost_usd,

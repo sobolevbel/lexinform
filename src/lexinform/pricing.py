@@ -93,3 +93,12 @@ def format_usd(amount: float | None) -> str:
 def format_tokens(tokens: int) -> str:
     """A token count as every message shows it: `95.3k` from a thousand up, the number below."""
     return f"{tokens / 1000:.1f}k" if tokens >= 1000 else str(tokens)
+
+
+def batch_reservation(model: str, *, input_tokens: int, max_output_tokens: int) -> float:
+    prices = price_of(model)
+    if prices is None:
+        raise ValueError(f"cannot reserve batch cost for unknown model {model}")
+    return (
+        input_tokens * prices[0] * CACHE_WRITE_FACTOR + max_output_tokens * prices[1]
+    ) / 2_000_000

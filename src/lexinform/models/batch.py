@@ -1,7 +1,6 @@
 """Submitting a full analysis or a re-analysis to a provider's batch API and collecting it later.
 
-Only `analysis`/`reanalysis` are batched (Phase 1); `CallKind` is shared with `models.report` so
-that `amendments`/`supplement`/`joint` extend the same shape without a new type once they join.
+Only `analysis`/`reanalysis` accept `BillContext`; other capabilities need their own request type.
 """
 
 import datetime as dt
@@ -22,10 +21,14 @@ class BatchRequest(BaseModel):
     """One item of a submission; `custom_id` is how its answer finds its way back to a bill."""
 
     custom_id: str
-    call_kind: CallKind
+    call_kind: Literal["analysis", "reanalysis"]
     term: int
     number: str
     ctx: BillContext
+    payload_json: str | None = None
+    model: str = ""
+    prompt_version: str = ""
+    estimated_cost_usd: float = 0.0
 
 
 class BatchResult(BaseModel):

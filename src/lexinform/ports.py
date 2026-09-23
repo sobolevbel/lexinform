@@ -265,6 +265,12 @@ class BatchBackend(Protocol):
     `AnalysisBackend.analyze`, at the cost of an answer that is not immediate). `triage` never
     goes through here: it stays the synchronous, per-bill `TriageBackend` above."""
 
+    def prepare_request(self, request: BatchRequest) -> BatchRequest:
+        """Freeze provider parameters and reserve the input plus maximum output cost."""
+        ...
+
+    def count_input_tokens(self, ctx: BillContext) -> int | None: ...
+
     def submit(self, requests: Sequence[BatchRequest]) -> str:
         """File one submission; returns the provider's own batch id."""
         ...

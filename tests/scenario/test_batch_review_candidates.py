@@ -327,3 +327,35 @@ def test_collect_cli_respects_configured_min_score(monkeypatch: pytest.MonkeyPat
 
     assert result.exit_code == 0, result.output
     assert not w.publisher.new_bills
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+def test_open_batch_reserves_budget_after_a_restart(workers: int) -> None:
+    w = World(batch=True, max_run_cost_usd=0.15)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.add_bill("3040", "Projekt ustawy o cudzoziemcach")
+    restarted = replace(
+        w.container,
+        settings=w.container.settings.model_copy(update={"llm_concurrency": workers}),
+    )
+
+    report = restarted.pipeline(dry_run=False).run(RunOptions(term=TERM))
+
+    assert len(w.batch.submitted) == 1
+    assert w.bill("3040").status is BillStatus.ANALYSIS_PENDING
+    assert any("run cost limit reached" in note for note in report.notes)
+    w.batch.resolve()
+    restarted.pipeline(dry_run=False).run(RunOptions(term=TERM))
+    assert len(w.batch.submitted) == 2
+
+
+def test_a_batch_request_larger_than_the_remaining_budget_is_not_submitted() -> None:
+    w = World(batch=True, max_run_cost_usd=0.01)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+
+    report = w.run()
+
+    assert not w.batch.submitted
+    assert w.bill("3039").status is BillStatus.ANALYSIS_PENDING
+    assert any("run cost limit reached" in note for note in report.notes)

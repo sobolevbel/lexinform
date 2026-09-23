@@ -28,12 +28,12 @@ class CostLedger:
         self._calls: list[LlmCall] = []
         self._stopped: str | None = None
 
-    def start_run(self) -> None:
+    def start_run(self, *, reserved_usd: float = 0.0) -> None:
         """A run is one budget. In production the container is built once per process, so the
         counter would be run-scoped anyway; a test drives several runs through one container."""
         with self._lock:
             self._spent = 0.0
-            self._reserved = 0.0
+            self._reserved = reserved_usd
             self._calls.clear()
             self._stopped = None
 
@@ -68,10 +68,14 @@ class CostLedger:
     def reserve(self, estimate_usd: float) -> bool:
         with self._lock:
             committed = self._spent + self._reserved
-            if self._max_run_usd and committed >= self._max_run_usd:
+            if self._max_run_usd and committed + estimate_usd > self._max_run_usd:
                 return False
             self._reserved += estimate_usd
             return True
+
+    def release(self, estimate_usd: float) -> None:
+        with self._lock:
+            self._reserved = max(0.0, self._reserved - estimate_usd)
 
     @property
     def calls(self) -> list[LlmCall]:
@@ -87,10 +91,13 @@ class CostLedger:
     def over_budget(self) -> str:
         """`run cost limit reached (≈$0.002 ≥ $0.001)`: how every message about the run's budget
         opens. What waits for the next run differs by phase, so the caller adds it."""
-        return (
-            f"run cost limit reached (≈{format_usd(self._spent + self._reserved)}"
-            f" ≥ {format_usd(self._max_run_usd)})"
-        )
+        total = self._spent + self._reserved
+        if total < self._max_run_usd:
+            return (
+                f"run cost limit reached (spent/reserved ≈{format_usd(total)}, "
+                f"next request exceeds {format_usd(self._max_run_usd)})"
+            )
+        return f"run cost limit reached (≈{format_usd(total)} ≥ {format_usd(self._max_run_usd)})"
 
     @property
     def stopped(self) -> str | None:

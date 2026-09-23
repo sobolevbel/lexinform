@@ -55,6 +55,7 @@ from lexinform.models import (
     SupplementContext,
     SupplementRecord,
 )
+from lexinform.pricing import TOKENS_PER_SCANNED_PAGE, batch_reservation
 from lexinform.settings import OpenAiEffort
 
 log = logging.getLogger(__name__)
@@ -320,40 +321,55 @@ class OpenAiAnalyzer:
             return None
         return len(encoding.encode(self._system)) + len(encoding.encode(build_user_prompt(ctx)))
 
+    def prepare_request(self, request: BatchRequest) -> BatchRequest:
+        if request.payload_json is not None:
+            return request
+        req = request
+        payload = {
+            "custom_id": req.custom_id,
+            "method": "POST",
+            "url": "/v1/responses",
+            "body": {
+                "model": self._model,
+                "reasoning": None if self._effort == "none" else {"effort": self._effort},
+                "max_output_tokens": self._max_output_tokens,
+                "input": [
+                    {"role": "system", "content": self._system},
+                    {
+                        "role": "user",
+                        "content": _content(build_user_prompt(req.ctx), req.ctx.scan),
+                    },
+                ],
+                "text": {
+                    "format": {
+                        "type": "json_schema",
+                        "name": "analysis",
+                        "schema": _ANALYSIS_SCHEMA,
+                        "strict": True,
+                    }
+                },
+            },
+        }
+        tokens = self.count_input_tokens(req.ctx)
+        estimate = max(tokens or 0, len(req.ctx.text) + len(req.ctx.title) + 2_000)
+        if req.ctx.scan is not None:
+            estimate += req.ctx.scan.pages * TOKENS_PER_SCANNED_PAGE
+        return req.model_copy(
+            update={
+                "payload_json": json.dumps(payload, ensure_ascii=False),
+                "model": self._model,
+                "prompt_version": PROMPT_VERSION,
+                "estimated_cost_usd": batch_reservation(
+                    self._model, input_tokens=estimate, max_output_tokens=self._max_output_tokens
+                ),
+            }
+        )
+
     def submit(self, requests: Sequence[BatchRequest]) -> str:
         """File one Batches API submission against `/v1/responses` — half of the synchronous
         price, answered within 24h at the most. One JSONL line per request, uploaded as a file
         first: the Batches API takes a file id, never the requests inline."""
-        lines = [
-            json.dumps(
-                {
-                    "custom_id": req.custom_id,
-                    "method": "POST",
-                    "url": "/v1/responses",
-                    "body": {
-                        "model": self._model,
-                        "reasoning": None if self._effort == "none" else {"effort": self._effort},
-                        "max_output_tokens": self._max_output_tokens,
-                        "input": [
-                            {"role": "system", "content": self._system},
-                            {
-                                "role": "user",
-                                "content": _content(build_user_prompt(req.ctx), req.ctx.scan),
-                            },
-                        ],
-                        "text": {
-                            "format": {
-                                "type": "json_schema",
-                                "name": "analysis",
-                                "schema": _ANALYSIS_SCHEMA,
-                                "strict": True,
-                            }
-                        },
-                    },
-                }
-            )
-            for req in requests
-        ]
+        lines = [self.prepare_request(req).payload_json or "{}" for req in requests]
         payload = ("\n".join(lines) + "\n").encode("utf-8")
         try:
             uploaded = self._resolved_client.files.create(
