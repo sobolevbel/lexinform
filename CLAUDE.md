@@ -1378,3 +1378,7 @@ filed opinions are not this channel's genre — the same fact arriving through a
 plenary `schedule`, which would name the day within a four-day sitting; and the measurement that
 would tell whether a `PublicHearing` node ever appears before its hearing.
 
+
+Secondary batch requests use the memo key as custom ID; their timeout includes queued and
+uncertain submission time. The v32 `awaiting_batch_since` keeps deferred observations eligible
+for tracking across discovery watermarks and is cleared with the observation checkpoint.

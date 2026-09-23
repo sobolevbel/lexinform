@@ -109,3 +109,8 @@ Offline shadow comparison of all 60 stored Sejm processes with known baselines p
 new stages, closures or text changes from unchanged input. This checks migration compatibility,
 not independent correctness of every historical decision. No LLM calls, live process replay
 or production publications were performed for this check.
+
+Secondary batch jobs use the memo key as custom ID. Their timeout starts when the intent is
+created and survives submission; an uncertain intent is never resubmitted automatically. v32
+adds `awaiting_batch_since` to keep deferred observations visible after the discovery watermark
+moves. This timestamp is cleared only with the observation checkpoint.

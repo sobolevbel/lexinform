@@ -146,7 +146,13 @@ class BatchItemMeta(BaseModel):
     text: str = ""
 
 
+class BatchJob(BaseModel):
+    state: Literal["queued", "submitting", "open", "failed"]
+    since: dt.datetime
+
+
 class DigestItemMeta(BaseModel):
+    queued_at: dt.datetime | None = None
     memo_key: str
     prompt_version: str = ""
     source_kind: SourceKind = "print"

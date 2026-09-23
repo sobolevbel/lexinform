@@ -354,3 +354,7 @@ adapter.
 ## License
 
 MIT. Data comes from the public Sejm API; summaries are machine-generated and are not legal advice.
+
+Secondary batch calls can be selected with `LEXINFORM_LLM_BATCH_KINDS` (comma-separated; default
+`analysis,reanalysis`). `LEXINFORM_LLM_BATCH_MAX_WAIT_HOURS=6` bounds secondary-call waiting
+from intent creation, including queued or uncertain submissions.

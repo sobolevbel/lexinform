@@ -50,7 +50,7 @@ from lexinform.models import (
     SupplementRecord,
     WykazEntry,
 )
-from lexinform.models.batch import batch_item_meta
+from lexinform.models.batch import BatchJob, batch_item_meta
 
 _NO_CARD_YET = """
                   NOT EXISTS (
@@ -349,6 +349,10 @@ MIGRATIONS: tuple[str, ...] = (
     # v31: the act's page on senat.gov.pl — its committees and their sittings.
     """
     ALTER TABLE bills ADD COLUMN senate_json TEXT;
+    """,
+    """
+    ALTER TABLE bills ADD COLUMN awaiting_batch_since TEXT;
+    CREATE INDEX ix_llm_batch_items_custom ON llm_batch_items(custom_id);
     """,
 )
 
@@ -717,6 +721,36 @@ class SqliteBillRepository:
                 intent.state,
                 intent.created_at.isoformat(),
             ),
+        )
+
+    def batch_job(self, custom_id: str) -> BatchJob | None:
+        intent = self._conn.execute(
+            "SELECT state, created_at FROM llm_batch_intents WHERE custom_id = ?", (custom_id,)
+        ).fetchone()
+        if intent is not None:
+            return BatchJob(
+                state=intent["state"], since=datetime.fromisoformat(intent["created_at"])
+            )
+        row = self._conn.execute(
+            "SELECT i.consumed_at, b.status, "
+            "COALESCE(json_extract(i.meta_json, '$.queued_at'), b.submitted_at) AS since "
+            "FROM llm_batch_items i JOIN llm_batches b USING (batch_id) "
+            "WHERE i.custom_id = ? ORDER BY b.submitted_at DESC LIMIT 1",
+            (custom_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return BatchJob(
+            state="failed"
+            if row["consumed_at"] is not None or row["status"] == "failed"
+            else "open",
+            since=datetime.fromisoformat(row["since"]),
+        )
+
+    def set_awaiting_batch(self, term: int, number: str, since: datetime | None) -> None:
+        self._conn.execute(
+            "UPDATE bills SET awaiting_batch_since = ? WHERE term = ? AND number = ?",
+            (_utc_iso(since) if since is not None else None, term, number),
         )
 
     def list_queued_batch_intents(self) -> list[BatchIntent]:
@@ -1097,6 +1131,7 @@ class SqliteBillRepository:
             sql += """
               AND (substr(b.change_date, 1, 19) >= substr(?, 1, 19)
                    OR (b.passed = 1 AND b.act_json IS NULL)
+                   OR b.awaiting_batch_since IS NOT NULL
                    OR b.status = ?
                    OR b.number LIKE ?)
             """
@@ -1834,6 +1869,7 @@ class SqliteBillRepository:
             analysis=analysis,
             analysis_attempts=int(row["analysis_attempts"]),
             analysis_generation=int(row["analysis_generation"]),
+            awaiting_batch_since=_parse_dt(row["awaiting_batch_since"]),
             ready_analysis=(
                 ReadyAnalysis.model_validate_json(row["ready_analysis_json"])
                 if row["ready_analysis_json"]

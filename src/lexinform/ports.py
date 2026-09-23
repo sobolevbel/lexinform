@@ -60,6 +60,7 @@ from lexinform.models import (
     Vote,
     WykazEntry,
 )
+from lexinform.models.batch import BatchJob
 from lexinform.models.report import CallKind
 
 
@@ -524,6 +525,10 @@ class BillRepository(Protocol):
         ...
 
     def save_batch_intent(self, intent: BatchIntent) -> None: ...
+
+    def batch_job(self, custom_id: str) -> BatchJob | None: ...
+
+    def set_awaiting_batch(self, term: int, number: str, since: datetime | None) -> None: ...
 
     def list_queued_batch_intents(self) -> list[BatchIntent]: ...
 

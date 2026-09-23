@@ -27,7 +27,7 @@ from lexinform.models import (
     is_over,
 )
 from lexinform.ports import BillRepository, Clock, Publisher, PublishResult, SejmGateway
-from lexinform.services.analysis import AnalysisService
+from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.joint import group_of, primary_of
 
 log = logging.getLogger(__name__)
@@ -355,6 +355,7 @@ class PublishingService:
             return bill
         if record is None:
             return bill
+        assert not isinstance(record, Waiting)
         self._repo.save_joint_comparison(bill.term, bill.number, record)
         return bill.model_copy(update={"joint": record})
 

@@ -55,3 +55,12 @@ def test_a_blank_inbox_dir_means_no_inbox(monkeypatch: pytest.MonkeyPatch) -> No
 
     assert Settings(_env_file=None).inbox_dir is None
     assert Settings(_env_file=None, inbox_dir="/tmp/inbox").inbox_dir == Path("/tmp/inbox")
+
+
+def test_batch_kinds_are_comma_separated_in_the_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LEXINFORM_LLM_BATCH_KINDS", "analysis, joint,supplement")
+    settings = Settings(_env_file=None)
+    assert settings.llm_batch_kinds == frozenset({"analysis", "joint", "supplement"})
+    assert settings.llm_batch_max_wait_hours == 6

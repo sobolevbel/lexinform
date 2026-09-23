@@ -305,7 +305,8 @@
 <div class="page">
 
   <header class="lede">
-    <span class="eyebrow">lexinform · sqlite · PRAGMA user_version = 14</span>
+    <p>v32: <code>bills.awaiting_batch_since</code> сохраняет начало ожидания сводки; индекс <code>ix_llm_batch_items_custom</code> ускоряет поиск задания по ключу мемо. Старые дампы мигрируют вперёд.</p>
+    <span class="eyebrow">lexinform · sqlite · PRAGMA user_version = 32</span>
     <h1>Схема базы lexinform</h1>
     <p>Один файл SQLite на весь бот: что известно о законопроекте, что в нём изменилось, что и куда
     уже отправлено, какие прогоны были и какие команды пришли от оператора. Пять таблиц, один

@@ -11,7 +11,7 @@ import logging
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Literal
 
 from pydantic import BaseModel
@@ -70,7 +70,14 @@ from lexinform.models import (
     usage_of,
     window_closes_within,
 )
-from lexinform.models.batch import AnalysisQuestion
+from lexinform.models.batch import (
+    AmendmentsQuestion,
+    AnalysisQuestion,
+    BatchKind,
+    BatchQuestion,
+    JointQuestion,
+    SupplementQuestion,
+)
 from lexinform.ports import AuthorsResolver, BatchBackend, BillRepository, Clock, LlmAnalyzer
 from lexinform.ports import TextSource as TextSourcePort
 from lexinform.pricing import (
@@ -183,6 +190,14 @@ class AnalysisOptions:
     batch_provider: BatchProvider | None = None
     submit_batches: bool = False
     batch_sync_within_days: int = 0
+    batch_kinds: frozenset[BatchKind] = frozenset({"analysis", "reanalysis"})
+    batch_models: dict[BatchKind, str] = field(default_factory=dict)
+    batch_max_wait: timedelta = timedelta(hours=6)
+
+
+@dataclass(frozen=True)
+class Waiting:
+    since: datetime
 
 
 @dataclass(frozen=True)
@@ -448,7 +463,9 @@ class AnalysisService:
 
         def prepare(bill: Bill) -> _Prepared:
             return self._prepare_first(
-                bill, triage=bill.number not in carried, submit_batch=self._batches(bill)
+                bill,
+                triage=bill.number not in carried,
+                submit_batch=self._batches(bill) and "analysis" in self._options.batch_kinds,
             )
 
         for outcome in fan_out(candidates, prepare, workers=self._options.workers):
@@ -882,7 +899,10 @@ class AnalysisService:
             return bill, False
         located = LocatedText(summary=summary, document=document)
         prepared = self._prepare(
-            bill, located, previous=bill.analysis, submit_batch=self._batches(bill)
+            bill,
+            located,
+            previous=bill.analysis,
+            submit_batch=self._batches(bill) and "reanalysis" in self._options.batch_kinds,
         )
         if prepared.queued:
             self._enqueue(bill, prepared)
@@ -911,9 +931,83 @@ class AnalysisService:
             authors = self._authors.resolve(described, prepared.text) or authors
         return bill.model_copy(update={"analysis": prepared.record, "authors": authors}), True
 
+    def may_wait_for_batch(self, bill: Bill) -> bool:
+        return bill.awaiting_batch_since is None or (
+            self._clock.now() - bill.awaiting_batch_since < self._options.batch_max_wait
+        )
+
+    def _ask_or_wait[Record: (AmendmentsRecord, SupplementRecord, JointRecord)](
+        self,
+        bill: Bill,
+        question: BatchQuestion,
+        key: str,
+        meta: DigestItemMeta,
+        record_model: type[Record],
+        sync_call: Callable[[], Record],
+        *,
+        may_wait: bool,
+    ) -> Record | Waiting:
+        cached = self._memo.get(key)
+        if cached is not None:
+            return _reused(record_model.model_validate_json(cached))
+        kind = question.kind
+        model = self._options.batch_models.get(kind, "")
+        provider = "anthropic" if model.startswith("claude-") else "openai"
+        if (
+            may_wait
+            and self._batches(bill)
+            and kind in self._options.batch_kinds
+            and model
+            and provider == self._options.batch_provider
+        ):
+            job = self._repo.batch_job(key)
+            now = self._clock.now()
+            if job is not None:
+                if job.state != "failed" and now - job.since < self._options.batch_max_wait:
+                    return Waiting(job.since)
+            else:
+                assert self._batch is not None and self._options.batch_provider is not None
+                request = self._batch.prepare_request(
+                    BatchRequest(
+                        custom_id=key,
+                        term=bill.term,
+                        number=bill.number,
+                        question=question,
+                        model=model,
+                    )
+                )
+                if self._ledger.reserve(request.estimated_cost_usd):
+                    try:
+                        self._repo.save_batch_intent(
+                            BatchIntent(
+                                request=request,
+                                meta=meta.model_copy(
+                                    update={
+                                        "prompt_version": request.prompt_version,
+                                        "queued_at": now,
+                                    }
+                                ),
+                                provider=self._options.batch_provider,
+                                created_at=now,
+                            )
+                        )
+                    except Exception:
+                        self._ledger.release(request.estimated_cost_usd)
+                        raise
+                    return Waiting(now)
+        record = sync_call()
+        self._ledger.charge(record, number=bill.number, kind=kind)
+        self._remember_analysis(key, record)
+        return record
+
     def summarize_amendments(
-        self, bill: Bill, document: TextDocument, *, proposal: str | None = None
-    ) -> AmendmentsRecord | None:
+        self,
+        bill: Bill,
+        document: TextDocument,
+        *,
+        proposal: str | None = None,
+        may_wait: bool = False,
+    ) -> AmendmentsRecord | Waiting | None:
         """What the amendments in `document` change, against the bill's current analysis.
         None when the document has no readable text (a scan) or costs more to read than the
         per-bill limit allows: the update then only names the event, which is the same thing a
@@ -943,20 +1037,22 @@ class AnalysisService:
             proposal=proposal,
         )
         key = _memo_key(bill, "amendments", ctx)
-        cached = self._memo.get(key)
-        if cached is None:
-            record = self._llm.summarize_amendments(ctx)
-            self._ledger.charge(record, number=bill.number, kind="amendments")
+        record = self._ask_or_wait(
+            bill,
+            AmendmentsQuestion(ctx=ctx),
+            key,
+            DigestItemMeta(memo_key=key, source_kind=document.kind),
+            AmendmentsRecord,
+            lambda: self._llm.summarize_amendments(ctx),
+            may_wait=may_wait,
+        )
+        if not isinstance(record, Waiting):
             record.source_url = document.url
-            self._remember_analysis(key, record)
-        else:
-            record = _reused(AmendmentsRecord.model_validate_json(cached))
-        record.source_url = document.url
         return record
 
     def digest_supplement(
-        self, bill: Bill, document: TextDocument, *, number: str, title: str
-    ) -> SupplementRecord:
+        self, bill: Bill, document: TextDocument, *, number: str, title: str, may_wait: bool = False
+    ) -> SupplementRecord | Waiting:
         """What the document filed to the print says about the bill, against its current
         analysis. A document with no readable text (a scan) comes back as the bare record, which
         the reply still names and links. Only an outage propagates."""
@@ -986,20 +1082,23 @@ class AnalysisService:
             previous_key_changes=list(bill.analysis.analysis.key_changes),
         )
         key = _memo_key(bill, "supplement", ctx)
-        cached = self._memo.get(key)
-        if cached is None:
-            record = self._llm.digest_supplement(ctx)
-            self._ledger.charge(record, number=bill.number, kind="supplement")
+        record = self._ask_or_wait(
+            bill,
+            SupplementQuestion(ctx=ctx),
+            key,
+            DigestItemMeta(memo_key=key, source_kind=document.kind, title=title),
+            SupplementRecord,
+            lambda: self._llm.digest_supplement(ctx),
+            may_wait=may_wait,
+        )
+        if not isinstance(record, Waiting):
             record.number = number
             record.source_url = document.url
-            self._remember_analysis(key, record)
-        else:
-            record = _reused(SupplementRecord.model_validate_json(cached))
-        record.number = number
-        record.source_url = document.url
         return record
 
-    def compare_joint(self, bill: Bill, others: list[Bill]) -> JointRecord | None:
+    def compare_joint(
+        self, bill: Bill, others: list[Bill], *, may_wait: bool = False
+    ) -> JointRecord | Waiting | None:
         """How `bill` differs from the prints considered jointly with it, read off the channel's
         own description of each. None when nothing has been analysed to compare with.
 
@@ -1015,9 +1114,16 @@ class AnalysisService:
             subject=_describe_for_comparison(bill),
             others=[_describe_for_comparison(other) for other in described],
         )
-        record = self._llm.compare_joint(ctx)
-        self._ledger.charge(record, number=bill.number, kind="joint")
-        return record
+        key = _memo_key(bill, "joint", ctx)
+        return self._ask_or_wait(
+            bill,
+            JointQuestion(ctx=ctx),
+            key,
+            DigestItemMeta(memo_key=key, compared_with=[other.number for other in described]),
+            JointRecord,
+            lambda: self._llm.compare_joint(ctx),
+            may_wait=may_wait,
+        )
 
     def _too_expensive_to_digest(self, loaded: _Loaded) -> bool:
         """The per-bill cost limit applies to a filed document too, and here it is the whole

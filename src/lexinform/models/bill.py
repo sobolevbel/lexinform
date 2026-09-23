@@ -98,6 +98,7 @@ class Bill(BaseModel):
     analysis: AnalysisRecord | None = None
     analysis_attempts: int = 0
     analysis_generation: int = 0
+    awaiting_batch_since: dt.datetime | None = None
     ready_analysis: ReadyAnalysis | None = None
     last_error: str | None = None
     submission: BillSubmission | None = None

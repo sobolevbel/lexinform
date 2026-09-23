@@ -10,6 +10,7 @@ from lexinform.models import (
     TextDocument,
     next_phase,
 )
+from lexinform.services.analysis import Waiting
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import COMMITTEE_STAGES, START, World
 from tests.scenario.test_tracking import REPORT_TEXT, REPORT_URL, WITH_REPORT
@@ -168,6 +169,7 @@ def test_amendments_memo_survives_restore_and_does_not_charge_tokens_twice() -> 
     again = analysis.summarize_amendments(w.bill("3039"), moved)
 
     assert first is not None and again is not None, "the report is a readable amendments PDF"
+    assert not isinstance(first, Waiting) and not isinstance(again, Waiting)
     assert first.amendments == again.amendments
     assert again.source_url == moved.url
     assert len(w.llm.amendment_contexts) == 1

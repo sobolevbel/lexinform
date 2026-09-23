@@ -5,6 +5,7 @@ tests exercise."""
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import timedelta
 from typing import cast
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
@@ -302,6 +303,13 @@ class Container:
             batch_provider=self.settings.llm_batch_provider,
             submit_batches=self.settings.llm_batch_enabled,
             batch_sync_within_days=self.settings.llm_batch_sync_within_days,
+            batch_kinds=self.settings.llm_batch_kinds,
+            batch_models={
+                "amendments": self.settings.llm_amendments_model,
+                "supplement": self.settings.llm_supplement_model,
+                "joint": self.settings.llm_joint_model,
+            },
+            batch_max_wait=timedelta(hours=self.settings.llm_batch_max_wait_hours),
         )
 
     def _build_analysis_service(self) -> AnalysisService:

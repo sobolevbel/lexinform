@@ -41,7 +41,7 @@ from lexinform.ports import (
     SenateGateway,
     WykazGateway,
 )
-from lexinform.services.analysis import AnalysisService
+from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.sources import SejmTextSource, fetch_print
 from lexinform.services.tracking.acts import ActWatcher
@@ -616,6 +616,7 @@ class StatusTrackingService:
         except Exception as exc:
             log.warning("druk %s: amendments not summarised: %s", bill.number, exc)
             return None
+        assert not isinstance(record, Waiting)
         if record is not None:
             result.count_usage(record)
             log.info("druk %s: amendments summarised from %s", bill.number, found.document.url)
@@ -753,6 +754,7 @@ class StatusTrackingService:
                 record = self._analysis.bare_supplement(
                     supplement.document, number=supplement.number, title=supplement.title
                 )
+            assert not isinstance(record, Waiting)
             if record.digest is not None:
                 result.count_usage(record)
             change.supplements.append(record)

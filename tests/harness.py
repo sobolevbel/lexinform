@@ -38,6 +38,7 @@ from lexinform.models import (
     WykazEntry,
     submission_pdf_url,
 )
+from lexinform.models.batch import BatchKind
 from lexinform.models.rcl import StageState
 from lexinform.models.wykaz import BILL_KIND
 from lexinform.ports import TextExtractor
@@ -306,6 +307,8 @@ class World:
         max_run_cost_usd: float = 0.0,
         text_budget_chars: int = 10_000,  # the outer cap; raise it to let the cost limit decide
         batch: bool = False,
+        batch_kinds: frozenset[BatchKind] = frozenset({"analysis", "reanalysis"}),
+        batch_max_wait_hours: float = 6,
         batch_script: dict[str, Analysis | Exception] | None = None,
     ) -> None:
         self.clock = FixedClock()
@@ -365,6 +368,8 @@ class World:
             rcl_concurrency=workers,
             llm_concurrency=workers,
             llm_batch_enabled=batch,
+            llm_batch_kinds=batch_kinds,
+            llm_batch_max_wait_hours=batch_max_wait_hours,
         )
         self.container = Container(
             settings=settings,

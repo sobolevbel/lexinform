@@ -5,10 +5,12 @@ what `.env.example` and the operator's documentation say about it.
 """
 
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+from lexinform.models.batch import BatchKind
 
 Effort = Literal["low", "medium", "high", "xhigh", "max"]
 OpenAiEffort = Literal["none", "low", "medium", "high"]
@@ -151,6 +153,20 @@ class Settings(BaseSettings):
         " `analyze()` directly. It decides what is *submitted* only: a batch already filed is"
         " collected whatever this says, so switching it off never strands requests in flight.",
     )
+    llm_batch_kinds: Annotated[frozenset[BatchKind], NoDecode] = frozenset(
+        {"analysis", "reanalysis"}
+    )
+    llm_batch_max_wait_hours: float = Field(default=6, gt=0)
+
+    @field_validator("llm_batch_kinds", mode="before")
+    @classmethod
+    def parse_batch_kinds(cls, value: object) -> object:
+        return (
+            frozenset(part.strip() for part in value.split(",") if part.strip())
+            if isinstance(value, str)
+            else value
+        )
+
     llm_batch_sync_within_days: int = Field(
         default=3,
         ge=0,
