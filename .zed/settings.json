@@ -1,17 +1,39 @@
 // Zed project settings: ruff formats and lints as `uv run ruff` does, mypy strict stays the type gate.
 {
+  "preferred_line_length": 100,
+  "wrap_guides": [100],
+  // Replaces Zed's default list, so its entries are repeated; worktrees are full copies of the repo.
+  "file_scan_exclusions": [
+    "**/.git",
+    "**/.svn",
+    "**/.hg",
+    "**/.jj",
+    "**/CVS",
+    "**/.DS_Store",
+    "**/Thumbs.db",
+    "**/.classpath",
+    "**/.settings",
+    ".claude/worktrees",
+    "**/.mypy_cache",
+    "**/.ruff_cache",
+    "**/.pytest_cache",
+    "**/.hypothesis",
+    "**/__pycache__",
+    "htmlcov"
+  ],
   "languages": {
     "Python": {
       "language_servers": ["basedpyright", "ruff", "!pylsp", "..."],
       "format_on_save": "on",
       "formatter": [{ "language_server": { "name": "ruff" } }],
-      "code_actions_on_format": { "source.organizeImports.ruff": true }
+      "code_actions_on_format": { "source.organizeImports.ruff": true },
+      "tasks": { "variables": { "TEST_RUNNER": "pytest" } }
     }
   },
   "lsp": {
     "basedpyright": {
       "settings": {
-        "basedpyright.analysis": { "typeCheckingMode": "standard" }
+        "basedpyright.analysis": { "typeCheckingMode": "standard", "stubPath": "web/stubs" }
       }
     }
   }

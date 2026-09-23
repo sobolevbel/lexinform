@@ -1,0 +1,15 @@
+// Project tasks, run with `task: spawn`; "gate" is what must be clean before a commit.
+[
+  {
+    "label": "gate",
+    "command": "uv run ruff format src tests && uv run ruff check src tests && uv run mypy && uv run pytest -q"
+  },
+  {
+    "label": "pytest: this file",
+    "command": "uv run pytest -q \"$ZED_RELATIVE_FILE\""
+  },
+  {
+    "label": "mypy",
+    "command": "uv run mypy"
+  }
+]
