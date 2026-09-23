@@ -1,0 +1,18 @@
+// Zed project settings: ruff formats and lints as `uv run ruff` does, mypy strict stays the type gate.
+{
+  "languages": {
+    "Python": {
+      "language_servers": ["basedpyright", "ruff", "!pylsp", "..."],
+      "format_on_save": "on",
+      "formatter": [{ "language_server": { "name": "ruff" } }],
+      "code_actions_on_format": { "source.organizeImports.ruff": true }
+    }
+  },
+  "lsp": {
+    "basedpyright": {
+      "settings": {
+        "basedpyright.analysis": { "typeCheckingMode": "standard" }
+      }
+    }
+  }
+}
