@@ -1,5 +1,7 @@
 """The OpenAI adapter: request shape, record fields and error classification, on a stub client."""
 
+import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from types import SimpleNamespace
@@ -8,14 +10,20 @@ from typing import Any
 import httpx2 as httpx
 import openai
 import pytest
+from pydantic import BaseModel
 
 from lexinform.adapters.llm_openai import LlmError, LlmFatalError, OpenAiAnalyzer
 from lexinform.adapters.llm_prompts import PROMPT_VERSION, gpt51_system_prompt
 from lexinform.models import (
+    Amendments,
     AmendmentsContext,
+    Analysis,
     ApplicantType,
+    BatchRequest,
     BillContext,
+    DocumentDigest,
     JointBillDescription,
+    JointComparison,
     JointContext,
     ScannedDocument,
     SupplementContext,
@@ -286,3 +294,106 @@ def test_joint_comparison_request_compares_the_descriptions_not_the_texts() -> N
     prompt = _prompt_of(client.responses.calls[0])
     assert "druk nr 1933" in prompt.lower() and "druk nr 1929" in prompt.lower()
     assert record.compared_with == ["1929"]
+
+
+def _shape(prop: dict[str, Any], defs: dict[str, Any]) -> dict[str, Any]:
+    """A property reduced to what strict Structured Outputs enforces: its types, enum and items."""
+    if "$ref" in prop:
+        prop = defs[prop["$ref"].rsplit("/", 1)[-1]]
+    if "anyOf" in prop:
+        variants = [_shape(variant, defs) for variant in prop["anyOf"]]
+        enums = [variant["enum"] for variant in variants if variant["enum"] is not None]
+        return {
+            "types": sorted(t for variant in variants for t in variant["types"]),
+            "enum": enums[0] if enums else None,
+            "items": None,
+        }
+    kind = prop["type"]
+    return {
+        "types": sorted(kind if isinstance(kind, list) else [kind]),
+        "enum": sorted(prop["enum"]) if "enum" in prop else None,
+        "items": _shape(prop["items"], defs) if "items" in prop else None,
+    }
+
+
+def _shapes(schema: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    defs = schema.get("$defs", {})
+    return {name: _shape(prop, defs) for name, prop in schema["properties"].items()}
+
+
+def _sent_schemas() -> dict[type[BaseModel], dict[str, Any]]:
+    """The schema each of the four calls actually sends, keyed by the model that parses it."""
+    calls: list[tuple[type[BaseModel], BaseModel, Callable[[OpenAiAnalyzer], object]]] = [
+        (Analysis, make_analysis(), lambda a: a.analyze(_ctx())),
+        (
+            Amendments,
+            make_amendments(),
+            lambda a: a.summarize_amendments(
+                AmendmentsContext(
+                    number="3039",
+                    title="Projekt",
+                    source_kind="senate_amendments",
+                    text="Poprawka 1.",
+                    truncated=False,
+                    previous_summary="Опис.",
+                )
+            ),
+        ),
+        (
+            DocumentDigest,
+            make_digest(),
+            lambda a: a.digest_supplement(
+                SupplementContext(
+                    number="3039",
+                    title="Projekt",
+                    document_title="Stanowisko Rządu",
+                    source_kind="government_position",
+                    text="Tekst.",
+                    truncated=False,
+                    previous_summary="Опис.",
+                )
+            ),
+        ),
+        (
+            JointComparison,
+            make_comparison(),
+            lambda a: a.compare_joint(
+                JointContext(
+                    subject=JointBillDescription(
+                        number="1933",
+                        title="A",
+                        applicant_type=ApplicantType.DEPUTIES,
+                        summary="Опис.",
+                    ),
+                    others=[],
+                )
+            ),
+        ),
+    ]
+    sent: dict[type[BaseModel], dict[str, Any]] = {}
+    for model, answer, call in calls:
+        client = _client(_response(answer.model_dump_json()))
+        call(_analyzer(client))
+        sent[model] = client.responses.calls[0]["text"]["format"]["schema"]
+    return sent
+
+
+@pytest.mark.parametrize("model", [Analysis, Amendments, DocumentDigest, JointComparison])
+def test_the_hand_written_schema_matches_the_pydantic_model(model: type[BaseModel]) -> None:
+    schema = _sent_schemas()[model]
+
+    assert _shapes(schema) == _shapes(model.model_json_schema())
+    assert sorted(schema["required"]) == sorted(model.model_fields)
+    assert schema["additionalProperties"] is False
+
+
+def test_the_batch_request_sends_the_same_analysis_schema_as_the_synchronous_call() -> None:
+    request = BatchRequest(
+        custom_id="parity", call_kind="analysis", term=10, number="3039", ctx=_ctx()
+    )
+
+    prepared = _analyzer(_client()).prepare_request(request)
+
+    assert prepared.payload_json is not None
+    body = json.loads(prepared.payload_json)["body"]
+    assert body["text"]["format"]["schema"] == _sent_schemas()[Analysis]
