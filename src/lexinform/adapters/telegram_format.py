@@ -1487,6 +1487,17 @@ class MessageFormatter:
             )
         if snapshot.batches or snapshot.queued_intents or snapshot.uncertain_intents:
             lines.append(self._batches_block(snapshot))
+        if snapshot.awaiting_batch and snapshot.observed_at is not None:
+            lines.append(
+                "⏳ <b>Ждут сводки батча</b>\n"
+                + "\n".join(
+                    f"• <b>{esc(b.number)}</b> · "
+                    f"{(snapshot.observed_at - b.awaiting_batch_since).total_seconds() / 3600:.1f}"
+                    " ч"
+                    for b in snapshot.awaiting_batch
+                    if b.awaiting_batch_since is not None
+                )
+            )
         if snapshot.orphaned:
             lines.append(
                 "⚠️ <b>batch_pending, held by no batch</b>\n"

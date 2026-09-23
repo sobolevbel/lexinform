@@ -35,6 +35,7 @@ class TrackingResult:
     """
 
     checked: int = 0
+    waiting: int = 0
     changed: int = 0
     linked: int = 0
     published: int = 0

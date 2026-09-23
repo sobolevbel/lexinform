@@ -400,6 +400,8 @@ class StatusSnapshot(BaseModel):
     uncertain_intents: int = 0
     # `batch_pending` with neither an open batch item nor an intent: nothing will ever answer it.
     orphaned: tuple[Bill, ...] = ()
+    awaiting_batch: tuple[Bill, ...] = ()
+    observed_at: dt.datetime | None = None
 
 
 class SpendSnapshot(BaseModel):

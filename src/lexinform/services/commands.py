@@ -652,7 +652,11 @@ class CommandService:
         batches = tuple(self._repo.list_open_llm_batches())
         queued = self._repo.list_queued_batch_intents()
         uncertain = self._repo.list_submitting_batch_intents()
-        held = {(i.request.term, i.request.number) for i in (*queued, *uncertain)} | {
+        held = {
+            (i.request.term, i.request.number)
+            for i in (*queued, *uncertain)
+            if i.request.call_kind in ("analysis", "reanalysis")
+        } | {
             (item.term, item.number)
             for batch in batches
             for item in self._repo.list_llm_batch_items(batch.batch_id)
@@ -678,6 +682,12 @@ class CommandService:
             queued_intents=len(queued),
             uncertain_intents=len(uncertain),
             orphaned=tuple(b for b in in_flight if (b.term, b.number) not in held),
+            awaiting_batch=tuple(
+                b for b in self._tracking.followed() if b.awaiting_batch_since is not None
+            )
+            if self._tracking is not None
+            else (),
+            observed_at=self._clock.now(),
         )
         return CommandOutcome(
             status=OutcomeStatus.REPORTED,

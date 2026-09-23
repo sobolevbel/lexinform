@@ -328,3 +328,7 @@ Rules of the road:
   channel, files and confirms nothing.
 - End to end: post `/help` in the log channel, watch the run start on the event and the reply
   appear; then `/analyze` of a bill known to be irrelevant (no card) and of a relevant one.
+
+`/status` also lists tracked bills waiting for a secondary batch digest and the elapsed hours.
+Waiting does not advance the observed stages; the bill remains eligible after the watermark
+moves. After the configured deadline, tracking uses a synchronous digest.

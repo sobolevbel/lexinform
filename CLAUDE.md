@@ -1386,3 +1386,7 @@ for tracking across discovery watermarks and is cleared with the observation che
 Joint comparisons may delay an automatic reply until the batch deadline, but never stop it:
 manual republish and dry runs stay synchronous; a failed or overdue item falls back to the
 ordinary comparison. Waiting creates no publication and consumes no delivery attempt.
+
+A waiting filed-document digest leaves stages, seen supplements and delivery work uncommitted.
+Mark the bill as waiting as soon as a digest is queued, including when a later document fails;
+clear the marker atomically with the completed observation. `/refresh` does not wait.

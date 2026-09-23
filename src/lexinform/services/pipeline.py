@@ -462,6 +462,7 @@ class DailyPipeline:
     def _merge_tracking(report: RunReport, tracked: TrackingResult, opts: RunOptions) -> int:
         """Add one tracking result to the report; returns its failed-post count."""
         report.tracked += tracked.checked
+        report.batch_waiting += tracked.waiting
         report.updates += tracked.published if opts.publish else tracked.changed
         report.reanalyzed += tracked.reanalyzed
         report.linked += tracked.linked

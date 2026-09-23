@@ -318,7 +318,7 @@ class StatusTrackingService:
         return result
 
     def check_updates(
-        self, *, publish: bool = True, changed_since: datetime | None = None
+        self, *, publish: bool = True, changed_since: datetime | None = None, may_wait: bool = True
     ) -> TrackingResult:
         """Look for news on published bills, whichever term they belong to.
 
@@ -336,7 +336,7 @@ class StatusTrackingService:
         everyone = tracked if changed_since is None else self._list_tracked()
         if not self._check_other_sources(tracked, everyone, result, publish=publish):
             return result
-        self._check_processes(tracked, result, publish=publish)
+        self._check_processes(tracked, result, publish=publish, may_wait=may_wait)
         self._remind_and_refresh(everyone, result, publish=publish)
         self._log_outcome(result, changed_since)
         return result
@@ -354,7 +354,7 @@ class StatusTrackingService:
         one = [bill]
         if not self._check_other_sources(one, one, result, publish=publish):
             return result
-        self._check_processes(one, result, publish=publish)
+        self._check_processes(one, result, publish=publish, may_wait=False)
         if result.fatal_error is None:
             self._cards.refresh(one, result, publish=publish)
         return result
@@ -382,7 +382,7 @@ class StatusTrackingService:
         return self._rcl is None or self._rcl.check(tracked, result, publish=publish)
 
     def _check_processes(
-        self, tracked: list[Bill], result: TrackingResult, *, publish: bool
+        self, tracked: list[Bill], result: TrackingResult, *, publish: bool, may_wait: bool
     ) -> None:
         """Read the process of every followed Sejm bill and tell what is new about it."""
         followed = [bill for bill in tracked if bill.has_process]
@@ -392,7 +392,7 @@ class StatusTrackingService:
             try:
                 found = outcome.result()
                 detail = found.detail
-                change = self._detect(bill, found, result)
+                change = self._detect(bill, found, result, may_wait=may_wait)
             except ServiceUnavailableError as exc:
                 result.abort(exc)
                 return
@@ -622,7 +622,9 @@ class StatusTrackingService:
             log.info("druk %s: amendments summarised from %s", bill.number, found.document.url)
         return record
 
-    def _detect(self, bill: Bill, found: _Found, result: TrackingResult) -> StatusChange | None:
+    def _detect(
+        self, bill: Bill, found: _Found, result: TrackingResult, *, may_wait: bool
+    ) -> StatusChange | None:
         """The processed snapshot and its delivery work commit together, after network work."""
         detail = found.detail
         new_fp = stage_fingerprint(detail.stages)
@@ -632,11 +634,20 @@ class StatusTrackingService:
             analysis_document=self._texts.newer(bill, detail, found.print_info),
             closure_announced=self._repo.closure_announced(bill.term, bill.number),
         )
-        change = self._detect_change(bill, found, plan, result)
+        may_wait = (
+            may_wait and self._analysis is not None and self._analysis.may_wait_for_batch(bill)
+        )
+        change = self._detect_change(bill, found, plan, result, may_wait=may_wait)
+        if isinstance(change, Waiting):
+            if bill.awaiting_batch_since is None:
+                self._repo.set_awaiting_batch(bill.term, bill.number, self._clock.now())
+            result.waiting += 1
+            return None
         # Stored with the committees named, so the card can address them by name: the name is
         # not part of `_stage_key`, so writing it moves no fingerprint and announces nothing.
         named = self._enricher.name_committees(bill.term, detail.stages)
         with self._repo.atomic():
+            self._repo.set_awaiting_batch(bill.term, bill.number, None)
             self._repo.upsert_summary(detail, now=self._clock.now())
             self._repo.save_stages(bill.term, bill.number, named, new_fp)
             self._repo.save_observed_closure(bill.term, bill.number, detail.closure_date)
@@ -666,8 +677,8 @@ class StatusTrackingService:
             self._repo.save_seen_supplements(bill.term, bill.number, filed)
 
     def _detect_change(
-        self, bill: Bill, found: _Found, plan: BillPlan, result: TrackingResult
-    ) -> StatusChange | None:
+        self, bill: Bill, found: _Found, plan: BillPlan, result: TrackingResult, *, may_wait: bool
+    ) -> StatusChange | Waiting | None:
         """The one change worth a post, or None when there is nothing to tell.
 
         A first sight of the stages seeds them silently: there is no "before" to compare with.
@@ -708,7 +719,9 @@ class StatusTrackingService:
         if found.amendments is not None:
             self._attach_amendments(change, bill, found.amendments, result)
         if filed:
-            self._attach_supplements(change, bill, filed, result)
+            waiting = self._attach_supplements(change, bill, filed, result, may_wait=may_wait)
+            if waiting is not None:
+                return waiting
         _log_change(bill, change)
         return change
 
@@ -739,13 +752,20 @@ class StatusTrackingService:
         bill: Bill,
         filed: list[_Supplement],
         result: TrackingResult,
-    ) -> None:
+        *,
+        may_wait: bool,
+    ) -> Waiting | None:
         """Memoized digests survive a failure before the observation checkpoint commits."""
         assert self._analysis is not None, "_supplements files nothing without an analysis service"
+        waiting = None
         for supplement in filed:
             try:
                 record = self._analysis.digest_supplement(
-                    bill, supplement.document, number=supplement.number, title=supplement.title
+                    bill,
+                    supplement.document,
+                    number=supplement.number,
+                    title=supplement.title,
+                    may_wait=may_wait,
                 )
             except ServiceUnavailableError:
                 raise
@@ -754,10 +774,15 @@ class StatusTrackingService:
                 record = self._analysis.bare_supplement(
                     supplement.document, number=supplement.number, title=supplement.title
                 )
-            assert not isinstance(record, Waiting)
+            if isinstance(record, Waiting):
+                if bill.awaiting_batch_since is None and waiting is None:
+                    self._repo.set_awaiting_batch(bill.term, bill.number, self._clock.now())
+                waiting = record
+                continue
             if record.digest is not None:
                 result.count_usage(record)
             change.supplements.append(record)
+        return waiting
 
     def _attach_amendments(
         self, change: StatusChange, bill: Bill, found: _Amendments, result: TrackingResult
