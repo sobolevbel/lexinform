@@ -1,7 +1,7 @@
 """Open review candidates; --runxfail exposes the expected-behaviour assertions."""
 
 import datetime as dt
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import replace
 from pathlib import Path
 
@@ -11,7 +11,7 @@ from typer.testing import CliRunner
 from lexinform.adapters.batch_checkpoint import GitBatchCheckpoint
 from lexinform.cli import app
 from lexinform.errors import BatchNotSubmittedError, LlmUnavailableError
-from lexinform.models import BatchRequest, BatchStatus, BillStatus
+from lexinform.models import BatchRequest, BatchResult, BatchStatus, BillStatus
 from lexinform.pricing import cost_usd
 from lexinform.services.pipeline import RunOptions
 from tests.fakes import FakeBatchBackend, FakeTextExtractor, make_analysis
@@ -359,3 +359,66 @@ def test_a_batch_request_larger_than_the_remaining_budget_is_not_submitted() -> 
     assert not w.batch.submitted
     assert w.bill("3039").status is BillStatus.ANALYSIS_PENDING
     assert any("run cost limit reached" in note for note in report.notes)
+
+
+def test_collected_cost_survives_restore_before_the_report_is_saved() -> None:
+    w = World(batch=True)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.batch.resolve()
+    w.container.analysis_service().collect_batches()
+    restored = World(batch=True)
+    restored.repo.restore(w.repo.dump())
+
+    report = restored.run()
+
+    assert report.llm_input_tokens == 100
+    assert report.llm_output_tokens == 50
+    assert not restored.repo.list_unaccounted_batch_items()
+    assert restored.run().llm_input_tokens == 0
+
+
+def test_paid_invalid_answer_is_accounted_without_a_successful_analysis(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    w = World(batch=True)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.batch.resolve()
+
+    def invalid(batch_id: str) -> Iterator[BatchResult]:
+        yield BatchResult(
+            custom_id=w.batch.submitted[0].custom_id,
+            model="claude-opus-5",
+            input_tokens=100,
+            output_tokens=20,
+            error="truncated",
+        )
+
+    monkeypatch.setattr(w.batch, "fetch_results", invalid)
+    report = w.run(max_analyze=0)
+    assert report.llm_input_tokens == 100
+    assert report.llm_output_tokens == 20
+    assert w.bill("3039").status is BillStatus.ANALYSIS_FAILED
+
+
+def test_one_unavailable_batch_does_not_block_another(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    w = World(batch=True)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.add_bill("3040", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.batch.resolve()
+
+    def poll(batch_id: str) -> BatchStatus:
+        if batch_id == "batch-1":
+            raise LlmUnavailableError("not in this workspace")
+        return "ended"
+
+    monkeypatch.setattr(w.batch, "poll", poll)
+    report = w.run()
+    assert report.errors
+    assert w.bill("3039").status is BillStatus.BATCH_PENDING
+    assert w.bill("3040").analysis is not None

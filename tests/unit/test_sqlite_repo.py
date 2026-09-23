@@ -867,6 +867,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         changes = {r[1] for r in conn.execute("PRAGMA table_info(status_changes)")}
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         commands = {r[1] for r in conn.execute("PRAGMA table_info(commands)")}
+        batch_items = {r[1] for r in conn.execute("PRAGMA table_info(llm_batch_items)")}
     assert "amendments_json" in changes  # v11
     assert "supplements_json" in changes  # v18
     assert "consultation_opened" in changes
@@ -876,6 +877,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert "rcl_wykaz_numbers" in tables  # v22
     assert {"llm_batches", "llm_batch_items"} <= tables  # v26
     assert "llm_batch_intents" in tables  # v27
+    assert {"result_json", "accounted_at"} <= batch_items
     # v9: the flag is stored, so a retried post renders the same message
     when = datetime(2026, 9, 7, 6, 0, tzinfo=UTC)
     assert repo.add_status_change(_change("1", when, discontinued=True)) is not None

@@ -91,6 +91,7 @@ class LlmBatchItem(BaseModel):
     number: str
     meta: BatchItemMeta
     consumed_at: dt.datetime | None = None
+    result: BatchResult | None = None
 
 
 class BatchIntent(BaseModel):

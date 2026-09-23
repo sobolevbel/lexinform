@@ -399,6 +399,7 @@ class OpenAiAnalyzer:
         try:
             batch = self._resolved_client.batches.retrieve(batch_id)
         except (
+            openai.NotFoundError,
             openai.AuthenticationError,
             openai.PermissionDeniedError,
             openai.RateLimitError,
@@ -406,8 +407,6 @@ class OpenAiAnalyzer:
             openai.APIConnectionError,
         ) as exc:
             raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
-        except openai.NotFoundError:
-            return "failed"
         if batch.status in ("completed", "expired", "cancelled"):
             return "ended"
         if batch.status == "failed":
@@ -423,6 +422,7 @@ class OpenAiAnalyzer:
                 if file_id is not None
             ]
         except (
+            openai.NotFoundError,
             openai.AuthenticationError,
             openai.PermissionDeniedError,
             openai.RateLimitError,
@@ -433,32 +433,47 @@ class OpenAiAnalyzer:
         for content in files:
             for line in content.text.splitlines():
                 if line.strip():
-                    yield self._batch_result_line(json.loads(line))
+                    try:
+                        decoded = json.loads(line)
+                    except json.JSONDecodeError:
+                        log.warning("batch %s contains an invalid JSONL line", batch_id)
+                        continue
+                    if not isinstance(decoded, dict) or not isinstance(
+                        decoded.get("custom_id"), str
+                    ):
+                        log.warning("batch %s contains a result without custom_id", batch_id)
+                        continue
+                    yield self._batch_result_line(decoded)
 
     def _batch_result_line(self, line: dict[str, Any]) -> BatchResult:
         custom_id = str(line["custom_id"])
         error = line.get("error")
         if error is not None:
             return BatchResult(custom_id=custom_id, error=str(error))
-        body = (line.get("response") or {}).get("body")
+        response_data = line.get("response")
+        body = response_data.get("body") if isinstance(response_data, dict) else None
         if body is None:
             return BatchResult(custom_id=custom_id, error="batch item carries no response")
         try:
             response = Response.model_validate(body)
-            analysis = _parsed_output(response, Analysis)
-        except (LlmError, ValidationError) as exc:
+        except ValidationError as exc:
             return BatchResult(custom_id=custom_id, error=str(exc))
         usage = _usage_of(response)
-        return BatchResult(
+        answer = BatchResult(
             custom_id=custom_id,
-            analysis=analysis,
             model=response.model,
-            prompt_version=PROMPT_VERSION,
             input_tokens=usage.input_tokens,
             output_tokens=usage.output_tokens,
             cache_read_input_tokens=usage.cached_tokens,
             cache_creation_input_tokens=0,
         )
+        try:
+            if response.status != "completed":
+                raise LlmError(f"response is {response.status}")
+            analysis = _parsed_output(response, Analysis)
+        except (LlmError, ValidationError) as exc:
+            return answer.model_copy(update={"error": str(exc)})
+        return answer.model_copy(update={"analysis": analysis})
 
     def _structured_call(
         self,

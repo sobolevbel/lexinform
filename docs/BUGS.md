@@ -83,6 +83,12 @@ The selected batch backend counts the input; batches are split at 100 requests /
 `test_saved_request_keeps_model_prompt_and_output_limit_after_configuration_change` covers both
 providers. Unknown model prices require an explicit price-table update before new batch work.
 
+B38/B40/B41 follow-up: a missing remote ID remains recoverable, one unavailable batch does not
+block the next, malformed JSONL/envelopes are isolated and reconciled against the manifest.
+Truncated/refused answers retain billed usage. v29 stores each answer before application and
+acknowledges its cost atomically with the run report; a restart before that report restores the
+cost exactly once (`test_collected_cost_survives_restore_before_the_report_is_saved`).
+
 ## Fixed
 
 | # | rank | module | what was wrong | how it was found | fix |

@@ -54,6 +54,9 @@ class CostLedger:
             cache_creation_input_tokens=record.cache_creation_input_tokens or 0,
             batched=batched,
         )
+        self.charge_call(call)
+
+    def charge_call(self, call: LlmCall) -> None:
         spent = cost_usd(call.usage)
         with self._lock:
             self._calls.append(call)

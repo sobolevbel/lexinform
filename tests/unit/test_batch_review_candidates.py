@@ -4,11 +4,15 @@ import json
 from types import SimpleNamespace
 from typing import Any
 
+import anthropic
+import httpx2 as httpx
+import openai
 import pytest
 from anthropic.types import Message
 
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
+from lexinform.errors import LlmUnavailableError
 from lexinform.models import ApplicantType, BatchRequest, BillContext
 from lexinform.pricing import batch_reservation
 from tests.fakes import make_analysis
@@ -99,6 +103,7 @@ def test_openai_malformed_analysis_does_not_hide_the_next_item() -> None:
 
     assert {item.custom_id for item in results} == {"ok", "bad"}
     assert results[0].error is not None and results[1].analysis is not None
+    assert results[0].input_tokens == 100
 
 
 def _anthropic_message(text: str, stop_reason: str) -> Message:
@@ -136,6 +141,37 @@ def test_anthropic_truncated_analysis_does_not_hide_the_next_item() -> None:
 
     assert {item.custom_id for item in results} == {"ok", "bad"}
     assert results[0].error is not None and results[1].analysis is not None
+    assert results[0].input_tokens == 100
+
+
+def test_invalid_jsonl_and_envelopes_do_not_hide_later_answers() -> None:
+    client = _openai_client(
+        '{broken\n[]\n{"response": null}\n'
+        + json.dumps({"custom_id": "bad", "response": "invalid"})
+        + "\n"
+        + _line("ok", make_analysis().model_dump_json())
+    )
+    results = list(OpenAiAnalyzer(lambda: client).fetch_results("batch-1"))
+    assert [result.custom_id for result in results] == ["bad", "ok"]
+    assert results[0].error is not None
+    assert results[1].analysis is not None
+
+
+@pytest.mark.parametrize("provider", ["anthropic", "openai"])
+def test_missing_remote_batch_stays_recoverable(provider: str) -> None:
+    response = httpx.Response(404, request=httpx.Request("GET", "https://example.test/batch"))
+    error_type = anthropic.NotFoundError if provider == "anthropic" else openai.NotFoundError
+
+    def missing(batch_id: str) -> Any:
+        raise error_type("not in this workspace", response=response, body=None)
+
+    batches = SimpleNamespace(retrieve=missing)
+    client: Any = SimpleNamespace(batches=batches, messages=SimpleNamespace(batches=batches))
+    backend = (
+        AnthropicAnalyzer(client) if provider == "anthropic" else OpenAiAnalyzer(lambda: client)
+    )
+    with pytest.raises(LlmUnavailableError):
+        backend.poll("batch-1")
 
 
 def test_batch_result_keeps_the_model_that_answered() -> None:

@@ -533,8 +533,17 @@ class BillRepository(Protocol):
         ...
 
     def mark_llm_batch_item_consumed(
-        self, batch_id: str, custom_id: str, *, consumed_at: datetime
+        self,
+        batch_id: str,
+        custom_id: str,
+        *,
+        consumed_at: datetime,
+        result: BatchResult | None = None,
     ) -> None: ...
+
+    def list_unaccounted_batch_items(self) -> list[LlmBatchItem]: ...
+
+    def mark_batch_item_accounted(self, batch_id: str, custom_id: str, *, at: datetime) -> None: ...
 
     def reset_bill(
         self, term: int, number: str, status: BillStatus, *, reason: str | None = None

@@ -165,7 +165,9 @@ class DailyPipeline:
                     report.llm_usage[model] = report.llm_usage.get(model, TokenUsage()).plus(usage)
             if run_id is not None:
                 try:
-                    self._repo.finish_run(run_id, report)
+                    with self._repo.atomic():
+                        self._repo.finish_run(run_id, report)
+                        self._analysis.acknowledge_batch_costs()
                 except Exception as exc:
                     log.exception("could not record the run: %s", exc)
                     report.errors.append(f"could not record the run: {type(exc).__name__}: {exc}")

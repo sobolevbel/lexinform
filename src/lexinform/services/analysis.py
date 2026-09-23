@@ -17,7 +17,12 @@ from typing import Literal
 from pydantic import BaseModel
 
 from lexinform.concurrency import fan_out
-from lexinform.errors import BatchNotSubmittedError, OrkaUnreachableError, ServiceUnavailableError
+from lexinform.errors import (
+    BatchNotSubmittedError,
+    LlmUnavailableError,
+    OrkaUnreachableError,
+    ServiceUnavailableError,
+)
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
     AMENDMENT_SOURCES,
@@ -332,6 +337,7 @@ class AnalysisService:
         self._batch_resolver = batch_resolver
         self._batch_checkpoint = batch_checkpoint
         self._dry_run = False
+        self._accounted_items: set[tuple[str, str]] = set()
         self._ledger = CostLedger(max_run_usd=options.max_run_cost_usd)
         self._memo = repo.load_analysis_memo()
 
@@ -346,7 +352,34 @@ class AnalysisService:
             ]
         )
         self._ledger.start_run(reserved_usd=committed)
+        self._accounted_items.clear()
+        for item in self._repo.list_unaccounted_batch_items():
+            if item.result is not None:
+                self._charge_batch_result(item, item.result)
         self._memo = self._repo.load_analysis_memo()
+
+    def acknowledge_batch_costs(self) -> None:
+        for batch_id, custom_id in self._accounted_items:
+            self._repo.mark_batch_item_accounted(batch_id, custom_id, at=self._clock.now())
+
+    def _charge_batch_result(self, item: LlmBatchItem, result: BatchResult) -> None:
+        identity = (item.batch_id, item.custom_id)
+        if identity in self._accounted_items:
+            return
+        if result.model is not None:
+            self._ledger.charge_call(
+                LlmCall(
+                    number=item.number,
+                    kind=item.call_kind,
+                    model=result.model,
+                    input_tokens=result.input_tokens or 0,
+                    output_tokens=result.output_tokens or 0,
+                    cache_read_input_tokens=result.cache_read_input_tokens or 0,
+                    cache_creation_input_tokens=result.cache_creation_input_tokens or 0,
+                    batched=True,
+                )
+            )
+        self._accounted_items.add(identity)
 
     @property
     def spent_usd(self) -> float:
@@ -548,44 +581,53 @@ class AnalysisService:
         one back."""
         if self._batch is None:
             return
-        now = self._clock.now()
+        errors: list[str] = []
         for batch in self._repo.list_open_llm_batches():
-            backend = (
-                self._batch_resolver(batch.provider)
-                if self._batch_resolver is not None
-                else self._batch
-                if batch.provider == self._options.batch_provider
-                else None
-            )
-            if backend is None:
-                log.warning("batch %s waits for %s backend", batch.batch_id, batch.provider)
-                continue
-            status = backend.poll(batch.batch_id)
-            self._repo.mark_llm_batch_polled(batch.batch_id, status=status, polled_at=now)
-            items = self._repo.list_llm_batch_items(batch.batch_id)
-            if status == "failed":
-                for item in items:
-                    self._consume(item, BatchResult(custom_id=item.custom_id, error="batch failed"))
-                self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
-                self._ledger.release(batch.estimated_cost_usd)
-                continue
-            if status != "ended":
-                continue
-            by_id = {item.custom_id: item for item in items}
-            received: set[str] = set()
-            for batch_result in backend.fetch_results(batch.batch_id):
-                found = by_id.get(batch_result.custom_id)
-                if found is not None and batch_result.custom_id not in received:
-                    self._consume(found, batch_result)
-                    received.add(batch_result.custom_id)
-            for custom_id, item in by_id.items():
-                if custom_id not in received:
-                    self._consume(
-                        item,
-                        BatchResult(custom_id=custom_id, error="batch item missing from results"),
-                    )
+            try:
+                backend = (
+                    self._batch_resolver(batch.provider)
+                    if self._batch_resolver is not None
+                    else self._batch
+                    if batch.provider == self._options.batch_provider
+                    else None
+                )
+                if backend is None:
+                    log.warning("batch %s waits for %s backend", batch.batch_id, batch.provider)
+                    continue
+                self._collect_batch(batch, backend)
+            except ServiceUnavailableError as exc:
+                errors.append(f"{batch.provider}/{batch.batch_id}: {exc}")
+        if errors:
+            raise LlmUnavailableError("; ".join(errors))
+
+    def _collect_batch(self, batch: LlmBatch, backend: BatchBackend) -> None:
+        now = self._clock.now()
+        status = backend.poll(batch.batch_id)
+        self._repo.mark_llm_batch_polled(batch.batch_id, status=status, polled_at=now)
+        items = self._repo.list_llm_batch_items(batch.batch_id)
+        if status == "failed":
+            for item in items:
+                self._consume(item, BatchResult(custom_id=item.custom_id, error="batch failed"))
             self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
             self._ledger.release(batch.estimated_cost_usd)
+            return
+        if status != "ended":
+            return
+        by_id = {item.custom_id: item for item in items}
+        received: set[str] = set()
+        for batch_result in backend.fetch_results(batch.batch_id):
+            found = by_id.get(batch_result.custom_id)
+            if found is not None and batch_result.custom_id not in received:
+                self._consume(found, batch_result)
+                received.add(batch_result.custom_id)
+        for custom_id, item in by_id.items():
+            if custom_id not in received:
+                self._consume(
+                    item,
+                    BatchResult(custom_id=custom_id, error="batch item missing from results"),
+                )
+        self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
+        self._ledger.release(batch.estimated_cost_usd)
 
     def uncertain_batch_intent_ids(self) -> list[str]:
         return [intent.request.custom_id for intent in self._repo.list_submitting_batch_intents()]
@@ -600,12 +642,9 @@ class AnalysisService:
         )
         with self._repo.atomic():
             record = self._consume_current(item, batch_result, now, active=active)
-        if record is not None:
-            self._ledger.charge(record, number=item.number, kind=item.call_kind, batched=True)
-            if active:
-                self._memo.setdefault(
-                    item.meta.memo_key or item.custom_id, record.model_dump_json()
-                )
+        self._charge_batch_result(item, batch_result)
+        if record is not None and active:
+            self._memo.setdefault(item.meta.memo_key or item.custom_id, record.model_dump_json())
 
     def _consume_current(
         self, item: LlmBatchItem, batch_result: BatchResult, now: datetime, *, active: bool
@@ -659,7 +698,9 @@ class AnalysisService:
             else:
                 # A reanalysis that failed keeps the old analysis, same as a synchronous one would.
                 self._repo.set_status(item.term, item.number, BillStatus.ANALYZED)
-        self._repo.mark_llm_batch_item_consumed(item.batch_id, item.custom_id, consumed_at=now)
+        self._repo.mark_llm_batch_item_consumed(
+            item.batch_id, item.custom_id, consumed_at=now, result=batch_result
+        )
         return record
 
     def analyze_bill(self, bill: Bill, *, ignore_cost_limit: bool = False) -> AnalysisOutcome:
@@ -1395,7 +1436,11 @@ def _submission_groups(intents: list[BatchIntent]) -> list[list[BatchIntent]]:
         )
         if payload_size > 100_000_000:
             raise BatchNotSubmittedError("one batch request exceeds the 100 MB payload limit")
-        if current and (len(current) >= 100 or size + payload_size > 100_000_000):
+        if current and (
+            len(current) >= 100
+            or size + payload_size > 100_000_000
+            or current[0].request.call_kind != intent.request.call_kind
+        ):
             groups.append(current)
             current, size = [], 0
         current.append(intent)

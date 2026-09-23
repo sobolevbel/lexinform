@@ -24,6 +24,7 @@ from lexinform.models import (
     BatchIntent,
     BatchItemMeta,
     BatchRequest,
+    BatchResult,
     BatchStatus,
     Bill,
     BillAuthors,
@@ -336,6 +337,10 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE bills ADD COLUMN analysis_generation INTEGER NOT NULL DEFAULT 0;
     ALTER TABLE bills ADD COLUMN ready_analysis_json TEXT;
     """,
+    """
+    ALTER TABLE llm_batch_items ADD COLUMN result_json TEXT;
+    ALTER TABLE llm_batch_items ADD COLUMN accounted_at TEXT;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -373,6 +378,7 @@ def _row_to_llm_batch_item(row: sqlite3.Row) -> LlmBatchItem:
         number=row["number"],
         meta=BatchItemMeta.model_validate_json(row["meta_json"]),
         consumed_at=_parse_dt(row["consumed_at"]),
+        result=BatchResult.model_validate_json(row["result_json"]) if row["result_json"] else None,
     )
 
 
@@ -805,11 +811,32 @@ class SqliteBillRepository:
         return [_row_to_llm_batch_item(r) for r in rows]
 
     def mark_llm_batch_item_consumed(
-        self, batch_id: str, custom_id: str, *, consumed_at: datetime
+        self,
+        batch_id: str,
+        custom_id: str,
+        *,
+        consumed_at: datetime,
+        result: BatchResult | None = None,
     ) -> None:
         self._conn.execute(
-            "UPDATE llm_batch_items SET consumed_at = ? WHERE batch_id = ? AND custom_id = ?",
-            (_iso(consumed_at), batch_id, custom_id),
+            "UPDATE llm_batch_items SET consumed_at = ?, result_json = ?"
+            " WHERE batch_id = ? AND custom_id = ? AND consumed_at IS NULL",
+            (_iso(consumed_at), result.model_dump_json() if result else None, batch_id, custom_id),
+        )
+
+    def list_unaccounted_batch_items(self) -> list[LlmBatchItem]:
+        return [
+            _row_to_llm_batch_item(row)
+            for row in self._conn.execute(
+                "SELECT * FROM llm_batch_items WHERE result_json IS NOT NULL"
+                " AND accounted_at IS NULL ORDER BY consumed_at, batch_id, custom_id"
+            ).fetchall()
+        ]
+
+    def mark_batch_item_accounted(self, batch_id: str, custom_id: str, *, at: datetime) -> None:
+        self._conn.execute(
+            "UPDATE llm_batch_items SET accounted_at = ? WHERE batch_id = ? AND custom_id = ?",
+            (_iso(at), batch_id, custom_id),
         )
 
     def reset_bill(

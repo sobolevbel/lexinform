@@ -373,6 +373,7 @@ class AnthropicAnalyzer:
         try:
             batch = self._client.messages.batches.retrieve(batch_id)
         except (
+            anthropic.NotFoundError,
             anthropic.AuthenticationError,
             anthropic.PermissionDeniedError,
             anthropic.RateLimitError,
@@ -380,8 +381,6 @@ class AnthropicAnalyzer:
             anthropic.APIConnectionError,
         ) as exc:
             raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
-        except anthropic.NotFoundError:
-            return "failed"
         return "ended" if batch.processing_status == "ended" else "submitted"
 
     def fetch_results(self, batch_id: str) -> Iterator[BatchResult]:
@@ -389,6 +388,7 @@ class AnthropicAnalyzer:
             for item in self._client.messages.batches.results(batch_id):
                 yield self._batch_result(item)
         except (
+            anthropic.NotFoundError,
             anthropic.AuthenticationError,
             anthropic.PermissionDeniedError,
             anthropic.RateLimitError,
@@ -405,27 +405,26 @@ class AnthropicAnalyzer:
                 reason = f"errored: {result.error.error.message}"
             return BatchResult(custom_id=item.custom_id, error=reason)
         message = result.message
-        # Any: `parse_response` binds its generic to the class object, not an Analysis instance.
-        try:
-            parsed: Any = parse_response(output_format=Analysis, response=message)
-        except ValidationError as exc:
-            return BatchResult(custom_id=item.custom_id, error=str(exc))
-        analysis = parsed.parsed_output
-        if not isinstance(analysis, Analysis):
-            return BatchResult(
-                custom_id=item.custom_id, error="model returned no parsable structured output"
-            )
         usage = message.usage
-        return BatchResult(
+        answer = BatchResult(
             custom_id=item.custom_id,
-            analysis=analysis,
             model=message.model,
-            prompt_version=PROMPT_VERSION,
             input_tokens=_usage_int(usage, "input_tokens"),
             output_tokens=_usage_int(usage, "output_tokens"),
             cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
             cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
         )
+        if message.stop_reason in ("refusal", "max_tokens"):
+            return answer.model_copy(update={"error": f"response stopped: {message.stop_reason}"})
+        try:
+            parsed: Any = parse_response(output_format=Analysis, response=message)
+        except ValidationError as exc:
+            return answer.model_copy(update={"error": str(exc)})
+        if not isinstance(parsed.parsed_output, Analysis):
+            return answer.model_copy(
+                update={"error": "model returned no parsable structured output"}
+            )
+        return answer.model_copy(update={"analysis": parsed.parsed_output})
 
     def _parse(
         self,
