@@ -333,7 +333,13 @@ def amendments_stage(stages: list[Stage]) -> Stage | None:
         if senate and "popraw" in position and "nie wniósł" not in position:
             return stage
         report = stage.stage_type == "CommitteeReport" and bool(stage.report_file)
-        if report and not stage.carries_bill_text and "popraw" in (stage.proposal or "").lower():
+        proposal = (stage.proposal or "").lower()
+        if (
+            report
+            and not stage.carries_bill_text
+            and "popraw" in proposal
+            and "bez poprawek" not in proposal
+        ):
             return stage
     return None
 

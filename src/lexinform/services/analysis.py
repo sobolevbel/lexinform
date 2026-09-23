@@ -935,15 +935,14 @@ class AnalysisService:
             previous_summary=bill.analysis.analysis.summary,
             previous_key_changes=list(bill.analysis.analysis.key_changes),
         )
-        key = _memo_key(bill, "supplement", ctx) if loaded.scan is None else None
-        cached = self._memo.get(key) if key is not None else None
+        key = _memo_key(bill, "supplement", ctx)
+        cached = self._memo.get(key)
         if cached is None:
             record = self._llm.digest_supplement(ctx)
             self._ledger.charge(record, number=bill.number, kind="supplement")
             record.number = number
             record.source_url = document.url
-            if key is not None:
-                self._remember_analysis(key, record)
+            self._remember_analysis(key, record)
         else:
             record = _reused(SupplementRecord.model_validate_json(cached))
         record.number = number

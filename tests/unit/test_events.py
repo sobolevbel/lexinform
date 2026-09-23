@@ -139,6 +139,8 @@ def test_amendments_stage_is_the_senate_print_or_a_report_on_amendments(
     assert amendments_stage([a_report]) is a_report
     assert amendments_stage([senate, on_senate]) is on_senate  # the newest wins
     assert amendments_stage([no_amendments]) is None
+    unchanged = a_report.model_copy(update={"proposal": "uchwalić projekt ustawy bez poprawek"})
+    assert amendments_stage([unchanged]) is None
     assert amendments_stage([]) is None
 
 

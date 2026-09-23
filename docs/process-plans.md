@@ -75,7 +75,7 @@ repository writes remain on the calling thread.
 
 A scanned input is memoized by the file's digest and the page window sent (`pages`,
 `of_pages`), and a triage verdict under a key of its own, stored before a batch request is
-queued. A filed document read as a scan is still not memoized. A crash after a synchronous call
+queued. Filed-document scans use the same digest and page-window memoization. A crash after a synchronous call
 answers but before its result is stored can still repeat a paid call; SQLite cannot atomically
 commit a remote call. A batch answer is stored before it is applied (v29), so collecting it
 again never pays twice.

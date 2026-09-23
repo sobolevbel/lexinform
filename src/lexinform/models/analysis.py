@@ -241,7 +241,9 @@ class ScannedDocument(BaseModel):
     sha256: str
     cover_letter_pages: int = Field(
         default=0,
-        description="How many of the pages not sent were the letter handing the document to the Marshal.",
+        description=(
+            "How many of the pages not sent were the letter handing the document to the Marshal."
+        ),
     )
 
     @property

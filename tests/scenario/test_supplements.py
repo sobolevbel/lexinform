@@ -1,7 +1,9 @@
 """Documents filed to a print after its submission: what is told, what is not, and once."""
 
+import pytest
+
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import new_supplements, supplement_kind
+from lexinform.models import DeliveryPlan, new_supplements, supplement_kind
 from tests.fakes import FakeTextExtractor, make_digest
 from tests.harness import COMMITTEE_STAGES, World
 
@@ -274,3 +276,38 @@ def test_a_second_document_of_the_same_kind_is_a_second_post() -> None:
 
     assert report.updates == 1
     assert [r.number for r in w.publisher.updates[-1][1].supplements] == ["3039-004"]
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+def test_scanned_digest_survives_a_failed_observation_checkpoint(
+    workers: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    w = World(
+        workers=workers,
+        extractor=FakeTextExtractor(by_content={b"%PDF-filed": PM_LETTER}, page_count=10),
+    )
+    w.add_bill("3039", TITLE)
+    w.run()
+    before = w.bill("3039").observed_process
+    w.file_to_print("3039", GOVERNMENT_POSITION)
+    w.clock.advance(days=1)
+
+    def fail_save(change_id: int, channel_id: str, delivery: DeliveryPlan) -> None:
+        raise RuntimeError("injected checkpoint failure")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(w.repo, "save_update_delivery", fail_save)
+        failed = w.run()
+
+    assert failed.errors
+    assert w.bill("3039").observed_process == before
+    assert not w.publisher.updates
+    assert len(w.llm.supplement_contexts) == 1
+    assert w.llm.supplement_contexts[0].scan is not None
+
+    recovered = w.run()
+    repeated = w.run()
+
+    assert (recovered.updates, repeated.updates) == (1, 0)
+    assert len(w.llm.supplement_contexts) == 1
+    assert w.publisher.updates[0][1].supplements[0].digest == make_digest()

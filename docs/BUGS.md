@@ -100,6 +100,8 @@ cost exactly once (`test_collected_cost_survives_restore_before_the_report_is_sa
 
 ## Fixed
 
+- **44 (P2, 2026-09-23)**: `amendments_stage` treated a committee recommendation to adopt without amendments as an amendment document. Exclude `bez poprawek`; regression: `test_amendments_stage_is_the_senate_print_or_a_report_on_amendments`.
+
 | # | rank | module | what was wrong | how it was found | fix |
 |---|---|---|---|---|---|
 | 31 | P3 | RCL tracking, SQLite analysis save | Saving the old analysis cleared an in-flight batch marker and caused repeat submissions | `test_rcl_reanalysis_is_not_submitted_twice_while_in_flight` | Re-saving identical analysis preserves `batch_pending` |
