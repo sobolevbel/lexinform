@@ -896,6 +896,24 @@ def test_status_names_an_ambiguous_delivery_nothing_retries_on_its_own() -> None
     ]
 
 
+def test_status_shows_the_open_batch_and_a_batch_pending_bill_nothing_holds() -> None:
+    w = World(batch=True)
+    w.add_bill("3039", TITLE)
+    w.add_bill("3100", TITLE)
+    w.run(max_analyze=1)  # 3039 filed to a batch, 3100 still waiting
+    w.repo.set_status(10, "3100", BillStatus.BATCH_PENDING)
+    w.command("/status")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    snapshot = outcome.snapshot
+    assert snapshot is not None
+    assert [b.request_count for b in snapshot.batches] == [1]
+    assert (snapshot.queued_intents, snapshot.uncertain_intents) == (0, 0)
+    assert [b.number for b in snapshot.orphaned] == ["3100"]
+
+
 def test_runs_answers_what_each_recorded_run_did() -> None:
     """`lexinform runs` in the channel: the operator has a phone, not a production dump."""
     w = World()

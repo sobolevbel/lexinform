@@ -13,6 +13,7 @@ from lexinform.models import (
     CommandName,
     CommandOutcome,
     IncomingCommand,
+    LlmBatch,
     OutcomeStatus,
     ProcessDetail,
     RunMode,
@@ -264,6 +265,32 @@ def test_status_reply_shows_the_queues_the_posts_and_the_runs(process_3039: Proc
     assert "👁 <b>followed</b>: 17" in text
     assert "🏃 <b>runs</b>: 1 in 7 days · 2 card(s) · 3 update(s) · last " in text
     assert "⏳ <b>waiting</b>" in text and "analysis_pending" in text
+
+
+def test_status_reply_names_the_open_batches_and_what_nothing_holds(
+    process_3039: ProcessDetail,
+) -> None:
+    orphan = bill_of(process_3039).model_copy(update={"status": BillStatus.BATCH_PENDING})
+    batch = LlmBatch(
+        batch_id="msgbatch_1",
+        provider="anthropic",
+        call_kind="analysis",
+        submitted_at=NOW,
+        status="submitted",
+        request_count=3,
+        estimated_cost_usd=0.5,
+    )
+    outcome = CommandOutcome(
+        status=OutcomeStatus.REPORTED,
+        snapshot=StatusSnapshot(batches=(batch,), uncertain_intents=1, orphaned=(orphan,)),
+    )
+
+    text = MessageFormatter("ru").command_reply(_incoming("/status"), outcome).text
+
+    assert_telegram_html(text)
+    assert "🧺 <b>batches</b>: 1 open · 1 uncertain → lexinform batch-intents" in text
+    assert "anthropic <code>msgbatch_1</code> · 3 request(s) · submitted since" in text
+    assert "<b>3039</b> → /reset 3039 to=analysis_pending" in text
 
 
 def test_forget_reply_names_the_message_that_was_dropped(process_3039: ProcessDetail) -> None:

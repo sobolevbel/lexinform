@@ -647,6 +647,18 @@ class CommandService:
         """The queues, what is stuck and what the recent runs cost — the state between the run
         reports, which each say what one run did and nothing about what has piled up."""
         since = self._clock.now() - dt.timedelta(days=self._status_days)
+        batches = tuple(self._repo.list_open_llm_batches())
+        queued = self._repo.list_queued_batch_intents()
+        uncertain = self._repo.list_submitting_batch_intents()
+        held = {(i.request.term, i.request.number) for i in (*queued, *uncertain)} | {
+            (item.term, item.number)
+            for batch in batches
+            for item in self._repo.list_llm_batch_items(batch.batch_id)
+        }
+        in_flight = self._repo.list_by_status(
+            [BillStatus.BATCH_PENDING],
+            limit=self._repo.count_by_status().get(BillStatus.BATCH_PENDING, 0),
+        )
         snapshot = StatusSnapshot(
             bills=self._repo.count_by_status(),
             publications=self._repo.count_publications(self._publishing.channel_id),
@@ -659,6 +671,10 @@ class CommandService:
             ),
             runs=tuple(self._repo.list_runs(since=since)),
             days=self._status_days,
+            batches=batches,
+            queued_intents=len(queued),
+            uncertain_intents=len(uncertain),
+            orphaned=tuple(b for b in in_flight if (b.term, b.number) not in held),
         )
         return CommandOutcome(
             status=OutcomeStatus.REPORTED,

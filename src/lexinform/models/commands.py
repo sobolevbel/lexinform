@@ -15,6 +15,7 @@ from urllib.parse import parse_qs, urlparse
 from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.models.analysis import TokenUsage
+from lexinform.models.batch import LlmBatch
 from lexinform.models.bill import Bill, Publication
 from lexinform.models.digest import week_bounds
 from lexinform.models.enums import PRE_PRINT_PREFIX, RCL_PREFIX, WYKAZ_PREFIX, BillStatus
@@ -134,7 +135,8 @@ class CommandName(StrEnum):
     Four are missing on purpose: `listen` is the relay reading this channel, `commands` is the
     phase that answers what is written in it, `db` is the workflow's handling of the state branch
     around every run, and `poll-batches` is the mikrus timer that asks for `collect-batches`
-    sooner than the schedule — none of them is a thing to ask a run for.
+    sooner than the schedule — none of them is a thing to ask a run for. The three batch-intent
+    repairs are missing too: each needs the provider checked by hand first.
     """
 
     RUN = "run"
@@ -393,6 +395,11 @@ class StatusSnapshot(BaseModel):
     stuck: tuple[Publication, ...] = ()
     runs: tuple[RunReport, ...] = ()
     days: int = 0
+    batches: tuple[LlmBatch, ...] = ()
+    queued_intents: int = 0
+    uncertain_intents: int = 0
+    # `batch_pending` with neither an open batch item nor an intent: nothing will ever answer it.
+    orphaned: tuple[Bill, ...] = ()
 
 
 class SpendSnapshot(BaseModel):

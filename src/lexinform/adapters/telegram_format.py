@@ -122,7 +122,10 @@ COMMAND_HELP = (
     "• <code>/index-rcl-numbers since=DATE</code> — read the RCL listing for the wykaz join\n"
     "\n• <code>/help</code>. <code>listen</code>, <code>commands</code>, <code>db</code> and"
     " <code>poll-batches</code> are not commands: they are this relay, this phase, the state"
-    " branch around every run and the mikrus timer that asks for a collect run early."
+    " branch around every run and the mikrus timer that asks for a collect run early. Nor are"
+    " <code>batch-intents</code>, <code>attach-batch-intents</code> and"
+    " <code>recover-batch-intent</code>: they repair the state database after checking the"
+    " provider by hand."
 )
 
 # The commands whose answer is a dossier and not a verdict: they get the status, the last stage
@@ -1470,7 +1473,33 @@ class MessageFormatter:
             lines.append(
                 "🛑 <b>stuck</b>\n" + "\n".join(f"• {self._stuck_line(p)}" for p in snapshot.stuck)
             )
+        if snapshot.batches or snapshot.queued_intents or snapshot.uncertain_intents:
+            lines.append(self._batches_block(snapshot))
+        if snapshot.orphaned:
+            lines.append(
+                "⚠️ <b>batch_pending, held by no batch</b>\n"
+                + "\n".join(
+                    f"• <b>{esc(b.number)}</b> → /reset {esc(b.number)} to=analysis_pending"
+                    for b in snapshot.orphaned
+                )
+            )
         return "\n".join(lines)
+
+    def _batches_block(self, snapshot: StatusSnapshot) -> str:
+        """Open batches with their age, and the requests not yet (or not surely) submitted."""
+        head = f"🧺 <b>batches</b>: {len(snapshot.batches)} open"
+        if snapshot.queued_intents:
+            head += f" · {snapshot.queued_intents} queued"
+        if snapshot.uncertain_intents:
+            head += f" · {snapshot.uncertain_intents} uncertain → lexinform batch-intents"
+        return "\n".join(
+            [head]
+            + [
+                f"• {esc(b.provider)} <code>{esc(b.batch_id)}</code> · {b.request_count} request(s)"
+                f" · {esc(b.status)} since {self.fmt_date(b.submitted_at.date())}"
+                for b in snapshot.batches
+            ]
+        )
 
     def _stuck_line(self, pub: Publication) -> str:
         """A `pending`/`unknown` post nothing retries on its own (BUGS.md #4): its bill, kind and
