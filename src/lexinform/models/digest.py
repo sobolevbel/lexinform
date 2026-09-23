@@ -5,7 +5,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from lexinform.models.analysis import TokenUsage
+from lexinform.models.analysis import TokenUsage, merge_usage
 from lexinform.models.enums import Category, PublicationKind
 from lexinform.models.report import RunReport
 from lexinform.models.sejm import AgendaItem
@@ -106,8 +106,7 @@ class MonthFigures(BaseModel):
         re-read with a day of overlap, so a sum of those counts one entry sixty times."""
         usage: dict[str, TokenUsage] = {}
         for report in reports:
-            for model, spent in report.llm_usage.items():
-                usage[model] = usage.get(model, TokenUsage()).plus(spent)
+            merge_usage(usage, report.llm_usage)
         return cls(
             month=month.replace(day=1),
             runs=len(reports),

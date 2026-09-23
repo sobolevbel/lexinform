@@ -40,6 +40,7 @@ from lexinform.models import (
     is_pre_print_number,
     is_rcl_number,
     is_wykaz_number,
+    merge_usage,
     rcl_project_id,
     stage_fingerprint,
     usage_of,
@@ -872,8 +873,7 @@ def cost(
         c.close()
     usage: dict[str, TokenUsage] = {}
     for r in reports:
-        for model, u in r.llm_usage.items():
-            usage[model] = usage.get(model, TokenUsage()).plus(u)
+        merge_usage(usage, r.llm_usage)
     total = cost_usd(usage)
     per_run = total / len(reports) if total is not None and reports else None
     typer.echo(

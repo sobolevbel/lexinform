@@ -27,6 +27,7 @@ from lexinform.models.analysis import (
     TriageRecord,
     UsageRecord,
     add_usage,
+    merge_usage,
     usage_of,
 )
 from lexinform.models.batch import (
@@ -437,6 +438,7 @@ __all__ = [
     "is_urgent",
     "is_wykaz_number",
     "latest_text_document",
+    "merge_usage",
     "ministry_contact_url",
     "ministry_name",
     "ministry_url",

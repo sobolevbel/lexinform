@@ -2,6 +2,7 @@
 the answers are stored, plus token accounting."""
 
 import datetime as dt
+from collections.abc import Mapping
 from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -328,9 +329,15 @@ def usage_of(record: UsageRecord) -> TokenUsage:
     )
 
 
+def merge_usage(target: dict[str, TokenUsage], usage: Mapping[str, TokenUsage]) -> None:
+    """Add each model's tokens in `usage` to that model's total in `target`."""
+    for model, tokens in usage.items():
+        target[model] = target.get(model, TokenUsage()).plus(tokens)
+
+
 def add_usage(target: dict[str, TokenUsage], record: UsageRecord) -> None:
     """Accumulate a record's tokens under its model."""
-    target[record.model] = target.get(record.model, TokenUsage()).plus(usage_of(record))
+    merge_usage(target, {record.model: usage_of(record)})
 
 
 class TriageContext(BaseModel):

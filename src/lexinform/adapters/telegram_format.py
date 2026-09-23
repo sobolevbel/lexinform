@@ -67,6 +67,7 @@ from lexinform.models import (
     is_rcl_number,
     is_urgent,
     is_wykaz_number,
+    merge_usage,
     ministry_contact_url,
     ministry_name,
     ministry_url,
@@ -2537,8 +2538,7 @@ def _runs_line(snapshot: StatusSnapshot) -> str:
         return f"🏃 <b>runs</b>: none in {snapshot.days} days"
     usage: dict[str, TokenUsage] = {}
     for report in runs:
-        for model, spent in report.llm_usage.items():
-            usage[model] = usage.get(model, TokenUsage()).plus(spent)
+        merge_usage(usage, report.llm_usage)
     cost = cost_usd(usage)
     parts = [
         f"{len(runs)} in {snapshot.days} days",

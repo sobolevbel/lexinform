@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.logging_setup import MemoryLogHandler
-from lexinform.models import RunMode, RunReport, TokenUsage
+from lexinform.models import RunMode, RunReport, merge_usage
 from lexinform.ports import BillRepository, Clock, RunNotifier
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.commands import CommandService
@@ -161,8 +161,7 @@ class DailyPipeline:
             report.llm_output_tokens = sum(call.output_tokens for call in report.llm_calls)
             report.llm_usage = {}
             for call in report.llm_calls:
-                for model, usage in call.usage.items():
-                    report.llm_usage[model] = report.llm_usage.get(model, TokenUsage()).plus(usage)
+                merge_usage(report.llm_usage, call.usage)
             if run_id is not None:
                 try:
                     with self._repo.atomic():
@@ -332,7 +331,7 @@ class DailyPipeline:
         report.commands = handled.lines
         report.llm_input_tokens += handled.input_tokens
         report.llm_output_tokens += handled.output_tokens
-        _merge_usage(report, handled.usage)
+        merge_usage(report.llm_usage, handled.usage)
         if handled.fatal_error:
             report.errors.append(f"commands: {handled.fatal_error}")
 
@@ -400,7 +399,7 @@ class DailyPipeline:
         ]
         report.llm_input_tokens += analysed.input_tokens
         report.llm_output_tokens += analysed.output_tokens
-        _merge_usage(report, analysed.usage)
+        merge_usage(report.llm_usage, analysed.usage)
         if analysed.fatal_error:
             report.errors.append(f"analysis: {analysed.fatal_error}")
 
@@ -479,7 +478,7 @@ class DailyPipeline:
         report.rehomed += tracked.rehomed
         report.llm_input_tokens += tracked.input_tokens
         report.llm_output_tokens += tracked.output_tokens
-        _merge_usage(report, tracked.usage)
+        merge_usage(report.llm_usage, tracked.usage)
         report.errors.extend(f"tracking: {error}" for error in tracked.partial_errors)
         return tracked.failed
 
@@ -500,8 +499,3 @@ class DailyPipeline:
             self._notifier.notify(report, lines)
         except Exception as exc:
             log.exception("run notification failed: %s", exc)
-
-
-def _merge_usage(report: RunReport, usage: dict[str, TokenUsage]) -> None:
-    for model, tokens in usage.items():
-        report.llm_usage[model] = report.llm_usage.get(model, TokenUsage()).plus(tokens)

@@ -32,6 +32,7 @@ from lexinform.models import (
     TokenUsage,
     closure_event,
     is_over,
+    merge_usage,
     parse_command,
 )
 from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier, Publisher
@@ -123,8 +124,8 @@ class CommandsResult:
 
 
 def _count_usage(result: CommandsResult, spent: dict[str, TokenUsage]) -> None:
-    for model, tokens in spent.items():
-        result.usage[model] = result.usage.get(model, TokenUsage()).plus(tokens)
+    merge_usage(result.usage, spent)
+    for tokens in spent.values():
         result.input_tokens += tokens.input + tokens.cache_read
         result.output_tokens += tokens.output
 
@@ -637,8 +638,7 @@ class CommandService:
                 " /analyze BILL publish posts the card first",
             )
         result = self._tracking.check_bill(bill, publish=publish)
-        for model, tokens in result.usage.items():
-            spent[model] = spent.get(model, TokenUsage()).plus(tokens)
+        merge_usage(spent, result.usage)
         if result.fatal_error is not None:
             raise _SourceDownError(result.fatal_error)
         return CommandOutcome(
@@ -701,8 +701,7 @@ class CommandService:
         reports = self._repo.list_runs(since=self._clock.now() - dt.timedelta(days=days))
         usage: dict[str, TokenUsage] = {}
         for report in reports:
-            for model, spent in report.llm_usage.items():
-                usage[model] = usage.get(model, TokenUsage()).plus(spent)
+            merge_usage(usage, report.llm_usage)
         snapshot = SpendSnapshot(
             days=days,
             runs=len(reports),
