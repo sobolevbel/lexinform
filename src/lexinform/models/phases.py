@@ -238,6 +238,19 @@ def consultation_open(bill: Bill, today: dt.date) -> bool:
     return phase is not None and phase.key == "rcl_consultation"
 
 
+def window_closes_within(bill: Bill, today: dt.date, days: int) -> bool:
+    """Whether the reader's time to act is measured in days: a pilny bill, or a consultation
+    whose end date falls within `days` of today — too close for a batch answer that may take 24h."""
+    if is_urgent(bill):
+        return True
+    window = bill.consultation
+    return (
+        window is not None
+        and window.end is not None
+        and today <= window.end <= today + dt.timedelta(days=days)
+    )
+
+
 def about_ukraine(bill: Bill) -> bool:
     """Prefilter hit on "obywatele Ukrainy" (title or text), or the title says so itself."""
     hits = {hit.removeprefix("text:") for hit in bill.prefilter_hits}

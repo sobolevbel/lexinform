@@ -62,6 +62,20 @@ def test_a_batched_analysis_posts_nothing_until_collected() -> None:
     assert w.bill("3039").status is BillStatus.ANALYZED
 
 
+def test_a_pilny_bill_is_analysed_at_once_even_with_batching_on() -> None:
+    w = World(batch=True)
+    w.add_bill("3039", "Rządowy projekt ustawy o zmianie ustawy o cudzoziemcach")
+    w.touch("3039", dt.datetime(2026, 9, 7, 5, tzinfo=dt.UTC), urgency_status="URGENT")
+    w.add_bill("3100", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
+
+    report = w.run()
+
+    assert [b.number for b, _ in w.publisher.new_bills] == ["3039"]
+    assert w.bill("3100").status is BillStatus.BATCH_PENDING
+    assert [r.number for r in w.batch.submitted] == ["3100"]
+    assert report.analyzed == 1
+
+
 def test_second_run_publishes_nothing_new() -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")

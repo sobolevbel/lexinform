@@ -140,6 +140,13 @@ class Settings(BaseSettings):
         " `analyze()` directly. It decides what is *submitted* only: a batch already filed is"
         " collected whatever this says, so switching it off never strands requests in flight.",
     )
+    llm_batch_sync_within_days: int = Field(
+        default=3,
+        ge=0,
+        description="A bill the reader must act on within this many days — pilny, or a"
+        " consultation that ends by then — is analysed at once even with batching on: a batch"
+        " answer may take 24 hours and the next run after it. 0 sends everything to the batch.",
+    )
     llm_batch_provider: Literal["anthropic", "openai"] = Field(
         default="anthropic",
         description="Which provider's batch API `llm_batch_enabled` submits to — one setting for"

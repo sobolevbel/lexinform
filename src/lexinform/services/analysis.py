@@ -63,6 +63,7 @@ from lexinform.models import (
     add_usage,
     observe,
     stage_fingerprint,
+    window_closes_within,
 )
 from lexinform.ports import AuthorsResolver, BatchBackend, BillRepository, Clock, LlmAnalyzer
 from lexinform.ports import TextSource as TextSourcePort
@@ -175,6 +176,7 @@ class AnalysisOptions:
     channel_id: str | None = None
     batch_provider: BatchProvider | None = None
     submit_batches: bool = False
+    batch_sync_within_days: int = 0
 
 
 @dataclass(frozen=True)
@@ -393,6 +395,17 @@ class AnalysisService:
         """Whether a memo miss is filed to the batch; `collect_batches` never asks."""
         return self._batch is not None and self._options.submit_batches and not self._dry_run
 
+    def _batches(self, bill: Bill) -> bool:
+        """Whether this bill's memo miss may wait for the batch; one the reader must act on
+        within `batch_sync_within_days` is asked at once."""
+        days = self._options.batch_sync_within_days
+        if not self._submits_batches:
+            return False
+        if days > 0 and window_closes_within(bill, self._clock.now().date(), days):
+            log.info("%s is analysed at once: the reader's window closes soon", bill.number)
+            return False
+        return True
+
     @property
     def stopped(self) -> str | None:
         """Set once the per-run limit has held a re-analysis back, for the run report to say so.
@@ -429,7 +442,7 @@ class AnalysisService:
 
         def prepare(bill: Bill) -> _Prepared:
             return self._prepare_first(
-                bill, triage=bill.number not in carried, submit_batch=self._submits_batches
+                bill, triage=bill.number not in carried, submit_batch=self._batches(bill)
             )
 
         for outcome in fan_out(candidates, prepare, workers=self._options.workers):
@@ -814,7 +827,7 @@ class AnalysisService:
             return bill, False
         located = LocatedText(summary=summary, document=document)
         prepared = self._prepare(
-            bill, located, previous=bill.analysis, submit_batch=self._submits_batches
+            bill, located, previous=bill.analysis, submit_batch=self._batches(bill)
         )
         if prepared.queued:
             self._enqueue(bill, prepared)

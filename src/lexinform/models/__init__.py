@@ -164,6 +164,7 @@ from lexinform.models.phases import (
     is_urgent,
     next_phase,
     stalled_days,
+    window_closes_within,
 )
 from lexinform.models.planning import BillPlan, observation_of, observe, plan_bill
 from lexinform.models.rcl import (
@@ -452,6 +453,7 @@ __all__ = [
     "WYKAZ_PREFIX",
     "WYKAZ_REGISTER_URL",
     "WykazEntry",
+    "window_closes_within",
     "wykaz_entry_number",
     "wykaz_fingerprint",
     "wykaz_number",

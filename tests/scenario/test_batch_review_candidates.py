@@ -301,6 +301,7 @@ def test_collected_tokens_are_in_the_run_totals() -> None:
 def test_government_batch_survives_a_term_rollover() -> None:
     w = World(batch=True)
     w.add_rcl_project()
+    w.clock.advance(days=3)  # past the consultation, or the project is analysed at once
     w.run()
     assert w.repo.move_government_rows(TERM, TERM + 1) == 0
     w.batch.resolve()

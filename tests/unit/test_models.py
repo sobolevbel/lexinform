@@ -26,8 +26,10 @@ from lexinform.models import (
     stage_fingerprint,
     third_reading_kept_the_text,
     veto_stood,
+    window_closes_within,
     wykaz_summary,
 )
+from tests.formatting import bill_of, consulted
 from tests.harness import wykaz_entry
 
 NOW = dt.datetime(2026, 9, 9, tzinfo=dt.UTC)
@@ -878,3 +880,22 @@ def test_the_opinion_survey_lives_on_its_own_host() -> None:
     assert sub.survey_url == "https://opiniowanie.sejm.gov.pl/RPW-29075-2026"
     assert sub.consultation_url is not None and "KONSULTOWANY_PROJEKT" in sub.consultation_url
     assert sub.model_copy(update={"public_consultation": False}).survey_url is None
+
+
+def test_a_consultation_ending_within_the_margin_cannot_wait_for_a_batch(
+    process_3039: ProcessDetail,
+) -> None:
+    bill = bill_of(process_3039, submission=consulted(consultation_end=dt.date(2026, 9, 20)))
+
+    assert window_closes_within(bill, dt.date(2026, 9, 17), 3)
+    assert not window_closes_within(bill, dt.date(2026, 9, 16), 3)
+    assert not window_closes_within(bill, dt.date(2026, 9, 21), 3)  # already closed
+
+
+def test_a_pilny_bill_cannot_wait_for_a_batch_whatever_its_consultation(
+    process_3039: ProcessDetail,
+) -> None:
+    urgent = bill_of(process_3039.model_copy(update={"urgency_status": "URGENT"}))
+
+    assert window_closes_within(urgent, dt.date(2026, 9, 7), 3)
+    assert not window_closes_within(bill_of(process_3039), dt.date(2026, 9, 7), 3)
