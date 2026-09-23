@@ -131,6 +131,7 @@ class RunReport(BaseModel):
     updates: int = 0
     reanalyzed: int = 0
     tracked: int = 0
+    batch_waiting: int = 0
     errors: list[str] = Field(default_factory=list)
     llm_input_tokens: int = 0
     llm_output_tokens: int = 0

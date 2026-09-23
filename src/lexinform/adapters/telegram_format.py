@@ -1165,6 +1165,7 @@ class MessageFormatter:
                     ("re-analyzed: {}", report.reanalyzed),
                     ("linked: {}", report.linked),
                     ("tracked: {}", report.tracked),
+                    ("ждут ответа батча: {}", report.batch_waiting),
                 ),
                 _counters(
                     ("acts: {}", report.acts_published),

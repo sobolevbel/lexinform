@@ -62,6 +62,7 @@ class PublishingResult:
     joined: int = 0
     skipped: int = 0
     failed: int = 0
+    waiting: int = 0
     fatal_error: str | None = None
 
 
@@ -114,7 +115,9 @@ class PublishingService:
         """The channel the cards go to: what a caller counting its posts must ask about."""
         return self._channel_id
 
-    def publish_new(self, *, min_score: int, limit: int, publish: bool = True) -> PublishingResult:
+    def publish_new(
+        self, *, min_score: int, limit: int, publish: bool = True, may_wait: bool = True
+    ) -> PublishingResult:
         """Post the cards this run has earned.
 
         A bill whose road ended between the analysis and the card — publishing was off, or the
@@ -159,13 +162,14 @@ class PublishingService:
                 result.skipped += 1
                 continue
             try:
-                ok = self.publish_bill(bill, result)
+                waiting = result.waiting
+                ok = self.publish_bill(bill, result, may_wait=may_wait)
             except ServiceUnavailableError as exc:
                 result.failed += 1
                 result.fatal_error = exc.describe()
                 log.error("aborting publishing phase: %s", result.fatal_error)
                 break
-            if not ok:
+            if not ok and result.waiting == waiting:
                 result.failed += 1
         return result
 
@@ -204,7 +208,9 @@ class PublishingService:
         for kind in CARD_KINDS:
             self._repo.delete_publication(bill.term, bill.number, kind, self._channel_id)
 
-    def publish_bill(self, bill: Bill, result: PublishingResult | None = None) -> bool:
+    def publish_bill(
+        self, bill: Bill, result: PublishingResult | None = None, *, may_wait: bool = False
+    ) -> bool:
         """Send one bill: a card, or a reply under the card of a print it is considered jointly
         with. Returns True on success and counts the post in `result`.
 
@@ -239,7 +245,7 @@ class PublishingService:
         else:
             plan = self.plan(bill)
         if plan.primary is not None:
-            return self._publish_joint(plan, result, identity)
+            return self._publish_joint(plan, result, identity, may_wait=may_wait)
         if plan.inherited is not None:
             return self._inherit_card(plan.bill, plan.inherited)
         bill, print_info = plan.bill, plan.print_info
@@ -288,7 +294,9 @@ class PublishingService:
         print_info = self.print_info(bill)
         return CardPlan(bill=self._with_submission(bill), print_info=print_info)
 
-    def _publish_joint(self, plan: CardPlan, result: PublishingResult, identity: Bill) -> bool:
+    def _publish_joint(
+        self, plan: CardPlan, result: PublishingResult, identity: Bill, *, may_wait: bool
+    ) -> bool:
         bill, print_info = plan.bill, plan.print_info
         card_bill, card_message_id = plan.primary, plan.primary_message_id
         assert card_bill is not None, (
@@ -298,7 +306,11 @@ class PublishingService:
             identity.term, identity.number, PublicationKind.JOINT_BILL, self._channel_id
         )
         if stored is None or stored.delivery is None:
-            bill = self._compared(bill)
+            compared = self._compared(bill, may_wait=may_wait)
+            if isinstance(compared, Waiting):
+                result.waiting += 1
+                return False
+            bill = compared
         pub_id = self._repo.create_publication(
             Publication(
                 term=identity.term,
@@ -328,7 +340,7 @@ class PublishingService:
         log.info("druk %s joined the thread of druk %s", bill.number, card_bill.number)
         return True
 
-    def _compared(self, bill: Bill) -> Bill:
+    def _compared(self, bill: Bill, *, may_wait: bool) -> Bill | Waiting:
         """The bill with an up-to-date answer to "how does it differ from the others", asked of
         the model once and stored on the row.
 
@@ -343,7 +355,7 @@ class PublishingService:
         if not numbers or (bill.joint is not None and bill.joint.compared_with == numbers):
             return bill
         try:
-            record = self._analysis.compare_joint(bill, others)
+            record = self._analysis.compare_joint(bill, others, may_wait=may_wait)
         except Exception as exc:
             log.warning(
                 "%s not compared with %s (%s: %s); the reply says what it can",
@@ -355,7 +367,8 @@ class PublishingService:
             return bill
         if record is None:
             return bill
-        assert not isinstance(record, Waiting)
+        if isinstance(record, Waiting):
+            return record
         self._repo.save_joint_comparison(bill.term, bill.number, record)
         return bill.model_copy(update={"joint": record})
 

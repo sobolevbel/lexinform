@@ -405,10 +405,11 @@ class DailyPipeline:
 
     def _publish(self, opts: RunOptions, report: RunReport) -> None:
         published = self._publishing.publish_new(
-            min_score=opts.min_score, limit=opts.max_publish, publish=opts.publish
+            min_score=opts.min_score, limit=opts.max_publish, publish=opts.publish, may_wait=True
         )
         report.published = published.published
         report.joint_published = published.joined
+        report.batch_waiting += published.waiting
         if published.fatal_error:
             report.errors.append(f"publishing: {published.fatal_error}")
         elif published.failed:
