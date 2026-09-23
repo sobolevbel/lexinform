@@ -63,8 +63,17 @@ a bypassed spending guard are P3 here, although they deserve early engineering a
 The two `test_batch_review_candidates.py` modules retain expected-behaviour assertions under
 strict `xfail` only for open rows; run with `--runxfail` to see those defects.
 
-No batch-review candidate remains open after the 23 September fixes. Production incidence remains
-unmeasured; the review report preserves the original reproductions and limits.
+The original probes pass after the 23 September fixes. The initial closure was too broad:
+follow-up validation also covers runner loss, superseding jobs and missing source documents.
+Production incidence remains unmeasured; the review preserves the original reproduction limits.
+
+Follow-up for B30/B32/B35/B37: state is now pushed before batch submission on ephemeral runners;
+generation checks prevent an old answer from completing a new job after reset; ready answers keep
+their source snapshot and do not require another download; usage is charged after the local
+consumption transaction commits. Regression coverage includes `test_batch_checkpoint.py`,
+`test_old_result_cannot_complete_a_new_job_after_reset`,
+`test_completed_initial_analysis_uses_its_saved_input_without_downloading_again`, and
+`test_ready_reanalysis_survives_restart_and_a_missing_document`.
 
 ## Fixed
 

@@ -225,6 +225,11 @@ server that is always on (`lexinform listen`):
 
 ## Configuration
 
+Batch submission on ephemeral runners requires `LEXINFORM_LLM_BATCH_STATE_FILE` pointing to
+the SQL dump in a checked-out Git state worktree and `LEXINFORM_LLM_BATCH_STATE_BRANCH` (default
+`state`). The daily workflow sets these and checkpoints state before sending work to the provider.
+Persistent local SQLite installations may leave the checkpoint path unset.
+
 Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 
 | Variable | Default | Meaning |

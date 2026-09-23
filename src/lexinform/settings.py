@@ -69,6 +69,10 @@ class Settings(BaseSettings):
     )
 
     db_path: Path = Path("lexinform.db")
+    llm_batch_state_file: Path | None = Field(
+        default=None, description="Git state dump checkpoint before and after remote submission."
+    )
+    llm_batch_state_branch: str = "state"
 
     anthropic_api_key: str | None = Field(
         default=None,

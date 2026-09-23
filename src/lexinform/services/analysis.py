@@ -46,6 +46,7 @@ from lexinform.models import (
     LlmCall,
     LocatedText,
     ProcessSummary,
+    ReadyAnalysis,
     ScannedDocument,
     SupplementContext,
     SupplementRecord,
@@ -232,6 +233,7 @@ class _Prepared:
     batch_meta: BatchItemMeta | None = None
     memo_key: str | None = None
     triage_memo_key: str | None = None
+    from_batch: bool = False
 
 
 _PAGE_NUMBER_LINE = re.compile(r"^\s*[–\-—]?\s*\d{1,4}\s*[–\-—]?\s*$", re.MULTILINE)
@@ -313,6 +315,7 @@ class AnalysisService:
         triage: KeywordPrefilter | None = None,
         batch: BatchBackend | None = None,
         batch_resolver: Callable[[BatchProvider], BatchBackend | None] | None = None,
+        batch_checkpoint: Callable[[], None] | None = None,
     ) -> None:
         self._repo = repo
         self._texts = texts
@@ -326,6 +329,7 @@ class AnalysisService:
         self._triage = triage
         self._batch = batch
         self._batch_resolver = batch_resolver
+        self._batch_checkpoint = batch_checkpoint
         self._dry_run = False
         self._ledger = CostLedger(max_run_usd=options.max_run_cost_usd)
         self._memo = repo.load_analysis_memo()
@@ -470,6 +474,7 @@ class AnalysisService:
             for intent in intents
             if (bill := self._repo.get(intent.request.term, intent.request.number)) is None
             or bill.status is not BillStatus.BATCH_PENDING
+            or bill.analysis_generation != intent.meta.generation
         ]
         if stale:
             self._repo.delete_batch_intents(stale)
@@ -489,7 +494,10 @@ class AnalysisService:
                 group = provider_intents[offset : offset + 100]
                 requests = [intent.request for intent in group]
                 ids = [request.custom_id for request in requests]
-                self._repo.mark_batch_intents_submitting(ids)
+                with self._repo.atomic():
+                    self._repo.mark_batch_intents_submitting(ids)
+                if self._batch_checkpoint is not None:
+                    self._batch_checkpoint()
                 try:
                     batch_id = backend.submit(requests)
                 except BatchNotSubmittedError:
@@ -521,6 +529,8 @@ class AnalysisService:
                         ],
                     )
                     self._repo.delete_batch_intents(ids)
+                if self._batch_checkpoint is not None:
+                    self._batch_checkpoint()
                 log.info("filed batch %s: %d request(s) with %s", batch_id, len(group), provider)
 
     def _estimate_request_cost(self, ctx: BillContext) -> float:
@@ -582,15 +592,24 @@ class AnalysisService:
     def _consume(self, item: LlmBatchItem, batch_result: BatchResult) -> None:
         now = self._clock.now()
         current = self._repo.get(item.term, item.number)
-        if current is None or current.status is not BillStatus.BATCH_PENDING:
-            self._repo.mark_llm_batch_item_consumed(item.batch_id, item.custom_id, consumed_at=now)
-            return
+        active = (
+            current is not None
+            and current.status is BillStatus.BATCH_PENDING
+            and current.analysis_generation == item.meta.generation
+        )
         with self._repo.atomic():
-            self._consume_current(item, batch_result, now)
+            record = self._consume_current(item, batch_result, now, active=active)
+        if record is not None:
+            self._ledger.charge(record, number=item.number, kind=item.call_kind, batched=True)
+            if active:
+                self._memo.setdefault(
+                    item.meta.memo_key or item.custom_id, record.model_dump_json()
+                )
 
     def _consume_current(
-        self, item: LlmBatchItem, batch_result: BatchResult, now: datetime
-    ) -> None:
+        self, item: LlmBatchItem, batch_result: BatchResult, now: datetime, *, active: bool
+    ) -> AnalysisRecord | None:
+        record = None
         if batch_result.analysis is not None:
             record = AnalysisRecord(
                 analysis=batch_result.analysis,
@@ -610,16 +629,25 @@ class AnalysisService:
                 text_sha256=item.meta.text_sha256,
                 source_checked_at=now,
             )
-            self._ledger.charge(record, number=item.number, kind=item.call_kind, batched=True)
-            self._remember_analysis(item.custom_id, record)
-            # Back to what the memo hit will finish for free: the queue, or the steady state.
-            done = (
-                BillStatus.ANALYSIS_READY
-                if item.call_kind == "analysis"
-                else BillStatus.REANALYSIS_READY
-            )
-            self._repo.set_status(item.term, item.number, done)
-        else:
+            if active:
+                self._repo.save_analysis_memo(
+                    item.meta.memo_key or item.custom_id, record.model_dump_json()
+                )
+                if item.meta.located is not None:
+                    self._repo.save_ready_analysis(
+                        item.term,
+                        item.number,
+                        ReadyAnalysis(
+                            record=record, located=item.meta.located, text=item.meta.text
+                        ),
+                    )
+                done = (
+                    BillStatus.ANALYSIS_READY
+                    if item.call_kind == "analysis"
+                    else BillStatus.REANALYSIS_READY
+                )
+                self._repo.set_status(item.term, item.number, done)
+        elif active:
             log.warning(
                 "%s: batch answer (%s) is %s", item.number, item.call_kind, batch_result.error
             )
@@ -631,11 +659,15 @@ class AnalysisService:
                 # A reanalysis that failed keeps the old analysis, same as a synchronous one would.
                 self._repo.set_status(item.term, item.number, BillStatus.ANALYZED)
         self._repo.mark_llm_batch_item_consumed(item.batch_id, item.custom_id, consumed_at=now)
+        return record
 
     def analyze_bill(self, bill: Bill, *, ignore_cost_limit: bool = False) -> AnalysisOutcome:
         """First analysis from the current text. Persists the result; raises on failure.
         `ignore_cost_limit` is the operator's explicit wish (a forced command): the per-bill
         cost guard does not apply."""
+        if ignore_cost_limit:
+            self._repo.reset_bill(bill.term, bill.number, BillStatus.ANALYSIS_PENDING)
+            bill = self._repo.get(bill.term, bill.number) or bill
         prepared = self._prepare_first(
             bill, cost_guard=not ignore_cost_limit, triage=not self._joint_card_exists(bill)
         )
@@ -649,6 +681,21 @@ class AnalysisService:
         triage: bool = True,
         submit_batch: bool = False,
     ) -> _Prepared:
+        if (
+            cost_guard
+            and bill.status is BillStatus.ANALYSIS_READY
+            and bill.ready_analysis is not None
+        ):
+            ready = bill.ready_analysis
+            return _Prepared(
+                bill,
+                ready.located,
+                ready.text,
+                ready.record.text_source,
+                _reused(ready.record),
+                first=True,
+                from_batch=True,
+            )
         return self._prepare(
             bill,
             self._texts.locate(bill),
@@ -693,6 +740,8 @@ class AnalysisService:
     ) -> tuple[Bill, bool]:
         """Memoize paid work without advancing the bill before its source checkpoint."""
         assert bill.analysis is not None
+        if bill.status is BillStatus.REANALYSIS_READY and bill.ready_analysis is not None:
+            return bill.model_copy(update={"analysis": _reused(bill.ready_analysis.record)}), True
         if bill.status is BillStatus.BATCH_PENDING:
             # Already filed and not yet collected: re-detecting it now would queue it twice.
             return bill, False
@@ -947,7 +996,13 @@ class AnalysisService:
                 triage=triaged,
                 queued=True,
                 batch_request=BatchRequest(
-                    custom_id=key, call_kind=purpose, term=bill.term, number=bill.number, ctx=ctx
+                    custom_id=hashlib.sha256(
+                        f"{key}:{bill.analysis_generation}".encode()
+                    ).hexdigest(),
+                    call_kind=purpose,
+                    term=bill.term,
+                    number=bill.number,
+                    ctx=ctx,
                 ),
                 batch_meta=BatchItemMeta(
                     input_chars=len(ctx.text),
@@ -958,6 +1013,10 @@ class AnalysisService:
                     revision=previous.revision + 1 if previous else 1,
                     text_sha256=digest,
                     prompt_version=self._options.prompt_version,
+                    generation=bill.analysis_generation,
+                    memo_key=key,
+                    located=located,
+                    text=text,
                 ),
                 memo_key=key,
                 triage_memo_key=triage_memo_key,
@@ -1185,7 +1244,7 @@ class AnalysisService:
             )
             authors = self._authors.resolve(described, prepared.text)
         with self._repo.atomic():
-            if prepared.first and located.summary is not None:
+            if prepared.first and located.summary is not None and not prepared.from_batch:
                 summary = located.summary
                 if summary.applicant_type is ApplicantType.UNKNOWN:
                     summary = summary.model_copy(update={"applicant": bill.summary.applicant_type})

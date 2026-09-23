@@ -41,6 +41,7 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
     RclProject,
+    ReadyAnalysis,
     RunMode,
     RunReport,
     Stage,
@@ -331,6 +332,10 @@ MIGRATIONS: tuple[str, ...] = (
     );
     CREATE INDEX ix_llm_batch_intents_state ON llm_batch_intents(state, created_at);
     """,
+    """
+    ALTER TABLE bills ADD COLUMN analysis_generation INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE bills ADD COLUMN ready_analysis_json TEXT;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -602,12 +607,18 @@ class SqliteBillRepository:
         self._conn.execute(
             """
             UPDATE bills SET analysis_json = ?,
+                analysis_generation = analysis_generation +
+                    CASE WHEN analysis_json IS NOT ? THEN 1 ELSE 0 END,
+                ready_analysis_json = CASE WHEN analysis_json IS NOT ? THEN NULL
+                                           ELSE ready_analysis_json END,
                 status = CASE WHEN status IN (?, ?) AND analysis_json = ?
                               THEN status ELSE ? END,
                 last_error = NULL
             WHERE term = ? AND number = ?
             """,
             (
+                record.model_dump_json(),
+                record.model_dump_json(),
                 record.model_dump_json(),
                 BillStatus.BATCH_PENDING.value,
                 BillStatus.REANALYSIS_READY.value,
@@ -616,6 +627,12 @@ class SqliteBillRepository:
                 term,
                 number,
             ),
+        )
+
+    def save_ready_analysis(self, term: int, number: str, ready: ReadyAnalysis) -> None:
+        self._conn.execute(
+            "UPDATE bills SET ready_analysis_json = ? WHERE term = ? AND number = ?",
+            (ready.model_dump_json(), term, number),
         )
 
     def save_observed_process(self, term: int, number: str, observed: ObservedProcess) -> None:
@@ -802,7 +819,8 @@ class SqliteBillRepository:
         replaces the last error (a bill silenced by `/skip` says so instead of keeping the
         prefilter's silence, which reads as a keyword miss)."""
         self._conn.execute(
-            "UPDATE bills SET status = ?, analysis_attempts = 0, last_error = ?"
+            "UPDATE bills SET status = ?, analysis_attempts = 0, last_error = ?,"
+            " analysis_generation = analysis_generation + 1, ready_analysis_json = NULL"
             " WHERE term = ? AND number = ?",
             (status.value, reason, term, number),
         )
@@ -1757,6 +1775,12 @@ class SqliteBillRepository:
             ),
             analysis=analysis,
             analysis_attempts=int(row["analysis_attempts"]),
+            analysis_generation=int(row["analysis_generation"]),
+            ready_analysis=(
+                ReadyAnalysis.model_validate_json(row["ready_analysis_json"])
+                if row["ready_analysis_json"]
+                else None
+            ),
             last_error=row["last_error"],
             submission=(
                 BillSubmission.model_validate_json(row["submission_json"])

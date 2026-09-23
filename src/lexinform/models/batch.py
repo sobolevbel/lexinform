@@ -10,6 +10,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from lexinform.models.analysis import Analysis, BillContext
+from lexinform.models.bill import LocatedText
 from lexinform.models.enums import SourceKind, TextSource
 from lexinform.models.report import CallKind
 
@@ -71,6 +72,10 @@ class BatchItemMeta(BaseModel):
     revision: int
     text_sha256: str | None
     prompt_version: str = ""
+    generation: int = 0
+    memo_key: str | None = None
+    located: LocatedText | None = None
+    text: str = ""
 
 
 class LlmBatchItem(BaseModel):

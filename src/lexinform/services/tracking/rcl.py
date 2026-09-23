@@ -158,6 +158,8 @@ class RclWatcher:
         fresh = bill
         content_changed = False
         document = self._texts.locate(bill.model_copy(update={"rcl": project})).document
+        if bill.status is BillStatus.REANALYSIS_READY and bill.ready_analysis is not None:
+            document = bill.ready_analysis.located.document or document
         if (
             self._analysis is not None
             and bill.analysis is not None

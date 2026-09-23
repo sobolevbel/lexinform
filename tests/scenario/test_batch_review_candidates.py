@@ -3,10 +3,12 @@
 import datetime as dt
 from collections.abc import Sequence
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
+from lexinform.adapters.batch_checkpoint import GitBatchCheckpoint
 from lexinform.cli import app
 from lexinform.errors import BatchNotSubmittedError, LlmUnavailableError
 from lexinform.models import BatchRequest, BatchStatus, BillStatus
@@ -102,6 +104,64 @@ def test_collect_respects_an_operator_skip() -> None:
     assert w.bill("3039").status is BillStatus.SKIPPED_PREFILTER
 
 
+def test_old_result_cannot_complete_a_new_job_after_reset() -> None:
+    w = World(batch=True)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.repo.reset_bill(TERM, "3039", BillStatus.ANALYSIS_PENDING)
+    w.run()
+    assert len(w.batch.batches) == 2
+
+    w.batch.resolve("batch-1")
+    report = w.run()
+
+    assert w.bill("3039").status is BillStatus.BATCH_PENDING
+    assert not w.publisher.new_bills
+    assert report.llm_input_tokens == 100
+    w.batch.resolve("batch-2")
+    w.run()
+    assert len(w.publisher.new_bills) == 1
+
+
+def test_completed_initial_analysis_uses_its_saved_input_without_downloading_again() -> None:
+    w = World(batch=True)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.batch.resolve()
+    w.gateway.outages.add("download")
+    restarted = replace(w.container)
+
+    report = restarted.pipeline(dry_run=False).run(RunOptions(term=TERM, track=False))
+
+    assert report.analyzed == 1
+    assert len(w.batch.submitted) == 1
+    assert len(w.publisher.new_bills) == 1
+
+
+def test_submission_requires_a_successful_external_checkpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    w = World(batch=True)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    restarted = replace(
+        w.container,
+        settings=w.container.settings.model_copy(
+            update={"llm_batch_state_file": Path("state.sql")}
+        ),
+    )
+
+    def refuse_checkpoint(checkpoint: GitBatchCheckpoint) -> None:
+        assert w.repo.list_submitting_batch_intents()
+        raise RuntimeError("state push rejected")
+
+    monkeypatch.setattr(GitBatchCheckpoint, "__call__", refuse_checkpoint)
+    report = restarted.pipeline(dry_run=False).run(RunOptions(term=TERM))
+
+    assert report.errors
+    assert not w.batch.submitted
+    assert w.repo.list_submitting_batch_intents()
+
+
 def test_collect_does_not_pay_for_triage_again() -> None:
     w = World(batch=True, triage=True)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
@@ -145,6 +205,26 @@ def test_collected_reanalysis_is_applied_even_after_discovery_watermark_moves() 
     report = w.run(since=None)
 
     assert report.reanalyzed == 1, (report.tracked, w.bill("3039").status)
+
+
+def test_ready_reanalysis_survives_restart_and_a_missing_document() -> None:
+    w = World(batch=True, extractor=FakeTextExtractor(by_content={b"%PDF-report": REPORT_TEXT}))
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.batch.resolve()
+    w.run()
+    w.set_stages("3039", WITH_REPORT)
+    w.gateway.files[REPORT_URL] = b"%PDF-report"
+    w.run(full_track=True)
+    w.batch.resolve()
+    w.gateway.outages.add("download")
+    restarted = replace(w.container)
+
+    report = restarted.pipeline(dry_run=False).run(RunOptions(term=TERM, full_track=True))
+
+    assert report.reanalyzed == 1
+    assert w.bill("3039").ready_analysis is None
+    assert len(w.batch.submitted) == 2
 
 
 def test_dry_run_still_previews_a_new_analysis_without_submitting_a_batch() -> None:

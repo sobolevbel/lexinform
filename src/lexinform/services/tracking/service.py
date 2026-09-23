@@ -16,6 +16,7 @@ from lexinform.models import (
     AmendmentsRecord,
     Bill,
     BillPlan,
+    BillStatus,
     PrintInfo,
     ProcessDetail,
     PublicationKind,
@@ -704,6 +705,8 @@ class StatusTrackingService:
         """True when the source published a text we had not read and the model read it now."""
         if self._analysis is None:
             return False
+        if bill.status is BillStatus.REANALYSIS_READY and bill.ready_analysis is not None:
+            document = bill.ready_analysis.located.document or document
         if document is None:
             return False
         log.info("druk %s: new text (%s), re-analysing", bill.number, document.kind)

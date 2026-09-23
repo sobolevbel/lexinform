@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 import anthropic
 import openai
 
+from lexinform.adapters.batch_checkpoint import GitBatchCheckpoint
 from lexinform.adapters.console import ConsolePublisher, ConsoleReplier, ConsoleRunNotifier
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
@@ -309,6 +310,15 @@ class Container:
             triage=self.prefilter if self.settings.llm_triage_model else None,
             batch=self.batch_backend(),
             batch_resolver=self.batch_backend_for,
+            batch_checkpoint=(
+                GitBatchCheckpoint(
+                    self.repo.dump,
+                    self.settings.llm_batch_state_file,
+                    self.settings.llm_batch_state_branch,
+                )
+                if self.settings.llm_batch_state_file is not None
+                else None
+            ),
         )
 
     def discovery_service(self) -> BillDiscoveryService:

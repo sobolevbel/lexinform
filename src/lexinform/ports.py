@@ -46,6 +46,7 @@ from lexinform.models import (
     RclProject,
     RclProjectSummary,
     RclStage,
+    ReadyAnalysis,
     RunReport,
     SejmSitting,
     SejmTerm,
@@ -488,6 +489,8 @@ class BillRepository(Protocol):
     ) -> None: ...
 
     def save_analysis(self, term: int, number: str, record: AnalysisRecord) -> None: ...
+
+    def save_ready_analysis(self, term: int, number: str, ready: ReadyAnalysis) -> None: ...
 
     def record_analysis_failure(self, term: int, number: str, error: str) -> None: ...
 

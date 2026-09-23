@@ -65,6 +65,19 @@ class ConsultationWindow(BaseModel):
         return self.end is not None and self.end >= today
 
 
+class LocatedText(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    summary: ProcessSummary | None = None
+    stages: tuple[Stage, ...] | None = None
+    document: TextDocument | None = None
+
+
+class ReadyAnalysis(BaseModel):
+    record: AnalysisRecord
+    located: LocatedText
+    text: str = ""
+
+
 class Bill(BaseModel):
     """One row of the `bills` table: everything we know and decided about a bill.
 
@@ -83,6 +96,8 @@ class Bill(BaseModel):
     observed_process: ObservedProcess | None = None
     analysis: AnalysisRecord | None = None
     analysis_attempts: int = 0
+    analysis_generation: int = 0
+    ready_analysis: ReadyAnalysis | None = None
     last_error: str | None = None
     submission: BillSubmission | None = None
     linked_number: str | None = None
@@ -180,17 +195,6 @@ class Bill(BaseModel):
             survey_url=sub.survey_url,
             results_published=sub.consultation_results,
         )
-
-
-class LocatedText(BaseModel):
-    """What a text source found for a bill: fresh metadata, the stage tree (when the source has
-    one) and the document to read. Any part may be missing."""
-
-    model_config = ConfigDict(frozen=True)
-
-    summary: ProcessSummary | None = None
-    stages: tuple[Stage, ...] | None = None
-    document: TextDocument | None = None
 
 
 ASIDE_STAGE_TYPES = frozenset({"GovermentPosition", "Opinion"})

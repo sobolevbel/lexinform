@@ -275,6 +275,12 @@ provider definitely has no batch containing that ID, use
 `lexinform recover-batch-intent CUSTOM_ID --confirmed-not-submitted`; the next run submits it.
 Both recovery commands must run against the state database that the workflow will next restore.
 
+On an ephemeral runner, `LEXINFORM_LLM_BATCH_STATE_FILE=state/lexinform.sql` and
+`LEXINFORM_LLM_BATCH_STATE_BRANCH=state` enable a Git checkpoint before the provider call and
+after recording its ID. The workflow sets both. A failed pre-submit push prevents the API call;
+if the runner disappears afterwards, the next run restores the uncertain intent and never
+silently submits it again. Local deployments with a persistent SQLite file can omit these settings.
+
 Updates are automatic: `.github/workflows/deploy-relay.yml` runs after every green CI on
 `main` (and on demand from the Actions tab), connects with the deploy key in the repository
 secret `MIKRUS_SSH_KEY` and runs `deploy/update.sh` on the server (fetch, reset to

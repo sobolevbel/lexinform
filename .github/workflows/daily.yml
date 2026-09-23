@@ -169,6 +169,8 @@ jobs:
           LEXINFORM_LOG_LEVEL: INFO
           # "false" analyses synchronously again; batches already filed are collected either way.
           LEXINFORM_LLM_BATCH_ENABLED: "true"
+          LEXINFORM_LLM_BATCH_STATE_FILE: state/lexinform.sql
+          LEXINFORM_LLM_BATCH_STATE_BRANCH: state
           INPUT_SINCE: ${{ inputs.since }}
           INPUT_INDEX_RCL_SINCE: ${{ inputs.index_rcl_since }}
           INPUT_DRY_RUN: ${{ inputs.dry_run }}
