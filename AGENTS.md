@@ -55,6 +55,8 @@ Dependencies flow only in this direction:
 - SQLite schema version is `PRAGMA user_version`; `MIGRATIONS` in `adapters/sqlite_repo.py` is append-only. Never edit or reorder deployed migrations.
 - Add a migration by appending plain SQL, update models and row mappings with backward-compatible defaults, and extend the legacy-dump migration test in `tests/unit/test_sqlite_repo.py`.
 - `dump()` records the schema version; `restore()` replays then migrates old dumps. There is no downgrade: roll back code and restore a previous `state`-branch dump.
+- Every durable state commit includes the derived `pending-batches.json`, including batch checkpoints.
+- Retention keeps publication identities, batch token accounting and the last discovery watermark. Never expire uncertain work or a memo needed by pending analysis, tracking or delivery; legacy memos without ownership remain protected.
 
 ## Important integration facts
 

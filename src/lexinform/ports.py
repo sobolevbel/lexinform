@@ -499,7 +499,17 @@ class BillRepository(Protocol):
 
     def load_analysis_memo(self) -> dict[str, str]: ...
 
-    def save_analysis_memo(self, key: str, record_json: str) -> None: ...
+    def save_analysis_memo(
+        self,
+        key: str,
+        record_json: str,
+        *,
+        term: int | None = None,
+        number: str | None = None,
+        used_at: datetime | None = None,
+    ) -> None: ...
+
+    def prune_history(self, *, before: datetime, memo_before: datetime) -> dict[str, int]: ...
 
     def save_observed_process(self, term: int, number: str, observed: ObservedProcess) -> None: ...
 

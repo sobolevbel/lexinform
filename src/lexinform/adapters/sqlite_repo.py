@@ -367,6 +367,12 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE bills ADD COLUMN awaiting_batch_since TEXT;
     CREATE INDEX ix_llm_batch_items_custom ON llm_batch_items(custom_id);
     """,
+    """
+    ALTER TABLE analysis_memo ADD COLUMN term INTEGER;
+    ALTER TABLE analysis_memo ADD COLUMN number TEXT;
+    ALTER TABLE analysis_memo ADD COLUMN last_used_at TEXT;
+    CREATE INDEX ix_analysis_memo_retention ON analysis_memo(last_used_at);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -690,10 +696,22 @@ class SqliteBillRepository:
     def load_analysis_memo(self) -> dict[str, str]:
         return dict(self._conn.execute("SELECT key, record_json FROM analysis_memo"))
 
-    def save_analysis_memo(self, key: str, record_json: str) -> None:
+    def save_analysis_memo(
+        self,
+        key: str,
+        record_json: str,
+        *,
+        term: int | None = None,
+        number: str | None = None,
+        used_at: datetime | None = None,
+    ) -> None:
         self._conn.execute(
-            "INSERT INTO analysis_memo(key, record_json) VALUES (?, ?) ON CONFLICT(key) DO NOTHING",
-            (key, record_json),
+            "INSERT INTO analysis_memo(key, record_json, term, number, last_used_at)"
+            " VALUES (?, ?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET"
+            " term = COALESCE(excluded.term, analysis_memo.term),"
+            " number = COALESCE(excluded.number, analysis_memo.number),"
+            " last_used_at = COALESCE(excluded.last_used_at, analysis_memo.last_used_at)",
+            (key, record_json, term, number, _iso(used_at)),
         )
 
     def save_update_delivery(self, change_id: int, channel_id: str, delivery: DeliveryPlan) -> None:
@@ -1785,8 +1803,60 @@ class SqliteBillRepository:
 
     def prune_runs(self, *, before: datetime) -> int:
         """Forget run records started before `before`; their reports are in the log channel."""
-        cur = self._conn.execute("DELETE FROM runs WHERE started_at < ?", (before.isoformat(),))
+        cur = self._conn.execute(
+            "DELETE FROM runs WHERE started_at < ? AND id NOT IN"
+            " (SELECT id FROM runs WHERE discovery_ok = 1 AND mode = 'run'"
+            " ORDER BY started_at DESC LIMIT 1)",
+            (before.isoformat(),),
+        )
         return int(cur.rowcount or 0)
+
+    def prune_history(self, *, before: datetime, memo_before: datetime) -> dict[str, int]:
+        with self.atomic():
+            publications = self._conn.execute(
+                "UPDATE publications SET delivery_json = NULL WHERE status = 'sent'"
+                " AND sent_at < ? AND delivery_json IS NOT NULL",
+                (_iso(before),),
+            ).rowcount
+            memos = self._conn.execute(
+                """
+                DELETE FROM analysis_memo AS m WHERE last_used_at < ?
+                  AND EXISTS (SELECT 1 FROM bills b WHERE b.term = m.term AND b.number = m.number
+                    AND b.status IN ('analyzed', 'linked', 'skipped_prefilter',
+                                     'skipped_text_prefilter', 'skipped_closed')
+                    AND b.awaiting_batch_since IS NULL AND b.ready_analysis_json IS NULL)
+                  AND NOT EXISTS (SELECT 1 FROM publications p
+                    WHERE p.term = m.term AND p.number = m.number
+                      AND p.status NOT IN ('sent', 'skipped'))
+                  AND NOT EXISTS (SELECT 1 FROM llm_batch_intents i
+                    WHERE json_extract(i.request_json, '$.term') = m.term
+                      AND json_extract(i.request_json, '$.number') = m.number)
+                  AND NOT EXISTS (SELECT 1 FROM llm_batch_items i
+                    WHERE i.term = m.term AND i.number = m.number
+                      AND (i.consumed_at IS NULL OR i.accounted_at IS NULL))
+                """,
+                (_iso(memo_before),),
+            ).rowcount
+            items = self._conn.execute(
+                """
+                UPDATE llm_batch_items
+                SET meta_json = json_remove(meta_json, '$.text', '$.located'),
+                  result_json = json_remove(result_json, '$.answer', '$.analysis')
+                WHERE consumed_at < ? AND accounted_at < ?
+                  AND batch_id IN (SELECT batch_id FROM llm_batches WHERE forgotten_at < ?)
+                  AND EXISTS (SELECT 1 FROM bills b
+                    WHERE b.term = llm_batch_items.term AND b.number = llm_batch_items.number
+                      AND b.status IN ('analyzed', 'linked', 'skipped_prefilter',
+                                       'skipped_text_prefilter', 'skipped_closed')
+                      AND b.awaiting_batch_since IS NULL AND b.ready_analysis_json IS NULL)
+                  AND (length(json_extract(meta_json, '$.text')) > 0
+                    OR json_type(meta_json, '$.located') = 'object'
+                    OR json_type(result_json, '$.answer') = 'object'
+                    OR json_type(result_json, '$.analysis') = 'object')
+                """,
+                (_iso(before), _iso(before), _iso(before)),
+            ).rowcount
+        return {"delivery_payloads": publications, "analysis_memos": memos, "batch_payloads": items}
 
     def start_run(self, report: RunReport) -> int:
         cur = self._conn.execute(

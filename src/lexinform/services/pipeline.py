@@ -85,6 +85,8 @@ class DailyPipeline:
         first_run_lookback_days: int = 1,
         rerun_overlap_days: int = 1,
         runs_retention_days: int | None = 90,
+        history_payload_retention_days: int = 90,
+        analysis_memo_retention_days: int = 180,
         pre_print: bool = True,
         full_track_weekday: int | None = 0,
     ) -> None:
@@ -107,6 +109,8 @@ class DailyPipeline:
             timedelta(days=runs_retention_days) if runs_retention_days is not None else None
         )
         self._pre_print = pre_print
+        self._history_retention = timedelta(days=history_payload_retention_days)
+        self._memo_retention = timedelta(days=analysis_memo_retention_days)
         self._full_track_weekday = full_track_weekday
 
     def resolve_since(self, requested: datetime | None) -> datetime:
@@ -211,6 +215,12 @@ class DailyPipeline:
         """The phases of a run, in the order they depend on each other."""
         self._report_stale_publications(report)
         self._prune_runs()
+        pruned = self._repo.prune_history(
+            before=self._clock.now() - self._history_retention,
+            memo_before=self._clock.now() - self._memo_retention,
+        )
+        if any(pruned.values()):
+            log.info("history payload cleanup: %s", pruned)
         self._run_phases(opts, current, since, report)
 
     def _report_stale_publications(self, report: RunReport) -> None:

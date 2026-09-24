@@ -288,6 +288,8 @@ class Settings(BaseSettings):
     runs_retention_days: int = Field(
         default=90, ge=7, description="Run records, with their reports, are kept this long."
     )
+    history_payload_retention_days: int = Field(default=90, ge=7)
+    analysis_memo_retention_days: int = Field(default=180, ge=7)
     track_closed_grace_days: int = Field(
         default=90,
         description="Publication in Dziennik Ustaw follows the Sejm's closure by 30 to 40 days.",

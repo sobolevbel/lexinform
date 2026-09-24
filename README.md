@@ -270,6 +270,8 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_AGENDA_WATCH` | `true` | Post when a followed bill appears on the agenda of a committee or Sejm sitting |
 | `LEXINFORM_MAX_PUBLISH_ATTEMPTS` | `3` | Retries of a failed Telegram post |
 | `LEXINFORM_RUNS_RETENTION_DAYS` | `90` | Run records (with their reports) older than this are deleted from the database |
+| `LEXINFORM_HISTORY_PAYLOAD_RETENTION_DAYS` | `90` | Remove old sent-delivery payloads and heavy consumed/accounted/forgotten batch payloads; keep identities and token accounting |
+| `LEXINFORM_ANALYSIS_MEMO_RETENTION_DAYS` | `180` | Remove unused analysis memos only for settled bills without pending work; legacy entries without ownership stay until reused |
 | `LEXINFORM_LOG_LEVEL` / `LEXINFORM_LOG_JSON` | `INFO` / `false` | Logging |
 
 The rest of `src/lexinform/settings.py` is infrastructure that rarely moves: API base URLs and

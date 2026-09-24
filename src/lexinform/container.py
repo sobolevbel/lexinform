@@ -597,6 +597,8 @@ class Container:
                 first_run_lookback_days=self.settings.first_run_lookback_days,
                 rerun_overlap_days=self.settings.rerun_overlap_days,
                 runs_retention_days=self.settings.runs_retention_days,
+                history_payload_retention_days=self.settings.history_payload_retention_days,
+                analysis_memo_retention_days=self.settings.analysis_memo_retention_days,
                 pre_print=self.settings.pre_print_enabled,
                 full_track_weekday=self.settings.track_full_weekday,
             ),

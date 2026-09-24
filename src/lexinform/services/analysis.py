@@ -751,7 +751,13 @@ class AnalysisService:
             result = result.model_copy(update={"error": "batch answer does not match call kind"})
         with self._repo.atomic():
             if record is not None:
-                self._repo.save_analysis_memo(meta.memo_key, record.model_dump_json())
+                self._repo.save_analysis_memo(
+                    meta.memo_key,
+                    record.model_dump_json(),
+                    term=item.term,
+                    number=item.number,
+                    used_at=now,
+                )
             self._repo.mark_llm_batch_item_consumed(
                 item.batch_id, item.custom_id, consumed_at=now, result=result
             )
@@ -785,7 +791,11 @@ class AnalysisService:
             )
             if active:
                 self._repo.save_analysis_memo(
-                    item.meta.memo_key or item.custom_id, record.model_dump_json()
+                    item.meta.memo_key or item.custom_id,
+                    record.model_dump_json(),
+                    term=item.term,
+                    number=item.number,
+                    used_at=now,
                 )
                 if item.meta.located is not None:
                     self._repo.save_ready_analysis(
@@ -932,7 +942,7 @@ class AnalysisService:
             log.info("%s: %s carries the analysed text; not re-analysed", bill.number, document.url)
             return bill.model_copy(update={"analysis": prepared.record}), False
         if prepared.memo_key is not None:
-            self._remember_analysis(prepared.memo_key, prepared.record)
+            self._remember_analysis(bill, prepared.memo_key, prepared.record)
         authors = bill.authors
         if self._authors is not None and document.kind == "print" and prepared.text:
             described = bill if summary is None else bill.model_copy(update={"summary": summary})
@@ -958,7 +968,9 @@ class AnalysisService:
         cached = self._memo.get(key)
         if cached is not None:
             self._cancel_queued_digest(key)
-            return _reused(record_model.model_validate_json(cached))
+            record = record_model.model_validate_json(cached)
+            self._remember_analysis(bill, key, record)
+            return _reused(record)
         kind = question.kind
         model = self._options.batch_models.get(kind, "")
         provider = "anthropic" if model.startswith("claude-") else "openai"
@@ -1006,7 +1018,7 @@ class AnalysisService:
                     return Waiting(now)
         record = sync_call()
         self._ledger.charge(record, number=bill.number, kind=kind)
-        self._remember_analysis(key, record)
+        self._remember_analysis(bill, key, record)
         self._cancel_queued_digest(key)
         return record
 
@@ -1492,7 +1504,7 @@ class AnalysisService:
             self._ledger.stop("the batch analysis waits for the next run")
             return False
         if prepared.triage_memo_key is not None and prepared.triage is not None:
-            self._remember_analysis(prepared.triage_memo_key, prepared.triage)
+            self._remember_analysis(bill, prepared.triage_memo_key, prepared.triage)
         with self._repo.atomic():
             self._repo.save_batch_intent(
                 BatchIntent(
@@ -1514,9 +1526,9 @@ class AnalysisService:
         assert prepared.record is not None, "a queued _Prepared must not reach _persist"
         bill, located = prepared.bill, prepared.located
         if prepared.memo_key is not None:
-            self._remember_analysis(prepared.memo_key, prepared.record)
+            self._remember_analysis(bill, prepared.memo_key, prepared.record)
         if prepared.triage_memo_key is not None and prepared.triage is not None:
-            self._remember_analysis(prepared.triage_memo_key, prepared.triage)
+            self._remember_analysis(bill, prepared.triage_memo_key, prepared.triage)
         document = located.document
         authors = None
         # A scanned print is still signed on its first page: the letter is the one part of it
@@ -1558,9 +1570,11 @@ class AnalysisService:
                 )
         return prepared.record
 
-    def _remember_analysis(self, key: str, record: BaseModel) -> None:
+    def _remember_analysis(self, bill: Bill, key: str, record: BaseModel) -> None:
         encoded = record.model_dump_json()
-        self._repo.save_analysis_memo(key, encoded)
+        self._repo.save_analysis_memo(
+            key, encoded, term=bill.term, number=bill.number, used_at=self._clock.now()
+        )
         self._memo.setdefault(key, encoded)
 
     def _load_text(self, document: TextDocument | None, *, trim: bool = True) -> _Loaded:

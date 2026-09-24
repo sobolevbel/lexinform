@@ -894,10 +894,13 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         commands = {r[1] for r in conn.execute("PRAGMA table_info(commands)")}
         batch_items = {r[1] for r in conn.execute("PRAGMA table_info(llm_batch_items)")}
         batches = {r[1] for r in conn.execute("PRAGMA table_info(llm_batches)")}
+        memo = {r[1] for r in conn.execute("PRAGMA table_info(analysis_memo)")}
     assert "amendments_json" in changes  # v11
     assert "supplements_json" in changes  # v18
     assert "consultation_opened" in changes
     assert "analysis_memo" in tables
+    assert {"term", "number", "last_used_at"} <= memo
+    assert "ix_analysis_memo_retention" in indexes
     assert "commands" in tables  # v13
     assert "executed_at" in commands  # v14
     assert "rcl_wykaz_numbers" in tables  # v22
