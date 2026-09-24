@@ -112,6 +112,8 @@ COMMAND_HELP = (
     "\n<b>the database</b>, answered here and now:\n"
     "• <code>/find WORDS</code> — bills whose title or number contains the words\n"
     "• <code>/status</code> — the queues, what is stuck, what the last runs cost\n"
+    "• <code>/delivery ID [confirm MESSAGE_ID | retry | dismiss REASON]</code> — inspect or"
+    " resolve an unknown delivery after checking the channel\n"
     "• <code>/runs [days=N]</code> — what each recorded run found, posted and cost\n"
     "• <code>/cost [days=N] [top=N]</code> — the model spend, per model, run and bill\n"
     "• <code>/digest [ref=2026-W38] [publish]</code> — draft the week's digest here, or send"
@@ -1388,6 +1390,7 @@ class MessageFormatter:
             OutcomeStatus.REFRESHED: "🔄",
             OutcomeStatus.FOUND: "🔍",
             OutcomeStatus.REPORTED: "📊",
+            OutcomeStatus.DELIVERY: "📨",
             OutcomeStatus.LISTED: "🏃",
             OutcomeStatus.SPENT: "💸",
             OutcomeStatus.HELP: "🛠",
@@ -1416,6 +1419,25 @@ class MessageFormatter:
         """What a command answers with beyond its verdict: a rendered card, a list of matches,
         the state of the queues. These are what gets shrunk when the message is too long."""
         bill = outcome.bill
+        if outcome.delivery is not None:
+            pub = outcome.delivery
+            plan = pub.delivery
+            lines = [
+                f"publication {pub.id} · {esc(pub.number)} · {esc(pub.kind)} · {esc(pub.status)}",
+                f"channel: {esc(pub.channel_id)} · created: {esc(pub.created_at.isoformat())}",
+                f"message: {pub.message_id} · parent: {plan.reply_to if plan else None}",
+                f"saved payload replayable: {bool(plan and plan.replayable(pub.kind))}",
+            ]
+            lines += [
+                f"{esc(r.resolved_at.isoformat())} · {esc(r.action)} · "
+                f"command {esc(r.command.chat_id)}/{r.command.message_id} "
+                f"(update {r.command.update_id}) · "
+                f"actor: {esc(r.command.actor_id or r.command.author_signature or 'unavailable')}"
+                f" · {esc(r.reason)}"
+                for r in outcome.delivery_history
+            ]
+            preview = self.delivery_preview(pub)
+            return ["\n".join(lines), "<b>Saved snapshot preview</b>\n" + preview]
         if outcome.status is OutcomeStatus.PREVIEWED and bill is not None:
             if outcome.joint_primary is not None:
                 return [self.joint_bill(bill, outcome.joint_primary, outcome.print_info).text]
@@ -1431,6 +1453,48 @@ class MessageFormatter:
         if outcome.spend is not None:
             return [self._spend_body(outcome.spend)]
         return []
+
+    def delivery_preview(self, pub: Publication) -> str:
+        plan = pub.delivery
+        if plan is None:
+            return "No saved payload; retry unavailable."
+        bill = Bill.model_validate_json(plan.bill_json)
+        kind = pub.kind
+        info = PrintInfo.model_validate_json(plan.print_json) if plan.print_json else None
+        if kind is PublicationKind.NEW_BILL:
+            return self.new_bill(bill, info).text
+        if kind is PublicationKind.JOINT_BILL and plan.primary_json:
+            return self.joint_bill(bill, Bill.model_validate_json(plan.primary_json), info).text
+        if kind is PublicationKind.STATUS_UPDATE and plan.change_json:
+            return self.status_update(bill, StatusChange.model_validate_json(plan.change_json)).text
+        if kind is PublicationKind.ACT_PUBLISHED:
+            return self.act_published(bill).text
+        if kind is PublicationKind.CONSULTATION_RESULTS:
+            return self.consultation_results(bill).text
+        if kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED) and plan.item_json:
+            item = AgendaItem.model_validate_json(plan.item_json)
+            if kind is PublicationKind.AGENDA_CANCELLED:
+                return self.agenda_cancelled(bill, item, still_meets=plan.still_meets).text
+            moved = (
+                AgendaItem.model_validate_json(plan.moved_from_json)
+                if plan.moved_from_json
+                else None
+            )
+            return self.agenda(bill, item, moved_from=moved).text
+        if plan.today is not None:
+            if kind is PublicationKind.IN_FORCE:
+                return self.in_force(bill, today=plan.today).text
+            if kind is PublicationKind.CONSULTATION_DEADLINE:
+                return self.consultation_deadline(bill, today=plan.today).text
+            if kind is PublicationKind.DECISION_DEADLINE and plan.phase_json:
+                return self.decision_deadline(
+                    bill, Phase.model_validate_json(plan.phase_json), today=plan.today
+                ).text
+            if kind is PublicationKind.HEARING_DEADLINE and plan.hearing_json:
+                return self.hearing_deadline(
+                    bill, Stage.model_validate_json(plan.hearing_json), today=plan.today
+                ).text
+        return "Saved payload is incomplete; retry unavailable."
 
     def _spend_body(self, spend: SpendSnapshot) -> str:
         """What `/cost` shows: the total, the models behind it, the dearest run and bills."""
@@ -1525,10 +1589,9 @@ class MessageFormatter:
         )
 
     def _stuck_line(self, pub: Publication) -> str:
-        """A `pending`/`unknown` post nothing retries on its own (BUGS.md #4): its bill, kind and
-        age, and `/republish` where that command actually clears it — only a card's own."""
+        """Ambiguous deliveries require an explicit operator decision before retrying."""
         age = self.fmt_date(pub.created_at.date())
-        fix = f" → /republish {pub.number}" if pub.kind is PublicationKind.NEW_BILL else ""
+        fix = f" → /delivery {pub.id}"
         return f"<b>{esc(pub.number)}</b> · {esc(pub.kind)} · {esc(pub.status)} since {age}{fix}"
 
     def _bill_facts(self, bill: Bill, *, full: bool) -> str:

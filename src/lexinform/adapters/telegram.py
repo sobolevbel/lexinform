@@ -247,6 +247,8 @@ def _channel_post(update: dict[str, Any]) -> ChannelPost | None:
             message_id=int(post["message_id"]),
             text=post.get("text"),
             date=datetime.fromtimestamp(int(post.get("date", 0)), tz=UTC),
+            actor_id=(post.get("from") or {}).get("id"),
+            author_signature=post.get("author_signature"),
         )
     except KeyError, TypeError, ValueError:
         log.warning("getUpdates: update %s has no readable post", update_id)

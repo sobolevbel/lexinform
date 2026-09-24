@@ -22,6 +22,7 @@ from lexinform.models import (
     CommandName,
     CommandOutcome,
     CommandState,
+    DeliveryResolution,
     IncomingCommand,
     OutcomeStatus,
     PrintInfo,
@@ -329,6 +330,8 @@ class CommandService:
             return CommandOutcome(status=OutcomeStatus.HELP, note=command.error or "")
         if command.name is CommandName.STATUS:
             return self._status()
+        if command.name is CommandName.DELIVERY:
+            return self._delivery(command, incoming, publish=publish)
         if command.name is CommandName.RUNS:
             return self._runs(command.count("days", 30))
         if command.name is CommandName.COST:
@@ -804,6 +807,85 @@ class CommandService:
         if bill.rcl is not None:
             return "closed on RCL without reaching the Sejm"
         return _CLOSURE_NOTES[closure_event(bill)]
+
+    def _delivery(
+        self, command: Command, incoming: IncomingCommand, *, publish: bool
+    ) -> CommandOutcome:
+        assert command.delivery_id is not None
+        publication = self._repo.publication_by_id(command.delivery_id)
+        if publication is None or publication.channel_id != self._publishing.channel_id:
+            return CommandOutcome(
+                status=OutcomeStatus.NOT_FOUND, note="publication not found in this channel"
+            )
+        action = command.delivery_action
+        if action != "show":
+            if not publish:
+                return CommandOutcome(
+                    status=OutcomeStatus.ERROR, note="publishing is off in this run"
+                )
+            if publication.status is not PublicationStatus.UNKNOWN:
+                return CommandOutcome(
+                    status=OutcomeStatus.ERROR,
+                    delivery=publication,
+                    note=f"only unknown deliveries can be resolved; status: {publication.status}",
+                )
+            if action == "retry":
+                if publication.delivery is None or not publication.delivery.replayable(
+                    publication.kind
+                ):
+                    return CommandOutcome(
+                        status=OutcomeStatus.ERROR,
+                        delivery=publication,
+                        note="no replayable saved payload; retry refused",
+                    )
+                bill = self._repo.get(publication.term, publication.number)
+                if bill is None:
+                    return CommandOutcome(
+                        status=OutcomeStatus.ERROR,
+                        delivery=publication,
+                        note="bill no longer exists; retry refused",
+                    )
+                if publication.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL) and (
+                    bill.status is BillStatus.LINKED or bill.last_error == SILENCED_BY_OPERATOR
+                ):
+                    return CommandOutcome(
+                        status=OutcomeStatus.ERROR,
+                        delivery=publication,
+                        note="card is linked or silenced; resolve that state before retrying",
+                    )
+            resolution = DeliveryResolution(
+                publication_id=command.delivery_id,
+                term=publication.term,
+                number=publication.number,
+                kind=publication.kind,
+                channel_id=publication.channel_id,
+                action=action,
+                command=incoming,
+                resolved_at=self._clock.now(),
+                message_id=command.delivery_message_id,
+                reason=command.delivery_reason,
+            )
+            with self._repo.atomic():
+                if not self._repo.resolve_delivery(resolution):
+                    return CommandOutcome(
+                        status=OutcomeStatus.ERROR,
+                        note="delivery already resolved; inspect it again",
+                    )
+                if action == "confirm" and publication.delivery is not None:
+                    assert resolution.message_id is not None
+                    self._repo.release_planned_changes(
+                        publication.delivery.held_change_ids,
+                        publication.channel_id,
+                        message_id=resolution.message_id,
+                        sent_at=resolution.resolved_at,
+                    )
+            publication = self._repo.publication_by_id(command.delivery_id)
+        return CommandOutcome(
+            status=OutcomeStatus.DELIVERY,
+            delivery=publication,
+            delivery_history=tuple(self._repo.delivery_resolutions(command.delivery_id)),
+            note="queued for the next publishing/tracking phase" if action == "retry" else "",
+        )
 
     def _republish(self, bill: Bill, *, publish: bool) -> CommandOutcome:
         if bill.analysis is None or not bill.analysis.analysis.relevant:

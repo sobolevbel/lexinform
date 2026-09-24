@@ -10,6 +10,7 @@ import datetime as dt
 import re
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Literal
 from urllib.parse import parse_qs, urlparse
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -18,7 +19,14 @@ from lexinform.models.analysis import TokenUsage
 from lexinform.models.batch import LlmBatch
 from lexinform.models.bill import Bill, Publication
 from lexinform.models.digest import week_bounds
-from lexinform.models.enums import PRE_PRINT_PREFIX, RCL_PREFIX, WYKAZ_PREFIX, BillStatus
+from lexinform.models.enums import (
+    PRE_PRINT_PREFIX,
+    RCL_PREFIX,
+    WYKAZ_PREFIX,
+    BillStatus,
+    PublicationKind,
+    PublicationStatus,
+)
 from lexinform.models.rcl import normalize_wykaz_number
 from lexinform.models.report import RunReport
 from lexinform.models.sejm import PrintInfo
@@ -38,6 +46,8 @@ class IncomingCommand(BaseModel):
     message_id: int
     text: str
     received_at: dt.datetime
+    actor_id: int | None = None
+    author_signature: str | None = None
 
 
 class CommandState(BaseModel):
@@ -55,6 +65,29 @@ class CommandState(BaseModel):
     reply: str | None = None
 
 
+class DeliveryResolution(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    publication_id: int
+    term: int
+    number: str
+    kind: PublicationKind
+    channel_id: str
+    action: Literal["confirm", "retry", "dismiss"]
+    command: IncomingCommand
+    resolved_at: dt.datetime
+    message_id: int | None = None
+    reason: str = ""
+
+    @property
+    def status(self) -> PublicationStatus:
+        return {
+            "confirm": PublicationStatus.SENT,
+            "retry": PublicationStatus.QUEUED,
+            "dismiss": PublicationStatus.DISMISSED,
+        }[self.action]
+
+
 class ChannelPost(BaseModel):
     """One Telegram update as the relay sees it: a post in some channel (or chat)."""
 
@@ -68,6 +101,8 @@ class ChannelPost(BaseModel):
     date: dt.datetime
     callback_id: str | None = None
     """A button press rather than a post: `text` is the command it stands for."""
+    actor_id: int | None = None
+    author_signature: str | None = None
 
     def is_from(self, channel: str) -> bool:
         """Whether the post comes from `channel`: a numeric id (`-100…`) or `@username`."""
@@ -86,6 +121,8 @@ class ChannelPost(BaseModel):
             message_id=self.message_id,
             text=self.text,
             received_at=self.date,
+            actor_id=self.actor_id,
+            author_signature=self.author_signature,
         )
 
 
@@ -158,6 +195,7 @@ class CommandName(StrEnum):
     RUNS = "runs"
     COST = "cost"
     STATUS = "status"
+    DELIVERY = "delivery"
     DIGEST = "digest"
     HELP = "help"
 
@@ -299,6 +337,10 @@ class Command(BaseModel):
     query: str | None = None
     options: dict[str, str] = Field(default_factory=dict)
     error: str | None = None
+    delivery_id: int | None = None
+    delivery_action: Literal["show", "confirm", "retry", "dismiss"] = "show"
+    delivery_message_id: int | None = None
+    delivery_reason: str = ""
 
     @property
     def force(self) -> bool:
@@ -371,6 +413,7 @@ class OutcomeStatus(StrEnum):
     LISTED = "runs"
     SPENT = "cost"
     DIGESTED = "digest"
+    DELIVERY = "delivery"
     HELP = "help"
     EXECUTED_EARLIER = "executed earlier"
     NOT_FOUND = "not_found"
@@ -444,6 +487,8 @@ class CommandOutcome(BaseModel):
     snapshot: StatusSnapshot | None = None
     runs: tuple[RunReport, ...] = ()
     spend: SpendSnapshot | None = None
+    delivery: Publication | None = None
+    delivery_history: tuple[DeliveryResolution, ...] = ()
     as_json: bool = False
     run_started_at: dt.datetime | None = None
     seconds: float | None = None
@@ -623,6 +668,8 @@ def parse_command(text: str) -> Command | None:
     name = _COMMAND_NAMES.get(head.replace("_", "-"))
     if name is None:
         return Command(name=CommandName.HELP, error=f"unknown command /{head}")
+    if name is CommandName.DELIVERY:
+        return _parse_delivery(words[1:])
     options, rest, error = _parse_options(name, words[1:])
     if error:
         return Command(name=name, error=error)
@@ -651,6 +698,50 @@ def parse_command(text: str) -> Command | None:
     if rest and name is not CommandName.HELP:
         return _unknown_option(name, rest[0])
     return Command(name=name, options=options)
+
+
+def _parse_delivery(words: list[str]) -> Command:
+    error = Command(
+        name=CommandName.DELIVERY,
+        error="use /delivery ID [confirm MESSAGE_ID | retry | dismiss REASON]",
+    )
+    if (
+        not words
+        or not words[0].isascii()
+        or not words[0].isdigit()
+        or len(words[0]) > 19
+        or not 0 < int(words[0]) <= 9_223_372_036_854_775_807
+    ):
+        return error
+    publication_id = int(words[0])
+    if len(words) == 1:
+        return Command(name=CommandName.DELIVERY, delivery_id=publication_id)
+    action = words[1].lower()
+    if action == "retry" and len(words) == 2:
+        return Command(
+            name=CommandName.DELIVERY, delivery_id=publication_id, delivery_action="retry"
+        )
+    if action == "dismiss" and len(words) >= 3:
+        return Command(
+            name=CommandName.DELIVERY,
+            delivery_id=publication_id,
+            delivery_action="dismiss",
+            delivery_reason=" ".join(words[2:]),
+        )
+    if (
+        action == "confirm"
+        and len(words) == 3
+        and words[2].isascii()
+        and words[2].isdigit()
+        and 0 < int(words[2]) <= 2_147_483_647
+    ):
+        return Command(
+            name=CommandName.DELIVERY,
+            delivery_id=publication_id,
+            delivery_action="confirm",
+            delivery_message_id=int(words[2]),
+        )
+    return error
 
 
 def _unknown_option(name: CommandName, word: str) -> Command:

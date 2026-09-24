@@ -37,6 +37,10 @@ terminal, has no twin either: posting the command *is* the confirmation.
 ```
 /find cudzoziemc              bills whose title or number carries the words
 /status                       the queues, what is stuck, what the last 7 days of runs cost
+/delivery 123                 inspect a publication's saved snapshot and recovery history
+/delivery 123 confirm 456     confirm that message 456 in the reader channel is this delivery
+/delivery 123 retry           after checking absence in Telegram, queue the saved delivery
+/delivery 123 dismiss expired close without sending, with a required reason
 /runs days=7                  what each recorded run found, posted and cost (default 30 days)
 /cost days=7 top=3            the model spend: per model, the dearest run, the dearest bills
 /digest                       draft the week that has just ended, here, with a publish button
@@ -44,6 +48,29 @@ terminal, has no twin either: posting the command *is* the confirmation.
 /digest publish ref=2026-W38    send it to the readers' channel — what the button does
 /help                         this list
 ```
+
+### Recovering an uncertain delivery
+
+`/status` includes publication IDs and `/delivery ID` links for ambiguous posts. Inspect the
+saved snapshot, destination channel, original parent, creation time and recovery history;
+then check the channel itself. `confirm` records the message ID you found. `retry` means
+you checked that no message arrived; it queues the original snapshot for the next enabled
+publishing/tracking phase. It does not send inside the command handler. An obsolete reminder
+can be closed with `dismiss REASON`; `dismissed` does not claim delivery.
+
+Only `unknown` can be resolved. A repeated command cannot queue a sent or already queued post.
+A crash during the new attempt becomes `unknown` again and needs a new decision. The saved
+facts and parent are reused, with the current formatter; historical HTML bytes are not stored.
+The preview may be shortened to fit Telegram. Records without a complete saved plan and parent
+cannot be retried; confirmation or dismissal still works. Digest records without a delivery
+plan also cannot be retried this way. Commands address only the configured reader channel.
+`--no-publish` refuses mutations, while dry runs roll back both resolution and audit.
+
+Each decision keeps the command's chat/message/update IDs, text, timestamp and author ID or
+signature when Telegram supplied it. An anonymous channel post cannot identify an individual
+administrator; the journal explicitly leaves that author unknown. The decision, state transition
+and release of only the included held changes commit together. Publication IDs are never reused
+after deletion, and the journal survives removal of the publication.
 
 ### A run, or one phase of it
 

@@ -108,6 +108,7 @@ class PublicationKind(StrEnum):
 
 
 class PublicationStatus(StrEnum):
+    DISMISSED = "dismissed"
     QUEUED = "queued"
     PENDING = "pending"
     SENT = "sent"

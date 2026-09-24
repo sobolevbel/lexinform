@@ -34,6 +34,7 @@ from lexinform.models import (
     BillSubmission,
     CommandState,
     DeliveryPlan,
+    DeliveryResolution,
     IncomingCommand,
     JointRecord,
     LlmBatch,
@@ -71,7 +72,7 @@ _NO_CARD_YET = """
                       WHERE p.term = b.term AND p.number = b.number
                         AND p.kind IN ('new_bill', 'joint_bill')
                         AND p.channel_id = ?
-                        AND (p.status IN ('sent', 'skipped', 'pending', 'unknown')
+                        AND (p.status IN ('sent', 'skipped', 'pending', 'unknown', 'dismissed')
                              OR (p.status = 'failed' AND p.attempts >= ?))
                   )"""
 """The bill has no post in this channel yet: no card, no reply, and no failed attempt left to
@@ -372,6 +373,20 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE analysis_memo ADD COLUMN number TEXT;
     ALTER TABLE analysis_memo ADD COLUMN last_used_at TEXT;
     CREATE INDEX ix_analysis_memo_retention ON analysis_memo(last_used_at);
+    """,
+    """
+    CREATE TABLE delivery_resolutions (
+        id INTEGER PRIMARY KEY,
+        publication_id INTEGER NOT NULL,
+        command_update_id INTEGER NOT NULL UNIQUE,
+        resolution_json TEXT NOT NULL
+    );
+    CREATE INDEX ix_delivery_resolutions_publication ON delivery_resolutions(publication_id);
+    CREATE TABLE publication_sequence (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        last_id INTEGER NOT NULL
+    );
+    INSERT INTO publication_sequence VALUES (1, (SELECT COALESCE(MAX(id), 0) FROM publications));
     """,
 )
 
@@ -1262,7 +1277,7 @@ class SqliteBillRepository:
         AND NOT EXISTS (
             SELECT 1 FROM publications r
             WHERE r.term = b.term AND r.number = b.number AND r.kind = ? AND r.channel_id = ?
-              AND r.status IN ('sent', 'skipped', 'pending', 'unknown')
+              AND r.status IN ('sent', 'skipped', 'pending', 'unknown', 'dismissed')
         )
     """
 
@@ -1516,17 +1531,23 @@ class SqliteBillRepository:
         Returns the row id, looked up by the natural key: `lastrowid` is unreliable after an
         upsert that took the UPDATE path.
         """
+        # Operator commands must never address a different message after its row was deleted.
+        identity = self._conn.execute(
+            "UPDATE publication_sequence SET last_id = last_id + 1 WHERE id = 1 RETURNING last_id"
+        ).fetchone()
+        assert identity is not None
         self._conn.execute(
             """
-            INSERT INTO publications (term, number, kind, status, channel_id, ref, message_id,
+            INSERT INTO publications (id, term, number, kind, status, channel_id, ref, message_id,
                 document_message_ids, status_change_id, created_at, sent_at, error, delivery_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT DO UPDATE SET status = excluded.status, created_at = excluded.created_at,
                                       error = NULL,
                                       delivery_json = COALESCE(
                                           publications.delivery_json, excluded.delivery_json)
             """,
             (
+                identity[0],
                 publication.term,
                 publication.number,
                 publication.kind.value,
@@ -1571,6 +1592,53 @@ class SqliteBillRepository:
             (channel_id, max_attempts),
         ).fetchall()
         return [self._row_to_publication(row) for row in rows]
+
+    def publication_by_id(self, publication_id: int) -> Publication | None:
+        row = self._conn.execute(
+            "SELECT * FROM publications WHERE id = ?", (publication_id,)
+        ).fetchone()
+        return self._row_to_publication(row) if row else None
+
+    def resolve_delivery(self, resolution: DeliveryResolution) -> bool:
+        status = resolution.status.value
+        with self.atomic():
+            if self._conn.execute(
+                "SELECT 1 FROM delivery_resolutions WHERE command_update_id = ?",
+                (resolution.command.update_id,),
+            ).fetchone():
+                return False
+            changed = self._conn.execute(
+                "UPDATE publications SET status = ?, message_id = COALESCE(?, message_id),"
+                " sent_at = ?, error = NULL,"
+                " attempts = CASE WHEN ? = 'queued' THEN 0 ELSE attempts END"
+                " WHERE id = ? AND status = 'unknown'",
+                (
+                    status,
+                    resolution.message_id,
+                    resolution.resolved_at.isoformat() if status == "sent" else None,
+                    status,
+                    resolution.publication_id,
+                ),
+            ).rowcount
+            if not changed:
+                return False
+            self._conn.execute(
+                "INSERT INTO delivery_resolutions"
+                " (publication_id, command_update_id, resolution_json) VALUES (?, ?, ?)",
+                (
+                    resolution.publication_id,
+                    resolution.command.update_id,
+                    resolution.model_dump_json(),
+                ),
+            )
+        return True
+
+    def delivery_resolutions(self, publication_id: int) -> list[DeliveryResolution]:
+        rows = self._conn.execute(
+            "SELECT resolution_json FROM delivery_resolutions WHERE publication_id = ? ORDER BY id",
+            (publication_id,),
+        ).fetchall()
+        return [DeliveryResolution.model_validate_json(row[0]) for row in rows]
 
     def mark_publication(
         self,

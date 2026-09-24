@@ -49,10 +49,15 @@ them. The payload belongs to one channel. A retry cannot use newer facts, move t
 change a deadline date or absorb later held stages.
 
 - `queued`: durable work, no send started; the next publishing run drains it.
-- `pending`: sending may have started; stale pending becomes `unknown`, never retried.
+- `pending`: sending may have started; stale pending becomes `unknown`, never retried automatically.
 - `failed`: explicit failure, retried within the existing attempt budget.
 - `skipped`: editorial hold, included in the next substantive update.
 - `sent`: delivery and release of its exact held-change IDs commit together.
+- `dismissed`: an operator closed an uncertain delivery without sending; never an editorial hold.
+
+`/delivery ID` inspects saved facts. Only an explicit audited `confirm`, `retry` or `dismiss`
+resolves `unknown`; retry queues the same payload and parent. See the
+[operator recovery procedure](operator-commands.md#recovering-an-uncertain-delivery).
 
 Disabled delivery queues detected updates, agendas and reminders, which no longer wait for
 another legislative event to be sent. Non-substantive and historical additions remain held.

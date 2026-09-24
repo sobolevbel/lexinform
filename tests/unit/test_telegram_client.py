@@ -205,6 +205,8 @@ def test_get_updates_long_polls_for_channel_posts_and_parses_them() -> None:
                             "date": 1789200000,
                             "chat": {"id": -1001, "type": "channel", "username": "lexlog"},
                             "text": "/analyze 3039",
+                            "from": {"id": 123},
+                            "author_signature": "Operator",
                         },
                     },
                     {"update_id": 11, "edited_channel_post": {"message_id": 1}},  # another kind
@@ -227,6 +229,8 @@ def test_get_updates_long_polls_for_channel_posts_and_parses_them() -> None:
     first = posts[0]
     assert (first.chat_id, first.chat_username, first.message_id) == (-1001, "lexlog", 42)
     assert first.text == "/analyze 3039" and first.date.isoformat() == "2026-09-12T08:00:00+00:00"
+    assert first.as_command().actor_id == 123
+    assert first.as_command().author_signature == "Operator"
     assert posts[1].chat_id == 0 and posts[1].text is None  # a placeholder from no chat
     assert posts[2].text is None  # a post without text (a photo)
 

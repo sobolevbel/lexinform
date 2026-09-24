@@ -2,6 +2,7 @@ import datetime as dt
 
 from pydantic import BaseModel, ConfigDict
 
+from lexinform.models.enums import PublicationKind
 from lexinform.models.evidence import decision_fingerprint
 from lexinform.models.sejm import Stage, TextDocument, stage_fingerprint
 
@@ -39,3 +40,24 @@ class DeliveryPlan(BaseModel):
     still_meets: bool = False
     reply_to: int | None = None
     held_change_ids: tuple[int, ...] = ()
+
+    def replayable(self, kind: PublicationKind) -> bool:
+        if kind is PublicationKind.NEW_BILL:
+            return True
+        if self.reply_to is None:
+            return False
+        if kind is PublicationKind.JOINT_BILL:
+            return bool(self.primary_json)
+        if kind is PublicationKind.STATUS_UPDATE:
+            return bool(self.change_json)
+        if kind in (PublicationKind.ACT_PUBLISHED, PublicationKind.CONSULTATION_RESULTS):
+            return True
+        if kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED):
+            return bool(self.item_json)
+        if self.today is None:
+            return False
+        if kind in (PublicationKind.IN_FORCE, PublicationKind.CONSULTATION_DEADLINE):
+            return True
+        if kind is PublicationKind.DECISION_DEADLINE:
+            return bool(self.phase_json)
+        return kind is PublicationKind.HEARING_DEADLINE and bool(self.hearing_json)

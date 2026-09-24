@@ -230,6 +230,41 @@ def test_druk_label_names_the_kind() -> None:
     assert BillRef(kind=RefKind.WYKAZ, value="UC164").label == "UC164"
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "/delivery",
+        "/delivery -1",
+        "/delivery 0",
+        "/delivery 1 confirm",
+        "/delivery 1 confirm -1",
+        "/delivery 1 confirm 0",
+        "/delivery 1 retry extra",
+        "/delivery 1 dismiss",
+        "/delivery 1 sent",
+        "/delivery 1 confirm 1 extra",
+    ],
+)
+def test_invalid_delivery_commands_cannot_mutate(text: str) -> None:
+    command = parse_command(text)
+    assert command is not None and command.error is not None
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "/delivery 12",
+        "/delivery 12 retry",
+        "/delivery 12 confirm 777",
+        "/delivery@bot 12 dismiss hearing has passed",
+    ],
+)
+def test_delivery_commands_address_publication_ids(text: str) -> None:
+    command = parse_command(text)
+    assert command is not None and command.error is None
+    assert command.delivery_id == 12 and command.ref is None
+
+
 def test_every_cli_command_worth_asking_for_is_a_command_here() -> None:
     """Relay and batch recovery commands operate the run machinery outside the chat."""
     cli = {

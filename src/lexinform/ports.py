@@ -27,6 +27,7 @@ from lexinform.models import (
     Committee,
     CommitteeSitting,
     DeliveryPlan,
+    DeliveryResolution,
     Digest,
     IncomingCommand,
     JointContext,
@@ -645,6 +646,12 @@ class BillRepository(Protocol):
     ) -> list[Bill]: ...
 
     def create_publication(self, publication: Publication) -> int: ...
+
+    def publication_by_id(self, publication_id: int) -> Publication | None: ...
+
+    def resolve_delivery(self, resolution: DeliveryResolution) -> bool: ...
+
+    def delivery_resolutions(self, publication_id: int) -> list[DeliveryResolution]: ...
 
     def list_due_deliveries(self, channel_id: str, *, max_attempts: int) -> list[Publication]: ...
 

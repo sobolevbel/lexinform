@@ -36,6 +36,7 @@ Dependencies flow only in this direction:
 
 - Resolve the current Sejm term from `/sejm/term`. Discover only in that term, but keep tracking previous-term bills until resolved. Rollover marks unfinished Sejm work as lapsed; passed acts remain followed; RCL projects awaiting a print move to the new term.
 - Publishing is pending-before-send. Create a unique pending publication before delivery; retry `failed`, never automatically resend stale `pending` (they become `unknown`).
+- Resolve `unknown` only through an audited operator decision; retry its saved payload and parent, never reuse publication IDs, and keep `dismissed` distinct from `sent` or editorial holds.
 - Prints considered jointly receive one main card; later related prints are `joint_bill` replies. Prefer the government print as the initial card.
 - Discovery must not overwrite existing `/bills` rows. Only the pre-print tracker refreshes them, so changes such as a print assignment or consultation result remain detectable.
 - Discovery must not overwrite `observed_closure_date`: analysis and linking seed it, tracking advances it after recording the change. A closure present in the initial snapshot is not news.

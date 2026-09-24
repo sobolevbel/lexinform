@@ -228,6 +228,7 @@ class PublishingService:
             PublicationStatus.PENDING,
             PublicationStatus.UNKNOWN,
             PublicationStatus.SKIPPED,
+            PublicationStatus.DISMISSED,
         ):
             return existing.status is PublicationStatus.SENT
         if existing is not None and existing.delivery is not None:

@@ -199,7 +199,11 @@ class Poster:
         if existing is not None:
             if existing.status is PublicationStatus.SENT:
                 return True
-            if existing.status in (PublicationStatus.PENDING, PublicationStatus.UNKNOWN):
+            if existing.status in (
+                PublicationStatus.PENDING,
+                PublicationStatus.UNKNOWN,
+                PublicationStatus.DISMISSED,
+            ):
                 return False
         delivery = self.prepare(bill, change)
         pub_id = self._repo.create_publication(

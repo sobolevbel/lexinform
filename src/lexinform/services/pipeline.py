@@ -224,9 +224,7 @@ class DailyPipeline:
         self._run_phases(opts, current, since, report)
 
     def _report_stale_publications(self, report: RunReport) -> None:
-        """Rows a crashed run left pending are named in the report, because they are never sent
-        again: this line is the operator's only chance to put the missing post back (`/republish`
-        for a card, `/analyze` to look at the bill)."""
+        """Ambiguous attempts need an operator's /delivery decision before another send."""
         stale = self._repo.mark_stale_pending_as_unknown(now=self._clock.now())
         if not stale:
             return

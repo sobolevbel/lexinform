@@ -902,6 +902,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert {"term", "number", "last_used_at"} <= memo
     assert "ix_analysis_memo_retention" in indexes
     assert "commands" in tables  # v13
+    assert {"delivery_resolutions", "publication_sequence"} <= tables
     assert "executed_at" in commands  # v14
     assert "rcl_wykaz_numbers" in tables  # v22
     assert {"llm_batches", "llm_batch_items"} <= tables  # v26
@@ -1165,6 +1166,8 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("DROP TABLE llm_batch_items")
         conn.execute("DROP TABLE llm_batches")
         conn.execute("DROP TABLE llm_batch_intents")
+        conn.execute("DROP TABLE delivery_resolutions")
+        conn.execute("DROP TABLE publication_sequence")
         conn.execute("ALTER TABLE bills DROP COLUMN analysis_generation")
         conn.execute("ALTER TABLE bills DROP COLUMN ready_analysis_json")
         conn.execute("ALTER TABLE bills DROP COLUMN senate_json")
