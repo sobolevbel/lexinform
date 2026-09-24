@@ -92,7 +92,6 @@ def test_joint_deadline_survives_a_changed_comparison_context() -> None:
     assert report.joint_published == 1
 
 
-@pytest.mark.xfail(strict=True, reason="B50: the tracking age cutoff excludes a waiting bill")
 def test_waiting_supplement_survives_the_tracking_age_cutoff() -> None:
     w = tracked_world()
     w.touch(

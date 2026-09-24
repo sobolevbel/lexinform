@@ -1108,7 +1108,8 @@ class SqliteBillRepository:
             JOIN publications p ON p.term = b.term AND p.number = b.number
             WHERE p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
               AND b.status != ? AND b.discontinued_at IS NULL
-              AND (b.closure_date IS NULL OR b.closure_date >= ?
+              AND (b.awaiting_batch_since IS NOT NULL
+                   OR b.closure_date IS NULL OR b.closure_date >= ?
                    OR (b.passed = 1 AND b.act_json IS NULL AND b.closure_date >= ?)
                    OR (b.act_json IS NOT NULL
                        AND (b.entry_into_force IS NULL OR b.entry_into_force > ?))
