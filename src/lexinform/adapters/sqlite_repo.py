@@ -8,11 +8,14 @@ a git branch with readable diffs.
 import json
 import logging
 import sqlite3
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
+from pydantic import TypeAdapter
+
+from lexinform.json_storage import compact_json, storage_json
 from lexinform.models import (
     PRE_PRINT_PREFIX,
     RCL_PREFIX,
@@ -51,6 +54,16 @@ from lexinform.models import (
     WykazEntry,
 )
 from lexinform.models.batch import BatchJob, batch_item_meta
+
+_STAGES = TypeAdapter(tuple[Stage, ...])
+_COMPACT_SNAPSHOTS: dict[str, Callable[[str], str]] = {
+    "summary_json": lambda raw: compact_json(raw, ProcessSummary.model_validate_json(raw)),
+    "rcl_json": lambda raw: compact_json(raw, RclProject.model_validate_json(raw)),
+    "observed_process_json": lambda raw: compact_json(
+        raw, ObservedProcess.model_validate_json(raw)
+    ),
+    "stages_json": lambda raw: compact_json(raw, _STAGES.validate_json(raw)),
+}
 
 _NO_CARD_YET = """
                   NOT EXISTS (
@@ -505,6 +518,19 @@ class SqliteBillRepository:
         self._conn.execute(f"PRAGMA user_version = {_dump_version(script)}")
         self.migrate()
 
+        with self.atomic():
+            for column, encode in _COMPACT_SNAPSHOTS.items():
+                rows = self._conn.execute(
+                    f"SELECT term, number, {column} FROM bills WHERE {column} IS NOT NULL"
+                ).fetchall()
+                for row in rows:
+                    compact = encode(row[column])
+                    if compact != row[column]:
+                        self._conn.execute(
+                            f"UPDATE bills SET {column} = ? WHERE term = ? AND number = ?",
+                            (compact, row["term"], row["number"]),
+                        )
+
     def get(self, term: int, number: str) -> Bill | None:
         row = self._conn.execute(
             "SELECT * FROM bills WHERE term = ? AND number = ?", (term, number)
@@ -532,7 +558,7 @@ class SqliteBillRepository:
                     _iso_date(summary.closure_date),
                     _bool(summary.passed),
                     BillStatus.DISCOVERED.value,
-                    summary.model_dump_json(),
+                    storage_json(summary),
                     now.isoformat(),
                     now.isoformat(),
                 ),
@@ -549,7 +575,7 @@ class SqliteBillRepository:
                     summary.change_date.isoformat(),
                     _iso_date(summary.closure_date),
                     _bool(summary.passed),
-                    summary.model_dump_json(),
+                    storage_json(summary),
                     now.isoformat(),
                     summary.term,
                     summary.number,
@@ -610,7 +636,7 @@ class SqliteBillRepository:
             "UPDATE bills SET stages_json = ?, stages_fingerprint = ?\n"
             "WHERE term = ? AND number = ?",
             (
-                json.dumps([s.model_dump(mode="json") for s in stages], ensure_ascii=False),
+                storage_json(stages),
                 fingerprint,
                 term,
                 number,
@@ -658,7 +684,7 @@ class SqliteBillRepository:
     def save_observed_process(self, term: int, number: str, observed: ObservedProcess) -> None:
         self._conn.execute(
             "UPDATE bills SET observed_process_json = ? WHERE term = ? AND number = ?",
-            (observed.model_dump_json(), term, number),
+            (storage_json(observed), term, number),
         )
 
     def load_analysis_memo(self) -> dict[str, str]:
@@ -1282,7 +1308,7 @@ class SqliteBillRepository:
     def save_rcl(self, term: int, number: str, project: RclProject) -> None:
         self._conn.execute(
             "UPDATE bills SET rcl_json = ? WHERE term = ? AND number = ?",
-            (project.model_dump_json(), term, number),
+            (storage_json(project), term, number),
         )
 
     def list_rcl_awaiting_link(self) -> list[Bill]:

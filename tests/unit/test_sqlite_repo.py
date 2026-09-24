@@ -785,6 +785,29 @@ def test_dump_restores_rows_indexes_and_the_schema_version(
     assert fresh.add_status_change(_change("3039", now)) is None  # unique index restored too
 
 
+def test_restore_compacts_legacy_json_without_changing_bill_or_fingerprint(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    repo.upsert_summary(process_3039, now=now)
+    repo.save_stages(10, "3039", process_3039.stages, stage_fingerprint(process_3039.stages))
+    before = repo.get(10, "3039")
+    legacy = sqlite3.connect(":memory:")
+    legacy.executescript(repo.dump())
+    legacy.execute("UPDATE bills SET summary_json = ?", (process_3039.model_dump_json(),))
+    legacy_dump = "\n".join(legacy.iterdump()) + f"\nPRAGMA user_version = {SCHEMA_VERSION};\n"
+    legacy.close()
+
+    repo.restore(legacy_dump)
+
+    assert repo.get(10, "3039") == before
+    assert len(repo.dump()) < len(legacy_dump)
+    restored = SqliteBillRepository(":memory:")
+    restored.restore(repo.dump())
+    assert restored.get(10, "3039") == before
+    assert restored.dump() == repo.dump()
+    restored.close()
+
+
 def test_a_dump_that_does_not_replay_leaves_the_database_as_it_was(
     repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
 ) -> None:
