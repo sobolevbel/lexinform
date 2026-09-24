@@ -468,7 +468,7 @@ class OpenAiAnalyzer:
                     yield self._batch_result_line(decoded, batch_output_model(kind))
 
     def forget(self, batch_id: str) -> None:
-        """OpenAI has no batch delete, only cancel; `poll-batches` keeps its time window here."""
+        """OpenAI has no batch delete; the poller excludes consumed items using persisted state."""
 
     def _batch_result_line(
         self, line: dict[str, Any], output_model: type[BatchAnswer]

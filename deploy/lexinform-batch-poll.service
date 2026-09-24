@@ -13,8 +13,7 @@ Wants=network-online.target
 Type=oneshot
 WorkingDirectory=/opt/lexinform
 # Secrets live in /opt/lexinform/.env (ANTHROPIC_API_KEY/OPENAI_API_KEY, GitHub repo and token).
-# No database: this reads the provider's own list of batches, not lexinform's.
+# Reads the persisted state into memory and checks only its unconsumed batches by ID.
 ExecStart=/opt/lexinform/.venv/bin/lexinform poll-batches
 Environment=PYTHONUNBUFFERED=1
 Environment=LEXINFORM_LOG_LEVEL=INFO
-# One request or two, then exit: no MemoryMax needed the way the always-on relay has one.

@@ -172,3 +172,18 @@ class GitHubInboxWriter:
 
     def close(self) -> None:
         self._client.close()
+
+    def read_state_dump(self, branch: str) -> str:
+        try:
+            response = self._client.get(
+                f"/repos/{self._repo}/contents/lexinform.sql",
+                params={"ref": branch},
+                headers={"Accept": "application/vnd.github.raw+json"},
+            )
+        except httpx.TransportError as exc:
+            raise GitHubUnavailableError(f"read state: {type(exc).__name__}") from exc
+        if response.status_code == 200:
+            return response.text
+        if response.status_code >= 500 or response.status_code == 429:
+            raise GitHubUnavailableError(f"read state: HTTP {response.status_code}")
+        raise GitHubError(f"read state: HTTP {response.status_code}")

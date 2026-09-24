@@ -117,6 +117,19 @@ for causes, evidence, limitations and the ordered change list.
 
 ## Fixed
 
+### VPS batch poller repeatedly dispatched for synthetic batches (24 Sept 2026, P3)
+
+The provider-wide Anthropic listing contained three completed smoke-test batches from
+`docs/reviews/2026-09-24-batch-predeploy.md`, while production `llm_batches` was empty.
+Seventeen consecutive `batch-ready` Actions runs from 02:50 to 08:26 UTC collected nothing;
+each also ran tracking. The poller incorrectly treated every undeleted remote batch as work
+owned by this installation. It now reads the pushed SQL state into memory and retrieves only
+batches with unconsumed items, by their saved provider and ID. Collected and unrelated batches
+cannot dispatch; old OpenAI completions and terminal failures remain eligible for recovery.
+Regressions: `test_poll_batches_ignores_provider_batches_absent_from_persisted_state`,
+`test_poller_stops_waking_runner_after_collection_is_persisted`, and the state-read failure
+and original-provider cases in `tests/unit/test_cli.py`.
+
 - **44 (P2, 2026-09-23)**: `amendments_stage` treated a committee recommendation to adopt without amendments as an amendment document. Exclude `bez poprawek`; regression: `test_amendments_stage_is_the_senate_print_or_a_report_on_amendments`.
 
 | # | rank | module | what was wrong | how it was found | fix |

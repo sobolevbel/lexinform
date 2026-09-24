@@ -36,6 +36,32 @@ def _github(request: httpx.Request) -> httpx.Response:
     return httpx.Response(201, json={"content": {"path": "inbox/5.json"}})
 
 
+def test_read_state_dump_requests_raw_content_from_the_configured_branch() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "GET"
+        assert request.url.path == "/repos/owner/repo/contents/lexinform.sql"
+        assert request.url.params["ref"] == "custom-state"
+        assert request.headers["Accept"] == "application/vnd.github.raw+json"
+        return httpx.Response(200, text="BEGIN TRANSACTION;\nCOMMIT;\n")
+
+    writer = _writer(handler)
+    try:
+        assert writer.read_state_dump("custom-state") == "BEGIN TRANSACTION;\nCOMMIT;\n"
+    finally:
+        writer.close()
+
+
+@pytest.mark.parametrize("status", [403, 404, 429, 503])
+def test_read_state_dump_surfaces_errors(status: int) -> None:
+    writer = _writer(lambda request: httpx.Response(status))
+    error = GitHubUnavailableError if status in (429, 503) else GitHubError
+    try:
+        with pytest.raises(error, match=f"read state: HTTP {status}"):
+            writer.read_state_dump("state")
+    finally:
+        writer.close()
+
+
 def test_put_creates_the_file_on_the_inbox_branch_and_starts_the_run() -> None:
     requests: list[httpx.Request] = []
 

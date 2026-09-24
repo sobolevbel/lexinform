@@ -1,6 +1,7 @@
 """Command-line interface."""
 
 import logging
+import sqlite3
 import sys
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
@@ -17,6 +18,7 @@ from lexinform.adapters.github_inbox import (
     GitHubInboxWriter,
     GitHubUnavailableError,
 )
+from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.concurrency import fan_out
@@ -685,7 +687,7 @@ def listen(
 def poll_batches() -> None:
     """Ask GitHub to collect a finished batch, sooner than the next scheduled run.
 
-    For the VPS timer (deploy/lexinform-batch-poll.*): no database, only the provider's list.
+    For the VPS timer: only batches with unconsumed items in the persisted state can wake a run.
     """
     settings = _settings()
     if not settings.llm_batch_enabled:
@@ -694,18 +696,22 @@ def poll_batches() -> None:
     if not (settings.github_repo and settings.github_token):
         typer.echo("no GitHub repo/token to ask for a collect run", err=True)
         raise typer.Exit(code=2)
-    try:
-        finished = _a_batch_is_done(settings)
-    except (anthropic.APIError, openai.APIError) as exc:
-        # A missing key or an outage; the timer asks again in 20 minutes, the run in a few hours.
-        typer.echo(f"could not ask {settings.llm_batch_provider}: {type(exc).__name__}", err=True)
-        raise typer.Exit(code=1) from None
-    if not finished:
-        typer.echo("no finished batch")
-        return
     writer = GitHubInboxWriter(settings.github_repo, settings.github_token)
     try:
+        batches = _pending_batches(writer, settings.llm_batch_state_branch)
+        if not batches:
+            typer.echo("no pending batches in persisted state")
+            return
+        if not _a_batch_is_done(settings, batches):
+            typer.echo("no finished batch")
+            return
         writer.dispatch("batch-ready")
+    except (anthropic.APIError, openai.APIError) as exc:
+        typer.echo(f"could not ask batch provider: {type(exc).__name__}", err=True)
+        raise typer.Exit(code=1) from None
+    except (sqlite3.Error, ValueError) as exc:
+        typer.echo(f"could not read batch state: {type(exc).__name__}", err=True)
+        raise typer.Exit(code=1) from None
     except (GitHubError, GitHubUnavailableError) as exc:
         # A live batch waits in `llm_batches` regardless; the next scheduled run collects it, and
         # the timer tries again in 20 minutes — a crash here would only be noise in the journal.
@@ -716,23 +722,33 @@ def poll_batches() -> None:
     typer.echo("asked GitHub to collect")
 
 
-BATCH_DONE_WINDOW = timedelta(minutes=40)
-"""OpenAI keeps a batch it cannot delete: only one that ended within two timer ticks is news."""
+def _pending_batches(writer: GitHubInboxWriter, branch: str) -> list[LlmBatch]:
+    repo = SqliteBillRepository(":memory:")
+    try:
+        repo.restore(writer.read_state_dump(branch))
+        return repo.list_open_llm_batches()
+    finally:
+        repo.close()
 
 
-def _a_batch_is_done(settings: Settings) -> bool:
-    if settings.llm_batch_provider == "anthropic":
-        # A collected batch is deleted, so an ended one still listed has not been collected.
-        claude = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-        return any(b.processing_status == "ended" for b in claude.messages.batches.list(limit=20))
-    cutoff = datetime.now(UTC) - BATCH_DONE_WINDOW
-    gpt = openai.OpenAI(api_key=settings.openai_api_key)
-    return any(
-        b.status == "completed"
-        and b.completed_at is not None
-        and b.completed_at >= cutoff.timestamp()
-        for b in gpt.batches.list(limit=20)
-    )
+def _a_batch_is_done(settings: Settings, batches: list[LlmBatch]) -> bool:
+    anthropic_ids = [b.batch_id for b in batches if b.provider == "anthropic"]
+    if anthropic_ids and settings.anthropic_api_key:
+        with anthropic.Anthropic(api_key=settings.anthropic_api_key) as claude:
+            if any(
+                claude.messages.batches.retrieve(batch_id).processing_status == "ended"
+                for batch_id in anthropic_ids
+            ):
+                return True
+    openai_ids = [b.batch_id for b in batches if b.provider == "openai"]
+    if openai_ids and settings.openai_api_key:
+        with openai.OpenAI(api_key=settings.openai_api_key) as gpt:
+            return any(
+                gpt.batches.retrieve(batch_id).status
+                in ("completed", "failed", "expired", "cancelled")
+                for batch_id in openai_ids
+            )
+    return False
 
 
 @app.command()

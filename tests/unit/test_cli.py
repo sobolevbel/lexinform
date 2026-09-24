@@ -27,6 +27,7 @@ from lexinform.models import (
     SILENCED_BY_OPERATOR,
     AnalysisRecord,
     BillStatus,
+    LlmBatch,
     ProcessDetail,
     ProcessSummary,
     RunMode,
@@ -401,15 +402,16 @@ def test_poll_batches_needs_a_github_repo_and_token(db: Path, api: str) -> None:
 def _fake_finished_anthropic_batch(
     monkeypatch: pytest.MonkeyPatch, *, ended_minutes_ago: int = 1
 ) -> None:
-    """An Anthropic whose `batches.list()` answers with one batch that ended that long ago."""
+    _fake_pending_batch(monkeypatch, "anthropic")
 
     class _FakeBatch:
         processing_status = "ended"
         ended_at = datetime.now(UTC) - timedelta(minutes=ended_minutes_ago)
 
     class _FakeBatches:
-        def list(self, *, limit: int) -> list[_FakeBatch]:
-            return [_FakeBatch()]
+        def retrieve(self, batch_id: str) -> _FakeBatch:
+            assert batch_id == "owned-batch"
+            return _FakeBatch()
 
     class _FakeMessages:
         batches = _FakeBatches()
@@ -418,7 +420,79 @@ def _fake_finished_anthropic_batch(
         def __init__(self, *, api_key: str) -> None:
             self.messages = _FakeMessages()
 
+        def __enter__(self) -> _FakeAnthropic:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            pass
+
     monkeypatch.setattr("lexinform.cli.anthropic.Anthropic", _FakeAnthropic)
+
+
+def _fake_pending_batch(monkeypatch: pytest.MonkeyPatch, provider: str) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    batch = LlmBatch.model_validate(
+        dict(
+            batch_id="owned-batch",
+            provider=provider,
+            call_kind="analysis",
+            submitted_at=datetime.now(UTC),
+            status="submitted",
+            request_count=1,
+            estimated_cost_usd=0.01,
+        )
+    )
+    monkeypatch.setattr("lexinform.cli._pending_batches", lambda writer, branch: [batch])
+
+
+def test_poll_batches_ignores_provider_batches_absent_from_persisted_state(
+    db: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo = SqliteBillRepository(db)
+    dump = repo.dump()
+    repo.close()
+    monkeypatch.setattr(
+        "lexinform.cli.GitHubInboxWriter.read_state_dump", lambda self, branch: dump
+    )
+    monkeypatch.setattr(
+        "lexinform.cli.anthropic.Anthropic", _raise(AssertionError("provider called"))
+    )
+    monkeypatch.setattr(
+        "lexinform.cli.GitHubInboxWriter.dispatch", _raise(AssertionError("dispatched"))
+    )
+    env = {
+        **_env(db),
+        "LEXINFORM_LLM_BATCH_ENABLED": "true",
+        "LEXINFORM_GITHUB_REPO": "owner/repo",
+        "LEXINFORM_GITHUB_TOKEN": "TOKEN",
+    }
+
+    for _ in range(2):
+        result = runner.invoke(app, ["poll-batches"], env=env)
+        assert result.exit_code == 0, result.output
+        assert "no pending batches in persisted state" in result.output
+
+
+@pytest.mark.parametrize("error", [GitHubError("read state: HTTP 403"), ValueError("bad dump")])
+def test_poll_batches_does_not_dispatch_without_readable_state(
+    db: Path, monkeypatch: pytest.MonkeyPatch, error: Exception
+) -> None:
+    monkeypatch.setattr("lexinform.cli.GitHubInboxWriter.read_state_dump", _raise(error))
+    monkeypatch.setattr(
+        "lexinform.cli.GitHubInboxWriter.dispatch", _raise(AssertionError("dispatched"))
+    )
+    env = {
+        **_env(db),
+        "LEXINFORM_LLM_BATCH_ENABLED": "true",
+        "LEXINFORM_GITHUB_REPO": "owner/repo",
+        "LEXINFORM_GITHUB_TOKEN": "TOKEN",
+    }
+
+    result = runner.invoke(app, ["poll-batches"], env=env)
+
+    assert result.exit_code == 1, result.output
+    assert "could not" in result.output
 
 
 def _raise(error: Exception) -> Callable[..., None]:
@@ -454,7 +528,6 @@ def test_poll_batches_asks_github_to_collect_a_finished_batch(
 def test_poll_batches_asks_for_an_anthropic_batch_that_ended_long_ago(
     db: Path, api: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A collected Anthropic batch is deleted, so one still listed is uncollected at any age."""
     _fake_finished_anthropic_batch(monkeypatch, ended_minutes_ago=180)
     dispatched: list[str] = []
     monkeypatch.setattr(
@@ -475,32 +548,40 @@ def test_poll_batches_asks_for_an_anthropic_batch_that_ended_long_ago(
 
 
 def _fake_finished_openai_batch(
-    monkeypatch: pytest.MonkeyPatch, *, completed_minutes_ago: int
+    monkeypatch: pytest.MonkeyPatch, *, completed_minutes_ago: int, status: str = "completed"
 ) -> None:
-    """An OpenAI whose `batches.list()` answers with one batch completed that long ago."""
+    _fake_pending_batch(monkeypatch, "openai")
 
     class _FakeBatch:
-        status = "completed"
         completed_at = int(
             (datetime.now(UTC) - timedelta(minutes=completed_minutes_ago)).timestamp()
         )
 
+        def __init__(self) -> None:
+            self.status = status
+
     class _FakeBatches:
-        def list(self, *, limit: int) -> list[_FakeBatch]:
-            return [_FakeBatch()]
+        def retrieve(self, batch_id: str) -> _FakeBatch:
+            assert batch_id == "owned-batch"
+            return _FakeBatch()
 
     class _FakeOpenAi:
         def __init__(self, *, api_key: str) -> None:
             self.batches = _FakeBatches()
 
+        def __enter__(self) -> _FakeOpenAi:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            pass
+
     monkeypatch.setattr("lexinform.cli.openai.OpenAI", _FakeOpenAi)
 
 
-@pytest.mark.parametrize(("minutes_ago", "asked"), [(5, True), (180, False)])
-def test_poll_batches_judges_an_openai_batch_by_when_it_completed(
+@pytest.mark.parametrize(("minutes_ago", "asked"), [(5, True), (180, True)])
+def test_poll_batches_collects_owned_openai_batch_regardless_of_age(
     db: Path, api: str, monkeypatch: pytest.MonkeyPatch, minutes_ago: int, asked: bool
 ) -> None:
-    """OpenAI cannot delete a batch and keeps it listed: only a recent completion is news."""
     _fake_finished_openai_batch(monkeypatch, completed_minutes_ago=minutes_ago)
     dispatched: list[str] = []
     monkeypatch.setattr(
@@ -513,6 +594,7 @@ def test_poll_batches_judges_an_openai_batch_by_when_it_completed(
         "LEXINFORM_GITHUB_REPO": "owner/repo",
         "LEXINFORM_GITHUB_TOKEN": "TOKEN",
         "LEXINFORM_LLM_BATCH_PROVIDER": "openai",
+        "OPENAI_API_KEY": "test-key",
     }
 
     result = runner.invoke(app, ["poll-batches"], env=env)
@@ -521,10 +603,35 @@ def test_poll_batches_judges_an_openai_batch_by_when_it_completed(
     assert dispatched == (["batch-ready"] if asked else [])
 
 
+@pytest.mark.parametrize("status", ["completed", "failed", "expired", "cancelled", "in_progress"])
+def test_poll_batches_checks_original_provider_and_terminal_failures(
+    db: Path, monkeypatch: pytest.MonkeyPatch, status: str
+) -> None:
+    _fake_finished_openai_batch(monkeypatch, completed_minutes_ago=180, status=status)
+    dispatched: list[str] = []
+    monkeypatch.setattr(
+        "lexinform.cli.GitHubInboxWriter.dispatch",
+        lambda self, event_type: dispatched.append(event_type),
+    )
+    env = {
+        **_env(db),
+        "LEXINFORM_LLM_BATCH_ENABLED": "true",
+        "LEXINFORM_LLM_BATCH_PROVIDER": "anthropic",
+        "LEXINFORM_GITHUB_REPO": "owner/repo",
+        "LEXINFORM_GITHUB_TOKEN": "TOKEN",
+    }
+
+    result = runner.invoke(app, ["poll-batches"], env=env)
+
+    assert result.exit_code == 0, result.output
+    assert dispatched == ([] if status == "in_progress" else ["batch-ready"])
+
+
 def test_poll_batches_says_so_when_the_provider_refuses(
     db: Path, api: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The VPS may hold no key for the provider at all: every 20 minutes, a clean line."""
+    _fake_pending_batch(monkeypatch, "anthropic")
     monkeypatch.setattr(
         "lexinform.cli.anthropic.Anthropic",
         _raise(anthropic.APIConnectionError(request=httpx.Request("GET", "https://api.test"))),
@@ -539,7 +646,7 @@ def test_poll_batches_says_so_when_the_provider_refuses(
     result = runner.invoke(app, ["poll-batches"], env=env)
 
     assert result.exit_code == 1
-    assert "could not ask anthropic" in result.output
+    assert "could not ask batch provider" in result.output
 
 
 def test_poll_batches_says_so_when_github_refuses_instead_of_crashing(
