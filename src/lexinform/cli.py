@@ -1,7 +1,6 @@
 """Command-line interface."""
 
 import logging
-import sqlite3
 import sys
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
@@ -18,7 +17,7 @@ from lexinform.adapters.github_inbox import (
     GitHubInboxWriter,
     GitHubUnavailableError,
 )
-from lexinform.adapters.sqlite_repo import SqliteBillRepository
+from lexinform.adapters.state_snapshot import write_state_snapshot
 from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.concurrency import fan_out
@@ -34,6 +33,8 @@ from lexinform.models import (
     BillSubmission,
     LlmBatch,
     LlmBatchItem,
+    PendingBatch,
+    PendingBatches,
     RclProject,
     RunMode,
     RunReport,
@@ -709,7 +710,7 @@ def poll_batches() -> None:
     except (anthropic.APIError, openai.APIError) as exc:
         typer.echo(f"could not ask batch provider: {type(exc).__name__}", err=True)
         raise typer.Exit(code=1) from None
-    except (sqlite3.Error, ValueError) as exc:
+    except ValueError as exc:
         typer.echo(f"could not read batch state: {type(exc).__name__}", err=True)
         raise typer.Exit(code=1) from None
     except (GitHubError, GitHubUnavailableError) as exc:
@@ -722,16 +723,11 @@ def poll_batches() -> None:
     typer.echo("asked GitHub to collect")
 
 
-def _pending_batches(writer: GitHubInboxWriter, branch: str) -> list[LlmBatch]:
-    repo = SqliteBillRepository(":memory:")
-    try:
-        repo.restore(writer.read_state_dump(branch))
-        return repo.list_open_llm_batches()
-    finally:
-        repo.close()
+def _pending_batches(writer: GitHubInboxWriter, branch: str) -> list[PendingBatch]:
+    return PendingBatches.model_validate_json(writer.read_pending_batches(branch)).batches
 
 
-def _a_batch_is_done(settings: Settings, batches: list[LlmBatch]) -> bool:
+def _a_batch_is_done(settings: Settings, batches: list[PendingBatch]) -> bool:
     anthropic_ids = [b.batch_id for b in batches if b.provider == "anthropic"]
     if anthropic_ids and settings.anthropic_api_key:
         with anthropic.Anthropic(api_key=settings.anthropic_api_key) as claude:
@@ -1041,8 +1037,7 @@ def db_dump(output: Annotated[Path, typer.Argument(help="Path of the SQL dump to
     """Write the whole database as a text SQL script (for the git `state` branch)."""
     c = _container()
     try:
-        output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(c.repo.dump(), encoding="utf-8")
+        write_state_snapshot(output, c.repo.dump(), c.repo.list_open_llm_batches())
     finally:
         c.close()
     typer.echo(f"dumped to {output}")

@@ -126,6 +126,16 @@ class LlmBatch(BaseModel):
     forgotten_at: dt.datetime | None = None
 
 
+class PendingBatch(BaseModel):
+    batch_id: str = Field(min_length=1)
+    provider: BatchProvider
+
+
+class PendingBatches(BaseModel):
+    version: Literal[1]
+    batches: list[PendingBatch]
+
+
 class BatchItemMeta(BaseModel):
     """What was already known about a request when it was queued — the provenance `_prepare`
     would otherwise attach to the `AnalysisRecord` right after calling the model, and that the

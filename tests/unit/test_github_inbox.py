@@ -36,28 +36,28 @@ def _github(request: httpx.Request) -> httpx.Response:
     return httpx.Response(201, json={"content": {"path": "inbox/5.json"}})
 
 
-def test_read_state_dump_requests_raw_content_from_the_configured_branch() -> None:
+def test_read_pending_batches_requests_raw_content_from_the_configured_branch() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.method == "GET"
-        assert request.url.path == "/repos/owner/repo/contents/lexinform.sql"
+        assert request.url.path == "/repos/owner/repo/contents/pending-batches.json"
         assert request.url.params["ref"] == "custom-state"
         assert request.headers["Accept"] == "application/vnd.github.raw+json"
-        return httpx.Response(200, text="BEGIN TRANSACTION;\nCOMMIT;\n")
+        return httpx.Response(200, text='{"version":1,"batches":[]}')
 
     writer = _writer(handler)
     try:
-        assert writer.read_state_dump("custom-state") == "BEGIN TRANSACTION;\nCOMMIT;\n"
+        assert writer.read_pending_batches("custom-state") == '{"version":1,"batches":[]}'
     finally:
         writer.close()
 
 
 @pytest.mark.parametrize("status", [403, 404, 429, 503])
-def test_read_state_dump_surfaces_errors(status: int) -> None:
+def test_read_pending_batches_surfaces_errors(status: int) -> None:
     writer = _writer(lambda request: httpx.Response(status))
     error = GitHubUnavailableError if status in (429, 503) else GitHubError
     try:
         with pytest.raises(error, match=f"read state: HTTP {status}"):
-            writer.read_state_dump("state")
+            writer.read_pending_batches("state")
     finally:
         writer.close()
 

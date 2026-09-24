@@ -27,7 +27,7 @@ from lexinform.models import (
     SILENCED_BY_OPERATOR,
     AnalysisRecord,
     BillStatus,
-    LlmBatch,
+    PendingBatch,
     ProcessDetail,
     ProcessSummary,
     RunMode,
@@ -432,7 +432,7 @@ def _fake_finished_anthropic_batch(
 def _fake_pending_batch(monkeypatch: pytest.MonkeyPatch, provider: str) -> None:
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    batch = LlmBatch.model_validate(
+    batch = PendingBatch.model_validate(
         dict(
             batch_id="owned-batch",
             provider=provider,
@@ -449,11 +449,9 @@ def _fake_pending_batch(monkeypatch: pytest.MonkeyPatch, provider: str) -> None:
 def test_poll_batches_ignores_provider_batches_absent_from_persisted_state(
     db: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    repo = SqliteBillRepository(db)
-    dump = repo.dump()
-    repo.close()
     monkeypatch.setattr(
-        "lexinform.cli.GitHubInboxWriter.read_state_dump", lambda self, branch: dump
+        "lexinform.cli.GitHubInboxWriter.read_pending_batches",
+        lambda self, branch: '{"version":1,"batches":[]}',
     )
     monkeypatch.setattr(
         "lexinform.cli.anthropic.Anthropic", _raise(AssertionError("provider called"))
@@ -478,7 +476,7 @@ def test_poll_batches_ignores_provider_batches_absent_from_persisted_state(
 def test_poll_batches_does_not_dispatch_without_readable_state(
     db: Path, monkeypatch: pytest.MonkeyPatch, error: Exception
 ) -> None:
-    monkeypatch.setattr("lexinform.cli.GitHubInboxWriter.read_state_dump", _raise(error))
+    monkeypatch.setattr("lexinform.cli.GitHubInboxWriter.read_pending_batches", _raise(error))
     monkeypatch.setattr(
         "lexinform.cli.GitHubInboxWriter.dispatch", _raise(AssertionError("dispatched"))
     )

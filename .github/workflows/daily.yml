@@ -231,7 +231,7 @@ jobs:
           git -C state config user.name "github-actions[bot]"
           git -C state config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           # Someone may have pushed to the branch meanwhile (e.g. a manual dump). The branch holds
-          # one file, so a rebase would always conflict: the dump is written again on top of the
+          # the dump and its polling manifest, so regenerate both on top of the
           # fetched tip instead (this run's database is the newer state either way).
           for attempt in 1 2 3; do
             uv run --frozen --no-dev lexinform db dump "$STATE_FILE"

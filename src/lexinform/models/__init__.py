@@ -46,6 +46,8 @@ from lexinform.models.batch import (
     JointQuestion,
     LlmBatch,
     LlmBatchItem,
+    PendingBatch,
+    PendingBatches,
     SupplementQuestion,
 )
 from lexinform.models.bill import (
@@ -342,6 +344,8 @@ __all__ = [
     "BatchStatus",
     "LlmBatch",
     "LlmBatchItem",
+    "PendingBatch",
+    "PendingBatches",
     "DocumentDigest",
     "ScannedDocument",
     "SupplementContext",

@@ -17,6 +17,7 @@ from typing import Any
 import httpx2 as httpx
 
 from lexinform.adapters.inbox_files import inbox_file_name
+from lexinform.adapters.state_snapshot import MANIFEST_NAME
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import IncomingCommand
 
@@ -173,10 +174,10 @@ class GitHubInboxWriter:
     def close(self) -> None:
         self._client.close()
 
-    def read_state_dump(self, branch: str) -> str:
+    def read_pending_batches(self, branch: str) -> str:
         try:
             response = self._client.get(
-                f"/repos/{self._repo}/contents/lexinform.sql",
+                f"/repos/{self._repo}/contents/{MANIFEST_NAME}",
                 params={"ref": branch},
                 headers={"Accept": "application/vnd.github.raw+json"},
             )

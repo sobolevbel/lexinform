@@ -253,13 +253,15 @@ journalctl -u lexinform-listen -f
 Same server, its own unit pair: a timer fires `lexinform poll-batches` every 20 minutes, which
 asks GitHub for a `collect-batches` run when a provider reports a terminal batch belonging to
 this installation — sooner than the next scheduled `daily.yml`, which would find it anyway.
-Each tick reads `lexinform.sql` from `LEXINFORM_LLM_BATCH_STATE_BRANCH` (default `state`) through
-the GitHub Contents API and restores a temporary in-memory copy. Only batches with unconsumed
+Each tick reads `pending-batches.json` from `LEXINFORM_LLM_BATCH_STATE_BRANCH` (default `state`)
+through the GitHub Contents API. `db dump` and every batch checkpoint derive this versioned list
+from the database and commit it together with the SQL dump. Only batches with unconsumed
 items are checked by ID, using their recorded provider and its configured key. No provider-wide
 listing or completion-age cutoff is used: test batches, other projects and already consumed
 results cannot wake the runner. Failed, expired and cancelled OpenAI batches also wake recovery.
 A state read failure exits without dispatching; a later timer tick retries. No persistent local
-database is needed. Provider deletion remains cleanup after a durable collection checkpoint.
+database is needed. A missing or invalid manifest never falls back to a provider-wide scan;
+the next scheduled run publishes it with its dump. Provider deletion remains cleanup after a durable collection checkpoint.
 `deploy/update.sh` installs and enables it automatically once its unit files are in `deploy/`, the
 same way it manages the relay's. Add to `.env`:
 

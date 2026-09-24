@@ -331,6 +331,7 @@ class Container:
                     self.repo.dump,
                     self.settings.llm_batch_state_file,
                     self.settings.llm_batch_state_branch,
+                    self.repo.list_open_llm_batches,
                 )
                 if self.settings.llm_batch_state_file is not None
                 else None
