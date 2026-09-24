@@ -308,6 +308,8 @@ class PublishingService:
         if stored is None or stored.delivery is None:
             compared = self._compared(bill, may_wait=may_wait)
             if isinstance(compared, Waiting):
+                if bill.awaiting_batch_since is None:
+                    self._repo.set_awaiting_batch(bill.term, bill.number, compared.since)
                 result.waiting += 1
                 return False
             bill = compared
@@ -336,6 +338,7 @@ class PublishingService:
         )
         if not sent:
             return False
+        self._repo.set_awaiting_batch(identity.term, identity.number, None)
         result.joined += 1
         log.info("druk %s joined the thread of druk %s", bill.number, card_bill.number)
         return True
@@ -355,7 +358,9 @@ class PublishingService:
         if not numbers or (bill.joint is not None and bill.joint.compared_with == numbers):
             return bill
         try:
-            record = self._analysis.compare_joint(bill, others, may_wait=may_wait)
+            record = self._analysis.compare_joint(
+                bill, others, may_wait=may_wait and self._analysis.may_wait_for_batch(bill)
+            )
         except Exception as exc:
             log.warning(
                 "%s not compared with %s (%s: %s); the reply says what it can",

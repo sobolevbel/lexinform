@@ -164,6 +164,7 @@ class BatchJob(BaseModel):
 class DigestItemMeta(BaseModel):
     queued_at: dt.datetime | None = None
     memo_key: str
+    delivery_key: str = ""
     prompt_version: str = ""
     source_kind: SourceKind = "print"
     title: str = ""

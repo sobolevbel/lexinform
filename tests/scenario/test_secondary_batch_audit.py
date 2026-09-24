@@ -14,20 +14,20 @@ from tests.scenario.test_secondary_batch import ask, ready_world
 from tests.scenario.test_tracking_batch import tracked_world
 
 
-@pytest.mark.xfail(strict=True, reason="B45: a refused reservation falls through to paid sync")
-def test_exhausted_secondary_budget_does_not_start_a_synchronous_call() -> None:
+@pytest.mark.parametrize("may_wait", [True, False])
+def test_exhausted_secondary_budget_does_not_start_a_synchronous_call(may_wait: bool) -> None:
     w = ready_world()
     settings = w.container.settings.model_copy(update={"max_run_cost_usd": 0.001})
     analysis = replace(w.container, settings=settings).analysis_service()
     analysis.start_run()
 
-    analysis.compare_joint(w.bill("3040"), [w.bill("3039")], may_wait=True)
+    result = analysis.compare_joint(w.bill("3040"), [w.bill("3039")], may_wait=may_wait)
 
+    assert isinstance(result, Waiting)
     assert not w.llm.joint_contexts
 
 
 @pytest.mark.parametrize("switch", ["disabled", "kind_removed"])
-@pytest.mark.xfail(strict=True, reason="B46: saved queued requests bypass submission switches")
 def test_queued_secondary_respects_the_current_submission_switch(switch: str) -> None:
     w = ready_world()
     assert isinstance(ask(w), Waiting)
@@ -44,7 +44,6 @@ def test_queued_secondary_respects_the_current_submission_switch(switch: str) ->
     assert not w.batch.submitted
 
 
-@pytest.mark.xfail(strict=True, reason="B47: supplement waiting hides an urgent new hearing")
 def test_new_hearing_deadline_is_not_held_behind_a_supplement() -> None:
     w = tracked_world()
     hearing = Stage(
@@ -60,7 +59,6 @@ def test_new_hearing_deadline_is_not_held_behind_a_supplement() -> None:
     assert report.hearing_reminders == 1
 
 
-@pytest.mark.xfail(strict=True, reason="B48: collected secondary answer still needs its source")
 def test_collected_supplement_survives_a_missing_source_document() -> None:
     w = tracked_world()
     w.run()
@@ -73,9 +71,32 @@ def test_collected_supplement_survives_a_missing_source_document() -> None:
 
     assert report.updates == 1
     assert w.publisher.updates[0][1].supplements[0].digest is not None
+    assert not w.llm.supplement_contexts
+    assert restarted.pipeline(dry_run=False).run(RunOptions(term=10)).updates == 0
 
 
-@pytest.mark.xfail(strict=True, reason="B49: changing joint context resets the reply deadline")
+def test_collected_supplement_is_not_reused_with_a_changed_analysis() -> None:
+    w = tracked_world()
+    w.run()
+    w.batch.resolve()
+    old = w.bill("3039").analysis
+    assert old is not None
+    w.repo.save_analysis(
+        10,
+        "3039",
+        old.model_copy(
+            update={"analysis": old.analysis.model_copy(update={"summary": "Changed context"})}
+        ),
+    )
+    w.gateway.files.clear()
+    w.repo.restore(w.repo.dump())
+
+    report = replace(w.container).pipeline(dry_run=False).run(RunOptions(term=10))
+
+    assert report.updates == 1
+    assert w.publisher.updates[0][1].supplements[0].digest is None
+
+
 def test_joint_deadline_survives_a_changed_comparison_context() -> None:
     w = joint_world()
     w.run()
@@ -90,6 +111,7 @@ def test_joint_deadline_survives_a_changed_comparison_context() -> None:
     report = w.run()
 
     assert report.joint_published == 1
+    assert w.bill("1929").awaiting_batch_since is None
 
 
 def test_waiting_supplement_survives_the_tracking_age_cutoff() -> None:

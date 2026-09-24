@@ -638,7 +638,9 @@ class StatusTrackingService:
             closure_announced=self._repo.closure_announced(bill.term, bill.number),
         )
         may_wait = (
-            may_wait and self._analysis is not None and self._analysis.may_wait_for_batch(bill)
+            may_wait
+            and self._analysis is not None
+            and self._analysis.may_wait_for_batch(bill.model_copy(update={"stages": detail.stages}))
         )
         change = self._detect_change(bill, found, plan, result, may_wait=may_wait)
         if isinstance(change, Waiting):

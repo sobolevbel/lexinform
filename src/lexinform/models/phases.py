@@ -20,6 +20,7 @@ from lexinform.models.bill import (
     veto_stood,
 )
 from lexinform.models.enums import ApplicantType, VetoOutcome
+from lexinform.models.events import hearings_due
 from lexinform.models.evidence import (
     DecisionState,
     ReadingOutcome,
@@ -241,7 +242,7 @@ def consultation_open(bill: Bill, today: dt.date) -> bool:
 def window_closes_within(bill: Bill, today: dt.date, days: int) -> bool:
     """Whether the reader's time to act is measured in days: a pilny bill, or a consultation
     whose end date falls within `days` of today — too close for a batch answer that may take 24h."""
-    if is_urgent(bill):
+    if is_urgent(bill) or hearings_due(bill, today, days_before=days):
         return True
     window = bill.consultation
     return (

@@ -113,16 +113,17 @@ def test_uncertain_intent_is_retained_after_synchronous_fallback() -> None:
     assert not w.batch.submitted
 
 
-def test_secondary_reservation_over_budget_falls_back_without_an_intent() -> None:
+def test_secondary_reservation_over_budget_waits_without_an_intent() -> None:
     w = World(batch=True, batch_kinds=frozenset({"joint"}), max_run_cost_usd=0.05)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.add_bill("3040", "Projekt ustawy o obywatelstwie")
     w.run()
     w.analysis.start_run()
 
-    assert isinstance(ask(w), JointRecord)
+    assert isinstance(ask(w), Waiting)
     assert not w.repo.list_queued_batch_intents()
-    assert len(w.llm.joint_contexts) == 1
+    assert not w.llm.joint_contexts
+    assert w.analysis.stopped is not None
 
 
 def test_submission_never_mixes_models_in_one_batch() -> None:

@@ -550,7 +550,10 @@ class AnalysisService:
 
     def submit_queued_batches(self) -> None:
         """Submit durable queued intents; an uncertain remote outcome stays operator-visible."""
+        if not self._submits_batches:
+            return
         intents = self._repo.list_queued_batch_intents()
+        intents = [i for i in intents if i.request.question.kind in self._options.batch_kinds]
         answered = {
             intent.request.custom_id
             for intent in intents
@@ -758,12 +761,22 @@ class AnalysisService:
                     number=item.number,
                     used_at=now,
                 )
+                if meta.delivery_key:
+                    self._repo.save_analysis_memo(
+                        meta.delivery_key,
+                        record.model_dump_json(),
+                        term=item.term,
+                        number=item.number,
+                        used_at=now,
+                    )
             self._repo.mark_llm_batch_item_consumed(
                 item.batch_id, item.custom_id, consumed_at=now, result=result
             )
         self._charge_batch_result(item, result)
         if record is not None:
             self._memo.setdefault(meta.memo_key, record.model_dump_json())
+            if meta.delivery_key:
+                self._memo[meta.delivery_key] = record.model_dump_json()
 
     def _consume_current(
         self, item: LlmBatchItem, batch_result: BatchResult, now: datetime, *, active: bool
@@ -950,6 +963,9 @@ class AnalysisService:
         return bill.model_copy(update={"analysis": prepared.record, "authors": authors}), True
 
     def may_wait_for_batch(self, bill: Bill) -> bool:
+        days = self._options.batch_sync_within_days
+        if days > 0 and window_closes_within(bill, self._clock.now().date(), days):
+            return False
         return bill.awaiting_batch_since is None or (
             self._clock.now() - bill.awaiting_batch_since < self._options.batch_max_wait
         )
@@ -1016,7 +1032,30 @@ class AnalysisService:
                         self._ledger.release(request.estimated_cost_usd)
                         raise
                     return Waiting(now)
-        record = sync_call()
+                self._ledger.stop("secondary analysis waits for the next run")
+                return Waiting(bill.awaiting_batch_since or now)
+        if self._ledger.exhausted:
+            self._ledger.stop("secondary analysis waits for the next run")
+            return Waiting(bill.awaiting_batch_since or self._clock.now())
+        estimate = 0.0
+        if self._batch is not None and model and provider == self._options.batch_provider:
+            request = self._batch.prepare_request(
+                BatchRequest(
+                    custom_id=key,
+                    term=bill.term,
+                    number=bill.number,
+                    question=question,
+                    model=model,
+                )
+            )
+            estimate = request.estimated_cost_usd * 2
+            if not self._ledger.reserve(estimate):
+                self._ledger.stop("secondary analysis waits for the next run")
+                return Waiting(bill.awaiting_batch_since or self._clock.now())
+        try:
+            record = sync_call()
+        finally:
+            self._ledger.release(estimate)
         self._ledger.charge(record, number=bill.number, kind=kind)
         self._remember_analysis(bill, key, record)
         self._cancel_queued_digest(key)
@@ -1094,6 +1133,32 @@ class AnalysisService:
             "the tracker collects filed documents only of an analysed bill"
         )
         assert document.kind in SUPPLEMENT_SOURCES, f"not a filed document: {document.kind}"
+        delivery_context = json.dumps(
+            {
+                "term": bill.term,
+                "bill": bill.number,
+                "number": number,
+                "title": title,
+                "document": document.model_dump(mode="json"),
+                "summary": bill.analysis.analysis.summary,
+                "changes": bill.analysis.analysis.key_changes,
+                "observation": bill.observed_process.model_dump(mode="json")
+                if bill.observed_process is not None
+                else None,
+            },
+            sort_keys=True,
+            ensure_ascii=False,
+        )
+        delivery_key = (
+            "supplement-delivery:" + hashlib.sha256(delivery_context.encode()).hexdigest()
+        )
+        cached = self._memo.get(delivery_key)
+        if bill.awaiting_batch_since is not None and cached is not None:
+            delivered = _reused(SupplementRecord.model_validate_json(cached))
+            delivered.number = number
+            delivered.source_url = document.url
+            self._remember_analysis(bill, delivery_key, delivered)
+            return delivered
         loaded = self._load_text(document, trim=False)
         if loaded.scan is None and (loaded.source == "metadata_only" or not loaded.text.strip()):
             return self.bare_supplement(document, number=number, title=title)
@@ -1120,7 +1185,9 @@ class AnalysisService:
             bill,
             SupplementQuestion(ctx=ctx),
             key,
-            DigestItemMeta(memo_key=key, source_kind=document.kind, title=title),
+            DigestItemMeta(
+                memo_key=key, delivery_key=delivery_key, source_kind=document.kind, title=title
+            ),
             SupplementRecord,
             lambda: self._llm.digest_supplement(ctx),
             may_wait=may_wait,
