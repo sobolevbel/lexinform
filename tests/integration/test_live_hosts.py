@@ -55,13 +55,12 @@ def test_a_bill_without_a_print_number_still_has_a_downloadable_file(
 
 
 def test_the_print_detail_names_a_file_that_downloads(sejm: SejmApiClient) -> None:
-    """Druk 599's listing names `599.pdf`, which is gone; its detail names `599-s.pdf`, which is
-    there. A run that builds the URL from the listing loses the print whole, and the only way to
-    notice is to ask the detail when the listing's files all fail."""
+    """Druk 599's detail names a government position, not bill text, in `599-s.pdf`."""
     info = sejm.get_print(TERM, "599")
 
-    assert info.main_pdf is not None
-    assert sejm.download(info.main_pdf.url, max_bytes=8_000_000).startswith(b"%PDF")
+    assert info.main_pdf is None
+    attachment = next(item for item in info.attachments if item.name == "599-s.pdf")
+    assert sejm.download(attachment.url, max_bytes=8_000_000).startswith(b"%PDF")
 
 
 def test_the_register_is_one_csv_whose_columns_are_still_recognisable() -> None:
