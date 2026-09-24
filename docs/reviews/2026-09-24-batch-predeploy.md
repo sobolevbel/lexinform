@@ -1,5 +1,8 @@
 # Secondary Batch predeployment verification
 
+Follow-up: the [architectural audit](2026-09-24-secondary-batch-audit.md) found six additional
+edge-case defects. The measurements below remain valid, but are not a blanket readiness verdict.
+
 24 September 2026. Implementation tested: `31936fd`; production-state snapshot:
 `e08805afa1d4300c6ef20ea01611e32ed927cc36`. No deployment or Telegram delivery.
 

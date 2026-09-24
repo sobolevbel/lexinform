@@ -98,6 +98,23 @@ Truncated/refused answers retain billed usage. v29 stores each answer before app
 acknowledges its cost atomically with the run report; a restart before that report restores the
 cost exactly once (`test_collected_cost_survives_restore_before_the_report_is_saved`).
 
+### Secondary batch audit — 24 Sept 2026
+
+Reviewed `18c845d`, including the secondary-call plan and its callers. Six defects are
+reproduced offline; production incidence is not established. They are **open**, not fixed.
+The seven strict-xfail acceptance cases in `tests/scenario/test_secondary_batch_audit.py`
+all fail with `--runxfail`. See [the audit](reviews/2026-09-24-secondary-batch-audit.md)
+for causes, evidence, limitations and the ordered change list.
+
+| # | rank | state | module | what is wrong | reproduction |
+|---|---|---|---|---|---|
+| 45 | P3 | open | `analysis.py::_ask_or_wait` | A rejected batch budget reservation falls through to a paid synchronous call without checking the remaining budget. The existing fallback test codifies this unsafe policy. | `test_exhausted_secondary_budget_does_not_start_a_synchronous_call` |
+| 46 | P3 | open | `analysis.py::submit_queued_batches` | Durable queued intents are submitted despite `llm_batch_enabled=false` or removal of their kind; the normal tracking fallback only masks this if it reaches that exact request first. | `test_queued_secondary_respects_the_current_submission_switch`, both switches |
+| 47 | P1 | open | `tracking/service.py::_detect`, `phases.py::window_closes_within` | Waiting for an OSR also withholds a newly discovered public hearing from the stored stages and its reminder; the urgency guard covers pilny/consultations, not hearing application deadlines. | `test_new_hearing_deadline_is_not_held_behind_a_supplement` |
+| 48 | P2 | open | `analysis.py::digest_supplement`, `DigestItemMeta` | After runner restart, applying an already collected digest still downloads the source to reconstruct its memo key. A missing file produces a bare supplement and marks it seen, losing the paid summary. | `test_collected_supplement_survives_a_missing_source_document` |
+| 49 | P2 | open | `publishing.py::_compared`, `analysis.py::compare_joint` | A changed comparison context creates another job with a fresh timeout; joint replies have no delivery-level deadline, so seven hours after the first wait the reply can enter another six-hour wait. | `test_joint_deadline_survives_a_changed_comparison_context` |
+| 50 | P1 | open | `sqlite_repo.py::list_tracked` | The wait marker bypasses the discovery watermark but not the tracking-age filter. A bill crossing that boundary is omitted even after its result is collected, leaving its update undelivered and its marker set. | `test_waiting_supplement_survives_the_tracking_age_cutoff` |
+
 ## Fixed
 
 - **44 (P2, 2026-09-23)**: `amendments_stage` treated a committee recommendation to adopt without amendments as an amendment document. Exclude `bez poprawek`; regression: `test_amendments_stage_is_the_senate_print_or_a_report_on_amendments`.
