@@ -9,6 +9,7 @@ import httpx2 as httpx
 import openai
 import pytest
 from anthropic.types import Message
+from openai.types.responses.response import Response
 
 from lexinform.adapters.llm_anthropic import AnthropicAnalyzer
 from lexinform.adapters.llm_openai import OpenAiAnalyzer
@@ -325,6 +326,34 @@ def test_secondary_batch_payload_and_result_contract(
     assert BatchRequest.model_validate_json(prepared.model_dump_json()) == prepared
     result = BatchResult(custom_id="secondary", answer=answer)
     assert BatchResult.model_validate_json(result.model_dump_json()).answer == answer
+
+    synchronous: list[dict[str, Any]] = []
+
+    def capture(**kwargs: Any) -> Any:
+        synchronous.append(kwargs)
+        if provider == "anthropic":
+            return SimpleNamespace(parsed_output=answer, stop_reason="end_turn", usage=None)
+        return Response.model_validate(
+            json.loads(_line("sync", answer.model_dump_json()))["response"]["body"]
+        )
+
+    client.messages = SimpleNamespace(parse=capture)
+    client.responses = SimpleNamespace(create=capture)
+    if isinstance(question, AmendmentsQuestion):
+        backend.summarize_amendments(question.ctx)
+    elif isinstance(question, SupplementQuestion):
+        backend.digest_supplement(question.ctx)
+    else:
+        assert isinstance(question, JointQuestion)
+        backend.compare_joint(question.ctx)
+    sent = synchronous[0]
+    if provider == "anthropic":
+        assert body["system"] == sent["system"]
+        assert body["messages"] == sent["messages"]
+        assert sent["output_format"] is type(answer)
+    else:
+        assert body["input"] == sent["input"]
+        assert body["text"] == sent["text"]
 
 
 @pytest.mark.parametrize("provider", ["anthropic", "openai"])

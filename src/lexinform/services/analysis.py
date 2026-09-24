@@ -551,6 +551,14 @@ class AnalysisService:
     def submit_queued_batches(self) -> None:
         """Submit durable queued intents; an uncertain remote outcome stays operator-visible."""
         intents = self._repo.list_queued_batch_intents()
+        answered = {
+            intent.request.custom_id
+            for intent in intents
+            if isinstance(intent.meta, DigestItemMeta) and intent.meta.memo_key in self._memo
+        }
+        for key in answered:
+            self._cancel_queued_digest(key)
+        intents = [intent for intent in intents if intent.request.custom_id not in answered]
         stale = [
             intent.request.custom_id
             for intent in intents
@@ -949,6 +957,7 @@ class AnalysisService:
     ) -> Record | Waiting:
         cached = self._memo.get(key)
         if cached is not None:
+            self._cancel_queued_digest(key)
             return _reused(record_model.model_validate_json(cached))
         kind = question.kind
         model = self._options.batch_models.get(kind, "")
@@ -998,7 +1007,20 @@ class AnalysisService:
         record = sync_call()
         self._ledger.charge(record, number=bill.number, kind=kind)
         self._remember_analysis(key, record)
+        self._cancel_queued_digest(key)
         return record
+
+    def _cancel_queued_digest(self, key: str) -> None:
+        if self._dry_run:
+            return
+        job = self._repo.batch_job(key)
+        if job is None or job.state != "queued":
+            return
+        for intent in self._repo.list_queued_batch_intents():
+            if intent.request.custom_id == key and isinstance(intent.meta, DigestItemMeta):
+                self._repo.delete_batch_intents([key])
+                self._ledger.release(intent.request.estimated_cost_usd)
+                return
 
     def summarize_amendments(
         self,

@@ -95,3 +95,23 @@ reply, some **$0.05** over the term. Sending both texts instead was measured and
 1929 + 1933 together are $1.95, which is inside the $2 per-bill guard only by accident, and the
 question a reader asks is how this print differs from the card they have read, not from a
 document they have not.
+
+
+## Secondary batch calls — 23 September 2026 plan
+
+The planning snapshot for 113 production runs on 7–23 September counted 34 analyses ($12.63),
+4 reanalyses ($3.14), 61 triages ($1.30), 1 amendment summary ($0.09), 2 joint comparisons
+($0.04), and no supplements. These are the plan's historical figures, not a new measurement.
+The term-10 corpus estimate was about $13.5 for secondary calls, or $6.7 saved by batching over
+one term; financial savings alone do not justify the feature.
+
+Secondary jobs use the same durable submission and memo collection path. Workflow configuration
+selects `analysis,reanalysis,joint,supplement`; amendments are implemented but remain disabled
+until at least 10 collected batches show collection-latency p90 at most 2 hours and the VPS poller
+is confirmed running. The state snapshot inspected during implementation contained **0 completed
+batches**: no latency percentile or poller-health conclusion can be drawn from it.
+
+A secondary request waits at most the configured age (default 6 hours) before the next run falls
+back synchronously. Queue time counts. An accepted or uncertain batch may still answer later,
+so that exceptional path pays twice; a definitely unsubmitted queued intent is removed after a
+successful synchronous answer. The late batch is still accounted for and cannot duplicate a post.

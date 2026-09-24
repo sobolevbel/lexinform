@@ -40,3 +40,15 @@ def test_batching_off_is_what_stops_a_submission() -> None:
 
     assert on.analysis_options().submit_batches is True
     assert off.analysis_options().submit_batches is False
+
+
+def test_secondary_batch_options_keep_each_call_model_and_selected_kinds() -> None:
+    c = _container(batching=True)
+    c.settings.llm_batch_kinds = frozenset({"joint", "supplement"})
+    c.settings.llm_joint_model = "gpt-5.1"
+    c.settings.llm_supplement_model = "claude-sonnet-5"
+    options = c.analysis_options()
+    assert options.batch_kinds == frozenset({"joint", "supplement"})
+    assert options.batch_models["joint"] == "gpt-5.1"
+    assert options.batch_models["supplement"] == "claude-sonnet-5"
+    assert options.batch_max_wait.total_seconds() == 6 * 3600

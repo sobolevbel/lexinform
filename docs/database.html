@@ -305,7 +305,6 @@
 <div class="page">
 
   <header class="lede">
-    <p>v32: <code>bills.awaiting_batch_since</code> сохраняет начало ожидания сводки; индекс <code>ix_llm_batch_items_custom</code> ускоряет поиск задания по ключу мемо. Старые дампы мигрируют вперёд.</p>
     <span class="eyebrow">lexinform · sqlite · PRAGMA user_version = 32</span>
     <h1>Схема базы lexinform</h1>
     <p>Один файл SQLite на весь бот: что известно о законопроекте, что в нём изменилось, что и куда
@@ -314,7 +313,7 @@
     держат главный инвариант: один пост одного вида на законопроект и канал.</p>
     <div class="facts">
       <span><b>5</b> таблиц</span>
-      <span><b>14</b> миграций, только вперёд</span>
+      <span><b>32</b> миграции, только вперёд</span>
       <span><b>WAL</b>, autocommit + явный <code>BEGIN</code> для dry-run</span>
       <span>источник правды — <b>MIGRATIONS</b> в <code>adapters/sqlite_repo.py</code></span>
     </div>
@@ -502,6 +501,7 @@
             <tr><td>title</td><td>TEXT</td><td>Заголовок, продублированный из <code>summary_json</code> ради человекочитаемого дампа и ручных SQL-запросов; модель читает JSON.</td></tr>
             <tr><td>change_date<span class="tag idx">idx</span></td><td>TEXT</td><td>Момент изменения по данным API. По нему сортируются очереди и отсекается <code>changed_since</code> в трекинге.</td></tr>
             <tr><td>closure_date</td><td>TEXT</td><td>Дата закрытия по API: для принятого проекта это III чтение, а не завершение всего пути.</td></tr>
+            <tr><td>awaiting_batch_since</td><td>TEXT</td><td>v32: начало ожидания сводок. Сохраняет участие в трекинге после сдвига водяного знака; снимается атомарно с наблюдением.</td></tr>
             <tr><td>observed_closure_date</td><td>TEXT</td><td>Добавлено в v24: дата закрытия из последнего обработанного снимка. Discovery её не меняет; первоначальный анализ и связывание с друком задают исходное значение, трекер обновляет после регистрации изменения.</td></tr>
             <tr><td>passed</td><td>INTEGER</td><td>Принят парламентом (не «вступил в силу»): у ветированных тоже 1.</td></tr>
             <tr><td>status<span class="tag idx">idx</span></td><td>TEXT</td><td><code>BillStatus</code>: discovered → skipped_prefilter / text_prefilter_pending → analysis_pending → analyzed, плюс analysis_failed, skipped_cost, skipped_closed (процесс завершился до того, как мы впервые увидели законопроект), linked.</td></tr>
@@ -626,6 +626,7 @@
       <table class="wide" style="min-width:640px;">
         <thead><tr><th>индекс</th><th>колонки</th><th>условие</th><th>зачем</th></tr></thead>
         <tbody>
+          <tr><td>ix_llm_batch_items_custom</td><td>llm_batch_items(custom_id)</td><td>—</td><td>v32: поиск состояния задания по ключу мемо.</td></tr>
           <tr><td>ix_bills_status</td><td>bills(status)</td><td>—</td><td>Очереди фаз: «кому нужен текстовый префильтр», «кого анализировать», «кого публиковать».</td></tr>
           <tr><td>ix_bills_change_date</td><td>bills(change_date)</td><td>—</td><td>Сортировка очередей: свежее — первым.</td></tr>
           <tr><td>ix_bills_entry_into_force</td><td>bills(entry_into_force)</td><td>—</td><td>«Что вступает в силу сегодня» — напоминание в день вступления.</td></tr>
@@ -721,6 +722,8 @@
       <div class="mig"><span class="v">v28</span><span class="what"><b>bills.analysis_generation</b> — защита от устаревшего ответа после reset; <b>bills.ready_analysis_json</b> — готовый ответ и снимок источника для применения без повторного скачивания.</span></div>
       <div class="mig"><span class="v">v29</span><span class="what"><b>llm_batch_items.result_json/accounted_at</b> — полученный ответ с billed usage; расходы подтверждаются атомарно с отчётом и восстанавливаются после сбоя.</span></div>
       <div class="mig"><span class="v">v30</span><span class="what"><b>llm_batches.forgotten_at</b> — собранный батч удалён у провайдера (Anthropic) после того, как его ответы попали в сохранённое состояние; поллер на VPS читает «ended и ещё есть в списке» как «не собран».</span></div>
+      <div class="mig"><span class="v">v31</span><span class="what"><b>bills.senate_json</b> — сведения со страницы акта в Сенате.</span></div>
+      <div class="mig"><span class="v">v32</span><span class="what"><b>bills.awaiting_batch_since</b> — отложенное наблюдение; <b>ix_llm_batch_items_custom</b> — поиск задания по ключу мемо. Ответы amendments, supplement и joint собираются в <b>analysis_memo</b>, не меняя статус билла.</span></div>
     </div>
   </section>
 

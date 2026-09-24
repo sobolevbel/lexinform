@@ -56,6 +56,10 @@ def test_secondary_timeout_includes_time_before_remote_submission(submit: bool) 
     assert len(w.llm.joint_contexts) == 1
     assert isinstance(ask(w), JointRecord)
     assert len(w.llm.joint_contexts) == 1
+    if not submit:
+        assert not w.repo.list_queued_batch_intents()
+        w.analysis.submit_queued_batches()
+        assert not w.batch.submitted
 
 
 def test_failed_secondary_item_falls_back_to_synchronous_call() -> None:
@@ -93,3 +97,43 @@ def test_deferred_bill_survives_watermark_filter_and_restore() -> None:
     )
     assert [bill.number for bill in found] == ["3039"]
     assert found[0].awaiting_batch_since == since
+
+
+def test_uncertain_intent_is_retained_after_synchronous_fallback() -> None:
+    w = ready_world()
+    ask(w)
+    intent = w.repo.list_queued_batch_intents()[0]
+    w.repo.mark_batch_intents_submitting([intent.request.custom_id])
+    w.clock.advance(hours=7)
+
+    assert isinstance(ask(w), JointRecord)
+    assert len(w.repo.list_submitting_batch_intents()) == 1
+    w.repo.mark_batch_intents_queued([intent.request.custom_id])
+    w.analysis.submit_queued_batches()
+    assert not w.batch.submitted
+
+
+def test_secondary_reservation_over_budget_falls_back_without_an_intent() -> None:
+    w = World(batch=True, batch_kinds=frozenset({"joint"}), max_run_cost_usd=0.05)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.add_bill("3040", "Projekt ustawy o obywatelstwie")
+    w.run()
+    w.analysis.start_run()
+
+    assert isinstance(ask(w), JointRecord)
+    assert not w.repo.list_queued_batch_intents()
+    assert len(w.llm.joint_contexts) == 1
+
+
+def test_submission_never_mixes_models_in_one_batch() -> None:
+    w = ready_world()
+    ask(w)
+    original = w.repo.list_queued_batch_intents()[0]
+    for suffix, model in [("b", "claude-sonnet-5"), ("c", "claude-opus-5")]:
+        request = original.request.model_copy(update={"custom_id": suffix, "model": model})
+        w.repo.save_batch_intent(original.model_copy(update={"request": request}))
+
+    w.analysis.submit_queued_batches()
+
+    assert len(w.batch.submitted) == 3
+    assert all(len({req.model for req in requests}) == 1 for requests in w.batch.batches.values())

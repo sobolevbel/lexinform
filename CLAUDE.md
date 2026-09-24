@@ -221,7 +221,7 @@ Invariants worth keeping:
   comparison is asked in `PublishingService._compared`, a moment before the reply is rendered and
   before its publication row exists, because the common case is a group arriving in one run,
   where at analysis time no print of it has been read yet; it is an embellishment of the reply
-  and never stops it, so even a model outage (everywhere else the end of a phase) is caught and
+  and may delay it until the batch deadline but never stops it, so even a model outage (everywhere else the end of a phase) is caught and
   the reply goes out as it was before comparisons existed. The verdict, importance and category
   stay the card's — one thread, one score. **Neither relevance gate decides an alternative
   bill**, for one reason asked at two moments: the card has already answered their question, of a
