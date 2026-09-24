@@ -1,0 +1,80 @@
+[project]
+site_name = "lexinform · документация"
+site_description = "Разработка, эксплуатация и решения проекта"
+docs_dir = "docs"
+site_dir = "site"
+dev_addr = "127.0.0.1:8001"
+use_directory_urls = true
+extra_css = ["assets/stylesheets/extra.css"]
+nav = [
+  { "Начало" = "index.md" },
+  { "Разработка" = [
+    { "Обзор" = "development/index.md" },
+    { "Наблюдения и доставка" = "process-plans.md" },
+    { "Выбор текста" = "text-selection.md" },
+    { "RCL: сбор данных" = "rcl-scraping.md" },
+    { "Хранение состояния" = "state-retention.md" },
+  ] },
+  { "Эксплуатация" = [
+    { "Обзор" = "operations/index.md" },
+    { "Команды оператора" = "operator-commands.md" },
+    { "RCL proxy" = "rcl-proxy.md" },
+    { "Стоимость LLM" = "llm-cost.md" },
+  ] },
+  { "Справочники" = [
+    { "Законодательный процесс" = "legislative-process.md" },
+    { "База данных" = "reference/database.md" },
+  ] },
+  { "Гайды читателям" = [
+    { "О материалах" = "guides/README.md" },
+    { "О боте" = "guides/o-bote.md" },
+    { "Заявить интерес" = "guides/zgloszenie-zainteresowania.md" },
+    { "Консультации" = "guides/konsultacje-publiczne.md" },
+    { "Письмо комиссии" = "guides/pismo-do-komisji.md" },
+    { "Публичные слушания" = "guides/wysluchanie-publiczne.md" },
+  ] },
+  { "Публичный сайт" = [
+    { "Действующие решения" = "website/index.md" },
+    { "Архитектура и стек" = "website/architecture.md" },
+    { "Данные и задачи" = "website/data.md" },
+    { "Деплой сайта" = "website/deployment.md" },
+    { "Порядок реализации" = "website/delivery.md" },
+    { "Ход реализации" = "plans/website-implementation-progress.md" },
+    { "Дизайн и прототип" = "website/design.md" },
+    { "Концепция" = "plans/website-design-concept.md" },
+  ] },
+  { "Планы" = [
+    { "Обзор" = "plans/index.md" },
+    { "Roadmap" = "roadmap.md" },
+    { "Вторичные batch-вызовы" = "plans/2026-09-23-batch-secondary-calls.md" },
+    { "Локальная документация" = "plans/2026-09-24-local-documentation.md" },
+    { "Монетизация" = "plans/monetization-options.md" },
+    { "История плана сайта" = "plans/website-development-plan.md" },
+  ] },
+  { "Аудиты" = [
+    { "Обзор" = "reviews/index.md" },
+    { "Инцидент 2111" = "incident-2111.md" },
+    { "Batch: архитектура · 23.09" = "reviews/2026-09-23-batch-architecture.md" },
+    { "Batch: перед деплоем · 24.09" = "reviews/2026-09-24-batch-predeploy.md" },
+    { "Batch: вторичные вызовы · 24.09" = "reviews/2026-09-24-secondary-batch-audit.md" },
+  ] },
+  { "Дефекты" = [
+    { "Открытые" = "BUGS.md" },
+    { "Архив" = "archive/bugs.md" },
+    { "Повторяющиеся ошибки" = "development/failure-patterns.md" },
+  ] },
+  { "Редактирование документации" = "authoring.md" },
+]
+
+[project.theme]
+language = "ru"
+custom_dir = "docs-theme"
+font = false
+features = ["navigation.top", "content.code.copy"]
+
+[project.validation]
+invalid_links = true
+invalid_link_anchors = true
+
+[project.markdown_extensions.toc]
+slugify = { object = "pymdownx.slugs.slugify", kwds = { case = "lower" } }

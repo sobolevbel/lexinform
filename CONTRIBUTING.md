@@ -49,6 +49,19 @@ a measured number), an invariant a later edit would silently break, or why the o
 taken. Not a restatement of the next line, not a divider, not a label over a group of fields or
 methods. What needs a paragraph becomes a function with a good name and a docstring.
 
+## Local documentation
+
+```bash
+uv sync --frozen --group docs
+uv run --frozen --group docs zensical serve
+uv run --frozen --group docs zensical build --strict
+uv run --frozen --group docs python tools/check_docs.py
+```
+
+Open http://127.0.0.1:8001; stop with Ctrl+C. No keys, database or application services are
+needed. Only `docs/` is served. Start at [the portal index](docs/index.md); editing instructions
+are in [authoring.md](docs/authoring.md). Generated `site/` and `.cache/` are ignored.
+
 ## Running the bot locally
 
 ```bash
@@ -208,8 +221,8 @@ curl -s 'https://legislacja.rcl.gov.pl/projekt/12414050' > projekt_12414050.html
 
 ## Database schema and migrations
 
-The tables, their columns, every index and the whole migration ledger, drawn and explained on one
-page: `docs/database.html` (Russian, open it in a browser). The source of truth stays the code.
+Start at [the schema reference](docs/reference/database.md). `docs/database.html` is an outdated
+visual snapshot; the source of truth stays the migration ledger in code.
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS`
 tuple in `adapters/sqlite_repo.py` (script `i` brings the database to version `i + 1`,

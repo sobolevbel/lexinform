@@ -1,0 +1,5 @@
+:root { --md-text-font: system-ui, sans-serif; --md-code-font: ui-monospace, monospace; }
+.md-grid { max-width: 90rem; }
+.md-typeset table:not([class]) { font-size: .78rem; }
+.md-typeset pre { max-width: 100%; overflow-x: auto; }
+.doc-example { padding: 1rem; border: 1px solid var(--md-default-fg-color--lightest); border-radius: .4rem; }

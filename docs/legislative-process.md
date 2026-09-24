@@ -1,5 +1,9 @@
 # How a Polish law is made (and where the public can act)
 
+Статус: технический справочник для разработчика; правовой и API-контекст — сентябрь 2026.
+[Визуальная версия для читателя](legislative-process.html) использует тот же временной контекст.
+24 сентября при организации документации правовые нормы повторно не проверялись.
+
 A reference for working on lexinform: the whole path of a bill (projekt ustawy) from the first
 public trace to entry into force, the legal deadlines on that path, the moments when organisations
 and individuals can submit an opinion, and how each step shows up in the Sejm API and in our

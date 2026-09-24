@@ -343,11 +343,15 @@ adapter.
 
 ## Documentation
 
+Start with the [documentation portal](docs/index.md). Run locally with
+`uv run --frozen --group docs zensical serve` and open http://127.0.0.1:8001.
+See [authoring](docs/authoring.md) for installation and checks.
+
 | Document | What is in it |
 |---|---|
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Setup, the check before every commit, tests, migrations, where a change goes |
 | [`docs/legislative-process.md`](docs/legislative-process.md) | How a Polish law is made: stages, legal deadlines, the public's windows, the API's stage vocabulary (`docs/legislative-process.html` is a one-page Russian version for readers) |
-| [`docs/database.html`](docs/database.html) | The database on one page: tables, relations, indexes and the migration ledger (Russian, open it in a browser) |
+| [`docs/reference/database.md`](docs/reference/database.md) | Schema source, migration rules and the historical HTML visualization |
 | [`docs/operator-commands.md`](docs/operator-commands.md) | The technical channel's commands, how one travels to a run, the relay's setup |
 | [`docs/rcl-proxy.md`](docs/rcl-proxy.md) | Why RCL needs an EU egress and how the proxy is built |
 | [`docs/roadmap.md`](docs/roadmap.md) | What is not done yet: what is being built now, what is next, what waits for a measurement |

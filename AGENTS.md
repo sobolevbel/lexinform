@@ -7,7 +7,8 @@ Read `README.md` for product context, `CONTRIBUTING.md` before changing code, an
 - `docs/roadmap.md` for the open work;
 - `docs/legislative-process.md` for stages, legal deadlines and public participation windows;
 - `docs/operator-commands.md` for the technical channel's commands and the relay that carries them;
-- `docs/database.html` for the schema, its indexes and the migration ledger on one page.
+- `docs/reference/database.md` for the schema source and migrations (`database.html` is historical).
+- `docs/index.md` for the local documentation portal and `docs/authoring.md` for editing it.
 
 ## Working rules
 

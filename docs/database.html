@@ -1,7 +1,6 @@
 <title>Схема базы lexinform</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:wght@500;600&display=swap">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   :root {
     --paper: #f5f7fa;
@@ -303,6 +302,12 @@
 </style>
 
 <div class="page">
+<aside style="padding:1rem;border:2px solid #a65d00;margin-bottom:1rem">
+  <a href="reference/database/">← База данных: актуальный справочник</a>
+  <p><strong>Историческая схема, не актуальная спецификация.</strong>
+  Визуальная модель не отражает полный состав современных таблиц и полей.
+  Пометка добавлена 24 сентября 2026; источник истины — MIGRATIONS в коде.</p>
+</aside>
 
   <header class="lede">
     <span class="eyebrow">lexinform · sqlite · PRAGMA user_version = 33</span>
@@ -717,7 +722,7 @@
       <div class="mig"><span class="v">v13</span><span class="what"><b>commands</b> — команды оператора по <code>update_id</code> Telegram, записанные до выполнения.</span></div>
       <div class="mig"><span class="v">v14</span><span class="what"><b>commands.executed_at</b> — команда, чей ответ не дошёл, отвечается повторно, а не выполняется повторно.</span></div>
       <div class="mig"><span class="v">v24</span><span class="what"><b>bills.observed_closure_date</b> — отдельная база сравнения для трекера. Заполняется из <code>closure_date</code> у строк с известным отпечатком стадий, чтобы обновление кода не объявляло старые решения новыми. Версии v15–v23 перечислены в <code>MIGRATIONS</code>; схема выше отражает первоначальную v14 с этим дополнением.</span></div>
-      <div class="mig"><span class="v">v25</span><span class="what"><b>bills.observed_process_json</b> — обработанное наблюдение; <b>publications.delivery_json</b> — неизменяемый план карточки, обновления, повестки или напоминания для повтора; <b>status_changes.consultation_opened</b> — сохранённый факт открытия консультаций; <b>analysis_memo</b> — результаты анализа по содержимому и цели. Состояние <b>queued</b> отделяет ожидающую доставку от редакционного удержания. <a href="process-plans.md">Архитектура и границы совместимости</a>.</span></div>
+      <div class="mig"><span class="v">v25</span><span class="what"><b>bills.observed_process_json</b> — обработанное наблюдение; <b>publications.delivery_json</b> — неизменяемый план карточки, обновления, повестки или напоминания для повтора; <b>status_changes.consultation_opened</b> — сохранённый факт открытия консультаций; <b>analysis_memo</b> — результаты анализа по содержимому и цели. Состояние <b>queued</b> отделяет ожидающую доставку от редакционного удержания. <a href="process-plans/">Архитектура и границы совместимости</a>.</span></div>
       <div class="mig"><span class="v">v26</span><span class="what"><b>llm_batches</b> и <b>llm_batch_items</b> — отправленные задания LLM, провайдер, элементы и отметки сбора ответов.</span></div>
       <div class="mig"><span class="v">v27</span><span class="what"><b>llm_batch_intents</b> — сохранённые запросы до отправки; <code>queued</code> можно повторить, <code>submitting</code> требует сверки с провайдером.</span></div>
       <div class="mig"><span class="v">v28</span><span class="what"><b>bills.analysis_generation</b> — защита от устаревшего ответа после reset; <b>bills.ready_analysis_json</b> — готовый ответ и снимок источника для применения без повторного скачивания.</span></div>
@@ -725,7 +730,7 @@
       <div class="mig"><span class="v">v30</span><span class="what"><b>llm_batches.forgotten_at</b> — собранный батч удалён у провайдера (Anthropic) после того, как его ответы попали в сохранённое состояние; поллер читает список pending-batches.json, сохранённый вместе с дампом.</span></div>
       <div class="mig"><span class="v">v31</span><span class="what"><b>bills.senate_json</b> — сведения со страницы акта в Сенате.</span></div>
       <div class="mig"><span class="v">v32</span><span class="what"><b>bills.awaiting_batch_since</b> — отложенное наблюдение; <b>ix_llm_batch_items_custom</b> — поиск задания по ключу мемо. Ответы amendments, supplement и joint собираются в <b>analysis_memo</b>, не меняя статус билла.</span></div>
-      <div class="mig"><span class="v">v33</span><span class="what"><b>analysis_memo.term, number, last_used_at</b> — владелец и последнее использование кеша; старые записи без этих сведений защищены от удаления. <a href="state-retention.md">Правила хранения</a>.</span></div>
+      <div class="mig"><span class="v">v33</span><span class="what"><b>analysis_memo.term, number, last_used_at</b> — владелец и последнее использование кеша; старые записи без этих сведений защищены от удаления. <a href="state-retention/">Правила хранения</a>.</span></div>
     </div>
   </section>
 

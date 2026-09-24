@@ -1,5 +1,7 @@
 # Secondary Batch predeployment verification
 
+Статус: историческая проверка 24.09.2026. Текущие дефекты — в [реестре](../BUGS.md).
+
 Follow-up: the [architectural audit](2026-09-24-secondary-batch-audit.md) found six additional
 edge-case defects. The measurements below remain valid, but are not a blanket readiness verdict.
 

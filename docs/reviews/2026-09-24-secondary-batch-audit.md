@@ -1,5 +1,8 @@
 # Аудит secondary batch — 24 сентября 2026
 
+Статус: исторический аудит указанной ниже версии. Текущее состояние — в [реестре](../BUGS.md).
+После аудита B50 исправлен; B45–B49 остаются открыты по состоянию реестра на 24.09.
+
 Проверен `18c845d`, рабочее дерево перед аудитом чистое. Основной diff:
 `c13abb2..18c845d` — восемь коммитов реализации и проверки плана
 `docs/plans/2026-09-23-batch-secondary-calls.md`. Дополнительно прочитаны общий lifecycle,
@@ -39,13 +42,13 @@ Ruff format/check и `git diff --check` прошли. С `--runxfail` — **7 fa
 `/tmp/lexinform-batch-audit-gate.log`.
 
 Ключевые места кода в проверенном HEAD:
-[admission](../../src/lexinform/services/analysis.py#L947),
-[submit](../../src/lexinform/services/analysis.py#L551),
-[tracking checkpoint](../../src/lexinform/services/tracking/service.py#L628),
-[tracking selection](../../src/lexinform/adapters/sqlite_repo.py#L1079),
-[digest application](../../src/lexinform/services/analysis.py#L1075),
-[joint context](../../src/lexinform/services/analysis.py#L1121),
-[urgency](../../src/lexinform/models/phases.py#L241).
+[admission](https://github.com/sobolevbel/lexinform/blob/18c845d/src/lexinform/services/analysis.py#L947),
+[submit](https://github.com/sobolevbel/lexinform/blob/18c845d/src/lexinform/services/analysis.py#L551),
+[tracking checkpoint](https://github.com/sobolevbel/lexinform/blob/18c845d/src/lexinform/services/tracking/service.py#L628),
+[tracking selection](https://github.com/sobolevbel/lexinform/blob/18c845d/src/lexinform/adapters/sqlite_repo.py#L1079),
+[digest application](https://github.com/sobolevbel/lexinform/blob/18c845d/src/lexinform/services/analysis.py#L1075),
+[joint context](https://github.com/sobolevbel/lexinform/blob/18c845d/src/lexinform/services/analysis.py#L1121),
+[urgency](https://github.com/sobolevbel/lexinform/blob/18c845d/src/lexinform/models/phases.py#L241).
 
 Production state и настройки не менялись, новых сетевых/LLM-вызовов и Telegram-отправок в
 этом аудите нет. Распространённость проблем на корпусе и в production не измерялась.
@@ -96,6 +99,9 @@ P2 — неполное или вводящее в заблуждение соо
 промежуточную стадию отдельно от её delivery work ради обхода теста: это сломает checkpoint.
 
 ### B50 · P1 · маркер не защищает от выхода из трекинга
+
+**После аудита исправлен**: [B50 в архиве](../archive/bugs.md#b50), commit `5b11966`.
+Ниже сохранено поведение версии `18c845d` до исправления.
 
 `sqlite_repo.py::list_tracked` добавляет `awaiting_batch_since IS NOT NULL` только в условие
 водяного знака. Предыдущее условие возраста закрытого проекта всё равно его исключает.

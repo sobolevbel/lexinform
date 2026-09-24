@@ -45,6 +45,9 @@ dev = [
   "mypy>=1.11",
   "hypothesis>=6.168.0",
 ]
+docs = [
+  "zensical>=0.0.64,<0.1",
+]
 
 [build-system]
 requires = ["hatchling"]

@@ -1,5 +1,8 @@
 # Incident 2111: false adoption, duplicate analysis and the reliability boundary
 
+Статус: исторический разбор инцидента 16.09.2026.
+Действующая архитектура — [process-plans.md](process-plans.md), дефекты — [в реестре](BUGS.md).
+
 Run 79, 16 September 2026, 19:35:36–19:39:18 UTC. Evidence: state commit `30bc17e`,
 [Actions run 35141456953](https://github.com/sobolevbel/lexinform/actions/runs/35141456953),
 running code `2b972cf`. Investigation used restored copies of state and offline fakes;
