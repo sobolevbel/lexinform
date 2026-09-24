@@ -144,7 +144,7 @@ def test_status_update_tags_name_the_events(process_1962: ProcessDetail) -> None
     )
 
     assert eventful.text.splitlines()[-1] == (
-        "#голосование #сенат #новыйтекст #важность5 #легализация #kadencja10druk1962"
+        "#голосование #сенат #важность5 #легализация #kadencja10druk1962"
     )
     # A referral is a searchable event of its own: "all the bills now in committee".
     assert plain.text.splitlines()[-1] == ("#комиссия #важность5 #легализация #kadencja10druk1962")

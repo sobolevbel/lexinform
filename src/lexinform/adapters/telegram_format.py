@@ -1095,7 +1095,9 @@ class MessageFormatter:
             links.append(link(act.text_pdf_url, lb.link_act_pdf))
         return links
 
-    def run_report(self, report: RunReport, log_lines: list[str]) -> RenderedMessage:
+    def run_report(
+        self, report: RunReport, log_lines: list[str], *, run_url: str | None = None
+    ) -> RenderedMessage:
         lb = self._labels
         status = "✅" if report.ok else "❌"
         duration = report.duration_seconds
@@ -1104,6 +1106,7 @@ class MessageFormatter:
             f"mode: {esc(report.mode)} · since: {esc(report.since.strftime('%Y-%m-%d %H:%M'))}"
             + (f" · term {report.term}" if report.term is not None else "")
             + (f" · {duration}s" if duration is not None else "")
+            + (f"\n{link(run_url, 'GitHub Actions log')}" if run_url else "")
         )
         # Zero counters say nothing: a section lists what happened, or that nothing did.
         sections = [

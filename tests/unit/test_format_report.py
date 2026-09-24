@@ -115,6 +115,18 @@ def test_run_report_of_a_quiet_run_says_so_instead_of_listing_zeros() -> None:
     assert ": 0" not in text and "tokens" not in text
 
 
+def test_run_report_links_to_the_github_actions_log_when_available() -> None:
+    url = 'https://github.com/owner/repo/actions/runs/123?x="y"&z=1'
+
+    text = MessageFormatter("ru").run_report(_report(), [], run_url=url).text
+
+    assert_telegram_html(text)
+    assert (
+        '<a href="https://github.com/owner/repo/actions/runs/123?x=&quot;y&quot;&amp;z=1">GitHub Actions log</a>'
+        in text
+    )
+
+
 def test_run_report_shows_cache_reads_apart_from_the_uncached_input() -> None:
     usage = {"claude-opus-5": TokenUsage(input=1_000, cache_read=4_000, output=100)}
 

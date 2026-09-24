@@ -1,9 +1,17 @@
 """The wiring decisions a test cannot see through a service: what the container builds and when."""
 
+import datetime as dt
+import json
+
+import httpx2 as httpx
+import pytest
+
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
+from lexinform.adapters.telegram import TelegramBotClient
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.container import Container
 from lexinform.keywords import KeywordPrefilter
+from lexinform.models import RunMode, RunReport
 from lexinform.ports import Clock
 from lexinform.services.terms import TermResolver
 from lexinform.settings import Settings
@@ -52,3 +60,35 @@ def test_secondary_batch_options_keep_each_call_model_and_selected_kinds() -> No
     assert options.batch_models["joint"] == "gpt-5.1"
     assert options.batch_models["supplement"] == "claude-sonnet-5"
     assert options.batch_max_wait.total_seconds() == 6 * 3600
+
+
+def test_run_notifier_links_the_actions_run_in_the_log_channel(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    messages: list[dict[str, object]] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        messages.append(json.loads(request.content))
+        return httpx.Response(200, json={"ok": True, "result": {"message_id": 1}})
+
+    container = _container(batching=False)
+    container.settings.telegram_log_channel_id = "@logs"
+    client = TelegramBotClient("TOKEN", transport=httpx.MockTransport(handle))
+    monkeypatch.setattr(container, "telegram_client", lambda: client)
+    monkeypatch.setenv("GITHUB_SERVER_URL", "https://github.com")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_RUN_ID", "123")
+    notifier = container.run_notifier(dry_run=False)
+    report = RunReport(
+        started_at=dt.datetime(2026, 9, 24),
+        since=dt.datetime(2026, 9, 24),
+        mode=RunMode.RUN,
+    )
+
+    assert notifier is not None
+    notifier.notify(report, [])
+
+    assert messages[0]["chat_id"] == "@logs"
+    assert '<a href="https://github.com/owner/repo/actions/runs/123">GitHub Actions log</a>' in str(
+        messages[0]["text"]
+    )

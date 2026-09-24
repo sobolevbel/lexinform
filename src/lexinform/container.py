@@ -3,6 +3,7 @@ for the pipeline or for single services. Every collaborator is typed on its port
 harness builds the same container from fakes and the wiring the daily run uses is what the
 tests exercise."""
 
+import os
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import timedelta
@@ -403,8 +404,19 @@ class Container:
             return ConsoleRunNotifier(self.formatter)
         if not self.settings.telegram_log_channel_id:
             return None
+        server = os.environ.get("GITHUB_SERVER_URL")
+        repository = os.environ.get("GITHUB_REPOSITORY")
+        run_id = os.environ.get("GITHUB_RUN_ID")
+        run_url = (
+            f"{server.rstrip('/')}/{repository}/actions/runs/{run_id}"
+            if server and repository and run_id
+            else None
+        )
         return TelegramRunNotifier(
-            self.telegram_client(), self.formatter, channel_id=self.settings.telegram_log_channel_id
+            self.telegram_client(),
+            self.formatter,
+            channel_id=self.settings.telegram_log_channel_id,
+            run_url=run_url,
         )
 
     def channel_id(self) -> str:

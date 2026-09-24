@@ -208,14 +208,20 @@ class TelegramRunNotifier:
     """Posts the run report and captured warnings to a technical log channel."""
 
     def __init__(
-        self, client: TelegramBotClient, formatter: MessageFormatter, *, channel_id: str
+        self,
+        client: TelegramBotClient,
+        formatter: MessageFormatter,
+        *,
+        channel_id: str,
+        run_url: str | None = None,
     ) -> None:
         self._client = client
         self._formatter = formatter
         self._channel_id = channel_id
+        self._run_url = run_url
 
     def notify(self, report: RunReport, log_lines: list[str]) -> None:
-        rendered = self._formatter.run_report(report, log_lines)
+        rendered = self._formatter.run_report(report, log_lines, run_url=self._run_url)
         self._client.send_message(self._channel_id, rendered.text)
 
     def notify_backfill(self, report: BackfillReport) -> None:
