@@ -32,6 +32,34 @@ above.
 
 ## The check before every commit
 
+Run `make` from the repository root to list the shortcuts. They use `uv.lock` with
+`--frozen`; no additional Python task runner is needed. GNU Make is required (the
+system `make` on macOS works).
+
+```bash
+make sync                     # install bot + development dependencies
+make check                    # tests, mypy, Ruff and formatting check; no source edits
+make format                   # apply formatting
+make test                     # offline unit + scenario tests
+make test-unit                # unit tests only
+make test-scenario            # pipeline scenarios only
+make test ARGS="tests/scenario/test_tracking.py -k closure -vv"
+make coverage                 # tests with coverage
+make lint                     # Ruff, including tools/
+make typecheck                # strict mypy
+make test-integration         # live external services; requires network
+make docs                     # documentation preview on port 8001
+make docs-check               # strict build + link and content checks
+```
+
+`make check` covers the bot and tools; docs and web have separate checks. The web
+shortcuts (`make web-sync`, `make web-check`, `make web-serve`) are described in
+[`web/README.md`](web/README.md). `ARGS` passes shell arguments to test and development
+server commands; quote expressions inside it, for example `ARGS="-k 'closure or hearing'"`.
+Override the uv command with `make check UV="uv --offline"` after dependencies are installed.
+
+The underlying commands remain available:
+
 ```bash
 uv run ruff format src tests && uv run ruff check src tests
 uv run mypy                   # strict, over src and tests
