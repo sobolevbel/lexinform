@@ -1155,6 +1155,12 @@ class MessageFormatter:
                     ("file refused, still queued: {}", report.analysis_unanswered),
                     ("joint prints revived: {}", report.joint_revived),
                 ),
+                _counters(
+                    ("отправлено запросов в batch: {}", report.batch_requests_submitted),
+                    ("ожидают обработки результатов batch: {}", report.batch_requests_pending),
+                    ("в очереди на отправку в batch: {}", report.batch_requests_queued),
+                    ("отправка batch не подтверждена: {}", report.batch_requests_uncertain),
+                ),
                 _tokens_line(report),
                 _spenders_line(report),
                 empty="nothing analyzed",

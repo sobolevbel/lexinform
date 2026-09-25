@@ -157,6 +157,7 @@ class DailyPipeline:
             report.errors.append(f"unexpected failure: {type(exc).__name__}: {exc}")
         finally:
             report.finished_at = self._clock.now()
+            self._phase(report, "batch status", lambda: self._batch_status(report))
             # Every phase that asks the model goes through one `AnalysisService`, so this is the
             # whole run's spend, however it was reached, and it is recorded before the report is
             # stored — a run that fell over still says what it had spent by then.
@@ -298,11 +299,31 @@ class DailyPipeline:
             self._phase(report, "tracking", lambda: self._track(opts, report))
         # Skipped on a dry run: a real batch submission has no rollback.
         if not opts.dry_run:
-            self._phase(report, "submit batches", self._analysis.submit_queued_batches)
+            self._phase(report, "submit batches", lambda: self._submit_batches(report))
         # After tracking, so that the week's own posts are in it; the service decides whether
         # today is the day, and it asks the Warsaw calendar and not the runner's.
         if opts.digest and opts.publish and self._digest is not None:
             self._phase(report, "digest", lambda: self._draft_digest(report))
+
+    def _submit_batches(self, report: RunReport) -> None:
+        before = {batch.batch_id for batch in self._repo.list_open_llm_batches()}
+        try:
+            self._analysis.submit_queued_batches()
+        finally:
+            report.batch_requests_submitted += sum(
+                batch.request_count
+                for batch in self._repo.list_open_llm_batches()
+                if batch.batch_id not in before
+            )
+
+    def _batch_status(self, report: RunReport) -> None:
+        report.batch_requests_pending = sum(
+            item.consumed_at is None
+            for batch in self._repo.list_open_llm_batches()
+            for item in self._repo.list_llm_batch_items(batch.batch_id)
+        )
+        report.batch_requests_queued = len(self._repo.list_queued_batch_intents())
+        report.batch_requests_uncertain = len(self._repo.list_submitting_batch_intents())
 
     @staticmethod
     def _phase(report: RunReport, name: str, action: Callable[[], None]) -> None:

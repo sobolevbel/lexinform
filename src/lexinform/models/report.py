@@ -132,6 +132,10 @@ class RunReport(BaseModel):
     reanalyzed: int = 0
     tracked: int = 0
     batch_waiting: int = 0
+    batch_requests_submitted: int = 0
+    batch_requests_pending: int = 0
+    batch_requests_queued: int = 0
+    batch_requests_uncertain: int = 0
     errors: list[str] = Field(default_factory=list)
     llm_input_tokens: int = 0
     llm_output_tokens: int = 0
@@ -159,6 +163,9 @@ class RunReport(BaseModel):
                 "discovery_ok",
                 "tracked",
                 "batch_waiting",
+                "batch_requests_pending",
+                "batch_requests_queued",
+                "batch_requests_uncertain",
                 "phase_seconds",
             }
         )
