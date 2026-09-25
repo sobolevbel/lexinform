@@ -4,6 +4,8 @@ waits in the inbox, the run executes it, answers under it and takes it out."""
 import datetime as dt
 from typing import Any
 
+import pytest
+
 from lexinform.errors import LlmUnavailableError
 from lexinform.models import (
     BillStatus,
@@ -541,6 +543,62 @@ def test_a_project_that_already_reached_the_sejm_leads_to_its_druk() -> None:
     assert w.bill(RCL).status is BillStatus.LINKED  # the project joins the druk's thread
     assert w.bill(RCL).linked_number == "2172"
     assert w.bill("2172").linked_wykaz_number == "UC164"
+
+
+@pytest.mark.parametrize("source", [RCL, RPW])
+def test_show_and_refresh_follow_the_link_to_the_print(source: str) -> None:
+    w = World()
+    w.add_bill("2172", TITLE)
+    if source == RCL:
+        w.add_rcl_project(rcl_project(rm_number="RM-0610-7-26", consultation=None))
+        w.touch("2172", w.clock.now(), rcl_num="RM-0610-7-26")
+    else:
+        w.gateway.submissions.append(submission(print_number="2172"))
+    w.command(f"/analyze {source}")
+    _commands_only(w)
+    w.command(f"/show {source}")
+    _commands_only(w)
+    incoming, shown = w.replier.replies[-1]
+    assert shown.status is OutcomeStatus.SHOWN
+    assert shown.bill is not None and shown.bill.number == "2172"
+    assert shown.note == f"linked: {source} → 2172"
+    text = w.formatter.command_reply(incoming, shown).text
+    assert "druk nr 2172" in text
+    assert "ждём номер" not in text
+    assert "присвоение номера" not in text
+
+    w.set_stages("2172", COMMITTEE_STAGES)
+    w.clock.advance(days=1)
+    w.command(f"/refresh {source}")
+    report = _commands_only(w)
+    _, refreshed = w.replier.replies[-1]
+    assert report.commands_failed == 0
+    assert refreshed.status is OutcomeStatus.REFRESHED
+    assert refreshed.bill is not None and refreshed.bill.number == "2172"
+    assert "1 post(s)" in refreshed.note
+    assert refreshed.note.startswith(f"linked: {source} → 2172")
+    bill, _, reply_to = w.publisher.updates[-1]
+    assert (bill.number, reply_to) == ("2172", w.card_id("2172"))
+    assert w.bill(source).status is BillStatus.LINKED
+
+
+@pytest.mark.parametrize("command", ["show", "refresh"])
+def test_inspection_rejects_a_cyclic_continuation(command: str) -> None:
+    w = World()
+    w.add_bill("2172", TITLE)
+    w.gateway.submissions.append(submission(print_number="2172"))
+    w.command(f"/analyze {RPW}")
+    _commands_only(w)
+    w.repo.set_status(10, "2172", BillStatus.LINKED)
+    w.command(f"/{command} {RPW}")
+
+    _commands_only(w)
+
+    _, outcome = w.replier.replies[-1]
+    assert outcome.status is OutcomeStatus.ERROR
+    assert outcome.bill is None
+    assert outcome.note == "2172: invalid continuation link"
+    assert w.publisher.updates == []
 
 
 def test_a_druk_that_continues_a_followed_project_joins_its_card() -> None:

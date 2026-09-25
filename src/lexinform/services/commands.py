@@ -365,8 +365,10 @@ class CommandService:
                 status=OutcomeStatus.NOT_FOUND,
                 note=f"{command.ref.label} is not in the database; /analyze fetches it",
             )
-        if command.name is CommandName.SHOW:
-            return CommandOutcome(status=OutcomeStatus.SHOWN, bill=bill_or_none)
+        if command.name in (CommandName.SHOW, CommandName.REFRESH):
+            return self._inspect(
+                bill_or_none, spent, refresh=command.name is CommandName.REFRESH, publish=publish
+            )
         if command.name is CommandName.SKIP:
             return self._skip(bill_or_none)
         if command.name is CommandName.UNSKIP:
@@ -376,8 +378,6 @@ class CommandService:
             return self._reset(bill_or_none, BillStatus(wanted))
         if command.name is CommandName.PREVIEW:
             return self._preview(bill_or_none, command.options.get("to"))
-        if command.name is CommandName.REFRESH:
-            return self._refresh(bill_or_none, spent, publish=publish)
         if command.name is CommandName.FORGET:
             return self._forget(bill_or_none, min_score=min_score)
         return self._republish(bill_or_none, publish=publish)
@@ -619,6 +619,43 @@ class CommandService:
             return f"cannot send to {chat}: this run publishes nowhere but its own channel"
         result = self._publisher_for(chat).publish_new_bill(bill, print_info)
         return f"sent to {chat} as message {result.message_id}; nothing was recorded"
+
+    def _inspect(
+        self, bill: Bill, spent: dict[str, TokenUsage], *, refresh: bool, publish: bool
+    ) -> CommandOutcome:
+        path = [bill.number]
+        try:
+            bill = self._continuation(bill, path)
+            outcome = (
+                self._refresh(bill, spent, publish=publish)
+                if refresh
+                else CommandOutcome(status=OutcomeStatus.SHOWN, bill=bill)
+            )
+            if outcome.bill is not None:
+                bill = self._continuation(outcome.bill, path)
+                outcome = outcome.model_copy(update={"bill": bill})
+        except BillNotFoundError as exc:
+            return CommandOutcome(status=OutcomeStatus.ERROR, note=str(exc))
+        if len(path) > 1:
+            note = "linked: " + " → ".join(path)
+            if outcome.note:
+                note += "\n" + outcome.note
+            outcome = outcome.model_copy(update={"note": note})
+        return outcome
+
+    def _continuation(self, bill: Bill, path: list[str]) -> Bill:
+        while bill.status is BillStatus.LINKED:
+            number = bill.linked_number
+            if number is None or number in path:
+                raise BillNotFoundError(f"{bill.number}: invalid continuation link")
+            target = self._repo.get(bill.term, number)
+            if target is None:
+                raise BillNotFoundError(
+                    f"{bill.number}: linked bill {number} is not in the database"
+                )
+            path.append(number)
+            bill = target
+        return bill
 
     def _refresh(
         self, bill: Bill, spent: dict[str, TokenUsage], *, publish: bool

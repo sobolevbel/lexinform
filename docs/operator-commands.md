@@ -32,6 +32,11 @@ terminal, has no twin either: posting the command *is* the confirmation.
 /forget 3039                  drop the card the channel remembers, post nothing (deleted by hand)
 ```
 
+`/show` and `/refresh` follow stored `linked` entries to the bill that continues them,
+including a chain from wykaz through RCL to a Sejm print. The reply names that transition;
+`/refresh` checks the continuing bill and uses its existing card. A missing or cyclic link
+returns an error instead of presenting the old entry as the current legislative stage.
+
 ### The database, answered here and now
 
 ```
