@@ -123,6 +123,24 @@ def db(tmp_path: Path, process_3039: ProcessDetail) -> Path:
     return path
 
 
+@pytest.mark.parametrize("command", ["analyze", "preview"])
+def test_analysis_and_preview_of_linked_entry_use_print(db: Path, api: str, command: str) -> None:
+    repo = SqliteBillRepository(db)
+    source = submission().number
+    repo.link_bills(10, source, "3039")
+    repo.close()
+
+    result = runner.invoke(app, [command, source], env=_env(db, api=api))
+
+    assert result.exit_code == 0, result.output
+    assert "3039" in result.output
+    assert "номер druku ещё не присвоен" not in result.output
+    repo = SqliteBillRepository(db)
+    original = repo.get(10, source)
+    repo.close()
+    assert original is not None and original.status is BillStatus.LINKED
+
+
 def _env(db: Path, term: str = "10", *, api: str = NOWHERE) -> dict[str, str]:
     # The term is pinned so that no command asks the live API which term is running. No bot
     # token and no log channel, whatever the developer's `.env` says (see `conftest.py`):

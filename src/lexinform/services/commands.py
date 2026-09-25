@@ -354,7 +354,7 @@ class CommandService:
         )
         try:
             if command.name is CommandName.ANALYZE:
-                bill = self._lookup.load_ref(command.ref)
+                bill = self._lookup.continuation(self._lookup.load_ref(command.ref))
                 done = self._analyze(bill, command, spent, min_score=min_score, publish=publish)
                 return done.model_copy(update={"as_json": command.as_json})
             bill_or_none = self._lookup.find_ref(command.ref)
@@ -377,7 +377,11 @@ class CommandService:
             wanted = command.options.get("to", BillStatus.ANALYSIS_PENDING.value)
             return self._reset(bill_or_none, BillStatus(wanted))
         if command.name is CommandName.PREVIEW:
-            return self._preview(bill_or_none, command.options.get("to"))
+            try:
+                bill = self._lookup.continuation(bill_or_none)
+            except BillNotFoundError as exc:
+                return CommandOutcome(status=OutcomeStatus.ERROR, note=str(exc))
+            return self._preview(bill, command.options.get("to"))
         if command.name is CommandName.FORGET:
             return self._forget(bill_or_none, min_score=min_score)
         return self._republish(bill_or_none, publish=publish)
@@ -625,14 +629,14 @@ class CommandService:
     ) -> CommandOutcome:
         path = [bill.number]
         try:
-            bill = self._continuation(bill, path)
+            bill = self._lookup.continuation(bill, path)
             outcome = (
                 self._refresh(bill, spent, publish=publish)
                 if refresh
                 else CommandOutcome(status=OutcomeStatus.SHOWN, bill=bill)
             )
             if outcome.bill is not None:
-                bill = self._continuation(outcome.bill, path)
+                bill = self._lookup.continuation(outcome.bill, path)
                 outcome = outcome.model_copy(update={"bill": bill})
         except BillNotFoundError as exc:
             return CommandOutcome(status=OutcomeStatus.ERROR, note=str(exc))
@@ -642,20 +646,6 @@ class CommandService:
                 note += "\n" + outcome.note
             outcome = outcome.model_copy(update={"note": note})
         return outcome
-
-    def _continuation(self, bill: Bill, path: list[str]) -> Bill:
-        while bill.status is BillStatus.LINKED:
-            number = bill.linked_number
-            if number is None or number in path:
-                raise BillNotFoundError(f"{bill.number}: invalid continuation link")
-            target = self._repo.get(bill.term, number)
-            if target is None:
-                raise BillNotFoundError(
-                    f"{bill.number}: linked bill {number} is not in the database"
-                )
-            path.append(number)
-            bill = target
-        return bill
 
     def _refresh(
         self, bill: Bill, spent: dict[str, TokenUsage], *, publish: bool

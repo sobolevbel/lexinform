@@ -582,6 +582,36 @@ def test_show_and_refresh_follow_the_link_to_the_print(source: str) -> None:
     assert w.bill(source).status is BillStatus.LINKED
 
 
+@pytest.mark.parametrize("source", [RCL, RPW])
+def test_analysis_and_preview_use_the_continuing_print(source: str) -> None:
+    w = World()
+    w.add_bill("2172", TITLE)
+    if source == RCL:
+        w.add_rcl_project(rcl_project(rm_number="RM-0610-7-26", consultation=None))
+        w.touch("2172", w.clock.now(), rcl_num="RM-0610-7-26")
+    else:
+        w.gateway.submissions.append(submission(print_number="2172"))
+    w.command(f"/analyze {source}")
+    _commands_only(w)
+    calls = len(w.llm.contexts)
+    card = w.card_id("2172")
+    w.command(f"/analyze {source}")
+    w.command(f"/preview {source}")
+
+    _commands_only(w)
+
+    for incoming, outcome in w.replier.replies[-2:]:
+        assert outcome.status in (OutcomeStatus.ANALYSED, OutcomeStatus.PREVIEWED)
+        assert outcome.bill is not None and outcome.bill.number == "2172"
+        text = w.formatter.command_reply(incoming, outcome).text
+        assert "druk nr 2172" in text
+        assert "номер druku ещё не присвоен" not in text
+    assert len(w.llm.contexts) == calls
+    assert w.bill(source).status is BillStatus.LINKED
+    assert w.card_id("2172") == card
+    assert len(w.publisher.new_bills) == 1
+
+
 @pytest.mark.parametrize("command", ["show", "refresh"])
 def test_inspection_rejects_a_cyclic_continuation(command: str) -> None:
     w = World()

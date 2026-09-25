@@ -37,6 +37,11 @@ including a chain from wykaz through RCL to a Sejm print. The reply names that t
 `/refresh` checks the continuing bill and uses its existing card. A missing or cyclic link
 returns an error instead of presenting the old entry as the current legislative stage.
 
+Analysis and preview also use the continuing bill, both in the channel and in the CLI.
+Repeating `/analyze` with an old RCL/RPW number reuses the print's analysis unless forced;
+the original row remains linked. Commands that change an explicitly named record
+(`skip`, `reset`, `forget`, `republish`) retain their existing addressing rules.
+
 ### The database, answered here and now
 
 ```

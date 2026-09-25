@@ -381,7 +381,10 @@ def analyze(
     """Analyse one bill with the LLM and store the result."""
     c = _container()
     try:
-        bill = _load_bill(c, number)
+        bill = _or_exit(lambda: c.bill_lookup().continuation(_load_bill(c, number)))
+        if bill.number != number:
+            typer.echo(f"linked: {number} → {bill.number}", err=True)
+        number = bill.number
         if bill.status == BillStatus.ANALYZED and not force:
             typer.echo(f"druk {number} already analysed; use --force to redo", err=True)
         elif (
@@ -395,7 +398,9 @@ def analyze(
             raise typer.Exit(code=2)
         else:
             c.analysis_service().analyze_bill(bill)
-        bill = _load_bill(c, number)
+        stored = c.repo.get(bill.term, bill.number)
+        assert stored is not None, "analysis retains the requested bill"
+        bill = stored
     finally:
         c.close()
     assert bill.analysis is not None, (
@@ -426,7 +431,7 @@ def preview(
     """Render the Telegram card for an analysed bill; optionally send it to a test chat."""
     c = _container()
     try:
-        bill = _load_bill(c, number)
+        bill = _or_exit(lambda: c.bill_lookup().continuation(_load_bill(c, number)))
         if bill.analysis is None:
             typer.echo(f"{number} is not analysed yet; run `lexinform analyze {number}`", err=True)
             raise typer.Exit(code=2)

@@ -105,6 +105,22 @@ class BillLookup:
         bill = self._repo.find_by_wykaz_number(ref.value)
         return bill.number if bill is not None else wykaz_number(ref.value)
 
+    def continuation(self, bill: Bill, path: list[str] | None = None) -> Bill:
+        if path is None:
+            path = [bill.number]
+        while bill.status is BillStatus.LINKED:
+            number = bill.linked_number
+            if number is None or number in path:
+                raise BillNotFoundError(f"{bill.number}: invalid continuation link")
+            target = self._repo.get(bill.term, number)
+            if target is None:
+                raise BillNotFoundError(
+                    f"{bill.number}: linked bill {number} is not in the database"
+                )
+            path.append(number)
+            bill = target
+        return bill
+
     def load(self, number: str) -> Bill:
         """The bill from the database, fetched from the API (or RCL) and prefiltered on first
         sight; raises `BillNotFoundError` when no system knows it."""
