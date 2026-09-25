@@ -27,7 +27,7 @@ from lexinform.models import (
     wykaz_number,
 )
 from lexinform.ports import BillRepository, Clock, RclGateway
-from lexinform.services.discovery import NOT_FOLLOWED
+from lexinform.services.predecessors import NOT_FOLLOWED
 from lexinform.services.rcl_projects import RclProjectReader
 
 log = logging.getLogger(__name__)

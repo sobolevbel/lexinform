@@ -17,20 +17,11 @@ from lexinform.models import (
     ProcessSummary,
     Stage,
     is_over,
-    rcl_number,
 )
 from lexinform.ports import BillRepository, Clock, EliGateway, ProjectResolver, SejmGateway
+from lexinform.services.predecessors import rcl_predecessor
 
 log = logging.getLogger(__name__)
-
-NOT_FOLLOWED = frozenset(
-    {
-        BillStatus.SKIPPED_PREFILTER,
-        BillStatus.SKIPPED_TEXT_PREFILTER,
-        BillStatus.SKIPPED_CLOSED,
-        BillStatus.LINKED,
-    }
-)
 
 
 @dataclass
@@ -110,28 +101,6 @@ class BillDiscoveryService:
         if self._text_prefilter and (summary.has_process or summary.is_pre_print):
             return BillStatus.TEXT_PREFILTER_PENDING
         return BillStatus.SKIPPED_PREFILTER
-
-    def _rcl_project_of(self, summary: ProcessSummary) -> Bill | None:
-        """The RCL row a government print continues, if we follow one and it was analysed
-        (a project the prefilter skipped leaves the print to the normal path)."""
-        rm_number = summary.rcl_num
-        if not rm_number:
-            return None
-        bill = self._repo.find_by_rm_number(rm_number)
-        if bill is None and self._projects is not None:
-            try:
-                project_id = self._projects.resolve_project_id(rm_number)
-            except ServiceUnavailableError as exc:
-                log.warning("RCL lookup of %s skipped: %s", rm_number, exc.describe())
-                return None
-            except Exception as exc:
-                log.warning("RCL lookup of %s failed: %s", rm_number, exc)
-                return None
-            if project_id is not None:
-                bill = self._repo.find_rcl(rcl_number(project_id))
-        if bill is None or bill.rcl is None or bill.status in NOT_FOLLOWED:
-            return None
-        return bill
 
     def _ended_before_first_sight(self, bill: Bill, now: datetime) -> bool:
         """ELI publication alone cannot prove that the act is already in force."""
@@ -228,10 +197,10 @@ class BillDiscoveryService:
                     )
                     return False
                 summary = summary.model_copy(update={"applicant": submission.applicant})
-            project = self._rcl_project_of(summary)
+            project = rcl_predecessor(self._repo, self._projects, summary.rcl_num)
             if project is not None:
                 assert project.rcl is not None, (
-                    "_rcl_project_of returns only a row with its project"
+                    "rcl_predecessor returns only a row with its project"
                 )
                 self._repo.save_rcl(
                     project.term,
