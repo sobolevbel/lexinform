@@ -144,6 +144,26 @@ class RunReport(BaseModel):
         return not self.errors
 
     @property
+    def is_empty(self) -> bool:
+        """Routine checks, batch waiting and timing alone are not run results."""
+        return not any(
+            value
+            for name, value in self.model_dump().items()
+            if name
+            not in {
+                "started_at",
+                "finished_at",
+                "since",
+                "mode",
+                "term",
+                "discovery_ok",
+                "tracked",
+                "batch_waiting",
+                "phase_seconds",
+            }
+        )
+
+    @property
     def duration_seconds(self) -> int | None:
         if self.finished_at is None:
             return None

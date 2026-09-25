@@ -808,7 +808,10 @@ DaysOpt = Annotated[int, typer.Option("--days", min=1, help="How many days back 
 
 
 @app.command()
-def runs(days: DaysOpt = 30) -> None:
+def runs(
+    days: DaysOpt = 30,
+    include_all: Annotated[bool, typer.Option("--all", help="Include empty runs.")] = False,
+) -> None:
     """List the recorded runs of the last days: what each found, posted and cost.
 
     A run recorded before the per-model breakdown existed carries tokens but no usage: its cost
@@ -819,8 +822,11 @@ def runs(days: DaysOpt = 30) -> None:
         reports = c.repo.list_runs(since=c.clock.now() - timedelta(days=days))
     finally:
         c.close()
+    if not include_all:
+        reports = [report for report in reports if not report.is_empty]
     if not reports:
-        typer.echo(f"no runs recorded in the last {days} days")
+        label = "runs" if include_all else "non-empty runs"
+        typer.echo(f"no {label} recorded in the last {days} days")
         return
     typer.echo(
         "started (UTC)     mode      ok   disc  anal  publ  upd  errs  tokens in/out       cost"

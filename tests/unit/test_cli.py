@@ -177,6 +177,22 @@ def test_runs_lists_the_recorded_runs_newest_first(db: Path) -> None:
     assert lines[1].startswith("2026-09-08 04:23") and "$0.51" in lines[1]
 
 
+def test_runs_all_includes_empty_runs(db: Path) -> None:
+    repo = SqliteBillRepository(db)
+    started = datetime(2026, 9, 8, 4, 23, tzinfo=UTC)
+    report = RunReport(started_at=started, since=started, mode=RunMode.RUN)
+    run_id = repo.start_run(report)
+    repo.finish_run(run_id, report)
+    repo.close()
+
+    filtered = runner.invoke(app, ["runs", "--days", "3650"], env=_env(db))
+    all_runs = runner.invoke(app, ["runs", "--days", "3650", "--all"], env=_env(db))
+
+    assert filtered.exit_code == all_runs.exit_code == 0
+    assert "no non-empty runs" in filtered.output
+    assert "2026-09-08 04:23" in all_runs.output
+
+
 def test_cost_sums_the_runs_and_names_the_dearest_analyses(db: Path) -> None:
     _record_run(db, datetime(2026, 9, 8, 4, 23, tzinfo=UTC), analyzed=2, input_tokens=100_000)
     _record_run(db, datetime(2026, 9, 9, 4, 23, tzinfo=UTC), analyzed=1, input_tokens=20_000)

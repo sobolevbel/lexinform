@@ -333,7 +333,7 @@ class CommandService:
         if command.name is CommandName.DELIVERY:
             return self._delivery(command, incoming, publish=publish)
         if command.name is CommandName.RUNS:
-            return self._runs(command.count("days", 30))
+            return self._runs(command.count("days", 30), include_all="all" in command.options)
         if command.name is CommandName.COST:
             return self._cost(command.count("days", 30), command.count("top", 5))
         if command.name is CommandName.FIND:
@@ -698,16 +698,19 @@ class CommandService:
             note=f"{snapshot.followed} bills followed",
         )
 
-    def _runs(self, days: int) -> CommandOutcome:
+    def _runs(self, days: int, *, include_all: bool = False) -> CommandOutcome:
         """`/runs`: what each recorded run of the window found, posted and cost — `lexinform
         runs` in the channel, for the operator who has no shell open."""
         reports = self._repo.list_runs(since=self._clock.now() - dt.timedelta(days=days))
+        if not include_all:
+            reports = [report for report in reports if not report.is_empty]
+        label = "runs" if include_all else "non-empty runs"
         return CommandOutcome(
             status=OutcomeStatus.LISTED,
             runs=tuple(reports),
             note=f"{len(reports)} run(s) in {days} days"
             if reports
-            else f"no runs recorded in the last {days} days",
+            else f"no {label} recorded in the last {days} days",
         )
 
     def _cost(self, days: int, top: int) -> CommandOutcome:

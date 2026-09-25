@@ -41,7 +41,8 @@ terminal, has no twin either: posting the command *is* the confirmation.
 /delivery 123 confirm 456     confirm that message 456 in the reader channel is this delivery
 /delivery 123 retry           after checking absence in Telegram, queue the saved delivery
 /delivery 123 dismiss expired close without sending, with a required reason
-/runs days=7                  what each recorded run found, posted and cost (default 30 days)
+/runs days=7                  non-empty runs: what each found, posted and cost (default 30 days)
+/runs all days=7              all recorded runs, including empty ones
 /cost days=7 top=3            the model spend: per model, the dearest run, the dearest bills
 /digest                       draft the week that has just ended, here, with a publish button
 /digest ref=2026-W38            some other week, by its ISO number
@@ -144,7 +145,10 @@ kind the posts stuck `pending`/`unknown` — nothing retries those on its own (B
 is what tells the operator one is there; `/republish` clears it for a card, and for any other
 kind of reply there is no command yet, only a look at the row. `/runs` is the row per run that
 `lexinform runs` prints — what each found, posted and cost — and `/cost` breaks the window's
-spend down by model, names the dearest run and the dearest analyses. All three read the database
+spend down by model, names the dearest run and the dearest analyses. By default, `/runs` hides
+runs without results, token usage, errors or notes; routine tracking checks and batch waiting
+alone do not count as results. Use `/runs all` (CLI: `lexinform runs --all`) to include them.
+All three read the database
 and nothing else: no request, no token, whatever the window.
 
 `/forget` is `/republish` without the post, for a card deleted from the channel by hand. The row

@@ -930,6 +930,32 @@ def test_runs_answers_what_each_recorded_run_did() -> None:
     assert outcome.note == "1 run(s) in 7 days"
 
 
+def test_runs_hides_idle_runs_but_all_includes_them() -> None:
+    w = World()
+    for counters in (
+        {"tracked": 4, "batch_waiting": 2, "discovery_ok": True},
+        {"errors": ["source unavailable"]},
+        {"llm_input_tokens": 100},
+        {"consultation_reminders": 1},
+        {"notes": ["source warning"]},
+    ):
+        report = RunReport(
+            started_at=w.clock.now(), since=w.clock.now(), mode=RunMode.RUN, **counters
+        )
+        run_id = w.repo.start_run(report)
+        w.repo.finish_run(run_id, report)
+        w.clock.advance(days=1)
+    w.command("/runs")
+    w.command("/runs all")
+
+    _commands_only(w)
+
+    (_, filtered), (_, all_runs) = w.replier.replies
+    assert len(filtered.runs) == 4
+    assert all(report.tracked == 0 for report in filtered.runs)
+    assert len(all_runs.runs) == 5
+
+
 def test_cost_adds_up_the_window_per_model_and_names_the_dearest_bills() -> None:
     w = World()
     w.add_bill("3039", TITLE)

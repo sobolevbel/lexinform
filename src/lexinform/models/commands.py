@@ -310,7 +310,7 @@ OPTIONS: dict[CommandName, dict[str, Option]] = {
     },
     CommandName.PREVIEW: {"to": Option("to", OptionKind.CHAT)},
     CommandName.RESET: {"to": Option("to", OptionKind.STATUS)},
-    CommandName.RUNS: {"days": _DAYS},
+    CommandName.RUNS: {"days": _DAYS, "all": Option("all")},
     CommandName.COST: {"days": _DAYS, "top": Option("top", OptionKind.COUNT, high=50)},
     CommandName.DIGEST: {
         "ref": Option("ref", OptionKind.WEEK),

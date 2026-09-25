@@ -114,7 +114,7 @@ COMMAND_HELP = (
     "• <code>/status</code> — the queues, what is stuck, what the last runs cost\n"
     "• <code>/delivery ID [confirm MESSAGE_ID | retry | dismiss REASON]</code> — inspect or"
     " resolve an unknown delivery after checking the channel\n"
-    "• <code>/runs [days=N]</code> — what each recorded run found, posted and cost\n"
+    "• <code>/runs [days=N] [all]</code> — non-empty runs; all includes empty runs\n"
     "• <code>/cost [days=N] [top=N]</code> — the model spend, per model, run and bill\n"
     "• <code>/digest [ref=2026-W38] [publish]</code> — draft the week's digest here, or send"
     " it to the channel; the draft's button is the same command\n"
