@@ -12,7 +12,8 @@ import json
 import logging
 from collections.abc import Callable, Iterator, Sequence
 from datetime import UTC, datetime
-from typing import Any, TypeVar
+from hashlib import sha256
+from typing import Any, Literal, NotRequired, TypedDict, TypeVar
 
 import openai
 import tiktoken
@@ -356,6 +357,7 @@ class OpenAiAnalyzer:
             "url": "/v1/responses",
             "body": {
                 "model": model,
+                **_cache_options(model, system, schema_name),
                 "reasoning": None if self._effort == "none" else {"effort": self._effort},
                 "max_output_tokens": self._max_output_tokens,
                 "input": [
@@ -519,6 +521,7 @@ class OpenAiAnalyzer:
         try:
             response = self._resolved_client.responses.create(
                 model=self._model,
+                **_cache_options(self._model, system, schema_name),
                 reasoning=None if self._effort == "none" else {"effort": self._effort},
                 max_output_tokens=self._max_output_tokens,
                 input=input_messages,
@@ -577,13 +580,30 @@ class _Usage(BaseModel):
     cached_tokens: int | None
 
 
+class _CacheOptions(TypedDict):
+    prompt_cache_key: str
+    prompt_cache_retention: NotRequired[Literal["24h"]]
+
+
+def _cache_options(model: str, system: str, schema_name: str) -> _CacheOptions:
+    options: _CacheOptions = {
+        "prompt_cache_key": f"lexinform:{schema_name}:{sha256(system.encode()).hexdigest()[:16]}"
+    }
+    if model == "gpt-5.1" or model.startswith("gpt-5.1-"):
+        options["prompt_cache_retention"] = "24h"
+    return options
+
+
 def _usage_of(response: Any) -> _Usage:
     usage = response.usage
     details = getattr(usage, "input_tokens_details", None)
+    total = getattr(usage, "input_tokens", None)
+    cached = getattr(details, "cached_tokens", None)
+    # OpenAI includes cached tokens in input_tokens; our cost model prices disjoint categories.
     return _Usage(
-        input_tokens=getattr(usage, "input_tokens", None),
+        input_tokens=max(0, total - (cached or 0)) if total is not None else None,
         output_tokens=getattr(usage, "output_tokens", None),
-        cached_tokens=getattr(details, "cached_tokens", None),
+        cached_tokens=cached,
     )
 
 

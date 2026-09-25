@@ -4,7 +4,7 @@ run report.
 Claude prices verified against platform.claude.com/docs/en/about-claude/pricing on 2026-09-08,
 Opus 5.5 on 2026-09-23; cache reads cost 0.1x the input price, cache writes 1.25x. GPT-5.1
 verified against developers.openai.com/api/docs/pricing on 2026-09-22 ($1.25/$10 standard,
-cached input $0.125 — also 0.1x, so the same `CACHE_READ_FACTOR` prices it right; OpenAI has no
+cached input $0.125 — also 0.1x, so the same `CACHE_READ_FACTOR` prices it right; GPT-5.1 has no
 billed cache-write step, so `cache_creation_input_tokens` is always 0 for it). Keys are matched as
 prefixes of the model id so dated snapshots ("claude-sonnet-5-20260601", "gpt-5.1-2025-11-13")
 price like their family; an unknown model yields None and the report simply shows no dollar figure.
@@ -100,6 +100,4 @@ def batch_reservation(model: str, *, input_tokens: int, max_output_tokens: int) 
     prices = price_of(model)
     if prices is None:
         raise ValueError(f"cannot reserve batch cost for unknown model {model}")
-    return (
-        input_tokens * prices[0] * CACHE_WRITE_FACTOR + max_output_tokens * prices[1]
-    ) / 2_000_000
+    return (input_tokens * prices[0] + max_output_tokens * prices[1]) / 2_000_000

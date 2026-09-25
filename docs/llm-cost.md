@@ -16,11 +16,34 @@ pages rejoined with it: the page is the unit every rule in `sections` works in).
 by `llm_triage_model`; a confident "no" is stored as a non-relevant analysis with
 `text_source="excerpts"`. Real numbers: druk 2695 (564k chars, irrelevant) cost $1.45 in full,
 ~$0.01 with the triage. The triage call runs without extended thinking (Haiku 4.5 rejects
-`thinking: adaptive`; a classification does not need it). The system prompts carry `cache_control`;
+`thinking: adaptive`; a classification does not need it). Synchronous Claude system prompts carry `cache_control`;
 the analysis prompt alone is ~850 tokens, under the 1024-token minimum of a cache entry, but the
 structured-output schema is part of the cached prefix, so the entry is ~2k tokens and does get read
 (state dump of 2026-09-09: 23k cache-read tokens over 11 analyses). The run report's "cache read"
 figure and `lexinform cost` show it; `lexinform runs` lists the recorded runs.
+
+### Prompt caching policy — 25 September 2026
+
+New Anthropic batch requests omit `cache_control`. Requests run concurrently with no guaranteed
+cache hit: the two-request batch for 1039/1040 wrote 5,304 tokens and read none, adding $0.002652
+over ordinary batch input. A one-hour write costs twice ordinary input, so even one write plus
+one read costs more than two uncached prefixes. For our small, intermittent batches we use
+ordinary batch input; synchronous Claude calls retain their five-minute cache. Existing saved
+batch payloads keep their original parameters and reservations.
+
+GPT-5.1 uses automatic caching without a cache-write surcharge. Both synchronous and batch
+requests use a stable key derived from the system prompt and output schema name, shared across
+bills, and request `prompt_cache_retention="24h"`. This improves opportunities for reuse without
+guaranteeing a cache hit. Other models keep their provider-default retention.
+OpenAI's `input_tokens` includes cached input; the adapter subtracts cached tokens before storing
+the uncached category. Batch pricing halves both uncached and cached rates. Historical reports
+are not rewritten. New batch reservations assume no paid cache writes and no cache hits.
+
+Run reports show cache reads and writes across synchronous and batch calls, including zero reads
+when a run only wrote cache entries. Sources:
+[Anthropic batch caching](https://platform.claude.com/docs/en/build-with-claude/batch-processing#using-prompt-caching-with-message-batches),
+[Anthropic cache pricing](https://platform.claude.com/docs/en/build-with-claude/prompt-caching),
+[OpenAI prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching).
 
 **Every model call is written down** (`RunReport.llm_calls`: bill, kind — analysis, reanalysis,
 triage, amendments, supplement, joint — model and tokens, recorded by `AnalysisService._charge`, which

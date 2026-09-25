@@ -118,6 +118,7 @@ def test_analysis_request_uses_the_gpt51_prompt_and_records_usage() -> None:
 
     call = client.responses.calls[0]
     assert call["model"] == "gpt-5.1"
+    assert call["prompt_cache_retention"] == "24h"
     assert call["reasoning"] == {"effort": "medium"}
     assert call["text"]["format"]["strict"] is True
     assert call["input"][0] == {"role": "system", "content": gpt51_system_prompt("ru")}
@@ -128,6 +129,35 @@ def test_analysis_request_uses_the_gpt51_prompt_and_records_usage() -> None:
         300,
         0,
     )
+
+
+def test_cached_input_is_not_counted_again_as_uncached_input() -> None:
+    client = _client(
+        _response(
+            make_analysis().model_dump_json(),
+            input_tokens=1200,
+            cached_tokens=1000,
+            output_tokens=300,
+        )
+    )
+
+    record = _analyzer(client).analyze(_ctx())
+
+    assert record.input_tokens == 200
+    assert record.cache_read_input_tokens == 1000
+    assert record.cache_creation_input_tokens == 0
+
+
+def test_cache_key_is_shared_across_bills_with_the_same_instructions() -> None:
+    client = _client(_response(make_analysis().model_dump_json()))
+    analyzer = _analyzer(client)
+
+    analyzer.analyze(_ctx(number="1039", text="first bill"))
+    analyzer.analyze(_ctx(number="1040", text="second bill"))
+
+    first, second = client.responses.calls
+    assert first["prompt_cache_key"] == second["prompt_cache_key"]
+    assert first["prompt_cache_retention"] == second["prompt_cache_retention"] == "24h"
 
 
 def test_effort_none_omits_the_reasoning_param() -> None:

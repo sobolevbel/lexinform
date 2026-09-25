@@ -168,6 +168,24 @@ def test_run_report_marks_batch_spending() -> None:
     assert "spent on: 1039 analysis batch $0.03" in text
 
 
+@pytest.mark.parametrize("reads", [0, 1024])
+def test_run_report_shows_batch_cache_writes_even_without_hits(reads: int) -> None:
+    text = (
+        MessageFormatter("ru")
+        .run_report(
+            _report(
+                llm_usage={
+                    "claude-opus-5-5": TokenUsage(batch_cache_read=reads, batch_cache_creation=5304)
+                }
+            ),
+            [],
+        )
+        .text
+    )
+
+    assert f"cache read {'1.0k' if reads else '0'} · cache write 5.3k" in text
+
+
 def test_fit_trims_at_a_word_boundary_and_marks_the_cut() -> None:
     assert fit("abc", 10) == "abc"
     trimmed = fit("word " * 100, 50)

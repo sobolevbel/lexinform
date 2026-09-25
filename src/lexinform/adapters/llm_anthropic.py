@@ -321,9 +321,7 @@ class AnthropicAnalyzer:
             "params": {
                 "model": model,
                 "max_tokens": self._max_tokens,
-                "system": [
-                    {"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}
-                ],
+                "system": [{"type": "text", "text": system}],
                 "messages": [{"role": "user", "content": _content(prompt, scan)}],
                 "thinking": {"type": "adaptive"},
                 "output_config": {

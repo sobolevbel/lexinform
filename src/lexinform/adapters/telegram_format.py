@@ -2653,9 +2653,11 @@ def _tokens_line(report: RunReport) -> str:
         ]
         lines.append(" · ".join(money))
     tokens = [f"tokens in/out: {report.llm_input_tokens}/{report.llm_output_tokens}"]
-    cached = sum(u.cache_read for u in report.llm_usage.values())
-    if cached:
+    cached = sum(u.cache_read + u.batch_cache_read for u in report.llm_usage.values())
+    written = sum(u.cache_creation + u.batch_cache_creation for u in report.llm_usage.values())
+    if cached or written:
         tokens.append(f"cache read {format_tokens(cached)}")
+        tokens.append(f"cache write {format_tokens(written)}")
     lines.append(" · ".join(tokens))
     return "\n".join(lines)
 

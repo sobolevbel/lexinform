@@ -22,6 +22,7 @@ from lexinform.models import (
     BillContext,
     JointBillDescription,
     JointContext,
+    LlmCall,
     SupplementContext,
 )
 from lexinform.models.batch import (
@@ -31,7 +32,7 @@ from lexinform.models.batch import (
     JointQuestion,
     SupplementQuestion,
 )
-from lexinform.pricing import batch_reservation
+from lexinform.pricing import batch_reservation, cost_usd
 from tests.fakes import make_amendments, make_analysis, make_comparison, make_digest
 
 
@@ -88,6 +89,27 @@ def _line(custom_id: str, text: str) -> str:
             },
         }
     )
+
+
+def test_openai_batch_prices_cached_input_once() -> None:
+    line = json.loads(_line("cached", make_analysis().model_dump_json()))
+    line["response"]["body"]["usage"]["input_tokens_details"]["cached_tokens"] = 80
+    client = _openai_client(json.dumps(line))
+
+    result = list(OpenAiAnalyzer(lambda: client).fetch_results("batch-1"))[0]
+
+    assert result.input_tokens == 20
+    assert result.cache_read_input_tokens == 80
+    call = LlmCall(
+        number="3039",
+        kind="analysis",
+        model=result.model or "",
+        input_tokens=result.input_tokens or 0,
+        output_tokens=result.output_tokens or 0,
+        cache_read_input_tokens=result.cache_read_input_tokens or 0,
+        batched=True,
+    )
+    assert cost_usd(call.usage) == pytest.approx((20 * 1.25 + 80 * 0.125 + 20 * 10) / 2_000_000)
 
 
 def test_openai_returns_failed_items_from_the_error_file() -> None:
@@ -242,6 +264,10 @@ def test_saved_request_keeps_model_prompt_and_output_limit_after_configuration_c
     body = payload["params" if provider == "anthropic" else "body"]
     assert body["model"] == prepared.model
     assert body["max_tokens" if provider == "anthropic" else "max_output_tokens"] == 100
+    if provider == "anthropic":
+        assert "cache_control" not in prepared.payload_json
+    else:
+        assert body["prompt_cache_retention"] == "24h"
     assert prepared.estimated_cost_usd > batch_reservation(
         prepared.model, input_tokens=0, max_output_tokens=100
     )
@@ -348,12 +374,16 @@ def test_secondary_batch_payload_and_result_contract(
         backend.compare_joint(question.ctx)
     sent = synchronous[0]
     if provider == "anthropic":
-        assert body["system"] == sent["system"]
+        assert body["system"][0]["text"] == sent["system"][0]["text"]
+        assert "cache_control" not in prepared.payload_json
+        assert sent["system"][0]["cache_control"] == {"type": "ephemeral"}
         assert body["messages"] == sent["messages"]
         assert sent["output_format"] is type(answer)
     else:
         assert body["input"] == sent["input"]
         assert body["text"] == sent["text"]
+        assert body["prompt_cache_key"] == sent["prompt_cache_key"]
+        assert body["prompt_cache_retention"] == sent["prompt_cache_retention"] == "24h"
 
 
 @pytest.mark.parametrize("provider", ["anthropic", "openai"])

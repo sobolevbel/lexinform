@@ -1,5 +1,5 @@
 from lexinform.models import TokenUsage
-from lexinform.pricing import cost_usd, price_of
+from lexinform.pricing import batch_reservation, cost_usd, price_of
 
 
 def test_prices_match_by_family_prefix() -> None:
@@ -7,6 +7,11 @@ def test_prices_match_by_family_prefix() -> None:
     assert price_of("claude-sonnet-5-20260601") == (2.0, 10.0)
     assert price_of("claude-haiku-4-5") == (1.0, 5.0)
     assert price_of("fake") is None
+
+
+def test_new_batch_reservations_do_not_charge_for_cache_writes() -> None:
+    assert batch_reservation("claude-opus-5-5", input_tokens=1_000_000, max_output_tokens=0) == 2
+    assert batch_reservation("gpt-5.1", input_tokens=1_000_000, max_output_tokens=0) == 0.625
 
 
 def test_cost_adds_models_and_cache_categories() -> None:
