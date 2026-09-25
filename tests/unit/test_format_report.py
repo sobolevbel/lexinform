@@ -14,6 +14,7 @@ from lexinform.models import (
     CommandOutcome,
     IncomingCommand,
     LlmBatch,
+    LlmCall,
     OutcomeStatus,
     ProcessDetail,
     RunMode,
@@ -144,10 +145,27 @@ def test_run_report_cost_line_adapts_to_the_models_used() -> None:
     unknown_model = fmt.run_report(_report(llm_usage={"fake": TokenUsage(input=1)}), []).text
     clean = fmt.run_report(_report(errors=[]), []).text
 
-    assert "Total $0.003\ntokens in/out: 50000/4000" in one_model
-    assert "sonnet-5 $0.003" not in one_model  # single model: no per-model breakdown
-    assert "$" not in unknown_model
+    assert "Total $0.003 · sonnet-5 $0.003\ntokens in/out: 50000/4000" in one_model
+    assert "Total $? · fake $?" in unknown_model
     assert clean.startswith("<b>✅") and "<pre>" not in clean
+
+
+def test_run_report_marks_batch_spending() -> None:
+    call = LlmCall(
+        number="1039",
+        kind="analysis",
+        model="claude-opus-5-5",
+        input_tokens=10_000,
+        output_tokens=1_000,
+        batched=True,
+    )
+
+    text = (
+        MessageFormatter("ru").run_report(_report(llm_usage=call.usage, llm_calls=[call]), []).text
+    )
+
+    assert "Total $0.03 · opus-5-5 $0.03" in text
+    assert "spent on: 1039 analysis batch $0.03" in text
 
 
 def test_fit_trims_at_a_word_boundary_and_marks_the_cut() -> None:

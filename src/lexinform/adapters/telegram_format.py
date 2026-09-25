@@ -2640,18 +2640,17 @@ def _runs_line(snapshot: StatusSnapshot) -> str:
 def _tokens_line(report: RunReport) -> str:
     """`Total $0.33 · opus-5 $0.32 · sonnet-5 $0.009` then, on its own line, `tokens in/out:
     12345/678 · cache read 4.0k` — the total leads because it is the one figure read at a
-    glance; empty when the model was never called or its price is unknown."""
+    glance; empty when the model was never called, `$?` when its price is unknown."""
     if not (report.llm_input_tokens or report.llm_output_tokens or report.llm_usage):
         return ""
     lines = []
     cost = cost_usd(report.llm_usage)
-    if cost is not None and report.llm_usage:
+    if report.llm_usage:
         money = [f"Total {format_usd(cost)}"]
-        if len(report.llm_usage) > 1:
-            money += [
-                f"{esc(model.removeprefix('claude-'))} {format_usd(cost_usd({model: u}))}"
-                for model, u in report.llm_usage.items()
-            ]
+        money += [
+            f"{esc(model.removeprefix('claude-'))} {format_usd(cost_usd({model: u}))}"
+            for model, u in report.llm_usage.items()
+        ]
         lines.append(" · ".join(money))
     tokens = [f"tokens in/out: {report.llm_input_tokens}/{report.llm_output_tokens}"]
     cached = sum(u.cache_read for u in report.llm_usage.values())
@@ -2671,7 +2670,7 @@ def _spenders_line(report: RunReport, *, top: int = 3) -> str:
     priced = [(cost, call) for call in report.llm_calls if (cost := cost_usd(call.usage))]
     priced.sort(key=lambda pair: -pair[0])
     named = [
-        f"{esc(call.number)} {call.kind} {format_usd(cost)}"
+        f"{esc(call.number)} {call.kind}{' batch' if call.batched else ''} {format_usd(cost)}"
         for cost, call in priced[:top]
         if cost >= 0.01
     ]
