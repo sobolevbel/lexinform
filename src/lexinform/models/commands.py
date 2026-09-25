@@ -48,6 +48,7 @@ class IncomingCommand(BaseModel):
     received_at: dt.datetime
     actor_id: int | None = None
     author_signature: str | None = None
+    acknowledgement_id: int | None = None
 
 
 class CommandState(BaseModel):

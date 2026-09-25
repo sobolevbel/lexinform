@@ -33,6 +33,10 @@ on:
     types: [inbox, batch-ready]
   workflow_dispatch:
     inputs:
+      log_message_id:
+        description: "Relay acknowledgement to replace with the report"
+        required: false
+        default: ""
       command:
         description: "Which lexinform command this run is. `run` is the whole day; the others are one phase of it."
         type: choice
@@ -79,6 +83,7 @@ env:
   INBOX_BRANCH: inbox
   LEXINFORM_DB_PATH: ${{ github.workspace }}/lexinform.db
   LEXINFORM_INBOX_DIR: ${{ github.workspace }}/inbox/inbox
+  LEXINFORM_RUN_MESSAGE_ID: ${{ inputs.log_message_id }}
 
 jobs:
   run:
@@ -280,8 +285,15 @@ jobs:
           DUMP: ${{ steps.dump.outcome }}
         run: |
           [ -n "$LEXINFORM_TELEGRAM_LOG_CHANNEL_ID" ] || exit 0
+          METHOD=sendMessage
+          MESSAGE_ARGS=()
+          if [ -n "$LEXINFORM_RUN_MESSAGE_ID" ]; then
+            METHOD=editMessageText
+            MESSAGE_ARGS=(--data-urlencode "message_id=${LEXINFORM_RUN_MESSAGE_ID}")
+          fi
           curl -sS -o /dev/null -X POST \
-            "https://api.telegram.org/bot${LEXINFORM_TELEGRAM_BOT_TOKEN}/sendMessage" \
+            "https://api.telegram.org/bot${LEXINFORM_TELEGRAM_BOT_TOKEN}/${METHOD}" \
+            "${MESSAGE_ARGS[@]}" \
             --data-urlencode "chat_id=${LEXINFORM_TELEGRAM_LOG_CHANNEL_ID}" \
             --data-urlencode "text=❌ lexinform: daily job failed around the run (restore: ${RESTORE}, dump/push: ${DUMP}); the state may be unsaved: ${RUN_URL}" \
             || true

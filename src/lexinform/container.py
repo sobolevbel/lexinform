@@ -400,7 +400,7 @@ class Container:
     def run_notifier(self, *, dry_run: bool) -> RunNotifier | None:
         if self.notifier_override is not None:
             return self.notifier_override
-        if dry_run:
+        if dry_run and not os.environ.get("LEXINFORM_RUN_MESSAGE_ID"):
             return ConsoleRunNotifier(self.formatter)
         if not self.settings.telegram_log_channel_id:
             return None
@@ -417,6 +417,9 @@ class Container:
             self.formatter,
             channel_id=self.settings.telegram_log_channel_id,
             run_url=run_url,
+            message_id=int(os.environ["LEXINFORM_RUN_MESSAGE_ID"])
+            if os.environ.get("LEXINFORM_RUN_MESSAGE_ID")
+            else None,
         )
 
     def channel_id(self) -> str:

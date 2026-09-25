@@ -1,9 +1,11 @@
 """Command-line interface."""
 
 import logging
+import os
 import sys
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from html import escape
 from pathlib import Path
 from typing import Annotated
 
@@ -203,6 +205,13 @@ def scan(since: SinceOpt = None) -> None:
             else 0
         )
         pending = c.repo.list_by_status([BillStatus.ANALYSIS_PENDING], limit=500)
+        _relay_result(
+            c,
+            f"scan completed: seen={result.seen} new={result.new} "
+            f"pre_print={result.pre_print_new} title_hits={result.prefilter_hits} "
+            f"rcl_new={rcl_new} rcl_hits={rcl_hits} text_hits={text_hits} "
+            f"wykaz_new={wykaz_new} over={over}",
+        )
     finally:
         c.close()
     typer.echo(
@@ -339,9 +348,22 @@ def index_rcl_numbers(
             typer.echo("RCL is disabled (LEXINFORM_RCL_ENABLED)", err=True)
             raise typer.Exit(code=2)
         seen = service.index_numbers(since.date())
+        _relay_result(c, f"index-rcl-numbers completed: indexed={seen}")
     finally:
         c.close()
     typer.echo(f"indexed={seen}")
+
+
+def _relay_result(c: Container, text: str) -> None:
+    message_id = os.environ.get("LEXINFORM_RUN_MESSAGE_ID")
+    if not message_id or not c.settings.telegram_log_channel_id:
+        return
+    try:
+        c.telegram_client().edit_message(
+            c.settings.telegram_log_channel_id, int(message_id), f"✅ {escape(text)}"
+        )
+    except Exception as exc:
+        log.warning("the command result did not reach the log channel: %s", exc)
 
 
 def _rcl_text(reader: RclProjectReader, number: str) -> RclProject:
@@ -1096,6 +1118,9 @@ def _report_startup_failure(settings: Settings, message: str) -> None:
             client,
             MessageFormatter(settings.output_language),
             channel_id=settings.telegram_log_channel_id,
+            message_id=int(os.environ["LEXINFORM_RUN_MESSAGE_ID"])
+            if os.environ.get("LEXINFORM_RUN_MESSAGE_ID")
+            else None,
         ).notify(report, [])
     except Exception as exc:
         logging.getLogger(__name__).error("could not post startup failure to log channel: %s", exc)

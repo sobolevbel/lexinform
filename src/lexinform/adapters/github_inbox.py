@@ -92,6 +92,10 @@ class GitHubInboxWriter:
                 "inbox: filed update %d but could not start the run: %s", command.update_id, exc
             )
 
+    @property
+    def workflow_url(self) -> str:
+        return f"https://github.com/{self._repo}/actions/workflows/{self.WORKFLOW}"
+
     def start_run(self, inputs: Mapping[str, str]) -> str:
         """Start `daily.yml` with these inputs and answer with the link to its runs.
 
@@ -106,7 +110,7 @@ class GitHubInboxWriter:
             raise GitHubUnavailableError(f"workflow dispatch: {type(exc).__name__}") from exc
         if response.status_code == 204:
             log.info("workflow %s started with %s", self.WORKFLOW, dict(inputs) or "no inputs")
-            return f"https://github.com/{self._repo}/actions/workflows/{self.WORKFLOW}"
+            return self.workflow_url
         if response.status_code >= 500:
             raise GitHubUnavailableError(f"workflow dispatch: HTTP {response.status_code}")
         if response.status_code in (403, 404):

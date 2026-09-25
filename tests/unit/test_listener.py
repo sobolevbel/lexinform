@@ -74,7 +74,7 @@ def test_run_starts_the_workflow_instead_of_being_filed() -> None:
 
     assert filed == 1
     assert writer.filed == []  # nothing in the inbox: there is nothing for a run to execute
-    assert writer.started == [{"since": "2026-09-01", "dry_run": "true"}]
+    assert writer.started == [{"since": "2026-09-01", "dry_run": "true", "log_message_id": "1001"}]
     assert ack.acknowledged == [1]
     assert "since=2026-09-01, dry_run=true" in ack.started_notes[0]
 
@@ -95,6 +95,13 @@ def test_every_phase_of_a_run_starts_the_workflow_and_is_not_filed() -> None:
     filed = _listener(FakeUpdates(posts), writer, ack).poll_once()
 
     assert filed == 5 and writer.filed == []
+    assert [inputs.pop("log_message_id") for inputs in writer.started] == [
+        "1001",
+        "1002",
+        "1003",
+        "1004",
+        "1005",
+    ]
     assert writer.started == [
         {"command": "scan", "options": "--since 2026-09-01"},
         {"command": "track", "dry_run": "true"},
@@ -219,6 +226,20 @@ def test_a_pressed_button_is_filed_as_the_command_it_stands_for_and_answered_as_
     assert [c.text for c in writer.filed] == ["/digest publish ref=2026-W38"]
     assert ack.presses == ["cb7"]
     assert ack.acknowledged == []  # no "queued" post under a message that is not a command
+
+
+def test_retry_reuses_the_acknowledgement_stored_with_the_command() -> None:
+    posts = [channel_post(1, "/help")]
+    writer = FakeInboxWriter(error=ServiceUnavailableError("offline"))
+    ack = FakeAcknowledger()
+    listener = _listener(FakeUpdates(posts, posts), writer, ack)
+
+    assert listener.poll_once() == 0
+    writer.error = None
+    assert listener.poll_once() == 1
+
+    assert ack.acknowledged == [1]
+    assert writer.filed[0].acknowledgement_id == 1001
 
 
 def test_the_container_builds_the_relay_from_the_bot_token_and_the_log_channel_alone() -> None:

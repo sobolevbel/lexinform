@@ -432,13 +432,16 @@ class WorkflowStarter(Protocol):
     Separate from `InboxWriter` because it is the one command that is not filed: `/run` is the
     run, so there is nothing for a run to execute."""
 
+    @property
+    def workflow_url(self) -> str: ...
+
     def start_run(self, inputs: Mapping[str, str]) -> str: ...
 
 
 class CommandAcknowledger(Protocol):
     """Tells the operator the command was taken (a reply under it); best effort."""
 
-    def queued(self, command: IncomingCommand) -> None: ...
+    def queued(self, command: IncomingCommand) -> int: ...
 
     def started(self, command: IncomingCommand, note: str, *, url: str | None = None) -> None:
         """A `/run` the relay has already acted on: what it started and where to watch it."""

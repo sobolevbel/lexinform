@@ -8,11 +8,27 @@ import httpx2 as httpx
 import pytest
 
 from lexinform.adapters.llm_prompts import PROMPT_VERSION
-from lexinform.adapters.telegram import TelegramBotClient, TelegramError, TelegramPublisher
+from lexinform.adapters.telegram import (
+    TelegramAcknowledger,
+    TelegramBotClient,
+    TelegramError,
+    TelegramOperatorReplier,
+    TelegramPublisher,
+    TelegramRunNotifier,
+)
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import TelegramUnavailableError
-from lexinform.models import AnalysisRecord, Bill, BillStatus, PrintInfo, ProcessDetail
-from tests.fakes import make_analysis
+from lexinform.models import (
+    AnalysisRecord,
+    Bill,
+    BillStatus,
+    CommandOutcome,
+    PrintInfo,
+    ProcessDetail,
+    RunMode,
+    RunReport,
+)
+from tests.fakes import channel_post, make_analysis
 
 Handler = Callable[[httpx.Request], httpx.Response]
 
@@ -24,6 +40,89 @@ def _client(handler: Handler, sleeps: list[float] | None = None) -> TelegramBotC
 
 def _ok(message_id: int) -> httpx.Response:
     return httpx.Response(200, json={"ok": True, "result": {"message_id": message_id}})
+
+
+def test_run_report_replaces_the_whole_started_message() -> None:
+    requests: list[tuple[str, dict[str, object]]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append((request.url.path, json.loads(request.content)))
+        return _ok(77)
+
+    client = _client(handler)
+    formatter = MessageFormatter("ru")
+    command = channel_post(1, "/run").as_command()
+    ack = TelegramAcknowledger(client, channel_id="-1001")
+    message_id = ack.queued(command)
+    command = command.model_copy(update={"acknowledgement_id": message_id})
+    ack.started(command, "run started (no inputs)", url="https://example.org/run")
+    report = RunReport(started_at=command.received_at, since=command.received_at, mode=RunMode.RUN)
+    TelegramRunNotifier(client, formatter, channel_id="-1001", message_id=message_id).notify(
+        report, []
+    )
+
+    assert [path for path, _ in requests] == [
+        "/botTOKEN/sendMessage",
+        "/botTOKEN/editMessageText",
+        "/botTOKEN/editMessageText",
+    ]
+    assert requests[-1][1]["message_id"] == 77
+    assert requests[-1][1]["text"] == formatter.run_report(report, []).text
+
+
+def test_command_reply_replaces_queued_message() -> None:
+    requests: list[tuple[str, dict[str, object]]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append((request.url.path, json.loads(request.content)))
+        return _ok(77)
+
+    command = channel_post(1, "/help").as_command().model_copy(update={"acknowledgement_id": 77})
+    formatter = MessageFormatter("ru")
+    outcome = CommandOutcome(status="help")
+    TelegramOperatorReplier(_client(handler), formatter, channel_id="-1001").reply(command, outcome)
+
+    assert requests == [
+        (
+            "/botTOKEN/editMessageText",
+            {
+                "chat_id": "-1001",
+                "message_id": 77,
+                "text": formatter.command_reply(command, outcome).text,
+                "parse_mode": "HTML",
+                "link_preview_options": {"is_disabled": True},
+            },
+        )
+    ]
+
+
+@pytest.mark.parametrize("message_id", [None, 77])
+def test_command_reply_sends_when_acknowledgement_is_absent_or_deleted(
+    message_id: int | None,
+) -> None:
+    methods: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        methods.append(request.url.path.rsplit("/", 1)[-1])
+        if methods[-1] == "editMessageText":
+            return httpx.Response(
+                400,
+                json={
+                    "ok": False,
+                    "error_code": 400,
+                    "description": "Bad Request: message to edit not found",
+                },
+            )
+        return _ok(88)
+
+    command = (
+        channel_post(1, "/help").as_command().model_copy(update={"acknowledgement_id": message_id})
+    )
+    TelegramOperatorReplier(_client(handler), MessageFormatter("ru"), channel_id="-1001").reply(
+        command, CommandOutcome(status="help")
+    )
+
+    assert methods == (["editMessageText", "sendMessage"] if message_id else ["sendMessage"])
 
 
 def test_send_message_posts_html_to_the_chat_and_returns_the_message_id() -> None:

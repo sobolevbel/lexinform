@@ -969,6 +969,10 @@ class FakeInboxWriter:
             raise self.error
         self.filed.append(command)
 
+    @property
+    def workflow_url(self) -> str:
+        return "https://github.com/owner/repo/actions/workflows/daily.yml"
+
     def start_run(self, inputs: Mapping[str, str]) -> str:
         if self.error is not None:
             raise self.error
@@ -982,11 +986,13 @@ class FakeAcknowledger:
         self.started_notes: list[str] = []
         self.presses: list[str] = []
 
-    def queued(self, command: IncomingCommand) -> None:
+    def queued(self, command: IncomingCommand) -> int:
         self.acknowledged.append(command.update_id)
+        return 1000 + command.update_id
 
     def started(self, command: IncomingCommand, note: str, *, url: str | None = None) -> None:
-        self.acknowledged.append(command.update_id)
+        if command.acknowledgement_id is None:
+            self.acknowledged.append(command.update_id)
         self.started_notes.append(note)
 
     def pressed(self, callback_id: str) -> None:

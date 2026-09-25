@@ -12,7 +12,7 @@ import time
 from collections.abc import Callable
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import DISPATCHED, ChannelPost, Command, parse_command
+from lexinform.models import DISPATCHED, ChannelPost, Command, IncomingCommand, parse_command
 from lexinform.ports import CommandAcknowledger, InboxWriter, UpdatesSource, WorkflowStarter
 
 log = logging.getLogger(__name__)
@@ -49,6 +49,7 @@ class CommandListener:
         self._stalled = False
         self._failures = 0
         self.filed: list[ChannelPost] = []
+        self._acknowledged: dict[int, IncomingCommand] = {}
 
     @property
     def offset(self) -> int | None:
@@ -75,6 +76,7 @@ class CommandListener:
                     self._stalled = True
                     break
                 filed += 1
+                self._acknowledged.pop(post.update_id, None)
             self._offset = post.update_id + 1
         return filed
 
@@ -141,10 +143,18 @@ class CommandListener:
             log.info("dry run: would start the workflow with %s", command.inputs or "no inputs")
             self.filed.append(post)
             return True
+        acted = self._acknowledge(post)
+        inputs = dict(command.inputs)
+        if acted.acknowledgement_id is not None:
+            inputs["log_message_id"] = str(acted.acknowledgement_id)
+        named = ", ".join(f"{k}={v}" for k, v in command.inputs.items()) or "no inputs"
+        where = self._starter.workflow_url
+        self._say(lambda ack: ack.started(acted, f"{command.name} started ({named})", url=where))
         try:
-            where = self._starter.start_run(command.inputs)
+            self._starter.start_run(inputs)
         except ServiceUnavailableError as exc:
             log.warning("update %d: the run was not started: %s", post.update_id, exc.describe())
+            self._say(lambda ack: ack.started(acted, "dispatch unavailable; relay will retry"))
             return False
         except Exception as exc:
             log.exception("update %d: the run was not started: %s", post.update_id, exc)
@@ -152,10 +162,8 @@ class CommandListener:
             self._say(lambda ack: ack.started(acted, refused))
             self.filed.append(post)
             return True
-        named = ", ".join(f"{k}={v}" for k, v in command.inputs.items()) or "no inputs"
         self.filed.append(post)
         log.info("update %d started the workflow (%s)", post.update_id, named)
-        self._say(lambda ack: ack.started(acted, f"{command.name} started ({named})", url=where))
         return True
 
     def _say(self, tell: Callable[[CommandAcknowledger], None]) -> None:
@@ -177,6 +185,7 @@ class CommandListener:
             log.info("dry run: would file update %d: %s", post.update_id, post.text)
             self.filed.append(post)
             return True
+        command = self._acknowledge(post)
         try:
             self._writer.put(command)
         except ServiceUnavailableError as exc:
@@ -193,8 +202,21 @@ class CommandListener:
                     # A press has no message of its own to reply under, only the draft it hangs
                     # on, and the button spins until Telegram is told it arrived.
                     self._ack.pressed(post.callback_id)
-                else:
-                    self._ack.queued(command)
             except Exception as exc:
                 log.warning("could not acknowledge update %d: %s", post.update_id, exc)
         return True
+
+    def _acknowledge(self, post: ChannelPost) -> IncomingCommand:
+        command = self._acknowledged.get(post.update_id, post.as_command())
+        if (
+            self._ack is not None
+            and post.callback_id is None
+            and command.acknowledgement_id is None
+        ):
+            try:
+                message_id = self._ack.queued(command)
+                command = command.model_copy(update={"acknowledgement_id": message_id})
+                self._acknowledged[post.update_id] = command
+            except Exception as exc:
+                log.warning("could not acknowledge update %d: %s", post.update_id, exc)
+        return command

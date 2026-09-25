@@ -215,19 +215,24 @@ class TelegramRunNotifier:
         *,
         channel_id: str,
         run_url: str | None = None,
+        message_id: int | None = None,
     ) -> None:
         self._client = client
         self._formatter = formatter
         self._channel_id = channel_id
         self._run_url = run_url
+        self._message_id = message_id
 
     def notify(self, report: RunReport, log_lines: list[str]) -> None:
         rendered = self._formatter.run_report(report, log_lines, run_url=self._run_url)
-        self._client.send_message(self._channel_id, rendered.text)
+        self._deliver(rendered.text)
 
     def notify_backfill(self, report: BackfillReport) -> None:
         rendered = self._formatter.backfill_report(report)
-        self._client.send_message(self._channel_id, rendered.text)
+        self._deliver(rendered.text)
+
+    def _deliver(self, text: str) -> None:
+        _replace_or_send(self._client, self._channel_id, self._message_id, text)
 
 
 def _channel_post(update: dict[str, Any]) -> ChannelPost | None:
@@ -292,8 +297,8 @@ class TelegramAcknowledger:
         self._client = client
         self._channel_id = channel_id
 
-    def queued(self, command: IncomingCommand) -> None:
-        self._client.send_message(self._channel_id, self.TEXT, reply_to=command.message_id)
+    def queued(self, command: IncomingCommand) -> int:
+        return self._client.send_message(self._channel_id, self.TEXT, reply_to=command.message_id)
 
     def started(self, command: IncomingCommand, note: str, *, url: str | None = None) -> None:
         """`/run` is answered by the relay itself: nothing was filed for a run to report on."""
@@ -301,7 +306,13 @@ class TelegramAcknowledger:
         if url is not None:
             label, separator, inputs = text.partition(" (")
             text = f'<a href="{escape(url, quote=True)}">{label}</a>{separator}{inputs}'
-        self._client.send_message(self._channel_id, f"▶️ {text}", reply_to=command.message_id)
+        _replace_or_send(
+            self._client,
+            self._channel_id,
+            command.acknowledgement_id,
+            f"▶️ {text}",
+            reply_to=command.message_id,
+        )
 
     def pressed(self, callback_id: str) -> None:
         self._client.answer_callback(callback_id, self.TEXT)
@@ -319,4 +330,34 @@ class TelegramOperatorReplier:
 
     def reply(self, command: IncomingCommand, outcome: CommandOutcome) -> None:
         rendered = self._formatter.command_reply(command, outcome)
-        self._client.send_message(self._channel_id, rendered.text, reply_to=command.message_id)
+        _replace_or_send(
+            self._client,
+            self._channel_id,
+            command.acknowledgement_id,
+            rendered.text,
+            reply_to=command.message_id,
+        )
+
+
+def _replace_or_send(
+    client: TelegramBotClient,
+    channel_id: str,
+    message_id: int | None,
+    text: str,
+    *,
+    reply_to: int | None = None,
+) -> None:
+    if message_id is not None:
+        try:
+            client.edit_message(channel_id, message_id, text)
+            return
+        except TelegramError as exc:
+            if not any(
+                reason in exc.description.lower()
+                for reason in (
+                    "message to edit not found",
+                    "message can't be edited",
+                )
+            ):
+                raise
+    client.send_message(channel_id, text, reply_to=reply_to)

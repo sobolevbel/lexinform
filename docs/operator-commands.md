@@ -3,6 +3,13 @@
 Post a command in the technical (log) channel and the bot answers under it a few minutes
 later. Any administrator of that channel can command; nobody else reaches the bot this way.
 
+The relay's `queued` message is replaced in place by the command's answer. For workflow
+commands, the same message becomes `run started` and then the complete run report.
+Older inbox entries without an acknowledgement ID receive a new reply; a deleted or
+uneditable acknowledgement also falls back to a new message.
+Relay-triggered dry runs update only this technical acknowledgement; reader messages and
+production state remain untouched. `/scan` and `/index-rcl-numbers` replace it with their counters.
+
 **Every `lexinform` command is here**, under its own name and with its own options. Three are
 not, and could not be: `listen` is this relay, `commands` is the phase that answers what it
 files, and `db init|dump|restore` is the workflow's handling of the state branch around every
