@@ -72,6 +72,14 @@ class LlmCall(BaseModel):
         }
 
 
+class PrefilterRejection(BaseModel):
+    term: int
+    number: str
+    title: str
+    stage: Literal["title", "text", "unreadable"]
+    reason: str
+
+
 class RunReport(BaseModel):
     """The counters one run reports to the log channel and stores in the `runs` table.
 
@@ -98,6 +106,7 @@ class RunReport(BaseModel):
     linked: int = 0
     prefilter_hits: int = 0
     prefilter_rejected: list[str] | None = None
+    prefilter_details: list[PrefilterRejection] = Field(default_factory=list)
     text_prefilter_checked: int = 0
     text_prefilter_hits: int = 0
     text_prefilter_scans: int = 0

@@ -37,6 +37,7 @@ class TextPrefilterResult:
 
     checked: int = 0
     rejected: list[str] = field(default_factory=list)
+    unreadable_bills: list[str] = field(default_factory=list)
     hits: int = 0
     scans: int = 0
     unreadable: int = 0
@@ -110,6 +111,7 @@ class TextPrefilterService:
                 result.scans += 1
             elif loaded.text is None:
                 result.unreadable += 1
+                result.unreadable_bills.append(f"{bill.term}/{bill.number}")
             accepted = self.decide(bill, loaded)
             if accepted and not loaded.is_scan:
                 result.hits += 1
@@ -192,7 +194,13 @@ class TextPrefilterService:
                 bill.summary.title,
             )
         else:
-            log.info("druk %s skipped: %s", bill.number, reason)
+            log.info(
+                "text prefilter skipped %s/%s: %s | %s",
+                bill.term,
+                bill.number,
+                bill.summary.title,
+                reason,
+            )
         return accepted
 
     def load(self, bill: Bill) -> PrefilterLoad:

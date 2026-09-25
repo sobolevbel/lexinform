@@ -10,12 +10,13 @@ import logging
 import time
 from collections.abc import Callable, Sequence
 from datetime import datetime, timedelta
+from typing import Literal
 
 from pydantic import BaseModel
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.logging_setup import MemoryLogHandler
-from lexinform.models import RunMode, RunReport, merge_usage
+from lexinform.models import PrefilterRejection, RunMode, RunReport, merge_usage
 from lexinform.ports import BillRepository, Clock, RunNotifier
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.commands import CommandService
@@ -374,6 +375,7 @@ class DailyPipeline:
         report.pre_print_discovered = discovered.pre_print_new
         report.prefilter_hits = discovered.prefilter_hits
         report.prefilter_rejected = [*(report.prefilter_rejected or []), *discovered.rejected]
+        self._prefilter_details(report, discovered.rejected, "title")
         report.over_on_arrival += discovered.over
 
     def _discover_rcl(
@@ -386,6 +388,7 @@ class DailyPipeline:
         report.rcl_discovered = discovered.new
         report.rcl_prefilter_hits = discovered.prefilter_hits
         report.prefilter_rejected = [*(report.prefilter_rejected or []), *discovered.rejected]
+        self._prefilter_details(report, discovered.rejected, "title")
         report.over_on_arrival += discovered.over
         if discovered.failed:
             report.errors.append(f"{discovered.failed} RCL project(s) could not be read")
@@ -412,12 +415,37 @@ class DailyPipeline:
         checked = self._text_prefilter.run(limit=opts.max_text_prefilter)
         report.text_prefilter_checked = checked.checked
         report.prefilter_rejected = [*(report.prefilter_rejected or []), *checked.rejected]
+        self._prefilter_details(report, checked.rejected, "text")
+        self._prefilter_details(report, checked.unreadable_bills, "unreadable")
         report.text_prefilter_hits = checked.hits
         report.text_prefilter_scans = checked.scans
         report.text_prefilter_unreadable = checked.unreadable
         report.text_prefilter_unanswered = checked.unanswered
         if checked.fatal_error:
             report.errors.append(f"text prefilter: {checked.fatal_error}")
+
+    def _prefilter_details(
+        self,
+        report: RunReport,
+        keys: Sequence[str],
+        stage: Literal["title", "text", "unreadable"],
+    ) -> None:
+        for key in keys:
+            term, number = key.split("/", 1)
+            bill = self._repo.get(int(term), number)
+            if bill is None:
+                continue
+            reason = bill.last_error or "title prefilter: no strong keyword hits"
+            report.prefilter_details.append(
+                PrefilterRejection(
+                    term=bill.term,
+                    number=bill.number,
+                    title=bill.summary.title,
+                    stage=stage,
+                    reason=reason,
+                )
+            )
+            log.info("prefilter %s: %s | %s | %s", stage, key, bill.summary.title, reason)
 
     def _analyse(self, opts: RunOptions, report: RunReport) -> None:
         analysed = self._analysis.analyze_pending(limit=opts.max_analyze)

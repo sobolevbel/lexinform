@@ -16,6 +16,7 @@ from lexinform.models import (
     LlmBatch,
     LlmCall,
     OutcomeStatus,
+    PrefilterRejection,
     ProcessDetail,
     RunMode,
     RunReport,
@@ -64,6 +65,41 @@ def _report(**overrides: Any) -> RunReport:
     )
     fields.update(overrides)
     return RunReport(**fields)
+
+
+@pytest.mark.parametrize("count", [1, 100])
+def test_prefilter_rejections_link_rcl_escape_html_and_fit(count: int) -> None:
+    report = _report(
+        prefilter_details=[
+            PrefilterRejection(
+                term=10,
+                number="RCL/12414402",
+                title="Projekt <test> & kontrola",
+                stage="text",
+                reason="text prefilter: weak patterns only (test×1) & <reason>",
+            )
+            for _ in range(count)
+        ]
+    )
+
+    text = MessageFormatter("ru").run_report(report, []).text
+
+    assert_telegram_html(text)
+    assert f"prefilter: rejected ({count})" in text
+    assert 'href="https://legislacja.rcl.gov.pl/projekt/12414402"' in text
+    assert "Projekt &lt;test&gt; &amp; kontrola" in text
+    assert "&amp; &lt;reason&gt;" in text
+
+
+def test_legacy_reports_have_no_invented_prefilter_details() -> None:
+    report = _report()
+    payload = report.model_dump()
+    del payload["prefilter_details"]
+
+    restored = RunReport.model_validate(payload)
+
+    assert restored.prefilter_details == []
+    assert "prefilter: rejected" not in MessageFormatter("ru").run_report(restored, []).text
 
 
 def test_run_report_lists_counters_costs_rejections_and_warnings() -> None:

@@ -202,6 +202,7 @@ from lexinform.models.report import (
     BackfillReport,
     CallKind,
     LlmCall,
+    PrefilterRejection,
     RunReport,
 )
 from lexinform.models.sejm import (
@@ -329,6 +330,7 @@ __all__ = [
     "Analysis",
     "AnalysisRecord",
     "AnalysisVerdict",
+    "PrefilterRejection",
     "BackfillOutcome",
     "BackfillReport",
     "BatchItemMeta",

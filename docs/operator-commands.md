@@ -10,6 +10,14 @@ uneditable acknowledgement also falls back to a new message.
 Relay-triggered dry runs update only this technical acknowledgement; reader messages and
 production state remain untouched. `/scan` and `/index-rcl-numbers` replace it with their counters.
 
+Run reports list prefilter rejections with the project link, title, filtering stage and reason.
+Text rejections include matched patterns and counts when present; unreadable files have a
+separate section and do not count as relevance rejections. Files still awaiting a download
+are not listed as rejected. Long lists are shortened to fit Telegram; complete details remain
+in the INFO log and `runs.report_json` (`prefilter_details`). Older reports have no such details.
+Use `/show NUMBER` to inspect the saved bill, or `/analyze NUMBER force` to request an analysis
+despite the prefilter (this can publish a card).
+
 **Every `lexinform` command is here**, under its own name and with its own options. Three are
 not, and could not be: `listen` is this relay, `commands` is the phase that answers what it
 files, and `db init|dump|restore` is the workflow's handling of the state branch around every

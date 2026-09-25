@@ -1219,9 +1219,32 @@ class MessageFormatter:
                 ),
             )
         logs = ""
+        prefilter_blocks = []
+        for unreadable, heading in (
+            (False, "prefilter: rejected"),
+            (True, "prefilter: unreadable, not a relevance verdict"),
+        ):
+            details = [
+                v for v in report.prefilter_details if (v.stage == "unreadable") == unreadable
+            ]
+            if details:
+                prefilter_blocks.append(
+                    _section(
+                        "🔍",
+                        f"{heading} ({len(details)})",
+                        *(
+                            f"• {link(process_web_url(v.term, v.number), _number_ref(v.number))}"
+                            f" · {esc(v.stage)} · {esc(_clip(v.title, 110))}\n"
+                            f"  {esc(v.reason)}"
+                            for v in details
+                        ),
+                    )
+                )
         if log_lines:
             logs = "⚠️ <b>warnings</b>\n<pre>" + esc("\n".join(log_lines)) + "</pre>"
-        text = self._assemble([head, "\n\n".join(sections)], flexible=[rejected_text, logs])
+        text = self._assemble(
+            [head, "\n\n".join(sections)], flexible=[*prefilter_blocks, rejected_text, logs]
+        )
         return RenderedMessage(text=text)
 
     def backfill_report(self, report: BackfillReport) -> RenderedMessage:

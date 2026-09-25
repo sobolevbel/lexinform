@@ -1,7 +1,11 @@
 """The second prefilter stage: keyword search inside the print PDF when the title said nothing."""
 
+import logging
+
+import pytest
+
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import BillStatus
+from lexinform.models import BillStatus, RunReport
 from tests.fakes import FakeTextExtractor
 from tests.harness import RPW, World, submission, submission_url
 
@@ -63,8 +67,15 @@ def test_pdf_is_downloaded_once_for_prefilter_and_analysis() -> None:
     assert sum(1 for c in w.gateway.calls if c.startswith("download:")) == 1
 
 
-def test_single_stray_mention_is_rejected_but_kept_for_tuning() -> None:
-    w = World(extractor=FakeTextExtractor("Art. 1. " * 40 + "cudzoziemiec " + "Art. 2. " * 40))
+@pytest.mark.parametrize("workers", [1, 4])
+def test_single_stray_mention_is_rejected_but_kept_for_tuning(
+    workers: int, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.INFO)
+    w = World(
+        extractor=FakeTextExtractor("Art. 1. " * 40 + "cudzoziemiec " + "Art. 2. " * 40),
+        workers=workers,
+    )
     w.add_bill("4100", "Rządowy projekt ustawy o podatku")
 
     report = w.run()
@@ -79,6 +90,19 @@ def test_single_stray_mention_is_rejected_but_kept_for_tuning() -> None:
     assert bill.last_error == (
         "text prefilter: under the threshold of 2 distinct patterns (cudzoziemcy×1)"
     )
+    saved = RunReport.model_validate_json(report.model_dump_json())
+    assert len(saved.prefilter_details) == 1
+    rejection = saved.prefilter_details[0]
+    assert (rejection.number, rejection.stage, rejection.reason) == (
+        "4100",
+        "text",
+        bill.last_error,
+    )
+    text = MessageFormatter("ru").run_report(saved, []).text
+    assert "prefilter: rejected (1)" in text
+    assert bill.summary.title in text
+    assert "cudzoziemcy×1" in text
+    assert f"10/4100 | {bill.summary.title} | {bill.last_error}" in caplog.text
 
 
 def test_a_broken_pdf_is_a_verdict_and_a_file_not_there_yet_is_not() -> None:
@@ -95,6 +119,7 @@ def test_a_broken_pdf_is_a_verdict_and_a_file_not_there_yet_is_not() -> None:
     assert report.text_prefilter_checked == 2 and not report.errors
     assert (report.text_prefilter_unreadable, report.text_prefilter_unanswered) == (1, 1)
     assert report.prefilter_rejected == []
+    assert [(v.number, v.stage) for v in report.prefilter_details] == [("4100", "unreadable")]
     broken, missing = w.bill("4100"), w.bill("4101")
     # The reason is on record: a skip for lack of a text is not a keyword miss.
     assert broken.status is BillStatus.SKIPPED_TEXT_PREFILTER
@@ -145,10 +170,11 @@ def test_text_prefilter_can_be_disabled() -> None:
     w = World(text_prefilter=False, extractor=FakeTextExtractor(FOREIGNER_TEXT))
     w.add_bill("4100", "Rządowy projekt ustawy o podatku")
 
-    w.run()
+    report = w.run()
 
     assert w.bill("4100").status is BillStatus.SKIPPED_PREFILTER
     assert not any(c.startswith("download:") for c in w.gateway.calls)
+    assert [(v.number, v.stage) for v in report.prefilter_details] == [("4100", "title")]
 
 
 COVER_LETTER = (
