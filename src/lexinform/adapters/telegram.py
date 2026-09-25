@@ -5,6 +5,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from html import escape
 from typing import Any
 
 import httpx2 as httpx
@@ -294,9 +295,13 @@ class TelegramAcknowledger:
     def queued(self, command: IncomingCommand) -> None:
         self._client.send_message(self._channel_id, self.TEXT, reply_to=command.message_id)
 
-    def started(self, command: IncomingCommand, note: str) -> None:
+    def started(self, command: IncomingCommand, note: str, *, url: str | None = None) -> None:
         """`/run` is answered by the relay itself: nothing was filed for a run to report on."""
-        self._client.send_message(self._channel_id, f"▶️ {note}", reply_to=command.message_id)
+        text = escape(note)
+        if url is not None:
+            label, separator, inputs = text.partition(" (")
+            text = f'<a href="{escape(url, quote=True)}">{label}</a>{separator}{inputs}'
+        self._client.send_message(self._channel_id, f"▶️ {text}", reply_to=command.message_id)
 
     def pressed(self, callback_id: str) -> None:
         self._client.answer_callback(callback_id, self.TEXT)

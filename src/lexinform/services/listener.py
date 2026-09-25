@@ -155,7 +155,7 @@ class CommandListener:
         named = ", ".join(f"{k}={v}" for k, v in command.inputs.items()) or "no inputs"
         self.filed.append(post)
         log.info("update %d started the workflow (%s)", post.update_id, named)
-        self._say(lambda ack: ack.started(acted, f"{command.name} started ({named}) — {where}"))
+        self._say(lambda ack: ack.started(acted, f"{command.name} started ({named})", url=where))
         return True
 
     def _say(self, tell: Callable[[CommandAcknowledger], None]) -> None:

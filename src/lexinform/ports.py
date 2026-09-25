@@ -440,7 +440,7 @@ class CommandAcknowledger(Protocol):
 
     def queued(self, command: IncomingCommand) -> None: ...
 
-    def started(self, command: IncomingCommand, note: str) -> None:
+    def started(self, command: IncomingCommand, note: str, *, url: str | None = None) -> None:
         """A `/run` the relay has already acted on: what it started and where to watch it."""
         ...
 

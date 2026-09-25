@@ -985,7 +985,7 @@ class FakeAcknowledger:
     def queued(self, command: IncomingCommand) -> None:
         self.acknowledged.append(command.update_id)
 
-    def started(self, command: IncomingCommand, note: str) -> None:
+    def started(self, command: IncomingCommand, note: str, *, url: str | None = None) -> None:
         self.acknowledged.append(command.update_id)
         self.started_notes.append(note)
 
