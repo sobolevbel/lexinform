@@ -53,8 +53,7 @@ SUNDAY = 6
 
 
 def _add_or_replace(entries: list[DigestEntry], slots: dict[int, int], entry: DigestEntry) -> None:
-    """A `new_bill` row and the alias a later link creates for it (`Linker._inherit_card` and its
-    two siblings) share one Telegram `message_id` — one post, not two — so a project that got its
+    """A `new_bill` row and its later alias share one Telegram `message_id`, so a project with a
     druk the same week its card was sent must not appear twice under two numbers. `message_id` is
     `None` only for a row that was never actually sent, which the digest's own `sent`-only query
     should not produce; treated as never colliding, so such a row is not silently dropped either.

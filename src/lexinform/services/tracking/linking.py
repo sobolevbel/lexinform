@@ -13,7 +13,6 @@ from lexinform.models import (
     BillStatus,
     ProcessDetail,
     Publication,
-    PublicationKind,
     PublicationStatus,
     Stage,
     StatusChange,
@@ -23,6 +22,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.publications import inherit_card
 from lexinform.services.sources import SejmTextSource, fetch_print
 from lexinform.services.tracking.acts import ActWatcher
 from lexinform.services.tracking.posting import Poster
@@ -103,7 +103,14 @@ class Linker:
             if bill.authors is not None:
                 self._repo.save_authors(bill.term, bill.number, bill.authors)
             if card is not None and card.status is PublicationStatus.SENT:
-                alias = self._inherit_card(pre, print_number, card, now=now)
+                alias = inherit_card(
+                    self._repo,
+                    term=pre.term,
+                    number=print_number,
+                    channel_id=self._channel_id,
+                    card=card,
+                    now=now,
+                )
             if change is not None:
                 change = self._poster.record_change(change)
                 if change is not None:
@@ -157,28 +164,6 @@ class Linker:
             print_number,
             wykaz_number=pre.rcl.wykaz_number if pre.rcl is not None else None,
         )
-
-    def _inherit_card(
-        self, pre: Bill, print_number: str, card: Publication, *, now: datetime
-    ) -> Publication:
-        """The card stays the root of the thread: the print is aliased to it instead of getting a
-        second card. The alias comes back so that `_render_card` can write the print's own text
-        into that message and keep the digest on the print's row."""
-        alias = Publication(
-            term=pre.term,
-            number=print_number,
-            kind=PublicationKind.NEW_BILL,
-            status=PublicationStatus.SENT,
-            channel_id=self._channel_id,
-            message_id=card.message_id,
-            created_at=now,
-            sent_at=card.sent_at,
-        )
-        alias.id = self._repo.create_publication(alias)
-        self._repo.mark_publication(
-            alias.id, PublicationStatus.SENT, message_id=card.message_id, sent_at=card.sent_at
-        )
-        return alias
 
     def _render_card(
         self, term: int, print_number: str, alias: Publication, *, publish: bool

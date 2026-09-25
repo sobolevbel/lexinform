@@ -29,6 +29,7 @@ from lexinform.models import (
 from lexinform.ports import BillRepository, Clock, Publisher, PublishResult, SejmGateway
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.joint import group_of, primary_of
+from lexinform.services.publications import inherit_card
 from lexinform.services.sources import fetch_print
 
 log = logging.getLogger(__name__)
@@ -398,20 +399,13 @@ class PublishingService:
         assert bill.linked_number is not None, (
             "_inherited_card finds a card only through linked_number"
         )
-        pub_id = self._repo.create_publication(
-            Publication(
-                term=bill.term,
-                number=bill.number,
-                kind=PublicationKind.NEW_BILL,
-                status=PublicationStatus.SENT,
-                channel_id=self._channel_id,
-                message_id=card.message_id,
-                created_at=self._clock.now(),
-                sent_at=card.sent_at,
-            )
-        )
-        self._repo.mark_publication(
-            pub_id, PublicationStatus.SENT, message_id=card.message_id, sent_at=card.sent_at
+        inherit_card(
+            self._repo,
+            term=bill.term,
+            number=bill.number,
+            channel_id=self._channel_id,
+            card=card,
+            now=self._clock.now(),
         )
         log.info(
             "druk %s continues %s: its card is message %s",

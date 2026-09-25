@@ -14,8 +14,6 @@ import logging
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
-    Publication,
-    PublicationKind,
     PublicationStatus,
     SourceOutcome,
     StatusChange,
@@ -30,6 +28,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, WykazGateway
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.publications import inherit_card
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.sources import RclTextSource
 from lexinform.services.tracking.posting import Poster
@@ -105,7 +104,14 @@ class WykazLinker:
             )
             if inherits:
                 assert card is not None, "inherits is true only with a sent card"
-                self._inherit_card(plan, summary.number, card)
+                inherit_card(
+                    self._repo,
+                    term=plan.term,
+                    number=summary.number,
+                    channel_id=self._channel_id,
+                    card=card,
+                    now=self._clock.now(),
+                )
                 change = self._poster.record_change(
                     StatusChange(
                         term=plan.term,
@@ -129,25 +135,6 @@ class WykazLinker:
             return
         result.changed += 1
         self._poster.tell(fresh, change, result, publish=publish)
-
-    def _inherit_card(self, plan: Bill, number: str, card: Publication) -> None:
-        """The plan's card stays the thread root; the project inherits it instead of getting a
-        second card, and the card is re-rendered so that it carries both numbers."""
-        pub_id = self._repo.create_publication(
-            Publication(
-                term=plan.term,
-                number=number,
-                kind=PublicationKind.NEW_BILL,
-                status=PublicationStatus.SENT,
-                channel_id=self._channel_id,
-                message_id=card.message_id,
-                created_at=self._clock.now(),
-                sent_at=card.sent_at,
-            )
-        )
-        self._repo.mark_publication(
-            pub_id, PublicationStatus.SENT, message_id=card.message_id, sent_at=card.sent_at
-        )
 
     def _reanalyse(self, bill: Bill, result: TrackingResult) -> tuple[Bill, bool]:
         """True when the project's documents gave the model a text to read."""
