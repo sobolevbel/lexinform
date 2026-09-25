@@ -504,13 +504,7 @@ class CommandService:
         return CommandOutcome(status=OutcomeStatus.SILENCED, bill=self._reload(bill), note=note)
 
     def _unskip(self, bill: Bill) -> CommandOutcome:
-        """The way back from `/skip` — and from any other skip the operator disagrees with: the
-        bill queues for the next run's analysis with a clean budget of attempts.
-
-        A skipped RCL row keeps only the project's skeleton, so its documents are read again
-        first: after the status is cleared, an unreachable RCL would leave the bill queued to be
-        analysed on its metadata alone.
-        """
+        """Restoring a saved analysis must not schedule a new paid analysis."""
         if bill.status is BillStatus.ANALYZED:
             return CommandOutcome(
                 status=OutcomeStatus.QUEUED,
@@ -526,6 +520,19 @@ class CommandService:
                 bill=bill,
                 note="linked: its card belongs to"
                 f" {bill.linked_number or 'the bill that continues it'}, ask for that one",
+            )
+        if bill.status is BillStatus.BATCH_PENDING:
+            return CommandOutcome(
+                status=OutcomeStatus.QUEUED,
+                bill=bill,
+                note="batch already pending; waiting for its result",
+            )
+        if bill.status in SKIPPED and bill.analysis is not None:
+            self._repo.reset_bill(bill.term, bill.number, BillStatus.ANALYZED)
+            return CommandOutcome(
+                status=OutcomeStatus.QUEUED,
+                bill=self._reload(bill),
+                note="saved analysis restored; /analyze BILL force asks the model again",
             )
         self._revive_rcl(bill, BillStatus.ANALYSIS_PENDING)
         self._repo.reset_bill(

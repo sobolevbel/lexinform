@@ -25,9 +25,9 @@ terminal, has no twin either: posting the command *is* the confirmation.
 /refresh 3039                 check this bill now: stages, act, sittings, its card — what the
                               next scheduled run would have found
 /skip 3039                    silence a false positive: no analysis, no card (the card stays)
-/unskip 3039                  the way back: the bill queues for the next run's analysis
+/unskip 3039                  restore saved analysis; queue analysis only if none exists
 /reset 3039 to=skipped_cost   any status at all, with a clean budget of attempts
-                              (`to=` defaults to `analysis_pending`, which is `/unskip`)
+                              (`to=` defaults to `analysis_pending`)
 /republish 3039               post the card again (after a lost or failed post)
 /forget 3039                  drop the card the channel remembers, post nothing (deleted by hand)
 ```
@@ -139,9 +139,11 @@ call, a read-only command spends nothing, and the note says the comparison is ma
 goes out. `/refresh` runs the tracking phase for one bill: the reader waits
 for the Sejm, not for 05:23 UTC, and an update the Sejm published an hour ago can be posted now.
 It leaves the reminders to the scheduled run — those are due-date queries over the whole
-channel, not about the bill that was named. `/unskip` clears the skip and the spent attempts and
-puts the bill back in the queue; an RCL project keeps only its skeleton while it is skipped, so
-its documents are read again first, and `/reset` does the same for whichever status it is given.
+channel, not about the bill that was named. `/unskip` restores a skipped bill's saved analysis
+without another model call and keeps its card. Without a saved analysis it clears the skip and
+spent attempts and queues analysis; an RCL project's documents are read again first. A pending
+batch is left intact. Use `/analyze BILL force` to request analysis again explicitly.
+`/reset` sets whichever status it is given.
 `to=` names a `BillStatus` and the reply repeats what the row was, attempts and all — the one
 command that can put a bill anywhere, which is why it says where it came from.
 

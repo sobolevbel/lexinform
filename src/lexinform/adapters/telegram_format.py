@@ -103,7 +103,7 @@ COMMAND_HELP = (
     " here only, or sent to a test chat\n"
     "• <code>/refresh BILL</code> — check this bill now: stages, act, sittings, its card\n"
     "• <code>/skip BILL</code> — silence a false positive (no analysis, no card)\n"
-    "• <code>/unskip BILL</code> — put it back in the queue for the next run\n"
+    "• <code>/unskip BILL</code> — restore saved analysis, or queue if none exists\n"
     "• <code>/reset BILL [to=STATUS]</code> — any status with a clean budget of attempts"
     " (default <code>analysis_pending</code>)\n"
     "• <code>/republish BILL</code> — post the card again\n"

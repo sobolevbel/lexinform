@@ -733,12 +733,15 @@ def test_a_dropped_plan_is_not_reported_as_a_law_that_was_not_enacted() -> None:
     assert outcome.note == "the process ended (dropped from the government's plan): not posted"
 
 
-def test_unskip_puts_a_silenced_bill_back_in_the_queue() -> None:
+def test_unskip_restores_a_silenced_bills_analysis_without_new_work() -> None:
     """`/skip` is the operator's only reversible mistake: the way back must be a command too,
     and not a laptop with the production dump on it."""
     w = World()
     w.add_bill("3039", TITLE)
     w.run()  # discovered, analysed, posted
+    before = w.bill("3039").analysis
+    calls = len(w.llm.contexts)
+    card = w.card_id("3039")
     w.command("/skip 3039")
     _commands_only(w)
     w.command("/unskip 3039")
@@ -748,9 +751,43 @@ def test_unskip_puts_a_silenced_bill_back_in_the_queue() -> None:
     (_, silenced), (_, queued) = w.replier.replies
     assert silenced.status is OutcomeStatus.SILENCED
     assert queued.status is OutcomeStatus.QUEUED
-    assert queued.note == "was skipped_prefilter; the next run analyses it"
-    assert w.bill("3039").status is BillStatus.ANALYSIS_PENDING
+    assert queued.note == "saved analysis restored; /analyze BILL force asks the model again"
+    assert w.bill("3039").status is BillStatus.ANALYZED
     assert w.bill("3039").analysis_attempts == 0  # a clean budget, not the spent one
+    assert w.bill("3039").last_error is None
+    assert w.bill("3039").analysis == before
+    w.run(batch=True)
+    assert len(w.llm.contexts) == calls
+    assert not w.batch.submitted
+    assert w.card_id("3039") == card
+    assert len(w.publisher.new_bills) == 1
+
+
+def test_unskip_without_analysis_still_queues_analysis() -> None:
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.run(max_analyze=0)
+    w.command("/skip 3039")
+    _commands_only(w)
+    w.command("/unskip 3039")
+    _commands_only(w)
+    assert w.bill("3039").status is BillStatus.ANALYSIS_PENDING
+    assert w.bill("3039").analysis is None
+
+
+def test_unskip_preserves_pending_batch_generation() -> None:
+    w = World(batch=True)
+    w.add_bill("3039", TITLE)
+    w.run()
+    generation = w.bill("3039").analysis_generation
+    w.command("/unskip 3039")
+    _commands_only(w)
+    assert w.bill("3039").status is BillStatus.BATCH_PENDING
+    assert w.bill("3039").analysis_generation == generation
+    w.batch.resolve()
+    w.run()
+    assert w.bill("3039").status is BillStatus.ANALYZED
+    assert len(w.batch.submitted) == 1
 
 
 def test_unskip_of_an_analysed_bill_does_not_pay_for_the_model_again() -> None:
