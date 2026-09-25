@@ -20,7 +20,8 @@ from zoneinfo import ZoneInfo
 import httpx2 as httpx
 
 from lexinform.adapters.browser_identity import BROWSER_USER_AGENT
-from lexinform.errors import AttachmentTooLargeError, SejmApiUnavailableError
+from lexinform.adapters.streams import read_bounded
+from lexinform.errors import SejmApiUnavailableError
 from lexinform.models import (
     BILL_DOCUMENT_TYPE,
     ActInfo,
@@ -253,14 +254,7 @@ class SejmApiClient:
         """Stream the attachment; stop as soon as `max_bytes` is exceeded."""
         response = self._request("GET", url, stream=True)
         try:
-            chunks: list[bytes] = []
-            received = 0
-            for chunk in response.iter_bytes():
-                received += len(chunk)
-                if max_bytes is not None and received > max_bytes:
-                    raise AttachmentTooLargeError(url, max_bytes)
-                chunks.append(chunk)
-            return b"".join(chunks)
+            return read_bounded(response.iter_bytes(), url, max_bytes)
         finally:
             response.close()
 

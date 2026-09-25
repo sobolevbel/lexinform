@@ -24,7 +24,8 @@ import httpx2 as httpx
 from bs4 import BeautifulSoup, Tag
 
 from lexinform.adapters.browser_identity import BROWSER_HEADERS
-from lexinform.errors import AttachmentTooLargeError, RclUnavailableError
+from lexinform.adapters.streams import read_bounded
+from lexinform.errors import RclUnavailableError
 from lexinform.models import (
     RclDocument,
     RclFolder,
@@ -140,14 +141,7 @@ class RclClient:
         """Stream a document; stop as soon as `max_bytes` is exceeded."""
         response = self._request("GET", url, stream=True)
         try:
-            chunks: list[bytes] = []
-            received = 0
-            for chunk in response.iter_bytes():
-                received += len(chunk)
-                if max_bytes is not None and received > max_bytes:
-                    raise AttachmentTooLargeError(url, max_bytes)
-                chunks.append(chunk)
-            body = b"".join(chunks)
+            body = read_bounded(response.iter_bytes(), url, max_bytes)
         finally:
             response.close()
         if _is_rejected_html(body):

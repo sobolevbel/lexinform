@@ -22,7 +22,8 @@ from collections.abc import Callable
 import httpx2 as httpx
 
 from lexinform.adapters.browser_identity import BROWSER_HEADERS
-from lexinform.errors import AttachmentTooLargeError, OrkaUnreachableError
+from lexinform.adapters.streams import read_bounded
+from lexinform.errors import OrkaUnreachableError
 
 __all__ = ["OrkaClient"]
 
@@ -83,7 +84,7 @@ class OrkaClient:
                 if status >= 400:
                     refusal = f"HTTP {status} ({_waf_marks(response)})"
                 else:
-                    body = self._body(url, response, max_bytes)
+                    body = read_bounded(response.iter_bytes(), url, max_bytes)
                     if not _is_challenge(response, body):
                         return body
                     marks = _waf_marks(response, body)
@@ -99,16 +100,6 @@ class OrkaClient:
 
     def close(self) -> None:
         self._client.close()
-
-    def _body(self, url: str, response: httpx.Response, max_bytes: int | None) -> bytes:
-        chunks: list[bytes] = []
-        received = 0
-        for chunk in response.iter_bytes():
-            received += len(chunk)
-            if max_bytes is not None and received > max_bytes:
-                raise AttachmentTooLargeError(url, max_bytes)
-            chunks.append(chunk)
-        return b"".join(chunks)
 
     def _wait(self, attempt: int, reason: str) -> None:
         delay = self._backoff * (2 ** (attempt - 1))
