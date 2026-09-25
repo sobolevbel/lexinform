@@ -101,3 +101,17 @@ def batch_reservation(model: str, *, input_tokens: int, max_output_tokens: int) 
     if prices is None:
         raise ValueError(f"cannot reserve batch cost for unknown model {model}")
     return (input_tokens * prices[0] + max_output_tokens * prices[1]) / 2_000_000
+
+
+def estimate_batch_reservation(
+    model: str,
+    *,
+    counted_tokens: int | None,
+    prompt_chars: int,
+    system_chars: int,
+    scan_pages: int,
+    max_output_tokens: int,
+) -> float:
+    estimate = max(counted_tokens or 0, prompt_chars + system_chars + 2_000)
+    estimate += scan_pages * TOKENS_PER_SCANNED_PAGE
+    return batch_reservation(model, input_tokens=estimate, max_output_tokens=max_output_tokens)

@@ -58,7 +58,7 @@ from lexinform.models import (
 )
 from lexinform.models.batch import BatchAnswer, batch_output_model
 from lexinform.models.report import CallKind
-from lexinform.pricing import TOKENS_PER_SCANNED_PAGE, batch_reservation
+from lexinform.pricing import estimate_batch_reservation
 from lexinform.settings import OpenAiEffort
 
 log = logging.getLogger(__name__)
@@ -375,16 +375,18 @@ class OpenAiAnalyzer:
             },
         }
         tokens = self.count_input_tokens(ctx) if isinstance(ctx, BillContext) else None
-        estimate = max(tokens or 0, len(prompt) + len(system) + 2_000)
-        if scan is not None:
-            estimate += scan.pages * TOKENS_PER_SCANNED_PAGE
         return request.model_copy(
             update={
                 "payload_json": json.dumps(payload, ensure_ascii=False),
                 "model": model,
                 "prompt_version": PROMPT_VERSION,
-                "estimated_cost_usd": batch_reservation(
-                    model, input_tokens=estimate, max_output_tokens=self._max_output_tokens
+                "estimated_cost_usd": estimate_batch_reservation(
+                    model,
+                    counted_tokens=tokens,
+                    prompt_chars=len(prompt),
+                    system_chars=len(system),
+                    scan_pages=scan.pages if scan is not None else 0,
+                    max_output_tokens=self._max_output_tokens,
                 ),
             }
         )
