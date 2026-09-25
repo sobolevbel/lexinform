@@ -396,6 +396,13 @@ INSERT INTO "commands" VALUES(79370074,'-1004460742180',359,'/status','2026-09-2
 INSERT INTO "commands" VALUES(79370075,'-1004460742180',362,'/cost','2026-09-23T01:00:29+00:00','2026-09-23T01:00:52+00:00','cost: 108 run(s) in 30 days','2026-09-23T01:00:51+00:00');
 INSERT INTO "commands" VALUES(79370076,'-1004460742180',365,'/runs','2026-09-23T01:01:45+00:00','2026-09-23T01:02:03+00:00','runs: 109 run(s) in 30 days','2026-09-23T01:02:03+00:00');
 INSERT INTO "commands" VALUES(79370081,'-1004460742180',383,'/status','2026-09-24T02:29:34+00:00','2026-09-24T02:29:56+00:00','status: 24 bills followed','2026-09-24T02:29:55+00:00');
+INSERT INTO "commands" VALUES(79370082,'-1004460742180',407,'/show RCL/12405609','2026-09-25T01:19:47+00:00','2026-09-25T01:20:11+00:00','RCL/12405609 shown','2026-09-25T01:20:11+00:00');
+CREATE TABLE delivery_resolutions (
+        id INTEGER PRIMARY KEY,
+        publication_id INTEGER NOT NULL,
+        command_update_id INTEGER NOT NULL UNIQUE,
+        resolution_json TEXT NOT NULL
+    );
 CREATE TABLE llm_batch_intents (
         custom_id TEXT PRIMARY KEY,
         provider TEXT NOT NULL,
@@ -425,6 +432,11 @@ CREATE TABLE llm_batches (
         request_count INTEGER NOT NULL,
         estimated_cost_usd REAL NOT NULL
     , forgotten_at TEXT);
+CREATE TABLE publication_sequence (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        last_id INTEGER NOT NULL
+    );
+INSERT INTO "publication_sequence" VALUES(1,59);
 CREATE TABLE publications (
         id INTEGER PRIMARY KEY,
         term INTEGER NOT NULL,
@@ -1510,6 +1522,7 @@ INSERT INTO "runs" VALUES(136,'2026-09-24T08:26:28+00:00','2026-09-24T08:27:28+0
 INSERT INTO "runs" VALUES(137,'2026-09-24T08:47:25+00:00','2026-09-24T08:48:41+00:00','2026-09-23T02:28:58+00:00','collect',1,'{"started_at":"2026-09-24T08:47:25Z","finished_at":"2026-09-24T08:48:41Z","since":"2026-09-23T02:28:58Z","mode":"collect","term":10,"discovery_ok":false,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":0,"digest_drafted":false,"consultation_results_posted":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"reanalyzed":0,"tracked":23,"batch_waiting":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{"collect batches":0.0,"commands":0.0,"text prefilter":0.0,"analysis":0.0,"publishing":0.0,"tracking":74.3,"submit batches":0.0}}',0);
 INSERT INTO "runs" VALUES(138,'2026-09-24T10:13:35+00:00','2026-09-24T10:14:05+00:00','2026-09-23T02:28:58+00:00','run',1,'{"started_at":"2026-09-24T10:13:35Z","finished_at":"2026-09-24T10:14:05Z","since":"2026-09-23T02:28:58Z","mode":"run","term":10,"discovery_ok":true,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":1,"digest_drafted":false,"consultation_results_posted":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"reanalyzed":0,"tracked":4,"batch_waiting":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{"collect batches":0.0,"commands":0.0,"discovery":1.2,"wykaz discovery":6.3,"rcl discovery":1.9,"text prefilter":0.0,"rcl consultations":0.0,"analysis":0.0,"publishing":0.0,"tracking":17.9,"submit batches":0.0,"digest":0.0}}',1);
 INSERT INTO "runs" VALUES(139,'2026-09-24T20:01:22+00:00','2026-09-24T20:03:35+00:00','2026-09-23T10:13:35+00:00','run',1,'{"started_at":"2026-09-24T20:01:22Z","finished_at":"2026-09-24T20:03:35Z","since":"2026-09-23T10:13:35Z","mode":"run","term":10,"discovery_ok":true,"discovered":0,"pre_print_discovered":0,"rcl_discovered":1,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"text_prefilter_checked":1,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":0,"digest_drafted":false,"consultation_results_posted":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":0,"commands_failed":0,"commands":[],"published":0,"joint_published":0,"updates":0,"reanalyzed":0,"tracked":5,"batch_waiting":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{"collect batches":0.0,"commands":0.0,"discovery":1.9,"wykaz discovery":7.3,"rcl discovery":27.8,"text prefilter":1.9,"rcl consultations":0.0,"analysis":0.0,"publishing":0.0,"tracking":92.0,"submit batches":0.0,"digest":0.0}}',1);
+INSERT INTO "runs" VALUES(140,'2026-09-25T01:20:09+00:00','2026-09-25T01:20:11+00:00','2026-09-23T20:01:22+00:00','commands',1,'{"started_at":"2026-09-25T01:20:09Z","finished_at":"2026-09-25T01:20:11Z","since":"2026-09-23T20:01:22Z","mode":"commands","term":10,"discovery_ok":false,"discovered":0,"pre_print_discovered":0,"rcl_discovered":0,"rcl_prefilter_hits":0,"wykaz_discovered":0,"over_on_arrival":0,"linked":0,"prefilter_hits":0,"text_prefilter_checked":0,"text_prefilter_hits":0,"text_prefilter_scans":0,"text_prefilter_unreadable":0,"text_prefilter_unanswered":0,"acts_published":0,"in_force_posted":0,"consultation_reminders":0,"hearing_reminders":0,"decision_reminders":0,"held":0,"cards_refreshed":0,"digest_drafted":false,"consultation_results_posted":0,"agenda_posted":0,"agenda_cancelled":0,"discontinued":0,"rehomed":0,"analyzed":0,"triaged_out":0,"analysis_failures":0,"analysis_skipped_cost":0,"analysis_unanswered":0,"joint_revived":0,"notes":[],"rejected":[],"commands_handled":1,"commands_failed":0,"commands":["/show RCL/12405609 → RCL/12405609 shown"],"published":0,"joint_published":0,"updates":0,"reanalyzed":0,"tracked":0,"batch_waiting":0,"errors":[],"llm_input_tokens":0,"llm_output_tokens":0,"llm_usage":{},"llm_calls":[],"phase_seconds":{"collect batches":0.0,"commands":0.6,"text prefilter":0.0,"rcl consultations":0.0,"analysis":0.0,"publishing":0.0,"submit batches":0.0,"digest":0.0}}',0);
 CREATE TABLE status_changes (
         id INTEGER PRIMARY KEY,
         term INTEGER NOT NULL,
@@ -1568,5 +1581,6 @@ CREATE INDEX ix_llm_batch_items_bill ON llm_batch_items(term, number);
 CREATE INDEX ix_llm_batch_intents_state ON llm_batch_intents(state, created_at);
 CREATE INDEX ix_llm_batch_items_custom ON llm_batch_items(custom_id);
 CREATE INDEX ix_analysis_memo_retention ON analysis_memo(last_used_at);
+CREATE INDEX ix_delivery_resolutions_publication ON delivery_resolutions(publication_id);
 COMMIT;
-PRAGMA user_version = 33;
+PRAGMA user_version = 34;
