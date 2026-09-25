@@ -29,6 +29,7 @@ from lexinform.models import (
 from lexinform.ports import BillRepository, Clock, Publisher, PublishResult, SejmGateway
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.joint import group_of, primary_of
+from lexinform.services.sources import fetch_print
 
 log = logging.getLogger(__name__)
 
@@ -283,7 +284,7 @@ class PublishingService:
             card_bill, message_id = primary
             return CardPlan(
                 bill=bill,
-                print_info=self._safe_print(bill),
+                print_info=fetch_print(self._gateway, bill),
                 primary=card_bill,
                 primary_message_id=message_id,
             )
@@ -499,13 +500,4 @@ class PublishingService:
         """The print whose files the card links, or None when the row has none (an RCL project,
         a wykaz entry) or the API is having a bad day: a card without the links is still a card.
         """
-        return self._safe_print(bill) if bill.has_process else None
-
-    def _safe_print(self, bill: Bill) -> PrintInfo | None:
-        try:
-            return self._gateway.get_print(bill.term, bill.number)
-        except ServiceUnavailableError:
-            raise
-        except Exception as exc:
-            log.warning("print %s unavailable, publishing without PDF: %s", bill.number, exc)
-            return None
+        return fetch_print(self._gateway, bill) if bill.has_process else None
