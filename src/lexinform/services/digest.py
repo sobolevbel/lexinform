@@ -22,7 +22,10 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    RunMode,
+    RunReport,
     Upcoming,
+    WeekFigures,
     consultation_open,
     is_first_digest_of_month,
     iso_week,
@@ -132,15 +135,15 @@ class DigestService:
         today = self.today()
         return iso_week(today) if today.weekday() == SUNDAY else previous_week(today)
 
-    def run(self) -> DigestResult:
+    def run(self, *, current_report: RunReport | None = None) -> DigestResult:
         """The digest phase of a run: draft the week on its day, and nothing on any other."""
         if self._drafter is None:
             return DigestResult(note="no technical channel: a digest is never sent unread")
         if self.today().weekday() != self._weekday:
             return DigestResult(note="not the digest's day")
-        return self.draft(self.current_ref())
+        return self.draft(self.current_ref(), current_report=current_report)
 
-    def draft(self, ref: str) -> DigestResult:
+    def draft(self, ref: str, *, current_report: RunReport | None = None) -> DigestResult:
         """Post the week's digest to the technical channel with the button that publishes it."""
         drafter = self._drafter
         if drafter is None:
@@ -150,7 +153,7 @@ class DigestService:
         )
         if existing is not None and existing.status is PublicationStatus.SENT:
             return DigestResult(ref=ref, message_id=existing.message_id, note="drafted already")
-        week = self.build(ref)
+        week = self.build(ref, current_report=current_report)
         message_id = self._send(
             self._draft_channel_id,
             week,
@@ -177,7 +180,7 @@ class DigestService:
             return DigestResult(ref=ref, failed=True, note=f"{ref} was not posted, see the log")
         return DigestResult(ref=ref, published=True, message_id=message_id)
 
-    def build(self, ref: str) -> Digest:
+    def build(self, ref: str, *, current_report: RunReport | None = None) -> Digest:
         """The week as the channel lived it, plus what a reader can still act on."""
         since, until = week_bounds(ref)
         posts = self._repo.list_publications_between(
@@ -199,6 +202,14 @@ class DigestService:
             elif post.kind in UPDATE_KINDS:
                 _add_or_replace(updates, update_slots, entry)
         consultations, sittings = self._ahead()
+        starts = self._midnight(since)
+        ends = self._midnight(until + dt.timedelta(days=1))
+        reports = self._repo.list_runs(since=starts)
+        if current_report is not None:
+            reports.append(current_report)
+        reports = [
+            r for r in reports if starts <= r.started_at < ends and r.mode is not RunMode.DRY_RUN
+        ]
         return Digest(
             ref=ref,
             since=since,
@@ -210,6 +221,7 @@ class DigestService:
             consultations=tuple(consultations),
             sittings=tuple(sittings),
             month=self._month(ref),
+            figures=WeekFigures.of(reports) if reports else None,
         )
 
     def _entry(self, post: Publication, bills: dict[tuple[int, str], Bill]) -> DigestEntry | None:

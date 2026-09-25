@@ -125,6 +125,29 @@ class MonthFigures(BaseModel):
         )
 
 
+class WeekFigures(BaseModel):
+    discovered: int = 0
+    filtered: int | None = None
+
+    @classmethod
+    def of(cls, reports: list[RunReport]) -> Self:
+        rejected = {key for report in reports for key in report.prefilter_rejected or []}
+        rejected.update(
+            f"{verdict.term}/{verdict.number}" for report in reports for verdict in report.rejected
+        )
+        return cls(
+            discovered=sum(
+                r.discovered + r.pre_print_discovered + r.rcl_discovered + r.wykaz_discovered
+                for r in reports
+            ),
+            filtered=(
+                len(rejected)
+                if all(r.prefilter_rejected is not None and not r.errors for r in reports)
+                else None
+            ),
+        )
+
+
 class Digest(BaseModel):
     """A week of the channel; built afresh whenever it is rendered, so a draft left standing
     overnight is rebuilt before a reader ever sees it."""
@@ -139,6 +162,7 @@ class Digest(BaseModel):
     consultations: tuple[Upcoming, ...] = ()
     sittings: tuple[Upcoming, ...] = ()
     month: MonthFigures | None = None
+    figures: WeekFigures | None = None
 
     @property
     def is_empty(self) -> bool:

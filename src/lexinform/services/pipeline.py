@@ -131,7 +131,10 @@ class DailyPipeline:
         from and a process that crashes says nothing at all."""
         started = self._clock.now()
         report = RunReport(
-            started_at=started, since=started, mode=RunMode.DRY_RUN if opts.dry_run else opts.mode
+            started_at=started,
+            since=started,
+            mode=RunMode.DRY_RUN if opts.dry_run else opts.mode,
+            prefilter_rejected=[],
         )
         captured = MemoryLogHandler()
         captured.install()
@@ -370,6 +373,7 @@ class DailyPipeline:
         report.discovered = discovered.new
         report.pre_print_discovered = discovered.pre_print_new
         report.prefilter_hits = discovered.prefilter_hits
+        report.prefilter_rejected = [*(report.prefilter_rejected or []), *discovered.rejected]
         report.over_on_arrival += discovered.over
 
     def _discover_rcl(
@@ -381,6 +385,7 @@ class DailyPipeline:
         discovered = self._rcl_discovery.discover(term, since, from_register=from_register)
         report.rcl_discovered = discovered.new
         report.rcl_prefilter_hits = discovered.prefilter_hits
+        report.prefilter_rejected = [*(report.prefilter_rejected or []), *discovered.rejected]
         report.over_on_arrival += discovered.over
         if discovered.failed:
             report.errors.append(f"{discovered.failed} RCL project(s) could not be read")
@@ -406,6 +411,7 @@ class DailyPipeline:
         )
         checked = self._text_prefilter.run(limit=opts.max_text_prefilter)
         report.text_prefilter_checked = checked.checked
+        report.prefilter_rejected = [*(report.prefilter_rejected or []), *checked.rejected]
         report.text_prefilter_hits = checked.hits
         report.text_prefilter_scans = checked.scans
         report.text_prefilter_unreadable = checked.unreadable
@@ -474,7 +480,7 @@ class DailyPipeline:
 
     def _draft_digest(self, report: RunReport) -> None:
         assert self._digest is not None, "run() starts this phase only with a digest service"
-        result = self._digest.run()
+        result = self._digest.run(current_report=report)
         report.digest_drafted = result.drafted
         if result.drafted:
             report.notes.append(f"digest {result.ref} drafted, waiting for the button")

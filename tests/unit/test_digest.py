@@ -17,6 +17,7 @@ from lexinform.models import (
     RunReport,
     TokenUsage,
     Upcoming,
+    WeekFigures,
     command_for_callback,
     is_first_digest_of_month,
     iso_week,
@@ -101,6 +102,25 @@ def test_a_month_sums_the_spend_per_model() -> None:
     spent = MonthFigures.of(dt.date(2026, 9, 5), [_report(usage=usage), _report(usage=usage)])
 
     assert spent.usage["claude-opus-5"] == TokenUsage(input=2000, output=200)
+
+
+def test_weekly_filtering_counts_decisions_once_and_keeps_discovery_independent() -> None:
+    reports = [
+        _report(discovered=2).model_copy(update={"prefilter_rejected": ["10/1"]}),
+        _report(rcl_discovered=3, analysis_skipped_cost=2).model_copy(
+            update={"prefilter_rejected": ["10/1", "10/2"]}
+        ),
+    ]
+    figures = WeekFigures.of(reports)
+
+    assert figures.discovered == 5
+    assert figures.filtered == 2
+
+
+def test_legacy_or_failed_reports_do_not_imply_zero_filtering() -> None:
+    assert WeekFigures.of([_report()]).filtered is None
+    failed = _report().model_copy(update={"prefilter_rejected": [], "errors": ["outage"]})
+    assert WeekFigures.of([failed]).filtered is None
 
 
 def test_the_digest_names_the_week_its_cards_and_its_tag() -> None:

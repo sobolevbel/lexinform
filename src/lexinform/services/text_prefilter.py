@@ -10,7 +10,7 @@ bills, which are the ones whose titles say "o zmianie niektórych ustaw".
 """
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from lexinform.concurrency import fan_out
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
@@ -36,6 +36,7 @@ class TextPrefilterResult:
     """
 
     checked: int = 0
+    rejected: list[str] = field(default_factory=list)
     hits: int = 0
     scans: int = 0
     unreadable: int = 0
@@ -109,8 +110,11 @@ class TextPrefilterService:
                 result.scans += 1
             elif loaded.text is None:
                 result.unreadable += 1
-            if self.decide(bill, loaded) and not loaded.is_scan:
+            accepted = self.decide(bill, loaded)
+            if accepted and not loaded.is_scan:
                 result.hits += 1
+            elif not accepted and loaded.text is not None:
+                result.rejected.append(f"{bill.term}/{bill.number}")
         log.info(
             "text prefilter: checked=%d hits=%d scans=%d unreadable=%d unanswered=%d failed=%d",
             result.checked,

@@ -10,7 +10,7 @@ looks at them.
 import datetime as dt
 import logging
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
@@ -47,6 +47,7 @@ class RclDiscoveryResult:
     new: int = 0
     refreshed: int = 0
     prefilter_hits: int = 0
+    rejected: list[str] = field(default_factory=list)
     planned: int = 0
     over: int = 0
     failed: int = 0
@@ -298,5 +299,6 @@ class RclDiscoveryService:
             status = BillStatus.TEXT_PREFILTER_PENDING
         else:
             status = BillStatus.SKIPPED_PREFILTER
+            result.rejected.append(f"{term}/{bill.number}")
         self._repo.set_status(term, bill.number, status, prefilter_hits=hits)
         result.new += 1

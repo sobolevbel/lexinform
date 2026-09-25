@@ -1,5 +1,6 @@
 """The weekly digest end to end: drafted on a Warsaw Sunday, published only on the button."""
 
+import datetime as dt
 from typing import Any
 
 from lexinform.container import Container
@@ -15,6 +16,7 @@ from lexinform.models import (
 from lexinform.services.digest import DigestService
 from lexinform.services.terms import TermResolver
 from lexinform.settings import Settings
+from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import CHANNEL, COMMITTEE_STAGES, SUPPORT_URL, World, submission
 
 TITLE = "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach"
@@ -59,6 +61,59 @@ def test_the_sunday_run_drafts_the_week_into_the_technical_channel() -> None:
     assert "Итоги недели" in draft
     assert "druk 3039" in draft  # the card of the week, named and linked
     assert "https://t.me/test/101" in draft
+
+
+def test_weekly_figures_include_the_current_run_and_survive_rebuilding() -> None:
+    w = World(
+        extractor=FakeTextExtractor("Art. 1. Podatek. " * 100),
+        llm_script={"4102": make_analysis(score=2)},
+    )
+    _sunday(w)
+    w.add_bill("4100", "Rządowy projekt ustawy o podatku")
+    w.add_bill("4101", TITLE)
+    w.add_bill("4102", TITLE)
+    w.add_bill("4103", "Rządowy projekt ustawy o lasach", with_pdf=False)
+
+    w.run()
+
+    (draft,) = _drafts(w)
+    expected = (
+        "Найдено новых записей о законопроектах: 4",
+        "Отсеяно при проверке релевантности: 2",
+        "Опубликовано новых разборов: 1",
+    )
+    assert all(line in draft for line in expected)
+    w.command(f"/digest publish ref={iso_week(w.clock.now().date())}")
+    _commands_only(w)
+    assert all(line in _drafts(w)[-1] for line in expected)
+
+
+def test_weekly_figures_use_warsaw_week_boundaries() -> None:
+    w = World()
+    starts = dt.datetime(2026, 9, 6, 22, tzinfo=dt.UTC)
+    for when, count in (
+        (starts - dt.timedelta(seconds=1), 100),
+        (starts, 2),
+        (starts + dt.timedelta(days=7) - dt.timedelta(seconds=1), 3),
+        (starts + dt.timedelta(days=7), 200),
+    ):
+        report = RunReport(
+            started_at=when,
+            finished_at=when,
+            since=when,
+            mode=RunMode.RUN,
+            discovered=count,
+            prefilter_rejected=[],
+        )
+        w.repo.finish_run(w.repo.start_run(report), report)
+    service = w.container.digest_service(dry_run=False)
+    assert service is not None
+
+    week = service.build("2026-W37")
+
+    assert week.figures is not None
+    assert week.figures.discovered == 5
+    assert week.figures.filtered == 0
 
 
 def test_the_draft_carries_the_button_and_the_channel_has_nothing_yet() -> None:

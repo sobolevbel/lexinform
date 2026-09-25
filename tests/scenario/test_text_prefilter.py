@@ -70,6 +70,7 @@ def test_single_stray_mention_is_rejected_but_kept_for_tuning() -> None:
     report = w.run()
 
     assert (report.text_prefilter_hits, report.analyzed) == (0, 0)
+    assert report.prefilter_rejected == ["10/4100"]
     bill = w.bill("4100")
     assert bill.status is BillStatus.SKIPPED_TEXT_PREFILTER
     assert bill.prefilter_hits == ["text:cudzoziemcy"]
@@ -93,6 +94,7 @@ def test_a_broken_pdf_is_a_verdict_and_a_file_not_there_yet_is_not() -> None:
 
     assert report.text_prefilter_checked == 2 and not report.errors
     assert (report.text_prefilter_unreadable, report.text_prefilter_unanswered) == (1, 1)
+    assert report.prefilter_rejected == []
     broken, missing = w.bill("4100"), w.bill("4101")
     # The reason is on record: a skip for lack of a text is not a keyword miss.
     assert broken.status is BillStatus.SKIPPED_TEXT_PREFILTER

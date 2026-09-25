@@ -1,7 +1,7 @@
 """Finds new/changed bills in the Sejm API and runs the keyword prefilter on new ones."""
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -43,6 +43,7 @@ class DiscoveryResult:
     pre_print_seen: int = 0
     pre_print_new: int = 0
     prefilter_hits: int = 0
+    rejected: list[str] = field(default_factory=list)
     over: int = 0
 
 
@@ -256,6 +257,8 @@ class BillDiscoveryService:
             candidate = accept_title_hits(hits)
             status = BillStatus.ANALYSIS_PENDING if candidate else self._miss_status(summary)
             self._repo.set_status(bill.term, bill.number, status, prefilter_hits=hits)
+            if status is BillStatus.SKIPPED_PREFILTER:
+                result.rejected.append(f"{bill.term}/{bill.number}")
             if candidate:
                 result.prefilter_hits += 1
                 log.info("candidate druk %s (%s): %s", bill.number, ", ".join(hits), summary.title)

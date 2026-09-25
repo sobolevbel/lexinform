@@ -97,6 +97,7 @@ class RunReport(BaseModel):
     over_on_arrival: int = 0
     linked: int = 0
     prefilter_hits: int = 0
+    prefilter_rejected: list[str] | None = None
     text_prefilter_checked: int = 0
     text_prefilter_hits: int = 0
     text_prefilter_scans: int = 0

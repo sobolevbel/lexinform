@@ -112,6 +112,14 @@ readers unread. A quiet week is told as a quiet week: in a channel about deadlin
 news too. A second, technical channel can receive a report after every run (counters, tokens,
 errors).
 
+Each digest includes weekly counts of newly stored bill records, bills filtered out during
+relevance checks, and new cards actually sent. Discovery counts records across sources, not
+unique legislative initiatives. Filtering counts distinct bill keys rejected by title, readable
+text or analysis during the week; pending work, unreadable files and budget limits are excluded.
+The two counts are independent: a rejection may concern an earlier discovery. Weeks containing
+legacy reports without rejection counters or failed runs show filtering data as incomplete.
+The current Sunday run is included in its draft; publishing rebuilds the figures from saved runs.
+
 ## How it works
 
 ```

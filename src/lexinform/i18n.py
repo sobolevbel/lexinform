@@ -215,6 +215,11 @@ class Labels:
     link_supplement: str
     supplement_unreadable: str
     digest_header: str
+    digest_figures: str
+    digest_found: str
+    digest_filtered: str
+    digest_published: str
+    digest_no_data: str
     digest_cards: str
     digest_updates: str
     digest_consultations: str
@@ -534,6 +539,11 @@ RU = Labels(
     link_supplement="Документ (PDF)",
     supplement_unreadable="Документ не удалось прочитать — он есть по ссылке ниже.",
     digest_header="Итоги недели",
+    digest_figures="Неделя в цифрах",
+    digest_found="Найдено новых записей о законопроектах: {}",
+    digest_filtered="Отсеяно при проверке релевантности: {}",
+    digest_published="Опубликовано новых разборов: {}",
+    digest_no_data="нет полных данных",
     digest_cards="Новые законопроекты",
     digest_updates="Что изменилось",
     digest_consultations="Идут консультации — можно успеть",
@@ -1183,6 +1193,11 @@ EN = Labels(
     link_supplement="Document (PDF)",
     supplement_unreadable="The document could not be read — it is at the link below.",
     digest_header="The week in the channel",
+    digest_figures="The week in figures",
+    digest_found="New bill records found: {}",
+    digest_filtered="Filtered out during relevance checks: {}",
+    digest_published="New explainers published: {}",
+    digest_no_data="complete data unavailable",
     digest_cards="New bills",
     digest_updates="What changed",
     digest_consultations="Consultations still open",
