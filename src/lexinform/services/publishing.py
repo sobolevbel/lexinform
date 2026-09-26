@@ -29,7 +29,7 @@ from lexinform.models import (
 from lexinform.ports import BillRepository, Clock, Publisher, PublishResult, SejmGateway
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.joint import group_of, primary_of
-from lexinform.services.publications import inherit_card
+from lexinform.services.publications import inherit_card, send_publication
 from lexinform.services.sources import fetch_print
 
 log = logging.getLogger(__name__)
@@ -435,30 +435,11 @@ class PublishingService:
         return primary_of(self._repo, bill, self._channel_id)
 
     def _send(self, pub_id: int, bill: Bill, send: Send) -> bool:
-        """Send the post and record what became of it. An outage of the channel propagates and
-        counts no attempt: the channel is down, not the post, so it keeps its retry budget."""
         self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
-        try:
-            sent = send()
-        except ServiceUnavailableError as exc:
-            self._repo.mark_publication(
-                pub_id, PublicationStatus.FAILED, error=exc.describe(), count_attempt=False
-            )
-            raise
-        except Exception as exc:
-            log.exception("publishing druk %s failed: %s", bill.number, exc)
-            self._repo.mark_publication(
-                pub_id, PublicationStatus.FAILED, error=f"{type(exc).__name__}: {exc}"
-            )
+        message_id = send_publication(self._repo, self._clock, pub_id, send)
+        if message_id is None:
             return False
-        self._repo.mark_publication(
-            pub_id,
-            PublicationStatus.SENT,
-            message_id=sent.message_id,
-            document_message_ids=list(sent.document_message_ids),
-            sent_at=self._clock.now(),
-        )
-        log.info("published druk %s as message %s", bill.number, sent.message_id)
+        log.info("published druk %s as message %s", bill.number, message_id)
         return True
 
     def _record_skipped(self, bill: Bill) -> None:

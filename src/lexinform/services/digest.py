@@ -11,7 +11,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
-from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     DIGEST_NUMBER,
     DIGEST_TERM,
@@ -34,6 +33,7 @@ from lexinform.models import (
     week_bounds,
 )
 from lexinform.ports import BillRepository, Clock, Publisher
+from lexinform.services.publications import send_publication
 
 log = logging.getLogger(__name__)
 
@@ -328,20 +328,4 @@ class DigestService:
                 created_at=self._clock.now(),
             )
         )
-        try:
-            message_id = post()
-        except ServiceUnavailableError as exc:
-            self._repo.mark_publication(
-                pub_id, PublicationStatus.FAILED, error=exc.describe(), count_attempt=False
-            )
-            raise
-        except Exception as exc:
-            log.exception("digest %s could not be posted: %s", week.ref, exc)
-            self._repo.mark_publication(
-                pub_id, PublicationStatus.FAILED, error=f"{type(exc).__name__}: {exc}"
-            )
-            return None
-        self._repo.mark_publication(
-            pub_id, PublicationStatus.SENT, message_id=message_id, sent_at=self._clock.now()
-        )
-        return message_id
+        return send_publication(self._repo, self._clock, pub_id, post)

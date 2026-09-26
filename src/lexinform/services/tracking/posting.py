@@ -26,6 +26,7 @@ from lexinform.models import (
     StatusChange,
 )
 from lexinform.ports import BillRepository, Clock, Publisher
+from lexinform.services.publications import HeldRelease, send_publication
 from lexinform.services.tracking.result import TrackingResult
 
 log = logging.getLogger(__name__)
@@ -426,34 +427,12 @@ class Poster:
     def _send(
         self, pub_id: int, bill: Bill, send: Send, *, held_change_ids: tuple[int, ...] = ()
     ) -> int | None:
-        """Send and record the outcome; the message id on success, None on a per-bill failure.
-
-        An outage of the channel propagates and does not count an attempt: it is the channel that
-        is down, not the post, so the post keeps its retry budget.
-        """
         card = self.card(bill)
         reply_to = card.message_id if card else None
-        try:
-            message_id = send(reply_to)
-        except ServiceUnavailableError as exc:
-            self._repo.mark_publication(
-                pub_id, PublicationStatus.FAILED, error=exc.describe(), count_attempt=False
-            )
-            raise
-        except Exception as exc:
-            log.exception("post for druk %s failed: %s", bill.number, exc)
-            self._repo.mark_publication(
-                pub_id, PublicationStatus.FAILED, error=f"{type(exc).__name__}: {exc}"
-            )
-            return None
-        with self._repo.atomic():
-            self._repo.mark_publication(
-                pub_id, PublicationStatus.SENT, message_id=message_id, sent_at=self._clock.now()
-            )
-            self._repo.release_planned_changes(
-                held_change_ids,
-                self._channel_id,
-                message_id=message_id,
-                sent_at=self._clock.now(),
-            )
-        return message_id
+        return send_publication(
+            self._repo,
+            self._clock,
+            pub_id,
+            lambda: send(reply_to),
+            release=HeldRelease(self._channel_id, held_change_ids),
+        )
