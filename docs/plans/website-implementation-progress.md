@@ -1,7 +1,7 @@
 # Website implementation progress
 
 This log tracks completed, verified slices of the lexinform.pl implementation plan. The task
-breakdown follows section 25.15 of `website-development-plan.md`; a task is marked complete only
+breakdown follows [section 25.15](../website/delivery.md#2515-порядок-реализации-и-границы-небольших-изменений); a task is marked complete only
 when its acceptance result and checks are recorded here.
 
 ## Current position
@@ -10,6 +10,8 @@ when its acceptance result and checks are recorded here.
 - Active task: WEB-02b — complex dependency spike
 - Next task: WEB-03 — identity model and import contract
 - Release target: A — public library in five languages
+- Last code review: 2026-09-26, local commit `6cd680d`; no production verification
+- Remaining implementation slices: [task list](../website/tasks.md)
 
 ## Implementation rules
 
@@ -46,6 +48,36 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-26 — plan revalidation against the local repository
+
+The source still contains the WEB-02a skeleton and the editorial portion of WEB-02b. The
+dependency list and settings have neither allauth MFA nor a database task backend; no identity,
+ingestion, translation, search or feedback application exists yet. The two editorial tests cover
+publication and translation/draft/preview; they do not establish staff MFA or worker recovery.
+The web CI job exists, but deployment images, web release workflow and recovery runbooks do not.
+This review inspected code and test definitions; the historical PostgreSQL test results below
+were not rerun for this documentation review.
+
+The root Makefile now supplies web sync/serve/test/lint/typecheck/format/check commands. The plan
+retains just as the target command interface, with an explicit repository-wide migration task
+(WEB-DX) instead of a second independent command catalog. Five configured language codes are
+not five translated public versions: locale routes, UI catalogs and the content pipeline remain.
+
+WEB-01 remains complete as a historical audit of its pinned snapshot. Its v1 fixture must remain
+unchanged; a new audit of a freshly pinned state copy is required before finalizing WEB-03 and
+again before launch. The current bot already has `ObservedProcess`, `BillPlan` and durable
+delivery checkpoints, while `list_tracked` still requires a sent Telegram card. WEB-07a must
+extend those boundaries for independent observation, not implement a second tracking pipeline.
+
+The [remaining tasks](../website/tasks.md) clarify dependencies and acceptance criteria. No
+implementation stage was completed by this review; release A remains the full five-language
+library, with B/C and the bot's PostgreSQL migration deferred.
+
+Checks for the documentation update: strict portal build and links/anchors/content validation,
+default bot pytest suite, strict mypy, Ruff check/format and `git diff --check` passed. No browser
+was available for visual navigation review; PostgreSQL web scenarios and production checks were
+not rerun.
 
 ### 2026-09-16 — WEB-01 production-state audit
 

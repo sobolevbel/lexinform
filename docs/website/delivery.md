@@ -2,6 +2,7 @@
 
 Статус: действующая спецификация (план), редакция 16 сентября 2026.
 Перенесена без изменения технических решений 24 сентября 2026 из §25 старого плана.
+§25.15 и §25.17 уточнены 26 сентября по локальной реализации и зависимостям задач.
 [Индекс решений](index.md) · [Состояние реализации](../plans/website-implementation-progress.md)
 
 ### 25.13. Критическая ревизия дизайна
@@ -157,12 +158,18 @@ Ansible syntax/idempotence smoke. Narrow исключение для upstream de
 каждое с тестами и отдельным English commit. Параллельность в таблице — возможность работы
 команды в будущем, не требование одновременно менять инфраструктуру и предметную модель.
 
+Разбиение на ближайшие изменения и критерии приёмки ведутся в
+[задачах реализации](tasks.md); фактически выполненное — в
+[журнале](../plans/website-implementation-progress.md). На 26 сентября WEB-02b ещё не завершён.
+WEB-01r обновляет исторический аудит перед контрактом; WEB-DX оформляет переход с имеющегося
+Makefile на just для всего репозитория и не блокирует запуск A.
+
 | Задача | Зависит от | Результат, который можно принять |
 | --- | --- | --- |
 | WEB-01: аудит входных данных | — | На копии state: текущая schema, пригодные анализы, aliases/linked, история, отсутствующая свежесть; fixtures v1 и точное число кандидатов |
-| WEB-02a: workspace и skeleton | — | Clean clone → web без секретов; Python 3.14/Django 6.1/Wagtail 8/Postgres; `User` в первой migration, just bootstrap/doctor |
+| WEB-02a: workspace и skeleton | — | Clean clone → web без секретов; Python 3.14/Django 6.1/Wagtail 8/Postgres; `User` в первой migration, bootstrap и `web_doctor` |
 | WEB-02b: проверка сложных зависимостей | 02a | Page+snippet: 2 локали, StreamField, revision/preview, ручная правка; MFA без обхода, strict mypy, worker kill/restart |
-| WEB-03: идентичность и контракт | 01, 02a | Matter/Identity/Relation, public_id, natural keys, merge/split с аудитом; утверждён ImportDocumentV1 |
+| WEB-03: идентичность и контракт | 01, 01r, 02a | Matter/Identity/Relation, public_id, natural keys, merge/split с аудитом; утверждён ImportDocumentV1 |
 | WEB-04a: поправки дизайна | 01 | Перенести §25.13 в components/прототип; убрать ложную аудиторию, ошибки coverage, вымышленные обещания действий |
 | WEB-04b: шаблоны и типографика | 02a, 04a | Base/components/blocks, локальные шрифты и пять алфавитов, реальные маршруты, no-JS и mobile states |
 | WEB-05a: воспроизводимый host/image | 02a | Ansible, Dockerfile, Compose, Caddy, registry package, health, first deploy в изолированную среду |
@@ -170,25 +177,33 @@ Ansible syntax/idempotence smoke. Narrow исключение для upstream de
 | WEB-05c: backup и runbooks | 05a | Внешняя копия восстановлена с media; измерен RTO, проверен alert снаружи хоста |
 | WEB-06: полный импорт | 03 | Fetch pinned SHA, validation, generations, atomic activation, guards; replay/kill/old SHA проходят |
 | WEB-07a: независимое наблюдение | 01, 03 | SQLite append-only migration и watchers без thread; сайт получает свежесть; прежние Telegram-сценарии неизменны |
-| WEB-07b: карточки и история | 04b, 06, 07a | Display models, source freshness, действия по Clock, история, overrides/conflicts, coverage; роль редактора проверена |
-| WEB-08: CMS и гайды | 02b, 04b | 5 исходных гайдов импортированы как drafts, ссылки/блоки/архив; редактор проверил и опубликовал canonical материалы |
+| WEB-07b: карточки и история | 02b, 04b, 06, 07a | Display models, source freshness, действия по Clock, история, overrides/conflicts, coverage; роль редактора проверена |
+| WEB-08: CMS и гайды | 02b, 03, 04b | 5 исходных гайдов импортированы как drafts, chooser постоянного Matter, ссылки/блоки/архив; редактор проверил и опубликовал canonical материалы |
 | WEB-09: переводы | 02b, 07b, 08 | Пять языков, durable requests, protected fields, glossary, бюджет и фактический замер; machine/reviewed/stale UI |
 | WEB-10: поиск и отбор | 06, 07b, 08, 09 | SearchDocument, ranking, aliases, темы/закрепления/фильтры, стабильные URL, измерение запросов |
-| WEB-11a: запусковой gate | 05b, 05c, 09, 10 | SEO, feedback, privacy content, analytics, accessibility, нагрузка и restore rehearsal; список известных ограничений |
+| WEB-11a: запусковой gate | 05b, 05c, 07a, 09, 10 | SEO, feedback, privacy content, analytics, accessibility, нагрузка и restore rehearsal; список известных ограничений |
 | WEB-11b: публичный A | 11a | DNS/TLS, корпус опубликован, свежесть/alerts работают; smoke на пяти языках, backup подтверждён |
 | WEB-12B | После наблюдения A | Аккаунты/подписки/email по §25.16 |
 | WEB-12C | После B и решения о модерации | Комментарии/жалобы по §25.16 |
 | WEB-12DB | Отдельное решение | PostgreSQL adapter трекера и cutover из §11.5; не зависимость A/B |
 
-Критический путь: 01 → 03 → 06/07a → 07b → 09 → 10 → 11. CMS/дизайн/деплой могут идти рядом после
+Критический путь от текущего состояния: 01r → 03 → 06/07a → 07b → 09 → 10 → 11.
+02b отдельно блокирует worker, CMS и безопасный release. CMS/дизайн/деплой могут идти рядом после
 skeleton. Первым сквозным результатом должна быть одна синтетическая карточка: импорт → публикация
 → ручная правка → новый снимок → перевод → показ читателю → image deploy → rollback. Масштабировать
 на весь корпус только после прохождения этого маршрута.
 
+WEB-06 сначала работает с legacy freshness = unknown; после WEB-07a требуется повторная
+контрактная проверка нового state → import → карточка, включая batch/checkpoint состояния.
+Разработку поискового индекса WEB-10 можно начать на синтетическом русском контенте после 07b/08;
+закрыть этап можно только после проверки всех пяти языков из WEB-09. Feedback и редакционные
+страницы из WEB-11a реализовать до финальной приёмки, а не считать саму приёмку их реализацией.
+
 Оценка одного разработчика после чтения текущего кода: foundation/spikes 3–5 дней; identity/import
 и независимое наблюдение 8–12; CMS/UI 6–9; translation/search 6–9; deploy/backup/CI 5–8;
 редакционная подготовка и launch QA 4–6. Итого **32–49 рабочих дней**, с резервом около 25% —
-**40–62 дня**. Это уточняет §19: прежняя оценка недостаточно явно учитывала отслеживание дел
+**40–62 дня**. Это историческая оценка полного объёма от 16 сентября, не оценка оставшегося
+времени на 26 сентября. Это уточняет §19: прежняя оценка недостаточно явно учитывала отслеживание дел
 без Telegram, совместимость отката и полноценную обработку переводов. Длительность вычитки
 носителями языков в эту оценку не входит. После WEB-02 и WEB-07a оценку пересчитать по результату.
 
@@ -244,8 +259,9 @@ allowlist sanitizer отдельной задачей с XSS fixtures.
   источников/переводов, редакторские очереди, feedback и история исправлений.
 - Реальная библиотека компонентов и шаблоны на основе исправленной «Маргиналии», local fonts,
   brand assets, пустые/ошибочные состояния и доступные мобильные страницы.
-- `justfile`, bootstrap/doctor/check/seed/import/export/smoke, sample settings без секретов,
-  CONTRIBUTING с воспроизводимым первым запуском.
+- Единый интерфейс команд (сейчас Makefile, целевой justfile по WEB-DX),
+  bootstrap/doctor/check/seed/import/export/smoke, sample settings без секретов,
+  CONTRIBUTING с воспроизводимым первым запуском; смена runner сама по себе не блокирует A.
 - Проверяемые CI/image/deploy, host configuration, rollback и compatibility tests, внешний
   backup и протокол успешного восстановления.
 - Runbooks с командами и ожидаемыми результатами: первый запуск, обычный release, rollback,

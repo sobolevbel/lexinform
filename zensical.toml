@@ -39,6 +39,7 @@ nav = [
     { "Данные и задачи" = "website/data.md" },
     { "Деплой сайта" = "website/deployment.md" },
     { "Порядок реализации" = "website/delivery.md" },
+    { "Задачи реализации" = "website/tasks.md" },
     { "Ход реализации" = "plans/website-implementation-progress.md" },
     { "Дизайн и прототип" = "website/design.md" },
     { "Концепция" = "plans/website-design-concept.md" },

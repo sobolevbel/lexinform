@@ -2,6 +2,7 @@
 
 Статус: действующая спецификация (план), редакция 16 сентября 2026.
 Перенесена без изменения технических решений 24 сентября 2026 из §25 старого плана.
+§25.12 уточнён 26 сентября: текущие команды Make, план перехода на just и имена настроек.
 [Индекс решений](index.md) · [Состояние реализации](../plans/website-implementation-progress.md)
 
 ### 25.10. Деплой: воспроизводимый сервер и неизменяемый релиз
@@ -217,6 +218,14 @@ arm64, production x86_64 проверяет Linux CI; не объявлять Ma
 разработки не получает production доступ по умолчанию. Скрипты не зависят от RTK: это личная
 обёртка команды, не runtime-зависимость сайта или CI.
 
+На 26 сентября реализован корневой `Makefile`: `make help`, `make check`, `make docs-check`,
+`make web-sync`, `make web-serve`, `make web-check` и отдельные web-проверки. `justfile` пока нет.
+Ниже — целевой интерфейс, не команды для запуска сегодня. [WEB-DX](tasks.md#ближайшие-задачи)
+переносит команды бота, сайта и документации вместе: один источник рецептов, документированная
+установка just и проверка аргументов/рабочего каталога. При необходимости старые make-имена
+временно делегируют just; независимые реализации одних проверок не сохраняются.
+Переход не блокирует предметную работу и сам по себе не является условием публичного A.
+
 | Команда, которую реализуем | Поведение |
 | --- | --- |
 | `just bootstrap` | Проверяет uv/Python/Docker/Node для e2e, синхронизирует lock, создаёт только отсутствующий локальный env, запускает БД, migrate, seed |
@@ -239,9 +248,12 @@ arm64, production x86_64 проверяет Linux CI; не объявлять Ma
 | `just restore-test <snapshot>` | Новые отдельные DB/media, disabled sends, smoke, отчёт RTO |
 | `just reset-local` | Только известная local DB/volume, проверка имени и окружения, явный destructive флаг |
 
-`.env.web.example` содержит только настройки сайта: `DATABASE_URL`, `SECRET_KEY`, `ALLOWED_HOSTS`,
-`PUBLIC_BASE_URL`, `CSRF_TRUSTED_ORIGINS`, media/static paths, read-only state source, task limits,
-translation model/budget, mailer mode, log level. Разделять local/test/production, production
+Будущий `.env.web.example` содержит только настройки сайта. Сохранять уже реализованные имена
+`LEXINFORM_WEB_SECRET_KEY`, `LEXINFORM_WEB_ALLOWED_HOSTS`, `LEXINFORM_WEB_BASE_URL` и
+`LEXINFORM_WEB_DB_NAME/USER/PASSWORD/HOST/PORT`; не вводить параллельный `DATABASE_URL` без
+задачи миграции настроек. Новые CSRF origins, media/static paths, read-only state source,
+task limits, translation model/budget, mailer mode и log level используют тот же префикс.
+Разделять local/test/production, production
 не имеет скрытых default для секретов. Чтение локального env явно привязано к web-файлу, не к
 первому `.env`, найденному выше по дереву. При добавлении общих settings обновить `.env.example`
 и README согласно правилам проекта. В тестах production settings собираются на фиктивных значениях.
