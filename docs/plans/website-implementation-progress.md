@@ -7,8 +7,8 @@ when its acceptance result and checks are recorded here.
 ## Current position
 
 - Started: 2026-09-16
-- Active task: WEB-01r — refresh the pinned state audit
-- Next task: WEB-03.1 — permanent matter identities
+- Active task: WEB-03.1 — permanent matter identities
+- Next task: WEB-03.2 — versioned import contract
 - Release target: A — public library in five languages
 - Last code review: 2026-09-26, local commit `6cd680d`; no production verification
 - Remaining implementation slices: [task list](../website/tasks.md)
@@ -34,7 +34,7 @@ when its acceptance result and checks are recorded here.
 | WEB-02b | Complete | Editorial revision/translation, staff MFA and real PostgreSQL worker recovery verified |
 | WEB-02b.1 | Complete | Allauth email login, mandatory TOTP/recovery, protected Wagtail and PostgreSQL scenarios |
 | WEB-02b.2 | Complete | Transactional enqueue, SIGTERM/SIGKILL, fenced explicit probe recovery, retry and retention |
-| WEB-01r | Not started | Updated state audit required before identities/import |
+| WEB-01r | Complete | Pinned v34 state, 265 validated bills, 113 candidates; v2 fixture and reproducible audit |
 | WEB-03 | Not started | — |
 | WEB-04a | Not started | — |
 | WEB-04b | Not started | — |
@@ -51,6 +51,20 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-01r: current pinned corpus audit
+
+Audited state `beea36293a76c72d4fdaea544b3b0cdd2eb05c8b` in a temporary SQLite copy:
+schema v34, integrity OK, no foreign-key violations, 265 Bill and 115 AnalysisRecord
+validated. The corpus has 113 candidates, five linked aliases and five joint groups.
+Only 27 candidates have Telegram cards; 100 lack analysis source-check timestamps.
+The snapshot has no pending batch, so synthetic pending/unknown contract fixtures remain
+required. Current 1039/1040 are analyzed again; do not carry v1 visibility as current truth.
+
+Saved `tests/fixtures/website/state_audit_v2.json` and `tools/audit_website_state.py`;
+v1 is unchanged. Details and reproduction are in the
+[audit report](../reviews/2026-09-27-website-state.md). No pipeline, paid call, delivery
+or production mutation occurred. This confirms import inputs, not public-site readiness.
 
 ### 2026-09-27 — WEB-02b.2 and reconciliation of the earlier stash
 
