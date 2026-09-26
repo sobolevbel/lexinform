@@ -616,12 +616,11 @@ class MessageFormatter:
         )
         closure = self._closure_line(bill, change, event)
         consultation = self._consultation_line(bill, today)
-        # `_closure_line` is the one place an update says how the road ended; `_steps_block` ends
-        # in `_ended_line`, which says it again from the bill. An RCL project closed and a plan
-        # dropped went out with the sentence twice, a blank line apart.
+        # Terminal updates explain the outcome once, even when no new closure date arrives.
         over = (
             change.withdrawn
             or change.discontinued
+            or event == "veto_sustained"
             or (change.closure_detected and is_over(bill, today=today))
         )
         steps = "" if over else self._steps_block(bill, today)

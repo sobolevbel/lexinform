@@ -3,10 +3,48 @@ is rendered — the vote with its clubs, the Senate's position, the President's 
 
 import datetime as dt
 
+import pytest
+
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import ClubVotes, ProcessDetail, Stage, SupplementRecord, flatten_stages
 from tests.fakes import make_analysis
 from tests.formatting import ACT, assert_telegram_html, bill_of, change_of
+
+
+@pytest.mark.parametrize("closure_detected", [False, True])
+def test_veto_update_explains_the_outcome_once(
+    process_1962: ProcessDetail, closure_detected: bool
+) -> None:
+    decision = Stage(
+        stage_name="Rozpatrywanie na forum Sejmu wniosku Prezydenta",
+        stage_type="PresidentMotionConsideration",
+        decision="nie uchwalona ponownie",
+        date=dt.date(2026, 9, 17),
+    )
+    process = process_1962.model_copy(
+        update={
+            "stages": (
+                Stage(stage_name="Wniosek Prezydenta (weto)", stage_type="Veto"),
+                decision,
+            ),
+            "passed": True,
+        }
+    )
+    text = (
+        MessageFormatter("ru")
+        .status_update(
+            bill_of(process),
+            change_of("1962", [decision], closure_detected=closure_detected),
+        )
+        .text
+    )
+
+    assert "Вето Президента осталось в силе" in text
+    assert (
+        text.count("🏁 Сейм не отклонил вето Президента (нужно 3/5 голосов): закон не принят.") == 1
+    )
+    assert "Что дальше" not in text and "Что можно сделать" not in text
+    assert_telegram_html(text)
 
 
 def test_status_update_without_an_analysis_keeps_the_stages_before_the_closure(
