@@ -19,6 +19,7 @@ import httpx2 as httpx
 from bs4 import BeautifulSoup, Tag
 
 from lexinform.adapters.browser_identity import BROWSER_HEADERS
+from lexinform.adapters.retries import backoff_delay
 from lexinform.errors import SenateUnavailableError
 from lexinform.models import SENATE_BASE_URL, SenateAct, SenateCommittee, senate_title_matches
 
@@ -232,6 +233,6 @@ class SenateClient:
             return response.text
 
     def _wait(self, attempt: int, reason: str) -> None:
-        delay = self._backoff * (2 ** (attempt - 1))
+        delay = backoff_delay(self._backoff, attempt)
         log.warning("senate retry %d in %.1fs (%s)", attempt, delay, reason)
         self._sleep(delay)

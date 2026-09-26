@@ -6,11 +6,75 @@ from collections.abc import Callable
 import httpx2 as httpx
 import pytest
 
-from lexinform.adapters.sejm_api import SejmApiClient
+from lexinform.adapters.orka import OrkaClient
+from lexinform.adapters.rcl_html import RclClient, RclPageError
+from lexinform.adapters.sejm_api import SejmApiClient, SejmApiError
+from lexinform.adapters.senat_html import SenateClient
 from lexinform.adapters.telegram import TelegramBotClient
-from lexinform.errors import SejmApiUnavailableError, TelegramUnavailableError
+from lexinform.adapters.wykaz_csv import REGISTER_PATH, WykazClient
+from lexinform.errors import (
+    OrkaUnreachableError,
+    RclUnavailableError,
+    SejmApiUnavailableError,
+    SenateUnavailableError,
+    TelegramUnavailableError,
+    WykazUnavailableError,
+)
 
 Handler = Callable[[httpx.Request], httpx.Response]
+
+
+@pytest.mark.parametrize("source", ["sejm", "rcl", "senate", "wykaz", "orka"])
+@pytest.mark.parametrize("failure", ["transport", "429", "500", "404"])
+@pytest.mark.parametrize("retries", [0, 2])
+def test_source_retry_contract(source: str, failure: str, retries: int) -> None:
+    calls: list[str] = []
+    responses: list[httpx.Response] = []
+    delays: list[float] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if source == "wykaz" and request.url.path == REGISTER_PATH:
+            return httpx.Response(200, text="register")
+        calls.append(request.url.path)
+        if failure == "transport":
+            raise httpx.ConnectError("offline")
+        response = httpx.Response(int(failure), content=b"unavailable")
+        responses.append(response)
+        return response
+
+    transport = httpx.MockTransport(handler)
+    read: Callable[[], object]
+    close: Callable[[], None]
+    error: type[RuntimeError]
+    if source == "sejm":
+        sejm = SejmApiClient(transport=transport, max_retries=retries, sleep=delays.append)
+        read, close = lambda: sejm.get_process(10, "1"), sejm.close
+        error = SejmApiError if failure == "404" else SejmApiUnavailableError
+    elif source == "rcl":
+        rcl = RclClient(transport=transport, max_retries=retries, sleep=delays.append)
+        read, close = lambda: rcl.get_project(1), rcl.close
+        error = RclPageError if failure == "404" else RclUnavailableError
+    elif source == "senate":
+        senate = SenateClient(transport=transport, max_retries=retries, sleep=delays.append)
+        read, close = lambda: senate.read_act("https://example.test/act"), senate.close
+        error = SenateUnavailableError
+    elif source == "wykaz":
+        wykaz = WykazClient(transport=transport, max_retries=retries, sleep=delays.append)
+        read, close = wykaz.entries, wykaz.close
+        error = WykazUnavailableError
+    else:
+        orka = OrkaClient(transport=transport, max_retries=retries, sleep=delays.append)
+        read, close = lambda: orka.download("https://example.test/file"), orka.close
+        error = OrkaUnreachableError
+    try:
+        with pytest.raises(error):
+            read()
+        repeated = 0 if failure == "404" else retries
+        assert len(calls) == repeated + 1
+        assert delays == ([1.0, 2.0] if repeated else [])
+        assert all(response.is_closed for response in responses)
+    finally:
+        close()
 
 
 def _sejm(handler: Handler) -> SejmApiClient:

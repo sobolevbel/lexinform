@@ -20,6 +20,7 @@ from zoneinfo import ZoneInfo
 import httpx2 as httpx
 
 from lexinform.adapters.browser_identity import BROWSER_USER_AGENT
+from lexinform.adapters.retries import backoff_delay
 from lexinform.adapters.streams import read_bounded
 from lexinform.errors import SejmApiUnavailableError
 from lexinform.models import (
@@ -304,7 +305,7 @@ class SejmApiClient:
             return response
 
     def _wait(self, attempt: int, reason: str) -> None:
-        delay = self._backoff * (2 ** (attempt - 1))
+        delay = backoff_delay(self._backoff, attempt)
         log.warning("Sejm API retry %d in %.1fs (%s)", attempt, delay, reason)
         self._sleep(delay)
 
