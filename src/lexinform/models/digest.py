@@ -141,9 +141,7 @@ class WeekFigures(BaseModel):
                 for r in reports
             ),
             filtered=(
-                len(rejected)
-                if all(r.prefilter_rejected is not None and not r.errors for r in reports)
-                else None
+                len(rejected) if all(r.prefilter_rejected is not None for r in reports) else None
             ),
         )
 

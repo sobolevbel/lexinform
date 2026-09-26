@@ -1302,24 +1302,13 @@ class MessageFormatter:
         tail = [self._month_block(week.month), self._support_block(), esc(lb.tag_digest)]
         head_blocks = [head, DIGEST_DRAFT_NOTE] if draft else [head]
         figures = week.figures
-        head_blocks.append(
-            "\n".join(
-                [
-                    f"<b>{esc(lb.digest_figures)}</b>",
-                    esc(
-                        lb.digest_found.format(figures.discovered if figures else lb.digest_no_data)
-                    ),
-                    esc(
-                        lb.digest_filtered.format(
-                            figures.filtered
-                            if figures is not None and figures.filtered is not None
-                            else lb.digest_no_data
-                        )
-                    ),
-                    esc(lb.digest_published.format(len(week.cards))),
-                ]
-            )
-        )
+        figure_lines = [f"<b>{esc(lb.digest_figures)}</b>"]
+        if figures is not None:
+            figure_lines.append(esc(lb.digest_found.format(figures.discovered)))
+            if figures.filtered is not None:
+                figure_lines.append(esc(lb.digest_filtered.format(figures.filtered)))
+        figure_lines.append(esc(lb.digest_published.format(len(week.cards))))
+        head_blocks.append("\n".join(figure_lines))
         return RenderedMessage(text=self._assemble(head_blocks, flexible=body, tail=tail))
 
     def _digest_block[T](self, title: str, items: Sequence[T], row: Callable[[T], str]) -> str:

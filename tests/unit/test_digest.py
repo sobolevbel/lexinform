@@ -117,10 +117,39 @@ def test_weekly_filtering_counts_decisions_once_and_keeps_discovery_independent(
     assert figures.filtered == 2
 
 
-def test_legacy_or_failed_reports_do_not_imply_zero_filtering() -> None:
+def test_legacy_reports_do_not_imply_zero_filtering() -> None:
     assert WeekFigures.of([_report()]).filtered is None
-    failed = _report().model_copy(update={"prefilter_rejected": [], "errors": ["outage"]})
-    assert WeekFigures.of([failed]).filtered is None
+
+
+def test_run_errors_do_not_hide_recorded_filtering_decisions() -> None:
+    failed = _report().model_copy(
+        update={"prefilter_rejected": ["10/1"], "errors": ["Telegram outage"]}
+    )
+    assert WeekFigures.of([failed]).filtered == 1
+
+
+@pytest.mark.parametrize("draft", [False, True])
+@pytest.mark.parametrize("filtered", [None, 0, 2])
+def test_digest_omits_unknown_filtering_but_shows_known_counts(
+    draft: bool, filtered: int | None
+) -> None:
+    week = Digest(
+        ref="2026-W37",
+        since=dt.date(2026, 9, 7),
+        until=dt.date(2026, 9, 13),
+        figures=WeekFigures(discovered=97, filtered=filtered),
+        cards=(_entry("3039"),),
+    )
+
+    text = MessageFormatter("ru").digest(week, draft=draft).text
+
+    assert "Найдено новых записей о законопроектах: 97" in text
+    assert "Опубликовано новых разборов: 1" in text
+    assert "нет полных данных" not in text
+    if filtered is None:
+        assert "Отсеяно при проверке релевантности" not in text
+    else:
+        assert f"Отсеяно при проверке релевантности: {filtered}" in text
 
 
 def test_the_digest_names_the_week_its_cards_and_its_tag() -> None:
@@ -138,6 +167,9 @@ def test_the_digest_names_the_week_its_cards_and_its_tag() -> None:
     assert '<a href="https://t.me/lexinform/101">druk 3039</a>' in text
     assert "🟠 4/5" in text
     assert text.endswith("#дайджест")
+    assert "нет полных данных" not in text
+    assert "Найдено новых записей" not in text
+    assert "Отсеяно при проверке релевантности" not in text
 
 
 def test_only_the_draft_carries_the_button_note() -> None:
