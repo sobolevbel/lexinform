@@ -10,6 +10,9 @@ INSTALLED_APPS = [
     "lexinform_web.accounts",
     "lexinform_web.editorial",
     "lexinform_web.operations",
+    "allauth",
+    "allauth.account",
+    "allauth.mfa",
     "wagtail.contrib.settings",
     "wagtail.contrib.redirects",
     "wagtail.contrib.sitemaps",
@@ -40,6 +43,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "lexinform_web.accounts.middleware.StaffMFAMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "wagtail.contrib.redirects.middleware.RedirectMiddleware",
@@ -83,6 +88,21 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTH_USER_MODEL = "accounts.User"
+AUTHENTICATION_BACKENDS = ["allauth.account.auth_backends.AuthenticationBackend"]
+ACCOUNT_ADAPTER = "lexinform_web.accounts.adapters.StaffAccountAdapter"
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_LOGIN_ON_PASSWORD_RESET = False
+ACCOUNT_REAUTHENTICATION_REQUIRED = True
+MFA_SUPPORTED_TYPES = ["totp", "recovery_codes"]
+MFA_TOTP_ISSUER = "lexinform"
+MFA_ADAPTER = "lexinform_web.accounts.adapters.StaffMFAAdapter"
+LOGIN_URL = "account_login"
+LOGIN_REDIRECT_URL = "/admin/"
+LOGOUT_REDIRECT_URL = "account_login"
+WAGTAILADMIN_LOGIN_URL = "/accounts/login/"
+STAFF_MFA_MAX_AGE_SECONDS = 12 * 60 * 60
 
 LANGUAGE_CODE = "pl"
 LANGUAGES = list(SUPPORTED_LANGUAGES)

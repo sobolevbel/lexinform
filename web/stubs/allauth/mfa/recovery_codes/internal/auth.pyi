@@ -1,0 +1,6 @@
+from django.contrib.auth.base_user import AbstractBaseUser
+
+class RecoveryCodes:
+    @classmethod
+    def activate(cls, user: AbstractBaseUser) -> RecoveryCodes: ...
+    def get_unused_codes(self) -> list[str]: ...

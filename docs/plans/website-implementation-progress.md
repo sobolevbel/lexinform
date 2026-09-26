@@ -8,7 +8,7 @@ when its acceptance result and checks are recorded here.
 
 - Started: 2026-09-16
 - Active task: WEB-02b — complex dependency spike
-- Next task: WEB-03 — identity model and import contract
+- Next task: WEB-02b.2 — database worker and recovery
 - Release target: A — public library in five languages
 - Last code review: 2026-09-26, local commit `6cd680d`; no production verification
 - Remaining implementation slices: [task list](../website/tasks.md)
@@ -31,7 +31,8 @@ when its acceptance result and checks are recorded here.
 | --- | --- | --- |
 | WEB-01 | Complete | Pinned state audited; launch corpus and v1 audit fixture recorded |
 | WEB-02a | Complete | Workspace, Django/Wagtail skeleton, PostgreSQL and first User migration |
-| WEB-02b | In progress | Editorial revision/translation spike complete; MFA and task worker remain |
+| WEB-02b | In progress | Editorial revision/translation and staff MFA complete; task worker remains |
+| WEB-02b.1 | Complete | Allauth email login, mandatory TOTP/recovery, protected Wagtail and PostgreSQL scenarios |
 | WEB-03 | Not started | — |
 | WEB-04a | Not started | — |
 | WEB-04b | Not started | — |
@@ -48,6 +49,28 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-26 — WEB-02b.1: staff login and MFA
+
+Implemented on `feat/website-implementation`. Staff use one allauth email/password flow;
+reader signup is closed and email verification is mandatory. Wagtail's legacy login,
+logout and password-reset routes redirect to allauth. The whole admin prefix, including
+preview, chooser and uploads, requires an active staff account and a recent MFA record
+for an authenticator still belonging to that user. The proof expires after 12 hours.
+An existing password-only session must enroll TOTP or reauthenticate. Self-service TOTP
+removal is disabled; recovery codes remain available and are single-use. Password reset
+does not remove MFA or automatically log the user in. Auth/admin responses use `no-store`.
+
+Local and test mail use Django 6.1 `MAILERS`; no deprecated `EMAIL_BACKEND` setting was
+added. Upstream allauth boundaries have narrow stubs; strict mypy remains enabled.
+PostgreSQL tests cover first enrollment, invalid code, recovery reuse, password reset,
+expired proof, removed device, nonstaff, superuser, editor permissions, CSRF and unsafe
+redirects. Real Wagtail preview/chooser/upload forms are reachable only after MFA.
+
+Checks: 38 web tests pass, strict web mypy passes. The commit gate also runs Django
+checks/migration drift, web lint, bot tests/types/lint/format and the documentation checker.
+This is local verification. Production SMTP, shared authentication rate-limit/replay cache,
+TLS and secret management remain part of WEB-05; no production authentication was deployed.
 
 ### 2026-09-26 — plan revalidation against the local repository
 
