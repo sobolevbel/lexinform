@@ -19,6 +19,7 @@ scans), `docs/rcl-scraping.md` (RCL's markup and files, the wykaz CSV, the probe
 
 ## Working rules
 
+- Tests marked `local_http` are excluded from the default gate; run `make test-local-http` only when a change needs CLI coverage through the local HTTP server.
 - Python 3.14, `uv`. `uv run pytest -q && uv run mypy && uv run ruff check src tests` and `uv run
   ruff format src tests` — all clean before a commit. mypy is strict over `src` and `tests`: no
   `type: ignore`, no local imports, tests fully typed. An `assert` that narrows a type states an

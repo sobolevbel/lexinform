@@ -8,7 +8,7 @@ DOCS = $(RUN) --group docs
 BOT_PATHS = src tests tools
 WEB_PATHS = web/src web/tests web/stubs
 
-.PHONY: help sync test test-unit test-scenario test-integration coverage lint typecheck format format-check check docs docs-build docs-check web-sync web-test web-lint web-typecheck web-format web-check web-serve
+.PHONY: help sync test test-unit test-scenario test-local-http test-integration coverage lint typecheck format format-check check docs docs-build docs-check web-sync web-test web-lint web-typecheck web-format web-check web-serve
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  make %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -25,6 +25,9 @@ test-unit: ## Run bot unit tests
 
 test-scenario: ## Run bot pipeline scenarios
 	$(RUN) pytest tests/scenario $(ARGS)
+
+test-local-http: ## Run optional CLI tests with a local HTTP server
+	$(RUN) pytest -m local_http $(ARGS)
 
 test-integration: ## Run live integration tests (network required)
 	$(RUN) pytest -m integration $(ARGS)

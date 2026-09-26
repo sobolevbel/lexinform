@@ -15,6 +15,7 @@ For documentation work, read `docs/index.md` for the local portal and `docs/auth
 
 - Python 3.14; use `uv`.
 - Before committing, run `uv run pytest -q && uv run mypy && uv run ruff check src tests`, then `uv run ruff format src tests`. Mypy is strict: no `type: ignore`, no local imports, and fully typed tests.
+- Tests marked `local_http` are excluded from the default gate; run `make test-local-http` only when a change needs CLI coverage through the local HTTP server.
 - Comments and docstrings state only a non-obvious external fact or invariant; keep them to one line. Commit messages are English. Commit each completed, coherent part; do not push unless asked or add `Co-Authored-By` trailers.
 - `.env` contains real secrets: do not read or print it. Keep `.env.example` aligned when adding settings.
 - Reader-facing wording is Russian (labels live in `i18n.py`); retain Polish legal titles and abbreviations unchanged.

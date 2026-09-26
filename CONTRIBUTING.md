@@ -48,6 +48,7 @@ make coverage                 # tests with coverage
 make lint                     # Ruff, including tools/
 make typecheck                # strict mypy
 make test-integration         # live external services; requires network
+make test-local-http          # optional CLI tests with a local HTTP server
 make docs                     # documentation preview on port 8001
 make docs-check               # strict build + link and content checks
 ```
@@ -188,11 +189,17 @@ Rules that keep this honest:
 ## Tests
 
 ```bash
-uv run pytest                          # unit + scenario (default: -m 'not integration')
+uv run pytest                          # unit + scenario, excluding integration and local_http
+uv run pytest -m local_http             # optional CLI tests with a local HTTP server
 uv run pytest -m integration           # live external systems, network
 uv run pytest tests/scenario/test_tracking.py -k closure -vv
 uv run pytest --cov --cov-report=term-missing
 ```
+
+Tests marked `local_http` are excluded from the default run, coverage and CI. Run
+`make test-local-http` only when a change needs CLI coverage through the local HTTP server
+(for example, CLI/container wiring or HTTP configuration); ordinary formatting and business
+logic changes do not require them. CLI tests that do not start a server remain in the default run.
 
 Layout:
 

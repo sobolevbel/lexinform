@@ -85,9 +85,10 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-m 'not integration' -q"
+addopts = "-m 'not integration and not local_http' -q"
 markers = [
   "integration: tests that call a live external system (network)",
+  "local_http: tests that start a local HTTP server (run on demand)",
 ]
 
 [tool.coverage.run]

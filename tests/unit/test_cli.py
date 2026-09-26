@@ -124,6 +124,7 @@ def db(tmp_path: Path, process_3039: ProcessDetail) -> Path:
 
 
 @pytest.mark.parametrize("command", ["analyze", "preview"])
+@pytest.mark.local_http
 def test_analysis_and_preview_of_linked_entry_use_print(db: Path, api: str, command: str) -> None:
     repo = SqliteBillRepository(db)
     source = submission().number
@@ -339,6 +340,7 @@ def test_db_init_creates_the_schema_at_the_current_version(tmp_path: Path) -> No
     assert version == SCHEMA_VERSION
 
 
+@pytest.mark.local_http
 def test_run_over_a_quiet_sejm_reports_it_and_changes_nothing(db: Path, api: str) -> None:
     """The daily job end to end: the container, all five phases and the report, against an API
     that answers every listing with nothing. `--dry-run` rolls the database back, so a run that
@@ -366,6 +368,7 @@ def test_a_run_that_cannot_even_start_says_why_instead_of_raising(tmp_path: Path
     assert "startup failed: OperationalError" in result.output
 
 
+@pytest.mark.local_http
 def test_scan_prints_the_counters_and_the_queue_it_leaves_behind(db: Path, api: str) -> None:
     result = runner.invoke(app, ["scan", "--since", "2026-09-01"], env=_env(db, api=api))
 
@@ -374,6 +377,7 @@ def test_scan_prints_the_counters_and_the_queue_it_leaves_behind(db: Path, api: 
     assert "rcl_new=0 rcl_hits=0" in result.output  # RCL off: the line still accounts for it
 
 
+@pytest.mark.local_http
 def test_track_reports_what_it_posted(db: Path, api: str) -> None:
     result = runner.invoke(app, ["track", "--dry-run"], env=_env(db, api=api))
 
@@ -381,6 +385,7 @@ def test_track_reports_what_it_posted(db: Path, api: str) -> None:
     assert "updates=0 errors=[]" in result.output
 
 
+@pytest.mark.local_http
 def test_collect_batches_reports_what_it_finished(db: Path, api: str) -> None:
     result = runner.invoke(app, ["collect-batches", "--dry-run"], env=_env(db, api=api))
 
@@ -388,6 +393,7 @@ def test_collect_batches_reports_what_it_finished(db: Path, api: str) -> None:
     assert "analyzed=0 published=0 updates=0 errors=[]" in result.output
 
 
+@pytest.mark.local_http
 def test_collect_batches_also_answers_the_inbox(db: Path, api: str, tmp_path: Path) -> None:
     # A batch-ready run can replace a pending inbox run in the workflow's concurrency group.
     inbox = tmp_path / "inbox"
@@ -417,6 +423,7 @@ def test_collect_batches_also_answers_the_inbox(db: Path, api: str, tmp_path: Pa
     assert list(inbox.iterdir()) == []
 
 
+@pytest.mark.local_http
 def test_poll_batches_does_nothing_when_batching_is_off(db: Path, api: str) -> None:
     result = runner.invoke(app, ["poll-batches"], env=_env(db, api=api))
 
@@ -424,6 +431,7 @@ def test_poll_batches_does_nothing_when_batching_is_off(db: Path, api: str) -> N
     assert "batching is off" in result.output
 
 
+@pytest.mark.local_http
 def test_poll_batches_needs_a_github_repo_and_token(db: Path, api: str) -> None:
     env = {**_env(db, api=api), "LEXINFORM_LLM_BATCH_ENABLED": "true"}
 
@@ -534,6 +542,7 @@ def _raise(error: Exception) -> Callable[..., None]:
     return fail
 
 
+@pytest.mark.local_http
 def test_poll_batches_asks_github_to_collect_a_finished_batch(
     db: Path, api: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -557,6 +566,7 @@ def test_poll_batches_asks_github_to_collect_a_finished_batch(
     assert dispatched == ["batch-ready"]
 
 
+@pytest.mark.local_http
 def test_poll_batches_asks_for_an_anthropic_batch_that_ended_long_ago(
     db: Path, api: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -611,6 +621,7 @@ def _fake_finished_openai_batch(
 
 
 @pytest.mark.parametrize(("minutes_ago", "asked"), [(5, True), (180, True)])
+@pytest.mark.local_http
 def test_poll_batches_collects_owned_openai_batch_regardless_of_age(
     db: Path, api: str, monkeypatch: pytest.MonkeyPatch, minutes_ago: int, asked: bool
 ) -> None:
@@ -659,6 +670,7 @@ def test_poll_batches_checks_original_provider_and_terminal_failures(
     assert dispatched == ([] if status == "in_progress" else ["batch-ready"])
 
 
+@pytest.mark.local_http
 def test_poll_batches_says_so_when_the_provider_refuses(
     db: Path, api: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -681,6 +693,7 @@ def test_poll_batches_says_so_when_the_provider_refuses(
     assert "could not ask batch provider" in result.output
 
 
+@pytest.mark.local_http
 def test_poll_batches_says_so_when_github_refuses_instead_of_crashing(
     db: Path, api: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -706,6 +719,7 @@ def test_poll_batches_says_so_when_github_refuses_instead_of_crashing(
     assert result.exception is None or isinstance(result.exception, SystemExit)
 
 
+@pytest.mark.local_http
 def test_reprefilter_has_nothing_to_do_when_no_bill_was_skipped(db: Path, api: str) -> None:
     result = runner.invoke(app, ["reprefilter"], env=_env(db, api=api))
 
@@ -713,6 +727,7 @@ def test_reprefilter_has_nothing_to_do_when_no_bill_was_skipped(db: Path, api: s
     assert "scanned=0 accepted=0" in result.output
 
 
+@pytest.mark.local_http
 def test_reprefilter_survives_a_log_channel_it_cannot_reach(db: Path, api: str) -> None:
     """The report is the last thing the backfill does and its work is already written down, so a
     notifier that cannot even be built must not fail it. On 15 Sept 2026 one did, and 36 minutes
@@ -727,6 +742,7 @@ def test_reprefilter_survives_a_log_channel_it_cannot_reach(db: Path, api: str) 
     assert "scanned=0 accepted=0" in result.output
 
 
+@pytest.mark.local_http
 def test_reprefilter_leaves_a_bill_the_operator_silenced_alone(db: Path, api: str) -> None:
     """`/skip` writes `SKIPPED_PREFILTER` like a keyword miss, so a backfill scanned it and put
     it back in the analysis queue — druki 1039 and 1040 on the state of 15 Sept 2026, which is
@@ -783,6 +799,7 @@ def _backfilled(path: Path, process_3039: ProcessDetail, api: str, workers: str)
     return said, stored
 
 
+@pytest.mark.local_http
 def test_reprefilter_gives_the_same_result_on_four_workers_as_on_one(
     tmp_path: Path, process_3039: ProcessDetail, api: str
 ) -> None:
@@ -807,6 +824,7 @@ def test_reprefilter_keeps_what_it_scanned_when_the_source_goes_down(
     assert "scanned=" in result.output
 
 
+@pytest.mark.local_http
 def test_show_prints_the_process_its_stages_and_what_the_database_knows(db: Path, api: str) -> None:
     result = runner.invoke(app, ["show", "3039"], env=_env(db, api=api))
 
@@ -861,6 +879,7 @@ def test_show_of_a_plan_nobody_knows_is_a_message_and_not_a_traceback(db: Path) 
     assert not isinstance(result.exception, BillNotFoundError)
 
 
+@pytest.mark.local_http
 def test_preview_renders_the_card_into_the_console_without_sending_anything(
     db: Path, api: str
 ) -> None:
