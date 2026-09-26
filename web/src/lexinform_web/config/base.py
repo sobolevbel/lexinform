@@ -10,6 +10,7 @@ INSTALLED_APPS = [
     "lexinform_web.accounts",
     "lexinform_web.editorial",
     "lexinform_web.operations",
+    "django_tasks_db",
     "allauth",
     "allauth.account",
     "allauth.mfa",
@@ -103,6 +104,8 @@ LOGIN_REDIRECT_URL = "/admin/"
 LOGOUT_REDIRECT_URL = "account_login"
 WAGTAILADMIN_LOGIN_URL = "/accounts/login/"
 STAFF_MFA_MAX_AGE_SECONDS = 12 * 60 * 60
+TASKS = {"default": {"BACKEND": "django_tasks_db.DatabaseBackend", "QUEUES": ["default"]}}
+WORKER_LOCK_PATH = os.environ.get("LEXINFORM_WEB_WORKER_LOCK_PATH", str(BASE_DIR / ".worker.lock"))
 
 LANGUAGE_CODE = "pl"
 LANGUAGES = list(SUPPORTED_LANGUAGES)

@@ -25,3 +25,5 @@ tmp/
 # settings under .claude/ stay tracked.
 .claude/worktrees/
 .claude/settings.local.json
+# Shared by the local worker and recovery command; never unlink while running.
+web/.worker.lock

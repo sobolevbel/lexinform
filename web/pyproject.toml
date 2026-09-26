@@ -6,6 +6,7 @@ requires-python = ">=3.14"
 dependencies = [
   "Django>=6.1,<6.2",
   "django-allauth[mfa]>=65.13,<66",
+  "django-tasks-db>=0.13.0",
   "lexinform",
   "psycopg[binary]>=3.2,<4",
   "wagtail>=8.0,<8.1",
