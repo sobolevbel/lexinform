@@ -1343,7 +1343,7 @@ class MessageFormatter:
         left = ""
         if window.deadline is not None:
             days = (window.deadline - self._today()).days
-            left = f" · {self.fmt_date(window.deadline)}{self._countdown(days)}"
+            left = f" · {self.fmt_date(window.deadline)} · {self._countdown(days)}"
         title = esc(_clip(window.title, DIGEST_TITLE_CHARS))
         return f"• {self._digest_ref(window)} — {title}{left}"
 
