@@ -140,9 +140,11 @@ class DigestService:
             return DigestResult(note="no technical channel: a digest is never sent unread")
         if self.today().weekday() != self._weekday:
             return DigestResult(note="not the digest's day")
-        return self.draft(self.current_ref(), current_report=current_report)
+        return self.draft(self.current_ref(), current_report=current_report, repeat=False)
 
-    def draft(self, ref: str, *, current_report: RunReport | None = None) -> DigestResult:
+    def draft(
+        self, ref: str, *, current_report: RunReport | None = None, repeat: bool = True
+    ) -> DigestResult:
         """Post the week's digest to the technical channel with the button that publishes it."""
         drafter = self._drafter
         if drafter is None:
@@ -150,13 +152,24 @@ class DigestService:
         existing = self._repo.get_publication(
             DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, self._draft_channel_id, ref=ref
         )
-        if existing is not None and existing.status is PublicationStatus.SENT:
+        if not repeat and existing is not None and existing.status is PublicationStatus.SENT:
             return DigestResult(ref=ref, message_id=existing.message_id, note="drafted already")
+        delivery_ref = ref
+        while existing is not None and existing.status is PublicationStatus.SENT:
+            delivery_ref = f"{ref}:draft:{existing.id}"
+            existing = self._repo.get_publication(
+                DIGEST_TERM,
+                DIGEST_NUMBER,
+                PublicationKind.DIGEST,
+                self._draft_channel_id,
+                ref=delivery_ref,
+            )
         week = self.build(ref, current_report=current_report)
         message_id = self._send(
             self._draft_channel_id,
             week,
             lambda: drafter.publish_digest(week, approve=self._approve).message_id,
+            delivery_ref=delivery_ref,
         )
         if message_id is None:
             return DigestResult(ref=ref, failed=True, note=f"{ref} was not posted, see the log")
@@ -315,10 +328,18 @@ class DigestService:
         """The start of a Warsaw day, in the UTC the `sent_at` column holds."""
         return dt.datetime.combine(day, dt.time(), tzinfo=self._tz).astimezone(dt.UTC)
 
-    def _send(self, channel_id: str, week: Digest, post: Callable[[], int]) -> int | None:
+    def _send(
+        self,
+        channel_id: str,
+        week: Digest,
+        post: Callable[[], int],
+        *,
+        delivery_ref: str | None = None,
+    ) -> int | None:
         """Record the row before sending it, and the outcome after; the message id on success."""
+        ref = delivery_ref or week.ref
         existing = self._repo.get_publication(
-            DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, channel_id, ref=week.ref
+            DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, channel_id, ref=ref
         )
         if existing is not None and existing.status in (
             PublicationStatus.PENDING,
@@ -339,7 +360,7 @@ class DigestService:
                 kind=PublicationKind.DIGEST,
                 status=PublicationStatus.PENDING,
                 channel_id=channel_id,
-                ref=week.ref,
+                ref=ref,
                 created_at=self._clock.now(),
             )
         )

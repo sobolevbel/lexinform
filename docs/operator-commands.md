@@ -259,7 +259,10 @@ spinning — rather than with a "queued" post, a press having no message of its 
 under. The week is built again from the database at the moment it is published, so a draft left
 standing for a day cannot go stale, and a second press changes nothing: the command row is
 answered rather than executed again, and the digest's publication row is unique per week and
-channel. `/digest` on any other day drafts that week all the same, and spends nothing either way
+reader channel. Each new `/digest` request rebuilds and sends a fresh draft to the technical
+channel, even for a week already drafted or published. Automatic runs draft each week only once.
+Pending, uncertain or dismissed draft deliveries are not resent by `/digest`.
+`/digest` on any other day drafts that week all the same, and spends nothing either way
 — the digest never asks the model.
 
 An outage of the Sejm API, RCL, the model or Telegram ends the phase and leaves the command for

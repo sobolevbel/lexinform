@@ -202,6 +202,56 @@ def test_the_button_publishes_the_week_to_the_readers_channel() -> None:
     assert len(_drafts(w)) == 2  # the draft, and the copy the readers got
 
 
+def test_manual_digest_repeats_drafts_even_after_publication() -> None:
+    w = World()
+    ref = "2026-W36"
+    for update_id, command in enumerate(
+        (
+            f"/digest ref={ref}",
+            f"/digest publish ref={ref}",
+            f"/digest ref={ref}",
+            f"/digest ref={ref}",
+        ),
+        start=1,
+    ):
+        w.command(command, update_id=update_id)
+        report = _commands_only(w)
+        assert report.commands_failed == 0
+
+    drafts = w.repo.list_publications_between(
+        w.container.drafts_channel_id(),
+        since=w.clock.now() - dt.timedelta(days=1),
+        until=w.clock.now() + dt.timedelta(days=1),
+    )
+    drafts = [p for p in drafts if p.kind is PublicationKind.DIGEST]
+    assert len(drafts) == 3
+    assert len({p.id for p in drafts}) == 3
+    assert len({p.message_id for p in drafts}) == 3
+    assert len(_drafts(w)) == 4
+
+
+@pytest.mark.parametrize(
+    "status", [PublicationStatus.PENDING, PublicationStatus.UNKNOWN, PublicationStatus.DISMISSED]
+)
+def test_repeated_draft_cannot_bypass_unresolved_delivery(status: PublicationStatus) -> None:
+    w = World()
+    service = w.container.digest_service(dry_run=False)
+    assert service is not None
+    ref = "2026-W36"
+    service.draft(ref)
+    service.draft(ref)
+    publication = w.repo.get_publication(
+        DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, w.container.drafts_channel_id()
+    )
+    assert publication is not None and publication.id is not None
+    w.repo.mark_publication(publication.id, status, count_attempt=False)
+
+    result = service.draft(ref)
+
+    assert result.failed
+    assert len(_drafts(w)) == 2
+
+
 def test_the_same_week_is_never_published_twice() -> None:
     w = World()
     w.add_bill("3039", TITLE)
