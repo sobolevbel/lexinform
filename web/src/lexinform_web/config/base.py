@@ -10,6 +10,7 @@ INSTALLED_APPS = [
     "lexinform_web.accounts",
     "lexinform_web.editorial",
     "lexinform_web.operations",
+    "lexinform_web.matters",
     "django_tasks_db",
     "allauth",
     "allauth.account",

@@ -7,8 +7,8 @@ when its acceptance result and checks are recorded here.
 ## Current position
 
 - Started: 2026-09-16
-- Active task: WEB-03.1 — permanent matter identities
-- Next task: WEB-03.2 — versioned import contract
+- Active task: WEB-03.2 — versioned import contract
+- Next task: WEB-06.1 — validated snapshot acquisition
 - Release target: A — public library in five languages
 - Last code review: 2026-09-26, local commit `6cd680d`; no production verification
 - Remaining implementation slices: [task list](../website/tasks.md)
@@ -35,7 +35,8 @@ when its acceptance result and checks are recorded here.
 | WEB-02b.1 | Complete | Allauth email login, mandatory TOTP/recovery, protected Wagtail and PostgreSQL scenarios |
 | WEB-02b.2 | Complete | Transactional enqueue, SIGTERM/SIGKILL, fenced explicit probe recovery, retry and retention |
 | WEB-01r | Complete | Pinned v34 state, 265 validated bills, 113 candidates; v2 fixture and reproducible audit |
-| WEB-03 | Not started | — |
+| WEB-03 | In progress | Permanent identities implemented; versioned import contract remains |
+| WEB-03.1 | Complete | UUIDs, scoped natural keys, relations, audited merge/split and stable URL resolution |
 | WEB-04a | Not started | — |
 | WEB-04b | Not started | — |
 | WEB-05a | Not started | — |
@@ -51,6 +52,31 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-03.1: permanent identities and editorial reconciliation
+
+Added PostgreSQL Matter, SourceIdentity, MatterRelation, MatterDecision and PublicAlias models.
+Sejm identities require a term; RCL stays global and RPW retains the full number/year. Wykaz
+display numbers alone are rejected; mapping the state evidence to a stable register entry key
+is part of WEB-03.2. Repeating discovery returns the same UUID. An explicit source lifecycle
+can attach Wykaz/RCL/RPW/druk identities to one matter; an identity already owned elsewhere
+requires an audited merge. Joint/alternative relations preserve separate initiatives and
+continuation can link a new submission after rollover.
+
+Merge/split require a separate `reconcile_matter` permission, a reason and a supplied Clock.
+They preserve original rows/UUIDs, record actor/time/before/after atomically, flatten merge
+targets and allow restoration of an earlier public UUID. PostgreSQL natural-key constraints
+and a transaction advisory lock protect concurrent discovery and opposite merges. New matters
+and new split targets start as drafts; merging does not publish or overwrite visibility.
+Stable `/b/<uuid>` and stored legacy paths resolve through the same selector after merge/split.
+Public HTTP routing and localized card rendering remain WEB-07b.1.
+
+Thirteen PostgreSQL scenarios cover the source lifecycle, rollover, joint groups, collisions,
+permissions, old paths, rollback, partial-restore rejection, four concurrent discoveries and
+two opposite merges. The root package now exposes its existing types through `py.typed`,
+allowing web to reuse the shared Clock protocol without duplicate stubs or relaxed mypy.
+Verification: all 62 web tests, strict web/bot typing, full default bot tests, Ruff/format,
+Django checks/migration drift and strict documentation build/link checks pass locally.
 
 ### 2026-09-27 — WEB-01r: current pinned corpus audit
 

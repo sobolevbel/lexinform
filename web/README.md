@@ -104,3 +104,17 @@ is required and must point to **one persistent shared file on the single host**,
 at the same path in old/new worker and recovery containers. Do not delete/replace the file
 or put it inside a release image. This lock does not coordinate multiple hosts; scaling to
 multiple hosts requires a different fencing protocol before enabling additional workers.
+
+## Permanent matter identities
+
+`matters.services.identify` persists a normalized `SourceKey` and returns the existing Matter
+on repeat. An explicit `continues` UUID adds another lifecycle identity; it does not silently
+merge an identity already assigned elsewhere. `relate` records joint, alternative or later
+continuation relationships without merging initiatives. Use these services for writes so
+all identity-graph mutations share the PostgreSQL transaction advisory lock.
+
+Editorial `merge` and `split` require an active staff user with `matters.reconcile_matter`,
+a nonempty reason and a Clock. They retain original UUIDs and append a MatterDecision.
+`split(..., restore_id=...)` can undo a mistaken merge while restoring the old public ID.
+`canonical_matter` and `matter_for_path` resolve existing IDs/legacy paths; they do not decide
+whether a reader may see the result. Public views must still enforce visibility in WEB-07b.
