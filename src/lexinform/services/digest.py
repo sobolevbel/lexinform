@@ -317,6 +317,21 @@ class DigestService:
 
     def _send(self, channel_id: str, week: Digest, post: Callable[[], int]) -> int | None:
         """Record the row before sending it, and the outcome after; the message id on success."""
+        existing = self._repo.get_publication(
+            DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, channel_id, ref=week.ref
+        )
+        if existing is not None and existing.status in (
+            PublicationStatus.PENDING,
+            PublicationStatus.UNKNOWN,
+            PublicationStatus.DISMISSED,
+        ):
+            log.warning(
+                "digest %s not resent: publication %s is %s",
+                week.ref,
+                existing.id,
+                existing.status,
+            )
+            return None
         pub_id = self._repo.create_publication(
             Publication(
                 term=DIGEST_TERM,

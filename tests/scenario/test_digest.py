@@ -3,12 +3,15 @@
 import datetime as dt
 from typing import Any
 
+import pytest
+
 from lexinform.container import Container
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
     DIGEST_NUMBER,
     DIGEST_TERM,
     PublicationKind,
+    PublicationStatus,
     RunMode,
     RunReport,
     iso_week,
@@ -22,6 +25,36 @@ from tests.harness import CHANNEL, COMMITTEE_STAGES, SUPPORT_URL, World, submiss
 TITLE = "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach"
 # The World's clock starts on Monday 2026-09-07; the digest's day is the Sunday that ends it.
 TO_SUNDAY = 6
+
+
+@pytest.mark.parametrize("draft", [False, True])
+@pytest.mark.parametrize(
+    "status", [PublicationStatus.PENDING, PublicationStatus.UNKNOWN, PublicationStatus.DISMISSED]
+)
+def test_digest_never_resends_uncertain_or_dismissed_delivery(
+    draft: bool, status: PublicationStatus
+) -> None:
+    w = World()
+    service = w.container.digest_service(dry_run=False)
+    assert service is not None
+    send = service.draft if draft else service.publish
+    ref = "2026-W36"
+    send(ref)
+    channel = w.container.drafts_channel_id() if draft else CHANNEL
+    publication = w.repo.get_publication(
+        DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, channel, ref=ref
+    )
+    assert publication is not None and publication.id is not None
+    w.repo.mark_publication(publication.id, status, count_attempt=False)
+    before = w.repo.publication_by_id(publication.id)
+    messages = list(w.publisher.texts(PublicationKind.DIGEST))
+    w.repo.restore(w.repo.dump())
+
+    result = send(ref)
+
+    assert not result.published and not result.drafted
+    assert w.publisher.texts(PublicationKind.DIGEST) == messages
+    assert w.repo.publication_by_id(publication.id) == before
 
 
 def _sunday(w: World) -> None:
