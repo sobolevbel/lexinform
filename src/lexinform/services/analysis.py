@@ -16,6 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from lexinform.analysis_records import RecordFactory, UsageFields
 from lexinform.concurrency import fan_out
 from lexinform.errors import (
     BatchNotSubmittedError,
@@ -100,6 +101,21 @@ from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 from lexinform.services.joint import primary_of, revive_prefilter_skips
 
 log = logging.getLogger(__name__)
+
+
+def _batch_records(result: BatchResult, prompt_version: str, now: datetime) -> RecordFactory:
+    return RecordFactory(
+        result.model or "",
+        prompt_version,
+        now,
+        UsageFields(
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            cache_read_input_tokens=result.cache_read_input_tokens,
+            cache_creation_input_tokens=result.cache_creation_input_tokens,
+        ),
+    )
+
 
 _FIT_MARGIN = 0.9
 """How much of the cost limit a shortened text aims at, the rest being the prompt and the schema.
@@ -728,28 +744,16 @@ class AnalysisService:
         self, item: LlmBatchItem, result: BatchResult, meta: DigestItemMeta
     ) -> None:
         now = self._clock.now()
-        data = result.model_dump(exclude={"answer", "custom_id", "error"})
-        data.update(model=result.model or "", prompt_version=meta.prompt_version, created_at=now)
+        records = _batch_records(result, meta.prompt_version, now)
         record: AmendmentsRecord | SupplementRecord | JointRecord | None = None
         if item.call_kind == "amendments" and isinstance(result.answer, Amendments):
-            record = AmendmentsRecord.model_validate(
-                dict(data, amendments=result.answer, source_url="", source_kind=meta.source_kind)
-            )
+            record = records.amendments(result.answer, source_kind=meta.source_kind)
         elif item.call_kind == "supplement" and isinstance(result.answer, DocumentDigest):
-            record = SupplementRecord.model_validate(
-                dict(
-                    data,
-                    digest=result.answer,
-                    number="",
-                    title=meta.title,
-                    source_url="",
-                    source_kind=meta.source_kind,
-                )
+            record = records.supplement(
+                result.answer, title=meta.title, source_kind=meta.source_kind
             )
         elif item.call_kind == "joint" and isinstance(result.answer, JointComparison):
-            record = JointRecord.model_validate(
-                dict(data, comparison=result.answer, compared_with=meta.compared_with)
-            )
+            record = records.joint(result.answer, compared_with=meta.compared_with)
         elif result.error is None:
             result = result.model_copy(update={"error": "batch answer does not match call kind"})
         with self._repo.atomic():
@@ -784,23 +788,22 @@ class AnalysisService:
         assert isinstance(item.meta, BatchItemMeta)
         record = None
         if batch_result.analysis is not None:
-            record = AnalysisRecord(
-                analysis=batch_result.analysis,
-                model=batch_result.model or "",
-                prompt_version=item.meta.prompt_version or batch_result.prompt_version or "",
+            record = _batch_records(
+                batch_result, item.meta.prompt_version or batch_result.prompt_version or "", now
+            ).analysis(
+                batch_result.analysis,
                 input_chars=item.meta.input_chars,
                 truncated=item.meta.truncated,
                 text_source=item.meta.text_source,
-                created_at=now,
-                input_tokens=batch_result.input_tokens,
-                output_tokens=batch_result.output_tokens,
-                cache_read_input_tokens=batch_result.cache_read_input_tokens,
-                cache_creation_input_tokens=batch_result.cache_creation_input_tokens,
-                source_url=item.meta.source_url,
-                source_kind=item.meta.source_kind,
-                revision=item.meta.revision,
-                text_sha256=item.meta.text_sha256,
-                source_checked_at=now,
+            )
+            record = record.model_copy(
+                update={
+                    "source_url": item.meta.source_url,
+                    "source_kind": item.meta.source_kind,
+                    "revision": item.meta.revision,
+                    "text_sha256": item.meta.text_sha256,
+                    "source_checked_at": now,
+                }
             )
             if active:
                 self._repo.save_analysis_memo(

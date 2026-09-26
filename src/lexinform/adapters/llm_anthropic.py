@@ -26,6 +26,7 @@ from lexinform.adapters.llm_prompts import (
     system_prompt,
     triage_system_prompt,
 )
+from lexinform.analysis_records import RecordFactory, UsageFields
 from lexinform.errors import BatchNotSubmittedError, LlmUnavailableError
 from lexinform.models import (
     Amendments,
@@ -125,18 +126,11 @@ class AnthropicAnalyzer:
             _usage_int(usage, "cache_read_input_tokens") or 0,
             _usage_int(usage, "output_tokens"),
         )
-        return AnalysisRecord(
-            analysis=analysis,
-            model=self._model,
-            prompt_version=PROMPT_VERSION,
+        return self._records(usage).analysis(
+            analysis,
             input_chars=len(ctx.text),
             truncated=ctx.truncated,
             text_source=ctx.text_source,
-            created_at=self._clock(),
-            input_tokens=_usage_int(usage, "input_tokens"),
-            output_tokens=_usage_int(usage, "output_tokens"),
-            cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
-            cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
         )
 
     def count_input_tokens(self, ctx: BillContext) -> int | None:
@@ -183,10 +177,7 @@ class AnthropicAnalyzer:
             triage=triage,
             model=self._triage_model,
             prompt_version=PROMPT_VERSION,
-            input_tokens=_usage_int(usage, "input_tokens"),
-            output_tokens=_usage_int(usage, "output_tokens"),
-            cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
-            cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
+            **_usage_fields(usage),
         )
 
     def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:
@@ -211,18 +202,7 @@ class AnthropicAnalyzer:
             _usage_int(usage, "input_tokens"),
             _usage_int(usage, "output_tokens"),
         )
-        return AmendmentsRecord(
-            amendments=amendments,
-            model=self._model,
-            prompt_version=PROMPT_VERSION,
-            source_url="",  # the caller knows the document
-            source_kind=ctx.source_kind,
-            created_at=self._clock(),
-            input_tokens=_usage_int(usage, "input_tokens"),
-            output_tokens=_usage_int(usage, "output_tokens"),
-            cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
-            cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
-        )
+        return self._records(usage).amendments(amendments, source_kind=ctx.source_kind)
 
     def digest_supplement(self, ctx: SupplementContext) -> SupplementRecord:
         """What a document filed to the print says about the bill; the analysis model, thinking."""
@@ -248,19 +228,8 @@ class AnthropicAnalyzer:
             _usage_int(usage, "input_tokens"),
             _usage_int(usage, "output_tokens"),
         )
-        return SupplementRecord(
-            number="",  # the caller knows which document it handed over
-            title=ctx.document_title,
-            source_kind=ctx.source_kind,
-            source_url="",
-            digest=digest,
-            model=self._model,
-            prompt_version=PROMPT_VERSION,
-            created_at=self._clock(),
-            input_tokens=_usage_int(usage, "input_tokens"),
-            output_tokens=_usage_int(usage, "output_tokens"),
-            cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
-            cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
+        return self._records(usage).supplement(
+            digest, title=ctx.document_title, source_kind=ctx.source_kind
         )
 
     def compare_joint(self, ctx: JointContext) -> JointRecord:
@@ -290,17 +259,13 @@ class AnthropicAnalyzer:
             _usage_int(usage, "input_tokens"),
             _usage_int(usage, "output_tokens"),
         )
-        return JointRecord(
-            comparison=comparison,
+        return self._records(usage).joint(
+            comparison,
             compared_with=[other.number for other in ctx.others],
-            model=self._model,
-            prompt_version=PROMPT_VERSION,
-            created_at=self._clock(),
-            input_tokens=_usage_int(usage, "input_tokens"),
-            output_tokens=_usage_int(usage, "output_tokens"),
-            cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
-            cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
         )
+
+    def _records(self, usage: Any) -> RecordFactory:
+        return RecordFactory(self._model, PROMPT_VERSION, self._clock(), _usage_fields(usage))
 
     def prepare_request(self, request: BatchRequest) -> BatchRequest:
         if request.payload_json is not None:
@@ -529,6 +494,15 @@ def _content(user_prompt: str, scan: ScannedDocument | None) -> list[Any]:
         )
     blocks.append({"type": "text", "text": user_prompt})
     return blocks
+
+
+def _usage_fields(usage: Any) -> UsageFields:
+    return UsageFields(
+        input_tokens=_usage_int(usage, "input_tokens"),
+        output_tokens=_usage_int(usage, "output_tokens"),
+        cache_read_input_tokens=_usage_int(usage, "cache_read_input_tokens"),
+        cache_creation_input_tokens=_usage_int(usage, "cache_creation_input_tokens"),
+    )
 
 
 def _usage_int(usage: Any, field: str) -> int | None:

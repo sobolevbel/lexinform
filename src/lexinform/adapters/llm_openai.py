@@ -37,6 +37,7 @@ from lexinform.adapters.llm_prompts import (
     gpt51_supplement_system_prompt,
     gpt51_system_prompt,
 )
+from lexinform.analysis_records import RecordFactory, UsageFields
 from lexinform.errors import BatchNotSubmittedError, LlmUnavailableError
 from lexinform.models import (
     Amendments,
@@ -201,18 +202,11 @@ class OpenAiAnalyzer:
             usage.cached_tokens or 0,
             usage.output_tokens,
         )
-        return AnalysisRecord(
-            analysis=analysis,
-            model=self._model,
-            prompt_version=PROMPT_VERSION,
+        return self._records(usage).analysis(
+            analysis,
             input_chars=len(ctx.text),
             truncated=ctx.truncated,
             text_source=ctx.text_source,
-            created_at=self._clock(),
-            input_tokens=usage.input_tokens,
-            output_tokens=usage.output_tokens,
-            cache_read_input_tokens=usage.cached_tokens,
-            cache_creation_input_tokens=0,
         )
 
     def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:
@@ -233,18 +227,7 @@ class OpenAiAnalyzer:
             usage.input_tokens,
             usage.output_tokens,
         )
-        return AmendmentsRecord(
-            amendments=amendments,
-            model=self._model,
-            prompt_version=PROMPT_VERSION,
-            source_url="",  # the caller knows the document
-            source_kind=ctx.source_kind,
-            created_at=self._clock(),
-            input_tokens=usage.input_tokens,
-            output_tokens=usage.output_tokens,
-            cache_read_input_tokens=usage.cached_tokens,
-            cache_creation_input_tokens=0,
-        )
+        return self._records(usage).amendments(amendments, source_kind=ctx.source_kind)
 
     def digest_supplement(self, ctx: SupplementContext) -> SupplementRecord:
         digest, usage = self._structured_call(
@@ -265,19 +248,8 @@ class OpenAiAnalyzer:
             usage.input_tokens,
             usage.output_tokens,
         )
-        return SupplementRecord(
-            number="",  # the caller knows which document it handed over
-            title=ctx.document_title,
-            source_kind=ctx.source_kind,
-            source_url="",
-            digest=digest,
-            model=self._model,
-            prompt_version=PROMPT_VERSION,
-            created_at=self._clock(),
-            input_tokens=usage.input_tokens,
-            output_tokens=usage.output_tokens,
-            cache_read_input_tokens=usage.cached_tokens,
-            cache_creation_input_tokens=0,
+        return self._records(usage).supplement(
+            digest, title=ctx.document_title, source_kind=ctx.source_kind
         )
 
     def compare_joint(self, ctx: JointContext) -> JointRecord:
@@ -298,17 +270,13 @@ class OpenAiAnalyzer:
             usage.input_tokens,
             usage.output_tokens,
         )
-        return JointRecord(
-            comparison=comparison,
+        return self._records(usage).joint(
+            comparison,
             compared_with=[other.number for other in ctx.others],
-            model=self._model,
-            prompt_version=PROMPT_VERSION,
-            created_at=self._clock(),
-            input_tokens=usage.input_tokens,
-            output_tokens=usage.output_tokens,
-            cache_read_input_tokens=usage.cached_tokens,
-            cache_creation_input_tokens=0,
         )
+
+    def _records(self, usage: _Usage) -> RecordFactory:
+        return RecordFactory(self._model, PROMPT_VERSION, self._clock(), usage.fields())
 
     def count_input_tokens(self, ctx: BillContext) -> int | None:
         """A local encoding, not a call: OpenAI has no free-standing token-counting endpoint, and
@@ -580,6 +548,14 @@ class _Usage(BaseModel):
     input_tokens: int | None
     output_tokens: int | None
     cached_tokens: int | None
+
+    def fields(self) -> UsageFields:
+        return UsageFields(
+            input_tokens=self.input_tokens,
+            output_tokens=self.output_tokens,
+            cache_read_input_tokens=self.cached_tokens,
+            cache_creation_input_tokens=0,
+        )
 
 
 class _CacheOptions(TypedDict):

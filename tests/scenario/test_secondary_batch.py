@@ -6,6 +6,7 @@ import pytest
 
 from lexinform.models import JointRecord
 from lexinform.services.analysis import Waiting
+from tests import fakes
 from tests.harness import World
 
 
@@ -21,7 +22,9 @@ def ask(w: World, *, may_wait: bool = True) -> JointRecord | Waiting | None:
     return w.analysis.compare_joint(w.bill("3040"), [w.bill("3039")], may_wait=may_wait)
 
 
-def test_secondary_request_is_deduplicated_collected_and_reused_after_restore() -> None:
+def test_secondary_request_is_deduplicated_collected_and_reused_after_restore(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     w = ready_world()
     before = w.bill("3040").status
     first = ask(w)
@@ -29,6 +32,8 @@ def test_secondary_request_is_deduplicated_collected_and_reused_after_restore() 
     assert ask(w) == first
     assert len(w.repo.list_queued_batch_intents()) == 1
     w.analysis.submit_queued_batches()
+    submitted_version = w.batch.submitted[0].prompt_version
+    monkeypatch.setattr(fakes, "PROMPT_VERSION", "newer-than-submitted")
     assert ask(w) == first
     w.batch.resolve()
     w.analysis.collect_batches()
@@ -39,6 +44,7 @@ def test_secondary_request_is_deduplicated_collected_and_reused_after_restore() 
 
     assert isinstance(answer, JointRecord)
     assert answer.input_tokens == 0
+    assert answer.prompt_version == submitted_version
     assert not w.llm.joint_contexts
     assert w.bill("3040").status == before
     assert len(w.batch.submitted) == 1
