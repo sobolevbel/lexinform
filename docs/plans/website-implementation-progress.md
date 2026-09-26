@@ -7,8 +7,8 @@ when its acceptance result and checks are recorded here.
 ## Current position
 
 - Started: 2026-09-16
-- Active task: WEB-03.2 — versioned import contract
-- Next task: WEB-06.1 — validated snapshot acquisition
+- Active task: WEB-06.1 — validated snapshot acquisition
+- Next task: WEB-06.2 — import generations and activation
 - Release target: A — public library in five languages
 - Last code review: 2026-09-26, local commit `6cd680d`; no production verification
 - Remaining implementation slices: [task list](../website/tasks.md)
@@ -35,8 +35,9 @@ when its acceptance result and checks are recorded here.
 | WEB-02b.1 | Complete | Allauth email login, mandatory TOTP/recovery, protected Wagtail and PostgreSQL scenarios |
 | WEB-02b.2 | Complete | Transactional enqueue, SIGTERM/SIGKILL, fenced explicit probe recovery, retry and retention |
 | WEB-01r | Complete | Pinned v34 state, 265 validated bills, 113 candidates; v2 fixture and reproducible audit |
-| WEB-03 | In progress | Permanent identities implemented; versioned import contract remains |
+| WEB-03 | Complete | Permanent identities and versioned import contract implemented |
 | WEB-03.1 | Complete | UUIDs, scoped natural keys, relations, audited merge/split and stable URL resolution |
+| WEB-03.2 | Complete | Explicit ImportDocumentV1 allowlist, pure state projection, graph validation and legacy/pending fixtures |
 | WEB-04a | Not started | — |
 | WEB-04b | Not started | — |
 | WEB-05a | Not started | — |
@@ -52,6 +53,32 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-03.2: versioned import contract
+
+Added frozen, extra-forbidden ImportDocumentV1 models and a pure projection of validated
+state models. Raw facts, processed baseline, applied analysis, batch metadata, history,
+editorial visibility and explicitly allowed public Telegram links remain separate. Staged
+analysis and unconsumed batch answers never become the current explanation. Memo, requests,
+prompts, technical channels, raw errors and delivery snapshots do not cross the allowlist.
+Source schemas 1–34 require prior isolated migration to normalized v34; unknown schemas and
+contract versions fail. Snapshot acquisition/restoration remains WEB-06.1.
+
+The graph rejects duplicate identities/events/work keys, dangling references, ambiguous
+lifecycle targets, cycles and mismatched coverage. Wykaz identity uses the display number,
+first publication timestamp and normalized entry URL independently of Sejm term. The evidence
+is preserved; changed evidence with a matching display alias requires reconciliation in
+WEB-06.2, not an automatic merge. See the [mapping and limitations](../website/data.md#реализованный-контракт-web-032-27-сентября-2026).
+
+Twenty contract cases cover legacy missing provenance, negative explanations, current versus
+processed stages, ready results, unknown intents, links, hidden/linked/joint bills, rollover,
+missing evidence, schema/field rejection and malformed graphs. Projected all 265 bills from
+the pinned WEB-01r dump in a temporary database: 115 applied analyses, 113 analyzed candidates
+and 22 lifecycle/joint relations. No pipeline, LLM, delivery or production mutation ran.
+
+Verification: 82 web tests on PostgreSQL 17, 1623 default bot tests, strict mypy for both
+packages, Ruff/format, Django checks/migration drift and strict docs build/link checks pass.
+The website is not deployed; this closes the contract slice, not the snapshot importer.
 
 ### 2026-09-27 — WEB-03.1: permanent identities and editorial reconciliation
 

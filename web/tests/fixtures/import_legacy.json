@@ -1,0 +1,32 @@
+{
+  "source_schema": 22,
+  "bill": {
+    "summary": {
+      "term": 10,
+      "number": "3039",
+      "title": "Projekt ustawy",
+      "document_type": "projekt ustawy",
+      "change_date": "2026-09-16T09:00:00"
+    },
+    "status": "analyzed",
+    "analysis": {
+      "analysis": {
+        "relevant": false,
+        "score": 1,
+        "category": "none",
+        "summary": "Проект не меняет положение иностранцев.",
+        "practical_impact": "",
+        "confidence": 0.9,
+        "rationale": "Изменения относятся к организации ведомства."
+      },
+      "model": "fixture-model",
+      "prompt_version": "v1",
+      "input_chars": 100,
+      "truncated": false,
+      "text_source": "pdf",
+      "created_at": "2026-09-16T08:00:00Z"
+    },
+    "first_seen_at": "2026-09-16T08:00:00Z",
+    "last_checked_at": "2026-09-16T08:00:00Z"
+  }
+}

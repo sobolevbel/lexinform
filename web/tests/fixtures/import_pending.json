@@ -1,0 +1,22 @@
+{
+  "provider": "anthropic",
+  "state": "submitting",
+  "created_at": "2026-09-27T08:00:00Z",
+  "request": {
+    "custom_id": "analysis-3039",
+    "term": 10,
+    "number": "3039",
+    "question": {
+      "kind": "joint",
+      "ctx": {
+        "subject": {
+          "number": "3039", "title": "Projekt", "applicant_type": "government",
+          "summary": "SECRET", "practical_impact": "SECRET"
+        },
+        "others": []
+      }
+    },
+    "payload_json": "SECRET"
+  },
+  "meta": {"memo_key": "SECRET", "queued_at": "2026-09-27T08:00:00Z"}
+}
