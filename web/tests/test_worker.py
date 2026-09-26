@@ -33,6 +33,10 @@ def worker_env(tmp_path: Path) -> Iterator[dict[str, str]]:
         **os.environ,
         "DJANGO_SETTINGS_MODULE": "lexinform_web.config.test",
         "LEXINFORM_WEB_DB_NAME": str(connection.settings_dict["NAME"]),
+        "LEXINFORM_WEB_DB_USER": str(connection.settings_dict["USER"]),
+        "LEXINFORM_WEB_DB_PASSWORD": str(connection.settings_dict["PASSWORD"]),
+        "LEXINFORM_WEB_DB_HOST": str(connection.settings_dict["HOST"]),
+        "LEXINFORM_WEB_DB_PORT": str(connection.settings_dict["PORT"]),
         "LEXINFORM_WEB_WORKER_LOCK_PATH": lock,
     }
     with override_settings(WORKER_LOCK_PATH=lock):

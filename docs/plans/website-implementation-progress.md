@@ -7,8 +7,8 @@ when its acceptance result and checks are recorded here.
 ## Current position
 
 - Started: 2026-09-16
-- Active task: WEB-02b — complex dependency spike
-- Next task: WEB-02b.2 — database worker and recovery
+- Active task: WEB-01r — refresh the pinned state audit
+- Next task: WEB-03.1 — permanent matter identities
 - Release target: A — public library in five languages
 - Last code review: 2026-09-26, local commit `6cd680d`; no production verification
 - Remaining implementation slices: [task list](../website/tasks.md)
@@ -31,8 +31,10 @@ when its acceptance result and checks are recorded here.
 | --- | --- | --- |
 | WEB-01 | Complete | Pinned state audited; launch corpus and v1 audit fixture recorded |
 | WEB-02a | Complete | Workspace, Django/Wagtail skeleton, PostgreSQL and first User migration |
-| WEB-02b | In progress | Editorial revision/translation and staff MFA complete; task worker remains |
+| WEB-02b | Complete | Editorial revision/translation, staff MFA and real PostgreSQL worker recovery verified |
 | WEB-02b.1 | Complete | Allauth email login, mandatory TOTP/recovery, protected Wagtail and PostgreSQL scenarios |
+| WEB-02b.2 | Complete | Transactional enqueue, SIGTERM/SIGKILL, fenced explicit probe recovery, retry and retention |
+| WEB-01r | Not started | Updated state audit required before identities/import |
 | WEB-03 | Not started | — |
 | WEB-04a | Not started | — |
 | WEB-04b | Not started | — |
@@ -49,6 +51,30 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-02b.2 and reconciliation of the earlier stash
+
+Reviewed the full website stash `cf31589f51270a288ad1fd63cb97fcd572fc122c` against
+`76f81eb` (MFA) and the owner's temporary worker commit `101e86e`. Its earlier MFA/worker
+implementation duplicates the current work and provides weaker guarantees: no MFA expiry
+or authenticator ownership check, and unrestricted task requeue without a live-worker lock.
+Those implementations, old dependency/stub versions, whitespace-only Compose changes and
+the old completion claim are discarded. Retained the web-specific architecture guidance as
+`web/AGENTS.md`, updated its documentation pointers, added bulk-upload MFA coverage and
+carried all test database connection settings into worker subprocesses.
+
+The current backend is locked at django-tasks-db 0.13.0. Real PostgreSQL worker processes
+prove transactional enqueue (including invisibility before commit), idempotent probe execution,
+SIGTERM drain, SIGKILL leaving a RUNNING row, restart without implicit recovery, refusal to
+steal old-but-live work, explicit retry with audit, retry limit and safe result retention.
+Strict mypy passes without backend stubs. Production settings require a shared persistent
+worker lock path. The single-host guarantee and recovery steps are in `web/README.md`.
+
+This closes the dependency spike, not the future translation dispatcher. Manual recovery is
+restricted to the idempotent probe; uncertain paid tasks require WEB-09.1's durable requests.
+No production worker or scheduler was changed. The temporary commit is preserved in history.
+Verification: 49 web tests on PostgreSQL 17, strict web/bot mypy, full default bot suite,
+Ruff/format, Django checks and migration drift, strict documentation build/link check all pass.
 
 ### 2026-09-26 — WEB-02b.1: staff login and MFA
 

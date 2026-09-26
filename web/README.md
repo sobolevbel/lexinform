@@ -61,3 +61,46 @@ requires enrollment again.
 Production delivery configuration, shared rate-limit/replay cache and operational recovery
 rehearsal belong to WEB-05. Console mail and a per-process cache are development defaults,
 not the production deployment configuration.
+
+## Database worker and recovery
+
+After `migrate`, start one worker with
+`uv run --package lexinform-web python web/manage.py web_worker`.
+`--batch` drains ready tasks and exits. This wraps `django-tasks-db`'s worker with a
+single-host lock and disables autoreload. Always use this wrapper rather than `db_worker`
+directly: the wrapper and recovery must acquire the same lock.
+
+The backend writes enqueue in the caller's database transaction. SIGTERM finishes the
+current task before stopping. SIGKILL leaves its result `RUNNING`; neither a restart nor
+an old `started_at` makes that task safe to retry. The backend has no expiring lease.
+
+For a reproducible, isolated failure rehearsal, run:
+
+```bash
+uv run --all-packages --all-groups pytest -c web/pyproject.toml web/tests/test_worker.py -v
+```
+
+These tests create a test database and real worker subprocesses, kill them only after the
+probe starts, check that a second worker/recovery cannot take live work, and confirm that
+explicit recovery succeeds after exit. They also cover rollback/uncommitted enqueue,
+duplicate execution, a failed attempt, retry limits and pruning without deleting unfinished work.
+
+Only the idempotent `worker_probe` task is currently eligible for manual retry:
+
+```bash
+uv run --package lexinform-web python web/manage.py recover_worker_probe TASK_UUID \
+  --worker-id LAST_WORKER_UUID --reason "Confirmed process exit; retry diagnostic probe"
+uv run --package lexinform-web python web/manage.py web_worker --batch
+uv run --package lexinform-web python web/manage.py prune_db_task_results --min-age-days 14
+```
+
+Recovery checks the last claim, accepts only failed/running probes and allows two retries.
+It atomically records the reason, previous state/error and worker ID in `TaskRecovery`.
+The audit survives task-result pruning. Unknown task functions cannot be retried here;
+translation requests will need their own durable-intent reconciliation in WEB-09.1.
+
+Locally the lock is `web/.worker.lock`. In production, `LEXINFORM_WEB_WORKER_LOCK_PATH`
+is required and must point to **one persistent shared file on the single host**, mounted
+at the same path in old/new worker and recovery containers. Do not delete/replace the file
+or put it inside a release image. This lock does not coordinate multiple hosts; scaling to
+multiple hosts requires a different fencing protocol before enabling additional workers.

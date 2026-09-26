@@ -25,7 +25,9 @@ ADMIN_PATHS = (
     "/admin/choose-page/",
     "/admin/images/chooser/",
     "/admin/images/add/",
+    "/admin/images/multiple/add/",
     "/admin/documents/add/",
+    "/admin/documents/multiple/add/",
     "/admin/snippets/editorial/topic/",
 )
 
@@ -211,7 +213,9 @@ def test_superuser_can_preview_choose_and_upload_only_after_mfa(
         reverse("wagtailadmin_pages:view_draft", args=[page.pk]),
         reverse("wagtailadmin_choose_page"),
         reverse("wagtailimages:add"),
+        reverse("wagtailimages:add_multiple"),
         reverse("wagtaildocs:add"),
+        reverse("wagtaildocs:add_multiple"),
     ]
     for path in paths:
         assert client.get(path).status_code == 302
