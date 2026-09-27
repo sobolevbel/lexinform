@@ -57,6 +57,28 @@ when its acceptance result and checks are recorded here.
 
 ## Work log
 
+### 2026-09-27 — WEB-07a.3b: dry run of tracking on a copy of the state
+
+`lexinform track --dry-run` on a fresh restore of `origin/state` (live Sejm, RCL, register and ELI
+APIs; the database rolled back): 489 s, no errors, `checked=23 observed=72 changed=27
+reanalyzed=7 published=0 failed=0`. Blank `LEXINFORM_*_API_KEY` variables did **not** override
+`.env`, so the seven re-analyses were real model calls: **$1.40**, all on bills without a card —
+druki 2110, 2271, 2846, RCL/12410853, RCL/12412454, and 3004/3008 which RCL linked in the same
+run. It is the one-off catch-up the invariant expects (texts changed since their analysis), but it
+has a product consequence: 2846 and RCL/12412454 came back at score 3, the publishing bar, so the
+next real run would give them cards. Decision pending before merge: accept that a new text can
+raise a below-bar bill into the channel, or keep re-analysis of unthreaded bills out of
+publishing. `--max-analyze 0` was not used: it caps the analysis phase, not tracking.
+
+### 2026-09-27 — WEB-07a.3a: freshness in the import contract
+
+`ImportedBill` carries `observation_mode`, `observation_basis` and `checks` (one `AspectCheck`
+per aspect from `source_checks`) in place of the `aspect_freshness="unknown"` placeholder. They
+are optional, so older documents and v34 dumps still validate; an empty list is unknown. The
+reader reads the v35 columns and the table, and the semantic hash ignores `checks`, so a new check
+moves freshness and not `content_updated_at`. `REVIEWED_MIGRATIONS[35]` now says the migration is
+exported. The tracking log line reports `observed` beside `checked`. Web gate 208 tests.
+
 ### 2026-09-27 — WEB-07a.2c: agenda, Senate, pre-print checks; 07a.2 complete
 
 The agenda watcher refreshes `bill.agenda` of unthreaded bills from the same sitting listings
