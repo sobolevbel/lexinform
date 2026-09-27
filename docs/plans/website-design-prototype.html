@@ -1,4 +1,7 @@
-<title>Маргиналия для lexinform</title>
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+<title>Маргиналия для lexinform — прототип</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
@@ -10,6 +13,8 @@
   --ink:#10161F;
   --ink-2:#4A5462;
   --red:#C0362C;
+  --brand-accent:var(--red);
+  --action-accent:var(--red);
   --on-red:#FBF8F2;
   --rule-uncertain:#6E7A8A;
   --hairline:rgba(16,22,31,.14);
@@ -82,15 +87,15 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
 @media (max-width:719px){.wrap{padding-inline:16px}}
 
 /* ── Аппарат: всё, что пришло из источника ── */
-.ap{font-family:var(--sans);font-size:15px;line-height:1.45;font-weight:450}
+.ap{font-family:var(--sans);font-size:15px;line-height:1.45;font-weight:400}
 .ap--sm{font-size:13px;letter-spacing:.01em;font-weight:500}
 .muted{color:var(--ink-2)}
-.pl{font-style:italic;color:var(--ink-2);font-size:.9em}
+.pl{font-style:normal;color:var(--ink-2);font-size:.9em}
 .num{font-family:var(--sans);font-variant-numeric:tabular-nums lining-nums}
 
 /* ── Знак ── */
 .mark{display:inline-flex;align-items:stretch;gap:7px;text-decoration:none;color:inherit}
-.mark__bar{width:4px;background:var(--red);border-radius:0}
+.mark__bar{width:4px;background:var(--brand-accent);border-radius:0}
 .mark__sign{font-family:Didot,"Bodoni 72","Playfair Display",Georgia,serif;font-size:27px;line-height:1;font-weight:400}
 .mark__word{font-family:var(--sans);font-weight:600;font-size:19px;letter-spacing:-.01em;align-self:center}
 
@@ -115,7 +120,6 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
 .tabs .sep{width:1px;background:var(--hairline);margin-inline:8px;align-self:stretch}
 
 .screen{display:none;padding-block:40px 64px}
-.screen[data-open]{display:block}
 
 /* ── Блок с линейкой: единственное структурное устройство ── */
 .b{display:grid;grid-template-columns:var(--rail) 1fr;column-gap:var(--gap);align-items:start}
@@ -130,7 +134,7 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
 }
 .b__field{font-family:var(--sans);font-size:15px;font-variant-numeric:tabular-nums;color:var(--ink-2);padding-top:2px}
 
-.r-open .b__rail{background:var(--red)}
+.r-open .b__rail{background:var(--action-accent)}
 .r-fact .b__rail{background:var(--ink)}
 .r-uncertain .b__rail{background:repeating-linear-gradient(to bottom,var(--rule-uncertain) 0 6px,transparent 6px 12px)}
 .r-ahead .b__rail{background:none}
@@ -164,7 +168,7 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
 .btn{
   font-family:var(--sans);font-size:16px;font-weight:500;
   min-height:48px;padding:12px 20px;border-radius:8px;border:1.5px solid transparent;
-  background:var(--red);color:var(--on-red);cursor:pointer;text-decoration:none;
+  background:var(--ink);color:var(--paper);cursor:pointer;text-decoration:none;
   display:inline-flex;align-items:center;justify-content:center;
 }
 .btn:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
@@ -232,7 +236,7 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
 .tl li{display:grid;grid-template-columns:var(--rail) 1fr;column-gap:var(--gap);padding-block:10px;position:relative}
 @media (min-width:760px){.tl li{grid-template-columns:var(--rail) var(--field) 1fr}}
 .tl__rail{grid-column:1;grid-row:1/-1;align-self:stretch;background:var(--ink)}
-.tl li.r-open .tl__rail{background:var(--red)}
+.tl li.r-open .tl__rail{background:var(--action-accent)}
 .tl__d{font-family:var(--sans);font-size:15px;font-variant-numeric:tabular-nums;color:var(--ink-2)}
 .tl__e{grid-column:2}
 @media (min-width:760px){.tl__d{grid-column:2;grid-row:1}.tl__e{grid-column:3;grid-row:1}}
@@ -311,10 +315,12 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
   padding:12px 18px;border-radius:8px;z-index:20;
 }
 </style>
+</head>
+<body>
 <aside style="padding:1rem;background:#fff4d6;color:#10161f">
   <a href="../website/design/">← Дизайн сайта и документация</a>
-  <p>Исторический прототип. Фильтры и ссылки-заглушки не являются работающими сценариями.
-  Поправки к реализации перечислены в действующей спецификации.</p>
+  <p>Прототип с поправками WEB-04a. Все дела, даты, оценки и числа ниже — демонстрационные сценарии,
+  не текущая юридическая информация. Фильтры и ссылки-заглушки пока не работают.</p>
 </aside>
 
 <div class="app">
@@ -362,8 +368,8 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
 <div class="main">
 
 <!-- ══ ГЛАВНАЯ ══ -->
-<section class="screen wrap" id="s-home" data-open>
-  <p class="note">Прототип направления «Маргиналия». Номера дел настоящие, формулировки макетные — юридических утверждений страница не содержит.</p>
+<section class="screen wrap" id="s-home">
+  <p class="note">Прототип направления «Маргиналия». Сценарии, даты и счётчики условные: это не сведения о текущем состоянии дел.</p>
 
   <div class="stack" style="margin-top:36px">
     <h1>Что меняется в польском праве для тех, кто здесь живёт</h1>
@@ -377,29 +383,29 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
 
   <div class="sec draw">
     <div class="sec__head">
-      <h2>Сегодня можно повлиять</h2>
-      <p class="ap"><a href="#">Все открытые окна, 4</a></p>
+      <h2>Возможности участия</h2>
+      <p class="ap">Открытые сроки не подтверждены</p>
     </div>
 
-    <div class="b b--wide r-open raised" style="--i:0">
+    <div class="b b--wide r-uncertain raised" style="--i:0">
       <span class="b__rail" aria-hidden="true"></span>
-      <p class="b__field">до 21&nbsp;сентября</p>
+      <p class="b__field">срок неизвестен</p>
       <div class="b__body prose">
         <h3><a href="#" style="text-decoration:none">Срок рассмотрения карты побыту сокращают до 60 дней</a></h3>
         <p class="pl" lang="pl">Ustawa o zmianie ustawy o cudzoziemcach</p>
-        <p>Мнение принимает комиссия Сейма. Отправить может кто угодно, гражданство не требуется.</p>
-        <p class="ap"><a href="#">Как отправить мнение — инструкция на 5 минут</a></p>
+        <p>Открытый срок и способ участия не подтверждены. Последнее известное состояние — рассмотрение в комиссии.</p>
+        <p class="ap">Сначала нужна проверка официальной страницы дела.</p>
       </div>
     </div>
 
-    <div class="b b--wide r-open raised" style="--i:1">
+    <div class="b b--wide r-uncertain raised" style="--i:1">
       <span class="b__rail" aria-hidden="true"></span>
-      <p class="b__field">до 30&nbsp;сентября</p>
+      <p class="b__field">срок неизвестен</p>
       <div class="b__body prose">
         <h3><a href="#" style="text-decoration:none">Взносы ZUS за umowa zlecenie считают по-новому</a></h3>
         <p class="pl" lang="pl">Projekt ustawy o systemie ubezpieczeń społecznych</p>
-        <p>Проект ещё в министерстве. Замечания принимают по электронной почте, ответ публикуют на RCL.</p>
-        <p class="ap"><a href="#">Как отправить замечание в министерство</a></p>
+        <p>Последнее известное состояние — проект в министерстве. Письмо о консультациях с адресатом и сроком пока не проверено.</p>
+        <p class="ap">Способ участия появится после проверки источника.</p>
       </div>
     </div>
   </div>
@@ -408,11 +414,11 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
     <div class="cols">
       <div class="stack">
         <h2>Ближайшие даты</h2>
-        <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field">18&nbsp;сент.</p>
-          <p class="b__body">Комиссия ENM рассматривает поправки, 10:30, зал 24</p></div>
+        <div class="b r-ahead"><span class="b__rail" aria-hidden="true"></span><p class="b__field">18&nbsp;сент.</p>
+          <p class="b__body">Назначено: комиссия ENM, рассмотрение поправок, 10:30, зал 24</p></div>
         <div class="b r-uncertain"><span class="b__rail" aria-hidden="true"></span><p class="b__field">23&nbsp;сент.</p>
           <p class="b__body">Заседание назначено условно: только если Сейм передаст проект в комиссию</p></div>
-        <div class="b r-open"><span class="b__rail" aria-hidden="true"></span><p class="b__field">30&nbsp;сент.</p>
+        <div class="b r-ahead"><span class="b__rail" aria-hidden="true"></span><p class="b__field">30&nbsp;сент.</p>
           <p class="b__body">Истекает срок Сената по делу о сезонной работе</p></div>
         <div class="b r-ahead"><span class="b__rail" aria-hidden="true"></span><p class="b__field muted">не&nbsp;назн.</p>
           <p class="b__body muted">Второе чтение по карте побыту. Дата не назначена</p></div>
@@ -462,47 +468,48 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
   </form>
 
   <nav class="states" aria-label="Состояние дела">
-    <a href="#" aria-current="true">Идёт <span class="num">38</span></a>
-    <a href="#">Принято <span class="num">47</span></a>
-    <a href="#">Не состоялось <span class="num">32</span></a>
-    <a href="#">Всё <span class="num">124</span></a>
+    <a href="#" aria-current="true">В работе <span class="num">38</span></a>
+    <a href="#">Опубликованы <span class="num">47</span></a>
+    <a href="#">Завершены без принятия <span class="num">32</span></a>
+    <a href="#">Все <span class="num">124</span></a>
   </nav>
-  <p class="ap muted" style="margin-bottom:20px"><b style="color:var(--ink)">Сначала то, что касается большинства</b> · <a href="#">по дате</a> · <a href="#">по сроку</a></p>
+  <p class="ap muted">В «Все» также 7 дел с неподтверждённым статусом. Для опубликованных: ожидают вступления · действуют · поэтапное вступление.</p>
+  <p class="ap muted" style="margin-bottom:20px"><b style="color:var(--ink)">По важности для иностранцев</b> · <a href="#">по дате</a> · <a href="#">по сроку</a></p>
 
   <div class="rows">
-    <div class="row r-open">
+    <div class="row r-uncertain">
       <span class="row__rail" aria-hidden="true"></span>
-      <p class="row__date">до 21.09</p>
+      <p class="row__date">срок не подтверждён</p>
       <p class="row__main"><a class="row__t" href="#">Срок рассмотрения карты побыту сокращают до 60 дней</a><span class="pl" lang="pl">Ustawa o zmianie ustawy o cudzoziemcach</span></p>
-      <p class="row__state">Консультации в Сейме<br><span class="muted">касается многих</span></p>
+      <p class="row__state">Рассматривает комиссия<br><span class="muted">Заявители на временное пребывание</span></p>
       <p class="row__id">druk 1630<br><span class="muted">UC104</span></p>
     </div>
     <div class="row r-fact">
       <span class="row__rail" aria-hidden="true"></span>
       <p class="row__date">14.09</p>
       <p class="row__main"><a class="row__t" href="#">Легализация работы сезонных работников</a><span class="pl" lang="pl">Ustawa o zatrudnianiu cudzoziemców</span></p>
-      <p class="row__state">Опубликован в Dz.U.<br><span class="muted">касается почти всех</span></p>
+      <p class="row__state">Опубликован в Dz.U.; дата вступления не подтверждена<br><span class="muted">Сезонные работники</span></p>
       <p class="row__id">Dz.U. 2026<br><span class="muted">poz. 936</span></p>
     </div>
     <div class="row r-uncertain">
       <span class="row__rail" aria-hidden="true"></span>
       <p class="row__date">02.09</p>
       <p class="row__main"><a class="row__t" href="#">Признание дипломов: новый порядок нострификации</a><span class="pl" lang="pl">Projekt ustawy o szkolnictwie wyższym</span></p>
-      <p class="row__state">Проект в министерстве<br><span class="muted">касается части</span></p>
+      <p class="row__state">Статус не подтверждён; последнее известное — проект в министерстве<br><span class="muted">Обладатели иностранных дипломов</span></p>
       <p class="row__id">UD338</p>
     </div>
     <div class="row r-fact">
       <span class="row__rail" aria-hidden="true"></span>
       <p class="row__date">28.08</p>
       <p class="row__main"><a class="row__t" href="#">Пошлина за карту побыту вырастет на 50 злотых</a><span class="pl" lang="pl">Ustawa o opłacie skarbowej</span></p>
-      <p class="row__state">Принят Сеймом<br><span class="muted">касается многих</span></p>
+      <p class="row__state">Принят Сеймом; ещё не действующий закон<br><span class="muted">Заявители на карту побыту</span></p>
       <p class="row__id">druk 2699</p>
     </div>
     <div class="row r-ahead">
       <span class="row__rail" aria-hidden="true"></span>
       <p class="row__date muted">план</p>
       <p class="row__main"><a class="row__t" href="#">Карта Поляка: правительство объявило о пересмотре</a><span class="pl" lang="pl">Wykaz prac legislacyjnych RM</span></p>
-      <p class="row__state">Текста пока нет<br><span class="muted">касается части</span></p>
+      <p class="row__state">Текста пока нет<br><span class="muted">Группы уточняются</span></p>
       <p class="row__id">UD368</p>
     </div>
   </div>
@@ -512,7 +519,7 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
 <section class="screen wrap" id="s-bill">
   <p class="ap muted" style="margin-bottom:20px"><a href="#">Законопроекты</a> → <a href="#">Пребывание</a></p>
 
-  <div class="b b--wide r-open draw" style="--i:0">
+  <div class="b b--wide draw" style="--i:0">
     <span class="b__rail" aria-hidden="true"></span>
     <div class="b__body" style="grid-column:2;display:grid;gap:12px">
       <h1>Срок рассмотрения карты побыту сокращают до 60 дней</h1>
@@ -528,22 +535,18 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
         <p>Воевода должен будет решить по заявлению за 60 дней вместо 90. Правило коснётся заявлений, поданных после вступления закона в силу; поданные раньше рассматривают по-старому.</p>
       </div>
 
-      <div class="b b--wide r-open raised">
+      <div class="b b--wide r-uncertain raised">
         <span class="b__rail" aria-hidden="true"></span>
         <div class="b__body prose" style="grid-column:2">
           <h2>Что можно сделать сейчас</h2>
-          <p>Отправить мнение в комиссию до 21 сентября. Комиссия обязана приобщить его к материалам дела.</p>
-          <p style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
-            <a class="btn" href="#">Открыть форму мнения</a>
-            <a class="ap" href="#">Как это сделать — инструкция</a>
-          </p>
-          <p class="ap muted">Основание: <span lang="pl">art. 8 ust. 2 ustawy o działalności lobbingowej</span></p>
+          <p>Открытый срок участия не подтверждён. Последнее известное состояние — рассмотрение в комиссии.</p>
+          <p class="ap muted">Форма или адресат, начало и конец приёма должны быть подтверждены источником этого дела. В макете таких данных нет.</p>
         </div>
       </div>
 
       <div class="stack">
         <h2>Что дальше</h2>
-        <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field">18&nbsp;сент.</p>
+        <div class="b r-ahead"><span class="b__rail" aria-hidden="true"></span><p class="b__field">18&nbsp;сент.</p>
           <p class="b__body">Комиссия ENM, 10:30, зал 24. Заседание назначено.</p></div>
         <div class="b r-ahead"><span class="b__rail" aria-hidden="true"></span><p class="b__field muted">дальше</p>
           <p class="b__body muted">Второе чтение. Дата не назначена.</p></div>
@@ -586,8 +589,8 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
       </div>
       <div>
         <h3>Важность</h3>
-        <p>Касается многих читателей <span class="muted num">4 из 5</span></p>
-        <p class="ap muted" style="margin-top:6px">Оценка наша, не Сейма. О шансах принятия мы не гадаем.</p>
+        <p>Оценка важности: <span class="num">4/5</span></p>
+        <p class="ap muted" style="margin-top:6px">Важность темы, а не размер аудитории: 5/5 — легализация пребывания. Затронутые группы перечислены отдельно. О шансах принятия мы не гадаем.</p>
       </div>
       <div>
         <h3>Темы</h3>
@@ -632,8 +635,8 @@ a:hover{color:var(--red);text-decoration-color:var(--red)}
     </div>
 
     <ol class="steps" style="margin-top:16px">
-      <li><div class="prose"><h3>Что понадобится</h3><p>Номер дела и адрес комиссии. Оба есть на карточке дела в строке «Номера дела».</p></div></li>
-      <li><div class="prose"><h3>Куда писать</h3><p>В комиссию, которая ведёт проект. Адрес электронной почты публикует Сейм; для проектов, которые ещё в министерстве, адрес указан в письме о консультациях.</p></div></li>
+      <li><div class="prose"><h3>Что понадобится</h3><p>Номер дела и проверенный источник с правилами участия: адресат, способ отправки и срок.</p></div></li>
+      <li><div class="prose"><h3>Куда писать</h3><p>Используйте способ, указанный в источнике конкретного дела. Универсальной формы для всех комиссий этот макет не предполагает.</p></div></li>
       <li>
         <div class="prose">
           <h3>Что написать</h3>
@@ -658,13 +661,13 @@ Z poważaniem,
           <p class="ap muted" style="margin-top:10px">Что здесь сказано: вы представляетесь, называете проект по номеру и просите отсчитывать срок с подачи полного комплекта документов.</p>
         </div>
       </li>
-      <li><div class="prose"><h3>Что будет дальше</h3><p>Комиссия приобщает мнение к материалам дела. Ответа лично вам не будет: результат виден в протоколе заседания, ссылку мы поставим на карточке.</p></div></li>
+      <li><div class="prose"><h3>Что будет дальше</h3><p>Порядок рассмотрения и публикации ответов зависит от процедуры. Проверьте условия в источнике; этот шаблон не обещает личного ответа или приобщения письма к материалам.</p></div></li>
     </ol>
 
-    <div class="b b--wide r-open raised" style="margin-top:16px">
+    <div class="b b--wide r-uncertain raised" style="margin-top:16px">
       <span class="b__rail" aria-hidden="true"></span>
       <div class="b__body" style="grid-column:2">
-        <p>Срок: до 21 сентября. После этой даты комиссия мнения не принимает.</p>
+        <p>Срок не подтверждён. Перед отправкой проверьте правила и даты конкретной процедуры; универсального запрета после даты этот гайд не устанавливает.</p>
       </div>
     </div>
 
@@ -685,9 +688,9 @@ Z poważaniem,
   <p class="ap muted" style="margin:16px 0 24px">Найдено <span class="num">7</span>. Искали в русском и в польских названиях. <a href="#">Искать во всех языках</a></p>
 
   <div class="rows">
-    <div class="row r-open">
+    <div class="row r-uncertain">
       <span class="row__rail" aria-hidden="true"></span>
-      <p class="row__date">до 21.09</p>
+      <p class="row__date">срок не подтверждён</p>
       <p class="row__main"><a class="row__t" href="#">Срок рассмотрения карты побыту сокращают до 60 дней</a><span class="pl" lang="pl">Ustawa o zmianie ustawy o cudzoziemcach</span></p>
       <p class="row__state">совпал номер дела</p>
       <p class="row__id">druk 1630</p>
@@ -717,23 +720,27 @@ Z poważaniem,
   </div>
 
   <div class="sec">
-    <h2>За текущую каденцию Сейма</h2>
+    <h2>Снимок корпуса: условный пример</h2>
+    <p>Единый срез на 16 сентября 2026: записи Sejm, RCL и Wykaz, накопленные к этой дате.
+      Это состояния записей, а не последовательная воронка и не число уникальных инициатив.</p>
     <ol class="ledger" style="max-width:640px">
-      <li class="r-fact"><span class="b__rail" aria-hidden="true"></span><b>938</b><p>проектов внесено в Сейм</p></li>
-      <li class="r-fact"><span class="b__rail" aria-hidden="true"></span><b>268</b><p>прошли отбор по ключевым словам</p></li>
-      <li class="r-fact"><span class="b__rail" aria-hidden="true"></span><b>93</b><p>прочитаны моделью целиком и опубликованы здесь</p></li>
-      <li class="r-fact"><span class="b__rail" aria-hidden="true"></span><b>22</b><p>попали в Telegram-канал</p></li>
-      <li class="r-uncertain"><span class="b__rail" aria-hidden="true"></span><b>89</b><p>прочитать пока не удалось</p></li>
+      <li class="r-fact"><span class="b__rail" aria-hidden="true"></span><b>193</b><p>записи источников в снимке</p></li>
+      <li class="r-fact"><span class="b__rail" aria-hidden="true"></span><b>89</b><p>не прошли текстовый отбор</p></li>
+      <li class="r-fact"><span class="b__rail" aria-hidden="true"></span><b>7</b><p>ждут анализа</p></li>
+      <li class="r-uncertain"><span class="b__rail" aria-hidden="true"></span><b>4</b><p>ошибка чтения</p></li>
+      <li class="r-fact"><span class="b__rail" aria-hidden="true"></span><b>93</b><p>подготовлен разбор; объём прочитанного указан в каждом разборе</p></li>
+      <li class="r-fact"><span class="b__rail" aria-hidden="true"></span><b>22</b><p>есть публикация в Telegram — отдельный показатель доставки</p></li>
     </ol>
-    <p class="ap muted">Обновляется после каждого импорта. Последний — сегодня, <span class="num">07:23</span>.</p>
+    <p class="ap muted">Числа демонстрационные. В приложении здесь будут SHA снимка, дата импорта и перечень источников. Дата импорта не равна дате проверки источника.</p>
   </div>
 
   <div class="sec">
-    <h2>Почему не удалось</h2>
+    <h2>Отбор и ошибки чтения — разные состояния</h2>
     <div class="b b--wide r-uncertain"><span class="b__rail" aria-hidden="true"></span>
       <div class="b__body" style="grid-column:2;display:grid;gap:12px">
-        <p>Часть проектов Сейм публикует отсканированной бумагой без текстового слоя, часть файлов сервер отдаёт не с первого раза.</p>
-        <p>Такие дела остаются в очереди и пробуются заново при каждом запуске. Отклонёнными мы их не считаем и из счётчика не убираем.</p>
+        <p>Текстовый отбор не нашёл достаточных признаков нужной темы. Это не ошибка скачивания и не обещание повторного анализа.</p>
+        <p>Ошибка чтения означает, что разбор не подготовлен: например, файл недоступен или текст не извлечён. Повтор зависит от состояния очереди и лимита попыток.</p>
+        <p>Разбор может опираться на сокращённый текст, triage или часть скана. Без данных об объёме чтения нельзя утверждать, что документ прочитан целиком.</p>
       </div>
     </div>
   </div>
@@ -766,7 +773,7 @@ Z poważaniem,
     </div>
     <div class="prose" style="margin-top:8px">
       <h3>Что это значит</h3>
-      <p>Порядок начисления взносов не изменился: действует прежняя редакция <span lang="pl">ustawy o systemie ubezpieczeń społecznych</span>. Пересчитывать ничего не нужно.</p>
+      <p>Этот проект не стал законом. Какое правило действует сейчас, нужно проверять по актуальным актам: исход этого проекта сам по себе этого не устанавливает.</p>
       <p class="ap muted">Блока «что можно сделать сейчас» на такой карточке нет вообще. Выключенная кнопка обещала бы, что когда-нибудь она включится.</p>
     </div>
     <ol class="tl" style="margin-top:8px">
@@ -778,24 +785,25 @@ Z poważaniem,
   </div>
 
   <div class="sec">
-    <h2>Семь концовок, и они не взаимозаменяемы</h2>
+    <h2>Подтверждённые исходы</h2>
     <p class="prose">Читателю важно одно: вернётся ли дело. Поэтому каждая концовка получает своё предложение, а не общее «процесс завершён».</p>
     <div class="stack" style="gap:14px">
       <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">Сейм</p><p class="b__body">Сейм отклонил проект 27 марта 2026</p></div>
       <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">заявитель</p><p class="b__body">Проект отозван заявителем. Может быть внесён заново</p></div>
-      <div class="b r-uncertain"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">реестр</p><p class="b__body">Дело больше не отслеживается. Сейм не опубликовал решения — что произошло, мы не знаем</p></div>
       <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">RCL</p><p class="b__body">Проект закрыт на этапе министерства, в Сейм не внесён</p></div>
       <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">план РМ</p><p class="b__body">Правительство отказалось от планов</p></div>
       <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">вето</p><p class="b__body">Президент наложил вето, Сейм его не преодолел</p></div>
       <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">каденция</p><p class="b__body">Дело закрыто вместе с каденцией Сейма. Внесут заново — свяжем с новым делом</p></div>
     </div>
+    <h3>Исход неизвестен</h3>
+    <div class="b r-uncertain"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">реестр</p><p class="b__body">Статус не подтверждён. Запись отсутствует в последнем списке; сохраняем последнее известное состояние. Это не свидетельство отзыва или завершения.</p></div>
   </div>
 
   <div class="sec">
-    <h2>Мы это прочитали — вас, скорее всего, не касается</h2>
-    <p class="prose">Семьдесят одно дело из девяноста трёх не попало в канал. Молчание о них хуже страницы: человек, который ищет их по названию, должен получить ответ, а не пустоту.</p>
+    <h2>Оценка связи с темой сайта</h2>
+    <p class="prose">Отрицательная оценка, важность ниже порога, совместное рассмотрение и ошибка доставки — разные причины отсутствия отдельной карточки в Telegram. Оценку показываем только из разбора.</p>
 
-    <div class="b b--wide r-uncertain" style="margin-top:8px">
+    <div class="b b--wide" style="margin-top:8px">
       <span class="b__rail" aria-hidden="true"></span>
       <div class="b__body" style="grid-column:2;display:grid;gap:12px">
         <h3 style="font-size:29px">Изменения в порядке выдачи виз для водителей-международников</h3>
@@ -804,14 +812,21 @@ Z poważaniem,
     </div>
 
     <div class="prose" style="margin-top:20px">
-      <p class="ap">Мы прочитали это дело и не нашли, чем оно касается читателей.</p>
-      <p>Проект меняет порядок выдачи виз перевозчикам из третьих стран по заявкам работодателя. На карту побыту, работу по <span lang="pl">umowa zlecenie</span> и воссоединение семьи он не влияет.</p>
+      <p class="ap">В демонстрационном разборе связь с темой сайта не подтверждена. Это оценка разбора, не персональная рекомендация.</p>
+      <p>Указанная группа: водители-международники. Основание оценки и ограничения чтения должны быть доступны рядом с выводом.</p>
     </div>
 
     <div class="stack" style="margin-top:22px;gap:12px">
       <p class="ap muted">Где дело сейчас</p>
       <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field">4&nbsp;сент.</p><p class="b__body">Принят Сеймом, ждёт Сената</p></div>
-      <p class="ap muted" style="max-width:66ch">Судьба дела показана отдельной строкой со своей линейкой: дело живо, отрицателен наш вердикт, а не его шансы. Пунктир на заголовке — про нашу оценку, и она может быть неверной.</p>
+      <p class="ap muted" style="max-width:66ch">Оценка релевантности не меняет состояние процесса. Пунктир используется только для предупреждения о качестве или свежести данных.</p>
+      <h3>Что дальше</h3>
+      <p>Рассмотрение в Сенате; дата заседания не подтверждена.</p>
+      <h3>Известная история</h3>
+      <p>4 сентября — принят Сеймом. Более ранние события в этом примере не сохранены.</p>
+      <h3>Источники</h3>
+      <p>В рабочей карточке здесь доступны официальная страница процесса и использованный текст. Источники сохраняются независимо от оценки.</p>
+      <details><summary>Участие, если дело относится к вашей ситуации</summary><p>Открытый срок участия не подтверждён. Проверенный способ и срок появятся здесь независимо от оценки релевантности.</p></details>
     </div>
 
     <div class="raised" style="margin-top:22px;max-width:560px;display:grid;gap:12px">
@@ -819,7 +834,7 @@ Z poważaniem,
       <p><a class="btn btn--2" href="#">Сообщить</a></p>
     </div>
 
-    <p class="ap muted" style="margin-top:22px;max-width:66ch">Чего на этой странице нет: «что можно сделать сейчас», подробной хронологии, «что дальше» и приглашения следить. Страница при этом индексируется — в этом весь смысл.</p>
+    <p class="ap muted" style="margin-top:22px;max-width:66ch">Краткий разбор сохраняет историю, источники и следующий шаг. Низкая оценка не скрывает факты участия.</p>
   </div>
 </section>
 
@@ -902,7 +917,7 @@ Z poważaniem,
     <h2>Словарь линейки</h2>
     <p class="prose">Один элемент, четыре значения. Смысл несёт форма линии, а не цвет: рядом с каждой всегда стоит слово.</p>
     <div class="stack" style="gap:16px;margin-top:8px">
-      <div class="b r-open"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">красная</p><p class="b__body">Окно открыто, срок идёт</p></div>
+      <div class="b r-open"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">красная</p><p class="b__body">Подтверждённое действие читателя со сроком; начало наступило, отмены нет, способ проверен. Здесь образец компонента, не открытое окно реального дела.</p></div>
       <div class="b r-fact"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">тёмная</p><p class="b__body">Состоявшийся факт</p></div>
       <div class="b r-uncertain"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap">пунктир</p><p class="b__body">Неточность названа</p></div>
       <div class="b r-ahead"><span class="b__rail" aria-hidden="true"></span><p class="b__field ap muted">нет</p><p class="b__body muted">Впереди, дата неизвестна</p></div>
@@ -989,3 +1004,5 @@ Z poważaniem,
   }
 })();
 </script>
+</body>
+</html>

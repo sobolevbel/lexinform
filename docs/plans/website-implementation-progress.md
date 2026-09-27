@@ -7,8 +7,9 @@ when its acceptance result and checks are recorded here.
 ## Current position
 
 - Started: 2026-09-16
-- Active task: WEB-07a.3 — regressions and a new import with freshness
-- Next task: WEB-04a — layout component corrections
+- Active task: WEB-04b — shared shell and typography
+- Pending acceptance: WEB-07a.3 — complete live tracking under an explicit model-call policy
+- Next task: WEB-07b.1 after 04b and the remaining 07a.3 acceptance
 - Release target: A — public library in five languages
 - Last code review: 2026-09-26, local commit `6cd680d`; no production verification
 - Remaining implementation slices: [task list](../website/tasks.md)
@@ -38,14 +39,14 @@ when its acceptance result and checks are recorded here.
 | WEB-03 | Complete | Permanent identities and versioned import contract implemented |
 | WEB-03.1 | Complete | UUIDs, scoped natural keys, relations, audited merge/split and stable URL resolution |
 | WEB-03.2 | Complete | Explicit ImportDocumentV1 allowlist, pure state projection, graph validation and legacy/pending fixtures |
-| WEB-04a | Not started | — |
+| WEB-04a | Complete | Prototype semantics corrected per §25.13; browser review of catalog, coverage and outcome states |
 | WEB-04b | Not started | — |
 | WEB-05a | Not started | — |
 | WEB-05b | Not started | — |
 | WEB-05c | Not started | — |
 | WEB-06 | In progress | Restore, acquisition, projection, activation and maintenance implemented; the deployment sandbox and timer remain (WEB-05a) |
 | WEB-06.3 | Complete | `import_state` command, `ImportRun` report, 20% corpus guard, reconciliation queue, retention and audited rebaseline |
-| WEB-07a | In progress | 07a.1 and 07a.2 done; regressions, import of freshness and the dry run (07a.3) remain |
+| WEB-07a | In progress | 07a.1/2 and local 07a.3 regressions/import done; complete live tracking acceptance remains |
 | WEB-07a.2 | Complete | Every watcher observes bills without a card; facts and changes stored, nothing delivered |
 | WEB-07a.1 | Complete | Bot v35: observation mode/basis, `source_checks` per (bill, aspect), freshness model |
 | WEB-07b | Not started | — |
@@ -56,6 +57,33 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-04a: correct the prototype before template implementation
+
+Applied §25.13 to the standalone HTML prototype. Importance labels no longer imply audience
+size; affected groups appear separately. Catalog states distinguish Sejm adoption, promulgation
+and unknown outcomes. Coverage uses one explicitly illustrative source snapshot and separates
+text filtering, waiting, reading errors, prepared analyses and Telegram delivery. It no longer
+promises full-document reading or a retry for every filtered record.
+
+Unverified participation uses an uncertainty notice instead of a red deadline or a fictitious
+commission form. The guide makes no universal promise about acceptance, replies or a deadline.
+Scheduled dates are labelled as scheduled, not accomplished facts. Closed matters state only
+that the project did not become law. A relevance assessment retains history, sources, next steps
+and a native disclosure for participation; missing registry entries are not treated as closure.
+
+Added document language/scaffold, separated brand/action color tokens, made search/copy buttons
+neutral, removed italic Polish titles and the unloaded 450 weight, and selected the light preview.
+Fixed an existing screen-switching defect: `data-open` kept home visible under every other screen.
+The historical concept is retained with an explicit pointer to the corrected semantics.
+
+Verified the built prototype in Brave: home, catalog and coverage; unknown outcome separated from
+confirmed outcomes; participation disclosure opens and retains the uncertainty notice. Screenshots
+were inspected at the available desktop viewport. Full mobile/zoom/keyboard/axe acceptance, local
+font assets, real routes and functional filters remain WEB-04b and later UI work.
+
+Checks: default bot pytest, strict mypy, Ruff/format, strict documentation build, links/anchors
+and `git diff --check` passed. This is a reviewed prototype, not a public release.
 
 ### 2026-09-27 — WEB-07a.3d: isolated dry-run acceptance remains incomplete
 
