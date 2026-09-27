@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Схема базы lexinform · v34</title>
+<title>Схема базы lexinform · v35</title>
 <style>
 :root { color-scheme: light dark; --paper:#f5f7fa; --surface:#fff; --ink:#15181e; --muted:#4c5563; --line:#d7dee7; --accent:#2c4f86; }
 @media (prefers-color-scheme:dark) { :root { --paper:#101318; --surface:#171b22; --ink:#e6eaf1; --muted:#9aa4b3; --line:#3a4350; --accent:#89b0e8; } }
@@ -40,7 +40,7 @@ summary { cursor:pointer; color:var(--accent); }
 <body><main>
 <a href="reference/database/">← База данных: справочник</a>
 <header>
-<p class="note">lexinform · SQLite · PRAGMA user_version = 34 · проверено 26 сентября 2026</p>
+<p class="note">lexinform · SQLite · PRAGMA user_version = 35 · проверено 27 сентября 2026</p>
 <h1>Схема базы lexinform</h1>
 <p>Снимок после выполнения всех <a href="https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py">MIGRATIONS</a>
 на пустой SQLite. Колонки, ограничения и индексы ниже получены из этой схемы.
@@ -51,7 +51,7 @@ summary { cursor:pointer; color:var(--accent); }
 <section id="relations">
 <h2>Законопроекты, доставка и LLM</h2>
 <div class="map">
-<section><h3>Наблюдения</h3><ul><li><a href="#bills">bills</a> — центральная запись</li><li><a href="#status_changes">status_changes</a> — изменения</li><li><a href="#rcl_wykaz_numbers">rcl_wykaz_numbers</a> — связь источников</li></ul></section>
+<section><h3>Наблюдения</h3><ul><li><a href="#bills">bills</a> — центральная запись</li><li><a href="#status_changes">status_changes</a> — изменения</li><li><a href="#rcl_wykaz_numbers">rcl_wykaz_numbers</a> — связь источников</li><li><a href="#source_checks">source_checks</a> — свежесть по аспектам</li></ul></section>
 <section><h3>Доставка</h3><ul><li><a href="#publications">publications</a> → status_changes (FK)</li><li><a href="#delivery_resolutions">delivery_resolutions</a> → publications, commands (логически)</li><li><a href="#publication_sequence">publication_sequence</a> — выделение ID</li></ul></section>
 <section><h3>Анализ</h3><ul><li><a href="#analysis_memo">analysis_memo</a> → bills (логически)</li><li><a href="#llm_batch_intents">llm_batch_intents</a> — до отправки</li><li><a href="#llm_batch_items">llm_batch_items</a> → <a href="#llm_batches">llm_batches</a> (FK)</li></ul></section>
 <section><h3>Эксплуатация</h3><ul><li><a href="#runs">runs</a> — отчёты и discovery</li><li><a href="#commands">commands</a> — выполнение и ответ</li></ul></section>
@@ -101,6 +101,8 @@ JSON хранится как TEXT, его структуру определяю�
 <tr><td><code>ready_analysis_json</code></td><td>TEXT</td><td>—</td><td><code>—</code></td></tr>
 <tr><td><code>senate_json</code></td><td>TEXT</td><td>—</td><td><code>—</code></td></tr>
 <tr><td><code>awaiting_batch_since</code></td><td>TEXT</td><td>—</td><td><code>—</code></td></tr>
+<tr><td><code>observation_mode</code></td><td>TEXT</td><td>—</td><td><code>—</code></td></tr>
+<tr><td><code>observation_basis</code></td><td>TEXT</td><td>—</td><td><code>—</code></td></tr>
 </tbody></table></div>
 <details><summary>SQL таблицы: составной ключ, UNIQUE, CHECK и REFERENCES</summary><pre><code>CREATE TABLE bills (
         term INTEGER NOT NULL,
@@ -118,7 +120,7 @@ JSON хранится как TEXT, его структуру определяю�
         analysis_attempts INTEGER NOT NULL DEFAULT 0,
         last_error TEXT,
         first_seen_at TEXT NOT NULL,
-        last_checked_at TEXT NOT NULL, submission_json TEXT, linked_number TEXT, act_json TEXT, entry_into_force TEXT, authors_json TEXT, agenda_json TEXT, rcl_json TEXT, discontinued_at TEXT, linked_wykaz_number TEXT, wykaz_json TEXT, supplements_json TEXT, joint_json TEXT, observed_closure_date TEXT, observed_process_json TEXT, analysis_generation INTEGER NOT NULL DEFAULT 0, ready_analysis_json TEXT, senate_json TEXT, awaiting_batch_since TEXT,
+        last_checked_at TEXT NOT NULL, submission_json TEXT, linked_number TEXT, act_json TEXT, entry_into_force TEXT, authors_json TEXT, agenda_json TEXT, rcl_json TEXT, discontinued_at TEXT, linked_wykaz_number TEXT, wykaz_json TEXT, supplements_json TEXT, joint_json TEXT, observed_closure_date TEXT, observed_process_json TEXT, analysis_generation INTEGER NOT NULL DEFAULT 0, ready_analysis_json TEXT, senate_json TEXT, awaiting_batch_since TEXT, observation_mode TEXT, observation_basis TEXT,
         PRIMARY KEY (term, number)
     );</code></pre></details>
 </article>
@@ -326,6 +328,18 @@ JSON хранится как TEXT, его структуру определяю�
         state TEXT NOT NULL,
         created_at TEXT NOT NULL
     );</code></pre></details>
+</article>
+<article id="source_checks">
+<h3>source_checks</h3><p>Последняя успешная проверка каждого аспекта дела (process, consultation, text, act); неудачи и outage учитываются отдельно. Переезжает вместе с делом при смене каденции.</p>
+<div class="scroll"><table><thead><tr><th>Колонка</th><th>Тип</th><th>Ограничения колонки</th><th>DEFAULT</th></tr></thead><tbody>
+<tr><td><code>term</code></td><td>INTEGER</td><td>NOT NULL, PK 1</td><td><code>—</code></td></tr>
+<tr><td><code>number</code></td><td>TEXT</td><td>NOT NULL, PK 2</td><td><code>—</code></td></tr>
+<tr><td><code>aspect</code></td><td>TEXT</td><td>NOT NULL, PK 3</td><td><code>—</code></td></tr>
+<tr><td><code>last_success_at</code></td><td>TEXT</td><td>—</td><td><code>—</code></td></tr>
+<tr><td><code>last_attempt_at</code></td><td>TEXT</td><td>—</td><td><code>—</code></td></tr>
+<tr><td><code>failures</code></td><td>INTEGER</td><td>NOT NULL</td><td><code>0</code></td></tr>
+<tr><td><code>last_outage_at</code></td><td>TEXT</td><td>—</td><td><code>—</code></td></tr>
+</tbody></table></div>
 </article>
 <article id="delivery_resolutions">
 <h3>delivery_resolutions</h3><p>Аудит ручных confirm, retry и dismiss; одна запись на команду.</p>

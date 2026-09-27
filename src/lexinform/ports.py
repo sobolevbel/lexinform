@@ -22,6 +22,7 @@ from lexinform.models import (
     BillStatus,
     BillSubmission,
     ChannelPost,
+    CheckAspect,
     CommandOutcome,
     CommandState,
     Committee,
@@ -36,6 +37,8 @@ from lexinform.models import (
     LlmBatchItem,
     LocatedText,
     Mp,
+    ObservationBasis,
+    ObservationMode,
     ObservedProcess,
     Phase,
     PrintInfo,
@@ -52,6 +55,7 @@ from lexinform.models import (
     SejmSitting,
     SejmTerm,
     SenateAct,
+    SourceCheck,
     Stage,
     StatusChange,
     SupplementContext,
@@ -541,6 +545,23 @@ class BillRepository(Protocol):
     def save_batch_intent(self, intent: BatchIntent) -> None: ...
 
     def batch_job(self, custom_id: str) -> BatchJob | None: ...
+
+    def set_observation(
+        self, term: int, number: str, mode: ObservationMode, basis: ObservationBasis
+    ) -> None: ...
+
+    def record_check(
+        self,
+        term: int,
+        number: str,
+        aspect: CheckAspect,
+        *,
+        at: datetime,
+        ok: bool,
+        outage: bool = False,
+    ) -> None: ...
+
+    def source_checks(self, term: int, number: str) -> dict[CheckAspect, SourceCheck]: ...
 
     def set_awaiting_batch(self, term: int, number: str, since: datetime | None) -> None: ...
 

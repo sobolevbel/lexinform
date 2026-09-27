@@ -32,6 +32,7 @@ from lexinform.models import (
     BillAuthors,
     BillStatus,
     BillSubmission,
+    CheckAspect,
     CommandState,
     DeliveryPlan,
     DeliveryResolution,
@@ -39,6 +40,8 @@ from lexinform.models import (
     JointRecord,
     LlmBatch,
     LlmBatchItem,
+    ObservationBasis,
+    ObservationMode,
     ObservedProcess,
     ProcessSummary,
     Publication,
@@ -49,6 +52,7 @@ from lexinform.models import (
     RunMode,
     RunReport,
     SenateAct,
+    SourceCheck,
     Stage,
     StatusChange,
     SupplementRecord,
@@ -388,6 +392,21 @@ MIGRATIONS: tuple[str, ...] = (
     );
     INSERT INTO publication_sequence VALUES (1, (SELECT COALESCE(MAX(id), 0) FROM publications));
     """,
+    # v35: observation independent of a Telegram thread; NULL mode on an old row means unknown.
+    """
+    ALTER TABLE bills ADD COLUMN observation_mode TEXT;
+    ALTER TABLE bills ADD COLUMN observation_basis TEXT;
+    CREATE TABLE source_checks (
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        aspect TEXT NOT NULL,
+        last_success_at TEXT,
+        last_attempt_at TEXT,
+        failures INTEGER NOT NULL DEFAULT 0,
+        last_outage_at TEXT,
+        PRIMARY KEY (term, number, aspect)
+    );
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -517,6 +536,10 @@ class SqliteBillRepository:
         try:
             scratch.execute("PRAGMA foreign_keys = OFF")
             scratch.executescript(script)
+            # A dump cut at a statement boundary replays cleanly and fails only in the migrations.
+            version = _dump_version(script)
+            for number, migration in enumerate(MIGRATIONS[version:], start=version + 1):
+                scratch.executescript(f"BEGIN;{migration}PRAGMA user_version = {number};COMMIT;")
         finally:
             scratch.close()
         tables = [
@@ -805,6 +828,65 @@ class SqliteBillRepository:
             else "open",
             since=datetime.fromisoformat(row["since"]),
         )
+
+    def set_observation(
+        self, term: int, number: str, mode: ObservationMode, basis: ObservationBasis
+    ) -> None:
+        self._conn.execute(
+            "UPDATE bills SET observation_mode = ?, observation_basis = ?"
+            " WHERE term = ? AND number = ?",
+            (mode.value, basis.value, term, number),
+        )
+
+    def record_check(
+        self,
+        term: int,
+        number: str,
+        aspect: CheckAspect,
+        *,
+        at: datetime,
+        ok: bool,
+        outage: bool = False,
+    ) -> None:
+        """A success resets the failures; an outage is not the bill's failure and counts none."""
+        stamp = _utc_iso(at)
+        self._conn.execute(
+            """
+            INSERT INTO source_checks
+                (term, number, aspect, last_success_at, last_attempt_at, failures, last_outage_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (term, number, aspect) DO UPDATE SET
+                last_success_at = COALESCE(excluded.last_success_at, last_success_at),
+                last_attempt_at = excluded.last_attempt_at,
+                failures = CASE WHEN excluded.last_success_at IS NOT NULL THEN 0
+                                ELSE failures + excluded.failures END,
+                last_outage_at = COALESCE(excluded.last_outage_at, last_outage_at)
+            """,
+            (
+                term,
+                number,
+                aspect.value,
+                stamp if ok else None,
+                stamp,
+                0 if ok or outage else 1,
+                stamp if outage and not ok else None,
+            ),
+        )
+
+    def source_checks(self, term: int, number: str) -> dict[CheckAspect, SourceCheck]:
+        rows = self._conn.execute(
+            "SELECT * FROM source_checks WHERE term = ? AND number = ?", (term, number)
+        ).fetchall()
+        return {
+            CheckAspect(row["aspect"]): SourceCheck(
+                aspect=CheckAspect(row["aspect"]),
+                last_success_at=_parse_dt(row["last_success_at"]),
+                last_attempt_at=_parse_dt(row["last_attempt_at"]),
+                failures=int(row["failures"]),
+                last_outage_at=_parse_dt(row["last_outage_at"]),
+            )
+            for row in rows
+        }
 
     def set_awaiting_batch(self, term: int, number: str, since: datetime | None) -> None:
         self._conn.execute(
@@ -1458,7 +1540,7 @@ class SqliteBillRepository:
         # A savepoint works in autocommit mode and inside a dry run's open transaction alike.
         self._conn.execute("SAVEPOINT rehome")
         try:
-            for table in ("publications", "status_changes"):
+            for table in ("publications", "status_changes", "source_checks"):
                 self._conn.execute(
                     f"UPDATE {table} SET term = ? WHERE term = ? AND number IN ({placeholders})",
                     (to_term, from_term, *numbers),
@@ -2069,6 +2151,12 @@ class SqliteBillRepository:
             ),
             joint=(
                 JointRecord.model_validate_json(row["joint_json"]) if row["joint_json"] else None
+            ),
+            observation_mode=(
+                ObservationMode(row["observation_mode"]) if row["observation_mode"] else None
+            ),
+            observation_basis=(
+                ObservationBasis(row["observation_basis"]) if row["observation_basis"] else None
             ),
             discontinued_at=(
                 datetime.fromisoformat(row["discontinued_at"]) if row["discontinued_at"] else None

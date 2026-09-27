@@ -39,6 +39,7 @@ from lexinform.models.sejm import (
     TextDocument,
 )
 from lexinform.models.senate import SenateAct
+from lexinform.models.source_checks import ObservationBasis, ObservationMode
 from lexinform.models.wykaz import WykazEntry
 
 
@@ -118,6 +119,9 @@ class Bill(BaseModel):
     """How this print differs from the others considered jointly with it, when the channel
     answers for it under their card rather than giving it one of its own."""
     discontinued_at: dt.datetime | None = None
+    observation_mode: ObservationMode | None = None
+    """None is a row from before observation modes: unknown, not off."""
+    observation_basis: ObservationBasis | None = None
     first_seen_at: dt.datetime
     last_checked_at: dt.datetime
 

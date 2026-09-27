@@ -910,7 +910,7 @@ Invariants worth keeping:
 
 The schema version is SQLite's `PRAGMA user_version`; the source of truth is the `MIGRATIONS` tuple
 in `adapters/sqlite_repo.py`. Script at index `i` brings the database to version `i + 1`;
-`SCHEMA_VERSION = len(MIGRATIONS)` (v32 as of Sept 2026). `migrate()` reads `user_version` and runs
+`SCHEMA_VERSION = len(MIGRATIONS)` (v35 as of Sept 2026). `migrate()` reads `user_version` and runs
 every later script inside its own transaction, stamping the new version at the end, so a failed
 script leaves the database at the previous version.
 
@@ -954,7 +954,10 @@ answer stale) and `bills.ready_analysis_json` (a collected re-analysis with its 
 v29 `llm_batch_items.result_json`/`accounted_at` (the answer stored before it is applied, its cost
 acknowledged with the run report); v30 `llm_batches.forgotten_at` (collected and deleted at the
 provider). See the batch invariant above. v31 `bills.senate_json` (the act's page on senat.gov.pl:
-its Senate print, the committees it went to with their e-mail, their sittings).
+its Senate print, the committees it went to with their e-mail, their sittings). v35
+`bills.observation_mode`/`observation_basis` (observation independent of a Telegram thread; NULL on
+an old row means unknown, not off) and `source_checks` (the last success of each aspect of a bill,
+failures and outages kept apart; moved with the row at a term rollover).
 
 How state travels: the daily workflow runs `db init` (fresh schema at the current version) → `db
 restore state/lexinform.sql` → `run` → `db dump`. `dump()` is `iterdump()` plus a trailing `PRAGMA

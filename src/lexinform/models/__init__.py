@@ -258,6 +258,13 @@ from lexinform.models.senate import (
     SenateCommittee,
     senate_title_matches,
 )
+from lexinform.models.source_checks import (
+    CheckAspect,
+    Freshness,
+    ObservationBasis,
+    ObservationMode,
+    SourceCheck,
+)
 from lexinform.models.wykaz import (
     BILL_KIND,
     REGISTER_PAGE_URL,
@@ -269,6 +276,11 @@ from lexinform.models.wykaz import (
 )
 
 __all__ = [
+    "CheckAspect",
+    "Freshness",
+    "ObservationBasis",
+    "ObservationMode",
+    "SourceCheck",
     "DecisionEvidence",
     "DecisionState",
     "ReadingOutcome",

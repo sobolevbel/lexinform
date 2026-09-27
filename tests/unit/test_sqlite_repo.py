@@ -18,7 +18,11 @@ from lexinform.models import (
     BillContext,
     BillStatus,
     BillSubmission,
+    CheckAspect,
+    Freshness,
     IncomingCommand,
+    ObservationBasis,
+    ObservationMode,
     ProcessDetail,
     ProcessSummary,
     Publication,
@@ -26,6 +30,7 @@ from lexinform.models import (
     PublicationStatus,
     RunMode,
     RunReport,
+    SourceCheck,
     Stage,
     StatusChange,
     process_summary,
@@ -877,6 +882,8 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "ready_analysis_json",
         "senate_json",  # v31
         "awaiting_batch_since",  # v32
+        "observation_mode",  # v35
+        "observation_basis",
     } <= bills
     assert {
         "ux_pub_once_per_kind",
@@ -909,6 +916,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert "llm_batch_intents" in tables  # v27
     assert {"result_json", "accounted_at"} <= batch_items
     assert "forgotten_at" in batches  # v30
+    assert "source_checks" in tables  # v35
     # v9: the flag is stored, so a retried post renders the same message
     when = datetime(2026, 9, 7, 6, 0, tzinfo=UTC)
     assert repo.add_status_change(_change("1", when, discontinued=True)) is not None
@@ -987,6 +995,63 @@ def test_the_end_of_a_term_leaves_the_governments_own_rows_alone(
     carried = repo.get(11, entry)
     assert carried is not None and carried.wykaz is not None, "move_government_rows moved one row"
     assert repo.get_publication(11, entry, PublicationKind.NEW_BILL, CHANNEL) is not None
+
+
+def test_checks_move_with_the_governments_rows(repo: SqliteBillRepository, now: datetime) -> None:
+    entry = _wykaz_row(repo, now)
+    repo.record_check(10, entry, CheckAspect.PROCESS, at=now, ok=True)
+
+    repo.move_government_rows(10, 11)
+
+    assert repo.source_checks(10, entry) == {}
+    assert repo.source_checks(11, entry)[CheckAspect.PROCESS].last_success_at == now
+
+
+def test_an_old_row_has_unknown_observation_and_no_checks(
+    repo: SqliteBillRepository, process_3039: ProcessDetail, now: datetime
+) -> None:
+    bill = repo.upsert_summary(process_3039, now=now)
+
+    assert (bill.observation_mode, bill.observation_basis) == (None, None)
+    assert repo.source_checks(bill.term, bill.number) == {}
+    repo.set_observation(
+        bill.term, bill.number, ObservationMode.METADATA, ObservationBasis.NOT_RELEVANT
+    )
+    stored = repo.get(bill.term, bill.number)
+    assert stored is not None and stored.observation_mode == ObservationMode.METADATA
+    assert stored.observation_basis == ObservationBasis.NOT_RELEVANT
+
+
+def test_checks_keep_success_failures_and_outages_apart(
+    repo: SqliteBillRepository, now: datetime
+) -> None:
+    later = now + timedelta(hours=40)
+    repo.record_check(10, "1", CheckAspect.ACT, at=now, ok=True)
+    repo.record_check(10, "1", CheckAspect.ACT, at=later, ok=False, outage=True)
+    outage = repo.source_checks(10, "1")[CheckAspect.ACT]
+    repo.record_check(10, "1", CheckAspect.ACT, at=later, ok=False)
+    repo.record_check(10, "1", CheckAspect.ACT, at=later, ok=False)
+    failing = repo.source_checks(10, "1")[CheckAspect.ACT]
+    repo.record_check(10, "1", CheckAspect.ACT, at=later, ok=True)
+    fresh = repo.source_checks(10, "1")[CheckAspect.ACT]
+
+    assert (outage.last_success_at, outage.failures) == (now, 0)
+    assert outage.freshness(later) == Freshness.OUTAGE
+    assert failing.failures == 2 and failing.last_attempt_at == later
+    assert (fresh.failures, fresh.last_success_at) == (0, later)
+    assert fresh.freshness(later) == Freshness.FRESH
+    assert repo.source_checks(10, "1").keys() == {CheckAspect.ACT}
+
+
+def test_freshness_is_unknown_without_a_success_and_stale_after_36_hours(now: datetime) -> None:
+    never = SourceCheck(aspect=CheckAspect.TEXT, last_attempt_at=now, failures=3)
+    old = SourceCheck(aspect=CheckAspect.TEXT, last_success_at=now)
+
+    assert never.freshness(now) == Freshness.UNKNOWN
+    assert old.freshness(now + timedelta(hours=36)) == Freshness.FRESH
+    assert old.freshness(now + timedelta(hours=37)) == Freshness.STALE
+    failing = old.model_copy(update={"failures": 1})
+    assert failing.freshness(now + timedelta(hours=37)) == Freshness.FAILING
 
 
 def test_known_terms_lists_every_term_with_bills(
@@ -1172,6 +1237,9 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("ALTER TABLE bills DROP COLUMN ready_analysis_json")
         conn.execute("ALTER TABLE bills DROP COLUMN senate_json")
         conn.execute("ALTER TABLE bills DROP COLUMN awaiting_batch_since")
+        conn.execute("ALTER TABLE bills DROP COLUMN observation_mode")
+        conn.execute("ALTER TABLE bills DROP COLUMN observation_basis")
+        conn.execute("DROP TABLE source_checks")
         conn.execute("PRAGMA user_version = 20")
     dump = source.dump()
     source.close()
