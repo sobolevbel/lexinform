@@ -43,7 +43,7 @@ when its acceptance result and checks are recorded here.
 | WEB-05a | Not started | — |
 | WEB-05b | Not started | — |
 | WEB-05c | Not started | — |
-| WEB-06 | In progress | Restore allowlist implemented; acquisition and process isolation remain |
+| WEB-06 | In progress | SQL allowlist and bounded child restore implemented; acquisition and deployment sandbox remain |
 | WEB-07a | Not started | — |
 | WEB-07b | Not started | — |
 | WEB-08 | Not started | — |
@@ -53,6 +53,34 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-06.1b: resource-bounded restore process
+
+Added `ingestion.process.restore_in_process`: SQL parsing and migration run in a separate
+Python process with isolated Python flags, an empty environment, closed inherited descriptors
+and a private temporary working directory. The default 30-second deadline kills and reaps the
+child on timeout. The child applies CPU (10 seconds), file-size (128 MiB), descriptor (32) and
+core-dump (disabled) limits before reading the dump. Linux additionally limits address space
+to 512 MiB; macOS does not claim an OS memory limit.
+
+The child writes the normalized database and a bounded receipt. The parent verifies source
+hash, supported schema versions, database size and hash, then opens the result read-only for
+the caller. Both files and the connection are removed/closed after success, validation failure,
+timeout or a caller exception. Worker stderr is not propagated, so malformed SQL and private
+dump contents do not appear in operator-facing exceptions. No shell or pipeline command runs.
+
+This adds process and resource boundaries, not a network/filesystem security sandbox: the
+child still runs as the service user. A deployment container without network, secrets or
+production mounts remains required before accepting remote dumps. Git fetch, ancestry,
+the import lock and projection into ImportDocumentV1 are also still pending in WEB-06.1.
+The normalized database remains private input and is never a public/downloadable artifact.
+
+Tests exercise real child processes for restore, SQL rejection, cleanup, environment options,
+deadline and resource limits, plus missing, oversized and mismatched result receipts. The
+Linux-only memory limit is covered conditionally in the same test, but was not exercised by
+the local macOS run. Full web gate: 155 tests passed, strict mypy, Ruff, Django checks and
+migration drift passed. The default bot suite, bot mypy/Ruff/format, lock consistency,
+strict documentation build and link/content checks also passed.
 
 ### 2026-09-27 — WEB-06.1a: bounded SQL restore validation
 

@@ -118,3 +118,20 @@ a nonempty reason and a Clock. They retain original UUIDs and append a MatterDec
 `split(..., restore_id=...)` can undo a mistaken merge while restoring the old public ID.
 `canonical_matter` and `matter_for_path` resolve existing IDs/legacy paths; they do not decide
 whether a reader may see the result. Public views must still enforce visibility in WEB-07b.
+
+## Snapshot restore boundary
+
+`ingestion.process.restore_in_process(raw_dump)` runs the SQL restore in a child process
+and yields a `RestoredSnapshot` with a read-only SQLite connection. Use it as a context manager;
+the connection and temporary normalized database are valid only inside that context. The child
+receives no inherited environment, runs from a private temporary directory and does not invoke
+the bot pipeline. Invalid input, worker failure or timeout raises a sanitized `SnapshotError`.
+
+Limits: 20 MiB input, 128 MiB database/output file, 10 CPU seconds, 30 seconds default wall time,
+32 descriptors and no core dump. Linux additionally applies a 512 MiB address-space limit;
+macOS relies on SQL/input/output limits and the deadline instead of an OS memory limit.
+
+This is an internal building block, not an import command. It does not restrict the service
+user's filesystem or network access. Production still requires a sandbox/container with no
+network, secrets or production mounts before remote snapshots are accepted. Fetch locking,
+pinned Git provenance, ancestry, row projection and generation activation are not wired yet.
