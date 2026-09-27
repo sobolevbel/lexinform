@@ -56,6 +56,16 @@ when its acceptance result and checks are recorded here.
 
 ## Work log
 
+### 2026-09-27 — WEB-07a.2b: RCL projects and wykaz plans without a card
+
+`RclWatcher.check` and `WykazWatcher.check` take the unthreaded bills as `quiet`, handled in the
+same pass (the register is downloaded once): the observation is stored and the change recorded,
+no publication row is prepared and the consultation-results notice is skipped; a `metadata`
+project is not re-analysed on a new text. Each read records a `process` check; a register or RCL
+outage records an outage, not a failure. The unthreaded list is now built before the other
+sources and re-read before the Sejm loop, since RCL may link a row in between. Linking already
+worked without a card: the alias is made only when a card was sent. Two more `World` scenarios.
+
 ### 2026-09-27 — WEB-07a.2a: Sejm process observed without a Telegram thread
 
 Watcher matrix (what reads bills, and how it behaves without a card):
@@ -65,9 +75,9 @@ Watcher matrix (what reads bills, and how it behaves without a card):
 | Sejm process (`service._check_processes`) | `list_tracked` | not read | **done**: stored, not delivered |
 | ELI act (`acts.check`) | inside the process loop | not read | **done**: act saved, no notice |
 | Pre-print `/bills` (`pre_print`) | all `RPW/` rows | reconciled; tells under a card | check: record `process` checks |
-| RCL (`rcl.check`) | `list_tracked` | not read | next: unthreaded listing, no `tell` |
-| Wykaz (`wykaz.check`) | `list_tracked` | not read | next: as RCL |
-| Linking RPW/RCL → druk | awaiting-link queries | links without a card | check: alias only with a card |
+| RCL (`rcl.check`) | `list_tracked` | not read | **done**: `quiet` refreshed, stored, not told |
+| Wykaz (`wykaz.check`) | `list_tracked` | not read | **done**: same download, stored, not told |
+| Linking RPW/RCL → druk | awaiting-link queries | links without a card | verified: alias only with a card |
 | Consultation results/reminders | due queries join the card | not read | next: facts only |
 | Agenda (`agenda.check`) | every followed bill | not read | next: store `bill.agenda`, no post |
 | Senate page | every followed bill | not read | next: read for `full` only |
