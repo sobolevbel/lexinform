@@ -10,6 +10,7 @@ from lexinform.models import (
     SejmSitting,
     Stage,
 )
+from tests.fakes import make_analysis
 from tests.harness import COMMITTEE_STAGES, REFERRED, World
 
 ASW = Committee(term=10, code="ASW", name="Komisja Administracji i Spraw Wewnętrznych")
@@ -537,3 +538,34 @@ def test_a_condition_on_another_point_of_the_agenda_leaves_our_sitting_a_fact() 
     _, item, _ = w.publisher.agendas[0]
     assert item.condition is None
     assert "условно" not in w.publisher.texts(PublicationKind.AGENDA)[0]
+
+
+def test_a_bill_without_a_card_keeps_its_agenda_and_announces_nothing() -> None:
+    w = World(llm_script={"3039": make_analysis(relevant=True, score=2)})
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
+    w.gateway.committees["ASW"] = ASW
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run()
+    w.clock.advance(days=1)
+    w.gateway.committee_sittings["ASW"] = ()
+
+    report = w.run()
+
+    assert w.publication("3039") is None
+    assert _refs(w) == []
+    assert (report.agenda_posted, report.agenda_cancelled) == (0, 0)
+    assert w.publisher.agendas == [] and w.publication("3039", PublicationKind.AGENDA) is None
+
+
+def test_a_sitting_is_stored_for_a_bill_without_a_card() -> None:
+    w = World(llm_script={"3039": make_analysis(relevant=True, score=2)})
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
+    w.gateway.committees["ASW"] = ASW
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert _refs(w) == [SITTING_REF]
+    assert report.agenda_posted == 0 and w.publisher.agendas == []

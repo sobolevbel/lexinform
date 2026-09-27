@@ -339,10 +339,23 @@ class StatusTrackingService:
         tracked = self._list_tracked(changed_since)
         everyone = tracked if changed_since is None else self._list_tracked()
         quiet: list[Bill] = []
+        quiet_everyone: list[Bill] = []
         if self._options.observe_unthreaded:
             self._assign_observation()
-            quiet = self._list_tracked(changed_since, unthreaded=True)
-        if not self._check_other_sources(tracked, everyone, result, publish=publish, quiet=quiet):
+            quiet_everyone = self._list_tracked(unthreaded=True)
+            quiet = (
+                quiet_everyone
+                if changed_since is None
+                else self._list_tracked(changed_since, unthreaded=True)
+            )
+        if not self._check_other_sources(
+            tracked,
+            everyone,
+            result,
+            publish=publish,
+            quiet=quiet,
+            quiet_everyone=quiet_everyone,
+        ):
             return result
         self._check_processes(tracked, result, publish=publish, may_wait=may_wait)
         if quiet and result.fatal_error is None:
@@ -390,6 +403,7 @@ class StatusTrackingService:
         *,
         publish: bool,
         quiet: list[Bill] | None = None,
+        quiet_everyone: list[Bill] | None = None,
     ) -> bool:
         """The watchers that do not read a Sejm process; False when one of them had to stop.
 
@@ -398,11 +412,13 @@ class StatusTrackingService:
         The wykaz comes before RCL: a plan whose project is out hands its card over, and the
         project is then among the rows the RCL watcher refreshes in the same run.
         """
-        if self._agenda is not None and not self._agenda.check(everyone, result, publish=publish):
+        silent = quiet or []
+        if self._agenda is not None and not self._agenda.check(
+            everyone, result, publish=publish, quiet=quiet_everyone or []
+        ):
             return False
         if self._senate is not None:
             self._senate.check(everyone, result)
-        silent = quiet or []
         if self._wykaz is not None and not self._wykaz.check(
             tracked, result, publish=publish, quiet=silent
         ):

@@ -8,6 +8,7 @@ say "II чтение — 15–18.09.2026") and every new (bill, sitting) pair is
 
 import datetime as dt
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
@@ -111,10 +112,19 @@ class AgendaWatcher:
         self._channel_id = channel_id
         self._local_tz = local_tz
 
-    def check(self, bills: list[Bill], result: TrackingResult, *, publish: bool) -> bool:
+    def check(
+        self,
+        bills: list[Bill],
+        result: TrackingResult,
+        *,
+        publish: bool,
+        quiet: Sequence[Bill] = (),
+    ) -> bool:
         """Refresh the upcoming sittings of every bill and post the new ones. False on an outage.
-        Sittings are listed once per term the bills belong to."""
-        followed = [b for b in bills if b.has_process]
+        Sittings are listed once per term the bills belong to; `quiet` bills have no card, and
+        only their stored agenda is refreshed from the same listings."""
+        silent = {(b.term, b.number) for b in quiet}
+        followed = [b for b in (*bills, *quiet) if b.has_process]
         today = self._clock.now().astimezone(self._local_tz).date()
         for term in sorted({b.term for b in followed}):
             of_term = [b for b in followed if b.term == term]
@@ -124,7 +134,9 @@ class AgendaWatcher:
                 result.partial_errors.append(f"sittings: {exc.describe()}")
                 log.error("agenda watch stopped for term %d: %s", term, exc.describe())
                 continue
-            if not self._check_term(of_term, listings, result, today, publish=publish):
+            if not self._check_term(
+                of_term, listings, result, today, publish=publish, silent=silent
+            ):
                 return False
         return True
 
@@ -141,12 +153,17 @@ class AgendaWatcher:
         today: dt.date,
         *,
         publish: bool,
+        silent: set[tuple[int, str]],
     ) -> bool:
         for bill in bills:
             try:
                 items = self._items_for(bill, listings)
                 items += listings.kept(bill, today)
                 items = tuple(sorted(items, key=lambda i: (i.date, i.ref)))
+                if (bill.term, bill.number) in silent:
+                    if items != bill.agenda:
+                        self._repo.save_agenda(bill.term, bill.number, items)
+                    continue
                 with self._repo.atomic():
                     cancelled = self._plan_retractions(bill, items, listings)
                     if items != bill.agenda:
