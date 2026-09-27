@@ -536,9 +536,11 @@ class StatusTrackingService:
     def _log_outcome(self, result: TrackingResult, changed_since: datetime | None) -> None:
         scope = "all" if changed_since is None else f"changed since {changed_since:%F %R}"
         log.info(
-            "tracking (%s): checked=%d changed=%d reanalyzed=%d published=%d agenda=%d failed=%d",
+            "tracking (%s): checked=%d observed=%d changed=%d reanalyzed=%d published=%d"
+            " agenda=%d failed=%d",
             scope,
             result.checked,
+            result.observed,
             result.changed,
             result.reanalyzed,
             result.published,
