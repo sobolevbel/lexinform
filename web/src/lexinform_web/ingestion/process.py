@@ -11,6 +11,7 @@ from tempfile import TemporaryDirectory
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from lexinform.adapters.sqlite_repo import SCHEMA_VERSION
+from lexinform_web.ingestion.contract import ImportDocumentV1
 from lexinform_web.ingestion.restore import (
     MAX_DATABASE_PAGES,
     MAX_DUMP_BYTES,
@@ -55,8 +56,7 @@ def verify_result(directory: Path, expected_hash: str) -> RestoreReceipt:
 
 
 @contextmanager
-def restore_in_process(raw: bytes, *, timeout: float = 30) -> Iterator[RestoredSnapshot]:
-    """Bound restoration in a child process; deployment must also isolate filesystem and network."""
+def worker_result(raw: bytes, timeout: float, arguments: tuple[str, ...] = ()) -> Iterator[Path]:
     if not raw or len(raw) > MAX_DUMP_BYTES:
         raise SnapshotError("snapshot size outside allowed bounds")
     if not math.isfinite(timeout) or timeout <= 0:
@@ -65,7 +65,14 @@ def restore_in_process(raw: bytes, *, timeout: float = 30) -> Iterator[RestoredS
         directory = Path(temporary)
         try:
             result = subprocess.run(
-                [sys.executable, "-I", "-B", "-m", "lexinform_web.ingestion.restore_worker"],
+                [
+                    sys.executable,
+                    "-I",
+                    "-B",
+                    "-m",
+                    "lexinform_web.ingestion.restore_worker",
+                    *arguments,
+                ],
                 input=raw,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
@@ -81,6 +88,13 @@ def restore_in_process(raw: bytes, *, timeout: float = 30) -> Iterator[RestoredS
             raise SnapshotError("restore worker could not start") from None
         if result.returncode != 0:
             raise SnapshotError("restore worker failed validation or exceeded its resource limits")
+        yield directory
+
+
+@contextmanager
+def restore_in_process(raw: bytes, *, timeout: float = 30) -> Iterator[RestoredSnapshot]:
+    """Bound restoration in a child process; deployment must also isolate filesystem and network."""
+    with worker_result(raw, timeout) as directory:
         receipt = verify_result(directory, hashlib.sha256(raw).hexdigest())
         uri = (directory / "normalized.sqlite").as_uri() + "?mode=ro&immutable=1"
         with closing(sqlite3.connect(uri, uri=True)) as connection:
@@ -91,3 +105,23 @@ def restore_in_process(raw: bytes, *, timeout: float = 30) -> Iterator[RestoredS
                 normalized_schema=receipt.normalized_schema,
                 dump_sha256=receipt.dump_sha256,
             )
+
+
+def project_in_process(
+    raw: bytes, *, source_commit: str, public_channel: str | None = None, timeout: float = 30
+) -> ImportDocumentV1:
+    with worker_result(raw, timeout, (source_commit, public_channel or "")) as directory:
+        try:
+            with (directory / "document.json").open("rb") as output:
+                payload = output.read(MAX_DUMP_BYTES + 1)
+            if len(payload) > MAX_DUMP_BYTES:
+                raise SnapshotError("import document exceeds its size limit")
+            document = ImportDocumentV1.model_validate_json(payload)
+        except OSError, ValidationError:
+            raise SnapshotError("projection worker produced an invalid document") from None
+        if (
+            document.origin.source_commit != source_commit
+            or document.origin.dump_sha256 != hashlib.sha256(raw).hexdigest()
+        ):
+            raise SnapshotError("import document belongs to a different snapshot")
+        return document

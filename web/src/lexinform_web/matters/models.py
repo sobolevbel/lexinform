@@ -3,6 +3,8 @@ import uuid
 from django.conf import settings
 from django.db import models
 
+from lexinform_web.matters.identities import IdentitySource
+
 
 class Matter(models.Model):
     class Visibility(models.TextChoices):
@@ -35,11 +37,7 @@ class Matter(models.Model):
 
 
 class SourceIdentity(models.Model):
-    class Source(models.TextChoices):
-        SEJM = "sejm", "Сейм"
-        RPW = "rpw", "RPW"
-        RCL = "rcl", "RCL"
-        WYKAZ = "wykaz", "Wykaz"
+    Source = IdentitySource
 
     source = models.CharField(max_length=8, choices=Source)
     scope = models.CharField(max_length=100)

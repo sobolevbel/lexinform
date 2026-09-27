@@ -133,8 +133,16 @@ macOS relies on SQL/input/output limits and the deadline instead of an OS memory
 
 This is an internal building block, not an import command. It does not restrict the service
 user's filesystem or network access. Production still requires a sandbox/container with no
-network, secrets or production mounts before remote snapshots are accepted. Row projection
-and generation activation are not wired yet.
+network, secrets or production mounts before remote snapshots are accepted.
+
+`ingestion.process.project_in_process(raw_dump, source_commit=sha, public_channel="@readers")`
+restores and projects the snapshot inside the same resource-bounded child, returning a validated
+`ImportDocumentV1`. The SHA must come from pinned acquisition; the parent checks it and the input
+hash against the returned origin. Output is limited to 20 MiB. Omitting `public_channel` exports
+no Telegram links. Only sent messages from that exact public username are included. Malformed
+rows, inconsistent embedded identities and dangling graph references reject the whole document.
+Applied analysis, staged-analysis presence and pending batch work remain separate. This boundary
+does not write PostgreSQL or accept a snapshot; generation activation is not wired yet.
 
 `ingestion.acquisition.acquire_snapshot(source, load_previous)` holds a separate PostgreSQL
 session lock before reading the last accepted `SnapshotRef` and fetching. Keep the context

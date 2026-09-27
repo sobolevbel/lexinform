@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from lexinform_web.ingestion.process import MAX_DATABASE_BYTES, RestoreReceipt
+from lexinform_web.ingestion.reader import read_document
 from lexinform_web.ingestion.restore import MAX_DUMP_BYTES, restore_snapshot
 
 
@@ -26,6 +27,17 @@ def main() -> None:
     limit_resources()
     raw = sys.stdin.buffer.read(MAX_DUMP_BYTES + 1)
     with restore_snapshot(raw) as snapshot:
+        if len(sys.argv) == 3:
+            document = read_document(
+                snapshot, source_commit=sys.argv[1], public_channel=sys.argv[2] or None
+            )
+            payload = document.model_dump_json().encode()
+            if len(payload) > MAX_DUMP_BYTES:
+                raise ValueError("import document exceeds its size limit")
+            Path("document.json").write_bytes(payload)
+            return
+        if len(sys.argv) != 1:
+            raise ValueError("invalid worker arguments")
         database = snapshot.connection.serialize()
         receipt = RestoreReceipt(
             source_schema=snapshot.source_schema,

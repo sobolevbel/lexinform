@@ -43,7 +43,7 @@ when its acceptance result and checks are recorded here.
 | WEB-05a | Not started | — |
 | WEB-05b | Not started | — |
 | WEB-05c | Not started | — |
-| WEB-06 | In progress | Restore, pinned Git acquisition and import lock implemented; projection, activation and deployment sandbox remain |
+| WEB-06 | In progress | Restore, pinned Git acquisition, import lock and bounded projection implemented; activation and deployment sandbox remain |
 | WEB-07a | Not started | — |
 | WEB-07b | Not started | — |
 | WEB-08 | Not started | — |
@@ -53,6 +53,29 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-06.1d: restored rows and bounded contract projection
+
+Added a read-only snapshot adapter for the existing ImportDocumentV1 projection. It checks
+embedded bill and intent identities against SQLite keys and rejects invalid model data or
+dangling graph references without exposing raw row contents in errors. History and applied
+analysis survive; staged analysis remains a presence flag, and unconsumed batch work stays
+separate. Consumed items do not reappear as pending. Telegram references require an explicit
+public username and a sent message; operator payloads and errors are not exported.
+
+`project_in_process` now performs restore, row decoding and projection in the resource-bounded
+child. It returns only the validated contract, with a 20 MiB output limit and parent-side checks
+of pinned SHA and source-byte hash. Temporary results are cleaned on success and failure.
+There are no PostgreSQL writes, production fetches or bot pipeline calls. The deployment
+filesystem/network sandbox remains open in WEB-06.1; generation activation remains WEB-06.2.
+
+Moved the source-choice enum out of the ORM model module so the contract can load without
+Django settings or app initialization. Existing model choices and migrations are unchanged.
+Full web gate passed (179 tests, strict mypy, Ruff, Django checks and migration drift).
+Five additional parent-result rejection cases then passed in the focused 13-test reader suite;
+strict web mypy passed again. The default bot suite, bot mypy/Ruff/format, lock consistency,
+strict documentation build and link/content checks passed. PostgreSQL checks used the local
+test database with sandbox network access enabled; production was not accessed.
 
 ### 2026-09-27 — WEB-06.1c: pinned acquisition and import lock
 

@@ -6,8 +6,7 @@ from urllib.parse import urlsplit
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from lexinform.models.enums import BillStatus, Category
-from lexinform_web.matters.identities import SourceKey
-from lexinform_web.matters.models import SourceIdentity
+from lexinform_web.matters.identities import IdentitySource, SourceKey
 
 SUPPORTED_SCHEMA: Final = 34
 Nonempty = Annotated[str, Field(min_length=1)]
@@ -43,7 +42,7 @@ class Identity(ContractModel):
 
     @model_validator(mode="after")
     def natural_key(self) -> Self:
-        SourceKey(SourceIdentity.Source(self.source), self.scope, self.external_id)
+        SourceKey(IdentitySource(self.source), self.scope, self.external_id)
         if self.source == "wykaz" and (
             self.scope != "gov.pl/premier"
             or not re.fullmatch(r"entry:[0-9a-f]{64}", self.external_id)
