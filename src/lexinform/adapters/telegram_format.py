@@ -1444,7 +1444,11 @@ class MessageFormatter:
             blocks.append(self._bill_facts(bill, full=outcome.status in FULL_FACTS))
         if outcome.message_id is not None:
             posted = "card posted" if bill is not None else "posted"
-            blocks.append(f"📣 {posted}: message {outcome.message_id}")
+            label = f"message {outcome.message_id}"
+            url = self._post_url(outcome.message_id)
+            if url:
+                label = f'<a href="{html.escape(url, quote=True)}">{label}</a>'
+            blocks.append(f"📣 {posted}: {label}")
         if outcome.note:
             blocks.append(esc(outcome.note))
         return RenderedMessage(

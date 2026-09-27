@@ -455,10 +455,12 @@ def test_a_published_digest_is_not_called_a_card() -> None:
         status=OutcomeStatus.DIGESTED, note="2026-W39 posted to the channel", message_id=63
     )
 
-    text = MessageFormatter("ru").command_reply(_incoming("/digest publish ref=2026-W39"), outcome)
+    formatter = MessageFormatter("ru", channel="@lexinform")
 
-    assert text.text.startswith("🗞")
-    assert "📣 posted: message 63" in text.text
+    text = formatter.command_reply(_incoming("/digest publish ref=2026-W39"), outcome).text
+
+    assert text.startswith("🗞")
+    assert '📣 posted: <a href="https://t.me/lexinform/63">message 63</a>' in text
 
 
 def test_run_report_lists_the_commands_handled() -> None:
