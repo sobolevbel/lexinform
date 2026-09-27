@@ -7,8 +7,8 @@ when its acceptance result and checks are recorded here.
 ## Current position
 
 - Started: 2026-09-16
-- Active task: WEB-07a.2 — watchers without a Telegram thread
-- Next task: WEB-07a.3 — regressions and a new import with freshness
+- Active task: WEB-07a.3 — regressions and a new import with freshness
+- Next task: WEB-04a — layout component corrections
 - Release target: A — public library in five languages
 - Last code review: 2026-09-26, local commit `6cd680d`; no production verification
 - Remaining implementation slices: [task list](../website/tasks.md)
@@ -45,7 +45,8 @@ when its acceptance result and checks are recorded here.
 | WEB-05c | Not started | — |
 | WEB-06 | In progress | Restore, acquisition, projection, activation and maintenance implemented; the deployment sandbox and timer remain (WEB-05a) |
 | WEB-06.3 | Complete | `import_state` command, `ImportRun` report, 20% corpus guard, reconciliation queue, retention and audited rebaseline |
-| WEB-07a | In progress | 07a.1 storage and the Sejm process part of 07a.2 done; other watchers and import (07a.3) remain |
+| WEB-07a | In progress | 07a.1 and 07a.2 done; regressions, import of freshness and the dry run (07a.3) remain |
+| WEB-07a.2 | Complete | Every watcher observes bills without a card; facts and changes stored, nothing delivered |
 | WEB-07a.1 | Complete | Bot v35: observation mode/basis, `source_checks` per (bill, aspect), freshness model |
 | WEB-07b | Not started | — |
 | WEB-08 | Not started | — |
@@ -55,6 +56,17 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-07a.2c: agenda, Senate, pre-print checks; 07a.2 complete
+
+The agenda watcher refreshes `bill.agenda` of unthreaded bills from the same sitting listings
+(all of them, like carded bills, not only the changed ones) and plans no announcement or
+retraction. The Senate page is read for unthreaded `full` bills. The pre-print reconciler records
+a `process` check for every RPW row: returned by `/bills` is a success, missing from a listing
+that came back is a failure, a `/bills` outage is an outage. Consultation windows and results are
+stored with the RCL project and the `/bills` row as before; only the notices need a card.
+Rollover, hearings, decision deadlines and the card refresher only deliver and are unchanged.
+Four more `World` scenarios; bot suite, strict mypy and Ruff passed.
 
 ### 2026-09-27 — WEB-07a.2b: RCL projects and wykaz plans without a card
 
@@ -74,13 +86,13 @@ Watcher matrix (what reads bills, and how it behaves without a card):
 | --- | --- | --- | --- |
 | Sejm process (`service._check_processes`) | `list_tracked` | not read | **done**: stored, not delivered |
 | ELI act (`acts.check`) | inside the process loop | not read | **done**: act saved, no notice |
-| Pre-print `/bills` (`pre_print`) | all `RPW/` rows | reconciled; tells under a card | check: record `process` checks |
+| Pre-print `/bills` (`pre_print`) | all `RPW/` rows | reconciled; tells under a card | **done**: `process` checks; absent entry is a failure, listing outage is not |
 | RCL (`rcl.check`) | `list_tracked` | not read | **done**: `quiet` refreshed, stored, not told |
 | Wykaz (`wykaz.check`) | `list_tracked` | not read | **done**: same download, stored, not told |
 | Linking RPW/RCL → druk | awaiting-link queries | links without a card | verified: alias only with a card |
-| Consultation results/reminders | due queries join the card | not read | next: facts only |
-| Agenda (`agenda.check`) | every followed bill | not read | next: store `bill.agenda`, no post |
-| Senate page | every followed bill | not read | next: read for `full` only |
+| Consultation results/reminders | due queries join the card | not read | **done**: window and results stored with the RCL/`/bills` row; notices stay card-only |
+| Agenda (`agenda.check`) | every followed bill | not read | **done**: `bill.agenda` stored, no post or retraction |
+| Senate page | every followed bill | not read | **done**: read for `full` bills |
 | Rollover | published unfinished | `discontinued_at` set for all | unchanged |
 | Hearings/deadlines/cards | followed bills | reminders need a card | unchanged: delivery only |
 
