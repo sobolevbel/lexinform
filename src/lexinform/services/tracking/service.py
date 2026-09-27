@@ -17,6 +17,8 @@ from lexinform.models import (
     Bill,
     BillPlan,
     BillStatus,
+    CheckAspect,
+    ObservationMode,
     PrintInfo,
     ProcessDetail,
     PublicationKind,
@@ -32,6 +34,7 @@ from lexinform.models import (
     stage_fingerprint,
     supplement_kind,
 )
+from lexinform.models.source_checks import observation_for
 from lexinform.ports import (
     BillRepository,
     Clock,
@@ -84,6 +87,7 @@ class TrackingOptions:
     local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw")
     text_prefilter: bool = True
     workers: int = 1
+    observe_unthreaded: bool = True
 
 
 def _consultation_reminder(
@@ -337,9 +341,21 @@ class StatusTrackingService:
         if not self._check_other_sources(tracked, everyone, result, publish=publish):
             return result
         self._check_processes(tracked, result, publish=publish, may_wait=may_wait)
+        if self._options.observe_unthreaded and result.fatal_error is None:
+            self._assign_observation()
+            quiet = self._list_tracked(changed_since, unthreaded=True)
+            self._check_processes(quiet, result, publish=False, may_wait=may_wait, deliver=False)
         self._remind_and_refresh(everyone, result, publish=publish)
         self._log_outcome(result, changed_since)
         return result
+
+    def _assign_observation(self) -> None:
+        """Give every analysed or carded bill the mode its card and its analysis call for."""
+        for bill, has_card in self._repo.list_observation_candidates(self._options.channel_id):
+            relevant = bill.analysis.analysis.relevant if bill.analysis else None
+            wanted = observation_for(relevant, has_card=has_card, current=bill.observation_basis)
+            if wanted is not None and wanted != (bill.observation_mode, bill.observation_basis):
+                self._repo.set_observation(bill.term, bill.number, *wanted)
 
     def check_bill(self, bill: Bill, *, publish: bool = True) -> TrackingResult:
         """Everything a run would look at for one bill, now: its source's watcher, its process
@@ -382,26 +398,45 @@ class StatusTrackingService:
         return self._rcl is None or self._rcl.check(tracked, result, publish=publish)
 
     def _check_processes(
-        self, tracked: list[Bill], result: TrackingResult, *, publish: bool, may_wait: bool
+        self,
+        tracked: list[Bill],
+        result: TrackingResult,
+        *,
+        publish: bool,
+        may_wait: bool,
+        deliver: bool = True,
     ) -> None:
-        """Read the process of every followed Sejm bill and tell what is new about it."""
+        """Read the process of every followed Sejm bill and tell what is new about it.
+
+        With `deliver` off the bill has no thread: its facts and changes are stored, nothing is
+        queued for Telegram, and a metadata-only bill asks the model nothing.
+        """
         followed = [bill for bill in tracked if bill.has_process]
         for outcome in fan_out(followed, self._fetch, workers=self._options.workers):
             bill = outcome.item
-            result.checked += 1
+            if deliver:
+                result.checked += 1
+            else:
+                result.observed += 1
             try:
                 found = outcome.result()
                 detail = found.detail
-                change = self._detect(bill, found, result, may_wait=may_wait)
+                change = self._detect(bill, found, result, may_wait=may_wait, deliver=deliver)
             except ServiceUnavailableError as exc:
+                self._check_done(bill, ok=False, outage=True)
                 result.abort(exc)
                 return
             except Exception as exc:
+                self._check_done(bill, ok=False)
                 result.failed += 1
                 log.exception("tracking druk %s failed: %s", bill.number, exc)
                 continue
+            self._check_done(bill, ok=True)
             if change is not None:
                 result.changed += 1
+            if not deliver:
+                self._acts.check(bill, detail, result, publish=False)
+                continue
             try:
                 self._post_news(bill, detail, change, result, publish=publish)
             except ServiceUnavailableError as exc:
@@ -410,6 +445,11 @@ class StatusTrackingService:
             except Exception as exc:
                 result.failed += 1
                 log.exception("posting for druk %s failed: %s", bill.number, exc)
+
+    def _check_done(self, bill: Bill, *, ok: bool, outage: bool = False) -> None:
+        self._repo.record_check(
+            bill.term, bill.number, CheckAspect.PROCESS, at=self._clock.now(), ok=ok, outage=outage
+        )
 
     def _post_news(
         self,
@@ -477,7 +517,9 @@ class StatusTrackingService:
             result.failed,
         )
 
-    def _list_tracked(self, changed_since: datetime | None = None) -> list[Bill]:
+    def _list_tracked(
+        self, changed_since: datetime | None = None, *, unthreaded: bool = False
+    ) -> list[Bill]:
         options = self._options
         return self._repo.list_tracked(
             options.channel_id,
@@ -485,6 +527,7 @@ class StatusTrackingService:
             pending_decision_max_days=options.pending_decision_max_days,
             now=self._clock.now(),
             changed_since=changed_since,
+            unthreaded=unthreaded,
         )
 
     def _retry_failed(self, result: TrackingResult) -> bool:
@@ -626,7 +669,13 @@ class StatusTrackingService:
         return record
 
     def _detect(
-        self, bill: Bill, found: _Found, result: TrackingResult, *, may_wait: bool
+        self,
+        bill: Bill,
+        found: _Found,
+        result: TrackingResult,
+        *,
+        may_wait: bool,
+        deliver: bool = True,
     ) -> StatusChange | None:
         """The processed snapshot and its delivery work commit together, after network work."""
         detail = found.detail
@@ -642,7 +691,8 @@ class StatusTrackingService:
             and self._analysis is not None
             and self._analysis.may_wait_for_batch(bill.model_copy(update={"stages": detail.stages}))
         )
-        change = self._detect_change(bill, found, plan, result, may_wait=may_wait)
+        paid = deliver or bill.observation_mode is not ObservationMode.METADATA
+        change = self._detect_change(bill, found, plan, result, may_wait=may_wait, paid=paid)
         if isinstance(change, Waiting):
             if bill.awaiting_batch_since is None:
                 self._repo.set_awaiting_batch(bill.term, bill.number, self._clock.now())
@@ -664,7 +714,7 @@ class StatusTrackingService:
             )
             if change is not None:
                 change = self._poster.record_change(change)
-                if change is not None:
+                if change is not None and deliver:
                     if plan.should_publish(change):
                         self._poster.prepare(fresh, change)
                     else:
@@ -682,7 +732,14 @@ class StatusTrackingService:
             self._repo.save_seen_supplements(bill.term, bill.number, filed)
 
     def _detect_change(
-        self, bill: Bill, found: _Found, plan: BillPlan, result: TrackingResult, *, may_wait: bool
+        self,
+        bill: Bill,
+        found: _Found,
+        plan: BillPlan,
+        result: TrackingResult,
+        *,
+        may_wait: bool,
+        paid: bool = True,
     ) -> StatusChange | Waiting | None:
         """The one change worth a post, or None when there is nothing to tell.
 
@@ -693,7 +750,9 @@ class StatusTrackingService:
         """
         detail = found.detail
         now = self._clock.now()
-        content_changed = self._reanalyze_new_text(bill, detail, plan.analysis_document, result)
+        content_changed = paid and self._reanalyze_new_text(
+            bill, detail, plan.analysis_document, result
+        )
         content_changed = content_changed or plan.content_changed
         old_fp = bill.stages_fingerprint
         if plan.previous is None:
@@ -722,6 +781,14 @@ class StatusTrackingService:
             detected_at=now,
         )
         waiting = None
+        if not paid:
+            change.supplements.extend(
+                self._analysis.bare_supplement(s.document, number=s.number, title=s.title)
+                for s in filed
+                if self._analysis is not None
+            )
+            _log_change(bill, change)
+            return change
         if found.amendments is not None:
             waiting = self._attach_amendments(
                 change, bill, found.amendments, result, may_wait=may_wait

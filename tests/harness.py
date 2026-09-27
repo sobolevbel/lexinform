@@ -310,6 +310,7 @@ class World:
         batch_kinds: frozenset[BatchKind] = frozenset({"analysis", "reanalysis"}),
         batch_max_wait_hours: float = 6,
         batch_script: dict[str, Analysis | Exception] | None = None,
+        observe_unthreaded: bool = True,
     ) -> None:
         self.clock = FixedClock()
         self.repo = SqliteBillRepository(":memory:")
@@ -370,6 +371,7 @@ class World:
             llm_batch_enabled=batch,
             llm_batch_kinds=batch_kinds,
             llm_batch_max_wait_hours=batch_max_wait_hours,
+            observe_unthreaded=observe_unthreaded,
         )
         self.container = Container(
             settings=settings,

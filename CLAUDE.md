@@ -901,6 +901,17 @@ Invariants worth keeping:
   (`repository_dispatch: batch-ready`); every run collects anyway. A dry run analyses
   synchronously, since a submission cannot be rolled back. `/status` names the open batches and
   any `batch_pending` bill no batch holds.
+- **A bill with no card is observed, never told.** For the website every analysed bill gets an
+  observation mode (`observation_for`: a sent card → `full`/`telegram_thread`, relevant →
+  `full`/`relevant_analysis`, not relevant → `metadata`/`not_relevant`; an `operator` basis is
+  never overwritten). `list_tracked(unthreaded=True)` lists the live ones without a sent card
+  under the same windows, jointly considered prints excluded (publishing owns their batch marker
+  while the reply waits). Their Sejm process is read after the carded loop: stages, closure,
+  act and the change row are stored, but no publication row is created, so nothing is ever
+  delivered and a later card does not replay them. `metadata` asks the model nothing (no
+  re-analysis, filed documents kept bare, no amendments summary). Each read records a `process`
+  check (`record_check`, an outage counting no failure). On the state of 27 Sept 2026 that is 44
+  more processes a run beside the 24 carded, 22 of them `full`.
 - **Parallelism only around the network.** `concurrency.fan_out` runs one network step (download,
   process lookup, model call) for many items; that step never touches the repository. Outcomes are
   consumed in the calling thread, in input order, and that is where every DB write happens.

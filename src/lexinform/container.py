@@ -590,6 +590,7 @@ class Container:
             local_tz=LOCAL_TZ,
             text_prefilter=settings.text_prefilter_enabled,
             workers=settings.sejm_concurrency,
+            observe_unthreaded=settings.observe_unthreaded,
         )
 
     def pipeline(self, *, dry_run: bool) -> DailyPipeline:

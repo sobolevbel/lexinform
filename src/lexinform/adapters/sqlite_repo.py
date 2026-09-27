@@ -873,6 +873,24 @@ class SqliteBillRepository:
             ),
         )
 
+    def list_observation_candidates(self, channel_id: str) -> list[tuple[Bill, bool]]:
+        """Live rows with an analysis or a card, each with whether its card was sent."""
+        rows = self._conn.execute(
+            """
+            SELECT b.*, EXISTS (
+                SELECT 1 FROM publications p WHERE p.term = b.term AND p.number = b.number
+                AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?) AS has_card
+            FROM bills b
+            WHERE b.status != ? AND b.discontinued_at IS NULL
+              AND (b.analysis_json IS NOT NULL OR EXISTS (
+                SELECT 1 FROM publications p WHERE p.term = b.term AND p.number = b.number
+                AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?))
+            ORDER BY b.term, b.number
+            """,
+            (channel_id, BillStatus.LINKED.value, channel_id),
+        ).fetchall()
+        return [(self._row_to_bill(row), bool(row["has_card"])) for row in rows]
+
     def source_checks(self, term: int, number: str) -> dict[CheckAspect, SourceCheck]:
         rows = self._conn.execute(
             "SELECT * FROM source_checks WHERE term = ? AND number = ?", (term, number)
@@ -1225,8 +1243,14 @@ class SqliteBillRepository:
         pending_decision_max_days: int,
         now: datetime,
         changed_since: datetime | None = None,
+        unthreaded: bool = False,
     ) -> list[Bill]:
         """Published bills still worth polling, whichever term they belong to.
+
+        `unthreaded` lists instead the bills observed for the website without a sent card, under
+        the same windows; their changes are recorded and never delivered. A jointly considered
+        print is left out: its group is followed through the card's process, and publishing owns
+        its batch marker while the reply waits.
 
         Both windows count from `closure_date`, which the Sejm sets at the third reading, long
         before the Senate, the President or a veto vote begin — hence the second of them. A law
@@ -1244,10 +1268,23 @@ class SqliteBillRepository:
         """
         cutoff = (now - timedelta(days=closed_grace_days)).date().isoformat()
         decision_cutoff = (now - timedelta(days=pending_decision_max_days)).date().isoformat()
-        sql = f"""
+        followed = (
+            """
+            SELECT b.* FROM bills b
+            WHERE b.observation_mode IN ('full', 'metadata')
+              AND COALESCE(json_array_length(b.summary_json, '$.prints_considered_jointly'), 0) = 0
+              AND NOT EXISTS (
+                SELECT 1 FROM publications p WHERE p.term = b.term AND p.number = b.number
+                AND p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?)
+            """
+            if unthreaded
+            else """
             SELECT b.* FROM bills b
             JOIN publications p ON p.term = b.term AND p.number = b.number
             WHERE p.kind = 'new_bill' AND p.status = 'sent' AND p.channel_id = ?
+            """
+        )
+        sql = f"""{followed}
               AND b.status != ? AND b.discontinued_at IS NULL
               AND (b.awaiting_batch_since IS NOT NULL
                    OR b.closure_date IS NULL OR b.closure_date >= ?
@@ -1904,6 +1941,13 @@ class SqliteBillRepository:
             ORDER BY c.id
             """,
             (term, number, channel_id),
+        ).fetchall()
+        return [self._row_to_status_change(r) for r in rows]
+
+    def list_status_changes(self, term: int, number: str) -> list[StatusChange]:
+        rows = self._conn.execute(
+            "SELECT * FROM status_changes WHERE term = ? AND number = ? ORDER BY id",
+            (term, number),
         ).fetchall()
         return [self._row_to_status_change(r) for r in rows]
 

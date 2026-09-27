@@ -54,3 +54,18 @@ class SourceCheck(BaseModel):
         if self.last_outage_at is not None and self.last_outage_at > self.last_success_at:
             return Freshness.OUTAGE
         return Freshness.FAILING if self.failures else Freshness.STALE
+
+
+def observation_for(
+    analysed_relevant: bool | None, *, has_card: bool, current: ObservationBasis | None
+) -> tuple[ObservationMode, ObservationBasis] | None:
+    """The mode a bill should be observed in; an operator's choice is never overwritten."""
+    if current is ObservationBasis.OPERATOR:
+        return None
+    if has_card:
+        return ObservationMode.FULL, ObservationBasis.TELEGRAM_THREAD
+    if analysed_relevant is None:
+        return None
+    if analysed_relevant:
+        return ObservationMode.FULL, ObservationBasis.RELEVANT_ANALYSIS
+    return ObservationMode.METADATA, ObservationBasis.NOT_RELEVANT

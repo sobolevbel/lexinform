@@ -327,6 +327,10 @@ class Settings(BaseSettings):
         default=True,
         description="Post when a followed bill appears on a committee or Sejm sitting agenda.",
     )
+    observe_unthreaded: bool = Field(
+        default=True,
+        description="Record the process of analysed bills that have no card, for the website.",
+    )
 
     digest_enabled: bool = Field(
         default=True,
