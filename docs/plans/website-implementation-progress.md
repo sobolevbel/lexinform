@@ -57,6 +57,33 @@ when its acceptance result and checks are recorded here.
 
 ## Work log
 
+### 2026-09-27 — WEB-07a.3c: observation regressions and PostgreSQL import
+
+Added `World` scenarios for unthreaded batch waiting across dump/restore, a newer discovery
+watermark and repeated runs, with workers=1/4. The processed baseline and original wait time
+survive until the result is checkpointed; the event is stored once without queued delivery or
+a Telegram card. Source-outage scenarios cover both process and ELI reads and recovery without
+spending analysis attempts.
+
+The ELI scenario exposed an uncaught outage in the unthreaded path: its act read was outside
+the tracking error boundary. It now uses the same boundary as the threaded path. Actual ELI
+reads record success, missing results, failures and outages for the `act` aspect. Reusing a
+cached act does not manufacture a fresh check timestamp.
+
+A PostgreSQL scenario runs the bot through `World`, projects its real v35 dump in the isolated
+reader, then activates three generations. It verifies permanent identity, a single history event,
+freshness advancing without changing `content_updated_at`, and no Telegram references, for both
+worker counts. Web tests now include the repository test harness in their import path and use
+the same Pydantic mypy plugin as the bot.
+
+This slice does not resolve the publication-policy question from 07a.3b or replace that run with
+a new `run --dry-run --max-analyze 0` acceptance run. No live source, LLM or production state was
+used here; WEB-07a.3 remains open for those acceptance items.
+
+Verification: 210 web tests on PostgreSQL, full default bot suite, strict bot/web mypy,
+Ruff and formatting, Django system checks and migration drift, strict documentation build
+and link validation passed.
+
 ### 2026-09-27 — WEB-07a.3b: dry run of tracking on a copy of the state
 
 `lexinform track --dry-run` on a fresh restore of `origin/state` (live Sejm, RCL, register and ELI

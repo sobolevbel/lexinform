@@ -30,7 +30,7 @@ lexinform = { workspace = true }
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "lexinform_web.config.test"
-pythonpath = ["src", "tests"]
+pythonpath = ["src", "tests", ".."]
 testpaths = ["tests"]
 
 [tool.mypy]
@@ -38,7 +38,7 @@ python_version = "3.14"
 strict = true
 files = ["src", "tests"]
 mypy_path = ["$MYPY_CONFIG_FILE_DIR/stubs", "$MYPY_CONFIG_FILE_DIR/tests"]
-plugins = ["mypy_django_plugin.main"]
+plugins = ["mypy_django_plugin.main", "pydantic.mypy"]
 warn_unreachable = true
 
 [tool.django-stubs]
