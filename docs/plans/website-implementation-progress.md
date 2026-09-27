@@ -43,7 +43,7 @@ when its acceptance result and checks are recorded here.
 | WEB-05a | Not started | — |
 | WEB-05b | Not started | — |
 | WEB-05c | Not started | — |
-| WEB-06 | Not started | — |
+| WEB-06 | In progress | Restore allowlist implemented; acquisition and process isolation remain |
 | WEB-07a | Not started | — |
 | WEB-07b | Not started | — |
 | WEB-08 | Not started | — |
@@ -53,6 +53,31 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-06.1a: bounded SQL restore validation
+
+Added a disposable in-memory restore boundary for bot-generated dumps up to 20 MiB.
+The source schema is checked against the exact DDL produced by the append-only migration
+ledger; input DDL is never executed. Only inserts into known tables pass to SQLite, with
+an authorizer denying functions, subqueries and other operations. Missing schema objects,
+duplicate declarations, missing transaction boundaries and unsupported versions fail closed.
+Trusted migrations normalize versions 1–34; integrity and foreign keys are checked before
+the result becomes query-only. The connection is closed when its context exits. SQLite page
+and VM-step budgets bound database growth and execution; the dump hash and both schema
+versions accompany the restored connection.
+
+This is a library boundary, not a runnable importer. WEB-06.1 remains active: a restricted
+process/container with wall-clock and OS resource limits, Git acquisition by pinned SHA,
+ancestry verification and the PostgreSQL lock before fetch still need implementation. The
+in-memory restore does not itself provide OS isolation, authenticate provenance, project
+rows into ImportDocumentV1 or change website data. Exact DDL matching intentionally rejects
+alternative SQL exports even if they appear equivalent to the bot schema.
+
+Regression coverage includes every supported source schema, an actual repository dump with
+a bill and applied analysis, multiline SQL-looking text, oversized/truncated input, modified
+schema, dangling foreign keys and disallowed SQL. Full web gate passed: 139 tests, strict
+mypy, Ruff, Django checks and migration drift. The default bot suite, bot mypy and Ruff
+check/format passed. Documentation strict build and link/content validation passed.
 
 ### 2026-09-27 — WEB-03.2: versioned import contract
 
