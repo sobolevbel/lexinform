@@ -911,7 +911,9 @@ Invariants worth keeping:
   delivered and a later card does not replay them. `metadata` asks the model nothing (no
   re-analysis, filed documents kept bare, no amendments summary). Each read records a `process`
   check (`record_check`, an outage counting no failure). On the state of 27 Sept 2026 that is 44
-  more processes a run beside the 24 carded, 22 of them `full`.
+  more processes a run beside the 24 carded, 22 of them `full`. The RCL, wykaz and agenda
+  watchers take the same bills as `quiet` in their own pass (one register download, one set of
+  sitting listings) and store without planning a post; the Senate page is read for `full` ones.
 - **Parallelism only around the network.** `concurrency.fan_out` runs one network step (download,
   process lookup, model call) for many items; that step never touches the repository. Outcomes are
   consumed in the calling thread, in input order, and that is where every DB write happens.

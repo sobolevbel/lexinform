@@ -13,6 +13,7 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
     BillSubmission,
+    CheckAspect,
     PublicationStatus,
     SourceOutcome,
     StatusChange,
@@ -69,6 +70,18 @@ class PrePrintReconciler:
         if not rows:
             return True
         listed = self._listing(rows, result)
+        now = self._clock.now()
+        for bill in pending:
+            key = bill.submission.number if bill.submission else bill.number
+            found = listed is not None and (bill.term, key) in listed
+            self._repo.record_check(
+                bill.term,
+                bill.number,
+                CheckAspect.PROCESS,
+                at=now,
+                ok=found,
+                outage=listed is None,
+            )
         if listed is None:
             return True
         return all(self._reconcile_one(bill, listed, result, publish=publish) for bill in rows)

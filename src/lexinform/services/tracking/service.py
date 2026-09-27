@@ -418,7 +418,8 @@ class StatusTrackingService:
         ):
             return False
         if self._senate is not None:
-            self._senate.check(everyone, result)
+            full = [b for b in quiet_everyone or [] if b.observation_mode is ObservationMode.FULL]
+            self._senate.check([*everyone, *full], result)
         if self._wykaz is not None and not self._wykaz.check(
             tracked, result, publish=publish, quiet=silent
         ):

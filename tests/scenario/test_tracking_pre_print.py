@@ -6,9 +6,9 @@ from typing import Any
 import pytest
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import ApplicantType, BillStatus, PublicationStatus
+from lexinform.models import ApplicantType, BillStatus, CheckAspect, PublicationStatus
 from tests.fakes import FakeTextExtractor
-from tests.harness import RPW, World, submission, submission_url
+from tests.harness import RPW, TERM, World, submission, submission_url
 
 
 def _fail_new_bill(*_args: Any, **_kwargs: Any) -> Any:
@@ -362,3 +362,35 @@ def test_a_numbered_print_is_never_announced_as_withdrawn_by_the_entry_rule() ->
 
     assert report.updates == 0 and len(w.publisher.updates) == told
     assert not w.repo.closure_announced(10, "3100")  # the real closure can still be told
+
+
+def test_each_run_records_whether_the_listing_returned_the_entry() -> None:
+    w = World()
+    w.gateway.submissions.append(submission())
+    w.gateway.files[submission_url()] = b"%PDF"
+    w.run()
+    w.clock.advance(days=1)
+    w.run()
+    listed = w.repo.source_checks(TERM, RPW)[CheckAspect.PROCESS]
+    w.gateway.submissions.clear()
+    w.clock.advance(days=1)
+
+    w.run()
+
+    missing = w.repo.source_checks(TERM, RPW)[CheckAspect.PROCESS]
+    assert (listed.last_success_at, listed.failures) == (w.clock.now() - dt.timedelta(days=1), 0)
+    assert missing.last_success_at == listed.last_success_at and missing.failures == 1
+
+
+def test_a_listing_outage_is_not_the_entrys_failure() -> None:
+    w = World()
+    w.gateway.submissions.append(submission())
+    w.gateway.files[submission_url()] = b"%PDF"
+    w.run()
+    w.gateway.outages.add("iter_bills")
+    w.clock.advance(days=1)
+
+    w.run()
+
+    check = w.repo.source_checks(TERM, RPW)[CheckAspect.PROCESS]
+    assert check.failures == 0 and check.last_outage_at == w.clock.now()
