@@ -45,7 +45,7 @@ when its acceptance result and checks are recorded here.
 | WEB-05c | Not started | — |
 | WEB-06 | In progress | Restore, acquisition, projection, activation and maintenance implemented; the deployment sandbox and timer remain (WEB-05a) |
 | WEB-06.3 | Complete | `import_state` command, `ImportRun` report, 20% corpus guard, reconciliation queue, retention and audited rebaseline |
-| WEB-07a | In progress | 07a.1 storage done; watchers (07a.2) and import (07a.3) remain |
+| WEB-07a | In progress | 07a.1 storage and the Sejm process part of 07a.2 done; other watchers and import (07a.3) remain |
 | WEB-07a.1 | Complete | Bot v35: observation mode/basis, `source_checks` per (bill, aspect), freshness model |
 | WEB-07b | Not started | — |
 | WEB-08 | Not started | — |
@@ -55,6 +55,41 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-07a.2a: Sejm process observed without a Telegram thread
+
+Watcher matrix (what reads bills, and how it behaves without a card):
+
+| Watcher | Reads | Without a card today | Plan |
+| --- | --- | --- | --- |
+| Sejm process (`service._check_processes`) | `list_tracked` | not read | **done**: stored, not delivered |
+| ELI act (`acts.check`) | inside the process loop | not read | **done**: act saved, no notice |
+| Pre-print `/bills` (`pre_print`) | all `RPW/` rows | reconciled; tells under a card | check: record `process` checks |
+| RCL (`rcl.check`) | `list_tracked` | not read | next: unthreaded listing, no `tell` |
+| Wykaz (`wykaz.check`) | `list_tracked` | not read | next: as RCL |
+| Linking RPW/RCL → druk | awaiting-link queries | links without a card | check: alias only with a card |
+| Consultation results/reminders | due queries join the card | not read | next: facts only |
+| Agenda (`agenda.check`) | every followed bill | not read | next: store `bill.agenda`, no post |
+| Senate page | every followed bill | not read | next: read for `full` only |
+| Rollover | published unfinished | `discontinued_at` set for all | unchanged |
+| Hearings/deadlines/cards | followed bills | reminders need a card | unchanged: delivery only |
+
+Observation modes are assigned at the start of the unthreaded step from the card and the stored
+analysis; an operator basis is kept. `list_tracked(unthreaded=True)` lists live bills with a mode
+and no sent card, jointly considered prints excluded because publishing owns their batch marker
+while the reply waits (the first version cleared it and broke the joint deadline scenario). Their
+processes are read after the carded loop: the observation checkpoint, the change row and the act
+are stored; no publication row is created, so `list_due_status_changes` never sees them and a
+later card does not replay them. `metadata` spends nothing on the model. Each read records a
+`process` check. `LEXINFORM_OBSERVE_UNTHREADED` (default on) switches it off.
+
+On a copy of the state of 27 Sept 2026: 113 bills get a mode (25 thread, 24 relevant, 64 not
+relevant); 78 are live without a card, 44 of them Sejm processes (22 full), against 24 carded.
+The first run may re-analyse a `full` bill whose text changed since its analysis, within the run
+cost guard. Seven `World` scenarios cover modes, one stored change and no delivery across
+repeats, process checks, no model call in metadata, the operator's choice, workers 1/4 and the
+switch. Bot suite, strict mypy, Ruff and the web gate passed. No dry run against the live APIs
+yet — that is WEB-07a.3's acceptance, with `--max-analyze 0`.
 
 ### 2026-09-27 — WEB-07a.1: observation mode and freshness storage
 
