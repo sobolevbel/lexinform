@@ -133,5 +133,19 @@ macOS relies on SQL/input/output limits and the deadline instead of an OS memory
 
 This is an internal building block, not an import command. It does not restrict the service
 user's filesystem or network access. Production still requires a sandbox/container with no
-network, secrets or production mounts before remote snapshots are accepted. Fetch locking,
-pinned Git provenance, ancestry, row projection and generation activation are not wired yet.
+network, secrets or production mounts before remote snapshots are accepted. Row projection
+and generation activation are not wired yet.
+
+`ingestion.acquisition.acquire_snapshot(source, load_previous)` holds a separate PostgreSQL
+session lock before reading the last accepted `SnapshotRef` and fetching. Keep the context
+open through restore and activation. It yields `already_running`, `unchanged`, or `ready`
+with the pinned reference and raw bytes. Acquisition never updates the accepted pointer;
+activation must still compare-and-swap that pointer in its transaction, even if the lock
+connection is lost. Always use this context around `GitSnapshotSource.fetch` in the importer.
+
+`GitSnapshotSource` takes a credential-free public HTTPS URL and a dedicated persistent bare
+cache path. A `Path` remote is reserved for local fixtures. It rejects rollback/divergence,
+shallow history, missing accepted commits and oversized dumps. It runs Git without inherited
+configuration, hooks or credentials, with a 60-second deadline per operation. Transport helpers
+are killed on timeout. The 20 MiB blob limit does not bound total Git history; deployment must
+provide a disk quota and cache maintenance. There is no import timer or production command yet.

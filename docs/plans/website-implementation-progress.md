@@ -43,7 +43,7 @@ when its acceptance result and checks are recorded here.
 | WEB-05a | Not started | — |
 | WEB-05b | Not started | — |
 | WEB-05c | Not started | — |
-| WEB-06 | In progress | SQL allowlist and bounded child restore implemented; acquisition and deployment sandbox remain |
+| WEB-06 | In progress | Restore, pinned Git acquisition and import lock implemented; projection, activation and deployment sandbox remain |
 | WEB-07a | Not started | — |
 | WEB-07b | Not started | — |
 | WEB-08 | Not started | — |
@@ -53,6 +53,35 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-06.1c: pinned acquisition and import lock
+
+Added a dedicated bare Git cache which fetches only `state`, pins its commit and reads
+`lexinform.sql` by that SHA. Blob size is checked before reading (20 MiB maximum), and a
+SHA-256 accompanies the bytes. An exact accepted SHA/hash returns `unchanged`; advancing
+history requires ancestry from the accepted commit. Rollback, divergence, missing history,
+shallow repositories, missing blobs and hash disagreement fail without returning old data.
+Acquisition does not mark a snapshot accepted; that belongs to successful generation activation.
+
+The `acquire_snapshot` context takes a nonblocking PostgreSQL session advisory lock before
+reading the accepted pointer or fetching. A separate autocommit connection holds it across
+the caller's work; contention returns `already_running` without touching Git. Closing the
+session releases the lock on caller/fetch failure. No database transaction spans network work.
+WEB-06.2 must still compare the previous active pointer atomically during activation, including
+protection against a lost lock session; this lock alone does not replace that final check.
+
+Git has a clean environment, no global/system config, interactive credentials or hooks, and
+uses only credential-free HTTPS (explicit local Paths support fixtures). Each Git operation
+has a 60-second default deadline; timeout kills the process group including transport helpers.
+The 20 MiB limit covers the dump blob, not the complete Git object cache: cache disk quotas,
+retention and the network/filesystem deployment sandbox remain operational prerequisites.
+
+Real temporary Git repositories cover repeat, forward history, rollback/divergence, moving
+remote after pinning, absent/oversized dumps, missing accepted commits and helper timeout.
+PostgreSQL tests verify contention before fetch, lock scope and release on failures.
+Full web gate passed (171 tests, strict mypy, Ruff, Django checks and migration drift).
+The default bot suite, bot mypy/Ruff/format, lock consistency, strict documentation build
+and link/content checks passed. No production fetch or site mutation was performed.
 
 ### 2026-09-27 — WEB-06.1b: resource-bounded restore process
 
