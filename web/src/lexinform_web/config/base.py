@@ -11,6 +11,7 @@ INSTALLED_APPS = [
     "lexinform_web.editorial",
     "lexinform_web.operations",
     "lexinform_web.matters",
+    "lexinform_web.ingestion",
     "django_tasks_db",
     "allauth",
     "allauth.account",

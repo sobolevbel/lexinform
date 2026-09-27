@@ -157,3 +157,14 @@ shallow history, missing accepted commits and oversized dumps. It runs Git witho
 configuration, hooks or credentials, with a 60-second deadline per operation. Transport helpers
 are killed on timeout. The 20 MiB blob limit does not bound total Git history; deployment must
 provide a disk quota and cache maintenance. There is no import timer or production command yet.
+
+## Generation activation
+
+`ingestion.activation.import_state(source, clock=..., public_channel=...)` acquires under the
+import lock, projects in the bounded child and calls `activate`. Activation is one PostgreSQL
+transaction: it creates the generation, snapshots, facts and event revisions and moves
+`ActiveImport` only if it still points at the snapshot read under the lock. Repeating the
+accepted SHA is a no-op; a moved pointer raises `StaleActivationError`; a lifecycle chain across
+two matters raises `ReconciliationRequiredError`. Readers call `selectors.active_generation()`
+once per request and pass that generation to `facts_at`/`events_at`. There is no command or
+timer yet (WEB-06.3).

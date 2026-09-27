@@ -7,8 +7,8 @@ when its acceptance result and checks are recorded here.
 ## Current position
 
 - Started: 2026-09-16
-- Active task: WEB-06.1 — validated snapshot acquisition
-- Next task: WEB-06.2 — import generations and activation
+- Active task: WEB-06.2 — import generations and activation
+- Next task: WEB-06.3 — import maintenance (command, report, guards, retention)
 - Release target: A — public library in five languages
 - Last code review: 2026-09-26, local commit `6cd680d`; no production verification
 - Remaining implementation slices: [task list](../website/tasks.md)
@@ -43,7 +43,7 @@ when its acceptance result and checks are recorded here.
 | WEB-05a | Not started | — |
 | WEB-05b | Not started | — |
 | WEB-05c | Not started | — |
-| WEB-06 | In progress | Restore, pinned Git acquisition, import lock and bounded projection implemented; activation and deployment sandbox remain |
+| WEB-06 | In progress | Restore, pinned acquisition, bounded projection and atomic generation activation implemented; maintenance (06.3) and deployment sandbox remain |
 | WEB-07a | Not started | — |
 | WEB-07b | Not started | — |
 | WEB-08 | Not started | — |
@@ -53,6 +53,34 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-06.2: import generations and atomic activation
+
+Added the `ingestion` Django app with `ImportGeneration`, the singleton `ActiveImport`,
+per-generation `SourceSnapshot` and `MatterFacts`, and permanent `MatterEvent` with
+append-only `EventRevision`. `activation.activate` writes a whole generation in one
+transaction under the identity-graph lock and a row lock on the pointer: the same SHA/hash
+returns `unchanged`, a pointer other than the expected previous one raises
+`StaleActivationError`, and nothing is written. A generation row exists only if its
+activation committed, so a failed generation is never visible.
+
+Lifecycle chains (RCL/RPW → druk) resolve to the Matter any member already has; a chain
+spanning two matters raises `ReconciliationRequiredError` without partial writes. Joint and
+alternative prints stay separate matters with relations. Facts are written for the canonical
+matter, so editorial merges and visibility survive imports. `content_updated_at` carries over
+while the bill's semantic hash (which ignores the analysis check time) is unchanged. An event
+gets a new revision only when its content changes; `selectors.events_at` reads the newest
+revision up to a pinned generation. A row missing from the new dump is counted in
+`absent_identities`; its matter and older facts remain. `import_state` wires acquisition,
+bounded projection and activation, passing the pointer read under the import lock as the
+expected previous value.
+
+Tests cover repeat, freshness vs content, stale/old SHA, failure before commit and retry after
+commit, lifecycle linking, joint prints, editorial merge/visibility, a chain across two matters,
+event revisions per generation, a missing row, two concurrent activations and an end-to-end
+import from a local Git remote. Full web gate passed (196 tests, strict mypy, Ruff, Django
+checks and migration drift). Not done here: the management command, report, corpus-drop guard,
+reconciliation queue and retention (WEB-06.3); HTTP views that pin the generation (WEB-07b).
 
 ### 2026-09-27 — WEB-06.1d: restored rows and bounded contract projection
 
