@@ -36,10 +36,19 @@ class ReconciliationRequiredError(SnapshotError):
     pass
 
 
+class CorpusDropError(SnapshotError):
+    pass
+
+
+# data.md §25.5 step 8: a fall of the visible corpus beyond 20% waits for reconciliation.
+MAX_CORPUS_DROP = 0.2
+
+
 @dataclass(frozen=True)
 class Activation:
     status: Literal["activated", "unchanged"]
     generation: ImportGeneration
+    absent: tuple[int, ...] = ()
 
 
 def digest(value: object) -> str:
@@ -118,8 +127,17 @@ def primary_bills(
     return primary
 
 
+def corpus_dropped(previous: ImportGeneration, document: ImportDocumentV1) -> bool:
+    before = int(previous.counts.get("analyzed_candidates", 0))
+    return document.coverage.analyzed_candidates < before * (1 - MAX_CORPUS_DROP)
+
+
 def activate(
-    document: ImportDocumentV1, *, expected: SnapshotRef | None, clock: Clock
+    document: ImportDocumentV1,
+    *,
+    expected: SnapshotRef | None,
+    clock: Clock,
+    accept_drop: bool = False,
 ) -> Activation:
     """Write a generation and switch the active pointer in one transaction, if nobody moved it."""
     reference = SnapshotRef(document.origin.source_commit, document.origin.dump_sha256)
@@ -223,23 +241,28 @@ def activate(
                 new_events += created
                 revised_events += not created
         absent = (
-            SourceSnapshot.objects.filter(generation=previous)
-            .exclude(identity__in=[row for row, _ in assigned.values()])
-            .count()
+            tuple(
+                SourceSnapshot.objects.filter(generation=previous)
+                .exclude(identity__in=[row for row, _ in assigned.values()])
+                .order_by("identity_id")
+                .values_list("identity_id", flat=True)
+            )
             if previous
-            else 0
+            else ()
         )
         generation.counts = {
             **document.coverage.model_dump(),
             "matters": len({matter.pk for _, matter in assigned.values()}),
             "new_events": new_events,
             "revised_events": revised_events,
-            "absent_identities": absent,
+            "absent_identities": len(absent),
         }
+        if previous is not None and not accept_drop and corpus_dropped(previous, document):
+            raise CorpusDropError("visible corpus fell by more than 20%; reconciliation required")
         generation.save(update_fields=["counts"])
         active.generation = generation
         active.save(update_fields=["generation"])
-        return Activation("activated", generation)
+        return Activation("activated", generation, absent)
 
 
 def import_state(
@@ -248,7 +271,9 @@ def import_state(
     clock: Clock,
     public_channel: str | None = None,
     timeout: float = 30,
-) -> Literal["activated", "unchanged", "already_running"]:
+    accept_drop: bool = False,
+    rebaseline: str | None = None,
+) -> Activation | Literal["unchanged", "already_running"]:
     """Fetch, project and activate one snapshot; any failure leaves the active generation as is."""
     previous: list[SnapshotRef | None] = []
 
@@ -256,7 +281,7 @@ def import_state(
         previous.append(accepted_reference())
         return previous[0]
 
-    with acquire_snapshot(source, load) as acquisition:
+    with acquire_snapshot(source, load, rebaseline=rebaseline) as acquisition:
         if acquisition.status != "ready":
             return acquisition.status
         assert acquisition.reference and acquisition.raw is not None, "fetch returns ready bytes"
@@ -266,4 +291,4 @@ def import_state(
             public_channel=public_channel,
             timeout=timeout,
         )
-        return activate(document, expected=previous[0], clock=clock).status
+        return activate(document, expected=previous[0], clock=clock, accept_drop=accept_drop)

@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 from lexinform_web.matters.models import Matter, SourceIdentity
@@ -12,6 +13,7 @@ class ImportGeneration(models.Model):
     contract_version = models.PositiveIntegerField()
     created_at = models.DateTimeField()
     counts = models.JSONField()
+    pruned_at = models.DateTimeField(null=True)
 
     class Meta:
         constraints = [
@@ -83,4 +85,58 @@ class EventRevision(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["event", "generation"], name="event_revision_unique")
+        ]
+
+
+class ImportRun(models.Model):
+    """One invocation of import_state and what came of it; failures are rows too."""
+
+    class Status(models.TextChoices):
+        ACTIVATED = "activated"
+        UNCHANGED = "unchanged"
+        ALREADY_RUNNING = "already_running"
+        FAILED = "failed"
+
+    started_at = models.DateTimeField()
+    finished_at = models.DateTimeField()
+    status = models.CharField(max_length=16, choices=Status)
+    generation = models.ForeignKey(
+        ImportGeneration, null=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    error_kind = models.CharField(max_length=64, blank=True)
+    message = models.TextField(blank=True)
+    pruned_generations = models.PositiveIntegerField(default=0)
+
+
+class ImportIssue(models.Model):
+    """The operator's reconciliation queue; one open issue per key."""
+
+    class Kind(models.TextChoices):
+        HISTORY = "history", "История state переписана"
+        CORPUS_DROP = "corpus_drop", "Резкое падение корпуса"
+        RECONCILIATION = "reconciliation", "Цепочка охватывает несколько дел"
+        ABSENT = "absent", "Строка пропала из снимка"
+        INVALID = "invalid", "Снимок отклонён"
+
+    kind = models.CharField(max_length=16, choices=Kind)
+    key = models.CharField(max_length=255)
+    identity = models.ForeignKey(
+        SourceIdentity, null=True, on_delete=models.PROTECT, related_name="+"
+    )
+    detail = models.TextField()
+    opened_at = models.DateTimeField()
+    last_seen_at = models.DateTimeField()
+    resolved_at = models.DateTimeField(null=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.PROTECT, related_name="+"
+    )
+    resolution = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["key"],
+                condition=models.Q(resolved_at__isnull=True),
+                name="import_issue_open_once",
+            )
         ]

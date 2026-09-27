@@ -2,7 +2,6 @@ import datetime as dt
 import json
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
 from pathlib import Path
 from unittest.mock import patch
 
@@ -10,12 +9,23 @@ import pytest
 from django.contrib.auth.models import Permission
 from django.db import connections
 
+from import_builders import (
+    RCL,
+    T0,
+    MovingClock,
+    bill,
+    document,
+    event,
+    ref,
+    sejm,
+)
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.models import Bill
-from lexinform.models.enums import BillStatus, Category
+from lexinform.models.enums import BillStatus
 from lexinform_web.accounts.models import User
-from lexinform_web.ingestion.acquisition import GitSnapshotSource, SnapshotRef
+from lexinform_web.ingestion.acquisition import GitSnapshotSource
 from lexinform_web.ingestion.activation import (
+    Activation,
     ReconciliationRequiredError,
     StaleActivationError,
     accepted_reference,
@@ -23,16 +33,7 @@ from lexinform_web.ingestion.activation import (
     import_state,
 )
 from lexinform_web.ingestion.contract import (
-    AppliedAnalysis,
-    Coverage,
-    Identity,
     IdentityRelation,
-    ImportDocumentV1,
-    ImportedBill,
-    ImportedEvent,
-    PublicLink,
-    SnapshotOrigin,
-    SourceFacts,
 )
 from lexinform_web.ingestion.models import (
     ActiveImport,
@@ -47,108 +48,6 @@ from lexinform_web.matters.models import Matter, MatterRelation, SourceIdentity
 from lexinform_web.matters.services import merge
 
 pytestmark = pytest.mark.django_db
-T0 = dt.datetime(2026, 9, 27, 8, tzinfo=dt.UTC)
-
-
-@dataclass
-class MovingClock:
-    at: dt.datetime = T0
-
-    def now(self) -> dt.datetime:
-        return self.at
-
-
-def sejm(number: str) -> Identity:
-    return Identity(source="sejm", scope="10", external_id=number)
-
-
-RCL = Identity(source="rcl", scope="global", external_id="12400301")
-
-
-def bill(
-    identity: Identity,
-    title: str = "Projekt ustawy o cudzoziemcach",
-    *,
-    checked: dt.datetime | None = None,
-    status: BillStatus = BillStatus.ANALYZED,
-) -> ImportedBill:
-    return ImportedBill(
-        identity=identity,
-        bot_status=status,
-        facts=SourceFacts(
-            title=title,
-            description=None,
-            source_link=PublicLink(url=f"https://api.sejm.gov.pl/{identity.external_id}"),
-            document_date=dt.date(2026, 9, 1),
-            closure_date=None,
-            passed=None,
-            stages=(),
-        ),
-        processed=None,
-        observed_closure_date=None,
-        applied_analysis=AppliedAnalysis(
-            relevant=True,
-            score=4,
-            category=Category.LEGAL_STAY,
-            summary="Summary",
-            rationale="Rationale",
-            key_changes=(),
-            affected_groups=(),
-            practical_impact="Impact",
-            effective_date=None,
-            changes_since_previous=(),
-            created_at=T0,
-            revision=1,
-            source_link=None,
-            text_sha256=None,
-            text_checked_at=checked,
-        ),
-        awaiting_batch_since=None,
-        has_staged_analysis=False,
-    )
-
-
-def event(
-    identity: Identity, key: str = "state:10:1:abc", *, withdrawn: bool = False
-) -> ImportedEvent:
-    return ImportedEvent(
-        event_key=key,
-        identity=identity,
-        observed_at=T0,
-        stages=(),
-        closure_detected=False,
-        passed=None,
-        content_changed=False,
-        withdrawn=withdrawn,
-        discontinued=False,
-        consultation_opened=False,
-    )
-
-
-def document(
-    commit: str,
-    *bills: ImportedBill,
-    relations: tuple[IdentityRelation, ...] = (),
-    events: tuple[ImportedEvent, ...] = (),
-) -> ImportDocumentV1:
-    return ImportDocumentV1(
-        origin=SnapshotOrigin(source_commit=commit * 40, dump_sha256=commit * 64, source_schema=34),
-        bills=bills,
-        relations=relations,
-        events=events,
-        coverage=Coverage(
-            total=len(bills),
-            with_applied_analysis=sum(b.applied_analysis is not None for b in bills),
-            analyzed_candidates=sum(
-                b.bot_status == BillStatus.ANALYZED and b.applied_analysis is not None
-                for b in bills
-            ),
-        ),
-    )
-
-
-def ref(commit: str) -> SnapshotRef:
-    return SnapshotRef(commit * 40, commit * 64)
 
 
 def test_first_activation_and_repeat_create_nothing_twice() -> None:
@@ -313,7 +212,9 @@ def test_events_are_revised_only_on_change_and_read_per_generation() -> None:
 def test_missing_row_is_counted_not_withdrawn() -> None:
     clock = MovingClock()
     first = activate(document("a", bill(sejm("1")), bill(sejm("2"))), expected=None, clock=clock)
-    second = activate(document("b", bill(sejm("1"))), expected=ref("a"), clock=clock)
+    second = activate(
+        document("b", bill(sejm("1"))), expected=ref("a"), clock=clock, accept_drop=True
+    )
 
     assert second.generation.counts["absent_identities"] == 1
     assert Matter.objects.count() == 2
@@ -357,7 +258,8 @@ def test_import_state_fetches_projects_and_activates(tmp_path: Path) -> None:
     repository.close()
     source = GitSnapshotSource(remote, tmp_path / "cache")
 
-    assert import_state(source, clock=MovingClock()) == "activated"
+    activated = import_state(source, clock=MovingClock())
+    assert isinstance(activated, Activation) and activated.status == "activated"
     assert import_state(source, clock=MovingClock()) == "unchanged"
     assert ImportGeneration.objects.count() == 1
     assert SourceIdentity.objects.count() == 1

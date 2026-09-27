@@ -118,7 +118,8 @@ class GitSnapshotSource:
             raise SnapshotError("snapshot Git operation failed")
         return result
 
-    def fetch(self, previous: SnapshotRef | None) -> Acquisition:
+    def fetch(self, previous: SnapshotRef | None, *, rebaseline: str | None = None) -> Acquisition:
+        """Pin the state branch; `rebaseline` is the audited commit accepted without ancestry."""
         self.cache.mkdir(parents=True, exist_ok=True, mode=0o700)
         if not (self.cache / "HEAD").exists():
             if any(self.cache.iterdir()):
@@ -144,7 +145,9 @@ class GitSnapshotSource:
         )
         if not re.fullmatch(r"[0-9a-f]{40}", commit):
             raise SnapshotError("invalid fetched commit")
-        if previous and previous.commit != commit:
+        if rebaseline is not None and rebaseline != commit:
+            raise HistoryError("state moved away from the audited rebaseline commit")
+        if previous and previous.commit != commit and rebaseline is None:
             result = self.run(
                 "merge-base", "--is-ancestor", previous.commit, commit, allow_no_match=True
             )
@@ -184,9 +187,11 @@ def import_lock() -> Iterator[bool]:
 def acquire_snapshot(
     source: GitSnapshotSource,
     load_previous: Callable[[], SnapshotRef | None],
+    *,
+    rebaseline: str | None = None,
 ) -> Iterator[Acquisition]:
     with import_lock() as acquired:
         if not acquired:
             yield Acquisition("already_running")
             return
-        yield source.fetch(load_previous())
+        yield source.fetch(load_previous(), rebaseline=rebaseline)

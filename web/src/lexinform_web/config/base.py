@@ -132,3 +132,7 @@ WAGTAILADMIN_BASE_URL = "http://localhost:8000"
 SECRET_KEY = ""
 DEBUG = False
 ALLOWED_HOSTS: list[str] = []
+
+STATE_REMOTE = os.environ.get("LEXINFORM_WEB_STATE_REMOTE", "")
+STATE_CACHE = os.environ.get("LEXINFORM_WEB_STATE_CACHE", str(BASE_DIR / ".state-cache"))
+STATE_PUBLIC_CHANNEL = os.environ.get("LEXINFORM_WEB_PUBLIC_CHANNEL") or None

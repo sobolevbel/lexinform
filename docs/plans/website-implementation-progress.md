@@ -7,8 +7,8 @@ when its acceptance result and checks are recorded here.
 ## Current position
 
 - Started: 2026-09-16
-- Active task: WEB-06.2 — import generations and activation
-- Next task: WEB-06.3 — import maintenance (command, report, guards, retention)
+- Active task: WEB-07a.1 — observation mode and freshness in the bot
+- Next task: WEB-07a.2 — watchers without a Telegram thread
 - Release target: A — public library in five languages
 - Last code review: 2026-09-26, local commit `6cd680d`; no production verification
 - Remaining implementation slices: [task list](../website/tasks.md)
@@ -43,7 +43,8 @@ when its acceptance result and checks are recorded here.
 | WEB-05a | Not started | — |
 | WEB-05b | Not started | — |
 | WEB-05c | Not started | — |
-| WEB-06 | In progress | Restore, pinned acquisition, bounded projection and atomic generation activation implemented; maintenance (06.3) and deployment sandbox remain |
+| WEB-06 | In progress | Restore, acquisition, projection, activation and maintenance implemented; the deployment sandbox and timer remain (WEB-05a) |
+| WEB-06.3 | Complete | `import_state` command, `ImportRun` report, 20% corpus guard, reconciliation queue, retention and audited rebaseline |
 | WEB-07a | Not started | — |
 | WEB-07b | Not started | — |
 | WEB-08 | Not started | — |
@@ -53,6 +54,33 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-06.3: import maintenance
+
+Added `ingestion.maintenance.run_import` and the `import_state` management command. Every call
+writes an `ImportRun` (status, generation, error kind, pruned count), failures included, and the
+command prints the report as JSON and exits non-zero on a refused snapshot.
+
+`ImportIssue` is the operator's reconciliation queue: one open issue per key (partial unique
+index). A refused snapshot opens one per kind — history, corpus drop, reconciliation, invalid —
+and repeats only refresh it; the next accepted snapshot closes them. A row missing from the dump
+opens an `absent` issue for its identity and keeps its matter and last facts; the issue closes
+when the row returns. `resolve_import_issue` lists and closes issues with an operator and reason.
+
+The corpus guard refuses an activation whose analysed candidates fell by more than 20%; it runs
+at the end of the activation transaction, so structural errors still report as such. An operator
+with `matters.reconcile_matter` accepts the drop with `--accept-drop` and a reason. Rewritten
+history waits for `--rebaseline SHA`, which skips the ancestry check for that pinned commit only
+and still refuses a branch that has moved on. Retention keeps the active generation, the newest
+ten and anything younger than seven days; older generations lose snapshots and facts
+(`pruned_at`), while the generation row and every event revision stay.
+
+Test builders moved to `web/tests/import_builders.py` (`tests` is on the pytest and mypy paths).
+Tests cover the guard and its override, a small drop, absent rows opened once and closed on
+return, retention, issue recording on refusal, override permissions, a rewritten local Git
+history with a wrong and then an audited rebaseline, and the two commands end to end. Full web
+gate passed (205 tests, strict mypy, Ruff, Django checks and migration drift). Not done: the
+five-minute timer and the network/filesystem sandbox of the deployment (WEB-05a).
 
 ### 2026-09-27 — WEB-06.2: import generations and atomic activation
 

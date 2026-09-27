@@ -156,7 +156,7 @@ cache path. A `Path` remote is reserved for local fixtures. It rejects rollback/
 shallow history, missing accepted commits and oversized dumps. It runs Git without inherited
 configuration, hooks or credentials, with a 60-second deadline per operation. Transport helpers
 are killed on timeout. The 20 MiB blob limit does not bound total Git history; deployment must
-provide a disk quota and cache maintenance. There is no import timer or production command yet.
+provide a disk quota and cache maintenance.
 
 ## Generation activation
 
@@ -166,5 +166,30 @@ transaction: it creates the generation, snapshots, facts and event revisions and
 `ActiveImport` only if it still points at the snapshot read under the lock. Repeating the
 accepted SHA is a no-op; a moved pointer raises `StaleActivationError`; a lifecycle chain across
 two matters raises `ReconciliationRequiredError`. Readers call `selectors.active_generation()`
-once per request and pass that generation to `facts_at`/`events_at`. There is no command or
-timer yet (WEB-06.3).
+once per request and pass that generation to `facts_at`/`events_at`.
+
+## Import maintenance
+
+`manage.py import_state` runs one import and prints the report as JSON; it exits non-zero when
+the snapshot was refused. It reads `LEXINFORM_WEB_STATE_REMOTE` (public HTTPS URL of the
+repository), `LEXINFORM_WEB_STATE_CACHE` (the dedicated bare cache) and
+`LEXINFORM_WEB_PUBLIC_CHANNEL`. Every call writes an `ImportRun` row, including failures.
+
+- A refused snapshot (rewritten history, corpus drop, a chain across two matters, an invalid
+  dump) opens one `ImportIssue` per kind; repeats only refresh `last_seen_at`. The next accepted
+  snapshot closes them.
+- A fall of analysed candidates by more than 20% is refused. After checking it, an operator with
+  `matters.reconcile_matter` accepts it:
+  `import_state --accept-drop --operator EMAIL --reason "..."`.
+- Rewritten `state` history is refused. The audited rebaseline pins one commit and skips the
+  ancestry check for it only: `import_state --rebaseline SHA --operator EMAIL --reason "..."`.
+  If the branch has moved past that commit, the import is refused again.
+- A row missing from the new dump keeps its matter and last facts and opens an `absent` issue
+  for that identity; the issue closes itself when the row returns.
+- Retention keeps the active generation, the newest ten and everything younger than seven days.
+  Older generations lose their snapshots and facts; the generation row and every event revision
+  stay.
+- `manage.py resolve_import_issue` lists open issues;
+  `resolve_import_issue ID... --operator EMAIL --resolution "..."` closes them.
+
+The five-minute timer belongs to the deployment (WEB-05a).
