@@ -4,7 +4,7 @@ import logging
 from zoneinfo import ZoneInfo
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import Bill, ProcessDetail, PublicationKind, PublicationStatus
+from lexinform.models import Bill, CheckAspect, ProcessDetail, PublicationKind, PublicationStatus
 from lexinform.ports import BillRepository, Clock, EliGateway
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.result import TrackingResult
@@ -42,7 +42,30 @@ class ActWatcher:
             return
         act = bill.act
         if act is None or act.entry_into_force is None or detail.eli != act.eli:
-            fetched = self._eli.get_act(detail.eli)
+            try:
+                fetched = self._eli.get_act(detail.eli)
+            except ServiceUnavailableError:
+                self._repo.record_check(
+                    bill.term,
+                    bill.number,
+                    CheckAspect.ACT,
+                    at=self._clock.now(),
+                    ok=False,
+                    outage=True,
+                )
+                raise
+            except Exception:
+                self._repo.record_check(
+                    bill.term, bill.number, CheckAspect.ACT, at=self._clock.now(), ok=False
+                )
+                raise
+            self._repo.record_check(
+                bill.term,
+                bill.number,
+                CheckAspect.ACT,
+                at=self._clock.now(),
+                ok=fetched is not None,
+            )
             if fetched is None:
                 log.info("druk %s: act %s not in the ELI API yet", bill.number, detail.eli)
                 return

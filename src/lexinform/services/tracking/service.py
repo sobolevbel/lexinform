@@ -463,10 +463,10 @@ class StatusTrackingService:
             self._check_done(bill, ok=True)
             if change is not None:
                 result.changed += 1
-            if not deliver:
-                self._acts.check(bill, detail, result, publish=False)
-                continue
             try:
+                if not deliver:
+                    self._acts.check(bill, detail, result, publish=False)
+                    continue
                 self._post_news(bill, detail, change, result, publish=publish)
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)

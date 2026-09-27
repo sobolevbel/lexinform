@@ -2,6 +2,8 @@
 
 import datetime as dt
 
+import pytest
+
 from lexinform.models import (
     CheckAspect,
     ObservationBasis,
@@ -11,10 +13,12 @@ from lexinform.models import (
 from tests.fakes import make_analysis
 from tests.harness import (
     COMMITTEE_STAGES,
+    ELI,
     RCL,
     TERM,
     WYKAZ,
     World,
+    act,
     rcl_stage,
     wykaz_entry,
 )
@@ -191,3 +195,91 @@ def test_a_plan_without_a_card_stores_its_withdrawal_silently() -> None:
     assert len(changes) == 1 and changes[0].closure_detected
     assert report.updates == 0 and w.publisher.updates == []
     assert w.wykaz.calls == 4  # discovery and tracking, once each per run
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+def test_unthreaded_batch_wait_survives_restore_and_watermark(workers: int) -> None:
+    w = World(
+        batch=True,
+        batch_kinds=frozenset({"supplement"}),
+        llm_script={"3039": make_analysis(relevant=True, score=2)},
+        workers=workers,
+    )
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    baseline = w.bill("3039").observed_process
+    w.file_to_print("3039", "Stanowisko Rządu")
+    w.clock.advance(hours=1)
+
+    waiting = w.run()
+    since = w.bill("3039").awaiting_batch_since
+    assert waiting.batch_waiting == 1 and since == w.clock.now()
+    assert w.bill("3039").observed_process == baseline
+    w.repo.restore(w.repo.dump())
+    w.clock.advance(hours=1)
+    w.run(since=w.clock.now())
+    assert w.bill("3039").awaiting_batch_since == since
+    assert w.bill("3039").observed_process == baseline
+    w.batch.resolve()
+
+    completed = w.run(since=w.clock.now())
+    repeated = w.run(since=w.clock.now())
+
+    changes = w.repo.list_status_changes(TERM, "3039")
+    assert len(changes) == 1 and changes[0].supplements[0].digest is not None
+    assert w.bill("3039").awaiting_batch_since is None
+    assert not completed.errors and not repeated.errors
+    assert not repeated.llm_calls and not w.llm.supplement_contexts
+    assert not w.publisher.updates and w.publication("3039") is None
+    assert w.repo.list_due_status_changes("@test", max_attempts=3) == []
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+@pytest.mark.parametrize("aspect", ["process", "act"])
+def test_unthreaded_source_outage_preserves_attempts_and_recovers(
+    workers: int, aspect: str
+) -> None:
+    w = below_bar_world(workers=workers)
+    w.run()
+    attempts = w.bill("3039").analysis_attempts
+    w.set_stages("3039", COMMITTEE_STAGES)
+    if aspect == "act":
+        w.publish_act("3039")
+        w.gateway.acts[ELI] = act()
+    w.clock.advance(days=1)
+    w.gateway.outages.add("get_act" if aspect == "act" else "get_process")
+
+    failed = w.tracking.check_updates()
+
+    assert failed.fatal_error is not None
+    assert w.bill("3039").analysis_attempts == attempts
+    check = w.repo.source_checks(TERM, "3039")[CheckAspect(aspect)]
+    assert check.failures == 0 and check.last_outage_at == w.clock.now()
+    w.gateway.outages.clear()
+    w.clock.advance(hours=1)
+    recovered = w.tracking.check_updates()
+    assert recovered.fatal_error is None
+    if aspect == "act":
+        assert w.bill("3039").act is not None
+    assert w.repo.source_checks(TERM, "3039")[CheckAspect(aspect)].last_success_at == w.clock.now()
+    assert not w.publisher.updates and w.publication("3039") is None
+
+
+def test_missing_act_is_not_fresh_and_a_cached_act_does_not_fake_a_new_check() -> None:
+    w = below_bar_world()
+    w.run()
+    w.publish_act("3039")
+    w.clock.advance(days=1)
+
+    w.tracking.check_updates()
+
+    missing = w.repo.source_checks(TERM, "3039")[CheckAspect.ACT]
+    assert missing.last_success_at is None and missing.failures == 1
+    w.gateway.acts[ELI] = act()
+    w.clock.advance(hours=1)
+    w.tracking.check_updates()
+    checked = w.repo.source_checks(TERM, "3039")[CheckAspect.ACT]
+    assert checked.last_success_at == w.clock.now() and checked.failures == 0
+    w.clock.advance(hours=1)
+    w.tracking.check_updates()
+    assert w.repo.source_checks(TERM, "3039")[CheckAspect.ACT] == checked
