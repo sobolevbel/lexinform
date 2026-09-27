@@ -10,10 +10,12 @@ A row that simply disappears from the register says the same as `Wycofany` and i
 """
 
 import logging
+from collections.abc import Sequence
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
+    CheckAspect,
     PublicationStatus,
     SourceOutcome,
     StatusChange,
@@ -164,26 +166,42 @@ class WykazWatcher:
         self._poster = poster
         self._linker = linker
 
-    def check(self, bills: list[Bill], result: TrackingResult, *, publish: bool) -> bool:
+    def check(
+        self,
+        bills: list[Bill],
+        result: TrackingResult,
+        *,
+        publish: bool,
+        quiet: Sequence[Bill] = (),
+    ) -> bool:
         """Re-read the register for the followed plans and post what the government decided;
-        link the ones whose project is out. False when Telegram is down."""
-        self._stamp_projects_already_listed(bills)
+        link the ones whose project is out. False when Telegram is down. `quiet` plans have no
+        card: stored the same way from the same download, never delivered."""
+        self._stamp_projects_already_listed([*bills, *quiet])
         if not self._link_pending(result, publish=publish):
             return False
         followed = [b for b in bills if b.wykaz is not None]
-        if not followed:
+        silent = [b for b in quiet if b.wykaz is not None]
+        if not followed and not silent:
             return True
-        entries = self._entries(result)
+        entries = self._entries(result, [*followed, *silent])
         if entries is None:
             return True
+        for bill in silent:
+            self._check_one(bill, entries, result, publish=False, deliver=False)
         return all(self._check_one(bill, entries, result, publish=publish) for bill in followed)
 
-    def _entries(self, result: TrackingResult) -> dict[str, WykazEntry] | None:
+    def _entries(self, result: TrackingResult, plans: list[Bill]) -> dict[str, WykazEntry] | None:
         """The whole register, by number; None when it could not be downloaded, which stops this
         watcher and nothing else."""
         try:
             return {e.number: e for e in self._wykaz.entries()}
         except ServiceUnavailableError as exc:
+            now = self._clock.now()
+            for bill in plans:
+                self._repo.record_check(
+                    bill.term, bill.number, CheckAspect.PROCESS, at=now, ok=False, outage=True
+                )
             result.partial_errors.append(f"wykaz: {exc.describe()}")
             log.error("wykaz tracking stopped: %s", exc.describe())
             return None
@@ -195,24 +213,31 @@ class WykazWatcher:
         result: TrackingResult,
         *,
         publish: bool,
+        deliver: bool = True,
     ) -> bool:
         """False when Telegram is down; a failure of this one plan is counted and passed over."""
         assert bill.wykaz is not None, "check() follows only the plans that carry a wykaz entry"
-        result.checked += 1
+        if deliver:
+            result.checked += 1
+        else:
+            result.observed += 1
         entry = entries.get(bill.wykaz.number) or self._removed(bill, entries)
         if entry is None:
             return True
+        now = self._clock.now()
         try:
             with self._repo.atomic():
                 change = self._detect(bill, entry, result)
-                if change is not None:
+                if change is not None and deliver:
                     fresh = self._repo.get(bill.term, bill.number) or bill
                     self._poster.prepare(fresh, change)
         except Exception as exc:
+            self._repo.record_check(bill.term, bill.number, CheckAspect.PROCESS, at=now, ok=False)
             result.failed += 1
             log.exception("tracking %s failed: %s", bill.number, exc)
             return True
-        if change is None:
+        self._repo.record_check(bill.term, bill.number, CheckAspect.PROCESS, at=now, ok=True)
+        if change is None or not deliver:
             return True
         fresh = self._repo.get(bill.term, bill.number) or bill
         try:

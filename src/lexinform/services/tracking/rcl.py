@@ -5,6 +5,7 @@ An RCL outage stops only this part of the tracking phase: the Sejm side of the r
 """
 
 import logging
+from collections.abc import Sequence
 from zoneinfo import ZoneInfo
 
 from lexinform.concurrency import fan_out
@@ -12,6 +13,8 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
     BillStatus,
+    CheckAspect,
+    ObservationMode,
     PublicationKind,
     RclProject,
     SourceOutcome,
@@ -67,10 +70,21 @@ class RclWatcher:
         self._texts = RclTextSource()
         self._workers = workers
 
-    def check(self, bills: list[Bill], result: TrackingResult, *, publish: bool) -> bool:
+    def check(
+        self,
+        bills: list[Bill],
+        result: TrackingResult,
+        *,
+        publish: bool,
+        quiet: Sequence[Bill] = (),
+    ) -> bool:
         """Refresh the followed RCL projects among `bills` and post what changed; link the ones
-        whose druk appeared. False when Telegram is down (RCL being down is only reported)."""
-        followed = [b for b in bills if b.rcl is not None]
+        whose druk appeared. False when Telegram is down (RCL being down is only reported).
+
+        `quiet` are projects with no card: refreshed and stored the same way, never delivered.
+        """
+        silent = {(b.term, b.number) for b in quiet}
+        followed = [b for b in (*bills, *quiet) if b.rcl is not None]
         try:
             followed = self._find_prints(followed)
         except ServiceUnavailableError as exc:
@@ -85,18 +99,29 @@ class RclWatcher:
         ]
         for outcome in fan_out(followed, self._refresh, workers=self._workers):
             bill = outcome.item
-            result.checked += 1
+            deliver = (bill.term, bill.number) not in silent
+            if deliver:
+                result.checked += 1
+            else:
+                result.observed += 1
             try:
                 project = outcome.result()
                 results_due = self._results_due(bill, project)
-                change = self._detect(bill, project, result)
+                change = self._detect(bill, project, result, deliver=deliver)
             except ServiceUnavailableError as exc:
+                self._checked(bill, ok=False, outage=True)
                 result.partial_errors.append(f"RCL: {exc.describe()}")
                 log.error("RCL tracking stopped: %s", exc.describe())
                 break
             except Exception as exc:
+                self._checked(bill, ok=False)
                 result.failed += 1
                 log.exception("tracking %s failed: %s", bill.number, exc)
+                continue
+            self._checked(bill, ok=True)
+            if not deliver:
+                if change is not None:
+                    result.changed += 1
                 continue
             fresh = self._repo.get(bill.term, bill.number) or bill
             try:
@@ -148,13 +173,18 @@ class RclWatcher:
                 log.exception("linking %s to its druk failed: %s", bill.number, exc)
         return True
 
+    def _checked(self, bill: Bill, *, ok: bool, outage: bool = False) -> None:
+        self._repo.record_check(
+            bill.term, bill.number, CheckAspect.PROCESS, at=self._clock.now(), ok=ok, outage=outage
+        )
+
     def _refresh(self, bill: Bill) -> RclProject:
         """Network only: the project as RCL shows it now."""
         assert bill.rcl is not None, "check() refreshes only the bills that carry a project"
         return self._reader.refresh(bill.rcl)
 
     def _detect(
-        self, bill: Bill, project: RclProject, result: TrackingResult
+        self, bill: Bill, project: RclProject, result: TrackingResult, *, deliver: bool = True
     ) -> StatusChange | None:
         """Source observations advance only with their delivery work after network preparation."""
         fresh = bill
@@ -162,8 +192,10 @@ class RclWatcher:
         document = self._texts.locate(bill.model_copy(update={"rcl": project})).document
         if bill.status is BillStatus.REANALYSIS_READY and bill.ready_analysis is not None:
             document = bill.ready_analysis.located.document or document
+        paid = deliver or bill.observation_mode is not ObservationMode.METADATA
         if (
-            self._analysis is not None
+            paid
+            and self._analysis is not None
             and bill.analysis is not None
             and document is not None
             and document.url != bill.analysis.source_url
@@ -183,9 +215,9 @@ class RclWatcher:
             self._repo.save_stages(bill.term, bill.number, stages, new_fp)
             change = self._detect_change(bill, project, stages, new_fp, content_changed)
             fresh = self._repo.get(bill.term, bill.number) or bill
-            if change is not None:
+            if change is not None and deliver:
                 self._poster.prepare(fresh, change)
-            if self._results_due(bill, project) and self._consultations is not None:
+            if deliver and self._results_due(bill, project) and self._consultations is not None:
                 self._consultations.prepare_results(fresh)
             self._repo.save_observed_process(
                 bill.term, bill.number, observe(fresh, closure_date=fresh.observed_closure_date)

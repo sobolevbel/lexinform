@@ -338,12 +338,15 @@ class StatusTrackingService:
             return result
         tracked = self._list_tracked(changed_since)
         everyone = tracked if changed_since is None else self._list_tracked()
-        if not self._check_other_sources(tracked, everyone, result, publish=publish):
-            return result
-        self._check_processes(tracked, result, publish=publish, may_wait=may_wait)
-        if self._options.observe_unthreaded and result.fatal_error is None:
+        quiet: list[Bill] = []
+        if self._options.observe_unthreaded:
             self._assign_observation()
             quiet = self._list_tracked(changed_since, unthreaded=True)
+        if not self._check_other_sources(tracked, everyone, result, publish=publish, quiet=quiet):
+            return result
+        self._check_processes(tracked, result, publish=publish, may_wait=may_wait)
+        if quiet and result.fatal_error is None:
+            quiet = [self._repo.get(b.term, b.number) or b for b in quiet]
             self._check_processes(quiet, result, publish=False, may_wait=may_wait, deliver=False)
         self._remind_and_refresh(everyone, result, publish=publish)
         self._log_outcome(result, changed_since)
@@ -380,7 +383,13 @@ class StatusTrackingService:
         return self._list_tracked()
 
     def _check_other_sources(
-        self, tracked: list[Bill], everyone: list[Bill], result: TrackingResult, *, publish: bool
+        self,
+        tracked: list[Bill],
+        everyone: list[Bill],
+        result: TrackingResult,
+        *,
+        publish: bool,
+        quiet: list[Bill] | None = None,
     ) -> bool:
         """The watchers that do not read a Sejm process; False when one of them had to stop.
 
@@ -393,9 +402,12 @@ class StatusTrackingService:
             return False
         if self._senate is not None:
             self._senate.check(everyone, result)
-        if self._wykaz is not None and not self._wykaz.check(tracked, result, publish=publish):
+        silent = quiet or []
+        if self._wykaz is not None and not self._wykaz.check(
+            tracked, result, publish=publish, quiet=silent
+        ):
             return False
-        return self._rcl is None or self._rcl.check(tracked, result, publish=publish)
+        return self._rcl is None or self._rcl.check(tracked, result, publish=publish, quiet=silent)
 
     def _check_processes(
         self,

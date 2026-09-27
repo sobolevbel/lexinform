@@ -1,5 +1,7 @@
 """Bills with no card are observed for the website: facts and changes stored, nothing delivered."""
 
+import datetime as dt
+
 from lexinform.models import (
     CheckAspect,
     ObservationBasis,
@@ -7,7 +9,15 @@ from lexinform.models import (
     PublicationKind,
 )
 from tests.fakes import make_analysis
-from tests.harness import COMMITTEE_STAGES, TERM, World
+from tests.harness import (
+    COMMITTEE_STAGES,
+    RCL,
+    TERM,
+    WYKAZ,
+    World,
+    rcl_stage,
+    wykaz_entry,
+)
 
 
 def below_bar_world(*, workers: int = 1, observe_unthreaded: bool = True) -> World:
@@ -133,3 +143,51 @@ def test_switched_off_observation_reads_nothing_without_a_card() -> None:
 
     assert w.repo.list_status_changes(TERM, "3039") == []
     assert w.bill("3039").observation_mode is None
+
+
+def test_an_rcl_project_without_a_card_is_refreshed_and_not_told() -> None:
+    w = World(llm_script={RCL: make_analysis(relevant=True, score=2)})
+    project = w.add_rcl_project()
+    w.run()
+    w.clock.advance(days=1)
+    w.rcl.put(
+        project.model_copy(
+            update={
+                "stages": (
+                    *project.stages[:3],
+                    rcl_stage(4, "Opiniowanie", "reached", modified=dt.date(2026, 9, 8)),
+                    rcl_stage(
+                        9, "Stały Komitet Rady Ministrów", "active", modified=dt.date(2026, 9, 8)
+                    ),
+                    *project.stages[5:],
+                ),
+                "modified": dt.date(2026, 9, 8),
+            }
+        )
+    )
+
+    report = w.run()
+
+    assert w.publication(RCL) is None
+    assert w.bill(RCL).observation_basis == ObservationBasis.RELEVANT_ANALYSIS
+    assert [len(c.new_stages) for c in w.repo.list_status_changes(TERM, RCL)] == [1]
+    assert report.updates == 0 and w.publisher.updates == []
+    assert w.repo.source_checks(TERM, RCL)[CheckAspect.PROCESS].failures == 0
+
+
+def test_a_plan_without_a_card_stores_its_withdrawal_silently() -> None:
+    w = World(llm_script={WYKAZ: make_analysis(relevant=False, score=1)})
+    w.add_wykaz_entry()
+    w.run()
+    w.clock.advance(days=1)
+    w.add_wykaz_entry(entry=wykaz_entry(status="Wycofany"))
+
+    report = w.run()
+
+    stored = w.bill(WYKAZ)
+    assert stored.observation_mode == ObservationMode.METADATA
+    assert stored.wykaz is not None and stored.wykaz.is_withdrawn
+    changes = w.repo.list_status_changes(TERM, WYKAZ)
+    assert len(changes) == 1 and changes[0].closure_detected
+    assert report.updates == 0 and w.publisher.updates == []
+    assert w.wykaz.calls == 4  # discovery and tracking, once each per run
