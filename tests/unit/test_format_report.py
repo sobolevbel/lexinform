@@ -441,6 +441,26 @@ def test_help_reply_lists_the_commands_after_the_complaint() -> None:
         assert f"/{name}" in text, f"the help does not name /{name}"
 
 
+@pytest.mark.parametrize(
+    "status", [s for s in OutcomeStatus if s not in (OutcomeStatus.ERROR, OutcomeStatus.NOT_FOUND)]
+)
+def test_only_a_failure_is_answered_with_the_failure_icon(status: OutcomeStatus) -> None:
+    text = MessageFormatter("ru").command_reply(_incoming("/x"), CommandOutcome(status=status)).text
+
+    assert not text.startswith("❌")
+
+
+def test_a_published_digest_is_not_called_a_card() -> None:
+    outcome = CommandOutcome(
+        status=OutcomeStatus.DIGESTED, note="2026-W39 posted to the channel", message_id=63
+    )
+
+    text = MessageFormatter("ru").command_reply(_incoming("/digest publish ref=2026-W39"), outcome)
+
+    assert text.text.startswith("🗞")
+    assert "📣 posted: message 63" in text.text
+
+
 def test_run_report_lists_the_commands_handled() -> None:
     report = RunReport(
         started_at=NOW,

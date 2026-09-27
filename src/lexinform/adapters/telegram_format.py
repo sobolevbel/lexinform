@@ -1431,6 +1431,7 @@ class MessageFormatter:
             OutcomeStatus.SPENT: "💸",
             OutcomeStatus.HELP: "🛠",
             OutcomeStatus.EXECUTED_EARLIER: "🕗",
+            OutcomeStatus.DIGESTED: "🗞",
         }.get(outcome.status, "❌")
         quoted = esc(_clip(command.text, QUOTED_LINE_CHARS))
         head = f"{icon} <b>{esc(outcome.status)}</b> · <code>{quoted}</code>"
@@ -1442,7 +1443,8 @@ class MessageFormatter:
         if bill is not None:
             blocks.append(self._bill_facts(bill, full=outcome.status in FULL_FACTS))
         if outcome.message_id is not None:
-            blocks.append(f"📣 card posted: message {outcome.message_id}")
+            posted = "card posted" if bill is not None else "posted"
+            blocks.append(f"📣 {posted}: message {outcome.message_id}")
         if outcome.note:
             blocks.append(esc(outcome.note))
         return RenderedMessage(
