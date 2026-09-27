@@ -1,10 +1,10 @@
 import hashlib
 import json
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from urllib.parse import urlsplit, urlunsplit
 
-from lexinform.models import Bill, Publication, Stage, StatusChange
+from lexinform.models import Bill, Publication, SourceCheck, Stage, StatusChange
 from lexinform.models.analysis import AnalysisRecord
 from lexinform.models.batch import BatchIntent, LlmBatchItem
 from lexinform.models.enums import BillStatus, PublicationKind, PublicationStatus
@@ -12,6 +12,7 @@ from lexinform_web.ingestion.contract import (
     ActFact,
     AgendaFact,
     AppliedAnalysis,
+    AspectCheck,
     ConsultationFact,
     Coverage,
     EventExplanation,
@@ -86,7 +87,7 @@ def applied_analysis(record: AnalysisRecord) -> AppliedAnalysis:
     )
 
 
-def project_bill(bill: Bill) -> ImportedBill:
+def project_bill(bill: Bill, checks: Sequence[SourceCheck] = ()) -> ImportedBill:
     summary = bill.summary
     consultation = bill.consultation
     act = bill.act
@@ -203,6 +204,18 @@ def project_bill(bill: Bill) -> ImportedBill:
         observed_closure_date=bill.observed_closure_date,
         awaiting_batch_since=bill.awaiting_batch_since,
         has_staged_analysis=bill.ready_analysis is not None,
+        observation_mode=bill.observation_mode.value if bill.observation_mode else None,
+        observation_basis=bill.observation_basis.value if bill.observation_basis else None,
+        checks=tuple(
+            AspectCheck(
+                aspect=check.aspect.value,
+                last_success_at=check.last_success_at,
+                last_attempt_at=check.last_attempt_at,
+                failures=check.failures,
+                last_outage_at=check.last_outage_at,
+            )
+            for check in sorted(checks, key=lambda c: c.aspect.value)
+        ),
     )
 
 
@@ -215,6 +228,7 @@ def project_state(
     public_channel: str | None = None,
     intents: Sequence[BatchIntent] = (),
     batch_items: Sequence[LlmBatchItem] = (),
+    checks: Mapping[tuple[int, str], Sequence[SourceCheck]] | None = None,
 ) -> ImportDocumentV1:
     by_row = {(bill.term, bill.number): identity_of(bill) for bill in bills}
     if len(by_row) != len(bills):
@@ -226,7 +240,9 @@ def project_state(
         except KeyError as error:
             raise ValueError("state contains a dangling bill reference") from error
 
-    projected = tuple(project_bill(bill) for bill in bills)
+    projected = tuple(
+        project_bill(bill, (checks or {}).get((bill.term, bill.number), ())) for bill in bills
+    )
     pending = [
         PendingWork(
             work_key=f"intent:{intent.provider}:{intent.request.custom_id}",

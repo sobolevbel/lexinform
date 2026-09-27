@@ -33,6 +33,7 @@ from lexinform_web.ingestion.activation import (
     import_state,
 )
 from lexinform_web.ingestion.contract import (
+    AspectCheck,
     IdentityRelation,
 )
 from lexinform_web.ingestion.models import (
@@ -81,6 +82,30 @@ def test_check_time_is_freshness_and_title_is_content() -> None:
     assert kept is not None and kept.content_updated_at == T0
     assert changed is not None and changed.content_updated_at == clock.at
     assert changed.title == "Nowy tytuł"
+
+
+def test_a_new_check_is_freshness_not_content() -> None:
+    clock = MovingClock()
+    activate(document("a", bill(sejm("1"))), expected=None, clock=clock)
+    clock.at = T0 + dt.timedelta(hours=1)
+    checked = bill(sejm("1")).model_copy(
+        update={
+            "checks": (
+                AspectCheck(
+                    aspect="process",
+                    last_success_at=clock.at,
+                    last_attempt_at=clock.at,
+                    failures=0,
+                    last_outage_at=None,
+                ),
+            )
+        }
+    )
+    second = activate(document("b", checked), expected=ref("a"), clock=clock)
+
+    facts = facts_at(second.generation, Matter.objects.get().pk)
+    assert facts is not None and facts.content_updated_at == T0
+    assert facts.snapshot.payload["checks"][0]["aspect"] == "process"
 
 
 def test_stale_or_old_snapshot_changes_nothing() -> None:

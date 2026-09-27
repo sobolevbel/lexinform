@@ -45,7 +45,7 @@ def test_legacy_missing_freshness_and_negative_analysis_survive(legacy_bill: Bil
     assert imported.applied_analysis.practical_impact == ""
     assert imported.applied_analysis.text_checked_at is None
     assert imported.processed is None
-    assert imported.aspect_freshness == "unknown"
+    assert (imported.observation_mode, imported.checks) == (None, ())
     assert imported.visibility == "editorial"
     assert restored.coverage.analyzed_candidates == 1
 

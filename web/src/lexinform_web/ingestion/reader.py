@@ -1,7 +1,7 @@
 import json
 import sqlite3
 
-from lexinform.models import Bill, Publication, StatusChange
+from lexinform.models import Bill, Publication, SourceCheck, StatusChange
 from lexinform.models.batch import BatchIntent, BatchRequest, LlmBatchItem, batch_item_meta
 from lexinform_web.ingestion.contract import ImportDocumentV1, SnapshotOrigin
 from lexinform_web.ingestion.projection import project_state
@@ -36,6 +36,8 @@ def read_document(
                     "last_checked_at",
                     "discontinued_at",
                     "observed_closure_date",
+                    "observation_mode",
+                    "observation_basis",
                 )
             }
             for name in (
@@ -100,6 +102,22 @@ def read_document(
             values["meta"] = batch_item_meta(row["call_kind"], row["meta_json"])
             values["result"] = json.loads(row["result_json"]) if row["result_json"] else None
             items.append(LlmBatchItem.model_validate(values))
+        checks: dict[tuple[int, str], list[SourceCheck]] = {}
+        for row in cursor.execute("SELECT * FROM source_checks ORDER BY term, number, aspect"):
+            checks.setdefault((row["term"], row["number"]), []).append(
+                SourceCheck.model_validate(
+                    {
+                        name: row[name]
+                        for name in (
+                            "aspect",
+                            "last_success_at",
+                            "last_attempt_at",
+                            "failures",
+                            "last_outage_at",
+                        )
+                    }
+                )
+            )
         return project_state(
             origin=origin,
             bills=bills,
@@ -108,6 +126,7 @@ def read_document(
             public_channel=public_channel,
             intents=intents,
             batch_items=items,
+            checks=checks,
         )
     except ValueError, TypeError, KeyError, IndexError, sqlite3.Error:
         raise SnapshotError("snapshot rows failed import contract validation") from None

@@ -11,7 +11,7 @@ from lexinform_web.matters.identities import IdentitySource, SourceKey
 SUPPORTED_SCHEMA: Final = 35
 # Every bot migration after the audited schema, with why contract v1 still reads it correctly.
 REVIEWED_MIGRATIONS: Final = {
-    35: "observation mode columns and source_checks; contract v1 reads neither",
+    35: "observation mode columns and source_checks; exported as optional ImportedBill fields",
 }
 Nonempty = Annotated[str, Field(min_length=1)]
 Sha256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
@@ -183,6 +183,14 @@ class PendingWork(ContractModel):
     since: dt.datetime | None
 
 
+class AspectCheck(ContractModel):
+    aspect: Literal["process", "consultation", "text", "act"]
+    last_success_at: dt.datetime | None
+    last_attempt_at: dt.datetime | None
+    failures: int = Field(ge=0)
+    last_outage_at: dt.datetime | None
+
+
 class ImportedBill(ContractModel):
     identity: Identity
     bot_status: BillStatus
@@ -193,7 +201,11 @@ class ImportedBill(ContractModel):
     awaiting_batch_since: dt.datetime | None
     has_staged_analysis: bool
     visibility: Literal["editorial"] = "editorial"
-    aspect_freshness: Literal["unknown"] = "unknown"
+    observation_mode: Literal["full", "metadata", "off"] | None = None
+    observation_basis: (
+        Literal["telegram_thread", "relevant_analysis", "not_relevant", "operator"] | None
+    ) = None
+    checks: tuple[AspectCheck, ...] = ()
 
 
 class EventExplanation(ContractModel):

@@ -8,7 +8,14 @@ from pathlib import Path
 import pytest
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
-from lexinform.models import Bill, Publication, StatusChange
+from lexinform.models import (
+    Bill,
+    CheckAspect,
+    ObservationBasis,
+    ObservationMode,
+    Publication,
+    StatusChange,
+)
 from lexinform.models.batch import BatchIntent, LlmBatch, LlmBatchItem
 from lexinform.models.bill import LocatedText, ReadyAnalysis
 from lexinform.models.enums import PublicationKind, PublicationStatus
@@ -43,9 +50,29 @@ def test_restored_rows_match_pure_projection(repository: SqliteBillRepository) -
         assert bill is not None
         assert document == project_state(origin=document.origin, bills=[bill])
         assert document == project_in_process(repository.dump().encode(), source_commit="a" * 40)
-        assert document.bills[0].aspect_freshness == "unknown"
+        assert (document.bills[0].observation_mode, document.bills[0].checks) == (None, ())
         with pytest.raises(sqlite3.OperationalError, match="readonly"):
             snapshot.connection.execute("DELETE FROM bills")
+
+
+def test_observation_and_checks_are_exported(repository: SqliteBillRepository) -> None:
+    stored, _ = repository.list_observation_candidates("@none")[0]
+    repository.set_observation(
+        stored.term, stored.number, ObservationMode.FULL, ObservationBasis.RELEVANT_ANALYSIS
+    )
+    repository.record_check(stored.term, stored.number, CheckAspect.PROCESS, at=NOW, ok=True)
+    repository.record_check(
+        stored.term, stored.number, CheckAspect.ACT, at=NOW, ok=False, outage=True
+    )
+
+    document = project_in_process(repository.dump().encode(), source_commit="a" * 40)
+
+    exported = document.bills[0]
+    assert (exported.observation_mode, exported.observation_basis) == ("full", "relevant_analysis")
+    assert [(c.aspect, c.last_success_at, c.last_outage_at) for c in exported.checks] == [
+        ("act", None, NOW),
+        ("process", NOW, None),
+    ]
 
 
 def test_history_and_only_explicit_public_channel_survive(repository: SqliteBillRepository) -> None:

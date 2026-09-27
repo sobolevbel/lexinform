@@ -160,7 +160,7 @@ identities и row lock `ActiveImport`: тот же SHA/hash — `unchanged`, у�
 | `linked_wykaz_number`, номер Wykaz у RCL | Только поисковые display aliases; совпадение номера не разрешает lifecycle/merge |
 | `publications` | Только sent, message_id и явно переданный публичный `@username`; digest, private/numeric channel и другие каналы не дают ссылок |
 | Bot status | Сохраняется отдельно; `visibility=editorial` означает, что импорт не назначает видимость сайта |
-| `last_checked_at` | Не импортируется как доказательство проверки аспектов; `aspect_freshness=unknown` до WEB-07a |
+| `last_checked_at` | Не импортируется как доказательство проверки аспектов; свежесть — `checks` из `source_checks` (v35), пустой список = unknown |
 | Числа корпуса | `coverage`: все строки, строки с применённым анализом, analyzed-кандидаты; проверяются по содержимому документа |
 
 Allowlist задаётся явными полями вложенных моделей и явным конструированием проекции.

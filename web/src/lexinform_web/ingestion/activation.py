@@ -58,8 +58,13 @@ def digest(value: object) -> str:
 
 
 def semantic_hash(bill: ImportedBill) -> str:
-    """Hash of what the bill says; a new check time alone is freshness, not content."""
-    return digest(bill.model_dump(mode="json", exclude={"applied_analysis": {"text_checked_at"}}))
+    """Hash of what the bill says; check times and outcomes are freshness, not content."""
+    return digest(
+        bill.model_dump(
+            mode="json",
+            exclude={"applied_analysis": {"text_checked_at"}, "checks": True},
+        )
+    )
 
 
 def reference_of(generation: ImportGeneration | None) -> SnapshotRef | None:
