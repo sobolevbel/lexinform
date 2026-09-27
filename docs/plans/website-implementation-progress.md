@@ -57,6 +57,29 @@ when its acceptance result and checks are recorded here.
 
 ## Work log
 
+### 2026-09-27 — WEB-07a.3d: isolated dry-run acceptance remains incomplete
+
+Fetched state commit `ef40ac0088d91a636742dafc8e5c43d4a57fecf2`; dump SHA-256
+`65c5a693677c524148511632add4219dd933d5a141ea0ae5ef60764df35d090d`.
+Restored it to a temporary database and ran `run --dry-run --max-analyze 0` from that
+directory with an empty inherited environment, dummy provider keys and a $0.000001 run budget.
+No `.env`, real credentials, inbox or Telegram delivery settings were loaded.
+
+The run lasted 159 seconds. Sejm/RCL/Wykaz discovery succeeded with no new records;
+analysis count was zero. Console output contained eight prospective cards and a digest draft.
+These delivery counts use the isolated default channel, not production channel settings, so
+they cannot establish production duplicate/republication behavior. Tracking stopped at the
+first attempted reanalysis (druk 2271): the disabled key received an authentication error.
+There were no successful LLM calls, recorded tokens or recorded cost. The migrated database
+dump after the run exactly matched a fresh restore of the pinned source.
+
+This confirms that `max_analyze=0` is not a no-LLM switch for tracking and a tiny run budget
+does not guarantee prevention of a provider request. The run is **not** a successful acceptance
+of WEB-07a.3. A complete tracking run under an explicit model-call policy and matching delivery
+context is still required. Do not infer current reader actions from these old, pre-tracking
+console cards. Full local output, including every prospective message, was retained in
+`/private/tmp/lexinform-web-07a-acceptance/run.log`; production was not changed.
+
 ### 2026-09-27 — WEB-07a.3c: observation regressions and PostgreSQL import
 
 Added `World` scenarios for unthreaded batch waiting across dump/restore, a newer discovery
