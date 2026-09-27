@@ -154,7 +154,7 @@ def test_bad_rows_fail_without_exposing_contents(
             else:
                 connection.execute("UPDATE bills SET status = 'linked', linked_number = '999999'")
             connection.commit()
-            raw = ("\n".join(connection.iterdump()) + "\nPRAGMA user_version = 34;").encode()
+            raw = ("\n".join(connection.iterdump()) + "\nPRAGMA user_version = 35;").encode()
         finally:
             connection.close()
     with restore_in_process(raw) as restored:

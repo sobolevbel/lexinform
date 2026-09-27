@@ -7,8 +7,8 @@ when its acceptance result and checks are recorded here.
 ## Current position
 
 - Started: 2026-09-16
-- Active task: WEB-07a.1 — observation mode and freshness in the bot
-- Next task: WEB-07a.2 — watchers without a Telegram thread
+- Active task: WEB-07a.2 — watchers without a Telegram thread
+- Next task: WEB-07a.3 — regressions and a new import with freshness
 - Release target: A — public library in five languages
 - Last code review: 2026-09-26, local commit `6cd680d`; no production verification
 - Remaining implementation slices: [task list](../website/tasks.md)
@@ -45,7 +45,8 @@ when its acceptance result and checks are recorded here.
 | WEB-05c | Not started | — |
 | WEB-06 | In progress | Restore, acquisition, projection, activation and maintenance implemented; the deployment sandbox and timer remain (WEB-05a) |
 | WEB-06.3 | Complete | `import_state` command, `ImportRun` report, 20% corpus guard, reconciliation queue, retention and audited rebaseline |
-| WEB-07a | Not started | — |
+| WEB-07a | In progress | 07a.1 storage done; watchers (07a.2) and import (07a.3) remain |
+| WEB-07a.1 | Complete | Bot v35: observation mode/basis, `source_checks` per (bill, aspect), freshness model |
 | WEB-07b | Not started | — |
 | WEB-08 | Not started | — |
 | WEB-09 | Not started | — |
@@ -54,6 +55,26 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-27 — WEB-07a.1: observation mode and freshness storage
+
+Bot migration v35 (append-only) adds `bills.observation_mode` and `observation_basis` and the
+`source_checks` table keyed by `(term, number, aspect)`. A row from an older dump has NULL mode,
+which means unknown and changes nothing: no watcher reads the mode yet, so every existing Telegram
+behaviour is kept. `record_check` keeps a success, the consecutive failures of the bill and the
+last outage apart — an outage counts no failure — and `SourceCheck.freshness` answers unknown,
+fresh (36 hours), stale, failing or outage. Checks move with government rows at a term rollover.
+
+Restore now replays the pending migrations on the scratch copy too: a dump cut at a statement
+boundary used to pass the scratch replay and fail only in `migrate()` on the real database,
+after its tables had been dropped. The new migration changed where the test's truncation fell
+and exposed it.
+
+The web contract now accepts schema 35. `REVIEWED_MIGRATIONS` in the contract records every bot
+migration after the audited v34 with why contract v1 still reads it correctly, and the test fails
+until a new migration is reviewed there. Contract v1 does not export the mode or checks yet
+(WEB-07a.3). The real state dump restored and migrated to v35 (265 bills, all unknown). Bot
+suite, strict mypy, Ruff and the full web gate (206 tests) passed.
 
 ### 2026-09-27 — WEB-06.3: import maintenance
 

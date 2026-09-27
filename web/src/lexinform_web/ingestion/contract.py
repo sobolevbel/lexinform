@@ -8,7 +8,11 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from lexinform.models.enums import BillStatus, Category
 from lexinform_web.matters.identities import IdentitySource, SourceKey
 
-SUPPORTED_SCHEMA: Final = 34
+SUPPORTED_SCHEMA: Final = 35
+# Every bot migration after the audited schema, with why contract v1 still reads it correctly.
+REVIEWED_MIGRATIONS: Final = {
+    35: "observation mode columns and source_checks; contract v1 reads neither",
+}
 Nonempty = Annotated[str, Field(min_length=1)]
 Sha256 = Annotated[str, Field(pattern=r"^[0-9a-f]{64}$")]
 
@@ -55,7 +59,7 @@ class SnapshotOrigin(ContractModel):
     source_commit: Annotated[str, Field(pattern=r"^[0-9a-f]{40}$")]
     dump_sha256: Sha256
     source_schema: int = Field(ge=1, le=SUPPORTED_SCHEMA)
-    normalized_schema: Literal[34] = SUPPORTED_SCHEMA
+    normalized_schema: Literal[35] = SUPPORTED_SCHEMA
 
 
 class StageFact(ContractModel):

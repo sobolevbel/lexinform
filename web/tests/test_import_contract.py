@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from lexinform.adapters.sqlite_repo import SCHEMA_VERSION
 from lexinform.models import Bill, Publication, Stage, StatusChange
 from lexinform.models.batch import BatchIntent, BatchItemMeta, BatchResult, LlmBatchItem
 from lexinform.models.bill import LocatedText, ReadyAnalysis
@@ -12,6 +13,7 @@ from lexinform.models.enums import BillStatus, PublicationKind, PublicationStatu
 from lexinform.models.observations import ObservedProcess
 from lexinform.models.wykaz import WykazEntry, wykaz_summary
 from lexinform_web.ingestion.contract import (
+    REVIEWED_MIGRATIONS,
     SUPPORTED_SCHEMA,
     Identity,
     ImportDocumentV1,
@@ -357,4 +359,6 @@ def test_contract_schema_pin_requires_explicit_review() -> None:
     from_schema = json.loads(
         (Path(__file__).parents[2] / "tests/fixtures/website/state_audit_v2.json").read_text()
     )
-    assert from_schema["source"]["validated_schema_version"] == SUPPORTED_SCHEMA
+    audited = from_schema["source"]["validated_schema_version"]
+    assert set(REVIEWED_MIGRATIONS) == set(range(audited + 1, SUPPORTED_SCHEMA + 1))
+    assert SUPPORTED_SCHEMA == SCHEMA_VERSION
