@@ -37,6 +37,11 @@ class Analysis(BaseModel):
         " previous version of the bill and the current text. Empty otherwise.",
     )
 
+    @property
+    def names_changes(self) -> bool:
+        """Whether a re-analysis found a difference worth telling the reader about."""
+        return any(change.strip() for change in self.changes_since_previous)
+
 
 class TokenUsage(BaseModel):
     """Tokens of one or more requests to one model, in the API's own categories; `input` is the

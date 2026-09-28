@@ -368,6 +368,55 @@ def test_updated_print_triggers_a_re_analysis_without_a_stage_change() -> None:
     assert w.llm.contexts[-1].text.startswith("Art. 1. Tekst po autopoprawce.")
 
 
+def test_a_re_analysis_that_names_no_change_is_kept_and_not_posted() -> None:
+    reformatted = "Art. 1. Ten sam tekst w innym układzie. " * 50
+    w = World(extractor=FakeTextExtractor(by_content={b"%PDF-v2": reformatted}))
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.clock.advance(days=2)
+    revised = print_url("3039").replace("3039.pdf", "3039_v2.pdf")
+    w.gateway.prints["3039"] = w.gateway.prints["3039"].model_copy(
+        update={
+            "change_date": w.clock.now().replace(tzinfo=None),
+            "attachments": (Attachment(print_number="3039", name="3039_v2.pdf", url=revised),),
+        }
+    )
+    w.gateway.files[revised] = b"%PDF-v2"
+    w.llm.finds_no_changes = True
+
+    report = w.run()
+
+    assert (report.reanalyzed, report.updates) == (1, 0)
+    assert w.publisher.updates == []
+    stored = w.bill("3039").analysis
+    assert stored is not None and (stored.revision, stored.source_url) == (2, revised)
+
+
+def test_a_batched_re_analysis_that_names_no_change_posts_nothing_when_collected() -> None:
+    w = World(batch=True, extractor=FakeTextExtractor(by_content={b"%PDF-report": REPORT_TEXT}))
+    batch = w.batch
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    batch.resolve()
+    w.run()
+    w.set_stages("3039", WITH_REPORT)
+    w.gateway.files[REPORT_URL] = b"%PDF-report"
+    w.clock.advance(days=1)
+    w.run()
+    posted = len(w.publisher.updates)
+    batch.finds_no_changes = True
+    batch.resolve()
+    w.clock.advance(days=1)
+
+    collected = w.run()
+
+    assert (collected.reanalyzed, collected.updates) == (1, 0)
+    assert len(w.publisher.updates) == posted
+    assert w.bill("3039").status is BillStatus.ANALYZED
+    stored = w.bill("3039").analysis
+    assert stored is not None and stored.source_url == REPORT_URL
+
+
 def test_print_re_dated_with_the_same_text_is_not_analysed_again() -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")

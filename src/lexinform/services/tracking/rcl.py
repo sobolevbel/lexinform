@@ -200,9 +200,10 @@ class RclWatcher:
             and document is not None
             and document.url != bill.analysis.source_url
         ):
-            fresh, content_changed = self._analysis.prepare_reanalysis(bill, document)
-            if content_changed and fresh.analysis is not None:
+            fresh, reanalysed = self._analysis.prepare_reanalysis(bill, document)
+            if reanalysed and fresh.analysis is not None:
                 result.count_reanalysis(fresh.analysis)
+                content_changed = fresh.analysis.analysis.names_changes
         new_fp = rcl_fingerprint(project)
         stages = rcl_stages(project)
         with self._repo.atomic():

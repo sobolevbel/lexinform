@@ -492,6 +492,13 @@ def make_analysis(
     )
 
 
+def read_again(analysis: Analysis) -> Analysis:
+    """A new text read against the old one: the model names what changed, as a real one does."""
+    if analysis.names_changes:
+        return analysis
+    return analysis.model_copy(update={"changes_since_previous": ["Изменена статья 1."]})
+
+
 def make_comparison(
     *, same_substance: bool = False, differences: list[str] | None = None
 ) -> JointComparison:
@@ -545,6 +552,7 @@ class FakeLlm:
         self.supplement_contexts: list[SupplementContext] = []
         self.joint_contexts: list[JointContext] = []
         self.counted: list[str] = []
+        self.finds_no_changes = False
         self.count_fails = False
         self.count_overshoot = 1.0
         """How much worse than two characters to the token an already-cut text is counted as.
@@ -586,6 +594,8 @@ class FakeLlm:
         outcome = self.script.get(ctx.number, self.default)
         if isinstance(outcome, Exception):
             raise outcome
+        if ctx.previous_summary is not None and not self.finds_no_changes:
+            outcome = read_again(outcome)
         return AnalysisRecord(
             analysis=outcome,
             model=self.MODEL,
@@ -661,6 +671,7 @@ class FakeBatchBackend:
         self.resolved: set[str] = set()
         self.submitted: list[BatchRequest] = []
         self.forgotten: list[str] = []
+        self.finds_no_changes = False
 
     def count_input_tokens(self, ctx: BillContext) -> int | None:
         return len(ctx.text) // 2 + 2_000
@@ -700,6 +711,8 @@ class FakeBatchBackend:
             if isinstance(outcome, Exception):
                 yield BatchResult(custom_id=req.custom_id, error=str(outcome))
                 continue
+            if kind == "reanalysis" and isinstance(outcome, Analysis) and not self.finds_no_changes:
+                outcome = read_again(outcome)
             yield BatchResult(
                 custom_id=req.custom_id,
                 answer=outcome,

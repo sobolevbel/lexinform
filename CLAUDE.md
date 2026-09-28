@@ -567,7 +567,13 @@ Invariants worth keeping:
   after the 3rd reading when `models.third_reading_kept_the_text` holds (2nd reading went straight
   to the 3rd, no "-A" report, `minorityMotions == 0` on the report): the Sejm adopted the analysed
   text verbatim. Unknown facts (motions not parsed, no 2nd reading) mean "may differ" and the text
-  is read.
+  is read. **A re-analysis is news only when the model names a change** (`Analysis.names_changes`):
+  otherwise it is stored and counted and nothing is posted. The same bill read from another
+  source never hashes alike — the law itself differs by 56–195 words in 2.5–3.4% between an RCL
+  package and its druk, all of it extraction (letter-spaced headings, split words, footnote
+  numbers, the druk's footnote listing the amended acts) — and a real amendment of one article is
+  a change of that size, so no rule short of the model tells the two apart
+  (`docs/incident-3141.md`).
 - **Stage fingerprint** (`_stage_key`) drives updates. Fields added to `Stage` for rendering
   (`voting`, `position`, `committee_name`, `proposal`) must stay *out* of the key, or every tracked
   bill posts a spurious update after deploy.

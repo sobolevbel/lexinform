@@ -841,7 +841,7 @@ class StatusTrackingService:
         document: TextDocument | None,
         result: TrackingResult,
     ) -> bool:
-        """True when the source published a text we had not read and the model read it now."""
+        """True when the model read a text we had not read and named what changed in it."""
         if self._analysis is None:
             return False
         if bill.status is BillStatus.REANALYSIS_READY and bill.ready_analysis is not None:
@@ -853,7 +853,7 @@ class StatusTrackingService:
         if record is None:
             return False
         result.count_reanalysis(record)
-        return True
+        return record.analysis.names_changes
 
     def _attach_supplements(
         self,

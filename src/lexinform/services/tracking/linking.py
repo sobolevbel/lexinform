@@ -240,13 +240,14 @@ class Linker:
     def _reanalyze_print(
         self, bill: Bill, detail: ProcessDetail, result: TrackingResult
     ) -> tuple[Bill, bool]:
-        """True when the print carries a text the model had not seen under the entry's number."""
+        """True when the model read the print as a new text and named what changed in it."""
         if self._analysis is None or bill.analysis is None:
             return bill, False
         document = self._texts.newer(bill, detail, fetch_print(self._gateway, bill))
         if document is None:
             return bill, False
-        fresh, changed = self._analysis.prepare_reanalysis(bill, document, summary=detail)
-        if changed and fresh.analysis is not None:
-            result.count_reanalysis(fresh.analysis)
-        return fresh, changed
+        fresh, reanalysed = self._analysis.prepare_reanalysis(bill, document, summary=detail)
+        if not reanalysed or fresh.analysis is None:
+            return fresh, False
+        result.count_reanalysis(fresh.analysis)
+        return fresh, fresh.analysis.analysis.names_changes

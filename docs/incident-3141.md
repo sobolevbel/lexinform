@@ -90,3 +90,13 @@ Regression: `test_the_druk_of_a_carded_project_is_joined_before_it_is_read`.
 What remains is the API naming the project only after the druk was read and carded; the linker
 then keeps the druk's card as the thread and logs the project's orphaned message, which has to be
 deleted by hand (`test_a_druk_carded_beside_its_projects_card_keeps_its_own_thread`).
+
+## The tail: an empty «Новая версия текста» (B59)
+
+At 16:18 in run 165 the linker had queued a re-analysis of 3141 on its print, the druk having
+taken the project's analysis of the RCL package. The batch answered in run 167 (17:22 UTC,
+already on `20d28a2`) and tracking posted message 69, «Новая версия текста», with nothing in it
+but the summary: the model had returned an empty `changes_since_previous`, the score stayed 3,
+but the digest of the print's text differed from the package's, and a differing digest was news.
+The operator deleted message 69. A re-analysis is now news only when the model names a change;
+see B59 for why the paid reading itself stays.
