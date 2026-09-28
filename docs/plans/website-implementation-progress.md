@@ -58,6 +58,29 @@ when its acceptance result and checks are recorded here.
 
 ## Work log
 
+### 2026-09-28 — WEB-04b.5: account-form browser review and checkbox target
+
+Reviewed the local shell in a private Brave window without the Dark Reader extension that affected
+the earlier review. The login page was inspected at desktop width and a 320px emulated viewport;
+the password-reset page at 320/390/768/1280px. The visible content, controls and navigation fit the
+viewport in these samples. The local paper palette and interface font were visible.
+
+The review found that Django's sibling checkbox label sat on a separate line, outside the existing
+44px label rule for nested inputs. Added an inline, vertically aligned label with a 44px minimum
+height for sibling checkbox/radio controls. At 320px, clicking the Remember Me label changed the
+checkbox state. Native required-field validation remained visible. The skip link followed by Tab
+reached the login email field, and Space closed the focused native language disclosure.
+
+This is partial browser evidence, not full accessibility acceptance: the attempted mobile Tab
+sequence did not establish a complete form traversal. Five-language long-guide samples,
+200% text zoom, 400% reflow, no-JS browser mode, axe and VoiceOver remain unverified. Clock-driven
+participation states also remain open. No account login or reset email was submitted.
+
+Checks: 226 PostgreSQL web tests, default bot pytest, strict bot/web mypy, Ruff/formatting,
+Django checks, migration drift, strict docs build/links and `git diff --check` passed. The browser
+used the existing local database; its unrelated pending migrations were not applied. PostgreSQL
+tests used their migrated test database. The temporary server and private browser window were closed.
+
 ### 2026-09-28 — WEB-04b.4: staff account forms in the shared shell
 
 Connected allauth layouts to the shared shell while retaining upstream form rendering, validation,

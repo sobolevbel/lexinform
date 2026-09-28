@@ -55,6 +55,9 @@ Staff account forms share the shell and local fonts, with responsive controls, v
 markers and native POST submission. Allauth retains its own translated form content, marked with
 the active language inside the Russian shell, and owns CSRF, validation and the MFA flow.
 The account menu does not advertise reader signup. Keyboard/mobile visual acceptance remains open.
+The progress log records a partial Brave review of login at 320px and password reset at
+320/390/768/1280px, including the checkbox label fix; it does not replace the full accessibility
+matrix in the website specification.
 
 For reproducible reading/typography checks, run:
 
