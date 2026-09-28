@@ -1,5 +1,6 @@
 """The SQLite repository: queries, uniqueness rules, dump/restore and migrations."""
 
+import json
 import sqlite3
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -235,6 +236,32 @@ def test_analysis_failures_are_counted_and_the_last_error_kept(
     assert bill is not None, "the test upserted this row above"
     assert (bill.analysis_attempts, bill.status) == (2, BillStatus.ANALYSIS_FAILED)
     assert bill.last_error == "boom again"
+
+
+def test_an_equal_analysis_in_another_serialisation_keeps_the_queued_reanalysis(
+    tmp_path: Path, process_3039: ProcessDetail, now: datetime
+) -> None:
+    path = tmp_path / "state.db"
+    repo = SqliteBillRepository(str(path))
+    repo.migrate()
+    repo.upsert_summary(process_3039, now=now)
+    record = FakeLlm().analyze(_context("3039"))
+    repo.save_analysis(10, "3039", record)
+    repo.set_status(10, "3039", BillStatus.BATCH_PENDING)
+    with sqlite3.connect(path) as raw:  # a row written by an older release of the model
+        raw.execute(
+            "UPDATE bills SET analysis_json = ? WHERE number = '3039'",
+            (json.dumps(json.loads(record.model_dump_json()), indent=1),),
+        )
+
+    repo.save_analysis(10, "3039", record)
+    kept = repo.get(10, "3039")
+    repo.save_analysis(10, "3039", record.model_copy(update={"input_chars": 1}))
+    replaced = repo.get(10, "3039")
+
+    assert kept is not None and replaced is not None, "the test upserted this row above"
+    assert (kept.status, kept.analysis_generation) == (BillStatus.BATCH_PENDING, 1)
+    assert (replaced.status, replaced.analysis_generation) == (BillStatus.ANALYZED, 2)
 
 
 def test_reset_puts_the_bill_back_with_a_clean_budget(

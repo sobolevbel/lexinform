@@ -1,9 +1,12 @@
-"""How far back `RclProjectReader.with_text` looks for the bill, and what it costs."""
+"""What `RclProjectReader` reads of a project: the bill's text and the consultation letters."""
 
+import datetime as dt
+
+from lexinform.models import RclConsultation, RclDocument, RclProject
 from lexinform.services.documents import TextLoader
 from lexinform.services.rcl_projects import RclProjectReader
 from tests.fakes import FakeRclGateway, FakeTextExtractor
-from tests.harness import RCL_ID, rcl_document, rcl_folder, rcl_project, rcl_stage
+from tests.harness import RCL_HOST, RCL_ID, rcl_document, rcl_folder, rcl_project, rcl_stage
 
 HANDOVER_LETTER = rcl_folder(13223970, "Pismo przewodnie", rcl_document(794900, "pismo.pdf"))
 PROJECT_FOLDER = rcl_folder(13223896, "Projekt", rcl_document(794885, "projekt_ustawy.DOCX"))
@@ -60,3 +63,93 @@ def test_a_project_with_no_text_anywhere_stops_at_the_cap() -> None:
 
     assert project.text_documents() == {}
     assert len([c for c in gateway.calls if c.startswith("get_stage")]) == 3
+
+
+ORIGINAL = rcl_document(774306, "Pismo MC_Konsultacje_UDER87.docx", created=dt.date(2026, 4, 30))
+CLOSING = rcl_document(
+    799267, "Pismo MC_zakończenie_konsultacje.docx", created=dt.date(2026, 9, 28)
+)
+EXTENSION = rcl_document(780001, "Informacja o przedłużeniu terminu.docx")
+GREETING = "Szanowni Państwo, przekazuję projekt ustawy o zmianie ustawy – Prawo o ruchu drogowym. "
+LETTERS = {
+    ORIGINAL: "Warszawa, 30 kwietnia 2026 r. " + GREETING + "Uprzejmie proszę o uwagi w terminie"
+    " 30 dni od dnia otrzymania pisma; uwagi proszę przesyłać na adres: sekretariat.dp@cyfra.gov.pl",
+    CLOSING: "Warszawa, 26 września 2026 r. " + GREETING + "Uprzejmie informuję, że w związku z"
+    " zakończeniem konsultacji publicznych zostały udostępnione tabele ze stanowiskami do uwag.",
+    EXTENSION: "Warszawa, 20 maja 2026 r. " + GREETING + "Informuję o przedłużeniu terminu"
+    " konsultacji publicznych tego projektu do dnia 15 czerwca 2026 r.",
+}
+
+
+def _consulted(
+    *letters: RclDocument, beside: RclDocument | None = None
+) -> tuple[RclProjectReader, RclProject, FakeRclGateway]:
+    """A project whose consultation stage files `letters` in their folder and `beside` with the bill."""
+    project_docs = (rcl_document(794885, "projekt_ustawy.DOCX"), *([beside] if beside else []))
+    stage = rcl_stage(
+        3,
+        "Konsultacje publiczne",
+        "active",
+        rcl_folder(13223896, "Projekt", *project_docs),
+        rcl_folder(13223897, "Pisma kierujące projekt do konsultacji publicznych", *letters),
+    )
+    gateway = FakeRclGateway()
+    gateway.put(rcl_project(stages=(stage,), consultation=None))
+    extractor = FakeTextExtractor(by_content={_bytes(d): t for d, t in LETTERS.items()})
+    for doc in (*project_docs, *letters):
+        gateway.files[doc.url] = _bytes(doc)
+    loader = TextLoader({RCL_HOST: gateway.download}, extractor, max_bytes=10**6)
+    reader = RclProjectReader(gateway, loader)
+    project = reader.timeline(RCL_ID).with_stage(gateway.get_stage(RCL_ID, stage.id))
+    gateway.calls.clear()
+    return reader, project, gateway
+
+
+def _bytes(doc: RclDocument) -> bytes:
+    """A Word file as the fake serves it: the zip signature, then something to tell it apart."""
+    return b"PK\x03\x04 " + doc.url.encode()
+
+
+def _downloads(gateway: FakeRclGateway) -> list[str]:
+    return [c.split(":", 1)[1] for c in gateway.calls if c.startswith("download:")]
+
+
+def test_a_closing_notice_does_not_erase_the_window_already_read() -> None:
+    reader, project, gateway = _consulted(CLOSING, beside=ORIGINAL)
+    known = RclConsultation(
+        letter_url=ORIGINAL.url,
+        deadline=dt.date(2026, 5, 30),
+        email="sekretariat.dp@cyfra.gov.pl",
+    )
+
+    window = reader.consultation(project, known=known)
+    again = reader.consultation(project, known=window)
+
+    assert window is not None and again is not None
+    assert (window.letter_url, window.deadline, window.email) == (
+        ORIGINAL.url,
+        dt.date(2026, 5, 30),
+        "sekretariat.dp@cyfra.gov.pl",
+    )
+    assert _downloads(gateway) == [CLOSING.url]
+    assert again == window
+
+
+def test_a_window_taken_from_a_closing_notice_is_repaired_from_the_letter_beside_the_bill() -> None:
+    reader, project, gateway = _consulted(CLOSING, beside=ORIGINAL)
+
+    window = reader.consultation(project, known=RclConsultation(letter_url=CLOSING.url))
+
+    assert window is not None
+    assert (window.deadline, window.email) == (dt.date(2026, 5, 30), "sekretariat.dp@cyfra.gov.pl")
+    assert set(window.letters_read) == {CLOSING.url, ORIGINAL.url}
+    assert _downloads(gateway) == [ORIGINAL.url]
+
+
+def test_an_extension_moves_the_deadline_and_keeps_the_address() -> None:
+    reader, project, _ = _consulted(ORIGINAL, EXTENSION)
+
+    window = reader.consultation(project)
+
+    assert window is not None
+    assert (window.deadline, window.email) == (dt.date(2026, 6, 15), "sekretariat.dp@cyfra.gov.pl")

@@ -157,17 +157,18 @@ class RclStage(BaseModel):
         the card then goes out with neither the deadline nor the address. The fallback asks
         `text_role` and not the name, because a name saying "pismo" can be the bill.
         """
-        letter = next((d for d in self.documents("letters") if d.readable), None)
-        if letter is not None:
-            return letter
-        return next(
-            (
-                d
-                for d in self.documents("project")
-                if d.readable and "pismo" in d.name.lower() and text_role(d.name) is None
-            ),
-            None,
+        letters = self.consultation_letters()
+        return letters[0] if letters else None
+
+    def consultation_letters(self) -> tuple[RclDocument, ...]:
+        """Every candidate letter in order: its own folder, then a "pismo" filed beside the bill."""
+        own = tuple(d for d in self.documents("letters") if d.readable)
+        beside = tuple(
+            d
+            for d in self.documents("project")
+            if d.readable and "pismo" in d.name.lower() and text_role(d.name) is None
         )
+        return own + beside
 
 
 class RclConsultation(BaseModel):
@@ -182,6 +183,8 @@ class RclConsultation(BaseModel):
     email: str | None = None
     positions: int = 0
     response_published: bool = False
+    # Every letter already read, so a closing or extension notice is fetched once, not each run.
+    letters_read: tuple[str, ...] = ()
 
     def is_open(self, today: dt.date) -> bool:
         return self.deadline is not None and self.deadline >= today

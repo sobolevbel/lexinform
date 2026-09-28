@@ -110,6 +110,7 @@ You do NOT see the whole bill. You see its beginning, the beginning of its justi
 - Provisions about visas, residence permits, citizenship, international protection, work of foreigners, aid to citizens of Ukraine, Karta Polaka, PESEL or benefits for foreigners ARE relevant even if short.
 - This is a gate: a wrong "false" loses the bill for the readers, a wrong "true" only costs one more request. When in doubt answer true with lower confidence.
 - Base the answer only on the provided fragments.
+- Write the rationale in {language}, although the request and the fragments are in Polish.
 """
 
 

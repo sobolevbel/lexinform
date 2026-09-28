@@ -90,24 +90,31 @@ class RclProjectReader:
     def consultation(
         self, project: RclProject, *, known: RclConsultation | None = None
     ) -> RclConsultation | None:
-        """What the consultation stage shows; the letter is read once (`known` keeps its data).
+        """What the consultation stage shows; each letter is read once (`known` keeps its data).
 
-        A letter whose deadline the parser cannot read is logged for the operator's channel:
-        without a date the card can only say "срок в письме" and no reminder is ever due.
+        A letter replaces the window only with a deadline, the later one winning (an extension);
+        a closing notice with neither date nor address must not erase the window already read.
         """
         stage = project.consultation_stage
         if stage is None or not any(f.documents for f in stage.folders):
             return None
-        letter = stage.consultation_letter()
         facts = {
             "positions": len(stage.documents("positions")),
             "response_published": bool(stage.documents("response")),
         }
-        if known is not None and known.letter_url == (letter.url if letter else None):
-            return known.model_copy(update=facts)
-        if letter is None:
+        read = set(known.letters_read) if known is not None else set()
+        if known is not None and known.letter_url is not None:
+            read.add(known.letter_url)
+        unread = [d for d in stage.consultation_letters() if d.url not in read]
+        window = known
+        for letter in unread:
+            window = _better_window(window, self._read_letter(letter, stage, project))
+            read.add(letter.url)
+        if window is None:
             return RclConsultation(**facts)
-        return self._read_letter(letter, stage, project).model_copy(update=facts)
+        if unread and window.deadline is None:
+            log.warning("consultation letters of %s give no deadline this run can use", project.id)
+        return window.model_copy(update={**facts, "letters_read": tuple(sorted(read))})
 
     def _read_letter(
         self, letter: RclDocument, stage: RclStage, project: RclProject
@@ -125,8 +132,6 @@ class RclProjectReader:
         info = parse_letter(text)
         published = letter.created or stage.modified or project.modified
         deadline = deadline_of(info, published=published)
-        if deadline is None:
-            log.warning("consultation letter %s gives no deadline this run can use", url)
         return RclConsultation(
             letter_url=url,
             letter_date=info.letter_date,
@@ -134,3 +139,12 @@ class RclProjectReader:
             deadline=deadline,
             email=info.email,
         )
+
+
+def _better_window(known: RclConsultation | None, read: RclConsultation) -> RclConsultation:
+    """The window after one more letter: a later deadline wins, and an address is never lost."""
+    if known is None:
+        return read
+    if read.deadline is not None and (known.deadline is None or read.deadline > known.deadline):
+        return read.model_copy(update={"email": read.email or known.email})
+    return known.model_copy(update={"email": known.email or read.email})

@@ -694,26 +694,33 @@ class SqliteBillRepository:
         )
 
     def save_analysis(self, term: int, number: str, record: AnalysisRecord) -> None:
+        """Store `record`; an equal model, not equal bytes, keeps the status and the generation."""
+        row = self._conn.execute(
+            "SELECT analysis_json, status FROM bills WHERE term = ? AND number = ?",
+            (term, number),
+        ).fetchone()
+        if row is None:
+            return
+        stored = row["analysis_json"]
+        same = stored is not None and AnalysisRecord.model_validate_json(stored) == record
+        keeps = same and row["status"] in (
+            BillStatus.BATCH_PENDING.value,
+            BillStatus.REANALYSIS_READY.value,
+        )
         self._conn.execute(
             """
             UPDATE bills SET analysis_json = ?,
-                analysis_generation = analysis_generation +
-                    CASE WHEN analysis_json IS NOT ? THEN 1 ELSE 0 END,
-                ready_analysis_json = CASE WHEN analysis_json IS NOT ? THEN NULL
-                                           ELSE ready_analysis_json END,
-                status = CASE WHEN status IN (?, ?) AND analysis_json = ?
-                              THEN status ELSE ? END,
+                analysis_generation = analysis_generation + ?,
+                ready_analysis_json = CASE WHEN ? THEN ready_analysis_json ELSE NULL END,
+                status = ?,
                 last_error = NULL
             WHERE term = ? AND number = ?
             """,
             (
                 record.model_dump_json(),
-                record.model_dump_json(),
-                record.model_dump_json(),
-                BillStatus.BATCH_PENDING.value,
-                BillStatus.REANALYSIS_READY.value,
-                record.model_dump_json(),
-                BillStatus.ANALYZED.value,
+                0 if same else 1,
+                same,
+                row["status"] if keeps else BillStatus.ANALYZED.value,
                 term,
                 number,
             ),
