@@ -777,6 +777,10 @@ class BillRepository(Protocol):
         """RCL rows whose project knows its druk number but that are not linked to it yet."""
         ...
 
+    def rcl_thread_awaits_druk(self) -> bool:
+        """Whether an RCL project with a Telegram thread does not know its druk number yet."""
+        ...
+
     def find_rcl(self, number: str) -> Bill | None:
         """The row of an RCL project by its `RCL/{id}` number (ids never repeat across terms)."""
         ...

@@ -10,6 +10,7 @@ from lexinform.keywords import KeywordPrefilter, accept_title_hits
 from lexinform.models import (
     BILL_DOCUMENT_TYPE,
     ActInfo,
+    ApplicantType,
     Bill,
     BillStatus,
     BillSubmission,
@@ -80,13 +81,14 @@ class BillDiscoveryService:
         return result
 
     def _discover_processes(self, term: int, since: datetime, result: DiscoveryResult) -> None:
+        read_rcl_num = self._projects is not None and self._repo.rcl_thread_awaits_druk()
         for summary in self._gateway.iter_processes(
             term, modified_since=since, document_type=BILL_DOCUMENT_TYPE
         ):
             if summary.document_type_enum != DocumentType.BILL:
                 continue
             result.seen += 1
-            if self._ingest(summary, result):
+            if self._ingest(summary, result, read_rcl_num=read_rcl_num):
                 result.new += 1
         if result.seen == 0:
             log.info("Sejm API returned no bills modified since %s", since.isoformat())
@@ -138,6 +140,19 @@ class BillDiscoveryService:
             log.warning("process %s not read: %s", summary.number, exc)
             return None
 
+    def _with_rcl_num(self, summary: ProcessSummary) -> ProcessSummary:
+        """The listing carries no `rclNum`; a government print's detail names its RCL project."""
+        if summary.applicant not in (None, ApplicantType.GOVERNMENT, ApplicantType.UNKNOWN):
+            return summary
+        try:
+            detail = self._gateway.get_process(summary.term, summary.number)
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("process %s not read: %s", summary.number, exc)
+            return summary
+        return summary.model_copy(update={"rcl_num": detail.rcl_num, "rcl_link": detail.rcl_link})
+
     def _find_submission(self, summary: ProcessSummary) -> BillSubmission | None:
         """The /bills entry of a numbered print: consultation dates, applicant, RPW number."""
         try:
@@ -164,7 +179,9 @@ class BillDiscoveryService:
                 result.pre_print_new += 1
                 self._repo.save_submission(sub.term, sub.number, sub)
 
-    def _ingest(self, summary: ProcessSummary, result: DiscoveryResult) -> bool:
+    def _ingest(
+        self, summary: ProcessSummary, result: DiscoveryResult, *, read_rcl_num: bool = False
+    ) -> bool:
         """Upsert the summary; prefilter new bills (and re-prefilter skipped ones whose title
         changed). True when the bill is new.
 
@@ -197,7 +214,13 @@ class BillDiscoveryService:
                     )
                     return False
                 summary = summary.model_copy(update={"applicant": submission.applicant})
+            from_detail = read_rcl_num and not summary.rcl_num
+            if from_detail:
+                summary = self._with_rcl_num(summary)
             project = rcl_predecessor(self._repo, self._projects, summary.rcl_num)
+            # Read for a thread only: a quiet project's druk is still judged on its own text.
+            if from_detail and project is not None and not project.has_thread:
+                project = None
             if project is not None:
                 assert project.rcl is not None, (
                     "rcl_predecessor returns only a row with its project"

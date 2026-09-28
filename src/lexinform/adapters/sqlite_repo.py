@@ -1485,6 +1485,15 @@ class SqliteBillRepository:
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
 
+    def rcl_thread_awaits_druk(self) -> bool:
+        row = self._conn.execute(
+            "SELECT 1 FROM bills WHERE number LIKE ? AND status != ? AND observation_basis = ?"
+            " AND discontinued_at IS NULL AND json_extract(rcl_json, '$.print_number') IS NULL"
+            " LIMIT 1",
+            (f"{RCL_PREFIX}%", BillStatus.LINKED.value, ObservationBasis.TELEGRAM_THREAD.value),
+        ).fetchone()
+        return row is not None
+
     def find_rcl(self, number: str) -> Bill | None:
         # RCL ids never repeat, and a project row lives in one term at a time (see
         # `move_rcl_projects`), so the number alone identifies the row.

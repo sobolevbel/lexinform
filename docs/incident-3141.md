@@ -74,10 +74,19 @@ by run, and `test_a_druk_carded_beside_its_projects_card_keeps_its_own_thread` s
 cards already sent. Without the linker change both fail — the druk loses its analysis and its
 card row moves to the project's message.
 
-## What is still possible
+## The reverse case, closed the same day
 
-A project carded first can still see its druk carded beside it when the listing gives the druk
-no `rclNum` and the watcher has not found it yet: the druk is a Sejm bill and passes every gate.
-After this fix the linker keeps the druk's card as the thread and logs the project's orphaned
-message, which has to be deleted by hand. Closing it would need the druk's candidate to look up
-its project before publishing, which costs a detail read per new druk.
+A project carded first could see its druk carded beside it, the listing giving the druk no
+`rclNum` and the watcher not finding it in time — `rcl_predecessor` in discovery, which exists
+for exactly this join, had never once been given an `rclNum` in production. Discovery now reads
+the detail of a new print while an RCL project with a thread awaits its druk (`Bill.has_thread`,
+`BillRepository.rcl_thread_awaits_druk`), skipping prints whose `/bills` entry names a
+non-government applicant, and joins the two before the prefilter, the triage or the model sees
+the druk; the linker then hands the project's card over as designed. A quiet project — followed
+for the website, with no card — is not joined this way: its druk is judged on its own text, as
+3141 was. The cost is one Sejm detail request per new print while such a project waits.
+Regression: `test_the_druk_of_a_carded_project_is_joined_before_it_is_read`.
+
+What remains is the API naming the project only after the druk was read and carded; the linker
+then keeps the druk's card as the thread and logs the project's orphaned message, which has to be
+deleted by hand (`test_a_druk_carded_beside_its_projects_card_keeps_its_own_thread`).

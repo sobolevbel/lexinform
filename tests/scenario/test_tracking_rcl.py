@@ -650,6 +650,7 @@ def _listing_names_the_project(w: World) -> None:
         p.model_copy(update={"rcl_num": RM}) if p.number == "3100" else p
         for p in w.gateway.processes
     ]
+    w.gateway.details["3100"] = w.gateway.details["3100"].model_copy(update={"rcl_num": RM})
 
 
 def test_a_project_whose_druk_already_has_a_card_gets_no_second_one() -> None:
@@ -681,12 +682,32 @@ def test_a_project_whose_druk_already_has_a_card_gets_no_second_one() -> None:
     assert w.publisher.updates == []
 
 
+def test_the_druk_of_a_carded_project_is_joined_before_it_is_read() -> None:
+    w = World()
+    project = w.add_rcl_project()
+    w.run()
+    card_id = w.card_id(RCL)
+    w.rcl.rm_numbers[RM] = project.id  # the RCL page does not show the RM number yet
+    w.clock.advance(days=1)
+    _druk_the_listing_does_not_link(w, project.title)
+
+    report = w.run()
+
+    assert (report.discovered, report.published, report.linked) == (0, 0, 1)
+    assert [bill.number for bill, _ in w.publisher.new_bills] == [RCL]
+    read = [ctx for ctx in w.llm.contexts if ctx.number == "3100"]
+    assert len(read) == 1 and read[0].previous_summary is not None  # the linker's re-analysis
+    bill, _, reply_to = w.publisher.updates[-1]
+    assert (bill.number, reply_to) == ("3100", card_id)
+
+
 def test_a_druk_carded_beside_its_projects_card_keeps_its_own_thread() -> None:
+    """The API named the project only after the druk had been read and carded."""
     w = World()
     project = w.add_rcl_project(rcl_project(rm_number=RM))
     w.run()
     w.clock.advance(days=1)
-    _druk_the_listing_does_not_link(w, project.title)
+    w.add_bill("3100", project.title)
     w.run()
     druk_card = w.card_id("3100")
     _listing_names_the_project(w)

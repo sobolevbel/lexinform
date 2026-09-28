@@ -642,11 +642,13 @@ Invariants worth keeping:
   comes from the API, is the text the Sejm works from, and costs a download and no tokens to scan.
   The RPW reconciler finds the print in `/bills`; for RCL, Sejm discovery notices a druk whose
   `rclNum` names a followed project (stored RM number, else `getIdFromLegislacja?number=…`), stores
-  the druk number on the RCL row and the RCL watcher links. `rclNum` is in the detail only, so a
-  druk can be carded before anything ties it to its project (`docs/incident-3141.md`): the
-  project then gets no card of its own (`PublishingService.became_druk`), the linker keeps the
-  druk's card and analysis rather than overwriting them, and a listing row never erases the
-  `rcl_num` a detail stored.
+  the druk number on the RCL row and the RCL watcher links. `rclNum` is in the detail only
+  (`docs/incident-3141.md`), so while an RCL project with a thread (`Bill.has_thread`) awaits its
+  druk, discovery reads the detail of each new print not known to be a non-government one
+  (`_with_rcl_num`) and joins it to that project before anything reads it; a quiet project's
+  druk is still judged on its own text. Past that gate the project gets no card of its own
+  (`PublishingService.became_druk`), the linker keeps a druk's own card and analysis rather than
+  overwriting them, and a listing row never erases the `rcl_num` a detail stored.
 - **RCL rows are refreshed by the RCL watcher only.** RCL discovery reads a project once (timeline
   + catalogs for a candidate, one catalog for a title miss) and afterwards only bumps `change_date`
   from the list; `RclWatcher` re-reads the timeline and the catalogs whose "Data ostatniej

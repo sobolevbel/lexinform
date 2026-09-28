@@ -150,6 +150,11 @@ class Bill(BaseModel):
         return self.summary.has_process
 
     @property
+    def has_thread(self) -> bool:
+        """Whether the bill's card is in the channel and its news go under it."""
+        return self.observation_basis is ObservationBasis.TELEGRAM_THREAD
+
+    @property
     def last_stage(self) -> Stage | None:
         """Where the bill stands; `process_stages` names the nodes that do not answer that.
 
