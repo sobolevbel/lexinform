@@ -58,7 +58,7 @@ def test_status_update_without_an_analysis_keeps_the_stages_before_the_closure(
     text = MessageFormatter("ru").status_update(bill, change).text
 
     assert_telegram_html(text)
-    assert text.index("• 03.09.2026: отчёт комиссии") < text.index("Сейм принял закон.")
+    assert text.index("• 3 сент 2026: отчёт комиссии") < text.index("Сейм принял закон.")
 
 
 def test_status_update_lists_new_stages_and_the_closure(process_1962: ProcessDetail) -> None:
@@ -73,10 +73,10 @@ def test_status_update_lists_new_stages_and_the_closure(process_1962: ProcessDet
     # The header names the newest event; the stages are bullets in the reader's language.
     assert "🏛 <b>Сейм рассмотрел поправки Сената — druk nr 1962</b>" in text
     assert (
-        "• 03.09.2026: отчёт комиссии (sprawozdanie) (druk nr 3014): предлагает принять часть"
+        "• 3 сент 2026: отчёт комиссии (sprawozdanie) (druk nr 3014): предлагает принять часть"
         in text
     )
-    assert "• 04.09.2026: Сейм рассмотрел позицию Сената — часть поправок Сената принята" in text
+    assert "• 4 сент 2026: Сейм рассмотрел позицию Сената — часть поправок Сената принята" in text
     assert "• процесс в Сейме завершён" in text and "Uchwalono" not in text
     assert "Сейм принял закон." in text
     assert "#kadencja10druk1962" in text
@@ -104,7 +104,7 @@ def test_update_header_names_the_event_and_the_closure_line_is_not_repeated(
     reported = fmt.status_update(bill, change_of("1962", [rejecting])).text
 
     assert passed.startswith("✅ <b>Сейм принял закон — druk nr 1962</b>")
-    assert "• 17.07.2026: III чтение на заседании Сейма — закон принят" in passed
+    assert "• 17 июл 2026: III чтение на заседании Сейма — закон принят" in passed
     assert "Сейм принял закон." not in passed  # the header said it
     assert "Что дальше" in passed
     assert rejected.startswith("🏁 <b>Процесс завершён: закон не принят — druk nr 1962</b>")
@@ -148,9 +148,9 @@ def test_frame_stages_are_dropped_when_their_children_are_listed(
     alone = fmt.status_update(bill, change_of("1962", [referral_parent])).text
 
     assert "Skierowano" not in with_children and "Praca w komisjach" not in with_children
-    assert "• 17.11.2025: 📮 Направлен в комиссию: SPC" in with_children
+    assert "• 17 нояб 2025: 📮 Направлен в комиссию: SPC" in with_children
     assert "предлагает принять проект в новой редакции (текст приложен)" in with_children
-    assert "• 17.11.2025: направлен на I чтение" in alone
+    assert "• 17 нояб 2025: направлен на I чтение" in alone
 
 
 def test_status_update_after_a_re_analysis_shows_the_diff(process_3039: ProcessDetail) -> None:
@@ -324,7 +324,7 @@ def test_president_stages_and_committee_referrals_have_labels(process_3039: Proc
         .text
     )
 
-    assert "• 13.08.2026: ✍️ Президент подписал закон" in text
+    assert "• 13 авг 2026: ✍️ Президент подписал закон" in text
     assert "• ⛔ Президент наложил вето (druk nr 2863)" in text
     assert "• 📮 Направлен в комиссию: Komisja Administracji i Spraw Wewnętrznych (ASW)" in text
     assert "• 📮 Направлен в комиссию: ASW" in text

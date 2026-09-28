@@ -80,7 +80,7 @@ def test_pre_print_card_names_the_stage_and_links_the_sejm_pdf() -> None:
     text = MessageFormatter("ru").new_bill(w.bill(RPW), None, today=w.clock.now().date()).text
 
     assert "RPW/29075/2026 (номер druku ещё не присвоен)" in text
-    assert "Общественные консультации:</b> 02.09.2026 — 30.09.2026" in text
+    assert "Общественные консультации:</b> 2-30 сент 2026" in text
     assert "orka.sejm.gov.pl/Druki10ka.nsf/Projekty/10-RPW-29075-2026/" in text
     assert "#RPW_29075_2026" in text and "ожидает присвоения номера druku" in text
 

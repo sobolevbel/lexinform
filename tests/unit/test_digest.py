@@ -163,7 +163,7 @@ def test_the_digest_names_the_week_its_cards_and_its_tag() -> None:
     text = MessageFormatter("ru", channel="@lexinform").digest(week).text
 
     assert_telegram_html(text)
-    assert "Итоги недели" in text and "07.09.2026 — 13.09.2026" in text
+    assert "Итоги недели" in text and "7-13 сент 2026" in text
     assert '<a href="https://t.me/lexinform/101">druk 3039</a>' in text
     assert "🟠 4/5" in text
     assert text.endswith("#дайджест")
@@ -265,7 +265,7 @@ def test_an_open_consultation_is_dated_and_counted_down() -> None:
     text = MessageFormatter("ru", today=lambda: dt.date(2026, 9, 13)).digest(week).text
 
     assert_telegram_html(text)
-    assert "Идут консультации" in text and "20.09.2026" in text
+    assert "Идут консультации" in text and "20 сент 2026" in text
     assert "UC164" in text  # a government project is named by its wykaz number, as its card is
 
 
@@ -298,7 +298,7 @@ def test_a_conditional_sitting_is_marked_and_not_stated_as_a_date() -> None:
     text = MessageFormatter("ru").digest(_ahead(_sitting(condition="referral"))).text
 
     assert_telegram_html(text)
-    assert "17.09.2026" in text and "(условно)" in text
+    assert "17 сент 2026" in text and "(условно)" in text
 
 
 def test_a_settled_sitting_carries_no_hedge() -> None:

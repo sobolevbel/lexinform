@@ -260,6 +260,7 @@ class Labels:
     stage_labels: dict[str, str] = field(default_factory=dict)
     rcl_stage_labels: dict[str, str] = field(default_factory=dict)
     date_format: str = "%Y-%m-%d"
+    short_months: tuple[str, ...] = ()
     stage_type_labels: dict[str, str] = field(default_factory=dict)
     senate_position_labels: dict[str, str] = field(default_factory=dict)
     category_labels: dict[Category, str] = field(default_factory=dict)
@@ -749,6 +750,20 @@ RU = Labels(
         "rcl_to_sejm": "присвоение номера druku в Сейме, затем I чтение",
     },
     date_format="%d.%m.%Y",
+    short_months=(
+        "янв",
+        "фев",
+        "мар",
+        "апр",
+        "май",
+        "июн",
+        "июл",
+        "авг",
+        "сент",
+        "окт",
+        "нояб",
+        "дек",
+    ),
     typical_durations={
         "pre_print": "обычно от нескольких дней до нескольких месяцев",
         "first_reading": "обычно 2–6 недель после поступления",

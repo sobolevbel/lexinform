@@ -64,7 +64,7 @@ def test_the_card_names_the_ministry_the_stage_and_the_planned_quarter() -> None
     assert (
         'Инициатор:</b> правительственный — <a href="https://www.gov.pl/web/mswia">Ministerstwo'
         " Spraw Wewnętrznych i Administracji</a> · номер в wykazie prac RM: UD408"
-        "\n📄 <b>Внесён в план работ:</b> 01.09.2026" in text
+        "\n📄 <b>Внесён в план работ:</b> 1 сент 2026" in text
     )
     assert "Путь:</b> план ● → RCL → Сейм → комиссии" in text
     assert "Что дальше:</b> публикация проекта на RCL" in text

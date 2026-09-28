@@ -178,9 +178,9 @@ def test_stage_update_carries_the_scheduled_sitting() -> None:
     bill, change, _ = w.publisher.updates[0]
     assert [st.stage_type for st in change.new_stages] == ["Reading", "PublicHearing"]
     text = MessageFormatter("ru").status_update(bill, change, today=dt.date(2026, 9, 9)).text
-    assert "• 08.09.2026: I чтение в комиссиях" in text  # the held stage, told now
+    assert "• 8 сент 2026: I чтение в комиссиях" in text  # the held stage, told now
     assert "Komisja Administracji i Spraw Wewnętrznych (ASW) (sprawozdanie)" in text
-    assert "· 17.09.2026, 09:00" in text and "до заседания 17.09.2026" in text
+    assert "· 17 сент 2026, 09:00" in text and "до заседания 17 сент 2026" in text
 
 
 def test_rescheduled_sitting_is_posted_again_and_replaces_the_old_item() -> None:
@@ -313,7 +313,7 @@ def test_a_sitting_that_moved_corrects_the_post_instead_of_contradicting_it() ->
     assert item.date == dt.date(2026, 9, 22)
     was = w.publisher.agendas[0][1]
     text = MessageFormatter("ru").agenda(bill, item, moved_from=was).text
-    assert "Заседание перенесено с 17.09.2026" in text
+    assert "Заседание перенесено с 17 сент 2026" in text
 
 
 def test_a_sitting_that_keeps_the_day_but_moves_the_hour_is_told_again() -> None:
@@ -391,7 +391,7 @@ def test_a_sitting_that_is_called_off_is_taken_back() -> None:
         .text
     )
     assert "🗓 <b>Заседание отменено — druk nr 3039</b>" in text
-    assert "было запланировано на 17.09.2026, 09:00" in text
+    assert "было запланировано на 17 сент 2026, 09:00" in text
     assert "Новая дата пока не назначена" in text
     assert "#заседаниекомиссии" in text  # one search finds the sitting and its retraction
 
@@ -508,7 +508,7 @@ def test_a_sitting_the_committee_called_conditionally_is_not_announced_as_a_fact
     [text] = w.publisher.texts(PublicationKind.AGENDA)
     assert "Заседание объявлено условно" in text and "первое чтение" in text
     assert "Заседание закрытое" in text
-    assert "zgloszenie.RF@sejm.gov.pl" in text and "16.09.2026" in text
+    assert "zgloszenie.RF@sejm.gov.pl" in text and "16 сент 2026" in text
 
 
 def test_a_condition_on_another_point_of_the_agenda_leaves_our_sitting_a_fact() -> None:

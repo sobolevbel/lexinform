@@ -50,8 +50,8 @@ def test_act_notice_renders_the_journal_address_and_the_date() -> None:
     text = MessageFormatter("ru").act_published(w.publisher.acts[0][0]).text
 
     assert "Опубликован в Dziennik Ustaw — druk nr 3039" in text
-    assert "Dz.U. 2026 poz. 1099 (опубликован 09.09.2026)" in text
-    assert "Вступает в силу:</b> 20.09.2026" in text
+    assert "Dz.U. 2026 poz. 1099 (опубликован 9 сент 2026)" in text
+    assert "Вступает в силу:</b> 20 сент 2026" in text
     assert "#закон #важность5 #легализация #kadencja10druk3039" in text
 
 
@@ -93,7 +93,7 @@ def test_act_discovered_already_in_force_gets_no_separate_reminder() -> None:
 
     assert (report.acts_published, report.in_force_posted) == (1, 0)
     bill, _ = w.publisher.acts[0]
-    assert "Уже действует с</b> 20.09.2026" in MessageFormatter("ru").act_published(bill).text
+    assert "Уже действует с</b> 20 сент 2026" in MessageFormatter("ru").act_published(bill).text
     assert w.publisher.in_force == []
     reminder = w.publication("3039", PublicationKind.IN_FORCE)
     assert reminder is not None and reminder.status is PublicationStatus.SKIPPED
@@ -125,4 +125,4 @@ def test_an_act_fetched_after_midnight_in_warsaw_counts_as_already_in_force() ->
 
     assert (report.acts_published, report.in_force_posted) == (1, 0)
     bill, _ = w.publisher.acts[0]
-    assert "Уже действует с</b> 20.09.2026" in MessageFormatter("ru").act_published(bill).text
+    assert "Уже действует с</b> 20 сент 2026" in MessageFormatter("ru").act_published(bill).text

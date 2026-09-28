@@ -32,7 +32,7 @@ def test_reminder_renders_the_countdown() -> None:
     last_day = MessageFormatter("ru").consultation_deadline(bill, today=dt.date(2026, 9, 20)).text
 
     assert "Консультации заканчиваются — RPW/29075/2026" in ahead
-    assert "до 20.09.2026 · осталось дней: 3" in ahead
+    assert "до 20 сент 2026 · осталось дней: 3" in ahead
     assert "#консультации #важность5 #легализация #RPW_29075_2026" in ahead
     assert "сегодня последний день" in last_day
 

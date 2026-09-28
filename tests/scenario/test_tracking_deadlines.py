@@ -100,7 +100,7 @@ def test_the_reminder_says_what_the_senate_decides_and_how_exact_the_date_is() -
     text = MessageFormatter("ru").decision_deadline(bill, phase, today=today).text
 
     assert text.startswith("⏳ <b>Закон в Сенате — druk nr 3039</b>")
-    assert "Сенат должен решить до 04.10.2026" in text
+    assert "Сенат должен решить до 4 окт 2026" in text
     assert "осталось дней: 6" in text
     # The date is counted from the Sejm's vote, not from the hand-over the API does not give.
     assert "фактический на несколько дней позже" in text
@@ -119,7 +119,7 @@ def test_an_urgent_bill_is_reminded_in_its_own_terms() -> None:
     text = MessageFormatter("ru").decision_deadline(bill, phase, today=today).text
 
     assert report.decision_reminders == 1
-    assert "Сенат должен решить до 18.09.2026" in text
+    assert "Сенат должен решить до 18 сент 2026" in text
     assert "у Сената 14 дней вместо обычных 30" in text
     assert "задолго до этого срока" not in text
 
@@ -142,7 +142,7 @@ def test_the_presidents_reminder_does_not_apologise_for_a_date_that_is_exact() -
     text = MessageFormatter("ru").decision_deadline(bill, phase, today=today).text
 
     assert phase.deadline_exact
-    assert "Президент должен решить до 11.10.2026" in text
+    assert "Президент должен решить до 11 окт 2026" in text
     assert "фактический на несколько дней позже" not in text
 
 

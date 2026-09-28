@@ -22,7 +22,7 @@ def test_card_contains_every_section(process_3039: ProcessDetail, print_3039: Pr
     assert "🔴 <b>Важность:</b> ●●●●● 5/5" in text
     assert "О чём проект" in text and "Ключевые изменения" in text
     # The stage the bill stands on, then the referral under it; translated, the body stays Polish.
-    assert "Стадия:</b> направлен на I чтение (03.09.2026) · направлен в комиссию ASW" in text
+    assert "Стадия:</b> направлен на I чтение (3 сент 2026) · направлен в комиссию ASW" in text
     assert "PrzebiegProc.xsp?nr=3039" in text and "prints/3039/3039.pdf" in text
     assert "#kadencja10druk3039 #важность5 #легализация #kadencja10" in text
 
@@ -49,7 +49,7 @@ def test_joint_bill_reply_names_the_thread_and_carries_both_tags(
         "🔀 <b>Альтернативный проект того же закона — druk nr 3050</b>\n\n<b>Rządowy projekt"
     )
     assert "Рассматривается совместно с druk 3039, 3051:" in text  # the card's print first
-    assert "Инициатор:</b> правительственный\n📄 <b>Дата druku:</b> 02.09.2026" in text
+    assert "Инициатор:</b> правительственный\n📄 <b>Дата druku:</b> 2 сент 2026" in text
     # What this print does and how it differs; the score and the category stay the card's.
     assert "О чём проект" in text and "Чем отличается от других проектов" in text
     assert "Важность" not in text
@@ -148,7 +148,7 @@ def test_labels_and_date_format_follow_the_language(
     ru = MessageFormatter("ru").new_bill(bill_of(process_3039), print_3039).text
     en = MessageFormatter("en").new_bill(bill_of(process_3039), print_3039).text
 
-    assert "\n📄 <b>Дата druku:</b> 03.08.2026" in ru  # the date has its own line
+    assert "\n📄 <b>Дата druku:</b> 3 авг 2026" in ru  # the date has its own line
     assert "New bill" in en and "#importance5" in en
     assert "Print date:</b> 2026-08-03" in en
 
@@ -222,12 +222,12 @@ def test_a_consultation_that_is_over_says_so_and_stops_inviting_opinions(
     while_open = formatter.new_bill(bill, None, today=dt.date(2025, 2, 1)).text
     once_closed = formatter.new_bill(bill, None, today=dt.date(2026, 9, 11)).text
 
-    assert "<b>Общественные консультации:</b> 24.01.2025 — 23.02.2025" in while_open
+    assert "<b>Общественные консультации:</b> 24 янв-23 фев 2025" in while_open
     assert ">анкета на сайте Сейма</a>" in while_open
-    assert "<b>Общественные консультации:</b> завершились 23.02.2025" in once_closed
+    assert "<b>Общественные консультации:</b> завершились 23 фев 2025" in once_closed
     assert "страница консультаций" in once_closed  # the page stays, the invitation goes
     assert "анкета на сайте Сейма" not in once_closed
-    assert "24.01.2025" not in once_closed  # the end date is the fact that matters
+    assert "24 янв 2025" not in once_closed  # the end date is the fact that matters
 
 
 def test_fixed_blocks_alone_over_the_limit_are_cut_at_a_line_boundary(
@@ -248,7 +248,7 @@ def test_the_card_cites_the_act_the_way_everyone_else_does(process_3039: Process
     used to live only in the publication notice, months down the replies."""
     text = MessageFormatter("ru").new_bill(bill_of(process_3039, act=ACT), None, today=TODAY).text
 
-    assert "📰 <b>Публикация:</b> Dz.U. 2026 poz. 1099 (опубликован 18.08.2026)" in text
+    assert "📰 <b>Публикация:</b> Dz.U. 2026 poz. 1099 (опубликован 18 авг 2026)" in text
 
 
 def test_a_card_for_a_bill_already_in_force_says_so_and_links_the_act(
@@ -262,7 +262,7 @@ def test_a_card_for_a_bill_already_in_force_says_so_and_links_the_act(
     text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
 
     assert "Законопроект: процесс завершён — druk nr 1962" in text
-    assert "Уже действует с</b> 01.09.2026" in text
+    assert "Уже действует с</b> 1 сент 2026" in text
     assert "Что можно сделать сейчас:</b> закон уже применяется" in text
     assert "Текст закона (PDF)" in text
 
@@ -276,7 +276,7 @@ def test_a_bill_waiting_only_for_its_vacatio_legis_is_not_called_finished(
     text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
 
     assert "Новый законопроект" in text
-    assert "Что дальше:</b> вступление в силу 19.11.2026" in text
+    assert "Что дальше:</b> вступление в силу 19 нояб 2026" in text
     assert "Уже действует" not in text
 
 

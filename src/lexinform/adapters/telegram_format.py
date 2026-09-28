@@ -1288,7 +1288,7 @@ class MessageFormatter:
         lb = self._labels
         head = (
             f"{ICON['digest']} <b>{esc(lb.digest_header)}</b>\n"
-            f"{self.fmt_date(week.since)} — {self.fmt_date(week.until)}"
+            f"{self.fmt_date_range(week.since, week.until)}"
         )
         body = [
             self._digest_block(lb.digest_cards, week.cards, self._digest_card),
@@ -1390,10 +1390,12 @@ class MessageFormatter:
         cost = cost_usd(month.usage)
         if cost is not None and month.usage:
             rows.append(f"{esc(lb.digest_month_cost)}: ≈ {format_usd(cost)}")
-        return (
-            f"{ICON['month']} <b>{esc(lb.digest_month)}</b> · {month.month:%m.%Y}\n"
-            + " · ".join(rows)
+        period = (
+            f"{lb.short_months[month.month.month - 1]} {month.month.year}"
+            if lb.short_months
+            else f"{month.month:%m.%Y}"
         )
+        return f"{ICON['month']} <b>{esc(lb.digest_month)}</b> · {period}\n" + " · ".join(rows)
 
     def _support_block(self) -> str:
         """The ask, and only where there is somewhere to send it."""
@@ -1680,7 +1682,21 @@ class MessageFormatter:
         return "\n".join(lines)
 
     def fmt_date(self, value: dt.date) -> str:
+        if months := self._labels.short_months:
+            return f"{value.day} {months[value.month - 1]} {value.year}"
         return value.strftime(self._labels.date_format)
+
+    def fmt_date_range(self, start: dt.date, end: dt.date) -> str:
+        if start == end:
+            return self.fmt_date(start)
+        if months := self._labels.short_months:
+            if start.year == end.year:
+                left = str(start.day)
+                if start.month != end.month:
+                    left += f" {months[start.month - 1]}"
+                return f"{left}-{self.fmt_date(end)}"
+            return f"{self.fmt_date(start)} - {self.fmt_date(end)}"
+        return f"{self.fmt_date(start)} — {self.fmt_date(end)}"
 
     def _header(self, icon: str, label: str, bill: Bill, title: str | None = None) -> str:
         """`📜 <b>Label — druk nr 3039</b>` and the bill's title on its own line."""
@@ -1979,7 +1995,7 @@ class MessageFormatter:
             "the caller asks for a period only when the window's end is known"
         )
         if window.start:
-            return f"{self.fmt_date(window.start)} — {self.fmt_date(window.end)}"
+            return self.fmt_date_range(window.start, window.end)
         return f"{esc(lb.consultation_until)} {self.fmt_date(window.end)}"
 
     def _steps_block(self, bill: Bill, today: dt.date, *, road: Bill | None = None) -> str:
@@ -2439,15 +2455,8 @@ class MessageFormatter:
             return esc(when)
         span = self.fmt_date(item.date)
         if item.end_date and item.end_date != item.date:
-            # "15–18.09.2026" only holds when the month is shared and the format opens with the
-            # day; across a month, or in a locale writing year first, both dates are spelled out.
-            same_month = (item.date.year, item.date.month) == (
-                item.end_date.year,
-                item.end_date.month,
-            )
-            if same_month and lb.date_format.startswith("%d"):
-                span = f"{item.date.day:02d}–{self.fmt_date(item.end_date)}"
-            else:
+            span = self.fmt_date_range(item.date, item.end_date)
+            if not lb.short_months:
                 span = f"{self.fmt_date(item.date)} – {self.fmt_date(item.end_date)}"
         number = f"{lb.sejm_sitting} {item.sitting_number}, " if item.sitting_number else ""
         return esc(f"{number}{span}")

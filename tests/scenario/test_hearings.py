@@ -54,7 +54,7 @@ def test_a_hearing_announced_late_is_still_told_even_though_applications_closed(
     assert report.hearing_reminders == 1
     bill, hearing, _, today = w.publisher.hearings[0]
     text = MessageFormatter("ru").hearing_deadline(bill, hearing, today=today).text
-    assert "слушания</b> 15.09.2026 · приём заявок на участие закрыт" in text
+    assert "слушания</b> 15 сент 2026 · приём заявок на участие закрыт" in text
 
 
 def test_a_hearing_that_has_taken_place_is_not_reminded() -> None:

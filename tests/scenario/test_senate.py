@@ -71,7 +71,7 @@ def test_the_card_names_the_committee_its_email_and_the_day_it_meets() -> None:
     assert (
         'направить мнение в комиссию Сената — <a href="https://www.senat.gov.pl/prace/'
         'komisje-senackie/komisja,228.html">Komisja Praw Człowieka i Praworządności</a>'
-        " (kpcp@senat.gov.pl) до заседания 09.09.2026"
+        " (kpcp@senat.gov.pl) до заседания 9 сент 2026"
         " (на польском, с номером сенатского druk nr 849)"
         f' · <a href="{ACT_URL}">закон на сайте Сената</a>'
     ) in card

@@ -105,7 +105,7 @@ def test_consultation_opening_later_is_announced_with_the_deadline() -> None:
     assert bill.consultation is not None and bill.consultation.end == dt.date(2026, 9, 8)
     text = MessageFormatter("ru").status_update(bill, change, today=dt.date(2026, 9, 8)).text
     assert "• <i>3. Konsultacje publiczne</i>" in text
-    assert "направить замечания на dep.prawny@mswia.gov.pl до 08.09.2026" in text
+    assert "направить замечания на dep.prawny@mswia.gov.pl до 8 сент 2026" in text
     assert change.consultation_opened and "#консультации" in text
 
 
@@ -139,7 +139,7 @@ def test_a_consultation_that_opens_without_a_new_stage_is_still_named() -> None:
     assert change.new_stages == [] and change.consultation_opened
     text = MessageFormatter("ru").status_update(bill, change, today=dt.date(2026, 9, 8)).text
     assert "🗣 <b>Открылись публичные консультации — UC164</b>" in text
-    assert "направить замечания на dep.prawny@mswia.gov.pl до 08.09.2026" in text
+    assert "направить замечания на dep.prawny@mswia.gov.pl до 8 сент 2026" in text
 
 
 def test_a_catalog_nobody_opened_is_read_on_the_next_refresh() -> None:

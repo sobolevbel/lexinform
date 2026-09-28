@@ -70,7 +70,7 @@ def test_card_of_an_rcl_project_offers_the_e_mail_and_the_comment_form() -> None
     text = MessageFormatter("ru").new_bill(w.bill(RCL), None, today=dt.date(2026, 9, 7)).text
 
     assert "Правительственный проект (RCL) — UC164" in text
-    assert "направить замечания на dep.prawny@mswia.gov.pl до 08.09.2026" in text
+    assert "направить замечания на dep.prawny@mswia.gov.pl до 8 сент 2026" in text
     assert f'<a href="{CONSULTATION_LETTER.url}">письмо о консультациях</a>' in text
 
 
@@ -126,7 +126,7 @@ def test_a_project_taken_by_its_text_still_gets_its_consultation_letter() -> Non
         "dep.prawny@mswia.gov.pl",
     )
     text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2026, 9, 7)).text
-    assert "направить замечания на dep.prawny@mswia.gov.pl до 08.09.2026" in text
+    assert "направить замечания на dep.prawny@mswia.gov.pl до 8 сент 2026" in text
 
 
 def test_a_letter_that_failed_once_is_retried_after_the_project_is_analysed() -> None:

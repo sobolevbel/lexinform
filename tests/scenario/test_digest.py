@@ -332,7 +332,7 @@ def test_the_first_digest_of_a_month_carries_its_figures_and_the_ask() -> None:
     w.run()
 
     (draft,) = _drafts(w)
-    assert "Итоги месяца" in draft and "09.2026" in draft
+    assert "Итоги месяца" in draft and "сент 2026" in draft
     assert "просмотрено записей" in draft and "отсеяно по ключевым словам" in draft
     assert SUPPORT_URL in draft
 

@@ -70,7 +70,7 @@ def test_a_finished_bill_says_so_on_its_card_and_is_then_left_alone() -> None:
     assert report.cards_refreshed == 1
     closed, _ = w.publisher.edited[-1]
     assert "Законопроект: процесс завершён" in closed.text
-    assert "Уже действует с</b> 01.09.2026" in closed.text
+    assert "Уже действует с</b> 1 сент 2026" in closed.text
     assert "Что можно сделать сейчас:</b> закон уже применяется" in closed.text
 
 
@@ -120,7 +120,7 @@ def test_the_day_a_card_is_judged_by_is_the_readers_day_not_the_runners() -> Non
     w.run()
 
     closed, _ = w.publisher.edited[-1]
-    assert "Уже действует с</b> 20.09.2026" in closed.text
+    assert "Уже действует с</b> 20 сент 2026" in closed.text
     assert "вступление в силу" not in closed.text
 
 
@@ -137,4 +137,4 @@ def test_an_act_with_a_vacatio_legis_still_ahead_keeps_its_card_true() -> None:
 
     assert report.cards_refreshed == 1
     edited, _ = w.publisher.edits[0]
-    assert "вступление в силу 19.11.2026" in MessageFormatter("ru").new_bill(edited, None).text
+    assert "вступление в силу 19 нояб 2026" in MessageFormatter("ru").new_bill(edited, None).text

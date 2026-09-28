@@ -30,9 +30,9 @@ def test_committee_sitting_message(process_3039: ProcessDetail) -> None:
     assert_telegram_html(text)
     assert text.startswith("🗓 <b>Заседание комиссии — druk nr 3039</b>")
     assert "📮 <b>Komisja Administracji i Spraw Wewnętrznych (ASW)</b>" in text
-    assert "📅 17.09.2026, 09:00 · sala nr 412" in text
+    assert "📅 17 сент 2026, 09:00 · sala nr 412" in text
     assert "📝 <b>Пункт повестки:</b> Pierwsze czytanie projektu (druk nr 3039)" in text
-    assert "до заседания 17.09.2026" in text
+    assert "до заседания 17 сент 2026" in text
     assert 'transmisje_arch.xsp?unid=1">Трансляция</a>' in text
     assert f"{COMMITTEE_PAGE}>Страница комиссии</a>" in text
     assert text.splitlines()[-1] == "#заседаниекомиссии #важность5 #легализация #kadencja10druk3039"
@@ -46,7 +46,7 @@ def test_sejm_sitting_message(process_3039: ProcessDetail) -> None:
 
     assert_telegram_html(ru)
     assert ru.startswith("🗓 <b>В повестке заседания Сейма — druk nr 3039</b>")
-    assert "🏛 заседание Сейма № 65, 15–18.09.2026" in ru
+    assert "🏛 заседание Сейма № 65, 15-18 сент 2026" in ru
     assert "Трансляция" not in ru and "Страница комиссии" not in ru
     assert ru.splitlines()[-1] == "#заседаниесейма #важность5 #легализация #kadencja10druk3039"
     assert "On the agenda of a Sejm sitting" in en
@@ -63,7 +63,7 @@ def test_a_sitting_that_runs_into_the_next_month_is_not_written_backwards(
 
     text = MessageFormatter("ru").agenda(bill, crossing, today=dt.date(2026, 9, 25)).text
 
-    assert "заседание Сейма № 65, 30.09.2026 – 02.10.2026" in text
+    assert "заседание Сейма № 65, 30 сент-2 окт 2026" in text
 
 
 def test_consultation_deadline_reminder(process_3039: ProcessDetail) -> None:
@@ -75,7 +75,7 @@ def test_consultation_deadline_reminder(process_3039: ProcessDetail) -> None:
 
     assert_telegram_html(ahead)
     assert "Консультации заканчиваются — druk nr 3039" in ahead
-    assert "до 30.09.2026 · осталось дней: 2" in ahead
+    assert "до 30 сент 2026 · осталось дней: 2" in ahead
     assert f'👉 <a href="{SURVEY}">мнение подаётся анкетой (ankieta) на сайте Сейма</a>' in ahead
     assert (
         f'🔗 <a href="{SURVEY}">анкета на сайте Сейма</a> | <a href="{CONSULTATION_PAGE}">' in ahead
@@ -91,7 +91,7 @@ def test_consultation_results_notice(process_3039: ProcessDetail) -> None:
     assert_telegram_html(text)
     assert text.startswith("🗣 <b>Опубликованы мнения из консультаций — druk nr 3039</b>")
     # The window shut — that is why this post exists — so it is not shown as a date range.
-    assert "📅 <b>Общественные консультации:</b> завершились 30.09.2026" in text
+    assert "📅 <b>Общественные консультации:</b> завершились 30 сент 2026" in text
     assert f'<a href="{CONSULTATION_PAGE}">поданные анкеты' in text
     assert "⏭ <b>Что дальше:</b> I чтение в комиссии — ASW" in text
     assert (
@@ -137,8 +137,8 @@ def test_act_notice_names_the_journal_the_date_and_the_staged_entry_caveat(
     ).text
 
     assert "📖 <b>Опубликован в Dziennik Ustaw — druk nr 3039</b>" in text
-    assert "Dz.U. 2026 poz. 1099 (опубликован 18.08.2026)" in text
-    assert "Вступает в силу:</b> 19.11.2026" in text
+    assert "Dz.U. 2026 poz. 1099 (опубликован 18 авг 2026)" in text
+    assert "Вступает в силу:</b> 19 нояб 2026" in text
     assert "Отдельные положения могут вступать в силу" in text
     assert "дата вступления в силу пока не указана" in no_date
     # The moment to diarise the date, and the card is months up the thread: one sentence of the

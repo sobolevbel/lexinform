@@ -69,16 +69,16 @@ def test_card_names_the_ministry_the_letter_deadline_and_both_ways_to_react() ->
     assert "Путь:</b> план ✓ → RCL ● → Сейм → комиссии → II и III чтение → Сенат" in text
     assert (
         "Инициатор:</b> правительственный — Minister Spraw Wewnętrznych i Administracji"
-        " · номер в wykazie prac RM: UC164\n📄 <b>Опубликован на RCL:</b> 31.08.2026" in text
+        " · номер в wykazie prac RM: UC164\n📄 <b>Опубликован на RCL:</b> 31 авг 2026" in text
     )
     assert (
-        "Общественные консультации:</b> до 08.09.2026 (7 дн. с даты письма) · "
+        "Общественные консультации:</b> до 8 сент 2026 (7 дн. с даты письма) · "
         "замечания на e-mail dep.prawny@mswia.gov.pl · "
         f'<a href="{CONSULTATION_LETTER.url}">письмо о консультациях</a>' in text
     )
     assert (
         "Что можно сделать сейчас:</b> направить замечания на dep.prawny@mswia.gov.pl до "
-        "08.09.2026 (на польском, с номером UC164); "
+        "8 сент 2026 (на польском, с номером UC164); "
         f'<a href="{COMMENT_FORM}">оставить комментарий через форму на RCL</a>' in text
     )
     # RCL names the minister, the table the ministry: the zgłoszenie still gets its address.
@@ -87,7 +87,7 @@ def test_card_names_the_ministry_the_letter_deadline_and_both_ways_to_react() ->
         '<a href="https://www.gov.pl/web/mswia/kontakt">адреса канцелярии, ePUAP и'
         " e-Doręczenia</a>" in text
     )
-    assert "Что дальше:</b> общественные консультации до 08.09.2026, затем сбор мнений" in text
+    assert "Что дальше:</b> общественные консультации до 8 сент 2026, затем сбор мнений" in text
     assert '">Проект на RCL</a> | <a href="' in text
     assert ">Текст проекта (DOCX)</a> | <a href=" in text and ">OSR</a> | <a href=" in text
     assert ">Uzasadnienie</a> | <a href=" in text  # the legacy .doc is readable too
@@ -102,7 +102,7 @@ def test_card_after_the_deadline_keeps_only_the_comment_form_and_says_what_follo
 
     # A closed deadline says so; the e-mail goes, the letter stays (it names the ministry).
     assert (
-        "Общественные консультации:</b> завершились 08.09.2026 · "
+        "Общественные консультации:</b> завершились 8 сент 2026 · "
         f'<a href="{CONSULTATION_LETTER.url}">письмо о консультациях</a>\n' in text
     )
     assert "dep.prawny@mswia.gov.pl" not in text
@@ -187,7 +187,7 @@ def test_update_lists_the_new_stage_and_announces_the_hand_over_to_the_sejm() ->
 
     assert_telegram_html(text)
     assert "🔢 <b>Проект направлен в Сейм — UC164</b>" in text
-    assert "• 02.09.2026: <i>14. Skierowanie projektu ustawy do Sejmu</i>" in text
+    assert "• 2 сент 2026: <i>14. Skierowanie projektu ustawy do Sejmu</i>" in text
     assert "Проект направлен в Сейм — ждём номер druku" in text
     assert "Что дальше:</b> присвоение номера druku в Сейме, затем I чтение" in text
     assert ">Проект на RCL</a>" in text and "#UC164" in text
@@ -202,7 +202,7 @@ def test_consultation_reminder_and_results_point_to_the_ministry_and_the_project
 
     assert_telegram_html(reminder)
     assert "Консультации заканчиваются — UC164" in reminder
-    assert "до 08.09.2026 · осталось дней: 2" in reminder
+    assert "до 8 сент 2026 · осталось дней: 2" in reminder
     assert "👉 замечания на e-mail dep.prawny@mswia.gov.pl · <a href=" in reminder
     assert (
         '">письмо о консультациях</a> | <a href="https://legislacja.rcl.gov.pl/projekt/12414100">Проект на RCL</a>'
