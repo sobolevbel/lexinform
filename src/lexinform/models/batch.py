@@ -149,6 +149,7 @@ class BatchItemMeta(BaseModel):
     source_url: str | None
     revision: int
     text_sha256: str | None
+    law_sha256: str | None = None
     prompt_version: str = ""
     generation: int = 0
     memo_key: str | None = None

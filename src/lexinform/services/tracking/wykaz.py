@@ -139,17 +139,18 @@ class WykazLinker:
         self._poster.tell(fresh, change, result, publish=publish)
 
     def _reanalyse(self, bill: Bill, result: TrackingResult) -> tuple[Bill, bool]:
-        """True when the model read the project's documents and named what changed in them."""
+        """True when the model read the plan's first text, or named what changed in a new one."""
         if self._analysis is None or bill.analysis is None:
             return bill, False
         document = self._texts.locate(bill).document
         if document is None:
             return bill, False
+        first_text = bill.analysis.text_source == "metadata_only"
         fresh, reanalysed = self._analysis.prepare_reanalysis(bill, document)
         if not reanalysed or fresh.analysis is None:
             return fresh, False
         result.count_reanalysis(fresh.analysis)
-        return fresh, fresh.analysis.analysis.names_changes
+        return fresh, first_text or fresh.analysis.analysis.names_changes
 
 
 class WykazWatcher:

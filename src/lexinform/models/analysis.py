@@ -92,6 +92,8 @@ class AnalysisRecord(BaseModel):
     source_kind: SourceKind = "print"
     revision: int = 1
     text_sha256: str | None = None
+    law_sha256: str | None = None
+    """The act alone, hard-normalised (`law_digest`): equal means the law did not change."""
     source_checked_at: dt.datetime | None = None
 
 

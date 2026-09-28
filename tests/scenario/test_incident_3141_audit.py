@@ -1,6 +1,4 @@
-"""Executable acceptance criteria for the findings of the incident 3141 review."""
-
-import pytest
+"""Regressions for the findings of the incident 3141 review (B60-B63)."""
 
 from lexinform.models import Attachment, BillStatus
 from tests.fakes import FakeTextExtractor, make_analysis
@@ -24,7 +22,6 @@ def _quiet_project_then_its_druk(w: World) -> None:
     w.run()
 
 
-@pytest.mark.xfail(strict=True, reason="B60: the linker overwrites a druk's own analysis")
 def test_a_druk_read_on_its_own_print_is_not_read_again_when_its_project_links() -> None:
     w = World(llm_script={RCL: make_analysis(score=2), "3100": make_analysis(score=2)})
     _quiet_project_then_its_druk(w)
@@ -40,7 +37,6 @@ def test_a_druk_read_on_its_own_print_is_not_read_again_when_its_project_links()
     assert len([ctx for ctx in w.llm.contexts if ctx.number == "3100"]) == 1
 
 
-@pytest.mark.xfail(strict=True, reason="B60: the linker drops a druk's batched first analysis")
 def test_a_druks_batched_first_analysis_survives_its_projects_link() -> None:
     w = World(batch=True, llm_script={RCL: make_analysis(score=2)})
     w.batch.script["3100"] = make_analysis(score=4)
@@ -60,7 +56,6 @@ def test_a_druks_batched_first_analysis_survives_its_projects_link() -> None:
     assert [bill.number for bill, _ in w.publisher.new_bills] == ["3100"]
 
 
-@pytest.mark.xfail(strict=True, reason="B61: a lagging checkpoint re-announces a re-analysis")
 def test_a_re_analysis_that_names_no_change_is_not_news_a_run_later() -> None:
     reformatted = "Art. 1. Ten sam tekst w innym układzie. " * 50
     w = World(
@@ -97,7 +92,6 @@ def test_a_re_analysis_that_names_no_change_is_not_news_a_run_later() -> None:
     assert change.supplements and not change.content_changed
 
 
-@pytest.mark.xfail(strict=True, reason="B62: a plan's first text is told only if changes named")
 def test_the_first_text_of_a_plan_is_told_even_when_the_model_names_no_change() -> None:
     w = World()
     w.add_wykaz_entry()
@@ -112,13 +106,15 @@ def test_the_first_text_of_a_plan_is_told_even_when_the_model_names_no_change() 
     assert change.content_changed
 
 
-@pytest.mark.xfail(strict=True, reason="B63: the RCL watcher does not ask the database")
 def test_a_project_whose_druk_the_database_knows_is_linked_without_the_api_walk() -> None:
     w = World(llm_script={RCL: make_analysis(score=2), "3100": make_analysis(score=3)})
-    _quiet_project_then_its_druk(w)
-    assert w.bill("3100").summary.rcl_num == RM
+    project = w.add_rcl_project(rcl_project(rm_number=RM))
+    w.run()
     w.clock.advance(days=1)
+    _druk_the_listing_does_not_link(w, project.title)  # the fake API walk cannot find it
 
     report = w.run()
 
+    assert w.bill("3100").summary.rcl_num == RM
     assert report.linked == 1 and w.bill(RCL).status is BillStatus.LINKED
+    assert [bill.number for bill, _ in w.publisher.new_bills] == ["3100"]

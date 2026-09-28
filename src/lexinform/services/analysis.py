@@ -25,6 +25,7 @@ from lexinform.errors import (
     ServiceUnavailableError,
 )
 from lexinform.keywords import KeywordPrefilter
+from lexinform.law_digest import law_digest
 from lexinform.models import (
     AMENDMENT_SOURCES,
     FULL_TEXT_SOURCES,
@@ -229,6 +230,7 @@ class _Loaded:
     truncated: bool
     source: TextSource
     scan: ScannedDocument | None = None
+    law: str | None = None
 
     @property
     def digest(self) -> str | None:
@@ -323,6 +325,13 @@ def _memo_key(bill: Bill, purpose: str, context: BaseModel) -> str:
     data["purpose"] = purpose
     encoded = json.dumps(data, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+def _source_of(record: AnalysisRecord | None) -> TextDocument | None:
+    """The file a stored analysis was read from, as far as the record itself can name it."""
+    if record is None or record.source_url is None or record.text_source not in FULL_TEXT_SOURCES:
+        return None
+    return TextDocument(url=record.source_url, kind=record.source_kind)
 
 
 def _reused[Record: BaseModel](record: Record) -> Record:
@@ -802,6 +811,7 @@ class AnalysisService:
                     "source_kind": item.meta.source_kind,
                     "revision": item.meta.revision,
                     "text_sha256": item.meta.text_sha256,
+                    "law_sha256": item.meta.law_sha256,
                     "source_checked_at": now,
                 }
             )
@@ -899,7 +909,12 @@ class AnalysisService:
         return primary_of(self._repo, bill, self._options.channel_id) is not None
 
     def reanalyze_bill(
-        self, bill: Bill, document: TextDocument, *, summary: ProcessSummary | None = None
+        self,
+        bill: Bill,
+        document: TextDocument,
+        *,
+        summary: ProcessSummary | None = None,
+        previous_document: TextDocument | None = None,
     ) -> AnalysisRecord | None:
         """Analyse a newer text of an already analysed bill; the model also reports what changed.
         `summary` is fresher metadata than the stored one, when the caller has it.
@@ -908,7 +923,9 @@ class AnalysisService:
         on RCL, a print re-dated by an attachment): the stored analysis then points at the new
         source and nothing else happens. None too when the run has spent its budget, and then
         nothing is written at all, so the next run offers the same document again."""
-        fresh, changed = self.prepare_reanalysis(bill, document, summary=summary)
+        fresh, changed = self.prepare_reanalysis(
+            bill, document, summary=summary, previous_document=previous_document
+        )
         if fresh is not bill:
             assert fresh.analysis is not None, (
                 "prepare_reanalysis returns a new bill only with its record"
@@ -920,9 +937,14 @@ class AnalysisService:
         return fresh.analysis if changed else None
 
     def prepare_reanalysis(
-        self, bill: Bill, document: TextDocument, *, summary: ProcessSummary | None = None
+        self,
+        bill: Bill,
+        document: TextDocument,
+        *,
+        summary: ProcessSummary | None = None,
+        previous_document: TextDocument | None = None,
     ) -> tuple[Bill, bool]:
-        """Memoize paid work without advancing the bill before its source checkpoint."""
+        """Memoize paid work without advancing the bill; `previous_document` was read before."""
         assert bill.analysis is not None, (
             "only a bill with a card is re-analysed, and a card needs an analysis"
         )
@@ -936,6 +958,7 @@ class AnalysisService:
             bill,
             located,
             previous=bill.analysis,
+            previous_document=previous_document or _source_of(bill.analysis),
             submit_batch=self._batches(bill) and "reanalysis" in self._options.batch_kinds,
         )
         if prepared.queued:
@@ -1254,6 +1277,7 @@ class AnalysisService:
         located: LocatedText,
         *,
         previous: AnalysisRecord | None,
+        previous_document: TextDocument | None = None,
         cost_guard: bool = True,
         triage: bool = True,
         submit_batch: bool = False,
@@ -1283,13 +1307,19 @@ class AnalysisService:
         if previous is not None and source not in FULL_TEXT_SOURCES:
             return _Prepared(bill, located, text, source, previous, first=False, unreadable=True)
         digest = loaded.digest
-        if previous is not None and digest is not None and digest == previous.text_sha256:
+        law = loaded.law
+        if previous is not None and (
+            (digest is not None and digest == previous.text_sha256)
+            or (law is not None and law == self._previous_law(previous, previous_document))
+        ):
             assert document is not None, "a text digest comes only from a document that was read"
             pointer = previous.model_copy(
                 update={
                     "source_url": document.url,
                     "source_kind": document.kind,
                     "source_checked_at": self._clock.now(),
+                    "text_sha256": digest or previous.text_sha256,
+                    "law_sha256": law or previous.law_sha256,
                 }
             )
             return _Prepared(bill, located, text, source, pointer, first=False, unchanged=True)
@@ -1366,6 +1396,7 @@ class AnalysisService:
                     source_url=document.url if document else None,
                     revision=previous.revision + 1 if previous else 1,
                     text_sha256=digest,
+                    law_sha256=law,
                     prompt_version=self._options.prompt_version,
                     generation=bill.analysis_generation,
                     memo_key=key,
@@ -1384,6 +1415,7 @@ class AnalysisService:
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
         record.text_sha256 = digest
+        record.law_sha256 = law
         record.source_checked_at = self._clock.now()
         return _Prepared(
             bill,
@@ -1396,6 +1428,18 @@ class AnalysisService:
             memo_key=key,
             triage_memo_key=triage_memo_key,
         )
+
+    def _previous_law(self, previous: AnalysisRecord, document: TextDocument | None) -> str | None:
+        """The stored act's digest; an older record's comes from its file if that hashes alike."""
+        if previous.law_sha256 is not None or document is None or previous.text_sha256 is None:
+            return previous.law_sha256
+        try:
+            loaded = self._load_text(document)
+        except Exception as exc:
+            # Best effort: an old file out of reach costs a full reading, never the phase.
+            log.warning("%s: the analysed text not re-read (%s)", document.url, exc)
+            return None
+        return loaded.law if loaded.digest == previous.text_sha256 else None
 
     def _fit_to_budget(
         self, ctx: BillContext, loaded: _Loaded, *, first: bool, batch: bool = False
@@ -1702,7 +1746,7 @@ class AnalysisService:
             return _Loaded("", False, "metadata_only")
         if not trim:
             budgeted = self._budget.apply(text, self._keywords.spans(text))
-            return _Loaded(budgeted.text, budgeted.truncated, "pdf")
+            return _Loaded(budgeted.text, budgeted.truncated, "pdf", law=law_digest(text))
         trimmed = trim_print(text)
         # Said whether anything was dropped or not: a text that goes in whole is the expensive
         # case, and it was the silent one — the package that cost $1.63 logged nothing at all.
@@ -1715,7 +1759,7 @@ class AnalysisService:
         )
         budgeted = self._budget.apply(trimmed.text, self._keywords.spans(trimmed.text))
         source: TextSource = "documents" if document.kind == "rcl" else "pdf"
-        return _Loaded(budgeted.text, budgeted.truncated, source)
+        return _Loaded(budgeted.text, budgeted.truncated, source, law=law_digest(trimmed.text))
 
     def _load_scan(self, document: TextDocument, text: str) -> _Loaded:
         """The document as pages, when its file carries no text of its own; metadata when it has

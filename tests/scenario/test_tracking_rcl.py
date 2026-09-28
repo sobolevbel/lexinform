@@ -659,7 +659,7 @@ def test_a_project_whose_druk_already_has_a_card_gets_no_second_one() -> None:
     w.run()
     w.clock.advance(days=1)
     _druk_the_listing_does_not_link(w, project.title)
-    w.run()
+    carded = w.run()
     druk_card = w.card_id("3100")
     druk_analysis = w.bill("3100").analysis
     w.llm.script[RCL] = make_analysis(score=3)
@@ -667,16 +667,14 @@ def test_a_project_whose_druk_already_has_a_card_gets_no_second_one() -> None:
     w.clock.advance(days=1)
     w.run()
     w.clock.advance(days=1)
+
     lifted = w.run()
-    _listing_names_the_project(w)
-    w.clock.advance(days=1)
 
-    linked = w.run()
-
+    assert carded.linked == 1  # the druk's detail named the project: the database links them
     assert lifted.published == 0
     assert [bill.number for bill, _ in w.publisher.new_bills] == ["3100"]
     assert w.publication(RCL, PublicationKind.NEW_BILL) is None
-    assert linked.linked == 1 and w.bill(RCL).status is BillStatus.LINKED
+    assert w.bill(RCL).status is BillStatus.LINKED
     assert w.card_id("3100") == druk_card
     assert w.bill("3100").analysis == druk_analysis
     assert w.publisher.updates == []

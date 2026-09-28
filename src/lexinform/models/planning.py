@@ -78,9 +78,12 @@ def plan_bill(
             and observed.closure_date != previous.closure_date
             and not closure_announced
         ),
+        # A re-analysis committed ahead of this checkpoint is news on the terms it was read on.
         content_changed=(
             previous is not None
             and observed.analysis_revision != previous.analysis_revision
             and observed.analysis_sha256 != previous.analysis_sha256
+            and bill.analysis is not None
+            and bill.analysis.analysis.names_changes
         ),
     )

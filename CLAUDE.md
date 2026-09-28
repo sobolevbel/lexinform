@@ -88,7 +88,7 @@ linking, acts, senate, consultations, agenda, posting, stages), pipeline) → `c
 → `cli.py` (typer).
 
 Services import only ports, models and the pure modules (`keywords`, `sections` incl. `TextBudget`,
-`agenda`, `authors`, `rcl_letters`, `concurrency`), never adapters; the generic services (analysis,
+`law_digest`, `agenda`, `authors`, `rcl_letters`, `concurrency`), never adapters; the generic services (analysis,
 text prefilter, formatter, `next_phase`) never branch on the source: they read `Bill.has_process`,
 `Bill.consultation`, `Bill.rcl`, `Bill.wykaz` and the `TextSource` port.
 
@@ -567,13 +567,21 @@ Invariants worth keeping:
   after the 3rd reading when `models.third_reading_kept_the_text` holds (2nd reading went straight
   to the 3rd, no "-A" report, `minorityMotions == 0` on the report): the Sejm adopted the analysed
   text verbatim. Unknown facts (motions not parsed, no 2nd reading) mean "may differ" and the text
-  is read. **A re-analysis is news only when the model names a change** (`Analysis.names_changes`):
-  otherwise it is stored and counted and nothing is posted. The same bill read from another
-  source never hashes alike — the law itself differs by 56–195 words in 2.5–3.4% between an RCL
-  package and its druk, all of it extraction (letter-spaced headings, split words, footnote
-  numbers, the druk's footnote listing the amended acts) — and a real amendment of one article is
-  a change of that size, so no rule short of the model tells the two apart
-  (`docs/incident-3141.md`).
+  is read. **The act is compared, not the file** (`law_digest.py`, `AnalysisRecord.law_sha256`):
+  the body from "Art. 1." to the uzasadnienie or OSR (`sections.law_body`), with the Dz.U. lists,
+  footnotes, list marks and the RCL stamp dropped, then letters and digits alone, lowercased. An
+  equal digest is the "same text" path above — no model call, whatever the uzasadnienie or the
+  OSR did — and only strict equality counts. Over the 468 RCL-to-druk pairs of the corpus it
+  matches 98, the text digest 6; the rest differ in the act itself, often for real (2034 → 2033
+  in druk 545, a second minister in 811), so they are read. A record older than the field has its
+  digest taken from its own file (`_previous_law`) when that file still hashes as
+  `text_sha256` says, else the text is read. **A scan has no digest** — no text layer to compare
+  — so only the same file (its `sha256`) is the same text; another scan or a text is read.
+  **A re-analysis is news only when the model names a change** (`Analysis.names_changes`, also
+  asked by `plan_bill` for a re-analysis committed ahead of its checkpoint, B61), except the first
+  text of a wykaz plan, which is news by itself (B62); otherwise it is stored and counted and
+  nothing is posted (`docs/incident-3141.md`,
+  `docs/reviews/2026-09-28-incident-3141-review.md`).
 - **Stage fingerprint** (`_stage_key`) drives updates. Fields added to `Stage` for rendering
   (`voting`, `position`, `committee_name`, `proposal`) must stay *out* of the key, or every tracked
   bill posts a spurious update after deploy.
@@ -654,7 +662,11 @@ Invariants worth keeping:
   (`_with_rcl_num`) and joins it to that project before anything reads it; a quiet project's
   druk is still judged on its own text. Past that gate the project gets no card of its own
   (`PublishingService.became_druk`), the linker keeps a druk's own card and analysis rather than
-  overwriting them, and a listing row never erases the `rcl_num` a detail stored.
+  overwriting them — and its status too whenever the druk was read on its own text or is being
+  read in a batch (`_read_on_its_own`, B60: `save_analysis` resets the status and the generation,
+  which dropped the batch's paid answer) — and a listing row never erases the `rcl_num` a detail
+  stored. The RCL watcher asks the database for that druk (`find_print_by_rcl_num`) before it
+  walks the API, so a project is linked in the run its druk's detail is first read (B63).
 - **RCL rows are refreshed by the RCL watcher only.** RCL discovery reads a project once (timeline
   + catalogs for a candidate, one catalog for a title miss) and afterwards only bumps `change_date`
   from the list; `RclWatcher` re-reads the timeline and the catalogs whose "Data ostatniej

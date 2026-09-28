@@ -1,6 +1,7 @@
 """A followed entry without a print number (RPW, RCL) got one: the print inherits the card.
 
-The card stays the root of the Telegram thread; the print row copies status and analysis, the
+The card stays the root of the Telegram thread; the print row copies status and analysis unless
+it has a reading of its own, the
 old row is marked `linked`, and one update announces the print number (with a re-analysis when
 the print text differs from what was analysed before).
 """
@@ -23,13 +24,24 @@ from lexinform.models import (
 from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.services.analysis import AnalysisService
 from lexinform.services.publications import inherit_card
-from lexinform.services.sources import SejmTextSource, fetch_print
+from lexinform.services.sources import RclTextSource, SejmTextSource, fetch_print
 from lexinform.services.tracking.acts import ActWatcher
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.result import TrackingResult
 from lexinform.services.tracking.stages import StageEnricher, change_key
 
 log = logging.getLogger(__name__)
+
+_BEING_READ = frozenset(
+    {BillStatus.BATCH_PENDING, BillStatus.ANALYSIS_READY, BillStatus.REANALYSIS_READY}
+)
+
+
+def _read_on_its_own(druk: Bill) -> bool:
+    """Whether the print was read, or is being read, from its own text."""
+    return druk.status in _BEING_READ or (
+        druk.status is BillStatus.ANALYZED and druk.analysis is not None
+    )
 
 
 class Linker:
@@ -87,23 +99,30 @@ class Linker:
         detail = self._gateway.get_process(pre.term, print_number)
         stages = self._enricher.name_committees(pre.term, detail.stages)
         card = self._poster.card(pre)
+        read = own is not None and _read_on_its_own(own)
+        status = own.status if own is not None and read else self._status_of_print(pre)
+        analysis = own.analysis if own is not None and own.analysis is not None and read else None
         bill = pre.model_copy(
             update={
                 "summary": detail,
                 "stages": stages,
                 "stages_fingerprint": stage_fingerprint(detail.stages),
                 "linked_number": pre.number,
-                "status": self._status_of_print(pre),
+                "status": status,
+                "analysis": analysis or pre.analysis,
             }
         )
         change = None
         if card is not None and card.status is PublicationStatus.SENT:
-            bill, changed = self._reanalyze_print(bill, detail, result)
+            changed = False
+            if not read:
+                bill, changed = self._reanalyze_print(bill, detail, result)
             change = self._print_change(bill, pre, detail, content_changed=changed, now=now)
         alias = None
         with self._repo.atomic():
-            self._adopt(pre, print_number, detail, stages, now=now)
-            if bill.analysis is not None:
+            self._adopt(pre, print_number, detail, stages, now=now, status=status, read=read)
+            # Saving an analysis resets the status and the generation, so a pending batch too.
+            if bill.analysis is not None and not read:
                 self._repo.save_analysis(bill.term, bill.number, bill.analysis)
             if bill.authors is not None:
                 self._repo.save_authors(bill.term, bill.number, bill.authors)
@@ -133,7 +152,7 @@ class Linker:
         if change is not None:
             result.changed += 1
             self._poster.tell(bill, change, result, publish=publish)
-        self._render_card(pre.term, print_number, alias, publish=publish)
+        self._render_card(pre.term, print_number, alias, publish=publish, fallback=pre)
 
     def _keep_prints_card(
         self,
@@ -173,8 +192,10 @@ class Linker:
         stages: tuple[Stage, ...],
         *,
         now: datetime,
+        status: BillStatus,
+        read: bool,
     ) -> None:
-        """The print takes over everything the entry knew about the bill."""
+        """The print takes over what the entry knew, never over a reading of its own."""
         self._repo.upsert_summary(detail, now=now)
         self._repo.save_stages(
             pre.term,
@@ -183,14 +204,16 @@ class Linker:
             stage_fingerprint(detail.stages),
         )
         self._repo.save_observed_closure(pre.term, print_number, detail.closure_date)
-        status = self._status_of_print(pre)
-        self._repo.set_status(pre.term, print_number, status, prefilter_hits=pre.prefilter_hits)
-        if status is not pre.status:
-            log.info(
-                "druk %s: %s was a title miss; its text is scanned next", print_number, pre.number
-            )
-        if pre.analysis is not None:
-            self._repo.save_analysis(pre.term, print_number, pre.analysis)
+        if not read:
+            self._repo.set_status(pre.term, print_number, status, prefilter_hits=pre.prefilter_hits)
+            if status is not pre.status:
+                log.info(
+                    "druk %s: %s was a title miss; its text is scanned next",
+                    print_number,
+                    pre.number,
+                )
+            if pre.analysis is not None:
+                self._repo.save_analysis(pre.term, print_number, pre.analysis)
         if pre.submission is not None:
             self._repo.save_submission(pre.term, print_number, pre.submission)
         self._repo.link_bills(
@@ -201,7 +224,13 @@ class Linker:
         )
 
     def _render_card(
-        self, term: int, print_number: str, alias: Publication, *, publish: bool
+        self,
+        term: int,
+        print_number: str,
+        alias: Publication,
+        *,
+        publish: bool,
+        fallback: Bill | None = None,
     ) -> None:
         """Write the print's own card into the thread's root message, once, at the end.
 
@@ -212,8 +241,12 @@ class Linker:
         if not publish:
             return
         bill = self._repo.get(term, print_number)
-        if bill is not None:
-            self._poster.rerender_card(bill, alias)
+        if bill is None:
+            return
+        if bill.analysis is None and fallback is not None:
+            # A print still being read shows the entry's analysis until its own arrives.
+            bill = bill.model_copy(update={"analysis": fallback.analysis})
+        self._poster.rerender_card(bill, alias)
 
     def _print_change(
         self,
@@ -246,7 +279,12 @@ class Linker:
         document = self._texts.newer(bill, detail, fetch_print(self._gateway, bill))
         if document is None:
             return bill, False
-        fresh, reanalysed = self._analysis.prepare_reanalysis(bill, document, summary=detail)
+        fresh, reanalysed = self._analysis.prepare_reanalysis(
+            bill,
+            document,
+            summary=detail,
+            previous_document=RclTextSource().locate(bill).document,
+        )
         if not reanalysed or fresh.analysis is None:
             return fresh, False
         result.count_reanalysis(fresh.analysis)

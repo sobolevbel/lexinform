@@ -489,6 +489,23 @@ def trim_print(text: str) -> TrimmedText:
     return TrimmedText(text=PAGE_BREAK.join(kept).strip(), dropped=tuple(dropped))
 
 
+_FIRST_ARTICLE_RE = re.compile(r"\bArt\.\s*1\.(?!\d)")
+_TRIM_MARKER_RE = re.compile(r"\n?\[pominięto: [^\]]*\]\n?")
+
+
+def law_body(text: str) -> str | None:
+    """The act itself: from its first article to its uzasadnienie or OSR, page furniture off."""
+    pages = text.split(PAGE_BREAK)
+    head = _running_head(pages)
+    joined = _TRIM_MARKER_RE.sub("\n", "\n".join(strip_page_furniture(p, head) for p in pages))
+    start = _FIRST_ARTICLE_RE.search(joined)
+    if start is None:
+        return None
+    rest = joined[start.start() :]
+    ends = [m.start() for rx in (_JUSTIFICATION_RE, _OSR_RE, _DSR_RE) if (m := rx.search(rest))]
+    return rest[: min(ends)] if ends else rest
+
+
 def _drop(dropped: list[DroppedSection], kept: list[str], name: str, chars: int) -> None:
     if dropped and dropped[-1].name == name and kept and kept[-1].startswith("\n[pominięto: "):
         dropped[-1] = DroppedSection(name, dropped[-1].chars + chars)

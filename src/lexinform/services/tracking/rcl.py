@@ -144,11 +144,13 @@ class RclWatcher:
         so the hand-over is asked about again on every run, for a few projects at a time."""
         pending = [
             b for b in bills if b.rcl is not None and b.rcl.sent_to_sejm and not b.rcl.print_number
-        ][: self._max_print_lookups]
+        ]
+        known = {b.number: self._known_print(b) for b in pending}
+        asked = [b for b in pending if known[b.number] is None][: self._max_print_lookups]
         found: dict[str, Bill] = {}
-        for bill in pending:
+        for bill in [b for b in pending if known[b.number] is not None] + asked:
             assert bill.rcl is not None, "pending is filtered on the project above"
-            number = print_of_project(self._gateway, bill.rcl, bill.term)
+            number = known[bill.number] or print_of_project(self._gateway, bill.rcl, bill.term)
             if number is None:
                 continue
             project = bill.rcl.model_copy(update={"print_number": number})
@@ -156,6 +158,13 @@ class RclWatcher:
             found[bill.number] = bill.model_copy(update={"rcl": project})
             log.info("%s went to the Sejm as druk %s", bill.number, number)
         return [found.get(b.number, b) for b in bills]
+
+    def _known_print(self, bill: Bill) -> str | None:
+        """The druk the database holds under this project's RM number (a detail named it)."""
+        if bill.rcl is None or not bill.rcl.rm_number:
+            return None
+        druk = self._repo.find_print_by_rcl_num(bill.term, bill.rcl.rm_number)
+        return druk.number if druk is not None else None
 
     def _link_pending(self, result: TrackingResult, *, publish: bool) -> bool:
         """Projects whose druk the Sejm discovery has seen: the print takes over the thread."""
@@ -200,7 +209,9 @@ class RclWatcher:
             and document is not None
             and document.url != bill.analysis.source_url
         ):
-            fresh, reanalysed = self._analysis.prepare_reanalysis(bill, document)
+            fresh, reanalysed = self._analysis.prepare_reanalysis(
+                bill, document, previous_document=self._texts.locate(bill).document
+            )
             if reanalysed and fresh.analysis is not None:
                 result.count_reanalysis(fresh.analysis)
                 content_changed = fresh.analysis.analysis.names_changes

@@ -4,7 +4,8 @@
 25 сентября обнаружены и исправлены локально B51–B52.
 Для B51 прочитана копия production state; B52 воспроизведён офлайн.
 28 сентября по [инциденту 3141](incident-3141.md) найдены и исправлены B56–B59;
-[ревью этих исправлений](reviews/2026-09-28-incident-3141-review.md) нашло B60–B63.
+[ревью этих исправлений](reviews/2026-09-28-incident-3141-review.md) нашло B60–B63, они исправлены
+в тот же день вместе с отпечатком закона (`law_digest`).
 
 ## Как пользоваться
 
@@ -29,12 +30,9 @@ P3 не означает, что расходы можно игнорирова�
 
 | ID | Приоритет | Проблема | Проверка |
 | --- | --- | --- | --- |
-| [B60](#b60) | P1 | Линкер затирает собственное чтение друка | 2 strict xfail |
-| [B61](#b61) | P2 | Реанализ без изменений объявляется прогоном позже | strict xfail |
-| [B62](#b62) | P2 | Первый текст плана из wykaz не считается новостью | strict xfail |
-| [B63](#b63) | P3 | RCL-watcher ищет друк только через API | strict xfail |
+| — | — | Нет открытых подтверждённых дефектов | B53–B63 исправлены |
 
-Пробы — `tests/scenario/test_incident_3141_audit.py`; с `--runxfail` все пять падают.
+Регрессии B60–B63 — `tests/scenario/test_incident_3141_audit.py`, до исправления strict xfail.
 Последний аудит: [28.09.2026](reviews/2026-09-28-incident-3141-review.md), версия `789092b`.
 Предыдущий: [24.09.2026](reviews/2026-09-24-secondary-batch-audit.md), версия `18c845d`;
 все шесть случаев B45–B49 падали с `--runxfail` до исправления, теперь это обычные тесты, а B50
@@ -42,7 +40,7 @@ P3 не означает, что расходы можно игнорирова�
 
 ## B60
 
-**P1 · open · 28.09.2026.** `services/tracking/linking.py::Linker.link`, `_adopt`.
+**P1 · fixed · 28.09.2026.** `services/tracking/linking.py::Linker.link`, `_adopt`.
 
 Линкер сохраняет строку друка, только если у неё есть отправленная карточка; иначе `_adopt`
 записывает поверх статус и анализ записи RCL или RPW. Листинг не несёт `rclNum`, поэтому discovery
@@ -51,9 +49,14 @@ P3 не означает, что расходы можно игнорирова�
 Друк, чей первый анализ ждёт батча, выходит из `batch_pending`: `_consume` отбрасывает оплаченный
 ответ, друк уходит в батч повторно и получает карточку на несколько прогонов позже.
 
+Теперь друк, прочитанный по своему тексту или ждущий ответа батча (`_read_on_its_own`), сохраняет
+статус и анализ; линкер только связывает строки и наследует карточку записи. Регрессии
+`test_a_druk_read_on_its_own_print_is_not_read_again_when_its_project_links` и
+`test_a_druks_batched_first_analysis_survives_its_projects_link`.
+
 ## B61
 
-**P2 · open · 28.09.2026.** `models/planning.py::plan_bill`, `services/analysis.py::reanalyze_bill`.
+**P2 · fixed · 28.09.2026.** `models/planning.py::plan_bill`, `services/analysis.py::reanalyze_bill`.
 
 `plan_bill` выводит `content_changed` из смены ревизии и хэша анализа относительно базовой линии,
 не спрашивая `names_changes`. `reanalyze_bill` фиксирует анализ сразу, а базовая линия двигается
@@ -61,21 +64,31 @@ P3 не означает, что расходы можно игнорирова�
 «Новая версия текста» без изменений — обход B59. Воспроизводится при продовых batch kinds: собранный
 реанализ плюс документ к друку, чья сводка ушла в батч.
 
+Теперь `plan_bill` тоже требует `names_changes`. Регрессия
+`test_a_re_analysis_that_names_no_change_is_not_news_a_run_later`.
+
 ## B62
 
-**P2 · open · 28.09.2026.** `services/tracking/wykaz.py::WykazLinker._reanalyse`.
+**P2 · fixed · 28.09.2026.** `services/tracking/wykaz.py::WykazLinker._reanalyse`.
 
 После B59 первый текст проекта плана считается изменением, только если модель перечислила
 изменения. Но прежний анализ — чтение анонса (`metadata_only`), и появление текста — новость само
 по себе; при пустом списке реплай теряет полное резюме и ссылку на текст.
 
+Теперь первый текст после анализа `metadata_only` — изменение без условий. Регрессия
+`test_the_first_text_of_a_plan_is_told_even_when_the_model_names_no_change`.
+
 ## B63
 
-**P3 · open · 28.09.2026.** `services/tracking/rcl.py::RclWatcher._find_prints`.
+**P3 · fixed · 28.09.2026.** `services/tracking/rcl.py::RclWatcher._find_prints`.
 
 Друк проекта ищется только через API с лимитом запросов, хотя база знает его по `rcl_num`
 (`find_print_by_rcl_num`, надёжно после B58). Тихий проект остаётся несвязанным, перечитывается на
 RCL за деньги, а от второй карточки его удерживает только `became_druk`; это шаг 2 инцидента 3141.
+
+Теперь `_find_prints` сначала спрашивает базу, лимит API тратится только на остальные проекты, и
+проект связывается в том же прогоне, где впервые прочитана деталь его друка. Регрессия
+`test_a_project_whose_druk_the_database_knows_is_linked_without_the_api_walk`.
 
 ## B59
 
