@@ -58,6 +58,18 @@ def price_of(model: str) -> tuple[float, float] | None:
     return None
 
 
+INPUT_TOKEN_LIMITS: dict[str, int] = {"gpt-5.1": 272_000}
+"""A longer input is refused whatever the output cap; Claude's 1M is past `text_budget_chars`."""
+
+
+def input_limit_of(model: str) -> int | None:
+    """The most input tokens `model` accepts, None when no text this bot sends can reach it."""
+    for prefix, limit in sorted(INPUT_TOKEN_LIMITS.items(), key=lambda kv: -len(kv[0])):
+        if model.startswith(prefix):
+            return limit
+    return None
+
+
 def cost_usd(usage_by_model: Mapping[str, TokenUsage]) -> float | None:
     """Total cost of a run, or None when any model is not in the price list."""
     total = 0.0

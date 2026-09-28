@@ -186,6 +186,7 @@ class AnalysisOptions:
     """The knobs of the analysis phase, as `Settings` sets them (cf. `TrackingOptions`).
 
     Both cost guards are off at 0, and the per-bill estimate needs the model's input price.
+    `max_input_tokens` cuts a text the model would refuse, even when `force` lifts the guard.
     `triage_min_chars` is the length from which the cheap pass pays (a scan is triaged whatever
     its text). `channel_id`: a print whose group already holds a card there skips that pass.
     `submit_batches` files an analysis to the batch instead of calling the model (collecting one
@@ -197,6 +198,8 @@ class AnalysisOptions:
     input_price_usd_per_mtok: float | None = None
     batch_input_price_usd_per_mtok: float | None = None
     supplement_input_price_usd_per_mtok: float | None = None
+    max_input_tokens: int | None = None
+    batch_max_input_tokens: int | None = None
     prompt_version: str = ""
     max_bill_cost_usd: float = 0.0
     max_run_cost_usd: float = 0.0
@@ -1361,8 +1364,9 @@ class AnalysisService:
             previous_summary=previous.analysis.summary if previous else None,
             previous_key_changes=list(previous.analysis.key_changes) if previous else [],
         )
-        if cost_guard:
-            ctx = self._fit_to_budget(ctx, loaded, first=previous is None, batch=submit_batch)
+        ctx = self._fit_to_budget(
+            ctx, loaded, first=previous is None, batch=submit_batch, cost_guard=cost_guard
+        )
         purpose: Literal["analysis", "reanalysis"] = (
             "analysis" if previous is None else "reanalysis"
         )
@@ -1442,7 +1446,13 @@ class AnalysisService:
         return loaded.law if loaded.digest == previous.text_sha256 else None
 
     def _fit_to_budget(
-        self, ctx: BillContext, loaded: _Loaded, *, first: bool, batch: bool = False
+        self,
+        ctx: BillContext,
+        loaded: _Loaded,
+        *,
+        first: bool,
+        batch: bool = False,
+        cost_guard: bool = True,
     ) -> BillContext:
         """The context the model is actually sent: this one, or a shorter one that fits the
         per-bill cost limit.
@@ -1457,53 +1467,65 @@ class AnalysisService:
         `first` is what every refusal turns on: a re-analysis is cut to fit but never raises, or
         it would land in the tracking loop's per-bill `except`, fail on the same text every run
         and keep a card describing the text before this one.
+
+        The model's input ceiling cuts the same way, even under `force`: over it the call fails.
         """
-        limit = self._options.max_bill_cost_usd
+        limit = self._options.max_bill_cost_usd if cost_guard else 0.0
         price = (
             self._options.batch_input_price_usd_per_mtok
             if batch
             else self._options.input_price_usd_per_mtok
         )
+        ceiling = self._options.batch_max_input_tokens if batch else self._options.max_input_tokens
         counter = self._batch if batch and self._batch is not None else self._llm
         if batch and price is not None:
             price *= 0.5
-        if not limit or price is None:
+        if not limit:
+            price = None
+        if price is None and ceiling is None:
             return ctx
-        if loaded.scan is not None:
-            cost = loaded.estimate(price)
-            if cost > limit and first:
-                raise TooExpensiveError(cost, limit, measure=loaded.measure(None))
-            return ctx
-        tokens = counter.count_input_tokens(ctx)
+        tokens = None if loaded.scan is not None else counter.count_input_tokens(ctx)
         if tokens is None:
-            cost = loaded.estimate(price)
+            cost = loaded.estimate(price) if price is not None else 0.0
             if cost > limit and first:
                 raise TooExpensiveError(cost, limit, measure=loaded.measure(None))
             return ctx
-        cost = input_cost(tokens, price)
-        if cost <= limit:
+        cost = input_cost(tokens, price) if price is not None else 0.0
+        over_by = max(cost / limit if limit else 0.0, tokens / ceiling if ceiling else 0.0)
+        if over_by <= 1:
             return ctx
-        shorter = self._shorten(ctx.text, over_by=cost / limit)
+        shorter = self._shorten(ctx.text, over_by=over_by)
         if shorter is None:
             if not first:
                 return ctx
             raise TooExpensiveError(cost, limit, measure=loaded.measure(tokens))
         reduced = ctx.model_copy(update={"text": shorter, "truncated": True})
         counted = counter.count_input_tokens(reduced)
+        if ceiling is not None and counted is not None and counted > ceiling:
+            again = self._shorten(shorter, over_by=counted / ceiling)
+            if again is not None:
+                reduced = reduced.model_copy(update={"text": again})
+                counted = counter.count_input_tokens(reduced)
         log.info(
-            "%s: %d tokens is %s, over the %s limit; sending %d of %d chars instead",
+            "%s: %d tokens at %s, over the limit %s or the ceiling %s; sending %d of %d chars",
             ctx.number,
             tokens,
             format_usd(cost),
             format_usd(limit),
-            len(shorter),
+            ceiling,
+            len(reduced.text),
             len(ctx.text),
         )
-        if first and counted is not None and input_cost(counted, price) > limit:
+        if (
+            first
+            and counted is not None
+            and price is not None
+            and input_cost(counted, price) > limit
+        ):
             raise TooExpensiveError(
                 input_cost(counted, price),
                 limit,
-                measure=f"{counted} tokens after trimming to {len(shorter)} chars",
+                measure=f"{counted} tokens after trimming to {len(reduced.text)} chars",
             )
         return reduced
 

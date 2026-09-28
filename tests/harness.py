@@ -354,6 +354,10 @@ class World:
             wykaz_enabled=True,
             telegram_channel_id=CHANNEL,
             llm_analysis_model="claude-opus-5",  # priced: the guard uses $5 per million tokens
+            llm_amendments_model="claude-opus-5-5",
+            llm_supplement_model="claude-opus-5-5",
+            llm_joint_model="claude-opus-5-5",
+            llm_batch_provider="anthropic",
             llm_triage_model="fake-triage" if triage else "",
             triage_min_chars=triage_min_chars,
             text_budget_chars=text_budget_chars,

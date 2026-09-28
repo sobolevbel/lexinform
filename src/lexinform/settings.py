@@ -121,30 +121,25 @@ class Settings(BaseSettings):
         " `llm_max_tokens`.",
     )
     llm_analysis_model: str = Field(
-        default="claude-opus-5-5",
-        description="Model for the full per-bill analysis (`analyze()`). GPT-5.1 is measured and"
-        " ready (96% agreement on relevance, zero missed bills, ~10x cheaper on 26 real prints"
-        " and one scan — docs/llm-cost.md) but not yet switched on in production: set this to"
-        " `gpt-5.1` when the paid-off Claude budget stops being the reason not to. A `claude-`"
-        " name (the default) routes it to a Claude client with Claude's own analysis prompt.",
+        default="gpt-5.1",
+        description="Model for the full per-bill analysis (`analyze()`); GPT-5.1 since"
+        " 2026-09-28 (96% agreement with Opus on relevance, zero missed bills, ~10x cheaper on"
+        " 26 real prints and one scan). A `claude-` name routes it back to Claude with Claude's"
+        " own analysis prompt.",
     )
     llm_amendments_model: str = Field(
-        default="claude-opus-5-5",
-        description="Model that summarises Senate/committee amendments. GPT-5.1 is measured and"
-        " ready (docs/llm-cost.md) but not yet switched on in production; see"
-        " `llm_analysis_model`.",
+        default="gpt-5.1",
+        description="Model that summarises Senate/committee amendments; see `llm_analysis_model`.",
     )
     llm_supplement_model: str = Field(
-        default="claude-opus-5-5",
+        default="gpt-5.1",
         description="Model that digests a document filed to a print (government position, OSR,"
-        " an opinion). GPT-5.1 is measured and ready but not yet switched on in production; see"
-        " `llm_analysis_model`.",
+        " an opinion); see `llm_analysis_model`.",
     )
     llm_joint_model: str = Field(
-        default="claude-opus-5-5",
+        default="gpt-5.1",
         description="Model that compares one print of a jointly considered group with the"
-        " others. GPT-5.1 is measured and ready but not yet switched on in production; see"
-        " `llm_analysis_model`.",
+        " others; see `llm_analysis_model`.",
     )
     llm_batch_enabled: bool = Field(
         default=False,
@@ -175,7 +170,7 @@ class Settings(BaseSettings):
         " answer may take 24 hours and the next run after it. 0 sends everything to the batch.",
     )
     llm_batch_provider: Literal["anthropic", "openai"] = Field(
-        default="anthropic",
+        default="openai",
         description="Which provider's batch API `llm_batch_enabled` submits to — one setting for"
         " both `analyze` and a re-analysis, not a choice per call kind: the two batch APIs are"
         " different submissions with nothing to gain from mixing them. Uses `llm_analysis_model`"

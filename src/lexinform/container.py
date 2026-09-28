@@ -58,7 +58,7 @@ from lexinform.ports import (
     TextExtractor,
     WykazGateway,
 )
-from lexinform.pricing import price_of
+from lexinform.pricing import input_limit_of, price_of
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisOptions, AnalysisService
 from lexinform.services.commands import CommandService
@@ -293,6 +293,10 @@ class Container:
             batch_input_price_usd_per_mtok=batch_price[0] if batch_price is not None else None,
             supplement_input_price_usd_per_mtok=(
                 supplement_price[0] if supplement_price is not None else None
+            ),
+            max_input_tokens=input_limit_of(self.settings.llm_analysis_model),
+            batch_max_input_tokens=input_limit_of(
+                self._batch_model(self.settings.llm_batch_provider)
             ),
             prompt_version=PROMPT_VERSION,
             max_bill_cost_usd=self.settings.max_analysis_cost_usd,
