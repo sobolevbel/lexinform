@@ -35,6 +35,22 @@ def test_print_3039_has_pdf_with_text(client: SejmApiClient) -> None:
     assert len(text) > 1000
 
 
+def test_the_listing_names_no_rcl_project(client: SejmApiClient) -> None:
+    """Discovery reads a detail to join a druk to its RCL project because of this."""
+    recent = list(
+        client.iter_processes(
+            10,
+            modified_since=datetime.now(UTC) - timedelta(days=14),
+            document_type=BILL_DOCUMENT_TYPE,
+        )
+    )
+    assert recent and all(p.rcl_num is None for p in recent)
+
+
+def test_the_detail_names_the_rcl_project(client: SejmApiClient) -> None:
+    assert client.get_process(10, "3141").rcl_num == "RM-0610-155-26"
+
+
 def test_process_detail_has_stages(client: SejmApiClient) -> None:
     detail = client.get_process(10, "1962")
     assert detail.passed is True and detail.last_stage is not None
