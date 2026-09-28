@@ -152,6 +152,8 @@ class PublishingService:
         today = self._clock.now().date()
         for bill in government_first(candidates[:limit]):
             planned = (bill.term, bill.number) in planned_keys
+            if not planned and self.became_druk(bill) is not None:
+                continue
             if not planned and is_over(bill, today=today):
                 log.info("%s is over: no card", bill.number)
                 self._record_skipped(bill)
@@ -233,6 +235,8 @@ class PublishingService:
             PublicationStatus.DISMISSED,
         ):
             return existing.status is PublicationStatus.SENT
+        if existing is None and self.became_druk(bill) is not None:
+            return False
         if existing is not None and existing.delivery is not None:
             delivery = existing.delivery
             plan = CardPlan(
@@ -379,6 +383,22 @@ class PublishingService:
             return record
         self._repo.save_joint_comparison(bill.term, bill.number, record)
         return bill.model_copy(update={"joint": record})
+
+    def became_druk(self, bill: Bill) -> Bill | None:
+        """The druk this RCL project or RPW entry already is: the druk carries the thread."""
+        if bill.has_process or bill.status is BillStatus.LINKED:
+            return None
+        druk = None
+        if bill.rcl is not None:
+            if bill.rcl.print_number:
+                druk = self._repo.get(bill.term, bill.rcl.print_number)
+            elif bill.rcl.rm_number:
+                druk = self._repo.find_print_by_rcl_num(bill.term, bill.rcl.rm_number)
+        elif bill.submission is not None and bill.submission.print_number:
+            druk = self._repo.get(bill.term, bill.submission.print_number)
+        if druk is not None:
+            log.info("%s is druk %s already: no card of its own", bill.number, druk.number)
+        return druk
 
     def _inherited_card(self, bill: Bill) -> Publication | None:
         """The sent card of the row this print continues (its RPW entry or its RCL project).

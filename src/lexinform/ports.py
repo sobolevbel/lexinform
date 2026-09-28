@@ -785,6 +785,10 @@ class BillRepository(Protocol):
         """The RCL row whose project shows this `RM-…` number (set once it went to the Sejm)."""
         ...
 
+    def find_print_by_rcl_num(self, term: int, rm_number: str) -> Bill | None:
+        """The druk whose process names this `RM-…` number, spacing and case aside."""
+        ...
+
     def find_by_wykaz_number(self, wykaz_number: str) -> Bill | None:
         """The RCL row of a project with this wykaz number; the register's own row is
         `find_wykaz` (an `UD408` names both once the project is published)."""

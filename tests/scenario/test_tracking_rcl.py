@@ -4,7 +4,7 @@ import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import BillStatus, PublicationKind, RclProject
-from tests.fakes import FakeTextExtractor
+from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import (
     CONSULTATION_FOLDERS,
     ELI,
@@ -634,3 +634,66 @@ def test_the_druk_of_a_project_whose_act_is_out_brings_the_act_with_it() -> None
     assert "Dz.U. 2026 poz. 1099" in card
     assert "публикация в Dziennik Ustaw" not in card
     assert "без движения" not in card
+
+
+RM = "RM-0610-139-26"
+
+
+def _druk_the_listing_does_not_link(w: World, title: str) -> None:
+    """Druk 3100 of the project: its detail names the RM number, its listing row does not."""
+    w.add_bill("3100", title)
+    w.gateway.details["3100"] = w.gateway.details["3100"].model_copy(update={"rcl_num": RM})
+
+
+def _listing_names_the_project(w: World) -> None:
+    w.gateway.processes = [
+        p.model_copy(update={"rcl_num": RM}) if p.number == "3100" else p
+        for p in w.gateway.processes
+    ]
+
+
+def test_a_project_whose_druk_already_has_a_card_gets_no_second_one() -> None:
+    w = World(llm_script={RCL: make_analysis(score=2), "3100": make_analysis(score=3)})
+    project = w.add_rcl_project(rcl_project(rm_number=RM))
+    w.run()
+    w.clock.advance(days=1)
+    _druk_the_listing_does_not_link(w, project.title)
+    w.run()
+    druk_card = w.card_id("3100")
+    druk_analysis = w.bill("3100").analysis
+    w.llm.script[RCL] = make_analysis(score=3)
+    _new_text_stage(w, project)
+    w.clock.advance(days=1)
+    w.run()
+    w.clock.advance(days=1)
+    lifted = w.run()
+    _listing_names_the_project(w)
+    w.clock.advance(days=1)
+
+    linked = w.run()
+
+    assert lifted.published == 0
+    assert [bill.number for bill, _ in w.publisher.new_bills] == ["3100"]
+    assert w.publication(RCL, PublicationKind.NEW_BILL) is None
+    assert linked.linked == 1 and w.bill(RCL).status is BillStatus.LINKED
+    assert w.card_id("3100") == druk_card
+    assert w.bill("3100").analysis == druk_analysis
+    assert w.publisher.updates == []
+
+
+def test_a_druk_carded_beside_its_projects_card_keeps_its_own_thread() -> None:
+    w = World()
+    project = w.add_rcl_project(rcl_project(rm_number=RM))
+    w.run()
+    w.clock.advance(days=1)
+    _druk_the_listing_does_not_link(w, project.title)
+    w.run()
+    druk_card = w.card_id("3100")
+    _listing_names_the_project(w)
+    w.clock.advance(days=1)
+
+    linked = w.run()
+
+    assert linked.linked == 1 and w.bill(RCL).status is BillStatus.LINKED
+    assert w.card_id("3100") == druk_card != w.card_id(RCL)
+    assert w.publisher.updates == []

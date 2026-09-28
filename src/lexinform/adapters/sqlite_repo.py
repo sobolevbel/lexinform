@@ -608,6 +608,13 @@ class SqliteBillRepository:
                 ),
             )
         else:
+            # rclNum and rclLink are in a process's detail only: a listing row must not erase them.
+            summary = summary.model_copy(
+                update={
+                    "rcl_num": summary.rcl_num or existing.summary.rcl_num,
+                    "rcl_link": summary.rcl_link or existing.summary.rcl_link,
+                }
+            )
             self._conn.execute(
                 """
                 UPDATE bills SET title = ?, change_date = ?, closure_date = ?, passed = ?,
@@ -1527,6 +1534,16 @@ class SqliteBillRepository:
 
     def find_by_wykaz_number(self, wykaz_number: str) -> Bill | None:
         return self._find_rcl("$.wykaz_number", wykaz_number)
+
+    def find_print_by_rcl_num(self, term: int, rm_number: str) -> Bill | None:
+        row = self._conn.execute(
+            "SELECT * FROM bills WHERE term = ? AND number NOT LIKE ? AND number NOT LIKE ?"
+            " AND number NOT LIKE ?"
+            " AND REPLACE(UPPER(json_extract(summary_json, '$.rcl_num')), ' ', '')"
+            " = REPLACE(UPPER(?), ' ', '') ORDER BY number LIMIT 1",
+            (term, f"{PRE_PRINT_PREFIX}%", f"{RCL_PREFIX}%", f"{WYKAZ_PREFIX}%", rm_number),
+        ).fetchone()
+        return self._row_to_bill(row) if row else None
 
     def remember_rcl_wykaz_number(
         self, wykaz_number: str, project_id: int, created: date | None

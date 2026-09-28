@@ -78,6 +78,11 @@ class Linker:
         can be found long after the Sejm was done with it, and a print that old is past every
         `list_tracked` window the moment it is created, so this is its only chance at the act.
         """
+        own = self._repo.get(pre.term, print_number)
+        own_card = self._poster.card(own) if own is not None else None
+        if own_card is not None and own_card.status is PublicationStatus.SENT:
+            self._keep_prints_card(pre, print_number, own_card, result, publish=publish)
+            return
         now = self._clock.now()
         detail = self._gateway.get_process(pre.term, print_number)
         stages = self._enricher.name_committees(pre.term, detail.stages)
@@ -129,6 +134,36 @@ class Linker:
             result.changed += 1
             self._poster.tell(bill, change, result, publish=publish)
         self._render_card(pre.term, print_number, alias, publish=publish)
+
+    def _keep_prints_card(
+        self,
+        pre: Bill,
+        print_number: str,
+        card: Publication,
+        result: TrackingResult,
+        *,
+        publish: bool,
+    ) -> None:
+        """The print was carded first: it keeps its card and analysis; the entry points at it."""
+        with self._repo.atomic():
+            self._repo.link_bills(
+                pre.term,
+                pre.number,
+                print_number,
+                wykaz_number=pre.rcl.wykaz_number if pre.rcl is not None else None,
+            )
+        result.linked += 1
+        stale = self._poster.card(pre)
+        if stale is not None and stale.status is PublicationStatus.SENT:
+            log.warning(
+                "%s became druk %s, which has its own card: message %s is left without a thread",
+                pre.number,
+                print_number,
+                stale.message_id,
+            )
+        else:
+            log.info("%s became druk %s, which keeps its own card", pre.number, print_number)
+        self._render_card(pre.term, print_number, card, publish=publish)
 
     def _adopt(
         self,
