@@ -165,6 +165,8 @@ def test_may_is_declined_after_a_day_and_not_in_the_month_heading() -> None:
 
     assert fmt.fmt_date(dt.date(2026, 5, 3)) == "3 мая 2026"
     assert fmt.fmt_date_range(dt.date(2026, 4, 30), dt.date(2026, 5, 2)) == "30 апр - 2 мая 2026"
+    assert fmt.fmt_date_range(dt.date(2026, 6, 29), dt.date(2026, 7, 2)) == "29 июня - 2 июля 2026"
+    assert fmt.fmt_date(dt.date(2026, 3, 9)) == "9 марта 2026"
     assert "25-31 мая 2026" in text
     assert "· май 2026" in text
 

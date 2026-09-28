@@ -216,7 +216,7 @@ def test_urgent_bill_gets_the_shortened_terms_and_not_the_usual_ones(
     )
     # 14 days from the third reading (17.07.2026), where a normal bill would get 30.
     assert (
-        "Что дальше:</b> рассмотрение в Сенате (срочный режим: до 14 дней) · решение до 31 июл 2026"
+        "Что дальше:</b> рассмотрение в Сенате (срочный режим: до 14 дней) · решение до 31 июля 2026"
         in senate
     )
 
@@ -352,7 +352,7 @@ def test_a_vacatio_legis_is_a_date_to_diarise_and_never_a_step_standing_still(
 
     text = MessageFormatter("ru").new_bill(bill, None, today=dt.date(2027, 3, 20)).text
 
-    assert "Что дальше:</b> вступление в силу 1 июл 2027" in text
+    assert "Что дальше:</b> вступление в силу 1 июля 2027" in text
     assert "без движения" not in text
 
 
@@ -481,7 +481,7 @@ def test_the_senate_window_names_the_committee_its_email_and_the_act(
         ' <a href="https://www.senat.gov.pl/prace/komisje-senackie/komisja,235.html">'
         "Komisja Samorządu</a> (kstap@senat.gov.pl),"
         ' <a href="https://www.senat.gov.pl/prace/komisje-senackie/komisja,228.html">'
-        "Komisja Praw Człowieka</a> (kpcp@senat.gov.pl) до заседания 22 июл 2026"
+        "Komisja Praw Człowieka</a> (kpcp@senat.gov.pl) до заседания 22 июля 2026"
     ) in text
     assert "сенатского druk nr 801" in text
     assert f'<a href="{act.url}">закон на сайте Сената</a>' in text

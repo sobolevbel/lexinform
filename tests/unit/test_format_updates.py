@@ -104,7 +104,7 @@ def test_update_header_names_the_event_and_the_closure_line_is_not_repeated(
     reported = fmt.status_update(bill, change_of("1962", [rejecting])).text
 
     assert passed.startswith("✅ <b>Сейм принял закон — druk nr 1962</b>")
-    assert "• 17 июл 2026: III чтение на заседании Сейма — закон принят" in passed
+    assert "• 17 июля 2026: III чтение на заседании Сейма — закон принят" in passed
     assert "Сейм принял закон." not in passed  # the header said it
     assert "Что дальше" in passed
     assert rejected.startswith("🏁 <b>Процесс завершён: закон не принят — druk nr 1962</b>")
