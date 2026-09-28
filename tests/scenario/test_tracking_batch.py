@@ -122,7 +122,7 @@ def test_status_names_deferred_observation_and_its_age() -> None:
     assert [bill.number for bill in outcome.snapshot.awaiting_batch] == ["3039"]
     assert outcome.snapshot.observed_at == w.clock.now()
     text = w.formatter.command_reply(*w.replier.replies[-1]).text
-    assert "Ждут сводки батча" in text and "2.0 ч" in text
+    assert "awaiting a batch digest" in text and "2.0 h" in text
 
 
 def test_urgent_bill_digest_never_waits() -> None:

@@ -17,7 +17,7 @@ def test_report_distinguishes_submitted_waiting_and_completed_analysis() -> None
     assert submitted.batch_requests_submitted == 2
     assert submitted.batch_requests_pending == 2
     assert not submitted.is_empty
-    assert "отправлено запросов в batch: 2" in text
+    assert "batch requests submitted: 2" in text
     assert "nothing analyzed" not in text
 
     waiting = w.run()
@@ -52,4 +52,4 @@ def test_uncertain_submission_is_not_reported_as_sent(monkeypatch: pytest.Monkey
     assert report.batch_requests_submitted == 0
     assert report.batch_requests_pending == 0
     assert report.batch_requests_uncertain == 1
-    assert "отправка batch не подтверждена: 1" in w.formatter.run_report(report, []).text
+    assert "batch submission unconfirmed: 1" in w.formatter.run_report(report, []).text

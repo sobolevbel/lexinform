@@ -1155,10 +1155,10 @@ class MessageFormatter:
                     ("joint prints revived: {}", report.joint_revived),
                 ),
                 _counters(
-                    ("отправлено запросов в batch: {}", report.batch_requests_submitted),
-                    ("ожидают обработки результатов batch: {}", report.batch_requests_pending),
-                    ("в очереди на отправку в batch: {}", report.batch_requests_queued),
-                    ("отправка batch не подтверждена: {}", report.batch_requests_uncertain),
+                    ("batch requests submitted: {}", report.batch_requests_submitted),
+                    ("batch results pending: {}", report.batch_requests_pending),
+                    ("queued for batch: {}", report.batch_requests_queued),
+                    ("batch submission unconfirmed: {}", report.batch_requests_uncertain),
                 ),
                 _tokens_line(report),
                 _spenders_line(report),
@@ -1175,7 +1175,7 @@ class MessageFormatter:
                     ("re-analyzed: {}", report.reanalyzed),
                     ("linked: {}", report.linked),
                     ("tracked: {}", report.tracked),
-                    ("ждут ответа батча: {}", report.batch_waiting),
+                    ("awaiting a batch answer: {}", report.batch_waiting),
                 ),
                 _counters(
                     ("acts: {}", report.acts_published),
@@ -1600,11 +1600,11 @@ class MessageFormatter:
             lines.append(self._batches_block(snapshot))
         if snapshot.awaiting_batch and snapshot.observed_at is not None:
             lines.append(
-                "⏳ <b>Ждут сводки батча</b>\n"
+                "⏳ <b>awaiting a batch digest</b>\n"
                 + "\n".join(
                     f"• <b>{esc(b.number)}</b> · "
                     f"{(snapshot.observed_at - b.awaiting_batch_since).total_seconds() / 3600:.1f}"
-                    " ч"
+                    " h"
                     for b in snapshot.awaiting_batch
                     if b.awaiting_batch_since is not None
                 )
