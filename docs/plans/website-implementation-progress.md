@@ -40,7 +40,7 @@ when its acceptance result and checks are recorded here.
 | WEB-03.1 | Complete | UUIDs, scoped natural keys, relations, audited merge/split and stable URL resolution |
 | WEB-03.2 | Complete | Explicit ImportDocumentV1 allowlist, pure state projection, graph validation and legacy/pending fixtures |
 | WEB-04a | Complete | Prototype semantics corrected per §25.13; browser review of catalog, coverage and outcome states |
-| WEB-04b | In progress | Shared shell, locale routes, CMS templates, local fonts, draft demo seed, account forms and empty/error states; Clock and mobile acceptance remain |
+| WEB-04b | In progress | Shared shell, locale routes, CMS templates, local fonts, draft demo seed, account forms, empty/error states and Clock-driven participation gallery; browser mobile/zoom/axe acceptance remains |
 | WEB-05a | Not started | — |
 | WEB-05b | Not started | — |
 | WEB-05c | Not started | — |
@@ -57,6 +57,27 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-28 — WEB-04b.6: Clock-driven participation states
+
+Added a pure `participation_display` that reads a consultation window on the Warsaw calendar day
+of a `Clock` instant, with the bot's inclusive end date. States: unconfirmed, upcoming, open, last
+day and closed. Only open and last-day windows get the red action rule; upcoming and closed ones
+are ordinary calendar lines, and unconfirmed or open-ended data uses the dashed uncertainty notice
+with its last known basis. Stale data is passed as `confirmed=False`; deciding staleness from
+source checks stays in WEB-07b.1, as do cancellation and the participation method/CTA link.
+
+The local-only gallery `/__components__/?on=YYYY-MM-DD` renders five synthetic windows through a
+fixed noon-in-Warsaw clock (default 21 September 2026). It is a no-JS GET form with an associated
+error for an invalid date, `noindex`, and 404 unless `WEBSITE_DEMO_ENABLED`. Labels are Russian
+like the rest of the shell; five-language UI strings wait for the gettext catalogs of WEB-09.
+
+Tests cover the UTC→Warsaw day boundary in summer and at the winter-time change, the absence of an
+action for unconfirmed or open-ended windows, and the gallery's counts for three chosen days.
+No browser review of this slice was performed.
+
+Checks: 241 PostgreSQL web tests, `make web-check` (lint, strict mypy, Django checks, migration
+drift), default bot pytest, strict bot mypy, Ruff and `git diff --check` passed.
 
 ### 2026-09-28 — WEB-04b.5: account-form browser review and checkbox target
 

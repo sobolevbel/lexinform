@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}Состояния компонентов · lexinform{% endblock %}
+{% block content %}
+  <h1>Состояния компонентов</h1>
+  <p class="lead">Локальная галерея на синтетических данных. Это не законопроекты и не правовой совет.</p>
+  <form class="gallery-clock" method="get">
+    <label for="gallery-day">Дата по варшавскому времени</label>
+    <input id="gallery-day" name="on" type="date" value="{{ day|date:'Y-m-d' }}"{% if day_error %} aria-invalid="true" aria-describedby="gallery-day-error"{% endif %}>
+    {% if day_error %}<p id="gallery-day-error" class="field-error">{{ day_error }}</p>{% endif %}
+    <button class="button" type="submit">Показать</button>
+  </form>
+  {% for sample in samples %}
+    <section class="gallery-sample" aria-labelledby="sample-{{ forloop.counter }}">
+      <h2 id="sample-{{ forloop.counter }}">{{ sample.label }}</h2>
+      {% include "components/participation.html" with participation=sample.display %}
+    </section>
+  {% endfor %}
+{% endblock %}

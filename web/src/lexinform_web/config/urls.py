@@ -8,6 +8,7 @@ from lexinform_web import views
 
 urlpatterns = [
     path("", views.language_home),
+    path("__components__/", views.components_gallery, name="components_gallery"),
     path("accounts/", include("allauth.urls")),
     path("admin/", include(wagtailadmin_urls)),
     path("documents/", include(wagtaildocs_urls)),

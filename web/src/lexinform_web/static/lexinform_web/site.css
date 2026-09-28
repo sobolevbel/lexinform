@@ -73,7 +73,16 @@ summary { display: list-item; cursor: pointer; }
 .lead { font-size: 1.25rem; }
 .eyebrow, .site-footer { color: var(--secondary); }
 .notice { border-inline-start: 2px dashed var(--warning-rule); padding: .25rem 1.25rem; margin-block: 2rem; max-width: 68ch; }
-.notice h2 { font-size: 1.125rem; }
+.notice h2, .notice-title { font-size: 1.125rem; font-weight: 600; }
+.action { border-inline-start: 4px solid var(--action-accent); padding: .25rem 1.25rem; margin-block: 1.5rem; max-width: 68ch; font-family: "Fira Sans", system-ui, sans-serif; }
+.action-title { font-size: 1.25rem; font-weight: 600; margin-block: .5rem; }
+.action-detail, .calendar-line { color: var(--secondary); font-family: "Fira Sans", system-ui, sans-serif; }
+.gallery-clock { font-family: "Fira Sans", system-ui, sans-serif; display: flex; flex-wrap: wrap; align-items: end; gap: .5rem 1rem; margin-block: 1.5rem; }
+.gallery-clock label { flex-basis: 100%; }
+.gallery-clock input { font: inherit; min-height: 44px; padding: .5rem; border: 1px solid var(--slate); background: var(--paper); color: var(--ink); max-width: 100%; }
+.gallery-clock .button { font: inherit; background: var(--paper); color: var(--ink); cursor: pointer; }
+.field-error { flex-basis: 100%; margin: 0; border-inline-start: 3px solid var(--brand-accent); padding-inline-start: .75rem; }
+.gallery-sample { border-top: 1px solid var(--warning-rule); margin-block: 1.5rem; }
 .button { display: inline-block; padding: .65rem 1rem; border: 1px solid var(--slate); min-height: 44px; }
 .skip-link { position: absolute; left: 1rem; top: -10rem; padding: .75rem; background: var(--paper); z-index: 1; }
 .skip-link:focus { top: 1rem; }

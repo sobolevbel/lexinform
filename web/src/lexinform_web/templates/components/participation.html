@@ -1,0 +1,23 @@
+{% load i18n %}{% language "ru" %}
+{% with window=participation.window %}
+{% if participation.state == "open" %}
+  <section class="action" aria-label="Участие">
+    <p class="action-title">До {{ window.end|date:"j E Y" }} можно отправить мнение</p>
+    <p class="action-detail">Осталось дней: {{ participation.days_left }}</p>
+  </section>
+{% elif participation.state == "last_day" %}
+  <section class="action" aria-label="Участие">
+    <p class="action-title">Сегодня, {{ window.end|date:"j E Y" }}, — последний день консультаций</p>
+  </section>
+{% elif participation.state == "upcoming" %}
+  <p class="calendar-line">Консультации назначены: {{ window.start|date:"j E Y" }} — {{ window.end|date:"j E Y" }}</p>
+{% elif participation.state == "closed" %}
+  <p class="calendar-line">Консультации завершились {{ window.end|date:"j E Y" }}</p>
+{% else %}
+  <aside class="notice" aria-label="Открытый срок участия не подтверждён">
+    <p class="notice-title">Открытый срок участия не подтверждён</p>
+    {% if window.basis %}<p>{{ window.basis }}</p>{% endif %}
+  </aside>
+{% endif %}
+{% endwith %}
+{% endlanguage %}
