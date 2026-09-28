@@ -38,7 +38,7 @@ from lexinform.adapters.llm_prompts import (
     gpt51_system_prompt,
 )
 from lexinform.analysis_records import RecordFactory, UsageFields
-from lexinform.errors import BatchNotSubmittedError, LlmUnavailableError
+from lexinform.errors import BatchNotSubmittedError, LlmContextExceededError, LlmUnavailableError
 from lexinform.models import (
     Amendments,
     AmendmentsContext,
@@ -448,11 +448,13 @@ class OpenAiAnalyzer:
         custom_id = str(line["custom_id"])
         error = line.get("error")
         if error is not None:
-            return BatchResult(custom_id=custom_id, error=str(error))
+            return _batch_error(custom_id, error)
         response_data = line.get("response")
         body = response_data.get("body") if isinstance(response_data, dict) else None
         if body is None:
             return BatchResult(custom_id=custom_id, error="batch item carries no response")
+        if isinstance(body, dict) and body.get("error") is not None:
+            return _batch_error(custom_id, body["error"])
         try:
             response = Response.model_validate(body)
         except ValidationError as exc:
@@ -514,8 +516,8 @@ class OpenAiAnalyzer:
         ) as exc:
             raise LlmFatalError(f"{type(exc).__name__}: {_short(exc)}") from exc
         except openai.BadRequestError as exc:
-            if _is_input_problem(exc):
-                raise LlmError(f"BadRequestError: {_short(exc)}") from exc
+            if _is_context_problem(str(exc)) or _is_context_problem(str(exc.body)):
+                raise LlmContextExceededError(f"BadRequestError: {_short(exc)}") from exc
             raise LlmFatalError(f"BadRequestError: {_short(exc)}") from exc
         except openai.APIError as exc:
             raise LlmError(f"{type(exc).__name__}: {_short(exc)}") from exc
@@ -598,12 +600,25 @@ def _parsed_output[T: BaseModel](response: Any, output_model: type[T]) -> T:
     raise LlmError("model returned no parsable structured output")
 
 
-_INPUT_PROBLEM_MARKERS = ("too long", "too many tokens", "exceeds the context", "context_length")
+_CONTEXT_PROBLEM_MARKERS = (
+    "context_length_exceeded",
+    "context_window_exceeded",
+    "exceeds the context",
+    "maximum context length",
+    "input is too long",
+    "too many tokens",
+    "input tokens exceed the configured limit",
+)
 
 
-def _is_input_problem(exc: Exception) -> bool:
-    text = str(exc).lower()
-    return any(marker in text for marker in _INPUT_PROBLEM_MARKERS)
+def _is_context_problem(message: str) -> bool:
+    return any(marker in message.lower() for marker in _CONTEXT_PROBLEM_MARKERS)
+
+
+def _batch_error(custom_id: str, error: object) -> BatchResult:
+    return BatchResult(
+        custom_id=custom_id, error=str(error), context_exceeded=_is_context_problem(str(error))
+    )
 
 
 def _short(exc: BaseException, limit: int = 300) -> str:

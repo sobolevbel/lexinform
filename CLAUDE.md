@@ -1259,7 +1259,10 @@ measurements and what was tried and rejected are in `docs/llm-cost.md`.
 
 ## Product decisions already taken
 
-Default model `claude-opus-5-5` (switched from `claude-opus-5` on 2026-09-23: same features, $4/$20 against $5/$25), `min_score` 3, text prefilter threshold 2 distinct patterns or 3
+Default analysis, amendments, supplement and joint model `gpt-5.1`, batch provider `openai`.
+Analysis above 272k input tokens or rejected for context overflow uses synchronous
+`llm_analysis_overflow_model` (`claude-opus-5-5`); its own price applies to the cost guard.
+Scans use 1600 tokens per page for routing. `min_score` 3, text prefilter threshold 2 distinct patterns or 3
 hits (weak patterns such as Straż Graniczna, "legalizacja" or "nierezydent" never decide alone: in
 a text they count next to a strong pattern, in a title they send the bill to the text stage, not to
 the model; everyone's registers and benefits (PESEL, mObywatel, NFZ, 800+, prawo jazdy, Kodeks

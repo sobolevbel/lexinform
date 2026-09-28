@@ -19,10 +19,12 @@ and `OPENAI_API_KEY` are read without a prefix (each SDK wants its own that way)
 is `LEXINFORM_*`. Five calls, five independent models: triage always stays on Claude
 (`LEXINFORM_LLM_TRIAGE_MODEL`); the full analysis, amendments, filed-document digests and joint
 comparisons (`LEXINFORM_LLM_ANALYSIS_MODEL` / `_AMENDMENTS_MODEL` / `_SUPPLEMENT_MODEL` /
-`_JOINT_MODEL`) default to Claude too for now — GPT-5.1 is measured and ready (docs/llm-cost.md)
-but switched on per call only by naming `gpt-5.1` in the setting; `OPENAI_API_KEY` is only needed
-once one of them is. `ANTHROPIC_API_KEY` alone is needed for a real `run` while all five stay on
-Claude. `LEXINFORM_LLM_BATCH_ENABLED` files `analyze()`/a re-analysis to the batch API instead of
+`_JOINT_MODEL`) default to GPT-5.1. Both API keys are needed with the defaults: Anthropic handles
+triage and synchronous analysis overflow (`LEXINFORM_LLM_ANALYSIS_OVERFLOW_MODEL=claude-opus-5-5`).
+An input above GPT-5.1's 272k-token ceiling, or rejected by the API for exceeding context, goes
+to Opus. Scans are estimated at 1600 tokens per page. The per-bill cost guard uses Opus's
+synchronous price; it can still shorten expensive texts or refuse expensive first-analysis scans.
+`LEXINFORM_LLM_BATCH_ENABLED` files `analyze()`/a re-analysis to the batch API instead of
 calling it directly (half the price, answered a run or two later, not the manual `/analyze`).
 `LEXINFORM_LLM_BATCH_KINDS` also selects secondary calls (`joint`, `supplement`, `amendments`);
 they wait through the memo and fall back synchronously after `LEXINFORM_LLM_BATCH_MAX_WAIT_HOURS`.

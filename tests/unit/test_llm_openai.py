@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from lexinform.adapters.llm_openai import LlmError, LlmFatalError, OpenAiAnalyzer
 from lexinform.adapters.llm_prompts import PROMPT_VERSION, gpt51_system_prompt
+from lexinform.errors import LlmContextExceededError
 from lexinform.models import (
     Amendments,
     AmendmentsContext,
@@ -221,9 +222,17 @@ def test_configuration_problems_are_fatal(error: Exception) -> None:
         _analyzer(_client(error=error)).analyze(_ctx())
 
 
-def test_oversized_input_is_a_per_bill_error() -> None:
-    error = _api_error(openai.BadRequestError, "input is too long for this model")
-    with pytest.raises(LlmError):
+@pytest.mark.parametrize(
+    "message",
+    [
+        "input is too long for this model",
+        "context_length_exceeded",
+        "Input tokens exceed the configured limit of 272,000 tokens",
+    ],
+)
+def test_oversized_input_is_a_context_error(message: str) -> None:
+    error = _api_error(openai.BadRequestError, message)
+    with pytest.raises(LlmContextExceededError):
         _analyzer(_client(error=error)).analyze(_ctx())
 
 

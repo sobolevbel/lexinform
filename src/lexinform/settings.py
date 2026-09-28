@@ -127,6 +127,10 @@ class Settings(BaseSettings):
         " 26 real prints and one scan). A `claude-` name routes it back to Claude with Claude's"
         " own analysis prompt.",
     )
+    llm_analysis_overflow_model: str = Field(
+        default="claude-opus-5-5",
+        description="Synchronous analysis model for inputs exceeding the primary model's context.",
+    )
     llm_amendments_model: str = Field(
         default="gpt-5.1",
         description="Model that summarises Senate/committee amendments; see `llm_analysis_model`.",

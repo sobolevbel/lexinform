@@ -69,6 +69,10 @@ class LlmUnavailableError(ServiceUnavailableError):
     system = "LLM API"
 
 
+class LlmContextExceededError(RuntimeError):
+    """The provider rejected this input because it exceeds the model's context."""
+
+
 class BatchNotSubmittedError(LlmUnavailableError):
     """The provider definitively rejected a batch before accepting any work."""
 

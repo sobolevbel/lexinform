@@ -143,7 +143,7 @@ Telegram ◄── cards (once per bill) ◄── publish ◄──┘        �
    działy); misses get their text scanned with the same patterns (accepted on two distinct topics
    or three hits).
 3. **Analyse** the current bill text (latest adopted text, then a committee's amended text,
-   otherwise the original print) with Claude through a structured-output schema (relevance, score,
+   otherwise the original print) with GPT-5.1 through a structured-output schema (relevance, score,
    category, summary, key changes, affected groups, practical impact, effective date). The print
    is trimmed first: the bill, its justification and the core of the regulatory impact assessment
    go in; consultation reports, EU compliance tables and draft regulations (55–80% of a government
@@ -191,7 +191,7 @@ time; decisions and database writes stay sequential, so the outcome never depend
 ```bash
 git clone https://github.com/sobolevbel/lexinform && cd lexinform
 uv sync
-cp .env.example .env            # ANTHROPIC_API_KEY, LEXINFORM_TELEGRAM_BOT_TOKEN, LEXINFORM_TELEGRAM_CHANNEL_ID
+cp .env.example .env            # both LLM API keys and Telegram credentials
 
 uv run lexinform show 3039                # what the API knows about a bill (no keys needed)
 uv run lexinform scan --since 2026-08-01  # discovery + prefilters, prints candidates
@@ -213,7 +213,7 @@ Warsaw in summer) and on the weekend at 10:23 UTC (12:23 Warsaw); GitHub starts 
 
 1. Create a bot with [@BotFather](https://t.me/BotFather); create the channel and add the bot as an
    administrator (channel id: `@name` or `-100…`).
-2. Add repository secrets: `ANTHROPIC_API_KEY`, `LEXINFORM_TELEGRAM_BOT_TOKEN`,
+2. Add repository secrets: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `LEXINFORM_TELEGRAM_BOT_TOKEN`,
    `LEXINFORM_TELEGRAM_CHANNEL_ID`, optionally `LEXINFORM_TELEGRAM_LOG_CHANNEL_ID` and
    `LEXINFORM_RCL_PROXY_URL`.
 3. *Actions → Daily run → Run workflow* with `dry_run` checked, then once more without it.
@@ -249,11 +249,12 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_LISTEN_TIMEOUT_SECONDS` | `50` | How long one `getUpdates` call of the relay waits for a post |
 | `LEXINFORM_TERM` | — | Sejm term; empty = the current one from `/sejm/term` (a new kadencja is picked up by itself), a number pins an older term |
 | `LEXINFORM_DB_PATH` | `lexinform.db` | SQLite file |
-| `LEXINFORM_LLM_ANALYSIS_MODEL` | `claude-opus-5-5` | Model for the full analysis; a `gpt-` name routes it to OpenAI (`OPENAI_API_KEY`) |
-| `LEXINFORM_LLM_AMENDMENTS_MODEL` / `_SUPPLEMENT_MODEL` / `_JOINT_MODEL` | `claude-opus-5-5` | Models for amendment summaries, filed-document digests and joint comparisons |
+| `LEXINFORM_LLM_ANALYSIS_MODEL` | `gpt-5.1` | Model for the full analysis; a `gpt-` name routes it to OpenAI (`OPENAI_API_KEY`) |
+| `LEXINFORM_LLM_ANALYSIS_OVERFLOW_MODEL` | `claude-opus-5-5` | Synchronous analysis above the primary input ceiling or after an API context rejection; uses this model's price for the cost guard |
+| `LEXINFORM_LLM_AMENDMENTS_MODEL` / `_SUPPLEMENT_MODEL` / `_JOINT_MODEL` | `gpt-5.1` | Models for amendment summaries, filed-document digests and joint comparisons |
 | `LEXINFORM_LLM_EFFORT` / `_LLM_MAX_TOKENS` | `medium` / `4000` | Claude's effort and output cap (`_LLM_OPENAI_EFFORT` / `_LLM_OPENAI_MAX_TOKENS` for GPT) |
 | `LEXINFORM_LLM_TRIAGE_MODEL` | `claude-sonnet-5` | Model for the cheap first pass on excerpts (`""` disables it) |
-| `LEXINFORM_LLM_BATCH_ENABLED` / `_LLM_BATCH_PROVIDER` | `false` / `anthropic` | Send the full analysis through the provider's batch API at half price (the workflow turns it on) |
+| `LEXINFORM_LLM_BATCH_ENABLED` / `_LLM_BATCH_PROVIDER` | `false` / `openai` | Send the full analysis through the provider's batch API at half price (the workflow turns it on); context overflow bypasses batch |
 | `LEXINFORM_LLM_BATCH_SYNC_WITHIN_DAYS` | `3` | A pilny bill, or one whose consultation ends this soon, is analysed at once anyway (`0`: never) |
 | `LEXINFORM_TRIAGE_MIN_CHARS` / `_TRIAGE_MIN_CONFIDENCE` | `20000` / `0.8` | Texts shorter than this skip the triage; confidence a rejection needs |
 | `LEXINFORM_OUTPUT_LANGUAGE` | `ru` | `ru` or `en` (add more in `i18n.py`) |

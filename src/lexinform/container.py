@@ -110,6 +110,7 @@ class Container:
     senate: SenateGateway | None = None
     orka: Downloader | None = None
     llm: LlmAnalyzer | None = None
+    overflow_llm: LlmAnalyzer | None = None
     batch_override: BatchBackend | None = None
     extractor: TextExtractor | None = None
     publisher_override: Publisher | None = None
@@ -286,6 +287,7 @@ class Container:
         price = price_of(self.settings.llm_analysis_model)  # None: unknown model, no estimates
         supplement_price = price_of(self.settings.llm_supplement_model)
         batch_price = price_of(self._batch_model(self.settings.llm_batch_provider))
+        overflow_price = price_of(self.settings.llm_analysis_overflow_model)
         return AnalysisOptions(
             max_attempts=self.settings.max_analysis_attempts,
             workers=self.settings.llm_concurrency,
@@ -295,6 +297,8 @@ class Container:
                 supplement_price[0] if supplement_price is not None else None
             ),
             max_input_tokens=input_limit_of(self.settings.llm_analysis_model),
+            overflow_input_price_usd_per_mtok=overflow_price[0] if overflow_price else None,
+            overflow_max_input_tokens=input_limit_of(self.settings.llm_analysis_overflow_model),
             batch_max_input_tokens=input_limit_of(
                 self._batch_model(self.settings.llm_batch_provider)
             ),
@@ -325,6 +329,9 @@ class Container:
             self.analyzer(),
             self.clock,
             self.analysis_options(),
+            overflow_llm=self.overflow_llm
+            or self.llm
+            or self._llm_backend(self.settings.llm_analysis_overflow_model),
             text_budget=TextBudget(self.settings.text_budget_chars),
             authors=SejmAuthorsResolver(self.gateway),
             keywords=self.prefilter,

@@ -843,6 +843,13 @@ class SqliteBillRepository:
             since=datetime.fromisoformat(row["since"]),
         )
 
+    def context_rejected_batch_ids(self) -> set[str]:
+        rows = self._conn.execute(
+            "SELECT custom_id FROM llm_batch_items "
+            "WHERE json_extract(result_json, '$.context_exceeded') = 1"
+        )
+        return {row["custom_id"] for row in rows}
+
     def set_observation(
         self, term: int, number: str, mode: ObservationMode, basis: ObservationBasis
     ) -> None:

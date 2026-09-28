@@ -183,6 +183,23 @@ def test_anthropic_truncated_analysis_does_not_hide_the_next_item() -> None:
     assert results[0].input_tokens == 100
 
 
+@pytest.mark.parametrize("envelope", ["error", "response"])
+@pytest.mark.parametrize("code", ["context_length_exceeded", "invalid_json_schema"])
+def test_openai_batch_preserves_context_rejection(envelope: str, code: str) -> None:
+    error = {"code": code, "message": "rejected"}
+    line: dict[str, Any] = {"custom_id": "rejected"}
+    if envelope == "error":
+        line["error"] = error
+    else:
+        line["response"] = {"status_code": 400, "body": {"error": error}}
+    client = _openai_client("", errors=json.dumps(line))
+
+    result = list(OpenAiAnalyzer(lambda: client).fetch_results("batch-1"))[0]
+
+    assert result.error is not None and code in result.error
+    assert result.context_exceeded == (code == "context_length_exceeded")
+
+
 def test_invalid_jsonl_and_envelopes_do_not_hide_later_answers() -> None:
     client = _openai_client(
         '{broken\n[]\n{"response": null}\n'

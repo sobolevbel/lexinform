@@ -105,6 +105,7 @@ class BatchResult(BaseModel):
     cache_read_input_tokens: int | None = None
     cache_creation_input_tokens: int | None = None
     error: str | None = None
+    context_exceeded: bool = False
 
     @property
     def analysis(self) -> Analysis | None:

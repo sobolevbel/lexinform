@@ -20,6 +20,7 @@ from lexinform.analysis_records import RecordFactory, UsageFields
 from lexinform.concurrency import fan_out
 from lexinform.errors import (
     BatchNotSubmittedError,
+    LlmContextExceededError,
     LlmUnavailableError,
     OrkaUnreachableError,
     ServiceUnavailableError,
@@ -80,9 +81,18 @@ from lexinform.models.batch import (
     JointQuestion,
     SupplementQuestion,
 )
-from lexinform.ports import AuthorsResolver, BatchBackend, BillRepository, Clock, LlmAnalyzer
+from lexinform.ports import (
+    AnalysisBackend,
+    AuthorsResolver,
+    BatchBackend,
+    BillRepository,
+    Clock,
+    LlmAnalyzer,
+)
 from lexinform.ports import TextSource as TextSourcePort
 from lexinform.pricing import (
+    CHARS_PER_TOKEN,
+    TOKENS_PER_SCANNED_PAGE,
     estimate_input_cost,
     estimate_scan_cost,
     format_usd,
@@ -186,7 +196,7 @@ class AnalysisOptions:
     """The knobs of the analysis phase, as `Settings` sets them (cf. `TrackingOptions`).
 
     Both cost guards are off at 0, and the per-bill estimate needs the model's input price.
-    `max_input_tokens` cuts a text the model would refuse, even when `force` lifts the guard.
+    `max_input_tokens` routes oversized inputs to the overflow backend before cost fitting.
     `triage_min_chars` is the length from which the cheap pass pays (a scan is triaged whatever
     its text). `channel_id`: a print whose group already holds a card there skips that pass.
     `submit_batches` files an analysis to the batch instead of calling the model (collecting one
@@ -200,6 +210,8 @@ class AnalysisOptions:
     supplement_input_price_usd_per_mtok: float | None = None
     max_input_tokens: int | None = None
     batch_max_input_tokens: int | None = None
+    overflow_input_price_usd_per_mtok: float | None = None
+    overflow_max_input_tokens: int | None = None
     prompt_version: str = ""
     max_bill_cost_usd: float = 0.0
     max_run_cost_usd: float = 0.0
@@ -367,6 +379,7 @@ class AnalysisService:
         options: AnalysisOptions,
         *,
         text_budget: TextBudget,
+        overflow_llm: AnalysisBackend | None = None,
         authors: AuthorsResolver | None = None,
         keywords: KeywordPrefilter | None = None,
         triage: KeywordPrefilter | None = None,
@@ -378,6 +391,7 @@ class AnalysisService:
         self._texts = texts
         self._loader = loader
         self._llm = llm
+        self._overflow_llm = overflow_llm
         self._clock = clock
         self._options = options
         self._budget = text_budget
@@ -392,6 +406,7 @@ class AnalysisService:
         self._accounted_items: set[tuple[str, str]] = set()
         self._ledger = CostLedger(max_run_usd=options.max_run_cost_usd)
         self._memo = repo.load_analysis_memo()
+        self._context_rejections = repo.context_rejected_batch_ids()
 
     def start_run(self, *, dry_run: bool = False) -> None:
         self._dry_run = dry_run
@@ -410,6 +425,7 @@ class AnalysisService:
             if item.result is not None:
                 self._charge_batch_result(item, item.result)
         self._memo = self._repo.load_analysis_memo()
+        self._context_rejections = self._repo.context_rejected_batch_ids()
 
     def acknowledge_batch_costs(self) -> None:
         for batch_id, custom_id in self._accounted_items:
@@ -748,6 +764,8 @@ class AnalysisService:
         )
         with self._repo.atomic():
             record = self._consume_current(item, batch_result, now, active=active)
+        if batch_result.context_exceeded:
+            self._context_rejections.add(item.custom_id)
         self._charge_batch_result(item, batch_result)
         if record is not None and active:
             self._memo.setdefault(item.meta.memo_key or item.custom_id, record.model_dump_json())
@@ -844,7 +862,15 @@ class AnalysisService:
             log.warning(
                 "%s: batch answer (%s) is %s", item.number, item.call_kind, batch_result.error
             )
-            if item.call_kind == "analysis":
+            if batch_result.context_exceeded and self._overflow_llm is not None:
+                self._repo.set_status(
+                    item.term,
+                    item.number,
+                    BillStatus.ANALYSIS_PENDING
+                    if item.call_kind == "analysis"
+                    else BillStatus.ANALYZED,
+                )
+            elif item.call_kind == "analysis":
                 self._repo.record_analysis_failure(
                     item.term, item.number, batch_result.error or "batch: no answer"
                 )
@@ -1364,13 +1390,37 @@ class AnalysisService:
             previous_summary=previous.analysis.summary if previous else None,
             previous_key_changes=list(previous.analysis.key_changes) if previous else [],
         )
+        original_ctx = ctx
+        overflow = self._needs_overflow(ctx, batch=submit_batch)
+        if overflow:
+            log.info("%s: input exceeds primary context; using synchronous overflow", bill.number)
+            submit_batch = False
         ctx = self._fit_to_budget(
-            ctx, loaded, first=previous is None, batch=submit_batch, cost_guard=cost_guard
+            ctx,
+            loaded,
+            first=previous is None,
+            batch=submit_batch,
+            cost_guard=cost_guard,
+            overflow=overflow,
         )
         purpose: Literal["analysis", "reanalysis"] = (
             "analysis" if previous is None else "reanalysis"
         )
         key = _memo_key(bill, purpose, ctx) if cost_guard else None
+        if key is not None and not overflow and self._overflow_llm is not None:
+            custom_id = hashlib.sha256(f"{key}:{bill.analysis_generation}".encode()).hexdigest()
+            if custom_id in self._context_rejections:
+                log.info("%s: batch context rejected; using synchronous overflow", bill.number)
+                overflow = True
+                submit_batch = False
+                ctx = self._fit_to_budget(
+                    original_ctx,
+                    loaded,
+                    first=previous is None,
+                    cost_guard=cost_guard,
+                    overflow=True,
+                )
+                key = _memo_key(bill, purpose, ctx)
         cached = self._memo.get(key) if key is not None else None
         if cached is None and submit_batch and self._batch is not None and key is not None:
             return _Prepared(
@@ -1411,7 +1461,23 @@ class AnalysisService:
                 triage_memo_key=triage_memo_key,
             )
         if cached is None:
-            record = self._llm.analyze(ctx)
+            analyzer = self._overflow_llm if overflow else self._llm
+            assert analyzer is not None
+            try:
+                record = analyzer.analyze(ctx)
+            except LlmContextExceededError:
+                if overflow or self._overflow_llm is None:
+                    raise
+                log.info("%s: API context rejected; using synchronous overflow", bill.number)
+                ctx = self._fit_to_budget(
+                    original_ctx,
+                    loaded,
+                    first=previous is None,
+                    cost_guard=cost_guard,
+                    overflow=True,
+                )
+                key = _memo_key(bill, purpose, ctx) if cost_guard else None
+                record = self._overflow_llm.analyze(ctx)
             self._ledger.charge(record, number=bill.number, kind=purpose)
         else:
             record = _reused(AnalysisRecord.model_validate_json(cached))
@@ -1445,6 +1511,20 @@ class AnalysisService:
             return None
         return loaded.law if loaded.digest == previous.text_sha256 else None
 
+    def _needs_overflow(self, ctx: BillContext, *, batch: bool) -> bool:
+        ceiling = self._options.batch_max_input_tokens if batch else self._options.max_input_tokens
+        if ceiling is None or self._overflow_llm is None:
+            return False
+        counter: AnalysisBackend | BatchBackend = (
+            self._batch if batch and self._batch is not None else self._llm
+        )
+        if ctx.scan is not None:
+            tokens = ctx.scan.pages * TOKENS_PER_SCANNED_PAGE
+        else:
+            counted = counter.count_input_tokens(ctx)
+            tokens = counted if counted is not None else int(len(ctx.text) / CHARS_PER_TOKEN)
+        return tokens > ceiling
+
     def _fit_to_budget(
         self,
         ctx: BillContext,
@@ -1453,6 +1533,7 @@ class AnalysisService:
         first: bool,
         batch: bool = False,
         cost_guard: bool = True,
+        overflow: bool = False,
     ) -> BillContext:
         """The context the model is actually sent: this one, or a shorter one that fits the
         per-bill cost limit.
@@ -1477,7 +1558,14 @@ class AnalysisService:
             else self._options.input_price_usd_per_mtok
         )
         ceiling = self._options.batch_max_input_tokens if batch else self._options.max_input_tokens
-        counter = self._batch if batch and self._batch is not None else self._llm
+        counter: AnalysisBackend | BatchBackend = (
+            self._batch if batch and self._batch is not None else self._llm
+        )
+        if overflow:
+            assert self._overflow_llm is not None
+            counter = self._overflow_llm
+            price = self._options.overflow_input_price_usd_per_mtok
+            ceiling = self._options.overflow_max_input_tokens
         if batch and price is not None:
             price *= 0.5
         if not limit:

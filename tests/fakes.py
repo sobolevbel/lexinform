@@ -16,6 +16,7 @@ from lexinform.adapters.sejm_api import rcl_key
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import (
     AttachmentTooLargeError,
+    LlmContextExceededError,
     OrkaUnreachableError,
     RclUnavailableError,
     SejmApiUnavailableError,
@@ -709,7 +710,11 @@ class FakeBatchBackend:
                 (req.number, kind), self.script.get(req.number, defaults[kind])
             )
             if isinstance(outcome, Exception):
-                yield BatchResult(custom_id=req.custom_id, error=str(outcome))
+                yield BatchResult(
+                    custom_id=req.custom_id,
+                    error=str(outcome),
+                    context_exceeded=isinstance(outcome, LlmContextExceededError),
+                )
                 continue
             if kind == "reanalysis" and isinstance(outcome, Analysis) and not self.finds_no_changes:
                 outcome = read_again(outcome)
