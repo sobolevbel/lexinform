@@ -63,7 +63,7 @@ def test_a_sitting_that_runs_into_the_next_month_is_not_written_backwards(
 
     text = MessageFormatter("ru").agenda(bill, crossing, today=dt.date(2026, 9, 25)).text
 
-    assert "заседание Сейма № 65, 30 сент-2 окт 2026" in text
+    assert "заседание Сейма № 65, 30 сент - 2 окт 2026" in text
 
 
 def test_consultation_deadline_reminder(process_3039: ProcessDetail) -> None:

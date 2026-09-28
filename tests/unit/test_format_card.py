@@ -222,7 +222,7 @@ def test_a_consultation_that_is_over_says_so_and_stops_inviting_opinions(
     while_open = formatter.new_bill(bill, None, today=dt.date(2025, 2, 1)).text
     once_closed = formatter.new_bill(bill, None, today=dt.date(2026, 9, 11)).text
 
-    assert "<b>Общественные консультации:</b> 24 янв-23 фев 2025" in while_open
+    assert "<b>Общественные консультации:</b> 24 янв - 23 фев 2025" in while_open
     assert ">анкета на сайте Сейма</a>" in while_open
     assert "<b>Общественные консультации:</b> завершились 23 фев 2025" in once_closed
     assert "страница консультаций" in once_closed  # the page stays, the invitation goes

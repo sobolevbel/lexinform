@@ -1694,6 +1694,7 @@ class MessageFormatter:
                 left = str(start.day)
                 if start.month != end.month:
                     left += f" {months[start.month - 1]}"
+                    return f"{left} - {self.fmt_date(end)}"
                 return f"{left}-{self.fmt_date(end)}"
             return f"{self.fmt_date(start)} - {self.fmt_date(end)}"
         return f"{self.fmt_date(start)} — {self.fmt_date(end)}"

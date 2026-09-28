@@ -29,7 +29,7 @@ def test_card_links_the_consultation_form_and_names_the_next_step(
     text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
 
     assert_telegram_html(text)
-    assert f'31 авг-30 сент 2026 · <a href="{SURVEY}">анкета на сайте Сейма</a>' in text
+    assert f'31 авг - 30 сент 2026 · <a href="{SURVEY}">анкета на сайте Сейма</a>' in text
     assert "⏭ <b>Что дальше:</b> I чтение в комиссии — ASW" in text  # name unknown: the code
     action = next(line for line in text.splitlines() if line.startswith("👉"))
     assert f'заполнить анкету (ankieta) <a href="{SURVEY}">на сайте Сейма</a> до' in action
