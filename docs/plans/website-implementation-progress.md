@@ -40,7 +40,7 @@ when its acceptance result and checks are recorded here.
 | WEB-03.1 | Complete | UUIDs, scoped natural keys, relations, audited merge/split and stable URL resolution |
 | WEB-03.2 | Complete | Explicit ImportDocumentV1 allowlist, pure state projection, graph validation and legacy/pending fixtures |
 | WEB-04a | Complete | Prototype semantics corrected per §25.13; browser review of catalog, coverage and outcome states |
-| WEB-04b | Not started | — |
+| WEB-04b | In progress | Shared shell, locale routes, CMS templates and empty/error states; fonts, forms, demo seed and mobile acceptance remain |
 | WEB-05a | Not started | — |
 | WEB-05b | Not started | — |
 | WEB-05c | Not started | — |
@@ -57,6 +57,37 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-28 — WEB-04b.1: shared shell and language routes
+
+Added a shared base, navigation, footer and uncertainty notice, with a separate local stylesheet.
+Home routes exist at `/pl/`, `/en/`, `/be/`, `/uk/` and `/ru/`; `/` redirects to the negotiated
+language. Wagtail content uses the same locale prefixes. Staff/account/document endpoints stay
+outside them, preserving the existing MFA boundary. The language disclosure links to section
+homes, not purported translations of the current article.
+
+Guide and topic preview templates now share the shell. The shell explicitly remains Russian
+(`lang="ru"`), while CMS articles carry their content locale. All preliminary pages and previews
+have `noindex,nofollow`; translated UI and release indexing policy remain later work. The empty
+home makes no corpus/freshness claim. Custom 404/500 states do not imply withdrawal of a matter;
+the 500 template renders without database access or request context processors.
+
+The stylesheet implements the light Paper/Ink tokens, separate brand/action/warning colors,
+wrapping layout, native disclosure, skip link, visible focus and print behavior. System fallback
+fonts are temporary: licensed local Literata/Fira Sans assets and glyph/weight verification are
+still required. No decorative search/filter form or fictitious participation CTA was introduced.
+Per owner feedback, the home uses a compact descriptive heading, no hero slogan and no minimum
+viewport-height spacer; content starts directly below the navigation.
+
+Acceptance covers all five routes, HEAD/POST behavior, root language negotiation, unchanged staff
+URLs, static discovery, real Wagtail live/draft isolation and error rendering. Brave desktop
+inspection confirmed the home layout, visible keyboard skip link and keyboard-operated language
+disclosure. Dark Reader was active in that browser, so this does not validate the source palette.
+320px/zoom/no-JS browser runs, font coverage, forms, deterministic demo seed/Clock and the full
+accessibility matrix remain open; WEB-04b is not complete.
+
+Checks: 219 web tests on PostgreSQL, strict web/bot mypy, default bot pytest, Ruff and formatting,
+Django checks, migration drift, strict documentation build/links and `git diff --check` passed.
 
 ### 2026-09-27 — WEB-04a: correct the prototype before template implementation
 

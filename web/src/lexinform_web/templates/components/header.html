@@ -1,0 +1,16 @@
+<header class="site-header">
+  <a class="brand" href="{% url 'home' %}" aria-label="lexinform — главная">
+    <span class="brand-mark" aria-hidden="true">§</span> lexinform
+  </a>
+  <nav aria-label="Основная навигация">
+    <a href="{% url 'home' %}"{% if request.resolver_match.url_name == 'home' %} aria-current="page"{% endif %}>Главная</a>
+    <details class="languages">
+      <summary>Языковые разделы</summary>
+      <ul>
+        {% for language in language_homes %}
+          <li><a href="{{ language.url }}" lang="{{ language.code }}" hreflang="{{ language.code }}"{% if language.code == section_language %} aria-current="true"{% endif %}>{{ language.label }}</a></li>
+        {% endfor %}
+      </ul>
+    </details>
+  </nav>
+</header>

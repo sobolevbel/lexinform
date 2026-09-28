@@ -1,0 +1,19 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>{% block title %}lexinform{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'lexinform_web/site.css' %}">
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Перейти к содержанию</a>
+    {% include "components/header.html" %}
+    <main id="main" class="page" tabindex="-1">
+      {% block content %}{% endblock %}
+    </main>
+    {% include "components/footer.html" %}
+  </body>
+</html>

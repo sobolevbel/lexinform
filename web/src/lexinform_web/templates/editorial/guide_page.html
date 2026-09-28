@@ -1,16 +1,10 @@
-<!doctype html>
+{% extends "base.html" %}
 {% load wagtailcore_tags %}
-<html lang="{{ page.locale.language_code }}">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ page.title }}</title>
-  </head>
-  <body>
-    <main>
-      <h1>{{ page.title }}</h1>
-      {% if page.summary %}<p>{{ page.summary }}</p>{% endif %}
-      {% include_block page.body %}
-    </main>
-  </body>
-</html>
+{% block title %}{{ page.title }} · lexinform{% endblock %}
+{% block content %}
+  <article class="reading" lang="{{ page.locale.language_code }}">
+    <h1>{{ page.title }}</h1>
+    {% if page.summary %}<p class="lead">{{ page.summary }}</p>{% endif %}
+    {% include_block page.body %}
+  </article>
+{% endblock %}

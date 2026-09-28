@@ -39,6 +39,17 @@ make web-check                # lint, types, Django checks, migration drift and 
 Start PostgreSQL and apply local migrations with the bootstrap commands above before running
 the server or full web check. The shortcuts do not start Docker or apply database migrations.
 
+## Website shell
+
+The preliminary home is available at `/pl/`, `/en/`, `/be/`, `/uk/` and `/ru/`.
+`/` redirects according to Django's language negotiation. Wagtail pages also use language
+prefixes; `/admin/`, `/accounts/` and `/documents/` remain unprefixed. The language menu links
+to section homes, not to translations of the current CMS page.
+
+The shared interface currently remains Russian, with the content language marked separately
+on CMS articles. All preliminary pages carry `noindex,nofollow`. Local font assets, translated
+UI, functional catalog/search forms and the mobile accessibility acceptance are still pending.
+
 ## Staff access
 
 Run `uv run --package lexinform-web python web/manage.py createsuperuser` for the first

@@ -1,15 +1,8 @@
-<!doctype html>
-<html lang="{{ topic.locale.language_code }}">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="robots" content="noindex,nofollow">
-    <title>{{ topic.name }}</title>
-  </head>
-  <body>
-    <main>
-      <h1>{{ topic.name }}</h1>
-      <p>{{ topic.description }}</p>
-    </main>
-  </body>
-</html>
+{% extends "base.html" %}
+{% block title %}{{ topic.name }} · lexinform{% endblock %}
+{% block content %}
+  <article class="reading" lang="{{ topic.locale.language_code }}">
+    <h1>{{ topic.name }}</h1>
+    <p>{{ topic.description }}</p>
+  </article>
+{% endblock %}
