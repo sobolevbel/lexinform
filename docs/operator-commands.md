@@ -3,12 +3,12 @@
 Post a command in the technical (log) channel and the bot answers under it a few minutes
 later. Any administrator of that channel can command; nobody else reaches the bot this way.
 
-The relay's `queued` message is replaced in place by the command's answer. For workflow
-commands, the same message becomes `run started` and then the complete run report.
-Older inbox entries without an acknowledgement ID receive a new reply; a deleted or
-uneditable acknowledgement also falls back to a new message.
-Relay-triggered dry runs update only this technical acknowledgement; reader messages and
-production state remain untouched. `/scan` and `/index-rcl-numbers` replace it with their counters.
+The relay answers `queued` under the command; for workflow commands that message becomes
+`run started`. The command's answer, the run report or the counters of `/scan` and
+`/index-rcl-numbers` arrive as a **new** message, so Telegram notifies the operator, and the
+`queued`/`run started` message is then deleted. If the answer cannot be sent, the
+acknowledgement stays. Relay-triggered dry runs post only here; reader messages and
+production state remain untouched.
 
 Run reports list prefilter rejections with the project link, title, filtering stage and reason.
 Text rejections include matched patterns and counts when present; unreadable files have a

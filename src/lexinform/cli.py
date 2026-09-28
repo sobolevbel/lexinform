@@ -20,7 +20,7 @@ from lexinform.adapters.github_inbox import (
     GitHubUnavailableError,
 )
 from lexinform.adapters.state_snapshot import write_state_snapshot
-from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier
+from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier, send_and_retract
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.concurrency import fan_out
 from lexinform.container import Container, build_container
@@ -359,8 +359,11 @@ def _relay_result(c: Container, text: str) -> None:
     if not message_id or not c.settings.telegram_log_channel_id:
         return
     try:
-        c.telegram_client().edit_message(
-            c.settings.telegram_log_channel_id, int(message_id), f"✅ {escape(text)}"
+        send_and_retract(
+            c.telegram_client(),
+            c.settings.telegram_log_channel_id,
+            int(message_id),
+            f"✅ {escape(text)}",
         )
     except Exception as exc:
         log.warning("the command result did not reach the log channel: %s", exc)

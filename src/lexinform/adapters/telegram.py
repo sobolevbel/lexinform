@@ -95,6 +95,14 @@ class TelegramBotClient:
             if "message is not modified" not in exc.description.lower():
                 raise
 
+    def delete_message(self, chat_id: str, message_id: int) -> None:
+        """Remove a message the bot posted; one already gone is not an error."""
+        try:
+            self._call("deleteMessage", json={"chat_id": chat_id, "message_id": message_id})
+        except TelegramError as exc:
+            if "message to delete not found" not in exc.description.lower():
+                raise
+
     def answer_callback(self, callback_id: str, text: str = "") -> None:
         """Stop the pressed button spinning; Telegram forgets a callback id within a minute."""
         try:
@@ -232,7 +240,7 @@ class TelegramRunNotifier:
         self._deliver(rendered.text)
 
     def _deliver(self, text: str) -> None:
-        _replace_or_send(self._client, self._channel_id, self._message_id, text)
+        send_and_retract(self._client, self._channel_id, self._message_id, text)
 
 
 def _channel_post(update: dict[str, Any]) -> ChannelPost | None:
@@ -330,7 +338,7 @@ class TelegramOperatorReplier:
 
     def reply(self, command: IncomingCommand, outcome: CommandOutcome) -> None:
         rendered = self._formatter.command_reply(command, outcome)
-        _replace_or_send(
+        send_and_retract(
             self._client,
             self._channel_id,
             command.acknowledgement_id,
@@ -361,3 +369,21 @@ def _replace_or_send(
             ):
                 raise
     client.send_message(channel_id, text, reply_to=reply_to)
+
+
+def send_and_retract(
+    client: TelegramBotClient,
+    channel_id: str,
+    acknowledgement_id: int | None,
+    text: str,
+    *,
+    reply_to: int | None = None,
+) -> None:
+    """A new message notifies the operator, an edit does not; the acknowledgement then goes."""
+    client.send_message(channel_id, text, reply_to=reply_to)
+    if acknowledgement_id is None:
+        return
+    try:
+        client.delete_message(channel_id, acknowledgement_id)
+    except (TelegramError, TelegramUnavailableError) as exc:
+        log.warning("could not delete acknowledgement %d: %s", acknowledgement_id, exc)

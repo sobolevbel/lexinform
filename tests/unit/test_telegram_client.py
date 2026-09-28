@@ -42,12 +42,12 @@ def _ok(message_id: int) -> httpx.Response:
     return httpx.Response(200, json={"ok": True, "result": {"message_id": message_id}})
 
 
-def test_run_report_replaces_the_whole_started_message() -> None:
+def test_run_report_is_a_new_message_and_the_started_one_is_deleted() -> None:
     requests: list[tuple[str, dict[str, object]]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append((request.url.path, json.loads(request.content)))
-        return _ok(77)
+        return _ok(77 if len(requests) == 1 else 90)
 
     client = _client(handler)
     formatter = MessageFormatter("ru")
@@ -64,53 +64,50 @@ def test_run_report_replaces_the_whole_started_message() -> None:
     assert [path for path, _ in requests] == [
         "/botTOKEN/sendMessage",
         "/botTOKEN/editMessageText",
-        "/botTOKEN/editMessageText",
+        "/botTOKEN/sendMessage",
+        "/botTOKEN/deleteMessage",
     ]
-    assert requests[-1][1]["message_id"] == 77
-    assert requests[-1][1]["text"] == formatter.run_report(report, []).text
+    assert requests[2][1]["text"] == formatter.run_report(report, []).text
+    assert requests[3][1] == {"chat_id": "-1001", "message_id": 77}
 
 
-def test_command_reply_replaces_queued_message() -> None:
+def test_command_reply_is_a_new_reply_and_the_queued_message_is_deleted() -> None:
     requests: list[tuple[str, dict[str, object]]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append((request.url.path, json.loads(request.content)))
-        return _ok(77)
+        return _ok(88)
 
     command = channel_post(1, "/help").as_command().model_copy(update={"acknowledgement_id": 77})
     formatter = MessageFormatter("ru")
     outcome = CommandOutcome(status="help")
     TelegramOperatorReplier(_client(handler), formatter, channel_id="-1001").reply(command, outcome)
 
-    assert requests == [
-        (
-            "/botTOKEN/editMessageText",
-            {
-                "chat_id": "-1001",
-                "message_id": 77,
-                "text": formatter.command_reply(command, outcome).text,
-                "parse_mode": "HTML",
-                "link_preview_options": {"is_disabled": True},
-            },
-        )
-    ]
+    assert [path for path, _ in requests] == ["/botTOKEN/sendMessage", "/botTOKEN/deleteMessage"]
+    sent = requests[0][1]
+    assert sent["text"] == formatter.command_reply(command, outcome).text
+    assert sent["reply_parameters"] == {
+        "message_id": command.message_id,
+        "allow_sending_without_reply": True,
+    }
+    assert requests[1][1] == {"chat_id": "-1001", "message_id": 77}
 
 
 @pytest.mark.parametrize("message_id", [None, 77])
-def test_command_reply_sends_when_acknowledgement_is_absent_or_deleted(
+def test_command_reply_survives_an_absent_or_already_deleted_acknowledgement(
     message_id: int | None,
 ) -> None:
     methods: list[str] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         methods.append(request.url.path.rsplit("/", 1)[-1])
-        if methods[-1] == "editMessageText":
+        if methods[-1] == "deleteMessage":
             return httpx.Response(
                 400,
                 json={
                     "ok": False,
                     "error_code": 400,
-                    "description": "Bad Request: message to edit not found",
+                    "description": "Bad Request: message to delete not found",
                 },
             )
         return _ok(88)
@@ -122,7 +119,24 @@ def test_command_reply_sends_when_acknowledgement_is_absent_or_deleted(
         command, CommandOutcome(status="help")
     )
 
-    assert methods == (["editMessageText", "sendMessage"] if message_id else ["sendMessage"])
+    assert methods == (["sendMessage", "deleteMessage"] if message_id else ["sendMessage"])
+
+
+def test_a_reply_that_cannot_be_sent_leaves_the_acknowledgement() -> None:
+    methods: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        methods.append(request.url.path.rsplit("/", 1)[-1])
+        return httpx.Response(
+            400, json={"ok": False, "error_code": 400, "description": "Bad Request: chat not found"}
+        )
+
+    command = channel_post(1, "/help").as_command().model_copy(update={"acknowledgement_id": 77})
+    replier = TelegramOperatorReplier(_client(handler), MessageFormatter("ru"), channel_id="-1001")
+
+    with pytest.raises(TelegramUnavailableError):
+        replier.reply(command, CommandOutcome(status="help"))
+    assert methods == ["sendMessage"]
 
 
 def test_send_message_posts_html_to_the_chat_and_returns_the_message_id() -> None:
