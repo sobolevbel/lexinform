@@ -1,7 +1,8 @@
 # Incident 3141: two cards for one bill and a reply that restated the card
 
 Статус: исторический разбор инцидента 28.09.2026.
-Дефекты — [B56–B58 в реестре](BUGS.md).
+Дефекты — [B56–B59 в реестре](BUGS.md); что исправления не закрыли —
+[ревью](reviews/2026-09-28-incident-3141-review.md), B60–B63.
 
 Runs 163–165, 28 September 2026, 15:32–16:20 UTC: Actions
 [36444271386](https://github.com/sobolevbel/lexinform/actions/runs/36444271386) (run 163),

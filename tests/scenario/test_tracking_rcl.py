@@ -718,3 +718,33 @@ def test_a_druk_carded_beside_its_projects_card_keeps_its_own_thread() -> None:
     assert linked.linked == 1 and w.bill(RCL).status is BillStatus.LINKED
     assert w.card_id("3100") == druk_card != w.card_id(RCL)
     assert w.publisher.updates == []
+
+
+def test_a_new_rcl_text_the_model_finds_unchanged_is_told_by_its_stages_alone() -> None:
+    w = World()
+    project = _followed_project(w)
+    _new_text_stage(w, project)
+    w.llm.finds_no_changes = True
+
+    report = w.run()
+
+    assert (report.updates, report.reanalyzed) == (1, 1)
+    _, change, _ = w.publisher.updates[0]
+    assert change.new_stages and not change.content_changed
+
+
+def test_the_druk_of_a_carded_project_read_alike_is_announced_by_its_number_alone() -> None:
+    w = World()
+    project = w.add_rcl_project()
+    w.run()
+    w.rcl.rm_numbers[RM] = project.id
+    w.clock.advance(days=1)
+    _druk_the_listing_does_not_link(w, project.title)
+    w.llm.finds_no_changes = True
+
+    report = w.run()
+
+    assert (report.linked, report.reanalyzed) == (1, 1)
+    bill, change, reply_to = w.publisher.updates[-1]
+    assert (bill.number, reply_to) == ("3100", w.card_id(RCL))
+    assert not change.content_changed
