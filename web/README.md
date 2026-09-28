@@ -51,6 +51,21 @@ on CMS articles. All preliminary pages carry `noindex,nofollow`. Literata and Fi
 locally as WOFF2; provenance and licenses are in `static/lexinform_web/fonts/` under the package.
 Translated UI, functional catalog/search forms and mobile accessibility acceptance remain pending.
 
+For reproducible reading/typography checks, run:
+
+```bash
+uv run --package lexinform-web python web/manage.py seed_demo
+```
+
+The command prints the Wagtail edit URL of an unpublished Russian demo guide. Log in with MFA
+and open Preview to inspect the long Polish title, all five alphabets, bold/italic text and
+uncertainty notice. It contains no real participation deadline or action. Repeating the command
+keeps the same page and all editorial changes, including a later publication or renamed slug.
+An unrelated page occupying `demo-reading` makes the command fail without changing content.
+Only local settings enable `WEBSITE_DEMO_ENABLED`; test/production settings disable it by default.
+The fixture is deliberately undated; time-dependent participation fixtures and Clock acceptance
+belong with the upcoming display models.
+
 ## Staff access
 
 Run `uv run --package lexinform-web python web/manage.py createsuperuser` for the first

@@ -5,6 +5,7 @@ from typing import Any
 from lexinform_web.languages import SUPPORTED_LANGUAGES
 
 BASE_DIR = Path(__file__).resolve().parents[3]
+WEBSITE_DEMO_ENABLED = False
 
 INSTALLED_APPS = [
     "lexinform_web.accounts",

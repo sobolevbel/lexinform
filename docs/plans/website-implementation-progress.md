@@ -40,7 +40,7 @@ when its acceptance result and checks are recorded here.
 | WEB-03.1 | Complete | UUIDs, scoped natural keys, relations, audited merge/split and stable URL resolution |
 | WEB-03.2 | Complete | Explicit ImportDocumentV1 allowlist, pure state projection, graph validation and legacy/pending fixtures |
 | WEB-04a | Complete | Prototype semantics corrected per §25.13; browser review of catalog, coverage and outcome states |
-| WEB-04b | In progress | Shared shell, locale routes, CMS templates, local fonts and empty/error states; forms, demo seed and mobile acceptance remain |
+| WEB-04b | In progress | Shared shell, locale routes, CMS templates, local fonts, draft demo seed and empty/error states; forms, Clock and mobile acceptance remain |
 | WEB-05a | Not started | — |
 | WEB-05b | Not started | — |
 | WEB-05c | Not started | — |
@@ -57,6 +57,24 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-28 — WEB-04b.3: repeatable local reading fixture
+
+Added `seed_demo`, enabled only by local settings. It creates one unpublished Wagtail guide with
+a fixed identity, a long Polish heading, five-language samples, real bold/italic text and an
+explicit demonstration/unknown-freshness notice. It prints the edit URL for the existing MFA
+preview flow; no public demo route or automatic publication is added.
+
+The service locks the default site and parent inside one transaction. Repeating the command
+returns the same guide without replacing editorial content or publication state. A conflicting
+unrelated slug fails without mutation. PostgreSQL scenarios cover draft isolation, rendered
+preview, repeated command, preservation of published edits, disabled settings and slug collision.
+
+The fixture is undated: Clock-driven participation states, forms and the full mobile/browser
+accessibility acceptance remain open. WEB-04b is still in progress.
+
+Checks: 223 PostgreSQL web tests, default bot pytest, strict bot/web mypy, Ruff/formatting,
+Django checks, migration drift, strict docs build/links and `git diff --check` passed.
 
 ### 2026-09-28 — WEB-04b.2: local reading and interface fonts
 
