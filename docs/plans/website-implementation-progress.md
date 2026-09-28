@@ -58,6 +58,15 @@ when its acceptance result and checks are recorded here.
 
 ## Work log
 
+### 2026-09-28 — WEB-07a.3: publication policy for re-analysed bills without a card
+
+Owner decision on the question left by 07a.3b: a relevant bill observed without a card (`full`)
+is re-analysed when its text changes, and if the new analysis reaches `min_score` the ordinary
+publishing rule gives it a card. The code already did this; a `World` scenario now fixes it — the
+card is posted once, the changes stored while the bill had no card are not replayed, and later
+runs neither re-analyse nor post. `metadata` bills still ask the model nothing. The live tracking
+run under an explicit model-call policy remains the open part of 07a.3.
+
 ### 2026-09-28 — WEB-04b.6: Clock-driven participation states
 
 Added a pure `participation_display` that reads a consultation window on the Warsaw calendar day
