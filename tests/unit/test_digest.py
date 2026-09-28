@@ -152,6 +152,23 @@ def test_digest_omits_unknown_filtering_but_shows_known_counts(
         assert f"Отсеяно при проверке релевантности: {filtered}" in text
 
 
+def test_may_is_declined_after_a_day_and_not_in_the_month_heading() -> None:
+    fmt = MessageFormatter("ru")
+    week = Digest(
+        ref="2026-W22",
+        since=dt.date(2026, 5, 25),
+        until=dt.date(2026, 5, 31),
+        month=MonthFigures.of(dt.date(2026, 5, 31), [_report()]),
+    )
+
+    text = fmt.digest(week).text
+
+    assert fmt.fmt_date(dt.date(2026, 5, 3)) == "3 мая 2026"
+    assert fmt.fmt_date_range(dt.date(2026, 4, 30), dt.date(2026, 5, 2)) == "30 апр - 2 мая 2026"
+    assert "25-31 мая 2026" in text
+    assert "· май 2026" in text
+
+
 def test_the_digest_names_the_week_its_cards_and_its_tag() -> None:
     week = Digest(
         ref="2026-W37",

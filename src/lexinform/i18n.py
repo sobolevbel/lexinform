@@ -261,6 +261,8 @@ class Labels:
     rcl_stage_labels: dict[str, str] = field(default_factory=dict)
     date_format: str = "%Y-%m-%d"
     short_months: tuple[str, ...] = ()
+    # A month without a day: Russian declines «мая» after a number and not on its own.
+    month_names: tuple[str, ...] = ()
     stage_type_labels: dict[str, str] = field(default_factory=dict)
     senate_position_labels: dict[str, str] = field(default_factory=dict)
     category_labels: dict[Category, str] = field(default_factory=dict)
@@ -751,6 +753,20 @@ RU = Labels(
     },
     date_format="%d.%m.%Y",
     short_months=(
+        "янв",
+        "фев",
+        "мар",
+        "апр",
+        "мая",
+        "июн",
+        "июл",
+        "авг",
+        "сент",
+        "окт",
+        "нояб",
+        "дек",
+    ),
+    month_names=(
         "янв",
         "фев",
         "мар",

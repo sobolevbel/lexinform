@@ -1391,8 +1391,8 @@ class MessageFormatter:
         if cost is not None and month.usage:
             rows.append(f"{esc(lb.digest_month_cost)}: ≈ {format_usd(cost)}")
         period = (
-            f"{lb.short_months[month.month.month - 1]} {month.month.year}"
-            if lb.short_months
+            f"{lb.month_names[month.month.month - 1]} {month.month.year}"
+            if lb.month_names
             else f"{month.month:%m.%Y}"
         )
         return f"{ICON['month']} <b>{esc(lb.digest_month)}</b> · {period}\n" + " · ".join(rows)
