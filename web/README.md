@@ -47,8 +47,9 @@ prefixes; `/admin/`, `/accounts/` and `/documents/` remain unprefixed. The langu
 to section homes, not to translations of the current CMS page.
 
 The shared interface currently remains Russian, with the content language marked separately
-on CMS articles. All preliminary pages carry `noindex,nofollow`. Local font assets, translated
-UI, functional catalog/search forms and the mobile accessibility acceptance are still pending.
+on CMS articles. All preliminary pages carry `noindex,nofollow`. Literata and Fira Sans are served
+locally as WOFF2; provenance and licenses are in `static/lexinform_web/fonts/` under the package.
+Translated UI, functional catalog/search forms and mobile accessibility acceptance remain pending.
 
 ## Staff access
 

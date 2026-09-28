@@ -40,7 +40,7 @@ when its acceptance result and checks are recorded here.
 | WEB-03.1 | Complete | UUIDs, scoped natural keys, relations, audited merge/split and stable URL resolution |
 | WEB-03.2 | Complete | Explicit ImportDocumentV1 allowlist, pure state projection, graph validation and legacy/pending fixtures |
 | WEB-04a | Complete | Prototype semantics corrected per §25.13; browser review of catalog, coverage and outcome states |
-| WEB-04b | In progress | Shared shell, locale routes, CMS templates and empty/error states; fonts, forms, demo seed and mobile acceptance remain |
+| WEB-04b | In progress | Shared shell, locale routes, CMS templates, local fonts and empty/error states; forms, demo seed and mobile acceptance remain |
 | WEB-05a | Not started | — |
 | WEB-05b | Not started | — |
 | WEB-05c | Not started | — |
@@ -57,6 +57,23 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-28 — WEB-04b.2: local reading and interface fonts
+
+Rebased the website branch onto local `main` (`165ae6b`) without conflicts. Added Literata
+normal/italic variable fonts and Fira Sans 400/600/700 as local WOFF2 assets, with original OFL
+licenses and provenance pinned to Google Fonts commit `23e54b51ddffbc7713c583748e3bd86f62b1fa4a`.
+Reading text uses Literata; navigation and notices use Fira Sans. CSS uses the supplied weights,
+optical sizing and `font-display: swap`; the system fallbacks remain available.
+
+FontTools verified all five output character maps against English, Polish, Russian, Belarusian
+and Ukrainian alphabets, digits and the section/apostrophe/dash glyphs. No glyph subsetting was
+performed. The five assets total about 1.2 MiB; browser loading is demand-driven, without preloads.
+Django static discovery resolves all five files. Visual review with these fonts, 320px/zoom,
+forms and deterministic demo seed/Clock remain open; this slice does not complete WEB-04b.
+
+Checks: default bot pytest, strict bot/web mypy, Ruff and formatting, all 219 PostgreSQL web
+tests, Django checks, migration drift and strict documentation build/link checks passed.
 
 ### 2026-09-28 — WEB-04b.1: shared shell and language routes
 
