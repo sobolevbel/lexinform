@@ -643,7 +643,7 @@ Invariants worth keeping:
   The RPW reconciler finds the print in `/bills`; for RCL, Sejm discovery notices a druk whose
   `rclNum` names a followed project (stored RM number, else `getIdFromLegislacja?number=…`), stores
   the druk number on the RCL row and the RCL watcher links. `rclNum` is in the detail only, so a
-  druk can be carded before anything ties it to its project (druk 3141, 28 Sept 2026): the
+  druk can be carded before anything ties it to its project (`docs/incident-3141.md`): the
   project then gets no card of its own (`PublishingService.became_druk`), the linker keeps the
   druk's card and analysis rather than overwriting them, and a listing row never erases the
   `rcl_num` a detail stored.
