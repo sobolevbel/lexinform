@@ -128,13 +128,10 @@ The planning snapshot for 113 production runs on 7–23 September counted 34 ana
 The term-10 corpus estimate was about $13.5 for secondary calls, or $6.7 saved by batching over
 one term; financial savings alone do not justify the feature.
 
-Secondary jobs use the same durable submission and memo collection path. Workflow configuration
-selects `analysis,reanalysis,joint,supplement`; amendments are implemented but remain disabled
-until at least 10 collected batches show collection-latency p90 at most 2 hours and the VPS poller
-is confirmed running. The state snapshot inspected during implementation contained **0 completed
-batches**: no latency percentile or poller-health conclusion can be drawn from it.
-
-A secondary request waits at most the configured age (default 6 hours) before the next run falls
-back synchronously. Queue time counts. An accepted or uncertain batch may still answer later,
-so that exceptional path pays twice; a definitely unsubmitted queued intent is removed after a
-successful synchronous answer. The late batch is still accounted for and cannot duplicate a post.
+The 28 September policy supersedes that plan's latency gate: all supported analysis calls,
+including amendments, use batch. Only triage remains synchronous. Each model selects its provider;
+GPT-5.1 context overflow is queued separately to Opus 5.5 and priced at its batch rate for the
+per-bill guard. Manual and forced commands also queue work. Waiting time and urgency never enable
+a synchronous fallback. Uncertain submissions require audited recovery, and confirmed secondary
+failures use the existing failure reporting path. This policy change provides no new production
+latency or poller-health measurement.

@@ -250,12 +250,10 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_TERM` | — | Sejm term; empty = the current one from `/sejm/term` (a new kadencja is picked up by itself), a number pins an older term |
 | `LEXINFORM_DB_PATH` | `lexinform.db` | SQLite file |
 | `LEXINFORM_LLM_ANALYSIS_MODEL` | `gpt-5.1` | Model for the full analysis; a `gpt-` name routes it to OpenAI (`OPENAI_API_KEY`) |
-| `LEXINFORM_LLM_ANALYSIS_OVERFLOW_MODEL` | `claude-opus-5-5` | Synchronous analysis above the primary input ceiling or after an API context rejection; uses this model's price for the cost guard |
+| `LEXINFORM_LLM_ANALYSIS_OVERFLOW_MODEL` | `claude-opus-5-5` | Batch analysis above the primary input ceiling or after an API context rejection; uses this model's batch price for the cost guard |
 | `LEXINFORM_LLM_AMENDMENTS_MODEL` / `_SUPPLEMENT_MODEL` / `_JOINT_MODEL` | `gpt-5.1` | Models for amendment summaries, filed-document digests and joint comparisons |
 | `LEXINFORM_LLM_EFFORT` / `_LLM_MAX_TOKENS` | `medium` / `4000` | Claude's effort and output cap (`_LLM_OPENAI_EFFORT` / `_LLM_OPENAI_MAX_TOKENS` for GPT) |
 | `LEXINFORM_LLM_TRIAGE_MODEL` | `claude-sonnet-5` | Model for the cheap first pass on excerpts (`""` disables it) |
-| `LEXINFORM_LLM_BATCH_ENABLED` / `_LLM_BATCH_PROVIDER` | `false` / `openai` | Send the full analysis through the provider's batch API at half price (the workflow turns it on); context overflow bypasses batch |
-| `LEXINFORM_LLM_BATCH_SYNC_WITHIN_DAYS` | `3` | A pilny bill, or one whose consultation ends this soon, is analysed at once anyway (`0`: never) |
 | `LEXINFORM_TRIAGE_MIN_CHARS` / `_TRIAGE_MIN_CONFIDENCE` | `20000` / `0.8` | Texts shorter than this skip the triage; confidence a rejection needs |
 | `LEXINFORM_OUTPUT_LANGUAGE` | `ru` | `ru` or `en` (add more in `i18n.py`) |
 | `LEXINFORM_MIN_SCORE` | `3` | Minimum importance to publish |
@@ -371,6 +369,8 @@ See [authoring](docs/authoring.md) for installation and checks.
 
 MIT. Data comes from the public Sejm API; summaries are machine-generated and are not legal advice.
 
-Secondary batch calls can be selected with `LEXINFORM_LLM_BATCH_KINDS` (comma-separated; default
-`analysis,reanalysis`). `LEXINFORM_LLM_BATCH_MAX_WAIT_HOURS=6` bounds secondary-call waiting
-from intent creation, including queued or uncertain submissions.
+All supported analysis models use batch, including manual and forced analyses, amendments,
+document digests and joint comparisons. Only triage is synchronous. The model selects its
+provider; context overflow queues a separate Opus batch. There is no synchronous fallback for
+urgent bills or long waits. Legacy batch enable/provider/kind/deadline settings no longer
+override this policy. A dry run prepares requests without submitting batches.

@@ -212,6 +212,8 @@ class AnalysisOptions:
     batch_max_input_tokens: int | None = None
     overflow_input_price_usd_per_mtok: float | None = None
     overflow_max_input_tokens: int | None = None
+    overflow_model: str = "claude-opus-5-5"
+    overflow_provider: BatchProvider = "anthropic"
     prompt_version: str = ""
     max_bill_cost_usd: float = 0.0
     max_run_cost_usd: float = 0.0
@@ -221,6 +223,7 @@ class AnalysisOptions:
     channel_id: str | None = None
     batch_provider: BatchProvider | None = None
     submit_batches: bool = False
+    require_batch: bool = False
     batch_sync_within_days: int = 0
     batch_kinds: frozenset[BatchKind] = frozenset({"analysis", "reanalysis"})
     batch_models: dict[BatchKind, str] = field(default_factory=dict)
@@ -230,6 +233,7 @@ class AnalysisOptions:
 @dataclass(frozen=True)
 class Waiting:
     since: datetime
+    usage: dict[str, TokenUsage] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -293,6 +297,7 @@ class _Prepared:
     queued: bool = False
     batch_request: BatchRequest | None = None
     batch_meta: BatchItemMeta | None = None
+    batch_provider: BatchProvider | None = None
     memo_key: str | None = None
     triage_memo_key: str | None = None
     from_batch: bool = False
@@ -379,7 +384,7 @@ class AnalysisService:
         options: AnalysisOptions,
         *,
         text_budget: TextBudget,
-        overflow_llm: AnalysisBackend | None = None,
+        overflow_batch: BatchBackend | None = None,
         authors: AuthorsResolver | None = None,
         keywords: KeywordPrefilter | None = None,
         triage: KeywordPrefilter | None = None,
@@ -391,7 +396,7 @@ class AnalysisService:
         self._texts = texts
         self._loader = loader
         self._llm = llm
-        self._overflow_llm = overflow_llm
+        self._overflow_batch = overflow_batch
         self._clock = clock
         self._options = options
         self._budget = text_budget
@@ -458,11 +463,17 @@ class AnalysisService:
     @property
     def _submits_batches(self) -> bool:
         """Whether a memo miss is filed to the batch; `collect_batches` never asks."""
-        return self._batch is not None and self._options.submit_batches and not self._dry_run
+        return (
+            self._batch is not None
+            and (self._options.submit_batches or self._options.require_batch)
+            and not self._dry_run
+        )
 
     def _batches(self, bill: Bill) -> bool:
         """Whether this bill's memo miss may wait for the batch; one the reader must act on
         within `batch_sync_within_days` is asked at once."""
+        if self._options.require_batch:
+            return True
         days = self._options.batch_sync_within_days
         if not self._submits_batches:
             return False
@@ -509,7 +520,8 @@ class AnalysisService:
             return self._prepare_first(
                 bill,
                 triage=bill.number not in carried,
-                submit_batch=self._batches(bill) and "analysis" in self._options.batch_kinds,
+                submit_batch=self._batches(bill)
+                and (self._options.require_batch or "analysis" in self._options.batch_kinds),
             )
 
         for outcome in fan_out(candidates, prepare, workers=self._options.workers):
@@ -594,10 +606,16 @@ class AnalysisService:
 
     def submit_queued_batches(self) -> None:
         """Submit durable queued intents; an uncertain remote outcome stays operator-visible."""
-        if not self._submits_batches:
+        if self._dry_run:
             return
         intents = self._repo.list_queued_batch_intents()
-        intents = [i for i in intents if i.request.question.kind in self._options.batch_kinds]
+        intents = [
+            i
+            for i in intents
+            if self._options.require_batch
+            or (self._submits_batches and i.request.question.kind in self._options.batch_kinds)
+            or (isinstance(i.meta, BatchItemMeta) and i.meta.overflow)
+        ]
         answered = {
             intent.request.custom_id
             for intent in intents
@@ -862,7 +880,11 @@ class AnalysisService:
             log.warning(
                 "%s: batch answer (%s) is %s", item.number, item.call_kind, batch_result.error
             )
-            if batch_result.context_exceeded and self._overflow_llm is not None:
+            if (
+                batch_result.context_exceeded
+                and self._overflow_batch is not None
+                and not item.meta.overflow
+            ):
                 self._repo.set_status(
                     item.term,
                     item.number,
@@ -882,16 +904,28 @@ class AnalysisService:
         )
         return record
 
-    def analyze_bill(self, bill: Bill, *, ignore_cost_limit: bool = False) -> AnalysisOutcome:
+    def analyze_bill(
+        self, bill: Bill, *, ignore_cost_limit: bool = False
+    ) -> AnalysisOutcome | Waiting:
         """First analysis from the current text. Persists the result; raises on failure.
         `ignore_cost_limit` is the operator's explicit wish (a forced command): the per-bill
         cost guard does not apply."""
+        if bill.status is BillStatus.BATCH_PENDING:
+            return Waiting(self._clock.now())
         if ignore_cost_limit:
             self._repo.reset_bill(bill.term, bill.number, BillStatus.ANALYSIS_PENDING)
             bill = self._repo.get(bill.term, bill.number) or bill
         prepared = self._prepare_first(
-            bill, cost_guard=not ignore_cost_limit, triage=not self._joint_card_exists(bill)
+            bill,
+            cost_guard=not ignore_cost_limit,
+            triage=not self._joint_card_exists(bill),
+            submit_batch=self._options.require_batch,
         )
+        if prepared.queued:
+            if not self._enqueue(bill, prepared):
+                return Waiting(self._clock.now())
+            self.submit_queued_batches()
+            return Waiting(self._clock.now(), usage_of(prepared.triage) if prepared.triage else {})
         return AnalysisOutcome(self._persist(prepared), prepared.triage)
 
     def _prepare_first(
@@ -988,7 +1022,8 @@ class AnalysisService:
             located,
             previous=bill.analysis,
             previous_document=previous_document or _source_of(bill.analysis),
-            submit_batch=self._batches(bill) and "reanalysis" in self._options.batch_kinds,
+            submit_batch=self._batches(bill)
+            and (self._options.require_batch or "reanalysis" in self._options.batch_kinds),
         )
         if prepared.queued:
             self._enqueue(bill, prepared)
@@ -1018,6 +1053,8 @@ class AnalysisService:
         return bill.model_copy(update={"analysis": prepared.record, "authors": authors}), True
 
     def may_wait_for_batch(self, bill: Bill) -> bool:
+        if self._options.require_batch:
+            return True
         days = self._options.batch_sync_within_days
         if days > 0 and window_closes_within(bill, self._clock.now().date(), days):
             return False
@@ -1044,8 +1081,9 @@ class AnalysisService:
             return _reused(record)
         kind = question.kind
         model = self._options.batch_models.get(kind, "")
-        provider = "anthropic" if model.startswith("claude-") else "openai"
-        if (
+        provider: BatchProvider = "anthropic" if model.startswith("claude-") else "openai"
+        backend = self._batch_resolver(provider) if self._batch_resolver else self._batch
+        if self._options.require_batch or (
             may_wait
             and self._batches(bill)
             and kind in self._options.batch_kinds
@@ -1055,11 +1093,17 @@ class AnalysisService:
             job = self._repo.batch_job(key)
             now = self._clock.now()
             if job is not None:
+                if self._options.require_batch:
+                    if job.state == "failed":
+                        raise RuntimeError(f"{kind} batch failed; no synchronous fallback")
+                    return Waiting(job.since)
                 if job.state != "failed" and now - job.since < self._options.batch_max_wait:
                     return Waiting(job.since)
             else:
-                assert self._batch is not None and self._options.batch_provider is not None
-                request = self._batch.prepare_request(
+                if self._options.require_batch and (not model or backend is None):
+                    raise LlmUnavailableError("batch backend is unavailable for the selected model")
+                assert backend is not None
+                request = backend.prepare_request(
                     BatchRequest(
                         custom_id=key,
                         term=bill.term,
@@ -1079,7 +1123,7 @@ class AnalysisService:
                                         "queued_at": now,
                                     }
                                 ),
-                                provider=self._options.batch_provider,
+                                provider=provider,
                                 created_at=now,
                             )
                         )
@@ -1290,6 +1334,8 @@ class AnalysisService:
         price = self._options.supplement_input_price_usd_per_mtok
         if not limit or price is None:
             return False
+        if self._options.require_batch:
+            price *= 0.5
         return loaded.estimate(price) > limit
 
     def bare_supplement(
@@ -1317,9 +1363,7 @@ class AnalysisService:
         reads a new version of a text that already passed the guard, and a bill whose new text
         we decline to read would keep a card describing the old one.
 
-        `submit_batch` files a memo miss to the batch instead of calling the model — false for a
-        manual `/analyze`, which the operator is waiting on. Still network-only: the request is
-        built and returned, not sent; `_enqueue` (the calling thread) is what touches the batch.
+        `submit_batch` builds a request; only `_enqueue` on the calling thread persists it.
         """
         document = located.document
         try:
@@ -1393,8 +1437,8 @@ class AnalysisService:
         original_ctx = ctx
         overflow = self._needs_overflow(ctx, batch=submit_batch)
         if overflow:
-            log.info("%s: input exceeds primary context; using synchronous overflow", bill.number)
-            submit_batch = False
+            log.info("%s: input exceeds primary context; using overflow model", bill.number)
+            submit_batch = True
         ctx = self._fit_to_budget(
             ctx,
             loaded,
@@ -1406,23 +1450,54 @@ class AnalysisService:
         purpose: Literal["analysis", "reanalysis"] = (
             "analysis" if previous is None else "reanalysis"
         )
-        key = _memo_key(bill, purpose, ctx) if cost_guard else None
-        if key is not None and not overflow and self._overflow_llm is not None:
+        key = _memo_key(bill, purpose, ctx)
+        if not overflow and self._overflow_batch is not None:
             custom_id = hashlib.sha256(f"{key}:{bill.analysis_generation}".encode()).hexdigest()
             if custom_id in self._context_rejections:
-                log.info("%s: batch context rejected; using synchronous overflow", bill.number)
+                log.info("%s: batch context rejected; using overflow model", bill.number)
                 overflow = True
-                submit_batch = False
+                submit_batch = True
                 ctx = self._fit_to_budget(
                     original_ctx,
                     loaded,
                     first=previous is None,
                     cost_guard=cost_guard,
+                    batch=submit_batch,
                     overflow=True,
                 )
                 key = _memo_key(bill, purpose, ctx)
-        cached = self._memo.get(key) if key is not None else None
-        if cached is None and submit_batch and self._batch is not None and key is not None:
+        cached = self._memo.get(key) if cost_guard else None
+        record: AnalysisRecord | None = None
+        if cached is None and not submit_batch:
+            try:
+                record = self._llm.analyze(ctx)
+            except LlmContextExceededError:
+                if self._overflow_batch is None:
+                    raise
+                overflow = True
+                submit_batch = True
+                ctx = self._fit_to_budget(
+                    original_ctx,
+                    loaded,
+                    first=previous is None,
+                    cost_guard=cost_guard,
+                    batch=True,
+                    overflow=True,
+                )
+                key = _memo_key(bill, purpose, ctx)
+                cached = self._memo.get(key) if cost_guard else None
+        backend = self._overflow_batch if overflow else self._batch
+        if cached is None and submit_batch and backend is None:
+            raise LlmUnavailableError(
+                "batch backend is unavailable for the selected analysis model"
+            )
+        if cached is None and submit_batch and backend is not None:
+            request_identity = f"{key}:{bill.analysis_generation}"
+            if overflow:
+                request_identity += f":overflow:{self._options.overflow_model}"
+            custom_id = hashlib.sha256(request_identity.encode()).hexdigest()
+            if overflow and custom_id in self._context_rejections:
+                raise LlmContextExceededError("overflow batch also rejected the input context")
             return _Prepared(
                 bill,
                 located,
@@ -1432,17 +1507,20 @@ class AnalysisService:
                 first=previous is None,
                 triage=triaged,
                 queued=True,
-                batch_request=self._batch.prepare_request(
+                batch_provider=(
+                    self._options.overflow_provider if overflow else self._options.batch_provider
+                ),
+                batch_request=backend.prepare_request(
                     BatchRequest(
-                        custom_id=hashlib.sha256(
-                            f"{key}:{bill.analysis_generation}".encode()
-                        ).hexdigest(),
+                        custom_id=custom_id,
                         term=bill.term,
                         number=bill.number,
                         question=AnalysisQuestion(kind=purpose, ctx=ctx),
+                        model=self._options.overflow_model if overflow else "",
                     )
                 ),
                 batch_meta=BatchItemMeta(
+                    overflow=overflow,
                     input_chars=len(ctx.text),
                     truncated=ctx.truncated,
                     text_source=source,
@@ -1461,23 +1539,7 @@ class AnalysisService:
                 triage_memo_key=triage_memo_key,
             )
         if cached is None:
-            analyzer = self._overflow_llm if overflow else self._llm
-            assert analyzer is not None
-            try:
-                record = analyzer.analyze(ctx)
-            except LlmContextExceededError:
-                if overflow or self._overflow_llm is None:
-                    raise
-                log.info("%s: API context rejected; using synchronous overflow", bill.number)
-                ctx = self._fit_to_budget(
-                    original_ctx,
-                    loaded,
-                    first=previous is None,
-                    cost_guard=cost_guard,
-                    overflow=True,
-                )
-                key = _memo_key(bill, purpose, ctx) if cost_guard else None
-                record = self._overflow_llm.analyze(ctx)
+            assert record is not None
             self._ledger.charge(record, number=bill.number, kind=purpose)
         else:
             record = _reused(AnalysisRecord.model_validate_json(cached))
@@ -1513,7 +1575,7 @@ class AnalysisService:
 
     def _needs_overflow(self, ctx: BillContext, *, batch: bool) -> bool:
         ceiling = self._options.batch_max_input_tokens if batch else self._options.max_input_tokens
-        if ceiling is None or self._overflow_llm is None:
+        if ceiling is None or self._overflow_batch is None:
             return False
         counter: AnalysisBackend | BatchBackend = (
             self._batch if batch and self._batch is not None else self._llm
@@ -1562,8 +1624,8 @@ class AnalysisService:
             self._batch if batch and self._batch is not None else self._llm
         )
         if overflow:
-            assert self._overflow_llm is not None
-            counter = self._overflow_llm
+            assert self._overflow_batch is not None
+            counter = self._overflow_batch
             price = self._options.overflow_input_price_usd_per_mtok
             ceiling = self._options.overflow_max_input_tokens
         if batch and price is not None:
@@ -1738,7 +1800,7 @@ class AnalysisService:
                             "prompt_version": prepared.batch_request.prompt_version,
                         }
                     ),
-                    provider=self._options.batch_provider or "anthropic",
+                    provider=prepared.batch_provider or self._options.batch_provider or "anthropic",
                     created_at=self._clock.now(),
                 )
             )

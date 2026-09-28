@@ -186,6 +186,7 @@ def test_explicit_forced_analysis_bypasses_the_memo() -> None:
 
     cached = analysis.analyze_bill(w.bill("3039"))
 
+    assert not isinstance(cached, Waiting)
     assert cached.record.input_tokens == 0 and len(w.llm.contexts) == 1
     analysis.analyze_bill(w.bill("3039"), ignore_cost_limit=True)
     assert len(w.llm.contexts) == 2

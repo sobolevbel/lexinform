@@ -2,151 +2,109 @@ from dataclasses import replace
 
 import pytest
 
-from lexinform.errors import LlmContextExceededError, LlmUnavailableError
-from lexinform.models import TextDocument
-from tests.fakes import FakeLlm, FakeTextExtractor
-from tests.harness import World
+from lexinform.errors import LlmContextExceededError
+from lexinform.models import BillContext, BillStatus, TextDocument
+from lexinform.services.analysis import Waiting
+from tests.fakes import FakeBatchBackend, FakeTextExtractor
+from tests.harness import World, print_url
 
 
-class OverflowLlm(FakeLlm):
+class OverflowBatch(FakeBatchBackend):
     MODEL = "claude-opus-5-5"
 
+    def __init__(self, *, rejected: bool = False) -> None:
+        super().__init__(
+            {"3039": LlmContextExceededError("context_length_exceeded")} if rejected else None,
+            id_prefix="opus",
+        )
 
-@pytest.mark.parametrize("batch", [False, True])
+
 @pytest.mark.parametrize("workers", [1, 4])
 @pytest.mark.parametrize("tokens", [272_000, 272_001])
-def test_context_boundary_routes_full_text_synchronously(
-    batch: bool, workers: int, tokens: int
-) -> None:
-    text = "a" * ((tokens - (2_000 if batch else 0)) * 2)
-    overflow = OverflowLlm()
+def test_context_boundary_routes_full_text_to_correct_batch(workers: int, tokens: int) -> None:
+    text = "a" * ((tokens - 2_000) * 2)
+    overflow = OverflowBatch()
     w = World(
         analysis_model="gpt-5.1",
-        overflow_llm=overflow,
-        batch=batch,
+        overflow_batch=overflow,
+        batch_only=True,
         workers=workers,
         extractor=FakeTextExtractor(text),
         text_budget_chars=1_500_000,
         max_bill_cost_usd=2,
     )
-    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
-    w.add_bill("3040", "Projekt ustawy o cudzoziemcach")
+    for number in ("3039", "3040"):
+        w.add_bill(number, "Projekt ustawy o cudzoziemcach")
 
     report = w.run()
 
-    assert not report.errors
-    if tokens > 272_000:
-        assert not w.llm.contexts and not w.batch.submitted
-        assert len(overflow.contexts) == 2
-        assert overflow.contexts[0].text == text
-        assert not overflow.contexts[0].truncated
-        record = w.bill("3039").analysis
-        assert record is not None and record.model == overflow.MODEL
-        assert any(call.model == overflow.MODEL for call in report.llm_calls)
-    else:
-        assert not overflow.contexts
-        assert bool(w.batch.submitted) == batch
-        assert bool(w.llm.contexts) != batch
+    assert not report.errors and not w.llm.contexts
+    selected = overflow if tokens > 272_000 else w.batch
+    assert len(selected.submitted) == 2
+    ctx = selected.submitted[0].ctx
+    assert isinstance(ctx, BillContext)
+    assert ctx.text == text
+    assert not ctx.truncated
+    assert w.bill("3039").status is BillStatus.BATCH_PENDING
+    selected.resolve()
+    w.run()
+    record = w.bill("3039").analysis
+    assert record is not None and record.model == selected.MODEL
 
 
 @pytest.mark.parametrize("force", [False, True])
-def test_overflow_uses_opus_cost_without_batch_discount(force: bool) -> None:
+def test_manual_overflow_uses_batch_price_and_force_only_lifts_cost_guard(force: bool) -> None:
+    overflow = OverflowBatch()
     text = "a" * 1_200_000
-    overflow = OverflowLlm()
     w = World(
         analysis_model="gpt-5.1",
-        overflow_llm=overflow,
-        batch=True,
+        overflow_batch=overflow,
+        batch_only=True,
         extractor=FakeTextExtractor(text),
         text_budget_chars=1_500_000,
-        max_bill_cost_usd=2,
-    )
-    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
-
-    w.run(max_analyze=0)
-    if force:
-        w.analysis.analyze_bill(w.bill("3039"), ignore_cost_limit=True)
-    else:
-        w.run()
-
-    ctx = overflow.contexts[0]
-    assert not w.llm.contexts and not w.batch.submitted
-    assert ctx.truncated != force
-    if force:
-        assert ctx.text == text
-    else:
-        assert len(ctx.text) / 2 * 4 / 1_000_000 <= 2
-
-
-@pytest.mark.parametrize("pages", [170, 171, 313])
-def test_scans_route_by_page_count_and_keep_opus_cost_guard(pages: int) -> None:
-    overflow = OverflowLlm()
-    w = World(
-        analysis_model="gpt-5.1",
-        overflow_llm=overflow,
-        batch=True,
-        extractor=FakeTextExtractor("", page_count=pages),
-        max_bill_cost_usd=2,
-    )
-    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
-
-    report = w.run()
-
-    assert not w.llm.counted and not overflow.counted
-    assert bool(w.batch.submitted) == (pages == 170)
-    assert bool(overflow.contexts) == (pages == 171)
-    assert report.analysis_skipped_cost == (1 if pages == 313 else 0)
-
-
-def test_changed_text_reanalysis_uses_overflow_and_reuses_memo() -> None:
-    overflow = OverflowLlm()
-    w = World(
-        analysis_model="gpt-5.1",
-        overflow_llm=overflow,
-        text_budget_chars=1_500_000,
-        extractor=FakeTextExtractor(by_content={b"new": "a" * 600_000}),
-    )
-    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
-    w.run()
-    bill = w.bill("3039")
-    url = "https://api.test/new.pdf"
-    w.gateway.files[url] = b"new"
-    document = TextDocument(url=url, kind="print")
-
-    record = w.analysis.reanalyze_bill(bill, document)
-    reused = w.analysis.reanalyze_bill(bill, document)
-
-    assert record is not None and record.model == overflow.MODEL
-    assert reused is not None and reused.input_tokens == 0
-    assert len(overflow.contexts) == 1
-    assert overflow.contexts[0].previous_summary is not None
-
-
-@pytest.mark.parametrize("force", [False, True])
-def test_api_context_rejection_retries_on_opus(force: bool) -> None:
-    overflow = OverflowLlm()
-    w = World(
-        analysis_model="gpt-5.1",
-        overflow_llm=overflow,
-        llm_script={"3039": LlmContextExceededError("context_length_exceeded")},
+        max_bill_cost_usd=1,
     )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run(max_analyze=0)
 
     outcome = w.analysis.analyze_bill(w.bill("3039"), ignore_cost_limit=force)
 
-    assert outcome.record.model == overflow.MODEL
-    assert len(w.llm.contexts) == len(overflow.contexts) == 1
-    assert overflow.contexts[0].text == w.llm.contexts[0].text
-    assert w.bill("3039").analysis_attempts == 0
+    assert isinstance(outcome, Waiting)
+    assert not w.llm.contexts and not w.batch.submitted
+    ctx = overflow.submitted[0].ctx
+    assert isinstance(ctx, BillContext)
+    assert ctx.truncated != force
+    assert ctx.text == text if force else len(ctx.text) / 2 * 2 / 1_000_000 <= 1
+    assert isinstance(w.analysis.analyze_bill(w.bill("3039"), ignore_cost_limit=True), Waiting)
+    assert len(overflow.submitted) == 1
 
 
-def test_batch_context_rejection_survives_restore_and_never_resubmits() -> None:
-    overflow = OverflowLlm()
+@pytest.mark.parametrize(("pages", "limit"), [(170, 2), (171, 2), (313, 2), (313, 1)])
+def test_scans_route_by_pages_and_batch_cost(pages: int, limit: float) -> None:
+    overflow = OverflowBatch()
     w = World(
         analysis_model="gpt-5.1",
-        overflow_llm=overflow,
-        batch=True,
+        overflow_batch=overflow,
+        batch_only=True,
+        extractor=FakeTextExtractor("", page_count=pages),
+        max_bill_cost_usd=limit,
+    )
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+
+    report = w.run()
+
+    assert not w.llm.contexts and not w.llm.counted
+    assert bool(w.batch.submitted) == (pages == 170)
+    assert bool(overflow.submitted) == (pages > 170 and limit == 2)
+    assert report.analysis_skipped_cost == (1 if limit == 1 else 0)
+
+
+def test_batch_context_rejection_survives_restart_and_switches_provider() -> None:
+    overflow = OverflowBatch()
+    w = World(
+        analysis_model="gpt-5.1",
+        overflow_batch=overflow,
+        batch_only=True,
         batch_script={"3039": LlmContextExceededError("context_length_exceeded")},
     )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
@@ -157,64 +115,66 @@ def test_batch_context_rejection_survives_restore_and_never_resubmits() -> None:
     w.container = replace(w.container)
     w.pipeline = w.container.pipeline(dry_run=False)
 
+    w.run()
+    w.run()
+
+    assert len(w.batch.submitted) == len(overflow.submitted) == 1
+    assert w.batch.submitted[0].custom_id != overflow.submitted[0].custom_id
+    assert not w.llm.contexts and w.bill("3039").analysis_attempts == 0
+    overflow.resolve()
     report = w.run()
-    w.run()
-
-    assert not report.errors
-    assert len(w.batch.submitted) == 1
-    assert len(overflow.contexts) == 1 and not w.llm.contexts
-    assert w.bill("3039").analysis_attempts == 0
-    assert any(call.model == overflow.MODEL for call in report.llm_calls)
+    assert w.bill("3039").analysis is not None
+    assert any(call.model == overflow.MODEL and call.batched for call in report.llm_calls)
 
 
-@pytest.mark.parametrize(
-    "failure",
-    [
-        LlmUnavailableError("rate limited"),
-        RuntimeError("invalid response"),
-    ],
-)
-def test_unrelated_api_errors_do_not_use_overflow(failure: Exception) -> None:
-    overflow = OverflowLlm()
+def test_synchronous_context_rejection_also_queues_overflow() -> None:
+    overflow = OverflowBatch()
     w = World(
         analysis_model="gpt-5.1",
-        overflow_llm=overflow,
-        llm_script={"3039": failure},
-    )
-    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
-
-    w.run()
-
-    assert len(w.llm.contexts) == 1 and not overflow.contexts
-
-
-def test_overflow_context_rejection_is_not_retried_again() -> None:
-    overflow = OverflowLlm(script={"3039": LlmContextExceededError("still too large")})
-    w = World(
-        analysis_model="gpt-5.1",
-        overflow_llm=overflow,
+        overflow_batch=overflow,
         llm_script={"3039": LlmContextExceededError("context_length_exceeded")},
     )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run(max_analyze=0)
 
-    w.run()
+    outcome = w.analysis.analyze_bill(w.bill("3039"))
 
-    assert len(w.llm.contexts) == len(overflow.contexts) == 1
-    assert w.bill("3039").analysis_attempts == 1
+    assert isinstance(outcome, Waiting)
+    assert len(w.llm.contexts) == len(overflow.submitted) == 1
 
 
-def test_batch_reanalysis_context_rejection_uses_opus() -> None:
-    overflow = OverflowLlm()
+def test_overflow_context_rejection_is_not_submitted_again() -> None:
+    overflow = OverflowBatch(rejected=True)
     w = World(
         analysis_model="gpt-5.1",
-        overflow_llm=overflow,
-        batch=True,
-        batch_kinds=frozenset({"reanalysis"}),
-        batch_script={"3039": LlmContextExceededError("context_length_exceeded")},
+        overflow_batch=overflow,
+        batch_only=True,
+        extractor=FakeTextExtractor("a" * 600_000),
+        text_budget_chars=1_500_000,
+    )
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    overflow.resolve()
+
+    w.run()
+    w.run()
+
+    assert len(overflow.submitted) == 1 and not w.llm.contexts
+
+
+def test_reanalysis_context_rejection_uses_opus_batch() -> None:
+    overflow = OverflowBatch()
+    w = World(
+        analysis_model="gpt-5.1",
+        overflow_batch=overflow,
+        batch_only=True,
         extractor=FakeTextExtractor(by_content={b"new": "Nowy tekst ustawy. " * 100}),
     )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
+    w.batch.resolve()
+    w.run()
+    w.batch.script["3039"] = LlmContextExceededError("context_length_exceeded")
     url = "https://api.test/new.pdf"
     w.gateway.files[url] = b"new"
     document = TextDocument(url=url, kind="print")
@@ -223,33 +183,37 @@ def test_batch_reanalysis_context_rejection_uses_opus() -> None:
     w.batch.resolve()
     w.analysis.collect_batches()
 
+    assert w.analysis.reanalyze_bill(w.bill("3039"), document) is None
+    w.analysis.submit_queued_batches()
+    overflow.resolve()
+    w.analysis.collect_batches()
     record = w.analysis.reanalyze_bill(w.bill("3039"), document)
 
     assert record is not None and record.model == overflow.MODEL and record.revision == 2
-    assert len(w.batch.submitted) == len(overflow.contexts) == 1
-    assert overflow.contexts[0].previous_summary is not None
+    assert len(overflow.submitted) == 1
+    ctx = overflow.submitted[0].ctx
+    assert isinstance(ctx, BillContext) and ctx.previous_summary is not None
 
 
-@pytest.mark.parametrize("batch", [False, True])
-def test_api_fallback_rechecks_cost_at_opus_price(batch: bool) -> None:
-    error = LlmContextExceededError("context_length_exceeded")
-    overflow = OverflowLlm()
-    text = "a" * 500_000
+def test_openai_and_opus_batches_are_submitted_and_collected_in_one_run() -> None:
+    overflow = OverflowBatch()
     w = World(
         analysis_model="gpt-5.1",
-        overflow_llm=overflow,
-        batch=batch,
-        llm_script={"3039": error},
-        batch_script={"3039": error},
-        extractor=FakeTextExtractor(text),
+        overflow_batch=overflow,
+        batch_only=True,
+        extractor=FakeTextExtractor(by_content={b"large": "a" * 600_000}),
         text_budget_chars=1_500_000,
-        max_bill_cost_usd=0.5,
     )
-    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
-    w.run()
-    if batch:
-        w.batch.resolve()
-        w.run()
+    for number in ("3039", "3040"):
+        w.add_bill(number, "Projekt ustawy o cudzoziemcach")
+    w.gateway.files[print_url("3040")] = b"large"
 
-    ctx = overflow.contexts[0]
-    assert ctx.truncated and len(ctx.text) / 2 * 4 / 1_000_000 <= 0.5
+    w.run()
+
+    assert len(w.batch.submitted) == len(overflow.submitted) == 1
+    assert {batch.provider for batch in w.repo.list_open_llm_batches()} == {"openai", "anthropic"}
+    w.batch.resolve()
+    overflow.resolve()
+    report = w.run()
+    assert report.analyzed == 2 and not report.errors
+    assert not w.repo.list_open_llm_batches()

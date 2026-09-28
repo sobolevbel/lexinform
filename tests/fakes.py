@@ -665,7 +665,10 @@ class FakeBatchBackend:
 
     MODEL = "fake-batch"
 
-    def __init__(self, script: dict[str, Analysis | Exception] | None = None) -> None:
+    def __init__(
+        self, script: dict[str, Analysis | Exception] | None = None, *, id_prefix: str = "batch"
+    ) -> None:
+        self.id_prefix = id_prefix
         self.script = script or {}
         self.secondary_script: dict[tuple[str, CallKind], BatchAnswer | Exception] = {}
         self.batches: dict[str, list[BatchRequest]] = {}
@@ -688,7 +691,7 @@ class FakeBatchBackend:
         )
 
     def submit(self, requests: Sequence[BatchRequest]) -> str:
-        batch_id = f"batch-{len(self.batches) + 1}"
+        batch_id = f"{self.id_prefix}-{len(self.batches) + 1}"
         self.batches[batch_id] = list(requests)
         self.submitted.extend(requests)
         return batch_id

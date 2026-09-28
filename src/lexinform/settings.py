@@ -129,7 +129,7 @@ class Settings(BaseSettings):
     )
     llm_analysis_overflow_model: str = Field(
         default="claude-opus-5-5",
-        description="Synchronous analysis model for inputs exceeding the primary model's context.",
+        description="Batch analysis model for inputs exceeding the primary model's context.",
     )
     llm_amendments_model: str = Field(
         default="gpt-5.1",
@@ -146,16 +146,15 @@ class Settings(BaseSettings):
         " others; see `llm_analysis_model`.",
     )
     llm_batch_enabled: bool = Field(
-        default=False,
-        description="The full analysis and a re-analysis go through the provider's batch API"
-        " (half the price, an answer within a run or two rather than at once) instead of"
-        " `analyze()` directly. It decides what is *submitted* only: a batch already filed is"
-        " collected whatever this says, so switching it off never strands requests in flight.",
+        default=True,
+        description="Legacy setting; supported model calls always use batch, except triage.",
     )
     llm_batch_kinds: Annotated[frozenset[BatchKind], NoDecode] = frozenset(
-        {"analysis", "reanalysis"}
+        {"analysis", "reanalysis", "joint", "supplement", "amendments"}
     )
-    llm_batch_max_wait_hours: float = Field(default=6, gt=0)
+    llm_batch_max_wait_hours: float = Field(
+        default=6, gt=0, description="Legacy setting; waiting never enables synchronous calls."
+    )
 
     @field_validator("llm_batch_kinds", mode="before")
     @classmethod
@@ -169,17 +168,11 @@ class Settings(BaseSettings):
     llm_batch_sync_within_days: int = Field(
         default=3,
         ge=0,
-        description="A bill the reader must act on within this many days — pilny, or a"
-        " consultation that ends by then — is analysed at once even with batching on: a batch"
-        " answer may take 24 hours and the next run after it. 0 sends everything to the batch.",
+        description="Legacy setting; urgent bills use batch too.",
     )
     llm_batch_provider: Literal["anthropic", "openai"] = Field(
         default="openai",
-        description="Which provider's batch API `llm_batch_enabled` submits to — one setting for"
-        " both `analyze` and a re-analysis, not a choice per call kind: the two batch APIs are"
-        " different submissions with nothing to gain from mixing them. Uses `llm_analysis_model`"
-        " when it already names this provider, that provider's own default model otherwise — so"
-        " switching this alone is enough unless the model itself should change too.",
+        description="Legacy setting; each configured model selects its own batch provider.",
     )
     triage_min_chars: int = Field(
         default=20_000, description="Shorter texts go straight to the full analysis."

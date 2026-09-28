@@ -18,7 +18,9 @@ from tests.scenario.test_tracking_batch import tracked_world
 def test_exhausted_secondary_budget_does_not_start_a_synchronous_call(may_wait: bool) -> None:
     w = ready_world()
     settings = w.container.settings.model_copy(update={"max_run_cost_usd": 0.001})
-    analysis = replace(w.container, settings=settings).analysis_service()
+    analysis = replace(
+        w.container, settings=settings, analysis_options_override=None
+    ).analysis_service()
     analysis.start_run()
 
     result = analysis.compare_joint(w.bill("3040"), [w.bill("3039")], may_wait=may_wait)
@@ -28,7 +30,7 @@ def test_exhausted_secondary_budget_does_not_start_a_synchronous_call(may_wait: 
 
 
 @pytest.mark.parametrize("switch", ["disabled", "kind_removed"])
-def test_queued_secondary_respects_the_current_submission_switch(switch: str) -> None:
+def test_legacy_switches_do_not_stop_queued_secondary_submission(switch: str) -> None:
     w = ready_world()
     assert isinstance(ask(w), Waiting)
     settings = w.container.settings.model_copy(deep=True)
@@ -36,12 +38,14 @@ def test_queued_secondary_respects_the_current_submission_switch(switch: str) ->
         settings.llm_batch_enabled = False
     else:
         settings.llm_batch_kinds = frozenset({"analysis", "reanalysis"})
-    analysis = replace(w.container, settings=settings).analysis_service()
+    analysis = replace(
+        w.container, settings=settings, analysis_options_override=None
+    ).analysis_service()
     analysis.start_run()
 
     analysis.submit_queued_batches()
 
-    assert not w.batch.submitted
+    assert len(w.batch.submitted) == 1
 
 
 def test_new_hearing_deadline_is_not_held_behind_a_supplement() -> None:

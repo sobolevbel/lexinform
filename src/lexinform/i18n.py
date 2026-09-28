@@ -23,6 +23,7 @@ class Labels:
     """
 
     new_bill_header: str
+    analysis_queued: str
     finished_bill_header: str
     update_header: str
     importance: str
@@ -271,6 +272,7 @@ class Labels:
 
 
 RU = Labels(
+    analysis_queued="Анализ поставлен в очередь. Результат будет обработан после завершения batch.",
     new_bill_header="Новый законопроект",
     finished_bill_header="Законопроект: процесс завершён",
     update_header="Обновление",
@@ -956,6 +958,7 @@ RU = Labels(
 )
 
 EN = Labels(
+    analysis_queued="Analysis queued. The result will be processed when the batch completes.",
     new_bill_header="New bill",
     finished_bill_header="Bill: the process is over",
     update_header="Update",

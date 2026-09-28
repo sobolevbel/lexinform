@@ -13,6 +13,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
+from lexinform.i18n import labels_for
 from lexinform.models import (
     DISPATCHED,
     SILENCED_BY_OPERATOR,
@@ -38,7 +39,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier, Publisher
 from lexinform.pricing import cost_usd
-from lexinform.services.analysis import AnalysisService, TooExpensiveError
+from lexinform.services.analysis import AnalysisService, TooExpensiveError, Waiting
 from lexinform.services.digest import DigestResult, DigestService
 from lexinform.services.joint import primary_of
 from lexinform.services.lookup import BillLookup, BillNotFoundError
@@ -456,6 +457,12 @@ class CommandService:
                 note=f"{exc}; {FORCE_HINT}",
             )
         spent.update(analysed.usage)
+        if isinstance(analysed, Waiting):
+            return self._reload(bill), CommandOutcome(
+                status=OutcomeStatus.QUEUED,
+                bill=self._reload(bill),
+                note=labels_for("ru").analysis_queued,
+            )
         return self._reload(bill), None
 
     def _card_verdict(

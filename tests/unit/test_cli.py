@@ -424,11 +424,11 @@ def test_collect_batches_also_answers_the_inbox(db: Path, api: str, tmp_path: Pa
 
 
 @pytest.mark.local_http
-def test_poll_batches_does_nothing_when_batching_is_off(db: Path, api: str) -> None:
+def test_legacy_batch_switch_does_not_disable_the_poller(db: Path, api: str) -> None:
     result = runner.invoke(app, ["poll-batches"], env=_env(db, api=api))
 
-    assert result.exit_code == 0, result.output
-    assert "batching is off" in result.output
+    assert result.exit_code == 2, result.output
+    assert "no GitHub repo/token" in result.output
 
 
 @pytest.mark.local_http

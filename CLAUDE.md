@@ -1260,8 +1260,10 @@ measurements and what was tried and rejected are in `docs/llm-cost.md`.
 ## Product decisions already taken
 
 Default analysis, amendments, supplement and joint model `gpt-5.1`, batch provider `openai`.
-Analysis above 272k input tokens or rejected for context overflow uses synchronous
-`llm_analysis_overflow_model` (`claude-opus-5-5`); its own price applies to the cost guard.
+Every analysis call uses its model's batch API, including manual/forced calls and secondary
+analyses; only triage is synchronous. Urgency and elapsed time never trigger synchronous fallback.
+Analysis above 272k input tokens or rejected for context overflow uses a separate batch on
+`llm_analysis_overflow_model` (`claude-opus-5-5`); its batch price applies to the cost guard.
 Scans use 1600 tokens per page for routing. `min_score` 3, text prefilter threshold 2 distinct patterns or 3
 hits (weak patterns such as Straż Graniczna, "legalizacja" or "nierezydent" never decide alone: in
 a text they count next to a strong pattern, in a title they send the bill to the text stage, not to

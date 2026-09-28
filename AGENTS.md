@@ -72,7 +72,8 @@ Dependencies flow only in this direction:
 
 ## Product defaults
 
-- Default model: `claude-opus-5`; minimum publication score: 3. Triage texts at least 20k chars with `claude-sonnet-5`.
+- Default model: `gpt-5.1`; minimum publication score: 3. Triage texts at least 20k chars with `claude-sonnet-5`.
+- All supported model analyses use batch, including manual/forced and secondary calls; only triage is synchronous. Context overflow uses an Opus 5.5 batch and its batch price. Urgency and waiting time never enable synchronous fallback.
 - Do not add a likelihood-of-passage estimate.
 - Prompt-version changes alone must not reanalyse or repost an existing card. A materially new text may.
 - Every card/update includes what happens next and what readers can do now. RCL cards ask readers to write in Polish and cite the wykaz number.

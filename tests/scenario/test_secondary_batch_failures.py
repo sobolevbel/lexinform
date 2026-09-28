@@ -45,7 +45,7 @@ def test_two_documents_wait_for_both_results_without_advancing_the_baseline(work
 
 
 @pytest.mark.parametrize("switch", ["disabled", "kind_removed", "provider_mismatch"])
-def test_configuration_rollback_finishes_a_waiting_observation(switch: str) -> None:
+def test_configuration_change_keeps_waiting_for_the_existing_batch(switch: str) -> None:
     w = tracked_world()
     w.run()
     settings = w.container.settings.model_copy(deep=True)
@@ -55,17 +55,17 @@ def test_configuration_rollback_finishes_a_waiting_observation(switch: str) -> N
         settings.llm_batch_kinds = frozenset({"analysis", "reanalysis"})
     else:
         settings.llm_supplement_model = "gpt-5.1"
-    restarted = replace(w.container, settings=settings)
+    restarted = replace(w.container, settings=settings, analysis_options_override=None)
 
     report = restarted.pipeline(dry_run=False).run(RunOptions(term=10))
 
     assert not report.errors
-    assert report.updates == 1 and report.batch_waiting == 0
-    assert w.bill("3039").awaiting_batch_since is None
-    assert len(w.llm.supplement_contexts) == 1
+    assert report.updates == 0 and report.batch_waiting == 1
+    assert w.bill("3039").awaiting_batch_since is not None
+    assert not w.llm.supplement_contexts
     w.batch.resolve()
     late = restarted.pipeline(dry_run=False).run(RunOptions(term=10))
-    assert late.updates == 0
+    assert late.updates == 1
     assert len(w.publisher.updates) == 1
 
 

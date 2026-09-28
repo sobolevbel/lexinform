@@ -144,6 +144,7 @@ class BatchItemMeta(BaseModel):
     sent except `source_url` and `revision`, which is why only those two are not."""
 
     input_chars: int
+    overflow: bool = False
     truncated: bool
     text_source: TextSource
     source_kind: SourceKind

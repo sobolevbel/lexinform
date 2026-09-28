@@ -20,17 +20,17 @@ is `LEXINFORM_*`. Five calls, five independent models: triage always stays on Cl
 (`LEXINFORM_LLM_TRIAGE_MODEL`); the full analysis, amendments, filed-document digests and joint
 comparisons (`LEXINFORM_LLM_ANALYSIS_MODEL` / `_AMENDMENTS_MODEL` / `_SUPPLEMENT_MODEL` /
 `_JOINT_MODEL`) default to GPT-5.1. Both API keys are needed with the defaults: Anthropic handles
-triage and synchronous analysis overflow (`LEXINFORM_LLM_ANALYSIS_OVERFLOW_MODEL=claude-opus-5-5`).
+triage and batch analysis overflow (`LEXINFORM_LLM_ANALYSIS_OVERFLOW_MODEL=claude-opus-5-5`).
 An input above GPT-5.1's 272k-token ceiling, or rejected by the API for exceeding context, goes
 to Opus. Scans are estimated at 1600 tokens per page. The per-bill cost guard uses Opus's
-synchronous price; it can still shorten expensive texts or refuse expensive first-analysis scans.
-`LEXINFORM_LLM_BATCH_ENABLED` files `analyze()`/a re-analysis to the batch API instead of
-calling it directly (half the price, answered a run or two later, not the manual `/analyze`).
-`LEXINFORM_LLM_BATCH_KINDS` also selects secondary calls (`joint`, `supplement`, `amendments`);
-they wait through the memo and fall back synchronously after `LEXINFORM_LLM_BATCH_MAX_WAIT_HOURS`.
-Amendments stay disabled in the workflow until the plan's latency gate is met;
-`LEXINFORM_LLM_BATCH_PROVIDER` picks Anthropic or OpenAI for it, independent of the model settings
-above.
+batch price; it can still shorten expensive texts or refuse expensive first-analysis scans.
+All analysis calls use the selected model's batch API: first analysis, re-analysis, amendments,
+document digests and joint comparisons. Only triage is synchronous. Manual `/analyze`, including
+`force`, acknowledges the queue; collection applies the result later. Urgency and elapsed waiting
+time never switch a request to synchronous billing. Unknown submission outcomes remain pending
+until audited recovery. Failed secondary batches follow the existing failure reporting path.
+Legacy `LLM_BATCH_ENABLED`, `_KINDS`, `_PROVIDER`, `_SYNC_WITHIN_DAYS` and `_MAX_WAIT_HOURS`
+settings remain readable for compatibility but do not override this policy in the application.
 
 ## The check before every commit
 

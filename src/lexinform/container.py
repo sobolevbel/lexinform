@@ -110,8 +110,9 @@ class Container:
     senate: SenateGateway | None = None
     orka: Downloader | None = None
     llm: LlmAnalyzer | None = None
-    overflow_llm: LlmAnalyzer | None = None
     batch_override: BatchBackend | None = None
+    overflow_batch_override: BatchBackend | None = None
+    analysis_options_override: AnalysisOptions | None = None
     extractor: TextExtractor | None = None
     publisher_override: Publisher | None = None
     notifier_override: RunNotifier | None = None
@@ -258,13 +259,19 @@ class Container:
         )
 
     def batch_backend(self) -> BatchBackend:
-        """The provider `llm_batch_provider` names, built whatever `llm_batch_enabled` says: that
-        flag stops a submission, and a batch already filed has to be collected all the same."""
-        backend = self.batch_backend_for(self.settings.llm_batch_provider)
+        """The primary model selects its provider; collected requests retain their own provider."""
+        backend = self.batch_backend_for(self.analysis_options().batch_provider or "openai")
         assert backend is not None, "batch_backend_for builds a backend for the configured provider"
         return backend
 
     def batch_backend_for(self, provider: BatchProvider) -> BatchBackend | None:
+        overflow_provider = (
+            "anthropic"
+            if self.settings.llm_analysis_overflow_model.startswith("claude-")
+            else "openai"
+        )
+        if self.overflow_batch_override is not None and provider == overflow_provider:
+            return self.overflow_batch_override
         if self.batch_override is not None:
             return self.batch_override if provider == self.settings.llm_batch_provider else None
         return self._once(
@@ -282,13 +289,19 @@ class Container:
         return self._once("analysis", self._build_analysis_service)
 
     def analysis_options(self) -> AnalysisOptions:
+        if self.analysis_options_override is not None:
+            return self.analysis_options_override
         # The per-bill guard is about the analyze() call specifically, so its price is that
         # model's, not the secondary one's (`llm_model`).
         price = price_of(self.settings.llm_analysis_model)  # None: unknown model, no estimates
         supplement_price = price_of(self.settings.llm_supplement_model)
-        batch_price = price_of(self._batch_model(self.settings.llm_batch_provider))
+        provider: BatchProvider = (
+            "anthropic" if self.settings.llm_analysis_model.startswith("claude-") else "openai"
+        )
+        batch_price = price
         overflow_price = price_of(self.settings.llm_analysis_overflow_model)
         return AnalysisOptions(
+            require_batch=True,
             max_attempts=self.settings.max_analysis_attempts,
             workers=self.settings.llm_concurrency,
             input_price_usd_per_mtok=price[0] if price is not None else None,
@@ -299,9 +312,13 @@ class Container:
             max_input_tokens=input_limit_of(self.settings.llm_analysis_model),
             overflow_input_price_usd_per_mtok=overflow_price[0] if overflow_price else None,
             overflow_max_input_tokens=input_limit_of(self.settings.llm_analysis_overflow_model),
-            batch_max_input_tokens=input_limit_of(
-                self._batch_model(self.settings.llm_batch_provider)
+            overflow_model=self.settings.llm_analysis_overflow_model,
+            overflow_provider=(
+                "anthropic"
+                if self.settings.llm_analysis_overflow_model.startswith("claude-")
+                else "openai"
             ),
+            batch_max_input_tokens=input_limit_of(self.settings.llm_analysis_model),
             prompt_version=PROMPT_VERSION,
             max_bill_cost_usd=self.settings.max_analysis_cost_usd,
             max_run_cost_usd=self.settings.max_run_cost_usd,
@@ -309,7 +326,7 @@ class Container:
             triage_scan_pages=self.settings.triage_scan_pages,
             triage_min_confidence=self.settings.triage_min_confidence,
             channel_id=self.channel_id(),
-            batch_provider=self.settings.llm_batch_provider,
+            batch_provider=provider,
             submit_batches=self.settings.llm_batch_enabled,
             batch_sync_within_days=self.settings.llm_batch_sync_within_days,
             batch_kinds=self.settings.llm_batch_kinds,
@@ -329,8 +346,8 @@ class Container:
             self.analyzer(),
             self.clock,
             self.analysis_options(),
-            overflow_llm=self.overflow_llm
-            or self.llm
+            overflow_batch=self.overflow_batch_override
+            or self.batch_override
             or self._llm_backend(self.settings.llm_analysis_overflow_model),
             text_budget=TextBudget(self.settings.text_budget_chars),
             authors=SejmAuthorsResolver(self.gateway),

@@ -25,6 +25,7 @@ from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.concurrency import fan_out
 from lexinform.container import Container, build_container
 from lexinform.errors import ServiceUnavailableError
+from lexinform.i18n import labels_for
 from lexinform.logging_setup import configure_logging
 from lexinform.models import (
     SILENCED_BY_OPERATOR,
@@ -51,6 +52,7 @@ from lexinform.models import (
     usage_of,
 )
 from lexinform.pricing import cost_usd, format_tokens, format_usd
+from lexinform.services.analysis import Waiting
 from lexinform.services.lookup import BillNotFoundError
 from lexinform.services.pipeline import RunOptions
 from lexinform.services.rcl_projects import RclProjectReader
@@ -422,7 +424,10 @@ def analyze(
             )
             raise typer.Exit(code=2)
         else:
-            c.analysis_service().analyze_bill(bill)
+            outcome = c.analysis_service().analyze_bill(bill, ignore_cost_limit=force)
+            if isinstance(outcome, Waiting):
+                typer.echo(labels_for(c.settings.output_language).analysis_queued)
+                return
         stored = c.repo.get(bill.term, bill.number)
         assert stored is not None, "analysis retains the requested bill"
         bill = stored
@@ -721,9 +726,6 @@ def poll_batches() -> None:
     For the VPS timer: only batches with unconsumed items in the persisted state can wake a run.
     """
     settings = _settings()
-    if not settings.llm_batch_enabled:
-        typer.echo("batching is off (LEXINFORM_LLM_BATCH_ENABLED)")
-        return
     if not (settings.github_repo and settings.github_token):
         typer.echo("no GitHub repo/token to ask for a collect run", err=True)
         raise typer.Exit(code=2)

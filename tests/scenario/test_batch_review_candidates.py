@@ -276,7 +276,13 @@ def test_switching_provider_does_not_poll_old_ids_on_the_new_provider() -> None:
     other = _OtherProvider()
     restarted = replace(
         w.container,
-        settings=w.container.settings.model_copy(update={"llm_batch_provider": "openai"}),
+        settings=w.container.settings.model_copy(
+            update={
+                "llm_batch_provider": "openai",
+                "llm_analysis_model": "gpt-5.1",
+            }
+        ),
+        analysis_options_override=None,
         batch_override=other,
     )
 

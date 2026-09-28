@@ -42,12 +42,13 @@ def test_the_batch_backend_is_built_even_with_batching_switched_off() -> None:
     assert off.analysis_service() is not None
 
 
-def test_batching_off_is_what_stops_a_submission() -> None:
+def test_legacy_batch_switch_cannot_enable_synchronous_analysis() -> None:
     on = _container(batching=True)
     off = _container(batching=False)
 
     assert on.analysis_options().submit_batches is True
     assert off.analysis_options().submit_batches is False
+    assert on.analysis_options().require_batch and off.analysis_options().require_batch
 
 
 def test_secondary_batch_options_keep_each_call_model_and_selected_kinds() -> None:

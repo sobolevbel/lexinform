@@ -6,6 +6,7 @@ pipeline (`run`) and asserts on the report, the publisher's records and the data
 """
 
 import datetime as dt
+from dataclasses import replace
 from typing import Any
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
@@ -297,7 +298,8 @@ class World:
         fail_publish: set[str] | None = None,
         llm_script: dict[str, Analysis | Exception] | None = None,
         analysis_model: str = "claude-opus-5",
-        overflow_llm: FakeLlm | None = None,
+        overflow_batch: FakeBatchBackend | None = None,
+        batch_only: bool = False,
         triage: bool = False,
         triage_script: dict[str, Triage | Exception] | None = None,
         joint_script: dict[str, JointComparison | Exception] | None = None,
@@ -392,13 +394,17 @@ class World:
             senate=self.senate,
             orka=self.orka,
             llm=self.llm,
-            overflow_llm=overflow_llm,
+            overflow_batch_override=overflow_batch,
             batch_override=self.batch,
             extractor=self.extractor,
             publisher_override=self.publisher,
             notifier_override=self.notifier,
             inbox_override=self.inbox,
             replier_override=self.replier,
+        )
+        self.container.analysis_options_override = replace(
+            self.container.analysis_options(),
+            require_batch=batch_only,
         )
         self.discovery = self.container.discovery_service()
         self.analysis = self.container.analysis_service()

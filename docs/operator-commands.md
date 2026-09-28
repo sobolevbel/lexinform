@@ -27,6 +27,12 @@ terminal, has no twin either: posting the command *is* the confirmation.
 
 ### One bill
 
+All model analyses except triage use batch. `/analyze`, including `force`, acknowledges the
+queue; a later collection applies and publishes the result under the normal publication rules.
+`force` lifts the per-bill cost guard, not the batch requirement. Repeating it while the bill
+has a pending batch does not submit another request. `/refresh` can likewise wait for batch
+analysis of a changed text or a filed document.
+
 ```
 /analyze 3039                 fetch the bill, prefilter it (title, then text), analyse it, post
                               the card when it is relevant and important enough, follow it
@@ -309,7 +315,7 @@ systemctl daemon-reload && systemctl enable --now lexinform-listen
 journalctl -u lexinform-listen -f
 ```
 
-### The batch poller (optional, LEXINFORM_LLM_BATCH_ENABLED only)
+### The batch poller (optional)
 
 Same server, its own unit pair: a timer fires `lexinform poll-batches` every 20 minutes, which
 asks GitHub for a `collect-batches` run when a provider reports a terminal batch belonging to
@@ -327,8 +333,8 @@ the next scheduled run publishes it with its dump. Provider deletion remains cle
 same way it manages the relay's. Add to `.env`:
 
 ```bash
-ANTHROPIC_API_KEY=...   # or OPENAI_API_KEY=..., matching LEXINFORM_LLM_BATCH_PROVIDER
-LEXINFORM_LLM_BATCH_ENABLED=true
+ANTHROPIC_API_KEY=...   # Opus overflow batches
+OPENAI_API_KEY=...      # GPT-5.1 batches
 ```
 
 `LEXINFORM_GITHUB_REPO`/`_TOKEN` are already there for the relay; the same Contents-scoped token
@@ -397,4 +403,5 @@ Rules of the road:
 
 `/status` also lists tracked bills waiting for a secondary batch digest and the elapsed hours.
 Waiting does not advance the observed stages; the bill remains eligible after the watermark
-moves. After the configured deadline, tracking uses a synchronous digest.
+moves. A long wait never triggers a synchronous model call; uncertain submissions require
+the audited recovery commands above.
