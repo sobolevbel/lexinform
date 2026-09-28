@@ -9,12 +9,14 @@ from lexinform.models import (
     ObservationBasis,
     ObservationMode,
     PublicationKind,
+    Stage,
 )
-from tests.fakes import make_analysis
+from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import (
     COMMITTEE_STAGES,
     ELI,
     RCL,
+    REFERRED,
     TERM,
     WYKAZ,
     World,
@@ -283,3 +285,49 @@ def test_missing_act_is_not_fresh_and_a_cached_act_does_not_fake_a_new_check() -
     w.clock.advance(hours=1)
     w.tracking.check_updates()
     assert w.repo.source_checks(TERM, "3039")[CheckAspect.ACT] == checked
+
+
+REPORT_URL = "https://api.test/sejm/term10/prints/2689/2689.pdf"
+WITH_REPORT = REFERRED + (
+    Stage(
+        stage_name="Praca w komisjach po I czytaniu",
+        stage_type="CommitteeWork",
+        date=dt.date(2026, 9, 6),
+        children=(
+            Stage(
+                stage_name="Sprawozdanie komisji",
+                stage_type="CommitteeReport",
+                date=dt.date(2026, 9, 6),
+                print_number="2689",
+                report_file=REPORT_URL,
+                proposal="uchwalić załączony projekt ustawy",
+            ),
+        ),
+    ),
+)
+
+
+def test_a_new_text_that_reaches_the_bar_gets_a_card_without_replaying_its_history() -> None:
+    w = World(
+        llm_script={"3039": make_analysis(relevant=True, score=2)},
+        extractor=FakeTextExtractor(by_content={b"%PDF-report": "Art. 1. Nowy tekst. " * 100}),
+    )
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.llm.script = {"3039": make_analysis(relevant=True, score=3)}
+    w.set_stages("3039", WITH_REPORT)
+    w.gateway.files[REPORT_URL] = b"%PDF-report"
+    w.clock.advance(days=1)
+
+    reanalysed = w.run()
+    w.clock.advance(days=1)
+    carded = w.run()
+    w.clock.advance(days=1)
+    settled = w.run()
+
+    assert reanalysed.reanalyzed == 1
+    assert len(w.publisher.texts(PublicationKind.NEW_BILL)) == 1
+    assert w.publication("3039") is not None
+    assert w.bill("3039").observation_basis == ObservationBasis.TELEGRAM_THREAD
+    assert w.publisher.updates == []
+    assert (carded.updates, settled.updates, settled.reanalyzed) == (0, 0, 0)

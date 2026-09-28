@@ -913,7 +913,9 @@ Invariants worth keeping:
   check (`record_check`, an outage counting no failure). On the state of 27 Sept 2026 that is 44
   more processes a run beside the 24 carded, 22 of them `full`. The RCL, wykaz and agenda
   watchers take the same bills as `quiet` in their own pass (one register download, one set of
-  sitting listings) and store without planning a post; the Senate page is read for `full` ones.
+  sitting listings) and store without planning a post; the Senate page is read for `full` ones. A
+  `full` bill's new text is re-analysed, and a re-analysis that lifts it to `min_score` gives it a
+  card on the next publishing phase (decided 2026-09-28); its stored changes are not replayed.
 - **Parallelism only around the network.** `concurrency.fan_out` runs one network step (download,
   process lookup, model call) for many items; that step never touches the repository. Outcomes are
   consumed in the calling thread, in input order, and that is where every DB write happens.
