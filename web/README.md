@@ -51,6 +51,11 @@ on CMS articles. All preliminary pages carry `noindex,nofollow`. Literata and Fi
 locally as WOFF2; provenance and licenses are in `static/lexinform_web/fonts/` under the package.
 Translated UI, functional catalog/search forms and mobile accessibility acceptance remain pending.
 
+Staff account forms share the shell and local fonts, with responsive controls, visible error
+markers and native POST submission. Allauth retains its own translated form content, marked with
+the active language inside the Russian shell, and owns CSRF, validation and the MFA flow.
+The account menu does not advertise reader signup. Keyboard/mobile visual acceptance remains open.
+
 For reproducible reading/typography checks, run:
 
 ```bash

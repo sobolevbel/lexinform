@@ -7,13 +7,15 @@
     <meta name="robots" content="noindex,nofollow">
     <title>{% block title %}lexinform{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'lexinform_web/site.css' %}">
+    {% block extra_head %}{% endblock %}
   </head>
   <body>
     <a class="skip-link" href="#main">Перейти к содержанию</a>
     {% include "components/header.html" %}
     <main id="main" class="page" tabindex="-1">
-      {% block content %}{% endblock %}
+      {% block main %}{% block content %}{% endblock %}{% endblock %}
     </main>
     {% include "components/footer.html" %}
+    {% block extra_body %}{% endblock %}
   </body>
 </html>

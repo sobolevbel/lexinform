@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% block head_title %}{% endblock %} · lexinform{% endblock %}
+{% block main %}
+  {% get_current_language as account_language %}
+  <section class="account-panel" lang="{{ account_language }}">
+    {% block body %}
+      {% if messages %}
+        <ul class="notice" aria-live="polite">
+          {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+      {% if user.is_authenticated %}
+        <nav aria-label="{% translate 'Account' %}">
+          <a href="{% url 'account_email' %}">{% translate 'Change Email' %}</a>
+          <a href="{% url 'account_change_password' %}">{% translate 'Change Password' %}</a>
+          <a href="{% url 'mfa_index' %}">{% translate 'Two-Factor Authentication' %}</a>
+          <a href="{% url 'account_logout' %}">{% translate 'Sign Out' %}</a>
+        </nav>
+      {% endif %}
+      {% block content %}{% endblock %}
+    {% endblock %}
+  </section>
+{% endblock %}

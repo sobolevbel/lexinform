@@ -40,7 +40,7 @@ when its acceptance result and checks are recorded here.
 | WEB-03.1 | Complete | UUIDs, scoped natural keys, relations, audited merge/split and stable URL resolution |
 | WEB-03.2 | Complete | Explicit ImportDocumentV1 allowlist, pure state projection, graph validation and legacy/pending fixtures |
 | WEB-04a | Complete | Prototype semantics corrected per §25.13; browser review of catalog, coverage and outcome states |
-| WEB-04b | In progress | Shared shell, locale routes, CMS templates, local fonts, draft demo seed and empty/error states; forms, Clock and mobile acceptance remain |
+| WEB-04b | In progress | Shared shell, locale routes, CMS templates, local fonts, draft demo seed, account forms and empty/error states; Clock and mobile acceptance remain |
 | WEB-05a | Not started | — |
 | WEB-05b | Not started | — |
 | WEB-05c | Not started | — |
@@ -57,6 +57,24 @@ when its acceptance result and checks are recorded here.
 | WEB-11b | Not started | — |
 
 ## Work log
+
+### 2026-09-28 — WEB-04b.4: staff account forms in the shared shell
+
+Connected allauth layouts to the shared shell while retaining upstream form rendering, validation,
+CSRF and MFA behavior. Account content declares its active translation language separately from
+the Russian shell. Authenticated users retain account/MFA/logout navigation; the layout does not
+advertise closed reader signup. Extra head/body blocks remain available to upstream templates.
+
+Added bounded-width native controls, local interface typography, visible error borders and help
+text, wrapping recovery-code output and bounded QR images. The integration tests check login and
+password-reset POST forms, labels/autocomplete, CSRF, no-store/noindex and error-to-input ARIA
+associations. Existing staff authentication scenarios continue to cover security behavior.
+
+Clock-driven participation fixtures and browser keyboard/mobile/zoom acceptance remain open;
+this slice does not complete WEB-04b.
+
+Checks: 226 PostgreSQL web tests, default bot pytest, strict bot/web mypy, Ruff/formatting,
+Django checks, migration drift, strict docs build/links and `git diff --check` passed.
 
 ### 2026-09-28 — WEB-04b.3: repeatable local reading fixture
 

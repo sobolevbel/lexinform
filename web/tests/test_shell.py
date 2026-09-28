@@ -1,6 +1,7 @@
 import pytest
 from bs4 import BeautifulSoup
 from django.contrib.staticfiles import finders
+from django.core.cache import cache
 from django.test import Client, RequestFactory
 from django.urls import reverse
 from django.utils.translation import override
@@ -9,6 +10,43 @@ from wagtail.models import Locale, Page, Site
 
 from lexinform_web.editorial.models import GuidePage
 from lexinform_web.languages import SUPPORTED_LANGUAGES
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("route", ["account_login", "account_reset_password"])
+def test_account_forms_use_shell_and_preserve_native_submission(client: Client, route: str) -> None:
+    response = client.get(reverse(route), HTTP_ACCEPT_LANGUAGE="ru")
+
+    document = BeautifulSoup(response.content, "html.parser")
+    assert response.status_code == 200
+    assert document.select_one('meta[name="robots"][content="noindex,nofollow"]')
+    assert document.select_one('section.account-panel[lang="ru"]')
+    assert document.select_one('link[href$="lexinform_web/site.css"]')
+    assert len(document.select("main h1")) == 1
+    assert document.select_one('form[method="post"] input[name="csrfmiddlewaretoken"]')
+    assert document.select_one('button[type="submit"]')
+    assert document.select_one('a[href="/accounts/signup/"]') is None
+    for field in document.select('input[type="email"], input[type="password"]'):
+        assert document.select_one(f'label[for="{field["id"]}"]')
+        assert field.has_attr("autocomplete")
+    assert "no-store" in response["Cache-Control"]
+
+
+@pytest.mark.django_db
+def test_login_field_error_is_associated_with_input(client: Client) -> None:
+    cache.clear()
+    response = client.post(reverse("account_login"), {"login": "invalid", "password": ""})
+
+    document = BeautifulSoup(response.content, "html.parser")
+    assert response.status_code == 200
+    field = document.select_one('input[name="login"]')
+    assert field is not None
+    assert field.get("aria-invalid") == "true"
+    described_by = str(field.get("aria-describedby", "")).split()
+    assert described_by
+    descriptions = [document.find(id=identifier) for identifier in described_by]
+    assert all(description is not None for description in descriptions)
+    assert any(description.get_text(strip=True) for description in descriptions if description)
 
 
 @pytest.mark.parametrize("language", [code for code, _ in SUPPORTED_LANGUAGES])

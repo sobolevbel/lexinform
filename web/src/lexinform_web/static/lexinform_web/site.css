@@ -79,6 +79,30 @@ summary { display: list-item; cursor: pointer; }
 .skip-link:focus { top: 1rem; }
 .reading { max-width: 68ch; font-size: 1.125rem; }
 .reading img { max-width: 100%; height: auto; }
+.account-panel { max-width: 42rem; overflow-wrap: anywhere; font-family: "Fira Sans", system-ui, sans-serif; }
+.account-panel form { margin-block: 1.5rem; }
+.account-panel label { display: block; margin-block: .75rem .25rem; }
+.account-panel input, .account-panel textarea, .account-panel select, .account-panel button {
+  max-width: 100%;
+  min-width: 0;
+  font: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--slate);
+  border-radius: .15rem;
+  padding: .65rem;
+}
+.account-panel input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+.account-panel textarea, .account-panel select { width: 100%; }
+.account-panel input[type="checkbox"], .account-panel input[type="radio"] { width: 1.25rem; height: 1.25rem; }
+.account-panel label:has(input[type="checkbox"]), .account-panel label:has(input[type="radio"]) { min-height: 44px; }
+.account-panel button { min-height: 44px; cursor: pointer; margin-block: .5rem; }
+.account-panel button:hover { background: var(--slate); color: var(--paper); }
+.account-panel .helptext { display: block; color: var(--secondary); }
+.account-panel .errorlist { border-inline-start: 3px solid var(--brand-accent); padding-inline-start: 1.5rem; }
+.account-panel [aria-invalid="true"] { border-width: 2px; border-color: var(--brand-accent); }
+.account-panel img, .account-panel svg { max-width: 100%; height: auto; }
+.account-panel pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 @media print {
   .site-header, .site-footer, .skip-link { display: none; }
   .page { padding: 0; }
