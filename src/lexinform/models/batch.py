@@ -162,6 +162,7 @@ class BatchItemMeta(BaseModel):
 class BatchJob(BaseModel):
     state: Literal["queued", "submitting", "open", "failed"]
     since: dt.datetime
+    submissions: int = 0
 
 
 class DigestItemMeta(BaseModel):

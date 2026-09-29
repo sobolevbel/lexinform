@@ -203,7 +203,8 @@ uv run lexinform run
 
 The first run publishes nothing from the past: only bills modified after the watermark (default:
 last 24 hours). `--since YYYY-MM-DD` starts earlier; `--no-publish` seeds the database silently.
-`--dry-run` still calls the model; add `--max-analyze 0` to try the pipeline without paying.
+`--dry-run` still asks the triage model (the analysis is queued, never submitted); add
+`--max-analyze 0` to try the pipeline without paying.
 
 ## Deploy with GitHub Actions
 

@@ -104,7 +104,8 @@ uv run lexinform run --dry-run             # the full run: messages to stdout, D
 uv run lexinform run                       # for real, into the DB at LEXINFORM_DB_PATH
 ```
 
-`run --dry-run` still calls the model. To try the pipeline without paying, add
+`run --dry-run` still asks the triage model; every other model call is prepared as a batch
+request and never submitted, so a new bill shows as queued. To try the pipeline without paying, add
 `--max-analyze 0`; to check every followed bill instead of only the changed ones, `--full-track`.
 
 ### Against production data

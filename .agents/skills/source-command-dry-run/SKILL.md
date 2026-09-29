@@ -9,8 +9,10 @@ Use for the migrated `dry-run` command. Fetch and restore the `state` dump into 
 explicit temporary `LEXINFORM_DB_PATH`; never touch the configured database. Stop if restore
 fails.
 
-Run `lexinform run --dry-run --max-analyze 0` by default. Dry runs make real model calls, so lift
-that limit only when the request explicitly asks to analyse, then cap it and report cost. Honour
+Run `lexinform run --dry-run --max-analyze 0` by default. Dry runs make real triage calls; every
+other model call is prepared as a batch request and never submitted, so no analysis or card of a
+new bill appears. Lift that limit only when the request explicitly asks for triage verdicts, then
+cap it and report cost. Honour
 requested `--since`, `--full-track`, and `--no-rcl` options. Treat RCL outages as findings, not a
 reason to silently retry or alter code.
 

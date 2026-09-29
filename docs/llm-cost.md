@@ -132,6 +132,7 @@ The 28 September policy supersedes that plan's latency gate: all supported analy
 including amendments, use batch. Only triage remains synchronous. Each model selects its provider;
 GPT-5.1 context overflow is queued separately to Opus 5.5 and priced at its batch rate for the
 per-bill guard. Manual and forced commands also queue work. Waiting time and urgency never enable
-a synchronous fallback. Uncertain submissions require audited recovery, and confirmed secondary
-failures use the existing failure reporting path. This policy change provides no new production
+a synchronous fallback. Uncertain submissions require audited recovery. A confirmed secondary
+failure is filed once more (a batch can expire or be cancelled) unless the provider refused its
+context; a second failure uses the existing failure reporting path. This policy change provides no new production
 latency or poller-health measurement.

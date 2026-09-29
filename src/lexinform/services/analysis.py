@@ -76,6 +76,7 @@ from lexinform.models import (
 from lexinform.models.batch import (
     AmendmentsQuestion,
     AnalysisQuestion,
+    BatchJob,
     BatchKind,
     BatchQuestion,
     JointQuestion,
@@ -138,6 +139,9 @@ over. Nine tenths clears the ~2k tokens of prefix with room to spare and costs o
 
 _FIT_MIN_CHARS = 20_000
 """Below this a shortened text is not a document any more, and refusing is the honest answer."""
+
+SECONDARY_BATCH_SUBMISSIONS = 2
+"""A batch expires, is cancelled or answers a 5xx: one more submission, then the post goes bare."""
 
 
 @dataclass
@@ -772,21 +776,23 @@ class AnalysisService:
     def _consume(self, item: LlmBatchItem, batch_result: BatchResult) -> None:
         if isinstance(item.meta, DigestItemMeta):
             self._consume_digest(item, batch_result, item.meta)
-            return
-        now = self._clock.now()
-        current = self._repo.get(item.term, item.number)
-        active = (
-            current is not None
-            and current.status is BillStatus.BATCH_PENDING
-            and current.analysis_generation == item.meta.generation
-        )
-        with self._repo.atomic():
-            record = self._consume_current(item, batch_result, now, active=active)
+        else:
+            now = self._clock.now()
+            current = self._repo.get(item.term, item.number)
+            active = (
+                current is not None
+                and current.status is BillStatus.BATCH_PENDING
+                and current.analysis_generation == item.meta.generation
+            )
+            with self._repo.atomic():
+                record = self._consume_current(item, batch_result, now, active=active)
+            self._charge_batch_result(item, batch_result)
+            if record is not None and active:
+                self._memo.setdefault(
+                    item.meta.memo_key or item.custom_id, record.model_dump_json()
+                )
         if batch_result.context_exceeded:
             self._context_rejections.add(item.custom_id)
-        self._charge_batch_result(item, batch_result)
-        if record is not None and active:
-            self._memo.setdefault(item.meta.memo_key or item.custom_id, record.model_dump_json())
 
     def _consume_digest(
         self, item: LlmBatchItem, result: BatchResult, meta: DigestItemMeta
@@ -1092,7 +1098,7 @@ class AnalysisService:
         ):
             job = self._repo.batch_job(key)
             now = self._clock.now()
-            if job is not None:
+            if job is not None and not self._files_again(job, key):
                 if self._options.require_batch:
                     if job.state == "failed":
                         raise RuntimeError(f"{kind} batch failed; no synchronous fallback")
@@ -1159,6 +1165,15 @@ class AnalysisService:
         self._remember_analysis(bill, key, record)
         self._cancel_queued_digest(key)
         return record
+
+    def _files_again(self, job: BatchJob, key: str) -> bool:
+        """Whether a failed secondary request goes to the batch once more instead of failing."""
+        return (
+            self._options.require_batch
+            and job.state == "failed"
+            and job.submissions < SECONDARY_BATCH_SUBMISSIONS
+            and key not in self._context_rejections
+        )
 
     def _cancel_queued_digest(self, key: str) -> None:
         if self._dry_run:

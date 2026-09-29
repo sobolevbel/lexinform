@@ -820,18 +820,23 @@ class SqliteBillRepository:
         )
 
     def batch_job(self, custom_id: str) -> BatchJob | None:
+        submissions = self._conn.execute(
+            "SELECT COUNT(*) FROM llm_batch_items WHERE custom_id = ?", (custom_id,)
+        ).fetchone()[0]
         intent = self._conn.execute(
             "SELECT state, created_at FROM llm_batch_intents WHERE custom_id = ?", (custom_id,)
         ).fetchone()
         if intent is not None:
             return BatchJob(
-                state=intent["state"], since=datetime.fromisoformat(intent["created_at"])
+                state=intent["state"],
+                since=datetime.fromisoformat(intent["created_at"]),
+                submissions=submissions,
             )
         row = self._conn.execute(
             "SELECT i.consumed_at, b.status, "
             "COALESCE(json_extract(i.meta_json, '$.queued_at'), b.submitted_at) AS since "
             "FROM llm_batch_items i JOIN llm_batches b USING (batch_id) "
-            "WHERE i.custom_id = ? ORDER BY b.submitted_at DESC LIMIT 1",
+            "WHERE i.custom_id = ? ORDER BY b.submitted_at DESC, i.rowid DESC LIMIT 1",
             (custom_id,),
         ).fetchone()
         if row is None:
@@ -841,6 +846,7 @@ class SqliteBillRepository:
             if row["consumed_at"] is not None or row["status"] == "failed"
             else "open",
             since=datetime.fromisoformat(row["since"]),
+            submissions=submissions,
         )
 
     def context_rejected_batch_ids(self) -> set[str]:

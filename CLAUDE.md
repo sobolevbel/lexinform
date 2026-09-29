@@ -62,8 +62,9 @@ scans), `docs/rcl-scraping.md` (RCL's markup and files, the wykaz CSV, the probe
   (weekdays 05:23 and 16:23 UTC = 07:23 and 18:23 Warsaw in summer, weekend 10:23 UTC; GitHub
   starts every schedule 3–4.5 h late here, whatever the minute). To test against real data: `git
   show origin/state:lexinform.sql > /tmp/s.sql`, `LEXINFORM_DB_PATH=/tmp/t.db uv run lexinform db
-  init && … db restore /tmp/s.sql`, then `lexinform run --dry-run --since YYYY-MM-DD` (real LLM
-  calls, DB rolled back, prints to stdout).
+  init && … db restore /tmp/s.sql`, then `lexinform run --dry-run --since YYYY-MM-DD` (real
+  triage calls, every other model call prepared as a batch request and never submitted, DB rolled
+  back, prints to stdout).
 
 ## Architecture in one breath
 
@@ -222,8 +223,9 @@ Invariants worth keeping:
   comparison is asked in `PublishingService._compared`, a moment before the reply is rendered and
   before its publication row exists, because the common case is a group arriving in one run,
   where at analysis time no print of it has been read yet; it is an embellishment of the reply
-  and may delay it until the batch deadline but never stops it, so even a model outage (everywhere else the end of a phase) is caught and
-  the reply goes out as it was before comparisons existed. The verdict, importance and category
+  and delays it until its batch answers but never stops it, so a batch that failed twice or even
+  a model outage (everywhere else the end of a phase) is caught and the reply goes out as it was
+  before comparisons existed. The verdict, importance and category
   stay the card's — one thread, one score. **Neither relevance gate decides an alternative
   bill**, for one reason asked at two moments: the card has already answered their question, of a
   bill on the same subject before the same committee, and all they can still do is take that bill
@@ -908,11 +910,15 @@ Invariants worth keeping:
   and the Sejm listing is re-read with a day of overlap, so summing what the runs looked at
   would count one entry sixty times.
 - **A batch request is written down before it is sent, and its answer before it is applied.**
-  `llm_batch_enabled` (on in `daily.yml`) files the full analysis and a re-analysis to the
-  provider's batch API at half price. `llm_batch_kinds` selects secondary amendments, digests
-  and joint comparisons too; triage stays synchronous, and so does a bill the reader must act on within `llm_batch_sync_within_days`
-  (`window_closes_within`: pilny, or a consultation ending by then) — a batch answer can take 24
-  hours and the run after it. The request is frozen whole into `llm_batch_intents` (payload, model,
+  Every model call but the triage goes to its model's batch API at half price (`require_batch`,
+  set by the container): the analysis and a re-analysis, the amendments, the digests and the
+  joint comparisons, with a manual `/analyze`, `force`, `/refresh` and `/republish` among them. A
+  batch answer can take 24 hours and the run after it, and neither urgency (pilny, a
+  consultation about to close) nor waiting buys a synchronous call; `llm_batch_enabled`,
+  `_kinds`, `_provider`, `_sync_within_days` and `_max_wait_hours` are legacy. A secondary
+  request whose batch failed is filed once more (`SECONDARY_BATCH_SUBMISSIONS`, a batch can
+  expire or be cancelled) unless the provider refused its context, and after that the post goes
+  out without it. The request is frozen whole into `llm_batch_intents` (payload, model,
   prompt, output cap) with a cost reservation against the run budget, and the state branch is
   pushed before the provider is called (`GitBatchCheckpoint`), because a runner that dies after
   the call would otherwise pay again. A `submitting` intent is never resubmitted by itself: the
@@ -922,8 +928,9 @@ Invariants worth keeping:
   published). Each open batch is polled through the provider it was *filed* with, one failing
   item never hides the next, and a collected re-analysis waits as `reanalysis_ready` for tracking,
   whatever the discovery watermark. The VPS poller only hurries collection
-  (`repository_dispatch: batch-ready`); every run collects anyway. A dry run analyses
-  synchronously, since a submission cannot be rolled back. `/status` names the open batches and
+  (`repository_dispatch: batch-ready`); every run collects anyway. A dry run prepares the
+  requests and submits none, since a submission cannot be rolled back: only the triage is asked,
+  and a new bill shows as queued rather than analysed. `/status` names the open batches and
   any `batch_pending` bill no batch holds.
 - **A bill with no card is observed, never told.** For the website every analysed bill gets an
   observation mode (`observation_for`: a sent card → `full`/`telegram_thread`, relevant →
@@ -1427,14 +1434,15 @@ plenary `schedule`, which would name the day within a four-day sitting; and the 
 would tell whether a `PublicHearing` node ever appears before its hearing.
 
 
-Secondary batch requests use the memo key as custom ID; their timeout includes queued and
-uncertain submission time. The v32 `awaiting_batch_since` keeps deferred observations eligible
-for tracking across discovery watermarks and is cleared with the observation checkpoint.
+Secondary batch requests use the memo key as custom ID, so one filed again keeps it and
+`batch_job` reads the newest submission. The v32 `awaiting_batch_since` keeps deferred
+observations eligible for tracking across discovery watermarks and is cleared with the
+observation checkpoint.
 
-Joint comparisons may delay an automatic reply until the batch deadline, but never stop it:
-manual republish and dry runs stay synchronous; a failed or overdue item falls back to the
-ordinary comparison. Waiting creates no publication and consumes no delivery attempt.
+Joint comparisons delay a reply until their batch answers, a manual republish included, but never
+stop it: a comparison that failed twice is dropped and the reply goes out without it. Waiting
+creates no publication and consumes no delivery attempt.
 
 A waiting filed-document digest leaves stages, seen supplements and delivery work uncommitted.
 Mark the bill as waiting as soon as a digest is queued, including when a later document fails;
-clear the marker atomically with the completed observation. `/refresh` does not wait.
+clear the marker atomically with the completed observation. `/refresh` waits like a run does.

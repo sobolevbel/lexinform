@@ -19,7 +19,7 @@ For documentation work, read `docs/index.md` for the local portal and `docs/auth
 - Comments and docstrings state only a non-obvious external fact or invariant; keep them to one line. Commit messages are English. Commit each completed, coherent part; do not push unless asked or add `Co-Authored-By` trailers.
 - `.env` contains real secrets: do not read or print it. Keep `.env.example` aligned when adding settings.
 - Reader-facing wording is Russian (labels live in `i18n.py`); retain Polish legal titles and abbreviations unchanged.
-- Production state is the SQLite dump on the `state` branch, maintained by `.github/workflows/daily.yml`. Real-data dry runs must use a copy of that dump and `lexinform run --dry-run`; they still make real LLM calls.
+- Production state is the SQLite dump on the `state` branch, maintained by `.github/workflows/daily.yml`. Real-data dry runs must use a copy of that dump and `lexinform run --dry-run`; they still make real triage calls, while every other model call is prepared as a batch request and never submitted.
 
 ## Architecture and tests
 
