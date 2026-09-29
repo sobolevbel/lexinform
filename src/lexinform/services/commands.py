@@ -13,7 +13,6 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
-from lexinform.i18n import labels_for
 from lexinform.models import (
     DISPATCHED,
     SILENCED_BY_OPERATOR,
@@ -461,7 +460,7 @@ class CommandService:
             return self._reload(bill), CommandOutcome(
                 status=OutcomeStatus.QUEUED,
                 bill=self._reload(bill),
-                note=labels_for("ru").analysis_queued,
+                note="queued to the batch; the result is applied when the batch completes",
             )
         return self._reload(bill), None
 

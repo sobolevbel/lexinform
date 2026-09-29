@@ -41,7 +41,7 @@ from lexinform.adapters.telegram_format import APPROVE_DIGEST, MessageFormatter
 from lexinform.adapters.wykaz_csv import WykazClient
 from lexinform.clock import SystemClock
 from lexinform.keywords import KeywordPrefilter
-from lexinform.models import BatchProvider
+from lexinform.models import BatchProvider, provider_of
 from lexinform.ports import (
     BatchBackend,
     BillRepository,
@@ -223,7 +223,7 @@ class Container:
         """One of the four non-triage capabilities, built for whichever model its own setting
         names. A `claude-` name is the one-setting way back to Claude for that capability alone —
         every other capability keeps whatever it was already routed to."""
-        if model.startswith("claude-"):
+        if provider_of(model) == "anthropic":
             return AnthropicAnalyzer(
                 anthropic.Anthropic(api_key=self.settings.anthropic_api_key),
                 model=model,
@@ -265,11 +265,7 @@ class Container:
         return backend
 
     def batch_backend_for(self, provider: BatchProvider) -> BatchBackend | None:
-        overflow_provider = (
-            "anthropic"
-            if self.settings.llm_analysis_overflow_model.startswith("claude-")
-            else "openai"
-        )
+        overflow_provider = provider_of(self.settings.llm_analysis_overflow_model)
         if self.overflow_batch_override is not None and provider == overflow_provider:
             return self.overflow_batch_override
         if self.batch_override is not None:
@@ -280,10 +276,9 @@ class Container:
 
     def _batch_model(self, provider: BatchProvider) -> str:
         analysis_model = self.settings.llm_analysis_model
-        is_claude = analysis_model.startswith("claude-")
-        if provider == "anthropic":
-            return analysis_model if is_claude else "claude-opus-5-5"
-        return analysis_model if not is_claude else "gpt-5.1"
+        if provider_of(analysis_model) == provider:
+            return analysis_model
+        return "claude-opus-5-5" if provider == "anthropic" else "gpt-5.1"
 
     def analysis_service(self) -> AnalysisService:
         return self._once("analysis", self._build_analysis_service)
@@ -295,9 +290,6 @@ class Container:
         # model's, not the secondary one's (`llm_model`).
         price = price_of(self.settings.llm_analysis_model)  # None: unknown model, no estimates
         supplement_price = price_of(self.settings.llm_supplement_model)
-        provider: BatchProvider = (
-            "anthropic" if self.settings.llm_analysis_model.startswith("claude-") else "openai"
-        )
         batch_price = price
         overflow_price = price_of(self.settings.llm_analysis_overflow_model)
         return AnalysisOptions(
@@ -313,11 +305,7 @@ class Container:
             overflow_input_price_usd_per_mtok=overflow_price[0] if overflow_price else None,
             overflow_max_input_tokens=input_limit_of(self.settings.llm_analysis_overflow_model),
             overflow_model=self.settings.llm_analysis_overflow_model,
-            overflow_provider=(
-                "anthropic"
-                if self.settings.llm_analysis_overflow_model.startswith("claude-")
-                else "openai"
-            ),
+            overflow_provider=provider_of(self.settings.llm_analysis_overflow_model),
             batch_max_input_tokens=input_limit_of(self.settings.llm_analysis_model),
             prompt_version=PROMPT_VERSION,
             max_bill_cost_usd=self.settings.max_analysis_cost_usd,
@@ -326,7 +314,7 @@ class Container:
             triage_scan_pages=self.settings.triage_scan_pages,
             triage_min_confidence=self.settings.triage_min_confidence,
             channel_id=self.channel_id(),
-            batch_provider=provider,
+            batch_provider=provider_of(self.settings.llm_analysis_model),
             submit_batches=self.settings.llm_batch_enabled,
             batch_sync_within_days=self.settings.llm_batch_sync_within_days,
             batch_kinds=self.settings.llm_batch_kinds,

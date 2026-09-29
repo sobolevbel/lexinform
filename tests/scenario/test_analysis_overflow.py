@@ -195,6 +195,40 @@ def test_reanalysis_context_rejection_uses_opus_batch() -> None:
     assert isinstance(ctx, BillContext) and ctx.previous_summary is not None
 
 
+def test_a_re_analysis_no_model_takes_keeps_the_previous_analysis_rather_than_failing() -> None:
+    """The tracking loop reads a new text first: a raise there would stop the bill's updates."""
+    overflow = OverflowBatch(rejected=True)
+    w = World(
+        analysis_model="gpt-5.1",
+        overflow_batch=overflow,
+        batch_only=True,
+        extractor=FakeTextExtractor(by_content={b"new": "Nowy tekst ustawy. " * 100}),
+    )
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.batch.resolve()
+    w.run()
+    w.batch.script["3039"] = LlmContextExceededError("context_length_exceeded")
+    url = "https://api.test/new.pdf"
+    w.gateway.files[url] = b"new"
+    document = TextDocument(url=url, kind="print")
+    w.analysis.reanalyze_bill(w.bill("3039"), document)
+    w.analysis.submit_queued_batches()
+    w.batch.resolve()
+    w.analysis.collect_batches()
+    w.analysis.reanalyze_bill(w.bill("3039"), document)
+    w.analysis.submit_queued_batches()
+    overflow.resolve()
+    w.analysis.collect_batches()
+
+    again = w.analysis.reanalyze_bill(w.bill("3039"), document)
+
+    assert again is None
+    analysis = w.bill("3039").analysis
+    assert analysis is not None and analysis.revision == 1
+    assert len(overflow.submitted) == 1
+
+
 def test_openai_and_opus_batches_are_submitted_and_collected_in_one_run() -> None:
     overflow = OverflowBatch()
     w = World(

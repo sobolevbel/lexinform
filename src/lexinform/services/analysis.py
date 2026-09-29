@@ -69,6 +69,7 @@ from lexinform.models import (
     TriageRecord,
     merge_usage,
     observe,
+    provider_of,
     stage_fingerprint,
     usage_of,
     window_closes_within,
@@ -416,6 +417,7 @@ class AnalysisService:
         self._ledger = CostLedger(max_run_usd=options.max_run_cost_usd)
         self._memo = repo.load_analysis_memo()
         self._context_rejections = repo.context_rejected_batch_ids()
+        self._read_since_last_run = True
 
     def start_run(self, *, dry_run: bool = False) -> None:
         self._dry_run = dry_run
@@ -433,8 +435,11 @@ class AnalysisService:
         for item in self._repo.list_unaccounted_batch_items():
             if item.result is not None:
                 self._charge_batch_result(item, item.result)
-        self._memo = self._repo.load_analysis_memo()
-        self._context_rejections = self._repo.context_rejected_batch_ids()
+        # A rolled-back dry run leaves both ahead of the database; a new service has just read them.
+        if not self._read_since_last_run:
+            self._memo = self._repo.load_analysis_memo()
+            self._context_rejections = self._repo.context_rejected_batch_ids()
+        self._read_since_last_run = False
 
     def acknowledge_batch_costs(self) -> None:
         for batch_id, custom_id in self._accounted_items:
@@ -1087,7 +1092,7 @@ class AnalysisService:
             return _reused(record)
         kind = question.kind
         model = self._options.batch_models.get(kind, "")
-        provider: BatchProvider = "anthropic" if model.startswith("claude-") else "openai"
+        provider = provider_of(model)
         backend = self._batch_resolver(provider) if self._batch_resolver else self._batch
         if self._options.require_batch or (
             may_wait
@@ -1450,37 +1455,29 @@ class AnalysisService:
             previous_key_changes=list(previous.analysis.key_changes) if previous else [],
         )
         original_ctx = ctx
+        first = previous is None
+        purpose: Literal["analysis", "reanalysis"] = "analysis" if first else "reanalysis"
+
+        def to_overflow(reason: str) -> tuple[BillContext, str]:
+            log.info("%s: %s; using the overflow model", bill.number, reason)
+            fitted = self._fit_to_budget(
+                original_ctx, loaded, first=first, cost_guard=cost_guard, batch=True, overflow=True
+            )
+            return fitted, _memo_key(bill, purpose, fitted)
+
         overflow = self._needs_overflow(ctx, batch=submit_batch)
         if overflow:
-            log.info("%s: input exceeds primary context; using overflow model", bill.number)
             submit_batch = True
-        ctx = self._fit_to_budget(
-            ctx,
-            loaded,
-            first=previous is None,
-            batch=submit_batch,
-            cost_guard=cost_guard,
-            overflow=overflow,
-        )
-        purpose: Literal["analysis", "reanalysis"] = (
-            "analysis" if previous is None else "reanalysis"
-        )
-        key = _memo_key(bill, purpose, ctx)
-        if not overflow and self._overflow_batch is not None:
+            ctx, key = to_overflow("input exceeds the primary model's context")
+        else:
+            ctx = self._fit_to_budget(
+                ctx, loaded, first=first, batch=submit_batch, cost_guard=cost_guard
+            )
+            key = _memo_key(bill, purpose, ctx)
             custom_id = hashlib.sha256(f"{key}:{bill.analysis_generation}".encode()).hexdigest()
-            if custom_id in self._context_rejections:
-                log.info("%s: batch context rejected; using overflow model", bill.number)
-                overflow = True
-                submit_batch = True
-                ctx = self._fit_to_budget(
-                    original_ctx,
-                    loaded,
-                    first=previous is None,
-                    cost_guard=cost_guard,
-                    batch=submit_batch,
-                    overflow=True,
-                )
-                key = _memo_key(bill, purpose, ctx)
+            if self._overflow_batch is not None and custom_id in self._context_rejections:
+                overflow = submit_batch = True
+                ctx, key = to_overflow("the primary batch rejected the context")
         cached = self._memo.get(key) if cost_guard else None
         record: AnalysisRecord | None = None
         if cached is None and not submit_batch:
@@ -1489,17 +1486,8 @@ class AnalysisService:
             except LlmContextExceededError:
                 if self._overflow_batch is None:
                     raise
-                overflow = True
-                submit_batch = True
-                ctx = self._fit_to_budget(
-                    original_ctx,
-                    loaded,
-                    first=previous is None,
-                    cost_guard=cost_guard,
-                    batch=True,
-                    overflow=True,
-                )
-                key = _memo_key(bill, purpose, ctx)
+                overflow = submit_batch = True
+                ctx, key = to_overflow("the primary model rejected the context")
                 cached = self._memo.get(key) if cost_guard else None
         backend = self._overflow_batch if overflow else self._batch
         if cached is None and submit_batch and backend is None:
@@ -1512,6 +1500,11 @@ class AnalysisService:
                 request_identity += f":overflow:{self._options.overflow_model}"
             custom_id = hashlib.sha256(request_identity.encode()).hexdigest()
             if overflow and custom_id in self._context_rejections:
+                if not first:
+                    log.warning("%s: no model takes the new text's context", bill.number)
+                    return _Prepared(
+                        bill, located, text, source, previous, first=False, unreadable=True
+                    )
                 raise LlmContextExceededError("overflow batch also rejected the input context")
             return _Prepared(
                 bill,

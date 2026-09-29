@@ -49,6 +49,7 @@ from lexinform.models.batch import (
     PendingBatch,
     PendingBatches,
     SupplementQuestion,
+    provider_of,
 )
 from lexinform.models.bill import (
     PLENARY_COMMITTEE_CODE,
@@ -357,6 +358,7 @@ __all__ = [
     "BatchIntent",
     "DigestItemMeta",
     "BatchProvider",
+    "provider_of",
     "BatchRequest",
     "BatchResult",
     "BatchStatus",

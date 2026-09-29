@@ -172,7 +172,7 @@ jobs:
           # legislacja.rcl.gov.pl drops connections from GitHub's runners: go through an EU proxy.
           LEXINFORM_RCL_PROXY_URL: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
           LEXINFORM_LOG_LEVEL: INFO
-          # "false" analyses synchronously again; batches already filed are collected either way.
+          # Legacy: every model call but the triage goes to the batch whatever these two say.
           LEXINFORM_LLM_BATCH_ENABLED: "true"
           LEXINFORM_LLM_BATCH_KINDS: analysis,reanalysis,joint,supplement,amendments
           LEXINFORM_LLM_BATCH_STATE_FILE: state/lexinform.sql

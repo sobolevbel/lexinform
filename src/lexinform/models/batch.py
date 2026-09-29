@@ -23,6 +23,11 @@ BatchProvider = Literal["anthropic", "openai"]
 BatchStatus = Literal["submitted", "ended", "failed"]
 
 
+def provider_of(model: str) -> BatchProvider:
+    """Who serves `model`: a `claude-` name is Anthropic's, every other name OpenAI's."""
+    return "anthropic" if model.startswith("claude-") else "openai"
+
+
 class AnalysisQuestion(BaseModel):
     kind: Literal["analysis", "reanalysis"]
     ctx: BillContext
