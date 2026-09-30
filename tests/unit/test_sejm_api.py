@@ -129,6 +129,22 @@ def test_a_print_publishing_its_text_under_a_name_of_its_own_is_still_read() -> 
     assert amended.main_pdf is not None
 
 
+def test_a_budget_print_is_read_from_the_act_and_not_from_the_first_appendix() -> None:
+    budget = _print_with(
+        "3150",
+        "3150-ustawa.docx",
+        "3150-trzyletni plan limitu mianowań urzędników.pdf",
+        "3150-strategia zarządzania długiem.pdf",
+        "3150-uzasadnienie.pdf",
+        "3150-ustawa i załączniki do ustawy.pdf",
+    )
+    misnumbered = _print_with("3155", "3115.pdf", "3115-ustawa.docx")
+
+    assert budget.main_pdf is not None
+    assert budget.main_pdf.name == "3150-ustawa i załączniki do ustawy.pdf"
+    assert misnumbered.main_pdf is not None and misnumbered.main_pdf.name == "3115.pdf"
+
+
 def test_the_prints_own_pdf_wins_over_everything_else() -> None:
     info = _print_with("3039", "3039-001.pdf", "3039.pdf")
 
@@ -278,6 +294,27 @@ def test_committee_sittings_and_sejm_sittings_are_parsed() -> None:
     assert "druki nr" in full.agenda
     with pytest.raises(SejmApiError):
         client.get_sitting(10, 66)
+
+
+def test_a_null_in_a_committee_listing_or_its_video_is_not_a_failed_listing() -> None:
+    sittings = [
+        None,
+        {"num": 7, "date": "2026-10-06", "status": "PLANNED", "agenda": "x", "video": [None]},
+        {
+            "num": 8,
+            "date": "2026-10-07",
+            "status": "PLANNED",
+            "agenda": "y",
+            "video": [None, {"playerLink": "https://www.sejm.gov.pl/v"}],
+        },
+    ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=sittings)
+
+    parsed = _client(handler).list_committee_sittings(10, "OSZ")
+
+    assert [(s.num, s.video_url) for s in parsed] == [(7, None), (8, "https://www.sejm.gov.pl/v")]
 
 
 def test_server_errors_are_retried_then_the_request_succeeds() -> None:

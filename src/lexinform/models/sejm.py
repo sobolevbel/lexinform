@@ -545,6 +545,14 @@ def _names_a_filing(name: str, number: str) -> bool:
     return re.fullmatch(rf"{re.escape(number)}-(\d+|s)\.[a-z0-9]+", name.strip(), re.I) is not None
 
 
+def _names_the_bill(name: str) -> bool:
+    """`3115.pdf`, `2872 (z autopoprawką).pdf` or `3150-ustawa i załączniki…`, not an appendix."""
+    return (
+        re.fullmatch(r"\d+(\s*\(.*\))?\.pdf|\d+-\s*(ustaw|projekt).*", name.strip(), re.I)
+        is not None
+    )
+
+
 class PrintInfo(BaseModel):
     """GET /prints/{number}."""
 
@@ -565,7 +573,7 @@ class PrintInfo(BaseModel):
 
     @property
     def main_pdf(self) -> Attachment | None:
-        """The bill text itself: `{number}.pdf`, else the first PDF that is this print's own.
+        """The bill text: `{number}.pdf`, else this print's own PDF, the act before an appendix.
 
         The fallback is for a print publishing its text under a name of its own ("2872 (z
         autopoprawką).pdf"), and must not reach past this print: for druki 599, 1768 and 2821 the
@@ -578,7 +586,7 @@ class PrintInfo(BaseModel):
             if a.name.lower() == preferred:
                 return a
         own = [a for a in pdfs if not _names_a_filing(a.name, self.number)]
-        return own[0] if own else None
+        return min(own, key=lambda a: not _names_the_bill(a.name), default=None)
 
 
 def supplement_kind(title: str) -> SourceKind | None:

@@ -240,7 +240,9 @@ class SejmApiClient:
         data = self._get_json(f"/sejm/term{term}/committees/{quote(code)}/sittings")
         if not isinstance(data, list):
             raise SejmApiError(f"Unexpected /committees/{code}/sittings payload")
-        return tuple(parse_committee_sitting(item, code=code) for item in data)
+        return tuple(
+            parse_committee_sitting(item, code=code) for item in data if isinstance(item, dict)
+        )
 
     def list_sittings(self, term: int) -> tuple[SejmSitting, ...]:
         data = self._get_json(f"/sejm/term{term}/proceedings")
@@ -501,7 +503,9 @@ def parse_committee(item: dict[str, Any], *, term: int) -> Committee:
 def parse_committee_sitting(item: dict[str, Any], *, code: str) -> CommitteeSitting:
     start = _datetime(item.get("startDateTime"))
     video = item.get("video") or ()
-    player = next((v.get("playerLink") for v in video if v.get("playerLink")), None)
+    player = next(
+        (v["playerLink"] for v in video if isinstance(v, dict) and v.get("playerLink")), None
+    )
     return CommitteeSitting(
         code=str(item.get("code") or code),
         num=_int(item.get("num")) or 0,

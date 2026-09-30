@@ -170,8 +170,11 @@ def test_formatter_dates_from_its_own_clock_when_no_day_is_given(
 
 
 def test_card_tags_open_consultations_and_ukraine(process_3039: ProcessDetail) -> None:
+    analysis = make_analysis()
+    analysis.affected_groups = ["граждане Украины со статусом UKR"]
     bill = bill_of(
         process_3039,
+        analysis,
         submission=consulted(number="RPW/1/2026", consultation_end=dt.date(2026, 9, 20)),
         prefilter_hits=["cudzoziemcy", "text:obywatele_ukrainy"],
     )
@@ -183,6 +186,16 @@ def test_card_tags_open_consultations_and_ukraine(process_3039: ProcessDetail) -
     )
 
     assert tags == "#kadencja10druk3039 #важность5 #легализация #Украина #консультации #kadencja10"
+
+
+def test_a_passing_mention_of_ukraine_in_the_text_does_not_tag_a_card_that_never_names_it(
+    process_3039: ProcessDetail,
+) -> None:
+    bill = bill_of(process_3039, prefilter_hits=["text:migracja", "text:obywatele_ukrainy"])
+
+    tags = MessageFormatter("ru").new_bill(bill, None).text.splitlines()[-1]
+
+    assert "#Украина" not in tags
 
 
 def test_closed_consultation_loses_its_tag_and_ukraine_is_read_from_the_title(

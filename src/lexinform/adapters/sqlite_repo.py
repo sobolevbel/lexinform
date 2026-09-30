@@ -1690,6 +1690,29 @@ class SqliteBillRepository:
             (pre_print_number, wykaz_number, term, print_number),
         )
 
+    def move_batch_work(self, term: int, from_number: str, to_number: str) -> None:
+        self._conn.execute(
+            "UPDATE llm_batch_items SET number = ?"
+            " WHERE term = ? AND number = ? AND consumed_at IS NULL",
+            (to_number, term, from_number),
+        )
+        self._conn.execute(
+            "UPDATE llm_batch_intents SET request_json = json_set(request_json, '$.number', ?)"
+            " WHERE json_extract(request_json, '$.term') = ?"
+            " AND json_extract(request_json, '$.number') = ?",
+            (to_number, term, from_number),
+        )
+        self._conn.execute(
+            "UPDATE bills SET (ready_analysis_json, analysis_generation) ="
+            " (SELECT ready_analysis_json, analysis_generation FROM bills"
+            " WHERE term = ? AND number = ?) WHERE term = ? AND number = ?",
+            (term, from_number, term, to_number),
+        )
+        self._conn.execute(
+            "UPDATE bills SET ready_analysis_json = NULL WHERE term = ? AND number = ?",
+            (term, from_number),
+        )
+
     def create_publication(self, publication: Publication) -> int:
         """Insert the row or, when its unique key exists, reset that row to the given status.
 

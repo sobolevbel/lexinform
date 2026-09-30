@@ -69,9 +69,9 @@ class Linker:
         self._text_prefilter = text_prefilter
         self._texts = SejmTextSource(gateway)
 
-    def _status_of_print(self, pre: Bill) -> BillStatus:
+    def _status_of_print(self, pre: Bill, own: Bill | None) -> BillStatus:
         """The print copies the entry's status, except a prefilter skip: the print's own PDF is
-        scanned instead of the skip being inherited.
+        scanned instead of the skip being inherited, unless it already was.
 
         The skip may mean the keywords missed the entry's own file, or that the file was a scan,
         or that the WAF refused us, and the status cannot say which. The print comes from
@@ -79,6 +79,8 @@ class Linker:
         """
         skipped = (BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER)
         if pre.status in skipped and self._text_prefilter:
+            if own is not None and own.status is BillStatus.SKIPPED_TEXT_PREFILTER:
+                return own.status
             return BillStatus.TEXT_PREFILTER_PENDING
         return pre.status
 
@@ -100,7 +102,7 @@ class Linker:
         stages = self._enricher.name_committees(pre.term, detail.stages)
         card = self._poster.card(pre)
         read = own is not None and _read_on_its_own(own)
-        status = own.status if own is not None and read else self._status_of_print(pre)
+        status = own.status if own is not None and read else self._status_of_print(pre, own)
         analysis = own.analysis if own is not None and own.analysis is not None and read else None
         bill = pre.model_copy(
             update={
@@ -206,14 +208,17 @@ class Linker:
         self._repo.save_observed_closure(pre.term, print_number, detail.closure_date)
         if not read:
             self._repo.set_status(pre.term, print_number, status, prefilter_hits=pre.prefilter_hits)
-            if status is not pre.status:
+            if status is not pre.status and status is BillStatus.TEXT_PREFILTER_PENDING:
                 log.info(
-                    "druk %s: %s was a title miss; its text is scanned next",
+                    "druk %s: %s was skipped by the prefilter; the print's text is scanned next",
                     print_number,
                     pre.number,
                 )
             if pre.analysis is not None:
                 self._repo.save_analysis(pre.term, print_number, pre.analysis)
+            # The entry's batch answers for the entry's number, which is `linked` from now on.
+            if status in _BEING_READ:
+                self._repo.move_batch_work(pre.term, pre.number, print_number)
         if pre.submission is not None:
             self._repo.save_submission(pre.term, print_number, pre.submission)
         self._repo.link_bills(

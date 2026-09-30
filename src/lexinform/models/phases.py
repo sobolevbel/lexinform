@@ -202,6 +202,7 @@ SITTING_PHASES = frozenset(
     }
 )
 _UKRAINE = next(p.regex for p in KEYWORD_PATTERNS if p.name == "obywatele_ukrainy")
+_UKRAINE_SAID = re.compile(r"украин|ukrai|\bUKR\b", re.IGNORECASE)
 
 
 def government_path(bill: Bill) -> bool:
@@ -253,12 +254,17 @@ def window_closes_within(bill: Bill, today: dt.date, days: int) -> bool:
 
 
 def about_ukraine(bill: Bill) -> bool:
-    """Prefilter hit on "obywatele Ukrainy" (title or text), or the title says so itself."""
-    hits = {hit.removeprefix("text:") for hit in bill.prefilter_hits}
-    if "obywatele_ukrainy" in hits:
-        return True
+    """The title names Ukraine, or the text does and the analysis says so too."""
     s = bill.summary
-    return bool(_UKRAINE.search(f"{s.title} {s.description or ''}"))
+    if "obywatele_ukrainy" in bill.prefilter_hits or _UKRAINE.search(
+        f"{s.title} {s.description or ''}"
+    ):
+        return True
+    if "text:obywatele_ukrainy" not in bill.prefilter_hits or bill.analysis is None:
+        return False
+    a = bill.analysis.analysis
+    said = " ".join([a.summary, a.practical_impact, *a.key_changes, *a.affected_groups])
+    return _UKRAINE_SAID.search(said) is not None
 
 
 def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:

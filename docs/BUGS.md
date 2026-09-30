@@ -7,10 +7,11 @@
 [ревью этих исправлений](reviews/2026-09-28-incident-3141-review.md) нашло B60–B63, они исправлены
 в тот же день вместе с отпечатком закона (`law_digest`).
 29 сентября разбор прогона 173 нашёл B64–B65 — старые проекты RCL, которые листинг показал изменёнными.
+30 сентября разбор прогонов 175–176 нашёл B66–B70; они исправлены в тот же день.
 
 ## Как пользоваться
 
-Баги отсортированы по влиянию на читателя, затем по номеру. Номера B1…B65 постоянные:
+Баги отсортированы по влиянию на читателя, затем по номеру. Номера B1…B70 постоянные:
 старые обозначения `#4` и `B4` означают одну запись.
 `open` — воспроизведённый дефект; `candidate` — ещё не доказанная гипотеза.
 Закрытие требует регрессии, падающей до исправления и проходящей после него,
@@ -68,6 +69,56 @@ projektu ustawy do Sejmu» 2021-01-07), даёт `SENT_TO_SEJM` и фазу `rcl
 Кандидат на исправление: передача в Сейм до начала текущего созыва (`/sejm/term`, `from`) на первом
 появлении — история; либо искать друк прошлого созыва через `getIdFromLegislacja` и решать по нему.
 Приёмка: `test_a_project_sent_to_a_past_sejm_gets_no_card_when_rcl_touches_it` (strict xfail).
+
+## B66
+
+**P1 · fixed · 30.09.2026.** `services/tracking/linking.py::_adopt`, `adapters/sqlite_repo.py::move_batch_work`.
+
+Зеркало B60. Запись RPW/32733/2026 (бюджет на 2027) ушла в overflow-батч Anthropic; в следующем
+прогоне линкер скопировал `batch_pending` на друк 3150 и сделал запись `linked`. Ответ батча
+выписан на номер записи, поэтому `_consume` счёл его неактивным: ответ оплачен и выброшен, а друк
+остался в `batch_pending` без батча навсегда.
+
+Теперь линкер, копируя статус ожидания, переносит на друк незабранные batch items, queued intents,
+готовый анализ и поколение записи. Регрессия
+`test_an_entrys_batched_analysis_reaches_the_print_it_became` (`tests/scenario/test_run_176_audit.py`).
+
+## B67
+
+**P1 · fixed · 30.09.2026.** `models/sejm.py::PrintInfo.main_pdf`.
+
+У друка без `{number}.pdf` брался первый собственный PDF. У бюджета 3150 первым идёт приложение
+«3150-trzyletni plan limitu mianowań urzędników.pdf» (15k символов), а сам проект лежит в
+«3150-ustawa i załączniki do ustawy.pdf»; префильтр отсеял бюджет по приложению. Тест друка 125
+проходил только потому, что в фикстуре проект стоял первым.
+
+Теперь первым берётся файл, названный номером или «{n}-ustawa…»/«{n}-projekt…». Регрессия
+`test_a_budget_print_is_read_from_the_act_and_not_from_the_first_appendix`.
+
+## B68
+
+**P2 · fixed · 30.09.2026.** `models/phases.py::about_ukraine`.
+
+Тег `#Украина` ставился по одному совпадению `obywatele_ukrainy` в тексте: карточка RCL/12398102
+(рефундация лекарств, пакет 450k символов) получила тег, хотя о Украине не говорит. Теперь текстовое
+совпадение даёт тег, только если Украину называет и анализ; заголовок решает, как раньше. Регрессия
+`test_a_passing_mention_of_ukraine_in_the_text_does_not_tag_a_card_that_never_names_it`.
+
+## B69
+
+**P3 · fixed · 30.09.2026.** `adapters/sejm_api.py::parse_committee_sitting`.
+
+`null` внутри `video` (или в самом листинге) падал `AttributeError`, который агенда пишет как
+«sittings of committee OSZ unavailable» (прогон 175): анонсы комиссии в этот прогон не обновлялись.
+Регрессия `test_a_null_in_a_committee_listing_or_its_video_is_not_a_failed_listing`.
+
+## B70
+
+**P3 · fixed · 30.09.2026.** `services/tracking/linking.py::_status_of_print`.
+
+Запись, отсеянная префильтром, при связывании отправляла друк в `text_prefilter_pending`, даже если
+друк уже был отсеян по своему PDF: друки 3154 и 3155 скачивались и отсеивались второй раз.
+Регрессия `test_a_print_its_own_text_already_skipped_is_not_scanned_again_when_its_entry_links`.
 
 ## B60
 
