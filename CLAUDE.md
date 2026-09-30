@@ -59,8 +59,9 @@ scans), `docs/rcl-scraping.md` (RCL's markup and files, the wykaz CSV, the probe
   CLI test's `env` sets the token and the log channel to "" explicitly as well.
 - Messages to readers are Russian (labels in `i18n.py`, RU + EN); Polish law titles stay Polish.
 - Prod state = SQLite dump in the `state` branch, written by `.github/workflows/daily.yml`
-  (weekdays 05:23 and 16:23 UTC = 07:23 and 18:23 Warsaw in summer, weekend 10:23 UTC; GitHub
-  starts every schedule 3–4.5 h late here, whatever the minute). To test against real data: `git
+  (cron weekdays 01:23 and 13:23 UTC, weekend 06:23 UTC; GitHub starts every schedule ~4–6 h
+  late here, whatever the minute, so a run lands ~08:00–10:00 and ~18:00–21:00 Warsaw, and at
+  midday on the weekend). To test against real data: `git
   show origin/state:lexinform.sql > /tmp/s.sql`, `LEXINFORM_DB_PATH=/tmp/t.db uv run lexinform db
   init && … db restore /tmp/s.sql`, then `lexinform run --dry-run --since YYYY-MM-DD` (real
   triage calls, every other model call prepared as a batch request and never submitted, DB rolled

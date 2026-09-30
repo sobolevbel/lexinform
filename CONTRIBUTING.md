@@ -111,7 +111,8 @@ request and never submitted, so a new bill shows as queued. To try the pipeline 
 ### Against production data
 
 Production state is a SQL dump in the `state` branch, written by `.github/workflows/daily.yml`
-after every run (weekdays 05:23 and 16:23 UTC, weekend 10:23 UTC). To reproduce a run on it:
+after every run (cron weekdays 01:23 and 13:23 UTC, weekend 06:23 UTC, started 4–6 h late). To
+reproduce a run on it:
 
 ```bash
 git fetch origin state

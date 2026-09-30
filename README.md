@@ -208,9 +208,10 @@ last 24 hours). `--since YYYY-MM-DD` starts earlier; `--no-publish` seeds the da
 
 ## Deploy with GitHub Actions
 
-`.github/workflows/daily.yml` runs the bot on weekdays at 05:23 and 16:23 UTC (07:23 and 18:23
-Warsaw in summer) and on the weekend at 10:23 UTC (12:23 Warsaw); GitHub starts scheduled runs
-3–4.5 hours late in this repository. It keeps its state in the `state` branch as a plain-text SQL dump.
+`.github/workflows/daily.yml` is scheduled on weekdays at 01:23 and 13:23 UTC and on the weekend
+at 06:23 UTC; GitHub starts scheduled runs 4–6 hours late in this repository, so the runs land in
+the Warsaw morning and evening and at midday on the weekend. It keeps its state in the `state`
+branch as a plain-text SQL dump.
 
 1. Create a bot with [@BotFather](https://t.me/BotFather); create the channel and add the bot as an
    administrator (channel id: `@name` or `-100…`).

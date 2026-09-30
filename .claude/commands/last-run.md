@@ -136,8 +136,8 @@ where p.kind = 'new_bill' and p.status = 'sent' and b.status not in ('analyzed',
 
 ## 6. Расписание и время фаз
 
-`gh run list --workflow daily.yml -L 10` — будни 05:23 и 16:23 UTC, выходные 10:23, GitHub
-стартует на 3–4.5 часа позже. `phase_seconds`: RCL-дискавери в сотни секунд — норма (страница
+`gh run list --workflow daily.yml -L 10` — cron будни 01:23 и 13:23 UTC, выходные 06:23, GitHub
+стартует на 4–6 часов позже (утренний прогон ~06:00–08:00 UTC). `phase_seconds`: RCL-дискавери в сотни секунд — норма (страница
 ~10 с), а вот текстовый префильтр в минуты означает сканы или большие PDF; сравни с прошлыми
 прогонами через `uv run lexinform runs --days 14`.
 

@@ -18,13 +18,14 @@ on:
     #     the calendar moves on: consultation deadlines and in-force dates falling on a Saturday
     #     or Sunday, reminders of Monday's hearings, a late Friday upload on RCL.
     # Nothing is skipped by a gap: the discovery watermark is the previous run's start.
-    # GitHub runs schedules late in this repository, 3–4.5 hours after the cron time whatever the
-    # minute (2026-09-08: 05:00 → 09:25; 2026-09-09: 04:23 → 08:59, 10:23 → 14:39, 16:23 → 19:19),
-    # and a changed schedule may skip its first occurrence (2026-09-08 17:00, 2026-09-10 05:23).
-    # Off the full hour anyway: ":00" is the most crowded minute of the queue.
-    - cron: "23 5 * * 1-5"   # 07:23 Warsaw (summer time)
-    - cron: "23 16 * * 1-5"  # 18:23
-    - cron: "23 10 * * 0,6"  # 12:23, Saturday and Sunday
+    # GitHub runs schedules late in this repository whatever the minute: over 13–30 Sept 2026
+    # 05:23 started at 09:53–11:48, 16:23 at 19:03–22:07 and the weekend's 10:23 at 13:56–15:11,
+    # so the cron times sit ~5 hours before the hour a run is wanted. A changed schedule may skip
+    # its first occurrence (2026-09-08 17:00, 2026-09-10 05:23). Off the full hour anyway: ":00" is
+    # the most crowded minute of the queue.
+    - cron: "23 1 * * 1-5"   # starts ~06:00–07:50 UTC, 08:00–09:50 Warsaw (summer time)
+    - cron: "23 13 * * 1-5"  # starts ~16:00–19:00 UTC
+    - cron: "23 6 * * 0,6"   # starts ~10:00–11:00 UTC, Saturday and Sunday
   repository_dispatch:
     # The relay files a command into the inbox branch and then sends `inbox`, which starts a run
     # within seconds (only cron is delayed); the mikrus batch poller sends `batch-ready` the same
