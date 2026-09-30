@@ -364,8 +364,9 @@ Invariants worth keeping:
   says so, and it unwinds on the next run if the Senate did act and the listing was behind. Two
   bills get no Senate deadline from us at all (`_senate_days`, `_SENATE_SPECIAL_TERM`): the budget,
   where art. 223 gives twenty days, and a constitutional amendment, where art. 235 gives sixty —
-  neither is in reach of this channel's keywords, but a date computed at thirty would be wrong and
-  the silence rule would then fire too early. A step whose term is out never keeps a wording that
+  the budget does reach the keywords (the 2027 bill, RPW/32733/2026 → druk 3150, hit on the UdSC
+  and Straż Graniczna lines and passed the triage at 0.55), and a date computed at thirty would be
+  wrong and the silence rule would then fire too early. A step whose term is out never keeps a wording that
   promises it: `next_step_labels` takes an `_overdue` variant (and the urgent wording of art. 123,
   which names the shortened term, is dropped for it, `urgent_mode` still saying which mode the bill
   was in), and the expiry note comes from `urgent_deadline_passed_labels` first — it used to quote
@@ -412,8 +413,10 @@ Invariants worth keeping:
   2026-08-18, in force 2026-11-19) is the one stretch where a reader has a fixed date to prepare
   for, so discovery reads the act too (one request, the row keeps it — the publishing gate asks the
   same question a phase later and without it would drop the card). An ELI the API has not indexed
-  yet still counts as the end. RCL discovery decides from the timeline, before the catalogs, and
-  the wykaz from the entry's status. Bills already followed are untouched: they keep their card and
+  yet still counts as the end. RCL discovery decides from the timeline, before the catalogs — a
+  project of a past term whose timeline has not moved since this term began is history too
+  (`RclProject.history_on_arrival`: RCL re-dates old listing rows, B64–B65) — and the wykaz from
+  the entry's status. Bills already followed are untouched: they keep their card and
   their updates to the end. The last gate is `PublishingService.publish_new`, for a bill analysed
   while it was still running.
 - **A file that is not there yet is not a verdict.** The Sejm lists a process before the print's

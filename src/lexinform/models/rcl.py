@@ -21,6 +21,12 @@ RCL_STAGE_TYPE = "RclStage"
 # `xml` is Word's Flat OPC, which ministries file a draft as; see `FlatOpcTextExtractor`.
 READABLE_EXTENSIONS = frozenset({"pdf", "docx", "docm", "doc", "odt", "xml", "zip"})
 OPEN_STATUS = "otwarty"
+_TERM_LABELS = {
+    label: n
+    for n, label in enumerate(
+        ("I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII"), 1
+    )
+}
 
 StageState = Literal["not_started", "reached", "active"]
 FolderKind = Literal["project", "letters", "positions", "response", "conference", "other"]
@@ -261,6 +267,14 @@ class RclProject(BaseModel):
     def is_over(self) -> bool:
         """Closed on RCL without reaching the Sejm: the government dropped the project."""
         return not self.is_open and not self.sent_to_sejm
+
+    def history_on_arrival(self, *, term: int, term_started: dt.date | None) -> bool:
+        """Of a past Sejm term, its timeline still since this term began: RCL re-dates such rows."""
+        label = _TERM_LABELS.get((self.term_label or "").strip().upper())
+        if label is None or label >= term or term_started is None:
+            return False
+        moved = [st.modified for st in self.stages if st.modified is not None]
+        return max([self.modified, *moved]) < term_started
 
     @property
     def reached_stages(self) -> tuple[RclStage, ...]:

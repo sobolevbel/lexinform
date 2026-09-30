@@ -207,6 +207,7 @@ class Container:
                 self.clock,
                 text_prefilter=self.settings.text_prefilter_enabled,
                 workers=self.settings.rcl_concurrency,
+                terms=self.terms,
             ),
         )
 

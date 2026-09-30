@@ -7,10 +7,11 @@ database knows is used, so that tracking and reminders still run; an empty datab
 leaves nothing to do, and the error propagates.
 """
 
+import datetime as dt
 import logging
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import current_term
+from lexinform.models import SejmTerm, current_term
 from lexinform.ports import BillRepository, SejmGateway
 
 log = logging.getLogger(__name__)
@@ -24,6 +25,7 @@ class TermResolver:
         self._repo = repo
         self._pinned = pinned
         self._resolved: int | None = None
+        self._listed: tuple[SejmTerm, ...] | None = None
 
     def current(self) -> int:
         """The pinned term, else the API's current one (asked once per process), else the newest
@@ -34,9 +36,20 @@ class TermResolver:
             self._resolved = self._resolve()
         return self._resolved
 
+    def started(self, term: int) -> dt.date | None:
+        """The day `term` began, None when the API is down or does not say."""
+        if self._listed is None:
+            try:
+                self._listed = self._gateway.list_terms()
+            except ServiceUnavailableError as exc:
+                log.warning("%s; the term's start is unknown", exc.describe())
+                return None
+        return next((t.start for t in self._listed if t.num == term), None)
+
     def _resolve(self) -> int:
         try:
-            term = current_term(self._gateway.list_terms())
+            self._listed = self._gateway.list_terms()
+            term = current_term(self._listed)
         except ServiceUnavailableError as exc:
             known = self._repo.known_terms()
             if not known:

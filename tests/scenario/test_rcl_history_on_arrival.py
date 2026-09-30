@@ -2,8 +2,6 @@
 
 import datetime as dt
 
-import pytest
-
 from lexinform.models import BillStatus, RclProject
 from tests.harness import (
     RCL,
@@ -30,7 +28,6 @@ def _touched_today(w: World, project: RclProject) -> None:
     ]
 
 
-@pytest.mark.xfail(strict=True, reason="B64: an abandoned project reads as live on first sight")
 def test_a_project_abandoned_years_ago_gets_no_card_when_rcl_touches_it() -> None:
     w = World()
     _touched_today(
@@ -61,7 +58,6 @@ def test_a_project_abandoned_years_ago_gets_no_card_when_rcl_touches_it() -> Non
     assert w.bill(RCL).status is BillStatus.SKIPPED_CLOSED
 
 
-@pytest.mark.xfail(strict=True, reason="B65: a project sent to a past Sejm waits for a druk")
 def test_a_project_sent_to_a_past_sejm_gets_no_card_when_rcl_touches_it() -> None:
     w = World()
     _touched_today(
@@ -94,3 +90,30 @@ def test_a_project_sent_to_a_past_sejm_gets_no_card_when_rcl_touches_it() -> Non
     assert (report.rcl_discovered, report.over_on_arrival) == (1, 1)
     assert (report.analyzed, report.published) == (0, 0)
     assert w.bill(RCL).status is BillStatus.SKIPPED_CLOSED
+
+
+def test_a_past_terms_project_that_moved_in_this_term_is_still_read() -> None:
+    w = World()
+    _touched_today(
+        w,
+        rcl_project(
+            created=dt.date(2023, 10, 20),
+            modified=dt.date(2024, 3, 4),
+            term_label="IX",
+            consultation=None,
+            stages=(
+                rcl_stage(
+                    2,
+                    "Uzgodnienia",
+                    "active",
+                    rcl_folder(13223896, "Projekt", *OLD_TEXT),
+                    modified=dt.date(2024, 3, 4),
+                ),
+            ),
+        ),
+    )
+
+    report = w.run()
+
+    assert report.over_on_arrival == 0
+    assert w.bill(RCL).status is not BillStatus.SKIPPED_CLOSED

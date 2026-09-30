@@ -8,6 +8,7 @@ looks at them.
 """
 
 import datetime as dt
+import functools
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -29,6 +30,7 @@ from lexinform.models import (
 from lexinform.ports import BillRepository, Clock, RclGateway
 from lexinform.services.predecessors import NOT_FOLLOWED
 from lexinform.services.rcl_projects import RclProjectReader
+from lexinform.services.terms import TermResolver
 
 log = logging.getLogger(__name__)
 
@@ -64,8 +66,10 @@ class RclDiscoveryService:
         *,
         text_prefilter: bool = True,
         workers: int = 1,
+        terms: TermResolver | None = None,
     ) -> None:
         self._rcl = rcl
+        self._terms = terms
         self._repo = repo
         self._reader = reader
         self._prefilter = prefilter
@@ -87,6 +91,7 @@ class RclDiscoveryService:
         this bot's first run is invisible to it (twelve were live on 15 Sept 2026).
         """
         result = RclDiscoveryResult()
+        started = self._terms.started(term) if self._terms is not None else None
         new_rows: list[RclProjectSummary] = []
         for row in self._rcl.list_projects(modified_since=since.date()):
             result.seen += 1
@@ -104,7 +109,8 @@ class RclDiscoveryService:
                 refreshed = existing.summary.model_copy(update={"change_date": modified})
                 self._repo.upsert_summary(refreshed, now=self._clock.now())
                 result.refreshed += 1
-        for outcome in fan_out(new_rows, self._read, workers=self._workers):
+        read = functools.partial(self._read, term=term, started=started)
+        for outcome in fan_out(new_rows, read, workers=self._workers):
             try:
                 project = outcome.result()
             except ServiceUnavailableError:
@@ -113,9 +119,9 @@ class RclDiscoveryService:
                 result.failed += 1
                 log.warning("RCL project %s not read: %s", outcome.item.id, exc)
                 continue
-            self._ingest(term, project, result)
+            self._ingest(term, project, result, started=started)
         for project_id in from_register:
-            self._take(term, project_id, result)
+            self._take(term, project_id, result, started=started)
         log.info(
             "RCL discovery: seen=%d new=%d refreshed=%d prefilter_hits=%d over=%d failed=%d",
             result.seen,
@@ -127,7 +133,9 @@ class RclDiscoveryService:
         )
         return result
 
-    def _take(self, term: int, project_id: int, result: RclDiscoveryResult) -> None:
+    def _take(
+        self, term: int, project_id: int, result: RclDiscoveryResult, *, started: dt.date | None
+    ) -> None:
         """One project by its id, read and judged exactly as the walk of the listing would.
 
         A project already stored is left alone: the watcher, not discovery, refreshes it. A
@@ -138,7 +146,7 @@ class RclDiscoveryService:
             return
         result.seen += 1
         try:
-            project = self._deepen(self._reader.timeline(project_id))
+            project = self._deepen(self._reader.timeline(project_id), term=term, started=started)
         except ServiceUnavailableError:
             raise
         except Exception as exc:
@@ -146,7 +154,7 @@ class RclDiscoveryService:
             log.warning("RCL project %s named by the register not read: %s", project_id, exc)
             return
         log.info("RCL %s: named by the register, not seen by the listing", project_id)
-        self._ingest(term, project, result)
+        self._ingest(term, project, result, started=started)
 
     def read_consultations(self, *, limit: int = CONSULTATION_READ_BATCH) -> int:
         """Read a missing consultation letter before a card can lose its action window.
@@ -238,16 +246,16 @@ class RclDiscoveryService:
         result.planned += 1
         return True
 
-    def _read(self, row: RclProjectSummary) -> RclProject:
+    def _read(self, row: RclProjectSummary, *, term: int, started: dt.date | None) -> RclProject:
         """Network only: as much of the project as its prefilter verdict needs.
 
         A project that is already over is read no further: `_ingest` records the skip.
         """
-        return self._deepen(self._reader.timeline(row.id))
+        return self._deepen(self._reader.timeline(row.id), term=term, started=started)
 
-    def _deepen(self, project: RclProject) -> RclProject:
+    def _deepen(self, project: RclProject, *, term: int, started: dt.date | None) -> RclProject:
         """How much of a project is read is what its title's verdict decides."""
-        if project.is_over:
+        if project.is_over or project.history_on_arrival(term=term, term_started=started):
             return project
         if accept_title_hits(self._hits(project, term=0)):
             log.info(
@@ -265,7 +273,14 @@ class RclDiscoveryService:
         summary = process_summary(project, term=term)
         return self._prefilter.match(summary.title, summary.description)
 
-    def _ingest(self, term: int, project: RclProject, result: RclDiscoveryResult) -> None:
+    def _ingest(
+        self,
+        term: int,
+        project: RclProject,
+        result: RclDiscoveryResult,
+        *,
+        started: dt.date | None,
+    ) -> None:
         """Store the project and decide what happens to it.
 
         One closed on RCL without ever reaching the Sejm, before we saw it, is history: a card
@@ -287,6 +302,17 @@ class RclDiscoveryService:
                 bill.number,
                 project.modified,
             )
+            result.over += 1
+            result.new += 1
+            return
+        if project.history_on_arrival(term=term, term_started=started):
+            self._repo.set_status(
+                term,
+                bill.number,
+                BillStatus.SKIPPED_CLOSED,
+                reason=f"term {project.term_label} project, still on RCL since {project.modified}",
+            )
+            log.info("%s is a past term's project, still since %s", bill.number, project.modified)
             result.over += 1
             result.new += 1
             return
