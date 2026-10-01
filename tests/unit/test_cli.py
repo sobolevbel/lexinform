@@ -27,6 +27,7 @@ from lexinform.models import (
     SILENCED_BY_OPERATOR,
     AnalysisRecord,
     BillStatus,
+    ObservationBasis,
     PendingBatch,
     ProcessDetail,
     ProcessSummary,
@@ -248,6 +249,21 @@ def test_reset_asks_before_changing_anything(db: Path) -> None:
 
     assert result.exit_code == 1
     assert _status(db)[0] is BillStatus.ANALYZED
+
+
+def test_observe_pins_a_mode_and_auto_gives_back_the_rules(db: Path) -> None:
+    pinned = runner.invoke(app, ["observe", "3039", "--mode", "off", "-y"], env=_env(db))
+    auto = runner.invoke(app, ["observe", "3039", "--mode", "auto", "-y"], env=_env(db))
+    wrong = runner.invoke(app, ["observe", "3039", "--mode", "quiet", "-y"], env=_env(db))
+
+    assert pinned.exit_code == 0, pinned.output
+    assert "3039: undecided -> off (operator)" in pinned.output
+    assert "3039: off (operator) -> metadata (not_relevant)" in auto.output
+    assert wrong.exit_code == 2
+    repo = SqliteBillRepository(db)
+    bill = repo.get(10, "3039")
+    repo.close()
+    assert bill is not None and bill.observation_basis == ObservationBasis.NOT_RELEVANT
 
 
 def test_republish_refuses_a_bill_without_a_relevant_analysis(db: Path) -> None:

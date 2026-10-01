@@ -51,6 +51,8 @@ from lexinform.models import (
     stage_fingerprint,
     usage_of,
 )
+from lexinform.models.commands import OBSERVATION_CHOICES
+from lexinform.models.source_checks import observation_label, operator_observation
 from lexinform.pricing import cost_usd, format_tokens, format_usd
 from lexinform.services.analysis import Waiting
 from lexinform.services.lookup import BillNotFoundError
@@ -1057,6 +1059,38 @@ def reset(
         ):
             c.repo.save_rcl(bill.term, bill.number, _read_rcl_project(c, bill.number))
             typer.echo("project documents re-read from RCL")
+        typer.echo("done")
+    finally:
+        c.close()
+
+
+@app.command()
+def observe(
+    number: Annotated[str, typer.Argument(help=NUMBER_HELP)],
+    mode: Annotated[str, typer.Option("--mode", help=f"One of {', '.join(OBSERVATION_CHOICES)}.")],
+    yes: YesOpt = False,
+) -> None:
+    """Pin how a bill without a card is watched; `auto` hands it back to the rule.
+
+    `metadata` stores stages and documents without asking the model, `off` stops reading the bill;
+    a bill with a card is followed in full whatever its mode.
+    """
+    if mode.lower() not in OBSERVATION_CHOICES:
+        raise typer.BadParameter(f"takes {', '.join(OBSERVATION_CHOICES)}", param_hint="--mode")
+    c = _container()
+    try:
+        bill = _load_bill(c, number)
+        publishing = c.publishing_service(dry_run=True)
+        has_card = publishing.has_sent_card(bill)
+        relevant = bill.analysis.analysis.relevant if bill.analysis else None
+        new_mode, basis = operator_observation(mode.lower(), relevant, has_card=has_card)
+        was = observation_label(bill.observation_mode, bill.observation_basis)
+        typer.echo(f"{number}: {was} -> {observation_label(new_mode, basis)}")
+        if has_card:
+            typer.echo("the bill has a card, which is followed in full whatever its mode")
+        if not yes and not typer.confirm("Apply?"):
+            raise typer.Exit(code=1)
+        c.repo.set_observation(bill.term, bill.number, new_mode, basis)
         typer.echo("done")
     finally:
         c.close()

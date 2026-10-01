@@ -69,3 +69,23 @@ def observation_for(
     if analysed_relevant:
         return ObservationMode.FULL, ObservationBasis.RELEVANT_ANALYSIS
     return ObservationMode.METADATA, ObservationBasis.NOT_RELEVANT
+
+
+AUTO_OBSERVATION = "auto"
+"""`/observe BILL mode=auto`: drop the operator's choice and let `observation_for` decide again."""
+
+
+def operator_observation(
+    choice: str, analysed_relevant: bool | None, *, has_card: bool
+) -> tuple[ObservationMode | None, ObservationBasis | None]:
+    """What `/observe` stores: a mode pinned by the operator, or for `auto` the rule's own."""
+    if choice != AUTO_OBSERVATION:
+        return ObservationMode(choice), ObservationBasis.OPERATOR
+    return observation_for(analysed_relevant, has_card=has_card, current=None) or (None, None)
+
+
+def observation_label(mode: ObservationMode | None, basis: ObservationBasis | None) -> str:
+    """`metadata (operator)`, or `undecided` for a row the rule has not reached yet."""
+    if mode is None:
+        return "undecided"
+    return f"{mode} ({basis})" if basis is not None else str(mode)

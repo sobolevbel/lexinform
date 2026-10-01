@@ -30,6 +30,7 @@ from lexinform.models.enums import (
 from lexinform.models.rcl import normalize_wykaz_number
 from lexinform.models.report import RunReport
 from lexinform.models.sejm import PrintInfo
+from lexinform.models.source_checks import AUTO_OBSERVATION, ObservationMode
 
 
 class IncomingCommand(BaseModel):
@@ -188,6 +189,7 @@ class CommandName(StrEnum):
     SKIP = "skip"
     UNSKIP = "unskip"
     RESET = "reset"
+    OBSERVE = "observe"
     REPUBLISH = "republish"
     FORGET = "forget"
     PREVIEW = "preview"
@@ -208,6 +210,7 @@ NEEDS_REFERENCE = frozenset(
         CommandName.SKIP,
         CommandName.UNSKIP,
         CommandName.RESET,
+        CommandName.OBSERVE,
         CommandName.REPUBLISH,
         CommandName.FORGET,
         CommandName.PREVIEW,
@@ -236,7 +239,8 @@ _COMMAND_NAMES: dict[str, CommandName] = {name.value: name for name in CommandNa
 
 
 class OptionKind(StrEnum):
-    """A bare word (`force`), or `key=value` checked as a date, count, chat, status or ISO week."""
+    """A bare word (`force`), or `key=value` checked as a date, count, chat, status, ISO week or
+    observation mode."""
 
     FLAG = "flag"
     DATE = "date"
@@ -244,6 +248,7 @@ class OptionKind(StrEnum):
     CHAT = "chat"
     STATUS = "status"
     WEEK = "week"
+    OBSERVATION = "observation"
 
 
 @dataclass(frozen=True)
@@ -311,6 +316,7 @@ OPTIONS: dict[CommandName, dict[str, Option]] = {
     },
     CommandName.PREVIEW: {"to": Option("to", OptionKind.CHAT)},
     CommandName.RESET: {"to": Option("to", OptionKind.STATUS)},
+    CommandName.OBSERVE: {"mode": Option("mode", OptionKind.OBSERVATION)},
     CommandName.RUNS: {"days": _DAYS, "all": Option("all")},
     CommandName.COST: {"days": _DAYS, "top": Option("top", OptionKind.COUNT, high=50)},
     CommandName.DIGEST: {
@@ -320,7 +326,12 @@ OPTIONS: dict[CommandName, dict[str, Option]] = {
     },
 }
 
-REQUIRED: dict[CommandName, str] = {CommandName.INDEX_RCL_NUMBERS: "since"}
+REQUIRED: dict[CommandName, str] = {
+    CommandName.INDEX_RCL_NUMBERS: "since",
+    CommandName.OBSERVE: "mode",
+}
+
+OBSERVATION_CHOICES = (*(mode.value for mode in ObservationMode), AUTO_OBSERVATION)
 
 
 class Command(BaseModel):
@@ -405,6 +416,7 @@ class OutcomeStatus(StrEnum):
     SILENCED = "silenced"
     QUEUED = "queued"
     RESET = "reset"
+    OBSERVED = "observed"
     REPUBLISHED = "republished"
     FORGOTTEN = "forgotten"
     PREVIEWED = "preview"
@@ -627,6 +639,10 @@ def _checked(name: CommandName, key: str, option: Option, raw: str) -> tuple[str
         except ValueError:
             return None, f"/{name}: {key} takes an ISO week (2026-W38), not {raw!r}"
         return raw.upper(), ""
+    if option.kind is OptionKind.OBSERVATION:
+        if raw.lower() in OBSERVATION_CHOICES:
+            return raw.lower(), ""
+        return None, f"/{name}: {key} takes {', '.join(OBSERVATION_CHOICES)}, not {raw!r}"
     try:
         return BillStatus(raw.lower()).value, ""
     except ValueError:

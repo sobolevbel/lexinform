@@ -549,8 +549,14 @@ class BillRepository(Protocol):
     def context_rejected_batch_ids(self) -> set[str]: ...
 
     def set_observation(
-        self, term: int, number: str, mode: ObservationMode, basis: ObservationBasis
-    ) -> None: ...
+        self,
+        term: int,
+        number: str,
+        mode: ObservationMode | None,
+        basis: ObservationBasis | None,
+    ) -> None:
+        """None and None is "not decided yet": the next tracking phase asks the rule again."""
+        ...
 
     def record_check(
         self,

@@ -857,12 +857,21 @@ class SqliteBillRepository:
         return {row["custom_id"] for row in rows}
 
     def set_observation(
-        self, term: int, number: str, mode: ObservationMode, basis: ObservationBasis
+        self,
+        term: int,
+        number: str,
+        mode: ObservationMode | None,
+        basis: ObservationBasis | None,
     ) -> None:
         self._conn.execute(
             "UPDATE bills SET observation_mode = ?, observation_basis = ?"
             " WHERE term = ? AND number = ?",
-            (mode.value, basis.value, term, number),
+            (
+                mode.value if mode is not None else None,
+                basis.value if basis is not None else None,
+                term,
+                number,
+            ),
         )
 
     def record_check(

@@ -106,6 +106,9 @@ COMMAND_HELP = (
     "• <code>/unskip BILL</code> — restore saved analysis, or queue if none exists\n"
     "• <code>/reset BILL [to=STATUS]</code> — any status with a clean budget of attempts"
     " (default <code>analysis_pending</code>)\n"
+    "• <code>/observe BILL mode=full|metadata|off|auto</code> — how a bill with no card is"
+    " watched: <code>metadata</code> asks the model nothing, <code>off</code> stops reading it,"
+    " <code>auto</code> hands it back to the rule\n"
     "• <code>/republish BILL</code> — post the card again\n"
     "• <code>/forget BILL</code> — drop the card the channel remembers, post nothing"
     " (a card deleted by hand)\n"
@@ -1422,6 +1425,7 @@ class MessageFormatter:
             OutcomeStatus.SILENCED: "🔇",
             OutcomeStatus.QUEUED: "🔁",
             OutcomeStatus.RESET: "🔁",
+            OutcomeStatus.OBSERVED: "👀",
             OutcomeStatus.REPUBLISHED: "📣",
             OutcomeStatus.FORGOTTEN: "🗑",
             OutcomeStatus.PREVIEWED: "👁",

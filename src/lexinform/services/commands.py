@@ -36,6 +36,7 @@ from lexinform.models import (
     merge_usage,
     parse_command,
 )
+from lexinform.models.source_checks import observation_label, operator_observation
 from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier, Publisher
 from lexinform.pricing import cost_usd
 from lexinform.services.analysis import AnalysisService, TooExpensiveError, Waiting
@@ -376,6 +377,8 @@ class CommandService:
         if command.name is CommandName.RESET:
             wanted = command.options.get("to", BillStatus.ANALYSIS_PENDING.value)
             return self._reset(bill_or_none, BillStatus(wanted))
+        if command.name is CommandName.OBSERVE:
+            return self._observe(bill_or_none, command.options["mode"])
         if command.name is CommandName.PREVIEW:
             try:
                 bill = self._lookup.continuation(bill_or_none)
@@ -569,6 +572,18 @@ class CommandService:
             bill=self._reload(bill),
             note=f"{note}; project documents re-read from RCL" if read_again else note,
         )
+
+    def _observe(self, bill: Bill, choice: str) -> CommandOutcome:
+        """`/observe BILL mode=…`: pin how a bill without a card is watched, or hand it back."""
+        has_card = self._publishing.has_sent_card(bill)
+        relevant = bill.analysis.analysis.relevant if bill.analysis else None
+        mode, basis = operator_observation(choice, relevant, has_card=has_card)
+        self._repo.set_observation(bill.term, bill.number, mode, basis)
+        note = f"was {observation_label(bill.observation_mode, bill.observation_basis)}, now"
+        note += f" {observation_label(mode, basis)}"
+        if has_card:
+            note += "; the bill has a card, which is followed in full whatever its mode"
+        return CommandOutcome(status=OutcomeStatus.OBSERVED, bill=self._reload(bill), note=note)
 
     def _revive_rcl(self, bill: Bill, to: BillStatus) -> bool:
         """A skipped RCL row keeps only the project's skeleton: read its documents again before

@@ -8,6 +8,7 @@ from lexinform.models import (
     CheckAspect,
     ObservationBasis,
     ObservationMode,
+    OutcomeStatus,
     PublicationKind,
     Stage,
 )
@@ -118,6 +119,45 @@ def test_an_operator_choice_survives_the_next_run() -> None:
 
     assert w.bill("3040").observation_mode == ObservationMode.OFF
     assert w.repo.list_status_changes(TERM, "3040") == []
+
+
+def test_observe_pins_metadata_on_a_relevant_bill_and_auto_hands_it_back() -> None:
+    w = below_bar_world()
+    w.run()
+    w.command("/observe 3039 mode=metadata")
+    w.file_to_print("3039", "Stanowisko Rządu")
+    w.clock.advance(days=1)
+
+    w.run()
+
+    (_, pinned), *_ = w.replier.replies
+    assert pinned.status is OutcomeStatus.OBSERVED
+    assert pinned.note == "was full (relevant_analysis), now metadata (operator)"
+    assert (w.bill("3039").observation_mode, w.bill("3039").observation_basis) == (
+        ObservationMode.METADATA,
+        ObservationBasis.OPERATOR,
+    )
+    assert "3039" not in {ctx.number for ctx in w.llm.supplement_contexts}
+
+    w.command("/observe 3039 mode=auto")
+    w.clock.advance(days=1)
+    w.run()
+
+    assert w.replier.replies[-1][1].note == "was metadata (operator), now full (relevant_analysis)"
+    assert w.bill("3039").observation_basis == ObservationBasis.RELEVANT_ANALYSIS
+
+
+def test_observe_on_a_carded_bill_says_the_card_keeps_it_followed() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.command("/observe 3039 mode=off")
+
+    w.run()
+
+    (_, outcome), *_ = w.replier.replies
+    assert outcome.note.endswith("the bill has a card, which is followed in full whatever its mode")
+    assert w.bill("3039").observation_mode == ObservationMode.OFF
 
 
 def test_one_and_four_workers_store_the_same_changes() -> None:

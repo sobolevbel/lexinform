@@ -206,6 +206,13 @@ class PublishingService:
         sent = next((pub for pub in rows if pub.status is PublicationStatus.SENT), None)
         return sent or next(iter(rows), None)
 
+    def has_sent_card(self, bill: Bill) -> bool:
+        """Whether the bill has a thread of its own: the test `observation_for` takes."""
+        pub = self._repo.get_publication(
+            bill.term, bill.number, PublicationKind.NEW_BILL, self._channel_id
+        )
+        return pub is not None and pub.status is PublicationStatus.SENT
+
     def forget_card(self, bill: Bill) -> None:
         """Drop what the channel remembers of the bill's card, both kinds, so that the next
         `publish_bill` decides again (the operator's `/republish`)."""

@@ -49,6 +49,9 @@ analysis of a changed text or a filed document.
 /unskip 3039                  restore saved analysis; queue analysis only if none exists
 /reset 3039 to=skipped_cost   any status at all, with a clean budget of attempts
                               (`to=` defaults to `analysis_pending`)
+/observe 3150 mode=metadata   how a bill with no card is watched: `full`, `metadata` (stages
+                              and documents, no model call), `off` (not read at all), or
+                              `auto` to give the choice back to the rule
 /republish 3039               post the card again (after a lost or failed post)
 /forget 3039                  drop the card the channel remembers, post nothing (deleted by hand)
 ```
@@ -167,6 +170,11 @@ batch is left intact. Use `/analyze BILL force` to request analysis again explic
 `/reset` sets whichever status it is given.
 `to=` names a `BillStatus` and the reply repeats what the row was, attempts and all — the one
 command that can put a bill anywhere, which is why it says where it came from.
+`/observe` is for a bill the rule watches in full without a card — relevant, under `min_score` —
+whose every new text would be a paid re-analysis (the 2027 budget, druk 3150, is $1.7 a reading
+on the overflow model). The choice is stored as basis `operator`, which no run overwrites, until
+`mode=auto` hands the bill back. A carded bill is followed in full whatever its mode, and the
+reply says so.
 
 `/preview BILL to=CHAT` sends the card to that chat and records nothing: no `publications` row,
 so the bill is no more published afterwards than before and the channel's own card is untouched.

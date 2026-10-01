@@ -361,6 +361,18 @@ def test_reset_takes_any_status_and_refuses_what_is_not_one() -> None:
     assert bad is not None and bad.error is not None and "takes a status" in bad.error
 
 
+def test_observe_needs_a_mode_it_knows() -> None:
+    good = parse_command("/observe 3150 mode=Metadata")
+    bare = parse_command("/observe 3150")
+    bad = parse_command("/observe 3150 mode=quiet")
+
+    assert good is not None and good.options == {"mode": "metadata"}
+    assert bare is not None and bare.error == "/observe needs mode=… (mode is not optional)"
+    assert bad is not None and bad.error == (
+        "/observe: mode takes full, metadata, off, auto, not 'quiet'"
+    )
+
+
 def test_preview_sends_to_a_chat_and_not_to_anything_else() -> None:
     to_channel = parse_command("/preview 3039 to=-1001234567")
     to_name = parse_command("/preview 3039 to=@lexinform_test")
