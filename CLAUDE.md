@@ -579,7 +579,21 @@ Invariants worth keeping:
   equal digest is the "same text" path above — no model call, whatever the uzasadnienie or the
   OSR did — and only strict equality counts. Over the 468 RCL-to-druk pairs of the corpus it
   matches 98, the text digest 6; the rest differ in the act itself, often for real (2034 → 2033
-  in druk 545, a second minister in 811), so they are read. A record older than the field has its
+  in druk 545, a second minister in 811). **A digest that differs is not yet a reading**
+  (decided 2026-10-01, B71; `checks/92_transitions.py` and `out/92_review_calibration.json` in
+  the corpus). A druk printed from the `BILL` submission the analysis read is that text by rule
+  (`_same_submission`): over term 10 the act is the same in all 524 RPW-to-druk pairs with a text
+  on both sides, the digests differing only where the orka text layer splits words or
+  `_FOOTNOTE_BODY` runs on into the next page, and 116 more pairs are scans nothing can compare.
+  Otherwise the act's two bodies are diffed (`law_diff.py`, from the file the *record* names —
+  a stored RCL project can run ahead of its analysis): layout noise alone keeps the analysis for
+  free, a change of at most `change_review_max_ratio` (0.15) of its words goes to the triage
+  model with the card's description (`AnalysisService._changes_settled`, synchronous like the
+  triage, about $0.012 a call on Sonnet 5), and only a confident (`triage_min_confidence`) "not
+  material" keeps it; anything else, and every larger change, is read. Over the 468 RCL-to-druk
+  pairs that is 107 free, 304 reviewed and 57 read; on 38 calibration pairs every real change
+  that touched foreigners (druk 1451 adding Straż Graniczna) or was unclear came back material,
+  and the confident "no" answers were footnotes, signatures and typos. A record older than the field has its
   digest taken from its own file (`_previous_law`) when that file still hashes as
   `text_sha256` says, else the text is read. **A scan has no digest** — no text layer to compare
   — so only the same file (its `sha256`) is the same text; another scan or a text is read.
@@ -914,7 +928,8 @@ Invariants worth keeping:
   and the Sejm listing is re-read with a day of overlap, so summing what the runs looked at
   would count one entry sixty times.
 - **A batch request is written down before it is sent, and its answer before it is applied.**
-  Every model call but the triage goes to its model's batch API at half price (`require_batch`,
+  Every model call but the triage and the change review (both cheap gates on the triage model)
+  goes to its model's batch API at half price (`require_batch`,
   set by the container): the analysis and a re-analysis, the amendments, the digests and the
   joint comparisons, with a manual `/analyze`, `force`, `/refresh` and `/republish` among them. A
   batch answer can take 24 hours and the run after it, and neither urgency (pilny, a
@@ -1274,7 +1289,8 @@ measurements and what was tried and rejected are in `docs/llm-cost.md`.
 
 Default analysis, amendments, supplement and joint model `gpt-5.1`, batch provider `openai`.
 Every analysis call uses its model's batch API, including manual/forced calls and secondary
-analyses; only triage is synchronous. Urgency and elapsed time never trigger synchronous fallback.
+analyses; only the triage and the change review that gates a re-analysis are synchronous. Urgency
+and elapsed time never trigger synchronous fallback.
 Analysis above 272k input tokens or rejected for context overflow uses a separate batch on
 `llm_analysis_overflow_model` (`claude-opus-5-5`); its batch price applies to the cost guard.
 Scans use 1600 tokens per page for routing. `min_score` 3, text prefilter threshold 2 distinct patterns or 3

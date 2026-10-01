@@ -90,6 +90,31 @@ document again; what it costs is that the stage update of that run goes out with
 обновился» note, and the card catches up when the refresher re-renders it.
 
 
+## What a new text of an analysed bill costs (1 Oct 2026)
+
+Until 2026-10-01 any difference of `text_sha256` and `law_sha256` from the stored analysis was a
+full re-analysis. In three weeks of production that was about thirteen readings at a transition
+between sources (RPW → druk, RCL → druk, the text after the third reading), and the model named a
+change in one: druk 3150 alone, the 2027 budget at score 1, cost $1.63 + $1.72 on the overflow
+model for the same act read twice (B71). Three rules now stand in front of the reading:
+
+- **The druk of the submission already read is that text** (`_same_submission`): all 644
+  RPW-to-druk pairs of term 10, scans included, cost nothing.
+- **A difference only in layout is free**, and **a small one is reviewed** by the triage model
+  (`law_diff`, `_changes_settled`): the changed passages of the act and the card's description,
+  ~2,000 input tokens at the median and 14k at the most, **≈$0.012 a call** on Sonnet 5 (38
+  calls, $0.44, `out/92_review_calibration.json` in the corpus). Over the 468 RCL-to-druk pairs:
+  98 equal digests and 9 noise-only (free), **304 reviewed** (≤15% of the act's words changed),
+  57 read in full. In the calibration 15 of 25 RCL reviews and 10 of 13 noisy RPW pairs were a
+  confident "not material"; every change that touched foreigners or was unclear was read.
+- **A relevant bill more than a point under `min_score` with no card is observed without the
+  model** (`ObservationBasis.BELOW_BAR`): no new text lifts it to a card.
+
+What is still read in full is a large change, a scan on either side (except the RPW → druk rule),
+and a review that is not sure — a wrong "material" costs one reading, a wrong "not material" would
+leave the card describing a text that is gone, so the threshold leans the cheap way only when the
+model is confident.
+
 ## What a jointly considered print costs (14 Sept 2026)
 
 Until 2026-09-14 a print whose group already held a card was not read at all: it got a reply
