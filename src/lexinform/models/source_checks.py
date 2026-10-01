@@ -73,7 +73,7 @@ def observation_for(
         return ObservationMode.FULL, ObservationBasis.TELEGRAM_THREAD
     if analysis is None:
         return None
-    # More than a point under the bar no new text lifts a bill to a card, so re-reading it only pays.
+    # More than a point under the bar no new text lifts a bill to a card: a re-read only pays.
     if analysis.relevant and analysis.score >= min_score - 1:
         return ObservationMode.FULL, ObservationBasis.RELEVANT_ANALYSIS
     if analysis.relevant:
