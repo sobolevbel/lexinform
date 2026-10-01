@@ -609,6 +609,7 @@ class Container:
             text_prefilter=settings.text_prefilter_enabled,
             workers=settings.sejm_concurrency,
             observe_unthreaded=settings.observe_unthreaded,
+            min_score=settings.min_score,
         )
 
     def pipeline(self, *, dry_run: bool) -> DailyPipeline:

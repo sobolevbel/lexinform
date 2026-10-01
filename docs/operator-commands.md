@@ -170,9 +170,9 @@ batch is left intact. Use `/analyze BILL force` to request analysis again explic
 `/reset` sets whichever status it is given.
 `to=` names a `BillStatus` and the reply repeats what the row was, attempts and all — the one
 command that can put a bill anywhere, which is why it says where it came from.
-`/observe` is for a bill the rule watches in full without a card — relevant, under `min_score` —
-whose every new text would be a paid re-analysis (the 2027 budget, druk 3150, is $1.7 a reading
-on the overflow model). The choice is stored as basis `operator`, which no run overwrites, until
+`/observe` overrides the rule, which watches a relevant bill without a card in full only when it
+scores `min_score − 1` or more (below that it is `metadata`/`below_bar` and its new texts are not
+re-read). The choice is stored as basis `operator`, which no run overwrites, until
 `mode=auto` hands the bill back. A carded bill is followed in full whatever its mode, and the
 reply says so.
 

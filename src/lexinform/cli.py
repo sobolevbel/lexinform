@@ -1082,8 +1082,12 @@ def observe(
         bill = _load_bill(c, number)
         publishing = c.publishing_service(dry_run=True)
         has_card = publishing.has_sent_card(bill)
-        relevant = bill.analysis.analysis.relevant if bill.analysis else None
-        new_mode, basis = operator_observation(mode.lower(), relevant, has_card=has_card)
+        new_mode, basis = operator_observation(
+            mode.lower(),
+            bill.analysis.analysis if bill.analysis else None,
+            has_card=has_card,
+            min_score=c.settings.min_score,
+        )
         was = observation_label(bill.observation_mode, bill.observation_basis)
         typer.echo(f"{number}: {was} -> {observation_label(new_mode, basis)}")
         if has_card:

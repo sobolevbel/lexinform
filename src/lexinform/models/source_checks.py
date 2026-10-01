@@ -5,6 +5,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel
 
+from lexinform.models.analysis import Analysis
+
 # docs/website/data.md §25.6: data that must be rechecked regularly is stale after 36 hours.
 FRESH_FOR = dt.timedelta(hours=36)
 
@@ -19,6 +21,7 @@ class ObservationBasis(StrEnum):
     TELEGRAM_THREAD = "telegram_thread"
     RELEVANT_ANALYSIS = "relevant_analysis"
     NOT_RELEVANT = "not_relevant"
+    BELOW_BAR = "below_bar"
     OPERATOR = "operator"
 
 
@@ -57,17 +60,24 @@ class SourceCheck(BaseModel):
 
 
 def observation_for(
-    analysed_relevant: bool | None, *, has_card: bool, current: ObservationBasis | None
+    analysis: Analysis | None,
+    *,
+    has_card: bool,
+    current: ObservationBasis | None,
+    min_score: int,
 ) -> tuple[ObservationMode, ObservationBasis] | None:
     """The mode a bill should be observed in; an operator's choice is never overwritten."""
     if current is ObservationBasis.OPERATOR:
         return None
     if has_card:
         return ObservationMode.FULL, ObservationBasis.TELEGRAM_THREAD
-    if analysed_relevant is None:
+    if analysis is None:
         return None
-    if analysed_relevant:
+    # More than a point under the bar no new text lifts a bill to a card, so re-reading it only pays.
+    if analysis.relevant and analysis.score >= min_score - 1:
         return ObservationMode.FULL, ObservationBasis.RELEVANT_ANALYSIS
+    if analysis.relevant:
+        return ObservationMode.METADATA, ObservationBasis.BELOW_BAR
     return ObservationMode.METADATA, ObservationBasis.NOT_RELEVANT
 
 
@@ -76,12 +86,13 @@ AUTO_OBSERVATION = "auto"
 
 
 def operator_observation(
-    choice: str, analysed_relevant: bool | None, *, has_card: bool
+    choice: str, analysis: Analysis | None, *, has_card: bool, min_score: int
 ) -> tuple[ObservationMode | None, ObservationBasis | None]:
     """What `/observe` stores: a mode pinned by the operator, or for `auto` the rule's own."""
     if choice != AUTO_OBSERVATION:
         return ObservationMode(choice), ObservationBasis.OPERATOR
-    return observation_for(analysed_relevant, has_card=has_card, current=None) or (None, None)
+    rule = observation_for(analysis, has_card=has_card, current=None, min_score=min_score)
+    return rule or (None, None)
 
 
 def observation_label(mode: ObservationMode | None, basis: ObservationBasis | None) -> str:

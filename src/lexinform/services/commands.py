@@ -378,7 +378,7 @@ class CommandService:
             wanted = command.options.get("to", BillStatus.ANALYSIS_PENDING.value)
             return self._reset(bill_or_none, BillStatus(wanted))
         if command.name is CommandName.OBSERVE:
-            return self._observe(bill_or_none, command.options["mode"])
+            return self._observe(bill_or_none, command.options["mode"], min_score=min_score)
         if command.name is CommandName.PREVIEW:
             try:
                 bill = self._lookup.continuation(bill_or_none)
@@ -573,11 +573,11 @@ class CommandService:
             note=f"{note}; project documents re-read from RCL" if read_again else note,
         )
 
-    def _observe(self, bill: Bill, choice: str) -> CommandOutcome:
+    def _observe(self, bill: Bill, choice: str, *, min_score: int) -> CommandOutcome:
         """`/observe BILL mode=…`: pin how a bill without a card is watched, or hand it back."""
         has_card = self._publishing.has_sent_card(bill)
-        relevant = bill.analysis.analysis.relevant if bill.analysis else None
-        mode, basis = operator_observation(choice, relevant, has_card=has_card)
+        analysis = bill.analysis.analysis if bill.analysis else None
+        mode, basis = operator_observation(choice, analysis, has_card=has_card, min_score=min_score)
         self._repo.set_observation(bill.term, bill.number, mode, basis)
         note = f"was {observation_label(bill.observation_mode, bill.observation_basis)}, now"
         note += f" {observation_label(mode, basis)}"

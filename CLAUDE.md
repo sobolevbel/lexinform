@@ -937,9 +937,11 @@ Invariants worth keeping:
   and a new bill shows as queued rather than analysed. `/status` names the open batches and
   any `batch_pending` bill no batch holds.
 - **A bill with no card is observed, never told.** For the website every analysed bill gets an
-  observation mode (`observation_for`: a sent card → `full`/`telegram_thread`, relevant →
-  `full`/`relevant_analysis`, not relevant → `metadata`/`not_relevant`; an `operator` basis is
-  never overwritten). `list_tracked(unthreaded=True)` lists the live ones without a sent card
+  observation mode (`observation_for`: a sent card → `full`/`telegram_thread`, relevant and
+  scored at least `min_score − 1` → `full`/`relevant_analysis`, relevant below that →
+  `metadata`/`below_bar` (decided 2026-10-01: no new text lifts such a bill to a card, and the
+  2027 budget, druk 3150, score 1, paid $1.72 a reading), not relevant →
+  `metadata`/`not_relevant`; an `operator` basis is never overwritten, `/observe` sets it). `list_tracked(unthreaded=True)` lists the live ones without a sent card
   under the same windows, jointly considered prints excluded (publishing owns their batch marker
   while the reply waits). Their Sejm process is read after the carded loop: stages, closure,
   act and the change row are stored, but no publication row is created, so nothing is ever

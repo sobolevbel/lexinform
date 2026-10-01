@@ -108,6 +108,24 @@ def test_metadata_observation_asks_the_model_nothing() -> None:
     assert w.publisher.updates == []
 
 
+def test_a_relevant_bill_far_under_the_bar_is_observed_without_the_model() -> None:
+    w = World(llm_script={"3039": make_analysis(relevant=True, score=1)})
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.file_to_print("3039", "Stanowisko Rządu")
+    w.clock.advance(days=1)
+
+    w.run()
+
+    bill = w.bill("3039")
+    assert (bill.observation_mode, bill.observation_basis) == (
+        ObservationMode.METADATA,
+        ObservationBasis.BELOW_BAR,
+    )
+    assert w.llm.supplement_contexts == []
+    assert len(w.repo.list_status_changes(TERM, "3039")) == 1
+
+
 def test_an_operator_choice_survives_the_next_run() -> None:
     w = below_bar_world()
     w.run()

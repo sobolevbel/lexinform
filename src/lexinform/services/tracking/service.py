@@ -88,6 +88,7 @@ class TrackingOptions:
     text_prefilter: bool = True
     workers: int = 1
     observe_unthreaded: bool = True
+    min_score: int = 3
 
 
 def _consultation_reminder(
@@ -368,8 +369,12 @@ class StatusTrackingService:
     def _assign_observation(self) -> None:
         """Give every analysed or carded bill the mode its card and its analysis call for."""
         for bill, has_card in self._repo.list_observation_candidates(self._options.channel_id):
-            relevant = bill.analysis.analysis.relevant if bill.analysis else None
-            wanted = observation_for(relevant, has_card=has_card, current=bill.observation_basis)
+            wanted = observation_for(
+                bill.analysis.analysis if bill.analysis else None,
+                has_card=has_card,
+                current=bill.observation_basis,
+                min_score=self._options.min_score,
+            )
             if wanted is not None and wanted != (bill.observation_mode, bill.observation_basis):
                 self._repo.set_observation(bill.term, bill.number, *wanted)
 
