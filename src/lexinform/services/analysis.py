@@ -30,6 +30,7 @@ from lexinform.law_digest import law_digest
 from lexinform.models import (
     AMENDMENT_SOURCES,
     FULL_TEXT_SOURCES,
+    ORKA_BASE_URL,
     SUPPLEMENT_SOURCES,
     Amendments,
     AmendmentsContext,
@@ -71,6 +72,7 @@ from lexinform.models import (
     observe,
     provider_of,
     stage_fingerprint,
+    submission_pdf_url,
     usage_of,
     window_closes_within,
 )
@@ -233,6 +235,7 @@ class AnalysisOptions:
     batch_kinds: frozenset[BatchKind] = frozenset({"analysis", "reanalysis"})
     batch_models: dict[BatchKind, str] = field(default_factory=dict)
     batch_max_wait: timedelta = timedelta(hours=6)
+    orka_base_url: str = ORKA_BASE_URL
 
 
 @dataclass(frozen=True)
@@ -1402,7 +1405,8 @@ class AnalysisService:
         digest = loaded.digest
         law = loaded.law
         if previous is not None and (
-            (digest is not None and digest == previous.text_sha256)
+            self._same_submission(bill, previous, document)
+            or (digest is not None and digest == previous.text_sha256)
             or (law is not None and law == self._previous_law(previous, previous_document))
         ):
             assert document is not None, "a text digest comes only from a document that was read"
@@ -1568,6 +1572,18 @@ class AnalysisService:
             memo_key=key,
             triage_memo_key=triage_memo_key,
         )
+
+    def _same_submission(
+        self, bill: Bill, previous: AnalysisRecord, document: TextDocument | None
+    ) -> bool:
+        """The druk's own print is the RPW file it was numbered from: 524 of 524 term-10 pairs."""
+        sub = bill.submission
+        if sub is None or not sub.is_bill or document is None or document.kind != "print":
+            return False
+        if previous.text_source not in FULL_TEXT_SOURCES:
+            return False
+        orka = submission_pdf_url(bill.term, sub.number, base_url=self._options.orka_base_url)
+        return previous.source_url == orka and document.url != orka
 
     def _previous_law(self, previous: AnalysisRecord, document: TextDocument | None) -> str | None:
         """The stored act's digest; an older record's comes from its file if that hashes alike."""

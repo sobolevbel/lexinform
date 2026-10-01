@@ -7,7 +7,7 @@ import pytest
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import ApplicantType, BillStatus, CheckAspect, PublicationStatus
-from tests.fakes import FakeTextExtractor
+from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import RPW, TERM, World, submission, submission_url
 
 
@@ -128,6 +128,60 @@ def test_assigned_print_number_continues_the_thread_under_the_new_number() -> No
     )
     analysis = w.bill("3100").analysis
     assert analysis is not None and analysis.revision == 2
+
+
+def test_the_print_of_an_entry_read_from_its_file_is_not_read_again() -> None:
+    """The druk prints the very submission: over term 10 the act is the same in 524 of 524 pairs,
+    whatever the text layer of the orka file made of it."""
+    orka_text = "Art. 1. Cudzoziemcy otrzymują poża ru ochronę. " * 40
+    print_text = "Art. 1. Cudzoziemcy otrzymują pożaru ochronę.\n1) przypis " * 40
+    w = World(
+        extractor=FakeTextExtractor(by_content={b"%PDF-orka": orka_text, b"%PDF": print_text})
+    )
+    w.gateway.submissions.append(submission())
+    w.gateway.files[submission_url()] = b"%PDF-orka"
+    w.run()
+    w.gateway.submissions[0] = submission(print_number="3100")
+    w.add_bill("3100", "Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony")
+    w.touch("3100", dt.datetime(2026, 9, 8, 9, 0))
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.linked, report.reanalyzed) == (1, 0)
+    assert [ctx.number for ctx in w.llm.contexts] == [RPW]
+    _, change, _ = w.publisher.updates[0]
+    assert not change.content_changed
+    analysis = w.bill("3100").analysis
+    assert analysis is not None and analysis.revision == 1
+    assert analysis.source_url == w.gateway.prints["3100"].attachments[0].url
+
+
+def test_an_observed_entry_without_a_card_is_not_read_again_as_its_print() -> None:
+    orka_text = "Art. 1. Cudzoziemcy otrzymują ochronę. " * 40
+    print_text = "Art. 1. Cudzoziemcy otrzymują ochronę.\n1) przypis " * 40
+    w = World(
+        extractor=FakeTextExtractor(by_content={b"%PDF-orka": orka_text, b"%PDF": print_text}),
+        llm_script={RPW: make_analysis(relevant=True, score=2)},
+    )
+    w.gateway.submissions.append(submission())
+    w.gateway.files[submission_url()] = b"%PDF-orka"
+    w.run()
+    w.gateway.submissions[0] = submission(print_number="3100")
+    w.add_bill("3100", "Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony")
+    w.touch("3100", dt.datetime(2026, 9, 8, 9, 0))
+    w.clock.advance(days=1)
+    w.run()
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.reanalyzed == 0
+    assert [ctx.number for ctx in w.llm.contexts] == [RPW]
+    analysis = w.bill("3100").analysis
+    assert (
+        analysis is not None and analysis.source_url == w.gateway.prints["3100"].attachments[0].url
+    )
 
 
 def test_the_inherited_card_keeps_the_original_sent_at_for_the_digest() -> None:
