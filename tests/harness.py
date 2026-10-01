@@ -419,15 +419,19 @@ class World:
         self.gateway.processes.append(process)
         self.gateway.details[number] = detail(process, stages)
         if with_pdf:
-            self.gateway.prints[number] = PrintInfo(
-                term=TERM,
-                number=number,
-                title=title,
-                attachments=(
-                    Attachment(print_number=number, name=f"{number}.pdf", url=print_url(number)),
-                ),
-            )
-            self.gateway.files[print_url(number)] = b"%PDF"
+            self.attach_pdf(number, title)
+
+    def attach_pdf(self, number: str, title: str) -> None:
+        """The print's file, which the Sejm can attach after it has listed the process."""
+        self.gateway.prints[number] = PrintInfo(
+            term=TERM,
+            number=number,
+            title=title,
+            attachments=(
+                Attachment(print_number=number, name=f"{number}.pdf", url=print_url(number)),
+            ),
+        )
+        self.gateway.files[print_url(number)] = b"%PDF"
 
     def add_wykaz_entry(self, entry: WykazEntry | None = None, **overrides: Any) -> WykazEntry:
         """A bill the government has announced in the wykaz prac legislacyjnych RM."""

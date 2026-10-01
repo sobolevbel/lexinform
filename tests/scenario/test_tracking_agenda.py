@@ -343,6 +343,37 @@ def test_a_sitting_that_keeps_the_day_but_moves_the_hour_is_told_again() -> None
     assert report.agenda_cancelled == 0
 
 
+def test_a_sitting_the_committee_renumbered_is_neither_taken_back_nor_announced_again() -> None:
+    """ASW renumbered its planned sittings on 1 Oct 2026: 138 on 6 Oct at 14:00 became 135."""
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(138),)
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (_sitting(135),)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.agenda_cancelled, report.agenda_posted) == (0, 0)
+    assert _refs(w) == ["ASW/138/2026-09-17+09:00+sala 412"]
+    assert w.bill("3039").agenda[0].sitting_number == 135
+
+
+def test_a_renumbered_sitting_that_then_moves_is_told_as_a_move() -> None:
+    w = _referred_bill()
+    w.gateway.committee_sittings["ASW"] = (_sitting(138),)
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (_sitting(135),)
+    w.clock.advance(days=1)
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (_sitting(135, dt.date(2026, 9, 22)),)
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.agenda_cancelled, report.agenda_posted) == (0, 1)
+    assert _refs(w) == ["ASW/138/2026-09-22+09:00+sala 412"]
+
+
 def test_a_committee_sitting_that_has_already_met_today_is_not_announced() -> None:
     """A committee agenda often appears on the morning of the sitting, and a run lands at ~11:00
     and ~22:00 Warsaw. Announcing an 09:00 sitting at 22:00 tells the reader about a room they

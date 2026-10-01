@@ -306,7 +306,7 @@ class AgendaWatcher:
                     apply_email=apply.email if apply else None,
                     apply_by=apply.deadline if apply else None,
                 )
-                item = _keep_told_ref(item, told)
+                item = _keep_renumbered(_keep_told_ref(item, told), bill.agenda)
                 kept = meetings.get(sitting.meeting_key)
                 if kept is None or (item.ref in told and kept.ref not in told):
                     meetings[sitting.meeting_key] = item
@@ -380,6 +380,36 @@ def _keep_told_ref(item: AgendaItem, told: set[str]) -> AgendaItem:
     if item.ref != legacy and legacy in told:
         return item.model_copy(update={"ref": legacy})
     return item
+
+
+def _keep_renumbered(item: AgendaItem, told: Sequence[AgendaItem]) -> AgendaItem:
+    """Keep the `sitting_key` a sitting was told under when its committee renumbered it."""
+    if item.kind != "committee":
+        return item
+    when = _when_and_where(item)
+    ours = [
+        old
+        for old in told
+        if old.kind == "committee"
+        and old.committee_code == item.committee_code
+        and old.sitting_key != item.sitting_key
+    ]
+    same = next((old for old in ours if _when_and_where(old) == when), None) or next(
+        (old for old in ours if old.sitting_number == item.sitting_number and _renumbered(old)),
+        None,
+    )
+    if same is None:
+        return item
+    return item.model_copy(update={"ref": f"{same.sitting_key}/{when}"})
+
+
+def _when_and_where(item: AgendaItem) -> str:
+    return item.ref.rsplit("/", 1)[1]
+
+
+def _renumbered(item: AgendaItem) -> bool:
+    """The item is told under a number its committee has since changed."""
+    return item.sitting_key != f"{item.committee_code}/{item.sitting_number}"
 
 
 def _already_happened(item: AgendaItem, now: dt.datetime) -> bool:

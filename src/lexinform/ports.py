@@ -498,6 +498,7 @@ class BillRepository(Protocol):
         *,
         prefilter_hits: list[str] | None = None,
         reason: str | None = None,
+        clear_reason: bool = False,
     ) -> None:
         """Move the bill to `status`; `prefilter_hits` and `reason` (kept in `last_error`: why a
         bill was skipped, readable from the state dump) are left as they are when None."""

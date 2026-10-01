@@ -185,7 +185,14 @@ class TextPrefilterService:
         hits = [f"{TEXT_HIT_PREFIX}{name}" for name in counts]
         status = BillStatus.ANALYSIS_PENDING if accepted else BillStatus.SKIPPED_TEXT_PREFILTER
         reason = None if accepted else loaded.problem or _miss(counts, self._min_distinct)
-        self._repo.set_status(bill.term, bill.number, status, prefilter_hits=hits, reason=reason)
+        self._repo.set_status(
+            bill.term,
+            bill.number,
+            status,
+            prefilter_hits=hits,
+            reason=reason,
+            clear_reason=accepted,
+        )
         if accepted:
             log.info(
                 "candidate druk %s by text (%s): %s",

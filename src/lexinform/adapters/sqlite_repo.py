@@ -653,6 +653,7 @@ class SqliteBillRepository:
         *,
         prefilter_hits: list[str] | None = None,
         reason: str | None = None,
+        clear_reason: bool = False,
     ) -> None:
         hits = None
         if prefilter_hits is not None:
@@ -661,10 +662,10 @@ class SqliteBillRepository:
             """
             UPDATE bills SET status = ?,
                 prefilter_hits = COALESCE(?, prefilter_hits),
-                last_error = COALESCE(?, last_error)
+                last_error = CASE WHEN ? THEN NULL ELSE COALESCE(?, last_error) END
             WHERE term = ? AND number = ?
             """,
-            (status.value, hits, reason, term, number),
+            (status.value, hits, clear_reason, reason, term, number),
         )
         if status in self._SKIPPED:
             self._drop_rcl_documents(term, number)

@@ -128,6 +128,19 @@ def test_a_broken_pdf_is_a_verdict_and_a_file_not_there_yet_is_not() -> None:
     assert missing.last_error == "text prefilter: the print has no file yet"
 
 
+def test_a_print_whose_file_arrives_later_drops_the_reason_it_waited() -> None:
+    w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT), batch=True, batch_only=True)
+    w.add_bill("4101", "Rządowy projekt ustawy o lasach", with_pdf=False)
+    w.run()
+    w.attach_pdf("4101", "Rządowy projekt ustawy o lasach")
+    w.clock.advance(hours=12)
+
+    report = w.run()
+
+    assert report.text_prefilter_hits == 1
+    assert w.bill("4101").last_error is None
+
+
 def test_a_scanned_print_goes_to_the_model_instead_of_being_skipped() -> None:
     """Keywords cannot search a photograph of paper, and that is not a reason to drop the bill:
     the deputies' prints that arrive as scans are the ones whose titles say the least."""
