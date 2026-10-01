@@ -4,9 +4,19 @@ import pytest
 
 from lexinform.errors import LlmContextExceededError
 from lexinform.models import BillContext, BillStatus, TextDocument
+from lexinform.pricing import INPUT_TOKEN_LIMITS
 from lexinform.services.analysis import Waiting
 from tests.fakes import FakeBatchBackend, FakeTextExtractor
 from tests.harness import World, print_url
+
+LIMIT = 4_720
+"""gpt-5.1's 272,000 a hundredfold smaller past the fake batch's 2,000 prompt tokens: 5k chars, not 540k."""
+
+
+@pytest.fixture
+def small_context(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The same boundary over texts a hundred times shorter: the keyword scan is linear in them."""
+    monkeypatch.setitem(INPUT_TOKEN_LIMITS, "gpt-5.1", LIMIT)
 
 
 class OverflowBatch(FakeBatchBackend):
@@ -19,8 +29,9 @@ class OverflowBatch(FakeBatchBackend):
         )
 
 
+@pytest.mark.usefixtures("small_context")
 @pytest.mark.parametrize("workers", [1, 4])
-@pytest.mark.parametrize("tokens", [272_000, 272_001])
+@pytest.mark.parametrize("tokens", [LIMIT, LIMIT + 1])
 def test_context_boundary_routes_full_text_to_correct_batch(workers: int, tokens: int) -> None:
     text = "a" * ((tokens - 2_000) * 2)
     overflow = OverflowBatch()
@@ -39,7 +50,7 @@ def test_context_boundary_routes_full_text_to_correct_batch(workers: int, tokens
     report = w.run()
 
     assert not report.errors and not w.llm.contexts
-    selected = overflow if tokens > 272_000 else w.batch
+    selected = overflow if tokens > LIMIT else w.batch
     assert len(selected.submitted) == 2
     ctx = selected.submitted[0].ctx
     assert isinstance(ctx, BillContext)
@@ -52,17 +63,18 @@ def test_context_boundary_routes_full_text_to_correct_batch(workers: int, tokens
     assert record is not None and record.model == selected.MODEL
 
 
+@pytest.mark.usefixtures("small_context")
 @pytest.mark.parametrize("force", [False, True])
 def test_manual_overflow_uses_batch_price_and_force_only_lifts_cost_guard(force: bool) -> None:
     overflow = OverflowBatch()
-    text = "a" * 1_200_000
+    text = "a" * 120_000
     w = World(
         analysis_model="gpt-5.1",
         overflow_batch=overflow,
         batch_only=True,
         extractor=FakeTextExtractor(text),
         text_budget_chars=1_500_000,
-        max_bill_cost_usd=1,
+        max_bill_cost_usd=0.1,
     )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run(max_analyze=0)
@@ -74,7 +86,7 @@ def test_manual_overflow_uses_batch_price_and_force_only_lifts_cost_guard(force:
     ctx = overflow.submitted[0].ctx
     assert isinstance(ctx, BillContext)
     assert ctx.truncated != force
-    assert ctx.text == text if force else len(ctx.text) / 2 * 2 / 1_000_000 <= 1
+    assert ctx.text == text if force else len(ctx.text) / 2 * 2 / 1_000_000 <= 0.1
     assert isinstance(w.analysis.analyze_bill(w.bill("3039"), ignore_cost_limit=True), Waiting)
     assert len(overflow.submitted) == 1
 
@@ -143,13 +155,14 @@ def test_synchronous_context_rejection_also_queues_overflow() -> None:
     assert len(w.llm.contexts) == len(overflow.submitted) == 1
 
 
+@pytest.mark.usefixtures("small_context")
 def test_overflow_context_rejection_is_not_submitted_again() -> None:
     overflow = OverflowBatch(rejected=True)
     w = World(
         analysis_model="gpt-5.1",
         overflow_batch=overflow,
         batch_only=True,
-        extractor=FakeTextExtractor("a" * 600_000),
+        extractor=FakeTextExtractor("a" * 6_000),
         text_budget_chars=1_500_000,
     )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
@@ -229,13 +242,14 @@ def test_a_re_analysis_no_model_takes_keeps_the_previous_analysis_rather_than_fa
     assert len(overflow.submitted) == 1
 
 
+@pytest.mark.usefixtures("small_context")
 def test_openai_and_opus_batches_are_submitted_and_collected_in_one_run() -> None:
     overflow = OverflowBatch()
     w = World(
         analysis_model="gpt-5.1",
         overflow_batch=overflow,
         batch_only=True,
-        extractor=FakeTextExtractor(by_content={b"large": "a" * 600_000}),
+        extractor=FakeTextExtractor(by_content={b"large": "a" * 6_000}),
         text_budget_chars=1_500_000,
     )
     for number in ("3039", "3040"):

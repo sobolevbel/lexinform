@@ -13,6 +13,7 @@ PESEL, mObywatel, NFZ, świadczenia, prawo jazdy and Kodeks wyborczy are deliber
 cost 4 to 14 full analyses of unrelated bills per term.
 """
 
+import functools
 import re
 from dataclasses import dataclass
 
@@ -112,10 +113,13 @@ class KeywordPrefilter:
 
     def spans(self, text: str) -> list[tuple[int, int]]:
         """Character ranges of every hit in `text` (offsets are valid for the original text)."""
-        haystack = self._normalize(text)
-        return sorted(
-            (m.start(), m.end()) for p in self._patterns for m in p.regex.finditer(haystack)
-        )
+        return list(_spans(self._patterns, self._normalize(text)))
+
+
+@functools.lru_cache(maxsize=8)
+def _spans(patterns: tuple[KeywordPattern, ...], haystack: str) -> tuple[tuple[int, int], ...]:
+    """One scan per text: a reading asks for the same text's spans two to four times over."""
+    return tuple(sorted((m.start(), m.end()) for p in patterns for m in p.regex.finditer(haystack)))
 
 
 def accept_title_hits(hits: list[str]) -> bool:
