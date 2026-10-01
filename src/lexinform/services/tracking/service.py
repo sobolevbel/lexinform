@@ -422,6 +422,12 @@ class StatusTrackingService:
             everyone, result, publish=publish, quiet=quiet_everyone or []
         ):
             return False
+        if publish:
+            try:
+                self._poster.flush_sittings(result)
+            except ServiceUnavailableError as exc:
+                result.abort(exc, failed=True)
+                return False
         if self._senate is not None:
             full = [b for b in quiet_everyone or [] if b.observation_mode is ObservationMode.FULL]
             self._senate.check([*everyone, *full], result)
@@ -574,8 +580,6 @@ class StatusTrackingService:
         only repeats a send that failed, and `check_updates` calls this only when publishing.
         """
         counters: dict[PublicationKind, PostCounter] = {
-            PublicationKind.AGENDA: "agenda_posted",
-            PublicationKind.AGENDA_CANCELLED: "agenda_cancelled",
             PublicationKind.HEARING_DEADLINE: "hearing_reminders",
             PublicationKind.DECISION_DEADLINE: "decision_reminders",
             PublicationKind.ACT_PUBLISHED: "acts_published",
@@ -587,6 +591,9 @@ class StatusTrackingService:
             self._options.channel_id, max_attempts=self._options.max_publish_attempts
         ):
             if publication.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
+                continue
+            if publication.kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED):
+                self._poster.queue_sitting(publication)  # sent with this run's roundup
                 continue
             try:
                 result.count_post(

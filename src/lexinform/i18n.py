@@ -124,14 +124,12 @@ class Labels:
     link_committee_letter: str
     link_hearing_rules: str
     next_step: str
-    agenda_committee_header: str
-    agenda_sejm_header: str
-    agenda_item: str
+    sittings_header: str
+    sittings_sejm: str
+    sittings_committees: str
     agenda_cancelled_header: str
     agenda_dropped_header: str
     agenda_was_planned: str
-    agenda_off_note: str
-    agenda_dropped_note: str
     agenda_conditional: str
     agenda_conditional_short: str
     agenda_closed_note: str
@@ -397,20 +395,12 @@ RU = Labels(
     link_committee_letter="форма письма",
     link_hearing_rules="бланк и порядок на сайте Сейма",
     next_step="Что дальше",
-    agenda_committee_header="Заседание комиссии",
-    agenda_sejm_header="В повестке заседания Сейма",
-    agenda_item="Пункт повестки",
+    sittings_header="Заседания",
+    sittings_sejm="Сейм",
+    sittings_committees="Комиссии",
     agenda_cancelled_header="Заседание отменено",
     agenda_dropped_header="Проект снят с повестки заседания",
     agenda_was_planned="было запланировано на",
-    agenda_off_note=(
-        "Заседание, о котором сообщалось выше, не состоится. Новая дата пока не назначена —"
-        " сообщим, когда она появится."
-    ),
-    agenda_dropped_note=(
-        "Заседание состоится, но этого проекта в его повестке больше нет. Сообщим, когда он"
-        " снова в неё попадёт."
-    ),
     agenda_conditional="Заседание объявлено условно: состоится, только если",
     agenda_conditional_short="условно",
     agenda_closed_note="Заседание закрытое — публику на него не пускают.",
@@ -1082,20 +1072,12 @@ EN = Labels(
     link_committee_letter="letter form",
     link_hearing_rules="form and rules on the Sejm's site",
     next_step="What comes next",
-    agenda_committee_header="Committee sitting",
-    agenda_sejm_header="On the agenda of a Sejm sitting",
-    agenda_item="Agenda item",
+    sittings_header="Sittings",
+    sittings_sejm="Sejm",
+    sittings_committees="Committees",
     agenda_cancelled_header="Sitting called off",
     agenda_dropped_header="Bill taken off the sitting's agenda",
     agenda_was_planned="was planned for",
-    agenda_off_note=(
-        "The sitting announced above is not taking place. No new date has been set yet — we will"
-        " say so when there is one."
-    ),
-    agenda_dropped_note=(
-        "The sitting goes ahead, but this bill is no longer on its agenda. We will say so when it"
-        " is back on."
-    ),
     agenda_conditional="The sitting is announced conditionally: it happens only if",
     agenda_conditional_short="conditional",
     agenda_closed_note="The sitting is closed — the public is not admitted.",

@@ -7,18 +7,19 @@ concrete publishers.
 
 import hashlib
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import (
     DIGEST_NUMBER,
-    AgendaItem,
     Bill,
     Digest,
     Phase,
     PrintInfo,
     PublicationKind,
+    SittingNews,
     Stage,
     StatusChange,
 )
@@ -29,7 +30,7 @@ from lexinform.ports import PublishResult
 class Outgoing:
     """A rendered message on its way out: what it is about, its text, where it replies.
 
-    `bill` is None for the digest, the one message about no bill; `action` is its button in the
+    `bill` is None for the digest and the sittings roundup; `action` is the digest's button in the
     technical channel — a label and the data a press sends back (`digest:2026-W38`)."""
 
     kind: PublicationKind
@@ -104,23 +105,10 @@ class RenderingPublisher(ABC):
         text = self._formatter.consultation_results(bill).text
         return self._deliver(Outgoing(PublicationKind.CONSULTATION_RESULTS, bill, text, reply_to))
 
-    def publish_agenda(
-        self,
-        bill: Bill,
-        item: AgendaItem,
-        reply_to: int | None,
-        moved_from: AgendaItem | None = None,
-    ) -> PublishResult:
-        text = self._formatter.agenda(bill, item, moved_from=moved_from).text
-        return self._deliver(Outgoing(PublicationKind.AGENDA, bill, text, reply_to, item.ref))
-
-    def publish_agenda_cancelled(
-        self, bill: Bill, item: AgendaItem, reply_to: int | None, *, still_meets: bool
-    ) -> PublishResult:
-        text = self._formatter.agenda_cancelled(bill, item, still_meets=still_meets).text
-        return self._deliver(
-            Outgoing(PublicationKind.AGENDA_CANCELLED, bill, text, reply_to, item.ref)
-        )
+    def publish_sittings(self, news: Sequence[SittingNews]) -> PublishResult:
+        text = self._formatter.sittings(news).text
+        detail = ", ".join(dict.fromkeys(n.bill.number for n in news))
+        return self._deliver(Outgoing(PublicationKind.AGENDA, None, text, detail=detail))
 
     def publish_hearing_deadline(
         self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date

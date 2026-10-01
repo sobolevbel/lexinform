@@ -310,11 +310,9 @@ def test_a_sitting_that_moved_corrects_the_post_instead_of_contradicting_it() ->
     report = w.run()
 
     assert report.agenda_posted == 1
-    bill, item, _ = w.publisher.agendas[-1]
+    _, item, _ = w.publisher.agendas[-1]
     assert item.date == dt.date(2026, 9, 22)
-    was = w.publisher.agendas[0][1]
-    text = MessageFormatter("ru").agenda(bill, item, moved_from=was).text
-    assert "Заседание перенесено с 17 сент 2026" in text
+    assert "Заседание перенесено с 17 сент 2026" in w.publisher.texts(PublicationKind.AGENDA)[-1]
 
 
 def test_a_sitting_that_keeps_the_day_but_moves_the_hour_is_told_again() -> None:
@@ -333,10 +331,9 @@ def test_a_sitting_that_keeps_the_day_but_moves_the_hour_is_told_again() -> None
     report = w.run()
 
     assert report.agenda_posted == 1
-    bill, item, _ = w.publisher.agendas[-1]
+    _, item, _ = w.publisher.agendas[-1]
     assert (item.start_time, item.room) == (dt.time(13, 30), "sala 118")
-    was = w.publisher.agendas[0][1]
-    text = MessageFormatter("ru").agenda(bill, item, moved_from=was).text
+    text = w.publisher.texts(PublicationKind.AGENDA)[-1]
     assert "13:30" in text and "sala 118" in text
     assert "Изменились время или зал" in text and "09:00 · sala 412" in text
     # The sitting is the same one, so it is corrected and not taken back as called off.
@@ -417,14 +414,8 @@ def test_a_sitting_that_is_called_off_is_taken_back() -> None:
     assert _refs(w) == []
     bill, item, still_meets = w.publisher.agenda_cancellations[0]
     assert (bill.number, item.ref, still_meets) == ("3039", SITTING_REF, False)
-    text = (
-        MessageFormatter("ru")
-        .agenda_cancelled(bill, item, still_meets=still_meets, today=dt.date(2026, 9, 8))
-        .text
-    )
-    assert "🗓 <b>Заседание отменено — druk nr 3039</b>" in text
-    assert "было запланировано на 17 сент 2026, 09:00" in text
-    assert "Новая дата пока не назначена" in text
+    text = w.publisher.texts(PublicationKind.AGENDA)[-1]
+    assert "было запланировано на 17 сент 2026, 09:00\nЗаседание отменено" in text
     assert "#заседаниекомиссии" in text  # one search finds the sitting and its retraction
 
 
@@ -440,15 +431,9 @@ def test_the_sitting_goes_ahead_without_the_bill_and_says_so() -> None:
     report = w.run()
 
     assert report.agenda_cancelled == 1
-    _, item, still_meets = w.publisher.agenda_cancellations[0]
+    _, _, still_meets = w.publisher.agenda_cancellations[0]
     assert still_meets
-    text = (
-        MessageFormatter("ru")
-        .agenda_cancelled(w.bill("3039"), item, still_meets=True, today=dt.date(2026, 9, 8))
-        .text
-    )
-    assert "🗓 <b>Проект снят с повестки заседания — druk nr 3039</b>" in text
-    assert "Заседание состоится, но этого проекта в его повестке больше нет" in text
+    assert "Проект снят с повестки заседания" in w.publisher.texts(PublicationKind.AGENDA)[-1]
 
 
 def test_a_sitting_is_taken_back_only_once() -> None:

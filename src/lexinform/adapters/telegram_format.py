@@ -43,6 +43,7 @@ from lexinform.models import (
     PublicationKind,
     RclProject,
     RunReport,
+    SittingNews,
     SpendSnapshot,
     Stage,
     StatusChange,
@@ -88,6 +89,7 @@ from lexinform.pricing import cost_usd, format_tokens, format_usd
 MESSAGE_LIMIT = 4096
 ELLIPSIS = "…"
 QUOTED_LINE_CHARS = 300  # Telegram takes 4096 characters in a command, and echoes them back
+SITTING_TEXT_CHARS = 240  # a roundup line quotes the agenda point, the card says the rest
 QUARTERS = {1: "I", 2: "II", 3: "III", 4: "IV"}
 
 # What the technical channel accepts (English, like the run report; the operator's language).
@@ -905,99 +907,61 @@ class MessageFormatter:
         tags = self._tags(bill, f"#{lb.tag_consultation_results}")
         return RenderedMessage(text=self._assemble([header, facts, steps, links_block, tags]))
 
-    def agenda(
-        self,
-        bill: Bill,
-        item: AgendaItem,
-        *,
-        moved_from: AgendaItem | None = None,
-        today: dt.date | None = None,
-    ) -> RenderedMessage:
-        """Reply under the card: the bill is on the agenda of a committee or Sejm sitting.
-
-        `moved_from` is the sitting as last announced, not a bare date: 302 of the 886 committee
-        sittings of term 10 that changed kept the day and moved the hour or the room, and
-        «перенесено с 17.09.2026» over an unchanged date tells the reader nothing.
-        """
+    def sittings(self, news: Sequence[SittingNews]) -> RenderedMessage:
+        """One post for the sittings of a run: the Sejm's first, each line linked to its card,
+        which carries the summary and what the reader can do."""
         lb = self._labels
-        s = bill.summary
-        is_committee = item.kind == "committee"
-        head_label = lb.agenda_committee_header if is_committee else lb.agenda_sejm_header
-        header = self._header(ICON["calendar"], head_label, bill)
-        lines: list[str] = []
-        if is_committee:
-            name = self._committee_display(bill, item.committee_code or "", item.committee_name)
-            lines.append(f"{ICON['committee']} <b>{esc(name)}</b>")
-            when = f"{ICON['effective']} {self._agenda_when(item)}"
-            if item.room:
-                when += f" · {esc(item.room)}"
-            lines.append(when)
-        else:
-            lines.append(f"{ICON['stage']} {self._agenda_when(item)}")
-        if moved_from is not None:
-            lines.append(f"{ICON['note']} {self._moved_line(moved_from, item)}")
-        lines.extend(self._sitting_notes(item))
-        if item.text:
-            lines.append(self._field(ICON["agenda"], lb.agenda_item, esc(item.text)))
-        facts = "\n".join(lines)
-        action = self._action_line(bill, today or self._today(), agenda_item=item)
-        links = [link(s.web_url, lb.link_process)]
+        blocks = [f"{ICON['calendar']} <b>{esc(lb.sittings_header)}</b>"]
+        lead: list[str] = []
+        for label, tag, group in (
+            (lb.sittings_sejm, lb.tag_sejm_sitting, [n for n in news if n.item.kind == "sejm"]),
+            (
+                lb.sittings_committees,
+                lb.tag_committee_sitting,
+                [n for n in news if n.item.kind == "committee"],
+            ),
+        ):
+            if not group:
+                continue
+            ordered = sorted(group, key=_sitting_order)
+            entries = "\n\n".join(self._sitting_entry(n) for n in ordered)
+            blocks.append(f"<b>{esc(label)}</b>\n\n{entries}")
+            lead.append(f"#{tag}")
+        threads = dict.fromkeys(self._thread_tags(n.bill) for n in news)
+        return RenderedMessage(text=self._assemble(blocks, tail=[" ".join([*lead, *threads])]))
+
+    def _sitting_entry(self, news: SittingNews) -> str:
+        """A sitting in two or three lines; a retraction says which of two facts it is: the
+        sitting is off, or it meets without this bill."""
+        lb = self._labels
+        item = news.item
+        label = self._number_label(news.bill)
+        url = self._post_url(news.card_message_id)
+        ref = f'<a href="{html.escape(url, quote=True)}">{label}</a>' if url else label
+        where = ""
+        if item.kind == "committee":
+            name = self._committee_display(
+                news.bill, item.committee_code or "", item.committee_name
+            )
+            where = f"{esc(name)} · "
+        if news.cancelled:
+            verdict = lb.agenda_dropped_header if news.still_meets else lb.agenda_cancelled_header
+            return (
+                f"❌ <b>{ref}</b> — {where}{esc(lb.agenda_was_planned)} {self._agenda_when(item)}"
+                f"\n{esc(verdict)}"
+            )
+        when = self._agenda_when(item)
+        if item.room:
+            when += f" · {esc(item.room)}"
         if item.video_url:
-            links.append(link(item.video_url, lb.link_video))
-        if is_committee and item.committee_code:
-            links.append(link(committee_web_url(s.term, item.committee_code), lb.link_committee))
-        links_block = self._links(links)
-        tags = self._tags(
-            bill, f"#{lb.tag_committee_sitting if is_committee else lb.tag_sejm_sitting}"
-        )
-        summary_block = ""
-        if bill.analysis is not None:
-            summary_block = self._summary_reminder(bill.analysis.analysis.summary, full=False)
-        text = self._assemble(
-            [header, facts], flexible=[summary_block], tail=[action, links_block, tags]
-        )
-        return RenderedMessage(text=text)
-
-    def agenda_cancelled(
-        self, bill: Bill, item: AgendaItem, *, still_meets: bool, today: dt.date | None = None
-    ) -> RenderedMessage:
-        """Reply under the card: a sitting the channel announced is not happening as announced.
-
-        Two different facts: the sitting is off, or it meets without this bill. A sitting that
-        merely moved is neither — it keeps its `sitting_key` and is told as a new agenda post. The
-        tag is the announcement's, so one search finds a sitting and its retraction together.
-        """
-        lb = self._labels
-        today = today or self._today()
-        is_committee = item.kind == "committee"
-        header = self._header(
-            ICON["calendar"],
-            lb.agenda_dropped_header if still_meets else lb.agenda_cancelled_header,
-            bill,
-        )
-        lines: list[str] = []
-        if is_committee:
-            name = self._committee_display(bill, item.committee_code or "", item.committee_name)
-            lines.append(f"{ICON['committee']} <b>{esc(name)}</b>")
-        lines.append(f"{ICON['effective']} {esc(lb.agenda_was_planned)} {self._agenda_when(item)}")
-        lines.append(
-            f"{ICON['note']} {esc(lb.agenda_dropped_note if still_meets else lb.agenda_off_note)}"
-        )
-        facts = "\n".join(lines)
-        links = [link(bill.summary.web_url, lb.link_process)]
-        if is_committee and item.committee_code:
-            links.append(
-                link(committee_web_url(bill.summary.term, item.committee_code), lb.link_committee)
-            )
-        tags = self._tags(
-            bill, f"#{lb.tag_committee_sitting if is_committee else lb.tag_sejm_sitting}"
-        )
-        return RenderedMessage(
-            text=self._assemble(
-                [header, facts],
-                tail=[self._next_step_line(bill, today), self._links(links), tags],
-            )
-        )
+            when += f" · {link(item.video_url, lb.link_video)}"
+        lines = [f"• <b>{ref}</b> — {where}{when}"]
+        if item.text:
+            lines.append(f"<i>{esc(_clip(item.text, SITTING_TEXT_CHARS))}</i>")
+        if news.moved_from is not None:
+            lines.append(f"{ICON['note']} {self._moved_line(news.moved_from, item)}")
+        lines.extend(self._sitting_notes(item))
+        return "\n".join(lines)
 
     def decision_deadline(self, bill: Bill, phase: Phase, *, today: dt.date) -> RenderedMessage:
         """Reply under the card as the Senate's or the President's constitutional term runs out.
@@ -1520,15 +1484,7 @@ class MessageFormatter:
         if kind is PublicationKind.CONSULTATION_RESULTS:
             return self.consultation_results(bill).text
         if kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED) and plan.item_json:
-            item = AgendaItem.model_validate_json(plan.item_json)
-            if kind is PublicationKind.AGENDA_CANCELLED:
-                return self.agenda_cancelled(bill, item, still_meets=plan.still_meets).text
-            moved = (
-                AgendaItem.model_validate_json(plan.moved_from_json)
-                if plan.moved_from_json
-                else None
-            )
-            return self.agenda(bill, item, moved_from=moved).text
+            return self.sittings([SittingNews.of(kind, plan)]).text
         if plan.today is not None:
             if kind is PublicationKind.IN_FORCE:
                 return self.in_force(bill, today=plan.today).text
@@ -2250,7 +2206,6 @@ class MessageFormatter:
         bill: Bill,
         today: dt.date,
         *,
-        agenda_item: AgendaItem | None = None,
         when_none: bool = True,
     ) -> str:
         """What a reader can do now, or (with `when_none`) why nothing. A post that exists to
@@ -2282,7 +2237,7 @@ class MessageFormatter:
             )
         phase = next_phase(bill, today=today)
         if phase is not None and phase.key in COMMITTEE_PHASES:
-            codes = phase.committees or ((agenda_item.committee_code,) if agenda_item else ())
+            codes = phase.committees
             targets = [
                 link(committee_web_url(bill.term, code), self._committee_display(bill, code, None))
                 + f" ({link(committee_letter_url(bill.term, code), lb.link_committee_letter)})"
@@ -2291,8 +2246,7 @@ class MessageFormatter:
             ]
             if targets:
                 text = f"{esc(lb.action_committee)} {', '.join(targets)}"
-                sitting = agenda_item if agenda_item and agenda_item.kind == "committee" else None
-                sitting = sitting or self._upcoming(bill, today, phase, kind="committee")
+                sitting = self._upcoming(bill, today, phase, kind="committee")
                 if sitting is not None and sitting.date > today:
                     text += f" {esc(lb.action_before_sitting)} {self.fmt_date(sitting.date)}"
                 actions.append(text)
@@ -2757,6 +2711,10 @@ def _verdict_ref(verdict: AnalysisVerdict) -> str:
     if verdict.term is None:
         return label
     return link(process_web_url(verdict.term, verdict.number), label)
+
+
+def _sitting_order(news: SittingNews) -> tuple[dt.date, dt.time, str]:
+    return (news.item.date, news.item.start_time or dt.time.min, news.bill.number)
 
 
 def _clip(text: str, limit: int) -> str:

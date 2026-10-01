@@ -6,7 +6,13 @@ from typing import TextIO
 
 from lexinform.adapters.publisher_base import Outgoing, RenderingPublisher
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import BackfillReport, CommandOutcome, IncomingCommand, RunReport
+from lexinform.models import (
+    BackfillReport,
+    CommandOutcome,
+    IncomingCommand,
+    PublicationKind,
+    RunReport,
+)
 
 
 @dataclass
@@ -16,8 +22,11 @@ class ConsolePublishResult:
 
 
 def _about(message: Outgoing) -> str:
-    """What the dry run's title says the message is about; the digest is about no bill."""
-    return f"druk {message.bill.number}" if message.bill is not None else message.number
+    """What the dry run's title says the message is about; the digest is about no bill, and
+    the sittings roundup names its prints in `detail`."""
+    if message.bill is not None:
+        return f"druk {message.bill.number}"
+    return message.number if message.kind is PublicationKind.DIGEST else "druki"
 
 
 class ConsolePublisher(RenderingPublisher):

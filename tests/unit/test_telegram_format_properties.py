@@ -24,6 +24,7 @@ from lexinform.models import (
     OutcomeStatus,
     RunMode,
     RunReport,
+    SittingNews,
     Stage,
     StatusChange,
 )
@@ -120,7 +121,9 @@ def test_every_reply_under_a_card_is_a_message_telegram_accepts(
     assert_telegram_html(fmt.status_update(bill, change, today=today).text)
     assert_telegram_html(fmt.act_published(bill.model_copy(update={"act": act()})).text)
     assert_telegram_html(fmt.in_force(bill.model_copy(update={"act": act()}), today=today).text)
-    assert_telegram_html(fmt.agenda(bill, item, today=today).text)
+    assert_telegram_html(fmt.sittings([SittingNews(bill=bill, item=item)]).text)
+    gone = SittingNews(bill=bill, item=item, cancelled=True)
+    assert_telegram_html(fmt.sittings([gone]).text)
     assert_telegram_html(fmt.hearing_deadline(bill, hearing, today=today).text)
     if bill.consultation is not None and bill.consultation.end is not None:
         assert_telegram_html(fmt.consultation_deadline(bill, today=today).text)

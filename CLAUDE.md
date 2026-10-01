@@ -138,7 +138,22 @@ Invariants worth keeping:
   that **failed** is not an absence (`_Listings.kept` puts those items back, for a Sejm sitting
   whose `/proceedings/{n}` was refused as well as for a committee's). The reader is told *which*
   fact it is — the sitting is off, or it meets without this bill (`_Listings.announced`) — and only
-  if the announcement was actually `sent`. The tag is the announcement's, so one search finds both.
+  if the announcement was actually `sent`; one still queued when its sitting goes is dropped
+  (`Poster.drop_sitting`), never sent. The tag is the announcement's, so one search finds both.
+  **A committee renumbers its planned sittings** (ASW 138 → 135 on 1 Oct 2026, same day, hour and
+  room): `_keep_renumbered` keeps the `sitting_key` the sitting was told under, or the move reads
+  as a cancellation followed by a fresh announcement of the same meeting.
+- **Sittings go out as one roundup a run, not as replies.** Every announcement, move and
+  retraction of a run is a line of one top-level post (`Poster.queue_sitting` →
+  `flush_sittings` → `Publisher.publish_sittings`, `MessageFormatter.sittings`): the Sejm first,
+  then the committees, each line linked to its bill's card, which carries the summary and the
+  action — the reply under the card repeated both at 1,700 characters a sitting. The per-sitting
+  `agenda`/`agenda_cancelled` rows stay the bookkeeping (dedupe, retraction, frozen
+  `DeliveryPlan`) and all take the roundup's `message_id`; a failed roundup leaves every line
+  `failed`, and the next run's `_retry_failed` queues them into its own. Nothing goes under a card,
+  by decision of 2026-10-01. The card does not absorb a same-run update or sitting: it shows
+  neither an RPW withdrawal nor a plenary sitting outside its phase's venue, so absorbing would
+  lose news.
 - **The agenda does not always name the druk, one meeting is listed many times, and the hour moves
   without the day.** Three blind spots, measured over the 4,387 committee and 75 Sejm sittings of
   term 10 (coverage audit, 14 Sept 2026). **Past the third reading the agenda names the derived

@@ -268,6 +268,33 @@ class Publication(BaseModel):
     """Digest of the card text as last sent (`new_bill`)."""
 
 
+class SittingNews(BaseModel):
+    """One line of the sittings roundup: a sitting announced, moved or taken back for a bill."""
+
+    model_config = ConfigDict(frozen=True)
+
+    bill: Bill
+    item: AgendaItem
+    moved_from: AgendaItem | None = None
+    cancelled: bool = False
+    still_meets: bool = False
+    card_message_id: int | None = None
+
+    @classmethod
+    def of(cls, kind: PublicationKind, plan: DeliveryPlan) -> SittingNews:
+        """The line as the publication's frozen plan describes it, never newer facts."""
+        assert plan.item_json is not None, "an agenda publication is prepared with its item"
+        moved = plan.moved_from_json
+        return cls(
+            bill=Bill.model_validate_json(plan.bill_json),
+            item=AgendaItem.model_validate_json(plan.item_json),
+            moved_from=AgendaItem.model_validate_json(moved) if moved else None,
+            cancelled=kind is PublicationKind.AGENDA_CANCELLED,
+            still_meets=plan.still_meets,
+            card_message_id=plan.reply_to,
+        )
+
+
 class StatusChange(BaseModel):
     """A detected change worth one update post; unique per (bill, new_fingerprint)."""
 

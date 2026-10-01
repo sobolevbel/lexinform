@@ -22,6 +22,7 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    SittingNews,
     Stage,
     StatusChange,
 )
@@ -30,6 +31,8 @@ from lexinform.services.publications import HeldRelease, send_publication
 from lexinform.services.tracking.result import TrackingResult
 
 log = logging.getLogger(__name__)
+
+SITTINGS_PER_POST = 8  # a line is at most ~500 characters, so eight stay under Telegram's 4096
 
 Send = Callable[[int | None], int]
 """Sends one post under an optional reply-to message and answers with its message id."""
@@ -61,9 +64,82 @@ class Poster:
         self._channel_id = channel_id
         self._max_attempts = max_attempts
         self._attempted: set[int] = set()
+        self._sittings: dict[int, Publication] = {}
 
     def start_run(self) -> None:
         self._attempted.clear()
+        self._sittings.clear()
+
+    def queue_sitting(self, pub: Publication) -> None:
+        """Keep a sitting for the run's roundup, which `flush_sittings` sends."""
+        assert pub.id is not None and pub.delivery is not None, (
+            "prepare_message and list_due_deliveries give only stored rows with a delivery plan"
+        )
+        if pub.status not in (PublicationStatus.QUEUED, PublicationStatus.FAILED):
+            return
+        if pub.attempts >= self._max_attempts or pub.id in self._attempted:
+            return
+        self._sittings[pub.id] = pub
+
+    def drop_sitting(self, bill: Bill, ref: str) -> None:
+        """An announcement not yet sent of a sitting that is gone: skipped, never retried."""
+        pub = self._repo.get_publication(
+            bill.term, bill.number, PublicationKind.AGENDA, self._channel_id, ref=ref
+        )
+        if pub is None or pub.id is None:
+            return
+        if pub.status in (PublicationStatus.QUEUED, PublicationStatus.FAILED):
+            self._sittings.pop(pub.id, None)
+            self._repo.mark_publication(pub.id, PublicationStatus.SKIPPED, count_attempt=False)
+
+    def flush_sittings(self, result: TrackingResult) -> None:
+        """Send the queued sittings as one post (or a few, `SITTINGS_PER_POST` lines each)."""
+        queued = list(self._sittings.values())
+        self._sittings.clear()
+        for start in range(0, len(queued), SITTINGS_PER_POST):
+            self._send_sittings(queued[start : start + SITTINGS_PER_POST], result)
+
+    def _send_sittings(self, pubs: list[Publication], result: TrackingResult) -> None:
+        news: list[SittingNews] = []
+        for pub in pubs:
+            assert pub.id is not None and pub.delivery is not None, "queue_sitting keeps these"
+            self._attempted.add(pub.id)
+            self._repo.mark_publication(pub.id, PublicationStatus.PENDING, count_attempt=False)
+            line = SittingNews.of(pub.kind, pub.delivery)
+            card = self.card(line.bill)
+            if card is not None and card.message_id is not None:
+                line = line.model_copy(update={"card_message_id": card.message_id})
+            news.append(line)
+        try:
+            sent = self._publisher.publish_sittings(news)
+        except ServiceUnavailableError as exc:
+            for pub in pubs:
+                assert pub.id is not None, "queue_sitting keeps stored rows"
+                self._repo.mark_publication(
+                    pub.id, PublicationStatus.FAILED, error=exc.describe(), count_attempt=False
+                )
+            raise
+        except Exception as exc:
+            log.exception("sittings post failed: %s", exc)
+            for pub in pubs:
+                assert pub.id is not None, "queue_sitting keeps stored rows"
+                self._repo.mark_publication(
+                    pub.id, PublicationStatus.FAILED, error=f"{type(exc).__name__}: {exc}"
+                )
+                result.count_post(False)
+            return
+        with self._repo.atomic():
+            for pub in pubs:
+                assert pub.id is not None, "queue_sitting keeps stored rows"
+                self._repo.mark_publication(
+                    pub.id,
+                    PublicationStatus.SENT,
+                    message_id=sent.message_id,
+                    sent_at=self._clock.now(),
+                )
+        for pub in pubs:
+            cancelled = pub.kind is PublicationKind.AGENDA_CANCELLED
+            result.count_post(True, "agenda_cancelled" if cancelled else "agenda_posted")
 
     def card(self, bill: Bill) -> Publication | None:
         """The bill's card in this channel: the message every reply is attached to."""
@@ -270,20 +346,6 @@ class Poster:
     def consultation_results(self, bill: Bill) -> bool:
         return self._once(bill, PublicationKind.CONSULTATION_RESULTS)
 
-    def agenda(self, bill: Bill, item: AgendaItem, moved_from: AgendaItem | None = None) -> bool:
-        return self._once(
-            bill, PublicationKind.AGENDA, ref=item.ref, item=item, moved_from=moved_from
-        )
-
-    def agenda_cancelled(self, bill: Bill, item: AgendaItem, *, still_meets: bool) -> bool:
-        return self._once(
-            bill,
-            PublicationKind.AGENDA_CANCELLED,
-            ref=item.ref,
-            item=item,
-            still_meets=still_meets,
-        )
-
     def decision_deadline(self, bill: Bill, phase: Phase, *, today: date) -> bool:
         return self._once(
             bill, PublicationKind.DECISION_DEADLINE, ref=phase.key, phase=phase, today=today
@@ -390,19 +452,9 @@ class Poster:
             return self._publisher.publish_act_published(bill, reply).message_id
         if kind is PublicationKind.CONSULTATION_RESULTS:
             return self._publisher.publish_consultation_results(bill, reply).message_id
-        if kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED):
-            assert plan.item_json is not None, "an agenda post is prepared with its item"
-            item = AgendaItem.model_validate_json(plan.item_json)
-            if kind is PublicationKind.AGENDA_CANCELLED:
-                return self._publisher.publish_agenda_cancelled(
-                    bill, item, reply, still_meets=plan.still_meets
-                ).message_id
-            moved = (
-                AgendaItem.model_validate_json(plan.moved_from_json)
-                if plan.moved_from_json
-                else None
-            )
-            return self._publisher.publish_agenda(bill, item, reply, moved).message_id
+        assert kind not in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED), (
+            "sittings go out together through queue_sitting and flush_sittings"
+        )
         assert plan.today is not None, f"a {kind} reminder is prepared with the day it is for"
         if kind is PublicationKind.IN_FORCE:
             return self._publisher.publish_in_force(bill, reply, today=plan.today).message_id

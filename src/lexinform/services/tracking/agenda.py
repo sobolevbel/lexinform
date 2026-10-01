@@ -3,7 +3,8 @@
 Committee sittings come from `/committees/{code}/sittings` (one request per committee a followed
 bill was referred to), Sejm sittings from `/proceedings` plus one `/proceedings/{n}` per sitting
 that is not over yet. A bill's upcoming items are stored on the bill (so cards and updates can
-say "II чтение — 15–18.09.2026") and every new (bill, sitting) pair is posted once.
+say "II чтение — 15–18.09.2026") and every new (bill, sitting) pair is told once, as a line of
+the run's sittings roundup (`Poster.flush_sittings`).
 """
 
 import datetime as dt
@@ -170,10 +171,8 @@ class AgendaWatcher:
                         self._repo.save_agenda(bill.term, bill.number, items)
                     announced = self._plan_new(bill, items)
                 if publish:
-                    for publication in cancelled:
-                        result.count_post(self._poster.deliver(publication), "agenda_cancelled")
-                    for publication in announced:
-                        result.count_post(self._poster.deliver(publication), "agenda_posted")
+                    for publication in (*cancelled, *announced):
+                        self._poster.queue_sitting(publication)
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return False
@@ -199,7 +198,8 @@ class AgendaWatcher:
             if old.sitting_key in keys or _already_happened(old, now):
                 continue
             if not self._poster.sent(bill, PublicationKind.AGENDA, ref=old.ref):
-                continue  # the reader was never told about this sitting
+                self._poster.drop_sitting(bill, old.ref)  # never told, so never announce it now
+                continue
             if self._poster.posted(bill, PublicationKind.AGENDA_CANCELLED, ref=old.ref):
                 continue
             still_meets = listings.announced(old)

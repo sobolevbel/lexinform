@@ -17,6 +17,7 @@ from lexinform.models import (
     StatusChange,
 )
 from lexinform.services.tracking.posting import Poster
+from lexinform.services.tracking.result import TrackingResult
 from tests.fakes import FakePublisher, FixedClock
 from tests.harness import act, submission
 
@@ -104,10 +105,49 @@ def test_agenda_posts_are_tracked_per_sitting(repo: SqliteBillRepository, bill: 
     poster = _poster(repo, FakePublisher())
     other = SITTING.model_copy(update={"ref": "sejm/65/2026-09-15", "kind": "sejm"})
 
-    poster.agenda(bill, SITTING)
+    poster.queue_sitting(
+        poster.prepare_message(bill, PublicationKind.AGENDA, ref=SITTING.ref, item=SITTING)
+    )
+    poster.flush_sittings(TrackingResult())
 
     assert poster.posted(bill, PublicationKind.AGENDA, ref=SITTING.ref)
     assert not poster.posted(bill, PublicationKind.AGENDA, ref=other.ref)
+
+
+def test_the_sittings_of_a_run_go_out_as_one_post(repo: SqliteBillRepository, bill: Bill) -> None:
+    publisher = FakePublisher()
+    poster = _poster(repo, publisher)
+    other = SITTING.model_copy(update={"ref": "sejm/65/2026-09-15", "kind": "sejm"})
+    result = TrackingResult()
+
+    for item in (SITTING, other):
+        poster.queue_sitting(
+            poster.prepare_message(bill, PublicationKind.AGENDA, ref=item.ref, item=item)
+        )
+    poster.flush_sittings(result)
+
+    assert len(publisher.sent) == 1 and result.agenda_posted == 2
+    rows = [
+        repo.get_publication(10, "3039", PublicationKind.AGENDA, CHANNEL, ref=item.ref)
+        for item in (SITTING, other)
+    ]
+    assert {row.message_id for row in rows if row is not None} == {101}
+
+
+def test_a_failed_sittings_post_leaves_every_line_to_retry(
+    repo: SqliteBillRepository, bill: Bill
+) -> None:
+    poster = _poster(repo, FakePublisher(fail_on={"3039"}))
+    result = TrackingResult()
+
+    poster.queue_sitting(
+        poster.prepare_message(bill, PublicationKind.AGENDA, ref=SITTING.ref, item=SITTING)
+    )
+    poster.flush_sittings(result)
+
+    row = repo.get_publication(10, "3039", PublicationKind.AGENDA, CHANNEL, ref=SITTING.ref)
+    assert row is not None and (row.status, row.attempts) == (PublicationStatus.FAILED, 1)
+    assert result.failed == 1
 
 
 def test_held_changes_go_out_with_the_next_update_and_are_released(

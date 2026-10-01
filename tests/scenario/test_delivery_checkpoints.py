@@ -264,7 +264,7 @@ def test_agenda_failure_preserves_the_previous_observation(monkeypatch: pytest.M
     assert w.run().agenda_posted == 0
 
 
-def test_queued_agenda_is_recovered_after_the_sitting_disappears() -> None:
+def test_a_queued_announcement_of_a_sitting_that_is_gone_is_dropped_not_sent() -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
     w.run()
@@ -282,12 +282,37 @@ def test_queued_agenda_is_recovered_after_the_sitting_disappears() -> None:
     row = w.repo.get_publication(10, "3039", PublicationKind.AGENDA, CHANNEL, ref=item.ref)
     assert row is not None and row.delivery is not None, "an unpublished run queues the agenda post"
     assert row.status is PublicationStatus.QUEUED
-    original = Bill.model_validate_json(row.delivery.bill_json)
     w.gateway.committee_sittings["ASW"] = ()
     w.repo.restore(w.repo.dump())
 
     report = w.run()
 
-    assert (report.agenda_posted, report.agenda_cancelled) == (1, 1)
-    assert w.publisher.agendas[0][0] == original
-    assert w.publisher.agendas[0][1] == item
+    assert (report.agenda_posted, report.agenda_cancelled) == (0, 0)
+    assert w.publisher.sittings == []
+    dropped = w.repo.get_publication(10, "3039", PublicationKind.AGENDA, CHANNEL, ref=item.ref)
+    assert dropped is not None and dropped.status is PublicationStatus.SKIPPED
+
+
+def test_a_queued_announcement_goes_out_from_its_frozen_snapshot() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (
+        CommitteeSitting(
+            code="ASW",
+            num=136,
+            date=dt.date(2026, 9, 17),
+            status="PLANNED",
+            agenda="Pierwsze czytanie (druk nr 3039)",
+        ),
+    )
+    w.run(publish=False)
+    item = w.bill("3039").agenda[0]
+    row = w.repo.get_publication(10, "3039", PublicationKind.AGENDA, CHANNEL, ref=item.ref)
+    assert row is not None and row.delivery is not None, "an unpublished run queues the agenda post"
+    original = Bill.model_validate_json(row.delivery.bill_json)
+
+    report = w.run()
+
+    assert report.agenda_posted == 1 and len(w.publisher.sittings) == 1
+    assert w.publisher.agendas[0][:2] == (original, item)

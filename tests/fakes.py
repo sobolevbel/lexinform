@@ -65,6 +65,7 @@ from lexinform.models import (
     SejmSitting,
     SejmTerm,
     SenateAct,
+    SittingNews,
     Stage,
     StatusChange,
     SupplementContext,
@@ -793,7 +794,9 @@ class FakePublisher(RenderingPublisher):
         self.in_force: list[tuple[Bill, int | None]] = []
         self.consultations: list[tuple[Bill, int | None, date]] = []
         self.consultation_results: list[tuple[Bill, int | None]] = []
+        # one line per sitting told: (bill, the sitting, the card the line links to)
         self.agendas: list[tuple[Bill, AgendaItem, int | None]] = []
+        self.sittings: list[tuple[SittingNews, ...]] = []  # each roundup post, line by line
         # retractions: (bill, the sitting taken back, whether it still meets)
         self.agenda_cancellations: list[tuple[Bill, AgendaItem, bool]] = []
         self.hearings: list[tuple[Bill, Stage, int | None, date]] = []
@@ -804,11 +807,14 @@ class FakePublisher(RenderingPublisher):
         self.outage_on_edit: set[str] = set()
         self._next_id = 100
 
-    def _send(self, number: str) -> FakePublishResult:
+    def _refuse(self, number: str) -> None:
         if number in self.outage_on:
             raise TelegramUnavailableError("sendMessage: ConnectError after 3 attempts")
         if number in self.fail_on:
             raise RuntimeError("telegram rejected the message")
+
+    def _send(self, number: str) -> FakePublishResult:
+        self._refuse(number)
         self._next_id += 1
         return FakePublishResult(message_id=self._next_id)
 
@@ -891,22 +897,16 @@ class FakePublisher(RenderingPublisher):
         self.consultation_results.append((bill, reply_to))
         return result
 
-    def publish_agenda(
-        self,
-        bill: Bill,
-        item: AgendaItem,
-        reply_to: int | None,
-        moved_from: AgendaItem | None = None,
-    ) -> PublishResult:
-        result = super().publish_agenda(bill, item, reply_to, moved_from)
-        self.agendas.append((bill, item, reply_to))
-        return result
-
-    def publish_agenda_cancelled(
-        self, bill: Bill, item: AgendaItem, reply_to: int | None, *, still_meets: bool
-    ) -> PublishResult:
-        result = super().publish_agenda_cancelled(bill, item, reply_to, still_meets=still_meets)
-        self.agenda_cancellations.append((bill, item, still_meets))
+    def publish_sittings(self, news: Sequence[SittingNews]) -> PublishResult:
+        for line in news:
+            self._refuse(line.bill.number)  # a failing bill fails the post it is a line of
+        result = super().publish_sittings(news)
+        self.sittings.append(tuple(news))
+        for line in news:
+            if line.cancelled:
+                self.agenda_cancellations.append((line.bill, line.item, line.still_meets))
+            else:
+                self.agendas.append((line.bill, line.item, line.card_message_id))
         return result
 
     def publish_hearing_deadline(

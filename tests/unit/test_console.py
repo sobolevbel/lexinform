@@ -15,6 +15,7 @@ from lexinform.models import (
     BillSubmission,
     Phase,
     ProcessSummary,
+    SittingNews,
     Stage,
     StatusChange,
 )
@@ -83,7 +84,7 @@ def test_every_kind_is_printed_with_an_increasing_message_id() -> None:
         publisher.publish_status_update(BILL, CHANGE, 1).message_id,
         publisher.publish_consultation_deadline(BILL, 1, today=date(2026, 9, 17)).message_id,
         publisher.publish_consultation_results(BILL, 1).message_id,
-        publisher.publish_agenda(BILL, SITTING, 1).message_id,
+        publisher.publish_sittings([SittingNews(bill=BILL, item=SITTING)]).message_id,
         publisher.publish_act_published(BILL, 1).message_id,
         publisher.publish_in_force(BILL, 1, today=date(2026, 9, 7)).message_id,
         publisher.publish_joint_bill(BILL, BILL, None, 1).message_id,
@@ -101,7 +102,7 @@ def test_every_kind_is_printed_with_an_increasing_message_id() -> None:
     assert "CONSULTATION DEADLINE druk RPW/1/2026 (reply to 1)" in out
     assert "осталось дней: 3" in out
     assert "CONSULTATION RESULTS druk RPW/1/2026" in out
-    assert "AGENDA druk RPW/1/2026 ASW/1/2026-09-17 (reply to 1)" in out
+    assert "AGENDA druki RPW/1/2026 (dry-run message #5)" in out
     assert "ACT PUBLISHED druk RPW/1/2026" in out
     assert "IN FORCE druk RPW/1/2026" in out and "С сегодняшнего дня действует" in out
     assert "HEARING DEADLINE druk RPW/1/2026 (reply to 1)" in out

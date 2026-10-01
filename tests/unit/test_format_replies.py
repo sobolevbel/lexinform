@@ -6,7 +6,7 @@ import datetime as dt
 import pytest
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import ProcessDetail
+from lexinform.models import ProcessDetail, SittingNews
 from tests.formatting import (
     ACT,
     COMMITTEE_PAGE,
@@ -22,35 +22,56 @@ from tests.formatting import (
 from tests.harness import act
 
 
-def test_committee_sitting_message(process_3039: ProcessDetail) -> None:
-    bill = bill_of(process_3039, submission=consulted(), agenda=(sitting(),))
+def test_the_sittings_roundup_names_each_sitting_in_a_line_linked_to_its_card(
+    process_3039: ProcessDetail,
+) -> None:
+    bill = bill_of(process_3039, submission=consulted(), agenda=(sitting(), PLENARY))
+    news = [
+        SittingNews(bill=bill, item=sitting(), card_message_id=7),
+        SittingNews(bill=bill, item=PLENARY, card_message_id=7),
+    ]
 
-    text = MessageFormatter("ru").agenda(bill, sitting(), today=TODAY).text
+    text = MessageFormatter("ru", channel="@lexinform").sittings(news).text
 
     assert_telegram_html(text)
-    assert text.startswith("🗓 <b>Заседание комиссии — druk nr 3039</b>")
-    assert "📮 <b>Komisja Administracji i Spraw Wewnętrznych (ASW)</b>" in text
-    assert "📅 17 сент 2026, 09:00 · sala nr 412" in text
-    assert "📝 <b>Пункт повестки:</b> Pierwsze czytanie projektu (druk nr 3039)" in text
-    assert "до заседания 17 сент 2026" in text
+    assert text.startswith("🗓 <b>Заседания</b>\n\n<b>Сейм</b>")
+    assert text.index("<b>Сейм</b>") < text.index("<b>Комиссии</b>")
+    card = '<a href="https://t.me/lexinform/7">druk nr 3039</a>'
+    assert f"• <b>{card}</b> — заседание Сейма № 65, 15-18 сент 2026" in text
+    assert (
+        f"• <b>{card}</b> — Komisja Administracji i Spraw Wewnętrznych (ASW) · "
+        "17 сент 2026, 09:00 · sala nr 412 · "
+    ) in text
     assert 'transmisje_arch.xsp?unid=1">Трансляция</a>' in text
-    assert f"{COMMITTEE_PAGE}>Страница комиссии</a>" in text
-    assert text.splitlines()[-1] == "#заседаниекомиссии #важность5 #легализация #kadencja10druk3039"
+    assert "<i>Pierwsze czytanie projektu (druk nr 3039)" in text
+    assert "Суть проекта" not in text and "Что можно сделать" not in text
+    assert COMMITTEE_PAGE not in text
+    assert text.splitlines()[-1] == "#заседаниесейма #заседаниекомиссии #kadencja10druk3039"
 
 
-def test_sejm_sitting_message(process_3039: ProcessDetail) -> None:
+def test_a_sitting_taken_back_is_one_line_saying_which_fact_it_is(
+    process_3039: ProcessDetail,
+) -> None:
+    bill = bill_of(process_3039)
+    off = SittingNews(bill=bill, item=sitting(), cancelled=True)
+    dropped = off.model_copy(update={"still_meets": True})
+
+    fmt = MessageFormatter("ru")
+
+    text = fmt.sittings([off]).text
+    assert_telegram_html(text)
+    assert "❌ <b>druk nr 3039</b> — Komisja Administracji i Spraw Wewnętrznych (ASW) · " in text
+    assert "было запланировано на 17 сент 2026, 09:00\nЗаседание отменено" in text
+    assert "Проект снят с повестки заседания" in fmt.sittings([dropped]).text
+
+
+def test_sejm_sitting_in_english_writes_the_year_first(process_3039: ProcessDetail) -> None:
     bill = bill_of(process_3039, agenda=(PLENARY,))
 
-    ru = MessageFormatter("ru").agenda(bill, PLENARY, today=TODAY).text
-    en = MessageFormatter("en").agenda(bill, PLENARY, today=TODAY).text
+    en = MessageFormatter("en").sittings([SittingNews(bill=bill, item=PLENARY)]).text
 
-    assert_telegram_html(ru)
-    assert ru.startswith("🗓 <b>В повестке заседания Сейма — druk nr 3039</b>")
-    assert "🏛 заседание Сейма № 65, 15-18 сент 2026" in ru
-    assert "Трансляция" not in ru and "Страница комиссии" not in ru
-    assert ru.splitlines()[-1] == "#заседаниесейма #важность5 #легализация #kadencja10druk3039"
-    assert "On the agenda of a Sejm sitting" in en
-    assert "Sejm sitting no. 65, 2026-09-15 – 2026-09-18" in en  # this locale writes the year first
+    assert "Sittings" in en
+    assert "Sejm sitting no. 65, 2026-09-15 – 2026-09-18" in en
 
 
 def test_a_sitting_that_runs_into_the_next_month_is_not_written_backwards(
@@ -61,7 +82,7 @@ def test_a_sitting_that_runs_into_the_next_month_is_not_written_backwards(
     )
     bill = bill_of(process_3039, agenda=(crossing,))
 
-    text = MessageFormatter("ru").agenda(bill, crossing, today=dt.date(2026, 9, 25)).text
+    text = MessageFormatter("ru").sittings([SittingNews(bill=bill, item=crossing)]).text
 
     assert "заседание Сейма № 65, 30 сент - 2 окт 2026" in text
 
