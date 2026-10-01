@@ -21,6 +21,8 @@ from lexinform.models import (
     BillContext,
     BillStatus,
     BillSubmission,
+    ChangeContext,
+    ChangeReviewRecord,
     ChannelPost,
     CheckAspect,
     CommandOutcome,
@@ -271,6 +273,10 @@ class JointBackend(Protocol):
 
 class TriageBackend(Protocol):
     def triage(self, ctx: TriageContext) -> TriageRecord: ...
+
+    def review_change(self, ctx: ChangeContext) -> ChangeReviewRecord:
+        """Whether a new text's changed passages alter the analysis: the cheap gate of a re-read."""
+        ...
 
 
 class LlmAnalyzer(

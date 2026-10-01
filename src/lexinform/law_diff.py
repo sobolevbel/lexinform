@@ -91,6 +91,7 @@ class _Text:
         return at, at
 
     def quote(self, first: int, end: int) -> str:
+        end = min(end, len(self.tokens))
         if first >= end:
             return ""
         return " ".join(self.body[self.tokens[first].start : self.tokens[end - 1].end].split())

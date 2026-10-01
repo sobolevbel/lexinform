@@ -30,7 +30,9 @@ class AnalysisVerdict(BaseModel):
         return f"score {self.score}" if self.relevant else "not relevant"
 
 
-CallKind = Literal["analysis", "reanalysis", "triage", "amendments", "supplement", "joint"]
+CallKind = Literal[
+    "analysis", "reanalysis", "triage", "change_review", "amendments", "supplement", "joint"
+]
 
 
 class LlmCall(BaseModel):

@@ -3,7 +3,7 @@
 import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import BillStatus, PublicationKind, RclProject
+from lexinform.models import BillStatus, ChangeReview, PublicationKind, RclProject
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import (
     CONSULTATION_FOLDERS,
@@ -14,6 +14,7 @@ from tests.harness import (
     World,
     act,
     detail,
+    print_url,
     rcl_document,
     rcl_folder,
     rcl_project,
@@ -41,6 +42,17 @@ def _followed_project(w: World, project: RclProject | None = None) -> RclProject
 
 def _moved(project: RclProject, *stages: object, **fields: object) -> RclProject:
     return project.model_copy(update={"stages": tuple(stages), **fields})
+
+
+REWRITTEN = b"%PDF-rewritten"
+OTHER_ACT = "Art. 1. Cudzoziemiec składa wniosek o zezwolenie wyłącznie elektronicznie. " * 50
+
+
+def _rewritten(w: World, files: dict[str, bytes], url: str) -> None:
+    """The file at `url` carries another act than the one analysed, not the same act again."""
+    assert isinstance(w.extractor, FakeTextExtractor), "World builds a FakeTextExtractor"
+    w.extractor.by_content[REWRITTEN] = OTHER_ACT
+    files[url] = REWRITTEN
 
 
 def test_reached_stage_is_posted_once() -> None:
@@ -303,6 +315,7 @@ def test_new_text_version_is_re_analysed_and_the_update_lists_the_changes() -> N
             modified=dt.date(2026, 9, 8),
         )
     )
+    _rewritten(w, w.rcl.files, new_text.documents[0].url)
 
     report = w.run()
 
@@ -320,9 +333,9 @@ def test_new_text_version_is_re_analysed_and_the_update_lists_the_changes() -> N
 _TOO_BIG = "Art. 500. Przepis dotyczy cudzoziemców przebywających na terytorium RP. " * 6_000
 
 
-def _new_text_stage(w: World, project: RclProject) -> RclProject:
+def _new_text_stage(w: World, project: RclProject, *, act_changed: bool = False) -> RclProject:
     """The project with a fresh redaction of its text under Komisja Prawnicza."""
-    return w.add_rcl_project(
+    moved = w.add_rcl_project(
         _moved(
             project,
             *project.stages[:4],
@@ -342,6 +355,70 @@ def _new_text_stage(w: World, project: RclProject) -> RclProject:
             modified=dt.date(2026, 9, 8),
         )
     )
+    if act_changed:
+        _rewritten(w, w.rcl.files, rcl_document(801, "projekt_po_KP.pdf").url)
+    return moved
+
+
+SMALL_CHANGE = b"%PDF-small"
+
+
+def _small_change(w: World) -> None:
+    """The redaction differs from the analysed act in one year: 2034 against the default text."""
+    assert isinstance(w.extractor, FakeTextExtractor), "World builds a FakeTextExtractor"
+    act = w.extractor.text + "Art. 9. Przepisy stosuje się do dnia 31 grudnia 2034 r. "
+    changed = act.replace("2034", "2033")
+    w.extractor.text = act
+    w.extractor.by_content[SMALL_CHANGE] = changed
+    w.rcl.files[rcl_document(801, "projekt_po_KP.pdf").url] = SMALL_CHANGE
+
+
+def test_a_small_change_the_review_calls_immaterial_is_not_read() -> None:
+    w = World()
+    project = w.add_rcl_project()
+    _small_change(w)
+    w.run()
+    w.clock.advance(days=1)
+    _new_text_stage(w, project)
+    w.rcl.files[rcl_document(801, "projekt_po_KP.pdf").url] = SMALL_CHANGE
+    w.llm.change_script[RCL] = ChangeReview(material=False, confidence=0.95, rationale="год")
+
+    report = w.run()
+
+    assert report.reanalyzed == 0
+    (ctx,) = w.llm.change_contexts
+    assert [(p.old, p.new) for p in ctx.passages] == [("2034", "2033")]
+    assert [c.kind for c in report.llm_calls] == ["change_review"]
+    analysis = w.bill(RCL).analysis
+    assert analysis is not None and analysis.revision == 1
+    assert analysis.source_url == rcl_document(801, "projekt_po_KP.pdf").url
+
+
+def test_a_small_change_the_review_calls_material_is_read() -> None:
+    w = World()
+    project = w.add_rcl_project()
+    _small_change(w)
+    w.run()
+    w.clock.advance(days=1)
+    _new_text_stage(w, project)
+    w.rcl.files[rcl_document(801, "projekt_po_KP.pdf").url] = SMALL_CHANGE
+
+    report = w.run()
+
+    assert report.reanalyzed == 1
+    assert [c.kind for c in report.llm_calls] == ["change_review", "reanalysis"]
+
+
+def test_a_redaction_that_leaves_the_act_alone_is_not_read_or_reviewed() -> None:
+    w = World()
+    project = _followed_project(w)
+    _new_text_stage(w, project)
+
+    report = w.run()
+
+    assert report.reanalyzed == 0 and w.llm.change_contexts == []
+    analysis = w.bill(RCL).analysis
+    assert analysis is not None and analysis.revision == 1
 
 
 def test_a_re_analysis_too_big_to_cut_down_is_read_anyway_rather_than_failing() -> None:
@@ -386,7 +463,10 @@ def test_a_re_analysis_that_counts_over_the_limit_after_the_cut_is_still_read() 
 def test_the_runs_cost_limit_holds_a_re_analysis_back_until_the_next_run() -> None:
     # The per-bill guard does not apply to a re-analysis on purpose, and until the limit covered
     # the tracking phase too, a new text was read whatever the run had already spent.
-    w = World(max_run_cost_usd=0.001)
+    other_act = "Art. 1. Cudzoziemiec składa wniosek elektronicznie. " * 50
+    w = World(
+        extractor=FakeTextExtractor(by_content={b"%PDF-new": other_act}), max_run_cost_usd=0.001
+    )
     w.llm.MODEL = "claude-opus-5"  # priced: 100 in + 50 out per call ≈ $0.002
     project = _followed_project(w)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")  # spends the budget before tracking
@@ -402,6 +482,7 @@ def test_the_runs_cost_limit_holds_a_re_analysis_back_until_the_next_run() -> No
         modified=dt.date(2026, 9, 8),
     )
     w.add_rcl_project(moved)
+    w.rcl.files[new_text.documents[0].url] = b"%PDF-new"
 
     held = w.run()
 
@@ -688,6 +769,7 @@ def test_the_druk_of_a_carded_project_is_joined_before_it_is_read() -> None:
     w.rcl.rm_numbers[RM] = project.id  # the RCL page does not show the RM number yet
     w.clock.advance(days=1)
     _druk_the_listing_does_not_link(w, project.title)
+    _rewritten(w, w.gateway.files, print_url("3100"))
 
     report = w.run()
 
@@ -721,7 +803,7 @@ def test_a_druk_carded_beside_its_projects_card_keeps_its_own_thread() -> None:
 def test_a_new_rcl_text_the_model_finds_unchanged_is_told_by_its_stages_alone() -> None:
     w = World()
     project = _followed_project(w)
-    _new_text_stage(w, project)
+    _new_text_stage(w, project, act_changed=True)
     w.llm.finds_no_changes = True
 
     report = w.run()
@@ -738,6 +820,7 @@ def test_the_druk_of_a_carded_project_read_alike_is_announced_by_its_number_alon
     w.rcl.rm_numbers[RM] = project.id
     w.clock.advance(days=1)
     _druk_the_listing_does_not_link(w, project.title)
+    _rewritten(w, w.gateway.files, print_url("3100"))
     w.llm.finds_no_changes = True
 
     report = w.run()

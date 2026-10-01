@@ -7,6 +7,7 @@ from lexinform.models import (
     WYKAZ_PREFIX,
     AmendmentsContext,
     BillContext,
+    ChangeContext,
     JointBillDescription,
     JointContext,
     ScannedDocument,
@@ -111,6 +112,26 @@ You do NOT see the whole bill. You see its beginning, the beginning of its justi
 - This is a gate: a wrong "false" loses the bill for the readers, a wrong "true" only costs one more request. When in doubt answer true with lower confidence.
 - Base the answer only on the provided fragments.
 - Write the rationale in {language}, although the request and the fragments are in Polish.
+"""
+
+
+CHANGE_REVIEW_SYSTEM_PROMPT_TEMPLATE = """You check new versions of bills for a channel that informs foreigners living in Poland.
+
+The channel has already analysed a bill and described it. A new text of the bill has appeared: the print the Sejm made of a project, the text a committee or the Sejm adopted, or a new redaction. You see the channel's description and every passage of the act that differs between the analysed text and the new one, each with a few words around it. Decide whether the analysis must be redone.
+
+## Output fields
+
+- material: true if any change alters what the bill means for foreigners: who is affected, what they must do or may do, deadlines, fees, amounts, procedures, documents, dates of entry into force. Also true when a change is substantive and you cannot tell whether it concerns foreigners.
+- confidence: 0-1, how sure you are of your answer.
+- rationale: one sentence in {language} naming what the changes are.
+
+## Rules
+
+- Not material: footnotes listing amended statutes or where a consolidated text was published, Dz. U. or Dz. Urz. UE citations, renumbering, punctuation, wording that says the same thing, a passage present on one side only because the document's layout put a footnote or a heading there.
+- A changed number, date, amount, deadline or a provision added or removed is material unless it plainly concerns nothing the description covers and nothing about foreigners.
+- This is a gate: a wrong "false" leaves the channel describing a text that no longer exists, a wrong "true" only costs one full reading. When in doubt answer true with lower confidence.
+- Base the answer only on the description and the passages.
+- Write the rationale in {language}, although the passages are in Polish.
 """
 
 
@@ -302,6 +323,12 @@ def triage_system_prompt(language: str) -> str:
     )
 
 
+def change_review_system_prompt(language: str) -> str:
+    return CHANGE_REVIEW_SYSTEM_PROMPT_TEMPLATE.format(
+        language=_LANGUAGE_NAMES.get(language.lower(), language)
+    )
+
+
 def amendments_system_prompt(language: str) -> str:
     return AMENDMENTS_SYSTEM_PROMPT_TEMPLATE.format(
         language=_LANGUAGE_NAMES.get(language.lower(), language)
@@ -428,6 +455,29 @@ def build_triage_prompt(ctx: TriageContext) -> str:
     lines.append("")
     lines.append("=== FRAGMENTY TEKSTU ===")
     lines.append(ctx.excerpts)
+    return "\n".join(lines)
+
+
+def build_change_review_prompt(ctx: ChangeContext) -> str:
+    lines = [
+        f"Numer: {ctx.number}",
+        f"Tytuł: {ctx.title}",
+        "",
+        "=== OPIS KANAŁU (analiza poprzedniego tekstu) ===",
+        ctx.summary,
+        *(f"- {change}" for change in ctx.key_changes),
+        "",
+        f"=== ZMIENIONE FRAGMENTY: {len(ctx.passages)}, {ctx.changed_words} z {ctx.total_words}"
+        " słów aktu ===",
+    ]
+    for i, passage in enumerate(ctx.passages, 1):
+        lines += [
+            "",
+            f"[{i}] …{passage.before}",
+            f"BYŁO: {passage.old or '(brak)'}",
+            f"JEST: {passage.new or '(brak)'}",
+            f"{passage.after}…",
+        ]
     return "\n".join(lines)
 
 

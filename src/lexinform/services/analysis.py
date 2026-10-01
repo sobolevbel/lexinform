@@ -26,6 +26,7 @@ from lexinform.errors import (
     ServiceUnavailableError,
 )
 from lexinform.keywords import KeywordPrefilter
+from lexinform.law_diff import diff_laws
 from lexinform.law_digest import law_digest
 from lexinform.models import (
     AMENDMENT_SOURCES,
@@ -48,6 +49,8 @@ from lexinform.models import (
     BillContext,
     BillStatus,
     Category,
+    ChangeContext,
+    ChangedPassage,
     DigestItemMeta,
     DocumentDigest,
     JointBillDescription,
@@ -236,6 +239,8 @@ class AnalysisOptions:
     batch_models: dict[BatchKind, str] = field(default_factory=dict)
     batch_max_wait: timedelta = timedelta(hours=6)
     orka_base_url: str = ORKA_BASE_URL
+    change_review_max_ratio: float = 0.15
+    change_review_max_chars: int = 60_000
 
 
 @dataclass(frozen=True)
@@ -258,6 +263,8 @@ class _Loaded:
     source: TextSource
     scan: ScannedDocument | None = None
     law: str | None = None
+    whole: str | None = None
+    """The trimmed text before the budget cut it: what a change between two texts is read from."""
 
     @property
     def digest(self) -> str | None:
@@ -1409,23 +1416,15 @@ class AnalysisService:
             or (digest is not None and digest == previous.text_sha256)
             or (law is not None and law == self._previous_law(previous, previous_document))
         ):
-            assert document is not None, "a text digest comes only from a document that was read"
-            pointer = previous.model_copy(
-                update={
-                    "source_url": document.url,
-                    "source_kind": document.kind,
-                    "source_checked_at": self._clock.now(),
-                    "text_sha256": digest or previous.text_sha256,
-                    "law_sha256": law or previous.law_sha256,
-                }
-            )
-            return _Prepared(bill, located, text, source, pointer, first=False, unchanged=True)
+            return self._unchanged(bill, located, loaded, previous)
         if previous is not None and self._ledger.exhausted:
             # The per-bill guard does not apply to a re-analysis, but the run's budget does: a
             # bill whose text is not read now keeps the analysis and the `source_url` it had, so
             # the next run sees the same new document and reads it then.
             self._ledger.stop("the new text(s) wait for the next run")
             return _Prepared(bill, located, text, source, previous, first=False, deferred=True)
+        if previous is not None and self._changes_settled(bill, loaded, previous):
+            return self._unchanged(bill, located, loaded, previous)
         meta = located.summary or bill.summary
         triaged: TriageRecord | None = None
         triage_memo_key: str | None = None
@@ -1572,6 +1571,79 @@ class AnalysisService:
             memo_key=key,
             triage_memo_key=triage_memo_key,
         )
+
+    def _unchanged(
+        self, bill: Bill, located: LocatedText, loaded: _Loaded, previous: AnalysisRecord
+    ) -> _Prepared:
+        """The analysis stands for the new document: only the pointer and its digests move."""
+        document = located.document
+        assert document is not None, "a text digest comes only from a document that was read"
+        pointer = previous.model_copy(
+            update={
+                "source_url": document.url,
+                "source_kind": document.kind,
+                "source_checked_at": self._clock.now(),
+                "text_sha256": loaded.digest or previous.text_sha256,
+                "law_sha256": loaded.law or previous.law_sha256,
+            }
+        )
+        return _Prepared(
+            bill, located, loaded.text, loaded.source, pointer, first=False, unchanged=True
+        )
+
+    def _changes_settled(self, bill: Bill, loaded: _Loaded, previous: AnalysisRecord) -> bool:
+        """Noise alone keeps the analysis free; a small change needs the triage model's sure no."""
+        ratio_cap = self._options.change_review_max_ratio
+        # The file the record names, not the caller's: a stored project can run ahead of it.
+        previous_document = _source_of(previous)
+        if not ratio_cap or loaded.whole is None or previous_document is None:
+            return False
+        try:
+            before = self._load_text(previous_document).whole
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("%s: the analysed text not re-read (%s)", previous_document.url, exc)
+            return False
+        diff = diff_laws(before, loaded.whole) if before is not None else None
+        if diff is None:
+            return False
+        if not diff.hunks:
+            log.info("%s: the act differs from the analysed one only in layout", bill.number)
+            return True
+        if diff.ratio > ratio_cap or diff.chars > self._options.change_review_max_chars:
+            return False
+        ctx = ChangeContext(
+            number=bill.number,
+            title=bill.summary.title,
+            summary=previous.analysis.summary,
+            key_changes=list(previous.analysis.key_changes),
+            passages=[
+                ChangedPassage(old=h.old, new=h.new, before=h.before, after=h.after)
+                for h in diff.hunks
+            ],
+            changed_words=diff.changed_words,
+            total_words=diff.total_words,
+        )
+        try:
+            reviewed = self._llm.review_change(ctx)
+        except LlmUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("%s: changes not reviewed (%s); reading the text", bill.number, exc)
+            return False
+        self._ledger.charge(reviewed, number=bill.number, kind="change_review")
+        settled = reviewed.settles(min_confidence=self._options.triage_min_confidence)
+        log.info(
+            "%s: %d changed word(s) of %d %s (%.2f): %s",
+            bill.number,
+            diff.changed_words,
+            diff.total_words,
+            "leave the analysis standing" if settled else "need a reading",
+            reviewed.review.confidence,
+            reviewed.review.rationale,
+        )
+        return settled
 
     def _same_submission(
         self, bill: Bill, previous: AnalysisRecord, document: TextDocument | None
@@ -1942,7 +2014,9 @@ class AnalysisService:
             return _Loaded("", False, "metadata_only")
         if not trim:
             budgeted = self._budget.apply(text, self._keywords.spans(text))
-            return _Loaded(budgeted.text, budgeted.truncated, "pdf", law=law_digest(text))
+            return _Loaded(
+                budgeted.text, budgeted.truncated, "pdf", law=law_digest(text), whole=text
+            )
         trimmed = trim_print(text)
         # Said whether anything was dropped or not: a text that goes in whole is the expensive
         # case, and it was the silent one — the package that cost $1.63 logged nothing at all.
@@ -1955,7 +2029,13 @@ class AnalysisService:
         )
         budgeted = self._budget.apply(trimmed.text, self._keywords.spans(trimmed.text))
         source: TextSource = "documents" if document.kind == "rcl" else "pdf"
-        return _Loaded(budgeted.text, budgeted.truncated, source, law=law_digest(trimmed.text))
+        return _Loaded(
+            budgeted.text,
+            budgeted.truncated,
+            source,
+            law=law_digest(trimmed.text),
+            whole=trimmed.text,
+        )
 
     def _load_scan(self, document: TextDocument, text: str) -> _Loaded:
         """The document as pages, when its file carries no text of its own; metadata when it has

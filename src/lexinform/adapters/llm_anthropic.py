@@ -17,10 +17,12 @@ from lexinform.adapters.llm_prompts import (
     PROMPT_VERSION,
     amendments_system_prompt,
     build_amendments_prompt,
+    build_change_review_prompt,
     build_joint_prompt,
     build_supplement_prompt,
     build_triage_prompt,
     build_user_prompt,
+    change_review_system_prompt,
     joint_system_prompt,
     supplement_system_prompt,
     system_prompt,
@@ -38,6 +40,9 @@ from lexinform.models import (
     BatchResult,
     BatchStatus,
     BillContext,
+    ChangeContext,
+    ChangeReview,
+    ChangeReviewRecord,
     DocumentDigest,
     JointComparison,
     JointContext,
@@ -99,6 +104,7 @@ class AnthropicAnalyzer:
         self._clock = clock
         self._system = system_prompt(output_language)
         self._triage_system = triage_system_prompt(output_language)
+        self._change_review_system = change_review_system_prompt(output_language)
         self._amendments_system = amendments_system_prompt(output_language)
         self._supplement_system = supplement_system_prompt(output_language)
         self._joint_system = joint_system_prompt(output_language)
@@ -175,6 +181,34 @@ class AnthropicAnalyzer:
         )
         return TriageRecord(
             triage=triage,
+            model=self._triage_model,
+            prompt_version=PROMPT_VERSION,
+            **_usage_fields(usage),
+        )
+
+    def review_change(self, ctx: ChangeContext) -> ChangeReviewRecord:
+        """Whether a new text's changed passages alter the analysis; on the triage model."""
+        response = self._parse(
+            self._triage_model,
+            self._change_review_system,
+            build_change_review_prompt(ctx),
+            ChangeReview,
+            thinking=False,
+        )
+        review = response.parsed_output
+        if not isinstance(review, ChangeReview):
+            raise LlmError("model returned no parsable structured output")
+        usage = getattr(response, "usage", None)
+        log.info(
+            "LLM reviewed the changes of %s: material=%s confidence=%.2f in=%s out=%s",
+            ctx.number,
+            review.material,
+            review.confidence,
+            _usage_int(usage, "input_tokens"),
+            _usage_int(usage, "output_tokens"),
+        )
+        return ChangeReviewRecord(
+            review=review,
             model=self._triage_model,
             prompt_version=PROMPT_VERSION,
             **_usage_fields(usage),

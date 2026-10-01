@@ -316,6 +316,8 @@ class Container:
             triage_min_confidence=self.settings.triage_min_confidence,
             channel_id=self.channel_id(),
             orka_base_url=self.settings.orka_base_url,
+            change_review_max_ratio=self.settings.change_review_max_ratio,
+            change_review_max_chars=self.settings.change_review_max_chars,
             batch_provider=provider_of(self.settings.llm_analysis_model),
             submit_batches=self.settings.llm_batch_enabled,
             batch_sync_within_days=self.settings.llm_batch_sync_within_days,

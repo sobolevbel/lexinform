@@ -17,6 +17,9 @@ from lexinform.models import (
     Analysis,
     ApplicantType,
     BillContext,
+    ChangeContext,
+    ChangedPassage,
+    ChangeReview,
     ScannedDocument,
     Triage,
     TriageContext,
@@ -208,6 +211,31 @@ def test_triage_runs_on_its_own_model_without_thinking() -> None:
     assert "Pełny tekst: 200000 znaków" in _prompt_of(call)
     assert (record.model, record.input_tokens) == ("claude-sonnet-5", 5000)
     assert record.rejects(min_confidence=0.8) and not record.rejects(min_confidence=0.99)
+
+
+def test_a_change_review_runs_on_the_triage_model_and_shows_both_wordings() -> None:
+    review = ChangeReview(material=False, confidence=0.9, rationale="сноски")
+    client = _client(_response(review, input_tokens=3000, output_tokens=40))
+    analyzer = AnthropicAnalyzer(client, model="claude-opus-5", triage_model="claude-sonnet-5")
+    ctx = ChangeContext(
+        number="3150",
+        title="Projekt ustawy budżetowej na rok 2027",
+        summary="Бюджет на 2027 год.",
+        key_changes=["UdSC: 108 млн зл."],
+        passages=[ChangedPassage(old="2034", new="2033", before="do dnia", after="r.")],
+        changed_words=1,
+        total_words=9000,
+    )
+
+    record = analyzer.review_change(ctx)
+
+    call = client.messages.calls[0]
+    assert call["model"] == "claude-sonnet-5" and call["output_format"] is ChangeReview
+    assert "thinking" not in call and "gate" in call["system"][0]["text"]
+    prompt = _prompt_of(call)
+    assert "BYŁO: 2034" in prompt and "JEST: 2033" in prompt and "1 z 9000" in prompt
+    assert "- UdSC: 108 млн зл." in prompt
+    assert record.settles(min_confidence=0.8) and not record.settles(min_confidence=0.95)
 
 
 def test_triage_falls_back_to_the_analysis_model() -> None:

@@ -12,6 +12,8 @@ from lexinform.models import (
     AmendmentsRecord,
     AnalysisRecord,
     BillContext,
+    ChangeContext,
+    ChangeReviewRecord,
     JointContext,
     JointRecord,
     SupplementContext,
@@ -60,3 +62,6 @@ class HybridAnalyzer:
 
     def triage(self, ctx: TriageContext) -> TriageRecord:
         return self._triage.triage(ctx)
+
+    def review_change(self, ctx: ChangeContext) -> ChangeReviewRecord:
+        return self._triage.review_change(ctx)

@@ -184,6 +184,16 @@ class Settings(BaseSettings):
         description="How many opening pages of a scanned document the cheap pass is shown."
         " The cost of the call then does not depend on how thick the paper is.",
     )
+    change_review_max_ratio: float = Field(
+        default=0.15,
+        ge=0.0,
+        le=1.0,
+        description="A new text whose act differs in at most this share of words is asked of the"
+        " triage model before a re-analysis; above it the text is read. 0 disables the review.",
+    )
+    change_review_max_chars: int = Field(
+        default=60_000, ge=0, description="The changed passages the review is shown, at most."
+    )
     max_analysis_cost_usd: float = Field(
         default=2.0,
         ge=0.0,

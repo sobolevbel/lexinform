@@ -123,6 +123,32 @@ class TriageRecord(BaseModel):
         return not self.triage.affects_foreigners and self.triage.confidence >= min_confidence
 
 
+class ChangeReview(BaseModel):
+    """Structured output of the cheap pass over a new text's changes: do they alter the analysis?"""
+
+    material: bool = Field(
+        description="True if any change alters what the bill means for foreigners, or if in doubt."
+    )
+    confidence: float = Field(ge=0.0, le=1.0, description="How sure you are of the answer.")
+    rationale: str = Field(description="One sentence in the output language.")
+
+
+class ChangeReviewRecord(BaseModel):
+    """A change review with its provenance; not persisted on its own."""
+
+    review: ChangeReview
+    model: str
+    prompt_version: str
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    cache_read_input_tokens: int | None = None
+    cache_creation_input_tokens: int | None = None
+
+    def settles(self, *, min_confidence: float) -> bool:
+        """A confident "nothing material" keeps the analysis; anything else reads the text."""
+        return not self.review.material and self.review.confidence >= min_confidence
+
+
 class Amendments(BaseModel):
     """Structured output about a set of amendments (the Senate's, or those tabled at the 2nd
     reading as answered by the committee): what they change, not a new analysis of the bill."""
@@ -326,7 +352,14 @@ class SupplementContext(BaseModel):
     previous_key_changes: list[str] = Field(default_factory=list)
 
 
-UsageRecord = AnalysisRecord | TriageRecord | AmendmentsRecord | SupplementRecord | JointRecord
+UsageRecord = (
+    AnalysisRecord
+    | TriageRecord
+    | ChangeReviewRecord
+    | AmendmentsRecord
+    | SupplementRecord
+    | JointRecord
+)
 
 
 def usage_of(record: UsageRecord) -> dict[str, TokenUsage]:
@@ -363,6 +396,27 @@ class TriageContext(BaseModel):
     excerpts: str
     text_chars: int
     scan: ScannedDocument | None = None
+
+
+class ChangedPassage(BaseModel):
+    """One passage of the act that differs between the analysed text and the new one."""
+
+    old: str
+    new: str
+    before: str
+    after: str
+
+
+class ChangeContext(BaseModel):
+    """What the change review sees: the channel's description and the act's changed passages."""
+
+    number: str
+    title: str
+    summary: str
+    key_changes: list[str]
+    passages: list[ChangedPassage]
+    changed_words: int
+    total_words: int
 
 
 class BillContext(BaseModel):

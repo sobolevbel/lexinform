@@ -12,6 +12,7 @@ from lexinform.models import (
     PublicationStatus,
     SejmTerm,
 )
+from tests.fakes import FakeTextExtractor
 from tests.harness import (
     CHANNEL,
     COMMITTEE_STAGES,
@@ -85,7 +86,7 @@ def test_source_observation_and_delivery_roll_back_together(
 
 
 def test_rcl_paid_analysis_survives_a_failed_checkpoint(monkeypatch: pytest.MonkeyPatch) -> None:
-    w = World()
+    w = World(extractor=FakeTextExtractor(by_content={b"%PDF-new": "Art. 1. Inna ustawa. " * 50}))
     project = w.add_rcl_project()
     w.run()
     before = w.bill(RCL).analysis
@@ -101,6 +102,7 @@ def test_rcl_paid_analysis_survives_a_failed_checkpoint(monkeypatch: pytest.Monk
             }
         )
     )
+    w.rcl.files[folder.documents[0].url] = b"%PDF-new"
     with monkeypatch.context() as patch:
         patch.setattr(w.repo, "save_update_delivery", fail_delivery)
         w.run()

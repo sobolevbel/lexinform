@@ -40,6 +40,9 @@ from lexinform.models import (
     BillContext,
     BillSubmission,
     Category,
+    ChangeContext,
+    ChangeReview,
+    ChangeReviewRecord,
     ChannelPost,
     CommandOutcome,
     Committee,
@@ -549,6 +552,8 @@ class FakeLlm:
         self.joint_script = joint_script or {}
         self.contexts: list[BillContext] = []
         self.triage_contexts: list[TriageContext] = []
+        self.change_script: dict[str, ChangeReview | Exception] = {}
+        self.change_contexts: list[ChangeContext] = []
         self.amendment_contexts: list[AmendmentsContext] = []
         self.supplement_contexts: list[SupplementContext] = []
         self.joint_contexts: list[JointContext] = []
@@ -573,6 +578,21 @@ class FakeLlm:
             raise outcome
         return TriageRecord(
             triage=outcome,
+            model=self.TRIAGE_MODEL,
+            prompt_version=PROMPT_VERSION,
+            input_tokens=self.TRIAGE_TOKENS[0],
+            output_tokens=self.TRIAGE_TOKENS[1],
+        )
+
+    def review_change(self, ctx: ChangeContext) -> ChangeReviewRecord:
+        self.change_contexts.append(ctx)
+        outcome = self.change_script.get(
+            ctx.number, ChangeReview(material=True, confidence=0.9, rationale="меняет")
+        )
+        if isinstance(outcome, Exception):
+            raise outcome
+        return ChangeReviewRecord(
+            review=outcome,
             model=self.TRIAGE_MODEL,
             prompt_version=PROMPT_VERSION,
             input_tokens=self.TRIAGE_TOKENS[0],
