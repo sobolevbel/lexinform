@@ -774,6 +774,17 @@ class SqliteBillRepository:
             (delivery.model_dump_json(), change_id, channel_id),
         )
 
+    def replace_unsent_update_delivery(
+        self, change_id: int, channel_id: str, delivery: DeliveryPlan
+    ) -> bool:
+        cur = self._conn.execute(
+            "UPDATE publications SET delivery_json = ? WHERE status_change_id = ?"
+            " AND channel_id = ? AND kind = 'status_update' AND status = 'queued'"
+            " AND attempts = 0",
+            (delivery.model_dump_json(), change_id, channel_id),
+        )
+        return cur.rowcount == 1
+
     def get_update_publication(self, change_id: int, channel_id: str) -> Publication | None:
         row = self._conn.execute(
             "SELECT * FROM publications WHERE status_change_id = ?"

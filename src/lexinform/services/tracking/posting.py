@@ -244,15 +244,30 @@ class Poster:
         return change
 
     def tell(
-        self, bill: Bill, change: StatusChange, result: TrackingResult, *, publish: bool
+        self,
+        bill: Bill,
+        change: StatusChange,
+        result: TrackingResult,
+        *,
+        publish: bool,
+        with_act: bool = False,
     ) -> Told:
-        """A recorded substantive event must have durable delivery work even with publishing off."""
+        """A recorded substantive event must have durable delivery work even with publishing off;
+        `with_act` tells the act out in the same run in this update, not in a notice of its own."""
         if not publish:
-            self.prepare(bill, change)
+            self.prepare(bill, change, with_act=with_act)
             return Told.QUEUED
-        sent = self.status_update(bill, change)
+        sent = self.status_update(bill, change, with_act=with_act)
         result.count_post(sent)
+        if sent and self.carries_act(change):
+            result.acts_published += 1
         return Told.SENT if sent else Told.FAILED
+
+    def carries_act(self, change: StatusChange) -> bool:
+        """The update's plan tells the act published in its run."""
+        assert change.id is not None, "only a change record_change stored reaches the poster"
+        row = self._repo.get_update_publication(change.id, self._channel_id)
+        return row is not None and row.delivery is not None and row.delivery.with_act
 
     def hold(self, bill: Bill, change: StatusChange) -> None:
         """Keep a service-stage change for the next post instead of sending it now."""
@@ -264,12 +279,13 @@ class Poster:
             "; ".join(st.stage_name for st in change.new_stages) or "closure",
         )
 
-    def status_update(self, bill: Bill, change: StatusChange) -> bool:
+    def status_update(self, bill: Bill, change: StatusChange, *, with_act: bool = False) -> bool:
         """Post a detected change as a reply to the card; True on success.
 
         Stages held since the previous post are listed first and released against the message
         just sent, not against "the newest update row": a retried update keeps its old row id, so
-        a later held row would be the newest one.
+        a later held row would be the newest one. An update that carries the act writes the act's
+        row only once it is sent, so a failed one leaves the act to its own notice.
         """
         assert change.id is not None, "only a change record_change stored reaches the poster"
         existing = self._repo.get_update_publication(change.id, self._channel_id)
@@ -282,7 +298,7 @@ class Poster:
                 PublicationStatus.DISMISSED,
             ):
                 return False
-        delivery = self.prepare(bill, change)
+        delivery = self.prepare(bill, change, with_act=with_act)
         pub_id = self._repo.create_publication(
             self._update_row(bill, change.id, PublicationStatus.PENDING)
         )
@@ -293,17 +309,40 @@ class Poster:
             snapshot,
             lambda reply_to: (
                 self._publisher.publish_status_update(
-                    snapshot, planned_change, delivery.reply_to or reply_to
+                    snapshot,
+                    planned_change,
+                    delivery.reply_to or reply_to,
+                    with_act=delivery.with_act,
                 ).message_id
             ),
             held_change_ids=delivery.held_change_ids,
         )
+        if message_id is not None and delivery.with_act:
+            self._act_told_in(snapshot, message_id)
         return message_id is not None
 
-    def prepare(self, bill: Bill, change: StatusChange) -> DeliveryPlan:
+    def _act_told_in(self, bill: Bill, message_id: int) -> None:
+        """The act's own row, sent in the update that carried it."""
+        row = self._repo.get_publication(
+            bill.term, bill.number, PublicationKind.ACT_PUBLISHED, self._channel_id
+        )
+        if row is not None and row.status is PublicationStatus.SENT:
+            return
+        pub_id = (
+            row.id
+            if row is not None and row.id is not None
+            else self.record(bill, PublicationKind.ACT_PUBLISHED, PublicationStatus.SENT)
+        )
+        self._repo.mark_publication(
+            pub_id, PublicationStatus.SENT, message_id=message_id, sent_at=self._clock.now()
+        )
+
+    def prepare(self, bill: Bill, change: StatusChange, *, with_act: bool = False) -> DeliveryPlan:
         assert change.id is not None, "only a change record_change stored reaches the poster"
         stored = self._repo.get_update_publication(change.id, self._channel_id)
         if stored is not None and stored.delivery is not None:
+            if with_act and self._never_attempted(stored):
+                return self._add_act(change.id, stored.delivery, bill)
             return stored.delivery
         held = self._repo.list_held_status_changes(bill.term, bill.number, self._channel_id)
         stages = [st for earlier in held for st in earlier.new_stages]
@@ -315,6 +354,7 @@ class Poster:
             change_json=planned.model_dump_json(),
             held_change_ids=tuple(c.id for c in held if c.id is not None),
             reply_to=card.message_id if card else None,
+            with_act=with_act and snapshot.act is not None,
         )
         with self._repo.atomic():
             self._repo.create_publication(
@@ -322,6 +362,23 @@ class Poster:
             )
             self._repo.save_update_delivery(change.id, self._channel_id, delivery)
         return delivery
+
+    @staticmethod
+    def _never_attempted(pub: Publication) -> bool:
+        return pub.status is PublicationStatus.QUEUED and pub.attempts == 0
+
+    def _add_act(self, change_id: int, delivery: DeliveryPlan, bill: Bill) -> DeliveryPlan:
+        """The plan `_detect` froze before the run read the act, now carrying it: nothing has
+        been sent from it, so the reader has seen none of the facts it replaces."""
+        snapshot = self._repo.get(bill.term, bill.number) or bill
+        if snapshot.act is None:
+            return delivery
+        planned = delivery.model_copy(
+            update={"with_act": True, "bill_json": snapshot.model_dump_json()}
+        )
+        if not self._repo.replace_unsent_update_delivery(change_id, self._channel_id, planned):
+            return delivery
+        return planned
 
     def _update_row(self, bill: Bill, change_id: int, status: PublicationStatus) -> Publication:
         return Publication(

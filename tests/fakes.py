@@ -867,9 +867,9 @@ class FakePublisher(RenderingPublisher):
         return result
 
     def publish_status_update(
-        self, bill: Bill, change: StatusChange, reply_to: int | None
+        self, bill: Bill, change: StatusChange, reply_to: int | None, *, with_act: bool = False
     ) -> PublishResult:
-        result = super().publish_status_update(bill, change, reply_to)
+        result = super().publish_status_update(bill, change, reply_to, with_act=with_act)
         self.updates.append((bill, change, reply_to))
         return result
 

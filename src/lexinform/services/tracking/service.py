@@ -502,17 +502,27 @@ class StatusTrackingService:
     ) -> None:
         """Tell what the run found about one bill.
 
-        The act notice goes first, so that the closure is suppressed only when the notice that
-        would have told it really went out; ELI can be a day behind the process, and the change
+        A change worth telling and an act not yet told go out as one update carrying the act.
+        Otherwise the act notice goes first, so that the closure is suppressed only when the notice
+        that would have told it really went out; ELI can be a day behind the process, and the change
         row is unique, so a suppressed closure is never detected again. A change with no news is
         held rather than dropped for the same reason: with publishing off the row already exists,
         so nothing would ever detect those stages again, and so is one that only fills in the road
         behind what the channel has shown (`fills_in_the_past`). `bill.stages` is still the tree
         the previous run left, `_detect` having saved the new one without touching this object.
         """
-        self._acts.check(bill, detail, result, publish=publish)
+        self._acts.fetch(bill, detail)
         if change is None:
+            if publish:
+                self._acts.announce(bill, detail, result)
             return
+        if publish and self._acts.due(bill, detail):
+            told = plan_bill(bill, detail, analysis_document=None, closure_announced=True)
+            if told.should_publish(change, act_published=True):
+                # One message for the bill: the update carries the act as well.
+                self._poster.tell(bill, change, result, publish=publish, with_act=True)
+                return
+            self._acts.announce(bill, detail, result)
         announced = self._poster.sent(bill, PublicationKind.ACT_PUBLISHED)
         plan = plan_bill(bill, detail, analysis_document=None, closure_announced=announced)
         news = plan.should_publish(change, act_published=announced)
@@ -612,6 +622,8 @@ class StatusTrackingService:
             try:
                 sent = self._poster.status_update(bill, change)
                 result.count_post(sent)
+                if sent and self._poster.carries_act(change):
+                    result.acts_published += 1
                 if sent and change.discontinued:
                     card = self._poster.card(bill)
                     if card is not None:

@@ -80,9 +80,9 @@ class RenderingPublisher(ABC):
         return self._deliver(Outgoing(PublicationKind.JOINT_BILL, bill, text, reply_to, detail))
 
     def publish_status_update(
-        self, bill: Bill, change: StatusChange, reply_to: int | None
+        self, bill: Bill, change: StatusChange, reply_to: int | None, *, with_act: bool = False
     ) -> PublishResult:
-        text = self._formatter.status_update(bill, change).text
+        text = self._formatter.status_update(bill, change, with_act=with_act).text
         return self._deliver(Outgoing(PublicationKind.STATUS_UPDATE, bill, text, reply_to))
 
     def publish_act_published(self, bill: Bill, reply_to: int | None) -> PublishResult:

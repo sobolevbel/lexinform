@@ -40,6 +40,8 @@ class DeliveryPlan(BaseModel):
     still_meets: bool = False
     reply_to: int | None = None
     held_change_ids: tuple[int, ...] = ()
+    with_act: bool = False
+    """A status update that also tells the act published in the same run."""
 
     def replayable(self, kind: PublicationKind) -> bool:
         if kind is PublicationKind.NEW_BILL:

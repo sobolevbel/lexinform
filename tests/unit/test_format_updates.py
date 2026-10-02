@@ -113,7 +113,7 @@ def test_update_header_names_the_event_and_the_closure_line_is_not_repeated(
     assert "предлагает отклонить проект" in reported
 
 
-def test_update_repeats_one_sentence_of_the_summary_unless_the_analysis_changed(
+def test_an_update_leaves_the_title_and_the_summary_to_the_card_unless_the_analysis_changed(
     process_1962: ProcessDetail,
 ) -> None:
     analysis = make_analysis()
@@ -125,9 +125,25 @@ def test_update_repeats_one_sentence_of_the_summary_unless_the_analysis_changed(
     plain = fmt.status_update(bill, change_of("1962", [referral])).text
     reanalysed = fmt.status_update(bill, change_of("1962", [], content_changed=True)).text
 
-    assert "📝 <b>Суть проекта:</b> Первое предложение о сути." in plain
-    assert "Второе предложение" not in plain
+    assert bill.summary.title not in plain
+    assert "Суть проекта" not in plain and "/5" not in plain
     assert "📝 <b>Суть проекта</b>\nПервое предложение о сути. Второе предложение" in reanalysed
+
+
+def test_an_update_in_the_run_the_act_came_out_carries_the_act(
+    process_1962: ProcessDetail,
+) -> None:
+    referral = next(st for st in flatten_stages(process_1962.stages) if st.stage_type == "Referral")
+    bill = bill_of(process_1962).model_copy(update={"act": ACT})
+    fmt = MessageFormatter("ru")
+
+    text = fmt.status_update(bill, change_of("1962", [referral]), with_act=True).text
+
+    assert_telegram_html(text)
+    assert "<b>Опубликован в Dziennik Ustaw</b>" in text
+    assert ACT.display_address in text
+    assert "#закон" in text.splitlines()[-1]
+    assert "Опубликован" not in fmt.status_update(bill, change_of("1962", [referral])).text
 
 
 def test_frame_stages_are_dropped_when_their_children_are_listed(
@@ -161,7 +177,6 @@ def test_status_update_after_a_re_analysis_shows_the_diff(process_3039: ProcessD
     text = MessageFormatter("ru").status_update(bill_of(process_3039, analysis), change).text
 
     assert_telegram_html(text)
-    assert "🟠 ●●●●○ 4/5" in text
     assert "Суть проекта" in text
     assert "🆕 <b>Что изменилось с прошлого раза</b>" in text and "Срок подачи сокращён" in text
     assert "Новые стадии" not in text

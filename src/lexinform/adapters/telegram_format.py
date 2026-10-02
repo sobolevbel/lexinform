@@ -595,22 +595,27 @@ class MessageFormatter:
         return "\n".join(lines)
 
     def status_update(
-        self, bill: Bill, change: StatusChange, *, today: dt.date | None = None
+        self,
+        bill: Bill,
+        change: StatusChange,
+        *,
+        today: dt.date | None = None,
+        with_act: bool = False,
     ) -> RenderedMessage:
+        """Reply under the card. `with_act` when the act came out in the same run: its Dziennik
+        Ustaw address goes in this message instead of a second one."""
         lb = self._labels
         analysis = bill.analysis.analysis if bill.analysis else None
         event = update_event(change, bill)
         today = today or self._today()
 
-        header = self._header(
+        header = self._reply_header(
             EVENT_ICON.get(event, ICON["update"]), self._event_header(change, event), bill
         )
-        badge = ""
-        if analysis is not None:
-            badge = (
-                f"{score_icon(analysis.score)} {importance_bar(analysis.score)} "
-                f"{analysis.score}/5 — "
-                f"{esc(lb.category_labels.get(analysis.category, analysis.category))}"
+        act_block = ""
+        if with_act and bill.act is not None:
+            act_block = f"{ICON['published']} <b>{esc(lb.act_published_header)}</b>\n" + (
+                self._act_facts(bill.act)
             )
 
         stage_lines = [f"• {self._stage_line(st, today)}" for st in told_stages(change.new_stages)]
@@ -634,20 +639,18 @@ class MessageFormatter:
         changes_block = ""
         amendments_block = self._amendments_block(change)
         supplements_block = self._supplements_block(change)
-        if analysis is not None:
-            # The card carries the whole summary; a reply repeats one sentence of it, the whole
-            # text only when the analysis itself changed.
-            summary_block = self._summary_reminder(analysis.summary, full=change.content_changed)
-            if change.content_changed:
-                bullets = "\n".join(
-                    f"• {esc(c.strip())}" for c in analysis.changes_since_previous if c.strip()
+        if analysis is not None and change.content_changed:
+            # The card carries the summary; a reply repeats it only when the analysis changed.
+            summary_block = self._summary_reminder(analysis.summary, full=True)
+            bullets = "\n".join(
+                f"• {esc(c.strip())}" for c in analysis.changes_since_previous if c.strip()
+            )
+            if bullets:
+                changes_block = (
+                    f"{ICON['changed']} <b>{esc(lb.changes_since_previous)}</b>\n{bullets}"
                 )
-                if bullets:
-                    changes_block = (
-                        f"{ICON['changed']} <b>{esc(lb.changes_since_previous)}</b>\n{bullets}"
-                    )
-                else:
-                    changes_block = f"{ICON['note']} <i>{esc(lb.reanalyzed_note)}</i>"
+            else:
+                changes_block = f"{ICON['note']} <i>{esc(lb.reanalyzed_note)}</i>"
 
         # Event tags only when the reply carries the event a reader would search for; `_tags`
         # adds the two halves every reply has.
@@ -658,12 +661,13 @@ class MessageFormatter:
                 for key in event_keys(change, event)
                 if key in lb.event_tags
             ),
+            *([f"#{lb.tag_published}"] if act_block else []),
         )
 
         # The new stages are what the post is for, and stages held since the last one are listed
         # here and released against it: shrunk away, they would be marked told and never told.
         text = self._assemble(
-            [header, badge, stages_block],
+            [header, stages_block, act_block],
             flexible=[supplements_block, amendments_block, changes_block, summary_block],
             tail=[
                 closure,
@@ -780,6 +784,27 @@ class MessageFormatter:
         if act is None:
             raise ValueError(f"bill {bill.number} has no act")
         header = self._header(ICON["published"], lb.act_published_header, bill, act.title)
+        facts = self._act_facts(act)
+        # The moment a reader has to diarise the date, and the last one before the channel goes
+        # quiet for the vacatio legis: without a sentence of the summary the notice was two dates
+        # under a Polish act title, and the card it replies to is months up the thread.
+        summary_block = ""
+        if bill.analysis is not None:
+            summary_block = self._summary_reminder(
+                bill.analysis.analysis.summary, full=False, law=True
+            )
+        links_block = self._links(self._act_links(bill, act))
+        tags = self._tags(bill, f"#{lb.tag_published}")
+        text = self._assemble(
+            [header, facts],
+            flexible=[summary_block],
+            tail=[self._action_line(bill, self._today()), links_block, tags],
+        )
+        return RenderedMessage(text=text)
+
+    def _act_facts(self, act: ActInfo) -> str:
+        """The Dziennik Ustaw address and when the act applies."""
+        lb = self._labels
         lines = [self._field(ICON["journal"], lb.journal, esc(act.display_address))]
         if act.promulgation_date:
             lines[0] += f" ({esc(lb.published_on)} {self.fmt_date(act.promulgation_date)})"
@@ -797,23 +822,7 @@ class MessageFormatter:
                 )
             )
         lines.append(f"{ICON['note']} <i>{esc(lb.partial_vacatio_note)}</i>")
-        facts = "\n".join(lines)
-        # The moment a reader has to diarise the date, and the last one before the channel goes
-        # quiet for the vacatio legis: without a sentence of the summary the notice was two dates
-        # under a Polish act title, and the card it replies to is months up the thread.
-        summary_block = ""
-        if bill.analysis is not None:
-            summary_block = self._summary_reminder(
-                bill.analysis.analysis.summary, full=False, law=True
-            )
-        links_block = self._links(self._act_links(bill, act))
-        tags = self._tags(bill, f"#{lb.tag_published}")
-        text = self._assemble(
-            [header, facts],
-            flexible=[summary_block],
-            tail=[self._action_line(bill, self._today()), links_block, tags],
-        )
-        return RenderedMessage(text=text)
+        return "\n".join(lines)
 
     def in_force(self, bill: Bill, *, today: dt.date | None = None) -> RenderedMessage:
         lb = self._labels
@@ -855,7 +864,7 @@ class MessageFormatter:
         window = bill.consultation
         if window is None or window.end is None:
             raise ValueError(f"bill {bill.number} has no consultation end date")
-        header = self._header(ICON["consultation"], lb.consultation_deadline_header, bill)
+        header = self._reply_header(ICON["consultation"], lb.consultation_deadline_header, bill)
         where = self._consultation_where(window, sejm_label=lb.consultation_hint)
         if bill.rcl is not None:
             # The card says how to write to a ministry; this reply is the one a reader acts on,
@@ -871,16 +880,9 @@ class MessageFormatter:
             f"{self._field(ICON['effective'], lb.consultation, until)}\n{ICON['action']} {where}"
         )
         next_step = self._next_step_line(bill, today)
-        summary_block = ""
-        if bill.analysis is not None:
-            a = bill.analysis.analysis
-            summary_block = f"{ICON['about']} <b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
         links_block = self._links(self._consultation_links(bill, window))
         tags = self._tags(bill, f"#{lb.tag_consultations}")
-        text = self._assemble(
-            [header, facts], flexible=[summary_block], tail=[next_step, links_block, tags]
-        )
-        return RenderedMessage(text=text)
+        return RenderedMessage(text=self._assemble([header, facts, next_step, links_block, tags]))
 
     def consultation_results(self, bill: Bill, *, today: dt.date | None = None) -> RenderedMessage:
         """Reply under the card once the Sejm publishes the opinions received."""
@@ -888,7 +890,7 @@ class MessageFormatter:
         window = bill.consultation
         if window is None:
             raise ValueError(f"bill {bill.number} had no public consultation")
-        header = self._header(ICON["consultation"], lb.consultation_results_header, bill)
+        header = self._reply_header(ICON["consultation"], lb.consultation_results_header, bill)
         page = window.form_url
         if bill.rcl is not None:
             facts = f"{ICON['note']} {link(bill.rcl.web_url, lb.rcl_results_hint)}"
@@ -974,7 +976,7 @@ class MessageFormatter:
             raise ValueError(f"bill {bill.number}: the {phase.key} phase carries no deadline")
         senate = phase.key == "senate"
         label = lb.senate_deadline_header if senate else lb.president_deadline_header
-        header = self._header(ICON["deadline"], label, bill)
+        header = self._reply_header(ICON["deadline"], label, bill)
         line = (lb.senate_deadline_line if senate else lb.president_deadline_line).format(
             date=self.fmt_date(phase.deadline)
         )
@@ -1001,14 +1003,8 @@ class MessageFormatter:
             links.append(link(bill.senate.url, lb.link_senate_act))
         elif senate:
             links.append(link(SENATE_BILLS_URL, lb.link_senate_bills))
-        summary_block = ""
-        if bill.analysis is not None:
-            summary_block = self._summary_reminder(
-                bill.analysis.analysis.summary, full=False, law=True
-            )
         text = self._assemble(
             [header, facts],
-            flexible=[summary_block],
             tail=[
                 self._action_line(bill, today, when_none=False),
                 self._links(links),
@@ -1023,7 +1019,7 @@ class MessageFormatter:
         deadline = hearing_application_deadline(hearing)
         if deadline is None or hearing.date is None:
             raise ValueError(f"bill {bill.number}: the hearing has no date")
-        header = self._header(ICON["hearing"], lb.hearing_deadline_header, bill)
+        header = self._reply_header(ICON["hearing"], lb.hearing_deadline_header, bill)
         when = f"{ICON['effective']} <b>{esc(lb.hearing_on)}</b> {self.fmt_date(hearing.date)}"
         if deadline < today:
             # Announced with less than the ten days art. 70b asks for: the hearing is still
@@ -1047,11 +1043,7 @@ class MessageFormatter:
             links.append(link(committee_web_url(bill.term, code), lb.link_committee))
         links_block = self._links(links)
         tags = self._tags(bill, f"#{lb.tag_hearing}")
-        summary_block = ""
-        if bill.analysis is not None:
-            summary_block = self._summary_reminder(bill.analysis.analysis.summary, full=False)
-        text = self._assemble([header, facts], flexible=[summary_block], tail=[links_block, tags])
-        return RenderedMessage(text=text)
+        return RenderedMessage(text=self._assemble([header, facts, links_block, tags]))
 
     def _act_links(self, bill: Bill, act: ActInfo) -> list[str]:
         lb = self._labels
@@ -1478,7 +1470,8 @@ class MessageFormatter:
         if kind is PublicationKind.JOINT_BILL and plan.primary_json:
             return self.joint_bill(bill, Bill.model_validate_json(plan.primary_json), info).text
         if kind is PublicationKind.STATUS_UPDATE and plan.change_json:
-            return self.status_update(bill, StatusChange.model_validate_json(plan.change_json)).text
+            change = StatusChange.model_validate_json(plan.change_json)
+            return self.status_update(bill, change, with_act=plan.with_act).text
         if kind is PublicationKind.ACT_PUBLISHED:
             return self.act_published(bill).text
         if kind is PublicationKind.CONSULTATION_RESULTS:
@@ -1658,6 +1651,10 @@ class MessageFormatter:
                 return f"{left}-{self.fmt_date(end)}"
             return f"{self.fmt_date(start)} - {self.fmt_date(end)}"
         return f"{self.fmt_date(start)} — {self.fmt_date(end)}"
+
+    def _reply_header(self, icon: str, label: str, bill: Bill) -> str:
+        """`🗓 <b>Label — druk nr 3039</b>`: a reply sits under the card, which has the title."""
+        return f"{icon} <b>{esc(label)} — {self._number_label(bill)}</b>"
 
     def _header(self, icon: str, label: str, bill: Bill, title: str | None = None) -> str:
         """`📜 <b>Label — druk nr 3039</b>` and the bill's title on its own line."""

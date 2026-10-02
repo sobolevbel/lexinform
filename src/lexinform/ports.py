@@ -346,8 +346,10 @@ class Publisher(Protocol):
         ...
 
     def publish_status_update(
-        self, bill: Bill, change: StatusChange, reply_to: int | None
-    ) -> PublishResult: ...
+        self, bill: Bill, change: StatusChange, reply_to: int | None, *, with_act: bool = False
+    ) -> PublishResult:
+        """`with_act` when the act published in the same run is told in this message too."""
+        ...
 
     def publish_act_published(self, bill: Bill, reply_to: int | None) -> PublishResult: ...
 
@@ -518,6 +520,12 @@ class BillRepository(Protocol):
     def save_update_delivery(
         self, change_id: int, channel_id: str, delivery: DeliveryPlan
     ) -> None: ...
+
+    def replace_unsent_update_delivery(
+        self, change_id: int, channel_id: str, delivery: DeliveryPlan
+    ) -> bool:
+        """Replace the plan of an update still `queued` and never attempted; False otherwise."""
+        ...
 
     def get_update_publication(self, change_id: int, channel_id: str) -> Publication | None: ...
 

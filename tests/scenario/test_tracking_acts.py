@@ -4,7 +4,7 @@ import datetime as dt
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import PublicationKind, PublicationStatus
-from tests.harness import ELI, World, act
+from tests.harness import COMMITTEE_STAGES, ELI, World, act
 
 
 def _published_bill() -> World:
@@ -98,6 +98,52 @@ def test_act_discovered_already_in_force_gets_no_separate_reminder() -> None:
     reminder = w.publication("3039", PublicationKind.IN_FORCE)
     assert reminder is not None and reminder.status is PublicationStatus.SKIPPED
     assert again.in_force_posted == 0
+
+
+def test_a_stage_change_and_the_act_in_one_run_are_one_message() -> None:
+    """Druki 2667 and 2699 each got an update and a Dziennik Ustaw notice a few seconds apart."""
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.set_stages("3039", COMMITTEE_STAGES)
+    w.publish_act("3039")
+    w.gateway.acts[ELI] = act()
+    w.clock.advance(days=2)
+
+    report = w.run()
+    w.clock.advance(days=1)
+    again = w.run()
+
+    assert (report.updates, report.acts_published) == (1, 1)
+    assert w.publisher.acts == [] and len(w.publisher.updates) == 1
+    assert "Опубликован в Dziennik Ustaw" in w.publisher.texts(PublicationKind.STATUS_UPDATE)[0]
+    notice = w.publication("3039", PublicationKind.ACT_PUBLISHED)
+    update = w.publication("3039", PublicationKind.STATUS_UPDATE)
+    assert notice is not None and update is not None
+    assert notice.status is PublicationStatus.SENT and notice.message_id == update.message_id
+    assert (again.updates, again.acts_published) == (0, 0)
+
+
+def test_a_failed_update_carrying_the_act_is_retried_with_it_and_the_act_not_told_twice() -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.set_stages("3039", COMMITTEE_STAGES)
+    w.publish_act("3039")
+    w.gateway.acts[ELI] = act()
+    w.publisher.fail_on = {"3039"}
+    w.clock.advance(days=2)
+
+    failed = w.run()
+    w.publisher.fail_on = set()
+    w.clock.advance(days=1)
+    retried = w.run()
+
+    assert failed.acts_published == 0
+    assert w.publication("3039", PublicationKind.ACT_PUBLISHED) is not None
+    assert w.publisher.acts == [] and len(w.publisher.updates) == 1
+    assert "Опубликован в Dziennik Ustaw" in w.publisher.texts(PublicationKind.STATUS_UPDATE)[0]
+    assert retried.acts_published == 1
 
 
 def test_failed_act_notice_is_retried_next_run() -> None:

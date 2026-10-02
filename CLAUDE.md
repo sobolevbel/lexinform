@@ -154,6 +154,20 @@ Invariants worth keeping:
   by decision of 2026-10-01. The card does not absorb a same-run update or sitting: it shows
   neither an RPW withdrawal nor a plenary sitting outside its phase's venue, so absorbing would
   lose news.
+- **A reply leaves to the card what the card says** (decided 2026-10-02). The status update and
+  the consultation, hearing and constitutional-deadline reminders open with `_reply_header` (the
+  label and the number, no title) and carry no importance badge and no «Суть проекта»; the tags
+  still carry importance and category. A re-analysis repeats the whole summary, it being the
+  news. The Dziennik Ustaw and in-force notices keep the act's title and a sentence of the
+  summary: they come months after the card. **An update and the act in one run are one
+  message**: `_post_news` sends the update with `with_act` (`DeliveryPlan.with_act`), whose plan
+  `_detect` froze before the act was read and which `replace_unsent_update_delivery` may rewrite
+  only while it is `queued` with no attempt; the act's own row is written `sent` with the update's
+  message id after the send (`Poster._act_told_in`), so a failed update leaves no act row and its
+  retry, which carries the act, comes before `announce` can tell it twice. Druki 2667 and 2699
+  each got the two posts seconds apart; two status updates of one bill in one run never happened
+  in the state of 1 Oct 2026 — held changes already ride the next update (1929's two rows on 18
+  Sept share message 56).
 - **The agenda does not always name the druk, one meeting is listed many times, and the hour moves
   without the day.** Three blind spots, measured over the 4,387 committee and 75 Sejm sittings of
   term 10 (coverage audit, 14 Sept 2026). **Past the third reading the agenda names the derived

@@ -195,9 +195,11 @@ def test_a_second_crash_requires_a_new_operator_decision(
     _commands_only(w)
     send = w.publisher.publish_status_update
 
-    def crash(bill: Bill, change: StatusChange, reply_to: int | None) -> PublishResult:
+    def crash(
+        bill: Bill, change: StatusChange, reply_to: int | None, *, with_act: bool = False
+    ) -> PublishResult:
         if accepted:
-            send(bill, change, reply_to)
+            send(bill, change, reply_to, with_act=with_act)
         raise KeyboardInterrupt("process stopped without recording the result")
 
     with monkeypatch.context() as patch:

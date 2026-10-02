@@ -38,6 +38,27 @@ class ActWatcher:
         self, bill: Bill, detail: ProcessDetail, result: TrackingResult, *, publish: bool
     ) -> None:
         """Once the process carries an ELI, fetch the act and announce the publication once."""
+        self.fetch(bill, detail)
+        if publish:
+            self.announce(bill, detail, result)
+
+    def due(self, bill: Bill, detail: ProcessDetail) -> bool:
+        """The process names an act, it is stored, and the channel has not been told it yet."""
+        if self._eli is None or not detail.eli:
+            return False
+        fresh = self._repo.get(bill.term, bill.number) or bill
+        return fresh.act is not None and not self._poster.posted(
+            bill, PublicationKind.ACT_PUBLISHED
+        )
+
+    def announce(self, bill: Bill, detail: ProcessDetail, result: TrackingResult) -> None:
+        if not self.due(bill, detail):
+            return
+        fresh = self._repo.get(bill.term, bill.number) or bill
+        result.count_post(self._poster.act_published(fresh), "acts_published")
+
+    def fetch(self, bill: Bill, detail: ProcessDetail) -> None:
+        """Read and store the act the process's ELI names, when it is new or still undated."""
         if self._eli is None or not detail.eli:
             return
         act = bill.act
@@ -78,10 +99,6 @@ class ActWatcher:
                     act.display_address,
                     act.entry_into_force,
                 )
-        if not publish or self._poster.posted(bill, PublicationKind.ACT_PUBLISHED):
-            return
-        fresh = self._repo.get(bill.term, bill.number) or bill
-        result.count_post(self._poster.act_published(fresh), "acts_published")
 
     def remind_in_force(self, result: TrackingResult) -> None:
         """One reply on the day the act enters into force (Warsaw time).
