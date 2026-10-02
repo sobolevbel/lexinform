@@ -27,7 +27,7 @@ from lexinform.models import (
     StatusChange,
 )
 from lexinform.ports import BillRepository, Clock, Publisher
-from lexinform.services.publications import HeldRelease, send_publication
+from lexinform.services.publications import send_publication
 from lexinform.services.tracking.result import TrackingResult
 
 log = logging.getLogger(__name__)
@@ -149,6 +149,11 @@ class Poster:
 
     def posted(self, bill: Bill, kind: PublicationKind, *, ref: str | None = None) -> bool:
         """True when this post exists and must not be attempted (again)."""
+        if (
+            kind is PublicationKind.ACT_PUBLISHED
+            and self._repo.get_act_update(bill.term, bill.number, self._channel_id) is not None
+        ):
+            return True
         pub = self._repo.get_publication(bill.term, bill.number, kind, self._channel_id, ref=ref)
         if pub is None:
             return False
@@ -284,8 +289,7 @@ class Poster:
 
         Stages held since the previous post are listed first and released against the message
         just sent, not against "the newest update row": a retried update keeps its old row id, so
-        a later held row would be the newest one. An update that carries the act writes the act's
-        row only once it is sent, so a failed one leaves the act to its own notice.
+        a later held row would be the newest one. The saved plan owns its included act notice.
         """
         assert change.id is not None, "only a change record_change stored reaches the poster"
         existing = self._repo.get_update_publication(change.id, self._channel_id)
@@ -315,27 +319,8 @@ class Poster:
                     with_act=delivery.with_act,
                 ).message_id
             ),
-            held_change_ids=delivery.held_change_ids,
         )
-        if message_id is not None and delivery.with_act:
-            self._act_told_in(snapshot, message_id)
         return message_id is not None
-
-    def _act_told_in(self, bill: Bill, message_id: int) -> None:
-        """The act's own row, sent in the update that carried it."""
-        row = self._repo.get_publication(
-            bill.term, bill.number, PublicationKind.ACT_PUBLISHED, self._channel_id
-        )
-        if row is not None and row.status is PublicationStatus.SENT:
-            return
-        pub_id = (
-            row.id
-            if row is not None and row.id is not None
-            else self.record(bill, PublicationKind.ACT_PUBLISHED, PublicationStatus.SENT)
-        )
-        self._repo.mark_publication(
-            pub_id, PublicationStatus.SENT, message_id=message_id, sent_at=self._clock.now()
-        )
 
     def prepare(self, bill: Bill, change: StatusChange, *, with_act: bool = False) -> DeliveryPlan:
         assert change.id is not None, "only a change record_change stored reaches the poster"
@@ -373,6 +358,8 @@ class Poster:
         snapshot = self._repo.get(bill.term, bill.number) or bill
         if snapshot.act is None:
             return delivery
+        original = Bill.model_validate_json(delivery.bill_json)
+        snapshot = original.model_copy(update={"act": snapshot.act})
         planned = delivery.model_copy(
             update={"with_act": True, "bill_json": snapshot.model_dump_json()}
         )
@@ -533,9 +520,7 @@ class Poster:
             bill, hearing, reply, today=plan.today
         ).message_id
 
-    def _send(
-        self, pub_id: int, bill: Bill, send: Send, *, held_change_ids: tuple[int, ...] = ()
-    ) -> int | None:
+    def _send(self, pub_id: int, bill: Bill, send: Send) -> int | None:
         card = self.card(bill)
         reply_to = card.message_id if card else None
         return send_publication(
@@ -543,5 +528,4 @@ class Poster:
             self._clock,
             pub_id,
             lambda: send(reply_to),
-            release=HeldRelease(self._channel_id, held_change_ids),
         )

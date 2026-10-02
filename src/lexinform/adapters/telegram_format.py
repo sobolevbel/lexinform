@@ -673,7 +673,7 @@ class MessageFormatter:
                 closure,
                 consultation,
                 steps,
-                self._links(self._update_links(bill, change)),
+                self._links(self._update_links(bill, change, with_act=with_act)),
                 tags,
             ],
         )
@@ -714,7 +714,9 @@ class MessageFormatter:
             closure = f"{ICON['print']} {esc(lb.rcl_sent_to_sejm)}"
         return closure
 
-    def _update_links(self, bill: Bill, change: StatusChange) -> list[str]:
+    def _update_links(
+        self, bill: Bill, change: StatusChange, *, with_act: bool = False
+    ) -> list[str]:
         """The process (or RCL project) page, the text the update is about, the amendments, and
         every document filed to the print that this update tells."""
         lb = self._labels
@@ -735,7 +737,9 @@ class MessageFormatter:
             if record.source_url:
                 label = lb.supplement_headers.get(record.source_kind, lb.link_supplement)
                 links.append(link(record.source_url, label))
-        return links
+        if with_act and bill.act is not None:
+            links.extend(self._act_links(bill, bill.act))
+        return list(dict.fromkeys(links))
 
     def _supplements_block(self, change: StatusChange) -> str:
         """One `📄 Позиция правительства` heading per document filed to the print, with the

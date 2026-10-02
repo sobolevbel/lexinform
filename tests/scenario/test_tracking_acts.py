@@ -2,8 +2,10 @@
 
 import datetime as dt
 
+import pytest
+
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import PublicationKind, PublicationStatus
+from lexinform.models import Publication, PublicationKind, PublicationStatus
 from tests.harness import COMMITTEE_STAGES, ELI, World, act
 
 
@@ -117,6 +119,8 @@ def test_a_stage_change_and_the_act_in_one_run_are_one_message() -> None:
     assert (report.updates, report.acts_published) == (1, 1)
     assert w.publisher.acts == [] and len(w.publisher.updates) == 1
     assert "Опубликован в Dziennik Ustaw" in w.publisher.texts(PublicationKind.STATUS_UPDATE)[0]
+    pdf = act().text_pdf_url
+    assert pdf is not None and pdf in w.publisher.texts(PublicationKind.STATUS_UPDATE)[0]
     notice = w.publication("3039", PublicationKind.ACT_PUBLISHED)
     update = w.publication("3039", PublicationKind.STATUS_UPDATE)
     assert notice is not None and update is not None
@@ -144,6 +148,65 @@ def test_a_failed_update_carrying_the_act_is_retried_with_it_and_the_act_not_tol
     assert w.publisher.acts == [] and len(w.publisher.updates) == 1
     assert "Опубликован в Dziennik Ustaw" in w.publisher.texts(PublicationKind.STATUS_UPDATE)[0]
     assert retried.acts_published == 1
+
+
+@pytest.mark.parametrize("action", ["confirm 777", "dismiss already handled", "retry"])
+def test_an_uncertain_combined_update_owns_the_act_until_resolved(action: str) -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.set_stages("3039", COMMITTEE_STAGES)
+    w.publish_act("3039")
+    w.gateway.acts[ELI] = act()
+    w.publisher.fail_on.add("3039")
+    w.run()
+    update = w.publication("3039", PublicationKind.STATUS_UPDATE)
+    assert update is not None and update.id is not None
+    w.repo.mark_publication(update.id, PublicationStatus.PENDING, count_attempt=False)
+    w.publisher.fail_on.clear()
+    w.repo.restore(w.repo.dump())
+
+    w.run()
+
+    assert w.publisher.acts == []
+    w.command(f"/delivery {update.id} {action}")
+    w.run()
+    w.run()
+
+    assert w.publisher.acts == []
+    notice = w.publication("3039", PublicationKind.ACT_PUBLISHED)
+    if action.startswith("dismiss"):
+        assert notice is None and w.publisher.updates == []
+    else:
+        resolved = w.repo.publication_by_id(update.id)
+        assert resolved is not None and notice is not None
+        assert resolved.message_id == notice.message_id
+        assert notice.status is PublicationStatus.SENT
+
+
+def test_combined_delivery_is_committed_atomically(monkeypatch: pytest.MonkeyPatch) -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.set_stages("3039", COMMITTEE_STAGES)
+    w.publish_act("3039")
+    w.gateway.acts[ELI] = act()
+    original = w.repo.create_publication
+
+    def fail_act(publication: Publication) -> int:
+        if publication.kind is PublicationKind.ACT_PUBLISHED:
+            raise RuntimeError("act bookkeeping interrupted")
+        return original(publication)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(w.repo, "create_publication", fail_act)
+        w.run()
+
+    update = w.publication("3039", PublicationKind.STATUS_UPDATE)
+    assert update is not None and update.status is PublicationStatus.PENDING
+    assert len(w.publisher.updates) == 1
+    w.run()
+    assert len(w.publisher.updates) == 1 and w.publisher.acts == []
 
 
 def test_failed_act_notice_is_retried_next_run() -> None:

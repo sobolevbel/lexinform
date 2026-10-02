@@ -536,6 +536,10 @@ class BillRepository(Protocol):
 
     def get_update_publication(self, change_id: int, channel_id: str) -> Publication | None: ...
 
+    def get_act_update(self, term: int, number: str, channel_id: str) -> Publication | None:
+        """The status update whose saved delivery includes this bill's act notice."""
+        ...
+
     def release_planned_changes(
         self, ids: tuple[int, ...], channel_id: str, *, message_id: int, sent_at: datetime
     ) -> None: ...

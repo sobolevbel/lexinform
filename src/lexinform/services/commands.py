@@ -43,6 +43,7 @@ from lexinform.services.analysis import AnalysisService, TooExpensiveError, Wait
 from lexinform.services.digest import DigestResult, DigestService
 from lexinform.services.joint import primary_of
 from lexinform.services.lookup import BillLookup, BillNotFoundError
+from lexinform.services.publications import complete_delivery
 from lexinform.services.publishing import PublishingService
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService, TrackingResult
@@ -937,9 +938,9 @@ class CommandService:
                     )
                 if action == "confirm" and publication.delivery is not None:
                     assert resolution.message_id is not None
-                    self._repo.release_planned_changes(
-                        publication.delivery.held_change_ids,
-                        publication.channel_id,
+                    complete_delivery(
+                        self._repo,
+                        publication,
                         message_id=resolution.message_id,
                         sent_at=resolution.resolved_at,
                     )

@@ -794,6 +794,15 @@ class SqliteBillRepository:
         ).fetchone()
         return self._row_to_publication(row) if row is not None else None
 
+    def get_act_update(self, term: int, number: str, channel_id: str) -> Publication | None:
+        row = self._conn.execute(
+            "SELECT * FROM publications WHERE term = ? AND number = ? AND channel_id = ?"
+            " AND kind = 'status_update' AND json_extract(delivery_json, '$.with_act') = 1"
+            " ORDER BY id LIMIT 1",
+            (term, number, channel_id),
+        ).fetchone()
+        return self._row_to_publication(row) if row is not None else None
+
     def release_planned_changes(
         self, ids: tuple[int, ...], channel_id: str, *, message_id: int, sent_at: datetime
     ) -> None:
