@@ -10,7 +10,7 @@ looks at them.
 import datetime as dt
 import functools
 import logging
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 
 from lexinform.concurrency import fan_out
@@ -23,6 +23,7 @@ from lexinform.models import (
     normalize_wykaz_number,
     process_summary,
     rcl_fingerprint,
+    rcl_num_key,
     rcl_number,
     rcl_stages,
     wykaz_number,
@@ -109,7 +110,8 @@ class RclDiscoveryService:
                 refreshed = existing.summary.model_copy(update={"change_date": modified})
                 self._repo.upsert_summary(refreshed, now=self._clock.now())
                 result.refreshed += 1
-        read = functools.partial(self._read, term=term, started=started)
+        known = self._repo.prints_by_rcl_num(term)
+        read = functools.partial(self._read, term=term, started=started, known=known)
         for outcome in fan_out(new_rows, read, workers=self._workers):
             try:
                 project = outcome.result()
@@ -145,8 +147,11 @@ class RclDiscoveryService:
         if self._repo.find_rcl(rcl_number(project_id)) is not None:
             return
         result.seen += 1
+        known = self._repo.prints_by_rcl_num(term)
         try:
-            project = self._deepen(self._reader.timeline(project_id), term=term, started=started)
+            project = self._deepen(
+                self._reader.timeline(project_id), term=term, started=started, known=known
+            )
         except ServiceUnavailableError:
             raise
         except Exception as exc:
@@ -246,17 +251,36 @@ class RclDiscoveryService:
         result.planned += 1
         return True
 
-    def _read(self, row: RclProjectSummary, *, term: int, started: dt.date | None) -> RclProject:
+    def _read(
+        self,
+        row: RclProjectSummary,
+        *,
+        term: int,
+        started: dt.date | None,
+        known: Mapping[str, str],
+    ) -> RclProject:
         """Network only: as much of the project as its prefilter verdict needs.
 
         A project that is already over is read no further: `_ingest` records the skip.
         """
-        return self._deepen(self._reader.timeline(row.id), term=term, started=started)
+        project = self._reader.timeline(row.id)
+        return self._deepen(project, term=term, started=started, known=known)
 
-    def _deepen(self, project: RclProject, *, term: int, started: dt.date | None) -> RclProject:
-        """How much of a project is read is what its title's verdict decides."""
+    def _deepen(
+        self,
+        project: RclProject,
+        *,
+        term: int,
+        started: dt.date | None,
+        known: Mapping[str, str],
+    ) -> RclProject:
+        """How much of a project is read is what its title's verdict decides; a project whose
+        druk is stored (`known`, by RM number) is read no further and carries that druk."""
         if project.is_over or project.history_on_arrival(term=term, term_started=started):
             return project
+        druk = known.get(rcl_num_key(project.rm_number)) if project.rm_number else None
+        if druk is not None:
+            return project.model_copy(update={"print_number": druk})
         if accept_title_hits(self._hits(project, term=0)):
             log.info(
                 "RCL %s (%s): candidate, reading its catalogs", project.id, project.wykaz_number
@@ -314,6 +338,17 @@ class RclDiscoveryService:
             )
             log.info("%s is a past term's project, still since %s", bill.number, project.modified)
             result.over += 1
+            result.new += 1
+            return
+        if project.print_number is not None:
+            # The druk is the bill with the text: the RCL watcher links the project to it.
+            self._repo.set_status(
+                term,
+                bill.number,
+                BillStatus.SKIPPED_PREFILTER,
+                reason=f"is druk {project.print_number} already: not read on RCL",
+            )
+            log.info("%s is druk %s already: left to the linker", bill.number, project.print_number)
             result.new += 1
             return
         hits = self._hits(project, term=term)

@@ -599,11 +599,10 @@ def _rcl_phase(bill: Bill, today: dt.date) -> Phase | None:
 
 def _consulting(project: RclProject, window: ConsultationWindow, today: dt.date) -> bool:
     """The public consultation is running. The deadline says so when the letter gave one; when it
-    did not, the timeline does — the stage the project is on is the consultation itself."""
+    did not, the timeline does — the consultation stage is one of the active ones."""
     if window.end is not None:
         return window.is_open(today)
-    current = project.current_stage
-    return current is not None and current.is_consultation
+    return any(st.is_consultation and st.state == "active" for st in project.stages)
 
 
 def _days_after(start: dt.date | None, days: int) -> dt.date | None:

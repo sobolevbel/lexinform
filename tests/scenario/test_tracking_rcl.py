@@ -761,6 +761,24 @@ def test_a_project_whose_druk_already_has_a_card_gets_no_second_one() -> None:
     assert w.publisher.updates == []
 
 
+def test_a_project_found_after_its_druk_is_not_read_and_joins_the_druks_thread() -> None:
+    w = World()
+    w.add_bill("3100", "Projekt ustawy o cudzoziemcach")
+    _listing_names_the_project(w)
+    w.run()
+    druk_card = w.card_id("3100")
+    w.add_rcl_project(rcl_project(rm_number=RM))
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert (report.rcl_discovered, report.published, report.linked) == (1, 0, 1)
+    assert [ctx.number for ctx in w.llm.contexts] == ["3100"]
+    assert w.bill(RCL).status is BillStatus.LINKED
+    assert w.card_id("3100") == druk_card
+    assert [bill.number for bill, _ in w.publisher.new_bills] == ["3100"]
+
+
 def test_the_druk_of_a_carded_project_is_joined_before_it_is_read() -> None:
     w = World()
     project = w.add_rcl_project()

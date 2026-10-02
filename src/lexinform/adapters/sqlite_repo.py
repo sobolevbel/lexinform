@@ -57,6 +57,7 @@ from lexinform.models import (
     StatusChange,
     SupplementRecord,
     WykazEntry,
+    rcl_num_key,
 )
 from lexinform.models.batch import BatchJob, batch_item_meta
 
@@ -1587,6 +1588,15 @@ class SqliteBillRepository:
             (term, f"{PRE_PRINT_PREFIX}%", f"{RCL_PREFIX}%", f"{WYKAZ_PREFIX}%", rm_number),
         ).fetchone()
         return self._row_to_bill(row) if row else None
+
+    def prints_by_rcl_num(self, term: int) -> dict[str, str]:
+        rows = self._conn.execute(
+            "SELECT number, json_extract(summary_json, '$.rcl_num') FROM bills WHERE term = ?"
+            " AND number NOT LIKE ? AND number NOT LIKE ? AND number NOT LIKE ?"
+            " AND json_extract(summary_json, '$.rcl_num') IS NOT NULL ORDER BY number DESC",
+            (term, f"{PRE_PRINT_PREFIX}%", f"{RCL_PREFIX}%", f"{WYKAZ_PREFIX}%"),
+        ).fetchall()
+        return {rcl_num_key(rcl_num): number for number, rcl_num in rows}
 
     def remember_rcl_wykaz_number(
         self, wykaz_number: str, project_id: int, created: date | None

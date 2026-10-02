@@ -49,6 +49,11 @@ def project_web_url(project_id: int) -> str:
     return f"{RCL_BASE_URL}/projekt/{project_id}"
 
 
+def rcl_num_key(value: str) -> str:
+    """An `RM-0610-126-26` number as `find_print_by_rcl_num` compares it: spacing and case aside."""
+    return "".join(value.split()).upper()
+
+
 def normalize_wykaz_number(value: str | None) -> str | None:
     """`UD 247` and `UD247` are the same entry of the wykaz prac legislacyjnych."""
     if value is None:
@@ -282,7 +287,8 @@ class RclProject(BaseModel):
 
     @property
     def current_stage(self) -> RclStage | None:
-        active = next((st for st in self.stages if st.state == "active"), None)
+        """The furthest active stage: RCL leaves an earlier one active (6 of 46 projects)."""
+        active = next((st for st in reversed(self.stages) if st.state == "active"), None)
         if active is not None:
             return active
         reached = self.reached_stages

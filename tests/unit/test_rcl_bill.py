@@ -139,6 +139,34 @@ def test_next_phase_follows_the_government_path() -> None:
     ]
 
 
+def test_a_project_stands_at_the_furthest_of_its_active_stages() -> None:
+    """RCL leaves «Opiniowanie» active after the project has moved on to a committee."""
+    both = rcl_bill(
+        rcl_project(
+            consultation=None,
+            stages=(
+                rcl_stage(4, "Opiniowanie", "active"),
+                rcl_stage(9, "Stały Komitet Rady Ministrów", "active"),
+            ),
+        )
+    )
+    consulting = rcl_bill(
+        rcl_project(
+            consultation=RclConsultation(email="a@b.pl", letter_url="https://x/pismo.pdf"),
+            stages=(
+                rcl_stage(3, "Konsultacje publiczne", "active"),
+                rcl_stage(4, "Opiniowanie", "active"),
+            ),
+        )
+    )
+
+    phase = next_phase(both, today=TODAY)
+    still = next_phase(consulting, today=TODAY)
+
+    assert phase is not None and phase.key == "rcl_committees"
+    assert still is not None and still.key == "rcl_consultation"
+
+
 def test_generic_stages_of_a_project_end_with_the_active_one() -> None:
     bill = rcl_bill(rcl_project())
 

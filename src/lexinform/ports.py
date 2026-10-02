@@ -807,6 +807,10 @@ class BillRepository(Protocol):
         """The druk whose process names this `RM-…` number, spacing and case aside."""
         ...
 
+    def prints_by_rcl_num(self, term: int) -> dict[str, str]:
+        """Every stored druk of the term by the `RM-…` number its process names (`rcl_num_key`)."""
+        ...
+
     def find_by_wykaz_number(self, wykaz_number: str) -> Bill | None:
         """The RCL row of a project with this wykaz number; the register's own row is
         `find_wykaz` (an `UD408` names both once the project is published)."""
