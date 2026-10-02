@@ -74,6 +74,7 @@ from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.signatories import SejmAuthorsResolver
 from lexinform.services.sources import (
     RclTextSource,
+    SejmTextIdentity,
     SejmTextSource,
     SubmissionTextSource,
     TextSources,
@@ -315,7 +316,6 @@ class Container:
             triage_scan_pages=self.settings.triage_scan_pages,
             triage_min_confidence=self.settings.triage_min_confidence,
             channel_id=self.channel_id(),
-            orka_base_url=self.settings.orka_base_url,
             change_review_max_ratio=self.settings.change_review_max_ratio,
             change_review_max_chars=self.settings.change_review_max_chars,
             batch_provider=provider_of(self.settings.llm_analysis_model),
@@ -342,6 +342,7 @@ class Container:
             or self.batch_override
             or self._llm_backend(self.settings.llm_analysis_overflow_model),
             text_budget=TextBudget(self.settings.text_budget_chars),
+            text_identity=SejmTextIdentity(self.settings.orka_base_url),
             authors=SejmAuthorsResolver(self.gateway),
             keywords=self.prefilter,
             triage=self.prefilter if self.settings.llm_triage_model else None,

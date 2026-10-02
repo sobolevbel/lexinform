@@ -60,7 +60,9 @@ def readable_law(text: str) -> str | None:
     body = body.translate(_CHARACTERS).replace(",,", '"')
     # Footnote bodies stay: `_FOOTNOTE_BODY` runs on into the next page's text where no blank line
     # follows the footnote, which on orka files dropped real provisions from one side of the diff.
-    return _HYPHEN_BREAK.sub(r"\1\2", _PAGE_NUMBER.sub("", _CITATION.sub("", _STAMP.sub("", body))))
+    body = _CITATION.sub("", _STAMP.sub("", body))
+    body = _LIST_MARK.sub("", body)
+    return _FOOTNOTE_REF.sub("", _HYPHEN_BREAK.sub(r"\1\2", _PAGE_NUMBER.sub("", body)))
 
 
 def law_digest(text: str) -> str | None:

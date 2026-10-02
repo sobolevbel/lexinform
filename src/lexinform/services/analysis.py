@@ -31,7 +31,6 @@ from lexinform.law_digest import law_digest
 from lexinform.models import (
     AMENDMENT_SOURCES,
     FULL_TEXT_SOURCES,
-    ORKA_BASE_URL,
     SUPPLEMENT_SOURCES,
     Amendments,
     AmendmentsContext,
@@ -75,7 +74,6 @@ from lexinform.models import (
     observe,
     provider_of,
     stage_fingerprint,
-    submission_pdf_url,
     usage_of,
     window_closes_within,
 )
@@ -95,6 +93,7 @@ from lexinform.ports import (
     BillRepository,
     Clock,
     LlmAnalyzer,
+    TextIdentity,
 )
 from lexinform.ports import TextSource as TextSourcePort
 from lexinform.pricing import (
@@ -238,7 +237,6 @@ class AnalysisOptions:
     batch_kinds: frozenset[BatchKind] = frozenset({"analysis", "reanalysis"})
     batch_models: dict[BatchKind, str] = field(default_factory=dict)
     batch_max_wait: timedelta = timedelta(hours=6)
-    orka_base_url: str = ORKA_BASE_URL
     change_review_max_ratio: float = 0.15
     change_review_max_chars: int = 60_000
 
@@ -272,6 +270,11 @@ class _Loaded:
         if self.scan is not None:
             return self.scan.sha256
         return text_digest(self.text) if self.source in FULL_TEXT_SOURCES else None
+
+    def matches(self, record: AnalysisRecord) -> bool:
+        return (self.law is not None and self.law == record.law_sha256) or (
+            self.digest is not None and self.digest == record.text_sha256
+        )
 
     def estimate(self, input_price: float) -> float:
         """What the model will charge to read it, before it is asked."""
@@ -399,6 +402,7 @@ class AnalysisService:
         options: AnalysisOptions,
         *,
         text_budget: TextBudget,
+        text_identity: TextIdentity | None = None,
         overflow_batch: BatchBackend | None = None,
         authors: AuthorsResolver | None = None,
         keywords: KeywordPrefilter | None = None,
@@ -409,6 +413,7 @@ class AnalysisService:
     ) -> None:
         self._repo = repo
         self._texts = texts
+        self._text_identity = text_identity
         self._loader = loader
         self._llm = llm
         self._overflow_batch = overflow_batch
@@ -1412,7 +1417,11 @@ class AnalysisService:
         digest = loaded.digest
         law = loaded.law
         if previous is not None and (
-            self._same_submission(bill, previous, document)
+            (
+                document is not None
+                and self._text_identity is not None
+                and self._text_identity.same_text(bill, previous, document)
+            )
             or (digest is not None and digest == previous.text_sha256)
             or (law is not None and law == self._previous_law(previous, previous_document))
         ):
@@ -1423,7 +1432,9 @@ class AnalysisService:
             # the next run sees the same new document and reads it then.
             self._ledger.stop("the new text(s) wait for the next run")
             return _Prepared(bill, located, text, source, previous, first=False, deferred=True)
-        if previous is not None and self._changes_settled(bill, loaded, previous):
+        if previous is not None and self._changes_settled(
+            bill, loaded, previous, previous_document
+        ):
             return self._unchanged(bill, located, loaded, previous)
         meta = located.summary or bill.summary
         triaged: TriageRecord | None = None
@@ -1591,19 +1602,33 @@ class AnalysisService:
             bill, located, loaded.text, loaded.source, pointer, first=False, unchanged=True
         )
 
-    def _changes_settled(self, bill: Bill, loaded: _Loaded, previous: AnalysisRecord) -> bool:
+    def _changes_settled(
+        self,
+        bill: Bill,
+        loaded: _Loaded,
+        previous: AnalysisRecord,
+        previous_document: TextDocument | None,
+    ) -> bool:
         """Noise alone keeps the analysis free; a small change needs the triage model's sure no."""
         ratio_cap = self._options.change_review_max_ratio
-        # The file the record names, not the caller's: a stored project can run ahead of it.
-        previous_document = _source_of(previous)
-        if not ratio_cap or loaded.whole is None or previous_document is None:
+        source = _source_of(previous)
+        if not ratio_cap or loaded.whole is None or source is None:
             return False
+        # The caller can recover the old package, but its project may have advanced already.
+        document = (
+            previous_document
+            if previous_document and previous_document.url == source.url
+            else source
+        )
         try:
-            before = self._load_text(previous_document).whole
+            baseline = self._load_text(document)
+            if not baseline.matches(previous):
+                return False
+            before = self._load_text(source).whole if document.extra_urls else baseline.whole
         except ServiceUnavailableError:
             raise
         except Exception as exc:
-            log.warning("%s: the analysed text not re-read (%s)", previous_document.url, exc)
+            log.warning("%s: the analysed text not re-read (%s)", source.url, exc)
             return False
         diff = diff_laws(before, loaded.whole) if before is not None else None
         if diff is None:
@@ -1644,18 +1669,6 @@ class AnalysisService:
             reviewed.review.rationale,
         )
         return settled
-
-    def _same_submission(
-        self, bill: Bill, previous: AnalysisRecord, document: TextDocument | None
-    ) -> bool:
-        """The druk's own print is the RPW file it was numbered from: 524 of 524 term-10 pairs."""
-        sub = bill.submission
-        if sub is None or not sub.is_bill or document is None or document.kind != "print":
-            return False
-        if previous.text_source not in FULL_TEXT_SOURCES:
-            return False
-        orka = submission_pdf_url(bill.term, sub.number, base_url=self._options.orka_base_url)
-        return previous.source_url == orka and document.url != orka
 
     def _previous_law(self, previous: AnalysisRecord, document: TextDocument | None) -> str | None:
         """The stored act's digest; an older record's comes from its file if that hashes alike."""

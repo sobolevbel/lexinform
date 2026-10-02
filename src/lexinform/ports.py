@@ -63,6 +63,7 @@ from lexinform.models import (
     StatusChange,
     SupplementContext,
     SupplementRecord,
+    TextDocument,
     TriageContext,
     TriageRecord,
     Vote,
@@ -214,6 +215,12 @@ class TextSource(Protocol):
     repository, so several bills can be located at once."""
 
     def locate(self, bill: Bill) -> LocatedText: ...
+
+
+class TextIdentity(Protocol):
+    """Source evidence that a new document republishes the previously analysed text."""
+
+    def same_text(self, bill: Bill, previous: AnalysisRecord, document: TextDocument) -> bool: ...
 
 
 class AuthorsResolver(Protocol):

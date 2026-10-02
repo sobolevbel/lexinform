@@ -9,8 +9,6 @@ from lexinform.law_digest import readable_law
 _WORD = re.compile(r"[^\W_]+")
 _UNIT_END = re.compile(r"(?<=[.;:])\s+")
 _CONTEXT_WORDS = 12
-_SHORT = 2
-"""A token this short alone is a list mark or a footnote reference when it appears or vanishes."""
 
 
 @dataclass(frozen=True)
@@ -125,8 +123,5 @@ def _word_hunks(
 
 
 def _is_noise(old: list[_Token], new: list[_Token]) -> bool:
-    """A word split or joined by the text layer, or a list mark one side lacks; "2"→"3" counts."""
-    if "".join(t.key for t in old) == "".join(t.key for t in new):
-        return True
-    one_sided = not old or not new
-    return one_sided and all(len(t.key) <= _SHORT for t in old + new)
+    """A word split or joined by the text layer keeps every letter and digit."""
+    return "".join(t.key for t in old) == "".join(t.key for t in new)

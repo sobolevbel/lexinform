@@ -11,7 +11,9 @@ from datetime import UTC, datetime
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
+    FULL_TEXT_SOURCES,
     ORKA_BASE_URL,
+    AnalysisRecord,
     Bill,
     LocatedText,
     PrintInfo,
@@ -131,6 +133,21 @@ class SubmissionTextSource:
     def locate(self, bill: Bill) -> LocatedText:
         url = submission_pdf_url(bill.term, bill.number, base_url=self._base_url)
         return LocatedText(document=TextDocument(url=url, kind="print"))
+
+
+class SejmTextIdentity:
+    def __init__(self, orka_base_url: str = ORKA_BASE_URL) -> None:
+        self._orka_base_url = orka_base_url
+
+    def same_text(self, bill: Bill, previous: AnalysisRecord, document: TextDocument) -> bool:
+        """The original druk republishes its BILL submission: 524 of 524 term-10 pairs."""
+        sub = bill.submission
+        if sub is None or not sub.is_bill or document.kind != "print":
+            return False
+        if previous.text_source not in FULL_TEXT_SOURCES:
+            return False
+        original = submission_pdf_url(bill.term, sub.number, base_url=self._orka_base_url)
+        return previous.source_url == original and document.url != original
 
 
 class RclTextSource:

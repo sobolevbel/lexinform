@@ -1,6 +1,7 @@
 """Following a government project on RCL: stages, consultation, new text, the way to the Sejm."""
 
 import datetime as dt
+from dataclasses import replace
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import BillStatus, ChangeReview, PublicationKind, RclProject
@@ -407,6 +408,26 @@ def test_a_small_change_the_review_calls_material_is_read() -> None:
 
     assert report.reanalyzed == 1
     assert [c.kind for c in report.llm_calls] == ["change_review", "reanalysis"]
+
+
+def test_a_replaced_old_file_cannot_prove_the_new_text_unchanged() -> None:
+    w = World()
+    project = w.add_rcl_project()
+    _small_change(w)
+    w.run()
+    previous = w.bill(RCL).analysis
+    assert previous is not None and previous.source_url is not None
+    w.clock.advance(days=1)
+    _new_text_stage(w, project)
+    w.rcl.files[rcl_document(801, "projekt_po_KP.pdf").url] = SMALL_CHANGE
+    w.rcl.files[previous.source_url] = SMALL_CHANGE
+    w.pipeline = replace(w.container).pipeline(dry_run=False)
+
+    report = w.run()
+
+    assert report.reanalyzed == 1
+    assert w.llm.change_contexts == []
+    assert w.bill(RCL).analysis is not None and w.bill(RCL).analysis != previous
 
 
 def test_a_redaction_that_leaves_the_act_alone_is_not_read_or_reviewed() -> None:

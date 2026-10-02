@@ -1,5 +1,7 @@
 """The act's changes between two texts: the extraction's noise out, every change of wording in."""
 
+import pytest
+
 from lexinform.law_diff import diff_laws
 
 ACT = """USTAWA
@@ -40,6 +42,18 @@ def test_a_replaced_single_digit_is_a_change() -> None:
     diff = diff_laws(ACT, ACT.replace("ust. 2 otrzymuje", "ust. 3 otrzymuje"))
 
     assert diff is not None and [(h.old, h.new) for h in diff.hunks] == [("2", "3")]
+
+
+@pytest.mark.parametrize("added", ["do", "18", "i", "w"])
+@pytest.mark.parametrize("removed", [False, True])
+def test_short_words_and_numbers_are_not_extraction_noise(added: str, removed: bool) -> None:
+    changed = ACT.replace("na okres", f"na {added} okres")
+    before, after = (changed, ACT) if removed else (ACT, changed)
+
+    diff = diff_laws(before, after)
+
+    assert diff is not None and len(diff.hunks) == 1
+    assert (diff.hunks[0].old, diff.hunks[0].new) == ((added, "") if removed else ("", added))
 
 
 def test_an_added_provision_is_quoted_whole_and_counted() -> None:
