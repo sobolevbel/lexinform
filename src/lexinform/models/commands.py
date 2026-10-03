@@ -30,7 +30,7 @@ from lexinform.models.enums import (
 from lexinform.models.rcl import normalize_wykaz_number
 from lexinform.models.report import RunReport
 from lexinform.models.sejm import PrintInfo
-from lexinform.models.source_checks import AUTO_OBSERVATION, ObservationMode
+from lexinform.models.source_checks import AUTO_OBSERVATION, ObservationMode, SourceCheck
 
 
 class IncomingCommand(BaseModel):
@@ -457,6 +457,8 @@ class StatusSnapshot(BaseModel):
     # `batch_pending` with neither an open batch item nor an intent: nothing will ever answer it.
     orphaned: tuple[Bill, ...] = ()
     awaiting_batch: tuple[Bill, ...] = ()
+    # A source that keeps not answering for one bill: no run report counts what it was not given.
+    failing: tuple[tuple[Bill, SourceCheck], ...] = ()
     observed_at: dt.datetime | None = None
 
 

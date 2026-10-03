@@ -667,6 +667,12 @@ class BillRepository(Protocol):
         """How many posts of the channel are in each publication status."""
         ...
 
+    def list_failing_checks(
+        self, *, min_failures: int, limit: int
+    ) -> list[tuple[Bill, SourceCheck]]:
+        """Checks of live rows failing `min_failures` times in a row or more, worst first."""
+        ...
+
     def list_stuck_publications(self, channel_id: str, *, limit: int) -> list[Publication]:
         """`pending`/`unknown` posts, oldest first: an ambiguous delivery `posted()` will not
         retry on its own, so the operator is who has to notice it (BUGS.md #4)."""

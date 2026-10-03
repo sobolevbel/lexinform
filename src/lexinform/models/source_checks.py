@@ -9,6 +9,8 @@ from lexinform.models.analysis import Analysis
 
 # docs/website/data.md §25.6: data that must be rechecked regularly is stale after 36 hours.
 FRESH_FOR = dt.timedelta(hours=36)
+# Three failures in a row is about a day of runs: one is a bad moment, three are a pattern.
+FAILING_CHECK_MIN = 3
 
 
 class ObservationMode(StrEnum):

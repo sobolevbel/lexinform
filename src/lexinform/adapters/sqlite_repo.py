@@ -1205,6 +1205,34 @@ class SqliteBillRepository:
         ).fetchall()
         return {str(status): int(count) for status, count in rows}
 
+    def list_failing_checks(
+        self, *, min_failures: int, limit: int
+    ) -> list[tuple[Bill, SourceCheck]]:
+        rows = self._conn.execute(
+            """
+            SELECT b.*, c.aspect AS check_aspect, c.last_success_at AS check_success,
+                   c.last_attempt_at AS check_attempt, c.failures AS check_failures,
+                   c.last_outage_at AS check_outage
+            FROM source_checks c JOIN bills b ON b.term = c.term AND b.number = c.number
+            WHERE c.failures >= ? AND b.status != ? AND b.discontinued_at IS NULL
+            ORDER BY c.failures DESC, b.term, b.number, c.aspect LIMIT ?
+            """,
+            (min_failures, BillStatus.LINKED.value, limit),
+        ).fetchall()
+        return [
+            (
+                self._row_to_bill(row),
+                SourceCheck(
+                    aspect=CheckAspect(row["check_aspect"]),
+                    last_success_at=_parse_dt(row["check_success"]),
+                    last_attempt_at=_parse_dt(row["check_attempt"]),
+                    failures=int(row["check_failures"]),
+                    last_outage_at=_parse_dt(row["check_outage"]),
+                ),
+            )
+            for row in rows
+        ]
+
     def list_stuck_publications(self, channel_id: str, *, limit: int) -> list[Publication]:
         rows = self._conn.execute(
             "SELECT * FROM publications WHERE channel_id = ? AND status IN ('pending', 'unknown')"

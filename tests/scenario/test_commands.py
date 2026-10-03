@@ -8,7 +8,9 @@ import pytest
 
 from lexinform.errors import LlmUnavailableError
 from lexinform.models import (
+    FAILING_CHECK_MIN,
     BillStatus,
+    CheckAspect,
     OutcomeStatus,
     Publication,
     PublicationKind,
@@ -1037,6 +1039,30 @@ def test_status_shows_the_open_batch_and_a_batch_pending_bill_nothing_holds() ->
     assert [b.request_count for b in snapshot.batches] == [1]
     assert (snapshot.queued_intents, snapshot.uncertain_intents) == (0, 0)
     assert [b.number for b in snapshot.orphaned] == ["3100"]
+
+
+def test_status_names_a_source_that_keeps_failing_for_a_live_bill() -> None:
+    """A listing that never returns a row fails its check every run, and no run report counts it."""
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.add_bill("3100", TITLE)
+    w.add_bill("3101", TITLE)
+    w.run()
+    for _ in range(FAILING_CHECK_MIN):
+        w.repo.record_check(10, "3039", CheckAspect.PROCESS, at=w.clock.now(), ok=False)
+        w.repo.record_check(10, "3101", CheckAspect.PROCESS, at=w.clock.now(), ok=False)
+    w.repo.record_check(10, "3100", CheckAspect.PROCESS, at=w.clock.now(), ok=False)
+    w.repo.set_status(10, "3101", BillStatus.LINKED)
+    w.command("/status")
+
+    _commands_only(w)
+
+    (_, outcome), *_ = w.replier.replies
+    snapshot = outcome.snapshot
+    assert snapshot is not None, "/status answers with a snapshot"
+    assert [(b.number, c.aspect, c.failures) for b, c in snapshot.failing] == [
+        ("3039", CheckAspect.PROCESS, FAILING_CHECK_MIN)
+    ]
 
 
 def test_runs_answers_what_each_recorded_run_did() -> None:

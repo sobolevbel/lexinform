@@ -10,6 +10,7 @@ from lexinform.adapters.telegram_format import MessageFormatter, fit, length, sh
 from lexinform.models import (
     AnalysisVerdict,
     BillStatus,
+    CheckAspect,
     CommandName,
     CommandOutcome,
     IncomingCommand,
@@ -20,6 +21,7 @@ from lexinform.models import (
     ProcessDetail,
     RunMode,
     RunReport,
+    SourceCheck,
     SpendSnapshot,
     StatusSnapshot,
     TokenUsage,
@@ -279,7 +281,7 @@ def test_command_reply_names_the_bill_the_verdict_and_the_card(
     assert_telegram_html(text)
     assert text.startswith("🤖 <b>analysed</b> · <code>/analyze 3039 &lt;force&gt;</code>")
     assert "<b>druk nr 3039</b>" in text and "PrzebiegProc.xsp?nr=3039" in text
-    assert "🔴 relevant · importance 5/5 · legal_stay · m · pdf" in text
+    assert "🔴 relevant · importance 5/5 · category legal_stay · m on pdf" in text
     assert "<i>Проект меняет правила легализации пребывания.</i>" in text
     assert "📣 card posted: message 101" in text
 
@@ -382,6 +384,25 @@ def test_status_reply_names_the_open_batches_and_what_nothing_holds(
     assert "<b>3039</b> → /reset 3039 to=analysis_pending" in text
     # A stranded re-analysis must not be sent through a paid first analysis and triage.
     assert "<b>3039</b> → /reset 3039 to=analyzed" in text
+
+
+def test_status_reply_names_a_check_that_keeps_failing(process_3039: ProcessDetail) -> None:
+    bill = bill_of(process_3039)
+    never = SourceCheck(aspect=CheckAspect.PROCESS, last_attempt_at=NOW, failures=29)
+    lapsed = SourceCheck(
+        aspect=CheckAspect.ACT, last_success_at=NOW - dt.timedelta(days=3), failures=4
+    )
+    outcome = CommandOutcome(
+        status=OutcomeStatus.REPORTED,
+        snapshot=StatusSnapshot(failing=((bill, never), (bill, lapsed))),
+    )
+
+    text = MessageFormatter("ru").command_reply(_incoming("/status"), outcome).text
+
+    assert_telegram_html(text)
+    assert "🩺 <b>failing checks</b>" in text
+    assert "<b>3039</b> · process · 29 in a row · never ok · analyzed → /show 3039" in text
+    assert "<b>3039</b> · act · 4 in a row · last ok " in text
 
 
 def test_forget_reply_names_the_message_that_was_dropped(process_3039: ProcessDetail) -> None:

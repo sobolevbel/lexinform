@@ -267,6 +267,7 @@ from lexinform.models.senate import (
     senate_title_matches,
 )
 from lexinform.models.source_checks import (
+    FAILING_CHECK_MIN,
     CheckAspect,
     Freshness,
     ObservationBasis,
@@ -284,6 +285,7 @@ from lexinform.models.wykaz import (
 )
 
 __all__ = [
+    "FAILING_CHECK_MIN",
     "CheckAspect",
     "Freshness",
     "ObservationBasis",

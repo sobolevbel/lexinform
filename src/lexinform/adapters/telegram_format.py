@@ -44,6 +44,7 @@ from lexinform.models import (
     RclProject,
     RunReport,
     SittingNews,
+    SourceCheck,
     SpendSnapshot,
     Stage,
     StatusChange,
@@ -1580,7 +1581,24 @@ class MessageFormatter:
                 "⚠️ <b>batch_pending, held by no batch</b>\n"
                 + "\n".join(f"• {_orphan_line(b)}" for b in snapshot.orphaned)
             )
+        if snapshot.failing:
+            lines.append(
+                "🩺 <b>failing checks</b>\n"
+                + "\n".join(f"• {self._failing_line(b, c)}" for b, c in snapshot.failing)
+            )
         return "\n".join(lines)
+
+    def _failing_line(self, bill: Bill, check: SourceCheck) -> str:
+        """Which aspect of which bill keeps failing, and since when it last worked."""
+        last = (
+            f"last ok {self.fmt_date(check.last_success_at.date())}"
+            if check.last_success_at is not None
+            else "never ok"
+        )
+        return (
+            f"<b>{esc(bill.number)}</b> · {esc(check.aspect)} · {check.failures} in a row"
+            f" · {last} · {esc(bill.status)} → /show {esc(bill.number)}"
+        )
 
     def _batches_block(self, snapshot: StatusSnapshot) -> str:
         """Open batches with their age, and the requests not yet (or not surely) submitted."""
@@ -1641,7 +1659,7 @@ class MessageFormatter:
             verdict = "relevant" if a.relevant else "not relevant"
             lines.append(
                 f"{score_icon(a.score)} {verdict} · importance {a.score}/5"
-                f" · {esc(a.category)} · {esc(record.model)} · {esc(record.text_source)}"
+                f" · category {esc(a.category)} · {esc(record.model)} on {esc(record.text_source)}"
             )
             if a.relevant:
                 lines.append(f"<i>{esc(lead(a.summary))}</i>")

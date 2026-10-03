@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.models import (
     DISPATCHED,
+    FAILING_CHECK_MIN,
     SILENCED_BY_OPERATOR,
     Bill,
     BillStatus,
@@ -746,6 +747,11 @@ class CommandService:
             )
             if self._tracking is not None
             else (),
+            failing=tuple(
+                self._repo.list_failing_checks(
+                    min_failures=FAILING_CHECK_MIN, limit=self._status_bills
+                )
+            ),
             observed_at=self._clock.now(),
         )
         return CommandOutcome(

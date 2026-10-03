@@ -184,7 +184,9 @@ The bot has to be able to post there, and a failure is answered as one.
 between the runs: the queues as they stand, how many bills are followed, and by bill number and
 kind the posts stuck `pending`/`unknown` — nothing retries those on its own (BUGS.md #4), so this
 is what tells the operator one is there; `/republish` clears it for a card, and for any other
-kind of reply there is no command yet, only a look at the row. `/runs` is the row per run that
+kind of reply there is no command yet, only a look at the row. Under «failing checks» it names
+the live bills whose source has failed `FAILING_CHECK_MIN` (3) checks in a row — a listing that
+never returns a row is no error and no counter of any run report (B83). `/runs` is the row per run that
 `lexinform runs` prints — what each found, posted and cost — and `/cost` breaks the window's
 spend down by model, names the dearest run and the dearest analyses. By default, `/runs` hides
 runs without results, token usage, errors or notes; routine tracking checks and batch waiting
