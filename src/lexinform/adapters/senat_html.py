@@ -21,7 +21,7 @@ from bs4 import BeautifulSoup, Tag
 from lexinform.adapters.browser_identity import BROWSER_HEADERS
 from lexinform.adapters.retries import backoff_delay
 from lexinform.errors import SenateUnavailableError
-from lexinform.models import SENATE_BASE_URL, SenateAct, SenateCommittee, senate_title_matches
+from lexinform.models import SENATE_BASE_URL, SenateAct, SenateCommittee, senate_title_distance
 
 __all__ = ["SenateClient", "SenatePageError", "parse_act", "parse_committee", "parse_listing"]
 
@@ -164,14 +164,17 @@ class SenateClient:
     def find_act(self, title_final: str, *, passed_on: date) -> SenateAct | None:
         """The first act of this title received on or after the vote: titles repeat (five acts of
         term 10 are "o zmianie ustawy o podatku akcyzowym"), so neither neighbour is it."""
-        found: list[SenateAct] = []
+        found: list[tuple[int, date, SenateAct]] = []
         for page in range(1, MAX_LISTING_PAGES + 1):
             for title, url in self._listing(page):
-                if senate_title_matches(title, title_final):
+                distance = senate_title_distance(title, title_final)
+                if distance is not None:
                     act = self.read_act(url)
                     if act.received is not None and act.received >= passed_on:
-                        found.append(act)
-        return min(found, key=lambda a: a.received or passed_on, default=None)
+                        found.append((distance, act.received, act))
+        # A retyped title is taken only where no act carries the Sejm's own.
+        best = min(found, key=lambda f: f[:2], default=None)
+        return best[2] if best is not None else None
 
     def read_act(self, url: str) -> SenateAct:
         html = self._get(url)

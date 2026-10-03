@@ -263,6 +263,7 @@ from lexinform.models.senate import (
     SENATE_BASE_URL,
     SenateAct,
     SenateCommittee,
+    senate_title_distance,
     senate_title_matches,
 )
 from lexinform.models.source_checks import (
@@ -423,6 +424,7 @@ __all__ = [
     "SENATE_BASE_URL",
     "SenateAct",
     "SenateCommittee",
+    "senate_title_distance",
     "senate_title_matches",
     "RCL_STAGE_TYPE",
     "RunMode",

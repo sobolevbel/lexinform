@@ -1278,10 +1278,13 @@ branch history; the state branch is the backup.
 - **The Senate has no API, but every act it receives has a page, and that page is the reader's
   address.** "Ustawy uchwalone przez Sejm" lists ten acts a page, newest first, titled "Ustawa" +
   the Sejm's `titleFinal` (the Sejm's hyphen is the Senate's en or figure dash, and `titleFinal`
-  sometimes keeps "Senacki projekt ustawy"); 68 of 70 acts of Aug–Sept 2026 match exactly, the
-  rest fall back to a card that promises the committee. Titles repeat — five acts of term 10 are
-  "o zmianie ustawy o podatku akcyzowym" — so `find_act` takes the earliest one received on or
-  after the third reading. The act's page names the committees (`p[data-komisja]`, the id of
+  sometimes keeps "Senacki projekt ustawy"). The Senate also retypes quotes and commas, drops
+  "innych", "o zmianie" or "w" and cuts a title's last word, so `senate_title_distance` compares
+  words and allows two such edits but never a changed number or a longer tail ("…wiatrowych oraz
+  niektórych innych ustaw" is another act than "…wiatrowych"): **574 of the 575** acts of term 10
+  are found (B82), the one miss being a page the listing lacks. Titles repeat — five acts of term
+  10 are "o zmianie ustawy o podatku akcyzowym" — so `find_act` takes the Sejm's own title before
+  a retyped one, then the earliest act received on or after the third reading. The act's page names the committees (`p[data-komisja]`, the id of
   `komisja,{id}.html`) and each committee sitting on it; the committee's page hides its
   secretariat's e-mail behind Cloudflare's `data-cfemail` or a `SendTo(...)` script (all twenty
   committees read on 23 Sept 2026). The window is days: druk 849 was received on 18 Sept,

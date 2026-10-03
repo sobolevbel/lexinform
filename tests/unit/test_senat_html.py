@@ -1,4 +1,5 @@
 import datetime as dt
+import re
 from collections.abc import Callable
 
 import httpx2 as httpx
@@ -127,7 +128,6 @@ def test_titles_are_compared_across_the_dashes_and_prefixes_the_two_houses_use()
     )
 
 
-@pytest.mark.xfail(strict=True, reason="B82: the Senate retypes and cuts the titles it lists")
 @pytest.mark.parametrize(
     ("senate_title", "title_final"),
     [
@@ -143,11 +143,97 @@ def test_titles_are_compared_across_the_dashes_and_prefixes_the_two_houses_use()
             'o wspieraniu rodziców w aktywności zawodowej oraz w wychowaniu dziecka - "Aktywny'
             ' rodzic"',
         ),
+        (
+            "Ustawa o zmianie ustawy – Prawo o postępowaniu przed sądami administracyjnymi",
+            "o zmianie ustawy - Prawo o postepowaniu przed sądami administracyjnymi.",
+        ),
+        (
+            "Ustawa o ratyfikacji Umowy między Rzecząpospolitą Polską a Republiką Indonezji"
+            " o wzajemnej pomocy prawnej w sprawach karnych, podpisanej w Warszawie dnia"
+            " 19 września 2025 r.",
+            "o ratyfikacji Umowy między Rzecząpospolitą Polską a Republiką Indonezji o wzajemnej"
+            " pomocy prawnej w sprawach karnych, podpisanej w Warszawie, dnia 19 września 2025 r.",
+        ),
+        (
+            "Ustawa o zmianie ustawy o drogach publicznych oraz niektórych innych ustaw",
+            "o zmianie ustawy o drogach publicznych oraz o zmianie niektórych innych ustaw",
+        ),
+        (
+            "Ustawa o zmianie ustaw w celu wsparcia zrównoważonego lotnictwa",
+            "o zmianie niektórych ustaw w celu wsparcia zrównoważonego lotnictwa",
+        ),
+        (
+            "Ustawa o zmianie ustawy – Prawo zamówień publicznych oraz ustawy o umowie koncesji"
+            " na roboty budowlane lub usługi",
+            "o zmianie ustawy - Prawo zamówień publicznych oraz ustawy o umowie koncesji na roboty"
+            " budowalne lub usługi",
+        ),
+        (
+            "Rozpatrzenie ustawy o zmianie ustawy o promowaniu wytwarzania energii elektrycznej"
+            " w morskich farmach wiatrowych",
+            "o zmianie ustawy o promowaniu wytwarzania energii elektrycznej w morskich farmach"
+            " wiatrowych",
+        ),
     ],
-    ids=["druk 949: title cut short", "druk 319: typographic quotes"],
+    ids=[
+        "druk 949: title cut short",
+        "druk 319: typographic quotes",
+        "druk 1432: the Sejm's missing diacritic",
+        "druk 2161: a comma",
+        "druk 2551: «o zmianie» dropped",
+        "druk 2822: «niektórych» dropped",
+        "druk 1302: the Sejm's typo",
+        "druk 811: «Rozpatrzenie ustawy»",
+    ],
 )
 def test_titles_the_senate_cuts_or_retypes_still_match(senate_title: str, title_final: str) -> None:
     assert senate_title_matches(senate_title, title_final)
+
+
+@pytest.mark.parametrize(
+    ("senate_title", "title_final"),
+    [
+        (
+            "Ustawa o zmianie ustawy o promowaniu wytwarzania energii elektrycznej w morskich"
+            " farmach wiatrowych oraz niektórych innych ustaw",
+            "o zmianie ustawy o promowaniu wytwarzania energii elektrycznej w morskich farmach"
+            " wiatrowych",
+        ),
+        ("Ustawa o zmianie ustawy o podatku akcyzowym", "o zmianie ustawy o podatku dochodowym"),
+        (
+            "Ustawa o zmianie ustawy o Planie Strategicznym dla Wspólnej Polityki Rolnej na lata"
+            " 2023–2027",
+            "o zmianie ustawy o Planie Strategicznym dla Wspólnej Polityki Rolnej na lata"
+            " 2023-2028",
+        ),
+        (
+            "Ustawa o zmianie ustawy o cudzoziemcach",
+            "o zmianie ustawy o cudzoziemcach oraz ustawy o Straży Granicznej",
+        ),
+    ],
+    ids=["another act extends the title", "another tax", "another year", "a short title"],
+)
+def test_a_title_that_differs_in_what_it_names_is_another_act(
+    senate_title: str, title_final: str
+) -> None:
+    assert not senate_title_matches(senate_title, title_final)
+
+
+def test_an_act_listed_under_the_sejm_s_own_title_wins_over_an_earlier_retyped_one() -> None:
+    pages = _pages()
+    treaty = re.search(r"Ustawa o ratyfikacji Traktatu[^<]*", pages[LISTING])
+    assert treaty is not None, "the listing fixture carries act 2168"
+    pages[LISTING] = pages[LISTING].replace(
+        treaty[0], "Ustawa " + JAPAN.replace(" w Tokio", " Tokio")
+    )
+    pages[f"{LISTING}ustawy-uchwalone-przez-sejm/ustawa,2168.html"] = _fixture(
+        "ustawa_2169.html"
+    ).replace("18 września 2026", "17 września 2026")
+
+    act = _client(_site(pages)).find_act(JAPAN, passed_on=dt.date(2026, 9, 17))
+
+    assert act is not None
+    assert act.url == f"https://www.senat.gov.pl{ACT_PATH}"
 
 
 def test_an_unreachable_site_is_an_outage() -> None:
