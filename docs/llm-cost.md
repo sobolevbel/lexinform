@@ -99,7 +99,8 @@ change in one: druk 3150 alone, the 2027 budget at score 1, cost $1.63 + $1.72 o
 model for the same act read twice (B71). Three rules now stand in front of the reading:
 
 - **The druk of the submission already read is that text** (`_same_submission`): all 644
-  RPW-to-druk pairs of term 10, scans included, cost nothing.
+  RPW-to-druk pairs of term 10 were labelled by provenance in the original probe; the actual
+  rule applies to BILL submissions only (see the recheck below).
 - **A difference only in layout is free**, and **a small one is reviewed** by the triage model
   (`law_diff`, `_changes_settled`): the changed passages of the act and the card's description,
   ~2,000 input tokens at the median and 14k at the most, **≈$0.012 a call** on Sonnet 5 (38
@@ -114,6 +115,33 @@ What is still read in full is a large change, a scan on either side (except the 
 and a review that is not sure — a wrong "material" costs one reading, a wrong "not material" would
 leave the card describing a text that is gone, so the threshold leans the cheap way only when the
 model is confident.
+
+### Corpus recheck (3 Oct 2026)
+
+An offline A/B replay compared `f7f994c` with `bcff188` over the exact 1,028 text pairs from
+`checks/out/92_transitions.json`. The old implementation reproduced every saved decision,
+ratio and diff size. No model calls were made. `law_digest` was unchanged on all 1,698 individual
+texts: 1,623 SHA-256 values and 75 absent digests (`None`).
+
+| Source pairs | Equal digest | Noise only | Review | Full: large change | Full: no act |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| RPW without provenance, before and after | 507 | 7 | 13 | 4 | 29 |
+| RCL before | 98 | 9 | 304 | 38 | 19 |
+| RCL after | 98 | 6 | 308 | 37 | 19 |
+
+Thus 618 of the previous 621 deterministic matches survived. Three unchanged RCL texts now
+need a review: a grammatical `z`, an unfilled appendix-date marker, and table coefficients
+misidentified as page numbers. These are recorded as [B79](BUGS.md#b79). Another RCL pair
+crossed from full reading to review because removing footnote markers lowered its changed-word
+ratio to 14.91%. No previously reviewed or fully read pair became an automatic match.
+The old model calibration cannot establish the model's response to the changed prompts.
+
+The corpus has another 84 RPW entries without readable source text and 130 linked entries
+without the druk text; they are outside this text comparison. The separate provenance replay
+covered all 644 rows labelled `provenance` by the old probe: 625 are BILL, 18 BILL_AMENDMENT,
+and one DRAFT_RESOLUTION. Only the 625 BILL rows qualify. Across 10,304 combinations of these
+metadata, document kind, text source and source URL, the original method and `SejmTextIdentity`
+agreed completely. This checks the refactor; it is not a fresh semantic review of every scan.
 
 ## What a jointly considered print costs (14 Sept 2026)
 
