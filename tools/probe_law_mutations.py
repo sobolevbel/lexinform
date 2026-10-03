@@ -82,7 +82,7 @@ def run(corpus: Path) -> dict[str, Any]:
     counts: dict[str, Counter[str]] = {kind: Counter() for kind in (*PATTERNS, "deadline_swap")}
     missed: list[dict[str, Any]] = []
     for index, path in enumerate(paths, 1):
-        body = law_body(load(corpus, path))
+        body = law_body(load(corpus, path), preserve_numbers=True)
         if body is None:
             continue
         original, guarded = law_digest(body), guarded_signature(body)

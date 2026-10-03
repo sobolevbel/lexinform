@@ -28,6 +28,7 @@ from lexinform.errors import (
 from lexinform.keywords import KeywordPrefilter
 from lexinform.law_diff import diff_laws
 from lexinform.law_digest import law_digest
+from lexinform.law_technical import DECORATED_PAGE
 from lexinform.models import (
     AMENDMENT_SOURCES,
     FULL_TEXT_SOURCES,
@@ -269,7 +270,11 @@ class _Loaded:
         """What says this is the same document as last time: the normalised text, or the file."""
         if self.scan is not None:
             return self.scan.sha256
-        return text_digest(self.text) if self.source in FULL_TEXT_SOURCES else None
+        return (
+            text_digest(self.whole if self.whole is not None else self.text)
+            if self.source in FULL_TEXT_SOURCES
+            else None
+        )
 
     def matches(self, record: AnalysisRecord) -> bool:
         return (self.law is not None and self.law == record.law_sha256) or (
@@ -321,7 +326,6 @@ class _Prepared:
     from_batch: bool = False
 
 
-_PAGE_NUMBER_LINE = re.compile(r"^\s*[–\-—]?\s*\d{1,4}\s*[–\-—]?\s*$", re.MULTILINE)
 _WHITESPACE = re.compile(r"\s+")
 
 
@@ -341,17 +345,23 @@ def _describe_for_comparison(bill: Bill) -> JointBillDescription:
 
 
 def text_digest(text: str) -> str:
-    """SHA-256 of the text with page numbers and whitespace differences ignored, so the same
-    bill text rendered by another layout (a republished file, a re-dated print) hashes alike."""
-    normalised = _WHITESPACE.sub(" ", _PAGE_NUMBER_LINE.sub("", text)).strip()
-    return hashlib.sha256(normalised.encode("utf-8")).hexdigest()
+    """Versioned full-text identity; bare numeric lines may be table values."""
+    normalised = _WHITESPACE.sub(" ", DECORATED_PAGE.sub("", text)).strip()
+    return "text-v2:" + hashlib.sha256(normalised.encode("utf-8")).hexdigest()
 
 
-def _memo_key(bill: Bill, purpose: str, context: BaseModel) -> str:
+def _memo_key(bill: Bill, purpose: str, context: BaseModel, *, legacy: bool = False) -> str:
     data = context.model_dump(mode="json", exclude={"scan", "text"})
     payload = context.model_dump()
     text = str(payload.get("text", ""))
     data["text_sha256"] = text_digest(text)
+    if legacy:
+        # Legacy identity locates in-flight work only; it never certifies a reusable answer.
+        without_numbers = re.sub(
+            r"^\s*[–\-—]?\s*\d{1,4}\s*[–\-—]?\s*$", "", text, flags=re.MULTILINE
+        )
+        normalized = _WHITESPACE.sub(" ", without_numbers).strip()
+        data["text_sha256"] = hashlib.sha256(normalized.encode()).hexdigest()
     scan = payload.get("scan")
     if isinstance(scan, dict):
         data["scan"] = {
@@ -1099,6 +1109,10 @@ class AnalysisService:
         *,
         may_wait: bool,
     ) -> Record | Waiting:
+        legacy_key = _memo_key(bill, question.kind, question.ctx, legacy=True)
+        legacy_job = self._repo.batch_job(legacy_key)
+        if legacy_job is not None and legacy_job.state in {"queued", "submitting", "open"}:
+            return Waiting(legacy_job.since)
         cached = self._memo.get(key)
         if cached is not None:
             self._cancel_queued_digest(key)
@@ -1634,7 +1648,11 @@ class AnalysisService:
         if diff is None:
             return False
         if not diff.hunks:
-            log.info("%s: the act differs from the analysed one only in layout", bill.number)
+            log.info(
+                "%s: technical equivalence (%s)",
+                bill.number,
+                ", ".join(sorted({proof.rule for proof in diff.evidence})) or "word_layout",
+            )
             return True
         if diff.ratio > ratio_cap or diff.chars > self._options.change_review_max_chars:
             return False
@@ -1649,6 +1667,8 @@ class AnalysisService:
             ],
             changed_words=diff.changed_words,
             total_words=diff.total_words,
+            old_law=diff.old_law,
+            new_law=diff.new_law,
         )
         try:
             reviewed = self._llm.review_change(ctx)

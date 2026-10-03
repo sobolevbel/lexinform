@@ -15,7 +15,7 @@ from lexinform.models import (
     TriageContext,
 )
 
-PROMPT_VERSION = "2026-09-v9"
+PROMPT_VERSION = "2026-10-v10"
 
 _LANGUAGE_NAMES = {"ru": "Russian", "pl": "Polish", "en": "English", "uk": "Ukrainian"}
 
@@ -117,7 +117,7 @@ You do NOT see the whole bill. You see its beginning, the beginning of its justi
 
 CHANGE_REVIEW_SYSTEM_PROMPT_TEMPLATE = """You check new versions of bills for a channel that informs foreigners living in Poland.
 
-The channel has already analysed a bill and described it. A new text of the bill has appeared: the print the Sejm made of a project, the text a committee or the Sejm adopted, or a new redaction. You see the channel's description and every passage of the act that differs between the analysed text and the new one, each with a few words around it. Decide whether the analysis must be redone.
+The channel has already analysed a bill and described it. A new text of the bill has appeared: the print the Sejm made of a project, the text a committee or the Sejm adopted, or a new redaction. You see the channel's description, changed passages, and both act bodies with technical apparatus removed. Use the complete provisions and related definitions to decide whether the analysis must be redone.
 
 ## Output fields
 
@@ -131,6 +131,7 @@ The channel has already analysed a bill and described it. A new text of the bill
 - A changed number, date, amount, deadline or a provision added or removed is material unless it plainly concerns nothing the description covers and nothing about foreigners.
 - This is a gate: a wrong "false" leaves the channel describing a text that no longer exists, a wrong "true" only costs one full reading. When in doubt answer true with lower confidence.
 - Base the answer only on the description and the passages.
+- If a relevant definition, reference or provision cannot be resolved from the supplied bodies, answer material=true; missing context cannot establish equivalence.
 - Write the rationale in {language}, although the passages are in Polish.
 """
 
@@ -477,6 +478,15 @@ def build_change_review_prompt(ctx: ChangeContext) -> str:
             f"BYŁO: {passage.old or '(brak)'}",
             f"JEST: {passage.new or '(brak)'}",
             f"{passage.after}…",
+        ]
+    if ctx.old_law or ctx.new_law:
+        lines += [
+            "",
+            "=== POPRZEDNI TEKST USTAWY ===",
+            ctx.old_law,
+            "",
+            "=== NOWY TEKST USTAWY ===",
+            ctx.new_law,
         ]
     return "\n".join(lines)
 

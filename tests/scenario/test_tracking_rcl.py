@@ -389,6 +389,8 @@ def test_a_small_change_the_review_calls_immaterial_is_not_read() -> None:
     assert report.reanalyzed == 0
     (ctx,) = w.llm.change_contexts
     assert [(p.old, p.new) for p in ctx.passages] == [("2034", "2033")]
+    assert "Art. 9." in ctx.old_law and "2034" in ctx.old_law
+    assert "Art. 9." in ctx.new_law and "2033" in ctx.new_law
     assert [c.kind for c in report.llm_calls] == ["change_review"]
     analysis = w.bill(RCL).analysis
     assert analysis is not None and analysis.revision == 1

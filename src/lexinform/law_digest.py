@@ -1,9 +1,10 @@
-"""Whether two texts carry the same act: 53 of 446 RCL-to-druk bodies match here, 6 as text."""
+"""Versioned law fingerprints that retain numeric values and bounded technical evidence."""
 
 import hashlib
+import json
 import re
 
-from lexinform.sections import law_body
+from lexinform.law_technical import TechnicalEvidence, TechnicalText, technical_law
 
 _CHARACTERS = str.maketrans(
     {
@@ -23,49 +24,61 @@ _CHARACTERS = str.maketrans(
         " ": " ",
     }
 )
-_STAMP = re.compile(r"za\s+zgodność\s+pod\s+względem\s+prawnym[\s\S]{0,300}?(?=\n\s*\n|\Z)", re.I)
-_FOOTNOTE_BODY = re.compile(
-    r"^\s*\d{1,2}\)\s*(?:Niniejsz\w+\s+ustaw\w+|Zmiany\s+tekstu\s+jednolitego|Zmiany\s+wymienion\w+"
-    r"|Ustawa\s+niniejsza|Przepisy\s+niniejszej)[\s\S]*?(?=\n\s*\n|\n\s*(?:Art\.|\d+\)|[a-z]\))|\Z)",
-    re.MULTILINE | re.IGNORECASE,
+_CITATION = re.compile(
+    r"\(\s*Dz\.\s*U\.(?:Dz\.|U\.|z|r\.|poz\.|Nr|i|oraz|późn\.|zm\.|ze|\.{2,}|[\d\s,–—…-])+\)",
+    re.IGNORECASE,
 )
-_CITATION = re.compile(r"\(\s*Dz\.\s*U\.[^()]*(?:\([^()]*\)[^()]*)*\)", re.IGNORECASE)
 _LIST_MARK = re.compile(r"(?:(?<=^)|(?<=[\s,;:]))(?:[a-z]{1,2}|\d{1,3}[a-z]?)\)", re.MULTILINE)
-_PAGE_NUMBER = re.compile(r"^\s*-?\s*\d{1,4}\s*-?\s*$", re.MULTILINE)
-_HYPHEN_BREAK = re.compile(r"(\w)-\s*\n\s*(\w)")
+_HYPHEN_BREAK = re.compile(r"([^\W\d_])-\s*\n\s*([^\W\d_])")
 _FOOTNOTE_REF = re.compile(r"(?<=[^\W\d_])\d{1,2}\)")
 _NOT_LETTER_OR_DIGIT = re.compile(r"[\W_]+")
 MIN_LAW_CHARS = 200
 """A body shorter than this, normalised, is a fragment and says nothing about the act."""
+LAW_DIGEST_PREFIX = "law-v2:"
 
 
 def normalised_law(text: str) -> str | None:
-    """The act of `text` as letters and digits alone, its legal-technical apparatus dropped."""
-    body = law_body(text)
+    """Numeric tokens keep their order, separators and signs alongside the complete wording."""
+    body = readable_law(text)
     if body is None:
         return None
-    body = body.translate(_CHARACTERS).replace(",,", '"')
-    body = _CITATION.sub("", _FOOTNOTE_BODY.sub("", _STAMP.sub("", body)))
-    body = _LIST_MARK.sub("", body)
-    body = _FOOTNOTE_REF.sub("", _HYPHEN_BREAK.sub(r"\1\2", _PAGE_NUMBER.sub("", body)))
     normalised = _NOT_LETTER_OR_DIGIT.sub("", body).lower()
-    return normalised if len(normalised) >= MIN_LAW_CHARS else None
+    numbers = re.findall(r"[+-]?\d+(?:[,.:/-]\d+)*|[<>≤≥=+/%]", body)
+    return normalised + "\x1f" + json.dumps(numbers) if len(normalised) >= MIN_LAW_CHARS else None
 
 
 def readable_law(text: str) -> str | None:
-    """The act of `text` with its apparatus dropped and its wording kept, for a diff to quote."""
-    body = law_body(text)
-    if body is None:
+    """The act with its apparatus dropped and its wording kept, for a diff to quote."""
+    prepared = prepare_law(text)
+    return prepared.text if prepared is not None else None
+
+
+def prepare_law(text: str) -> TechnicalText | None:
+    """`readable_law` with the evidence for every fragment it dropped."""
+    prepared = technical_law(text)
+    if prepared is None:
         return None
-    body = body.translate(_CHARACTERS).replace(",,", '"')
-    # Footnote bodies stay: `_FOOTNOTE_BODY` runs on into the next page's text where no blank line
-    # follows the footnote, which on orka files dropped real provisions from one side of the diff.
-    body = _CITATION.sub("", _STAMP.sub("", body))
-    body = _LIST_MARK.sub("", body)
-    return _FOOTNOTE_REF.sub("", _HYPHEN_BREAK.sub(r"\1\2", _PAGE_NUMBER.sub("", body)))
+    body = prepared.text.translate(_CHARACTERS).replace(",,", '"')
+    evidence = list(prepared.evidence)
+    for pattern, replacement, rule in (
+        (_CITATION, "", "publication_citation"),
+        (_LIST_MARK, "", "list_marker"),
+        (_HYPHEN_BREAK, r"\1\2", "hyphenated_word"),
+        (_FOOTNOTE_REF, "", "footnote_marker"),
+    ):
+        evidence.extend(
+            TechnicalEvidence(rule, match.group(), match.expand(replacement))
+            for match in pattern.finditer(body)
+        )
+        body = pattern.sub(replacement, body)
+    return TechnicalText(body, tuple(evidence))
 
 
 def law_digest(text: str) -> str | None:
     """SHA-256 of `normalised_law`; None when the text carries no act to compare."""
     normalised = normalised_law(text)
-    return hashlib.sha256(normalised.encode()).hexdigest() if normalised is not None else None
+    return (
+        LAW_DIGEST_PREFIX + hashlib.sha256(normalised.encode()).hexdigest()
+        if normalised is not None
+        else None
+    )

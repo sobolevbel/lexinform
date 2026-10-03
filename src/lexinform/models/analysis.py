@@ -93,7 +93,7 @@ class AnalysisRecord(BaseModel):
     revision: int = 1
     text_sha256: str | None = None
     law_sha256: str | None = None
-    """The act alone, hard-normalised (`law_digest`): equal means the law did not change."""
+    """Version-prefixed law identity; unversioned legacy hashes cannot certify current text."""
     source_checked_at: dt.datetime | None = None
 
 
@@ -417,6 +417,8 @@ class ChangeContext(BaseModel):
     passages: list[ChangedPassage]
     changed_words: int
     total_words: int
+    old_law: str = ""
+    new_law: str = ""
 
 
 class BillContext(BaseModel):

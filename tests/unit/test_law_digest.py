@@ -31,7 +31,7 @@ i 1402) wprowadza się następujące zmiany:
 szy niż 3 lata.”;
 2) art. 115 – uchyla się.
 
-1) Niniejszą ustawą zmienia się ustawę z dnia 12 grudnia 2013 r. o cudzoziemcach.
+1) Zmiany tekstu jednolitego wymienionej ustawy zostały ogłoszone w Dz. U. z 2025 r. poz. 1088.
 
 – 2 –
 Art. 2. Ustawa wchodzi w życie po upływie 14 dni od dnia ogłoszenia.

@@ -92,7 +92,7 @@ def decide(old: str, new: str, *, hashes: bool = True) -> Decision:
     if diff is None:
         return Decision("unreadable", 1)
     route = "noise" if not diff.hunks else "review"
-    if diff.ratio > 0.15 or diff.chars > 60_000:
+    if diff.hunks and (diff.ratio > 0.15 or diff.chars > 60_000):
         route = "full"
     return Decision(route, diff.ratio, diff.chars)
 

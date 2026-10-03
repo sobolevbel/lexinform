@@ -63,7 +63,7 @@ def test_an_added_provision_is_quoted_whole_and_counted() -> None:
     assert diff is not None
     (hunk,) = diff.hunks
     assert hunk.old == "" and "Cudzoziemiec może złożyć wniosek elektronicznie." in hunk.new
-    assert diff.changed_words == 7 and 0 < diff.ratio < 0.15
+    assert diff.changed_words == 8 and 0 < diff.ratio < 0.15
 
 
 def test_a_text_without_an_act_cannot_be_compared() -> None:

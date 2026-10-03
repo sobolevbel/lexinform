@@ -92,6 +92,11 @@ document again; what it costs is that the stage update of that run goes out with
 
 ## What a new text of an analysed bill costs (1 Oct 2026)
 
+Historical measurements below describe the short-context comparator. The
+[3 October integration](reviews/2026-10-03-law-comparison.md#внедрение-в-pipeline) versions
+fingerprints and supplies both law bodies to change review. Its 60,000-character limit counts
+that context; the old median token count and price do not describe the new prompts.
+
 Until 2026-10-01 any difference of `text_sha256` and `law_sha256` from the stored analysis was a
 full re-analysis. In three weeks of production that was about thirteen readings at a transition
 between sources (RPW → druk, RCL → druk, the text after the third reading), and the model named a

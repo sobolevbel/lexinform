@@ -603,8 +603,13 @@ Invariants worth keeping:
   to the 3rd, no "-A" report, `minorityMotions == 0` on the report): the Sejm adopted the analysed
   text verbatim. Unknown facts (motions not parsed, no 2nd reading) mean "may differ" and the text
   is read. **The act is compared, not the file** (`law_digest.py`, `AnalysisRecord.law_sha256`):
-  the body from "Art. 1." to the uzasadnienie or OSR (`sections.law_body`), with the Dz.U. lists,
-  footnotes, list marks and the RCL stamp dropped, then letters and digits alone, lowercased. An
+  the body from "Art. 1." to the uzasadnienie or OSR (`sections.law_body`), with only what
+  `law_technical.py` can prove technical dropped (a bibliographic footnote or Dz.U. citation, a
+  page number framed by dashes, a signed RCL stamp, list marks), then letters and digits
+  lowercased **with every number kept as its own token, in order** — glued digits hid `92,67` →
+  `9267` and a footnote rule ate a `nie` (B80–B81). Digests are versioned (`law-v2:`,
+  `text-v2:`): an older hash never certifies a new text, and the change review is given both
+  bodies whole, not only the hunks. An
   equal digest is the "same text" path above — no model call, whatever the uzasadnienie or the
   OSR did — and only strict equality counts. Over the 468 RCL-to-druk pairs of the corpus it
   matches 98, the text digest 6; the rest differ in the act itself, often for real (2034 → 2033

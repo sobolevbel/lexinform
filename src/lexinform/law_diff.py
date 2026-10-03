@@ -4,9 +4,10 @@ import difflib
 import re
 from dataclasses import dataclass
 
-from lexinform.law_digest import readable_law
+from lexinform.law_digest import MIN_LAW_CHARS, prepare_law
+from lexinform.law_technical import TOKEN, TechnicalEvidence, align_table
 
-_WORD = re.compile(r"[^\W_]+")
+_WORD = TOKEN
 _UNIT_END = re.compile(r"(?<=[.;:])\s+")
 _CONTEXT_WORDS = 12
 
@@ -33,6 +34,9 @@ class Hunk:
 class LawDiff:
     hunks: tuple[Hunk, ...]
     total_words: int
+    evidence: tuple[TechnicalEvidence, ...] = ()
+    old_law: str = ""
+    new_law: str = ""
 
     @property
     def changed_words(self) -> int:
@@ -44,21 +48,34 @@ class LawDiff:
 
     @property
     def chars(self) -> int:
-        return sum(len(h.old) + len(h.new) + len(h.before) + len(h.after) for h in self.hunks)
+        return (
+            len(self.old_law)
+            + len(self.new_law)
+            + sum(len(h.old) + len(h.new) + len(h.before) + len(h.after) for h in self.hunks)
+        )
 
 
 def diff_laws(old_text: str, new_text: str) -> LawDiff | None:
     """The act's changes between two texts; None when either carries no act to compare."""
-    old_body, new_body = readable_law(old_text), readable_law(new_text)
+    old_body, new_body = prepare_law(old_text), prepare_law(new_text)
     if old_body is None or new_body is None:
         return None
-    old, new = _Text(old_body), _Text(new_body)
+    if min(len(re.sub(r"[\W_]+", "", body.text)) for body in (old_body, new_body)) < MIN_LAW_CHARS:
+        return None
+    aligned = align_table(old_body.text, new_body.text)
+    old, new = _Text(old_body.text), _Text(aligned.text)
     hunks: list[Hunk] = []
     matcher = difflib.SequenceMatcher(None, old.unit_keys, new.unit_keys, autojunk=False)
     for tag, i1, i2, j1, j2 in matcher.get_opcodes():
         if tag != "equal":
             hunks.extend(_word_hunks(old, old.span(i1, i2), new, new.span(j1, j2)))
-    return LawDiff(hunks=tuple(hunks), total_words=max(len(old.tokens), len(new.tokens)))
+    return LawDiff(
+        hunks=tuple(hunks),
+        total_words=max(len(old.tokens), len(new.tokens)),
+        evidence=old_body.evidence + new_body.evidence + aligned.evidence,
+        old_law=old_body.text,
+        new_law=aligned.text,
+    )
 
 
 class _Text:
@@ -123,5 +140,7 @@ def _word_hunks(
 
 
 def _is_noise(old: list[_Token], new: list[_Token]) -> bool:
-    """A word split or joined by the text layer keeps every letter and digit."""
+    """Only letters may reflow across token boundaries; numbers keep their individual values."""
+    if any(not token.key.isalpha() for token in (*old, *new)):
+        return [token.key for token in old] == [token.key for token in new]
     return "".join(t.key for t in old) == "".join(t.key for t in new)

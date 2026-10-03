@@ -307,7 +307,9 @@ kept run. Nine of the corpus's openings carry the stamp, five of them regulation
 """
 
 
-def strip_page_furniture(page: str, running_head: str | None) -> str:
+def strip_page_furniture(
+    page: str, running_head: str | None, *, preserve_numbers: bool = False
+) -> str:
     """A page without what the printer put on it: its running head, its number, its draft stamp.
 
     A section heading is looked for in the opening of a page, and whatever the printer put above
@@ -318,6 +320,8 @@ def strip_page_furniture(page: str, running_head: str | None) -> str:
     lines = page.split("\n")
     start = 0
     while start < len(lines) and _is_furniture(lines[start], running_head):
+        if preserve_numbers and _PAGE_NUMBER_LINE.fullmatch(lines[start]):
+            break
         start += 1
     return "\n".join(lines[start:])
 
@@ -493,11 +497,14 @@ _FIRST_ARTICLE_RE = re.compile(r"\bArt\.\s*1\.(?!\d)")
 _TRIM_MARKER_RE = re.compile(r"\n?\[pominięto: [^\]]*\]\n?")
 
 
-def law_body(text: str) -> str | None:
+def law_body(text: str, *, preserve_numbers: bool = False) -> str | None:
     """The act itself: from its first article to its uzasadnienie or OSR, page furniture off."""
     pages = text.split(PAGE_BREAK)
     head = _running_head(pages)
-    joined = _TRIM_MARKER_RE.sub("\n", "\n".join(strip_page_furniture(p, head) for p in pages))
+    joined = _TRIM_MARKER_RE.sub(
+        "\n",
+        "\n".join(strip_page_furniture(p, head, preserve_numbers=preserve_numbers) for p in pages),
+    )
     start = _FIRST_ARTICLE_RE.search(joined)
     if start is None:
         return None
