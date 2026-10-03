@@ -458,8 +458,8 @@ class AnthropicAnalyzer:
     ) -> _ParsedMessageLike:
         """One structured-output request with the error classification shared by both passes.
 
-        The analysis thinks (adaptive thinking, configured effort); the triage is a short
-        classification and runs without it, which also keeps smaller models (Haiku 4.5) eligible.
+        The analysis thinks at the configured effort; the triage sends no thinking settings, so the
+        model's default applies (adaptive on Sonnet 5, none on Haiku 4.5, which rejects effort).
         A `scan` is the document itself, attached before the prompt so the model reads its pages:
         that is the only way to read the signed paper the Sejm files as images.
         """
