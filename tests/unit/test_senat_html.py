@@ -127,6 +127,29 @@ def test_titles_are_compared_across_the_dashes_and_prefixes_the_two_houses_use()
     )
 
 
+@pytest.mark.xfail(strict=True, reason="B82: the Senate retypes and cuts the titles it lists")
+@pytest.mark.parametrize(
+    ("senate_title", "title_final"),
+    [
+        (
+            "Ustawa o warunkach dopuszczalności powierzania pracy cudzoziemcom na terytorium"
+            " Rzeczypospolitej",
+            "o warunkach dopuszczalności powierzania pracy cudzoziemcom na terytorium"
+            " Rzeczypospolitej Polskiej",
+        ),
+        (
+            "Ustawa o wspieraniu rodziców w aktywności zawodowej oraz w wychowaniu dziecka"
+            " – „Aktywny rodzic”",
+            'o wspieraniu rodziców w aktywności zawodowej oraz w wychowaniu dziecka - "Aktywny'
+            ' rodzic"',
+        ),
+    ],
+    ids=["druk 949: title cut short", "druk 319: typographic quotes"],
+)
+def test_titles_the_senate_cuts_or_retypes_still_match(senate_title: str, title_final: str) -> None:
+    assert senate_title_matches(senate_title, title_final)
+
+
 def test_an_unreachable_site_is_an_outage() -> None:
     def down(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("refused", request=request)
