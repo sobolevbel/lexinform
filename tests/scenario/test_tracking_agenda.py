@@ -2,16 +2,19 @@
 
 import datetime as dt
 
+import pytest
+
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import (
     Committee,
     CommitteeSitting,
     PublicationKind,
+    PublicationStatus,
     SejmSitting,
     Stage,
 )
 from tests.fakes import make_analysis
-from tests.harness import COMMITTEE_STAGES, REFERRED, World
+from tests.harness import CHANNEL, COMMITTEE_STAGES, REFERRED, World
 
 ASW = Committee(term=10, code="ASW", name="Komisja Administracji i Spraw Wewnętrznych")
 FIRST_READING_AGENDA = (
@@ -492,6 +495,60 @@ def test_a_sitting_the_reader_was_never_told_about_is_not_taken_back() -> None:
 
     assert report.agenda_cancelled == 0
     assert w.publisher.agenda_cancellations == []
+
+
+@pytest.mark.parametrize("expired", [False, True])
+def test_an_unsent_sitting_is_not_announced_after_it_moves_or_passes(expired: bool) -> None:
+    w = _referred_bill()
+    w.run()
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    w.run(publish=False)
+    if expired:
+        w.clock.advance(days=11)
+        w.gateway.committee_sittings["ASW"] = ()
+    else:
+        w.gateway.committee_sittings["ASW"] = (_sitting(date=dt.date(2026, 9, 22)),)
+
+    report = w.run()
+
+    assert report.agenda_posted == (0 if expired else 1)
+    assert all(item.date != dt.date(2026, 9, 17) for _, item, _ in w.publisher.agendas)
+    old = w.repo.get_publication(10, "3039", PublicationKind.AGENDA, CHANNEL, ref=SITTING_REF)
+    assert old is not None and old.status is PublicationStatus.SKIPPED
+    assert all(news.moved_from is None for post in w.publisher.sittings for news in post)
+
+
+@pytest.mark.parametrize("legacy_queue", [False, True])
+def test_jointly_considered_carded_bills_reserve_one_sitting_announcement(
+    legacy_queue: bool,
+) -> None:
+    w = _referred_bill()
+    w.add_bill("3055", "Projekt ustawy o cudzoziemcach", stages=COMMITTEE_STAGES)
+    w.run()
+    w.touch("3039", w.clock.now(), prints_considered_jointly=("3055",))
+    w.touch("3055", w.clock.now(), prints_considered_jointly=("3039",))
+    w.gateway.committee_sittings["ASW"] = (_sitting(),)
+    if legacy_queue:
+        w.run(publish=False)
+        first = w.repo.get_publication(10, "3039", PublicationKind.AGENDA, CHANNEL, ref=SITTING_REF)
+        assert first is not None and first.delivery is not None
+        w.repo.create_publication(
+            first.model_copy(
+                update={
+                    "id": None,
+                    "number": "3055",
+                    "delivery": first.delivery.model_copy(
+                        update={"bill_json": w.bill("3055").model_dump_json()}
+                    ),
+                }
+            )
+        )
+
+    report = w.run()
+
+    assert report.agenda_posted == 1
+    assert len(w.publisher.agendas) == 1
+    assert w.run().agenda_posted == 0
 
 
 def test_a_sitting_the_committee_called_conditionally_is_not_announced_as_a_fact() -> None:

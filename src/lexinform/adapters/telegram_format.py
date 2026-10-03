@@ -914,6 +914,15 @@ class MessageFormatter:
         return RenderedMessage(text=self._assemble([header, facts, steps, links_block, tags]))
 
     def sittings(self, news: Sequence[SittingNews]) -> RenderedMessage:
+        text = self._sittings_text(news)
+        if length(text) > MESSAGE_LIMIT:
+            raise ValueError("sittings exceed the message limit; split the roundup")
+        return RenderedMessage(text=text)
+
+    def sittings_fit(self, news: Sequence[SittingNews]) -> bool:
+        return length(self._sittings_text(news)) <= MESSAGE_LIMIT
+
+    def _sittings_text(self, news: Sequence[SittingNews]) -> str:
         """One post for the sittings of a run: the Sejm's first, each line linked to its card,
         which carries the summary and what the reader can do."""
         lb = self._labels
@@ -934,7 +943,7 @@ class MessageFormatter:
             blocks.append(f"<b>{esc(label)}</b>\n\n{entries}")
             lead.append(f"#{tag}")
         threads = dict.fromkeys(self._thread_tags(n.bill) for n in news)
-        return RenderedMessage(text=self._assemble(blocks, tail=[" ".join([*lead, *threads])]))
+        return "\n\n".join([*blocks, " ".join([*lead, *threads])])
 
     def _sitting_entry(self, news: SittingNews) -> str:
         """A sitting in two or three lines; a retraction says which of two facts it is: the

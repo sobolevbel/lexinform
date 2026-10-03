@@ -374,6 +374,10 @@ class Publisher(Protocol):
         """One top-level post for the sittings a run announced, moved or took back."""
         ...
 
+    def sittings_fit(self, news: Sequence[SittingNews]) -> bool:
+        """Whether every entry fits in one message without dropping facts; no I/O."""
+        ...
+
     def publish_hearing_deadline(
         self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date
     ) -> PublishResult:

@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import datetime
 
 from lexinform.errors import ServiceUnavailableError
@@ -15,34 +15,50 @@ def send_publication(
     pub_id: int,
     send: Callable[[], PublishResult | int],
 ) -> int | None:
+    return send_publications(repo, clock, (pub_id,), send)
+
+
+def send_publications(
+    repo: BillRepository,
+    clock: Clock,
+    pub_ids: Sequence[int],
+    send: Callable[[], PublishResult | int],
+) -> int | None:
     """The caller persists pending work before sending; only definite failures spend attempts."""
     try:
         sent = send()
     except ServiceUnavailableError as exc:
-        repo.mark_publication(
-            pub_id, PublicationStatus.FAILED, error=exc.describe(), count_attempt=False
-        )
+        _fail_deliveries(repo, pub_ids, exc.describe(), count_attempt=False)
         raise
     except Exception as exc:
-        log.exception("publication %s failed: %s", pub_id, exc)
-        repo.mark_publication(
-            pub_id, PublicationStatus.FAILED, error=f"{type(exc).__name__}: {exc}"
-        )
+        log.exception("publications %s failed: %s", pub_ids, exc)
+        _fail_deliveries(repo, pub_ids, f"{type(exc).__name__}: {exc}", count_attempt=True)
         return None
     message_id = sent if isinstance(sent, int) else sent.message_id
     documents = None if isinstance(sent, int) else list(sent.document_message_ids)
     with repo.atomic():
-        repo.mark_publication(
-            pub_id,
-            PublicationStatus.SENT,
-            message_id=message_id,
-            document_message_ids=documents,
-            sent_at=clock.now(),
-        )
-        publication = repo.publication_by_id(pub_id)
-        assert publication is not None, "pending work is persisted before send"
-        complete_delivery(repo, publication, message_id=message_id, sent_at=clock.now())
+        for pub_id in pub_ids:
+            repo.mark_publication(
+                pub_id,
+                PublicationStatus.SENT,
+                message_id=message_id,
+                document_message_ids=documents,
+                sent_at=clock.now(),
+            )
+            publication = repo.publication_by_id(pub_id)
+            assert publication is not None, "pending work is persisted before send"
+            complete_delivery(repo, publication, message_id=message_id, sent_at=clock.now())
     return message_id
+
+
+def _fail_deliveries(
+    repo: BillRepository, pub_ids: Sequence[int], error: str, *, count_attempt: bool
+) -> None:
+    with repo.atomic():
+        for pub_id in pub_ids:
+            repo.mark_publication(
+                pub_id, PublicationStatus.FAILED, error=error, count_attempt=count_attempt
+            )
 
 
 def complete_delivery(

@@ -194,11 +194,13 @@ class AgendaWatcher:
         now = self._clock.now().astimezone(self._local_tz)
         planned: list[Publication] = []
         keys = {item.sitting_key for item in items}
+        upcoming = {item.ref for item in items if not _already_happened(item, now)}
         for old in bill.agenda:
-            if old.sitting_key in keys or _already_happened(old, now):
-                continue
             if not self._poster.sent(bill, PublicationKind.AGENDA, ref=old.ref):
-                self._poster.drop_sitting(bill, old.ref)  # never told, so never announce it now
+                if old.ref not in upcoming:
+                    self._poster.drop_sitting(bill, old.ref)
+                continue
+            if old.sitting_key in keys or _already_happened(old, now):
                 continue
             if self._poster.posted(bill, PublicationKind.AGENDA_CANCELLED, ref=old.ref):
                 continue
@@ -327,7 +329,7 @@ class AgendaWatcher:
                 continue
             if self._poster.posted(bill, PublicationKind.AGENDA, ref=item.ref):
                 continue
-            if self._poster.told_jointly(bill, PublicationKind.AGENDA, item.ref):
+            if self._poster.joint_delivery_exists(bill, PublicationKind.AGENDA, item.ref):
                 self._poster.record(
                     bill, PublicationKind.AGENDA, PublicationStatus.SKIPPED, ref=item.ref
                 )
@@ -355,7 +357,9 @@ class AgendaWatcher:
         previous = [
             old
             for old in bill.agenda
-            if old.sitting_key == item.sitting_key and old.ref != item.ref
+            if old.sitting_key == item.sitting_key
+            and old.ref != item.ref
+            and self._poster.sent(bill, PublicationKind.AGENDA, ref=old.ref)
         ]
         return max(previous, key=lambda old: old.date, default=None)
 

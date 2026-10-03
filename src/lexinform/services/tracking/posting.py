@@ -27,12 +27,10 @@ from lexinform.models import (
     StatusChange,
 )
 from lexinform.ports import BillRepository, Clock, Publisher
-from lexinform.services.publications import send_publication
+from lexinform.services.publications import send_publication, send_publications
 from lexinform.services.tracking.result import TrackingResult
 
 log = logging.getLogger(__name__)
-
-SITTINGS_PER_POST = 8  # a line is at most ~500 characters, so eight stay under Telegram's 4096
 
 Send = Callable[[int | None], int]
 """Sends one post under an optional reply-to message and answers with its message id."""
@@ -93,53 +91,40 @@ class Poster:
             self._repo.mark_publication(pub.id, PublicationStatus.SKIPPED, count_attempt=False)
 
     def flush_sittings(self, result: TrackingResult) -> None:
-        """Send the queued sittings as one post (or a few, `SITTINGS_PER_POST` lines each)."""
+        """The publisher sizes messages; every included event shares the delivery result."""
         queued = list(self._sittings.values())
         self._sittings.clear()
-        for start in range(0, len(queued), SITTINGS_PER_POST):
-            self._send_sittings(queued[start : start + SITTINGS_PER_POST], result)
-
-    def _send_sittings(self, pubs: list[Publication], result: TrackingResult) -> None:
+        batch: list[Publication] = []
         news: list[SittingNews] = []
-        for pub in pubs:
+        for pub in queued:
             assert pub.id is not None and pub.delivery is not None, "queue_sitting keeps these"
-            self._attempted.add(pub.id)
-            self._repo.mark_publication(pub.id, PublicationStatus.PENDING, count_attempt=False)
             line = SittingNews.of(pub.kind, pub.delivery)
-            card = self.card(line.bill)
-            if card is not None and card.message_id is not None:
-                line = line.model_copy(update={"card_message_id": card.message_id})
+            if batch and not self._publisher.sittings_fit([*news, line]):
+                self._send_sittings(batch, news, result)
+                batch, news = [], []
+            batch.append(pub)
             news.append(line)
-        try:
-            sent = self._publisher.publish_sittings(news)
-        except ServiceUnavailableError as exc:
-            for pub in pubs:
-                assert pub.id is not None, "queue_sitting keeps stored rows"
-                self._repo.mark_publication(
-                    pub.id, PublicationStatus.FAILED, error=exc.describe(), count_attempt=False
-                )
-            raise
-        except Exception as exc:
-            log.exception("sittings post failed: %s", exc)
-            for pub in pubs:
-                assert pub.id is not None, "queue_sitting keeps stored rows"
-                self._repo.mark_publication(
-                    pub.id, PublicationStatus.FAILED, error=f"{type(exc).__name__}: {exc}"
-                )
-                result.count_post(False)
-            return
+        if batch:
+            self._send_sittings(batch, news, result)
+
+    def _send_sittings(
+        self, pubs: list[Publication], news: list[SittingNews], result: TrackingResult
+    ) -> None:
+        identities: list[int] = []
         with self._repo.atomic():
             for pub in pubs:
                 assert pub.id is not None, "queue_sitting keeps stored rows"
-                self._repo.mark_publication(
-                    pub.id,
-                    PublicationStatus.SENT,
-                    message_id=sent.message_id,
-                    sent_at=self._clock.now(),
-                )
+                identities.append(pub.id)
+                self._repo.mark_publication(pub.id, PublicationStatus.PENDING, count_attempt=False)
+        self._attempted.update(identities)
+        message_id = send_publications(
+            self._repo, self._clock, identities, lambda: self._publisher.publish_sittings(news)
+        )
         for pub in pubs:
             cancelled = pub.kind is PublicationKind.AGENDA_CANCELLED
-            result.count_post(True, "agenda_cancelled" if cancelled else "agenda_posted")
+            result.count_post(
+                message_id is not None, "agenda_cancelled" if cancelled else "agenda_posted"
+            )
 
     def card(self, bill: Bill) -> Publication | None:
         """The bill's card in this channel: the message every reply is attached to."""
@@ -172,14 +157,19 @@ class Poster:
         pub = self._repo.get_publication(bill.term, bill.number, kind, self._channel_id, ref=ref)
         return pub is not None and pub.status is PublicationStatus.SENT
 
-    def told_jointly(self, bill: Bill, kind: PublicationKind, ref: str) -> bool:
-        """A print considered jointly with this one has already told the channel about this very
-        event. A sitting and a hearing belong to the whole group — one committee report for all
-        of them — so telling it once per print is the same news twice."""
+    def joint_delivery_exists(self, bill: Bill, kind: PublicationKind, ref: str) -> bool:
+        """A joint print owns this event's delivery, including queued or uncertain work."""
+        own = self._repo.get_publication(bill.term, bill.number, kind, self._channel_id, ref=ref)
+        retryable = (PublicationStatus.QUEUED, PublicationStatus.FAILED)
         for number in bill.summary.prints_considered_jointly:
             pub = self._repo.get_publication(bill.term, number, kind, self._channel_id, ref=ref)
-            if pub is not None and pub.status is PublicationStatus.SENT:
-                return True
+            if pub is None or pub.status is PublicationStatus.SKIPPED:
+                continue
+            if own is not None and own.status in retryable and pub.status in retryable:
+                assert own.id is not None and pub.id is not None, "stored publications have IDs"
+                if own.id < pub.id:
+                    continue
+            return True
         return False
 
     def retry_due(self, bill: Bill, kind: PublicationKind, *, ref: str | None = None) -> bool:
@@ -200,7 +190,7 @@ class Poster:
         ref: str | None = None,
     ) -> int:
         """Write the bookkeeping row without sending anything (e.g. `skipped`)."""
-        return self._repo.create_publication(
+        identity = self._repo.create_publication(
             Publication(
                 term=bill.term,
                 number=bill.number,
@@ -211,6 +201,9 @@ class Poster:
                 created_at=self._clock.now(),
             )
         )
+        if status is PublicationStatus.SKIPPED:
+            self._sittings.pop(identity, None)
+        return identity
 
     def rerender_card(self, bill: Bill, card: Publication) -> bool:
         """Re-render the card in place from `bill` as it stands now; one attempt, a refusal is

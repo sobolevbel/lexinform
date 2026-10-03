@@ -53,7 +53,7 @@ class HearingReminder:
                 ref = hearing.date.isoformat()
                 if self._poster.posted(bill, PublicationKind.HEARING_DEADLINE, ref=ref):
                     continue
-                if self._poster.told_jointly(bill, PublicationKind.HEARING_DEADLINE, ref):
+                if self._poster.joint_delivery_exists(bill, PublicationKind.HEARING_DEADLINE, ref):
                     self._poster.record(
                         bill, PublicationKind.HEARING_DEADLINE, PublicationStatus.SKIPPED, ref=ref
                     )

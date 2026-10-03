@@ -150,6 +150,78 @@ def test_a_failed_sittings_post_leaves_every_line_to_retry(
     assert result.failed == 1
 
 
+def test_long_roundup_keeps_every_sitting_and_its_application_address(
+    repo: SqliteBillRepository, bill: Bill
+) -> None:
+    publisher = FakePublisher()
+    poster = _poster(repo, publisher)
+    result = TrackingResult()
+    for number in range(8):
+        item = SITTING.model_copy(
+            update={
+                "ref": f"ASW/{number}/2026-09-17",
+                "committee_name": "Komisja Administracji i Spraw Wewnętrznych",
+                "text": "Rozpatrzenie projektu ustawy o cudzoziemcach. " * 6,
+                "condition": "first_reading_referral",
+                "apply_email": f"sitting-{number}@sejm.gov.pl",
+                "apply_by": dt.date(2026, 9, 16),
+                "closed": True,
+            }
+        )
+        poster.queue_sitting(
+            poster.prepare_message(bill, PublicationKind.AGENDA, ref=item.ref, item=item)
+        )
+
+    poster.flush_sittings(result)
+
+    assert result.agenda_posted == 8
+    for number in range(8):
+        row = repo.get_publication(
+            bill.term,
+            bill.number,
+            PublicationKind.AGENDA,
+            CHANNEL,
+            ref=f"ASW/{number}/2026-09-17",
+        )
+        assert row is not None and row.message_id is not None
+        message = publisher.sent[row.message_id - 101]
+        assert f"sitting-{number}@sejm.gov.pl" in message.text
+
+
+def test_a_queued_sitting_keeps_its_saved_card_link(repo: SqliteBillRepository, bill: Bill) -> None:
+    publisher = FakePublisher()
+    poster = _poster(repo, publisher)
+    planned = poster.prepare_message(bill, PublicationKind.AGENDA, ref=SITTING.ref, item=SITTING)
+    card = poster.card(bill)
+    assert card is not None and card.id is not None
+    repo.mark_publication(card.id, PublicationStatus.SENT, message_id=999)
+
+    poster.queue_sitting(planned)
+    poster.flush_sittings(TrackingResult())
+
+    assert publisher.agendas[0][2] == 42
+
+
+def test_an_oversized_sitting_is_failed_instead_of_partly_told(
+    repo: SqliteBillRepository, bill: Bill
+) -> None:
+    publisher = FakePublisher()
+    poster = _poster(repo, publisher)
+    item = SITTING.model_copy(update={"room": "x" * 5000})
+    planned = poster.prepare_message(bill, PublicationKind.AGENDA, ref=item.ref, item=item)
+    result = TrackingResult()
+
+    poster.queue_sitting(planned)
+    poster.flush_sittings(result)
+
+    assert publisher.sent == []
+    assert (result.agenda_posted, result.failed) == (0, 1)
+    row = repo.get_publication(
+        bill.term, bill.number, PublicationKind.AGENDA, CHANNEL, ref=item.ref
+    )
+    assert row is not None and row.status is PublicationStatus.FAILED
+
+
 def test_held_changes_go_out_with_the_next_update_and_are_released(
     repo: SqliteBillRepository, bill: Bill, now: dt.datetime
 ) -> None:

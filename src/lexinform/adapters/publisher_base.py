@@ -110,6 +110,9 @@ class RenderingPublisher(ABC):
         detail = ", ".join(dict.fromkeys(n.bill.number for n in news))
         return self._deliver(Outgoing(PublicationKind.AGENDA, None, text, detail=detail))
 
+    def sittings_fit(self, news: Sequence[SittingNews]) -> bool:
+        return self._formatter.sittings_fit(news)
+
     def publish_hearing_deadline(
         self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date
     ) -> PublishResult:
