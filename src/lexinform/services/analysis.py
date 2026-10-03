@@ -184,10 +184,11 @@ class AnalysisOutcome:
 
     @property
     def usage(self) -> dict[str, TokenUsage]:
-        tokens: dict[str, TokenUsage] = {}
-        for used in (self.triage, self.record):
-            if used is not None:
-                merge_usage(tokens, usage_of(used))
+        # A rejection's record is the triage call itself; adding `triage` too would double it.
+        if self.triage is None or self.record.text_source == "excerpts":
+            return usage_of(self.record)
+        tokens = usage_of(self.triage)
+        merge_usage(tokens, usage_of(self.record))
         return tokens
 
 

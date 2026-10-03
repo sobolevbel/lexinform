@@ -18,6 +18,7 @@ from lexinform.models import (
     RunMode,
     RunReport,
     Stage,
+    Triage,
 )
 from lexinform.services.commands import FORCE_HINT
 from tests.fakes import FakeLlm, FakeTextExtractor, make_analysis
@@ -523,6 +524,24 @@ def test_the_reply_carries_the_run_time_and_what_the_analysis_cost() -> None:
     assert analysed.usage["fake"].input == FakeLlm.ANALYSIS_TOKENS[0]
     assert analysed.usage["fake-triage"].input == FakeLlm.TRIAGE_TOKENS[0]
     assert shown.usage == {}  # /show never calls the model
+
+
+def test_a_bill_the_triage_rejected_is_charged_one_call_and_not_two() -> None:
+    w = World(
+        triage=True,
+        triage_script={
+            "3039": Triage(affects_foreigners=False, confidence=0.95, rationale="не касается")
+        },
+    )
+    w.add_bill("3039", TITLE)
+    w.command("/analyze 3039")
+
+    _commands_only(w)
+
+    (_, analysed), *_ = w.replier.replies
+    assert analysed.usage["fake-triage"].input == FakeLlm.TRIAGE_TOKENS[0]
+    assert analysed.usage["fake-triage"].output == FakeLlm.TRIAGE_TOKENS[1]
+    assert "fake" not in analysed.usage
 
 
 def test_a_project_that_already_reached_the_sejm_leads_to_its_druk() -> None:
