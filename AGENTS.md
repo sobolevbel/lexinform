@@ -33,6 +33,7 @@ Dependencies flow only in this direction:
 - Test through `tests/harness.py::World` and fakes in `tests/fakes.py`: arrange with public helpers, run the pipeline, assert reports/publications/models. Do not access private state. HTTP adapters use `httpx2.MockTransport`.
 - Parallelise network-only work with `concurrency.fan_out`; make repository writes in input order on the calling thread. `workers=4` must behave identically to `workers=1`.
 - Take time in services from the `Clock`, never `datetime.now()`.
+- Validate every extraction, trimming, normalization, fingerprint or text-comparison change on the real corpus before committing: replay prior matches, inspect changed decisions, and inject meaningful changes (dates, amounts, negations, scope and references). Similarity alone never proves immateriality. Record corpus coverage and exclusions; fixtures alone do not replace this check.
 
 ## Invariants to preserve
 

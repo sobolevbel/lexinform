@@ -75,6 +75,13 @@ depends on what a distribution ships.
 Commit after each finished part; do not push unless asked. Commit messages are English, subject
 and body alike.
 
+Changes to text extraction, trimming, normalization, fingerprints or comparisons also require
+a replay of the real `lexinform-corpus` before committing. Compare the previous and candidate
+decisions, inspect every lost match and new automatic match, and inject changes to dates, amounts,
+negations, scope and legal references. A high similarity score does not establish that a change
+is immaterial. Record coverage and exclusions; unit fixtures alone are not enough. Keep corpus
+inputs and historical results read-only, and write each experiment's output to a separate path.
+
 Comments carry what the code cannot: a fact from outside the repo (an API quirk, a legal deadline,
 a measured number), an invariant a later edit would silently break, or why the obvious way was not
 taken. Not a restatement of the next line, not a divider, not a label over a group of fields or
