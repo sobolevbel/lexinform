@@ -246,13 +246,28 @@ def test_bills_endpoint_parses_submissions_with_and_without_a_print() -> None:
 
     subs = list(_client(_bills_handler(seen)).iter_bills(10, received_from=date(2026, 9, 1)))
 
-    assert (seen[0]["dateOfReceiptFrom"], seen[0]["limit"]) == ("2026-09-01", "500")
+    assert (seen[0]["dateOfReceiptFrom"], seen[0]["limit"]) == ("2026-08-31", "500")
     assert [s.number for s in subs] == ["RPW/29075/2026", "RPW/26666/2026"]
     first, second = subs
     assert first.applicant is ApplicantType.DEPUTIES and first.print_number is None
     assert first.public_consultation and first.consultation_end == date(2026, 9, 30)
     assert first.pdf_url.endswith("/10-RPW-29075-2026/$file/10-RPW-29075-2026.pdf")
     assert second.print_number == "3039" and second.is_closed and second.withdrawn_date
+
+
+def test_the_bills_listing_includes_entries_received_on_its_first_day() -> None:
+    """The API lists only entries received after `dateOfReceiptFrom` (verified live, Oct 2026)."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        params = dict(request.url.params)
+        if params.get("offset", "0") != "0":
+            return httpx.Response(200, json=[])
+        after = params["dateOfReceiptFrom"]
+        return httpx.Response(200, json=[b for b in BILLS if str(b["dateOfReceipt"]) > after])
+
+    subs = list(_client(handler).iter_bills(10, received_from=date(2026, 8, 31)))
+
+    assert [s.number for s in subs] == ["RPW/29075/2026"]
 
 
 def test_submission_lookup_by_print_number() -> None:

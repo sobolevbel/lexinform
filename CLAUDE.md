@@ -1090,7 +1090,9 @@ branch history; the state branch is the backup.
   for the switch, print numbers restart at 1 in the new term.
 - `/processes` only lists bills that already have a print number. Bills at the consultation stage
   live in `/bills` (`RPW/…`), with `publicConsultationStart/EndDate`, `applicantType`, `status`,
-  `print`, `consultationResults`. Their text is a PDF on orka.sejm.gov.pl at an address built by
+  `print`, `consultationResults`. **`dateOfReceiptFrom` is exclusive** (from=09-08 starts at
+  09-09; B83): `iter_bills` passes the day before, so its `received_from` stays inclusive like the
+  fake's. Their text is a PDF on orka.sejm.gov.pl at an address built by
   convention (`models.submission_pdf_url`, `LEXINFORM_ORKA_BASE_URL`), and it **is** downloadable,
   which the project denied until 2026-09-12: Imperva there refuses a `User-Agent` that names a bot
   (`curl/8.x`) and serves a browser, as long as the client follows the 302 and keeps the cookies it

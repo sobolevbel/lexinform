@@ -153,7 +153,8 @@ class SejmApiClient:
         """GET /bills: submitted bills incl. those without a print number yet."""
         params: dict[str, str | int] = {"limit": self.BILLS_PAGE_SIZE}
         if received_from is not None:
-            params["dateOfReceiptFrom"] = received_from.isoformat()
+            # The API's bound is exclusive: from=2026-09-08 starts at entries received on 09-09.
+            params["dateOfReceiptFrom"] = (received_from - timedelta(days=1)).isoformat()
         offset = 0
         previous_first: str | None = None
         while True:
