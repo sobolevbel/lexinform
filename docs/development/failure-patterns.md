@@ -68,6 +68,6 @@ entry below was found at least twice.
 The replays that find these are in the corpus, not here:
 `~/projects/lexinform-corpus/checks/`, run from this checkout as
 `uv run python ../lexinform-corpus/checks/NN_name.py`. `checks/README.md` holds the method,
-`FINDINGS.md` and `COLD.md` the two audits of 14 Sept 2026. The registry is the repository's copy
-of what they concluded, because the corpus is not a git repository and does not travel with the
-code.
+`FINDINGS.md` and `COLD.md` the two audits of 14 Sept 2026, `ENRICH.md` the enrichment of 3 Oct
+2026. The registry is the repository's copy of what they concluded, because the corpus is a
+separate repository whose data is untracked and does not travel with the code.

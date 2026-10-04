@@ -39,14 +39,16 @@ scans), `docs/rcl-scraping.md` (RCL's markup and files, the wykaz CSV, the probe
   it; a comment that opens a function body and says what the function does is a docstring written
   in the wrong place.
 - Developer guide (setup, tests, migrations, where a change goes): `CONTRIBUTING.md`.
-- **Every measured claim below can be re-run** against the corpus — a separate 11 GB checkout, not
-  a git repo, beside this one as `lexinform-corpus`; the paths below are relative to it. It holds
-  all 938 bill prints of term 10 with their text, 825 RCL projects with every reached stage and 9,208
-  of their files, the whole wykaz register, 826 orka submissions, and the stage tree of all 5,533
-  processes of terms 8–10. Start at `INDEX.json`: it maps a druk number, an RCL id, a wykaz number
-  (`wpl:UC104`) or an RPW number to the files, the labels and each other, and its `cases` are the
-  ready-made sets (`print.scan`, `document.unknown`, …). A sample of size 45 is what most of the
-  older numbers here rest on; the corpus is now the term.
+- **Every measured claim below can be re-run** against the corpus — a separate 11 GB checkout
+  beside this one as `lexinform-corpus`, its own git repository for the scripts, checks and index
+  with the downloaded data untracked; the paths below are relative to it. It holds all 980 bill
+  prints of term 10 with their text, 825 RCL projects with every reached stage and 9,221 of their
+  files, the whole wykaz register, 827 orka submissions, and the stage tree of all 5,533 processes
+  of terms 8–10 (term 10 re-read on 3 Oct 2026 under `sejm/snapshots/`). Its sources were taken on
+  different days: its `README.md` says how fresh each is. Start at `INDEX.json`: it maps a druk
+  number, an RCL id, a wykaz number (`wpl:UC104`) or an RPW number to the files, the labels and
+  each other, and its `cases` are the ready-made sets (`print.scan`, `document.unknown`, …). A
+  sample of size 45 is what most of the older numbers here rest on; the corpus is now the term.
 - Commit after each finished part. Do not push unless asked. No `Co-Authored-By` trailers. A push
   of `main` deploys everything: the bot (every `daily.yml` run checks out `main`) and, after a
   green CI, the relay on the VPS (`deploy-relay.yml` → `deploy/update.sh` over SSH).
