@@ -55,6 +55,7 @@ nav = [
   ] },
   { "Аудиты" = [
     { "Обзор" = "reviews/index.md" },
+    { "Векторы и поиск · 05.10" = "reviews/2026-10-05-semantic-search.md" },
     { "Сравнение текстов · 03.10" = "reviews/2026-10-03-law-comparison.md" },
     { "Дублирование кода · 25.09" = "reviews/2026-09-25-duplication.md" },
     { "Инцидент 2111" = "incident-2111.md" },
