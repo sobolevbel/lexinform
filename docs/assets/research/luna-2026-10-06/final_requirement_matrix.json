@@ -1,0 +1,89 @@
+{
+  "objective": "Evaluate Luna across all Lexinform LLM roles, calibrate prompts, compare source-grounded quality and cost, and give a decision without production changes, using only Batch and at most USD2.",
+  "requirements": [
+    {
+      "requirement": "All seven production roles represented by real sources and focused controls",
+      "evidence": [
+        "cases.json",
+        "chunk_plan.json",
+        "all_answers.json",
+        "completion_audit.json"
+      ],
+      "status": "complete_with_stated_qualification",
+      "qualification": "All planned roles and outputs are collected. Primary/revision41real contexts plus5focused controls,87real triage inputs plus16focused controls, secondary small real samples and focused adversarial checks represented. This qualifies an evidence-based limited/negative replacement decision, not universal equivalence."
+    },
+    {
+      "requirement": "Research input-fidelity defect in applicant metadata is corrected and evaluated without relabelling prior results",
+      "evidence": [
+        "metadata_check_protocol.json",
+        "metadata_check_plan.json",
+        "cases.json",
+        "all_answers.json",
+        "quality_audit.json"
+      ],
+      "status": "complete_with_stated_qualification",
+      "qualification": "All57metadata-corrected diagnostics collected/source-reviewed separately. Thirty repeated contexts are not30new laws; corrected321 rejection relies on unsupported citizen-only beneficiary inference. Metadata plus stochastic variation prevent a causal attribution to metadata alone."
+    },
+    {
+      "requirement": "Calibration evaluated for both repairs and regressions, with new controls fixed before their answers",
+      "evidence": [
+        "quality_audit.json",
+        "conditions_v3_protocol.json",
+        "triage_v2_protocol.json",
+        "reasoning_stability_protocol.json",
+        "rcl_triage_source_expectations.json"
+      ],
+      "status": "complete_with_stated_qualification",
+      "qualification": "Frozenv2/v3 and high/xhigh stability checks audited for repairs and regressions. Medical consent/refund repair succeeds with samev3 in bothhigh/xhigh; Jamb samehigh input demonstrably varies;16triage controls pass but correctedreal321 exposes a settled-reject evidence problem."
+    },
+    {
+      "requirement": "Full replacement decision considers material omissions, wrong conditions, dates, units, score gates and confidence failures",
+      "evidence": [
+        "quality_audit.json",
+        "source_audit_additions.json",
+        "cohort_summary.json",
+        "integration_limits.json"
+      ],
+      "status": "complete_with_stated_qualification",
+      "qualification": "Source findings retain wrong months, missing limiting conditions, ranking failures and unjustified confidence, alongside successful recoveries and errors in historical reference models. Recommendation is no blanket no-loss replacement; narrower roles are candidates for further shadow validation, not approved production switches."
+    },
+    {
+      "requirement": "Actual spend and all pending commitments remain at most USD2, including failed outputs and reasoning",
+      "evidence": [
+        "ledger.json",
+        "aggregate.json",
+        "configuration_costs.json",
+        "completion_audit.json"
+      ],
+      "status": "complete_with_stated_qualification",
+      "qualification": "All732paidrequests settled atUSD1.41323965 including14no-final max32k outputs and3canaries. No pending/future commitments. Historical19Opus/5GPT51 comparisons transparently repriced;Luna cache disabled;currentSonnet comparison and monthly ROI not measured."
+    },
+    {
+      "requirement": "Paid generation uses only Luna via Batch, including test triage; no production changes or secret output",
+      "evidence": [
+        "chunk_plan.json",
+        "ledger.json",
+        "completion_audit.json",
+        "eval.py"
+      ],
+      "status": "complete_with_stated_qualification",
+      "qualification": "Final audit confirms Luna only, Batch only includingtriage, no direct-generation calls, unchangedrepositoryHEAD/cleanworktree and no production/model/Telegram mutation. Key loaded only under prior user authorization withoutsecret output."
+    },
+    {
+      "requirement": "One understandable final Russian report gives good/bad data types, calibration outcomes, per-role configuration decisions, costs and integration limits",
+      "evidence": [
+        "quality_audit.json",
+        "cohort_summary.json",
+        "configuration_costs.json",
+        "integration_limits.json",
+        "final chat response"
+      ],
+      "status": "complete_with_stated_qualification",
+      "qualification": "Final Russian response prepared from source audit, cohort/cost artifacts and the structured decision, withgood/bad input types, explicit configuration and uncertainty boundaries, finalcost, coldcache/reasoning/cap implications and integration prerequisites."
+    }
+  ],
+  "completion_proven": true,
+  "all_planned_requests_collected": 732,
+  "actual_paid_usd": 1.41323965,
+  "production_equivalence_proven": false
+}

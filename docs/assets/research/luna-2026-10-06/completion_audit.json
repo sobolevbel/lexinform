@@ -1,0 +1,47 @@
+{
+  "checks": {
+    "all_roles_represented": true,
+    "only_luna_in_planned_paid_requests": true,
+    "only_responses_batch_request_endpoint": true,
+    "no_direct_generation_calls_in_experiment_scripts": true,
+    "all_planned_outputs_collected": true,
+    "budget_worst_case_at_most_2_usd": true,
+    "output_accounting_consistent_for_completed_jobs": true,
+    "repository_head_unchanged": true,
+    "repository_worktree_clean": true
+  },
+  "planned_paid_requests_including_canary": 732,
+  "case_count": 223,
+  "roles": {
+    "analysis": 53,
+    "reanalysis": 15,
+    "triage": 128,
+    "change_review": 13,
+    "amendments": 2,
+    "supplement": 3,
+    "joint": 9
+  },
+  "request_models": {
+    "gpt-6-luna": 732
+  },
+  "request_endpoints": {
+    "/v1/responses": 732
+  },
+  "accounted_completed_batch_cost_usd": 1.41323965,
+  "max_committed_usd": 1.41323965,
+  "unfinished_phases": [],
+  "errors": [],
+  "direct_generation_calls": [],
+  "batch_creation_calls": [
+    {
+      "file": "eval.py",
+      "line": 315
+    }
+  ],
+  "legal_quality_review": "quality_audit.json",
+  "scope": "This audits execution, accounting and coverage. Semantic suitability requires manual source review and an explicit final recommendation; green mechanical checks alone do not complete the research.",
+  "manual_source_assessment_recorded": true,
+  "research_decision": "final_research_decision.json",
+  "production_quality_equivalence_proven": false,
+  "completion_proven": true
+}

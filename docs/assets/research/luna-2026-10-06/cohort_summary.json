@@ -1,0 +1,3179 @@
+{
+  "cohorts": [
+    {
+      "kind": "amendments",
+      "configuration": "original/high",
+      "requests": 2,
+      "unique_contexts": 2,
+      "source_counts": {
+        "synthetic_control": 1,
+        "real_committee_amendments": 1
+      },
+      "valid": 2,
+      "usd": 0.0017867500000000001,
+      "median_usd": 0.0008933750000000001,
+      "input_tokens": 11110,
+      "output_tokens_including_reasoning": 4925,
+      "reasoning_tokens": 4448,
+      "reasoning_fraction_of_output": 0.9031472081218274
+    },
+    {
+      "kind": "amendments",
+      "configuration": "original/medium",
+      "requests": 2,
+      "unique_contexts": 2,
+      "source_counts": {
+        "synthetic_control": 1,
+        "real_committee_amendments": 1
+      },
+      "valid": 2,
+      "usd": 0.00106075,
+      "median_usd": 0.000530375,
+      "input_tokens": 11110,
+      "output_tokens_including_reasoning": 2021,
+      "reasoning_tokens": 1632,
+      "reasoning_fraction_of_output": 0.8075210291934686
+    },
+    {
+      "kind": "analysis",
+      "configuration": "conditions_v3/high",
+      "requests": 9,
+      "unique_contexts": 9,
+      "source_counts": {
+        "new_conditions_v3_guard": 4,
+        "new_max_v2_guard": 2,
+        "saved_batch_text": 2,
+        "corpus_full_text": 1
+      },
+      "valid": 9,
+      "usd": 0.0139281,
+      "median_usd": 0.0002837,
+      "input_tokens": 182157,
+      "output_tokens_including_reasoning": 19281,
+      "reasoning_tokens": 15849,
+      "reasoning_fraction_of_output": 0.8220009335615373,
+      "historical_baseline_count": 2,
+      "historical_publication_agreement": 2,
+      "historical_score_agreement": 1,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "corrected_metadata_conditions_v3/high",
+      "requests": 2,
+      "unique_contexts": 2,
+      "source_counts": {
+        "metadata_corrected_saved_batch_text": 1,
+        "metadata_corrected_corpus_full_text": 1
+      },
+      "valid": 2,
+      "usd": 0.00227195,
+      "median_usd": 0.001135975,
+      "input_tokens": 13494,
+      "output_tokens_including_reasoning": 6389,
+      "reasoning_tokens": 5361,
+      "reasoning_fraction_of_output": 0.8390984504617311,
+      "historical_baseline_count": 1,
+      "historical_publication_agreement": 1,
+      "historical_score_agreement": 0,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "corrected_metadata_high_v2/high",
+      "requests": 5,
+      "unique_contexts": 5,
+      "source_counts": {
+        "metadata_corrected_corpus_full_text": 3,
+        "metadata_corrected_saved_batch_text": 2
+      },
+      "valid": 5,
+      "usd": 0.00613925,
+      "median_usd": 0.0010243499999999998,
+      "input_tokens": 70225,
+      "output_tokens_including_reasoning": 10512,
+      "reasoning_tokens": 8534,
+      "reasoning_fraction_of_output": 0.811834094368341,
+      "historical_baseline_count": 2,
+      "historical_publication_agreement": 2,
+      "historical_score_agreement": 2,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "high_v2/high",
+      "requests": 35,
+      "unique_contexts": 35,
+      "source_counts": {
+        "saved_batch_text": 13,
+        "new_max_v2_guard": 5,
+        "real_register_metadata": 2,
+        "corpus_full_text": 10,
+        "exploratory_triage_disagreement_full_text": 4,
+        "real_full_scan": 1
+      },
+      "valid": 35,
+      "usd": 0.269665525,
+      "median_usd": 0.00251565,
+      "input_tokens": 3174237,
+      "output_tokens_including_reasoning": 99851,
+      "reasoning_tokens": 84347,
+      "reasoning_fraction_of_output": 0.8447286456820663,
+      "historical_baseline_count": 13,
+      "historical_publication_agreement": 10,
+      "historical_score_agreement": 9,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "max_v2/high",
+      "requests": 1,
+      "unique_contexts": 1,
+      "source_counts": {
+        "new_repair_holdout": 1
+      },
+      "valid": 1,
+      "usd": 0.00024055000000000002,
+      "median_usd": 0.00024055000000000002,
+      "input_tokens": 1886,
+      "output_tokens_including_reasoning": 585,
+      "reasoning_tokens": 368,
+      "reasoning_fraction_of_output": 0.629059829059829,
+      "historical_baseline_count": 0,
+      "historical_publication_agreement": 0,
+      "historical_score_agreement": 0,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "max_v2/max",
+      "requests": 32,
+      "unique_contexts": 32,
+      "source_counts": {
+        "new_max_v2_guard": 5,
+        "real_register_metadata": 2,
+        "saved_batch_text": 10,
+        "corpus_full_text": 10,
+        "exploratory_triage_disagreement_full_text": 3,
+        "real_full_scan": 1,
+        "new_repair_holdout": 1
+      },
+      "valid": 23,
+      "usd": 0.22362385,
+      "median_usd": 0.0065870749999999995,
+      "input_tokens": 1484117,
+      "output_tokens_including_reasoning": 597672,
+      "reasoning_tokens": 587879,
+      "reasoning_fraction_of_output": 0.9836147585966885,
+      "historical_baseline_count": 6,
+      "historical_publication_agreement": 4,
+      "historical_score_agreement": 3,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "max_v2/medium",
+      "requests": 1,
+      "unique_contexts": 1,
+      "source_counts": {
+        "new_repair_holdout": 1
+      },
+      "valid": 1,
+      "usd": 0.0002333,
+      "median_usd": 0.0002333,
+      "input_tokens": 1886,
+      "output_tokens_including_reasoning": 556,
+      "reasoning_tokens": 302,
+      "reasoning_fraction_of_output": 0.5431654676258992,
+      "historical_baseline_count": 0,
+      "historical_publication_agreement": 0,
+      "historical_score_agreement": 0,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "original/high",
+      "requests": 15,
+      "unique_contexts": 15,
+      "source_counts": {
+        "synthetic_control": 5,
+        "saved_batch_text": 5,
+        "corpus_full_text": 1,
+        "exploratory_triage_disagreement_full_text": 4
+      },
+      "valid": 15,
+      "usd": 0.132491375,
+      "median_usd": 0.0012217,
+      "input_tokens": 1513507,
+      "output_tokens_including_reasoning": 21750,
+      "reasoning_tokens": 16541,
+      "reasoning_fraction_of_output": 0.7605057471264368,
+      "historical_baseline_count": 5,
+      "historical_publication_agreement": 4,
+      "historical_score_agreement": 4,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "original/medium",
+      "requests": 35,
+      "unique_contexts": 35,
+      "source_counts": {
+        "synthetic_control": 5,
+        "real_full_scan": 1,
+        "real_register_metadata": 2,
+        "saved_batch_text": 13,
+        "corpus_full_text": 10,
+        "exploratory_triage_disagreement_full_text": 4
+      },
+      "valid": 35,
+      "usd": 0.2514746,
+      "median_usd": 0.0023056500000000002,
+      "input_tokens": 3162431,
+      "output_tokens_including_reasoning": 32660,
+      "reasoning_tokens": 18953,
+      "reasoning_fraction_of_output": 0.5803123086344152,
+      "historical_baseline_count": 13,
+      "historical_publication_agreement": 9,
+      "historical_score_agreement": 9,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "precision_v1/high",
+      "requests": 3,
+      "unique_contexts": 3,
+      "source_counts": {
+        "new_repair_holdout": 3
+      },
+      "valid": 3,
+      "usd": 0.00078755,
+      "median_usd": 0.0002776,
+      "input_tokens": 4996,
+      "output_tokens_including_reasoning": 2151,
+      "reasoning_tokens": 1392,
+      "reasoning_fraction_of_output": 0.6471408647140865,
+      "historical_baseline_count": 0,
+      "historical_publication_agreement": 0,
+      "historical_score_agreement": 0,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "precision_v1/medium",
+      "requests": 3,
+      "unique_contexts": 3,
+      "source_counts": {
+        "new_repair_holdout": 3
+      },
+      "valid": 3,
+      "usd": 0.0005720499999999999,
+      "median_usd": 0.0001917,
+      "input_tokens": 4996,
+      "output_tokens_including_reasoning": 1289,
+      "reasoning_tokens": 483,
+      "reasoning_fraction_of_output": 0.37470907680372384,
+      "historical_baseline_count": 0,
+      "historical_publication_agreement": 0,
+      "historical_score_agreement": 0,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "repair_base/high",
+      "requests": 3,
+      "unique_contexts": 3,
+      "source_counts": {
+        "new_repair_holdout": 3
+      },
+      "valid": 3,
+      "usd": 0.0006146,
+      "median_usd": 0.00019869999999999998,
+      "input_tokens": 4672,
+      "output_tokens_including_reasoning": 1524,
+      "reasoning_tokens": 702,
+      "reasoning_fraction_of_output": 0.46062992125984253,
+      "historical_baseline_count": 0,
+      "historical_publication_agreement": 0,
+      "historical_score_agreement": 0,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "repair_base/medium",
+      "requests": 3,
+      "unique_contexts": 3,
+      "source_counts": {
+        "new_repair_holdout": 3
+      },
+      "valid": 3,
+      "usd": 0.0005461,
+      "median_usd": 0.0001737,
+      "input_tokens": 4672,
+      "output_tokens_including_reasoning": 1250,
+      "reasoning_tokens": 526,
+      "reasoning_fraction_of_output": 0.4208,
+      "historical_baseline_count": 0,
+      "historical_publication_agreement": 0,
+      "historical_score_agreement": 0,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "stability_v3/high",
+      "requests": 1,
+      "unique_contexts": 1,
+      "source_counts": {
+        "new_reasoning_stability_guard": 1
+      },
+      "valid": 1,
+      "usd": 0.00038930000000000003,
+      "median_usd": 0.00038930000000000003,
+      "input_tokens": 2286,
+      "output_tokens_including_reasoning": 1100,
+      "reasoning_tokens": 733,
+      "reasoning_fraction_of_output": 0.6663636363636364,
+      "historical_baseline_count": 0,
+      "historical_publication_agreement": 0,
+      "historical_score_agreement": 0,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "analysis",
+      "configuration": "stability_v3/xhigh",
+      "requests": 1,
+      "unique_contexts": 1,
+      "source_counts": {
+        "new_reasoning_stability_guard": 1
+      },
+      "valid": 1,
+      "usd": 0.00054705,
+      "median_usd": 0.00054705,
+      "input_tokens": 2286,
+      "output_tokens_including_reasoning": 1731,
+      "reasoning_tokens": 1318,
+      "reasoning_fraction_of_output": 0.7614095898324668,
+      "historical_baseline_count": 0,
+      "historical_publication_agreement": 0,
+      "historical_score_agreement": 0,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "change_review",
+      "configuration": "change_review_v1/high",
+      "requests": 11,
+      "unique_contexts": 11,
+      "source_counts": {
+        "synthetic_control": 7,
+        "controlled_corpus_mutation": 4
+      },
+      "valid": 11,
+      "usd": 0.011473500000000001,
+      "median_usd": 7.105e-05,
+      "input_tokens": 218845,
+      "output_tokens_including_reasoning": 2125,
+      "reasoning_tokens": 1491,
+      "reasoning_fraction_of_output": 0.7016470588235294
+    },
+    {
+      "kind": "change_review",
+      "configuration": "change_review_v1/medium",
+      "requests": 11,
+      "unique_contexts": 11,
+      "source_counts": {
+        "synthetic_control": 7,
+        "controlled_corpus_mutation": 4
+      },
+      "valid": 11,
+      "usd": 0.011260750000000002,
+      "median_usd": 6.430000000000002e-05,
+      "input_tokens": 218845,
+      "output_tokens_including_reasoning": 1274,
+      "reasoning_tokens": 683,
+      "reasoning_fraction_of_output": 0.5361067503924647
+    },
+    {
+      "kind": "change_review",
+      "configuration": "original/high",
+      "requests": 11,
+      "unique_contexts": 11,
+      "source_counts": {
+        "synthetic_control": 7,
+        "controlled_corpus_mutation": 4
+      },
+      "valid": 11,
+      "usd": 0.011749,
+      "median_usd": 5.805e-05,
+      "input_tokens": 216810,
+      "output_tokens_including_reasoning": 3634,
+      "reasoning_tokens": 3015,
+      "reasoning_fraction_of_output": 0.8296642817831591
+    },
+    {
+      "kind": "change_review",
+      "configuration": "original/medium",
+      "requests": 11,
+      "unique_contexts": 11,
+      "source_counts": {
+        "synthetic_control": 7,
+        "controlled_corpus_mutation": 4
+      },
+      "valid": 11,
+      "usd": 0.011277000000000002,
+      "median_usd": 5.4550000000000005e-05,
+      "input_tokens": 216810,
+      "output_tokens_including_reasoning": 1746,
+      "reasoning_tokens": 1139,
+      "reasoning_fraction_of_output": 0.652348224513173
+    },
+    {
+      "kind": "change_review",
+      "configuration": "prepared_change_review_v1/high",
+      "requests": 2,
+      "unique_contexts": 2,
+      "source_counts": {
+        "controlled_corpus_production_prepared": 2
+      },
+      "valid": 2,
+      "usd": 0.00032645000000000005,
+      "median_usd": 0.00016322500000000002,
+      "input_tokens": 5329,
+      "output_tokens_including_reasoning": 240,
+      "reasoning_tokens": 124,
+      "reasoning_fraction_of_output": 0.5166666666666667
+    },
+    {
+      "kind": "change_review",
+      "configuration": "prepared_change_review_v1/medium",
+      "requests": 2,
+      "unique_contexts": 2,
+      "source_counts": {
+        "controlled_corpus_production_prepared": 2
+      },
+      "valid": 2,
+      "usd": 0.0003097,
+      "median_usd": 0.00015485,
+      "input_tokens": 5329,
+      "output_tokens_including_reasoning": 173,
+      "reasoning_tokens": 65,
+      "reasoning_fraction_of_output": 0.37572254335260113
+    },
+    {
+      "kind": "change_review",
+      "configuration": "prepared_original/high",
+      "requests": 2,
+      "unique_contexts": 2,
+      "source_counts": {
+        "controlled_corpus_production_prepared": 2
+      },
+      "valid": 2,
+      "usd": 0.0002967,
+      "median_usd": 0.00014835,
+      "input_tokens": 4959,
+      "output_tokens_including_reasoning": 195,
+      "reasoning_tokens": 82,
+      "reasoning_fraction_of_output": 0.4205128205128205
+    },
+    {
+      "kind": "change_review",
+      "configuration": "prepared_original/medium",
+      "requests": 2,
+      "unique_contexts": 2,
+      "source_counts": {
+        "controlled_corpus_production_prepared": 2
+      },
+      "valid": 2,
+      "usd": 0.0002877,
+      "median_usd": 0.00014385,
+      "input_tokens": 4959,
+      "output_tokens_including_reasoning": 159,
+      "reasoning_tokens": 57,
+      "reasoning_fraction_of_output": 0.3584905660377358
+    },
+    {
+      "kind": "joint",
+      "configuration": "joint_guard_base/high",
+      "requests": 5,
+      "unique_contexts": 5,
+      "source_counts": {
+        "new_synthetic_holdout": 5
+      },
+      "valid": 5,
+      "usd": 0.00044785,
+      "median_usd": 8.305000000000001e-05,
+      "input_tokens": 4647,
+      "output_tokens_including_reasoning": 862,
+      "reasoning_tokens": 477,
+      "reasoning_fraction_of_output": 0.5533642691415314
+    },
+    {
+      "kind": "joint",
+      "configuration": "joint_guard_base/medium",
+      "requests": 5,
+      "unique_contexts": 5,
+      "source_counts": {
+        "new_synthetic_holdout": 5
+      },
+      "valid": 5,
+      "usd": 0.00041109999999999996,
+      "median_usd": 8.285e-05,
+      "input_tokens": 4647,
+      "output_tokens_including_reasoning": 715,
+      "reasoning_tokens": 338,
+      "reasoning_fraction_of_output": 0.4727272727272727
+    },
+    {
+      "kind": "joint",
+      "configuration": "joint_v1/high",
+      "requests": 9,
+      "unique_contexts": 9,
+      "source_counts": {
+        "synthetic_control": 2,
+        "real_joint_descriptions": 2,
+        "new_synthetic_holdout": 5
+      },
+      "valid": 9,
+      "usd": 0.0025554,
+      "median_usd": 0.00012009999999999999,
+      "input_tokens": 12113,
+      "output_tokens_including_reasoning": 7799,
+      "reasoning_tokens": 6783,
+      "reasoning_fraction_of_output": 0.8697268880625721
+    },
+    {
+      "kind": "joint",
+      "configuration": "joint_v1/medium",
+      "requests": 9,
+      "unique_contexts": 9,
+      "source_counts": {
+        "synthetic_control": 2,
+        "real_joint_descriptions": 2,
+        "new_synthetic_holdout": 5
+      },
+      "valid": 9,
+      "usd": 0.0013369,
+      "median_usd": 0.00010159999999999999,
+      "input_tokens": 12113,
+      "output_tokens_including_reasoning": 2925,
+      "reasoning_tokens": 1822,
+      "reasoning_fraction_of_output": 0.6229059829059829
+    },
+    {
+      "kind": "joint",
+      "configuration": "original/high",
+      "requests": 2,
+      "unique_contexts": 2,
+      "source_counts": {
+        "synthetic_control": 2
+      },
+      "valid": 2,
+      "usd": 0.00019465000000000002,
+      "median_usd": 9.732500000000001e-05,
+      "input_tokens": 1858,
+      "output_tokens_including_reasoning": 407,
+      "reasoning_tokens": 256,
+      "reasoning_fraction_of_output": 0.628992628992629
+    },
+    {
+      "kind": "joint",
+      "configuration": "original/medium",
+      "requests": 4,
+      "unique_contexts": 4,
+      "source_counts": {
+        "synthetic_control": 2,
+        "real_joint_descriptions": 2
+      },
+      "valid": 4,
+      "usd": 0.0006822,
+      "median_usd": 0.0001573,
+      "input_tokens": 6494,
+      "output_tokens_including_reasoning": 1430,
+      "reasoning_tokens": 839,
+      "reasoning_fraction_of_output": 0.5867132867132867
+    },
+    {
+      "kind": "reanalysis",
+      "configuration": "conditions_v3/high",
+      "requests": 3,
+      "unique_contexts": 3,
+      "source_counts": {
+        "saved_batch_text": 3
+      },
+      "valid": 3,
+      "usd": 0.007544749999999999,
+      "median_usd": 0.0013884000000000001,
+      "input_tokens": 71045,
+      "output_tokens_including_reasoning": 15970,
+      "reasoning_tokens": 14116,
+      "reasoning_fraction_of_output": 0.8839073262366938,
+      "historical_baseline_count": 3,
+      "historical_publication_agreement": 2,
+      "historical_score_agreement": 1,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "reanalysis",
+      "configuration": "high_v2/high",
+      "requests": 11,
+      "unique_contexts": 11,
+      "source_counts": {
+        "saved_batch_text": 11
+      },
+      "valid": 11,
+      "usd": 0.0903702,
+      "median_usd": 0.00290625,
+      "input_tokens": 1028179,
+      "output_tokens_including_reasoning": 28176,
+      "reasoning_tokens": 22732,
+      "reasoning_fraction_of_output": 0.8067859170925611,
+      "historical_baseline_count": 11,
+      "historical_publication_agreement": 11,
+      "historical_score_agreement": 6,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "reanalysis",
+      "configuration": "max_v2/max",
+      "requests": 10,
+      "unique_contexts": 10,
+      "source_counts": {
+        "saved_batch_text": 10
+      },
+      "valid": 5,
+      "usd": 0.0842412,
+      "median_usd": 0.00806995,
+      "input_tokens": 396724,
+      "output_tokens_including_reasoning": 257620,
+      "reasoning_tokens": 254935,
+      "reasoning_fraction_of_output": 0.9895776725409517,
+      "historical_baseline_count": 5,
+      "historical_publication_agreement": 4,
+      "historical_score_agreement": 1,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "reanalysis",
+      "configuration": "original/medium",
+      "requests": 13,
+      "unique_contexts": 13,
+      "source_counts": {
+        "synthetic_control": 2,
+        "saved_batch_text": 11
+      },
+      "valid": 13,
+      "usd": 0.08614875,
+      "median_usd": 0.00238425,
+      "input_tokens": 1027725,
+      "output_tokens_including_reasoning": 12121,
+      "reasoning_tokens": 6665,
+      "reasoning_fraction_of_output": 0.5498721227621484,
+      "historical_baseline_count": 11,
+      "historical_publication_agreement": 10,
+      "historical_score_agreement": 4,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "reanalysis",
+      "configuration": "precision_v1/high",
+      "requests": 5,
+      "unique_contexts": 5,
+      "source_counts": {
+        "saved_batch_text": 3,
+        "new_repair_holdout": 2
+      },
+      "valid": 5,
+      "usd": 0.0093159,
+      "median_usd": 0.0026845500000000004,
+      "input_tokens": 144443,
+      "output_tokens_including_reasoning": 8375,
+      "reasoning_tokens": 6247,
+      "reasoning_fraction_of_output": 0.7459104477611941,
+      "historical_baseline_count": 3,
+      "historical_publication_agreement": 3,
+      "historical_score_agreement": 3,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "reanalysis",
+      "configuration": "precision_v1/medium",
+      "requests": 5,
+      "unique_contexts": 5,
+      "source_counts": {
+        "saved_batch_text": 3,
+        "new_repair_holdout": 2
+      },
+      "valid": 5,
+      "usd": 0.00842665,
+      "median_usd": 0.0023644,
+      "input_tokens": 144443,
+      "output_tokens_including_reasoning": 4818,
+      "reasoning_tokens": 2790,
+      "reasoning_fraction_of_output": 0.5790784557907845,
+      "historical_baseline_count": 3,
+      "historical_publication_agreement": 3,
+      "historical_score_agreement": 3,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "reanalysis",
+      "configuration": "repair_base/high",
+      "requests": 5,
+      "unique_contexts": 5,
+      "source_counts": {
+        "saved_batch_text": 3,
+        "new_repair_holdout": 2
+      },
+      "valid": 5,
+      "usd": 0.0097164,
+      "median_usd": 0.00283065,
+      "input_tokens": 143903,
+      "output_tokens_including_reasoning": 10085,
+      "reasoning_tokens": 7878,
+      "reasoning_fraction_of_output": 0.7811601388200298,
+      "historical_baseline_count": 3,
+      "historical_publication_agreement": 3,
+      "historical_score_agreement": 3,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "reanalysis",
+      "configuration": "repair_base/medium",
+      "requests": 2,
+      "unique_contexts": 2,
+      "source_counts": {
+        "new_repair_holdout": 2
+      },
+      "valid": 2,
+      "usd": 0.00052295,
+      "median_usd": 0.000261475,
+      "input_tokens": 3144,
+      "output_tokens_including_reasoning": 1463,
+      "reasoning_tokens": 947,
+      "reasoning_fraction_of_output": 0.6473000683526999,
+      "historical_baseline_count": 0,
+      "historical_publication_agreement": 0,
+      "historical_score_agreement": 0,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "reanalysis",
+      "configuration": "stability_v3/high",
+      "requests": 1,
+      "unique_contexts": 1,
+      "source_counts": {
+        "saved_batch_text": 1
+      },
+      "valid": 1,
+      "usd": 0.0014609500000000001,
+      "median_usd": 0.0014609500000000001,
+      "input_tokens": 11639,
+      "output_tokens_including_reasoning": 3516,
+      "reasoning_tokens": 2704,
+      "reasoning_fraction_of_output": 0.7690557451649602,
+      "historical_baseline_count": 1,
+      "historical_publication_agreement": 1,
+      "historical_score_agreement": 0,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "reanalysis",
+      "configuration": "stability_v3/xhigh",
+      "requests": 2,
+      "unique_contexts": 2,
+      "source_counts": {
+        "saved_batch_text": 2
+      },
+      "valid": 2,
+      "usd": 0.00769835,
+      "median_usd": 0.003849175,
+      "input_tokens": 60462,
+      "output_tokens_including_reasoning": 18701,
+      "reasoning_tokens": 17134,
+      "reasoning_fraction_of_output": 0.9162076894283728,
+      "historical_baseline_count": 2,
+      "historical_publication_agreement": 2,
+      "historical_score_agreement": 1,
+      "baseline_agreement_is_not_legal_accuracy": true
+    },
+    {
+      "kind": "supplement",
+      "configuration": "original/high",
+      "requests": 2,
+      "unique_contexts": 2,
+      "source_counts": {
+        "synthetic_control": 2
+      },
+      "valid": 2,
+      "usd": 0.00018065,
+      "median_usd": 9.0325e-05,
+      "input_tokens": 1803,
+      "output_tokens_including_reasoning": 362,
+      "reasoning_tokens": 212,
+      "reasoning_fraction_of_output": 0.585635359116022
+    },
+    {
+      "kind": "supplement",
+      "configuration": "original/medium",
+      "requests": 3,
+      "unique_contexts": 3,
+      "source_counts": {
+        "synthetic_control": 2,
+        "real_supplement": 1
+      },
+      "valid": 3,
+      "usd": 0.0017813500000000001,
+      "median_usd": 0.0001081,
+      "input_tokens": 30232,
+      "output_tokens_including_reasoning": 1079,
+      "reasoning_tokens": 658,
+      "reasoning_fraction_of_output": 0.6098239110287303
+    },
+    {
+      "kind": "triage",
+      "configuration": "corrected_metadata_original/medium",
+      "requests": 25,
+      "unique_contexts": 25,
+      "source_counts": {
+        "metadata_corrected_corpus_excerpts": 25
+      },
+      "valid": 25,
+      "usd": 0.00815045,
+      "median_usd": 0.00031775,
+      "input_tokens": 137539,
+      "output_tokens_including_reasoning": 5094,
+      "reasoning_tokens": 3229,
+      "reasoning_fraction_of_output": 0.6338829996073813,
+      "rationale_without_cyrillic": 0,
+      "historical_reference_count": 25,
+      "rejects_confidence_at_least_08": 5,
+      "historical_reference_gate_agreement": 16,
+      "historical_reference_is_not_independent_gold": true
+    },
+    {
+      "kind": "triage",
+      "configuration": "corrected_metadata_triage_v2/medium",
+      "requests": 25,
+      "unique_contexts": 25,
+      "source_counts": {
+        "metadata_corrected_corpus_excerpts": 25
+      },
+      "valid": 25,
+      "usd": 0.00844345,
+      "median_usd": 0.00033485000000000003,
+      "input_tokens": 145089,
+      "output_tokens_including_reasoning": 4756,
+      "reasoning_tokens": 2857,
+      "reasoning_fraction_of_output": 0.6007148864592095,
+      "rationale_without_cyrillic": 0,
+      "historical_reference_count": 25,
+      "rejects_confidence_at_least_08": 2,
+      "historical_reference_gate_agreement": 13,
+      "historical_reference_is_not_independent_gold": true
+    },
+    {
+      "kind": "triage",
+      "configuration": "original/medium",
+      "requests": 92,
+      "unique_contexts": 92,
+      "source_counts": {
+        "corpus_excerpts": 79,
+        "synthetic_control": 5,
+        "real_scan_window": 2,
+        "real_rcl_triage_excerpts": 6
+      },
+      "valid": 92,
+      "usd": 0.032513,
+      "median_usd": 0.000328175,
+      "input_tokens": 564460,
+      "output_tokens_including_reasoning": 17160,
+      "reasoning_tokens": 10661,
+      "reasoning_fraction_of_output": 0.6212703962703963,
+      "rationale_without_cyrillic": 0,
+      "historical_reference_count": 81,
+      "rejects_confidence_at_least_08": 11,
+      "historical_reference_gate_agreement": 53,
+      "historical_reference_is_not_independent_gold": true
+    },
+    {
+      "kind": "triage",
+      "configuration": "original/none",
+      "requests": 86,
+      "unique_contexts": 86,
+      "source_counts": {
+        "corpus_excerpts": 79,
+        "synthetic_control": 5,
+        "real_scan_window": 2
+      },
+      "valid": 86,
+      "usd": 0.027899,
+      "median_usd": 0.00029627500000000003,
+      "input_tokens": 524815,
+      "output_tokens_including_reasoning": 6633,
+      "reasoning_tokens": 0,
+      "reasoning_fraction_of_output": 0.0,
+      "rationale_without_cyrillic": 4,
+      "historical_reference_count": 81,
+      "rejects_confidence_at_least_08": 19,
+      "historical_reference_gate_agreement": 61,
+      "historical_reference_is_not_independent_gold": true
+    },
+    {
+      "kind": "triage",
+      "configuration": "triage_v1/medium",
+      "requests": 97,
+      "unique_contexts": 97,
+      "source_counts": {
+        "corpus_excerpts": 79,
+        "real_scan_window": 2,
+        "new_triage_v1_guard": 5,
+        "synthetic_control": 5,
+        "real_rcl_triage_excerpts": 6
+      },
+      "valid": 97,
+      "usd": 0.03487015,
+      "median_usd": 0.00034965,
+      "input_tokens": 586373,
+      "output_tokens_including_reasoning": 22206,
+      "reasoning_tokens": 15001,
+      "reasoning_fraction_of_output": 0.6755381428442763,
+      "rationale_without_cyrillic": 0,
+      "historical_reference_count": 81,
+      "rejects_confidence_at_least_08": 15,
+      "historical_reference_gate_agreement": 51,
+      "historical_reference_is_not_independent_gold": true
+    },
+    {
+      "kind": "triage",
+      "configuration": "triage_v2/medium",
+      "requests": 103,
+      "unique_contexts": 103,
+      "source_counts": {
+        "real_scan_window": 2,
+        "new_triage_v1_guard": 5,
+        "new_triage_v2_guard": 6,
+        "synthetic_control": 5,
+        "corpus_excerpts": 79,
+        "real_rcl_triage_excerpts": 6
+      },
+      "valid": 103,
+      "usd": 0.03471875,
+      "median_usd": 0.0003283,
+      "input_tokens": 601600,
+      "output_tokens_including_reasoning": 18555,
+      "reasoning_tokens": 10902,
+      "reasoning_fraction_of_output": 0.5875505254648343,
+      "rationale_without_cyrillic": 2,
+      "historical_reference_count": 81,
+      "rejects_confidence_at_least_08": 8,
+      "historical_reference_gate_agreement": 42,
+      "historical_reference_is_not_independent_gold": true
+    }
+  ],
+  "analysis_pairs": [
+    {
+      "case_id": "analysis-1039",
+      "source": "saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-1039-medium-base",
+          "score": 4,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00066385,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/high",
+          "id": "analysis-1039-high-base",
+          "score": 4,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00092385,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-1039-max-max_v2",
+          "score": 4,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0058623500000000005,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-1039-high-high_v2",
+          "score": 4,
+          "category": "employment",
+          "publish": true,
+          "usd": 0.0011358499999999999,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-1040",
+      "source": "saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-1040-medium-base",
+          "score": 4,
+          "category": "employment",
+          "publish": true,
+          "usd": 0.0003924,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/high",
+          "id": "analysis-1040-high-base",
+          "score": 4,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0007059,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-1040-max-max_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.006429649999999999,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-1040-high-high_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00116365,
+          "changes_count": 0
+        },
+        {
+          "configuration": "conditions_v3/high",
+          "id": "analysis-1040-high-conditions_v3",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0010811500000000001,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-RCL_12408900",
+      "source": "saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-RCL_12408900-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0051549000000000005,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-RCL_12408900-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00576265,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-3143",
+      "source": "saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-3143-medium-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0006703,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-3143-max-max_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0024615500000000003,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-3143-high-high_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0009895499999999998,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-3139",
+      "source": "saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-3139-medium-base",
+          "score": 4,
+          "category": "employment",
+          "publish": true,
+          "usd": 0.0354755,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-3139-high-high_v2",
+          "score": 4,
+          "category": "employment",
+          "publish": true,
+          "usd": 0.03646075,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-3141",
+      "source": "saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-3141-medium-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00283975,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/high",
+          "id": "analysis-3141-high-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0032865,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-3141-high-high_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00426925,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-3140",
+      "source": "saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-3140-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.032941175,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-3140-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.033690175,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-3146",
+      "source": "saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-3146-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0023056500000000002,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-3146-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0072574,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-3146-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00251565,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-RCL_12412454",
+      "source": "saved_batch_text",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "reanalysis-RCL_12412454-medium-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0026469,
+          "changes_count": 0
+        },
+        {
+          "configuration": "precision_v1/medium",
+          "id": "reanalysis-RCL_12412454-medium-precision_v1",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0027588,
+          "changes_count": 0
+        },
+        {
+          "configuration": "repair_base/high",
+          "id": "reanalysis-RCL_12412454-high-repair_base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00283065,
+          "changes_count": 0
+        },
+        {
+          "configuration": "precision_v1/high",
+          "id": "reanalysis-RCL_12412454-high-precision_v1",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0026845500000000004,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "reanalysis-RCL_12412454-high-high_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0034374,
+          "changes_count": 0
+        },
+        {
+          "configuration": "conditions_v3/high",
+          "id": "reanalysis-RCL_12412454-high-conditions_v3",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0052009,
+          "changes_count": 0
+        },
+        {
+          "configuration": "stability_v3/xhigh",
+          "id": "reanalysis-RCL_12412454-xhigh-stability_v3",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0051429,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-2110",
+      "source": "saved_batch_text",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "reanalysis-2110-medium-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0007346500000000001,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "reanalysis-2110-max-max_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00521515,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "reanalysis-2110-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00116565,
+          "changes_count": 0
+        },
+        {
+          "configuration": "conditions_v3/high",
+          "id": "reanalysis-2110-high-conditions_v3",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0013884000000000001,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-2271",
+      "source": "saved_batch_text",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "reanalysis-2271-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00099595,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "reanalysis-2271-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00543295,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "reanalysis-2271-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0012124500000000001,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-2846",
+      "source": "saved_batch_text",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "reanalysis-2846-medium-base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0006884500000000001,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "reanalysis-2846-max-max_v2",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0053719499999999995,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "reanalysis-2846-high-high_v2",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0008917,
+          "changes_count": 0
+        },
+        {
+          "configuration": "conditions_v3/high",
+          "id": "reanalysis-2846-high-conditions_v3",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00095545,
+          "changes_count": 0
+        },
+        {
+          "configuration": "stability_v3/high",
+          "id": "reanalysis-2846-high-stability_v3",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0014609500000000001,
+          "changes_count": 0
+        },
+        {
+          "configuration": "stability_v3/xhigh",
+          "id": "reanalysis-2846-xhigh-stability_v3",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00255545,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-3004",
+      "source": "saved_batch_text",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "reanalysis-3004-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0033154,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "reanalysis-3004-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00352665,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-3008",
+      "source": "saved_batch_text",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "reanalysis-3008-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0023906,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "reanalysis-3008-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0070141000000000005,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "reanalysis-3008-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00251185,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-RCL_12410853",
+      "source": "saved_batch_text",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "reanalysis-RCL_12410853-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0008124000000000001,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "reanalysis-RCL_12410853-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0010844000000000001,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-3146",
+      "source": "saved_batch_text",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "reanalysis-3146-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00238425,
+          "changes_count": 0
+        },
+        {
+          "configuration": "precision_v1/medium",
+          "id": "reanalysis-3146-medium-precision_v1",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0023644,
+          "changes_count": 0
+        },
+        {
+          "configuration": "repair_base/high",
+          "id": "reanalysis-3146-high-repair_base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00283525,
+          "changes_count": 0
+        },
+        {
+          "configuration": "precision_v1/high",
+          "id": "reanalysis-3146-high-precision_v1",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0027934,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "reanalysis-3146-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00761475,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "reanalysis-3146-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00290625,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-3141",
+      "source": "saved_batch_text",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "reanalysis-3141-medium-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0030083,
+          "changes_count": 5
+        },
+        {
+          "configuration": "precision_v1/medium",
+          "id": "reanalysis-3141-medium-precision_v1",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0029059500000000005,
+          "changes_count": 0
+        },
+        {
+          "configuration": "repair_base/high",
+          "id": "reanalysis-3141-high-repair_base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0036020500000000003,
+          "changes_count": 0
+        },
+        {
+          "configuration": "precision_v1/high",
+          "id": "reanalysis-3141-high-precision_v1",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0030357,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "reanalysis-3141-high-high_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0038405500000000003,
+          "changes_count": 1
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-3150",
+      "source": "saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/high",
+          "id": "analysis-3150-high-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0589465,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/medium",
+          "id": "analysis-3150-medium-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.058843,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-3150-high-high_v2",
+          "score": 1,
+          "category": "marginal",
+          "publish": false,
+          "usd": 0.059003625,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-RCL_12398102",
+      "source": "saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-RCL_12398102-medium-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0079693,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-RCL_12398102-high-high_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.008269299999999999,
+          "changes_count": 0
+        },
+        {
+          "configuration": "conditions_v3/high",
+          "id": "analysis-RCL_12398102-high-conditions_v3",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00940855,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-3150",
+      "source": "saved_batch_text",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "reanalysis-3150-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.06364075,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "reanalysis-3150-high-high_v2",
+          "score": 1,
+          "category": "marginal",
+          "publish": false,
+          "usd": 0.064179,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-3160",
+      "source": "saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-3160-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.003832,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-3160-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.01037625,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-3160-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0046875,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-3157",
+      "source": "saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-3157-medium-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0031261500000000003,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-3157-max-max_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0070329,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-3157-high-high_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0036764000000000002,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-RCL_12399355",
+      "source": "saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/high",
+          "id": "analysis-RCL_12399355-high-base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0066414,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/medium",
+          "id": "analysis-RCL_12399355-medium-base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0064009,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-RCL_12399355-high-high_v2",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00728565,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-RCL_12402353",
+      "source": "saved_batch_text",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "reanalysis-RCL_12402353-medium-base",
+          "score": 4,
+          "category": "employment",
+          "publish": true,
+          "usd": 0.0051838000000000006,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "reanalysis-RCL_12402353-high-high_v2",
+          "score": 4,
+          "category": "employment",
+          "publish": true,
+          "usd": 0.0056143,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-950",
+      "source": "corpus_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-950-medium-base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0039181500000000005,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-950-high-high_v2",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0055479,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-1962",
+      "source": "corpus_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/high",
+          "id": "analysis-1962-high-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0017056500000000002,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/medium",
+          "id": "analysis-1962-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0015849000000000002,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-1962-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0038189,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-1962-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0017871500000000002,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-2699",
+      "source": "corpus_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-2699-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00071415,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-2699-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.004542399999999999,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-2699-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00131465,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-3039",
+      "source": "corpus_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-3039-medium-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00065255,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-3039-high-high_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00095555,
+          "changes_count": 0
+        },
+        {
+          "configuration": "conditions_v3/high",
+          "id": "analysis-3039-high-conditions_v3",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00176205,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-1630",
+      "source": "corpus_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-1630-medium-base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.006607700000000001,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-1630-high-high_v2",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0077077000000000005,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-342",
+      "source": "corpus_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-342-medium-base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0056451,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-342-high-high_v2",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.006418350000000001,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-319",
+      "source": "corpus_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-319-medium-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0043835,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-319-high-high_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00517375,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-276",
+      "source": "corpus_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-276-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00068775,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-276-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00356375,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-276-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00091125,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-1407",
+      "source": "corpus_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-1407-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.002908,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-1407-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0067445,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-1407-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00344075,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-825",
+      "source": "corpus_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-825-medium-base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0012575499999999999,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-825-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0054568,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-825-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0013882999999999999,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-control-deadline",
+      "source": "synthetic_control",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-control-deadline-medium-base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00015895,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/high",
+          "id": "analysis-control-deadline-high-base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00018894999999999998,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-control-work",
+      "source": "synthetic_control",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-control-work-medium-base",
+          "score": 4,
+          "category": "employment",
+          "publish": true,
+          "usd": 0.00016935000000000002,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/high",
+          "id": "analysis-control-work-high-base",
+          "score": 4,
+          "category": "employment",
+          "publish": true,
+          "usd": 0.00016510000000000003,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-control-social",
+      "source": "synthetic_control",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-control-social-medium-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00015760000000000004,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/high",
+          "id": "analysis-control-social-high-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00017910000000000002,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-control-agency",
+      "source": "synthetic_control",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-control-agency-medium-base",
+          "score": 1,
+          "category": "none",
+          "publish": false,
+          "usd": 0.00015955,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/high",
+          "id": "analysis-control-agency-high-base",
+          "score": 1,
+          "category": "none",
+          "publish": false,
+          "usd": 0.00017255000000000002,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-control-uncertain",
+      "source": "synthetic_control",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-control-uncertain-medium-base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00014510000000000003,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/high",
+          "id": "analysis-control-uncertain-high-base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00018960000000000003,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-scan-RPW-2793-2025",
+      "source": "real_full_scan",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-scan-RPW-2793-2025-medium-base",
+          "score": 4,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00243395,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-scan-RPW-2793-2025-max-max_v2",
+          "score": 4,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0077077,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-scan-RPW-2793-2025-high-high_v2",
+          "score": 4,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0029492,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-WPL_UD368",
+      "source": "real_register_metadata",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-WPL_UD368-medium-base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00041945000000000003,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-WPL_UD368-max-max_v2",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0032781999999999998,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-WPL_UD368-high-high_v2",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0006602,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-WPL_UD338",
+      "source": "real_register_metadata",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "analysis-WPL_UD338-medium-base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00049865,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-WPL_UD338-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0030934,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-WPL_UD338-high-high_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00067215,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-control-changed",
+      "source": "synthetic_control",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "reanalysis-control-changed-medium-base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00018705000000000002,
+          "changes_count": 1
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-control-unchanged",
+      "source": "synthetic_control",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "original/medium",
+          "id": "reanalysis-control-unchanged-medium-base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00016025,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-new-return_origin",
+      "source": "new_repair_holdout",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "repair_base/medium",
+          "id": "analysis-new-return_origin-medium-repair_base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00020835000000000002,
+          "changes_count": 0
+        },
+        {
+          "configuration": "precision_v1/medium",
+          "id": "analysis-new-return_origin-medium-precision_v1",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00019575,
+          "changes_count": 0
+        },
+        {
+          "configuration": "repair_base/high",
+          "id": "analysis-new-return_origin-high-repair_base",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00022635000000000003,
+          "changes_count": 0
+        },
+        {
+          "configuration": "precision_v1/high",
+          "id": "analysis-new-return_origin-high-precision_v1",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.000206,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-new-return_destination",
+      "source": "new_repair_holdout",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "repair_base/medium",
+          "id": "analysis-new-return_destination-medium-repair_base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00016405,
+          "changes_count": 0
+        },
+        {
+          "configuration": "precision_v1/medium",
+          "id": "analysis-new-return_destination-medium-precision_v1",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0001917,
+          "changes_count": 0
+        },
+        {
+          "configuration": "repair_base/high",
+          "id": "analysis-new-return_destination-high-repair_base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00018955,
+          "changes_count": 0
+        },
+        {
+          "configuration": "precision_v1/high",
+          "id": "analysis-new-return_destination-high-precision_v1",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00030395,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/medium",
+          "id": "analysis-new-return_destination-medium-max_v2_return_guard",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0002333,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/high",
+          "id": "analysis-new-return_destination-high-max_v2_return_guard",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00024055000000000002,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-new-return_destination-max-max_v2_return_guard",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00108805,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-new-course_eligibility",
+      "source": "new_repair_holdout",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "repair_base/medium",
+          "id": "analysis-new-course_eligibility-medium-repair_base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0001737,
+          "changes_count": 0
+        },
+        {
+          "configuration": "precision_v1/medium",
+          "id": "analysis-new-course_eligibility-medium-precision_v1",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00018460000000000001,
+          "changes_count": 0
+        },
+        {
+          "configuration": "repair_base/high",
+          "id": "analysis-new-course_eligibility-high-repair_base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00019869999999999998,
+          "changes_count": 0
+        },
+        {
+          "configuration": "precision_v1/high",
+          "id": "analysis-new-course_eligibility-high-precision_v1",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0002776,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-new-omitted_detail",
+      "source": "new_repair_holdout",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "repair_base/medium",
+          "id": "reanalysis-new-omitted_detail-medium-repair_base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0003058,
+          "changes_count": 0
+        },
+        {
+          "configuration": "precision_v1/medium",
+          "id": "reanalysis-new-omitted_detail-medium-precision_v1",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00023319999999999998,
+          "changes_count": 0
+        },
+        {
+          "configuration": "repair_base/high",
+          "id": "reanalysis-new-omitted_detail-high-repair_base",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0002633,
+          "changes_count": 1
+        },
+        {
+          "configuration": "precision_v1/high",
+          "id": "reanalysis-new-omitted_detail-high-precision_v1",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0004217,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "reanalysis-new-actual_changed_amount",
+      "source": "new_repair_holdout",
+      "kind": "reanalysis",
+      "answers": [
+        {
+          "configuration": "repair_base/medium",
+          "id": "reanalysis-new-actual_changed_amount-medium-repair_base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00021715,
+          "changes_count": 1
+        },
+        {
+          "configuration": "precision_v1/medium",
+          "id": "reanalysis-new-actual_changed_amount-medium-precision_v1",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.0001643,
+          "changes_count": 1
+        },
+        {
+          "configuration": "repair_base/high",
+          "id": "reanalysis-new-actual_changed_amount-high-repair_base",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00018515,
+          "changes_count": 1
+        },
+        {
+          "configuration": "precision_v1/high",
+          "id": "reanalysis-new-actual_changed_amount-high-precision_v1",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00038055,
+          "changes_count": 1
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-edge-2355",
+      "source": "exploratory_triage_disagreement_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/high",
+          "id": "analysis-edge-2355-high-edge",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.044323175000000006,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/medium",
+          "id": "analysis-edge-2355-medium-edge",
+          "score": 1,
+          "category": "none",
+          "publish": false,
+          "usd": 0.043771175,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-edge-2355-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.044217925000000005,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-edge-1894",
+      "source": "exploratory_triage_disagreement_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-edge-1894-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0052266000000000005,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/high",
+          "id": "analysis-edge-1894-high-edge",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0023398500000000005,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/medium",
+          "id": "analysis-edge-1894-medium-edge",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0022283500000000005,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-edge-1894-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0024161000000000005,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-edge-2360",
+      "source": "exploratory_triage_disagreement_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-edge-2360-max-max_v2",
+          "score": 1,
+          "category": "none",
+          "publish": false,
+          "usd": 0.00732095,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/high",
+          "id": "analysis-edge-2360-high-edge",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0012217,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/medium",
+          "id": "analysis-edge-2360-medium-edge",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0009057000000000001,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-edge-2360-high-high_v2",
+          "score": 1,
+          "category": "none",
+          "publish": false,
+          "usd": 0.00118845,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-edge-878",
+      "source": "exploratory_triage_disagreement_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "original/high",
+          "id": "analysis-edge-878-high-edge",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.011501550000000001,
+          "changes_count": 0
+        },
+        {
+          "configuration": "original/medium",
+          "id": "analysis-edge-878-medium-edge",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.01145255,
+          "changes_count": 0
+        },
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-edge-878-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.01580705,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-edge-878-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0129688,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-maxguard-budget_existing",
+      "source": "new_max_v2_guard",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-maxguard-budget_existing-max-max_v2",
+          "score": 1,
+          "category": "marginal",
+          "publish": false,
+          "usd": 0.00037360000000000003,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-maxguard-budget_existing-high-high_v2",
+          "score": 1,
+          "category": "marginal",
+          "publish": false,
+          "usd": 0.00018535000000000003,
+          "changes_count": 0
+        },
+        {
+          "configuration": "conditions_v3/high",
+          "id": "analysis-maxguard-budget_existing-high-conditions_v3",
+          "score": 1,
+          "category": "marginal",
+          "publish": false,
+          "usd": 0.00024685,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-maxguard-funding_new_right",
+      "source": "new_max_v2_guard",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-maxguard-funding_new_right-max-max_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00027580000000000004,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-maxguard-funding_new_right-high-high_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00018555,
+          "changes_count": 0
+        },
+        {
+          "configuration": "conditions_v3/high",
+          "id": "analysis-maxguard-funding_new_right-high-conditions_v3",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0001908,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-maxguard-bilateral_ratification",
+      "source": "new_max_v2_guard",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-maxguard-bilateral_ratification-max-max_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0005495,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-maxguard-bilateral_ratification-high-high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.000243,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-maxguard-patient_without_pesel",
+      "source": "new_max_v2_guard",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-maxguard-patient_without_pesel-max-max_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.000381,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-maxguard-patient_without_pesel-high-high_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0002215,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-maxguard-generic_hospital_budget",
+      "source": "new_max_v2_guard",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "max_v2/max",
+          "id": "analysis-maxguard-generic_hospital_budget-max-max_v2",
+          "score": 1,
+          "category": "marginal",
+          "publish": false,
+          "usd": 0.00145895,
+          "changes_count": 0
+        },
+        {
+          "configuration": "high_v2/high",
+          "id": "analysis-maxguard-generic_hospital_budget-high-high_v2",
+          "score": 1,
+          "category": "none",
+          "publish": false,
+          "usd": 0.00020194999999999998,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-v3guard-consent_and_refund",
+      "source": "new_conditions_v3_guard",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "conditions_v3/high",
+          "id": "analysis-v3guard-consent_and_refund-high-conditions_v3",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0002837,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-v3guard-lookback_five",
+      "source": "new_conditions_v3_guard",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "conditions_v3/high",
+          "id": "analysis-v3guard-lookback_five-high-conditions_v3",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0002792,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-v3guard-foreign_relationship",
+      "source": "new_conditions_v3_guard",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "conditions_v3/high",
+          "id": "analysis-v3guard-foreign_relationship-high-conditions_v3",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00040915,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-v3guard-no_criminal_record",
+      "source": "new_conditions_v3_guard",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "conditions_v3/high",
+          "id": "analysis-v3guard-no_criminal_record-high-conditions_v3",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00026665,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-stability-mixed",
+      "source": "new_reasoning_stability_guard",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "stability_v3/high",
+          "id": "analysis-stability-mixed-high-stability_v3",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00038930000000000003,
+          "changes_count": 0
+        },
+        {
+          "configuration": "stability_v3/xhigh",
+          "id": "analysis-stability-mixed-xhigh-stability_v3",
+          "score": 5,
+          "category": "legal_stay",
+          "publish": true,
+          "usd": 0.00054705,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-1039-metadata",
+      "source": "metadata_corrected_saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "corrected_metadata_high_v2/high",
+          "id": "analysis-1039-metadata-high-metadata_high_v2",
+          "score": 4,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0010243499999999998,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-1040-metadata",
+      "source": "metadata_corrected_saved_batch_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "corrected_metadata_high_v2/high",
+          "id": "analysis-1040-metadata-high-metadata_high_v2",
+          "score": 4,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00075415,
+          "changes_count": 0
+        },
+        {
+          "configuration": "corrected_metadata_conditions_v3/high",
+          "id": "analysis-1040-metadata-high-metadata_conditions_v3",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.00054615,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-1962-metadata",
+      "source": "metadata_corrected_corpus_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "corrected_metadata_high_v2/high",
+          "id": "analysis-1962-metadata-high-metadata_high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.0018539000000000001,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-3039-metadata",
+      "source": "metadata_corrected_corpus_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "corrected_metadata_high_v2/high",
+          "id": "analysis-3039-metadata-high-metadata_high_v2",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0009888,
+          "changes_count": 0
+        },
+        {
+          "configuration": "corrected_metadata_conditions_v3/high",
+          "id": "analysis-3039-metadata-high-metadata_conditions_v3",
+          "score": 3,
+          "category": "social",
+          "publish": true,
+          "usd": 0.0017258,
+          "changes_count": 0
+        }
+      ]
+    },
+    {
+      "case_id": "analysis-825-metadata",
+      "source": "metadata_corrected_corpus_full_text",
+      "kind": "analysis",
+      "answers": [
+        {
+          "configuration": "corrected_metadata_high_v2/high",
+          "id": "analysis-825-metadata-high-metadata_high_v2",
+          "score": 2,
+          "category": "indirect",
+          "publish": false,
+          "usd": 0.00151805,
+          "changes_count": 0
+        }
+      ]
+    }
+  ],
+  "warning": "Requests and repeated configurations are not independent laws or an overall accuracy sample. Historical triage labels are Haiku, not the current Sonnet model."
+}

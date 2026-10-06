@@ -1,0 +1,24 @@
+{
+  "quality_acceptance": {
+    "full_replacement": "No confirmed material errors or lost relevant bills across the covered roles, including large contexts and scans; secondary and revision coverage must be stated, not assumed.",
+    "triage": "No confirmed high-confidence false negatives at production confidence threshold 0.8; uncertain fragments must pass to full analysis.",
+    "analysis": "Preserve material dates, amounts, negation, eligibility, exceptions, and proposal-versus-decision distinction. JSON validity and agreement alone are insufficient.",
+    "calibration": "Use only the preregistered calibration split, then evaluate the fixed prompt on the heldout split. Report before/after results."
+  },
+  "baseline_limits": [
+    "Saved full-analysis references cover 19 Opus 5.5 and 5 GPT-5.1 outputs; no fresh paid baseline inference.",
+    "Text triage references are historical Haiku 4.5, not current Sonnet 5. They are comparison aids, not independent ground truth.",
+    "Eight saved reanalysis texts have no reconstructable previous analysis; they test current-text analysis only. Three saved revisions and two controlled revisions include prior descriptions.",
+    "Author metadata is reconstructed in some corpus cases; the saved supplied text is exact, but some metadata and prompt versions differ from historical baseline requests.",
+    "Baseline outputs are not treated as infallible; disagreements require supplied-text audit.",
+    "A finite selected sample cannot certify unchanged quality on every future bill."
+  ],
+  "money": "Every new generation is a Batch request. Reserve all unsent planned batches as well as active ones; add no calibration work beyond the $2 total ceiling.",
+  "calibration_reporting_limits": [
+    "The original calibration/heldout split remains recorded unchanged. Later precision_v1, max_v2 and triage_v1 prompts use exploratory feedback from already reviewed errors, including some original heldout cases; their aggregate rerun results must not be reported as an untouched blind validation score.",
+    "New joint, precision, max_v2 and triage guard contexts were fixed before their own answers, but deliberately target known error categories rather than forming an independent random sample.",
+    "The return-to-Poland guard is a recheck of known classification instability, not a new independent test. Direct inspection of the production rubric makes score 2 defensible for entry/exit without a change to the residence permit; the earlier regression interpretation was corrected in the source audit.",
+    "Report source-supported repairs, persistent defects and introduced regressions separately; a higher percentage of historical-reference agreement alone is not proof of unchanged legal quality.",
+    "change_review_v1 is an exploratory recheck of all eleven prior controls after a raw full-context whitespace false positive. Original raw full-corpus review inputs contain justification and are stress tests. Separately added production-prepared cases use the actual diff_laws bodies/hunks and current eligibility limits; the production caller already filters zero-hunk spacing and bypasses review above 60000 combined characters."
+  ]
+}

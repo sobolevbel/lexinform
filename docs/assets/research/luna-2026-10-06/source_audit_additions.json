@@ -1,0 +1,49 @@
+{
+  "findings": [
+    {
+      "case": "analysis-RCL_12408900-medium-base",
+      "severity": "mixed_with_source_supported_advantage",
+      "source_fact": "The supplied operative text requires Poland/EU/EEA/Swiss citizenship, adequate Polish, age 25 and five years of practice. It also permits appointing another knowledgeable person where appointing a registered expert is impossible or difficult. Luna correctly preserves that exception; the historical Opus practical-impact text is more absolute about third-country exclusion.",
+      "coverage_limit": "Luna omits the supplied authenticated-translation and no-PESEL identity-document requirements, and does not explicitly name eligible EU/EEA/Swiss foreign candidates in affected_groups. Its core citizenship rule and dates match the source."
+    },
+    {
+      "case": "analysis-3143-medium-base",
+      "severity": "source_supported_publication_difference",
+      "source_fact": "The supplied justification identifies an actual access problem: uninsured HIV patients cannot afford visits or diagnostic services needed to receive treatment. The bill expressly funds related healthcare for those without insurance entitlement. Luna preserves this practical effect and the 14-day vacatio.",
+      "qualification": "Luna social/3 versus historical Opus indirect/2 is defensible under the rubric for changed access to healthcare. Do not classify all baseline publication disagreements as Luna errors. This is not equivalent to the unchanged annual-budget allocations in 3150."
+    },
+    {
+      "case": "analysis-3160-medium-base",
+      "severity": "publication_difference_with_input_limit",
+      "source_fact": "The supplied text repeals art. 3a of the foreigner real-estate acquisition law but does not reproduce that article. Luna honestly says the precise consequence is unavailable from the supplied bill; historical GPT-5.1 also supplies no precise consequence despite assigning score 3.",
+      "external_primary_source": "https://eli.gov.pl/api/acts/DU/2017/2278/text.html",
+      "external_source_fact": "In the consolidated version cited in the bill, art. 3a sets a one-month decision period for property in a special economic zone. This is outside the model's supplied input; 2026 amendments are not verified by this older consolidation alone.",
+      "qualification": "Luna score 2 versus the reference score 3 cannot be treated as a proven substantive legal error from reference disagreement alone. A production reader-facing analysis would benefit from retrieving the repealed provision."
+    },
+    {
+      "case": "analysis-3157-medium-base",
+      "severity": "passed_core_conditions",
+      "source_fact": "Preserves the patient non-discrimination rule by citizenship/nationality without overriding separate eligibility rules, the medical-worker time/pay restrictions, half-time minimum for specified hospital personnel, six-month contract-adjustment window and one-month vacatio.",
+      "qualification": "The short answer does not enumerate every pay cap; this review establishes the listed core conditions, not exhaustive coverage of all institutional provisions."
+    },
+    {
+      "case": "analysis-RCL_12399355-medium-base",
+      "severity": "coverage",
+      "source_fact": "The supplied bill permits employers subject to national restrictive measures to apply for FGSP payments protecting specified employee claims. Luna lists affected workers but omits this available protection from the summary, key_changes and practical_impact; the saved Opus reference includes it.",
+      "qualification": "Luna correctly preserves undesirable-stay listing, the 20-million-zloty penalty cap and effective dates. The missing wage-protection route is a reader-usefulness loss rather than an invented sanction."
+    },
+    {
+      "case": "reanalysis-2846-medium-base",
+      "severity": "coverage",
+      "source_fact": "The reference and supplied Jamboree bill contain a criminal-record-document requirement for volunteers from outside the EU, covering citizenship and residence states over ten years. Luna's four bullets focus on visas and omit this distinct volunteer obligation.",
+      "qualification": "The visa-fee waiver, participation evidence, six-week notification condition, official-delegation exception and 14-day vacatio are preserved. Score 5 versus reference 3 is not itself a publication loss because both publish."
+    },
+    {
+      "case": "reanalysis-3008-medium-base",
+      "severity": "passed_core_foreigner_procedure",
+      "source_fact": "Preserves foreign-candidate Polish B2 evidence, alternatives to PESEL, age 26 and qualification requirements, electronic filing to the district-court president and September 2027 date.",
+      "qualification": "The old full bill is unavailable, so no independent claim about changes since the previous version is established. Score 2 versus reference 1 keeps both below the publication threshold."
+    }
+  ],
+  "status": "Additional manual source reviews of original answers; strongest calibrated answers still pending."
+}

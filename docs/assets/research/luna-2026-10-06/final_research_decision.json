@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-06",
+  "model": "gpt-6-luna",
+  "paid_api_usd": 1.41323965,
+  "paid_requests": 732,
+  "original_contexts": 193,
+  "metadata_corrected_repeated_contexts": 30,
+  "all_requests_batch": true,
+  "all_planned_collected": true,
+  "production_modified": false,
+  "blanket_replacement_recommended": false,
+  "full_analysis_best_broad_tested_configuration": {
+    "prompt": "high_v2",
+    "reasoning": "high",
+    "max_output_tokens": 16000,
+    "contexts": 46,
+    "valid": 46,
+    "cost": 0.360035725,
+    "quality_equivalence_proven": false
+  },
+  "targeted_conditions_calibration": {
+    "prompt": "conditions_v3",
+    "medical_consent_refund_error_repaired_in_high_and_xhigh": true,
+    "jamb_same_high_prompt_repeat_variability_confirmed": true,
+    "xhigh_broad_replacement_qualified": false
+  },
+  "triage_best_broad_tested_configuration": {
+    "prompt": "triage_v2",
+    "reasoning": "medium",
+    "max_output_tokens": 4000,
+    "contexts": 103,
+    "real_contexts": 87,
+    "fixed_controls": 16,
+    "correct_fixed_controls": 16,
+    "cost": 0.03471875,
+    "rationales_in_wrong_language": 2,
+    "corrected_metadata_regional_language_unsupported_reject": true,
+    "current_sonnet_equivalence_measured": false
+  },
+  "max_tested_configuration": {
+    "max_output_tokens": 32000,
+    "contexts": 42,
+    "final_answers": 28,
+    "no_final_answers": 14,
+    "intrinsic_model_incapability_proven": false
+  },
+  "role_recommendations": {
+    "analysis": "retain existing stronger models for automatic publication",
+    "reanalysis": "retain stronger models; preserve material-condition checks",
+    "triage": "keep current triage;Luna mediumv2 is only a shadow candidate",
+    "change_review": "calibratedhighv1 candidate;production-shaped corpus coverage insufficient for no-loss replacement",
+    "joint": "calibratedhighv1 candidate;2realpairs insufficient to certify universal use",
+    "amendments": "1realcommittee document insufficient for replacement certification",
+    "supplement": "1realOSR andfocusedcontrols insufficient for replacement certification"
+  },
+  "paired_historical_cost_comparison_is_fresh_AB": false,
+  "warm_luna_cache_measured": false,
+  "monthly_pipeline_roi_proven": false,
+  "evidence": [
+    "quality_audit.json",
+    "source_audit_additions.json",
+    "cohort_summary.json",
+    "configuration_costs.json",
+    "completion_audit.json",
+    "ledger.json",
+    "final_requirement_matrix.json"
+  ]
+}

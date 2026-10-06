@@ -1,0 +1,678 @@
+{
+  "findings": [
+    {
+      "case": "reanalysis-3146-medium-base",
+      "severity": "material",
+      "field": "summary",
+      "model_text": "операций Frontex по возвращению иностранцев с нерегулируемым статусом в Польшу",
+      "source_fact": "The supplied justification defines a return operation as sending returnees away from member states. Operations conducted on Polish territory do not mean returning foreigners to Poland.",
+      "source_excerpt": "osoby powracające z jednego lub większej liczby państw członkowskich są odsyłane",
+      "baseline": "Historical Opus 5.5 correctly describes returns/removal from Poland.",
+      "qualification": "Other Luna fields describe operations in Poland correctly, but the summary reverses the direction. This prevents approval of unchanged medium as a full replacement."
+    },
+    {
+      "case": "reanalysis-3141-medium-base",
+      "severity": "revision_evidence",
+      "field": "changes_since_previous",
+      "model_text": "прежнее резюме этого не упоминало",
+      "source_fact": "The old input is a short description and saved bullets, not an old full bill. Absence from that description cannot establish a new provision.",
+      "qualification": "Do not count all five named details as independently established legislative changes. A precision prompt and high reasoning are tested exploratorily."
+    },
+    {
+      "case": "reanalysis-RCL_12412454-medium-base",
+      "severity": "coverage",
+      "field": "affected_groups",
+      "source_fact": "The supplied bill includes participants of Polish-language/preparatory courses without another insurance basis; the historical Opus description and the related print 3141 name them.",
+      "qualification": "Luna names medical graduates and cross-border pensioners but omits language-course participants in this answer. Check high and the precision prompt before deciding replacement."
+    },
+    {
+      "case": "joint-control-False-medium-base and high-base",
+      "severity": "prompt_ambiguity",
+      "field": "same_substance",
+      "source_fact": "The original system prompt explicitly classifies differences in dates as potentially identical substance. Luna accurately lists 30 June versus 30 September 2027 but sets same_substance=true.",
+      "qualification": "This is not evidence that Luna missed the legal date. The corrected joint_v1 prompt gets both calibration controls and all five new unseen control categories right for medium and high."
+    },
+    {
+      "case": "analysis-scan-RPW-2793-2025-medium-base",
+      "severity": "passed",
+      "source_fact": "Matches the visually inspected normative page: Ukraine special-act benefit and scientific-employment repeals, 30-day vacatio, no invented stay extension; distinguishes loss of special grounds from all entitlement disappearing."
+    },
+    {
+      "case": "all completed triage comparisons so far",
+      "severity": "precision_tradeoff",
+      "source_fact": "No high-confidence false negative versus the historical reference among the first 68 text none and 68 paired text medium cases; medium allows more extra full analyses. Historical Haiku labels are not independent ground truth.",
+      "qualification": "General applicability to foreigners sometimes suffices under the broad existing prompt. Do not optimize away these cases solely to match historical rejects."
+    },
+    {
+      "case": "triage-2355-none-base",
+      "severity": "potential_material_triage_miss",
+      "source_fact": "Supplied excerpts explicitly require criminal-record checks through the citizenship state for workers who are citizens of EU states other than Poland. This is a specific foreign-worker procedure, not only an agency keyword.",
+      "source_excerpt": "w przypadku gdy osoba podlegająca sprawdzeniu ma obywatelstwo państwa członkowskiego innego niż Rzeczpospolita Polska",
+      "qualification": "none rejects at .87, medium passes at .97; historical Haiku also rejects. Full-text medium/high adjudication pending. Do not equate reference agreement with independent recall."
+    },
+    {
+      "case": "analysis-control-* and reanalysis-control-* original prompt",
+      "severity": "passed",
+      "source_fact": "Manual review of 12 answers: medium/high preserve the 30 September 2027 stay date, 14/30-day vacatio, permanent-residence work condition, 800-zloty amount and tourist-visa exclusion. No invented effective date for absent or truncated text. Changed revision names June-to-September; unchanged revision has no changes.",
+      "qualification": "Russian statute translation in medium uncertainty control is a style defect against the Polish-title preservation rule, not a material legal-fact failure."
+    },
+    {
+      "case": "amendments-real-1929-medium-base",
+      "severity": "material",
+      "field": "summary",
+      "model_text": "снизить предел в 80 часов до 70",
+      "source_fact": "The original project specifies a minimum support-need score of 80 points, while 20–80 hours is a separate youth-assistance rule. The amendment changes the eligibility threshold, not assistance hours.",
+      "source_basis": [
+        "2792-A proposal 3: art. 3 ust. 3 pkt 1, 80 -> 70, committee recommends rejection",
+        "1929 corpus full text: poziom potrzeby wsparcia ... co najmniej 80 punktów",
+        "Historical Opus 5 committee digest correctly uses баллов поддержки"
+      ],
+      "qualification": "The supplied amendment text did not specify the unit at the replaced numeral; inventing hours is unsupported even without retrieving the base print. High avoids this false hours claim and correctly reports rejection of the foreigner-eligibility rewrite."
+    },
+    {
+      "case": "amendments-real-1929-high-base",
+      "severity": "passed",
+      "source_fact": "Names commission recommendation to reject the foreigner-eligibility rewrite, accepts residence throughout service, preserves the two specified financing-law scope and the 2027->2028 / 2030 dates; does not claim Sejm adoption or invent hours for 80->70.",
+      "qualification": "Single real committee report plus controlled proposal test; supports high for this role within this coverage, not a universal guarantee."
+    },
+    {
+      "case": "joint-real-316 and joint-real-1933, base and joint_v1",
+      "severity": "passed",
+      "source_fact": "Manual comparison against supplied descriptions: narrower foreigner eligibility in 316, 40–200 versus 20–240 hours, starosta versus regional disability commission, and 1933 foreign-assistant register all preserved.",
+      "qualification": "Historical Opus references mention additional score-phasing details absent from the reconstructed descriptions. Do not count absence of unsupplied details as a Luna error."
+    },
+    {
+      "case": "analysis-1040-medium-base and high-base",
+      "severity": "passed",
+      "source_fact": "Preserves cumulative employment OR business plus taxes, tax-deferral/installment exception, school/co-residence conditions, suspension/restoration from qualifying month, first application window February–April 2025, and 14-day vacatio.",
+      "qualification": "School age/deferral exceptions are not spelled out in either short answer; the phrase requirements for schooling does not deny those exceptions."
+    },
+    {
+      "case": "analysis-3141-medium-base and high-base",
+      "severity": "coverage",
+      "source_fact": "The supplied operative text explicitly covers Polish-language/preparatory-course participants without another insurance basis. Both fresh primary-analysis answers omit this group; high includes medical graduates but still misses course participants.",
+      "qualification": "High reasoning alone does not recover all foreigner-specific content. The precision_v1 role-prioritization prompt is still being tested on the corresponding revision case."
+    },
+    {
+      "case": "analysis-3139-medium-base",
+      "severity": "rubric_mismatch",
+      "source_fact": "The supplied project is a bilateral-agreement ratification; the scoring rubric explicitly assigns ratifications importance 2. Luna gives employment 4 while acknowledging unchanged Polish entry/work permit requirements.",
+      "qualification": "The factual ICT durations match the supplied agreement. This is ranking and publication consistency, not a fabricated permit exemption."
+    },
+    {
+      "case": "analysis-RCL_12398102-medium-base",
+      "severity": "coverage",
+      "source_fact": "The supplied full text includes passport/identity-data alternatives to PESEL and EU healthcare-coordination identifiers, both highlighted in the saved Opus reference. Luna provides a generic medicine-reimbursement summary without these specific foreign-patient procedures.",
+      "qualification": "Correct publication score and entry dates alone do not establish equal reader usefulness."
+    },
+    {
+      "case": "reanalysis-2110-medium-base",
+      "severity": "coverage",
+      "source_fact": "Article 6 excludes persons already in a foreign-law cohabitation union not recognized as marriage under Polish law. Luna omits this foreigner-specific eligibility restriction and the lack of new residence rights, both present in the saved reference.",
+      "qualification": "The current answer does not expressly claim a residence right or universal eligibility, but loses useful conditions for the target audience."
+    },
+    {
+      "case": "analysis-3150-medium-base",
+      "severity": "publication_scope",
+      "source_fact": "The 583180-token budget text is processed successfully and the reported aid allocations and effective date match the saved reference, but Luna gives social/3 to ordinary budget financing while expressly stating no new rights or eligibility rules. Historical Opus gives marginal/1.",
+      "qualification": "This would add a general-budget card under the production score >=3 gate. It shows editorial ranking drift despite accurate numbers; strong context capacity is not sufficient for full replacement."
+    },
+    {
+      "case": "analysis-3150-high-base",
+      "severity": "publication_scope",
+      "source_fact": "High also assigns social/3 to the annual budget while explicitly stating no new rights, applications or eligibility. Higher reasoning alone does not fix this editorial drift."
+    },
+    {
+      "case": "reanalysis-3146 precision_v1 medium/high and high original",
+      "severity": "passed_repair",
+      "source_fact": "All three exploratory rechecks avoid the original direction reversal; high precision_v1 explicitly names returns from Poland.",
+      "qualification": "The original medium failure remains evidence of variability; this targeted repair is not an original blind heldout result."
+    },
+    {
+      "case": "reanalysis-3141 precision_v1 medium/high",
+      "severity": "passed_repair",
+      "source_fact": "Restores language-course and medical-graduate insurance groups and stops treating newly noticed details as established legislative changes."
+    },
+    {
+      "case": "reanalysis-RCL_12412454 precision_v1 medium/high and high original",
+      "severity": "coverage_persists",
+      "source_fact": "All three exploratory rechecks still omit language-course participants. The stronger max_v2 instruction explicitly prioritizes these groups and is rerun on all real primary/revision contexts."
+    },
+    {
+      "case": "reanalysis-new-omitted_detail high base versus precision_v1",
+      "severity": "passed_repair",
+      "source_fact": "Original high calls a detail absent from the short prior description a change. precision_v1 medium/high leave changes empty, while the new 100->200 fee control still names the real change."
+    },
+    {
+      "case": "triage scans none versus medium",
+      "severity": "tradeoff",
+      "source_fact": "Both modes preserve the positive Ukraine-special-act scan. none rejects the farmer-ombudsman scan; medium passes it due to citizenship restrictions for a single public office. No independent broad-negative legal gold was assigned to that scan."
+    },
+    {
+      "case": "analysis-new-return_destination-high-precision_v1",
+      "severity": "rubric_ambiguity",
+      "source_fact": "The supplied control explicitly gives holders of valid permanent residence the right to return to Poland after travel. Original medium/high and precision medium score it legal_stay/5; precision high scores it indirect/2 while preserving the facts.",
+      "qualification": "The production rubric explicitly assigns entry/exit and immigration control score 2, but changes to permanent residence score 5. This short control grants return after travel without changing the residence permit itself, so score 2 is defensible. The old score-5 answer is not a legal oracle, and no score expectation was preregistered. Report classification instability, not an established publication false negative."
+    },
+    {
+      "case": "analysis-RCL_12408900-medium-base",
+      "severity": "mixed_with_source_supported_advantage",
+      "source_fact": "The supplied operative text requires Poland/EU/EEA/Swiss citizenship, adequate Polish, age 25 and five years of practice. It also permits appointing another knowledgeable person where appointing a registered expert is impossible or difficult. Luna correctly preserves that exception; the historical Opus practical-impact text is more absolute about third-country exclusion.",
+      "coverage_limit": "Luna omits the supplied authenticated-translation and no-PESEL identity-document requirements, and does not explicitly name eligible EU/EEA/Swiss foreign candidates in affected_groups. Its core citizenship rule and dates match the source."
+    },
+    {
+      "case": "analysis-3143-medium-base",
+      "severity": "source_supported_publication_difference",
+      "source_fact": "The supplied justification identifies an actual access problem: uninsured HIV patients cannot afford visits or diagnostic services needed to receive treatment. The bill expressly funds related healthcare for those without insurance entitlement. Luna preserves this practical effect and the 14-day vacatio.",
+      "qualification": "Luna social/3 versus historical Opus indirect/2 is defensible under the rubric for changed access to healthcare. Do not classify all baseline publication disagreements as Luna errors. This is not equivalent to the unchanged annual-budget allocations in 3150."
+    },
+    {
+      "case": "analysis-3160-medium-base",
+      "severity": "publication_difference_with_input_limit",
+      "source_fact": "The supplied text repeals art. 3a of the foreigner real-estate acquisition law but does not reproduce that article. Luna honestly says the precise consequence is unavailable from the supplied bill; historical GPT-5.1 also supplies no precise consequence despite assigning score 3.",
+      "external_primary_source": "https://eli.gov.pl/api/acts/DU/2017/2278/text.html",
+      "external_source_fact": "In the consolidated version cited in the bill, art. 3a sets a one-month decision period for property in a special economic zone. This is outside the model's supplied input; 2026 amendments are not verified by this older consolidation alone.",
+      "qualification": "Luna score 2 versus the reference score 3 cannot be treated as a proven substantive legal error from reference disagreement alone. A production reader-facing analysis would benefit from retrieving the repealed provision."
+    },
+    {
+      "case": "analysis-3157-medium-base",
+      "severity": "passed_core_conditions",
+      "source_fact": "Preserves the patient non-discrimination rule by citizenship/nationality without overriding separate eligibility rules, the medical-worker time/pay restrictions, half-time minimum for specified hospital personnel, six-month contract-adjustment window and one-month vacatio.",
+      "qualification": "The short answer does not enumerate every pay cap; this review establishes the listed core conditions, not exhaustive coverage of all institutional provisions."
+    },
+    {
+      "case": "analysis-RCL_12399355-medium-base",
+      "severity": "coverage",
+      "source_fact": "The supplied bill permits employers subject to national restrictive measures to apply for FGSP payments protecting specified employee claims. Luna lists affected workers but omits this available protection from the summary, key_changes and practical_impact; the saved Opus reference includes it.",
+      "qualification": "Luna correctly preserves undesirable-stay listing, the 20-million-zloty penalty cap and effective dates. The missing wage-protection route is a reader-usefulness loss rather than an invented sanction."
+    },
+    {
+      "case": "reanalysis-2846-medium-base",
+      "severity": "coverage",
+      "source_fact": "The reference and supplied Jamboree bill contain a criminal-record-document requirement for volunteers from outside the EU, covering citizenship and residence states over ten years. Luna's four bullets focus on visas and omit this distinct volunteer obligation.",
+      "qualification": "The visa-fee waiver, participation evidence, six-week notification condition, official-delegation exception and 14-day vacatio are preserved. Score 5 versus reference 3 is not itself a publication loss because both publish."
+    },
+    {
+      "case": "reanalysis-3008-medium-base",
+      "severity": "passed_core_foreigner_procedure",
+      "source_fact": "Preserves foreign-candidate Polish B2 evidence, alternatives to PESEL, age 26 and qualification requirements, electronic filing to the district-court president and September 2027 date.",
+      "qualification": "The old full bill is unavailable, so no independent claim about changes since the previous version is established. Score 2 versus reference 1 keeps both below the publication threshold."
+    },
+    {
+      "case": "triage-none-language",
+      "severity": "style_instruction",
+      "source_fact": "Four of the first 75 completed none triage rationales are entirely Polish despite the explicit Russian-rationale rule: 1684, 765, 2747 and 2161. The paired medium rationales are Russian.",
+      "qualification": "These rationales are not reader cards, and language compliance is separate from legal relevance. The calibrated triage prompt reiterates Russian final JSON."
+    },
+    {
+      "case": "analysis-edge-2360-medium-edge and high-edge",
+      "severity": "unsupported_audience_and_publication_scope",
+      "source_fact": "The bill adds Greek minority to the national-minority list and a representative to the joint commission, without changing the citizenship definition. Article 2(1) of the underlying act defines national minorities as groups of Polish citizens.",
+      "external_primary_source": "https://eli.gov.pl/api/acts/DU/2005/141/text.html",
+      "medium": "Scores social/3 and relevant=true on Greek-community cultural rights without establishing a non-citizen beneficiary group.",
+      "high": "Scores social/3 and explicitly names foreigners of Greek origin as potential beneficiaries if they meet the legal minority definition, without explaining its Polish-citizenship requirement.",
+      "qualification": "The unchanged definition is not reproduced in the supplied bill. This shows insufficient eligibility evidence and a foreigner-channel publication scope error, not an unconditional invented residence entitlement. The stricter calibrated audience checks are still pending."
+    },
+    {
+      "case": "analysis-edge-1894-high-edge",
+      "severity": "passed_narrow_relevance",
+      "source_fact": "Preserves the operative recognition of foreigner-law documents and no-PESEL identity data for access passes to Sejm/Senate buildings. Score indirect/2 avoids a reader card while retaining a genuine identification procedure.",
+      "qualification": "Historical triage rejection and Luna passing differ editorially; this full-source result does not establish a legal false-positive triage error."
+    },
+    {
+      "case": "reanalysis-3150-medium-base",
+      "severity": "publication_variability",
+      "source_fact": "The revision-context answer gives indirect/2 with no changes_since_previous and correctly says the budget funds existing tasks without changing individual rights or conditions. Original primary medium and high both give social/3.",
+      "qualification": "The revision source is slightly different and includes the reconstructed prior summary, so this is not a controlled identical-request repeat. It nevertheless shows the model's editorial judgment depends on context; max_v2 is tested on both primary and revision inputs."
+    },
+    {
+      "case": "3141-course-delta-source-check",
+      "severity": "source_grounding_check",
+      "source_fact": "The supplied justification explicitly says art. 66(1)(20a) is supplemented with medical graduates in practical training and persons attending Polish-language/preparatory courses without another mandatory insurance basis; art. 73(4) is adjusted for start/end of insurance. This supports treating course coverage as material rather than merely an unchanged sentence copied into a replacement paragraph.",
+      "source_excerpt": "w dziedzini e medycyny ( zmiana w art. 1 pkt 19 lit. a i pkt 22 projektu ). Katalog osób objętych ubezpieczeniem zdrowotnym na podstawie art. 66 ust. 1 pkt 20a ustawy o świadczeniach opieki zdrowotnej uzupełniono o absolwentów kierunku lekarskiego oraz lekarsko -dentystycznego, którzy odbywają w Rzeczypospolitej Polskiej szkolenie praktyczne, o którym mowa w art. 15p ust. 1 ustawy z dnia 5 grudnia 1996 r. o zawodach lekarza i lekarza dentysty (Dz. U. z 2026 r. poz. 37, z późn. zm.), oraz osoby odbywające kursy języka polskiego lub kursy przygotowawcze do podjęcia nauki w języku p olskim, o których mowa w przepisach odrębnych, niepodlegające obowiązkowi ubezpieczenia zdrowotnego z innego tytułu. W tym zakresie dostosowano również przepis art. 73 pkt 4 ustawy o świadczeniach opieki zdrowotnej dotyczący powstania i wygaśnięcia obowiąz ku ubezpieczenia zdrowotnego w przypadku wskazanych wyżej osób. W pozostałym zakresie obejmującym zgłoszenie i zasady opłacania składki na ubezpieczenie zdrowotne nie uległy zmianie. Stosownie do art. 67 ust. 4 ustawy osoby wymienione w art. 66 ust. 1 pkt 20a zgłaszają do ubezpieczenia zdrowotnego uczelnie, natomia",
+      "qualification": "The 2025 consolidated-law HTML was unavailable through the web tool; this finding is grounded in the exact supplied bill justification, not an unverified claim about a fetched current consolidation."
+    },
+    {
+      "case": "change_review-corpus-format_only-medium-corpus",
+      "severity": "materiality_false_positive",
+      "source_fact": "The only edit adds one ordinary space in kursy języka polskiego; full old and new texts are identical after whitespace collapse. Both already include preparatory courses. Luna nevertheless says courses were added, material=true and confidence=.98.",
+      "qualification": "An isolated full-context stress test, not an actual historical legislative change. New change_review_v1 checks real OLD-to-NEW differences while retaining dates, amounts, negation and logical scope checks."
+    },
+    {
+      "case": "corpus-review-production-scope",
+      "severity": "applicability_limit",
+      "source_fact": "diff_laws prepares 2353-character normative bodies for 1040, with one hunk for the date and OR/AND edits. For 3141 it prepares 38666 characters; whitespace has zero hunks, and the insurance-negation pair exceeds the 60000-character review cap. The whitespace error cannot trigger an actual production LLM review on this mutation.",
+      "qualification": "Raw full-context tests remain useful stress evidence but do not establish current production-path failure. Eight follow-up generations compare original and calibrated prompts on the exact eligible production-prepared 1040 contexts."
+    },
+    {
+      "case": "analysis-3039-medium-base",
+      "severity": "coverage_conditions",
+      "field": "key_changes and practical_impact",
+      "source_fact": "The proposed under-26 entitlement requires collective accommodation before 1 July 2026 followed immediately by daytime school or full-time university education. The answer only says some students under 26 and gives no usable eligibility conditions.",
+      "source_excerpt": "przebywa lub przebywała w obiekcie zbiorowego zakwaterowania przed dniem 1 lipca 2026 r. ... następnie bezpośrednio kontynuuje naukę ... w formie dziennej ... na uczelni w formie stacjonarnej",
+      "qualification": "The answer does not explicitly promise eligibility to every student, so classify as loss of actionable conditions rather than an invented universal entitlement. Its major groups, outside-centre healthcare and 14-day vacatio are source-supported; calibrated answers still require comparison."
+    },
+    {
+      "case": "analysis-276-medium-base",
+      "severity": "passed_checked_details",
+      "source_fact": "Supplied text confirms functional immunity for official acts, the director condition excluding Polish citizens and permanent residents, personal-import privileges for one year, and 14-day vacatio.",
+      "qualification": "This verifies named conditions, not a complete audit of the incorporated UN privileges convention."
+    },
+    {
+      "case": "analysis-2699-medium-base",
+      "severity": "passed_checked_details",
+      "source_fact": "Supplied bill and justification confirm electronic notarial transmission through CREWAN, seven-day existing transmission duty, a fee with amount set by regulation, and three-month vacatio; no new property-permit exemption is asserted."
+    },
+    {
+      "case": "analysis-825-medium-base",
+      "severity": "passed_checked_details",
+      "source_fact": "Supplied normative text confirms the double condition for domestic movable/property-right gifts: neither acquirer nor donor has Polish citizenship or permanent residence/headquarters in Poland. Foreign assets are taxable if the recipient has Polish citizenship or permanent residence. The date belongs to this historical draft, not proof that the proposal became law."
+    },
+    {
+      "case": "analysis-1962-medium-base and high-base",
+      "severity": "passed_checked_details",
+      "source_fact": "Supplied registry clauses explicitly include foreign lawyers, insurance information and suspension status. Both answers restrict the effect to professional registry access rather than general migration or work-permit changes."
+    },
+    {
+      "case": "corpus-format-only-original-high-and-medium",
+      "severity": "stress_false_positive",
+      "source_fact": "Both original efforts mistakenly infer added preparatory-course eligibility where the only old/new difference is one extra space in full 3141 text.",
+      "qualification": "Production diff_laws filters this zero-hunk change before model review. Both change_review_v1 efforts correctly return material=false; do not present the original stress error as a current production repost failure."
+    },
+    {
+      "case": "max_v2 completed jobs",
+      "severity": "configuration_output_exhaustion",
+      "source_fact": "Several real inputs exhaust the 32000-token output budget entirely on reasoning, with no final JSON and incomplete reason max_output_tokens.",
+      "qualification": "This is a genuine unusable response for the tested configuration, not commentary parsing. Test the same frozen prompt at high before selecting a practical configuration; count exhausted reasoning in paid cost."
+    },
+    {
+      "case": "analysis-new-return_destination-max-max_v2_return_guard",
+      "severity": "rubric_ambiguity",
+      "source_fact": "The short controlled norm expressly permits return to Poland for permanent residents. Original medium/high scored legal_stay 5, precision_v1 high scored indirect 2. Frozen v2 gives medium 2, high 5 and max 2 despite all three describing the direction correctly.",
+      "qualification": "The production rubric explicitly assigns entry/exit and immigration control score 2, but changes to permanent residence score 5. This short control grants return after travel without changing the residence permit itself, so score 2 is defensible. The old score-5 answer is not a legal oracle, and no score expectation was preregistered. Report classification instability, not an established publication false negative."
+    },
+    {
+      "case": "2355-triage-miss-publication-scope",
+      "severity": "triage_scope_qualification",
+      "source_fact": "Full-text high analysis confirms a citizenship-state criminal-record check for non-Polish EU workers but scores it indirect 2. Original none and the historical Haiku reject the excerpts; original medium passes them.",
+      "qualification": "This is a source-supported triage false negative under the broad procedural-relevance gate, but it is not proven loss of a score>=3 reader card under the current publication threshold. Historical-reference agreement conceals the procedural miss."
+    },
+    {
+      "case": "return-control-score-audit-correction",
+      "severity": "evaluation_correction",
+      "source_fact": "Earlier exploratory audit called score 2 a regression against original score 5. Direct inspection of production scoring rubric found entry/exit explicitly scored 2; that inference was too strong.",
+      "qualification": "All configurations preserve the correct direction; this control cannot establish quality deterioration without a clearer substantive residence-entitlement change."
+    },
+    {
+      "case": "triage-v1-real-citizen-only-scope",
+      "severity": "precision_limit",
+      "source_fact": "All five fresh triage guards pass, including a Polish-citizen-only minority. Real 1889 nevertheless returns affects_foreigners=true with confidence .82 while correctly saying only Polish citizens can get the new widow/widower status; real 2360 passes conservatively at .68 because the supplied excerpt lacks the underlying minority definition.",
+      "qualification": "Prompt calibration improves explanations and some budget/generic exclusions but does not turn a conservative gate into a precise legal-audience classifier. 1889 is extra analysis cost, not an invented eligibility right or a demonstrated lost bill."
+    },
+    {
+      "case": "production-prepared-change-review-eight-comparisons",
+      "severity": "passed_checked_production_input_shape",
+      "source_fact": "Both original and calibrated prompts at medium/high detect the 14-to-30-day vacatio mutation and OR-to-AND entitlement mutation in normative bodies/hunks prepared by the actual production diff_laws pipeline. All eight decisions and their stated effects match the source modifications.",
+      "qualification": "Eight generated answers represent two controlled source changes, not eight independent legislative events. The large full-3141 negation stress input exceeds the current production review cap and would route to full reanalysis."
+    },
+    {
+      "case": "analysis-RCL_12398102-high-high_v2",
+      "severity": "source_supported_calibration_repair",
+      "source_fact": "Frozen v2 at high restores the passport/identity-document option without PESEL and the EU healthcare-coordination personal identifier/institution data omitted by original medium. It restricts reimbursement to already entitled patients and does not invent automatic entitlement. Normative text also confirms the one-year consent, loss of reimbursement after full-price dispensing, and 180-day target-import prescription validity.",
+      "qualification": "A successful targeted repair on a known omission, not independent blind proof. This same input exhausted 32k output tokens with max; high returns usable JSON with 2015 output tokens, 1552 reasoning, at $0.0082693."
+    },
+    {
+      "case": "analysis-3039-high-high_v2",
+      "severity": "source_supported_calibration_repair",
+      "source_fact": "High-v2 restores the before-1-July-2026 collective-accommodation condition and immediate full-time education for the under-26 group, and the unmarried/absent-in-Poland husband condition for single mothers. It also preserves pension cap, children under residents care, outside-centre healthcare, declaration and 14-day vacatio.",
+      "qualification": "The original medium answer used vague some-students wording without actionable conditions. This is a targeted repair, not an independent blind accuracy score."
+    },
+    {
+      "case": "reanalysis-2846-high-high_v2",
+      "severity": "persistent_condition_omission",
+      "source_fact": "High-v2 now names criminal-record checks for foreign volunteers, but says from countries prescribed by law without the citizenship/residence jurisdictions or ten-year lookback. The supplied norm and historical Opus explicitly name those conditions, especially non-EU volunteers working with children.",
+      "qualification": "Visa-fee exemption, six-week notice and exception, and 14-day vacatio remain accurate. Test generic conditions_v3 rather than assuming the partly repaired answer is equivalent in actionable completeness."
+    },
+    {
+      "case": "reanalysis-2110-high-high_v2",
+      "severity": "partial_coverage_repair",
+      "source_fact": "High-v2 corrects score to indirect 2, states no residence entitlement, and mentions other relationships may bar access. It still does not name the supplied foreign-law union rule: barred even when that union is not recognized as marriage under Polish law. Historical Opus names it explicitly.",
+      "qualification": "No unconditional eligibility promise is made; classify loss of an important foreigner-specific restriction, not an invented new residence right. At score 2 this normally does not generate a reader card."
+    },
+    {
+      "case": "analysis-edge-2360-high-high_v2",
+      "severity": "source_defensible_audience_repair",
+      "source_fact": "High-v2 rejects publication and identifies Polish citizens of Greek origin, unlike original medium/high that described potential noncitizen beneficiaries. The underlying minority-law citizen definition was independently checked in the primary ELI source.",
+      "qualification": "The original supplied draft does not quote the whole underlying definition; conservative low-confidence triage passing remains defensible. This does not prove that no indirect language-support effect could ever concern noncitizens."
+    },
+    {
+      "case": "reanalysis-RCL_12412454-high-high_v2",
+      "severity": "material_procedure_deadline_error_after_coverage_repair",
+      "field": "key_changes",
+      "model_text": "При срочном лечении заявление на возмещение можно подать после лечения — в течение 30 дней.",
+      "source_fact": "The supplied art.42d(3) exception refers to wniosek o wydanie zgody under art.42b(9), submitted within 30 days from completion of urgent life/health-saving treatment in another EU/EEA state. It is a retrospective consent application, not the separate refund application.",
+      "source_excerpt": "przed złożeniem wniosku o wydanie zgody ... jeżeli następnie złożył taki wniosek w terminie 30 dni od dnia zakończenia tego leczenia",
+      "qualification": "High-v2 successfully restores course eligibility and the no-other-insurance condition, but coverage improvement does not establish unchanged procedural accuracy. Historical Opus does not introduce this mislabeled deadline. The pending v3 prompt was extended before any v3 generation to distinguish legal procedures; a fresh control uses different consent/refund deadlines."
+    },
+    {
+      "case": "analysis-3141-high-high_v2",
+      "severity": "source_supported_coverage_repair",
+      "source_fact": "High-v2 includes course participants and medical graduates without other insurance, and correctly calls the retrospective 30-day procedure an application for consent in another EU/EEA state. It also retains the 14-day pension-work notification and staged 14-day/9-month/12-month entry rules.",
+      "qualification": "The related RCL high-v2 answer mislabels the same procedure as refund, so this one correct answer cannot establish configuration-wide stability."
+    },
+    {
+      "case": "reanalysis-3141-high-high_v2",
+      "severity": "revision_description_correction_not_proven_text_delta",
+      "source_fact": "High-v2 restores the missing course groups and preserves the no-other-insurance condition. Its one changes_since_previous bullet correctly distinguishes foreign-doctor evidence for consent from the separate refund procedure; the supplied reconstructed old bullet ambiguously combines refund and that evidence.",
+      "qualification": "An actual prior saved brief is available but the old full legislative version is not. Treat this as correction of prior description, not proven creation/removal of a provision between bill versions. This context cannot establish historical version-change precision."
+    },
+    {
+      "case": "reanalysis-3004-high-high_v2",
+      "severity": "incomplete_date_exception_and_checked_scope",
+      "source_fact": "The foreign-acquirer declaration is source-supported, including the company already owning or becoming an owner/perpetual usufructuary on registration. The answer omits perpetual usufruct, which the historical Opus also omits. Its effective_date states only 1 October 2027, while supplied art.14 and Opus explicitly include some financial-filing provisions effective 1 October 2028.",
+      "qualification": "The directly discussed foreign-acquirer declaration is in the 2027 part, so this is incomplete whole-law entry wording rather than a demonstrated wrong date for that foreigner duty. Opus score 1 versus Luna 2 does not change the >=3 publication gate."
+    },
+    {
+      "case": "reanalysis-2846-high-conditions_v3",
+      "severity": "coverage_regression_during_calibration",
+      "source_fact": "The v3 completeness prompt produces a visa-only answer and omits foreign volunteers and their criminal-record checks in every output field. V2 high had at least mentioned the check, and historical Opus names citizenship/residence jurisdictions and the ten-year period.",
+      "qualification": "Do not choose the new prompt solely because it repairs another case. The fresh small five-year control passes, demonstrating that passing an isolated control does not establish rich-real-input coverage. An identical high repeat and xhigh/64k with the unchanged v3 prompt are explicitly queued."
+    },
+    {
+      "case": "reanalysis-2110-high-conditions_v3",
+      "severity": "source_supported_condition_repair_with_editorial_variation",
+      "source_fact": "V3 high explicitly restores the restriction on foreign-law unions not recognized as marriage, adult/legal-capacity exclusions, personal joint attendance, optional PESEL, the 100zl fee and no residence entitlement. Its score changes from v2 indirect 2 to social 3.",
+      "qualification": "Facts improve, but the publication gate changes. Civil partnership versus social rights is an editorial classification judgment here, not a proven fabricated statutory right. Historical Opus uses 2; report the score variation separately from factual completeness."
+    },
+    {
+      "case": "conditions_v3 initial passing checks",
+      "severity": "passed_selected_source_conditions",
+      "source_fact": "V3 preserves the score-1 ordinary-budget versus score-3 new-benefit distinction, full work-or-business/tax/child-school exceptions in 1040, and pre-July-2026/immediate full-time study plus single-mother/pension conditions in 3039. Its fresh non-EU volunteer guard correctly uses citizenship/residence states over five years and excludes Poland.",
+      "qualification": "These selected passing checks coexist with a real Jamboree coverage regression and do not prove universal improvement."
+    },
+    {
+      "case": "change_review_v1-complete-eleven-controls",
+      "severity": "passed_complete_planned_controls_with_locale_limit",
+      "source_fact": "All eleven distinct review controls at medium/high match materiality gold: five legal changes and two immaterial small controls, plus four real-corpus mutations (OR/AND, vacatio, insurance negation, spacing). Separately all eight decisions on two exact production-prepared mutations are correct.",
+      "qualification": "Twenty-two plus eight answers are repeated effort/prompt variants, not thirty independent events. One medium scope rationale is Polish, whereas the corresponding high is Russian; this is a locale defect, not a lost material change. The large raw-corpus stress cases are outside the current production review size cap."
+    },
+    {
+      "case": "analysis-950-high-high_v2-full-source-conditions",
+      "severity": "material_eligibility_condition_omission",
+      "source_fact": "The high-v2 answer accurately preserves the main Blue Card 6-month contract, 3/5-year qualification experience, 12/6-month mobility, 150% salary and 15 working-day notification rules, and all three conditions for a foreign caregiver of a Polish child. But its sibling groups are broad: dependent ill siblings of refugees. The normative art.159(5)(2) requires complete and permanent dependence on parents who qualify as parents of an unaccompanied minor refugee and have been granted the family-reunification residence permits. Those limiting conditions do not appear anywhere in the answer. Confidence is .99.",
+      "qualification": "This is a source-grounded incompleteness in a generally competent detailed answer, not evidence that all listed siblings have automatic residence. No matched fresh Opus answer or paired v3 replay of this case exists. The social-assistance statement is supported by repeal of arts.76/78 and the supplied justification; do not classify it as an invented entitlement merely because it is compressed."
+    },
+    {
+      "case": "analysis-RCL_12399355-high-high_v2-FGSP-repair",
+      "severity": "source_supported_coverage_repair_with_limits",
+      "source_fact": "High-v2 restores the FGŚP wage-protection mechanism omitted by the original medium answer, and accurately identifies a maximum three-month period and the 30-day main / six-month art.73 commencement split. Source arts.34-38 also set employer/individual application timing, monthly payout caps and unmet claims caused by the restrictive measures. The short answer leaves these to generic conditions-of-law wording.",
+      "qualification": "Main-topic coverage improved, but this is not a complete actionable explanation of the application procedure. Max32k produced no final answer on this same source."
+    },
+    {
+      "case": "offline-minimal-card-render-127-answers",
+      "severity": "passed_limited_render_probe",
+      "source_fact": "Actual production MessageFormatter renders 127 completed analysis/reanalysis variants with minimal bill metadata within Telegram length limits. Summary, key changes, practical impact, affected groups and effective date all survive in these cards. No paid API call or Telegram delivery was made.",
+      "qualification": "Does not include real stages, consultation/RCL metadata or update-card rendering, and does not prove factual completeness. It only shows the extra group conditions in these tested answers are not removed by the minimal card renderer."
+    },
+    {
+      "case": "historical-cost-disjoint-cache-correction",
+      "severity": "economic_comparison_correction_without_budget_change",
+      "source_fact": "Production token records use disjoint uncached/read/write inputs. Fully cold historical repricing must add all three categories before applying input rates. The earlier cold comparison omitted 5304 Opus cache-write tokens and 2048 GPT-5.1 cache-read tokens. The comparison script now provides corrected cold totals and a separate repricing using observed cache categories. Official Opus5.5 Batch cache read is .10/M, 5-minute write2.50/M; GPT5.1 Batch cached input .0625/M. All measured Luna cache categories remain zero.",
+      "qualification": "Historical cache-write TTL is not persisted; the observed-cache scenario assumes 5-minute writes. Comparisons remain repriced past usage with different tokenizers/prompts, not fresh matched-model quality runs or future monthly savings. Actual Luna test cost and its $2 budget are unchanged."
+    },
+    {
+      "case": "triage-1407-v1-scope-regression",
+      "severity": "potential_scope_narrowing_regression",
+      "source_fact": "Original triage none/medium passes real KSeF1407 as a change to VAT/business obligations, at .73/.78 confidence. V1 rejects at .91 solely because the visible changes lack a special rule for foreigners. The original production triage gate includes directly or clearly indirectly changed non-citizen obligations; the added V1 universal-applicability sentence risks narrowing that gate. Full-text medium describes actual foreign-buyer/non-NIP/SME procedures and scores2.",
+      "qualification": "No proven lost score>=3 reader card under current thresholds, and full-source details absent from excerpts must not be pretended visible. Historical Haiku also rejects and is not independent gold. New v2 removes the foreigners-only interpretation and is registered on all91 existing contexts plus six fresh focused guards without changing the publication rubric. General criminal procedure410 is also sensitive to this boundary; conservative extra passing is evaluated separately from lost relevance."
+    },
+    {
+      "case": "triage-v1-complete-91-with-source-qualified-recall",
+      "severity": "completed_calibration_with_mixed_scope_effects",
+      "source_fact": "All91 v1 medium triage answers are valid and Russian. The real2355 answer correctly passes the operative other-EU-citizen criminal-record procedure at .99. Case423 now passes an explicit 90-day foreign radio-amateur permission exception, whereas original medium and historical Haiku rejected it. The KSeF1407 v1 rejection at .91 remains a broad-gate narrowing risk and is the reason for v2.",
+      "qualification": "Do not label423 a newly created statutory right without its prior-law comparison. V1 successes and ten synthetic guards do not establish current Sonnet equivalence; historical labels can share misses. KSeF full-text analysis is score2, so a lost published card is not proven. Six RCL source inputs have now been added separately to test a missing data type."
+    },
+    {
+      "case": "analysis-edge-2355-medium-edge-long-input",
+      "severity": "confident_complete_topic_omission_in_long_mixed_source",
+      "source_fact": "Full-text medium on the same real2355 source returns irrelevant/1 at .98 and asserts no foreigner-specific work/documents procedures, omitting the supplied other-EU-citizen citizenship-state criminal-record check. The earlier high answer on this source identifies it at score2; original triage medium and calibrated v1 triage pass it. The medium input is434138 tokens and reasoning758 tokens.",
+      "qualification": "This is a source-grounded full-analysis coverage failure, not merely disagreement with historical Haiku (which also rejected). Both full answers remain below the current publication score3 threshold, so loss of a published reader card is not established. The planned high-v2 rerun is still pending; do not count it as fixed."
+    },
+    {
+      "case": "secondary-role-field-semantics-and-threshold-audit",
+      "severity": "passed_limited_runtime_semantics_check_with_style_caveat",
+      "source_fact": "Actual DocumentDigest schema and prompts require supports null for OSR/opinions, false for a government rejection and true for backing. The real1319 OSR answer has null, and positive/negative controls are correct at medium/high. Calibrated change-review and joint answers also retain confidence above the .8 production decision threshold; their correct false flags are not merely low-confidence outcomes that would require fallback.",
+      "qualification": "OSR summary writes the Cyrillic ОСР rather than Latin OSR, a style defect under the acronym rule. There is only one real supplement and two real joint-description pairs, with other examples synthetic. These limited checks cannot certify all secondary documents or current GPT5.1/Sonnet equivalence."
+    },
+    {
+      "case": "high-v2-2271-825-1962-source-review",
+      "severity": "source_supported_core_with_condition_compression_caveat",
+      "source_fact": "Three newly completed high_v2 answers are valid. 2271 correctly retains authenticated payment form and deposit upon missing/improper form by payment deadline, final ECHR judgments as executable titles and 30-day vacatio; score2 versus historical Opus1 stays below publication threshold. 825 correctly identifies removal of inheritance taxation, foreign-gift recipient Polish citizenship OR permanent residence and the source-proposed 1 January2025 date. 1962 correctly separates foreign lawyers public name/list number, practising-lawyer insurance sum and government system access including PESEL if present, with14-day vacatio.",
+      "qualification": "825 compresses the domestic movable-property/rights exemption to neither party having a Polish connection; source expressly requires neither party being Polish citizens nor having permanent residence or registered seat in Poland, so the answer is not a fully specified eligibility guide. Historical proposal date is not confirmation of current law. 2271 score mismatch alone is not a legal error. No matched historical baseline exists for825 or1962; these do not establish relative superiority over Opus."
+    },
+    {
+      "case": "high-v2-3146-3008-source-conditions-check",
+      "severity": "source_supported_repair_with_remaining_eligibility_omission",
+      "source_fact": "3146 high_v2 preserves Frontex return operations carried out in Poland, KGSG consent for Agency-initiated actions, foreign/staff operational powers including coercion under EU rules and14-day vacatio; it avoids the original-medium inversion into returning foreigners TO Poland. 3008 high_v2 preserves non-Polish applicants B2 proof, passport/travel/statutory-document alternative without PESEL,26years, general education/training, electronic application and1September2027. Both remain below publication threshold.",
+      "qualification": "3008 omits the source art3(1)(7) bar on a final conviction for an intentional crime or intentional fiscal crime and the application criminal-record certificate issued no earlier than one month before filing. Historical Opus included nonconviction. This is incomplete qualification, not an explicit assertion that convicted applicants qualify. Source recognition of foreign studies also appears in trainer/transition provisions; do not wrongly impose all such provisions on every new applicant. Score2 versus historical1 is not legal accuracy evidence."
+    },
+    {
+      "case": "high-v2-ksef1407-operative-foreign-private-procedure",
+      "severity": "source_supported_indirect_relevance_with_actionability_limits",
+      "source_fact": "1407 high_v2 correctly passes with score2 and names source-backed purchaser invoice delivery outside KSeF, SME beneficiary EX number, offline24 upload by the next working day and phased1February/1April2026 adoption by2024 sales exceeding200millionPLN. Source art3 and amended commencement provisions support the stated dates. This corroborates a concrete private foreign-customer/SME angle behind the v1 triage scope-risk diagnosis.",
+      "qualification": "The answer reduces the small-seller exception to compliance with unspecified thresholds rather than the source10,000PLN per month during1April–31December2026 and loss starting with the exceeding invoice. The source purchaser clause requires non-use of both identification categories with category exclusions; the compressed Russian wording should not be read as free choice to omit a legally required identifier. Full-text facts outside triage excerpts must not be credited to triage. Both original medium and this high answer score2, so a lost published score>=3 card is not established. No matched historic Opus baseline is available for this case; source-proposed2026 dates are not live-law verification."
+    },
+    {
+      "case": "rcl-triage-12402353-three-prompt-comparison",
+      "severity": "source_supported_triage_gate_all_three_variants_with_rationale_scope_caveat",
+      "source_fact": "First completed real RCL triage context12402353 passes in original/v1/v2 medium at.99, all valid with Russian rationales. The supplied excerpts explicitly show amended maritime code art10(1)(2a) EU or EFTA-state-party-to-EEA owners and art10a(1) Polish branch or service representative; foreign-flag operating procedures are also visible. V2 retains EU/EEA wording and the branch/service representative condition, matching the independently frozen pass expectation.",
+      "qualification": "This is one context repeated under three prompts, not three independent successes or proof of Sonnet-equivalent recall. V1 compresses eligible EFTA owners without the party-to-EEA condition, an overbroad rationale if read as eligibility guidance, while its pass decision remains correct. Old-law comparison is absent, so allowing registration in the proposed wording must not be reported as a newly created right. Five other real RCL triage contexts remain pending."
+    },
+    {
+      "case": "triage-v2-first13-source-qualified-routing-review",
+      "severity": "conservative_routing_broadened_without_general_quality_certificate",
+      "source_fact": "First13 Sejm v2 outputs are valid and Russian. At the actual0.8 rejection threshold, v2 routes12 to full analysis, v1 routed10 and historical Haiku routed3. Newly passed2747 contains operative dog-control restrictions and fines;2887 contains an operative170/140/110/80/50km route restriction by heavy-vehicle mass, not only an infrastructure funding plan. UNOPS276 and inheritance825 passes have already source-checked private effects.1271 correctly rejects a commemorative day despite Ukrainian keywords.1889 preserves Polish-only widow eligibility and lowers uncertainty confidence to.57 rather than claiming a non-citizen widow benefit.",
+      "qualification": "This small first shard is not representative accuracy or monthly ROI. Universal applicability can appropriately trigger conservative analysis but may add below-threshold cases; no lost or gained published card is proven.1472 has expanded monitoring data about foreign students in the supplied justification; the model’s data-effect reasoning is not evidence of a new residence or benefit right.321 old eligibility law is not fully quoted, so uncertainty pass is defensible rather than proof of non-citizen entitlement. Current Sonnet has not been freshly benchmarked."
+    },
+    {
+      "case": "input-fidelity-applicant-metadata-correction",
+      "severity": "confirmed_research_input_limitation_with_controlled_replay_registered",
+      "source_fact": "The reconstruction assigned government to25 corpus Sejm triage inputs and3 corpus full-analysis inputs whose official titles map to deputies/committee/president. Two saved-text reconstructed analysis inputs1039/1040 also disagree with production applicant_from_title. Source texts and frozen prompt variants remain archived unchanged. A57-request Batch-only diagnostic on30 corrected contexts is registered within the full USD2 cap: original/v2 medium triage for25; high-v2 for5 main analyses; and v3 completeness checks for3039/1040.",
+      "qualification": "This is post-discovery input correction, not57 new bills or a blind quality sample. Corrected input results must remain a distinct cohort and must not retrospectively relabel old results as exact production inputs. Pure production helper is reused; extraction, source content, excerpts, schema, rubric and prompt tails are unchanged. Registration reserveUSD.09923575, full maximum at registrationUSD1.786997475; no generation has been sent synchronously and no production code changed."
+    },
+    {
+      "case": "medical-rcl12412454-v3-xhigh64k-procedure-repair",
+      "severity": "targeted_source_supported_repair_with_urgency_condition_compression",
+      "source_fact": "First real xhigh/64k answer with unchanged v3 prompt is valid. It restores language/preparatory-course and practical-medical-graduate coverage only without another compulsory insurance basis, and identifies a consent application before urgent treatment or within30days after it ends in another UE/EOG state. Separate coordination reimbursement concerns care during UE/EFTA/UK stay rather than a trip for treatment, with prescription/document proof, and pension work-cessation notification14days. It avoids the v2-high30day-refund error. Measured costUSD.0051429,10807 output tokens including10054 reasoning, against v2-highUSD.0034374 and4036 output including3395 reasoning.",
+      "qualification": "This is one targeted real context, not full-corpus xhigh equivalence or isolated effort causality: it combines the richer v3 prompt and higher effort compared with v2 high. The actual same-v3 high result remains pending. The answer abbreviates the source urgency condition to urgent treatment rather than explicitly preserving clinically confirmed necessity to save life or health, so it is not a fully specified eligibility guide. Longer practical impact exceeds the nominal1–2-sentence copy preference; do not trim legal conditions to mask this tradeoff."
+    },
+    {
+      "case": "conditions-v3-three-new-guards-source-review",
+      "severity": "passed_focused_conditions_and_no_overfitting_guards",
+      "source_fact": "All three remaining fresh v3 guards pass source review at high16k: foreign-law registered union excludes the notarial agreement even if not recognized as marriage, with no residence right; permanent-resident child-under12 benefit50PLN/passport/tourist-only exclusion without invented criminal-history documents; urgent life-saving consent18days after treatment separately from refund40days after invoice payment, with no automatic entitlement. All are valid and Russian.",
+      "qualification": "These are three small focused controls fixed before their answers, not three independent legislative events or proof of performance on rich real inputs. The earlier rich real Jamboree omission remains unresolved pending repeat/xhigh."
+    },
+    {
+      "case": "high-v2-full-scan-rpw2793-core-consistency",
+      "severity": "core_agreement_with_previously_visually_checked_normative_page",
+      "source_fact": "High-v2 full-scan answer retains the previously visually inspected Ukraine-special-act social-benefit/health-ground and scientific-hiring repeals,30-day vacatio and distinction between losing special grounds and losing all possible entitlement. Score4 is consistent with the special Ukraine-act rubric, with no invented stay extension.",
+      "qualification": "Core agreement is with an earlier visual source audit, not a new independent scan sample or measured current-model comparison. The added county financing/art27a bullet has not been independently rechecked in this audit entry, so this entry is not an all-detail pass or proof for arbitrary poor scans."
+    },
+    {
+      "case": "triage-v2-first25-ksef-repair-and16-guard-audit",
+      "severity": "source_supported_calibration_repair_and_focused_guard_passes",
+      "source_fact": "All25 v2 answers in the first shard are valid and Russian. All16 synthetic controls match their frozen expected triage gates, including all six new v2 guards: universal invoicing, tenant deposit deadline, Sunday wage, citizenship-only payment exclusion, unchanged agency funding exclusion and inconclusive individual fee with low confidence. Real1407 KSeF now passes at.91 on changed invoicing/VAT obligations rather than requiring a foreigners-only provision, repairing v1 rejection.125/1749 remain settled budget rejections and1271 in the next shard rejects a commemorative day, so v2 does not simply accept every keyword hit.",
+      "qualification": "Guards are small focused controls, not16 independent real-law successes. The other source-grounded real procedures in this shard generally trigger conservative full analysis, possibly below publication threshold. Old Haiku differs on all nine real gates here, but historical labels are not independent legal truth and neither agreement nor disagreement is an accuracy percentage. No newly created KSeF foreign-buyer fact absent from excerpts is credited to triage, and no lost score>=3 budget/KSeF card is proven. Main input-metadata corrections and remaining full-corpus v2 cases are pending."
+    },
+    {
+      "case": "high-v2-primary3146-direction-stability-with-core-omission",
+      "severity": "source_supported_direction_repair_but_not_all_material_detail_retained",
+      "source_fact": "Primary3146 high-v2 also keeps return operations conducted in Poland, KGSG consent, voluntary/forced return scope and14-day vacatio, without the original-medium return-TO-Poland inversion. The source justification explicitly mentions forced or voluntary returns. This agrees with the separately reconstructed revision context on the central direction.",
+      "qualification": "The source expressly includes weapons/coercion powers under EU rules; this primary answer does not name those powers, although the revised-context high-v2 answer and historical Opus do. This is a summary coverage gap, not a contradictory claim that force is prohibited. Two contexts are the same bill and not independent robustness successes. Score2 remains below publication threshold."
+    },
+    {
+      "case": "high-v2-rcl12408900-expert-citizenship-and-unregistered-exception",
+      "severity": "source_supported_core_and_exception_with_copy_compression_limits",
+      "source_fact": "High-v2 preserves art24 Polish/EU/EFTA-parties-to-EEA/Swiss citizenship for certified court experts, sufficient Polish, age25, five-year professional practice,15-hour training with law-degree exemption, no-PESEL identity alternative and source-stated2027/2026 commencement exceptions. It also preserves the separate appointment of an unregistered knowledgeable person when calling a registered expert is impossible or difficult, avoiding the historical Opus blanket-ban problem already diagnosed against the source.",
+      "qualification": "This does not establish superiority on all expert qualifications: full capacity, public-rights and other art24 conditions are not all named. The certified-translation statement compresses the source requirement for specified application documents rather than every conceivable foreign-language paper. Polish/EU/EEA/Swiss eligibility and the unregistered exception are verified, but the answer is not an exhaustive applicant checklist; proposed dates are not a live-law confirmation."
+    },
+    {
+      "case": "high-v2-ukraine342-core-and-family-exclusion-audit",
+      "severity": "source_supported_core_with_missing_family_citizenship_exclusion",
+      "source_fact": "342 high-v2 preserves the frozen2024 proposal stay extension to30September2025, UKR on4March2024 plus on application and at least365continuous days, online CUKR/card route,7-day employment notice, school-linked benefits and mixed commencement dates. Source art42o makes the main card valid for3years from issue, with the child card tied to the mother’s term.",
+      "qualification": "The answer names non-Ukrainian minor family members but does not preserve the explicit Polish/other-EU citizenship exclusion in amended art1(2) and art2(1), so the group description is incomplete despite confidence.99. Its up-to3years wording is less precise than the source fixed3-year main-card duration and child-specific term. This is an historical proposal test, not a claim of currently applicable2026 stay rules. No matched historical Opus baseline is available here; core correctness does not certify all medical/care/payment conditions in the long mixed source."
+    },
+    {
+      "case": "jamboree2846-identical-v3-high-repeat-nonmonotonic-coverage",
+      "severity": "confirmed_same_input_variability_with_targeted_repair_in_repeat",
+      "source_fact": "Offline comparison proves the original conditionsv3_1 Jamboree request body and stabilityv3_1 high request body are exactly equal. The original final answer omitted the entire foreign-volunteer/criminal-check topic. The repeat at the same.99 confidence preserves non-Polish EU citizenship-state information via KRK, non-EU residence countries over10years for EU volunteers and citizenship/residence countries over10years excluding Poland and citizenship country in the non-EU-volunteer residence set. It also preserves child-work disqualifiers and special-country fallback ordinary criminal-record information. Visa confirmation/six-week notice and exceptions remain present.",
+      "qualification": "This is one real bill repeated twice, not two independent successes or a measured error rate. A recovered repeat does not erase the first omission or prove a safe confidence-based router. Historical Opus includes the omitted topic, but there is no fresh multi-run Opus/Sonnet variability comparison. The xhigh Jamboree result remains pending."
+    },
+    {
+      "case": "stability-v3-mixed-high-fresh-guard-all-topics",
+      "severity": "passed_focused_mixed_topic_guard",
+      "source_fact": "High on the fresh mixed guard preserves registration-proof visa-fee waiver, non-EU child-work volunteer citizenship/residence countries with the novel7-year lookback, preparatory-course insurance only without another basis and14-day vacatio, correctly ignoring internal room/statistical provisions. It does not copy the5- or10-year lookback from other tests.",
+      "qualification": "This is a short controlled source with three topics, not proof of coverage on long rich bills. The corresponding xhigh guard is pending, and the same-v3 Jamboree omission already shows that passing this guard alone cannot qualify full replacement."
+    },
+    {
+      "case": "metadata-first31-main-core-review-and3039-audit-clarification",
+      "severity": "source_supported_core_after_input_correction_with_coverage_variation",
+      "source_fact": "First31 corrected-metadata answers are valid:26 triage,3 high-v2 main and2 conditions-v3 main. Corrected3039 high-v2/v3 preserve pre1July2026 accommodation followed immediately by daytime/full-time education, unmarried or spouse-outside-Poland single mother, pension cap, child-under-resident-care group, outside-centre care and truthful eligibility declaration. The only14-day clause in this supplied3039 text is vacatio; no separate14-day notification duty should be invented or counted as omitted. Corrected1040 v3 preserves work OR business plus tax obligations and lawful debt exceptions, child co-residence/school qualification, suspension/restart and1February–30April2025 application window. Corrected1039 preserves loss of special grounds rather than all ordinary entitlement, scientific hiring repeal and30-day vacatio.",
+      "qualification": "Corrected825 high-v2 focuses on inheritance in Poland and foreign gifts; it is narrower than the prior coverage and does not describe all domestic-gift exemption conditions or clearly address foreign inheritance, but does not explicitly claim those inheritances remain taxed. Source-proposed dates are not live law. Same source with one applicant-field correction is still subject to sampling variation; observed wording differences cannot be attributed causally to metadata alone. These are repeated contexts, not new bills. Prospective source review, not an erroneous shorthand in conversation, is the quality evidence."
+    },
+    {
+      "case": "cache-mode-cold-test-by-construction-and-budget-proof",
+      "severity": "verified_configuration_and_official_caching_semantics",
+      "source_fact": "All test requests use prompt_cache_options.mode=explicit without explicit prompt_cache_breakpoint markers. Official OpenAI prompt-caching documentation confirms such requests neither read nor write cache; observed input cache reads/writes are zero. Therefore this is a deliberately cold/no-cache quality-and-cost test, not a failed empirical attempt to obtain warm-cache hits. At the live budget checkpoint, uncached all-commitment boundUSD1.675329525 remains belowUSD2; even a hypothetical all-remaining-input cache-write uplift givesUSD1.756820675 with no missing preflight bounds.",
+      "qualification": "Do not claim caching is unavailable or measured warm-cache savings. Production adoption could mark only a reusable instruction prefix; new bill bodies often have no reusable full prefix, and repeated identical analysis may already be free through analysis_memo. Official currently supported cache TTL is a minimum30minutes and backend may retain longer; Batch scheduling cannot be assumed to preserve every prefix. Hypothetical cache-write calculation is a conservative diagnostic, not actual spend or a request to enable caching.",
+      "source": "https://developers.openai.com/api/docs/guides/prompt-caching"
+    },
+    {
+      "case": "analysis-3157-high-v2-source-review",
+      "severity": "checked_core_conditions_preserved",
+      "source_fact": "Source provides nationality/citizenship nondiscrimination subject to separate statutory rules, medical work cap of twice full-time, hospital and associated AOS generally at least half-time with specified exceptions, further qualifying employer consent, remuneration ceilings and prohibition on percentage-of-NFZ remuneration, six-month adaptation and one-month vacatio. Luna names these core features and explicitly avoids inferring new NFZ funding eligibility.",
+      "qualification": "Not an exhaustive labour-law checklist: declaration deadlines, employer response rules and exceptions are compressed. Historical baseline also compresses core labour details; no claim of universal superiority."
+    },
+    {
+      "case": "analysis-3160-high-v2-source-review",
+      "severity": "checked_facts_with_publication_gate_disagreement_not_gold_error",
+      "source_fact": "Source confirms PSI decisions15–20years, KAS mandatory opinion at>=PLN40million and below-threshold restriction through2028, electronic procedures2029, main commencement2027 and art3a repeal31Dec2027. Luna accurately states these dates/threshold and does not invent the repealed provision content. Historical answer scores3/social and broadly calls this a change to foreign property purchases; Luna scores2/indirect.",
+      "qualification": "A source-confirmed repeal is relevant, but supplied source does not set out previous art3a substance. Publication-gate divergence is unresolved significance judgement, not independently proved legal misinformation or a proven safe rejection."
+    },
+    {
+      "case": "analysis-319-high-v2-inconsistent-return-payment-month",
+      "severity": "material_internal_contradiction_after_calibration",
+      "source_fact": "Source new special-law art26(3g–3h) suspends payment after beneficiary or child leaves Poland and, following re-entry with conditions met, pays from the month payment was suspended. Luna key_changes wrongly says from month of return, while practical_impact correctly says from month of suspension. At confidence0.98 this can change a reader assessment of arrears.",
+      "qualification": "Core three-benefit amounts, residence-conditioned foreign eligibility, ZUS electronic route, three-working-day personal appearance and staged dates are preserved; wrong key clause still prevents an unconditional quality pass. This corpus context has no matched historical model baseline."
+    },
+    {
+      "case": "reanalysis-RCL_12402353-high-v2-source-review",
+      "severity": "core_maritime_conditions_preserved_eea_qualifier_compressed",
+      "source_fact": "Source art67 differentiates temporary recognition up to3months for relevant third-country documents and temporary work up to3months on application confirmation after authenticity checks; non-EC-recognized countries require justified EC request. Art32 provides14day relevant document rules and year-after-system-communication main commencement. These cores are preserved. Source art10 owner eligibility is EU or EFTA-party-to-EEA, but Luna calls owner categories EU/EFTA without EEA qualifier.",
+      "qualification": "Historical matched answer also labels owners UE/EFTA; this is a shared scope compression, not evidence of a unique Luna regression. Luna omits the30PLN fee included in historical answer. Original context lacks reconstructible prior summary, so empty revision list is not itself an assessed failure."
+    },
+    {
+      "case": "analysis-3140-high-v2-full-long-ratification-source-review",
+      "severity": "source_grounded_long_text_with_scope_compression",
+      "source_fact": "323338input tokens invokes whole-request long-input tier. Treaty art15 confirms own-national readmission and travel documents within30days; art201 preserves domestic labour/social requirements; art202 provides max3years intra-company transfer and90day business visits to establish an enterprise; art203 contract services shorter of3monthsper12months or contract duration. Entry clause first day of second month after last notification matches answer. Score2 avoids earlier bilateral-ratification score inflation.",
+      "qualification": "Luna compresses establishing-an-enterprise business-visit purpose into business visits and omits shorter-contract duration rule; sector/reservation conditions also compressed. No claim that a long valid answer exhaustively preserves all migration rights or that this proves Opus-equivalent quality."
+    },
+    {
+      "case": "reanalysis-2846-v3-xhigh-country-checks-source-review",
+      "severity": "successful_same_prompt_higher_effort_diagnostic_not_stability_proof",
+      "source_fact": "xhigh version of frozenv3 preserves EU-citizen via-KRK citizenship-country checks plus nonEU residence countries over10years; nonEU-citizen citizenship and residence-country checks over10years, ordinary-list exclusion of Poland/citizenship countries and fallback ordinary registry checks. Visa fees, six-week consular notice and14day vacatio are sourced. USD0.00255545;7894output includes7080reasoning.",
+      "qualification": "Samev3 high first response omitted entire volunteer checks, exacthigh repeat recovered them, andxhigh now recovers them. These repeats demonstrate successful outputs and uncontrolled variability, not statistically established reliable xhigh replacement or a guarantee from0.99confidence."
+    },
+    {
+      "case": "joint-v1-consumer-semantics-verification",
+      "severity": "compatible_prompt_clarification_for_editorial_comparison",
+      "source_fact": "Source consumers of same_substance are adapter logging and MessageFormatter._joint_differences heading selection, not discovery grouping, posting suppression or legal equivalence filtering. Original prompt false branch already includes leaving reader in different position; v1 clarifies legal amounts/eligibility/deadlines vs purely editorial issue dates consistently with that criterion.",
+      "qualification": "The original true clause permits dates/detail differences and is ambiguous; do not grade every original date-difference response as a policy violation. Nine distinct controls/pairs and18effort variants do not establish broad secondary-task equivalence."
+    },
+    {
+      "case": "triage-v2-phases7-8-9-source-grounded-pass-review",
+      "severity": "nineteen_existing_contexts_preserve_conservative_routing",
+      "source_fact": "All19valid Russian v2 answers pass as v1 did. Reviewed visible source excerpts supporting cash-declaration sanctions268; foreign-property2699; citizenship-neutral Albania social coordination2667; fixedPLN100000 profit-border-organising sanction2081; nonresident passport tax data2287; discretionary registration bans outsideEU/EEA2995; specific Ukraine education calculations142/128/622; undesirable-foreigner list3003; EU-country criminal checks2355; service-agent outsidePL/EU2363; foreign-benefit eligibility319; employment-permit contract transmission2290; Eurodac2533; Ukraine342; BlueCard950; noncitizen repatriation family1201; interpreter rights2802.",
+      "qualification": "These are routing/rationale checks, not19new independent holdouts or proof that all source provisions survive full analysis. Source-support of specific Ukraine budget provisions is not an instruction to pass every generic annual unchanged agency budget. Original metadata defect affects some and is separately repeated in corrected-metadata cohort."
+    },
+    {
+      "case": "stability-mixed-v3-xhigh-fresh-control",
+      "severity": "checked_fresh_short_control_pass",
+      "source_fact": "Frozen fresh control contains registration-proof visa fee waiver, nonEU child-contact volunteer citizenship and residence-country criminal checks over7years, preparatory Polish-language-course insurance only if no other title and14day vacatio. xhigh preserves every specified core requirement and agrees with samev3 high. USD0.00054705;1731output includes1318reasoning.",
+      "qualification": "Short synthetic control fixed before answers. It does not undo material failures on long real bills or establish stable xhigh accuracy across all roles."
+    },
+    {
+      "case": "triage-scan-RPW-2793-v2-source-routing",
+      "severity": "actual_scan_relevant_scope_preserved",
+      "source_fact": "Actual previously visually inspected RPW2793 Ukraine proposal scan supplies withdrawal of Ukraine-specific entitlements/medical/social/work provisions. v2 triage correctly passes with Russian explanation;24813input tokens includes scan accounting;USD0.0012804.",
+      "qualification": "Same scan already tested by prior prompts and full analysis; one real scan context with repeated variants, not an independent scan population or proof of every claimed legal consequence."
+    },
+    {
+      "case": "analysis-RCL_12398102-conditions-v3-high-source-review",
+      "severity": "source_grounded_recovery_of_identifiers_and_refund_conditions",
+      "source_fact": "Source art39 preserves outside-medical-provider individual import refund;30day application assessment starts no earlier than day following import decision;consent valid one year;full patient payment extinguishes refund entitlement. Required noPESEL identity/representative data and EU-coordination identifier/document expiry appear in source. Target-import prescription180day and one-time realization, lifesaving/health necessity and medicinal authorization in exporting country, medical contraindication allowance and staged main2027 commencement are preserved in v3high.",
+      "qualification": "Successful real full-source calibrated resultUSD0.00940855,6521output includes5814reasoning. It repairs early identifier omissions but is not independent evidence that all calibrated long medical projects are safe; core eligibility, deadlines and consent versus repayment must remain individually checked."
+    },
+    {
+      "case": "analysis-3139-high-v2-long-ratification-score-calibration-failure",
+      "severity": "confirmed_rubric_publication_mismatch_after_explicit_guard",
+      "source_fact": "Actual supplied Kyrgyzstan treaty art76 has ICT employment and3year/1year durations but expressly preserves national entry, residence, work and social law. Bill consents to ratification. Frozenv2 explicitly says score2 bilateral ratification and only a separate operative Polish visa/residence/work entitlement change merits higher category. Calibratedhigh still scores4/employment and explains treatyart76 as grounds, while correctly acknowledging no automatic permit exemption. Historical matched answer scores2/indirect.",
+      "qualification": "Source facts and durations are largely correct; this is publication-priority/rubric inconsistency, not a fabricated Polish permit exemption. The neighboring full Uzbekistan ratification is scored2, so long-context ranking is not consistently repaired by the explicit guard.350680input uses entire-request long tier;3714output includes3309reasoning;USD0.03646075. No additional paid prompt variant registered."
+    },
+    {
+      "case": "reanalysis-RCL_12412454-conditions-v3-high-source-and-xhigh-pair-review",
+      "severity": "same_frozen_prompt_repairs_consent_refund_error_in_both_efforts",
+      "source_fact": "Medical source art42d(3) has urgent clinically confirmed lifesaving/health treatment in anotherUE/EEA country and complete consent application before treatment or submitted within30days after treatment. v3high correctly names consent application, not reimbursement claim; course/practical medical graduate insurance only without another title, incidental-stay UE/EFTA/UK refund with no treatment-purpose trip, prescription evidence, pension foreign-work cessation notification14days, and main14day/9month/12month staged vacatio are preserved. Verified high andxhigh request input/schema equality;effort high16kcap vsxhigh64kcap. High USD0.0052009/11039out10233reason; xhigh USD0.0051429/10807out10054reason.",
+      "qualification": "The clinical-confirmation condition is still compressed in both summaries. One matched pair does not prove general xhigh cost or quality advantage. The repair is not attributable solely to higher effort: new frozenv3 succeeds at both. Observed high total output exceeds current production8k cap, so copying model name into existing8k setting is not the tested configuration; no8k repeat was registered."
+    },
+    {
+      "case": "analysis-edge-878-high-v2-final-source-review",
+      "severity": "checked_core_sanctions_customs_changes",
+      "source_fact": "Source confirms export declarations for risk destinations/Russia-Belarus transit, destination customs clearance evidence45days after EU exit, fineup-toPLN500000, restrictedCN44 timber provenance evidence, forced-management24to36months and removal of art217KPA certificates procedure. Highv2 names these and scores2/indirect without inferring a new stay entitlement.",
+      "qualification": "Focused source-supported analysis of real triage disagreement, not proof that ordinary customs inspection alone is a publishable immigration story.223131input tokens,USD0.0129688."
+    },
+    {
+      "case": "analysis-edge-2355-high-v2-final-source-review",
+      "severity": "rare_foreigner_rule_found_in_large_real_text",
+      "source_fact": "434473input tokens. Source art6zzc includes other-EU citizenship-country criminal-register requests viaKRK and mandatory background-check interval at least onceper3years. Separate art6zz3year system audit exists too; actualperson check interval independently confirmed, not a misattributed audit number. Sensitive access/contractor identification/biometrics and14daymain/6monthCBM dates grounded. Score2/indirect below cardgate.",
+      "qualification": "Role and exceptions compressed. A correct triage pass followed by below-cardgate full analysis is an extra cost and is not a triage false positive by itself.USD0.044217925."
+    },
+    {
+      "case": "analysis-and-reanalysis-3150-high-v2-final-budget-repair",
+      "severity": "real_large_text_ranking_repair_confirmed",
+      "source_fact": "Both583515input-token primary and631455input-token revision now score1/marginal, fixing originalmedium/high score3. Source annual funding includes repatriants70.2million, KartaPolaka55million, FunduszPomocy1billion; revision addsUdSC108.137million and foreigner aid175.182million/32.955million with thousand-PLN table headers. Polish-language training exists in FunduszPracy table without specific visible amount. Source maincommencement1Jan2027. No individual entitlement inferred.",
+      "qualification": "Two versions of one real budget, not independent positive controls; not every future funding bill is immaterial. Fresh200PLNbenefit control stillscores3. Both charge whole-request long tier;USD0.059003625 and0.064179."
+    },
+    {
+      "case": "triage-v2-final103-contexts-and-language-regressions",
+      "severity": "routing_controls_pass_with_nonuniversal_semantic_and_language_limits",
+      "source_fact": "All103distinct originalv2 contexts return schema-valid results:87realinputs(79Sejmexcerpt contexts,2scans,6RCL) and16focused controls. All16fixedBoolean controls pass.8settledrejects include5controls and3real(annualbudgets125/1749,commemorative1271); remaining real inputs routefull. Totalv2costUSD0.03471875.2rationales878/1379are Polish, unlike all97v1rationales Russian.",
+      "qualification": "16of16controlled binary checks is not100%legal accuracy or currentSonnet equivalence. Generic procedural obligations and uncertainty routefull conservatively; actuallatercardgate may reject. The corrected-metadata repeat has an additional unsettled source-evidence issue on321. Historical references areHaiku, not currentSonnet."
+    },
+    {
+      "case": "triage-rcl-final-six-real-contexts-three-prompts-source-review",
+      "severity": "all18routing_outputs_match_frozen_source_expectations_with_rationale_limits",
+      "source_fact": "6realRCL excerpt contexts × original/v1/v2 allpass, matching source expectations frozen before results. Court source defines bieglysadowy as certifiedandregistered, thencitizenshipeligibility; nonregistered-expert exception is not visible in triage excerpts, so do not use triage sentence as exhaustive professional-admission advice. Original medical rationale calls pensionsforeign where source Polishpensionplusforeignwork;v1/v2 focus courses/practicalgrad insurance. Taxdiplomatexemption, drugEUcoordination identifiers and sanctionsundesirable-foreigner list are visible. DrugnoPESELpassportandFGSPwages are NOT in correspondingexcerpt inputs and are not expected triage output.",
+      "qualification": "18repeated outputs cover6inputs, not18independent projects. Positive routing is sourcegrounded; fullmedical eligibility/title qualifiers may be compressed in one-sentence triage rationale and must come fromfull analysis. No new provider reference model paid."
+    },
+    {
+      "case": "corrected-metadata-final57-outputs-source-and-gate-review",
+      "severity": "input-fidelity-correction-complete_with_uncertain-regional-language-reject",
+      "source_fact": "All57diagnostics completed for30corrected applicant contexts:25triage(originalmedium/v2medium) and5main highv2 plus2highv3 condition repeats. Corrected1040highv2 preserves workORbusiness/tax exceptions/co-residence/schoolscope/stagedapplications andsuspensionrestart;1962coreprofessional insurance publication/14days preserved though publicname/listnumber omitted.321correctedv2 switches from originalmetadata v2 true0.8 tofalse0.87: rationale uses citizenship described in justification. Source operative art20 grants language learning topersonsusingregional languages, while citizenship in justification characterizeslanguage/community, not an explicit beneficiary exclusion.",
+      "qualification": "Cannot infer eligibility is citizen-only from community description; given supplied excerpts conservative uncertainty routing should be retained. This is unsupportedsettledreject, not independently proven lost>=3card; no full321gold. Metadataandstochastic variation bothchange, so no causal claim applicantfieldalonecausedresult. Other checked correcteddates/sourcegroups remain separately recorded; outputstyle mayvary."
+    },
+    {
+      "case": "max32k-final-resource-configuration-result",
+      "severity": "tested_configuration_unreliable_not_intrinsic_model_limit",
+      "source_fact": "42planned maxeffort calls yield28usablefinals and14incomplete outputs consuming32koutput cap mostly/allreasoning. New completions retain core metadata null dates,1040workORbusiness,2110foreignunion impediment andJambcountry/10yrchecks; most validcases are already reviewedsourcecontexts. Aggregate maxeffort reasoning is>98%output. Allfailures andinput/outputtokens included inUSD1.41323965final total.",
+      "qualification": "No128kcap experiment run; do not claim max intrinsically cannot solve task. Testedmax32k configuration not deployable; valid maxanswers stillcompress conditions/schoolscope/domesticgiftexemption and do not prove universal quality gains."
+    },
+    {
+      "case": "final-cost-and-paired-routing-qualification",
+      "severity": "fully_settled_accounting_and_non_roi_comparison",
+      "source_fact": "All732paidBatchrequests completed/collected; no activefuture commitments. ActualUSD1.41323965. Originalmedium-v2paired triage86contexts have9newfullroutes and2newsettledrejects(net7extra downstream analyses). Calibratedhighv2 coldLunacost for19matchedhistoricalOpuscontextsUSD0.22974705 versus observedhistoricalcache repricedUSD7.229026(~31.47x);5matchedGPT51USD0.02953315 versusUSD0.35574425(~12.05x).",
+      "qualification": "Historical tokens/outputs repriced, notfreshsame-prompt strong-model A/B;tokenizer/prompts/metadata differ and cachewarm not measuredforLuna. There is no measured currentSonnet or end-to-end monthly ROI. Do not present per-request savings as no-loss quality qualification."
+    }
+  ],
+  "additional_source_reviews": "source_audit_additions.json"
+}

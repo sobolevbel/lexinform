@@ -4,6 +4,13 @@ Extracted from `CLAUDE.md` on 2026-09-14: the price of a run, the guard rails an
 behind them. Read it when changing `AnalysisService`, `pricing.py`,
 `sections.excerpts`/`TextBudget` or any cost setting.
 
+## Сохранённое исследование Luna
+
+Результаты тестирования 5–6 октября 2026: [GPT-6 Luna — качество, калибровка и стоимость](reviews/2026-10-06-luna-evaluation.md).
+732 Batch-запроса стоили $1,41323965. Полная замена текущих моделей без потери качества
+не подтверждена; приложение и production не менялись. Это отдельный эксперимент, а не
+обновление исторических расчётов ниже.
+
 ## LLM cost model (Sept 2026)
 
 Opus 5 is $5/M input; output is ~1% of the bill. Since 2026-09-23 the analysis runs on Opus 5.5

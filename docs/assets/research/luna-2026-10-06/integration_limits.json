@@ -1,0 +1,40 @@
+{
+  "production_modified": false,
+  "analysis_configuration_only_is_insufficient": true,
+  "confirmed_blocks": [
+    {
+      "file": "src/lexinform/pricing.py",
+      "fact": "cannot reserve batch cost for unknown model gpt-6-luna"
+    },
+    {
+      "file": "src/lexinform/container.py",
+      "fact": "Triage and change review are wired to AnthropicAnalyzer."
+    }
+  ],
+  "required_before_adoption": [
+    "Luna pricing and long-input rate accounting",
+    "Context/token counting for the Luna tokenizer",
+    "Model-aware reasoning settings: current OpenAiEffort accepts none/low/medium/high only, so tested xhigh/max configurations cannot be enabled by an environment variable alone",
+    "Apply the selected Luna-specific prompt and per-role output cap; high-v2 is tested with 16000 output tokens and max-v2 with 32000 and exploratory xhigh stability checks with 64000, rather than the shared 8000-token production cap.",
+    "Luna cache-write accounting or explicit no-write mode",
+    "OpenAI triage/change-review adapter and Batch lifecycle if these roles are migrated",
+    "Phase-aware Responses parsing: select final_answer and exclude commentary; three first-pass responses required this correction."
+  ],
+  "experiment_scope": "Standalone Responses Batch payloads reuse production prompt builders and output models; they do not certify production wiring.",
+  "render_probe_scope": "189 completed variants rendered with the actual formatter and minimal metadata, without field loss or Telegram overflow. Real-stage, consultation/RCL and update-card rendering remain untested.",
+  "historical_baseline_lifecycle": {
+    "model": "gpt-5.1",
+    "deprecation_announced": "2026-10-01",
+    "api_shutdown": "2027-04-01",
+    "official_recommended_replacement": "gpt-6-sol",
+    "source": "https://developers.openai.com/api/docs/deprecations",
+    "scope": "Confirmed official lifecycle of the configured default model family; not a fresh verification of production runtime settings, and no replacement was implemented."
+  },
+  "experiment_cache_configuration": {
+    "mode": "explicit",
+    "explicit_breakpoints_present": false,
+    "observed_reads_and_writes": 0,
+    "interpretation": "Cold test by construction; absence of cache use is not proof of cache failure. Reusable instruction-prefix markers would require deliberate configuration and do not imply complete bill-body reuse.",
+    "source": "https://developers.openai.com/api/docs/guides/prompt-caching"
+  }
+}
