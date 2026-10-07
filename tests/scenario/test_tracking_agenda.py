@@ -242,6 +242,32 @@ def test_sejm_api_outage_stops_only_the_agenda_watch_and_loses_nothing() -> None
     assert len(w.publisher.agendas) == 1
 
 
+def test_one_committee_timing_out_does_not_stop_the_watch_of_the_others() -> None:
+    w = _referred_bill()
+    w.gateway.committees["SPC"] = Committee(term=10, code="SPC", name="Komisja Sprawiedliwości")
+    referral = Stage(
+        stage_name="Skierowanie",
+        stage_type="Referral",
+        date=dt.date(2026, 9, 3),
+        committee_code="SPC",
+    )
+    referrals = COMMITTEE_STAGES[-1]
+    w.set_stages(
+        "3039",
+        COMMITTEE_STAGES[:-1]
+        + (referrals.model_copy(update={"children": (*referrals.children, referral)}),),
+    )
+    w.gateway.committee_sittings["SPC"] = (
+        _sitting().model_copy(update={"code": "SPC", "num": 92}),
+    )
+    w.gateway.outages.add("list_committee_sittings:ASW")
+
+    report = w.run()
+
+    assert report.errors == [] and report.agenda_posted == 1
+    assert _refs(w) == ["SPC/92/2026-09-17+09:00+sala 412"]
+
+
 def test_items_are_stored_but_not_posted_without_publishing() -> None:
     w = _referred_bill()
     w.run()

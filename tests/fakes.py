@@ -118,7 +118,7 @@ class FakeSejmGateway:
 
     def _called(self, method: str, detail: str = "") -> None:
         self.calls.append(f"{method}:{detail}" if detail else method)
-        if method in self.outages:
+        if method in self.outages or f"{method}:{detail}" in self.outages:
             raise SejmApiUnavailableError(f"{method}: connection refused")
 
     def close(self) -> None:

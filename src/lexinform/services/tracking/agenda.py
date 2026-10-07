@@ -236,11 +236,15 @@ class AgendaWatcher:
         )
         upcoming: dict[str, list[CommitteeSitting]] = {}
         failed: set[str] = set()
+        outage: ServiceUnavailableError | None = None
         for code in codes:
             try:
                 sittings = self._gateway.list_committee_sittings(term, code)
-            except ServiceUnavailableError:
-                raise
+            except ServiceUnavailableError as exc:
+                outage = exc
+                failed.add(code)
+                log.warning("sittings of committee %s unreachable: %s", code, exc.describe())
+                continue
             except Exception as exc:
                 failed.add(code)
                 log.warning("sittings of committee %s unavailable: %s", code, exc)
@@ -248,6 +252,8 @@ class AgendaWatcher:
             upcoming[code] = [
                 s for s in sittings if s.date >= today and s.agenda and s.status == PLANNED
             ]
+        if outage is not None and not upcoming:
+            raise outage
         return upcoming, failed
 
     def _sejm_sittings(self, term: int, today: dt.date) -> tuple[list[SejmSitting], set[int]]:
