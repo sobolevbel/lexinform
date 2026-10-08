@@ -13,6 +13,7 @@ import logging
 import time
 from collections.abc import Callable, Iterator
 from datetime import UTC, date, datetime, timedelta
+from threading import Lock
 from typing import Any
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
@@ -69,6 +70,8 @@ class SejmApiError(RuntimeError):
 
 
 class SejmApiClient:
+    MAX_FAILED_REQUESTS = 3
+
     def __init__(
         self,
         base_url: str = "https://api.sejm.gov.pl",
@@ -91,6 +94,8 @@ class SejmApiClient:
         self._page_size = page_size
         self._max_retries = max_retries
         self._backoff = backoff_seconds
+        self._failed_requests: dict[str, int] = {}
+        self._failure_lock = Lock()
         # Looked up here and not bound as a default: a default binds at import and no test that
         # builds the container can then shorten the 1+2+4 seconds of a refused host.
         self._sleep = sleep or time.sleep
@@ -279,14 +284,21 @@ class SejmApiClient:
     ) -> httpx.Response:
         """One request with retries; `stream=True` returns before the body is read (caller
         closes the response)."""
+        host = self._client.build_request(method, url).url.host
         attempt = 0
         while True:
+            with self._failure_lock:
+                if self._failed_requests.get(host, 0) >= self.MAX_FAILED_REQUESTS:
+                    raise SejmApiUnavailableError(
+                        f"{host}: request failure budget exhausted; retry on the next run"
+                    )
             attempt += 1
             try:
                 request = self._client.build_request(method, url, params=params)
                 response = self._client.send(request, stream=stream)
             except httpx.TransportError as exc:
                 if attempt > self._max_retries:
+                    self._record_failure(host)
                     raise SejmApiUnavailableError(
                         f"{method} {url} failed after {attempt} attempts: {exc}"
                     ) from exc
@@ -297,6 +309,7 @@ class SejmApiClient:
                 if attempt <= self._max_retries:
                     self._wait(attempt, f"{method} {url}: HTTP {response.status_code}")
                     continue
+                self._record_failure(host)
                 raise SejmApiUnavailableError(
                     f"{method} {url}: HTTP {response.status_code} after {attempt} attempts"
                 )
@@ -306,6 +319,11 @@ class SejmApiClient:
                 response.close()
                 raise SejmApiError(f"{method} {url}: HTTP {response.status_code}")
             return response
+
+    def _record_failure(self, host: str) -> None:
+        """Successful endpoints must not replenish an outage budget shared across phases."""
+        with self._failure_lock:
+            self._failed_requests[host] = self._failed_requests.get(host, 0) + 1
 
     def _wait(self, attempt: int, reason: str) -> None:
         delay = backoff_delay(self._backoff, attempt)

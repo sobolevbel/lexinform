@@ -1,0 +1,28 @@
+name: Daily run interruption alert
+
+on:
+  workflow_run:
+    workflows: [Daily run]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  notify:
+    if: ${{ contains(fromJSON('["cancelled", "timed_out"]'), github.event.workflow_run.conclusion) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      # A separate runner survives cancellation and the daily job's hard timeout.
+      - name: Report interrupted run
+        env:
+          BOT_TOKEN: ${{ secrets.LEXINFORM_TELEGRAM_BOT_TOKEN }}
+          LOG_CHANNEL: ${{ secrets.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+        run: |
+          [ -n "$LOG_CHANNEL" ] || exit 0
+          curl --connect-timeout 10 --max-time 30 -fsS -o /dev/null -X POST \
+            "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${LOG_CHANNEL}" \
+            --data-urlencode "text=❌ lexinform: daily job ${CONCLUSION}; check the dump/push step before retrying, state persistence is not guaranteed: ${RUN_URL}"

@@ -163,6 +163,8 @@ jobs:
       # whole day (which answers the waiting commands first).
       - name: Run lexinform
         id: run
+        # Leave time for state persistence before the job-wide timeout.
+        timeout-minutes: 35
         continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -277,23 +279,24 @@ jobs:
       # The run itself reports to the log channel; this covers everything around it (a failed
       # restore, dump or push, a broken checkout), the cases where state may be lost.
       - name: Tell the log channel when the job failed around the run
-        if: ${{ failure() }}
+        if: ${{ !cancelled() && (failure() || steps.run.outcome == 'failure') }}
         env:
           LEXINFORM_TELEGRAM_BOT_TOKEN: ${{ secrets.LEXINFORM_TELEGRAM_BOT_TOKEN }}
           LEXINFORM_TELEGRAM_LOG_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          RUN: ${{ steps.run.outcome }}
           RESTORE: ${{ steps.restore.outcome }}
           DUMP: ${{ steps.dump.outcome }}
         run: |
           [ -n "$LEXINFORM_TELEGRAM_LOG_CHANNEL_ID" ] || exit 0
-          curl -sS -o /dev/null -X POST \
+          curl --connect-timeout 10 --max-time 30 -fsS -o /dev/null -X POST \
             "https://api.telegram.org/bot${LEXINFORM_TELEGRAM_BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${LEXINFORM_TELEGRAM_LOG_CHANNEL_ID}" \
-            --data-urlencode "text=❌ lexinform: daily job failed around the run (restore: ${RESTORE}, dump/push: ${DUMP}); the state may be unsaved: ${RUN_URL}" \
+            --data-urlencode "text=❌ lexinform: daily job failed (run: ${RUN}, restore: ${RESTORE}, dump/push: ${DUMP}); the state may be unsaved: ${RUN_URL}" \
             || true
           # A new message notifies the operator; the relay's "run started" is then removed.
           [ -n "$LEXINFORM_RUN_MESSAGE_ID" ] || exit 0
-          curl -sS -o /dev/null -X POST \
+          curl --connect-timeout 10 --max-time 30 -fsS -o /dev/null -X POST \
             "https://api.telegram.org/bot${LEXINFORM_TELEGRAM_BOT_TOKEN}/deleteMessage" \
             --data-urlencode "chat_id=${LEXINFORM_TELEGRAM_LOG_CHANNEL_ID}" \
             --data-urlencode "message_id=${LEXINFORM_RUN_MESSAGE_ID}" \

@@ -148,3 +148,98 @@ def test_bot_not_in_the_channel_is_an_outage() -> None:
 
     with pytest.raises(TelegramUnavailableError, match="not a member"):
         _telegram(forbidden).send_message("@c", "x")
+
+
+@pytest.mark.parametrize("failure", ["timeout", "429", "503"])
+def test_sejm_outage_budget_bounds_requests_across_endpoints(failure: str) -> None:
+    calls: list[str] = []
+    delays: list[float] = []
+
+    def unavailable(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.path)
+        if failure == "timeout":
+            raise httpx.ReadTimeout("upstream stalled")
+        return httpx.Response(int(failure))
+
+    client = SejmApiClient(transport=httpx.MockTransport(unavailable), sleep=delays.append)
+    try:
+        for code in ("ASW", "SPC", "FPB", "ZDR", "EDU"):
+            with pytest.raises(SejmApiUnavailableError):
+                client.list_committee_sittings(10, code)
+        with pytest.raises(SejmApiUnavailableError, match="budget exhausted"):
+            client.list_sittings(10)
+        with pytest.raises(SejmApiUnavailableError, match="budget exhausted"):
+            list(client.iter_processes(10))
+
+        assert len(calls) == 12
+        assert delays == [1.0, 2.0, 4.0] * 3
+    finally:
+        client.close()
+
+
+def test_sejm_partial_success_does_not_refill_outage_budget() -> None:
+    calls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.path)
+        if "ASW" in request.url.path:
+            raise httpx.ReadTimeout("one committee stalled")
+        return httpx.Response(200, json=[])
+
+    client = SejmApiClient(transport=httpx.MockTransport(handler), max_retries=0)
+    try:
+        for _ in range(2):
+            with pytest.raises(SejmApiUnavailableError):
+                client.list_committee_sittings(10, "ASW")
+            assert client.list_committee_sittings(10, "SPC") == ()
+        with pytest.raises(SejmApiUnavailableError):
+            client.list_committee_sittings(10, "ASW")
+        with pytest.raises(SejmApiUnavailableError, match="budget exhausted"):
+            client.list_committee_sittings(10, "SPC")
+        assert len(calls) == 5
+    finally:
+        client.close()
+
+
+def test_sejm_missing_items_do_not_consume_outage_budget() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404 if "processes" in request.url.path else 200, json=[])
+
+    client = SejmApiClient(transport=httpx.MockTransport(handler))
+    try:
+        for number in range(10):
+            with pytest.raises(SejmApiError):
+                client.get_process(10, str(number))
+        assert client.list_sittings(10) == ()
+    finally:
+        client.close()
+
+
+def test_sejm_budget_is_host_scoped_and_a_new_client_can_retry() -> None:
+    calls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.host)
+        if request.url.host == "api.sejm.gov.pl":
+            return httpx.Response(503)
+        return httpx.Response(200, content=b"attachment")
+
+    transport = httpx.MockTransport(handler)
+    client = SejmApiClient(transport=transport, max_retries=0)
+    try:
+        for _ in range(3):
+            with pytest.raises(SejmApiUnavailableError):
+                client.list_terms()
+        assert client.download("https://files.test/print.pdf") == b"attachment"
+        with pytest.raises(SejmApiUnavailableError, match="budget exhausted"):
+            client.list_terms()
+    finally:
+        client.close()
+
+    fresh = SejmApiClient(transport=httpx.MockTransport(handler), max_retries=0)
+    try:
+        with pytest.raises(SejmApiUnavailableError, match="HTTP 503"):
+            fresh.list_terms()
+    finally:
+        fresh.close()
+    assert calls == ["api.sejm.gov.pl"] * 3 + ["files.test", "api.sejm.gov.pl"]

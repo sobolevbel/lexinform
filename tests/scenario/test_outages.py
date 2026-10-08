@@ -4,9 +4,11 @@ or Telegram was down must be tried again on the next run, and exactly once."""
 
 from datetime import datetime
 
+import httpx2 as httpx
 import pytest
 
-from lexinform.errors import LlmUnavailableError
+from lexinform.adapters.sejm_api import SejmApiClient
+from lexinform.errors import LlmUnavailableError, SejmApiUnavailableError
 from lexinform.models import BillStatus, PublicationStatus
 from tests.harness import World
 
@@ -141,3 +143,37 @@ def test_unexpected_bug_in_a_phase_is_reported(monkeypatch: pytest.MonkeyPatch) 
     report = w.run(expect_bugs=True)
 
     assert report.errors == ["discovery failed: KeyError: 'oops'"]
+
+
+def test_exhausted_sejm_budget_keeps_discovery_watermark_for_recovery(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    assert w.run().ok
+    watermark = w.repo.last_discovery_started_at()
+    w.clock.advance(days=2)
+    w.add_bill("3040", "Projekt ustawy o obywatelstwie polskim")
+
+    def unavailable(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("upstream stalled")
+
+    client = SejmApiClient(transport=httpx.MockTransport(unavailable), max_retries=0)
+    try:
+        for _ in range(3):
+            with pytest.raises(SejmApiUnavailableError):
+                client.list_terms()
+        with monkeypatch.context() as patch:
+            patch.setattr(w.gateway, "iter_processes", client.iter_processes)
+            report = w.run()
+        assert not report.ok
+        assert any("budget exhausted" in error for error in report.errors)
+        assert w.repo.last_discovery_started_at() == watermark
+        assert w.repo.get(10, "3040") is None
+        assert w.bill("3039").analysis_attempts == 0
+    finally:
+        client.close()
+
+    assert w.run().published == 1
+    assert w.repo.last_discovery_started_at() == w.clock.now()
+    assert len(w.publisher.new_bills) == 2
