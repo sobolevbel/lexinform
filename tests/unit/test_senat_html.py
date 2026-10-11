@@ -66,6 +66,50 @@ def test_the_act_page_gives_the_print_the_committees_and_their_sitting() -> None
     assert act.committee_sittings == (dt.date(2026, 9, 23),)
 
 
+def test_continued_committee_work_preserves_every_date_and_does_not_announce_completion() -> None:
+    act = parse_act(_fixture("ustawa_2170.html"), "https://www.senat.gov.pl/ustawa,2170.html")
+
+    assert act.received == dt.date(2026, 9, 22)
+    assert act.committee_sittings == (dt.date(2026, 10, 8), dt.date(2026, 10, 13))
+    assert act.next_committee_sitting(dt.date(2026, 10, 11)) == dt.date(2026, 10, 13)
+    assert not act.committees_done(dt.date(2026, 10, 11))
+    assert not act.committees_done(dt.date(2026, 10, 14))
+
+
+def test_a_committee_recommendation_is_completion_evidence() -> None:
+    act = parse_act(_fixture("ustawa_2169.html"), "https://www.senat.gov.pl/x")
+
+    assert act.committee_work_completed
+    assert not act.committees_done(dt.date(2026, 9, 22))
+    assert act.committees_done(dt.date(2026, 9, 24))
+
+
+def test_one_committee_report_does_not_complete_the_other_referred_committees() -> None:
+    html = _fixture("ustawa_2169.html").replace(" oraz 38. pos. Komisji Spraw Zagranicznych", "")
+
+    act = parse_act(html, "https://www.senat.gov.pl/x")
+
+    assert not act.committees_done(dt.date(2026, 9, 24))
+
+
+@pytest.mark.parametrize(
+    "decision",
+    [
+        "Decyzja komisji: kontynuacja prac",
+        "Wniosek komisji: nie o przyjęcie ustawy",
+        "Wniosek komisji: nieznany",
+    ],
+)
+def test_a_missing_or_continued_committee_decision_is_not_completion(decision: str) -> None:
+    html = _fixture("ustawa_2169.html").replace(
+        "Wniosek komisji: o przyjęcie ustawy bez poprawek", decision
+    )
+
+    act = parse_act(html, "https://www.senat.gov.pl/x")
+
+    assert not act.committees_done(dt.date(2026, 9, 24))
+
+
 def test_a_committee_email_is_read_behind_either_obfuscation() -> None:
     blank = SenateCommittee(id=0, name="?")
 

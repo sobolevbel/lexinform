@@ -35,13 +35,13 @@ class SenateAct(BaseModel):
     received: dt.date | None = None
     committees: tuple[SenateCommittee, ...] = ()
     committee_sittings: tuple[dt.date, ...] = ()
+    committee_work_completed: bool = False
 
     def next_committee_sitting(self, today: dt.date) -> dt.date | None:
         return min((d for d in self.committee_sittings if d >= today), default=None)
 
     def committees_done(self, today: dt.date) -> bool:
-        """The committees have met on it and no further sitting is listed."""
-        return bool(self.committee_sittings) and self.next_committee_sitting(today) is None
+        return self.committee_work_completed and self.next_committee_sitting(today) is None
 
 
 # Words the Senate drops or adds in a title it retypes: "w niektóre inne dni", "oraz o zmianie".

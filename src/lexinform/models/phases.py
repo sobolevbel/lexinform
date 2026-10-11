@@ -56,10 +56,7 @@ class Phase(BaseModel):
     date: dt.date | None = None
     deadline: dt.date | None = None
     deadline_exact: bool = False
-    """Whether `deadline` is counted from the step that actually starts it. `ToPresident` is the
-    hand-over itself, so the twenty-one days of art. 122 run from a date the API gives; the
-    Senate's thirty are counted from the third reading, days before the Marszałek sends the act.
-    A message that apologises for being early must not do it over an exact date."""
+    """True for a deadline based on receipt, rather than an earlier vote."""
     since: dt.date | None = None
 
 
@@ -158,7 +155,8 @@ def deadline_overdue(phase: Phase, today: dt.date) -> bool:
     hand-over unless `deadline_exact` says otherwise, so they fall a few days early; that is what
     `DEADLINE_GRACE_DAYS` covers. Past it the date is no longer something to promise a reader.
     """
-    return phase.deadline is not None and (today - phase.deadline).days > DEADLINE_GRACE_DAYS
+    grace = 0 if phase.deadline_exact else DEADLINE_GRACE_DAYS
+    return phase.deadline is not None and (today - phase.deadline).days > grace
 
 
 def stalled_days(phase: Phase, today: dt.date) -> int | None:
@@ -276,6 +274,14 @@ def next_phase(bill: Bill, *, today: dt.date) -> Phase | None:
     phase = _phase_of(bill, today)
     if phase is None:
         return None
+    if phase.key == "senate" and bill.senate is not None and bill.senate.received is not None:
+        days = _senate_days(bill)
+        phase = phase.model_copy(
+            update={
+                "deadline": _days_after(bill.senate.received, days) if days is not None else None,
+                "deadline_exact": days is not None,
+            }
+        )
     phase = _after_senate_silence(bill, phase, today)
     return phase.model_copy(update={"since": _phase_started(bill)})
 

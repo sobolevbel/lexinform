@@ -2,7 +2,9 @@
 
 import datetime as dt
 
-from lexinform.models import SenateAct, SenateCommittee, Stage
+import pytest
+
+from lexinform.models import SenateAct, SenateCommittee, Stage, next_phase
 from tests.harness import COMMITTEE_STAGES, World
 
 ACT_URL = "https://www.senat.gov.pl/prace/proces-legislacyjny-w-senacie/ustawa,2169.html"
@@ -89,9 +91,12 @@ def test_the_stored_page_is_read_again_rather_than_looked_up() -> None:
     assert w.senate.calls == [f"read {ACT_URL}"]
 
 
-def test_once_the_committees_have_met_the_card_invites_nothing_more() -> None:
+def test_once_the_committees_have_reported_the_card_invites_nothing_more() -> None:
     w = _passed()
-    w.senate.put("o cudzoziemcach", _act(committee_sittings=(dt.date(2026, 9, 8),)))
+    w.senate.put(
+        "o cudzoziemcach",
+        _act(committee_sittings=(dt.date(2026, 9, 8),), committee_work_completed=True),
+    )
     w.clock.advance(days=2)  # 2026-09-09
 
     w.run()
@@ -99,6 +104,38 @@ def test_once_the_committees_have_met_the_card_invites_nothing_more() -> None:
     card = _card(w)
     assert "комиссии Сената уже рассмотрели закон, дальше голосование Сената" in card
     assert "kpcp@senat.gov.pl" not in card
+
+
+def test_a_past_sitting_without_a_report_does_not_close_the_committee_window() -> None:
+    w = _passed()
+    w.senate.put("o cudzoziemcach", _act(committee_sittings=(dt.date(2026, 9, 8),)))
+    w.clock.advance(days=2)
+
+    w.run()
+
+    assert "kpcp@senat.gov.pl" in _card(w)
+    assert "комиссии Сената уже рассмотрели закон" not in _card(w)
+
+
+@pytest.mark.parametrize("urgent, days", [(False, 30), (True, 14)])
+def test_senate_receipt_sets_the_exact_deadline_and_prevents_early_silence(
+    urgent: bool, days: int
+) -> None:
+    w = _passed()
+    w.clock.advance(days=8)
+    if urgent:
+        w.touch("3039", w.clock.now(), urgency_status="URGENT")
+    w.senate.put("o cudzoziemcach", _act(received=dt.date(2026, 9, 15)))
+    w.run()
+    bill = w.bill("3039")
+    deadline = dt.date(2026, 9, 15) + dt.timedelta(days=days)
+
+    phase = next_phase(bill, today=deadline - dt.timedelta(days=3))
+    after = next_phase(bill, today=deadline + dt.timedelta(days=1))
+
+    assert phase is not None and phase.key == "senate"
+    assert phase.deadline == deadline and phase.deadline_exact
+    assert after is not None and after.key == "president_after_senate_silence"
 
 
 def test_an_older_act_of_the_same_title_is_not_taken_for_this_one() -> None:

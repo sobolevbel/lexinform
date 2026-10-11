@@ -485,4 +485,4 @@ def test_the_senate_window_names_the_committee_its_email_and_the_act(
     ) in text
     assert "сенатского druk nr 801" in text
     assert f'<a href="{act.url}">закон на сайте Сената</a>' in text
-    assert "до 16 авг 2026" in text
+    assert "до 17 авг 2026" in text

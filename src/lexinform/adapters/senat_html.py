@@ -75,6 +75,7 @@ def parse_act(html: str, url: str) -> SenateAct:
     print_number: str | None = None
     committees: list[SenateCommittee] = []
     sittings: list[date] = []
+    completed: set[int] = set()
     for item in soup.select("ul.elementy > li"):
         when = _date(item.select_one("span.small"))
         heading = item.select_one("h3, h4")
@@ -89,8 +90,21 @@ def parse_act(html: str, url: str) -> SenateAct:
             name = re.sub(r"^[–\s]*Komisji\b", "Komisja", name.strip())
             committees.append(SenateCommittee(id=int(str(referral["data-komisja"])), name=name))
         link = item.select_one('h4 a[href*="komisje-senackie/posiedzenia"]')
-        if link is not None and when is not None:
-            sittings.append(when)
+        if link is not None:
+            sittings.extend(_dates(item.select_one("span.small")))
+            names = link.get_text(" ", strip=True).casefold()
+            decision = item.get_text(" ", strip=True).casefold()
+            finished = (
+                "wniosek komisji: o przyjęcie ustawy" in decision
+                or "wniosek komisji: o odrzucenie ustawy" in decision
+            )
+            for committee in committees:
+                name = re.sub(r"^komisja\b", "komisji", committee.name.casefold())
+                if name in names:
+                    if finished:
+                        completed.add(committee.id)
+                    else:
+                        completed.discard(committee.id)
     return SenateAct(
         url=url,
         title=title.get_text(" ", strip=True),
@@ -98,6 +112,7 @@ def parse_act(html: str, url: str) -> SenateAct:
         received=received,
         committees=tuple(committees),
         committee_sittings=tuple(sorted(set(sittings))),
+        committee_work_completed=bool(committees) and all(c.id in completed for c in committees),
     )
 
 
@@ -123,10 +138,15 @@ def _decode_cfemail(encoded: str) -> str:
 
 
 def _date(node: Tag | None) -> date | None:
-    match = _DATE.search(node.get_text(" ", strip=True)) if node else None
-    if match is None or match.group(2).lower() not in _MONTHS:
-        return None
-    return date(int(match.group(3)), _MONTHS[match.group(2).lower()], int(match.group(1)))
+    return next(iter(_dates(node)), None)
+
+
+def _dates(node: Tag | None) -> list[date]:
+    return [
+        date(int(year), _MONTHS[month.lower()], int(day))
+        for day, month, year in _DATE.findall(node.get_text(" ", strip=True) if node else "")
+        if month.lower() in _MONTHS
+    ]
 
 
 def _absolute(href: str) -> str:
