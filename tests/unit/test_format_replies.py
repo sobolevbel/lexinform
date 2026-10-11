@@ -97,7 +97,7 @@ def test_consultation_deadline_reminder(process_3039: ProcessDetail) -> None:
     assert_telegram_html(ahead)
     assert "Консультации заканчиваются — druk nr 3039" in ahead
     assert "до 30 сент 2026 · осталось дней: 2" in ahead
-    assert f'👉 <a href="{SURVEY}">мнение подаётся анкетой (ankieta) на сайте Сейма</a>' in ahead
+    assert f'👉 <a href="{SURVEY}">мнение подаётся анкетой на сайте Сейма</a>' in ahead
     assert (
         f'🔗 <a href="{SURVEY}">анкета на сайте Сейма</a> | <a href="{CONSULTATION_PAGE}">' in ahead
     )

@@ -32,7 +32,7 @@ def test_card_links_the_consultation_form_and_names_the_next_step(
     assert f'31 авг - 30 сент 2026 · <a href="{SURVEY}">анкета на сайте Сейма</a>' in text
     assert "⏭ <b>Что дальше:</b> I чтение в комиссии — ASW" in text  # name unknown: the code
     action = next(line for line in text.splitlines() if line.startswith("👉"))
-    assert f'заполнить анкету (ankieta) <a href="{SURVEY}">на сайте Сейма</a> до' in action
+    assert f'заполнить анкету <a href="{SURVEY}">на сайте Сейма</a> до' in action
     assert "до 30 сент 2026" in action
     assert f"{COMMITTEE_PAGE}>ASW</a>" in action
     # The Sejm's letter form with the committee already chosen: where the opinion actually goes.

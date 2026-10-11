@@ -335,7 +335,7 @@ RU = Labels(
     consultation_until="до",
     consultation_closed_on="завершились",
     consultation_closed_undated="завершились — срок был указан в письме",
-    consultation_hint="мнение подаётся анкетой (ankieta) на сайте Сейма",
+    consultation_hint="мнение подаётся анкетой на сайте Сейма",
     print_assigned="Проекту присвоен номер druku",
     process_withdrawn="Проект отозван до присвоения номера druku.",
     process_abandoned=(
@@ -386,7 +386,7 @@ RU = Labels(
     ),
     action_senate_in_polish="(на польском, с номером сенатского druk nr {number})",
     path="Путь",
-    action_send_opinion="заполнить анкету (ankieta)",
+    action_send_opinion="заполнить анкету",
     action_consultation_page="на сайте Сейма",
     action_committee="направить мнение в комиссию —",
     action_before_sitting="до заседания",
