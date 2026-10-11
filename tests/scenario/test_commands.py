@@ -711,7 +711,13 @@ def test_a_druk_that_continues_a_followed_entry_joins_its_card() -> None:
     card = w.publication("3100")
     assert card is not None and card.message_id == card_id
     edited, edited_message = w.publisher.edits[0]  # the card carries the druk's tag now
-    assert (edited.number, edited_message) == (RPW, card_id)
+    assert (edited.number, edited_message) == ("3100", card_id)
+    rendered, rendered_id = w.publisher.edited[0]
+    pdf = w.gateway.prints["3100"].main_pdf
+    assert pdf is not None
+    assert rendered_id == card_id
+    assert f'<a href="{pdf.url}">PDF</a>' in rendered.text
+    assert "#kadencja10druk3100 #RPW_29075_2026" in rendered.text
 
 
 def test_a_bill_whose_road_has_ended_gets_a_verdict_but_no_card() -> None:

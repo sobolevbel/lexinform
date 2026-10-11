@@ -12,6 +12,7 @@ from datetime import datetime
 from lexinform.models import (
     Bill,
     BillStatus,
+    PrintInfo,
     ProcessDetail,
     Publication,
     PublicationStatus,
@@ -114,11 +115,12 @@ class Linker:
                 "analysis": analysis or pre.analysis,
             }
         )
+        print_info = fetch_print(self._gateway, bill)
         change = None
         if card is not None and card.status is PublicationStatus.SENT:
             changed = False
             if not read:
-                bill, changed = self._reanalyze_print(bill, detail, result)
+                bill, changed = self._reanalyze_print(bill, detail, print_info, result)
             change = self._print_change(bill, pre, detail, content_changed=changed, now=now)
         alias = None
         with self._repo.atomic():
@@ -154,7 +156,9 @@ class Linker:
         if change is not None:
             result.changed += 1
             self._poster.tell(bill, change, result, publish=publish)
-        self._render_card(pre.term, print_number, alias, publish=publish, fallback=pre)
+        self._render_card(
+            pre.term, print_number, alias, publish=publish, fallback=pre, print_info=print_info
+        )
 
     def _keep_prints_card(
         self,
@@ -236,6 +240,7 @@ class Linker:
         *,
         publish: bool,
         fallback: Bill | None = None,
+        print_info: PrintInfo | None = None,
     ) -> None:
         """Write the print's own card into the thread's root message, once, at the end.
 
@@ -251,7 +256,7 @@ class Linker:
         if bill.analysis is None and fallback is not None:
             # A print still being read shows the entry's analysis until its own arrives.
             bill = bill.model_copy(update={"analysis": fallback.analysis})
-        self._poster.rerender_card(bill, alias)
+        self._poster.rerender_card(bill, alias, print_info=print_info)
 
     def _print_change(
         self,
@@ -276,12 +281,16 @@ class Linker:
         )
 
     def _reanalyze_print(
-        self, bill: Bill, detail: ProcessDetail, result: TrackingResult
+        self,
+        bill: Bill,
+        detail: ProcessDetail,
+        print_info: PrintInfo | None,
+        result: TrackingResult,
     ) -> tuple[Bill, bool]:
         """True when the model read the print as a new text and named what changed in it."""
         if self._analysis is None or bill.analysis is None:
             return bill, False
-        document = self._texts.newer(bill, detail, fetch_print(self._gateway, bill))
+        document = self._texts.newer(bill, detail, print_info)
         if document is None:
             return bill, False
         fresh, reanalysed = self._analysis.prepare_reanalysis(

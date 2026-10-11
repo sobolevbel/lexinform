@@ -18,7 +18,7 @@ from lexinform.models import (
 )
 from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.result import TrackingResult
-from tests.fakes import FakePublisher, FixedClock
+from tests.fakes import FakePublisher, FakeSejmGateway, FixedClock
 from tests.harness import act, submission
 
 CHANNEL = "@test"
@@ -47,7 +47,14 @@ def bill(repo: SqliteBillRepository, process_3039: ProcessDetail, now: dt.dateti
 
 
 def _poster(repo: SqliteBillRepository, publisher: FakePublisher, attempts: int = 3) -> Poster:
-    return Poster(repo, publisher, FixedClock(), channel_id=CHANNEL, max_attempts=attempts)
+    return Poster(
+        repo,
+        publisher,
+        FixedClock(),
+        gateway=FakeSejmGateway(),
+        channel_id=CHANNEL,
+        max_attempts=attempts,
+    )
 
 
 def test_successful_post_replies_to_the_card_and_is_recorded_as_sent(

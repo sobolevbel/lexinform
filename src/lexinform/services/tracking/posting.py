@@ -20,6 +20,7 @@ from lexinform.models import (
     Bill,
     DeliveryPlan,
     Phase,
+    PrintInfo,
     Publication,
     PublicationKind,
     PublicationStatus,
@@ -32,8 +33,9 @@ from lexinform.models import (
     stage_keys,
     update_event,
 )
-from lexinform.ports import BillRepository, Clock, Publisher
+from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway
 from lexinform.services.publications import send_publication, send_publications
+from lexinform.services.sources import fetch_print
 from lexinform.services.tracking.result import TrackingResult
 
 log = logging.getLogger(__name__)
@@ -59,12 +61,14 @@ class Poster:
         publisher: Publisher,
         clock: Clock,
         *,
+        gateway: SejmGateway,
         channel_id: str,
         max_attempts: int,
     ) -> None:
         self._repo = repo
         self._publisher = publisher
         self._clock = clock
+        self._gateway = gateway
         self._channel_id = channel_id
         self._max_attempts = max_attempts
         self._attempted: set[int] = set()
@@ -211,7 +215,9 @@ class Poster:
             self._sittings.pop(identity, None)
         return identity
 
-    def rerender_card(self, bill: Bill, card: Publication) -> bool:
+    def rerender_card(
+        self, bill: Bill, card: Publication, *, print_info: PrintInfo | None = None
+    ) -> bool:
         """Re-render the card in place from `bill` as it stands now; one attempt, a refusal is
         logged and not retried.
 
@@ -221,8 +227,11 @@ class Poster:
         """
         if card.message_id is None or card.id is None:
             return False
+        # A linked print can still carry its RPW analysis while its own batch is pending.
+        if print_info is None and bill.has_process:
+            print_info = fetch_print(self._gateway, bill)
         try:
-            self._publisher.edit_new_bill(bill, None, message_id=card.message_id)
+            self._publisher.edit_new_bill(bill, print_info, message_id=card.message_id)
         except ServiceUnavailableError:
             raise
         except Exception as exc:

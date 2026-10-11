@@ -165,6 +165,67 @@ def test_the_print_of_an_entry_read_from_its_file_is_not_read_again() -> None:
     assert f'<a href="{analysis.source_url}">PDF</a>' in rendered.text
 
 
+@pytest.mark.parametrize("workers", [1, 4])
+@pytest.mark.parametrize("print_outage", [False, True])
+def test_the_inherited_card_links_the_print_pdf_while_its_analysis_is_pending(
+    workers: int,
+    print_outage: bool,
+) -> None:
+    w = World(batch_only=True, workers=workers)
+    w.gateway.submissions.append(submission())
+    w.gateway.files[submission_url()] = b"%PDF"
+    w.run()
+    w.batch.resolve()
+    w.run()
+    card_id = w.card_id(RPW)
+    old_analysis = w.bill(RPW).analysis
+    assert old_analysis is not None and old_analysis.source_url == submission_url()
+    w.add_bill("3100", "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach")
+    print_info = w.gateway.prints["3100"]
+    pdf = print_info.main_pdf
+    assert pdf is not None
+    pdf = pdf.model_copy(
+        update={
+            "name": "3100 (z autopoprawką).pdf",
+            "url": "https://api.test/sejm/term10/prints/3100/3100-autopoprawka.pdf",
+        }
+    )
+    w.gateway.prints["3100"] = print_info.model_copy(update={"attachments": (pdf,)})
+    w.gateway.files[pdf.url] = b"%PDF"
+    w.touch("3100", dt.datetime(2026, 9, 8, 9, tzinfo=dt.UTC))
+    w.clock.advance(days=1)
+    w.run()
+    assert w.bill("3100").status is BillStatus.BATCH_PENDING
+    w.gateway.submissions[0] = submission(print_number="3100")
+    w.clock.advance(hours=1)
+    if print_outage:
+        w.gateway.outages.add("get_print:3100")
+        blocked = w.run()
+        assert any(e.startswith("tracking: Sejm API unavailable") for e in blocked.errors)
+        assert w.bill(RPW).status is BillStatus.ANALYZED
+        assert w.publication("3100") is None
+        w.gateway.outages.clear()
+
+    report = w.run()
+
+    assert report.linked == 1
+    assert w.bill("3100").status is BillStatus.BATCH_PENDING
+    assert len(w.publisher.new_bills) == 1
+    rendered, rendered_id = w.publisher.edited[-1]
+    assert rendered.bill is not None and rendered.bill.analysis == old_analysis
+    assert rendered_id == card_id
+    assert f'<a href="{pdf.url}">PDF</a>' in rendered.text
+    assert submission_url() not in rendered.text
+    assert "#kadencja10druk3100 #RPW_29075_2026" in rendered.text
+
+    edits = len(w.publisher.edited)
+    w.clock.advance(hours=1)
+    w.run()
+
+    assert len(w.publisher.edited) == edits
+    assert w.bill("3100").status is BillStatus.BATCH_PENDING
+
+
 def test_an_observed_entry_without_a_card_is_not_read_again_as_its_print() -> None:
     orka_text = "Art. 1. Cudzoziemcy otrzymują ochronę. " * 40
     print_text = "Art. 1. Cudzoziemcy otrzymują ochronę.\n1) przypis " * 40

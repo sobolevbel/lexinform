@@ -253,7 +253,12 @@ class StatusTrackingService:
     ) -> None:
         channel_id = options.channel_id
         poster = Poster(
-            repo, publisher, clock, channel_id=channel_id, max_attempts=options.max_publish_attempts
+            repo,
+            publisher,
+            clock,
+            gateway=gateway,
+            channel_id=channel_id,
+            max_attempts=options.max_publish_attempts,
         )
         enricher = StageEnricher(gateway, club_breakdown=options.club_breakdown)
         consultations = _consultation_reminder(repo, clock, poster, options)
