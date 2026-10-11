@@ -54,7 +54,12 @@ class ConsolePublisher(RenderingPublisher):
         return ConsolePublishResult(message_id=self._emit(title, message.text))
 
     def _edit(self, message: Outgoing, *, message_id: int) -> None:
-        self._emit(f"EDIT CARD {_about(message)} (message #{message_id})", message.text)
+        kind = (
+            "CARD"
+            if message.kind is PublicationKind.NEW_BILL
+            else message.kind.replace("_", " ").upper()
+        )
+        self._emit(f"EDIT {kind} {_about(message)} (message #{message_id})", message.text)
 
 
 class ConsoleRunNotifier:

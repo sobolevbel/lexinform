@@ -43,6 +43,7 @@ from lexinform.models import (
     ObservationMode,
     ObservedProcess,
     Phase,
+    PlenaryVoting,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
@@ -112,6 +113,8 @@ class SejmGateway(Protocol):
     def get_print(self, term: int, number: str) -> PrintInfo: ...
 
     def get_voting(self, term: int, sitting: int, number: int) -> tuple[Vote, ...]: ...
+
+    def list_votings(self, term: int, sitting: int) -> tuple[PlenaryVoting, ...]: ...
 
     def get_committee(self, term: int, code: str) -> Committee: ...
 
@@ -357,6 +360,16 @@ class Publisher(Protocol):
     ) -> PublishResult:
         """`with_act` when the act published in the same run is told in this message too."""
         ...
+
+    def edit_status_update(
+        self,
+        bill: Bill,
+        change: StatusChange,
+        *,
+        message_id: int,
+        today: date,
+        with_act: bool = False,
+    ) -> None: ...
 
     def publish_act_published(self, bill: Bill, reply_to: int | None) -> PublishResult: ...
 

@@ -34,6 +34,7 @@ from lexinform.models import (
     CommitteeSitting,
     DocumentType,
     Mp,
+    PlenaryVoting,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
@@ -233,6 +234,21 @@ class SejmApiClient:
     def get_voting(self, term: int, sitting: int, number: int) -> tuple[Vote, ...]:
         data = self._get_json(f"/sejm/term{term}/votings/{sitting}/{number}")
         return tuple(parse_vote(v) for v in data.get("votes") or ())
+
+    def list_votings(self, term: int, sitting: int) -> tuple[PlenaryVoting, ...]:
+        data = self._get_json(f"/sejm/term{term}/votings/{sitting}")
+        if not isinstance(data, list):
+            raise SejmApiError(f"Unexpected /votings/{sitting} payload")
+        return tuple(
+            PlenaryVoting(
+                title=str(item.get("title") or ""),
+                description=str(item.get("description") or ""),
+                topic=str(item.get("topic") or ""),
+                date=datetime.fromisoformat(item["date"]).date(),
+                result=parse_voting(item),
+            )
+            for item in data
+        )
 
     def list_mps(self, term: int) -> tuple[Mp, ...]:
         data = self._get_json(f"/sejm/term{term}/MP")

@@ -4,8 +4,19 @@ import hashlib
 import logging
 from collections.abc import Iterable
 
+from lexinform.agenda import print_numbers
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import PLENARY_COMMITTEE_CODE, Bill, Stage, aggregate_clubs
+from lexinform.models import (
+    PLENARY_COMMITTEE_CODE,
+    Bill,
+    ProcessDetail,
+    ReadingOutcome,
+    Stage,
+    aggregate_clubs,
+    flatten_stages,
+    reading_evidence,
+    stage_keys,
+)
 from lexinform.ports import SejmGateway
 
 log = logging.getLogger(__name__)
@@ -57,6 +68,53 @@ class StageEnricher:
         time this runs, and the answers are cached for the run.
         """
         return tuple(self._named(term, stage) for stage in stages)
+
+    def decision_votes(
+        self, detail: ProcessDetail, known_stages: tuple[Stage, ...] = ()
+    ) -> ProcessDetail:
+        stages = tuple(self._decision_vote(detail, stage, known_stages) for stage in detail.stages)
+        return detail.model_copy(update={"stages": stages})
+
+    def _decision_vote(
+        self, detail: ProcessDetail, stage: Stage, known_stages: tuple[Stage, ...]
+    ) -> Stage:
+        if (
+            stage.stage_type != "SejmReading"
+            or not stage.stage_name.casefold().startswith("iii czytanie")
+            or reading_evidence(stage).reading is not ReadingOutcome.PASSED
+            or stage.sitting_num is None
+            or stage.date is None
+            or any(child.stage_type == "Voting" for child in stage.children)
+        ):
+            return stage
+        for known in flatten_stages(known_stages):
+            if stage_keys((known,))[0] == stage_keys((stage,))[0]:
+                votes = tuple(child for child in known.children if child.stage_type == "Voting")
+                if votes:
+                    return stage.model_copy(update={"children": (*stage.children, *votes)})
+        try:
+            votings = self._gateway.list_votings(detail.term, stage.sitting_num)
+        except ServiceUnavailableError:
+            raise
+        except Exception as exc:
+            log.warning("vote totals of druk %s unavailable: %s", detail.number, exc)
+            return stage
+        matches = [
+            vote
+            for vote in votings
+            if vote.date == stage.date
+            and vote.result.sitting == stage.sitting_num
+            and detail.number in print_numbers(vote.title)
+            and (
+                vote.description.casefold().strip().rstrip(".") == "całość projektu ustawy"
+                or vote.topic.casefold().strip().rstrip(".") == "głosowanie nad całością projektu"
+            )
+        ]
+        if len(matches) != 1:
+            return stage
+        result = matches[0].result
+        voting = Stage(stage_name="Głosowanie", stage_type="Voting", date=stage.date, voting=result)
+        return stage.model_copy(update={"children": (*stage.children, voting)})
 
     def _named(self, term: int, stage: Stage) -> Stage:
         children = self.name_committees(term, stage.children)

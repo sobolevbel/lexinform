@@ -85,6 +85,18 @@ class RenderingPublisher(ABC):
         text = self._formatter.status_update(bill, change, with_act=with_act).text
         return self._deliver(Outgoing(PublicationKind.STATUS_UPDATE, bill, text, reply_to))
 
+    def edit_status_update(
+        self,
+        bill: Bill,
+        change: StatusChange,
+        *,
+        message_id: int,
+        today: date,
+        with_act: bool = False,
+    ) -> None:
+        text = self._formatter.status_update(bill, change, today=today, with_act=with_act).text
+        self._edit(Outgoing(PublicationKind.STATUS_UPDATE, bill, text), message_id=message_id)
+
     def publish_act_published(self, bill: Bill, reply_to: int | None) -> PublishResult:
         text = self._formatter.act_published(bill).text
         return self._deliver(Outgoing(PublicationKind.ACT_PUBLISHED, bill, text, reply_to))

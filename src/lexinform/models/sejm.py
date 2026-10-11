@@ -68,6 +68,16 @@ class VotingSummary(BaseModel):
     clubs: tuple[ClubVotes, ...] = ()
 
 
+class PlenaryVoting(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    title: str
+    description: str = ""
+    topic: str = ""
+    date: dt.date
+    result: VotingSummary
+
+
 class Mp(BaseModel):
     """A member of parliament from GET /MP (only what the author lookup needs)."""
 

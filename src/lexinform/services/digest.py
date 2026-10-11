@@ -206,6 +206,8 @@ class DigestService:
         card_slots: dict[int, int] = {}  # message_id -> index in `cards`
         update_slots: dict[int, int] = {}
         for post in posts:
+            if post.delivery is not None and post.delivery.edit_message_id is not None:
+                continue
             entry = self._entry(post, bills)
             if entry is None:
                 continue

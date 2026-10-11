@@ -54,6 +54,7 @@ from lexinform.models import (
     JointRecord,
     Mp,
     Phase,
+    PlenaryVoting,
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
@@ -104,6 +105,7 @@ class FakeSejmGateway:
     prints: dict[str, PrintInfo] = field(default_factory=dict)
     files: dict[str, bytes] = field(default_factory=dict)
     votings: dict[tuple[int, int], tuple[Vote, ...]] = field(default_factory=dict)
+    sitting_votings: dict[int, tuple[PlenaryVoting, ...]] = field(default_factory=dict)
     committees: dict[str, Committee] = field(default_factory=dict)
     mps: tuple[Mp, ...] = ()
     submissions: list[BillSubmission] = field(default_factory=list)
@@ -123,6 +125,10 @@ class FakeSejmGateway:
 
     def close(self) -> None:
         pass
+
+    def list_votings(self, term: int, sitting: int) -> tuple[PlenaryVoting, ...]:
+        self._called("list_votings", str(sitting))
+        return self.sitting_votings.get(sitting, ())
 
     def list_terms(self) -> tuple[SejmTerm, ...]:
         self._called("list_terms")

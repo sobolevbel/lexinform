@@ -12,6 +12,7 @@ import logging
 from collections.abc import Callable
 from datetime import date
 from enum import StrEnum
+from zoneinfo import ZoneInfo
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
@@ -22,9 +23,14 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    ReadingOutcome,
     SittingNews,
     Stage,
     StatusChange,
+    flatten_stages,
+    reading_evidence,
+    stage_keys,
+    update_event,
 )
 from lexinform.ports import BillRepository, Clock, Publisher
 from lexinform.services.publications import send_publication, send_publications
@@ -265,7 +271,12 @@ class Poster:
         """The update's plan tells the act published in its run."""
         assert change.id is not None, "only a change record_change stored reaches the poster"
         row = self._repo.get_update_publication(change.id, self._channel_id)
-        return row is not None and row.delivery is not None and row.delivery.with_act
+        return (
+            row is not None
+            and row.delivery is not None
+            and row.delivery.with_act
+            and row.delivery.edit_message_id is None
+        )
 
     def hold(self, bill: Bill, change: StatusChange) -> None:
         """Keep a service-stage change for the next post instead of sending it now."""
@@ -304,16 +315,26 @@ class Poster:
         message_id = self._send(
             pub_id,
             snapshot,
-            lambda reply_to: (
-                self._publisher.publish_status_update(
-                    snapshot,
-                    planned_change,
-                    delivery.reply_to or reply_to,
-                    with_act=delivery.with_act,
-                ).message_id
-            ),
+            lambda reply_to: self._send_update(snapshot, planned_change, delivery, reply_to),
         )
         return message_id is not None
+
+    def _send_update(
+        self, bill: Bill, change: StatusChange, delivery: DeliveryPlan, reply_to: int | None
+    ) -> int:
+        if delivery.edit_message_id is not None:
+            assert delivery.today is not None, "an edit preserves the original message's date"
+            self._publisher.edit_status_update(
+                bill,
+                change,
+                message_id=delivery.edit_message_id,
+                today=delivery.today,
+                with_act=delivery.with_act,
+            )
+            return delivery.edit_message_id
+        return self._publisher.publish_status_update(
+            bill, change, delivery.reply_to or reply_to, with_act=delivery.with_act
+        ).message_id
 
     def prepare(self, bill: Bill, change: StatusChange, *, with_act: bool = False) -> DeliveryPlan:
         assert change.id is not None, "only a change record_change stored reaches the poster"
@@ -322,6 +343,14 @@ class Poster:
             if with_act and self._never_attempted(stored):
                 return self._add_act(change.id, stored.delivery, bill)
             return stored.delivery
+        completion = self._vote_completion(bill, change)
+        if completion is not None:
+            with self._repo.atomic():
+                self._repo.create_publication(
+                    self._update_row(bill, change.id, PublicationStatus.QUEUED)
+                )
+                self._repo.save_update_delivery(change.id, self._channel_id, completion)
+            return completion
         held = self._repo.list_held_status_changes(bill.term, bill.number, self._channel_id)
         stages = [st for earlier in held for st in earlier.new_stages]
         planned = change.model_copy(update={"new_stages": stages + list(change.new_stages)})
@@ -340,6 +369,71 @@ class Poster:
             )
             self._repo.save_update_delivery(change.id, self._channel_id, delivery)
         return delivery
+
+    def _vote_completion(self, bill: Bill, change: StatusChange) -> DeliveryPlan | None:
+        votes = flatten_stages(change.new_stages)
+        if (
+            not votes
+            or any(
+                st.stage_type != "Voting"
+                or st.voting is None
+                or st.voting.sitting is None
+                or st.voting.voting_number is None
+                for st in votes
+            )
+            or change.content_changed
+            or change.closure_detected
+            or change.withdrawn
+            or change.discontinued
+            or change.consultation_opened
+            or change.amendments
+            or change.supplements
+        ):
+            return None
+        identities = {(st.voting.sitting, st.voting.voting_number) for st in votes if st.voting}
+        parents = [
+            st
+            for st in flatten_stages(bill.stages)
+            if st.stage_type == "SejmReading"
+            and reading_evidence(st).reading is ReadingOutcome.PASSED
+            and identities
+            <= {
+                (child.voting.sitting, child.voting.voting_number)
+                for child in flatten_stages(st.children)
+                if child.voting is not None
+            }
+        ]
+        if len(parents) != 1:
+            return None
+        parent_key = stage_keys((parents[0],))[0]
+        for earlier in reversed(self._repo.list_status_changes(bill.term, bill.number)):
+            if earlier.id is None or earlier.id == change.id:
+                continue
+            post = self._repo.get_update_publication(earlier.id, self._channel_id)
+            if post is None or post.status is not PublicationStatus.SENT or post.message_id is None:
+                continue
+            delivery = post.delivery
+            if delivery is None or not delivery.change_json:
+                continue
+            original = StatusChange.model_validate_json(delivery.change_json)
+            snapshot = Bill.model_validate_json(delivery.bill_json)
+            if update_event(original, snapshot) != "passed" or not any(
+                stage_keys((st,))[0] == parent_key for st in flatten_stages(original.new_stages)
+            ):
+                continue
+            enriched = original.model_copy(update={"new_stages": [*original.new_stages, *votes]})
+            return delivery.model_copy(
+                update={
+                    "change_json": enriched.model_dump_json(),
+                    "edit_message_id": post.message_id,
+                    "today": delivery.today
+                    or (post.sent_at or post.created_at)
+                    .astimezone(ZoneInfo("Europe/Warsaw"))
+                    .date(),
+                    "held_change_ids": (),
+                }
+            )
+        return None
 
     @staticmethod
     def _never_attempted(pub: Publication) -> bool:

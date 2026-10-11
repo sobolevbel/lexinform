@@ -1,0 +1,75 @@
+[
+  {
+    "abstain": 3,
+    "date": "2026-10-08T20:55:37",
+    "kind": "ELECTRONIC",
+    "links": [
+      {
+        "href": "https://api.sejm.gov.pl/sejm/term10/votings/66/104/pdf",
+        "rel": "pdf"
+      }
+    ],
+    "majorityType": "SIMPLE_MAJORITY",
+    "majorityVotes": 207,
+    "no": 206,
+    "notParticipating": 25,
+    "present": 0,
+    "sitting": 66,
+    "sittingDay": 3,
+    "term": 10,
+    "title": "Pkt. 5 Sprawozdanie Komisji o rządowym projekcie ustawy o zabezpieczeniu socjalnym osób wykonujących zawód artystyczny (druki nr 2644 i 3082)",
+    "topic": "wniosek o przystąpienie do trzeciego czytania bez kierowania projektu do komisji",
+    "totalVoted": 435,
+    "votingNumber": 104,
+    "yes": 226
+  },
+  {
+    "abstain": 3,
+    "date": "2026-10-08T20:56:24",
+    "kind": "ELECTRONIC",
+    "links": [
+      {
+        "href": "https://api.sejm.gov.pl/sejm/term10/votings/66/105/pdf",
+        "rel": "pdf"
+      }
+    ],
+    "majorityType": "SIMPLE_MAJORITY",
+    "majorityVotes": 235,
+    "no": 234,
+    "notParticipating": 26,
+    "present": 0,
+    "sitting": 66,
+    "sittingDay": 3,
+    "term": 10,
+    "title": "Pkt. 5 Sprawozdanie Komisji o rządowym projekcie ustawy o zabezpieczeniu socjalnym osób wykonujących zawód artystyczny (druki nr 2644 i 3082)",
+    "topic": "wniosek o odrzucenie w całości projektu.",
+    "totalVoted": 434,
+    "votingNumber": 105,
+    "yes": 197
+  },
+  {
+    "abstain": 4,
+    "date": "2026-10-08T20:56:58",
+    "description": "całość projektu ustawy",
+    "kind": "ELECTRONIC",
+    "links": [
+      {
+        "href": "https://api.sejm.gov.pl/sejm/term10/votings/66/106/pdf",
+        "rel": "pdf"
+      }
+    ],
+    "majorityType": "SIMPLE_MAJORITY",
+    "majorityVotes": 198,
+    "no": 197,
+    "notParticipating": 27,
+    "present": 0,
+    "sitting": 66,
+    "sittingDay": 3,
+    "term": 10,
+    "title": "Pkt. 5 Sprawozdanie Komisji o rządowym projekcie ustawy o zabezpieczeniu socjalnym osób wykonujących zawód artystyczny (druki nr 2644 i 3082)",
+    "topic": "głosowanie nad całością projektu.",
+    "totalVoted": 433,
+    "votingNumber": 106,
+    "yes": 232
+  }
+]

@@ -637,7 +637,9 @@ class StatusTrackingService:
         """What detection needs from the API for one bill (no database access): the process,
         the print, whatever document a new stage brings amendments in, and the documents filed
         to the print since the last check."""
-        detail = self._gateway.get_process(bill.term, bill.number)
+        detail = self._enricher.decision_votes(
+            self._gateway.get_process(bill.term, bill.number), bill.stages
+        )
         print_info = fetch_print(self._gateway, bill)
         return _Found(
             detail,

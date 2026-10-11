@@ -39,6 +39,7 @@ class DeliveryPlan(BaseModel):
     today: dt.date | None = None
     still_meets: bool = False
     reply_to: int | None = None
+    edit_message_id: int | None = None
     held_change_ids: tuple[int, ...] = ()
     with_act: bool = False
     """A status update that also tells the act published in the same run."""

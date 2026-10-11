@@ -17,6 +17,24 @@ from tests.conftest import FIXTURES
 Handler = Callable[[httpx.Request], httpx.Response]
 
 
+def test_list_votings_preserves_purpose_prints_and_warsaw_date() -> None:
+    data = _fixture("votings_66_2644.json")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/sejm/term10/votings/66"
+        return data
+
+    votes = _client(handler).list_votings(10, 66)
+
+    assert len(votes) == 3
+    final = votes[-1]
+    assert final.description == "całość projektu ustawy"
+    assert final.date == date(2026, 10, 8)
+    assert final.result.date == datetime(2026, 10, 8, 18, 56, 58, tzinfo=UTC)
+    assert (final.result.yes, final.result.no, final.result.voting_number) == (232, 197, 106)
+    assert "2644" in final.title
+
+
 def _client(handler: Handler, **options: Any) -> SejmApiClient:
     return SejmApiClient(
         "https://api.test", transport=httpx.MockTransport(handler), sleep=lambda s: None, **options
