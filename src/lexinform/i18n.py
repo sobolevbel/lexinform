@@ -47,6 +47,7 @@ class Labels:
     process_veto_sustained: str
     process_tribunal_ruled: str
     stage_veto_sustained: str
+    link_sejm_project: str
     link_process: str
     link_pdf: str
     link_text_after3: str
@@ -297,6 +298,7 @@ RU = Labels(
     process_tribunal_ruled="Конституционный трибунал вынес решение по закону.",
     stage_veto_sustained="закон не принят повторно после вето Президента",
     process_passed="Сейм принял закон.",
+    link_sejm_project="Страница проекта в Сейме",
     link_process="Ход процесса в Сейме",
     link_pdf="PDF",
     link_text_after3="Текст после III чтения",
@@ -975,6 +977,7 @@ EN = Labels(
     process_tribunal_ruled="The Constitutional Tribunal has ruled on the act.",
     stage_veto_sustained="not passed again after the President's veto",
     process_passed="The Sejm passed the bill.",
+    link_sejm_project="Sejm project page",
     link_process="Legislative process",
     link_pdf="Print PDF",
     link_text_after3="Text after 3rd reading",

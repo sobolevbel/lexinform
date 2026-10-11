@@ -75,6 +75,7 @@ from lexinform.models import (
     ministry_url,
     next_phase,
     open_hearing,
+    print_web_url,
     process_web_url,
     reaches_sejm,
     stalled_days,
@@ -486,8 +487,7 @@ class MessageFormatter:
         return "\n\n".join(details)
 
     def _card_links(self, bill: Bill, print_info: PrintInfo | None) -> list[str]:
-        """Where the card points: the RCL project, the Sejm submission, or the process page
-        with the print's PDF (and the RCL project a government print came from)."""
+        """Keep the analyzed text reachable when a card is rendered without print metadata."""
         lb = self._labels
         s = bill.summary
         if bill.wykaz is not None:
@@ -501,16 +501,33 @@ class MessageFormatter:
             return [link(s.web_url, lb.link_submission_pdf)]
         if bill.act is not None:
             return self._act_links(bill, bill.act)
-        links = [link(s.web_url, lb.link_process)]
+        links = self._sejm_links(bill)
         pdf = print_info.main_pdf if print_info else None
         if pdf is not None:
             links.append(link(pdf.url, lb.link_pdf))
+        elif bill.analysis is not None and bill.analysis.source_url:
+            label = (
+                lb.link_pdf
+                if bill.analysis.text_source in {"pdf", "scan", "excerpts"}
+                else lb.link_bill_text
+            )
+            links.append(link(bill.analysis.source_url, label))
         if s.rcl_link:
             # The government stage the print came through, and the door to everything the card
             # itself cannot carry once the thread is the druk's: the consultation letter with the
             # ministry's address, the dates it ran between, the OSR. A chip labelled "RCL" was a
             # link a reader had no reason to follow.
             links.append(link(s.rcl_link, lb.link_rcl_project))
+        return links
+
+    def _sejm_links(self, bill: Bill) -> list[str]:
+        lb = self._labels
+        if not bill.has_process:
+            return [link(bill.summary.web_url, lb.link_process)]
+        links = [link(print_web_url(bill.term, bill.number), lb.link_sejm_project)]
+        # Start-only processes can lack a public process page (druk 3205, October 2026).
+        if any(st.stage_type != "Start" for st in bill.stages):
+            links.append(link(bill.summary.web_url, lb.link_process))
         return links
 
     def _card_tags(self, bill: Bill, today: dt.date) -> str:
@@ -725,9 +742,10 @@ class MessageFormatter:
         s = bill.summary
         if bill.wykaz is not None:
             links = [link(bill.wykaz.web_url, lb.link_wykaz_entry)]
+        elif bill.rcl is not None:
+            links = [link(s.web_url, lb.link_rcl_project)]
         else:
-            label = lb.link_rcl_project if bill.rcl is not None else lb.link_process
-            links = [link(s.web_url, label)]
+            links = self._sejm_links(bill)
         text_after3 = next((st.text_after3 for st in change.new_stages if st.text_after3), None)
         if text_after3:
             links.append(link(text_after3, lb.link_text_after3))
@@ -1013,7 +1031,7 @@ class MessageFormatter:
             # `ToPresident` the API dates the hand-over itself, and apologising for a date that
             # is exact teaches the reader to discount it.
             facts += f"\n{ICON['note']} <i>{esc(lb.deadline_counted_from_vote)}</i>"
-        links = [link(bill.summary.web_url, lb.link_process)]
+        links = self._sejm_links(bill)
         if senate and bill.senate is not None:
             links.append(link(bill.senate.url, lb.link_senate_act))
         elif senate:
@@ -1051,7 +1069,7 @@ class MessageFormatter:
                 facts += f"\n{ICON['action']} {details}"
         links = [
             link(hearing_rules_url(bill.term), lb.link_hearing_rules),
-            link(bill.summary.web_url, lb.link_process),
+            *self._sejm_links(bill),
         ]
         phase = next_phase(bill, today=today)
         for code in phase.committees if phase else ():
@@ -1062,7 +1080,7 @@ class MessageFormatter:
 
     def _act_links(self, bill: Bill, act: ActInfo) -> list[str]:
         lb = self._labels
-        links = [link(bill.summary.web_url, lb.link_process)]
+        links = self._sejm_links(bill)
         isap = act.isap_url or bill.summary.isap_url
         if isap:
             links.append(link(isap, lb.link_isap))
@@ -1974,7 +1992,7 @@ class MessageFormatter:
             if window.letter_url:
                 links.insert(0, link(window.letter_url, lb.consultation_letter))
             return links
-        links = [link(bill.summary.web_url, lb.link_process)]
+        links = self._sejm_links(bill)
         if window.form_url:
             links.insert(0, link(window.form_url, lb.consultation_page))
         if window.survey_url:

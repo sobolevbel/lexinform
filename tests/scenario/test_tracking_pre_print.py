@@ -128,6 +128,12 @@ def test_assigned_print_number_continues_the_thread_under_the_new_number() -> No
     )
     analysis = w.bill("3100").analysis
     assert analysis is not None and analysis.revision == 2
+    assert analysis.source_url is not None
+    rendered, rendered_id = w.publisher.edited[0]
+    assert rendered_id == card_id
+    assert "druk.xsp?nr=3100" in rendered.text
+    assert "PrzebiegProc.xsp?nr=3100" not in rendered.text
+    assert f'<a href="{analysis.source_url}">PDF</a>' in rendered.text
 
 
 def test_the_print_of_an_entry_read_from_its_file_is_not_read_again() -> None:
@@ -155,6 +161,8 @@ def test_the_print_of_an_entry_read_from_its_file_is_not_read_again() -> None:
     analysis = w.bill("3100").analysis
     assert analysis is not None and analysis.revision == 1
     assert analysis.source_url == w.gateway.prints["3100"].attachments[0].url
+    rendered, _ = w.publisher.edited[-1]
+    assert f'<a href="{analysis.source_url}">PDF</a>' in rendered.text
 
 
 def test_an_observed_entry_without_a_card_is_not_read_again_as_its_print() -> None:

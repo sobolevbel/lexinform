@@ -6,7 +6,7 @@ import datetime as dt
 import pytest
 
 from lexinform.adapters.telegram_format import MESSAGE_LIMIT, MessageFormatter
-from lexinform.models import PrintInfo, ProcessDetail, Stage
+from lexinform.models import PrintInfo, ProcessDetail, Stage, StatusChange
 from tests.fakes import joint_record, make_analysis, make_comparison
 from tests.formatting import ACT, TODAY, assert_telegram_html, bill_of, consulted
 from tests.harness import act
@@ -25,7 +25,69 @@ def test_card_contains_every_section(process_3039: ProcessDetail, print_3039: Pr
     # The stage the bill stands on, then the referral under it; translated, the body stays Polish.
     assert "Стадия:</b> направлен на I чтение (3 сент 2026) · направлен в комиссию ASW" in text
     assert "PrzebiegProc.xsp?nr=3039" in text and "prints/3039/3039.pdf" in text
+    assert "druk.xsp?nr=3039" in text
     assert "#kadencja10druk3039 #важность5 #легализация #kadencja10" in text
+
+
+@pytest.mark.parametrize("language", ["ru", "en"])
+def test_a_start_only_print_links_its_project_page(
+    process_3039: ProcessDetail, language: str
+) -> None:
+    process = process_3039.model_copy(
+        update={
+            "number": "3205",
+            "stages": (Stage(stage_type="Start", stage_name="Projekt wpłynął do Sejmu"),),
+        }
+    )
+    bill = bill_of(process)
+    change = StatusChange(
+        term=10,
+        number="3205",
+        old_fingerprint=None,
+        new_fingerprint="start",
+        new_stages=list(process.stages),
+        detected_at=bill.last_checked_at,
+    )
+    formatter = MessageFormatter(language)
+
+    for text in (formatter.new_bill(bill, None).text, formatter.status_update(bill, change).text):
+        assert_telegram_html(text)
+        assert 'href="https://www.sejm.gov.pl/Sejm10.nsf/druk.xsp?nr=3205"' in text
+        assert "PrzebiegProc.xsp?nr=3205" not in text
+
+
+@pytest.mark.parametrize("missing_print", [True, False])
+def test_a_card_keeps_the_analyzed_pdf_without_print_attachments(
+    process_3039: ProcessDetail, print_3039: PrintInfo, missing_print: bool
+) -> None:
+    bill = bill_of(process_3039)
+    assert bill.analysis is not None
+    pdf = "https://api.sejm.gov.pl/sejm/term10/prints/3039/3039.pdf"
+    bill = bill.model_copy(
+        update={"analysis": bill.analysis.model_copy(update={"source_url": pdf})}
+    )
+    print_info = None if missing_print else print_3039.model_copy(update={"attachments": ()})
+
+    text = MessageFormatter("ru").new_bill(bill, print_info).text
+
+    assert_telegram_html(text)
+    assert f'<a href="{pdf}">PDF</a>' in text
+
+
+def test_the_original_print_pdf_takes_precedence_over_an_analyzed_report(
+    process_3039: ProcessDetail, print_3039: PrintInfo
+) -> None:
+    bill = bill_of(process_3039)
+    assert bill.analysis is not None
+    report = "https://api.sejm.gov.pl/sejm/term10/prints/3333/3333.pdf"
+    bill = bill.model_copy(
+        update={"analysis": bill.analysis.model_copy(update={"source_url": report})}
+    )
+
+    text = MessageFormatter("ru").new_bill(bill, print_3039).text
+
+    assert "prints/3039/3039.pdf" in text
+    assert report not in text
 
 
 def test_joint_bill_reply_names_the_thread_and_carries_both_tags(
