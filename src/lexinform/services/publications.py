@@ -2,7 +2,7 @@ import logging
 from collections.abc import Callable, Sequence
 from datetime import datetime
 
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import DeliveryUncertainError, ServiceUnavailableError
 from lexinform.models import Publication, PublicationKind, PublicationStatus
 from lexinform.ports import BillRepository, Clock, PublishResult
 
@@ -27,6 +27,13 @@ def send_publications(
     """The caller persists pending work before sending; only definite failures spend attempts."""
     try:
         sent = send()
+    except DeliveryUncertainError as exc:
+        with repo.atomic():
+            for pub_id in pub_ids:
+                repo.mark_publication(
+                    pub_id, PublicationStatus.UNKNOWN, error=exc.describe(), count_attempt=False
+                )
+        raise
     except ServiceUnavailableError as exc:
         _fail_deliveries(repo, pub_ids, exc.describe(), count_attempt=False)
         raise

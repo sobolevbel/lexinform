@@ -20,6 +20,7 @@ from lexinform.errors import (
     TelegramUnavailableError,
     WykazUnavailableError,
 )
+from tests.fakes import MonotonicClock
 
 Handler = Callable[[httpx.Request], httpx.Response]
 
@@ -84,7 +85,10 @@ def _sejm(handler: Handler) -> SejmApiClient:
 
 
 def _telegram(handler: Handler) -> TelegramBotClient:
-    return TelegramBotClient("T", transport=httpx.MockTransport(handler), sleep=lambda s: None)
+    clock = MonotonicClock()
+    return TelegramBotClient(
+        "T", transport=httpx.MockTransport(handler), sleep=clock.sleep, monotonic=clock.monotonic
+    )
 
 
 def test_sejm_client_raises_unavailable_after_connection_errors() -> None:

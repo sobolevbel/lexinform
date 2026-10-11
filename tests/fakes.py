@@ -83,6 +83,19 @@ from lexinform.ports import PublishResult
 from lexinform.sections import MIN_CHARS_PER_PAGE
 
 
+class MonotonicClock:
+    def __init__(self, sleeps: list[float] | None = None) -> None:
+        self.elapsed = 0.0
+        self.sleeps = sleeps if sleeps is not None else []
+
+    def monotonic(self) -> float:
+        return self.elapsed
+
+    def sleep(self, seconds: float) -> None:
+        self.sleeps.append(seconds)
+        self.elapsed += seconds
+
+
 class FixedClock:
     """A clock that moves only when a test tells it to."""
 

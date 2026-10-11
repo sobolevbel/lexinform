@@ -1,6 +1,7 @@
 """Thin Telegram Bot API client and the Publisher built on it."""
 
 import logging
+import math
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -12,7 +13,8 @@ import httpx2 as httpx
 
 from lexinform.adapters.publisher_base import Outgoing, RenderingPublisher
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.errors import TelegramUnavailableError
+from lexinform.adapters.telegram_rate import TelegramRateLimiter
+from lexinform.errors import DeliveryUncertainError, TelegramUnavailableError
 from lexinform.models import (
     BackfillReport,
     ChannelPost,
@@ -34,7 +36,7 @@ class TelegramError(RuntimeError):
 
 
 class TelegramBotClient:
-    """`sendMessage` with retries; auth and membership problems are `TelegramUnavailableError`."""
+    """Telegram API client with shared pacing and bounded safe retries."""
 
     def __init__(
         self,
@@ -44,6 +46,7 @@ class TelegramBotClient:
         timeout: float = 60.0,
         transport: httpx.BaseTransport | None = None,
         sleep: Callable[[float], None] = time.sleep,
+        monotonic: Callable[[], float] = time.monotonic,
     ) -> None:
         if not token:
             raise ValueError("Telegram bot token is empty")
@@ -51,6 +54,7 @@ class TelegramBotClient:
             base_url=f"{base_url.rstrip('/')}/bot{token}", timeout=timeout, transport=transport
         )
         self._sleep = sleep
+        self._rate = TelegramRateLimiter(monotonic=monotonic, sleep=sleep)
 
     def send_message(
         self,
@@ -78,7 +82,10 @@ class TelegramBotClient:
                 "allow_sending_without_reply": True,
             }
         result = self._call("sendMessage", json=payload)
-        return int(result["message_id"])
+        message_id = result.get("message_id")
+        if not isinstance(message_id, int) or isinstance(message_id, bool) or message_id <= 0:
+            raise DeliveryUncertainError("sendMessage: response has no valid message id")
+        return message_id
 
     def edit_message(self, chat_id: str, message_id: int, html: str) -> None:
         """Replace the text of a message the bot posted; an identical text is not an error."""
@@ -139,39 +146,91 @@ class TelegramBotClient:
         self._client.close()
 
     MAX_ATTEMPTS = 3
+    MAX_RATE_RETRIES = 3
 
     def _call(self, method: str, **kwargs: Any) -> dict[str, Any]:
-        rate_limited_once = False
-        for attempt in range(1, self.MAX_ATTEMPTS + 1):
+        attempt = 1
+        rate_retries = 0
+        payload = kwargs.get("json") or {}
+        chat_id = str(payload["chat_id"]) if "chat_id" in payload else None
+        while True:
+            self._rate.wait(chat_id)
             try:
                 response = self._client.post(f"/{method}", **kwargs)
             except httpx.TransportError as exc:
+                if method == "sendMessage" and not isinstance(
+                    exc, (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout)
+                ):
+                    raise DeliveryUncertainError(
+                        f"{method}: {type(exc).__name__}; delivery outcome unknown"
+                    ) from exc
                 if attempt == self.MAX_ATTEMPTS:
                     raise TelegramUnavailableError(
                         f"{method}: {type(exc).__name__} after {attempt} attempts"
                     ) from exc
                 log.warning("Telegram %s: %s, retry %d", method, type(exc).__name__, attempt)
                 self._sleep(2.0 * attempt)
+                attempt += 1
                 continue
             if response.status_code >= 500:
+                if method == "sendMessage":
+                    raise DeliveryUncertainError(
+                        f"{method}: HTTP {response.status_code}; delivery outcome unknown"
+                    )
                 if attempt == self.MAX_ATTEMPTS:
                     raise TelegramUnavailableError(f"{method}: HTTP {response.status_code}")
                 self._sleep(2.0 * attempt)
+                attempt += 1
                 continue
             try:
                 body = response.json()
-            except ValueError as exc:
-                raise TelegramError(response.status_code, response.text[:200]) from exc
+            except ValueError:
+                body = None
+            if not isinstance(body, dict):
+                if response.status_code == 429:
+                    body = {"error_code": 429, "description": "Too Many Requests"}
+                else:
+                    if method == "sendMessage" and response.is_success:
+                        raise DeliveryUncertainError(f"{method}: unreadable success response")
+                    raise TelegramError(response.status_code, response.text[:200])
             if body.get("ok"):
                 result = body.get("result")
+                if isinstance(result, dict) and chat_id is not None:
+                    chat = result.get("chat")
+                    if isinstance(chat, dict) and isinstance(chat.get("id"), int):
+                        username = chat.get("username")
+                        self._rate.identify(
+                            chat_id, chat["id"], username if isinstance(username, str) else None
+                        )
                 return result if isinstance(result, dict) else {"result": result}
             code = int(body.get("error_code", response.status_code))
             description = str(body.get("description", ""))
-            retry_after = (body.get("parameters") or {}).get("retry_after")
-            if code == 429 and not rate_limited_once and retry_after is not None:
-                rate_limited_once = True
-                log.warning("Telegram rate limit, sleeping %ss", retry_after)
-                self._sleep(float(retry_after))
+            if code == 429:
+                parameters = body.get("parameters")
+                retry_after = (
+                    parameters.get("retry_after") if isinstance(parameters, dict) else None
+                )
+                delay = (
+                    float(retry_after)
+                    if isinstance(retry_after, (int, float))
+                    and not isinstance(retry_after, bool)
+                    and math.isfinite(retry_after)
+                    and retry_after >= 0
+                    else 5.0 * 2**rate_retries
+                )
+                self._rate.defer(delay)
+                log.warning(
+                    "Telegram %s rate limit: cooldown %.1fs, retries used %d/%d",
+                    method,
+                    delay + TelegramRateLimiter.COOLDOWN_MARGIN,
+                    rate_retries,
+                    self.MAX_RATE_RETRIES,
+                )
+                if rate_retries == self.MAX_RATE_RETRIES:
+                    raise TelegramUnavailableError(
+                        f"{method}: rate limit persists after {rate_retries} retries"
+                    )
+                rate_retries += 1
                 continue
             if code in (401, 403, 409) or "chat not found" in description.lower():
                 # Wrong token, bot not an admin, wrong channel id: affects every message. 409 is
@@ -180,7 +239,6 @@ class TelegramBotClient:
                 # log a traceback once a cycle for as long as the other consumer lived.
                 raise TelegramUnavailableError(f"HTTP {code}: {description}")
             raise TelegramError(code, description)
-        raise TelegramUnavailableError(f"{method}: gave up after {self.MAX_ATTEMPTS} attempts")
 
 
 @dataclass

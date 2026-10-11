@@ -79,3 +79,9 @@ class BatchNotSubmittedError(LlmUnavailableError):
 
 class TelegramUnavailableError(ServiceUnavailableError):
     system = "Telegram API"
+
+
+class DeliveryUncertainError(ServiceUnavailableError):
+    """A message may have been accepted; retry requires an audited operator decision."""
+
+    system = "message delivery"

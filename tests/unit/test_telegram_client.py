@@ -28,14 +28,19 @@ from lexinform.models import (
     RunMode,
     RunReport,
 )
-from tests.fakes import channel_post, make_analysis
+from tests.fakes import MonotonicClock, channel_post, make_analysis
 
 Handler = Callable[[httpx.Request], httpx.Response]
 
 
 def _client(handler: Handler, sleeps: list[float] | None = None) -> TelegramBotClient:
-    record = sleeps if sleeps is not None else []
-    return TelegramBotClient("TOKEN", transport=httpx.MockTransport(handler), sleep=record.append)
+    clock = MonotonicClock(sleeps)
+    return TelegramBotClient(
+        "TOKEN",
+        transport=httpx.MockTransport(handler),
+        sleep=clock.sleep,
+        monotonic=clock.monotonic,
+    )
 
 
 def _ok(message_id: int) -> httpx.Response:
@@ -174,7 +179,7 @@ def test_rate_limit_is_waited_out_once() -> None:
 
     message_id = _client(handler, sleeps).send_message("@chan", "x")
 
-    assert (message_id, sleeps) == (1, [3.0])
+    assert message_id == 1 and sleeps == pytest.approx([3.1])
 
 
 def test_edit_message_replaces_the_text_and_tolerates_an_unchanged_one() -> None:

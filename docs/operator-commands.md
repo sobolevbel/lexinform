@@ -382,6 +382,10 @@ To rotate the key: `ssh-keygen -t ed25519 -N "" -f deploy_key -C lexinform-deplo
 
 Rules of the road:
 
+- Requests share pacing within each process; sends, edits and deletions to one chat are
+  spaced by at least 3.1 s. Repeated `429` responses respect `retry_after`; ambiguous sends
+  become `unknown` and require `/delivery`. See [Telegram rate limits](operations/telegram.md)
+  for retry rules and the boundary between the relay and workflow processes.
 - Telegram allows **one `getUpdates` consumer per bot**. A second `lexinform listen` (a local
   one, say) steals updates from the server's: use `--dry-run`, which confirms nothing, and
   never set a webhook for the bot (`deleteWebhook` if one exists).
