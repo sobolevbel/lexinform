@@ -336,6 +336,64 @@ def test_a_plenary_sitting_names_itself_once() -> None:
     assert "№ 65" in text
 
 
+@pytest.mark.parametrize("language", ["ru", "en"])
+def test_sitting_groups_list_linked_bills_with_titles(language: str) -> None:
+    plenary = _sitting(
+        kind="sejm",
+        ref="sejm/65/2026-09-15",
+        date=dt.date(2026, 9, 15),
+        end_date=dt.date(2026, 9, 18),
+        sitting_number=65,
+        committee_code=None,
+        committee_name=None,
+        start_time=None,
+    )
+    windows = tuple(
+        Upcoming(
+            term=10,
+            number=number,
+            title=title,
+            message_id=message_id,
+            sitting=plenary.model_copy(update={"text": f"druk nr {number}"}),
+        )
+        for number, title, message_id in (
+            ("3039", "Projekt ustawy o cudzoziemcach", 101),
+            ("3100", "Projekt ustawy o obywatelstwie & ochronie", 102),
+        )
+    )
+    week = _ahead().model_copy(update={"sittings": (*windows, windows[0])})
+
+    text = MessageFormatter(language, channel="@test").digest(week).text
+
+    assert_telegram_html(text)
+    assert text.count("<b>" + ("заседание Сейма" if language == "ru" else "Sejm sitting")) == 1
+    assert '<a href="https://t.me/test/101">druk 3039</a> — O cudzoziemcach' in text
+    assert '<a href="https://t.me/test/102">druk 3100</a> — O obywatelstwie &amp; ochronie' in text
+    assert text.count("druk 3039") == 1
+    assert text.index("65,") < text.index("druk 3039") < text.index("druk 3100")
+
+
+def test_committee_sittings_are_separate_groups_in_date_order() -> None:
+    early = _sitting(sitting_number=136)
+    later = _sitting(ref="ASW/137/2026-09-18", date=dt.date(2026, 9, 18), sitting_number=137)
+
+    text = MessageFormatter("ru").digest(_ahead(later, early)).text
+
+    assert_telegram_html(text)
+    assert text.count("Komisja Administracji i Spraw Wewnętrznych") == 2
+    assert text.index("17 сент 2026, 09:00</b>\n• druk 3039 — Projekt") < text.index(
+        "18 сент 2026, 09:00</b>\n• druk 3039 — Projekt"
+    )
+
+
+def test_a_sitting_without_bill_entries_is_omitted() -> None:
+    week = _ahead().model_copy(
+        update={"sittings": (Upcoming(term=10, number="3039", title="Projekt"),)}
+    )
+
+    assert "Ближайшие заседания" not in MessageFormatter("ru").digest(week).text
+
+
 def test_an_open_consultation_says_what_the_bill_is() -> None:
     """The one section a reader acts on: a bare number and a date named nothing."""
     week = Digest(

@@ -1268,7 +1268,7 @@ class MessageFormatter:
             self._digest_block(lb.digest_cards, week.cards, self._digest_card),
             self._digest_block(lb.digest_updates, week.updates, self._digest_update),
             self._digest_block(lb.digest_consultations, week.consultations, self._digest_window),
-            self._digest_block(lb.digest_sittings, week.sittings, self._digest_sitting),
+            self._digest_sittings(week.sittings),
         ]
         if week.is_empty:
             body = [esc(lb.digest_quiet)]
@@ -1321,19 +1321,36 @@ class MessageFormatter:
         title = esc(_clip(publication_title(window.title), DIGEST_TITLE_CHARS))
         return f"• {self._digest_ref(window)} — {title}{left}"
 
-    def _digest_sitting(self, window: Upcoming) -> str:
-        """A sitting the committee called conditionally is marked as the card marks it: 21 of
-        term 10 happen only if the Sejm refers something first, and a digest that states one as
-        a settled date is the reason the rule exists. A plenary sitting names itself in
-        `_agenda_when`, so naming it here as well said «Заседание Сейма, Заседание Сейма 65»."""
-        item = window.sitting
-        if item is None:
-            return ""
+    def _digest_sittings(self, windows: Sequence[Upcoming]) -> str:
+        groups: dict[tuple[int, str, str], tuple[AgendaItem, list[Upcoming]]] = {}
+        for window in windows:
+            item = window.sitting
+            if item is None:
+                continue
+            _, group = groups.setdefault((window.term, item.kind, item.ref), (item, []))
+            if not any(bill.number == window.number for bill in group):
+                group.append(window)
+        ordered = sorted(
+            groups.values(),
+            key=lambda group: (group[0].date, group[0].start_time or dt.time()),
+        )
+        return self._digest_block(self._labels.digest_sittings, ordered, self._digest_sitting)
+
+    def _digest_sitting(self, group: tuple[AgendaItem, list[Upcoming]]) -> str:
+        item, windows = group
         where = (
             f"{esc(item.committee_name or item.committee_code)}, " if item.committee_code else ""
         )
-        mark = f" ({esc(self._labels.agenda_conditional_short)})" if item.condition else ""
-        return f"• {self._digest_ref(window)} — {where}{self._agenda_when(item)}{mark}"
+        conditional = any(window.sitting and window.sitting.condition for window in windows)
+        mark = f" ({esc(self._labels.agenda_conditional_short)})" if conditional else ""
+        rows = [
+            f"• {self._digest_ref(window)} — {esc(publication_title(window.title))}"
+            for window in windows[:DIGEST_MAX_PER_SECTION]
+        ]
+        left = len(windows) - len(rows)
+        if left:
+            rows.append(f"• {esc(self._labels.digest_and_more.format(left))}")
+        return "\n".join([f"<b>{where}{self._agenda_when(item)}{mark}</b>", *rows])
 
     def _digest_ref(self, entry: DigestEntry | Upcoming) -> str:
         """How the digest names a bill: its number as its own card names it (a government

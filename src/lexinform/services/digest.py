@@ -282,7 +282,6 @@ class DigestService:
             for item in sorted(bill.agenda, key=lambda i: (i.date, i.start_time or dt.time())):
                 if today <= item.date <= horizon:
                     sittings.append(self._upcoming(bill, sitting=item))
-                    break
         consultations.sort(key=lambda w: (w.deadline or horizon, w.number))
         sittings.sort(key=lambda w: (w.sitting.date if w.sitting else horizon, w.number))
         return consultations, sittings

@@ -14,13 +14,14 @@ from lexinform.models import (
     PublicationStatus,
     RunMode,
     RunReport,
+    SejmSitting,
     iso_week,
 )
 from lexinform.services.digest import DigestService
 from lexinform.services.terms import TermResolver
 from lexinform.settings import Settings
 from tests.fakes import FakeTextExtractor, make_analysis
-from tests.harness import CHANNEL, COMMITTEE_STAGES, SUPPORT_URL, World, submission
+from tests.harness import CHANNEL, COMMITTEE_STAGES, REFERRED, SUPPORT_URL, World, submission
 
 TITLE = "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach"
 # The World's clock starts on Monday 2026-09-07; the digest's day is the Sunday that ends it.
@@ -295,6 +296,51 @@ def test_the_digest_names_an_update_by_what_it_said() -> None:
     (draft,) = _drafts(w)
     assert "Что изменилось" in draft
     assert "Направлен в комиссию" in draft
+
+
+def test_digest_groups_all_upcoming_sittings_and_omits_unfollowed_bills() -> None:
+    w = World(llm_script={"4100": make_analysis(score=2)})
+    w.add_bill("3039", TITLE, stages=REFERRED)
+    w.add_bill("3100", "Projekt ustawy o obywatelstwie", stages=REFERRED)
+    w.add_bill("4100", TITLE, stages=REFERRED)
+    w.gateway.sittings = [
+        SejmSitting(
+            number=65,
+            dates=(dt.date(2026, 9, 15), dt.date(2026, 9, 18)),
+            agenda="Pierwsze czytanie (druki nr 3039, 3100, 4100)",
+        ),
+        SejmSitting(
+            number=66,
+            dates=(dt.date(2026, 9, 20),),
+            agenda="Drugie czytanie (druk nr 3039)",
+        ),
+        SejmSitting(
+            number=67,
+            dates=(dt.date(2026, 9, 21),),
+            agenda="Pierwsze czytanie (druk nr 4100)",
+        ),
+        SejmSitting(
+            number=68,
+            dates=(dt.date(2026, 10, 1),),
+            agenda="Drugie czytanie (druk nr 3039)",
+        ),
+    ]
+    w.run()
+    _sunday(w)
+
+    w.run()
+
+    (draft,) = _drafts(w)
+    ahead = draft.split("Ближайшие заседания</b>\n")[1]
+    assert ahead.count("заседание Сейма № 65") == 1
+    assert ahead.count("заседание Сейма № 66") == 1
+    assert "заседание Сейма № 67" not in ahead
+    assert "заседание Сейма № 68" not in ahead
+    assert "druk 4100" not in ahead
+    assert ahead.count(f'<a href="https://t.me/test/{w.card_id("3039")}">druk 3039</a>') == 2
+    assert (
+        f'<a href="https://t.me/test/{w.card_id("3100")}">druk 3100</a> — O obywatelstwie' in ahead
+    )
 
 
 def test_an_inherited_card_appears_once_in_the_digest_not_under_two_numbers() -> None:
