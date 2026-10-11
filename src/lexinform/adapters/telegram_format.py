@@ -86,6 +86,7 @@ from lexinform.models import (
     wykaz_entry_number,
 )
 from lexinform.pricing import cost_usd, format_tokens, format_usd
+from lexinform.publication_titles import publication_title
 
 MESSAGE_LIMIT = 4096
 ELLIPSIS = "…"
@@ -1296,7 +1297,8 @@ class MessageFormatter:
 
     def _digest_card(self, entry: DigestEntry) -> str:
         score = f"{score_icon(entry.score)} {entry.score}/5 " if entry.score is not None else ""
-        return f"• {score}{self._digest_ref(entry)} — {esc(_clip(entry.title, DIGEST_TITLE_CHARS))}"
+        title = esc(_clip(publication_title(entry.title), DIGEST_TITLE_CHARS))
+        return f"• {score}{self._digest_ref(entry)} — {title}"
 
     def _digest_update(self, entry: DigestEntry) -> str:
         """What the reply said, by its event where it has one and by its kind where it has not."""
@@ -1316,7 +1318,7 @@ class MessageFormatter:
         if window.deadline is not None:
             days = (window.deadline - self._today()).days
             left = f" · {self.fmt_date(window.deadline)} · {self._countdown(days)}"
-        title = esc(_clip(window.title, DIGEST_TITLE_CHARS))
+        title = esc(_clip(publication_title(window.title), DIGEST_TITLE_CHARS))
         return f"• {self._digest_ref(window)} — {title}{left}"
 
     def _digest_sitting(self, window: Upcoming) -> str:
@@ -1691,7 +1693,7 @@ class MessageFormatter:
         """`📜 <b>Label — druk nr 3039</b>` and the bill's title on its own line."""
         return (
             f"{icon} <b>{esc(label)} — {self._number_label(bill)}</b>\n\n"
-            f"<b>{esc(title or bill.summary.title)}</b>"
+            f"<b>{esc(publication_title(title or bill.summary.title))}</b>"
         )
 
     @staticmethod

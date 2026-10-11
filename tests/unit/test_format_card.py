@@ -17,7 +17,8 @@ def test_card_contains_every_section(process_3039: ProcessDetail, print_3039: Pr
 
     assert_telegram_html(text)
     assert text.startswith(
-        f"📜 <b>Новый законопроект — druk nr 3039</b>\n\n<b>{process_3039.title}"
+        "📜 <b>Новый законопроект — druk nr 3039</b>\n\n"
+        "<b>O udzielaniu cudzoziemcom ochrony na terytorium Rzeczypospolitej Polskiej</b>"
     )
     assert "🔴 <b>Важность:</b> ●●●●● 5/5" in text
     assert "О чём проект" in text and "Ключевые изменения" in text
@@ -46,7 +47,8 @@ def test_joint_bill_reply_names_the_thread_and_carries_both_tags(
 
     assert_telegram_html(text)
     assert text.startswith(
-        "🔀 <b>Альтернативный проект того же закона — druk nr 3050</b>\n\n<b>Rządowy projekt"
+        "🔀 <b>Альтернативный проект того же закона — druk nr 3050</b>\n\n"
+        "<b>O udzielaniu cudzoziemcom ochrony</b>"
     )
     assert "Рассматривается совместно с druk 3039, 3051:" in text  # the card's print first
     assert "Инициатор:</b> правительственный\n📄 <b>Дата druku:</b> 2 сент 2026" in text

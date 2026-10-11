@@ -354,7 +354,8 @@ def test_an_open_consultation_says_what_the_bill_is() -> None:
 
     text = MessageFormatter("ru", today=lambda: dt.date(2026, 9, 13)).digest(week).text
 
-    assert "Projekt ustawy o zmianie ustawy o cudzoziemcach" in text
+    assert "O cudzoziemcach" in text
+    assert "Projekt ustawy o zmianie ustawy" not in text
 
 
 def test_the_ask_is_silent_when_there_is_nowhere_to_send_it() -> None:
