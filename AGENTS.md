@@ -84,3 +84,7 @@ Dependencies flow only in this direction:
 Secondary LLM batches pass results through analysis_memo without changing bill status. Deferred
 tracking keeps awaiting_batch_since until the observation checkpoint commits; queued time counts
 toward the deadline. Never resubmit an uncertain intent automatically.
+
+Digest-only events stay queued until their owning reader digest part is confirmed.
+Reserve digest_event_links before sending; retries and operator recovery act on the physical
+part, preserve its payload and membership, and release only its covered held changes.

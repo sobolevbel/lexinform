@@ -990,6 +990,13 @@ class CommandService:
             return CommandOutcome(
                 status=OutcomeStatus.NOT_FOUND, note="publication not found in this channel"
             )
+        owner_id = self._repo.digest_owner(command.delivery_id)
+        if owner_id is not None and command.delivery_action != "show":
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR,
+                delivery=publication,
+                note=f"resolve physical digest part {owner_id}; this row is an included event",
+            )
         action = command.delivery_action
         if action != "show":
             if not publish:
@@ -1066,6 +1073,12 @@ class CommandService:
         return CommandOutcome(
             status=OutcomeStatus.DELIVERY,
             delivery=publication,
+            digest_owner=self._repo.publication_by_id(owner_id) if owner_id is not None else None,
+            digest_members=tuple(
+                member.id
+                for member in self._repo.digest_sources(command.delivery_id)
+                if member.id is not None
+            ),
             delivery_history=tuple(self._repo.delivery_resolutions(command.delivery_id)),
             note="queued for the next publishing/tracking phase" if action == "retry" else "",
         )

@@ -1,4 +1,5 @@
 import datetime as dt
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -47,6 +48,10 @@ class DeliveryPlan(BaseModel):
     rendered_text: str = ""
     disable_notification: bool = False
     schedule: DeliverySchedule | None = None
+    destination: Literal["direct", "digest_only"] = "direct"
+    destination_reason: str = ""
+    digest_eligible_at: dt.datetime | None = None
+    digest_event_ids: tuple[int, ...] = ()
     participation: ParticipationSnapshot | None = None
     change_json: str = ""
     print_json: str | None = None

@@ -434,6 +434,13 @@ MIGRATIONS: tuple[str, ...] = (
     """
     ALTER TABLE status_changes ADD COLUMN decision_changed INTEGER NOT NULL DEFAULT 0;
     """,
+    """
+    CREATE TABLE digest_event_links (
+        source_publication_id INTEGER PRIMARY KEY REFERENCES publications(id),
+        owner_publication_id INTEGER NOT NULL REFERENCES publications(id)
+    );
+    CREATE INDEX ix_digest_owner ON digest_event_links(owner_publication_id);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -842,6 +849,8 @@ class SqliteBillRepository:
             " WHERE status_change_id = ?"
             " AND channel_id = ? AND kind = 'status_update' AND status = 'queued'"
             " AND attempts = 0"
+            " AND NOT EXISTS (SELECT 1 FROM digest_event_links"
+            " WHERE source_publication_id = publications.id)"
             " AND COALESCE(json_array_length(delivery_json, '$.update_group'), 0) = 0",
             (
                 delivery.model_dump_json(),
@@ -853,10 +862,23 @@ class SqliteBillRepository:
         return cur.rowcount == 1
 
     def replace_unattempted_delivery(self, publication_id: int, delivery: DeliveryPlan) -> bool:
+        original = self.publication_by_id(publication_id)
+        if (
+            original is not None
+            and original.delivery is not None
+            and self.digest_sources(publication_id)
+            and (
+                original.delivery.rendered_text != delivery.rendered_text
+                or original.delivery.digest_event_ids != delivery.digest_event_ids
+            )
+        ):
+            return False
         cur = self._conn.execute(
             "UPDATE publications SET delivery_json = ?, attention_json = ?"
             " WHERE id = ? AND status = 'queued'"
             " AND attempts = 0"
+            " AND NOT EXISTS (SELECT 1 FROM digest_event_links"
+            " WHERE source_publication_id = publications.id)"
             " AND COALESCE(json_array_length(delivery_json, '$.update_group'), 0) = 0",
             (
                 delivery.model_dump_json(),
@@ -880,6 +902,7 @@ class SqliteBillRepository:
             "SELECT * FROM publications WHERE channel_id = ? AND kind = 'status_update'"
             " AND status = 'queued' AND attempts = 0"
             " AND json_extract(delivery_json, '$.absorbed_by') IS NULL"
+            " AND COALESCE(json_extract(delivery_json, '$.destination'), 'direct') != 'digest_only'"
             " AND COALESCE(json_array_length(delivery_json, '$.update_group'), 0) = 0"
             " AND COALESCE(json_extract(delivery_json, '$.rendered_text'), '') = ''"
             " AND (json_extract(delivery_json, '$.wait_until') IS NOT NULL"
@@ -1998,6 +2021,94 @@ class SqliteBillRepository:
         assert row is not None, "the upsert above left a row under this natural key"
         return int(row[0])
 
+    def list_digest_candidates(
+        self, channel_id: str, *, eligible_before: datetime
+    ) -> list[Publication]:
+        rows = self._conn.execute(
+            "SELECT * FROM publications p WHERE channel_id = ? AND status = 'queued'"
+            " AND attempts = 0 AND json_extract(delivery_json, '$.destination') = 'digest_only'"
+            " AND COALESCE(json_extract(delivery_json, '$.digest_eligible_at'), created_at) < ?"
+            " AND NOT EXISTS (SELECT 1 FROM digest_event_links WHERE source_publication_id = p.id)"
+            " ORDER BY created_at, id",
+            (channel_id, eligible_before.isoformat()),
+        ).fetchall()
+        return [self._row_to_publication(row) for row in rows]
+
+    def digest_owner(self, source_id: int) -> int | None:
+        row = self._conn.execute(
+            "SELECT owner_publication_id FROM digest_event_links WHERE source_publication_id = ?",
+            (source_id,),
+        ).fetchone()
+        return int(row[0]) if row else None
+
+    def digest_sources(self, owner_id: int) -> list[Publication]:
+        rows = self._conn.execute(
+            "SELECT p.* FROM publications p JOIN digest_event_links l"
+            " ON l.source_publication_id = p.id WHERE l.owner_publication_id = ? ORDER BY p.id",
+            (owner_id,),
+        ).fetchall()
+        return [self._row_to_publication(row) for row in rows]
+
+    def reserve_digest_events(self, owner_id: int, source_ids: tuple[int, ...]) -> None:
+        with self.atomic():
+            owner = self.publication_by_id(owner_id)
+            if (
+                owner is None
+                or owner.kind is not PublicationKind.DIGEST
+                or owner.status is not PublicationStatus.QUEUED
+                or owner.delivery is None
+                or owner.attempts
+                or len(set(source_ids)) != len(source_ids)
+                or owner.delivery.digest_event_ids != source_ids
+            ):
+                raise ValueError("digest ownership does not match its saved payload")
+            for identity in source_ids:
+                source = self.publication_by_id(identity)
+                linked = self.digest_owner(identity)
+                if (
+                    source is None
+                    or source.channel_id != owner.channel_id
+                    or source.status is not PublicationStatus.QUEUED
+                    or source.attempts
+                    or source.delivery is None
+                    or source.delivery.destination != "digest_only"
+                    or (linked is not None and linked != owner_id)
+                ):
+                    raise ValueError("digest source is no longer available")
+            self._conn.executemany(
+                "INSERT OR IGNORE INTO digest_event_links VALUES (?, ?)",
+                [(identity, owner_id) for identity in source_ids],
+            )
+
+    def complete_digest_events(
+        self, owner_id: int, *, message_id: int, sent_at: datetime
+    ) -> list[Publication]:
+        owner = self.publication_by_id(owner_id)
+        sources = self.digest_sources(owner_id)
+        if (
+            owner is None
+            or owner.delivery is None
+            or set(owner.delivery.digest_event_ids) != {source.id for source in sources}
+        ):
+            raise ValueError("digest membership does not match its saved payload")
+        for source in sources:
+            if (
+                source.status is not PublicationStatus.QUEUED
+                or source.attempts
+                or source.delivery is None
+            ):
+                raise ValueError("digest source cannot be confirmed")
+        for source in sources:
+            assert source.id is not None
+            self.mark_publication(
+                source.id,
+                PublicationStatus.SENT,
+                message_id=message_id,
+                sent_at=sent_at,
+                count_attempt=False,
+            )
+        return sources
+
     def list_due_deliveries(self, channel_id: str, *, max_attempts: int) -> list[Publication]:
         rows = self._conn.execute(
             "SELECT * FROM publications WHERE channel_id = ? AND delivery_json IS NOT NULL"
@@ -2020,6 +2131,8 @@ class SqliteBillRepository:
                 "SELECT 1 FROM delivery_resolutions WHERE command_update_id = ?",
                 (resolution.command.update_id,),
             ).fetchone():
+                return False
+            if self.digest_owner(resolution.publication_id) is not None:
                 return False
             original = self.publication_by_id(resolution.publication_id)
             if original is None:
@@ -2049,6 +2162,21 @@ class SqliteBillRepository:
                     )
                 ):
                     return False
+            digest_members = self.digest_sources(resolution.publication_id)
+            if (
+                original is not None
+                and original.delivery is not None
+                and set(original.delivery.digest_event_ids)
+                != {member.id for member in digest_members}
+            ):
+                return False
+            if any(
+                member.status is not PublicationStatus.QUEUED
+                or member.delivery is None
+                or member.attempts
+                for member in digest_members
+            ):
+                return False
             for identity in identities:
                 self._conn.execute(
                     "UPDATE publications SET status = ?, message_id = COALESCE(?, message_id),"
@@ -2078,6 +2206,28 @@ class SqliteBillRepository:
                                 self.mark_publication(
                                     owned.id, PublicationStatus.DISMISSED, count_attempt=False
                                 )
+            if status == "dismissed":
+                for member in digest_members:
+                    assert member.id is not None and member.delivery is not None
+                    self.mark_publication(
+                        member.id,
+                        PublicationStatus.DISMISSED,
+                        error=resolution.reason,
+                        count_attempt=False,
+                    )
+                    for change_id in member.delivery.held_change_ids:
+                        held = self.get_update_publication(change_id, member.channel_id)
+                        if (
+                            held is not None
+                            and held.id is not None
+                            and held.status is PublicationStatus.SKIPPED
+                        ):
+                            self.mark_publication(
+                                held.id,
+                                PublicationStatus.DISMISSED,
+                                error=resolution.reason,
+                                count_attempt=False,
+                            )
             self._conn.execute(
                 "INSERT INTO delivery_resolutions"
                 " (publication_id, command_update_id, resolution_json) VALUES (?, ?, ?)",

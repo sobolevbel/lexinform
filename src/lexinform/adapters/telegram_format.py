@@ -39,6 +39,7 @@ from lexinform.models import (
     DecisionState,
     Digest,
     DigestEntry,
+    DigestPart,
     IncomingCommand,
     MonthFigures,
     OutcomeStatus,
@@ -1484,8 +1485,11 @@ class MessageFormatter:
         return RenderedMessage(text=self._assemble(head_blocks, flexible=body, tail=tail))
 
     def digest_parts(self, week: Digest, *, draft: bool = False) -> tuple[str, ...]:
+        return tuple(part.text for part in self.digest_layout(week, draft=draft))
+
+    def digest_layout(self, week: Digest, *, draft: bool = False) -> tuple[DigestPart, ...]:
         if not self._attention_enabled:
-            return (self.digest(week, draft=draft).text,)
+            return (DigestPart(text=self.digest(week, draft=draft).text),)
         lb = self._labels
         head = (
             f"{ICON['digest']} <b>{esc(lb.digest_header)}</b>\n"
@@ -1551,7 +1555,19 @@ class MessageFormatter:
             if block
         ]
         sections.append(("", tail))
-        parts: list[str] = []
+        ownership: dict[str, tuple[int, ...]] = {}
+        for entry in (*week.cards, *week.updates, *week.highlights):
+            for row in (
+                self._digest_card(entry),
+                self._digest_update(entry),
+                self._digest_highlight(entry),
+            ):
+                ownership[row] = tuple(
+                    dict.fromkeys((*ownership.get(row, ()), *entry.source_publication_ids))
+                )
+        parts: list[DigestPart] = []
+        event_ids: list[int] = []
+        covered: set[int] = set()
         current = head + (f"\n\n{DIGEST_DRAFT_NOTE}" if draft else "")
         for title, rows in sections:
             heading = f"<b>{esc(title)}</b>" if title else ""
@@ -1559,15 +1575,21 @@ class MessageFormatter:
             for row in rows:
                 block = "\n".join(value for value in (heading if first else "", row) if value)
                 if length(current + "\n\n" + block) > MESSAGE_LIMIT:
-                    parts.append(current)
+                    parts.append(DigestPart(text=current, event_ids=tuple(event_ids)))
+                    event_ids = []
                     current = head
                     block = "\n".join(value for value in (heading, row) if value)
                 assert length(current + "\n\n" + block) <= MESSAGE_LIMIT, (
                     "one digest event must fit"
                 )
                 current += "\n\n" + block
+                if not draft:
+                    event_ids.extend(
+                        identity for identity in ownership.get(row, ()) if identity not in covered
+                    )
+                    covered.update(event_ids)
                 first = False
-        parts.append(current)
+        parts.append(DigestPart(text=current, event_ids=tuple(event_ids)))
         return tuple(parts)
 
     def _digest_highlight(self, entry: DigestEntry) -> str:
@@ -1659,6 +1681,8 @@ class MessageFormatter:
             label = esc(entry.wykaz_number)
         if entry.mnemonic and entry.mnemonic_language == self._language:
             label = f"{esc(entry.mnemonic)} · {label}"
+        elif isinstance(entry, DigestEntry) and entry.summary:
+            label = f"{esc(lead(entry.summary))} · {label}"
         url = self._post_url(entry.message_id)
         return f'<a href="{html.escape(url, quote=True)}">{label}</a>' if url else label
 
@@ -1765,6 +1789,16 @@ class MessageFormatter:
                 f"message: {pub.message_id} · parent: {plan.reply_to if plan else None}",
                 f"saved payload replayable: {bool(plan and plan.replayable(pub.kind))}",
             ]
+            if plan is not None:
+                lines.append(f"destination: {plan.destination} · {esc(plan.destination_reason)}")
+            if outcome.digest_owner is not None:
+                owner = outcome.digest_owner
+                lines.append(
+                    f"physical digest part: {owner.id} · {owner.status}"
+                    f" · message {owner.message_id}"
+                )
+            if outcome.digest_members:
+                lines.append("covered events: " + ", ".join(map(str, outcome.digest_members)))
             if plan is not None and plan.publication_ids:
                 lines.append(
                     "shared delivery: "
@@ -2726,7 +2760,7 @@ class MessageFormatter:
         they meet. Never art. 121's thirty days: the committees take the act within a week."""
         lb = self._labels
         act = bill.senate
-        if act is None or not act.committees:
+        if act is None or not act.committees or not any(c.email for c in act.committees):
             return esc(lb.action_senate_pending)
         if act.committees_done(today):
             return None

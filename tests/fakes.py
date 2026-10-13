@@ -16,6 +16,7 @@ from lexinform.adapters.sejm_api import rcl_key
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import (
     AttachmentTooLargeError,
+    DeliveryUncertainError,
     LlmContextExceededError,
     OrkaUnreachableError,
     RclUnavailableError,
@@ -802,6 +803,9 @@ class FakePublisher(RenderingPublisher):
         formatter: MessageFormatter | None = None,
     ) -> None:
         super().__init__(formatter or MessageFormatter("ru"))
+        self.digest_send_attempts = 0
+        self.fail_digest_attempt: int | None = None
+        self.unknown_digest_attempt: int | None = None
         self.sent: list[Outgoing] = []  # every message as rendered, in the order it went out
         self.edited: list[tuple[Outgoing, int]] = []
         self.new_bills: list[tuple[Bill, PrintInfo | None]] = []
@@ -839,6 +843,12 @@ class FakePublisher(RenderingPublisher):
         return FakePublishResult(message_id=self._next_id)
 
     def _deliver(self, message: Outgoing) -> FakePublishResult:
+        if message.kind is PublicationKind.DIGEST:
+            self.digest_send_attempts += 1
+            if self.digest_send_attempts == self.fail_digest_attempt:
+                raise RuntimeError("digest part rejected")
+            if self.digest_send_attempts == self.unknown_digest_attempt:
+                raise DeliveryUncertainError("digest part timed out after send")
         result = self._send(message.number)
         self.sent.append(message)
         return result

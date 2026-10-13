@@ -84,7 +84,7 @@ class DeliveryService:
             pub = self._repo.get_update_publication(change.id, self._channel_id)
             if pub is not None and pub.delivery is not None:
                 plan = pub.delivery
-                if plan.absorbed_by is not None:
+                if plan.absorbed_by is not None or plan.destination == "digest_only":
                     continue
                 if plan.update_group:
                     try:
@@ -124,10 +124,10 @@ class DeliveryService:
         captured = MemoryLogHandler()
         captured.install()
         run_id: int | None = None
-        self._poster.start_run()
         if dry_run:
             self._repo.begin()
         try:
+            self._poster.start_run()
             run_id = self._repo.start_run(report)
             stale = self._repo.mark_stale_pending_as_unknown(now=started)
             if stale:

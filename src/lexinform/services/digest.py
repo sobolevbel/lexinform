@@ -229,6 +229,17 @@ class DigestService:
             since=self._midnight(since),
             until=self._midnight(until + dt.timedelta(days=1)),
         )
+        posts = [
+            post for post in posts if post.id is None or self._repo.digest_owner(post.id) is None
+        ]
+        posts.extend(
+            self._repo.list_digest_candidates(
+                self._channel_id,
+                eligible_before=min(
+                    self._clock.now(), self._midnight(until + dt.timedelta(days=1))
+                ),
+            )
+        )
         bills: dict[tuple[int, str], Bill] = {}
         cards: list[DigestEntry] = []
         updates: list[DigestEntry] = []
@@ -250,11 +261,17 @@ class DigestService:
                 continue
             if post.kind in CARD_KINDS:
                 _add_or_replace(cards, card_slots, entry)
-            elif post.kind in UPDATE_KINDS:
+            elif post.kind in UPDATE_KINDS or (
+                post.delivery is not None and post.delivery.destination == "digest_only"
+            ):
                 key = (
-                    (entry.message_id, entry.term, entry.number)
-                    if entry.message_id in grouped_messages
-                    else (entry.message_id, 0, "")
+                    (None, entry.term, f"{entry.number}/{post.id}")
+                    if entry.message_id is None
+                    else (
+                        (entry.message_id, entry.term, entry.number)
+                        if entry.message_id in grouped_messages
+                        else (entry.message_id, 0, "")
+                    )
                 )
                 slot = update_slots.get(key)
                 if slot is None:
@@ -332,13 +349,23 @@ class DigestService:
             mnemonic_language=bill.editorial.mnemonic.language if bill.editorial.mnemonic else "ru",
             consequence=consequence,
             attention=post.attention,
+            historical_snapshot=post.delivery is not None and bool(post.delivery.bill_json),
+            summary=analysis.summary if analysis is not None and post.delivery is not None else "",
+            source_publication_ids=(post.id,)
+            if post.id is not None
+            and post.delivery is not None
+            and post.delivery.destination == "digest_only"
+            and post.status is PublicationStatus.QUEUED
+            else (),
             kind=post.kind,
             sent_at=post.sent_at or post.created_at,
             message_id=post.message_id,
             score=analysis.score if analysis is not None else None,
             category=analysis.category if analysis is not None else None,
             wykaz_number=_wykaz_number(bill),
-            event=update_event(change, bill) if change is not None else self._event(post, bill),
+            event=update_event(change, bill)
+            if change is not None and post.delivery is not None
+            else "",
         )
 
     def _event(self, post: Publication, bill: Bill) -> str:
@@ -480,10 +507,10 @@ class DigestService:
         existing: Publication | None,
     ) -> int | None:
         if existing is None:
-            texts = publisher.render_digest(week, draft=channel_id == self._draft_channel_id)
+            parts = publisher.render_digest_parts(week, draft=channel_id == self._draft_channel_id)
             identities: list[int] = []
             with self._repo.atomic():
-                for index, text in enumerate(texts):
+                for index, rendered_part in enumerate(parts):
                     identities.append(
                         self._repo.create_publication(
                             Publication(
@@ -496,17 +523,20 @@ class DigestService:
                                 created_at=self._clock.now(),
                                 delivery=DeliveryPlan(
                                     bill_json="",
-                                    rendered_text=text,
+                                    rendered_text=rendered_part.text,
+                                    digest_event_ids=rendered_part.event_ids,
                                     policy_version="attention-v1",
                                     digest_ref=week.ref,
                                     approve_label=self._approve
                                     if channel_id == self._draft_channel_id
-                                    and index == len(texts) - 1
+                                    and index == len(parts) - 1
                                     else "",
                                 ),
                             )
                         )
                     )
+                    if rendered_part.event_ids:
+                        self._repo.reserve_digest_events(identities[-1], rendered_part.event_ids)
                 root = self._repo.publication_by_id(identities[0])
                 assert root is not None and root.delivery is not None and root.id is not None
                 assert self._repo.replace_unattempted_delivery(

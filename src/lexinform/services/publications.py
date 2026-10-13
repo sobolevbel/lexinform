@@ -78,6 +78,12 @@ def complete_delivery(
     repo.release_planned_changes(
         plan.held_change_ids, publication.channel_id, message_id=message_id, sent_at=sent_at
     )
+    if plan.digest_event_ids:
+        assert publication.id is not None
+        for source in repo.complete_digest_events(
+            publication.id, message_id=message_id, sent_at=sent_at
+        ):
+            complete_delivery(repo, source, message_id=message_id, sent_at=sent_at)
     if publication.kind is not PublicationKind.STATUS_UPDATE or not plan.with_act:
         return
     notice = repo.get_publication(

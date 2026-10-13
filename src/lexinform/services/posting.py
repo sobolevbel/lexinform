@@ -131,6 +131,30 @@ class Poster:
         self._attempted.clear()
         self._sittings.clear()
         self._updates.clear()
+        for pub in self._repo.list_digest_candidates(
+            self._channel_id, eligible_before=self._clock.now() + timedelta(microseconds=1)
+        ):
+            assert pub.id is not None and pub.delivery is not None
+            current = self._repo.get(pub.term, pub.number)
+            priority = current.editorial.priority if current is not None else None
+            override = (
+                priority is not None
+                and priority.expires_at > self._clock.now()
+                and (priority.urgent or priority.important)
+            )
+            if self._attention_mode != "on" or override:
+                self._repo.replace_unattempted_delivery(
+                    pub.id,
+                    pub.delivery.model_copy(
+                        update={
+                            "destination": "direct",
+                            "destination_reason": "operator_override"
+                            if override
+                            else "policy_disabled",
+                            "schedule": None,
+                        }
+                    ),
+                )
 
     def queue_update(self, pub: Publication) -> None:
         assert pub.id is not None and pub.delivery is not None
@@ -606,6 +630,8 @@ class Poster:
             self.prepare(bill, change, with_act=with_act)
             return Told.QUEUED
         plan = self.prepare(bill, change, with_act=with_act)
+        if plan.destination == "digest_only":
+            return Told.QUEUED
         if plan.update_group:
             assert change.id is not None
             pub = self._repo.get_update_publication(change.id, self._channel_id)
@@ -686,6 +712,8 @@ class Poster:
         if existing is not None and not self.ready(
             existing.model_copy(update={"delivery": delivery})
         ):
+            return False
+        if delivery.destination == "digest_only":
             return False
         if delivery.wait_until is not None:
             # Attempted or uncertain sends can never be absorbed into a later analysis update.
@@ -1024,6 +1052,7 @@ class Poster:
                 item=item,
                 moved_from=moved_from,
                 hearing=hearing,
+                phase=phase,
                 urgent_days=self._urgent_days,
             )
             if self._attention_mode != "off"
@@ -1088,7 +1117,7 @@ class Poster:
         assert pub.id is not None and pub.delivery is not None, (
             "prepare_message and list_due_deliveries give only stored rows with a delivery plan"
         )
-        if pub.id in self._attempted:
+        if pub.id in self._attempted or pub.delivery.destination == "digest_only":
             return False
         if pub.delivery.policy_version == "attention-v1":
             pub = self._refresh_attention(pub)
@@ -1192,6 +1221,8 @@ class Poster:
 
     def ready(self, pub: Publication) -> bool:
         plan = pub.delivery
+        if plan is not None and plan.destination == "digest_only":
+            return False
         if (
             plan is None
             or plan.schedule is None
@@ -1314,6 +1345,21 @@ class Poster:
 
     def attention_metrics(self) -> dict[str, int]:
         metrics = dict(self._attention_metrics)
+        digest_queue = [
+            pub
+            for pub in self._repo.list_open_deliveries(self._channel_id)
+            if pub.delivery is not None and pub.delivery.destination == "digest_only"
+        ]
+        if digest_queue:
+            metrics["digest_queued_events"] = len(digest_queue)
+            metrics["digest_awaiting_approval"] = sum(
+                pub.id is not None and self._repo.digest_owner(pub.id) is None
+                for pub in digest_queue
+            )
+            metrics["digest_oldest_minutes"] = max(
+                max(0, int((self._clock.now() - pub.created_at).total_seconds() // 60))
+                for pub in digest_queue
+            )
         schedules = [
             pub.delivery.schedule
             for pub in self._repo.list_scheduled_deliveries(self._channel_id)

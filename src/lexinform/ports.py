@@ -33,6 +33,7 @@ from lexinform.models import (
     DeliveryPlan,
     DeliveryResolution,
     Digest,
+    DigestPart,
     Editorial,
     IncomingCommand,
     JointContext,
@@ -406,6 +407,10 @@ class Publisher(Protocol):
 
     def render_digest(self, digest: Digest, *, draft: bool = False) -> tuple[str, ...]: ...
 
+    def render_digest_parts(
+        self, digest: Digest, *, draft: bool = False
+    ) -> tuple[DigestPart, ...]: ...
+
     def publish_prepared(self, publication: Publication) -> PublishResult: ...
 
     def publish_hearing_deadline(
@@ -762,6 +767,20 @@ class BillRepository(Protocol):
     def resolve_delivery(self, resolution: DeliveryResolution) -> bool: ...
 
     def delivery_resolutions(self, publication_id: int) -> list[DeliveryResolution]: ...
+
+    def list_digest_candidates(
+        self, channel_id: str, *, eligible_before: datetime
+    ) -> list[Publication]: ...
+
+    def digest_owner(self, source_id: int) -> int | None: ...
+
+    def digest_sources(self, owner_id: int) -> list[Publication]: ...
+
+    def reserve_digest_events(self, owner_id: int, source_ids: tuple[int, ...]) -> None: ...
+
+    def complete_digest_events(
+        self, owner_id: int, *, message_id: int, sent_at: datetime
+    ) -> list[Publication]: ...
 
     def list_due_deliveries(self, channel_id: str, *, max_attempts: int) -> list[Publication]: ...
 

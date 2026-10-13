@@ -16,6 +16,7 @@ from lexinform.models import (
     DIGEST_NUMBER,
     Bill,
     Digest,
+    DigestPart,
     Phase,
     PrintInfo,
     Publication,
@@ -150,6 +151,9 @@ class RenderingPublisher(ABC):
 
     def render_digest(self, digest: Digest, *, draft: bool = False) -> tuple[str, ...]:
         return self._formatter.digest_parts(digest, draft=draft)
+
+    def render_digest_parts(self, digest: Digest, *, draft: bool = False) -> tuple[DigestPart, ...]:
+        return self._formatter.digest_layout(digest, draft=draft)
 
     def publish_prepared(self, publication: Publication) -> PublishResult:
         plan = publication.delivery

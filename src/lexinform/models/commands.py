@@ -513,6 +513,8 @@ class CommandOutcome(BaseModel):
     runs: tuple[RunReport, ...] = ()
     spend: SpendSnapshot | None = None
     delivery: Publication | None = None
+    digest_owner: Publication | None = None
+    digest_members: tuple[int, ...] = ()
     delivery_history: tuple[DeliveryResolution, ...] = ()
     as_json: bool = False
     run_started_at: dt.datetime | None = None

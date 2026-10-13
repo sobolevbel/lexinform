@@ -66,7 +66,10 @@ class DigestEntry(BaseModel):
     mnemonic: str = ""
     mnemonic_language: str = "ru"
     consequence: str = ""
+    summary: str = ""
     attention: AttentionAssessment | None = None
+    source_publication_ids: tuple[int, ...] = ()
+    historical_snapshot: bool = True
     """What an update said, keyed as `models.update_event` keys it; empty for a card."""
 
 
@@ -177,3 +180,10 @@ class Digest(BaseModel):
         """Nothing posted and nothing ahead; the digest still goes out, silence being news in a
         channel about deadlines."""
         return not (self.cards or self.updates or self.consultations or self.sittings)
+
+
+class DigestPart(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    text: str
+    event_ids: tuple[int, ...] = ()

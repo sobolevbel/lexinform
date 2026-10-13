@@ -507,3 +507,12 @@ Rules of the road:
 Waiting does not advance the observed stages; the bill remains eligible after the watermark
 moves. A long wait never triggers a synchronous model call; uncertain submissions require
 the audited recovery commands above.
+
+## События, ожидающие дайджеста
+
+`/delivery ID` показывает назначение `digest_only`, причину, физическую часть и
+включённые ID событий. До approval событие остаётся ожидающим, а технический draft
+не означает доставки читателю. Если исходная запись принадлежит unknown части,
+confirm/retry/dismiss нужно выполнять для ID этой физической части. Retry сохраняет
+HTML, состав и ownership; dismiss не считается чтением. Неизвестный исход источника
+и unknown Telegram delivery — разные состояния.

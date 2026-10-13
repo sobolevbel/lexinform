@@ -37,9 +37,10 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `source_checks` | `(term, number, aspect)` | Последние попытка и успех проверки, число сбоев и дата outage. |
 | `delivery_alerts` (v38) | `channel_id` | Отпечаток проблем доставки и время последнего успешно отправленного техотчёта о них. |
 
-SQL объявляет только два внешних ключа:
+SQL объявляет внешние ключи:
 `publications.status_change_id → status_changes.id` и
-`llm_batch_items.batch_id → llm_batches.batch_id`.
+`llm_batch_items.batch_id → llm_batches.batch_id`;
+`digest_event_links.source_publication_id/owner_publication_id → publications.id` (v40).
 Связи по `(term, number)`, ссылки аудита на публикацию и команду — логические,
 без `FOREIGN KEY`. Дайджест относится к неделе и каналу, а не к одному законопроекту.
 
@@ -108,6 +109,13 @@ bill. Исчезнувший срок удерживает напоминани�
 Частичные уникальные индексы `publications` задают отдельные правила для карточки,
 изменения, напоминаний, заседаний и дайджеста. Повторяющиеся события используют `ref`;
 SQL всех условий приведён в [визуальной схеме](../database.html#indexes).
+
+В v40 `digest_event_links` сохраняет единственную физическую часть дайджеста для
+каждого `digest_only` события. Source остаётся `queued` до подтверждения его части;
+технический draft его не покрывает. После успеха source получает настоящий message ID
+части, membership остаётся после retention. Failed/unknown части удерживают источники;
+`/delivery` разрешает физическую часть, а не отдельный включённый факт. Политика off
+и operator override освобождают только unreserved, never-attempted события.
 
 ## Дамп и восстановление
 
