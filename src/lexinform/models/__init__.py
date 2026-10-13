@@ -167,6 +167,8 @@ from lexinform.models.evidence import (
     SourceOutcome,
     TribunalOutcome,
     decision_changes,
+    process_evidence,
+    process_rejected,
     rcl_evidence,
     reading_evidence,
     senate_evidence,
@@ -305,6 +307,8 @@ from lexinform.models.wykaz import (
 )
 
 __all__ = [
+    "process_evidence",
+    "process_rejected",
     "FAILING_CHECK_MIN",
     "CheckAspect",
     "Freshness",

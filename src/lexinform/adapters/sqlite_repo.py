@@ -431,6 +431,9 @@ MIGRATIONS: tuple[str, ...] = (
         notified_at TEXT NOT NULL
     );
     """,
+    """
+    ALTER TABLE status_changes ADD COLUMN decision_changed INTEGER NOT NULL DEFAULT 0;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -1512,7 +1515,8 @@ class SqliteBillRepository:
               AND b.status != ? AND b.discontinued_at IS NULL
               AND (b.awaiting_batch_since IS NOT NULL
                    OR b.closure_date IS NULL OR b.closure_date >= ?
-                   OR (b.passed = 1 AND b.act_json IS NULL AND b.closure_date >= ?)
+                   OR ((b.passed = 1 OR b.passed IS NULL) AND b.act_json IS NULL
+                       AND b.closure_date >= ?)
                    OR (b.act_json IS NOT NULL
                        AND (b.entry_into_force IS NULL OR b.entry_into_force > ?))
                    OR (b.act_json IS NULL AND b.closure_date >= ?
@@ -2217,8 +2221,8 @@ class SqliteBillRepository:
                                             new_stages_json, closure_detected, passed,
                                             content_changed, withdrawn, discontinued,
                                             amendments_json, supplements_json, detected_at,
-                                            consultation_opened)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                            consultation_opened, decision_changed)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     change.term,
@@ -2241,6 +2245,7 @@ class SqliteBillRepository:
                     _supplements_json(change.supplements),
                     change.detected_at.isoformat(),
                     int(change.consultation_opened),
+                    int(change.decision_changed),
                 ),
             )
         except sqlite3.IntegrityError:
@@ -2576,6 +2581,7 @@ class SqliteBillRepository:
             new_fingerprint=row["new_fingerprint"],
             new_stages=[Stage.model_validate(s) for s in json.loads(row["new_stages_json"])],
             closure_detected=bool(row["closure_detected"]),
+            decision_changed=bool(row["decision_changed"]),
             passed=None if row["passed"] is None else bool(row["passed"]),
             content_changed=bool(row["content_changed"]),
             withdrawn=bool(row["withdrawn"]),

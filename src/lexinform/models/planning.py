@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict
 
 from lexinform.models.bill import Bill, StatusChange
 from lexinform.models.events import fills_in_the_past, has_news
-from lexinform.models.evidence import decision_changes
+from lexinform.models.evidence import decision_changes, process_evidence
 from lexinform.models.observations import ObservedProcess
 from lexinform.models.sejm import ProcessDetail, Stage, TextDocument, diff_stages
 
@@ -71,7 +71,17 @@ def plan_bill(
         observed=observed,
         analysis_document=analysis_document,
         new_stages=tuple(added),
-        decision_changed=bool(decisions),
+        decision_changed=bool(decisions)
+        or (
+            previous is not None
+            and previous.passed != observed.passed
+            and process_evidence(
+                previous.stages, passed=previous.passed, closed=previous.closure_date is not None
+            ).model_dump(exclude={"stage"})
+            != process_evidence(
+                observed.stages, passed=observed.passed, closed=observed.closure_date is not None
+            ).model_dump(exclude={"stage"})
+        ),
         closure_detected=(
             previous is not None
             and observed.closure_date is not None

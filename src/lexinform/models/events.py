@@ -25,6 +25,8 @@ from lexinform.models.evidence import (
     SenateOutcome,
     SourceOutcome,
     TribunalOutcome,
+    process_evidence,
+    process_rejected,
     reading_evidence,
     senate_evidence,
     submission_evidence,
@@ -74,7 +76,7 @@ def has_news(change: StatusChange, *, act_published: bool = False) -> bool:
     Dziennik Ustaw is not news on its own: the publication notice says it all."""
     if change.withdrawn or change.discontinued or change.content_changed:
         return True
-    if change.closure_detected and not act_published:
+    if (change.closure_detected or change.decision_changed) and not act_published:
         return True
     if change.supplements:
         return True
@@ -117,7 +119,7 @@ def update_event(change: StatusChange, bill: Bill) -> str:
         # there is no new stage to name the post: without this the one moment a reader of an RCL
         # project can act on was announced as «Обновление».
         return "consultation_opened"
-    if change.closure_detected:
+    if change.closure_detected or change.decision_changed:
         return _closure_event_of(change, bill)
     if change.content_changed:
         return "text_changed"
@@ -195,9 +197,14 @@ def _closure_event_of(change: StatusChange, bill: Bill) -> str:
         return "text_changed" if change.content_changed else "update"
     if outcome is VetoOutcome.OVERRIDDEN:
         return "veto_overridden"
-    if change.passed and outcome is None:
+    evidence = process_evidence(
+        bill.stages,
+        passed=change.passed,
+        closed=change.closure_detected or bill.summary.closure_date is not None,
+    )
+    if evidence.reading is ReadingOutcome.PASSED:
         return "passed"
-    return closure_event(bill)
+    return closure_event(bill) if process_rejected(evidence) else "decision_unknown"
 
 
 def closure_event(bill: Bill) -> str:

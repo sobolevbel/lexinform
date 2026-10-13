@@ -748,7 +748,8 @@ def test_a_bill_is_over_only_when_the_stages_leave_nothing_ahead(
 
     assert not is_over(adopted, today=TODAY)  # closed by the Sejm, the President has it
     assert not is_over(adopted.model_copy(update={"stages": ()}), today=TODAY)  # unread: unknown
-    assert is_over(rejected, today=TODAY)
+    assert not is_over(rejected, today=TODAY)
+    assert is_over(rejected.model_copy(update={"stages": ()}), today=TODAY)
     assert not is_over(published, today=TODAY)
 
 

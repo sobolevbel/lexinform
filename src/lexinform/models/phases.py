@@ -27,10 +27,11 @@ from lexinform.models.evidence import (
     SenateOutcome,
     SourceOutcome,
     TribunalOutcome,
+    process_evidence,
+    process_rejected,
     rcl_evidence,
     reading_evidence,
     senate_evidence,
-    terminal_stage,
     tribunal_evidence,
     wykaz_evidence,
 )
@@ -368,8 +369,13 @@ def _pre_print_phase(bill: Bill, today: dt.date) -> Phase | None:
 def _sejm_phase(bill: Bill, today: dt.date) -> Phase | None:
     """The road through the Sejm, read from the stage the process stands on."""
     summary = bill.summary
-    if summary.closure_date is not None and summary.passed is False:
+    evidence = process_evidence(
+        bill.stages, passed=summary.passed, closed=summary.closure_date is not None
+    )
+    if process_rejected(evidence):
         return None
+    if evidence.state is DecisionState.UNKNOWN and evidence.veto is None:
+        return Phase(key="decision_unknown")
     if veto_stood(bill.stages):
         return None
     top = process_stages(bill.stages)
@@ -561,8 +567,10 @@ def is_over(bill: Bill, *, today: dt.date) -> bool:
         return wykaz_evidence(bill.wykaz).source is SourceOutcome.WITHDRAWN
     if bill.is_pre_print:
         return bill.summary.closure_date is not None
-    return terminal_stage(bill.stages) is not None or (
-        bill.summary.closure_date is not None and bill.summary.passed is False
+    return process_rejected(
+        process_evidence(
+            bill.stages, passed=bill.summary.passed, closed=bill.summary.closure_date is not None
+        )
     )
 
 

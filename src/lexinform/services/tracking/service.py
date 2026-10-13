@@ -815,7 +815,9 @@ class StatusTrackingService:
         closure_detected = plan.closure_detected
         new_stages = plan.new_stages
         filed = found.supplements
-        if not (new_stages or content_changed or closure_detected or filed):
+        if not (
+            new_stages or content_changed or closure_detected or plan.decision_changed or filed
+        ):
             return None
 
         fresh = self._repo.get(bill.term, bill.number) or bill
@@ -831,6 +833,7 @@ class StatusTrackingService:
             ),
             new_stages=[self._enricher.enrich(bill.term, st) for st in new_stages],
             closure_detected=closure_detected,
+            decision_changed=plan.decision_changed,
             passed=detail.passed,
             content_changed=content_changed,
             detected_at=now,

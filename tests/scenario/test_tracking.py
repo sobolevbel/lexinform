@@ -2,6 +2,8 @@
 
 import datetime as dt
 
+import pytest
+
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.errors import LlmUnavailableError
 from lexinform.models import (
@@ -926,3 +928,33 @@ def test_a_law_the_senate_held_past_the_window_is_still_followed() -> None:
         "SenatePositionConsideration",
         "ToPresident",
     ]
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+@pytest.mark.parametrize("passed", [True, False])
+def test_unknown_closure_stays_uncertain_and_resolution_is_delivered_once(
+    workers: int, passed: bool
+) -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.touch("3039", w.clock.now(), closure_date=w.clock.now().date(), passed=None)
+
+    w.run()
+    unknown = w.publisher.texts(PublicationKind.STATUS_UPDATE)[-1]
+
+    assert "не принят" not in unknown
+    assert "пока не подтверждён" in unknown
+    assert "направить мнение" not in unknown
+    w.touch("3039", w.clock.now(), passed=passed)
+    w.clock.advance(days=1)
+
+    restored = w.repo.dump()
+    w.repo.restore(restored)
+    resolved = w.run(workers=workers)
+    again = w.run(workers=workers)
+
+    assert resolved.updates == 1
+    text = w.publisher.texts(PublicationKind.STATUS_UPDATE)[-1]
+    assert ("Сейм принял" if passed else "закон не принят") in text
+    assert again.updates == 0

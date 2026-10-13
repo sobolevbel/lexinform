@@ -115,8 +115,10 @@ def test_update_event_is_the_newest_stage_or_the_flag(process_1962: ProcessDetai
     assert update_event(_change([by_type["End"]], closure_detected=True, passed=True), bill) == (
         "passed"
     )
-    # Nothing in the stages says the Sejm rejected it: the ending is told without a culprit.
-    assert update_event(_change([], closure_detected=True, passed=False), bill) == "not_enacted"
+    # A negative listing conflicts with the explicit adoption in this tree.
+    assert (
+        update_event(_change([], closure_detected=True, passed=False), bill) == "decision_unknown"
+    )
     assert update_event(_change([], content_changed=True), bill) == "text_changed"
     assert update_event(_change([], discontinued=True), bill) == "discontinued"
     assert update_event(_change([by_type["Start"]]), bill) == "start"

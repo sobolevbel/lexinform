@@ -386,7 +386,9 @@ def test_the_third_reading_is_not_dated_by_a_committee_sitting(
     )
     stages = list(process_1962.stages[: second_reading + 1])
     stages[-1] = stages[-1].model_copy(update={"decision": "przystąpiono do III czytania"})
-    in_readings = process_1962.model_copy(update={"stages": tuple(stages), "passed": None})
+    in_readings = process_1962.model_copy(
+        update={"stages": tuple(stages), "passed": None, "closure_date": None}
+    )
 
     text = (
         MessageFormatter("ru")

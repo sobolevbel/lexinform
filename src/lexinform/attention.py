@@ -90,12 +90,12 @@ def assess_attention(
     source: str | None = None
     if kind is PublicationKind.STATUS_UPDATE and change is not None:
         event = update_event(change, bill)
-        if change.content_changed or change.amendments or change.supplements:
+        if event == "decision_unknown":
+            reasons.append("unclassified_event")
+        elif change.content_changed or change.amendments or change.supplements:
             importance = "important"
             reasons.append("substantive_content")
-        elif (
-            change.withdrawn or change.discontinued or change.closure_detected or event in DECISIONS
-        ):
+        elif change.withdrawn or change.discontinued or event in DECISIONS:
             importance = "important"
             reasons.append("confirmed_decision")
         elif change.consultation_opened or event == "hearing":

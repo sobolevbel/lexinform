@@ -36,6 +36,7 @@ from lexinform.models import (
     BillStatus,
     CommandOutcome,
     ConsultationWindow,
+    DecisionState,
     Digest,
     DigestEntry,
     IncomingCommand,
@@ -46,6 +47,7 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     RclProject,
+    ReadingOutcome,
     RunReport,
     SittingNews,
     SourceCheck,
@@ -82,6 +84,7 @@ from lexinform.models import (
     open_hearing,
     participation_view,
     print_web_url,
+    process_evidence,
     process_web_url,
     reaches_sejm,
     stalled_days,
@@ -768,6 +771,7 @@ class MessageFormatter:
             closure = f"{ICON['closed']} {esc(lb.process_veto_sustained)}"
         elif (
             change.closure_detected
+            and event != "decision_unknown"
             and event not in _SELF_EXPLAINING_CLOSURES
             and veto_outcome(bill.stages) is None
         ):
@@ -2066,7 +2070,12 @@ class MessageFormatter:
             return states["published"]
         if is_over(bill, today=today):
             return states["ended"]
-        return states["passed"] if bill.summary.passed is True else states["project"]
+        evidence = process_evidence(
+            bill.stages, passed=bill.summary.passed, closed=bill.summary.closure_date is not None
+        )
+        if evidence.state is DecisionState.UNKNOWN:
+            return self._labels.update_headers["decision_unknown"]
+        return states["passed"] if evidence.reading is ReadingOutcome.PASSED else states["project"]
 
     @staticmethod
     def _field(icon: str, label: str, value: str) -> str:

@@ -307,6 +307,7 @@ class StatusChange(BaseModel):
     new_fingerprint: str
     new_stages: list[Stage]
     closure_detected: bool = False
+    decision_changed: bool = False
     passed: bool | None = None
     content_changed: bool = False
     withdrawn: bool = False

@@ -23,7 +23,7 @@ class ObservedProcess(BaseModel):
 
     @property
     def fingerprint(self) -> str:
-        return f"{stage_fingerprint(self.stages)}:{decision_fingerprint(self.stages)}"
+        return f"{stage_fingerprint(self.stages)}:{decision_fingerprint(self.stages)}:{self.passed}"
 
 
 class UpdateSnapshot(BaseModel):

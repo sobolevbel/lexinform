@@ -242,3 +242,50 @@ def decision_fingerprint(stages: tuple[Stage, ...]) -> str:
         if stage.stage_type == "SenatePosition"
     ]
     return hashlib.sha256(json.dumps(facts).encode()).hexdigest()
+
+
+def process_evidence(
+    stages: tuple[Stage, ...], *, passed: bool | None, closed: bool
+) -> DecisionEvidence:
+    """An unresolved veto blocks listing signals; closure alone does not establish a decision."""
+    veto = veto_evidence(stages)
+    if veto.state is not DecisionState.ABSENT:
+        return veto
+    terminal = terminal_stage(stages)
+    if terminal is not None:
+        return DecisionEvidence(
+            state=DecisionState.KNOWN, stage=terminal, reading=ReadingOutcome.REJECTED
+        )
+    for stage in reversed(stages):
+        if (
+            stage.stage_type == "End"
+            and closed
+            and passed is False
+            and "niezgodność z konstytucją" in stage.stage_name.casefold()
+            and any(item.stage_type == "ConstitutionalTribunalRuling" for item in stages)
+        ):
+            return DecisionEvidence(
+                state=DecisionState.KNOWN, stage=stage, reading=ReadingOutcome.REJECTED
+            )
+        if stage.stage_type == "End" and stage.stage_name.casefold() in {"odrzucono", "wycofano"}:
+            return DecisionEvidence(
+                state=DecisionState.KNOWN, stage=stage, source=SourceOutcome.WITHDRAWN
+            )
+        evidence = reading_evidence(stage)
+        if evidence.reading is ReadingOutcome.PASSED:
+            if closed and passed is False:
+                return DecisionEvidence(state=DecisionState.UNKNOWN)
+            return evidence
+    if passed is True:
+        return DecisionEvidence(state=DecisionState.KNOWN, reading=ReadingOutcome.PASSED)
+    if closed and passed is False:
+        return DecisionEvidence(state=DecisionState.KNOWN, reading=ReadingOutcome.REJECTED)
+    return DecisionEvidence(state=DecisionState.UNKNOWN if closed else DecisionState.ABSENT)
+
+
+def process_rejected(evidence: DecisionEvidence) -> bool:
+    return evidence.state is DecisionState.KNOWN and (
+        evidence.veto is VetoOutcome.SUSTAINED
+        or evidence.reading is ReadingOutcome.REJECTED
+        or evidence.source is SourceOutcome.WITHDRAWN
+    )
