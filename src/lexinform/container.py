@@ -613,6 +613,9 @@ class Container:
             workers=settings.sejm_concurrency,
             observe_unthreaded=settings.observe_unthreaded,
             min_score=settings.min_score,
+            reader_attention=settings.reader_attention,
+            attention_urgent_days=settings.attention_urgent_days,
+            attention_max_group=settings.attention_max_group,
         )
 
     def pipeline(self, *, dry_run: bool) -> DailyPipeline:
@@ -712,6 +715,7 @@ def build_container(settings: Settings) -> Container:
             channel=settings.telegram_channel_id,
             support_url=settings.digest_support_url,
             sponsor_url=settings.digest_sponsor_url,
+            attention_enabled=settings.reader_attention == "on",
         ),
         prefilter=KeywordPrefilter(),
         terms=TermResolver(gateway, repo, pinned=settings.term),

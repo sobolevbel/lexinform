@@ -15,7 +15,7 @@ from lexinform.models import (
     TriageContext,
 )
 
-PROMPT_VERSION = "2026-10-v10"
+PROMPT_VERSION = "2026-10-v11"
 
 _LANGUAGE_NAMES = {"ru": "Russian", "pl": "Polish", "en": "English", "uk": "Ukrainian"}
 
@@ -46,6 +46,10 @@ You receive a bill (projekt ustawy) at some point of its life: a print submitted
 - effective_date: the vacatio legis / entry-into-force rule quoted from the text, translated to {language}; null if absent.
 - confidence: 0-1. Lower it when the text is truncated or only metadata was available.
 - rationale: one sentence (in {language}) justifying score and category.
+- mnemonic_candidate: a concrete memorable name in {language}, preferably 2-3 words, at most four. Name this bill's distinctive mechanism, not a broad topic. One simple image (window, route, price tag, timer, check) is optional when it cannot suggest more than the text supports. No stages, dates, druk numbers, slogans, urgency, invented acronyms, artificial word joins or hyphen chains. Preserve NFZ, ZUS, PESEL. Never promise adoption, automatic approval or guaranteed benefit. No URLs, HTML, hashtags or line breaks.
+- mnemonic_fallback: a precise neutral name in {language}, at most four words, naming the same mechanism without a metaphor.
+- mnemonic_basis: a short confirmed source fact supporting the candidate. For multi-topic bills choose the main confirmed effect on foreigners; keep other effects in the analysis.
+- mnemonic_language: language code of the names (ru or en). Names are editorial suggestions: they do not change relevance, materiality or legal identity.
 - changes_since_previous: ONLY when a previous analysis is provided (section "POPRZEDNIA ANALIZA"): up to 6 bullets in {language} describing concretely what differs between the previous version of the bill and the current text (added/removed provisions, changed deadlines, amounts, scope). Leave empty when there is no previous analysis or nothing material changed.
 
 ## Rules
@@ -80,6 +84,10 @@ You receive a bill (projekt ustawy) at some point of its life: a print submitted
 - effective_date: the vacatio legis / entry-into-force rule quoted from the text, translated to {language}; null if absent.
 - confidence: 0-1. Lower it when the text is truncated or only metadata was available.
 - rationale: one sentence (in {language}) justifying score and category.
+- mnemonic_candidate: a concrete memorable name in {language}, preferably 2-3 words, at most four. Name this bill's distinctive mechanism, not a broad topic. One simple image (window, route, price tag, timer, check) is optional when it cannot suggest more than the text supports. No stages, dates, druk numbers, slogans, urgency, invented acronyms, artificial word joins or hyphen chains. Preserve NFZ, ZUS, PESEL. Never promise adoption, automatic approval or guaranteed benefit. No URLs, HTML, hashtags or line breaks.
+- mnemonic_fallback: a precise neutral name in {language}, at most four words, naming the same mechanism without a metaphor.
+- mnemonic_basis: a short confirmed source fact supporting the candidate. For multi-topic bills choose the main confirmed effect on foreigners; keep other effects in the analysis.
+- mnemonic_language: language code of the names (ru or en). Names are editorial suggestions: they do not change relevance, materiality or legal identity.
 - changes_since_previous: ONLY when a previous analysis is provided (section "POPRZEDNIA ANALIZA"): up to 6 bullets in {language} describing concretely what differs between the previous version of the bill and the current text (added/removed provisions, changed deadlines, amounts, scope). Leave empty when there is no previous analysis or nothing material changed.
 
 ## Rules

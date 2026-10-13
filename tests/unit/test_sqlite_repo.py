@@ -911,6 +911,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "awaiting_batch_since",  # v32
         "observation_mode",  # v35
         "observation_basis",
+        "editorial_json",  # v36
     } <= bills
     assert {
         "ux_pub_once_per_kind",
@@ -1266,6 +1267,7 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("ALTER TABLE bills DROP COLUMN awaiting_batch_since")
         conn.execute("ALTER TABLE bills DROP COLUMN observation_mode")
         conn.execute("ALTER TABLE bills DROP COLUMN observation_basis")
+        conn.execute("ALTER TABLE bills DROP COLUMN editorial_json")
         conn.execute("DROP TABLE source_checks")
         conn.execute("PRAGMA user_version = 20")
     dump = source.dump()

@@ -127,6 +127,8 @@ class Labels:
     next_step: str
     sittings_header: str
     updates_header: str
+    attention_important: str
+    attention_urgent: str
     roundup_rcl_action: str
     sittings_sejm: str
     sittings_committees: str
@@ -401,6 +403,8 @@ RU = Labels(
     next_step="Что дальше",
     sittings_header="Заседания",
     updates_header="Что изменилось",
+    attention_important="Важно",
+    attention_urgent="Нужно действовать",
     roundup_rcl_action=(
         "консультации закрыты; {comment}; заявить интерес к работам"
         " (zgłoszenie zainteresowania): {organ} · писать на польском, указать {number}"
@@ -1084,6 +1088,8 @@ EN = Labels(
     next_step="What comes next",
     sittings_header="Sittings",
     updates_header="What changed",
+    attention_important="Important",
+    attention_urgent="Action needed",
     roundup_rcl_action=(
         "consultations closed; {comment}; declare interest in the work"
         " (zgłoszenie zainteresowania): {organ} · write in Polish, cite {number}"

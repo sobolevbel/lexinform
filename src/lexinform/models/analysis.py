@@ -31,6 +31,14 @@ class Analysis(BaseModel):
     )
     confidence: float = Field(ge=0.0, le=1.0)
     rationale: str = Field(description="One sentence justifying score and category.")
+    mnemonic_candidate: str = Field(
+        default="", description="Concrete memorable name, up to four words."
+    )
+    mnemonic_fallback: str = Field(
+        default="", description="Neutral mechanism name, up to four words."
+    )
+    mnemonic_basis: str = Field(default="", description="Source fact supporting the proposed name.")
+    mnemonic_language: str = Field(default="ru", description="Language code of the proposed names.")
     changes_since_previous: list[str] = Field(
         default_factory=list,
         description="Only when a previous analysis is provided: concrete differences between the"

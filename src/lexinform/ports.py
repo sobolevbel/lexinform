@@ -32,6 +32,7 @@ from lexinform.models import (
     DeliveryPlan,
     DeliveryResolution,
     Digest,
+    Editorial,
     IncomingCommand,
     JointContext,
     JointRecord,
@@ -705,6 +706,8 @@ class BillRepository(Protocol):
     def search(self, text: str, *, limit: int) -> list[Bill]:
         """Bills whose title or number contains `text`, newest change first."""
         ...
+
+    def save_editorial(self, term: int, number: str, editorial: Editorial) -> None: ...
 
     def list_joint_reply_candidates(
         self, channel_id: str, *, limit: int, max_attempts: int = 3

@@ -33,6 +33,7 @@ from lexinform.models.analysis import (
     merge_usage,
     usage_of,
 )
+from lexinform.models.attention import AttentionAssessment as AttentionAssessment
 from lexinform.models.batch import (
     AmendmentsQuestion,
     AnalysisQuestion,
@@ -103,6 +104,18 @@ from lexinform.models.digest import (
     iso_week,
     previous_week,
     week_bounds,
+)
+from lexinform.models.editorial import (
+    Editorial as Editorial,
+)
+from lexinform.models.editorial import (
+    Mnemonic as Mnemonic,
+)
+from lexinform.models.editorial import (
+    PriorityOverride as PriorityOverride,
+)
+from lexinform.models.editorial import (
+    valid_mnemonic as valid_mnemonic,
 )
 from lexinform.models.enums import (
     AMENDMENT_SOURCES,

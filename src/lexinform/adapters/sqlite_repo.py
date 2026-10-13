@@ -36,10 +36,12 @@ from lexinform.models import (
     CommandState,
     DeliveryPlan,
     DeliveryResolution,
+    Editorial,
     IncomingCommand,
     JointRecord,
     LlmBatch,
     LlmBatchItem,
+    Mnemonic,
     ObservationBasis,
     ObservationMode,
     ObservedProcess,
@@ -58,6 +60,7 @@ from lexinform.models import (
     SupplementRecord,
     WykazEntry,
     rcl_num_key,
+    valid_mnemonic,
 )
 from lexinform.models.batch import BatchJob, batch_item_meta
 
@@ -408,6 +411,10 @@ MIGRATIONS: tuple[str, ...] = (
         PRIMARY KEY (term, number, aspect)
     );
     """,
+    # v36: editorial names belong to the case, independently of analysis revisions.
+    """
+    ALTER TABLE bills ADD COLUMN editorial_json TEXT;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -733,6 +740,33 @@ class SqliteBillRepository:
                 term,
                 number,
             ),
+        )
+
+        bill = self.get(term, number)
+        assert bill is not None
+        answer = record.analysis
+        name = next(
+            (
+                value
+                for value in (answer.mnemonic_candidate, answer.mnemonic_fallback)
+                if valid_mnemonic(value)
+            ),
+            "",
+        )
+        if answer.relevant and name and answer.mnemonic_basis.strip():
+            candidate = Mnemonic(
+                name=name,
+                language=answer.mnemonic_language,
+                basis=answer.mnemonic_basis,
+                selected_at=record.created_at,
+                provisional=record.text_source == "metadata_only",
+            )
+            self.save_editorial(term, number, bill.editorial.select(candidate))
+
+    def save_editorial(self, term: int, number: str, editorial: Editorial) -> None:
+        self._conn.execute(
+            "UPDATE bills SET editorial_json = ? WHERE term = ? AND number = ?",
+            (editorial.model_dump_json(), term, number),
         )
 
     def save_ready_analysis(self, term: int, number: str, ready: ReadyAnalysis) -> None:
@@ -1267,16 +1301,20 @@ class SqliteBillRepository:
         not its number. SQLite folds case for ASCII only, so a Polish letter matches as it was
         typed; the titles are mixed-case Polish and a word from the middle is the usual query.
         """
-        pattern = f"%{text.strip()}%"
         rows = self._conn.execute(
-            """
-            SELECT * FROM bills
-            WHERE title LIKE ? COLLATE NOCASE OR number LIKE ? COLLATE NOCASE
-            ORDER BY change_date DESC LIMIT ?
-            """,
-            (pattern, pattern, limit),
+            "SELECT * FROM bills ORDER BY change_date DESC, term, number",
         ).fetchall()
-        return [self._row_to_bill(r) for r in rows]
+        query = text.strip().casefold()
+        matches: list[Bill] = []
+        for row in rows:
+            bill = self._row_to_bill(row)
+            names = [bill.summary.title, bill.number, bill.reader_name]
+            names.extend(name.name for name in bill.editorial.previous)
+            if any(query in name.casefold() for name in names):
+                matches.append(bill)
+                if len(matches) >= limit:
+                    break
+        return matches
 
     def list_publish_candidates(
         self, channel_id: str, *, min_score: int, limit: int, max_attempts: int = 3
@@ -1769,6 +1807,9 @@ class SqliteBillRepository:
         *,
         wykaz_number: str | None = None,
     ) -> None:
+        previous = self.get(term, pre_print_number)
+        if previous is not None and previous.editorial.mnemonic is not None:
+            self.save_editorial(term, print_number, previous.editorial)
         self._conn.execute(
             "UPDATE bills SET linked_number = ?, status = ? WHERE term = ? AND number = ?",
             (print_number, BillStatus.LINKED.value, term, pre_print_number),
@@ -2361,6 +2402,11 @@ class SqliteBillRepository:
                 else None
             ),
             analysis=analysis,
+            editorial=(
+                Editorial.model_validate_json(row["editorial_json"])
+                if row["editorial_json"]
+                else Editorial()
+            ),
             analysis_attempts=int(row["analysis_attempts"]),
             analysis_generation=int(row["analysis_generation"]),
             awaiting_batch_since=_parse_dt(row["awaiting_batch_since"]),

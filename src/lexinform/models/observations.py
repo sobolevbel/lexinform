@@ -2,6 +2,7 @@ import datetime as dt
 
 from pydantic import BaseModel, ConfigDict
 
+from lexinform.models.attention import AttentionAssessment
 from lexinform.models.enums import PublicationKind
 from lexinform.models.evidence import decision_fingerprint
 from lexinform.models.sejm import Stage, TextDocument, stage_fingerprint
@@ -38,6 +39,9 @@ class DeliveryPlan(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     bill_json: str
+    attention: AttentionAssessment | None = None
+    attention_history: tuple[AttentionAssessment, ...] = ()
+    policy_version: str = "legacy"
     change_json: str = ""
     print_json: str | None = None
     primary_json: str | None = None

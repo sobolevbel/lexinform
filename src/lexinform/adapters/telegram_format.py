@@ -10,7 +10,9 @@ import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo
 
+from lexinform.attention import assess_attention
 from lexinform.i18n import Labels, labels_for
 from lexinform.models import (
     COMMITTEE_PHASES,
@@ -355,6 +357,7 @@ class MessageFormatter:
         channel: str = "",
         support_url: str = "",
         sponsor_url: str = "",
+        attention_enabled: bool = False,
     ) -> None:
         """`today` dates "what comes next", the countdowns and the consultation tag when a
         message method is not given the day explicitly: production passes the run's clock in
@@ -367,6 +370,8 @@ class MessageFormatter:
         self._channel = channel
         self._support_url = support_url
         self._sponsor_url = sponsor_url
+        self._attention_enabled = attention_enabled
+        self._language = language
 
     def new_bill(
         self, bill: Bill, print_info: PrintInfo | None, *, today: dt.date | None = None
@@ -633,6 +638,25 @@ class MessageFormatter:
         header = self._reply_header(
             EVENT_ICON.get(event, ICON["update"]), self._event_header(change, event), bill
         )
+        if self._attention_enabled:
+            assessment = assess_attention(
+                bill,
+                PublicationKind.STATUS_UPDATE,
+                change=change,
+                now=dt.datetime.combine(today, dt.time(), tzinfo=ZoneInfo("Europe/Warsaw")),
+                with_act=with_act,
+            )
+            marker = (
+                self._labels.attention_urgent
+                if assessment.urgency == "urgent"
+                else (
+                    self._labels.attention_important if assessment.importance == "important" else ""
+                )
+            )
+            if marker:
+                if assessment.urgency == "urgent" and assessment.deadline is not None:
+                    marker += f" · {self.fmt_date(assessment.deadline)}"
+                header = f"<b>{esc(marker)}</b>\n{header}"
         act_block = ""
         if with_act and bill.act is not None:
             act_block = f"{ICON['published']} <b>{esc(lb.act_published_header)}</b>\n" + (
@@ -1000,7 +1024,9 @@ class MessageFormatter:
         label = self._number_label(bill)
         url = self._post_url(item.card_message_id)
         reference = link(url, label) if url else esc(label)
-        subject = lead(bill.analysis.analysis.summary) if bill.analysis else bill.summary.title
+        subject = self._mnemonic(bill) or (
+            lead(bill.analysis.analysis.summary) if bill.analysis else bill.summary.title
+        )
         event = update_event(change, bill)
         lines = [
             f"<b>{reference}</b> — {esc(fit(subject, 180))}",
@@ -1049,6 +1075,8 @@ class MessageFormatter:
         lb = self._labels
         item = news.item
         label = self._number_label(news.bill)
+        if name := self._mnemonic(news.bill):
+            label = f"{esc(name)} · {label}"
         url = self._post_url(news.card_message_id)
         ref = f'<a href="{html.escape(url, quote=True)}">{label}</a>' if url else label
         where = ""
@@ -1670,7 +1698,7 @@ class MessageFormatter:
     def _bill_line(self, bill: Bill) -> str:
         """One bill in a list: its number, where our pipeline left it, and its title as a link."""
         return f"<b>{self._number_label(bill)}</b> · {esc(bill.status)} · " + link(
-            process_web_url(bill.term, bill.number), _clip(bill.summary.title, 90)
+            process_web_url(bill.term, bill.number), _clip(bill.reader_name, 90)
         )
 
     def _snapshot_body(self, snapshot: StatusSnapshot) -> str:
@@ -1811,14 +1839,26 @@ class MessageFormatter:
 
     def _reply_header(self, icon: str, label: str, bill: Bill) -> str:
         """`🗓 <b>Label — druk nr 3039</b>`: a reply sits under the card, which has the title."""
+        if name := self._mnemonic(bill):
+            return f"<b>{esc(name)} · {self._number_label(bill)}</b>\n{icon} <b>{esc(label)}</b>"
         return f"{icon} <b>{esc(label)} — {self._number_label(bill)}</b>"
 
     def _header(self, icon: str, label: str, bill: Bill, title: str | None = None) -> str:
         """`📜 <b>Label — druk nr 3039</b>` and the bill's title on its own line."""
+        if name := self._mnemonic(bill):
+            return (
+                f"<b>{esc(name)} · {self._number_label(bill)}</b>\n"
+                f"{icon} <b>{esc(label)}</b>\n\n"
+                f"{esc(publication_title(title or bill.summary.title))}"
+            )
         return (
             f"{icon} <b>{esc(label)} — {self._number_label(bill)}</b>\n\n"
             f"<b>{esc(publication_title(title or bill.summary.title))}</b>"
         )
+
+    def _mnemonic(self, bill: Bill) -> str:
+        name = bill.editorial.mnemonic
+        return name.name if name is not None and name.language == self._language else ""
 
     @staticmethod
     def _field(icon: str, label: str, value: str) -> str:

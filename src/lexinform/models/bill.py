@@ -17,6 +17,7 @@ from lexinform.models.analysis import (
     JointRecord,
     SupplementRecord,
 )
+from lexinform.models.editorial import Editorial
 from lexinform.models.enums import BillStatus, PublicationKind, PublicationStatus, VetoOutcome
 from lexinform.models.evidence import (
     end_names_veto_sustained as end_names_veto_sustained,
@@ -97,6 +98,7 @@ class Bill(BaseModel):
     observed_closure_date: dt.date | None = None
     observed_process: ObservedProcess | None = None
     analysis: AnalysisRecord | None = None
+    editorial: Editorial = Field(default_factory=Editorial)
     analysis_attempts: int = 0
     analysis_generation: int = 0
     awaiting_batch_since: dt.datetime | None = None
@@ -132,6 +134,10 @@ class Bill(BaseModel):
     @property
     def number(self) -> str:
         return self.summary.number
+
+    @property
+    def reader_name(self) -> str:
+        return self.editorial.mnemonic.name if self.editorial.mnemonic else self.summary.title
 
     @property
     def is_pre_print(self) -> bool:

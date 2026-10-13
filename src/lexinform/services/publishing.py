@@ -13,6 +13,7 @@ import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from lexinform.attention import assess_attention
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     SILENCED_BY_OPERATOR,
@@ -270,6 +271,9 @@ class PublishingService:
                 kind=PublicationKind.NEW_BILL,
                 delivery=DeliveryPlan(
                     bill_json=bill.model_dump_json(),
+                    attention=assess_attention(
+                        bill, PublicationKind.NEW_BILL, now=self._clock.now()
+                    ),
                     print_json=print_info.model_dump_json() if print_info else None,
                 ),
                 status=PublicationStatus.QUEUED,
@@ -338,6 +342,9 @@ class PublishingService:
                     bill_json=bill.model_dump_json(),
                     print_json=print_info.model_dump_json() if print_info else None,
                     primary_json=card_bill.model_dump_json(),
+                    attention=assess_attention(
+                        bill, PublicationKind.JOINT_BILL, now=self._clock.now()
+                    ),
                     reply_to=card_message_id,
                 ),
                 status=PublicationStatus.QUEUED,

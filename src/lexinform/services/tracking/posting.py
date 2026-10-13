@@ -14,6 +14,7 @@ from datetime import date, timedelta
 from enum import StrEnum
 from zoneinfo import ZoneInfo
 
+from lexinform.attention import assess_attention
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     AgendaItem,
@@ -96,6 +97,9 @@ class Poster:
         gateway: SejmGateway,
         channel_id: str,
         max_attempts: int,
+        attention_mode: str = "shadow",
+        urgent_days: int = 3,
+        max_group: int = 5,
     ) -> None:
         self._repo = repo
         self._publisher = publisher
@@ -103,6 +107,9 @@ class Poster:
         self._gateway = gateway
         self._channel_id = channel_id
         self._max_attempts = max_attempts
+        self._attention_mode = attention_mode
+        self._urgent_days = urgent_days
+        self._max_group = max_group
         self._attempted: set[int] = set()
         self._sittings: dict[int, Publication] = {}
         self._updates: dict[int, Publication] = {}
@@ -556,6 +563,17 @@ class Poster:
         card = self.card(bill)
         delivery = DeliveryPlan(
             bill_json=snapshot.model_dump_json(),
+            attention=assess_attention(
+                snapshot,
+                PublicationKind.STATUS_UPDATE,
+                change=planned,
+                now=self._clock.now(),
+                with_act=with_act,
+                urgent_days=self._urgent_days,
+            )
+            if self._attention_mode != "off"
+            else None,
+            policy_version="attention-v1" if self._attention_mode == "on" else "legacy",
             change_json=planned.model_dump_json(),
             held_change_ids=tuple(
                 dict.fromkeys(
@@ -755,6 +773,18 @@ class Poster:
         card = self.card(bill)
         delivery = DeliveryPlan(
             bill_json=bill.model_dump_json(),
+            attention=assess_attention(
+                bill,
+                kind,
+                now=self._clock.now(),
+                item=item,
+                moved_from=moved_from,
+                hearing=hearing,
+                urgent_days=self._urgent_days,
+            )
+            if self._attention_mode != "off"
+            else None,
+            policy_version="attention-v1" if self._attention_mode == "on" else "legacy",
             today=today,
             item_json=item.model_dump_json() if item else None,
             moved_from_json=moved_from.model_dump_json() if moved_from else None,

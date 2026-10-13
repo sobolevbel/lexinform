@@ -89,6 +89,9 @@ class TrackingOptions:
     workers: int = 1
     observe_unthreaded: bool = True
     min_score: int = 3
+    reader_attention: str = "shadow"
+    attention_urgent_days: int = 3
+    attention_max_group: int = 5
 
 
 def _consultation_reminder(
@@ -259,6 +262,9 @@ class StatusTrackingService:
             gateway=gateway,
             channel_id=channel_id,
             max_attempts=options.max_publish_attempts,
+            attention_mode=options.reader_attention,
+            urgent_days=options.attention_urgent_days,
+            max_group=options.attention_max_group,
         )
         enricher = StageEnricher(gateway, club_breakdown=options.club_breakdown)
         consultations = _consultation_reminder(repo, clock, poster, options)
