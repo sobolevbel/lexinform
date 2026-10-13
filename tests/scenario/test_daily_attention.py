@@ -299,7 +299,7 @@ def test_compact_roundup_preserves_case_links_dates_committees_and_tags() -> Non
     text = w.publisher.texts(PublicationKind.STATUS_UPDATE)[-1]
     assert report.ok and (report.updates, report.update_events) == (1, 2)
     assert text.count("Что дальше:") == 1 and text.count("Что можно сделать сейчас:") == 1
-    assert text.count("Пока проект") == 2
+    assert "Пока проект" not in text
     assert text.count("Направлен в комиссию: ASW") == 2
     assert text.count(w.formatter.fmt_date(dt.date(2026, 9, 3))) == 2
     assert "Путь проекта" not in text

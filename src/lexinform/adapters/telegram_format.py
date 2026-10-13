@@ -1075,7 +1075,9 @@ class MessageFormatter:
         ]
         lines = [f"<b>{reference}</b> — {esc(fit(subject, 180))}"]
         if compact:
-            lines.append(f"<i>{esc(self._norm_state(bill, today))}</i>")
+            state = self._norm_state(bill, today)
+            if state != self._labels.norm_states["project"]:
+                lines.append(f"<i>{esc(state)}</i>")
         if not compact or not stage_lines:
             lines.append(esc(self._event_header(change, event)))
         lines.extend(stage_lines)
