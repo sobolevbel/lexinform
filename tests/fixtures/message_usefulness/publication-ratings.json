@@ -1,0 +1,255 @@
+[
+  {
+    "variant": "new_bill_sejm",
+    "dimensions": [
+      2,
+      1,
+      2,
+      1,
+      2
+    ],
+    "score": 8
+  },
+  {
+    "variant": "new_bill_rpw",
+    "dimensions": [
+      2,
+      1,
+      2,
+      1,
+      2
+    ],
+    "score": 8
+  },
+  {
+    "variant": "new_bill_open_consultation",
+    "dimensions": [
+      2,
+      2,
+      2,
+      1,
+      2
+    ],
+    "score": 9
+  },
+  {
+    "variant": "new_bill_rcl_unknown_date",
+    "dimensions": [
+      2,
+      0,
+      1,
+      1,
+      2
+    ],
+    "score": 6
+  },
+  {
+    "variant": "new_bill_wykaz",
+    "dimensions": [
+      1,
+      1,
+      1,
+      1,
+      2
+    ],
+    "score": 6
+  },
+  {
+    "variant": "joint_bill",
+    "dimensions": [
+      2,
+      1,
+      1,
+      1,
+      2
+    ],
+    "score": 7
+  },
+  {
+    "variant": "joint_bill_no_comparison",
+    "dimensions": [
+      1,
+      0,
+      1,
+      1,
+      2
+    ],
+    "score": 5
+  },
+  {
+    "variant": "act_published",
+    "dimensions": [
+      2,
+      1,
+      2,
+      1,
+      2
+    ],
+    "score": 8
+  },
+  {
+    "variant": "in_force",
+    "dimensions": [
+      2,
+      1,
+      2,
+      1,
+      1
+    ],
+    "score": 7
+  },
+  {
+    "variant": "consultation_deadline_sejm",
+    "dimensions": [
+      1,
+      2,
+      2,
+      1,
+      2
+    ],
+    "score": 8
+  },
+  {
+    "variant": "consultation_deadline_rcl",
+    "dimensions": [
+      1,
+      2,
+      2,
+      1,
+      2
+    ],
+    "score": 8
+  },
+  {
+    "variant": "consultation_results",
+    "dimensions": [
+      1,
+      1,
+      0,
+      1,
+      2
+    ],
+    "score": 5
+  },
+  {
+    "variant": "agenda",
+    "dimensions": [
+      1,
+      1,
+      1,
+      1,
+      2
+    ],
+    "score": 6
+  },
+  {
+    "variant": "agenda_moved",
+    "dimensions": [
+      2,
+      1,
+      2,
+      1,
+      2
+    ],
+    "score": 8
+  },
+  {
+    "variant": "agenda_cancelled",
+    "dimensions": [
+      2,
+      1,
+      2,
+      1,
+      2
+    ],
+    "score": 8
+  },
+  {
+    "variant": "agenda_dropped",
+    "dimensions": [
+      2,
+      1,
+      2,
+      1,
+      2
+    ],
+    "score": 8
+  },
+  {
+    "variant": "hearing_deadline",
+    "dimensions": [
+      2,
+      2,
+      2,
+      1,
+      2
+    ],
+    "score": 9
+  },
+  {
+    "variant": "hearing_closed",
+    "dimensions": [
+      1,
+      0,
+      1,
+      1,
+      2
+    ],
+    "score": 5
+  },
+  {
+    "variant": "decision_deadline_senate",
+    "dimensions": [
+      1,
+      0,
+      0,
+      1,
+      2
+    ],
+    "score": 4
+  },
+  {
+    "variant": "decision_deadline_president",
+    "dimensions": [
+      0,
+      0,
+      0,
+      1,
+      2
+    ],
+    "score": 3
+  },
+  {
+    "variant": "updates_roundup",
+    "dimensions": [
+      1,
+      1,
+      2,
+      2,
+      2
+    ],
+    "score": 8
+  },
+  {
+    "variant": "digest_active",
+    "dimensions": [
+      1,
+      1,
+      2,
+      1,
+      2
+    ],
+    "score": 7
+  },
+  {
+    "variant": "digest_quiet",
+    "dimensions": [
+      0,
+      0,
+      0,
+      1,
+      2
+    ],
+    "score": 3
+  }
+]

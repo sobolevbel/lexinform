@@ -1,0 +1,523 @@
+{
+  "code_ref": "9acea0d",
+  "method": "Expert assessment of delivery plus text; 0-2 for five dimensions; max 4 if a dangerous false decision/deadline is asserted; scores are not user-study measurements.",
+  "events": {
+    "update": {
+      "label": "Обновление",
+      "criteria": {
+        "new_information": 0,
+        "decision_action": 0,
+        "timeliness": 0,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 3
+    },
+    "print_assigned": {
+      "label": "Присвоен номер druku",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 0,
+        "timeliness": 0,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 4
+    },
+    "start": {
+      "label": "Проект поступил в Сейм",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 0,
+        "timeliness": 0,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 4
+    },
+    "first_reading_referral": {
+      "label": "Направлен на I чтение",
+      "criteria": {
+        "new_information": 0,
+        "decision_action": 0,
+        "timeliness": 0,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 3
+    },
+    "first_reading": {
+      "label": "I чтение прошло",
+      "criteria": {
+        "new_information": 0,
+        "decision_action": 0,
+        "timeliness": 0,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 3
+    },
+    "committee_work": {
+      "label": "Работа в комиссии началась",
+      "criteria": {
+        "new_information": 0,
+        "decision_action": 0,
+        "timeliness": 0,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 3
+    },
+    "second_reading": {
+      "label": "II чтение прошло",
+      "criteria": {
+        "new_information": 0,
+        "decision_action": 0,
+        "timeliness": 0,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 3
+    },
+    "referral": {
+      "label": "Направлен в комиссию",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 0,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 5
+    },
+    "referrals": {
+      "label": "Направлен в комиссии",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 0,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 5
+    },
+    "referral_plenary": {
+      "label": "I чтение пройдёт на заседании Сейма",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 0,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 5
+    },
+    "committee_report": {
+      "label": "Отчёт комиссии",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 6
+    },
+    "subcommittee_report": {
+      "label": "Отчёт подкомиссии",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 6
+    },
+    "committee_rejects": {
+      "label": "Комиссия предлагает отклонить проект",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 7
+    },
+    "second_reading_amendments": {
+      "label": "Поправки во II чтении: проект вернулся в комиссию",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 7
+    },
+    "hearing": {
+      "label": "Назначены публичные слушания",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 2,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 9
+    },
+    "consultation_opened": {
+      "label": "Открылись публичные консультации",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 2,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 9
+    },
+    "text_changed": {
+      "label": "Новая версия текста",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 2,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 9
+    },
+    "third_reading": {
+      "label": "III чтение",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 0,
+        "timeliness": 0,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 4
+    },
+    "voting": {
+      "label": "Состоялось голосование",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 0,
+        "timeliness": 0,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 4
+    },
+    "passed": {
+      "label": "Сейм принял закон",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 8
+    },
+    "rejected": {
+      "label": "Сейм отклонил проект",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 8
+    },
+    "withdrawn_by_applicant": {
+      "label": "Проект отозван",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 8
+    },
+    "veto_sustained": {
+      "label": "Вето Президента осталось в силе",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 8
+    },
+    "veto_overridden": {
+      "label": "Сейм отклонил вето: закон принят повторно",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 8
+    },
+    "not_enacted": {
+      "label": "Процесс завершён: закон не принят",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 8,
+      "edge_case_unknown_passed": {
+        "criteria": [
+          1,
+          0,
+          1,
+          0,
+          0
+        ],
+        "score": 2,
+        "evidence": "Reproduced with World: new closure_date and passed=None produce terminal not_enacted header plus ongoing committee action."
+      }
+    },
+    "senate_amendments": {
+      "label": "Сенат внёс поправки",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 8
+    },
+    "senate_rejected": {
+      "label": "Сенат отклонил закон",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 8
+    },
+    "veto": {
+      "label": "Президент наложил вето",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 8
+    },
+    "withdrawn": {
+      "label": "Проект отозван",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 8
+    },
+    "senate": {
+      "label": "Позиция Сената",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 1
+      },
+      "score": 5
+    },
+    "senate_no_amendments": {
+      "label": "Сенат принял закон без поправок",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 7
+    },
+    "senate_considered": {
+      "label": "Сейм рассмотрел поправки Сената",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 7
+    },
+    "tribunal": {
+      "label": "Закон направлен в Конституционный трибунал",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 7
+    },
+    "discontinued": {
+      "label": "Проект прекращён с концом каденции",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 7
+    },
+    "rcl_closed": {
+      "label": "Проект закрыт на RCL",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 7
+    },
+    "wykaz_withdrawn": {
+      "label": "Правительство отказалось от проекта",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 7
+    },
+    "to_president": {
+      "label": "Закон передан Президенту",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 0,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 5
+    },
+    "rcl_to_sejm": {
+      "label": "Проект направлен в Сейм",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 0,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 5
+    },
+    "signed": {
+      "label": "Президент подписал закон",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 6
+    },
+    "tribunal_ruled": {
+      "label": "Конституционный трибунал вынес решение",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 6
+    },
+    "government_position": {
+      "label": "Правительство высказалось о проекте",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 6
+    },
+    "impact_assessment": {
+      "label": "Появилась оценка последствий проекта",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 6
+    },
+    "abandoned": {
+      "label": "Проект больше не отслеживается",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 6
+    },
+    "wykaz_adopted": {
+      "label": "Правительство приняло проект",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 1,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 6
+    },
+    "rcl_stage": {
+      "label": "Новая стадия на RCL",
+      "criteria": {
+        "new_information": 1,
+        "decision_action": 1,
+        "timeliness": 0,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 5
+    },
+    "rcl_started": {
+      "label": "Проект опубликован на RCL",
+      "criteria": {
+        "new_information": 2,
+        "decision_action": 1,
+        "timeliness": 2,
+        "clarity": 1,
+        "trust": 2
+      },
+      "score": 8
+    }
+  }
+}
