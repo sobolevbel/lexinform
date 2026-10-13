@@ -3,6 +3,7 @@ import datetime as dt
 from pydantic import BaseModel, ConfigDict
 
 from lexinform.models.attention import AttentionAssessment
+from lexinform.models.delivery import DeliverySchedule
 from lexinform.models.enums import PublicationKind
 from lexinform.models.evidence import decision_fingerprint
 from lexinform.models.sejm import Stage, TextDocument, stage_fingerprint
@@ -44,6 +45,7 @@ class DeliveryPlan(BaseModel):
     policy_version: str = "legacy"
     rendered_text: str = ""
     disable_notification: bool = False
+    schedule: DeliverySchedule | None = None
     change_json: str = ""
     print_json: str | None = None
     primary_json: str | None = None

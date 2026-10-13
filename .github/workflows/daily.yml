@@ -26,6 +26,8 @@ on:
     - cron: "23 1 * * 1-5"   # starts ~06:00–07:50 UTC, 08:00–09:50 Warsaw (summer time)
     - cron: "23 13 * * 1-5"  # starts ~16:00–19:00 UTC
     - cron: "23 6 * * 0,6"   # starts ~10:00–11:00 UTC, Saturday and Sunday
+    # Delivery-only ticks share the state lock; GitHub may start them late too.
+    - cron: "43 * * * *"
   repository_dispatch:
     # The relay files a command into the inbox branch and then sends `inbox`, which starts a run
     # within seconds (only cron is delayed); the mikrus batch poller sends `batch-ready` the same
@@ -41,7 +43,7 @@ on:
       command:
         description: "Which lexinform command this run is. `run` is the whole day; the others are one phase of it."
         type: choice
-        options: [run, scan, track, collect-batches, reprefilter, index-rcl-numbers]
+        options: [run, scan, track, collect-batches, drain-deliveries, reprefilter, index-rcl-numbers]
         default: run
       options:
         description: "Its own flags, exactly as the CLI takes them (--no-publish --min-score 4). The relay checks every value before it sends one."
@@ -70,7 +72,7 @@ on:
 
 # One run at a time so two runs never race on the state branch. A pending run is replaced by a
 # newer one (GitHub keeps one pending run per group): harmless, because every run drains the
-# whole inbox, whichever event started it.
+# whole inbox, whichever event started it, including a delivery-only tick with pending commands.
 concurrency:
   group: lexinform-daily
   cancel-in-progress: false
@@ -85,9 +87,13 @@ env:
   LEXINFORM_DB_PATH: ${{ github.workspace }}/lexinform.db
   LEXINFORM_INBOX_DIR: ${{ github.workspace }}/inbox/inbox
   LEXINFORM_RUN_MESSAGE_ID: ${{ inputs.log_message_id }}
+  LEXINFORM_READER_ATTENTION: ${{ vars.LEXINFORM_READER_ATTENTION || 'shadow' }}
+  LEXINFORM_ATTENTION_ROUNDUP: ${{ vars.LEXINFORM_ATTENTION_ROUNDUP || 'run' }}
+  LEXINFORM_ATTENTION_DAILY_HOUR: ${{ vars.LEXINFORM_ATTENTION_DAILY_HOUR || '18' }}
 
 jobs:
   run:
+    if: ${{ github.event_name != 'schedule' || github.event.schedule != '43 * * * *' || (vars.LEXINFORM_READER_ATTENTION == 'on' && vars.LEXINFORM_ATTENTION_ROUNDUP == 'daily') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -189,10 +195,20 @@ jobs:
           INPUT_OPTIONS: ${{ inputs.options }}
           EVENT_NAME: ${{ github.event_name }}
           EVENT_TYPE: ${{ github.event.action }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
           INBOX_PRESENT: ${{ steps.inbox.outputs.present }}
         run: |
           set -euo pipefail
           if [ "$INBOX_PRESENT" != "true" ]; then unset LEXINFORM_INBOX_DIR; fi
+          if [ "$EVENT_NAME" = "schedule" ] && [ "$EVENT_SCHEDULE" = "43 * * * *" ]; then
+            STATUS=0
+            uv run --frozen --no-dev lexinform drain-deliveries || STATUS=$?
+            # A tick can replace a pending inbox dispatch in the shared concurrency group.
+            if [ "$INBOX_PRESENT" = "true" ] && compgen -G "$LEXINFORM_INBOX_DIR/*.json" >/dev/null; then
+              uv run --frozen --no-dev lexinform commands || STATUS=$?
+            fi
+            exit "$STATUS"
+          fi
           # The join between a plan of the wykaz and its project on RCL is published in the
           # listing and nowhere else, so the years before this bot have to be read once.
           if [ -n "${INPUT_INDEX_RCL_SINCE:-}" ]; then
@@ -213,10 +229,11 @@ jobs:
           ARGS=()
           if [ -n "${INPUT_OPTIONS:-}" ]; then ARGS+=($INPUT_OPTIONS); fi
           if [ "$COMMAND" = "run" ] && [ -n "$INPUT_SINCE" ]; then ARGS+=(--since "$INPUT_SINCE"); fi
-          # Only these three take a dry run, and it is the same input that keeps the state branch
+          # These commands take a dry run, and it is the same input that keeps the state branch
           # unpushed, so none of them can ever disagree with it about what this run persisted.
           if [ "$INPUT_DRY_RUN" = "true" ] \
-            && { [ "$COMMAND" = "run" ] || [ "$COMMAND" = "track" ] || [ "$COMMAND" = "collect-batches" ]; }; then
+            && { [ "$COMMAND" = "run" ] || [ "$COMMAND" = "track" ] \
+              || [ "$COMMAND" = "collect-batches" ] || [ "$COMMAND" = "drain-deliveries" ]; }; then
             ARGS+=(--dry-run)
           fi
           STATUS=0

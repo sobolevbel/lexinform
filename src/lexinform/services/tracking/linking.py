@@ -24,12 +24,12 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.posting import Poster
 from lexinform.services.publications import inherit_card
 from lexinform.services.sources import RclTextSource, SejmTextSource, fetch_print
 from lexinform.services.tracking.acts import ActWatcher
-from lexinform.services.tracking.posting import Poster
-from lexinform.services.tracking.result import TrackingResult
 from lexinform.services.tracking.stages import StageEnricher, change_key
+from lexinform.services.tracking_result import TrackingResult
 
 log = logging.getLogger(__name__)
 

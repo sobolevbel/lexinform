@@ -16,8 +16,8 @@ from lexinform.models import (
     Stage,
     StatusChange,
 )
-from lexinform.services.tracking.posting import Poster
-from lexinform.services.tracking.result import TrackingResult
+from lexinform.services.posting import Poster
+from lexinform.services.tracking_result import TrackingResult
 from tests.fakes import FakePublisher, FakeSejmGateway, FixedClock
 from tests.harness import act, submission
 

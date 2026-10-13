@@ -252,6 +252,45 @@ Run reports count attention events separately from physical messages and list ro
 `off` stops new assessments. Already prepared sends continue from their saved plans.
 See the [implementation and rollout conditions](plans/2026-10-13-reader-attention-progress.md).
 
+### Daily accumulation and delivery-only runs
+
+Set `LEXINFORM_READER_ATTENTION=on` and `LEXINFORM_ATTENTION_ROUNDUP=daily` to accumulate
+routine status updates and distant sitting announcements across runs. The next release is
+18:00 Warsaw by default (`LEXINFORM_ATTENTION_DAILY_HOUR`), with a 24-hour elapsed-time cap
+from detection. Protected events and sittings within the urgent horizon bypass the wait.
+Participation reminders, new cards, acts and organ-deadline reminders keep their existing path.
+
+`/drain-deliveries [dry]` starts the short delivery-only command; locally:
+
+```bash
+uv run lexinform drain-deliveries
+uv run lexinform drain-deliveries --dry-run
+```
+
+It releases saved ready work and confirmed failures without reading legislative sources,
+resolving a Sejm term, collecting batches or requesting models. Dry run prints ready messages
+and rolls back the database. It does not answer the inbox itself. A quiet drain posts no report;
+errors, delivered attention messages and overdue waiting are reported to the technical channel.
+`/delivery ID` shows the saved route, detection time, `not_before` and `deliver_by`.
+`/attention BILL` retains the event's reasons; delivery reports also show `daily_queued`,
+`daily_oldest_minutes`, `daily_released` and `daily_overdue` when present.
+
+The workflow offers this command and has an hourly delivery-only tick at minute 43, enabled
+only when the repository variables `LEXINFORM_READER_ATTENTION=on` and
+`LEXINFORM_ATTENTION_ROUNDUP=daily` are set. `LEXINFORM_ATTENTION_DAILY_HOUR` is also a
+repository variable, default 18. These variables configure the ordinary runs too. The tick
+shares the existing state concurrency group, restores and saves the SQL dump and batch manifest.
+If inbox commands are waiting, it answers them separately so replacing a pending inbox dispatch
+does not strand those commands; an explicit `/analyze` may therefore request its usual batch.
+No new analysis is caused by the delivery queue itself.
+
+GitHub schedule delays and outages can exceed `deliver_by`: it is a bound on editorial
+waiting, not a guarantee about Telegram or runner start time. The first available run releases
+overdue work and reports it. Turning accumulation or the attention policy off releases unattempted
+waiting work at the next run. Started groups keep their exact payload and membership; `unknown`
+still needs `/delivery`. Cancelled unannounced sittings and unattempted announcements whose
+start is already past are retired rather than inviting readers to a past event.
+
 An uncertain sitting roundup is resolved as a whole through `/delivery` on any member.
 Digest continuations have separate delivery IDs: resolve only the uncertain part. Successful
 parts are not sent again; unfinished approved digests resume on the next available digest phase.

@@ -210,6 +210,8 @@ class Settings(BaseSettings):
     reader_attention: Literal["off", "shadow", "on"] = "shadow"
     attention_urgent_days: int = Field(default=3, ge=0, le=14)
     attention_max_group: int = Field(default=5, ge=1, le=10)
+    attention_roundup: Literal["run", "daily"] = "run"
+    attention_daily_hour: int = Field(default=18, ge=0, le=23)
     text_budget_chars: int = Field(
         default=1_500_000,
         description="Safety cap only: Polish text is ~2 chars per token, so this is ~750k tokens"

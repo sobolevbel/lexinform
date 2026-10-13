@@ -409,6 +409,22 @@ def test_collect_batches_reports_what_it_finished(db: Path, api: str) -> None:
     assert "analyzed=0 published=0 updates=0 errors=[]" in result.output
 
 
+def test_delivery_drain_needs_no_model_keys_or_term_lookup(db: Path) -> None:
+    env = _env(db)
+    env["ANTHROPIC_API_KEY"] = ""
+    env["OPENAI_API_KEY"] = ""
+    env["LEXINFORM_TELEGRAM_BOT_TOKEN"] = "unused-test-token"
+
+    result = runner.invoke(app, ["drain-deliveries"], env=env)
+
+    assert result.exit_code == 0, result.output
+    assert "updates=0 queued=0 overdue=0 errors=[]" in result.output
+    repo = SqliteBillRepository(db)
+    reports = repo.list_runs(since=datetime(2026, 1, 1, tzinfo=UTC))
+    repo.close()
+    assert reports[-1].mode is RunMode.DELIVERIES and reports[-1].llm_calls == []
+
+
 @pytest.mark.local_http
 def test_collect_batches_also_answers_the_inbox(db: Path, api: str, tmp_path: Path) -> None:
     # A batch-ready run can replace a pending inbox run in the workflow's concurrency group.

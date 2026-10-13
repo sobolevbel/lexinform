@@ -15,6 +15,7 @@ from enum import StrEnum
 from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
+from lexinform.delivery_schedule import daily_schedule, sitting_is_close
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     AgendaItem,
@@ -42,7 +43,7 @@ from lexinform.models import (
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway
 from lexinform.services.publications import send_publication, send_publications
 from lexinform.services.sources import fetch_print
-from lexinform.services.tracking.result import TrackingResult
+from lexinform.services.tracking_result import TrackingResult
 
 log = logging.getLogger(__name__)
 
@@ -100,6 +101,8 @@ class Poster:
         attention_mode: str = "shadow",
         urgent_days: int = 3,
         max_group: int = 5,
+        daily_roundup: bool = False,
+        daily_hour: int = 18,
     ) -> None:
         self._repo = repo
         self._publisher = publisher
@@ -110,6 +113,8 @@ class Poster:
         self._attention_mode = attention_mode
         self._urgent_days = urgent_days
         self._max_group = max_group
+        self._daily_roundup = daily_roundup
+        self._daily_hour = daily_hour
         self._attention_metrics: dict[str, int] = {}
         self._counted: set[int] = set()
         self._told_windows: dict[tuple[int, str, str, date], tuple[int, int]] = {}
@@ -179,6 +184,8 @@ class Poster:
                 and plan.attention.protected
                 and plan.policy_version == "attention-v1"
             )
+            if not self.ready(pub):
+                continue
             current = self._repo.get(pub.term, pub.number)
             if (
                 not protected
@@ -186,6 +193,7 @@ class Poster:
                 and self._clock.now() < plan.wait_until
                 and current is not None
                 and current.status in (BillStatus.BATCH_PENDING, BillStatus.REANALYSIS_READY)
+                and (plan.schedule is None or self._clock.now() < plan.schedule.deliver_by)
             ):
                 continue
             item = UpdateNews(
@@ -334,6 +342,31 @@ class Poster:
             if pub.delivery.policy_version == "attention-v1":
                 pub = self._refresh_attention(pub)
                 assert pub.delivery is not None
+            assert pub.delivery is not None and pub.id is not None
+            if (
+                pub.kind is PublicationKind.AGENDA
+                and pub.delivery.schedule is not None
+                and pub.status is PublicationStatus.QUEUED
+                and pub.attempts == 0
+                and pub.delivery.item_json is not None
+                and AgendaItem.model_validate_json(pub.delivery.item_json).has_started(
+                    self._clock.now()
+                )
+            ):
+                self._repo.mark_publication(
+                    pub.id,
+                    PublicationStatus.SKIPPED,
+                    error="Unannounced sitting has already started.",
+                    count_attempt=False,
+                )
+                self._attention_metrics["expired"] = self._attention_metrics.get("expired", 0) + 1
+                if self._clock.now() > pub.delivery.schedule.deliver_by:
+                    self._attention_metrics["daily_overdue"] = (
+                        self._attention_metrics.get("daily_overdue", 0) + 1
+                    )
+                continue
+            if not self.ready(pub):
+                continue
             assert pub.delivery is not None
             line = SittingNews.of(pub.kind, pub.delivery)
             if (
@@ -646,6 +679,10 @@ class Poster:
             ):
                 return False
         delivery = self.prepare(bill, change, with_act=with_act)
+        if existing is not None and not self.ready(
+            existing.model_copy(update={"delivery": delivery})
+        ):
+            return False
         if delivery.wait_until is not None:
             # Attempted or uncertain sends can never be absorbed into a later analysis update.
             delivery = delivery.model_copy(update={"wait_until": None})
@@ -718,6 +755,12 @@ class Poster:
             if pub.term == bill.term
             and pub.number == bill.number
             and pub.status_change_id != change.id
+            and pub.delivery is not None
+            and not pub.delivery.with_act
+            and (
+                pub.delivery.schedule is None
+                or (pub.delivery.attention is not None and not pub.delivery.attention.protected)
+            )
         ]
         stages = [st for earlier in held for st in earlier.new_stages]
         stages.extend(
@@ -783,6 +826,16 @@ class Poster:
                 ]
             )
             delivery = delivery.model_copy(update={"wait_until": deadline})
+        delivery = self._schedule(delivery, PublicationKind.STATUS_UPDATE)
+        schedules = [
+            pub.delivery.schedule
+            for pub in deferred
+            if pub.delivery is not None and pub.delivery.schedule is not None
+        ]
+        if schedules and delivery.schedule is not None:
+            schedules.append(delivery.schedule)
+            earliest = min(schedules, key=lambda schedule: schedule.detected_at)
+            delivery = delivery.model_copy(update={"schedule": earliest})
         with self._repo.atomic():
             identity = self._repo.create_publication(
                 self._update_row(bill, change.id, PublicationStatus.QUEUED)
@@ -869,6 +922,7 @@ class Poster:
             pub.status is PublicationStatus.QUEUED
             and pub.attempts == 0
             and (pub.delivery is None or not pub.delivery.update_group)
+            and (pub.delivery is None or not pub.delivery.rendered_text)
         )
 
     def _add_act(self, change_id: int, delivery: DeliveryPlan, bill: Bill) -> DeliveryPlan:
@@ -979,6 +1033,7 @@ class Poster:
             still_meets=still_meets,
             reply_to=card.message_id if card else None,
         )
+        delivery = self._schedule(delivery, kind)
         pub = Publication(
             term=bill.term,
             number=bill.number,
@@ -1092,12 +1147,52 @@ class Poster:
         assert pub.delivery is not None and pub.id is not None
         if pub.delivery.rendered_text:
             return pub
-        plan = pub.delivery.model_copy(
-            update={"rendered_text": self._publisher.render_delivery(pub)}
+        today = (
+            pub.delivery.today
+            if pub.delivery.edit_message_id is not None
+            else self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date()
         )
+        plan = pub.delivery.model_copy(update={"today": today})
+        pub = pub.model_copy(update={"delivery": plan})
+        plan = plan.model_copy(update={"rendered_text": self._publisher.render_delivery(pub)})
+        assert pub.id is not None
         if self._repo.replace_unattempted_delivery(pub.id, plan):
             return pub.model_copy(update={"delivery": plan})
         return pub
+
+    def _schedule(self, plan: DeliveryPlan, kind: PublicationKind) -> DeliveryPlan:
+        if not self._daily_roundup or self._attention_mode != "on" or plan.edit_message_id:
+            return plan
+        schedule = daily_schedule(
+            plan.attention,
+            kind,
+            now=self._clock.now(),
+            release_hour=self._daily_hour,
+            urgent_days=self._urgent_days,
+        )
+        return plan.model_copy(update={"schedule": schedule})
+
+    def ready(self, pub: Publication) -> bool:
+        plan = pub.delivery
+        if (
+            plan is None
+            or plan.schedule is None
+            or pub.status is not PublicationStatus.QUEUED
+            or pub.attempts
+            or plan.publication_ids
+            or plan.rendered_text
+            or not self._daily_roundup
+            or self._attention_mode != "on"
+        ):
+            return True
+        assessment = plan.attention
+        if assessment is None or assessment.protected:
+            return True
+        if plan.schedule.route == "daily_sittings" and sitting_is_close(
+            assessment, now=self._clock.now(), urgent_days=self._urgent_days
+        ):
+            return True
+        return self._clock.now() >= min(plan.schedule.not_before, plan.schedule.deliver_by)
 
     def _refresh_attention(self, pub: Publication) -> Publication:
         assert pub.delivery is not None and pub.id is not None
@@ -1196,7 +1291,23 @@ class Poster:
         return sent
 
     def attention_metrics(self) -> dict[str, int]:
-        return dict(self._attention_metrics)
+        metrics = dict(self._attention_metrics)
+        schedules = [
+            pub.delivery.schedule
+            for pub in self._repo.list_scheduled_deliveries(self._channel_id)
+            if pub.delivery is not None and pub.delivery.schedule is not None
+        ]
+        if schedules:
+            now = self._clock.now()
+            metrics["daily_queued"] = len(schedules)
+            metrics["daily_oldest_minutes"] = max(
+                max(0, int((now - schedule.detected_at).total_seconds() // 60))
+                for schedule in schedules
+            )
+            overdue = sum(now > schedule.deliver_by for schedule in schedules)
+            if overdue:
+                metrics["daily_overdue"] = metrics.get("daily_overdue", 0) + overdue
+        return metrics
 
     def _count_attention(self, identities: tuple[int, ...], sent: int | None) -> None:
         if sent is None:
@@ -1235,6 +1346,10 @@ class Poster:
                     (pub.term, pub.number, assessment.action, assessment.deadline)
                 ] = (identity, sent)
             keys = ["events", assessment.importance]
+            if pub.delivery is not None and pub.delivery.schedule is not None:
+                keys.append("daily_released")
+                if self._clock.now() > pub.delivery.schedule.deliver_by:
+                    keys.append("daily_overdue")
             if assessment.urgency == "urgent":
                 keys.append("urgent")
             if len(identities) > 1:

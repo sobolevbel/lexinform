@@ -6,8 +6,8 @@ from zoneinfo import ZoneInfo
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import Bill, CheckAspect, ProcessDetail, PublicationKind, PublicationStatus
 from lexinform.ports import BillRepository, Clock, EliGateway
-from lexinform.services.tracking.posting import Poster
-from lexinform.services.tracking.result import TrackingResult
+from lexinform.services.posting import Poster
+from lexinform.services.tracking_result import TrackingResult
 
 log = logging.getLogger(__name__)
 

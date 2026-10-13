@@ -22,7 +22,6 @@ from lexinform.models import (
     PrintInfo,
     ProcessDetail,
     PublicationKind,
-    PublicationStatus,
     StatusChange,
     TextDocument,
     amendments_stage,
@@ -46,6 +45,8 @@ from lexinform.ports import (
     WykazGateway,
 )
 from lexinform.services.analysis import AnalysisService, Waiting
+from lexinform.services.delivery import DeliveryService
+from lexinform.services.posting import Poster
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.sources import SejmTextSource, fetch_print
 from lexinform.services.tracking.acts import ActWatcher
@@ -55,14 +56,13 @@ from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.deadlines import DeadlineReminder
 from lexinform.services.tracking.hearings import HearingReminder
 from lexinform.services.tracking.linking import Linker
-from lexinform.services.tracking.posting import Poster
 from lexinform.services.tracking.pre_print import PrePrintReconciler
 from lexinform.services.tracking.rcl import RclWatcher
-from lexinform.services.tracking.result import PostCounter, TrackingResult
 from lexinform.services.tracking.rollover import TermRollover
 from lexinform.services.tracking.senate import SenateWatcher
 from lexinform.services.tracking.stages import StageEnricher, change_key
 from lexinform.services.tracking.wykaz import WykazLinker, WykazWatcher
+from lexinform.services.tracking_result import TrackingResult
 
 log = logging.getLogger(__name__)
 
@@ -93,6 +93,8 @@ class TrackingOptions:
     reader_attention: str = "shadow"
     attention_urgent_days: int = 3
     attention_max_group: int = 5
+    attention_roundup: str = "run"
+    attention_daily_hour: int = 18
 
 
 def _consultation_reminder(
@@ -254,9 +256,11 @@ class StatusTrackingService:
         rcl_reader: RclProjectReader | None = None,
         wykaz: WykazGateway | None = None,
         senate: SenateGateway | None = None,
+        poster: Poster | None = None,
+        deliveries: DeliveryService | None = None,
     ) -> None:
         channel_id = options.channel_id
-        poster = Poster(
+        poster = poster or Poster(
             repo,
             publisher,
             clock,
@@ -266,6 +270,8 @@ class StatusTrackingService:
             attention_mode=options.reader_attention,
             urgent_days=options.attention_urgent_days,
             max_group=options.attention_max_group,
+            daily_roundup=options.attention_roundup == "daily",
+            daily_hour=options.attention_daily_hour,
         )
         enricher = StageEnricher(gateway, club_breakdown=options.club_breakdown)
         consultations = _consultation_reminder(repo, clock, poster, options)
@@ -297,6 +303,9 @@ class StatusTrackingService:
         self._analysis = analysis
         self._options = options
         self._poster = poster
+        self._deliveries = deliveries or DeliveryService(
+            repo, clock, poster, channel_id=channel_id, max_attempts=options.max_publish_attempts
+        )
         self._enricher = enricher
         self._texts = SejmTextSource(gateway)
         self._consultations = consultations
@@ -612,80 +621,15 @@ class StatusTrackingService:
         )
 
     def _retry_failed(self, result: TrackingResult) -> bool:
-        """Re-send status updates whose post failed earlier. False if Telegram is down.
-
-        The one place that sends an update without going through `Poster.tell`, and the reason
-        is that there is nothing to decide: the change was recorded and told long ago, this run
-        only repeats a send that failed, and `check_updates` calls this only when publishing.
-        """
-        counters: dict[PublicationKind, PostCounter] = {
-            PublicationKind.HEARING_DEADLINE: "hearing_reminders",
-            PublicationKind.DECISION_DEADLINE: "decision_reminders",
-            PublicationKind.ACT_PUBLISHED: "acts_published",
-            PublicationKind.IN_FORCE: "in_force_posted",
-            PublicationKind.CONSULTATION_RESULTS: "consultation_results_posted",
-            PublicationKind.CONSULTATION_DEADLINE: "consultation_reminders",
-        }
-        for publication in self._repo.list_due_deliveries(
-            self._options.channel_id, max_attempts=self._options.max_publish_attempts
-        ):
-            if publication.kind in (
-                PublicationKind.NEW_BILL,
-                PublicationKind.JOINT_BILL,
-                PublicationKind.DIGEST,
-            ):
-                continue
-            if publication.kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED):
-                self._poster.queue_sitting(publication)  # sent with this run's roundup
-                continue
-            try:
-                sent = self._poster.deliver(publication)
-                latest = (
-                    self._repo.publication_by_id(publication.id)
-                    if publication.id is not None
-                    else None
-                )
-                if latest is not None and latest.status is PublicationStatus.SKIPPED:
-                    continue
-                result.count_post(sent, counters.get(publication.kind, "published"))
-            except ServiceUnavailableError as exc:
-                result.abort(exc, failed=True)
-                return False
-        for change in self._repo.list_due_status_changes(
-            self._options.channel_id, max_attempts=self._options.max_publish_attempts
-        ):
-            bill = self._repo.get(change.term, change.number)
-            if bill is None:
-                continue
-            assert change.id is not None
-            pub = self._repo.get_update_publication(change.id, self._options.channel_id)
-            if pub is not None and pub.delivery is not None:
-                plan = pub.delivery
-                if plan.absorbed_by is not None:
-                    continue
-                if plan.update_group:
-                    try:
-                        self._poster.retry_update_group(pub, result)
-                    except ServiceUnavailableError as exc:
-                        result.abort(exc, failed=True)
-                        return False
-                    continue
-                if plan.wait_until is not None:
-                    continue
-            log.info("retrying status update for druk %s", bill.number)
-            try:
-                sent = self._poster.status_update(bill, change)
-                result.count_post(sent)
-                if sent and self._poster.carries_act(change):
-                    result.acts_published += 1
-                if sent and change.discontinued:
-                    card = self._poster.card(bill)
-                    if card is not None:
-                        self._poster.rerender_card(bill, card)
-            except ServiceUnavailableError as exc:
-                result.abort(exc, failed=True)
-                return False
-        return True
+        for bill in self._deliveries.retry(result):
+            card = self._poster.card(bill)
+            if card is not None:
+                try:
+                    self._poster.rerender_card(bill, card)
+                except ServiceUnavailableError as exc:
+                    result.abort(exc, failed=True)
+                    break
+        return result.fatal_error is None
 
     def _fetch(self, bill: Bill) -> _Found:
         """What detection needs from the API for one bill (no database access): the process,

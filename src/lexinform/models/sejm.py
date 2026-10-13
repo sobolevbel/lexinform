@@ -335,6 +335,14 @@ class AgendaItem(BaseModel):
     apply_email: str | None = None
     apply_by: dt.date | None = None
 
+    def has_started(self, now: dt.datetime) -> bool:
+        local = now.astimezone(ZoneInfo("Europe/Warsaw"))
+        return self.last_date < local.date() or (
+            self.date == local.date()
+            and self.start_time is not None
+            and self.start_time <= local.time()
+        )
+
     @classmethod
     def for_committee(
         cls,

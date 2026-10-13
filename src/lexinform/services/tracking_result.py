@@ -5,7 +5,14 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from lexinform.errors import ServiceUnavailableError
-from lexinform.models import AnalysisRecord, TokenUsage, UsageRecord, merge_usage, usage_of
+from lexinform.models import (
+    AnalysisRecord,
+    RunReport,
+    TokenUsage,
+    UsageRecord,
+    merge_usage,
+    usage_of,
+)
 
 log = logging.getLogger(__name__)
 
@@ -86,3 +93,31 @@ class TrackingResult:
             self.failed += 1
         self.fatal_error = exc.describe()
         log.error("aborting tracking phase: %s", self.fatal_error)
+
+
+def merge_tracking(report: RunReport, tracked: TrackingResult, *, publish: bool) -> int:
+    report.tracked += tracked.checked
+    report.batch_waiting += tracked.waiting
+    report.updates += tracked.published if publish else tracked.changed
+    report.update_events += tracked.update_events if publish else tracked.changed
+    for key, count in tracked.attention.items():
+        report.attention[key] = report.attention.get(key, 0) + count
+    report.reanalyzed += tracked.reanalyzed
+    report.linked += tracked.linked
+    report.acts_published += tracked.acts_published
+    report.in_force_posted += tracked.in_force_posted
+    report.consultation_reminders += tracked.consultation_reminders
+    report.hearing_reminders += tracked.hearing_reminders
+    report.decision_reminders += tracked.decision_reminders
+    report.held += tracked.held
+    report.cards_refreshed += tracked.cards_refreshed
+    report.consultation_results_posted += tracked.consultation_results_posted
+    report.agenda_posted += tracked.agenda_posted
+    report.agenda_cancelled += tracked.agenda_cancelled
+    report.discontinued += tracked.discontinued
+    report.rehomed += tracked.rehomed
+    report.llm_input_tokens += tracked.input_tokens
+    report.llm_output_tokens += tracked.output_tokens
+    merge_usage(report.llm_usage, tracked.usage)
+    report.errors.extend(f"tracking: {error}" for error in tracked.partial_errors)
+    return tracked.failed

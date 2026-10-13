@@ -142,6 +142,7 @@ COMMAND_HELP = (
     "• <code>/track [dry]</code> — the tracking phase over every followed bill\n"
     "• <code>/collect-batches [dry]</code> — write down a finished batch, then analyse/publish"
     "/track what that frees\n"
+    "• <code>/drain-deliveries [dry]</code> — release saved deliveries without scanning or models\n"
     "• <code>/reprefilter [limit=N] [text_skipped]</code> — scan the texts of skipped bills\n"
     "• <code>/index-rcl-numbers since=DATE</code> — read the RCL listing for the wykaz join\n"
     "\n• <code>/help</code>. <code>listen</code>, <code>commands</code>, <code>db</code> and"
@@ -1347,7 +1348,7 @@ class MessageFormatter:
             sections.append(
                 _section(
                     "👁",
-                    "attention: delivered",
+                    "attention: delivery",
                     *(f"{esc(key)}: {count}" for key, count in sorted(report.attention.items())),
                 )
             )
@@ -1732,6 +1733,13 @@ class MessageFormatter:
                 lines.append(
                     "shared delivery: "
                     + ", ".join(str(identity) for identity in plan.publication_ids)
+                )
+            if plan is not None and plan.schedule is not None:
+                schedule = plan.schedule
+                lines.append(
+                    f"route: {esc(schedule.route)} · detected: {schedule.detected_at.isoformat()}"
+                    f"\nnot_before: {schedule.not_before.isoformat()}"
+                    f" · deliver_by: {schedule.deliver_by.isoformat()}"
                 )
             if pub.attention is not None:
                 assessment = pub.attention

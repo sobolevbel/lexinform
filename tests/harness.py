@@ -316,6 +316,8 @@ class World:
         batch_script: dict[str, Analysis | Exception] | None = None,
         observe_unthreaded: bool = True,
         reader_attention: Literal["off", "shadow", "on"] = "shadow",
+        attention_roundup: Literal["run", "daily"] = "run",
+        attention_daily_hour: int = 18,
     ) -> None:
         self.clock = FixedClock()
         self.repo = SqliteBillRepository(":memory:")
@@ -372,6 +374,8 @@ class World:
             max_run_cost_usd=max_run_cost_usd,
             text_prefilter_enabled=text_prefilter,
             reader_attention=reader_attention,
+            attention_roundup=attention_roundup,
+            attention_daily_hour=attention_daily_hour,
             pre_print_enabled=True,
             agenda_watch=True,
             in_force_reminders=True,

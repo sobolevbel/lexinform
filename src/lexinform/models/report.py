@@ -164,9 +164,15 @@ class RunReport(BaseModel):
     @property
     def is_empty(self) -> bool:
         """Routine checks, batch waiting and timing alone are not run results."""
+        values = self.model_dump()
+        values["attention"] = {
+            key: count
+            for key, count in self.attention.items()
+            if key not in {"daily_queued", "daily_oldest_minutes"}
+        }
         return not any(
             value
-            for name, value in self.model_dump().items()
+            for name, value in values.items()
             if name
             not in {
                 "started_at",

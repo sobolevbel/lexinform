@@ -62,12 +62,14 @@ from lexinform.pricing import input_limit_of, price_of
 from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisOptions, AnalysisService
 from lexinform.services.commands import CommandService
+from lexinform.services.delivery import DeliveryService
 from lexinform.services.digest import DigestService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.documents import TextLoader
 from lexinform.services.listener import CommandListener
 from lexinform.services.lookup import BillLookup
 from lexinform.services.pipeline import DailyPipeline
+from lexinform.services.posting import Poster
 from lexinform.services.publishing import PublishingService
 from lexinform.services.rcl_discovery import RclDiscoveryService
 from lexinform.services.rcl_projects import RclProjectReader
@@ -592,6 +594,40 @@ class Container:
                 rcl_reader=self.rcl_reader() if self.rcl is not None else None,
                 wykaz=self.wykaz,
                 senate=self.senate,
+                poster=self.poster(dry_run=dry_run),
+                deliveries=self.delivery_service(dry_run=dry_run),
+            ),
+        )
+
+    def poster(self, *, dry_run: bool) -> Poster:
+        return self._once(
+            f"poster:{dry_run}",
+            lambda: Poster(
+                self.repo,
+                self.publisher(dry_run=dry_run),
+                self.clock,
+                gateway=self.gateway,
+                channel_id=self.channel_id(),
+                max_attempts=self.settings.max_publish_attempts,
+                attention_mode=self.settings.reader_attention,
+                urgent_days=self.settings.attention_urgent_days,
+                max_group=self.settings.attention_max_group,
+                daily_roundup=self.settings.attention_roundup == "daily",
+                daily_hour=self.settings.attention_daily_hour,
+            ),
+        )
+
+    def delivery_service(self, *, dry_run: bool) -> DeliveryService:
+        return self._once(
+            f"deliveries:{dry_run}",
+            lambda: DeliveryService(
+                self.repo,
+                self.clock,
+                self.poster(dry_run=dry_run),
+                channel_id=self.channel_id(),
+                max_attempts=self.settings.max_publish_attempts,
+                notifier=self.run_notifier(dry_run=dry_run),
+                runs_retention_days=self.settings.runs_retention_days,
             ),
         )
 
@@ -620,6 +656,8 @@ class Container:
             reader_attention=settings.reader_attention,
             attention_urgent_days=settings.attention_urgent_days,
             attention_max_group=settings.attention_max_group,
+            attention_roundup=settings.attention_roundup,
+            attention_daily_hour=settings.attention_daily_hour,
         )
 
     def pipeline(self, *, dry_run: bool) -> DailyPipeline:

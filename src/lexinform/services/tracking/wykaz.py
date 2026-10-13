@@ -30,11 +30,11 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, WykazGateway
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.posting import Poster
 from lexinform.services.publications import inherit_card
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.sources import RclTextSource
-from lexinform.services.tracking.posting import Poster
-from lexinform.services.tracking.result import TrackingResult
+from lexinform.services.tracking_result import TrackingResult
 
 log = logging.getLogger(__name__)
 

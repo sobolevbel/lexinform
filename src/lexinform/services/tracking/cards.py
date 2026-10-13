@@ -15,7 +15,7 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.models import Bill, BillStatus, PublicationKind, PublicationStatus
 from lexinform.ports import BillRepository, Publisher, SejmGateway
 from lexinform.services.sources import fetch_print
-from lexinform.services.tracking.result import TrackingResult
+from lexinform.services.tracking_result import TrackingResult
 
 log = logging.getLogger(__name__)
 

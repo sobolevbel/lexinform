@@ -267,6 +267,8 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_OUTPUT_LANGUAGE` | `ru` | `ru` or `en` (add more in `i18n.py`) |
 | `LEXINFORM_READER_ATTENTION` | `shadow` | `off`: legacy; `shadow`: save event assessments; `on`: attention labels, routing and complete digest parts |
 | `LEXINFORM_ATTENTION_URGENT_DAYS` / `_ATTENTION_MAX_GROUP` | `3` / `5` | Near-deadline horizon in Warsaw calendar days / maximum bills per new-policy roundup |
+| `LEXINFORM_ATTENTION_ROUNDUP` | `run` | `daily` with attention `on` persists routine updates and distant sittings across runs; protected events bypass the wait |
+| `LEXINFORM_ATTENTION_DAILY_HOUR` | `18` | Warsaw hour of the next daily release; editorial waiting is capped at 24 elapsed hours, delivery needs an available runner |
 | `LEXINFORM_MIN_SCORE` | `3` | Minimum importance to publish |
 | `LEXINFORM_MAX_PUBLISH_PER_RUN` / `_MAX_ANALYZE_PER_RUN` | `10` / `40` | Flood and cost caps |
 | `LEXINFORM_MAX_ANALYSIS_ATTEMPTS` | `3` | Attempts per bill before the analysis is given up on (an outage costs none) |

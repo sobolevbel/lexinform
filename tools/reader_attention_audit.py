@@ -10,7 +10,8 @@ from pathlib import Path
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.attention import assess_attention
-from lexinform.models import Bill, PublicationKind, Stage, StatusChange
+from lexinform.delivery_schedule import daily_schedule
+from lexinform.models import AgendaItem, Bill, PublicationKind, Stage, StatusChange
 
 
 def audit(dump: Path, destination: Path) -> None:
@@ -49,6 +50,23 @@ def audit(dump: Path, destination: Path) -> None:
                 hearing=Stage.model_validate_json(delivery["hearing_json"])
                 if delivery.get("hearing_json")
                 else None,
+                item=AgendaItem.model_validate_json(delivery["item_json"])
+                if delivery.get("item_json")
+                else None,
+                moved_from=AgendaItem.model_validate_json(delivery["moved_from_json"])
+                if delivery.get("moved_from_json")
+                else None,
+            )
+            schedule = (
+                daily_schedule(
+                    assessment,
+                    PublicationKind(row["kind"]),
+                    now=dt.datetime.fromisoformat(row["created_at"]),
+                    release_hour=18,
+                    urgent_days=3,
+                )
+                if delivery.get("bill_json")
+                else None
             )
             counts[f"{assessment.importance}/{assessment.urgency}"] += 1
             events.append(
@@ -60,10 +78,16 @@ def audit(dump: Path, destination: Path) -> None:
                     "message_id": row["message_id"],
                     "assessment": assessment.model_dump(mode="json"),
                     "has_snapshot": bool(delivery.get("bill_json")),
+                    "daily_schedule": schedule.model_dump(mode="json") if schedule else None,
                 }
             )
         events.sort(key=lambda item: str(item["sent_at"]))
         days = Counter(str(item["sent_at"])[:10] for item in events)
+        windows = Counter(
+            (schedule["route"], schedule["not_before"])
+            for event in events
+            if isinstance(schedule := event.get("daily_schedule"), dict)
+        )
         report = {
             "source": str(dump),
             "period": [events[0]["sent_at"], events[-1]["sent_at"]] if events else [],
@@ -72,9 +96,15 @@ def audit(dump: Path, destination: Path) -> None:
             "matrix": dict(counts),
             "busiest_days": days.most_common(5),
             "without_snapshot": sum(not item["has_snapshot"] for item in events),
+            "daily_snapshot_replay": {
+                "eligible_events": sum(windows.values()),
+                "release_windows": len(windows),
+                "largest_windows": windows.most_common(5),
+            },
             "limits": [
                 "Missing historic snapshots use current bills; labels are not independent.",
                 "No generated names, paid model requests or reader recall test.",
+                "Daily replay excludes missing snapshots; windows are not guaranteed send times.",
             ],
         }
         (destination / "baseline.json").write_text(

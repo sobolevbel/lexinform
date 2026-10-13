@@ -92,6 +92,7 @@ from lexinform.models.commands import (
     parse_command,
     parse_reference,
 )
+from lexinform.models.delivery import DeliverySchedule as DeliverySchedule
 from lexinform.models.digest import (
     DIGEST_NUMBER,
     DIGEST_TERM,

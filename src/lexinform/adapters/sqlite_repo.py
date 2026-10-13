@@ -869,7 +869,19 @@ class SqliteBillRepository:
             " AND status = 'queued' AND attempts = 0"
             " AND json_extract(delivery_json, '$.absorbed_by') IS NULL"
             " AND COALESCE(json_array_length(delivery_json, '$.update_group'), 0) = 0"
-            " AND json_extract(delivery_json, '$.wait_until') IS NOT NULL ORDER BY id",
+            " AND COALESCE(json_extract(delivery_json, '$.rendered_text'), '') = ''"
+            " AND (json_extract(delivery_json, '$.wait_until') IS NOT NULL"
+            " OR json_extract(delivery_json, '$.schedule.route') = 'daily_updates') ORDER BY id",
+            (channel_id,),
+        ).fetchall()
+        return [self._row_to_publication(row) for row in rows]
+
+    def list_scheduled_deliveries(self, channel_id: str) -> list[Publication]:
+        rows = self._conn.execute(
+            "SELECT * FROM publications WHERE channel_id = ?"
+            " AND status IN ('queued', 'failed', 'pending', 'unknown')"
+            " AND json_extract(delivery_json, '$.schedule') IS NOT NULL"
+            " AND json_extract(delivery_json, '$.absorbed_by') IS NULL ORDER BY id",
             (channel_id,),
         ).fetchall()
         return [self._row_to_publication(row) for row in rows]
@@ -897,7 +909,8 @@ class SqliteBillRepository:
             " WHERE status_change_id = ? AND channel_id = ?"
             " AND kind = 'status_update' AND (status = 'skipped' OR"
             " (status = 'queued' AND attempts = 0"
-            " AND json_extract(delivery_json, '$.wait_until') IS NOT NULL))",
+            " AND (json_extract(delivery_json, '$.wait_until') IS NOT NULL"
+            " OR json_extract(delivery_json, '$.schedule.route') = 'daily_updates')))",
             [(message_id, sent_at.isoformat(), change_id, channel_id) for change_id in ids],
         )
 

@@ -33,9 +33,9 @@ from lexinform.models import (
     flatten_stages,
 )
 from lexinform.ports import BillRepository, Clock, SejmGateway
-from lexinform.services.tracking.posting import Poster
-from lexinform.services.tracking.result import TrackingResult
+from lexinform.services.posting import Poster
 from lexinform.services.tracking.stages import StageEnricher
+from lexinform.services.tracking_result import TrackingResult
 
 log = logging.getLogger(__name__)
 
@@ -188,19 +188,19 @@ class AgendaWatcher:
 
         Only a `sitting_key` that has disappeared is a retraction: one that merely moved keeps its
         key and is told as a new post saying where it moved from. A sitting that has started or
-        passed is never retracted (`_already_happened`), nor is one whose listing failed —
+        passed is never retracted (`AgendaItem.has_started`), nor is one whose listing failed —
         `_Listings.kept` puts those items back before this runs.
         """
         now = self._clock.now().astimezone(self._local_tz)
         planned: list[Publication] = []
         keys = {item.sitting_key for item in items}
-        upcoming = {item.ref for item in items if not _already_happened(item, now)}
+        upcoming = {item.ref for item in items if not item.has_started(now)}
         for old in bill.agenda:
             if not self._poster.sent(bill, PublicationKind.AGENDA, ref=old.ref):
                 if old.ref not in upcoming:
                     self._poster.drop_sitting(bill, old.ref)
                 continue
-            if old.sitting_key in keys or _already_happened(old, now):
+            if old.sitting_key in keys or old.has_started(now):
                 continue
             if self._poster.posted(bill, PublicationKind.AGENDA_CANCELLED, ref=old.ref):
                 continue
@@ -331,7 +331,7 @@ class AgendaWatcher:
         now = self._clock.now().astimezone(self._local_tz)
         planned: list[Publication] = []
         for item in items:
-            if _already_happened(item, now):
+            if item.has_started(now):
                 continue
             if self._poster.posted(bill, PublicationKind.AGENDA, ref=item.ref):
                 continue
@@ -420,12 +420,3 @@ def _when_and_where(item: AgendaItem) -> str:
 def _renumbered(item: AgendaItem) -> bool:
     """The item is told under a number its committee has since changed."""
     return item.sitting_key != f"{item.committee_code}/{item.sitting_number}"
-
-
-def _already_happened(item: AgendaItem, now: dt.datetime) -> bool:
-    """Whether the sitting is behind the reader. The day alone does not tell: a committee meets
-    at 08:30 and the evening run would announce it at 22:00, hours after it closed. A sitting the
-    API gives no time for (a plenary spans days) keeps the whole of its last day."""
-    if item.last_date < now.date():
-        return True
-    return item.date == now.date() and item.start_time is not None and item.start_time <= now.time()

@@ -543,6 +543,25 @@ def collect_batches(
     raise typer.Exit(code=0 if report.ok else 1)
 
 
+@app.command(name="drain-deliveries")
+def drain_deliveries(
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Print ready deliveries and roll back all writes.")
+    ] = False,
+) -> None:
+    """Release saved deliveries without discovery, tracking or model requests."""
+    c = _container()
+    try:
+        report = c.delivery_service(dry_run=dry_run).run(dry_run=dry_run)
+    finally:
+        c.close()
+    typer.echo(
+        f"updates={report.updates} queued={report.attention.get('daily_queued', 0)}"
+        f" overdue={report.attention.get('daily_overdue', 0)} errors={report.errors}"
+    )
+    raise typer.Exit(code=0 if report.ok else 1)
+
+
 @app.command(name="batch-intents")
 def batch_intents() -> None:
     """Show requests awaiting submission and requests whose remote acceptance is uncertain."""

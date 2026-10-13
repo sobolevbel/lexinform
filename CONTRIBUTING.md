@@ -173,7 +173,9 @@ models/  → ports.py → adapters/ → services/ → container.py → cli.py
   services (`sources`: `SejmTextSource`, `RclTextSource`, `MetadataOnlySource` behind
   `TextSources`; `documents`: `TextLoader` routing downloads by host; `signatories`), and
   `tracking/` (`service` loop, `pre_print`, `rcl`, `linking`, `acts`, `consultations`,
-  `hearings`, `agenda`, `rollover`, `posting`, `stages`). Services import ports, models and the
+  `hearings`, `agenda`, `rollover`, `stages`). `delivery` and `posting` own the saved delivery
+  queue shared by tracking and `drain-deliveries`; `delivery_schedule` is a pure time policy.
+  Services import ports, models and the
   pure modules (`keywords`, `sections`, `agenda`, `authors`, `rcl_letters`, `concurrency`),
   never adapters.
 - `container.py` wires adapters into services from `Settings`; `cli.py` is typer.

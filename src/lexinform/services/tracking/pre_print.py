@@ -20,11 +20,11 @@ from lexinform.models import (
     submission_evidence,
 )
 from lexinform.ports import BillRepository, Clock, SejmGateway
+from lexinform.services.posting import Poster
 from lexinform.services.tracking.consultations import ConsultationReminder
 from lexinform.services.tracking.linking import Linker
-from lexinform.services.tracking.posting import Poster
-from lexinform.services.tracking.result import TrackingResult
 from lexinform.services.tracking.stages import synthetic_key
+from lexinform.services.tracking_result import TrackingResult
 
 log = logging.getLogger(__name__)
 

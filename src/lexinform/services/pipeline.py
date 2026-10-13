@@ -27,7 +27,7 @@ from lexinform.services.rcl_discovery import RclDiscoveryService
 from lexinform.services.terms import TermResolver
 from lexinform.services.text_prefilter import TextPrefilterService
 from lexinform.services.tracking import StatusTrackingService
-from lexinform.services.tracking.result import TrackingResult
+from lexinform.services.tracking_result import TrackingResult, merge_tracking
 from lexinform.services.wykaz_discovery import WykazDiscoveryService
 
 log = logging.getLogger(__name__)
@@ -525,32 +525,7 @@ class DailyPipeline:
 
     @staticmethod
     def _merge_tracking(report: RunReport, tracked: TrackingResult, opts: RunOptions) -> int:
-        """Add one tracking result to the report; returns its failed-post count."""
-        report.tracked += tracked.checked
-        report.batch_waiting += tracked.waiting
-        report.updates += tracked.published if opts.publish else tracked.changed
-        report.update_events += tracked.update_events if opts.publish else tracked.changed
-        for key, count in tracked.attention.items():
-            report.attention[key] = report.attention.get(key, 0) + count
-        report.reanalyzed += tracked.reanalyzed
-        report.linked += tracked.linked
-        report.acts_published += tracked.acts_published
-        report.in_force_posted += tracked.in_force_posted
-        report.consultation_reminders += tracked.consultation_reminders
-        report.hearing_reminders += tracked.hearing_reminders
-        report.decision_reminders += tracked.decision_reminders
-        report.held += tracked.held
-        report.cards_refreshed += tracked.cards_refreshed
-        report.consultation_results_posted += tracked.consultation_results_posted
-        report.agenda_posted += tracked.agenda_posted
-        report.agenda_cancelled += tracked.agenda_cancelled
-        report.discontinued += tracked.discontinued
-        report.rehomed += tracked.rehomed
-        report.llm_input_tokens += tracked.input_tokens
-        report.llm_output_tokens += tracked.output_tokens
-        merge_usage(report.llm_usage, tracked.usage)
-        report.errors.extend(f"tracking: {error}" for error in tracked.partial_errors)
-        return tracked.failed
+        return merge_tracking(report, tracked, publish=opts.publish)
 
     def _notify(self, report: RunReport, captured: MemoryLogHandler) -> None:
         """Send the run report to the log channel; a failure there must never break the run.
