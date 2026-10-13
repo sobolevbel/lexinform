@@ -319,3 +319,11 @@ class StatusChange(BaseModel):
     """The documents filed to the print since the last check, digested: the government's
     position, the OSR, an opinion that raised something."""
     detected_at: dt.datetime
+
+
+class UpdateNews(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    bill: Bill
+    change: StatusChange
+    card_message_id: int | None = None

@@ -64,6 +64,7 @@ from lexinform.models.bill import (
     ReadyAnalysis,
     SittingNews,
     StatusChange,
+    UpdateNews,
     end_names_veto_sustained,
     process_stages,
     veto_decision,
@@ -166,7 +167,7 @@ from lexinform.models.ministries import (
     ministry_name,
     ministry_url,
 )
-from lexinform.models.observations import DeliveryPlan, ObservedProcess
+from lexinform.models.observations import DeliveryPlan, ObservedProcess, UpdateSnapshot
 from lexinform.models.phases import (
     COMMITTEE_PHASES,
     DAYS_PER_MONTH,
@@ -314,6 +315,8 @@ __all__ = [
     "plan_bill",
     "ObservedProcess",
     "DeliveryPlan",
+    "UpdateNews",
+    "UpdateSnapshot",
     "DeliveryResolution",
     "command_for_callback",
     "DIGEST_NUMBER",

@@ -71,6 +71,7 @@ class DeliveryResolution(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     publication_id: int
+    publication_ids: tuple[int, ...] = ()
     term: int
     number: str
     kind: PublicationKind

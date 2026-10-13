@@ -77,6 +77,13 @@ Senate's or the second reading's amendments change (read from the Senate's resol
 the committee's report on them), "published in Dziennik Ustaw" with the entry-into-force date,
 and a reminder on the day the act enters into force.
 
+Routine stage notices share one top-level roundup per run, split at Telegram's limit. Each
+bill keeps its own event record and card link; identical paths, next steps and actions are
+printed once. A single notice remains a reply. A stage accompanying pending text re-analysis
+waits up to one hour from detection for a combined update, then is released on the next available
+run. Consultations opening, hearings, urgent bills and nearby participation deadlines are told
+immediately. New cards, substantive text changes, decisions and legal deadlines keep separate posts.
+
 Every update is named after its event ("Сейм принял закон", "Направлен в комиссии", "Сенат внёс
 поправки"), lists the new stages in the reader's language and repeats one sentence of the
 summary (the whole text only when the analysis changed). Stages that only frame an event

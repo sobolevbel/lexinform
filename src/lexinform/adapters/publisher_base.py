@@ -22,6 +22,7 @@ from lexinform.models import (
     SittingNews,
     Stage,
     StatusChange,
+    UpdateNews,
 )
 from lexinform.ports import PublishResult
 
@@ -124,6 +125,15 @@ class RenderingPublisher(ABC):
 
     def sittings_fit(self, news: Sequence[SittingNews]) -> bool:
         return self._formatter.sittings_fit(news)
+
+    def render_updates(self, news: Sequence[UpdateNews], *, today: date) -> str:
+        return self._formatter.updates(news, today=today)
+
+    def updates_fit(self, news: Sequence[UpdateNews], *, today: date) -> bool:
+        return self._formatter.updates_fit(news, today=today)
+
+    def publish_updates(self, text: str) -> PublishResult:
+        return self._deliver(Outgoing(PublicationKind.STATUS_UPDATE, None, text))
 
     def publish_hearing_deadline(
         self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date

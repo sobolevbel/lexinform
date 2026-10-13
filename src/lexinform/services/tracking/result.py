@@ -40,6 +40,7 @@ class TrackingResult:
     changed: int = 0
     linked: int = 0
     published: int = 0
+    update_events: int = 0
     acts_published: int = 0
     in_force_posted: int = 0
     consultation_reminders: int = 0
@@ -63,6 +64,8 @@ class TrackingResult:
     def count_post(self, sent: bool, counter: PostCounter = "published") -> None:
         if sent:
             setattr(self, counter, getattr(self, counter) + 1)
+            if counter == "published":
+                self.update_events += 1
         else:
             self.failed += 1
 

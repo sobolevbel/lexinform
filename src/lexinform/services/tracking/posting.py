@@ -10,7 +10,7 @@ stages before its own and releases them (their rows become `sent` with its messa
 
 import logging
 from collections.abc import Callable
-from datetime import date
+from datetime import date, timedelta
 from enum import StrEnum
 from zoneinfo import ZoneInfo
 
@@ -18,6 +18,7 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     AgendaItem,
     Bill,
+    BillStatus,
     DeliveryPlan,
     Phase,
     PrintInfo,
@@ -28,10 +29,14 @@ from lexinform.models import (
     SittingNews,
     Stage,
     StatusChange,
+    UpdateNews,
+    UpdateSnapshot,
     flatten_stages,
+    is_substantive,
     reading_evidence,
     stage_keys,
     update_event,
+    window_closes_within,
 )
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway
 from lexinform.services.publications import send_publication, send_publications
@@ -42,6 +47,33 @@ log = logging.getLogger(__name__)
 
 Send = Callable[[int | None], int]
 """Sends one post under an optional reply-to message and answers with its message id."""
+
+UPDATE_ANALYSIS_WAIT = timedelta(hours=1)
+ROUNDUP_EVENTS = frozenset(
+    {"rcl_stage", "referral", "referrals", "committee_report", "subcommittee_report", "signed"}
+)
+
+
+def routine_update(bill: Bill, change: StatusChange, plan: DeliveryPlan) -> bool:
+    return (
+        update_event(change, bill) in ROUNDUP_EVENTS
+        and not (
+            change.content_changed
+            or change.consultation_opened
+            or change.closure_detected
+            or change.withdrawn
+            or change.discontinued
+            or change.amendments
+            or change.supplements
+        )
+        and not plan.with_act
+        and plan.edit_message_id is None
+        and all(
+            not is_substantive(stage)
+            or stage.stage_type in {"RclStage", "Referral", "CommitteeReport", "PresidentSignature"}
+            for stage in flatten_stages(change.new_stages)
+        )
+    )
 
 
 class Told(StrEnum):
@@ -73,10 +105,130 @@ class Poster:
         self._max_attempts = max_attempts
         self._attempted: set[int] = set()
         self._sittings: dict[int, Publication] = {}
+        self._updates: dict[int, Publication] = {}
 
     def start_run(self) -> None:
         self._attempted.clear()
         self._sittings.clear()
+        self._updates.clear()
+
+    def queue_update(self, pub: Publication) -> None:
+        assert pub.id is not None and pub.delivery is not None
+        if pub.status is PublicationStatus.QUEUED and pub.attempts == 0:
+            self._updates[pub.id] = pub
+
+    def flush_updates(self, result: TrackingResult) -> None:
+        for deferred in self._repo.list_deferred_updates(self._channel_id):
+            self.queue_update(deferred)
+        queued = list(self._updates.values())
+        self._updates.clear()
+        batch: list[Publication] = []
+        news: list[UpdateNews] = []
+        today = self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date()
+        for candidate in queued:
+            assert candidate.id is not None
+            pub = self._repo.publication_by_id(candidate.id)
+            if pub is None or pub.status is not PublicationStatus.QUEUED or pub.delivery is None:
+                continue
+            plan = pub.delivery
+            if plan.absorbed_by is not None or pub.id in self._attempted:
+                continue
+            current = self._repo.get(pub.term, pub.number)
+            if (
+                plan.wait_until is not None
+                and self._clock.now() < plan.wait_until
+                and current is not None
+                and current.status in (BillStatus.BATCH_PENDING, BillStatus.REANALYSIS_READY)
+            ):
+                continue
+            item = UpdateNews(
+                bill=Bill.model_validate_json(plan.bill_json),
+                change=StatusChange.model_validate_json(plan.change_json),
+                card_message_id=plan.reply_to,
+            )
+            if batch and not self._publisher.updates_fit([*news, item], today=today):
+                self._flush_update_batch(batch, news, result, today)
+                batch, news = [], []
+            batch.append(pub)
+            news.append(item)
+        if batch:
+            self._flush_update_batch(batch, news, result, today)
+
+    def _flush_update_batch(
+        self, pubs: list[Publication], news: list[UpdateNews], result: TrackingResult, today: date
+    ) -> None:
+        if len(pubs) == 1:
+            item = news[0]
+            result.count_post(self.status_update(item.bill, item.change))
+            return
+        members = tuple(
+            UpdateSnapshot(
+                publication_id=pub.id,
+                bill_json=pub.delivery.bill_json,
+                change_json=pub.delivery.change_json,
+                card_message_id=pub.delivery.reply_to,
+            )
+            for pub in pubs
+            if pub.id is not None and pub.delivery is not None
+        )
+        text = self._publisher.render_updates(news, today=today)
+        with self._repo.atomic():
+            self._repo.tag_update_group(
+                tuple(item.publication_id for item in members),
+                f"updates/{members[0].publication_id}",
+            )
+            for pub in pubs:
+                assert pub.status_change_id is not None and pub.delivery is not None
+                plan = pub.delivery.model_copy(
+                    update={
+                        "update_group": members,
+                        "group_text": text,
+                        "today": today,
+                        "wait_until": None,
+                    }
+                )
+                assert self._repo.replace_unsent_update_delivery(
+                    pub.status_change_id, self._channel_id, plan
+                )
+        stored = self._repo.publication_by_id(members[0].publication_id)
+        assert stored is not None
+        self.retry_update_group(stored, result)
+
+    def retry_update_group(self, pub: Publication, result: TrackingResult) -> bool:
+        """A shared send cannot be decomposed into independently retried member posts."""
+        assert pub.delivery is not None and pub.delivery.update_group
+        plan = pub.delivery
+        identities = tuple(item.publication_id for item in pub.delivery.update_group)
+        if any(identity in self._attempted for identity in identities):
+            return False
+        members = [self._repo.publication_by_id(identity) for identity in identities]
+        if any(
+            member is None
+            or member.channel_id != self._channel_id
+            or member.status not in (PublicationStatus.QUEUED, PublicationStatus.FAILED)
+            or member.attempts >= self._max_attempts
+            or member.delivery is None
+            or member.delivery.update_group != pub.delivery.update_group
+            or member.delivery.group_text != pub.delivery.group_text
+            for member in members
+        ):
+            return False
+        with self._repo.atomic():
+            for identity in identities:
+                self._repo.mark_publication(
+                    identity, PublicationStatus.PENDING, count_attempt=False
+                )
+        self._attempted.update(identities)
+        sent = send_publications(
+            self._repo,
+            self._clock,
+            identities,
+            lambda: self._publisher.publish_updates(plan.group_text),
+        )
+        result.count_post(sent is not None)
+        if sent is not None:
+            result.update_events += len(identities) - 1
+        return sent is not None
 
     def queue_sitting(self, pub: Publication) -> None:
         """Keep a sitting for the run's roundup, which `flush_sittings` sends."""
@@ -270,6 +422,22 @@ class Poster:
         if not publish:
             self.prepare(bill, change, with_act=with_act)
             return Told.QUEUED
+        plan = self.prepare(bill, change, with_act=with_act)
+        if plan.update_group:
+            assert change.id is not None
+            pub = self._repo.get_update_publication(change.id, self._channel_id)
+            assert pub is not None
+            sent = self.retry_update_group(pub, result)
+            return Told.SENT if sent else Told.FAILED
+        if routine_update(bill, change, plan) and not window_closes_within(
+            bill, self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(), 3
+        ):
+            assert change.id is not None
+            pub = self._repo.get_update_publication(change.id, self._channel_id)
+            assert pub is not None
+            if pub.status is PublicationStatus.QUEUED and pub.attempts == 0:
+                self.queue_update(pub)
+                return Told.QUEUED
         sent = self.status_update(bill, change, with_act=with_act)
         result.count_post(sent)
         if sent and self.carries_act(change):
@@ -307,8 +475,12 @@ class Poster:
         assert change.id is not None, "only a change record_change stored reaches the poster"
         existing = self._repo.get_update_publication(change.id, self._channel_id)
         if existing is not None:
+            if existing.delivery is not None and existing.delivery.absorbed_by is not None:
+                return False
             if existing.status is PublicationStatus.SENT:
                 return True
+            if existing.delivery is not None and existing.delivery.update_group:
+                return self.retry_update_group(existing, TrackingResult())
             if existing.status in (
                 PublicationStatus.PENDING,
                 PublicationStatus.UNKNOWN,
@@ -316,6 +488,10 @@ class Poster:
             ):
                 return False
         delivery = self.prepare(bill, change, with_act=with_act)
+        if delivery.wait_until is not None:
+            # Attempted or uncertain sends can never be absorbed into a later analysis update.
+            delivery = delivery.model_copy(update={"wait_until": None})
+            assert self._repo.replace_unsent_update_delivery(change.id, self._channel_id, delivery)
         pub_id = self._repo.create_publication(
             self._update_row(bill, change.id, PublicationStatus.PENDING)
         )
@@ -361,22 +537,77 @@ class Poster:
                 self._repo.save_update_delivery(change.id, self._channel_id, completion)
             return completion
         held = self._repo.list_held_status_changes(bill.term, bill.number, self._channel_id)
+        deferred = [
+            pub
+            for pub in self._repo.list_deferred_updates(self._channel_id)
+            if pub.term == bill.term
+            and pub.number == bill.number
+            and pub.status_change_id != change.id
+        ]
         stages = [st for earlier in held for st in earlier.new_stages]
+        stages.extend(
+            stage
+            for pub in deferred
+            if pub.delivery is not None
+            for stage in StatusChange.model_validate_json(pub.delivery.change_json).new_stages
+        )
         planned = change.model_copy(update={"new_stages": stages + list(change.new_stages)})
         snapshot = self._repo.get(bill.term, bill.number) or bill
         card = self.card(bill)
         delivery = DeliveryPlan(
             bill_json=snapshot.model_dump_json(),
             change_json=planned.model_dump_json(),
-            held_change_ids=tuple(c.id for c in held if c.id is not None),
+            held_change_ids=tuple(
+                dict.fromkeys(
+                    [
+                        *(c.id for c in held if c.id is not None),
+                        *(
+                            pub.status_change_id
+                            for pub in deferred
+                            if pub.status_change_id is not None
+                        ),
+                        *(
+                            identity
+                            for pub in deferred
+                            if pub.delivery is not None
+                            for identity in pub.delivery.held_change_ids
+                        ),
+                    ]
+                )
+            ),
             reply_to=card.message_id if card else None,
             with_act=with_act and snapshot.act is not None,
         )
+        if (
+            snapshot.status is BillStatus.BATCH_PENDING
+            and routine_update(snapshot, change, delivery)
+            and not window_closes_within(
+                snapshot, self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(), 3
+            )
+        ):
+            deadline = min(
+                [
+                    change.detected_at + UPDATE_ANALYSIS_WAIT,
+                    *(
+                        pub.delivery.wait_until
+                        for pub in deferred
+                        if pub.delivery is not None and pub.delivery.wait_until is not None
+                    ),
+                ]
+            )
+            delivery = delivery.model_copy(update={"wait_until": deadline})
         with self._repo.atomic():
-            self._repo.create_publication(
+            identity = self._repo.create_publication(
                 self._update_row(bill, change.id, PublicationStatus.QUEUED)
             )
             self._repo.save_update_delivery(change.id, self._channel_id, delivery)
+            for pub in deferred:
+                assert pub.status_change_id is not None and pub.delivery is not None
+                assert self._repo.replace_unsent_update_delivery(
+                    pub.status_change_id,
+                    self._channel_id,
+                    pub.delivery.model_copy(update={"absorbed_by": identity}),
+                )
         return delivery
 
     def _vote_completion(self, bill: Bill, change: StatusChange) -> DeliveryPlan | None:
@@ -446,7 +677,11 @@ class Poster:
 
     @staticmethod
     def _never_attempted(pub: Publication) -> bool:
-        return pub.status is PublicationStatus.QUEUED and pub.attempts == 0
+        return (
+            pub.status is PublicationStatus.QUEUED
+            and pub.attempts == 0
+            and (pub.delivery is None or not pub.delivery.update_group)
+        )
 
     def _add_act(self, change_id: int, delivery: DeliveryPlan, bill: Bill) -> DeliveryPlan:
         """The plan `_detect` froze before the run read the act, now carrying it: nothing has

@@ -126,6 +126,8 @@ class Labels:
     link_hearing_rules: str
     next_step: str
     sittings_header: str
+    updates_header: str
+    roundup_rcl_action: str
     sittings_sejm: str
     sittings_committees: str
     agenda_cancelled_header: str
@@ -398,6 +400,11 @@ RU = Labels(
     link_hearing_rules="бланк и порядок на сайте Сейма",
     next_step="Что дальше",
     sittings_header="Заседания",
+    updates_header="Что изменилось",
+    roundup_rcl_action=(
+        "консультации закрыты; {comment}; заявить интерес к работам"
+        " (zgłoszenie zainteresowania): {organ} · писать на польском, указать {number}"
+    ),
     sittings_sejm="Сейм",
     sittings_committees="Комиссии",
     agenda_cancelled_header="Заседание отменено",
@@ -1076,6 +1083,11 @@ EN = Labels(
     link_hearing_rules="form and rules on the Sejm's site",
     next_step="What comes next",
     sittings_header="Sittings",
+    updates_header="What changed",
+    roundup_rcl_action=(
+        "consultations closed; {comment}; declare interest in the work"
+        " (zgłoszenie zainteresowania): {organ} · write in Polish, cite {number}"
+    ),
     sittings_sejm="Sejm",
     sittings_committees="Committees",
     agenda_cancelled_header="Sitting called off",

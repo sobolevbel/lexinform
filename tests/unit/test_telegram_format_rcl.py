@@ -2,6 +2,8 @@
 
 import datetime as dt
 
+import pytest
+
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import (
     RCL_STAGE_TYPE,
@@ -23,6 +25,36 @@ from tests.harness import CONSULTATION_LETTER, RCL_CONSULTATION, rcl_project, rc
 NOW = dt.datetime(2026, 9, 7, tzinfo=dt.UTC)
 TODAY = dt.date(2026, 9, 7)
 COMMENT_FORM = "https://legislacja.rcl.gov.pl/projekt/12414100/komentarz"
+
+
+@pytest.mark.parametrize("language", ["ru", "en"])
+@pytest.mark.parametrize("extension", ["zip", "DOCX", "pdf"])
+def test_new_text_link_names_its_actual_format(language: str, extension: str) -> None:
+    bill = rcl_bill(rcl_project())
+    assert bill.analysis is not None
+    url = f"https://legislacja.rcl.gov.pl/docs/dokument801844.{extension}?download=1"
+    bill = bill.model_copy(
+        update={"analysis": bill.analysis.model_copy(update={"source_url": url})}
+    )
+    change = StatusChange(
+        term=bill.term,
+        number=bill.number,
+        old_fingerprint="old",
+        new_fingerprint="new",
+        new_stages=[],
+        content_changed=True,
+        detected_at=NOW,
+    )
+
+    text = MessageFormatter(language).status_update(bill, change, today=TODAY).text
+
+    assert_telegram_html(text)
+    assert f'href="{url}"' in text
+    if extension.lower() == "pdf":
+        label = "PDF" if language == "ru" else "Print PDF"
+        assert f">{label}</a>" in text
+    else:
+        assert f"({extension.upper()})</a>" in text and ">PDF</a>" not in text
 
 
 def rcl_bill(project: RclProject, *, text_source: TextSource = "documents") -> Bill:

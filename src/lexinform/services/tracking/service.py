@@ -362,11 +362,13 @@ class StatusTrackingService:
             quiet=quiet,
             quiet_everyone=quiet_everyone,
         ):
+            self._flush_updates(result, publish=publish)
             return result
         self._check_processes(tracked, result, publish=publish, may_wait=may_wait)
         if quiet and result.fatal_error is None:
             quiet = [self._repo.get(b.term, b.number) or b for b in quiet]
             self._check_processes(quiet, result, publish=False, may_wait=may_wait, deliver=False)
+        self._flush_updates(result, publish=publish)
         self._remind_and_refresh(everyone, result, publish=publish)
         self._log_outcome(result, changed_since)
         return result
@@ -393,13 +395,24 @@ class StatusTrackingService:
         (`CommandService._refresh`) checks it before asking.
         """
         result = TrackingResult()
+        self._poster.start_run()
         one = [bill]
         if not self._check_other_sources(one, one, result, publish=publish):
+            self._flush_updates(result, publish=publish)
             return result
         self._check_processes(one, result, publish=publish, may_wait=False)
+        self._flush_updates(result, publish=publish)
         if result.fatal_error is None:
             self._cards.refresh(one, result, publish=publish)
         return result
+
+    def _flush_updates(self, result: TrackingResult, *, publish: bool) -> None:
+        if not publish or result.fatal_error is not None:
+            return
+        try:
+            self._poster.flush_updates(result)
+        except ServiceUnavailableError as exc:
+            result.abort(exc, failed=True)
 
     def followed(self) -> list[Bill]:
         """The bills a run would check: a card in the channel and a road that has not ended."""
@@ -623,6 +636,21 @@ class StatusTrackingService:
             bill = self._repo.get(change.term, change.number)
             if bill is None:
                 continue
+            assert change.id is not None
+            pub = self._repo.get_update_publication(change.id, self._options.channel_id)
+            if pub is not None and pub.delivery is not None:
+                plan = pub.delivery
+                if plan.absorbed_by is not None:
+                    continue
+                if plan.update_group:
+                    try:
+                        self._poster.retry_update_group(pub, result)
+                    except ServiceUnavailableError as exc:
+                        result.abort(exc, failed=True)
+                        return False
+                    continue
+                if plan.wait_until is not None:
+                    continue
             log.info("retrying status update for druk %s", bill.number)
             try:
                 sent = self._poster.status_update(bill, change)

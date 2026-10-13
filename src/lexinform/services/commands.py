@@ -926,6 +926,11 @@ class CommandService:
                     )
             resolution = DeliveryResolution(
                 publication_id=command.delivery_id,
+                publication_ids=tuple(
+                    item.publication_id for item in publication.delivery.update_group
+                )
+                if publication.delivery is not None and publication.delivery.update_group
+                else (command.delivery_id,),
                 term=publication.term,
                 number=publication.number,
                 kind=publication.kind,
@@ -944,12 +949,18 @@ class CommandService:
                     )
                 if action == "confirm" and publication.delivery is not None:
                     assert resolution.message_id is not None
-                    complete_delivery(
-                        self._repo,
-                        publication,
-                        message_id=resolution.message_id,
-                        sent_at=resolution.resolved_at,
-                    )
+                    identities = tuple(
+                        item.publication_id for item in publication.delivery.update_group
+                    ) or (command.delivery_id,)
+                    for identity in identities:
+                        member = self._repo.publication_by_id(identity)
+                        assert member is not None
+                        complete_delivery(
+                            self._repo,
+                            member,
+                            message_id=resolution.message_id,
+                            sent_at=resolution.resolved_at,
+                        )
             publication = self._repo.publication_by_id(command.delivery_id)
         return CommandOutcome(
             status=OutcomeStatus.DELIVERY,

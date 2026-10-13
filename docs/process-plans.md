@@ -63,6 +63,32 @@ Disabled delivery queues detected updates, agendas and reminders, which no longe
 another legislative event to be sent. Non-substantive and historical additions remain held.
 The existing silent seeding of **new cards** under `run --no-publish` remains unchanged.
 
+### Routine roundups and pending text analysis
+
+Routine RCL stages, referrals, committee reports and signatures are collected before card
+refresh. Two or more compatible notices share a top-level post; one remains a reply. Open
+consultations, hearings, urgent bills, participation deadlines within three days, text changes,
+amendments, decisions and act notices remain separate. Every report retains its document link.
+
+Each member keeps a status-update publication. Its `DeliveryPlan.update_group` records all
+member IDs and snapshots; `group_text` freezes the rendered HTML before the pending checkpoint.
+Failure and success apply to all members together. `/delivery` on any member resolves the whole
+group atomically; `DeliveryResolution.publication_ids` preserves the audit after payload retention.
+The digest keeps every bill even when several share one Telegram ID. `updates` counts messages;
+`update_events` counts their primary event records.
+
+Status-update members also share a durable `ref=updates/<first-publication-id>` so historical
+digests retain every bill after sent payloads are pruned; legacy aliases keep their deduplication.
+
+A routine stage with pending re-analysis remains `queued`, with a fixed `wait_until` one hour
+after detection. Repeated observations cannot renew the deadline. A ready result absorbs its
+stages into the next update; `absorbed_by` prevents the old row from sending independently.
+The wait marker is cleared before its first delivery attempt: failed or operator-retried work
+can never be absorbed into a later analysis or get a newer payload.
+Successful delivery releases only saved included change IDs. No material change still releases
+the stage; a missing result releases it at the next available run after the deadline. Source or
+delivery outages may postpone that run. Existing batch policy and uncertain-intent rules apply.
+
 RCL, RPW and wykaz changes build their delivery plans in the transaction that advances the
 stored source snapshot. Linking a predecessor to its RCL project or druk commits the successor,
 card alias, analysis and update plan together. Term rollover commits discontinuation and all its

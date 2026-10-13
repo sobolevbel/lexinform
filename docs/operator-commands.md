@@ -95,7 +95,10 @@ can be closed with `dismiss REASON`; `dismissed` does not claim delivery.
 
 Only `unknown` can be resolved. A repeated command cannot queue a sent or already queued post.
 A crash during the new attempt becomes `unknown` again and needs a new decision. The saved
-facts and parent are reused, with the current formatter; historical HTML bytes are not stored.
+facts and parent are reused, with the current formatter for individual posts. Stage roundups
+also store the exact rendered HTML and all member publication IDs. `/delivery` on any member
+shows the shared message and resolves every member together; a partial group cannot be retried
+or confirmed. The saved HTML is sent once, as a top-level post, and never rebuilt from newer bills.
 The preview may be shortened to fit Telegram. Records without a complete saved plan and parent
 cannot be retried; confirmation or dismissal still works. Digest records without a delivery
 plan also cannot be retried this way. Commands address only the configured reader channel.
@@ -183,8 +186,8 @@ The bot has to be able to post there, and a failure is answered as one.
 `/status`, `/runs` and `/cost` are what no single run report says. `/status` is the state
 between the runs: the queues as they stand, how many bills are followed, and by bill number and
 kind the posts stuck `pending`/`unknown` — nothing retries those on its own (BUGS.md #4), so this
-is what tells the operator one is there; `/republish` clears it for a card, and for any other
-kind of reply there is no command yet, only a look at the row. Under «failing checks» it names
+is what tells the operator one is there; use `/delivery ID` and an audited resolution after
+checking the channel. Under «failing checks» it names
 the live bills whose source has failed `FAILING_CHECK_MIN` (3) checks in a row — a listing that
 never returns a row is no error and no counter of any run report (B83). `/runs` is the row per run that
 `lexinform runs` prints — what each found, posted and cost — and `/cost` breaks the window's

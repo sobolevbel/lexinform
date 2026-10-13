@@ -67,6 +67,7 @@ from lexinform.models import (
     TextDocument,
     TriageContext,
     TriageRecord,
+    UpdateNews,
     Vote,
     WykazEntry,
 )
@@ -391,6 +392,12 @@ class Publisher(Protocol):
         """Whether every entry fits in one message without dropping facts; no I/O."""
         ...
 
+    def render_updates(self, news: Sequence[UpdateNews], *, today: date) -> str: ...
+
+    def updates_fit(self, news: Sequence[UpdateNews], *, today: date) -> bool: ...
+
+    def publish_updates(self, text: str) -> PublishResult: ...
+
     def publish_hearing_deadline(
         self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date
     ) -> PublishResult:
@@ -548,10 +555,14 @@ class BillRepository(Protocol):
     def replace_unsent_update_delivery(
         self, change_id: int, channel_id: str, delivery: DeliveryPlan
     ) -> bool:
-        """Replace the plan of an update still `queued` and never attempted; False otherwise."""
+        """Replace a queued individual plan before its first send; shared payloads stay frozen."""
         ...
 
     def get_update_publication(self, change_id: int, channel_id: str) -> Publication | None: ...
+
+    def list_deferred_updates(self, channel_id: str) -> list[Publication]: ...
+
+    def tag_update_group(self, publication_ids: tuple[int, ...], ref: str) -> None: ...
 
     def get_act_update(self, term: int, number: str, channel_id: str) -> Publication | None:
         """The status update whose saved delivery includes this bill's act notice."""

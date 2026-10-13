@@ -809,6 +809,7 @@ class FakePublisher(RenderingPublisher):
         # "alternative bill" replies: (bill, the bill whose card it went under, reply_to)
         self.joint_bills: list[tuple[Bill, Bill, int | None]] = []
         self.updates: list[tuple[Bill, StatusChange, int | None]] = []
+        self.update_roundups: list[str] = []
         self.acts: list[tuple[Bill, int | None]] = []
         self.in_force: list[tuple[Bill, int | None]] = []
         self.consultations: list[tuple[Bill, int | None, date]] = []
@@ -895,6 +896,11 @@ class FakePublisher(RenderingPublisher):
     def publish_act_published(self, bill: Bill, reply_to: int | None) -> PublishResult:
         result = super().publish_act_published(bill, reply_to)
         self.acts.append((bill, reply_to))
+        return result
+
+    def publish_updates(self, text: str) -> PublishResult:
+        result = super().publish_updates(text)
+        self.update_roundups.append(text)
         return result
 
     def publish_in_force(

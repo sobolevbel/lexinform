@@ -204,7 +204,13 @@ class DigestService:
         cards: list[DigestEntry] = []
         updates: list[DigestEntry] = []
         card_slots: dict[int, int] = {}  # message_id -> index in `cards`
-        update_slots: dict[int, int] = {}
+        update_slots: dict[tuple[int | None, int, str], int] = {}
+        grouped_messages = {
+            post.message_id
+            for post in posts
+            if (post.ref is not None and post.ref.startswith("updates/"))
+            or (post.delivery is not None and post.delivery.update_group)
+        }
         for post in posts:
             if post.delivery is not None and post.delivery.edit_message_id is not None:
                 continue
@@ -214,7 +220,17 @@ class DigestService:
             if post.kind in CARD_KINDS:
                 _add_or_replace(cards, card_slots, entry)
             elif post.kind in UPDATE_KINDS:
-                _add_or_replace(updates, update_slots, entry)
+                key = (
+                    (entry.message_id, entry.term, entry.number)
+                    if entry.message_id in grouped_messages
+                    else (entry.message_id, 0, "")
+                )
+                slot = update_slots.get(key)
+                if slot is None:
+                    update_slots[key] = len(updates)
+                    updates.append(entry)
+                else:
+                    updates[slot] = entry
         consultations, sittings = self._ahead()
         starts = self._midnight(since)
         ends = self._midnight(until + dt.timedelta(days=1))

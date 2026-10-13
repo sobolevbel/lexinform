@@ -209,11 +209,8 @@ def test_a_batched_re_analysis_posts_nothing_until_collected() -> None:
 
     submitted = w.run()
 
-    # The new committee-report stage is still posted this run (it needs no LLM answer); the text
-    # itself is filed to the batch instead, and this update says nothing about its content yet.
     assert submitted.reanalyzed == 0
-    _, first_change, _ = w.publisher.updates[-1]
-    assert not first_change.content_changed
+    assert submitted.updates == 0 and not w.publisher.updates
     assert w.bill("3039").status is BillStatus.BATCH_PENDING
     assert len(batch.submitted) == 1
 
@@ -221,6 +218,7 @@ def test_a_batched_re_analysis_posts_nothing_until_collected() -> None:
     resubmitted = w.run()  # a re-visit while still pending must not queue it again
 
     assert resubmitted.reanalyzed == 0 and len(batch.submitted) == 1
+    assert resubmitted.updates == 1 and not w.publisher.updates[-1][1].content_changed
 
     batch.resolve()
     w.clock.advance(days=1)
@@ -410,8 +408,9 @@ def test_a_batched_re_analysis_that_names_no_change_posts_nothing_when_collected
 
     collected = w.run()
 
-    assert (collected.reanalyzed, collected.updates) == (1, 0)
-    assert len(w.publisher.updates) == posted
+    assert (collected.reanalyzed, collected.updates) == (1, 1)
+    assert len(w.publisher.updates) == posted + 1
+    assert not w.publisher.updates[-1][1].content_changed
     assert w.bill("3039").status is BillStatus.ANALYZED
     stored = w.bill("3039").analysis
     assert stored is not None and stored.source_url == REPORT_URL

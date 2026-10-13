@@ -357,6 +357,7 @@ def test_report_carries_phase_timings() -> None:
 
 
 COUNTERS = (
+    "update_events",
     "discovered",
     "prefilter_hits",
     "text_prefilter_checked",
@@ -396,7 +397,7 @@ def test_parallel_workers_produce_the_same_result_as_a_plain_loop() -> None:
     assert sequential == parallel
     first, second, published = parallel
     assert (first["analyzed"], first["published"], first["text_prefilter_hits"]) == (4, 4, 2)
-    assert (second["tracked"], second["updates"]) == (4, 4)
+    assert (second["tracked"], second["updates"], second["update_events"]) == (4, 1, 4)
     assert published == ["3039", "3040", "4000", "4001"]
 
 

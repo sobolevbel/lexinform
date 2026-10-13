@@ -141,6 +141,7 @@ class RunReport(BaseModel):
     published: int = 0
     joint_published: int = 0
     updates: int = 0
+    update_events: int = 0
     reanalyzed: int = 0
     tracked: int = 0
     batch_waiting: int = 0

@@ -781,7 +781,8 @@ class SqliteBillRepository:
         cur = self._conn.execute(
             "UPDATE publications SET delivery_json = ? WHERE status_change_id = ?"
             " AND channel_id = ? AND kind = 'status_update' AND status = 'queued'"
-            " AND attempts = 0",
+            " AND attempts = 0"
+            " AND COALESCE(json_array_length(delivery_json, '$.update_group'), 0) = 0",
             (delivery.model_dump_json(), change_id, channel_id),
         )
         return cur.rowcount == 1
@@ -793,6 +794,24 @@ class SqliteBillRepository:
             (change_id, channel_id),
         ).fetchone()
         return self._row_to_publication(row) if row is not None else None
+
+    def list_deferred_updates(self, channel_id: str) -> list[Publication]:
+        """Only never-attempted, unowned individual updates can be absorbed by analysis."""
+        rows = self._conn.execute(
+            "SELECT * FROM publications WHERE channel_id = ? AND kind = 'status_update'"
+            " AND status = 'queued' AND attempts = 0"
+            " AND json_extract(delivery_json, '$.absorbed_by') IS NULL"
+            " AND COALESCE(json_array_length(delivery_json, '$.update_group'), 0) = 0"
+            " AND json_extract(delivery_json, '$.wait_until') IS NOT NULL ORDER BY id",
+            (channel_id,),
+        ).fetchall()
+        return [self._row_to_publication(row) for row in rows]
+
+    def tag_update_group(self, publication_ids: tuple[int, ...], ref: str) -> None:
+        self._conn.executemany(
+            "UPDATE publications SET ref = ? WHERE id = ? AND kind = 'status_update'",
+            [(ref, identity) for identity in publication_ids],
+        )
 
     def get_act_update(self, term: int, number: str, channel_id: str) -> Publication | None:
         row = self._conn.execute(
@@ -809,7 +828,9 @@ class SqliteBillRepository:
         self._conn.executemany(
             "UPDATE publications SET status = 'sent', message_id = ?, sent_at = ?"
             " WHERE status_change_id = ? AND channel_id = ?"
-            " AND kind = 'status_update' AND status = 'skipped'",
+            " AND kind = 'status_update' AND (status = 'skipped' OR"
+            " (status = 'queued' AND attempts = 0"
+            " AND json_extract(delivery_json, '$.wait_until') IS NOT NULL))",
             [(message_id, sent_at.isoformat(), change_id, channel_id) for change_id in ids],
         )
 
@@ -1863,21 +1884,63 @@ class SqliteBillRepository:
                 (resolution.command.update_id,),
             ).fetchone():
                 return False
-            changed = self._conn.execute(
-                "UPDATE publications SET status = ?, message_id = COALESCE(?, message_id),"
-                " sent_at = ?, error = NULL,"
-                " attempts = CASE WHEN ? = 'queued' THEN 0 ELSE attempts END"
-                " WHERE id = ? AND status = 'unknown'",
-                (
-                    status,
-                    resolution.message_id,
-                    resolution.resolved_at.isoformat() if status == "sent" else None,
-                    status,
-                    resolution.publication_id,
-                ),
-            ).rowcount
-            if not changed:
+            original = self.publication_by_id(resolution.publication_id)
+            if original is None:
                 return False
+            plan = original.delivery
+            identities = (
+                tuple(item.publication_id for item in plan.update_group)
+                if plan and plan.update_group
+                else (resolution.publication_id,)
+            )
+            if resolution.publication_id not in identities:
+                return False
+            for identity in identities:
+                member = self.publication_by_id(identity)
+                if (
+                    member is None
+                    or member.status is not PublicationStatus.UNKNOWN
+                    or member.channel_id != resolution.channel_id
+                    or (
+                        plan
+                        and plan.update_group
+                        and (
+                            member.delivery is None
+                            or member.delivery.update_group != plan.update_group
+                            or member.delivery.group_text != plan.group_text
+                        )
+                    )
+                ):
+                    return False
+            for identity in identities:
+                self._conn.execute(
+                    "UPDATE publications SET status = ?, message_id = COALESCE(?, message_id),"
+                    " sent_at = ?, error = NULL,"
+                    " attempts = CASE WHEN ? = 'queued' THEN 0 ELSE attempts END"
+                    " WHERE id = ?",
+                    (
+                        status,
+                        resolution.message_id,
+                        resolution.resolved_at.isoformat() if status == "sent" else None,
+                        status,
+                        identity,
+                    ),
+                )
+                if status == "dismissed":
+                    member = self.publication_by_id(identity)
+                    if member is not None and member.delivery is not None:
+                        for change_id in member.delivery.held_change_ids:
+                            owned = self.get_update_publication(change_id, resolution.channel_id)
+                            if (
+                                owned is not None
+                                and owned.id is not None
+                                and owned.status is PublicationStatus.QUEUED
+                                and owned.delivery is not None
+                                and owned.delivery.absorbed_by is not None
+                            ):
+                                self.mark_publication(
+                                    owned.id, PublicationStatus.DISMISSED, count_attempt=False
+                                )
             self._conn.execute(
                 "INSERT INTO delivery_resolutions"
                 " (publication_id, command_update_id, resolution_json) VALUES (?, ?, ?)",
@@ -1891,8 +1954,11 @@ class SqliteBillRepository:
 
     def delivery_resolutions(self, publication_id: int) -> list[DeliveryResolution]:
         rows = self._conn.execute(
-            "SELECT resolution_json FROM delivery_resolutions WHERE publication_id = ? ORDER BY id",
-            (publication_id,),
+            "SELECT resolution_json FROM delivery_resolutions"
+            " WHERE publication_id = ? OR EXISTS ("
+            " SELECT 1 FROM json_each(resolution_json, '$.publication_ids') WHERE value = ?)"
+            " ORDER BY id",
+            (publication_id, publication_id),
         ).fetchall()
         return [DeliveryResolution.model_validate_json(row[0]) for row in rows]
 

@@ -9,6 +9,7 @@ import html
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from urllib.parse import urlsplit
 
 from lexinform.i18n import Labels, labels_for
 from lexinform.models import (
@@ -51,6 +52,7 @@ from lexinform.models import (
     StatusSnapshot,
     TokenUsage,
     Upcoming,
+    UpdateNews,
     VotingSummary,
     WykazEntry,
     about_ukraine,
@@ -750,7 +752,22 @@ class MessageFormatter:
         if text_after3:
             links.append(link(text_after3, lb.link_text_after3))
         elif bill.analysis and bill.analysis.source_url and change.content_changed:
-            links.append(link(bill.analysis.source_url, lb.link_pdf))
+            url = bill.analysis.source_url
+            extension = urlsplit(url).path.rsplit(".", 1)[-1].upper()
+            label = (
+                f"{lb.link_bill_text} ({extension})"
+                if extension in {"ZIP", "DOCX", "DOC", "ODT"}
+                else lb.link_pdf
+            )
+            links.append(link(url, label))
+        linked_text = text_after3 or (
+            bill.analysis.source_url if bill.analysis and change.content_changed else None
+        )
+        for stage in told_stages(change.new_stages):
+            if stage.report_file and stage.report_file != linked_text:
+                links.append(
+                    link(stage.report_file, f"{lb.link_pdf} {stage.print_number or ''}".strip())
+                )
         if change.amendments is not None and change.amendments.source_url:
             links.append(link(change.amendments.source_url, lb.link_amendments))
         for record in change.supplements:
@@ -938,6 +955,67 @@ class MessageFormatter:
         if length(text) > MESSAGE_LIMIT:
             raise ValueError("sittings exceed the message limit; split the roundup")
         return RenderedMessage(text=text)
+
+    def updates(self, news: Sequence[UpdateNews], *, today: dt.date) -> str:
+        groups: dict[str, list[UpdateNews]] = {}
+        for item in news:
+            steps = "\n".join(
+                [
+                    self._path_line(item.bill, today, road=item.bill),
+                    self._next_step_line(item.bill, today),
+                ]
+            )
+            groups.setdefault(steps, []).append(item)
+        blocks = [f"{ICON['update']} <b>{esc(self._labels.updates_header)}</b>"]
+        for steps, items in groups.items():
+            actions = [self._roundup_action(item.bill, today) for item in items]
+            shared_action = len(set(actions)) == 1
+            for item, action in zip(items, actions, strict=True):
+                entry = self._update_entry(item, today)
+                blocks.append(entry if shared_action else f"{entry}\n{action}")
+            blocks.append(steps)
+            if shared_action:
+                blocks.append(actions[0])
+        return "\n\n".join(block for block in blocks if block)
+
+    def _roundup_action(self, bill: Bill, today: dt.date) -> str:
+        project = bill.rcl
+        if project is None or bill.consultation is None or consultation_open(bill, today):
+            return self._action_line(bill, today)
+        lb = self._labels
+        organ = ministry_name(project.applicant) or project.applicant or lb.wykaz_organ_unknown
+        contacts = ministry_contact_url(project.applicant) if project.applicant else None
+        body = lb.roundup_rcl_action.format(
+            comment=link(project.comment_url, lb.action_rcl_comment),
+            organ=link(contacts, organ) if contacts else esc(organ),
+            number=esc(project.wykaz_number or bill.number),
+        )
+        return f"{ICON['action']} <b>{esc(lb.action_now)}:</b> {body}"
+
+    def updates_fit(self, news: Sequence[UpdateNews], *, today: dt.date) -> bool:
+        return length(self.updates(news, today=today)) <= MESSAGE_LIMIT
+
+    def _update_entry(self, item: UpdateNews, today: dt.date) -> str:
+        bill, change = item.bill, item.change
+        label = self._number_label(bill)
+        url = self._post_url(item.card_message_id)
+        reference = link(url, label) if url else esc(label)
+        subject = lead(bill.analysis.analysis.summary) if bill.analysis else bill.summary.title
+        event = update_event(change, bill)
+        lines = [
+            f"<b>{reference}</b> — {esc(fit(subject, 180))}",
+            esc(self._event_header(change, event)),
+        ]
+        lines.extend(
+            f"• {self._stage_line(stage, today)}" for stage in told_stages(change.new_stages)
+        )
+        links = self._update_links(bill, change)
+        if bill.has_process:
+            redundant = link(print_web_url(bill.term, bill.number), self._labels.link_sejm_project)
+            links = [value for value in links if value != redundant]
+        lines.append(self._links(links))
+        lines.append(self._tags(bill))
+        return "\n".join(line for line in lines if line)
 
     def sittings_fit(self, news: Sequence[SittingNews]) -> bool:
         return length(self._sittings_text(news)) <= MESSAGE_LIMIT
@@ -1163,6 +1241,10 @@ class MessageFormatter:
                     ("new cards: {}", report.published),
                     ("alternatives: {}", report.joint_published),
                     ("updates: {}", report.updates),
+                    (
+                        "status events: {}",
+                        report.update_events if report.update_events != report.updates else 0,
+                    ),
                     ("held: {}", report.held),
                     ("re-analyzed: {}", report.reanalyzed),
                     ("linked: {}", report.linked),
@@ -1483,6 +1565,11 @@ class MessageFormatter:
                 f"message: {pub.message_id} · parent: {plan.reply_to if plan else None}",
                 f"saved payload replayable: {bool(plan and plan.replayable(pub.kind))}",
             ]
+            if plan is not None and plan.update_group:
+                lines.append(
+                    "shared delivery: "
+                    + ", ".join(str(item.publication_id) for item in plan.update_group)
+                )
             lines += [
                 f"{esc(r.resolved_at.isoformat())} · {esc(r.action)} · "
                 f"command {esc(r.command.chat_id)}/{r.command.message_id} "
@@ -1513,6 +1600,8 @@ class MessageFormatter:
         plan = pub.delivery
         if plan is None:
             return "No saved payload; retry unavailable."
+        if plan.update_group:
+            return plan.group_text
         bill = Bill.model_validate_json(plan.bill_json)
         kind = pub.kind
         info = PrintInfo.model_validate_json(plan.print_json) if plan.print_json else None

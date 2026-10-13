@@ -23,6 +23,15 @@ class ObservedProcess(BaseModel):
         return f"{stage_fingerprint(self.stages)}:{decision_fingerprint(self.stages)}"
 
 
+class UpdateSnapshot(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    publication_id: int
+    bill_json: str
+    change_json: str
+    card_message_id: int | None = None
+
+
 class DeliveryPlan(BaseModel):
     """Serialized snapshots cannot be mutated by a later watcher or a delivery attempt."""
 
@@ -41,10 +50,16 @@ class DeliveryPlan(BaseModel):
     reply_to: int | None = None
     edit_message_id: int | None = None
     held_change_ids: tuple[int, ...] = ()
+    wait_until: dt.datetime | None = None
+    absorbed_by: int | None = None
+    update_group: tuple[UpdateSnapshot, ...] = ()
+    group_text: str = ""
     with_act: bool = False
     """A status update that also tells the act published in the same run."""
 
     def replayable(self, kind: PublicationKind) -> bool:
+        if kind is PublicationKind.STATUS_UPDATE and self.update_group:
+            return bool(self.group_text) and all(item.change_json for item in self.update_group)
         if kind is PublicationKind.NEW_BILL:
             return True
         if self.reply_to is None:

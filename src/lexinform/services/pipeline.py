@@ -527,6 +527,7 @@ class DailyPipeline:
         report.tracked += tracked.checked
         report.batch_waiting += tracked.waiting
         report.updates += tracked.published if opts.publish else tracked.changed
+        report.update_events += tracked.update_events if opts.publish else tracked.changed
         report.reanalyzed += tracked.reanalyzed
         report.linked += tracked.linked
         report.acts_published += tracked.acts_published
