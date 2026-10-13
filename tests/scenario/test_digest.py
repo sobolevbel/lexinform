@@ -337,9 +337,11 @@ def test_digest_groups_all_upcoming_sittings_and_omits_unfollowed_bills() -> Non
     assert "заседание Сейма № 67" not in ahead
     assert "заседание Сейма № 68" not in ahead
     assert "druk 4100" not in ahead
-    assert ahead.count(f'<a href="https://t.me/test/{w.card_id("3039")}">druk 3039</a>') == 2
+    assert ahead.count(f'<a href="https://t.me/test/{w.card_id("3039")}">') == 2
+    assert ahead.count("druk 3039</a>") == 2
     assert (
-        f'<a href="https://t.me/test/{w.card_id("3100")}">druk 3100</a> — O obywatelstwie' in ahead
+        f'<a href="https://t.me/test/{w.card_id("3100")}">' in ahead
+        and "druk 3100</a> — O obywatelstwie" in ahead
     )
 
 

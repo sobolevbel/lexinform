@@ -9,7 +9,7 @@ from lexinform.models.analysis import TokenUsage, merge_usage
 from lexinform.models.attention import AttentionAssessment
 from lexinform.models.enums import Category, PublicationKind
 from lexinform.models.report import RunReport
-from lexinform.models.sejm import AgendaItem
+from lexinform.models.sejm import AgendaItem, VotingSummary
 
 DIGEST_NUMBER = "DIGEST"
 DIGEST_TERM = 0
@@ -67,6 +67,10 @@ class DigestEntry(BaseModel):
     mnemonic_language: str = "ru"
     consequence: str = ""
     summary: str = ""
+    case_key: str = ""
+    decision_key: str = ""
+    votings: tuple[VotingSummary, ...] = ()
+    organ_deadline: dt.date | None = None
     attention: AttentionAssessment | None = None
     source_publication_ids: tuple[int, ...] = ()
     historical_snapshot: bool = True
@@ -85,6 +89,9 @@ class Upcoming(BaseModel):
     mnemonic_language: str = "ru"
     action_url: str | None = None
     action_email: str | None = None
+    source_url: str | None = None
+    affected_groups: tuple[str, ...] = ()
+    summary: str = ""
     message_id: int | None = None
     wykaz_number: str | None = None
     deadline: dt.date | None = None
@@ -174,6 +181,9 @@ class Digest(BaseModel):
     month: MonthFigures | None = None
     figures: WeekFigures | None = None
     highlights: tuple[DigestEntry, ...] = ()
+    pending_events: int = 0
+    unknown_deliveries: int = 0
+    checks_incomplete: bool = False
 
     @property
     def is_empty(self) -> bool:

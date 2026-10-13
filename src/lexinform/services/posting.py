@@ -46,6 +46,7 @@ from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway
 from lexinform.services.publications import send_publication, send_publications
 from lexinform.services.sources import fetch_print
 from lexinform.services.tracking_result import TrackingResult
+from lexinform.usefulness import digest_reason
 
 log = logging.getLogger(__name__)
 
@@ -65,6 +66,7 @@ def routine_update(bill: Bill, change: StatusChange, plan: DeliveryPlan) -> bool
             change.content_changed
             or change.consultation_opened
             or change.closure_detected
+            or change.decision_changed
             or change.withdrawn
             or change.discontinued
             or change.amendments
@@ -132,7 +134,7 @@ class Poster:
         self._sittings.clear()
         self._updates.clear()
         for pub in self._repo.list_digest_candidates(
-            self._channel_id, eligible_before=self._clock.now() + timedelta(microseconds=1)
+            self._channel_id, eligible_before=self._clock.now() + timedelta(milliseconds=1)
         ):
             assert pub.id is not None and pub.delivery is not None
             current = self._repo.get(pub.term, pub.number)
@@ -769,10 +771,68 @@ class Poster:
         assert change.id is not None, "only a change record_change stored reaches the poster"
         stored = self._repo.get_update_publication(change.id, self._channel_id)
         if stored is not None and stored.delivery is not None:
-            if with_act and self._never_attempted(stored):
+            if (
+                with_act
+                and self._never_attempted(stored)
+                and (stored.id is None or self._repo.digest_owner(stored.id) is None)
+            ):
                 return self._add_act(change.id, stored.delivery, bill)
             return stored.delivery
-        completion = self._vote_completion(bill, change)
+        completion = self._vote_completion(bill, change) if not with_act else None
+        if completion is not None and self._attention_mode != "off":
+            assessment = assess_attention(
+                bill,
+                PublicationKind.STATUS_UPDATE,
+                change=change,
+                now=self._clock.now(),
+                urgent_days=self._urgent_days,
+            )
+            assessment = assessment.model_copy(
+                update={
+                    "novelty": "enrichment",
+                    "importance": "routine",
+                    "explanation": "Vote details enrich a confirmed reader delivery.",
+                    "reasons": tuple(
+                        reason
+                        for reason in assessment.reasons
+                        if reason
+                        in {
+                            "pilny_guard",
+                            "operator_priority",
+                            "existing_window_guard",
+                            "near_reader_deadline",
+                        }
+                    )
+                    + ("enrichment_of_delivered_decision",),
+                }
+            )
+            reason = digest_reason(
+                bill,
+                PublicationKind.STATUS_UPDATE,
+                assessment,
+                today=self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(),
+                enrichment=True,
+            )
+            if self._attention_mode == "on" and not reason:
+                completion = None
+            elif reason:
+                completion = completion.model_copy(
+                    update={
+                        "attention": assessment,
+                        "proposed_destination": "digest_only",
+                        "destination_reason": reason,
+                    }
+                )
+                if self._attention_mode == "on":
+                    completion = completion.model_copy(
+                        update={
+                            "destination": "digest_only",
+                            "digest_eligible_at": self._clock.now(),
+                            "edit_message_id": None,
+                            "policy_version": "attention-v1",
+                            "schedule": None,
+                        }
+                    )
         if completion is not None:
             with self._repo.atomic():
                 self._repo.create_publication(
@@ -968,6 +1028,9 @@ class Poster:
         planned = delivery.model_copy(
             update={
                 "with_act": True,
+                "destination": "direct",
+                "destination_reason": "act_evidence",
+                "schedule": None,
                 "bill_json": snapshot.model_dump_json(),
                 "rendered_text": "",
                 "attention": assess_attention(
@@ -1208,6 +1271,27 @@ class Poster:
         return pub
 
     def _schedule(self, plan: DeliveryPlan, kind: PublicationKind) -> DeliveryPlan:
+        bill = Bill.model_validate_json(plan.bill_json)
+        phase = Phase.model_validate_json(plan.phase_json) if plan.phase_json else None
+        reason = digest_reason(
+            bill,
+            kind,
+            plan.attention,
+            phase=phase,
+            today=self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(),
+        )
+        if reason and self._attention_mode != "off":
+            plan = plan.model_copy(
+                update={"proposed_destination": "digest_only", "destination_reason": reason}
+            )
+            if self._attention_mode == "on":
+                return plan.model_copy(
+                    update={
+                        "destination": "digest_only",
+                        "digest_eligible_at": self._clock.now(),
+                        "schedule": None,
+                    }
+                )
         if not self._daily_roundup or self._attention_mode != "on" or plan.edit_message_id:
             return plan
         schedule = daily_schedule(
@@ -1275,6 +1359,7 @@ class Poster:
             else None,
             hearing=Stage.model_validate_json(plan.hearing_json) if plan.hearing_json else None,
             with_act=plan.with_act,
+            phase=Phase.model_validate_json(plan.phase_json) if plan.phase_json else None,
             urgent_days=self._urgent_days,
         )
         previous = plan.attention

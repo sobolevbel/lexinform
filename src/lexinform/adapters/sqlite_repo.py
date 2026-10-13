@@ -2027,7 +2027,8 @@ class SqliteBillRepository:
         rows = self._conn.execute(
             "SELECT * FROM publications p WHERE channel_id = ? AND status = 'queued'"
             " AND attempts = 0 AND json_extract(delivery_json, '$.destination') = 'digest_only'"
-            " AND COALESCE(json_extract(delivery_json, '$.digest_eligible_at'), created_at) < ?"
+            " AND julianday(COALESCE(json_extract(delivery_json, '$.digest_eligible_at'),"
+            " created_at)) < julianday(?)"
             " AND NOT EXISTS (SELECT 1 FROM digest_event_links WHERE source_publication_id = p.id)"
             " ORDER BY created_at, id",
             (channel_id, eligible_before.isoformat()),

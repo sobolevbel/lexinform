@@ -269,6 +269,14 @@ class Labels:
     path_steps: dict[str, str] = field(default_factory=dict)
     stage_labels: dict[str, str] = field(default_factory=dict)
     rcl_stage_labels: dict[str, str] = field(default_factory=dict)
+    digest_expectations: str = ""
+    digest_coverage_warning: str = ""
+    digest_route_unknown: str = ""
+    digest_source_unknown: str = ""
+    digest_source: str = ""
+    digest_submit_polish: str = ""
+    digest_history_limited: str = ""
+    digest_organ_deadline: str = ""
     agenda_purpose_labels: dict[str, str] = field(default_factory=dict)
     agenda_purpose_unknown: str = ""
     date_format: str = "%Y-%m-%d"
@@ -302,6 +310,17 @@ RU = Labels(
     partial_text_note="Анализ основан на неполном тексте документа.",
     new_stages="Новые стадии",
     reading_stage="{numeral} чтение на заседании Сейма",
+    digest_expectations="Что ожидается",
+    digest_coverage_warning=(
+        "Ожидают доставки событий: {pending}; unknown доставок: {unknown}. "
+        "Полнота обзора ограничена ожидающей работой или проверками источников."
+    ),
+    digest_route_unknown="Маршрут подачи пока не подтверждён.",
+    digest_source_unknown="Источник окна не сохранён.",
+    digest_source="Источник окна",
+    digest_submit_polish="Писать на польском; для проекта правительства укажите номер wykaz.",
+    digest_history_limited="Исходный snapshot не сохранился; исторический исход не восстановлен.",
+    digest_organ_deadline="Срок рассмотрения органом, не подачи мнения",
     agenda_purpose_labels={
         "first_reading": "Первое чтение проекта",
         "second_reading": "Второе чтение проекта",
@@ -404,8 +423,7 @@ RU = Labels(
     action_senate="направить мнение в комиссию Сената —",
     action_senate_many="направить мнение в комиссии Сената —",
     action_senate_pending=(
-        "мнение можно будет направить в комиссию Сената — Сенат назначит её в ближайшие дни,"
-        " и здесь появятся её название и e-mail"
+        "Данные о комиссии и маршруте подачи пока не подтверждены; проверьте страницу Сената."
     ),
     action_senate_in_polish="(на польском, с номером сенатского druk nr {number})",
     path="Путь",
@@ -547,19 +565,15 @@ RU = Labels(
     senate_deadline_line="Сенат должен решить до {date}",
     president_deadline_line="Президент должен решить до {date}",
     senate_deadline_body=(
-        "Принять закон без изменений, внести поправки или отклонить его целиком"
-        " (ст. 121 Конституции). Профильная комиссия Сената обычно рассматривает закон"
-        " задолго до этого срока — мнение имеет смысл направить сейчас."
+        "Это срок рассмотрения Сенатом, не срок подачи мнения. "
+        "Возможность обращения зависит от подтверждённой работы комиссии."
     ),
     president_deadline_body=(
         "Подписать закон, наложить вето или направить его в Конституционный трибунал"
         " (ст. 122 Конституции)."
     ),
     senate_deadline_body_urgent=(
-        "Принять закон без изменений, внести поправки или отклонить его целиком"
-        " (ст. 121 Конституции). Проект срочный (tryb pilny, ст. 123): у Сената 14 дней"
-        " вместо обычных 30, и его комиссия рассмотрит закон в ближайшие дни —"
-        " если хотите направить мнение, отправляйте сразу."
+        "Срок рассмотрения Сенатом сокращён в срочной процедуре. Это не срок подачи мнения."
     ),
     president_deadline_body_urgent=(
         "Подписать закон, наложить вето или направить его в Конституционный трибунал"
@@ -1012,6 +1026,19 @@ EN = Labels(
     partial_text_note="The analysis is based on a partial text of the document.",
     new_stages="New stages",
     reading_stage="{numeral} reading at a Sejm sitting",
+    digest_expectations="What is expected",
+    digest_coverage_warning=(
+        "Events awaiting delivery: {pending}; unknown deliveries: {unknown}. "
+        "Pending work or source checks limit coverage."
+    ),
+    digest_route_unknown="The submission route is not confirmed.",
+    digest_source_unknown="The window source was not saved.",
+    digest_source="Window source",
+    digest_submit_polish="Write in Polish; quote the wykaz number for a government project.",
+    digest_history_limited=(
+        "The original snapshot is unavailable; the historic outcome was not reconstructed."
+    ),
+    digest_organ_deadline="Organ decision deadline, not an opinion submission deadline",
     agenda_purpose_labels={
         "first_reading": "First reading",
         "second_reading": "Second reading",
@@ -1112,8 +1139,7 @@ EN = Labels(
     action_senate="send an opinion to the Senate committee —",
     action_senate_many="send an opinion to the Senate committees —",
     action_senate_pending=(
-        "an opinion can go to a Senate committee — the Senate names it within days, and its name"
-        " and e-mail will appear here"
+        "The committee and submission route are not confirmed; check the Senate page."
     ),
     action_senate_in_polish="(in Polish, quoting Senate print no. {number})",
     path="Path",
@@ -1254,19 +1280,16 @@ EN = Labels(
     senate_deadline_line="The Senate must decide by {date}",
     president_deadline_line="The President must decide by {date}",
     senate_deadline_body=(
-        "Pass the act unchanged, amend it or reject it as a whole (art. 121 of the"
-        " Constitution). Its committee takes the act well before that date, so an opinion is"
-        " worth sending now."
+        "This is the Senate decision deadline, not an opinion submission deadline. "
+        "Contact depends on confirmed committee work."
     ),
     president_deadline_body=(
         "Sign the act, veto it or refer it to the Constitutional Tribunal"
         " (art. 122 of the Constitution)."
     ),
     senate_deadline_body_urgent=(
-        "Pass the act unchanged, amend it or reject it as a whole (art. 121 of the"
-        " Constitution). The bill is urgent (tryb pilny, art. 123): the Senate has 14 days"
-        " instead of the usual 30 and its committee takes the act within days — send an"
-        " opinion now if you want one heard."
+        "The Senate decision term is shorter under the urgent procedure. "
+        "It is not an opinion submission deadline."
     ),
     president_deadline_body_urgent=(
         "Sign the act, veto it or refer it to the Constitutional Tribunal"

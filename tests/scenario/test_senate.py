@@ -53,12 +53,12 @@ def _card(w: World) -> str:
     return message.text
 
 
-def test_an_act_the_senate_has_not_listed_yet_promises_the_committee_by_name() -> None:
+def test_an_unlisted_act_keeps_the_committee_and_route_unconfirmed() -> None:
     w = _passed()
 
     card = _card(w)
 
-    assert "Сенат назначит её в ближайшие дни" in card
+    assert "маршруте подачи пока не подтверждены" in card
     assert "профильную комиссию" not in card
     assert w.bill("3039").senate is None
 
@@ -154,4 +154,4 @@ def test_the_senate_being_down_stops_only_its_own_part() -> None:
     report = w.run()
 
     assert any(e.startswith("tracking: senate: ") for e in report.errors)
-    assert "Сенат назначит её в ближайшие дни" in _card(w)
+    assert "маршруте подачи пока не подтверждены" in _card(w)

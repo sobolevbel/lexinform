@@ -122,6 +122,8 @@ class RunReport(BaseModel):
     held: int = 0
     cards_refreshed: int = 0
     digest_drafted: bool = False
+    digest_reader_parts: int = 0
+    digest_events_covered: int = 0
     consultation_results_posted: int = 0
     agenda_posted: int = 0
     agenda_cancelled: int = 0

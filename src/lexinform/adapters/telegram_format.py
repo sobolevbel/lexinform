@@ -776,6 +776,13 @@ class MessageFormatter:
             closure = f"{ICON['closed']} {esc(lb.process_veto_sustained)}"
         elif (
             change.closure_detected
+            and bill.has_process
+            and process_evidence(bill.stages, passed=change.passed, closed=True).state
+            is DecisionState.UNKNOWN
+        ):
+            closure = esc(lb.update_headers["decision_unknown"])
+        elif (
+            change.closure_detected
             and event != "decision_unknown"
             and event not in _SELF_EXPLAINING_CLOSURES
             and veto_outcome(bill.stages) is None
@@ -1381,6 +1388,15 @@ class MessageFormatter:
                     for v in report.rejected
                 ),
             )
+        if report.digest_reader_parts or report.digest_events_covered:
+            sections.append(
+                _section(
+                    "🗞",
+                    "digest delivery",
+                    f"reader parts: {report.digest_reader_parts}",
+                    f"covered events: {report.digest_events_covered}",
+                )
+            )
         if report.attention:
             sections.append(
                 _section(
@@ -1501,23 +1517,23 @@ class MessageFormatter:
             if week.figures.filtered is not None:
                 figures.append(esc(lb.digest_filtered.format(week.figures.filtered)))
         figures.append(esc(lb.digest_published.format(len(week.cards))))
+        near = [
+            window
+            for window in week.consultations
+            if window.deadline is not None
+            and self._today() <= window.deadline <= self._today() + dt.timedelta(days=7)
+        ]
+        remaining_updates = [entry for entry in week.updates if entry not in week.highlights]
         sections: list[tuple[str, list[str]]] = [
-            (lb.digest_figures, ["\n".join(figures[1:])]),
             (lb.digest_remember, [self._digest_highlight(entry) for entry in week.highlights]),
+            (lb.digest_actions, [self._digest_action(window) for window in near]),
             (
-                lb.digest_actions,
+                lb.digest_expectations,
                 [
-                    self._digest_action(window)
-                    for window in week.consultations
-                    if window.deadline is not None
-                    and self._today() <= window.deadline <= self._today() + dt.timedelta(days=7)
+                    self._digest_update(entry)
+                    for entry in remaining_updates
+                    if entry.kind is PublicationKind.DECISION_DEADLINE
                 ],
-            ),
-            (lb.digest_cards, [self._digest_card(entry) for entry in week.cards]),
-            (lb.digest_updates, [self._digest_update(entry) for entry in week.updates]),
-            (
-                lb.digest_consultations,
-                [self._digest_window(window) for window in week.consultations],
             ),
         ]
         sittings: dict[tuple[int, str, str], list[Upcoming]] = {}
@@ -1547,6 +1563,48 @@ class MessageFormatter:
                 for window in group
             ]
             sections.append((title, rows))
+        sections.extend(
+            [
+                (
+                    lb.digest_cards,
+                    [
+                        self._digest_card(entry)
+                        for entry in week.cards
+                        if entry not in week.highlights
+                    ],
+                ),
+                (
+                    lb.digest_updates,
+                    [
+                        self._digest_update(entry)
+                        for entry in remaining_updates
+                        if entry.kind is not PublicationKind.DECISION_DEADLINE
+                    ],
+                ),
+                (
+                    lb.digest_consultations,
+                    [
+                        self._digest_action(window)
+                        for window in week.consultations
+                        if window not in near
+                    ],
+                ),
+                (lb.digest_figures, ["\n".join(figures[1:])]),
+            ]
+        )
+        if week.pending_events or week.unknown_deliveries or week.checks_incomplete:
+            sections.append(
+                (
+                    "",
+                    [
+                        esc(
+                            lb.digest_coverage_warning.format(
+                                pending=week.pending_events, unknown=week.unknown_deliveries
+                            )
+                        )
+                    ],
+                )
+            )
         if week.is_empty:
             sections.append(("", [esc(lb.digest_quiet)]))
         tail = [
@@ -1593,16 +1651,28 @@ class MessageFormatter:
         return tuple(parts)
 
     def _digest_highlight(self, entry: DigestEntry) -> str:
-        row = self._digest_update(entry) if entry.event else self._digest_card(entry)
-        return row + (f"\n{esc(_clip(entry.consequence, 700))}" if entry.consequence else "")
+        return (
+            self._digest_update(entry)
+            if entry.kind not in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL)
+            else self._digest_card(entry)
+        )
 
     def _digest_action(self, window: Upcoming) -> str:
-        row = self._digest_window(window)
+        lines = [self._digest_window(window)]
+        if window.affected_groups:
+            lines.append(f"{esc(self._labels.affected)}: {esc('; '.join(window.affected_groups))}")
         if window.action_email:
-            return f"{row}\n{esc(self._labels.action_send_opinion)}: {esc(window.action_email)}"
-        if window.action_url:
-            return f"{row}\n{link(window.action_url, self._labels.action_send_opinion)}"
-        return row
+            lines.append(f"{esc(self._labels.action_send_opinion)}: {esc(window.action_email)}")
+        elif window.action_url:
+            lines.append(link(window.action_url, self._labels.action_send_opinion))
+        else:
+            lines.append(esc(self._labels.digest_route_unknown))
+        lines.append(esc(self._labels.digest_submit_polish))
+        if window.source_url:
+            lines.append(link(window.source_url, self._labels.digest_source))
+        else:
+            lines.append(esc(self._labels.digest_source_unknown))
+        return "\n".join(lines)
 
     def _digest_block[T](self, title: str, items: Sequence[T], row: Callable[[T], str]) -> str:
         """One section, capped, and saying how many it left out: a week of 14 cards showed ten
@@ -1618,7 +1688,12 @@ class MessageFormatter:
     def _digest_card(self, entry: DigestEntry) -> str:
         score = f"{score_icon(entry.score)} {entry.score}/5 " if entry.score is not None else ""
         title = esc(_clip(publication_title(entry.title), DIGEST_TITLE_CHARS))
-        return f"• {score}{self._digest_ref(entry)} — {title}"
+        row = f"• {score}{self._digest_ref(entry)} — {title}"
+        if entry.consequence:
+            row += f"\n{esc(entry.consequence)}"
+        if not entry.historical_snapshot:
+            row += f"\n<i>{esc(self._labels.digest_history_limited)}</i>"
+        return row
 
     def _digest_update(self, entry: DigestEntry) -> str:
         """What the reply said, by its event where it has one and by its kind where it has not."""
@@ -1627,9 +1702,18 @@ class MessageFormatter:
             PublicationKind.ACT_PUBLISHED: lb.act_published_header,
             PublicationKind.IN_FORCE: lb.in_force_header,
             PublicationKind.CONSULTATION_RESULTS: lb.consultation_results_header,
+            PublicationKind.DECISION_DEADLINE: lb.digest_organ_deadline,
         }
         said = lb.update_headers.get(entry.event) or by_kind.get(entry.kind) or lb.update_header
-        return f"• {self._digest_ref(entry)} — {esc(said)}"
+        row = f"• {self._digest_ref(entry)} — {esc(said)}"
+        if entry.organ_deadline is not None:
+            row += f" · {self.fmt_date(entry.organ_deadline)}"
+        if entry.consequence:
+            row += f"\n{esc(entry.consequence)}"
+        row += "".join(f"\n{self._voting_lines(vote)}" for vote in entry.votings)
+        if not entry.historical_snapshot:
+            row += f"\n<i>{esc(lb.digest_history_limited)}</i>"
+        return row
 
     def _digest_window(self, window: Upcoming) -> str:
         """The section a reader acts on, so it says what the bill is: a bare number and a date
@@ -1681,16 +1765,20 @@ class MessageFormatter:
             label = esc(entry.wykaz_number)
         if entry.mnemonic and entry.mnemonic_language == self._language:
             label = f"{esc(entry.mnemonic)} · {label}"
-        elif isinstance(entry, DigestEntry) and entry.summary:
+        elif entry.summary:
             label = f"{esc(lead(entry.summary))} · {label}"
         url = self._post_url(entry.message_id)
         return f'<a href="{html.escape(url, quote=True)}">{label}</a>' if url else label
 
     def _post_url(self, message_id: int | None) -> str | None:
         """A post of the channel by its id; only a channel with a public name has one."""
-        if message_id is None or not self._channel.startswith("@"):
+        if message_id is None:
             return None
-        return f"https://t.me/{self._channel[1:]}/{message_id}"
+        if self._channel.startswith("@"):
+            return f"https://t.me/{self._channel[1:]}/{message_id}"
+        if self._channel.startswith("-100") and self._channel[4:].isdigit():
+            return f"https://t.me/c/{self._channel[4:]}/{message_id}"
+        return None
 
     def _month_block(self, month: MonthFigures | None) -> str:
         """What the month caught and what it cost; the first digest of a month carries it."""
@@ -1791,6 +1879,8 @@ class MessageFormatter:
             ]
             if plan is not None:
                 lines.append(f"destination: {plan.destination} · {esc(plan.destination_reason)}")
+                age = max(0, (self._today() - pub.created_at.date()).days)
+                lines.append(f"age: {age} day(s) · eligible: {plan.digest_eligible_at}")
             if outcome.digest_owner is not None:
                 owner = outcome.digest_owner
                 lines.append(

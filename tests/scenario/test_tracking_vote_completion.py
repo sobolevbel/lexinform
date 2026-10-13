@@ -178,3 +178,61 @@ def test_a_late_vote_edit_does_not_reannounce_last_weeks_adoption_in_the_digest(
     assert service is not None
     assert len(service.build("2026-W37").updates) == 1
     assert service.build("2026-W38").updates == ()
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+def test_attention_routes_only_proven_late_vote_details_to_digest(workers: int) -> None:
+    w = World(workers=workers, reader_attention="on")
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
+    w.run()
+    w.set_stages("3039", (*REFERRED, PASSED))
+    w.clock.advance(days=4)
+    w.run()
+    w.gateway.sitting_votings[62] = (VOTE,)
+    w.gateway.votings[(62, 16)] = (Vote(mp=1, club="KO", vote="YES"),)
+    w.clock.advance(days=1)
+
+    report = w.run()
+    source = w.publication("3039", PublicationKind.STATUS_UPDATE)
+
+    assert report.ok and report.updates == 0
+    assert len(w.publisher.texts(PublicationKind.STATUS_UPDATE)) == 1
+    assert source is not None and source.delivery is not None
+    assert (
+        source.status is PublicationStatus.QUEUED and source.delivery.destination == "digest_only"
+    )
+    assert (
+        source.delivery.attention is not None and source.delivery.attention.novelty == "enrichment"
+    )
+    assert source.delivery.edit_message_id is None
+    service = w.container.digest_service(dry_run=False)
+    assert service is not None
+    digest = service.build("2026-W37")
+    assert any(entry.source_publication_ids == (source.id,) for entry in digest.updates)
+
+
+def test_digest_merges_the_decision_with_late_votes_and_keeps_membership() -> None:
+    w = World(reader_attention="on")
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
+    w.run()
+    w.set_stages("3039", (*REFERRED, PASSED))
+    w.clock.advance(days=4)
+    w.run()
+    w.gateway.sitting_votings[62] = (VOTE,)
+    w.gateway.votings[(62, 16)] = (Vote(mp=1, club="KO", vote="YES"),)
+    w.clock.advance(days=1)
+    w.run()
+    source = w.publication("3039", PublicationKind.STATUS_UPDATE)
+    assert source is not None and source.id is not None
+    service = w.container.digest_service(dry_run=False)
+    assert service is not None
+
+    digest = service.build("2026-W37")
+    result = service.publish("2026-W37")
+
+    assert len(digest.updates) == 1 and digest.updates[0].source_publication_ids == (source.id,)
+    assert result.published
+    text = "\n".join(w.publisher.texts(PublicationKind.DIGEST))
+    assert text.count("Сейм принял закон") == 1
+    assert "261 за" in text and "KO 1" in text
+    assert w.repo.digest_owner(source.id) is not None

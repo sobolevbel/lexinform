@@ -10,6 +10,7 @@ import tempfile
 from collections import Counter
 from functools import partial
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.adapters.telegram_format import MessageFormatter
@@ -40,7 +41,7 @@ def audit(dump: Path, destination: Path) -> dict[str, object]:
                         {"id": pub.id, "kind": pub.kind.value, "reason": "missing saved payload"}
                     )
                     continue
-                day = plan.today or pub.created_at.date()
+                day = plan.today or pub.created_at.astimezone(ZoneInfo("Europe/Warsaw")).date()
                 for language in ("ru", "en"):
                     formatter = MessageFormatter(
                         language,

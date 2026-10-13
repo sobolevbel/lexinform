@@ -20,6 +20,7 @@ from lexinform.models import (
     Digest,
     DigestEntry,
     MonthFigures,
+    Phase,
     Publication,
     PublicationKind,
     PublicationStatus,
@@ -28,7 +29,9 @@ from lexinform.models import (
     StatusChange,
     Upcoming,
     WeekFigures,
+    adoption_signature,
     consultation_open,
+    flatten_stages,
     is_first_digest_of_month,
     iso_week,
     participation_view,
@@ -93,6 +96,8 @@ class DigestResult:
     failed: bool = False
     note: str = ""
     message_id: int | None = None
+    reader_parts: int = 0
+    covered_events: int = 0
 
 
 class DigestService:
@@ -210,6 +215,7 @@ class DigestService:
             return DigestResult(
                 ref=ref, message_id=existing.message_id, note="this week is in the channel already"
             )
+        before_parts, before_events = self._delivery_totals(existing)
         week = self.build(ref)
         message_id = self._send(
             self._channel_id,
@@ -217,9 +223,27 @@ class DigestService:
             lambda: self._publisher.publish_digest(week).message_id,
             publisher=self._publisher,
         )
+        saved = self._repo.get_publication(
+            DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, self._channel_id, ref=ref
+        )
+        after_parts, after_events = self._delivery_totals(saved)
+        reader_parts = max(0, after_parts - before_parts)
+        covered_events = max(0, after_events - before_events)
         if message_id is None:
-            return DigestResult(ref=ref, failed=True, note=f"{ref} was not posted, see the log")
-        return DigestResult(ref=ref, published=True, message_id=message_id)
+            return DigestResult(
+                ref=ref,
+                failed=True,
+                note=f"{ref} was not posted, see the log",
+                reader_parts=reader_parts,
+                covered_events=covered_events,
+            )
+        return DigestResult(
+            ref=ref,
+            published=True,
+            message_id=message_id,
+            reader_parts=reader_parts,
+            covered_events=covered_events,
+        )
 
     def build(self, ref: str, *, current_report: RunReport | None = None) -> Digest:
         """The week as the channel lived it, plus what a reader can still act on."""
@@ -236,7 +260,8 @@ class DigestService:
             self._repo.list_digest_candidates(
                 self._channel_id,
                 eligible_before=min(
-                    self._clock.now(), self._midnight(until + dt.timedelta(days=1))
+                    self._clock.now() + dt.timedelta(milliseconds=1),
+                    self._midnight(until + dt.timedelta(days=1)),
                 ),
             )
         )
@@ -279,6 +304,34 @@ class DigestService:
                     updates.append(entry)
                 else:
                     updates[slot] = entry
+        merged: list[DigestEntry] = []
+        decisions: dict[tuple[str, str], int] = {}
+        for entry in updates:
+            decision_key = (entry.case_key, entry.decision_key)
+            if entry.decision_key and decision_key in decisions:
+                index = decisions[decision_key]
+                earlier = merged[index]
+                votes = {
+                    (vote.sitting, vote.voting_number): vote
+                    for vote in (*earlier.votings, *entry.votings)
+                }
+                merged[index] = earlier.model_copy(
+                    update={
+                        "source_publication_ids": tuple(
+                            dict.fromkeys(
+                                (*earlier.source_publication_ids, *entry.source_publication_ids)
+                            )
+                        ),
+                        "votings": tuple(votes.values()),
+                        "consequence": earlier.consequence or entry.consequence,
+                        "event": "passed",
+                    }
+                )
+            else:
+                if entry.decision_key:
+                    decisions[decision_key] = len(merged)
+                merged.append(entry)
+        updates = merged
         consultations, sittings = self._ahead()
         starts = self._midnight(since)
         ends = self._midnight(until + dt.timedelta(days=1))
@@ -290,6 +343,15 @@ class DigestService:
         ]
         return Digest(
             ref=ref,
+            pending_events=sum(
+                pub.kind is not PublicationKind.DIGEST
+                for pub in self._repo.list_open_deliveries(self._channel_id)
+            ),
+            unknown_deliveries=sum(
+                pub.status is PublicationStatus.UNKNOWN
+                for pub in self._repo.list_open_deliveries(self._channel_id)
+            ),
+            checks_incomplete=any(report.errors for report in reports) or not reports,
             since=since,
             until=until,
             # Everything the week held: how much of it fits one message is the renderer's
@@ -331,7 +393,10 @@ class DigestService:
             bill = participation_view(
                 Bill.model_validate_json(post.delivery.bill_json), post.delivery.participation
             )
-        analysis = bill.analysis.analysis if bill.analysis is not None else None
+        historical_snapshot = post.delivery is not None and bool(post.delivery.bill_json)
+        analysis = (
+            bill.analysis.analysis if bill.analysis is not None and historical_snapshot else None
+        )
         change = None
         if post.delivery is not None and post.delivery.change_json:
             change = StatusChange.model_validate_json(post.delivery.change_json)
@@ -348,6 +413,20 @@ class DigestService:
             mnemonic=bill.editorial.mnemonic.name if bill.editorial.mnemonic else "",
             mnemonic_language=bill.editorial.mnemonic.language if bill.editorial.mnemonic else "ru",
             consequence=consequence,
+            organ_deadline=Phase.model_validate_json(post.delivery.phase_json).deadline
+            if post.delivery is not None and post.delivery.phase_json
+            else None,
+            case_key=f"thread/{post.delivery.reply_to}"
+            if post.delivery is not None and post.delivery.reply_to is not None
+            else f"{bill.term}/{bill.number}",
+            decision_key=adoption_signature(change, bill) if change is not None else "",
+            votings=tuple(
+                stage.voting
+                for stage in flatten_stages(change.new_stages)
+                if stage.voting is not None
+            )
+            if change is not None
+            else (),
             attention=post.attention,
             historical_snapshot=post.delivery is not None and bool(post.delivery.bill_json),
             summary=analysis.summary if analysis is not None and post.delivery is not None else "",
@@ -415,6 +494,13 @@ class DigestService:
             if bill.consultation
             else None,
             action_email=bill.consultation.email if bill.consultation else None,
+            source_url=bill.consultation.letter_url
+            or bill.consultation.form_url
+            or bill.consultation.survey_url
+            if bill.consultation
+            else None,
+            affected_groups=tuple(bill.analysis.analysis.affected_groups) if bill.analysis else (),
+            summary=bill.analysis.analysis.summary if bill.analysis else "",
             message_id=card.message_id if card is not None else None,
             wykaz_number=_wykaz_number(bill),
             **what,
@@ -487,6 +573,24 @@ class DigestService:
             )
         )
         return send_publication(self._repo, self._clock, pub_id, post)
+
+    def _delivery_totals(self, root: Publication | None) -> tuple[int, int]:
+        if root is None or root.id is None:
+            return 0, 0
+        identities = (
+            root.delivery.digest_parts
+            if root.delivery and root.delivery.digest_parts
+            else (root.id,)
+        )
+        parts = [self._repo.publication_by_id(identity) for identity in identities]
+        return (
+            sum(part is not None and part.status is PublicationStatus.SENT for part in parts),
+            sum(
+                source.status is PublicationStatus.SENT
+                for identity in identities
+                for source in self._repo.digest_sources(identity)
+            ),
+        )
 
     def _parts_complete(self, publication: Publication) -> bool:
         if publication.delivery is None or not publication.delivery.digest_parts:
@@ -594,14 +698,22 @@ class DigestService:
                 ):
                     continue
                 ref = part.delivery.digest_ref
+                before_parts, before_events = self._delivery_totals(root)
                 sent = self._send_parts(
                     channel, self.build(ref), publisher, ref=root_ref, existing=root
                 )
+                after_parts, after_events = self._delivery_totals(root)
                 return DigestResult(
                     ref=ref,
                     message_id=sent,
                     failed=sent is None,
                     drafted=sent is not None and channel == self._draft_channel_id,
                     published=sent is not None and channel == self._channel_id,
+                    reader_parts=max(0, after_parts - before_parts)
+                    if channel == self._channel_id
+                    else 0,
+                    covered_events=max(0, after_events - before_events)
+                    if channel == self._channel_id
+                    else 0,
                 )
         return None

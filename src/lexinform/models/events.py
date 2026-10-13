@@ -112,6 +112,13 @@ def update_event(change: StatusChange, bill: Bill) -> str:
     if _is_first_update_of_successor(change, bill):
         return "print_assigned" if bill.has_process else "rcl_started"
     named = _newest_stage_event(change.new_stages)
+    if (
+        named == "passed"
+        and change.closure_detected
+        and process_evidence(bill.stages, passed=change.passed, closed=True).state
+        is DecisionState.UNKNOWN
+    ):
+        return "decision_unknown"
     if named is not None:
         return named
     if change.consultation_opened:
@@ -463,3 +470,56 @@ def hearing_application_deadline(stage: Stage) -> dt.date | None:
     if stage.stage_type != "PublicHearing" or stage.date is None:
         return None
     return stage.date - dt.timedelta(days=HEARING_APPLICATION_DAYS)
+
+
+def adoption_signature(change: StatusChange, bill: Bill) -> str:
+    if (
+        change.content_changed
+        or change.amendments
+        or change.supplements
+        or change.withdrawn
+        or change.discontinued
+    ):
+        return ""
+    event = update_event(change, bill)
+    if (
+        process_evidence(
+            bill.stages, passed=bill.summary.passed, closed=bill.summary.closure_date is not None
+        ).state
+        is not DecisionState.KNOWN
+    ):
+        return ""
+    if event not in {"passed", "voting"}:
+        return ""
+    parent = next(
+        (
+            stage
+            for stage in reversed(bill.stages)
+            if reading_evidence(stage).reading is ReadingOutcome.PASSED
+        ),
+        None,
+    )
+    if parent is None:
+        return (
+            f"listing/{bill.summary.closure_date}"
+            if event == "passed" and bill.summary.closure_date is not None
+            else ""
+        )
+    if event == "voting":
+        identities = {
+            (stage.voting.sitting, stage.voting.voting_number)
+            for stage in flatten_stages(change.new_stages)
+            if stage.voting is not None
+        }
+        parent_votes = {
+            (stage.voting.sitting, stage.voting.voting_number)
+            for stage in flatten_stages(parent.children)
+            if stage.voting is not None
+        }
+        if (
+            not identities
+            or any(None in identity for identity in identities)
+            or not identities <= parent_votes
+        ):
+            return ""
+    return f"adoption/{parent.date}/{parent.sitting_num}/{parent.print_number}"

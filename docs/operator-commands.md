@@ -516,3 +516,10 @@ the audited recovery commands above.
 confirm/retry/dismiss нужно выполнять для ID этой физической части. Retry сохраняет
 HTML, состав и ownership; dismiss не считается чтением. Неизвестный исход источника
 и unknown Telegram delivery — разные состояния.
+
+В `/attention` novelty различает новое решение, последствия, участие, обогащение
+и неизвестность. Назначение и owner относятся к доставке, а uncertain importance —
+к доказательствам источника. Срок органа хранится с точностью и происхождением и не
+становится сроком подачи мнения. В отчёте digest_reader_parts — физические сообщения
+читателю, digest_events_covered — покрытые события, digest_queued_events — ожидающие
+события, digest_awaiting_approval — ещё не зарезервированные события.

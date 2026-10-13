@@ -18,6 +18,9 @@ class AttentionAssessment(BaseModel):
     deadline_precision: Literal["day", "estimated", "unknown"] = "unknown"
     detected_at: dt.datetime
     assessed_at: dt.datetime
+    novelty: Literal[
+        "new_decision", "new_consequence", "new_participation", "enrichment", "unknown"
+    ] = "unknown"
     rule_version: str = "attention-v1"
 
     @property

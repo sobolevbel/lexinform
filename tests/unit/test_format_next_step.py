@@ -183,7 +183,10 @@ def test_senate_stage_invites_an_opinion_to_the_senate_committee(
 
     # The 30 days count from the third reading (17.07.2026): the date, not only the rule.
     assert "Что дальше:</b> рассмотрение в Сенате (до 30 дней) · решение до 16 авг 2026" in text
-    assert "Что можно сделать сейчас:</b> мнение можно будет направить в комиссию Сената" in text
+    assert (
+        "Что можно сделать сейчас:</b> Данные о комиссии и маршруте подачи пока не подтверждены"
+        in text
+    )
     assert "→ Сенат ● → Президент" in text
 
 

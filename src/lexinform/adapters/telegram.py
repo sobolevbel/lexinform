@@ -357,7 +357,7 @@ def _button_press(update_id: int, query: dict[str, Any]) -> ChannelPost | None:
 class TelegramAcknowledger:
     """`⏳ queued` under the command, so the operator knows the relay took it."""
 
-    TEXT = "⏳ queued — the next run answers here in a few minutes"
+    TEXT = "⏳ Команда в очереди; ответ появится здесь после выполнения."
 
     def __init__(self, client: TelegramBotClient, *, channel_id: str) -> None:
         self._client = client

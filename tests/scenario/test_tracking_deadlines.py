@@ -104,7 +104,7 @@ def test_the_reminder_says_what_the_senate_decides_and_how_exact_the_date_is() -
     assert "осталось дней: 6" in text
     # The date is counted from the Sejm's vote, not from the hand-over the API does not give.
     assert "фактический на несколько дней позже" in text
-    assert "мнение можно будет направить в комиссию Сената" in text
+    assert "Данные о комиссии и маршруте подачи пока не подтверждены" in text
     assert "#сенат #важность5 #легализация #kadencja10druk3039" in text
 
 
@@ -120,7 +120,7 @@ def test_an_urgent_bill_is_reminded_in_its_own_terms() -> None:
 
     assert report.decision_reminders == 1
     assert "Сенат должен решить до 18 сент 2026" in text
-    assert "у Сената 14 дней вместо обычных 30" in text
+    assert "сокращён в срочной процедуре" in text
     assert "задолго до этого срока" not in text
 
 
@@ -163,3 +163,20 @@ def test_an_urgent_bill_is_not_told_the_ordinary_term_ran_out() -> None:
     # which mode the bill was in.
     assert "подпись Президента, затем публикация в Dziennik Ustaw (срочный режим" in text
     assert "до 7 дней" not in text
+
+
+def test_attention_waits_for_digest_when_senate_contact_is_unconfirmed() -> None:
+    w = World(reader_attention="on")
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=PASSED)
+    w.touch("3039", w.clock.now(), passed=True)
+    w.run()
+    w.clock.advance(days=21)
+
+    report = w.run()
+    pub = w.publication("3039", PublicationKind.DECISION_DEADLINE)
+
+    assert report.ok and report.decision_reminders == 0
+    assert pub is not None and pub.delivery is not None and pub.attention is not None
+    assert pub.delivery.destination == "digest_only" and pub.status is PublicationStatus.QUEUED
+    assert pub.attention.deadline_precision == "estimated"
+    assert pub.attention.deadline_source == "statutory_term:senate:vote_estimate"

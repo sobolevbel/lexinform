@@ -74,6 +74,7 @@ def test_approved_digest_covers_exact_saved_event_and_survives_restore() -> None
     assert owner is not None and owner.delivery is not None
     assert current is not None and current.status is PublicationStatus.SENT
     assert current.message_id == owner.message_id == result.message_id
+    assert result.reader_parts == 1 and result.covered_events == 1
     assert owner.delivery.digest_event_ids == (source.id,)
     assert str(source.number) in owner.delivery.rendered_text
     assert not repeated.published

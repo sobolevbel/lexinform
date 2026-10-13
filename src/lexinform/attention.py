@@ -5,6 +5,8 @@ from lexinform.models import (
     AgendaItem,
     AttentionAssessment,
     Bill,
+    DecisionState,
+    Phase,
     PublicationKind,
     Stage,
     StatusChange,
@@ -12,6 +14,7 @@ from lexinform.models import (
     hearing_application_deadline,
     is_substantive,
     is_urgent,
+    process_evidence,
     update_event,
     window_closes_within,
 )
@@ -79,6 +82,7 @@ def assess_attention(
     moved_from: AgendaItem | None = None,
     hearing: Stage | None = None,
     with_act: bool = False,
+    phase: Phase | None = None,
     urgent_days: int = 3,
 ) -> AttentionAssessment:
     today = now.astimezone(ZoneInfo("Europe/Warsaw")).date()
@@ -90,7 +94,12 @@ def assess_attention(
     source: str | None = None
     if kind is PublicationKind.STATUS_UPDATE and change is not None:
         event = update_event(change, bill)
-        if event == "decision_unknown":
+        if event == "decision_unknown" or (
+            bill.has_process
+            and change.closure_detected
+            and process_evidence(bill.stages, passed=change.passed, closed=True).state
+            is DecisionState.UNKNOWN
+        ):
             reasons.append("unclassified_event")
         elif change.content_changed or change.amendments or change.supplements:
             importance = "important"
@@ -150,6 +159,11 @@ def assess_attention(
     elif kind is PublicationKind.DECISION_DEADLINE:
         importance = "routine"
         reasons.append("organ_deadline_not_reader_deadline")
+        if phase is not None:
+            deadline = phase.deadline
+            source = f"statutory_term:{phase.key}:" + (
+                "receipt" if phase.deadline_exact else "vote_estimate"
+            )
 
     if with_act:
         importance = "important"
@@ -210,6 +224,13 @@ def assess_attention(
         reasons.append("operator_priority")
     return AttentionAssessment(
         importance=importance,
+        novelty="new_consequence"
+        if "substantive_content" in reasons
+        else "new_decision"
+        if "confirmed_decision" in reasons
+        else "new_participation"
+        if "participation_opened" in reasons
+        else "unknown",
         urgency=urgency,
         reasons=tuple(dict.fromkeys(reasons)),
         explanation=" ".join(REASON_TEXT[reason] for reason in dict.fromkeys(reasons)),
@@ -220,7 +241,15 @@ def assess_attention(
         action=action,
         deadline=deadline,
         deadline_source=source,
-        deadline_precision="day" if deadline is not None else "unknown",
+        deadline_precision=(
+            "estimated"
+            if kind is PublicationKind.DECISION_DEADLINE
+            and phase is not None
+            and not phase.deadline_exact
+            else "day"
+        )
+        if deadline is not None
+        else "unknown",
         detected_at=detected_at or (change.detected_at if change else now),
         assessed_at=now,
     )

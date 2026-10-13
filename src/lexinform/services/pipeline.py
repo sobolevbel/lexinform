@@ -512,6 +512,8 @@ class DailyPipeline:
         assert self._digest is not None, "run() starts this phase only with a digest service"
         result = self._digest.run(current_report=report)
         report.digest_drafted = result.drafted
+        report.digest_reader_parts += result.reader_parts
+        report.digest_events_covered += result.covered_events
         if result.drafted:
             report.notes.append(f"digest {result.ref} drafted, waiting for the button")
         elif result.failed:

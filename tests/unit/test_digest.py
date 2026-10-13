@@ -199,7 +199,7 @@ def test_only_the_draft_carries_the_button_note() -> None:
     assert "press the button" not in formatter.digest(week).text
 
 
-def test_a_numeric_channel_gets_no_links_because_it_has_no_public_address() -> None:
+def test_a_private_numeric_channel_links_messages_with_its_internal_address() -> None:
     week = Digest(
         ref="2026-W37",
         since=dt.date(2026, 9, 7),
@@ -209,7 +209,7 @@ def test_a_numeric_channel_gets_no_links_because_it_has_no_public_address() -> N
 
     text = MessageFormatter("ru", channel="-1001234567").digest(week).text
 
-    assert "druk 3039" in text and "t.me" not in text
+    assert "druk 3039" in text and "https://t.me/c/1234567/101" in text
 
 
 def test_a_government_row_is_named_by_its_wykaz_number_and_a_print_by_its_druk() -> None:

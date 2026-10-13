@@ -444,6 +444,10 @@ class CommandService:
                 f"{post.id}: {post.kind} · {post.status}"
                 f" · {post.attention.importance}/{post.attention.urgency}"
                 f" · {', '.join(post.attention.reasons)}"
+                f" · novelty={post.attention.novelty}"
+                " · destination="
+                f"{post.delivery.destination if post.delivery else 'retained history'}"
+                f" · owner={self._repo.digest_owner(post.id) if post.id is not None else None}"
                 for post in posts
                 if post.attention is not None
             ]

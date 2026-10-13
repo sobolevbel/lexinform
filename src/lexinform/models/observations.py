@@ -50,6 +50,7 @@ class DeliveryPlan(BaseModel):
     schedule: DeliverySchedule | None = None
     destination: Literal["direct", "digest_only"] = "direct"
     destination_reason: str = ""
+    proposed_destination: Literal["direct", "digest_only"] | None = None
     digest_eligible_at: dt.datetime | None = None
     digest_event_ids: tuple[int, ...] = ()
     participation: ParticipationSnapshot | None = None

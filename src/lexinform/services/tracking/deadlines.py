@@ -67,7 +67,12 @@ class DeadlineReminder:
             if self._poster.posted(bill, PublicationKind.DECISION_DEADLINE, ref=phase.key):
                 continue
             try:
-                sent = self._poster.decision_deadline(bill, phase, today=today)
+                pub = self._poster.prepare_message(
+                    bill, PublicationKind.DECISION_DEADLINE, ref=phase.key, phase=phase, today=today
+                )
+                if pub.delivery is not None and pub.delivery.destination == "digest_only":
+                    continue
+                sent = self._poster.deliver(pub)
                 result.count_post(sent, "decision_reminders")
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
