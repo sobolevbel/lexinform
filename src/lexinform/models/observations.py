@@ -42,6 +42,8 @@ class DeliveryPlan(BaseModel):
     attention: AttentionAssessment | None = None
     attention_history: tuple[AttentionAssessment, ...] = ()
     policy_version: str = "legacy"
+    rendered_text: str = ""
+    disable_notification: bool = False
     change_json: str = ""
     print_json: str | None = None
     primary_json: str | None = None
@@ -57,11 +59,19 @@ class DeliveryPlan(BaseModel):
     wait_until: dt.datetime | None = None
     absorbed_by: int | None = None
     update_group: tuple[UpdateSnapshot, ...] = ()
+    sitting_group: tuple[int, ...] = ()
+    digest_parts: tuple[int, ...] = ()
+    digest_ref: str = ""
+    approve_label: str = ""
     group_text: str = ""
     with_act: bool = False
     """A status update that also tells the act published in the same run."""
 
     def replayable(self, kind: PublicationKind) -> bool:
+        if kind is PublicationKind.DIGEST:
+            return bool(self.rendered_text)
+        if self.sitting_group:
+            return bool(self.group_text)
         if kind is PublicationKind.STATUS_UPDATE and self.update_group:
             return bool(self.group_text) and all(item.change_json for item in self.update_group)
         if kind is PublicationKind.NEW_BILL:
@@ -83,3 +93,7 @@ class DeliveryPlan(BaseModel):
         if kind is PublicationKind.DECISION_DEADLINE:
             return bool(self.phase_json)
         return kind is PublicationKind.HEARING_DEADLINE and bool(self.hearing_json)
+
+    @property
+    def publication_ids(self) -> tuple[int, ...]:
+        return tuple(item.publication_id for item in self.update_group) or self.sitting_group

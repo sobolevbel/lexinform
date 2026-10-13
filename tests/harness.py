@@ -7,7 +7,7 @@ pipeline (`run`) and asserts on the report, the publisher's records and the data
 
 import datetime as dt
 from dataclasses import replace
-from typing import Any
+from typing import Any, Literal
 
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.adapters.telegram_format import MessageFormatter
@@ -315,6 +315,7 @@ class World:
         batch_max_wait_hours: float = 6,
         batch_script: dict[str, Analysis | Exception] | None = None,
         observe_unthreaded: bool = True,
+        reader_attention: Literal["off", "shadow", "on"] = "shadow",
     ) -> None:
         self.clock = FixedClock()
         self.repo = SqliteBillRepository(":memory:")
@@ -335,6 +336,7 @@ class World:
             today=lambda: self.clock.now().astimezone(LOCAL_TZ).date(),
             channel=CHANNEL,
             support_url=SUPPORT_URL,
+            attention_enabled=reader_attention == "on",
         )
         self.publisher = FakePublisher(fail_on=fail_publish, formatter=self.formatter)
         self.notifier = FakeNotifier()
@@ -369,6 +371,7 @@ class World:
             max_analysis_cost_usd=max_bill_cost_usd,
             max_run_cost_usd=max_run_cost_usd,
             text_prefilter_enabled=text_prefilter,
+            reader_attention=reader_attention,
             pre_print_enabled=True,
             agenda_watch=True,
             in_force_reminders=True,

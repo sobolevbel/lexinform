@@ -6,6 +6,7 @@ from typing import Self
 from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.models.analysis import TokenUsage, merge_usage
+from lexinform.models.attention import AttentionAssessment
 from lexinform.models.enums import Category, PublicationKind
 from lexinform.models.report import RunReport
 from lexinform.models.sejm import AgendaItem
@@ -62,6 +63,10 @@ class DigestEntry(BaseModel):
     category: Category | None = None
     wykaz_number: str | None = None
     event: str = ""
+    mnemonic: str = ""
+    mnemonic_language: str = "ru"
+    consequence: str = ""
+    attention: AttentionAssessment | None = None
     """What an update said, keyed as `models.update_event` keys it; empty for a card."""
 
 
@@ -73,6 +78,10 @@ class Upcoming(BaseModel):
     term: int
     number: str
     title: str
+    mnemonic: str = ""
+    mnemonic_language: str = "ru"
+    action_url: str | None = None
+    action_email: str | None = None
     message_id: int | None = None
     wykaz_number: str | None = None
     deadline: dt.date | None = None
@@ -161,6 +170,7 @@ class Digest(BaseModel):
     sittings: tuple[Upcoming, ...] = ()
     month: MonthFigures | None = None
     figures: WeekFigures | None = None
+    highlights: tuple[DigestEntry, ...] = ()
 
     @property
     def is_empty(self) -> bool:

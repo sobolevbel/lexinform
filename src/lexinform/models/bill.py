@@ -17,6 +17,7 @@ from lexinform.models.analysis import (
     JointRecord,
     SupplementRecord,
 )
+from lexinform.models.attention import AttentionAssessment
 from lexinform.models.editorial import Editorial
 from lexinform.models.enums import BillStatus, PublicationKind, PublicationStatus, VetoOutcome
 from lexinform.models.evidence import (
@@ -256,6 +257,7 @@ class Publication(BaseModel):
 
     id: int | None = None
     delivery: DeliveryPlan | None = None
+    attention: AttentionAssessment | None = None
     term: int
     number: str
     attempts: int = 0

@@ -30,6 +30,7 @@ from lexinform.models import (
     AgendaItem,
     AnalysisVerdict,
     ApplicantType,
+    AttentionAssessment,
     BackfillReport,
     Bill,
     BillStatus,
@@ -123,6 +124,9 @@ COMMAND_HELP = (
     " (a card deleted by hand)\n"
     "\n<b>the database</b>, answered here and now:\n"
     "• <code>/find WORDS</code> — bills whose title or number contains the words\n"
+    "• <code>/name BILL [NAME | REASON]</code> — inspect or change the stable editorial name\n"
+    "• <code>/attention BILL [important|urgent until=DATE | REASON]</code> — inspect or raise"
+    " event priority with an expiry date\n"
     "• <code>/status</code> — the queues, what is stuck, what the last runs cost\n"
     "• <code>/delivery ID [confirm MESSAGE_ID | retry | dismiss REASON]</code> — inspect or"
     " resolve an unknown delivery after checking the channel\n"
@@ -384,6 +388,8 @@ class MessageFormatter:
         today = today or self._today()
 
         header = self._header(ICON["new_bill"], self._card_header(bill, today), bill)
+        if self._attention_enabled:
+            header += f"\n<i>{esc(self._norm_state(bill, today))}</i>"
         meta = (
             f"{score_icon(a.score)} <b>{esc(lb.importance)}:</b> {importance_bar(a.score)} "
             f"{a.score}/5\n"
@@ -627,6 +633,7 @@ class MessageFormatter:
         *,
         today: dt.date | None = None,
         with_act: bool = False,
+        attention: AttentionAssessment | None = None,
     ) -> RenderedMessage:
         """Reply under the card. `with_act` when the act came out in the same run: its Dziennik
         Ustaw address goes in this message instead of a second one."""
@@ -638,8 +645,9 @@ class MessageFormatter:
         header = self._reply_header(
             EVENT_ICON.get(event, ICON["update"]), self._event_header(change, event), bill
         )
-        if self._attention_enabled:
-            assessment = assess_attention(
+        first_screen = ""
+        if self._attention_enabled or attention is not None:
+            assessment = attention or assess_attention(
                 bill,
                 PublicationKind.STATUS_UPDATE,
                 change=change,
@@ -657,6 +665,14 @@ class MessageFormatter:
                 if assessment.urgency == "urgent" and assessment.deadline is not None:
                     marker += f" · {self.fmt_date(assessment.deadline)}"
                 header = f"<b>{esc(marker)}</b>\n{header}"
+            header += f"\n<i>{esc(self._norm_state(bill, today))}</i>"
+            if assessment.affected_groups:
+                groups = esc("; ".join(assessment.affected_groups))
+                first_screen = f"{esc(self._labels.affected)}: {groups}"
+            if analysis is not None and change.content_changed and analysis.changes_since_previous:
+                first_screen += f"\n<b>{esc(self._labels.version_changes)}</b>\n" + "\n".join(
+                    f"• {esc(value)}" for value in analysis.changes_since_previous[:2]
+                )
         act_block = ""
         if with_act and bill.act is not None:
             act_block = f"{ICON['published']} <b>{esc(lb.act_published_header)}</b>\n" + (
@@ -687,14 +703,17 @@ class MessageFormatter:
         if analysis is not None and change.content_changed:
             # The card carries the summary; a reply repeats it only when the analysis changed.
             summary_block = self._summary_reminder(analysis.summary, full=True)
-            bullets = "\n".join(
-                f"• {esc(c.strip())}" for c in analysis.changes_since_previous if c.strip()
+            differences = (
+                analysis.changes_since_previous[2:]
+                if first_screen
+                else analysis.changes_since_previous
             )
+            bullets = "\n".join(f"• {esc(c.strip())}" for c in differences if c.strip())
             if bullets:
                 changes_block = (
                     f"{ICON['changed']} <b>{esc(lb.changes_since_previous)}</b>\n{bullets}"
                 )
-            else:
+            elif not first_screen:
                 changes_block = f"{ICON['note']} <i>{esc(lb.reanalyzed_note)}</i>"
 
         # Event tags only when the reply carries the event a reader would search for; `_tags`
@@ -712,7 +731,7 @@ class MessageFormatter:
         # The new stages are what the post is for, and stages held since the last one are listed
         # here and released against it: shrunk away, they would be marked told and never told.
         text = self._assemble(
-            [header, stages_block, act_block],
+            [header, first_screen, stages_block, act_block],
             flexible=[supplements_block, amendments_block, changes_block, summary_block],
             tail=[
                 closure,
@@ -990,7 +1009,12 @@ class MessageFormatter:
                 ]
             )
             groups.setdefault(steps, []).append(item)
-        blocks = [f"{ICON['update']} <b>{esc(self._labels.updates_header)}</b>"]
+        label = (
+            self._labels.attention_roundup
+            if self._attention_enabled
+            else self._labels.updates_header
+        )
+        blocks = [f"{ICON['update']} <b>{esc(label)}</b>"]
         for steps, items in groups.items():
             actions = [self._roundup_action(item.bill, today) for item in items]
             shared_action = len(set(actions)) == 1
@@ -1319,6 +1343,14 @@ class MessageFormatter:
                     for v in report.rejected
                 ),
             )
+        if report.attention:
+            sections.append(
+                _section(
+                    "👁",
+                    "attention: delivered",
+                    *(f"{esc(key)}: {count}" for key, count in sorted(report.attention.items())),
+                )
+            )
         logs = ""
         prefilter_blocks = []
         for unreadable, heading in (
@@ -1387,6 +1419,8 @@ class MessageFormatter:
 
     def digest(self, week: Digest, *, draft: bool = False) -> RenderedMessage:
         """The week in the channel; `draft` adds the note only the technical channel's copy has."""
+        if self._attention_enabled:
+            return RenderedMessage(text=self.digest_parts(week, draft=draft)[0])
         lb = self._labels
         head = (
             f"{ICON['digest']} <b>{esc(lb.digest_header)}</b>\n"
@@ -1411,6 +1445,105 @@ class MessageFormatter:
         figure_lines.append(esc(lb.digest_published.format(len(week.cards))))
         head_blocks.append("\n".join(figure_lines))
         return RenderedMessage(text=self._assemble(head_blocks, flexible=body, tail=tail))
+
+    def digest_parts(self, week: Digest, *, draft: bool = False) -> tuple[str, ...]:
+        if not self._attention_enabled:
+            return (self.digest(week, draft=draft).text,)
+        lb = self._labels
+        head = (
+            f"{ICON['digest']} <b>{esc(lb.digest_header)}</b>\n"
+            f"{self.fmt_date_range(week.since, week.until)}"
+        )
+        figures = [f"<b>{esc(lb.digest_figures)}</b>"]
+        if week.figures is not None:
+            figures.append(esc(lb.digest_found.format(week.figures.discovered)))
+            if week.figures.filtered is not None:
+                figures.append(esc(lb.digest_filtered.format(week.figures.filtered)))
+        figures.append(esc(lb.digest_published.format(len(week.cards))))
+        sections: list[tuple[str, list[str]]] = [
+            (lb.digest_figures, ["\n".join(figures[1:])]),
+            (lb.digest_remember, [self._digest_highlight(entry) for entry in week.highlights]),
+            (
+                lb.digest_actions,
+                [
+                    self._digest_action(window)
+                    for window in week.consultations
+                    if window.deadline is not None
+                    and self._today() <= window.deadline <= self._today() + dt.timedelta(days=7)
+                ],
+            ),
+            (lb.digest_cards, [self._digest_card(entry) for entry in week.cards]),
+            (lb.digest_updates, [self._digest_update(entry) for entry in week.updates]),
+            (
+                lb.digest_consultations,
+                [self._digest_window(window) for window in week.consultations],
+            ),
+        ]
+        sittings: dict[tuple[int, str, str], list[Upcoming]] = {}
+        for window in week.sittings:
+            if window.sitting is not None:
+                sittings.setdefault(
+                    (window.term, window.sitting.kind, window.sitting.ref), []
+                ).append(window)
+        for group in sorted(
+            sittings.values(),
+            key=lambda items: (
+                items[0].sitting.date if items[0].sitting else dt.date.max,
+                items[0].number,
+            ),
+        ):
+            item = group[0].sitting
+            assert item is not None
+            where = item.committee_name or item.committee_code or lb.sittings_sejm
+            title = f"{lb.digest_sittings} · {where} · {self._agenda_when(item)}"
+            rows = [
+                f"• {self._digest_ref(window)}"
+                + (
+                    f" — {esc(_clip(publication_title(window.title), 220))}"
+                    if not window.mnemonic
+                    else ""
+                )
+                for window in group
+            ]
+            sections.append((title, rows))
+        if week.is_empty:
+            sections.append(("", [esc(lb.digest_quiet)]))
+        tail = [
+            block
+            for block in (self._month_block(week.month), self._support_block(), esc(lb.tag_digest))
+            if block
+        ]
+        sections.append(("", tail))
+        parts: list[str] = []
+        current = head + (f"\n\n{DIGEST_DRAFT_NOTE}" if draft else "")
+        for title, rows in sections:
+            heading = f"<b>{esc(title)}</b>" if title else ""
+            first = True
+            for row in rows:
+                block = "\n".join(value for value in (heading if first else "", row) if value)
+                if length(current + "\n\n" + block) > MESSAGE_LIMIT:
+                    parts.append(current)
+                    current = head
+                    block = "\n".join(value for value in (heading, row) if value)
+                assert length(current + "\n\n" + block) <= MESSAGE_LIMIT, (
+                    "one digest event must fit"
+                )
+                current += "\n\n" + block
+                first = False
+        parts.append(current)
+        return tuple(parts)
+
+    def _digest_highlight(self, entry: DigestEntry) -> str:
+        row = self._digest_update(entry) if entry.event else self._digest_card(entry)
+        return row + (f"\n{esc(_clip(entry.consequence, 700))}" if entry.consequence else "")
+
+    def _digest_action(self, window: Upcoming) -> str:
+        row = self._digest_window(window)
+        if window.action_email:
+            return f"{row}\n{esc(self._labels.action_send_opinion)}: {esc(window.action_email)}"
+        if window.action_url:
+            return f"{row}\n{link(window.action_url, self._labels.action_send_opinion)}"
+        return row
 
     def _digest_block[T](self, title: str, items: Sequence[T], row: Callable[[T], str]) -> str:
         """One section, capped, and saying how many it left out: a week of 14 cards showed ten
@@ -1487,6 +1620,8 @@ class MessageFormatter:
         government = is_rcl_number(entry.number) or is_wykaz_number(entry.number)
         if entry.wykaz_number and government:
             label = esc(entry.wykaz_number)
+        if entry.mnemonic and entry.mnemonic_language == self._language:
+            label = f"{esc(entry.mnemonic)} · {label}"
         url = self._post_url(entry.message_id)
         return f'<a href="{html.escape(url, quote=True)}">{label}</a>' if url else label
 
@@ -1593,11 +1728,22 @@ class MessageFormatter:
                 f"message: {pub.message_id} · parent: {plan.reply_to if plan else None}",
                 f"saved payload replayable: {bool(plan and plan.replayable(pub.kind))}",
             ]
-            if plan is not None and plan.update_group:
+            if plan is not None and plan.publication_ids:
                 lines.append(
                     "shared delivery: "
-                    + ", ".join(str(item.publication_id) for item in plan.update_group)
+                    + ", ".join(str(identity) for identity in plan.publication_ids)
                 )
+            if pub.attention is not None:
+                assessment = pub.attention
+                lines.append(
+                    f"attention: {assessment.importance}/{assessment.urgency}"
+                    f" · {esc(assessment.explanation)}"
+                )
+                if assessment.deadline is not None:
+                    lines.append(
+                        f"deadline: {assessment.deadline} · {assessment.deadline_precision}"
+                        f" · {esc(assessment.deadline_source or '')}"
+                    )
             lines += [
                 f"{esc(r.resolved_at.isoformat())} · {esc(r.action)} · "
                 f"command {esc(r.command.chat_id)}/{r.command.message_id} "
@@ -1628,18 +1774,26 @@ class MessageFormatter:
         plan = pub.delivery
         if plan is None:
             return "No saved payload; retry unavailable."
-        if plan.update_group:
+        if plan.update_group or plan.sitting_group:
             return plan.group_text
+        if plan.rendered_text:
+            return plan.rendered_text
         bill = Bill.model_validate_json(plan.bill_json)
         kind = pub.kind
         info = PrintInfo.model_validate_json(plan.print_json) if plan.print_json else None
         if kind is PublicationKind.NEW_BILL:
-            return self.new_bill(bill, info).text
+            return self.new_bill(bill, info, today=plan.today).text
         if kind is PublicationKind.JOINT_BILL and plan.primary_json:
             return self.joint_bill(bill, Bill.model_validate_json(plan.primary_json), info).text
         if kind is PublicationKind.STATUS_UPDATE and plan.change_json:
             change = StatusChange.model_validate_json(plan.change_json)
-            return self.status_update(bill, change, with_act=plan.with_act).text
+            return self.status_update(
+                bill,
+                change,
+                with_act=plan.with_act,
+                today=plan.today,
+                attention=plan.attention if plan.policy_version == "attention-v1" else None,
+            ).text
         if kind is PublicationKind.ACT_PUBLISHED:
             return self.act_published(bill).text
         if kind is PublicationKind.CONSULTATION_RESULTS:
@@ -1840,7 +1994,19 @@ class MessageFormatter:
     def _reply_header(self, icon: str, label: str, bill: Bill) -> str:
         """`🗓 <b>Label — druk nr 3039</b>`: a reply sits under the card, which has the title."""
         if name := self._mnemonic(bill):
-            return f"<b>{esc(name)} · {self._number_label(bill)}</b>\n{icon} <b>{esc(label)}</b>"
+            previous = ""
+            chosen = bill.editorial.mnemonic
+            if (
+                chosen is not None
+                and chosen.version > bill.editorial.announced_version
+                and bill.editorial.previous
+            ):
+                old_name = self._labels.previous_name.format(bill.editorial.previous[-1].name)
+                previous = f"\n<i>{esc(old_name)}</i>"
+            return (
+                f"<b>{esc(name)} · {self._number_label(bill)}</b>\n"
+                f"{icon} <b>{esc(label)}</b>{previous}"
+            )
         return f"{icon} <b>{esc(label)} — {self._number_label(bill)}</b>"
 
     def _header(self, icon: str, label: str, bill: Bill, title: str | None = None) -> str:
@@ -1859,6 +2025,18 @@ class MessageFormatter:
     def _mnemonic(self, bill: Bill) -> str:
         name = bill.editorial.mnemonic
         return name.name if name is not None and name.language == self._language else ""
+
+    def _norm_state(self, bill: Bill, today: dt.date) -> str:
+        states = self._labels.norm_states
+        if bill.act is not None:
+            day = bill.act.entry_into_force
+            if day is not None:
+                label = states["in_force"] if day <= today else states["published"]
+                return f"{label} · {self.fmt_date(day)}"
+            return states["published"]
+        if is_over(bill, today=today):
+            return states["ended"]
+        return states["passed"] if bill.summary.passed is True else states["project"]
 
     @staticmethod
     def _field(icon: str, label: str, value: str) -> str:

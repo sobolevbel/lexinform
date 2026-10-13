@@ -472,6 +472,8 @@ class DailyPipeline:
         )
         report.published = published.published
         report.joint_published = published.joined
+        for key, count in published.attention.items():
+            report.attention[key] = report.attention.get(key, 0) + count
         report.batch_waiting += published.waiting
         if published.fatal_error:
             report.errors.append(f"publishing: {published.fatal_error}")
@@ -528,6 +530,8 @@ class DailyPipeline:
         report.batch_waiting += tracked.waiting
         report.updates += tracked.published if opts.publish else tracked.changed
         report.update_events += tracked.update_events if opts.publish else tracked.changed
+        for key, count in tracked.attention.items():
+            report.attention[key] = report.attention.get(key, 0) + count
         report.reanalyzed += tracked.reanalyzed
         report.linked += tracked.linked
         report.acts_published += tracked.acts_published

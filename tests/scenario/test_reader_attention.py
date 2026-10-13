@@ -25,6 +25,8 @@ from tests.harness import COMMITTEE_STAGES, TERM, World
         "<b>Имя</b>",
         "#Имя",
         "https://example.test",
+        "ftp://example.test",
+        "nfz.gov.pl",
         "Два  пробела",
     ],
 )

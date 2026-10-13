@@ -41,6 +41,7 @@ class TrackingResult:
     linked: int = 0
     published: int = 0
     update_events: int = 0
+    attention: dict[str, int] = field(default_factory=dict)
     acts_published: int = 0
     in_force_posted: int = 0
     consultation_reminders: int = 0

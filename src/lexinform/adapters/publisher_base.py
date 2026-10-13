@@ -8,7 +8,7 @@ concrete publishers.
 import hashlib
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
 from lexinform.adapters.telegram_format import MessageFormatter
@@ -18,6 +18,7 @@ from lexinform.models import (
     Digest,
     Phase,
     PrintInfo,
+    Publication,
     PublicationKind,
     SittingNews,
     Stage,
@@ -45,6 +46,12 @@ class Outgoing:
     def number(self) -> str:
         """What the post is about, for a log line or a dry run's title."""
         return self.bill.number if self.bill is not None else DIGEST_NUMBER
+
+
+@dataclass(frozen=True)
+class PreparedPublishResult:
+    message_id: int
+    document_message_ids: list[int] = field(default_factory=list)
 
 
 class RenderingPublisher(ABC):
@@ -134,6 +141,33 @@ class RenderingPublisher(ABC):
 
     def publish_updates(self, text: str) -> PublishResult:
         return self._deliver(Outgoing(PublicationKind.STATUS_UPDATE, None, text))
+
+    def render_delivery(self, publication: Publication) -> str:
+        return self._formatter.delivery_preview(publication)
+
+    def render_sittings(self, news: Sequence[SittingNews]) -> str:
+        return self._formatter.sittings(news).text
+
+    def render_digest(self, digest: Digest, *, draft: bool = False) -> tuple[str, ...]:
+        return self._formatter.digest_parts(digest, draft=draft)
+
+    def publish_prepared(self, publication: Publication) -> PublishResult:
+        plan = publication.delivery
+        assert plan is not None and (plan.rendered_text or plan.group_text)
+        bill = Bill.model_validate_json(plan.bill_json) if plan.bill_json else None
+        outgoing = Outgoing(
+            publication.kind,
+            None if plan.sitting_group else bill,
+            plan.group_text or plan.rendered_text,
+            None if plan.sitting_group else plan.reply_to,
+            action=(plan.approve_label, f"digest:{plan.digest_ref}")
+            if plan.approve_label
+            else None,
+        )
+        if plan.edit_message_id is not None:
+            self._edit(outgoing, message_id=plan.edit_message_id)
+            return PreparedPublishResult(message_id=plan.edit_message_id)
+        return self._deliver(outgoing)
 
     def publish_hearing_deadline(
         self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date

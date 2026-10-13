@@ -9,7 +9,11 @@ def valid_mnemonic(value: str) -> bool:
         bool(value.strip())
         and value == " ".join(value.split())
         and len(value.split()) <= 4
-        and not re.search(r"[<>#\r\n\t]|https?://|www\.", value, re.IGNORECASE)
+        and not re.search(
+            r"[<>#\r\n\t]|[a-z][a-z0-9+.-]*://|www\.|\b(?:[a-z0-9-]+\.)+[a-z]{2,}\b",
+            value,
+            re.IGNORECASE,
+        )
     )
 
 
@@ -24,6 +28,8 @@ class Mnemonic(BaseModel):
     version: int = 1
     provisional: bool = False
     command_update_id: int | None = None
+    actor_id: int | None = None
+    author_signature: str | None = None
 
 
 class PriorityOverride(BaseModel):
@@ -35,6 +41,8 @@ class PriorityOverride(BaseModel):
     selected_at: dt.datetime
     urgent: bool = False
     important: bool = False
+    actor_id: int | None = None
+    author_signature: str | None = None
 
 
 class Editorial(BaseModel):
@@ -45,6 +53,7 @@ class Editorial(BaseModel):
     proposed: Mnemonic | None = None
     priority: PriorityOverride | None = None
     priority_history: tuple[PriorityOverride, ...] = ()
+    announced_version: int = 0
 
     def select(self, candidate: Mnemonic) -> Editorial:
         if not valid_mnemonic(candidate.name):

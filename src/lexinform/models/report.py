@@ -142,6 +142,7 @@ class RunReport(BaseModel):
     joint_published: int = 0
     updates: int = 0
     update_events: int = 0
+    attention: dict[str, int] = Field(default_factory=dict)
     reanalyzed: int = 0
     tracked: int = 0
     batch_waiting: int = 0

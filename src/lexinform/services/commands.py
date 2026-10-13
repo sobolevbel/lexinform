@@ -11,6 +11,7 @@ import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from zoneinfo import ZoneInfo
 
 from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
 from lexinform.models import (
@@ -25,8 +26,10 @@ from lexinform.models import (
     CommandState,
     DeliveryResolution,
     IncomingCommand,
+    Mnemonic,
     OutcomeStatus,
     PrintInfo,
+    PriorityOverride,
     PublicationKind,
     PublicationStatus,
     SpendSnapshot,
@@ -36,6 +39,7 @@ from lexinform.models import (
     is_over,
     merge_usage,
     parse_command,
+    valid_mnemonic,
 )
 from lexinform.models.source_checks import observation_label, operator_observation
 from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier, Publisher
@@ -151,6 +155,7 @@ class CommandService:
         publisher_for: Callable[[str], Publisher] | None = None,
         status_days: int = 7,
         status_bills: int = 10,
+        language: str = "ru",
     ) -> None:
         self._repo = repo
         self._inbox = inbox
@@ -159,6 +164,7 @@ class CommandService:
         self._analysis = analysis
         self._publishing = publishing
         self._clock = clock
+        self._language = language
         self._text_prefilter = text_prefilter
         self._tracking = tracking
         self._digest = digest
@@ -381,6 +387,8 @@ class CommandService:
             return self._reset(bill_or_none, BillStatus(wanted))
         if command.name is CommandName.OBSERVE:
             return self._observe(bill_or_none, command.options["mode"], min_score=min_score)
+        if command.name in (CommandName.NAME, CommandName.ATTENTION):
+            return self._editorial(bill_or_none, command, incoming)
         if command.name is CommandName.PREVIEW:
             try:
                 bill = self._lookup.continuation(bill_or_none)
@@ -390,6 +398,97 @@ class CommandService:
         if command.name is CommandName.FORGET:
             return self._forget(bill_or_none, min_score=min_score)
         return self._republish(bill_or_none, publish=publish)
+
+    def _editorial(self, bill: Bill, command: Command, incoming: IncomingCommand) -> CommandOutcome:
+        if bill.status is BillStatus.LINKED and bill.linked_number:
+            bill = self._repo.get(bill.term, bill.linked_number) or bill
+        editorial = bill.editorial
+        if command.name is CommandName.NAME:
+            if not command.editorial_name:
+                name = editorial.mnemonic
+                proposed = editorial.proposed
+                return CommandOutcome(
+                    status=OutcomeStatus.SHOWN,
+                    bill=bill,
+                    note=(
+                        f"name: {name.name if name else 'fallback'}; "
+                        f"proposal: {proposed.name if proposed else 'none'}; "
+                        f"previous: {', '.join(item.name for item in editorial.previous) or 'none'}"
+                    ),
+                )
+            if not valid_mnemonic(command.editorial_name):
+                return CommandOutcome(
+                    status=OutcomeStatus.ERROR,
+                    bill=bill,
+                    note="Name must contain 1–4 words, normal spaces and no HTML, URL or hashtag.",
+                )
+            candidate = Mnemonic(
+                name=command.editorial_name,
+                language=self._language,
+                basis=command.editorial_reason,
+                selected_at=self._clock.now(),
+                origin="operator",
+                command_update_id=incoming.update_id,
+                actor_id=incoming.actor_id,
+                author_signature=incoming.author_signature,
+            )
+            self._repo.save_editorial(bill.term, bill.number, editorial.rename(candidate))
+            return CommandOutcome(
+                status=OutcomeStatus.SHOWN,
+                bill=self._reload(bill),
+                note="Editorial name saved; existing messages keep their saved payload.",
+            )
+        if command.editorial_priority is None or command.editorial_until is None:
+            posts = self._repo.list_attention_publications(bill.term, bill.number, limit=20)
+            notes = [
+                f"{post.id}: {post.kind} · {post.status}"
+                f" · {post.attention.importance}/{post.attention.urgency}"
+                f" · {', '.join(post.attention.reasons)}"
+                for post in posts
+                if post.attention is not None
+            ]
+            return CommandOutcome(
+                status=OutcomeStatus.SHOWN,
+                bill=bill,
+                note="\n".join(notes) or "No saved event assessment yet.",
+            )
+        expires_at = dt.datetime.combine(
+            command.editorial_until + dt.timedelta(days=1),
+            dt.time(),
+            tzinfo=ZoneInfo("Europe/Warsaw"),
+        ).astimezone(dt.UTC)
+        if expires_at <= self._clock.now():
+            return CommandOutcome(
+                status=OutcomeStatus.ERROR,
+                bill=bill,
+                note="Priority expiry must be today or later in Warsaw.",
+            )
+        override = PriorityOverride(
+            reason=command.editorial_reason,
+            expires_at=expires_at,
+            selected_at=self._clock.now(),
+            command_update_id=incoming.update_id,
+            urgent=command.editorial_priority == "urgent",
+            important=command.editorial_priority == "important",
+            actor_id=incoming.actor_id,
+            author_signature=incoming.author_signature,
+        )
+        self._repo.save_editorial(
+            bill.term,
+            bill.number,
+            editorial.model_copy(
+                update={
+                    "priority": override,
+                    "priority_history": editorial.priority_history
+                    + ((editorial.priority,) if editorial.priority else ()),
+                }
+            ),
+        )
+        return CommandOutcome(
+            status=OutcomeStatus.SHOWN,
+            bill=self._reload(bill),
+            note="Priority raised until the stated Warsaw date; attempted deliveries keep plans.",
+        )
 
     def _analyze(
         self,
@@ -884,7 +983,10 @@ class CommandService:
     ) -> CommandOutcome:
         assert command.delivery_id is not None
         publication = self._repo.publication_by_id(command.delivery_id)
-        if publication is None or publication.channel_id != self._publishing.channel_id:
+        if publication is None or (
+            publication.channel_id != self._publishing.channel_id
+            and not (self._digest is not None and self._digest.owns_channel(publication.channel_id))
+        ):
             return CommandOutcome(
                 status=OutcomeStatus.NOT_FOUND, note="publication not found in this channel"
             )
@@ -910,14 +1012,17 @@ class CommandService:
                         note="no replayable saved payload; retry refused",
                     )
                 bill = self._repo.get(publication.term, publication.number)
-                if bill is None:
+                if bill is None and publication.kind is not PublicationKind.DIGEST:
                     return CommandOutcome(
                         status=OutcomeStatus.ERROR,
                         delivery=publication,
                         note="bill no longer exists; retry refused",
                     )
                 if publication.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL) and (
-                    bill.status is BillStatus.LINKED or bill.last_error == SILENCED_BY_OPERATOR
+                    bill is not None
+                    and (
+                        bill.status is BillStatus.LINKED or bill.last_error == SILENCED_BY_OPERATOR
+                    )
                 ):
                     return CommandOutcome(
                         status=OutcomeStatus.ERROR,
@@ -926,10 +1031,8 @@ class CommandService:
                     )
             resolution = DeliveryResolution(
                 publication_id=command.delivery_id,
-                publication_ids=tuple(
-                    item.publication_id for item in publication.delivery.update_group
-                )
-                if publication.delivery is not None and publication.delivery.update_group
+                publication_ids=publication.delivery.publication_ids
+                if publication.delivery is not None and publication.delivery.publication_ids
                 else (command.delivery_id,),
                 term=publication.term,
                 number=publication.number,
@@ -949,9 +1052,7 @@ class CommandService:
                     )
                 if action == "confirm" and publication.delivery is not None:
                     assert resolution.message_id is not None
-                    identities = tuple(
-                        item.publication_id for item in publication.delivery.update_group
-                    ) or (command.delivery_id,)
+                    identities = publication.delivery.publication_ids or (command.delivery_id,)
                     for identity in identities:
                         member = self._repo.publication_by_id(identity)
                         assert member is not None

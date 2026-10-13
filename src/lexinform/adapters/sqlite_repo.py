@@ -24,6 +24,7 @@ from lexinform.models import (
     AgendaItem,
     AmendmentsRecord,
     AnalysisRecord,
+    AttentionAssessment,
     BatchIntent,
     BatchRequest,
     BatchResult,
@@ -415,6 +416,12 @@ MIGRATIONS: tuple[str, ...] = (
     """
     ALTER TABLE bills ADD COLUMN editorial_json TEXT;
     """,
+    # v37: preserve priority evidence after sent payload retention.
+    """
+    ALTER TABLE publications ADD COLUMN attention_json TEXT;
+    UPDATE publications SET attention_json = json_extract(delivery_json, '$.attention')
+      WHERE delivery_json IS NOT NULL;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -804,20 +811,46 @@ class SqliteBillRepository:
 
     def save_update_delivery(self, change_id: int, channel_id: str, delivery: DeliveryPlan) -> None:
         self._conn.execute(
-            "UPDATE publications SET delivery_json = ? WHERE status_change_id = ?"
+            "UPDATE publications SET delivery_json = ?, attention_json = ?"
+            " WHERE status_change_id = ?"
             " AND channel_id = ? AND kind = 'status_update' AND delivery_json IS NULL",
-            (delivery.model_dump_json(), change_id, channel_id),
+            (
+                delivery.model_dump_json(),
+                delivery.attention.model_dump_json() if delivery.attention else None,
+                change_id,
+                channel_id,
+            ),
         )
 
     def replace_unsent_update_delivery(
         self, change_id: int, channel_id: str, delivery: DeliveryPlan
     ) -> bool:
         cur = self._conn.execute(
-            "UPDATE publications SET delivery_json = ? WHERE status_change_id = ?"
+            "UPDATE publications SET delivery_json = ?, attention_json = ?"
+            " WHERE status_change_id = ?"
             " AND channel_id = ? AND kind = 'status_update' AND status = 'queued'"
             " AND attempts = 0"
             " AND COALESCE(json_array_length(delivery_json, '$.update_group'), 0) = 0",
-            (delivery.model_dump_json(), change_id, channel_id),
+            (
+                delivery.model_dump_json(),
+                delivery.attention.model_dump_json() if delivery.attention else None,
+                change_id,
+                channel_id,
+            ),
+        )
+        return cur.rowcount == 1
+
+    def replace_unattempted_delivery(self, publication_id: int, delivery: DeliveryPlan) -> bool:
+        cur = self._conn.execute(
+            "UPDATE publications SET delivery_json = ?, attention_json = ?"
+            " WHERE id = ? AND status = 'queued'"
+            " AND attempts = 0"
+            " AND COALESCE(json_array_length(delivery_json, '$.update_group'), 0) = 0",
+            (
+                delivery.model_dump_json(),
+                delivery.attention.model_dump_json() if delivery.attention else None,
+                publication_id,
+            ),
         )
         return cur.rowcount == 1
 
@@ -1809,7 +1842,13 @@ class SqliteBillRepository:
     ) -> None:
         previous = self.get(term, pre_print_number)
         if previous is not None and previous.editorial.mnemonic is not None:
-            self.save_editorial(term, print_number, previous.editorial)
+            inherited = previous.editorial
+            current = self.get(term, print_number)
+            if current is not None:
+                candidate = current.editorial.proposed or current.editorial.mnemonic
+                if candidate is not None:
+                    inherited = inherited.select(candidate)
+            self.save_editorial(term, print_number, inherited)
         self._conn.execute(
             "UPDATE bills SET linked_number = ?, status = ? WHERE term = ? AND number = ?",
             (print_number, BillStatus.LINKED.value, term, pre_print_number),
@@ -1849,6 +1888,9 @@ class SqliteBillRepository:
         Returns the row id, looked up by the natural key: `lastrowid` is unreliable after an
         upsert that took the UPDATE path.
         """
+        attention = publication.attention or (
+            publication.delivery.attention if publication.delivery else None
+        )
         # Operator commands must never address a different message after its row was deleted.
         identity = self._conn.execute(
             "UPDATE publication_sequence SET last_id = last_id + 1 WHERE id = 1 RETURNING last_id"
@@ -1857,12 +1899,15 @@ class SqliteBillRepository:
         self._conn.execute(
             """
             INSERT INTO publications (id, term, number, kind, status, channel_id, ref, message_id,
-                document_message_ids, status_change_id, created_at, sent_at, error, delivery_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                document_message_ids, status_change_id, created_at, sent_at, error, delivery_json,
+                attention_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT DO UPDATE SET status = excluded.status, created_at = excluded.created_at,
                                       error = NULL,
                                       delivery_json = COALESCE(
-                                          publications.delivery_json, excluded.delivery_json)
+                                          publications.delivery_json, excluded.delivery_json),
+                                      attention_json = COALESCE(
+                                          publications.attention_json, excluded.attention_json)
             """,
             (
                 identity[0],
@@ -1879,6 +1924,7 @@ class SqliteBillRepository:
                 _iso(publication.sent_at),
                 publication.error,
                 publication.delivery.model_dump_json() if publication.delivery else None,
+                attention.model_dump_json() if attention else None,
             ),
         )
         if publication.kind is PublicationKind.STATUS_UPDATE:
@@ -1930,8 +1976,8 @@ class SqliteBillRepository:
                 return False
             plan = original.delivery
             identities = (
-                tuple(item.publication_id for item in plan.update_group)
-                if plan and plan.update_group
+                plan.publication_ids
+                if plan and plan.publication_ids
                 else (resolution.publication_id,)
             )
             if resolution.publication_id not in identities:
@@ -1944,10 +1990,10 @@ class SqliteBillRepository:
                     or member.channel_id != resolution.channel_id
                     or (
                         plan
-                        and plan.update_group
+                        and plan.publication_ids
                         and (
                             member.delivery is None
-                            or member.delivery.update_group != plan.update_group
+                            or member.delivery.publication_ids != plan.publication_ids
                             or member.delivery.group_text != plan.group_text
                         )
                     )
@@ -2068,6 +2114,17 @@ class SqliteBillRepository:
                 _utc_iso(since),
                 _utc_iso(until),
             ),
+        ).fetchall()
+        return [self._row_to_publication(row) for row in rows]
+
+    def list_attention_publications(
+        self, term: int, number: str, *, limit: int
+    ) -> list[Publication]:
+        rows = self._conn.execute(
+            "SELECT * FROM publications WHERE term = ? AND number = ?"
+            " AND attention_json IS NOT NULL"
+            " ORDER BY id DESC LIMIT ?",
+            (term, number, limit),
         ).fetchall()
         return [self._row_to_publication(row) for row in rows]
 
@@ -2253,7 +2310,11 @@ class SqliteBillRepository:
         with self.atomic():
             publications = self._conn.execute(
                 "UPDATE publications SET delivery_json = NULL WHERE status = 'sent'"
-                " AND sent_at < ? AND delivery_json IS NOT NULL",
+                " AND sent_at < ? AND delivery_json IS NOT NULL"
+                " AND NOT EXISTS (SELECT 1"
+                " FROM json_each(publications.delivery_json, '$.digest_parts') part"
+                " JOIN publications member ON member.id = part.value"
+                " WHERE member.status NOT IN ('sent', 'dismissed'))",
                 (_iso(before),),
             ).rowcount
             memos = self._conn.execute(
@@ -2488,6 +2549,11 @@ class SqliteBillRepository:
     @staticmethod
     def _row_to_publication(row: sqlite3.Row) -> Publication:
         return Publication(
+            attention=(
+                AttentionAssessment.model_validate_json(row["attention_json"])
+                if row["attention_json"]
+                else None
+            ),
             delivery=(
                 DeliveryPlan.model_validate_json(row["delivery_json"])
                 if row["delivery_json"]

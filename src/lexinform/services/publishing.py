@@ -11,7 +11,9 @@ differs from the ones the reader has already read about (`_compared`).
 
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from functools import partial
+from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
 from lexinform.errors import ServiceUnavailableError
@@ -66,6 +68,7 @@ class PublishingResult:
     skipped: int = 0
     failed: int = 0
     waiting: int = 0
+    attention: dict[str, int] = field(default_factory=dict)
     fatal_error: str | None = None
 
 
@@ -104,6 +107,8 @@ class PublishingService:
         channel_id: str,
         max_attempts: int = 3,
         analysis: AnalysisService | None = None,
+        attention_enabled: bool = False,
+        attention_assess: bool = True,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -112,6 +117,8 @@ class PublishingService:
         self._channel_id = channel_id
         self._max_attempts = max_attempts
         self._analysis = analysis
+        self._attention_enabled = attention_enabled
+        self._attention_assess = attention_assess
 
     @property
     def channel_id(self) -> str:
@@ -271,9 +278,13 @@ class PublishingService:
                 kind=PublicationKind.NEW_BILL,
                 delivery=DeliveryPlan(
                     bill_json=bill.model_dump_json(),
+                    policy_version="attention-v1" if self._attention_enabled else "legacy",
+                    today=self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(),
                     attention=assess_attention(
                         bill, PublicationKind.NEW_BILL, now=self._clock.now()
-                    ),
+                    )
+                    if self._attention_assess
+                    else None,
                     print_json=print_info.model_dump_json() if print_info else None,
                 ),
                 status=PublicationStatus.QUEUED,
@@ -285,6 +296,7 @@ class PublishingService:
             return False
         self._repo.set_card_digest(pub_id, self._publisher.card_digest(bill))
         result.published += 1
+        self._count_attention(pub_id, result)
         return True
 
     def plan(self, bill: Bill) -> CardPlan:
@@ -342,9 +354,13 @@ class PublishingService:
                     bill_json=bill.model_dump_json(),
                     print_json=print_info.model_dump_json() if print_info else None,
                     primary_json=card_bill.model_dump_json(),
+                    policy_version="attention-v1" if self._attention_enabled else "legacy",
+                    today=self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(),
                     attention=assess_attention(
                         bill, PublicationKind.JOINT_BILL, now=self._clock.now()
-                    ),
+                    )
+                    if self._attention_assess
+                    else None,
                     reply_to=card_message_id,
                 ),
                 status=PublicationStatus.QUEUED,
@@ -363,6 +379,7 @@ class PublishingService:
             return False
         self._repo.set_awaiting_batch(identity.term, identity.number, None)
         result.joined += 1
+        self._count_attention(pub_id, result)
         log.info("druk %s joined the thread of druk %s", bill.number, card_bill.number)
         return True
 
@@ -469,12 +486,36 @@ class PublishingService:
         return primary_of(self._repo, bill, self._channel_id)
 
     def _send(self, pub_id: int, bill: Bill, send: Send) -> bool:
+        pub = self._repo.publication_by_id(pub_id)
+        if (
+            pub is not None
+            and pub.delivery is not None
+            and pub.delivery.policy_version == "attention-v1"
+        ):
+            if not pub.delivery.rendered_text:
+                plan = pub.delivery.model_copy(
+                    update={"rendered_text": self._publisher.render_delivery(pub)}
+                )
+                assert self._repo.replace_unattempted_delivery(pub_id, plan)
+                pub = pub.model_copy(update={"delivery": plan})
+            send = partial(self._publisher.publish_prepared, pub)
         self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
         message_id = send_publication(self._repo, self._clock, pub_id, send)
         if message_id is None:
             return False
         log.info("published druk %s as message %s", bill.number, message_id)
         return True
+
+    def _count_attention(self, pub_id: int, result: PublishingResult) -> None:
+        pub = self._repo.publication_by_id(pub_id)
+        if pub is None or pub.attention is None:
+            return
+        keys = ["events", "messages", pub.attention.importance]
+        if pub.attention.urgency == "urgent":
+            keys.append("urgent")
+        keys.extend(f"reason/{reason}" for reason in pub.attention.reasons)
+        for key in keys:
+            result.attention[key] = result.attention.get(key, 0) + 1
 
     def _record_skipped(self, bill: Bill) -> None:
         self._repo.create_publication(

@@ -10,13 +10,22 @@ from lexinform.models import (
     StatusChange,
     flatten_stages,
     hearing_application_deadline,
+    is_substantive,
     is_urgent,
     update_event,
     window_closes_within,
 )
 
 ROUTINE_EVENTS = frozenset(
-    {"rcl_stage", "referral", "referrals", "committee_report", "subcommittee_report", "signed"}
+    {
+        "rcl_stage",
+        "referral",
+        "referrals",
+        "committee_report",
+        "subcommittee_report",
+        "signed",
+        "to_president",
+    }
 )
 DECISIONS = frozenset(
     {
@@ -34,6 +43,29 @@ DECISIONS = frozenset(
         "tribunal_ruled",
     }
 )
+
+REASON_TEXT = {
+    "substantive_content": "Substantive text or supporting documents changed.",
+    "confirmed_decision": "Decision or process closure evidence changed.",
+    "participation_opened": "A participation opportunity opened.",
+    "editorial_frame": "A service stage adds no standalone news.",
+    "routine_process": "Only routine process facts changed.",
+    "unclassified_event": "The facts do not establish a routine event.",
+    "new_anchor": "A new case needs its own reader anchor.",
+    "act_evidence": "Publication or entry into force is confirmed.",
+    "participation_reminder": "An existing participation window needs a reminder.",
+    "participation_result": "Consultation results became available.",
+    "agenda": "The case appears on a sitting agenda.",
+    "agenda_correction": "A previously announced sitting changed.",
+    "near_event_correction": "The affected sitting is close.",
+    "organ_deadline_not_reader_deadline": "The organ's deadline is not a filing deadline.",
+    "near_reader_deadline": "A dated reader action is close.",
+    "expired_window": "The dated action window has passed.",
+    "missing_reader_deadline": "The reader's deadline is unknown.",
+    "existing_window_guard": "The existing participation guard applies.",
+    "pilny_guard": "The urgent procedure bypasses editorial waiting.",
+    "operator_priority": "An unexpired operator override raises priority.",
+}
 
 
 def assess_attention(
@@ -69,7 +101,17 @@ def assess_attention(
         elif change.consultation_opened or event == "hearing":
             importance = "important"
             reasons.append("participation_opened")
-        elif event in ROUTINE_EVENTS:
+        elif change.new_stages and all(
+            not is_substantive(stage) for stage in flatten_stages(change.new_stages)
+        ):
+            importance = "routine"
+            reasons.append("editorial_frame")
+        elif event in ROUTINE_EVENTS and all(
+            not is_substantive(stage)
+            or stage.stage_type
+            in {"RclStage", "Referral", "CommitteeReport", "PresidentSignature", "ToPresident"}
+            for stage in flatten_stages(change.new_stages)
+        ):
             importance = "routine"
             reasons.append("routine_process")
         else:
@@ -95,7 +137,8 @@ def assess_attention(
         )
         dates = [event.date for event in (item, moved_from) if event is not None]
         if dates:
-            deadline = min(dates)
+            near = [day for day in dates if 0 <= (day - today).days <= urgent_days]
+            deadline = min(near or dates)
             source = "agenda"
         if (
             (moved_from or kind is PublicationKind.AGENDA_CANCELLED)
@@ -115,7 +158,7 @@ def assess_attention(
     if (
         window is not None
         and window.end is not None
-        and window.end >= today
+        and (window.end >= today or kind is PublicationKind.CONSULTATION_DEADLINE)
         and (window.email or window.survey_url or window.form_url)
     ):
         deadline = window.end
@@ -153,11 +196,10 @@ def assess_attention(
     ):
         urgency = "uncertain"
         reasons.append("missing_reader_deadline")
-    if window_closes_within(bill, today, urgent_days):
+    if window_closes_within(bill, today, urgent_days) and not is_urgent(bill):
         urgency = "urgent"
         reasons.append("existing_window_guard")
     if is_urgent(bill):
-        urgency = "urgent"
         reasons.append("pilny_guard")
     override = bill.editorial.priority
     if override is not None and now < override.expires_at:
@@ -170,7 +212,11 @@ def assess_attention(
         importance=importance,
         urgency=urgency,
         reasons=tuple(dict.fromkeys(reasons)),
-        explanation="; ".join(dict.fromkeys(reasons)),
+        explanation=" ".join(REASON_TEXT[reason] for reason in dict.fromkeys(reasons)),
+        affected_groups=tuple(bill.analysis.analysis.affected_groups)
+        if bill.analysis is not None
+        and (kind is PublicationKind.NEW_BILL or (change is not None and change.content_changed))
+        else (),
         action=action,
         deadline=deadline,
         deadline_source=source,

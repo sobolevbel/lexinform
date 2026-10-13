@@ -503,6 +503,7 @@ class Container:
                 tracking=self.tracking_service(dry_run=dry_run),
                 digest=self.digest_service(dry_run=dry_run),
                 publisher_for=lambda chat: self.publisher_for(chat, dry_run=dry_run),
+                language=self.settings.output_language,
             ),
         )
 
@@ -524,6 +525,8 @@ class Container:
                 channel_id=self.channel_id(),
                 max_attempts=self.settings.max_publish_attempts,
                 analysis=self.analysis_service(),
+                attention_enabled=self.settings.reader_attention == "on",
+                attention_assess=self.settings.reader_attention != "off",
             ),
         )
 
@@ -543,6 +546,7 @@ class Container:
                 channel_id=self.channel_id(),
                 draft_channel_id=self.drafts_channel_id(),
                 approve_label=APPROVE_DIGEST,
+                attention_enabled=s.reader_attention == "on",
                 weekday=s.digest_weekday,
                 local_tz=LOCAL_TZ,
                 closed_grace_days=s.track_closed_grace_days,

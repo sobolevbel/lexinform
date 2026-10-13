@@ -22,6 +22,7 @@ from lexinform.models import (
     PrintInfo,
     ProcessDetail,
     PublicationKind,
+    PublicationStatus,
     StatusChange,
     TextDocument,
     amendments_stage,
@@ -345,9 +346,9 @@ class StatusTrackingService:
         result = TrackingResult()
         self._poster.start_run()
         if publish and not self._retry_failed(result):
-            return result
+            return self._finish(result)
         if not self._pre_print.reconcile(result, publish=publish):
-            return result
+            return self._finish(result)
         tracked = self._list_tracked(changed_since)
         everyone = tracked if changed_since is None else self._list_tracked()
         quiet: list[Bill] = []
@@ -369,7 +370,7 @@ class StatusTrackingService:
             quiet_everyone=quiet_everyone,
         ):
             self._flush_updates(result, publish=publish)
-            return result
+            return self._finish(result)
         self._check_processes(tracked, result, publish=publish, may_wait=may_wait)
         if quiet and result.fatal_error is None:
             quiet = [self._repo.get(b.term, b.number) or b for b in quiet]
@@ -377,7 +378,7 @@ class StatusTrackingService:
         self._flush_updates(result, publish=publish)
         self._remind_and_refresh(everyone, result, publish=publish)
         self._log_outcome(result, changed_since)
-        return result
+        return self._finish(result)
 
     def _assign_observation(self) -> None:
         """Give every analysed or carded bill the mode its card and its analysis call for."""
@@ -405,11 +406,15 @@ class StatusTrackingService:
         one = [bill]
         if not self._check_other_sources(one, one, result, publish=publish):
             self._flush_updates(result, publish=publish)
-            return result
+            return self._finish(result)
         self._check_processes(one, result, publish=publish, may_wait=False)
         self._flush_updates(result, publish=publish)
         if result.fatal_error is None:
             self._cards.refresh(one, result, publish=publish)
+        return self._finish(result)
+
+    def _finish(self, result: TrackingResult) -> TrackingResult:
+        result.attention = self._poster.attention_metrics()
         return result
 
     def _flush_updates(self, result: TrackingResult, *, publish: bool) -> None:
@@ -624,15 +629,25 @@ class StatusTrackingService:
         for publication in self._repo.list_due_deliveries(
             self._options.channel_id, max_attempts=self._options.max_publish_attempts
         ):
-            if publication.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
+            if publication.kind in (
+                PublicationKind.NEW_BILL,
+                PublicationKind.JOINT_BILL,
+                PublicationKind.DIGEST,
+            ):
                 continue
             if publication.kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED):
                 self._poster.queue_sitting(publication)  # sent with this run's roundup
                 continue
             try:
-                result.count_post(
-                    self._poster.deliver(publication), counters.get(publication.kind, "published")
+                sent = self._poster.deliver(publication)
+                latest = (
+                    self._repo.publication_by_id(publication.id)
+                    if publication.id is not None
+                    else None
                 )
+                if latest is not None and latest.status is PublicationStatus.SKIPPED:
+                    continue
+                result.count_post(sent, counters.get(publication.kind, "published"))
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return False

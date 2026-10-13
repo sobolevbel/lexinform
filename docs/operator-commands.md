@@ -225,6 +225,37 @@ searched for a bill already in the database).
 
 ## How a command travels
 
+### Editorial names and attention
+
+These commands are handled in the technical channel without model requests or reader posts:
+
+```text
+/name BILL
+/name BILL Concrete mechanism name | SOURCE FACT OR REASON
+/attention BILL
+/attention BILL urgent until=2026-10-16 | CONFIRMED REASON
+/attention BILL important until=2026-10-20 | CONFIRMED REASON
+```
+
+Names have at most four words, normal spaces and no HTML, links or hashtags. They belong to
+the case and survive re-analysis and confirmed source transitions. Re-analysis can propose a
+new name for review. Manual changes keep the old names searchable and retain the command,
+actor, reason and timestamp; the first subsequent update identifies the former name.
+
+`/attention BILL` lists the latest twenty saved event assessments, including held and queued work. Priority overrides
+can raise importance or urgency, expire at the end of the stated Warsaw day and never hide
+protected facts. They do not rewrite attempted payloads or resolve `unknown` deliveries.
+Run reports count attention events separately from physical messages and list routing reasons.
+
+`LEXINFORM_READER_ATTENTION=shadow` is the default: assessments are saved with legacy routing.
+`on` enables reader labels, the attention policy, capped roundups and complete digest parts;
+`off` stops new assessments. Already prepared sends continue from their saved plans.
+See the [implementation and rollout conditions](plans/2026-10-13-reader-attention-progress.md).
+
+An uncertain sitting roundup is resolved as a whole through `/delivery` on any member.
+Digest continuations have separate delivery IDs: resolve only the uncertain part. Successful
+parts are not sent again; unfinished approved digests resume on the next available digest phase.
+
 ```
 technical channel ──getUpdates──► lexinform listen (VPS) ──Contents API──► branch `inbox`
                                           │ repository_dispatch                         │

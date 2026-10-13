@@ -22,4 +22,8 @@ class AttentionAssessment(BaseModel):
 
     @property
     def protected(self) -> bool:
-        return self.importance != "routine" or self.urgency != "normal"
+        return (
+            self.importance != "routine"
+            or self.urgency != "normal"
+            or "pilny_guard" in self.reasons
+        )

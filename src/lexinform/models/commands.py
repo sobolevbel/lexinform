@@ -200,6 +200,8 @@ class CommandName(StrEnum):
     COST = "cost"
     STATUS = "status"
     DELIVERY = "delivery"
+    NAME = "name"
+    ATTENTION = "attention"
     DIGEST = "digest"
     HELP = "help"
 
@@ -354,6 +356,10 @@ class Command(BaseModel):
     delivery_action: Literal["show", "confirm", "retry", "dismiss"] = "show"
     delivery_message_id: int | None = None
     delivery_reason: str = ""
+    editorial_name: str = ""
+    editorial_reason: str = ""
+    editorial_priority: Literal["important", "urgent"] | None = None
+    editorial_until: dt.date | None = None
 
     @property
     def force(self) -> bool:
@@ -690,6 +696,8 @@ def parse_command(text: str) -> Command | None:
         return Command(name=CommandName.HELP, error=f"unknown command /{head}")
     if name is CommandName.DELIVERY:
         return _parse_delivery(words[1:])
+    if name in (CommandName.NAME, CommandName.ATTENTION):
+        return _parse_editorial(name, words[1:])
     options, rest, error = _parse_options(name, words[1:])
     if error:
         return Command(name=name, error=error)
@@ -718,6 +726,39 @@ def parse_command(text: str) -> Command | None:
     if rest and name is not CommandName.HELP:
         return _unknown_option(name, rest[0])
     return Command(name=name, options=options)
+
+
+def _parse_editorial(name: CommandName, words: list[str]) -> Command:
+    if not words or (ref := parse_reference(words[0])) is None:
+        return Command(name=name, error=f"/{name} needs a bill number or link")
+    if len(words) == 1:
+        return Command(name=name, ref=ref)
+    value, separator, reason = " ".join(words[1:]).partition("|")
+    if not separator or not reason.strip():
+        return Command(name=name, error=f"/{name} requires a reason after |")
+    if name is CommandName.NAME:
+        return Command(
+            name=name, ref=ref, editorial_name=value.strip(), editorial_reason=reason.strip()
+        )
+    priority, _, until = value.strip().partition(" until=")
+    try:
+        day = dt.date.fromisoformat(until)
+    except ValueError:
+        return Command(
+            name=name, error="use /attention BILL important|urgent until=YYYY-MM-DD | REASON"
+        )
+    if priority not in ("important", "urgent"):
+        return Command(
+            name=name,
+            error="priority must be important or urgent; protected facts cannot be downgraded",
+        )
+    return Command(
+        name=name,
+        ref=ref,
+        editorial_priority=priority,
+        editorial_until=day,
+        editorial_reason=reason.strip(),
+    )
 
 
 def _parse_delivery(words: list[str]) -> Command:

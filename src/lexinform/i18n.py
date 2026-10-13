@@ -129,6 +129,10 @@ class Labels:
     updates_header: str
     attention_important: str
     attention_urgent: str
+    attention_roundup: str
+    previous_name: str
+    norm_states: dict[str, str]
+    version_changes: str
     roundup_rcl_action: str
     sittings_sejm: str
     sittings_committees: str
@@ -226,6 +230,8 @@ class Labels:
     digest_no_data: str
     digest_cards: str
     digest_updates: str
+    digest_remember: str
+    digest_actions: str
     digest_consultations: str
     digest_sittings: str
     digest_quiet: str
@@ -405,6 +411,16 @@ RU = Labels(
     updates_header="Что изменилось",
     attention_important="Важно",
     attention_urgent="Нужно действовать",
+    attention_roundup="Коротко по проектам",
+    previous_name="Прежнее имя: {}",
+    norm_states={
+        "project": "Пока проект",
+        "passed": "Принят Сеймом",
+        "published": "Опубликован",
+        "in_force": "Действует",
+        "ended": "Процесс завершён",
+    },
+    version_changes="Изменения между версиями проекта",
     roundup_rcl_action=(
         "консультации закрыты; {comment}; заявить интерес к работам"
         " (zgłoszenie zainteresowania): {organ} · писать на польском, указать {number}"
@@ -554,6 +570,8 @@ RU = Labels(
     digest_no_data="нет полных данных",
     digest_cards="Новые законопроекты",
     digest_updates="Что изменилось",
+    digest_remember="Что запомнить",
+    digest_actions="Что сделать на ближайшей неделе",
     digest_consultations="Идут консультации — можно успеть",
     digest_sittings="Ближайшие заседания",
     digest_quiet="На этой неделе в канале не было публикаций.",
@@ -1090,6 +1108,16 @@ EN = Labels(
     updates_header="What changed",
     attention_important="Important",
     attention_urgent="Action needed",
+    attention_roundup="Briefly on the bills",
+    previous_name="Previously: {}",
+    norm_states={
+        "project": "Draft",
+        "passed": "Passed by the Sejm",
+        "published": "Published",
+        "in_force": "In force",
+        "ended": "Process ended",
+    },
+    version_changes="Changes between draft versions",
     roundup_rcl_action=(
         "consultations closed; {comment}; declare interest in the work"
         " (zgłoszenie zainteresowania): {organ} · write in Polish, cite {number}"
@@ -1237,6 +1265,8 @@ EN = Labels(
     digest_no_data="complete data unavailable",
     digest_cards="New bills",
     digest_updates="What changed",
+    digest_remember="What to remember",
+    digest_actions="What to do next week",
     digest_consultations="Consultations still open",
     digest_sittings="Sittings ahead",
     digest_quiet="Nothing was posted in the channel this week.",

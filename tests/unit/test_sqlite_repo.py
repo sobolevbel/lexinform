@@ -890,7 +890,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         publications = {r[1] for r in conn.execute("PRAGMA table_info(publications)")}
         bills = {r[1] for r in conn.execute("PRAGMA table_info(bills)")}
         indexes = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='index'")}
-    assert {"attempts", "ref", "rendered_sha256", "delivery_json"} <= publications
+    assert {"attempts", "ref", "rendered_sha256", "delivery_json", "attention_json"} <= publications
     assert {
         "submission_json",
         "linked_number",
@@ -1254,6 +1254,7 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("ALTER TABLE bills DROP COLUMN observed_closure_date")
         conn.execute("ALTER TABLE bills DROP COLUMN observed_process_json")
         conn.execute("ALTER TABLE publications DROP COLUMN delivery_json")
+        conn.execute("ALTER TABLE publications DROP COLUMN attention_json")
         conn.execute("ALTER TABLE status_changes DROP COLUMN consultation_opened")
         conn.execute("DROP TABLE analysis_memo")
         conn.execute("DROP TABLE llm_batch_items")

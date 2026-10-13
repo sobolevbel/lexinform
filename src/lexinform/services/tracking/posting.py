@@ -110,11 +110,17 @@ class Poster:
         self._attention_mode = attention_mode
         self._urgent_days = urgent_days
         self._max_group = max_group
+        self._attention_metrics: dict[str, int] = {}
+        self._counted: set[int] = set()
+        self._told_windows: dict[tuple[int, str, str, date], tuple[int, int]] = {}
         self._attempted: set[int] = set()
         self._sittings: dict[int, Publication] = {}
         self._updates: dict[int, Publication] = {}
 
     def start_run(self) -> None:
+        self._attention_metrics.clear()
+        self._counted.clear()
+        self._told_windows.clear()
         self._attempted.clear()
         self._sittings.clear()
         self._updates.clear()
@@ -127,7 +133,31 @@ class Poster:
     def flush_updates(self, result: TrackingResult) -> None:
         for deferred in self._repo.list_deferred_updates(self._channel_id):
             self.queue_update(deferred)
-        queued = list(self._updates.values())
+        queued = [
+            self._refresh_attention(pub)
+            if pub.delivery is not None and pub.delivery.policy_version == "attention-v1"
+            else pub
+            for pub in self._updates.values()
+        ]
+        if any(
+            pub.delivery is not None and pub.delivery.policy_version == "attention-v1"
+            for pub in queued
+        ):
+            queued.sort(
+                key=lambda pub: (
+                    not (
+                        pub.delivery is not None
+                        and pub.delivery.attention is not None
+                        and pub.delivery.attention.protected
+                    ),
+                    pub.delivery.attention.deadline or date.max
+                    if pub.delivery is not None and pub.delivery.attention is not None
+                    else date.max,
+                    pub.term,
+                    pub.number,
+                    pub.id or 0,
+                )
+            )
         self._updates.clear()
         batch: list[Publication] = []
         news: list[UpdateNews] = []
@@ -140,9 +170,19 @@ class Poster:
             plan = pub.delivery
             if plan.absorbed_by is not None or pub.id in self._attempted:
                 continue
+            if plan.policy_version == "attention-v1" and self._never_attempted(pub):
+                pub = self._refresh_attention(pub)
+                assert pub.delivery is not None
+                plan = pub.delivery
+            protected = (
+                plan.attention is not None
+                and plan.attention.protected
+                and plan.policy_version == "attention-v1"
+            )
             current = self._repo.get(pub.term, pub.number)
             if (
-                plan.wait_until is not None
+                not protected
+                and plan.wait_until is not None
                 and self._clock.now() < plan.wait_until
                 and current is not None
                 and current.status in (BillStatus.BATCH_PENDING, BillStatus.REANALYSIS_READY)
@@ -153,7 +193,20 @@ class Poster:
                 change=StatusChange.model_validate_json(plan.change_json),
                 card_message_id=plan.reply_to,
             )
-            if batch and not self._publisher.updates_fit([*news, item], today=today):
+            if protected:
+                if batch:
+                    self._flush_update_batch(batch, news, result, today)
+                    batch, news = [], []
+                result.count_post(self.status_update(item.bill, item.change))
+                continue
+            if batch and (
+                (plan.policy_version == "attention-v1" and len(batch) >= self._max_group)
+                or (
+                    batch[0].delivery is not None
+                    and batch[0].delivery.policy_version != plan.policy_version
+                )
+                or not self._publisher.updates_fit([*news, item], today=today)
+            ):
                 self._flush_update_batch(batch, news, result, today)
                 batch, news = [], []
             batch.append(pub)
@@ -232,6 +285,7 @@ class Poster:
             identities,
             lambda: self._publisher.publish_updates(plan.group_text),
         )
+        self._count_attention(identities, sent)
         result.count_post(sent is not None)
         if sent is not None:
             result.update_events += len(identities) - 1
@@ -256,6 +310,8 @@ class Poster:
         if pub is None or pub.id is None:
             return
         if pub.status in (PublicationStatus.QUEUED, PublicationStatus.FAILED):
+            if pub.delivery is not None and pub.delivery.sitting_group:
+                return
             self._sittings.pop(pub.id, None)
             self._repo.mark_publication(pub.id, PublicationStatus.SKIPPED, count_attempt=False)
 
@@ -267,8 +323,37 @@ class Poster:
         news: list[SittingNews] = []
         for pub in queued:
             assert pub.id is not None and pub.delivery is not None, "queue_sitting keeps these"
+            if pub.id in self._attempted:
+                continue
+            if pub.delivery.sitting_group:
+                if batch:
+                    self._send_sittings(batch, news, result)
+                    batch, news = [], []
+                self._retry_sitting_group(pub, result)
+                continue
+            if pub.delivery.policy_version == "attention-v1":
+                pub = self._refresh_attention(pub)
+                assert pub.delivery is not None
+            assert pub.delivery is not None
             line = SittingNews.of(pub.kind, pub.delivery)
-            if batch and not self._publisher.sittings_fit([*news, line]):
+            if (
+                pub.delivery.policy_version == "attention-v1"
+                and pub.delivery.attention is not None
+                and pub.delivery.attention.protected
+            ):
+                if batch:
+                    self._send_sittings(batch, news, result)
+                    batch, news = [], []
+                self._send_sittings([pub], [line], result)
+                continue
+            if batch and (
+                (pub.delivery.policy_version == "attention-v1" and len(batch) >= self._max_group)
+                or (
+                    batch[0].delivery is not None
+                    and batch[0].delivery.policy_version != pub.delivery.policy_version
+                )
+                or not self._publisher.sittings_fit([*news, line])
+            ):
                 self._send_sittings(batch, news, result)
                 batch, news = [], []
             batch.append(pub)
@@ -279,6 +364,23 @@ class Poster:
     def _send_sittings(
         self, pubs: list[Publication], news: list[SittingNews], result: TrackingResult
     ) -> None:
+        if all(
+            pub.delivery is not None and pub.delivery.policy_version == "attention-v1"
+            for pub in pubs
+        ):
+            group_ids = tuple(pub.id for pub in pubs if pub.id is not None)
+            text = self._publisher.render_sittings(news)
+            with self._repo.atomic():
+                for pub in pubs:
+                    assert pub.id is not None and pub.delivery is not None
+                    planned = pub.delivery.model_copy(
+                        update={"sitting_group": group_ids, "group_text": text}
+                    )
+                    assert self._repo.replace_unattempted_delivery(pub.id, planned)
+            stored = self._repo.publication_by_id(group_ids[0])
+            assert stored is not None
+            self._retry_sitting_group(stored, result)
+            return
         identities: list[int] = []
         with self._repo.atomic():
             for pub in pubs:
@@ -289,10 +391,47 @@ class Poster:
         message_id = send_publications(
             self._repo, self._clock, identities, lambda: self._publisher.publish_sittings(news)
         )
+        self._count_attention(tuple(identities), message_id)
         for pub in pubs:
             cancelled = pub.kind is PublicationKind.AGENDA_CANCELLED
             result.count_post(
                 message_id is not None, "agenda_cancelled" if cancelled else "agenda_posted"
+            )
+
+    def _retry_sitting_group(self, pub: Publication, result: TrackingResult) -> None:
+        assert pub.delivery is not None and pub.delivery.sitting_group
+        identities = pub.delivery.sitting_group
+        if any(identity in self._attempted for identity in identities):
+            return
+        members = [self._repo.publication_by_id(identity) for identity in identities]
+        if any(
+            member is None
+            or member.status not in (PublicationStatus.QUEUED, PublicationStatus.FAILED)
+            or member.attempts >= self._max_attempts
+            or member.channel_id != self._channel_id
+            or member.delivery is None
+            or member.delivery.sitting_group != identities
+            or member.delivery.group_text != pub.delivery.group_text
+            for member in members
+        ):
+            return
+        with self._repo.atomic():
+            for identity in identities:
+                self._repo.mark_publication(
+                    identity, PublicationStatus.PENDING, count_attempt=False
+                )
+        self._attempted.update(identities)
+        sent = send_publications(
+            self._repo, self._clock, identities, lambda: self._publisher.publish_prepared(pub)
+        )
+        self._count_attention(identities, sent)
+        for member in members:
+            assert member is not None
+            result.count_post(
+                sent is not None,
+                "agenda_cancelled"
+                if member.kind is PublicationKind.AGENDA_CANCELLED
+                else "agenda_posted",
             )
 
     def card(self, bill: Bill) -> Publication | None:
@@ -436,7 +575,10 @@ class Poster:
             assert pub is not None
             sent = self.retry_update_group(pub, result)
             return Told.SENT if sent else Told.FAILED
-        if routine_update(bill, change, plan) and not window_closes_within(
+        routine = routine_update(bill, change, plan)
+        if plan.policy_version == "attention-v1" and plan.attention is not None:
+            routine = not plan.attention.protected and plan.edit_message_id is None
+        if routine and not window_closes_within(
             bill, self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(), 3
         ):
             assert change.id is not None
@@ -465,7 +607,16 @@ class Poster:
     def hold(self, bill: Bill, change: StatusChange) -> None:
         """Keep a service-stage change for the next post instead of sending it now."""
         assert change.id is not None, "only a change record_change stored reaches the poster"
-        self._repo.create_publication(self._update_row(bill, change.id, PublicationStatus.SKIPPED))
+        row = self._update_row(bill, change.id, PublicationStatus.SKIPPED)
+        if self._attention_mode != "off":
+            row.attention = assess_attention(
+                bill,
+                PublicationKind.STATUS_UPDATE,
+                change=change,
+                now=self._clock.now(),
+                urgent_days=self._urgent_days,
+            )
+        self._repo.create_publication(row)
         log.info(
             "druk %s: %s held for the next update",
             bill.number,
@@ -500,10 +651,27 @@ class Poster:
             delivery = delivery.model_copy(update={"wait_until": None})
             assert self._repo.replace_unsent_update_delivery(change.id, self._channel_id, delivery)
         pub_id = self._repo.create_publication(
-            self._update_row(bill, change.id, PublicationStatus.PENDING)
+            self._update_row(
+                bill,
+                change.id,
+                PublicationStatus.QUEUED
+                if delivery.policy_version == "attention-v1"
+                else PublicationStatus.PENDING,
+            )
         )
         snapshot = Bill.model_validate_json(delivery.bill_json)
         planned_change = StatusChange.model_validate_json(delivery.change_json)
+        if delivery.policy_version == "attention-v1":
+            pub = self._repo.publication_by_id(pub_id)
+            assert pub is not None
+            pub = self._freeze(pub)
+            self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
+            return (
+                self._send(
+                    pub_id, snapshot, lambda _: self._publisher.publish_prepared(pub).message_id
+                )
+                is not None
+            )
         message_id = self._send(
             pub_id,
             snapshot,
@@ -595,6 +763,7 @@ class Poster:
             ),
             reply_to=card.message_id if card else None,
             with_act=with_act and snapshot.act is not None,
+            today=self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(),
         )
         if (
             snapshot.status is BillStatus.BATCH_PENDING
@@ -683,6 +852,7 @@ class Poster:
             return delivery.model_copy(
                 update={
                     "change_json": enriched.model_dump_json(),
+                    "rendered_text": "",
                     "edit_message_id": post.message_id,
                     "today": delivery.today
                     or (post.sent_at or post.created_at)
@@ -710,7 +880,23 @@ class Poster:
         original = Bill.model_validate_json(delivery.bill_json)
         snapshot = original.model_copy(update={"act": snapshot.act})
         planned = delivery.model_copy(
-            update={"with_act": True, "bill_json": snapshot.model_dump_json()}
+            update={
+                "with_act": True,
+                "bill_json": snapshot.model_dump_json(),
+                "rendered_text": "",
+                "attention": assess_attention(
+                    snapshot,
+                    PublicationKind.STATUS_UPDATE,
+                    change=StatusChange.model_validate_json(delivery.change_json),
+                    with_act=True,
+                    now=self._clock.now(),
+                    urgent_days=self._urgent_days,
+                )
+                if self._attention_mode != "off" or delivery.policy_version == "attention-v1"
+                else None,
+                "attention_history": delivery.attention_history
+                + ((delivery.attention,) if delivery.attention else ()),
+            }
         )
         if not self._repo.replace_unsent_update_delivery(change_id, self._channel_id, planned):
             return delivery
@@ -845,11 +1031,126 @@ class Poster:
         )
         if pub.id in self._attempted:
             return False
+        if pub.delivery.policy_version == "attention-v1":
+            pub = self._refresh_attention(pub)
+            assert pub.delivery is not None and pub.id is not None
+            assessment = pub.delivery.attention
+            if (
+                pub.attempts == 0
+                and not pub.delivery.rendered_text
+                and pub.kind
+                in (
+                    PublicationKind.CONSULTATION_DEADLINE,
+                    PublicationKind.HEARING_DEADLINE,
+                    PublicationKind.IN_FORCE,
+                )
+                and assessment is not None
+                and assessment.deadline is not None
+            ):
+                owner = self._told_windows.get(
+                    (pub.term, pub.number, assessment.action, assessment.deadline)
+                )
+                if owner is not None:
+                    plan = pub.delivery.model_copy(update={"absorbed_by": owner[0]})
+                    assert self._repo.replace_unattempted_delivery(pub.id, plan)
+                    self._repo.mark_publication(
+                        pub.id,
+                        PublicationStatus.SENT,
+                        message_id=owner[1],
+                        sent_at=self._clock.now(),
+                        count_attempt=False,
+                    )
+                    self._attention_metrics["absorbed_reminders"] = (
+                        self._attention_metrics.get("absorbed_reminders", 0) + 1
+                    )
+                    return True
+            if (
+                pub.attempts == 0
+                and not pub.delivery.rendered_text
+                and pub.kind
+                in (PublicationKind.CONSULTATION_DEADLINE, PublicationKind.HEARING_DEADLINE)
+                and pub.delivery.attention is not None
+                and "expired_window" in pub.delivery.attention.reasons
+            ):
+                self._repo.mark_publication(pub.id, PublicationStatus.SKIPPED, count_attempt=False)
+                self._attention_metrics["expired"] = self._attention_metrics.get("expired", 0) + 1
+                return False
+            pub = self._freeze(pub)
+        assert pub.id is not None and pub.delivery is not None
         self._attempted.add(pub.id)
         plan = pub.delivery
         bill = Bill.model_validate_json(plan.bill_json)
         self._repo.mark_publication(pub.id, PublicationStatus.PENDING, count_attempt=False)
+        if plan.rendered_text:
+            return (
+                self._send(pub.id, bill, lambda _: self._publisher.publish_prepared(pub).message_id)
+                is not None
+            )
         return self._send(pub.id, bill, lambda _: self._dispatch(pub.kind, bill, plan)) is not None
+
+    def _freeze(self, pub: Publication) -> Publication:
+        assert pub.delivery is not None and pub.id is not None
+        if pub.delivery.rendered_text:
+            return pub
+        plan = pub.delivery.model_copy(
+            update={"rendered_text": self._publisher.render_delivery(pub)}
+        )
+        if self._repo.replace_unattempted_delivery(pub.id, plan):
+            return pub.model_copy(update={"delivery": plan})
+        return pub
+
+    def _refresh_attention(self, pub: Publication) -> Publication:
+        assert pub.delivery is not None and pub.id is not None
+        if (
+            pub.status is not PublicationStatus.QUEUED
+            or pub.attempts
+            or pub.delivery.publication_ids
+            or pub.delivery.rendered_text
+        ):
+            return pub
+        plan = pub.delivery
+        bill = Bill.model_validate_json(plan.bill_json)
+        current = self._repo.get(pub.term, pub.number)
+        if current is not None:
+            bill = bill.model_copy(update={"editorial": current.editorial})
+            if pub.kind is PublicationKind.CONSULTATION_DEADLINE:
+                bill = bill.model_copy(
+                    update={"submission": current.submission, "rcl": current.rcl}
+                )
+        assessment = assess_attention(
+            bill,
+            pub.kind,
+            now=self._clock.now(),
+            detected_at=plan.attention.detected_at if plan.attention else pub.created_at,
+            change=StatusChange.model_validate_json(plan.change_json) if plan.change_json else None,
+            item=AgendaItem.model_validate_json(plan.item_json) if plan.item_json else None,
+            moved_from=AgendaItem.model_validate_json(plan.moved_from_json)
+            if plan.moved_from_json
+            else None,
+            hearing=Stage.model_validate_json(plan.hearing_json) if plan.hearing_json else None,
+            with_act=plan.with_act,
+            urgent_days=self._urgent_days,
+        )
+        previous = plan.attention
+        if previous is not None and (
+            previous.importance,
+            previous.urgency,
+            previous.reasons,
+            previous.action,
+        ) == (assessment.importance, assessment.urgency, assessment.reasons, assessment.action):
+            return pub
+        plan = plan.model_copy(
+            update={
+                "attention": assessment,
+                "attention_history": plan.attention_history + ((previous,) if previous else ()),
+                "rendered_text": "",
+                "today": self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(),
+                "bill_json": bill.model_dump_json(),
+            }
+        )
+        if self._repo.replace_unattempted_delivery(pub.id, plan):
+            return pub.model_copy(update={"delivery": plan})
+        return pub
 
     def _dispatch(self, kind: PublicationKind, bill: Bill, plan: DeliveryPlan) -> int:
         reply = plan.reply_to
@@ -884,9 +1185,70 @@ class Poster:
     def _send(self, pub_id: int, bill: Bill, send: Send) -> int | None:
         card = self.card(bill)
         reply_to = card.message_id if card else None
-        return send_publication(
+        sent = send_publication(
             self._repo,
             self._clock,
             pub_id,
             lambda: send(reply_to),
         )
+
+        self._count_attention((pub_id,), sent)
+        return sent
+
+    def attention_metrics(self) -> dict[str, int]:
+        return dict(self._attention_metrics)
+
+    def _count_attention(self, identities: tuple[int, ...], sent: int | None) -> None:
+        if sent is None:
+            return
+        messages = False
+        for identity in identities:
+            if identity in self._counted:
+                continue
+            self._counted.add(identity)
+            pub = self._repo.publication_by_id(identity)
+            if pub is None:
+                continue
+            if pub.kind is PublicationKind.STATUS_UPDATE and pub.delivery is not None:
+                snapshot = Bill.model_validate_json(pub.delivery.bill_json)
+                chosen = snapshot.editorial.mnemonic
+                current = self._repo.get(pub.term, pub.number)
+                if (
+                    chosen is not None
+                    and current is not None
+                    and current.editorial.mnemonic == chosen
+                ):
+                    self._repo.save_editorial(
+                        pub.term,
+                        pub.number,
+                        current.editorial.model_copy(update={"announced_version": chosen.version}),
+                    )
+            if pub.attention is None:
+                continue
+            assessment = pub.attention
+            if (
+                assessment.deadline is not None
+                and assessment.action != "wait"
+                and pub.kind in (PublicationKind.STATUS_UPDATE, PublicationKind.ACT_PUBLISHED)
+            ):
+                self._told_windows[
+                    (pub.term, pub.number, assessment.action, assessment.deadline)
+                ] = (identity, sent)
+            keys = ["events", assessment.importance]
+            if assessment.urgency == "urgent":
+                keys.append("urgent")
+            if len(identities) > 1:
+                keys.append("grouped")
+            if (
+                assessment.deadline is not None
+                and assessment.deadline
+                < self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date()
+                and assessment.action != "wait"
+            ):
+                keys.append("overdue")
+            keys.extend(f"reason/{reason}" for reason in assessment.reasons)
+            for key in keys:
+                self._attention_metrics[key] = self._attention_metrics.get(key, 0) + 1
+            messages = messages or pub.delivery is None or pub.delivery.edit_message_id is None
+        if messages:
+            self._attention_metrics["messages"] = self._attention_metrics.get("messages", 0) + 1

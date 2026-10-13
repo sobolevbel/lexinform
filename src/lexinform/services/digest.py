@@ -9,12 +9,14 @@ import datetime as dt
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
+from functools import partial
 from zoneinfo import ZoneInfo
 
 from lexinform.models import (
     DIGEST_NUMBER,
     DIGEST_TERM,
     Bill,
+    DeliveryPlan,
     Digest,
     DigestEntry,
     MonthFigures,
@@ -23,6 +25,7 @@ from lexinform.models import (
     PublicationStatus,
     RunMode,
     RunReport,
+    StatusChange,
     Upcoming,
     WeekFigures,
     consultation_open,
@@ -108,6 +111,7 @@ class DigestService:
         local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
         closed_grace_days: int = 90,
         pending_decision_max_days: int = 1095,
+        attention_enabled: bool = False,
     ) -> None:
         self._repo = repo
         self._publisher = publisher
@@ -120,10 +124,14 @@ class DigestService:
         self._tz = local_tz
         self._closed_grace_days = closed_grace_days
         self._pending_decision_max_days = pending_decision_max_days
+        self._attention_enabled = attention_enabled
 
     def today(self) -> dt.date:
         """The reader's day, which is the Sejm's: a digest is due on a Warsaw Sunday."""
         return self._clock.now().astimezone(self._tz).date()
+
+    def owns_channel(self, channel: str) -> bool:
+        return channel in (self._channel_id, self._draft_channel_id)
 
     def current_ref(self) -> str:
         """The last ISO week that has ended, which is what a digest sent now is about.
@@ -136,6 +144,9 @@ class DigestService:
 
     def run(self, *, current_report: RunReport | None = None) -> DigestResult:
         """The digest phase of a run: draft the week on its day, and nothing on any other."""
+        resumed = self._resume_parts()
+        if resumed is not None:
+            return resumed
         if self._drafter is None:
             return DigestResult(note="no technical channel: a digest is never sent unread")
         if self.today().weekday() != self._weekday:
@@ -152,10 +163,19 @@ class DigestService:
         existing = self._repo.get_publication(
             DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, self._draft_channel_id, ref=ref
         )
-        if not repeat and existing is not None and existing.status is PublicationStatus.SENT:
+        if (
+            not repeat
+            and existing is not None
+            and existing.status is PublicationStatus.SENT
+            and self._parts_complete(existing)
+        ):
             return DigestResult(ref=ref, message_id=existing.message_id, note="drafted already")
         delivery_ref = ref
-        while existing is not None and existing.status is PublicationStatus.SENT:
+        while (
+            existing is not None
+            and existing.status is PublicationStatus.SENT
+            and self._parts_complete(existing)
+        ):
             delivery_ref = f"{ref}:draft:{existing.id}"
             existing = self._repo.get_publication(
                 DIGEST_TERM,
@@ -170,6 +190,7 @@ class DigestService:
             week,
             lambda: drafter.publish_digest(week, approve=self._approve).message_id,
             delivery_ref=delivery_ref,
+            publisher=drafter,
         )
         if message_id is None:
             return DigestResult(ref=ref, failed=True, note=f"{ref} was not posted, see the log")
@@ -180,13 +201,20 @@ class DigestService:
         existing = self._repo.get_publication(
             DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, self._channel_id, ref=ref
         )
-        if existing is not None and existing.status is PublicationStatus.SENT:
+        if (
+            existing is not None
+            and existing.status is PublicationStatus.SENT
+            and self._parts_complete(existing)
+        ):
             return DigestResult(
                 ref=ref, message_id=existing.message_id, note="this week is in the channel already"
             )
         week = self.build(ref)
         message_id = self._send(
-            self._channel_id, week, lambda: self._publisher.publish_digest(week).message_id
+            self._channel_id,
+            week,
+            lambda: self._publisher.publish_digest(week).message_id,
+            publisher=self._publisher,
         )
         if message_id is None:
             return DigestResult(ref=ref, failed=True, note=f"{ref} was not posted, see the log")
@@ -212,6 +240,8 @@ class DigestService:
             or (post.delivery is not None and post.delivery.update_group)
         }
         for post in posts:
+            if post.delivery is not None and post.delivery.absorbed_by is not None:
+                continue
             if post.delivery is not None and post.delivery.edit_message_id is not None:
                 continue
             entry = self._entry(post, bills)
@@ -252,6 +282,22 @@ class DigestService:
             sittings=tuple(sittings),
             month=self._month(ref),
             figures=WeekFigures.of(reports) if reports else None,
+            highlights=tuple(
+                sorted(
+                    [
+                        entry
+                        for entry in [*cards, *updates]
+                        if entry.attention is not None and entry.attention.importance == "important"
+                    ],
+                    key=lambda entry: (
+                        entry.attention.urgency != "urgent" if entry.attention else True,
+                        entry.attention.deadline or dt.date.max if entry.attention else dt.date.max,
+                        entry.term,
+                        entry.number,
+                        entry.sent_at,
+                    ),
+                )[:3]
+            ),
         )
 
     def _entry(self, post: Publication, bills: dict[tuple[int, str], Bill]) -> DigestEntry | None:
@@ -263,18 +309,33 @@ class DigestService:
                 return None
             bills[key] = found
         bill = bills[key]
+        if post.delivery is not None and post.delivery.bill_json:
+            bill = Bill.model_validate_json(post.delivery.bill_json)
         analysis = bill.analysis.analysis if bill.analysis is not None else None
+        change = None
+        if post.delivery is not None and post.delivery.change_json:
+            change = StatusChange.model_validate_json(post.delivery.change_json)
+        consequence = ""
+        if analysis is not None:
+            if change is not None and change.content_changed:
+                consequence = " ".join(analysis.changes_since_previous[:2])
+            elif post.kind in CARD_KINDS:
+                consequence = " ".join(analysis.key_changes[:2])
         return DigestEntry(
             term=bill.term,
             number=bill.number,
             title=bill.summary.title,
+            mnemonic=bill.editorial.mnemonic.name if bill.editorial.mnemonic else "",
+            mnemonic_language=bill.editorial.mnemonic.language if bill.editorial.mnemonic else "ru",
+            consequence=consequence,
+            attention=post.attention,
             kind=post.kind,
             sent_at=post.sent_at or post.created_at,
             message_id=post.message_id,
             score=analysis.score if analysis is not None else None,
             category=analysis.category if analysis is not None else None,
             wykaz_number=_wykaz_number(bill),
-            event=self._event(post, bill),
+            event=update_event(change, bill) if change is not None else self._event(post, bill),
         )
 
     def _event(self, post: Publication, bill: Bill) -> str:
@@ -318,6 +379,12 @@ class DigestService:
             term=bill.term,
             number=bill.number,
             title=bill.summary.title,
+            mnemonic=bill.editorial.mnemonic.name if bill.editorial.mnemonic else "",
+            mnemonic_language=bill.editorial.mnemonic.language if bill.editorial.mnemonic else "ru",
+            action_url=bill.consultation.survey_url or bill.consultation.form_url
+            if bill.consultation
+            else None,
+            action_email=bill.consultation.email if bill.consultation else None,
             message_id=card.message_id if card is not None else None,
             wykaz_number=_wykaz_number(bill),
             **what,
@@ -352,12 +419,20 @@ class DigestService:
         post: Callable[[], int],
         *,
         delivery_ref: str | None = None,
+        publisher: Publisher | None = None,
     ) -> int | None:
         """Record the row before sending it, and the outcome after; the message id on success."""
         ref = delivery_ref or week.ref
         existing = self._repo.get_publication(
             DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, channel_id, ref=ref
         )
+        if (
+            existing is not None
+            and existing.delivery is not None
+            and existing.delivery.digest_parts
+        ) or (self._attention_enabled and existing is None):
+            assert publisher is not None
+            return self._send_parts(channel_id, week, publisher, ref=ref, existing=existing)
         if existing is not None and existing.status in (
             PublicationStatus.PENDING,
             PublicationStatus.UNKNOWN,
@@ -382,3 +457,118 @@ class DigestService:
             )
         )
         return send_publication(self._repo, self._clock, pub_id, post)
+
+    def _parts_complete(self, publication: Publication) -> bool:
+        if publication.delivery is None or not publication.delivery.digest_parts:
+            return True
+        return all(
+            part is not None and part.status is PublicationStatus.SENT
+            for identity in publication.delivery.digest_parts
+            for part in (self._repo.publication_by_id(identity),)
+        )
+
+    def _send_parts(
+        self,
+        channel_id: str,
+        week: Digest,
+        publisher: Publisher,
+        *,
+        ref: str,
+        existing: Publication | None,
+    ) -> int | None:
+        if existing is None:
+            texts = publisher.render_digest(week, draft=channel_id == self._draft_channel_id)
+            identities: list[int] = []
+            with self._repo.atomic():
+                for index, text in enumerate(texts):
+                    identities.append(
+                        self._repo.create_publication(
+                            Publication(
+                                term=DIGEST_TERM,
+                                number=DIGEST_NUMBER,
+                                kind=PublicationKind.DIGEST,
+                                status=PublicationStatus.QUEUED,
+                                channel_id=channel_id,
+                                ref=ref if index == 0 else f"{ref}:part:{index + 1}",
+                                created_at=self._clock.now(),
+                                delivery=DeliveryPlan(
+                                    bill_json="",
+                                    rendered_text=text,
+                                    policy_version="attention-v1",
+                                    digest_ref=week.ref,
+                                    approve_label=self._approve
+                                    if channel_id == self._draft_channel_id
+                                    and index == len(texts) - 1
+                                    else "",
+                                ),
+                            )
+                        )
+                    )
+                root = self._repo.publication_by_id(identities[0])
+                assert root is not None and root.delivery is not None and root.id is not None
+                assert self._repo.replace_unattempted_delivery(
+                    root.id, root.delivery.model_copy(update={"digest_parts": tuple(identities)})
+                )
+            existing = self._repo.publication_by_id(identities[0])
+        assert existing is not None and existing.delivery is not None
+        for identity in existing.delivery.digest_parts:
+            part = self._repo.publication_by_id(identity)
+            assert part is not None
+            if part.status is PublicationStatus.SENT:
+                continue
+            if part.status not in (PublicationStatus.QUEUED, PublicationStatus.FAILED):
+                return None
+            self._repo.mark_publication(identity, PublicationStatus.PENDING, count_attempt=False)
+            if (
+                send_publication(
+                    self._repo, self._clock, identity, partial(publisher.publish_prepared, part)
+                )
+                is None
+            ):
+                return None
+        root = self._repo.publication_by_id(existing.id) if existing.id is not None else None
+        return root.message_id if root is not None else None
+
+    def _resume_parts(self) -> DigestResult | None:
+        for channel, publisher in (
+            (self._channel_id, self._publisher),
+            (self._draft_channel_id, self._drafter),
+        ):
+            if publisher is None:
+                continue
+            for part in self._repo.list_due_deliveries(channel, max_attempts=3):
+                if part.kind is not PublicationKind.DIGEST or part.delivery is None or not part.ref:
+                    continue
+                root_ref = part.ref.split(":part:", 1)[0]
+                root = self._repo.get_publication(
+                    DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, channel, ref=root_ref
+                )
+                if root is None or root.delivery is None or not root.delivery.digest_parts:
+                    continue
+                members = [
+                    self._repo.publication_by_id(identity)
+                    for identity in root.delivery.digest_parts
+                ]
+                if any(
+                    member is None
+                    or member.status
+                    not in (
+                        PublicationStatus.QUEUED,
+                        PublicationStatus.FAILED,
+                        PublicationStatus.SENT,
+                    )
+                    for member in members
+                ):
+                    continue
+                ref = part.delivery.digest_ref
+                sent = self._send_parts(
+                    channel, self.build(ref), publisher, ref=root_ref, existing=root
+                )
+                return DigestResult(
+                    ref=ref,
+                    message_id=sent,
+                    failed=sent is None,
+                    drafted=sent is not None and channel == self._draft_channel_id,
+                    published=sent is not None and channel == self._channel_id,
+                )
+        return None

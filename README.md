@@ -265,6 +265,8 @@ Environment variables or `.env`. `ANTHROPIC_API_KEY` is read by the SDK.
 | `LEXINFORM_LLM_TRIAGE_MODEL` | `claude-sonnet-5` | Model for the cheap first pass on excerpts (`""` disables it) |
 | `LEXINFORM_TRIAGE_MIN_CHARS` / `_TRIAGE_MIN_CONFIDENCE` | `20000` / `0.8` | Texts shorter than this skip the triage; confidence a rejection needs |
 | `LEXINFORM_OUTPUT_LANGUAGE` | `ru` | `ru` or `en` (add more in `i18n.py`) |
+| `LEXINFORM_READER_ATTENTION` | `shadow` | `off`: legacy; `shadow`: save event assessments; `on`: attention labels, routing and complete digest parts |
+| `LEXINFORM_ATTENTION_URGENT_DAYS` / `_ATTENTION_MAX_GROUP` | `3` / `5` | Near-deadline horizon in Warsaw calendar days / maximum bills per new-policy roundup |
 | `LEXINFORM_MIN_SCORE` | `3` | Minimum importance to publish |
 | `LEXINFORM_MAX_PUBLISH_PER_RUN` / `_MAX_ANALYZE_PER_RUN` | `10` / `40` | Flood and cost caps |
 | `LEXINFORM_MAX_ANALYSIS_ATTEMPTS` | `3` | Attempts per bill before the analysis is given up on (an outage costs none) |
