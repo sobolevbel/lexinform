@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -16,6 +17,16 @@ def execution_script() -> str:
             break
         script.append(line[10:])
     return "\n".join(script)
+
+
+def test_only_enabled_jobs_share_a_non_replacing_state_queue() -> None:
+    workflow = Path(__file__).parents[2] / ".github/workflows/daily.yml"
+    text = workflow.read_text()
+    assert re.search(r"^concurrency:", text, re.MULTILINE) is None
+    lock = re.search(r"^    concurrency:\n((?:      .+\n)+)", text, re.MULTILINE)
+    assert lock is not None
+    options = dict(line.strip().split(": ", 1) for line in lock.group(1).splitlines())
+    assert options == {"group": "lexinform-daily", "cancel-in-progress": "false", "queue": "max"}
 
 
 @pytest.mark.parametrize("pending_commands", [False, True])

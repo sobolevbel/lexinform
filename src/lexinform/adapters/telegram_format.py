@@ -80,6 +80,7 @@ from lexinform.models import (
     ministry_url,
     next_phase,
     open_hearing,
+    participation_view,
     print_web_url,
     process_web_url,
     reaches_sejm,
@@ -1001,6 +1002,8 @@ class MessageFormatter:
         return RenderedMessage(text=text)
 
     def updates(self, news: Sequence[UpdateNews], *, today: dt.date) -> str:
+        if self._attention_enabled:
+            return self._attention_updates(news, today=today)
         groups: dict[str, list[UpdateNews]] = {}
         for item in news:
             steps = "\n".join(
@@ -1027,6 +1030,20 @@ class MessageFormatter:
                 blocks.append(actions[0])
         return "\n\n".join(block for block in blocks if block)
 
+    def _attention_updates(self, news: Sequence[UpdateNews], *, today: dt.date) -> str:
+        groups: dict[tuple[str, str], list[UpdateNews]] = {}
+        for item in news:
+            next_step = self._next_step_line(item.bill, today)
+            action = self._roundup_action(item.bill, today)
+            groups.setdefault((next_step, action), []).append(item)
+        blocks = [f"{ICON['update']} <b>{esc(self._labels.attention_roundup)}</b>"]
+        for (next_step, action), items in groups.items():
+            blocks.extend(self._update_entry(item, today, compact=True) for item in items)
+            blocks.append("\n".join(line for line in (next_step, action) if line))
+        tags = dict.fromkeys(tag for item in news for tag in self._tags(item.bill).split())
+        blocks.append(" ".join(tags))
+        return "\n\n".join(block for block in blocks if block)
+
     def _roundup_action(self, bill: Bill, today: dt.date) -> str:
         project = bill.rcl
         if project is None or bill.consultation is None or consultation_open(bill, today):
@@ -1044,7 +1061,7 @@ class MessageFormatter:
     def updates_fit(self, news: Sequence[UpdateNews], *, today: dt.date) -> bool:
         return length(self.updates(news, today=today)) <= MESSAGE_LIMIT
 
-    def _update_entry(self, item: UpdateNews, today: dt.date) -> str:
+    def _update_entry(self, item: UpdateNews, today: dt.date, *, compact: bool = False) -> str:
         bill, change = item.bill, item.change
         label = self._number_label(bill)
         url = self._post_url(item.card_message_id)
@@ -1053,19 +1070,22 @@ class MessageFormatter:
             lead(bill.analysis.analysis.summary) if bill.analysis else bill.summary.title
         )
         event = update_event(change, bill)
-        lines = [
-            f"<b>{reference}</b> — {esc(fit(subject, 180))}",
-            esc(self._event_header(change, event)),
-        ]
-        lines.extend(
+        stage_lines = [
             f"• {self._stage_line(stage, today)}" for stage in told_stages(change.new_stages)
-        )
+        ]
+        lines = [f"<b>{reference}</b> — {esc(fit(subject, 180))}"]
+        if compact:
+            lines.append(f"<i>{esc(self._norm_state(bill, today))}</i>")
+        if not compact or not stage_lines:
+            lines.append(esc(self._event_header(change, event)))
+        lines.extend(stage_lines)
         links = self._update_links(bill, change)
         if bill.has_process:
             redundant = link(print_web_url(bill.term, bill.number), self._labels.link_sejm_project)
             links = [value for value in links if value != redundant]
         lines.append(self._links(links))
-        lines.append(self._tags(bill))
+        if not compact:
+            lines.append(self._tags(bill))
         return "\n".join(line for line in lines if line)
 
     def sittings_fit(self, news: Sequence[SittingNews]) -> bool:
@@ -1786,7 +1806,7 @@ class MessageFormatter:
             return plan.group_text
         if plan.rendered_text:
             return plan.rendered_text
-        bill = Bill.model_validate_json(plan.bill_json)
+        bill = participation_view(Bill.model_validate_json(plan.bill_json), plan.participation)
         kind = pub.kind
         info = PrintInfo.model_validate_json(plan.print_json) if plan.print_json else None
         if kind is PublicationKind.NEW_BILL:
@@ -2260,7 +2280,7 @@ class MessageFormatter:
             )
         if window.source == "rcl":
             when = (
-                self._rcl_deadline(bill, window)
+                self._rcl_deadline(window)
                 if window.end is not None
                 else esc(lb.consultation_deadline_in_letter)
             )
@@ -2273,12 +2293,12 @@ class MessageFormatter:
             f"{self._consultation_where(window)}"
         )
 
-    def _rcl_deadline(self, bill: Bill, window: ConsultationWindow) -> str:
+    def _rcl_deadline(self, window: ConsultationWindow) -> str:
         """ "до 08.09.2026 (7 дн. с даты письма)"."""
         lb = self._labels
         assert window.end is not None, "the caller dates an RCL window only when its end is known"
         text = f"{esc(lb.consultation_until)} {self.fmt_date(window.end)}"
-        days = bill.rcl.consultation.days if bill.rcl and bill.rcl.consultation else None
+        days = window.days
         if days is not None:
             text += f" ({esc(lb.consultation_days_from_letter.format(days=days))})"
         return text

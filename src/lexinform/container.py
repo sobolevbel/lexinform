@@ -63,6 +63,7 @@ from lexinform.sections import TextBudget
 from lexinform.services.analysis import AnalysisOptions, AnalysisService
 from lexinform.services.commands import CommandService
 from lexinform.services.delivery import DeliveryService
+from lexinform.services.delivery_notifier import DeliveryNotifier
 from lexinform.services.digest import DigestService
 from lexinform.services.discovery import BillDiscoveryService
 from lexinform.services.documents import TextLoader
@@ -421,6 +422,23 @@ class Container:
         return self._once("telegram_publisher", self.telegram_publisher)
 
     def run_notifier(self, *, dry_run: bool) -> RunNotifier | None:
+        return self._once(f"notifier:{dry_run}", lambda: self._run_notifier(dry_run=dry_run))
+
+    def _run_notifier(self, *, dry_run: bool) -> RunNotifier | None:
+        notifier = self._raw_notifier(dry_run=dry_run)
+        return (
+            DeliveryNotifier(
+                notifier,
+                self.repo,
+                self.clock,
+                channel_id=self.channel_id(),
+                dry_run=dry_run,
+            )
+            if notifier is not None
+            else None
+        )
+
+    def _raw_notifier(self, *, dry_run: bool) -> RunNotifier | None:
         if self.notifier_override is not None:
             return self.notifier_override
         if dry_run and not os.environ.get("LEXINFORM_RUN_MESSAGE_ID"):

@@ -7,17 +7,194 @@ from lexinform.delivery_schedule import daily_schedule
 from lexinform.errors import DeliveryUncertainError
 from lexinform.models import (
     AttentionAssessment,
+    Bill,
+    BillSubmission,
     Editorial,
     Mnemonic,
     PriorityOverride,
     PublicationKind,
     PublicationStatus,
+    RunReport,
     Stage,
     StatusChange,
+    participation_view,
 )
 from lexinform.ports import PublishResult
-from tests.harness import CHANNEL, COMMITTEE_STAGES, TERM, World
+from tests.harness import CHANNEL, COMMITTEE_STAGES, RCL, TERM, World
 from tests.scenario.test_tracking_agenda import ASW, _sitting
+
+
+def save_window(w: World, end: dt.date | None, *, submission_number: str = "RPW/1/2026") -> None:
+    w.repo.save_submission(
+        TERM,
+        "3039",
+        BillSubmission(
+            term=TERM,
+            number=submission_number,
+            title="Учебный проект",
+            date_of_receipt=w.clock.now().date(),
+            public_consultation=True,
+            consultation_end=end,
+        ),
+    )
+
+
+def test_shortened_window_releases_routine_queue_without_rebasing_the_event() -> None:
+    w = World(reader_attention="on", attention_roundup="daily")
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    save_window(w, w.clock.now().date() + dt.timedelta(days=10))
+    w.set_stages("3039", COMMITTEE_STAGES)
+    assert w.run().updates == 0
+    pub = w.publication("3039", PublicationKind.STATUS_UPDATE)
+    assert pub is not None and pub.delivery is not None
+    frozen_event = pub.delivery.bill_json
+    w.clock.advance(hours=1)
+    end = w.clock.now().date() + dt.timedelta(days=2)
+    save_window(w, end)
+    calls = list(w.gateway.calls)
+
+    report = w.container.delivery_service(dry_run=False).run()
+
+    pub = w.publication("3039", PublicationKind.STATUS_UPDATE)
+    assert report.ok and report.updates == 1 and report.attention["urgent"] == 1
+    assert w.gateway.calls == calls
+    assert pub is not None and pub.delivery is not None and pub.attention is not None
+    assert pub.delivery.bill_json == frozen_event and pub.attention.deadline == end
+    assert pub.delivery.participation is not None
+    assert w.formatter.fmt_date(end) in pub.delivery.rendered_text
+    original = Bill.model_validate_json(frozen_event)
+    assert original.consultation is not None and original.consultation.end != end
+
+
+def test_reminder_refreshes_date_and_route_even_when_priority_does_not_change() -> None:
+    w = World(reader_attention="on", attention_roundup="daily")
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    save_window(w, w.clock.now().date() + dt.timedelta(days=2))
+    pub = w.container.poster(dry_run=False).prepare_message(
+        w.bill("3039"), PublicationKind.CONSULTATION_DEADLINE, today=w.clock.now().date()
+    )
+    assert pub.delivery is not None
+    original = pub.delivery.bill_json
+    end = w.clock.now().date() + dt.timedelta(days=1)
+    save_window(w, end, submission_number="RPW/2/2026")
+    w.repo.restore(w.repo.dump())
+
+    report = w.container.delivery_service(dry_run=False).run()
+
+    sent = w.repo.publication_by_id(pub.id or 0)
+    assert report.ok and report.consultation_reminders == 1
+    assert sent is not None and sent.delivery is not None and sent.attention is not None
+    assert sent.delivery.bill_json == original and sent.attention.deadline == end
+    assert sent.delivery.attention_history and sent.delivery.participation is not None
+    assert "https://opiniowanie.sejm.gov.pl/RPW-2-2026" in sent.delivery.rendered_text
+    assert w.formatter.fmt_date(end) in sent.delivery.rendered_text
+
+
+def test_disappeared_window_waits_for_evidence_without_invitation_or_attempt() -> None:
+    w = World(reader_attention="on")
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    save_window(w, w.clock.now().date() + dt.timedelta(days=2))
+    pub = w.container.poster(dry_run=False).prepare_message(
+        w.bill("3039"), PublicationKind.CONSULTATION_DEADLINE, today=w.clock.now().date()
+    )
+    save_window(w, None)
+
+    report = w.container.delivery_service(dry_run=False).run()
+
+    waiting = w.repo.publication_by_id(pub.id or 0)
+    assert report.ok and report.attention["participation_unavailable"] == 1
+    assert waiting is not None and waiting.status is PublicationStatus.QUEUED
+    assert waiting.attempts == 0 and not w.publisher.texts(PublicationKind.CONSULTATION_DEADLINE)
+    save_window(w, w.clock.now().date() + dt.timedelta(days=1))
+    resumed = w.container.delivery_service(dry_run=False).run()
+    assert resumed.ok and resumed.consultation_reminders == 1
+
+
+def test_rcl_reminder_refreshes_email_letter_and_day_count_without_rebasing_source() -> None:
+    w = World(reader_attention="on")
+    w.add_rcl_project()
+    w.run(track=False)
+    bill = w.bill(RCL)
+    assert bill.rcl is not None and bill.rcl.consultation is not None
+    pub = w.container.poster(dry_run=False).prepare_message(
+        bill, PublicationKind.CONSULTATION_DEADLINE, today=w.clock.now().date()
+    )
+    assert pub.delivery is not None
+    original = pub.delivery.bill_json
+    consultation = bill.rcl.consultation.model_copy(
+        update={
+            "email": "konsultacje@mswia.gov.pl",
+            "letter_url": "https://legislacja.rcl.gov.pl/docs/revised-letter.pdf",
+            "days": 14,
+        }
+    )
+    w.repo.save_rcl(TERM, RCL, bill.rcl.model_copy(update={"consultation": consultation}))
+    calls = list(w.rcl.calls)
+
+    report = w.container.delivery_service(dry_run=False).run()
+
+    sent = w.repo.publication_by_id(pub.id or 0)
+    assert report.ok and report.consultation_reminders == 1 and w.rcl.calls == calls
+    assert sent is not None and sent.delivery is not None
+    assert sent.delivery.bill_json == original and sent.delivery.participation is not None
+    assert "konsultacje@mswia.gov.pl" in sent.delivery.rendered_text
+    assert "dep.prawny@mswia.gov.pl" not in sent.delivery.rendered_text
+    assert consultation.letter_url is not None
+    assert consultation.letter_url in sent.delivery.rendered_text
+    assert sent.delivery.participation.consultation is not None
+    assert sent.delivery.participation.consultation.days == 14
+    preview = w.formatter.new_bill(
+        participation_view(bill, sent.delivery.participation), None, today=w.clock.now().date()
+    )
+    assert "14 дн. с даты письма" in preview.text
+
+
+def test_newly_expired_consultation_is_retired_and_reported_once() -> None:
+    w = World(reader_attention="on")
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    save_window(w, w.clock.now().date() + dt.timedelta(days=2))
+    pub = w.container.poster(dry_run=False).prepare_message(
+        w.bill("3039"), PublicationKind.CONSULTATION_DEADLINE, today=w.clock.now().date()
+    )
+    save_window(w, w.clock.now().date() - dt.timedelta(days=1))
+    notices = len(w.notifier.calls)
+
+    report = w.container.delivery_service(dry_run=False).run()
+
+    retired = w.repo.publication_by_id(pub.id or 0)
+    assert report.ok and report.attention["expired"] == 1
+    assert retired is not None and retired.status is PublicationStatus.SKIPPED
+    assert retired.attempts == 0 and not w.publisher.texts(PublicationKind.CONSULTATION_DEADLINE)
+    assert len(w.notifier.calls) == notices + 1
+    w.container.delivery_service(dry_run=False).run()
+    assert len(w.notifier.calls) == notices + 1
+
+
+def test_changed_window_does_not_rewrite_an_attempted_reminder() -> None:
+    w = World(reader_attention="on")
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    save_window(w, w.clock.now().date() + dt.timedelta(days=2))
+    w.container.poster(dry_run=False).prepare_message(
+        w.bill("3039"), PublicationKind.CONSULTATION_DEADLINE, today=w.clock.now().date()
+    )
+    w.publisher.fail_on.add("3039")
+    assert not w.container.delivery_service(dry_run=False).run().ok
+    failed = w.publication("3039", PublicationKind.CONSULTATION_DEADLINE)
+    assert failed is not None and failed.delivery is not None and failed.delivery.rendered_text
+    frozen = failed.delivery.rendered_text
+    save_window(w, w.clock.now().date() + dt.timedelta(days=1))
+    w.publisher.fail_on.clear()
+    w.repo.restore(w.repo.dump())
+
+    report = w.container.delivery_service(dry_run=False).run()
+
+    assert report.ok and report.consultation_reminders == 1
+    assert w.publisher.texts(PublicationKind.CONSULTATION_DEADLINE)[-1] == frozen
 
 
 def queued_world(*, workers: int = 1) -> World:
@@ -29,6 +206,106 @@ def queued_world(*, workers: int = 1) -> World:
     report = w.run()
     assert report.ok and report.updates == 0 and report.attention["daily_queued"] == 1
     return w
+
+
+def overdue_unknown_world() -> World:
+    w = queued_world()
+    pub = w.publication("3039", PublicationKind.STATUS_UPDATE)
+    assert pub is not None and pub.id is not None
+    w.repo.mark_publication(
+        pub.id, PublicationStatus.UNKNOWN, error="uncertain send", count_attempt=False
+    )
+    w.clock.advance(hours=25)
+    return w
+
+
+def test_overdue_alert_is_persistent_and_repeats_daily_instead_of_hourly() -> None:
+    w = overdue_unknown_world()
+    calls = len(w.notifier.calls)
+
+    first = w.container.delivery_service(dry_run=False).run()
+
+    assert first.ok and first.attention["daily_overdue"] == 1
+    assert len(w.notifier.calls) == calls + 1
+    notice = w.repo.get_delivery_alert(CHANNEL)
+    assert notice is not None and notice.notified_at == w.clock.now()
+    w.repo.restore(w.repo.dump())
+    w.repo.prune_runs(before=w.clock.now() + dt.timedelta(days=1))
+    w.clock.advance(hours=1)
+
+    repeat = w.container.delivery_service(dry_run=False).run()
+
+    assert repeat.attention["daily_overdue"] == 1
+    assert len(w.notifier.calls) == calls + 1
+    assert w.repo.get_delivery_alert(CHANNEL) == notice
+    assert not w.publisher.texts(PublicationKind.STATUS_UPDATE)
+    w.clock.advance(hours=23)
+    w.container.delivery_service(dry_run=False).run()
+    assert len(w.notifier.calls) == calls + 2
+
+
+def test_changed_problem_triggers_an_alert_before_the_daily_repeat() -> None:
+    w = overdue_unknown_world()
+    w.container.delivery_service(dry_run=False).run()
+    calls = len(w.notifier.calls)
+    pub = w.publication("3039", PublicationKind.STATUS_UPDATE)
+    assert pub is not None and pub.id is not None
+    w.repo.mark_publication(
+        pub.id, PublicationStatus.UNKNOWN, error="changed problem", count_attempt=False
+    )
+
+    report = w.container.delivery_service(dry_run=False).run()
+
+    assert report.ok and len(w.notifier.calls) == calls + 1
+
+
+def test_failed_operator_notification_does_not_suppress_the_next_attempt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    w = overdue_unknown_world()
+
+    def fail(report: RunReport, lines: list[str]) -> None:
+        raise RuntimeError("log channel unavailable")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(w.notifier, "notify", fail)
+        w.container.delivery_service(dry_run=False).run()
+    assert w.repo.get_delivery_alert(CHANNEL) is None
+
+    report = w.container.delivery_service(dry_run=False).run()
+
+    assert report.ok and w.repo.get_delivery_alert(CHANNEL) is not None
+    assert w.notifier.calls[-1][0] == report
+
+
+def test_dry_run_does_not_advance_the_delivery_alert_cursor() -> None:
+    w = overdue_unknown_world()
+    before = w.repo.dump()
+
+    report = w.container.delivery_service(dry_run=True).run(dry_run=True)
+
+    assert report.ok and w.repo.dump() == before
+    assert w.repo.get_delivery_alert(CHANNEL) is None
+
+
+def test_compact_roundup_preserves_case_links_dates_committees_and_tags() -> None:
+    w = queued_world()
+    w.set_stages("3040", COMMITTEE_STAGES)
+    assert w.run().updates == 0
+    w.clock.advance(hours=10)
+
+    report = w.container.delivery_service(dry_run=False).run()
+
+    text = w.publisher.texts(PublicationKind.STATUS_UPDATE)[-1]
+    assert report.ok and (report.updates, report.update_events) == (1, 2)
+    assert text.count("Что дальше:") == 1 and text.count("Что можно сделать сейчас:") == 1
+    assert text.count("Пока проект") == 2
+    assert text.count("Направлен в комиссию: ASW") == 2
+    assert text.count(w.formatter.fmt_date(dt.date(2026, 9, 3))) == 2
+    assert "Путь проекта" not in text
+    for number in ("3039", "3040"):
+        assert f"#kadencja10druk{number}" in text
+        assert f"https://t.me/test/{w.card_id(number)}" in text
 
 
 @pytest.mark.parametrize("workers", [1, 4])

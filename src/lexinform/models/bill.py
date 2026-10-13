@@ -7,7 +7,6 @@ is *going* is `models/phases.py`, which reads this module and is read by nothing
 """
 
 import datetime as dt
-from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -30,6 +29,8 @@ from lexinform.models.evidence import (
     veto_evidence,
 )
 from lexinform.models.observations import DeliveryPlan, ObservedProcess
+from lexinform.models.participation import ConsultationWindow as ConsultationWindow
+from lexinform.models.participation import ParticipationSnapshot
 from lexinform.models.rcl import RclProject
 from lexinform.models.sejm import (
     ActInfo,
@@ -43,30 +44,6 @@ from lexinform.models.sejm import (
 from lexinform.models.senate import SenateAct
 from lexinform.models.source_checks import ObservationBasis, ObservationMode
 from lexinform.models.wykaz import WykazEntry
-
-
-class ConsultationWindow(BaseModel):
-    """The public consultation of a bill, whoever runs it.
-
-    The Sejm consults deputies', Senate, presidential and citizens' bills: `form_url` is the
-    project page, which carries the text and links the survey at `survey_url`, where the opinion
-    is actually submitted. The government consults its own on RCL, by e-mail to the ministry
-    named in the consultation letter (`email`, `letter_url`).
-    """
-
-    model_config = ConfigDict(frozen=True)
-
-    source: Literal["sejm", "rcl"]
-    start: dt.date | None = None
-    end: dt.date | None = None
-    form_url: str | None = None
-    survey_url: str | None = None
-    email: str | None = None
-    letter_url: str | None = None
-    results_published: bool = False
-
-    def is_open(self, today: dt.date) -> bool:
-        return self.end is not None and self.end >= today
 
 
 class LocatedText(BaseModel):
@@ -202,6 +179,7 @@ class Bill(BaseModel):
                 email=rcl.email,
                 letter_url=rcl.letter_url,
                 results_published=rcl.results_published,
+                days=rcl.days,
             )
         sub = self.submission
         if sub is None or not sub.public_consultation or sub.consultation_end is None:
@@ -214,6 +192,22 @@ class Bill(BaseModel):
             survey_url=sub.survey_url,
             results_published=sub.consultation_results,
         )
+
+
+class ParticipationBill(Bill):
+    model_config = ConfigDict(frozen=True)
+
+    participation: ParticipationSnapshot
+
+    @property
+    def consultation(self) -> ConsultationWindow | None:
+        return self.participation.consultation
+
+
+def participation_view(bill: Bill, participation: ParticipationSnapshot | None) -> Bill:
+    if participation is None:
+        return bill
+    return ParticipationBill.model_validate(bill.model_dump() | {"participation": participation})
 
 
 ASIDE_STAGE_TYPES = frozenset({"GovermentPosition", "Opinion"})
@@ -294,7 +288,7 @@ class SittingNews(BaseModel):
         assert plan.item_json is not None, "an agenda publication is prepared with its item"
         moved = plan.moved_from_json
         return cls(
-            bill=Bill.model_validate_json(plan.bill_json),
+            bill=participation_view(Bill.model_validate_json(plan.bill_json), plan.participation),
             item=AgendaItem.model_validate_json(plan.item_json),
             moved_from=AgendaItem.model_validate_json(moved) if moved else None,
             cancelled=kind is PublicationKind.AGENDA_CANCELLED,

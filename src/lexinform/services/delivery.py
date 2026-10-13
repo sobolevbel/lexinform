@@ -61,7 +61,14 @@ class DeliveryService:
                     if publication.id is not None
                     else None
                 )
-                if latest is not None and latest.status is PublicationStatus.SKIPPED:
+                if latest is not None and (
+                    latest.status is PublicationStatus.SKIPPED
+                    or (
+                        not sent
+                        and latest.status is PublicationStatus.QUEUED
+                        and not latest.attempts
+                    )
+                ):
                     continue
                 result.count_post(sent, counters.get(publication.kind, "published"))
             except ServiceUnavailableError as exc:
@@ -153,11 +160,7 @@ class DeliveryService:
                 if dry_run:
                     self._repo.rollback()
                 captured.uninstall()
-            if self._notifier is not None and (
-                not report.ok
-                or report.attention.get("messages", 0)
-                or report.attention.get("daily_overdue", 0)
-            ):
+            if self._notifier is not None and not report.is_empty:
                 try:
                     self._notifier.notify(report, list(captured.lines))
                 except Exception:

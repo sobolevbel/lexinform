@@ -70,13 +70,6 @@ on:
         required: false
         default: ""
 
-# One run at a time so two runs never race on the state branch. A pending run is replaced by a
-# newer one (GitHub keeps one pending run per group): harmless, because every run drains the
-# whole inbox, whichever event started it, including a delivery-only tick with pending commands.
-concurrency:
-  group: lexinform-daily
-  cancel-in-progress: false
-
 permissions:
   contents: write  # needed to push the state and inbox branches with the automatic GITHUB_TOKEN
 
@@ -94,6 +87,11 @@ env:
 jobs:
   run:
     if: ${{ github.event_name != 'schedule' || github.event.schedule != '43 * * * *' || (vars.LEXINFORM_READER_ATTENTION == 'on' && vars.LEXINFORM_ATTENTION_ROUNDUP == 'daily') }}
+    # Disabled ticks never acquire the state lock; enabled ticks cannot replace pending work.
+    concurrency:
+      group: lexinform-daily
+      cancel-in-progress: false
+      queue: max
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -203,7 +201,6 @@ jobs:
           if [ "$EVENT_NAME" = "schedule" ] && [ "$EVENT_SCHEDULE" = "43 * * * *" ]; then
             STATUS=0
             uv run --frozen --no-dev lexinform drain-deliveries || STATUS=$?
-            # A tick can replace a pending inbox dispatch in the shared concurrency group.
             if [ "$INBOX_PRESENT" = "true" ] && compgen -G "$LEXINFORM_INBOX_DIR/*.json" >/dev/null; then
               uv run --frozen --no-dev lexinform commands || STATUS=$?
             fi

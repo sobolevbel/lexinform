@@ -31,6 +31,7 @@ from lexinform.models import (
     consultation_open,
     is_first_digest_of_month,
     iso_week,
+    participation_view,
     previous_week,
     update_event,
     week_bounds,
@@ -310,7 +311,9 @@ class DigestService:
             bills[key] = found
         bill = bills[key]
         if post.delivery is not None and post.delivery.bill_json:
-            bill = Bill.model_validate_json(post.delivery.bill_json)
+            bill = participation_view(
+                Bill.model_validate_json(post.delivery.bill_json), post.delivery.participation
+            )
         analysis = bill.analysis.analysis if bill.analysis is not None else None
         change = None
         if post.delivery is not None and post.delivery.change_json:

@@ -22,6 +22,7 @@ from lexinform.models import (
     Bill,
     BillStatus,
     DeliveryPlan,
+    ParticipationSnapshot,
     Phase,
     PrintInfo,
     Publication,
@@ -35,6 +36,7 @@ from lexinform.models import (
     UpdateSnapshot,
     flatten_stages,
     is_substantive,
+    participation_view,
     reading_evidence,
     stage_keys,
     update_event,
@@ -197,7 +199,9 @@ class Poster:
             ):
                 continue
             item = UpdateNews(
-                bill=Bill.model_validate_json(plan.bill_json),
+                bill=participation_view(
+                    Bill.model_validate_json(plan.bill_json), plan.participation
+                ),
                 change=StatusChange.model_validate_json(plan.change_json),
                 card_message_id=plan.reply_to,
             )
@@ -1091,6 +1095,20 @@ class Poster:
             assert pub.delivery is not None and pub.id is not None
             assessment = pub.delivery.attention
             if (
+                pub.kind is PublicationKind.CONSULTATION_DEADLINE
+                and pub.status is PublicationStatus.QUEUED
+                and pub.attempts == 0
+                and not pub.delivery.rendered_text
+            ):
+                window = participation_view(
+                    Bill.model_validate_json(pub.delivery.bill_json), pub.delivery.participation
+                ).consultation
+                if window is None or window.end is None:
+                    self._attention_metrics["participation_unavailable"] = (
+                        self._attention_metrics.get("participation_unavailable", 0) + 1
+                    )
+                    return False
+            if (
                 pub.attempts == 0
                 and not pub.delivery.rendered_text
                 and pub.kind
@@ -1205,15 +1223,17 @@ class Poster:
             return pub
         plan = pub.delivery
         bill = Bill.model_validate_json(plan.bill_json)
+        original_editorial = bill.editorial
+        participation = plan.participation
         current = self._repo.get(pub.term, pub.number)
         if current is not None:
             bill = bill.model_copy(update={"editorial": current.editorial})
-            if pub.kind is PublicationKind.CONSULTATION_DEADLINE:
-                bill = bill.model_copy(
-                    update={"submission": current.submission, "rcl": current.rcl}
+            if participation_view(bill, participation).consultation != current.consultation:
+                participation = ParticipationSnapshot(
+                    consultation=current.consultation, checked_at=self._clock.now()
                 )
         assessment = assess_attention(
-            bill,
+            participation_view(bill, participation),
             pub.kind,
             now=self._clock.now(),
             detected_at=plan.attention.detected_at if plan.attention else pub.created_at,
@@ -1227,12 +1247,13 @@ class Poster:
             urgent_days=self._urgent_days,
         )
         previous = plan.attention
-        if previous is not None and (
-            previous.importance,
-            previous.urgency,
-            previous.reasons,
-            previous.action,
-        ) == (assessment.importance, assessment.urgency, assessment.reasons, assessment.action):
+        if (
+            previous is not None
+            and previous.model_dump(exclude={"assessed_at"})
+            == assessment.model_dump(exclude={"assessed_at"})
+            and participation == plan.participation
+            and original_editorial == bill.editorial
+        ):
             return pub
         plan = plan.model_copy(
             update={
@@ -1241,6 +1262,7 @@ class Poster:
                 "rendered_text": "",
                 "today": self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(),
                 "bill_json": bill.model_dump_json(),
+                "participation": participation,
             }
         )
         if self._repo.replace_unattempted_delivery(pub.id, plan):

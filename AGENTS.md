@@ -45,6 +45,8 @@ Dependencies flow only in this direction:
 - Discovery must not overwrite `observed_closure_date`: analysis and linking seed it, tracking advances it after recording the change. A closure present in the initial snapshot is not news.
 - `ObservedProcess` is the processed baseline; Sejm checkpoints commit it with status-change delivery work. Keep network calls outside that transaction.
 - Status updates distinguish queued delivery from editorial holds. Retry the saved per-channel payload and release only its included held-change IDs; never render an old event against a newer bill.
+- Before the first attention delivery attempt, refresh participation evidence separately from historical stages and analysis; missing windows hold reminders without attempts. Frozen payloads and attempted groups remain immutable.
+- Operator delivery-alert cursors advance only after successful notification, survive retention, and never change delivery identities or resolve `unknown`.
 - Missing decisions and unknown next steps do not prove completion. Senate decision evidence is compared separately from rendering-only stage fields.
 - Memoized analysis results are keyed by bill, normalized content, purpose and comparison context; reused results charge no new tokens. Worker threads never write the repository.
 - Unknown decisions are not successful decisions. Use the shared `VetoOutcome` evidence for veto headers, process completion and deadlines; committee proposals are not Sejm decisions.

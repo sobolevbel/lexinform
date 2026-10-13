@@ -67,6 +67,7 @@ from lexinform.models.bill import (
     StatusChange,
     UpdateNews,
     end_names_veto_sustained,
+    participation_view,
     process_stages,
     veto_decision,
     veto_outcome,
@@ -93,6 +94,7 @@ from lexinform.models.commands import (
     parse_reference,
 )
 from lexinform.models.delivery import DeliverySchedule as DeliverySchedule
+from lexinform.models.delivery_alert import DeliveryAlert as DeliveryAlert
 from lexinform.models.digest import (
     DIGEST_NUMBER,
     DIGEST_TERM,
@@ -182,6 +184,7 @@ from lexinform.models.ministries import (
     ministry_url,
 )
 from lexinform.models.observations import DeliveryPlan, ObservedProcess, UpdateSnapshot
+from lexinform.models.participation import ParticipationSnapshot as ParticipationSnapshot
 from lexinform.models.phases import (
     COMMITTEE_PHASES,
     DAYS_PER_MONTH,
@@ -540,6 +543,7 @@ __all__ = [
     "told_stages",
     "update_event",
     "process_stages",
+    "participation_view",
     "veto_decision",
     "veto_outcome",
     "veto_stood",

@@ -11,7 +11,15 @@ from pathlib import Path
 from lexinform.adapters.sqlite_repo import SqliteBillRepository
 from lexinform.attention import assess_attention
 from lexinform.delivery_schedule import daily_schedule
-from lexinform.models import AgendaItem, Bill, PublicationKind, Stage, StatusChange
+from lexinform.models import (
+    AgendaItem,
+    Bill,
+    ParticipationSnapshot,
+    PublicationKind,
+    Stage,
+    StatusChange,
+    participation_view,
+)
 
 
 def audit(dump: Path, destination: Path) -> None:
@@ -35,6 +43,10 @@ def audit(dump: Path, destination: Path) -> None:
             delivery = json.loads(row["delivery_json"] or "{}")
             if delivery.get("bill_json"):
                 bill = Bill.model_validate_json(delivery["bill_json"])
+                if delivery.get("participation"):
+                    bill = participation_view(
+                        bill, ParticipationSnapshot.model_validate(delivery["participation"])
+                    )
             change = (
                 repo.get_status_change(row["status_change_id"]) if row["status_change_id"] else None
             )

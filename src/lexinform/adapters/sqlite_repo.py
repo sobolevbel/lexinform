@@ -35,6 +35,7 @@ from lexinform.models import (
     BillSubmission,
     CheckAspect,
     CommandState,
+    DeliveryAlert,
     DeliveryPlan,
     DeliveryResolution,
     Editorial,
@@ -421,6 +422,14 @@ MIGRATIONS: tuple[str, ...] = (
     ALTER TABLE publications ADD COLUMN attention_json TEXT;
     UPDATE publications SET attention_json = json_extract(delivery_json, '$.attention')
       WHERE delivery_json IS NOT NULL;
+    """,
+    # v38: the last confirmed operator alert cannot be derived from delivery status.
+    """
+    CREATE TABLE delivery_alerts (
+        channel_id TEXT PRIMARY KEY,
+        fingerprint TEXT NOT NULL,
+        notified_at TEXT NOT NULL
+    );
     """,
 )
 
@@ -885,6 +894,30 @@ class SqliteBillRepository:
             (channel_id,),
         ).fetchall()
         return [self._row_to_publication(row) for row in rows]
+
+    def list_open_deliveries(self, channel_id: str) -> list[Publication]:
+        rows = self._conn.execute(
+            "SELECT * FROM publications WHERE channel_id = ?"
+            " AND status IN ('queued', 'failed', 'pending', 'unknown')"
+            " AND delivery_json IS NOT NULL"
+            " AND json_extract(delivery_json, '$.absorbed_by') IS NULL ORDER BY id",
+            (channel_id,),
+        ).fetchall()
+        return [self._row_to_publication(row) for row in rows]
+
+    def get_delivery_alert(self, channel_id: str) -> DeliveryAlert | None:
+        row = self._conn.execute(
+            "SELECT * FROM delivery_alerts WHERE channel_id = ?", (channel_id,)
+        ).fetchone()
+        return DeliveryAlert.model_validate(dict(row)) if row else None
+
+    def save_delivery_alert(self, alert: DeliveryAlert) -> None:
+        self._conn.execute(
+            "INSERT INTO delivery_alerts(channel_id, fingerprint, notified_at) VALUES (?, ?, ?)"
+            " ON CONFLICT(channel_id) DO UPDATE SET fingerprint = excluded.fingerprint,"
+            " notified_at = excluded.notified_at",
+            (alert.channel_id, alert.fingerprint, alert.notified_at.isoformat()),
+        )
 
     def tag_update_group(self, publication_ids: tuple[int, ...], ref: str) -> None:
         self._conn.executemany(

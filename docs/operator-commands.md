@@ -142,8 +142,8 @@ command only needs Contents), and a dry run persists nothing at all — not even
 asked to build, since the state branch is only pushed by a real run.
 
 `/run reprefilter=N` and `/reprefilter limit=N` are not the same thing: the first is a backfill
-*and then* a whole run, which is what the composition is for (two dispatches would be two runs,
-and the concurrency group keeps only the newest pending one), the second is the backfill alone.
+*and then* a whole run, which is what the composition is for (two dispatches would be two runs),
+the second is the backfill alone.
 
 An option a command does not know is answered rather than ignored, including one that belongs to
 another command: `/show 3039 force` used to do nothing and say nothing, which reads exactly like
@@ -271,17 +271,32 @@ It releases saved ready work and confirmed failures without reading legislative 
 resolving a Sejm term, collecting batches or requesting models. Dry run prints ready messages
 and rolls back the database. It does not answer the inbox itself. A quiet drain posts no report;
 errors, delivered attention messages and overdue waiting are reported to the technical channel.
+An unchanged waiting problem is reported at first detection and then every 24 hours, across
+restarts. Changes to the affected deliveries, their status, attempts or error trigger a report
+immediately. Failed technical notifications do not advance the repeat timer. Full runs and
+drains with fresh deliveries, expirations or errors still produce their usual report.
 `/delivery ID` shows the saved route, detection time, `not_before` and `deliver_by`.
 `/attention BILL` retains the event's reasons; delivery reports also show `daily_queued`,
-`daily_oldest_minutes`, `daily_released` and `daily_overdue` when present.
+`daily_oldest_minutes`, `daily_released`, `daily_overdue` and `participation_unavailable` when present.
+
+Before the first delivery attempt, attention checks the current participation window in the
+saved database, including its date and submission route. It refreshes that window separately
+from the event's historical stages and analysis. A consultation reminder with a missing or
+undated window stays queued without spending attempts; a newly expired window retires it.
+The drain still makes no source requests: it can only use evidence saved by ordinary tracking.
+Routine roundups keep each case's dated events, committee, card/source links and legal state;
+cases sharing the same next step and action have one common footer.
 
 The workflow offers this command and has an hourly delivery-only tick at minute 43, enabled
 only when the repository variables `LEXINFORM_READER_ATTENTION=on` and
 `LEXINFORM_ATTENTION_ROUNDUP=daily` are set. `LEXINFORM_ATTENTION_DAILY_HOUR` is also a
 repository variable, default 18. These variables configure the ordinary runs too. The tick
-shares the existing state concurrency group, restores and saves the SQL dump and batch manifest.
-If inbox commands are waiting, it answers them separately so replacing a pending inbox dispatch
-does not strand those commands; an explicit `/analyze` may therefore request its usual batch.
+shares the existing state concurrency group at job level with `queue: max`: up to 100 pending
+jobs are retained instead of replacing pending work. Disabled hourly jobs never acquire the lock;
+running jobs remain serialized. GitHub does not guarantee dispatch order. See
+[GitHub's concurrency rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
+The tick restores and saves the SQL dump and batch manifest. If inbox commands are waiting,
+it answers them separately; an explicit `/analyze` may therefore request its usual batch.
 No new analysis is caused by the delivery queue itself.
 
 GitHub schedule delays and outages can exceed `deliver_by`: it is a bound on editorial
@@ -318,7 +333,7 @@ technical channel ──getUpdates──► lexinform listen (VPS) ──Content
    died after the post) is measured against those two marks: answered means it is only deleted,
    executed but unanswered means the answer is repeated and the command is *not* run a second
    time — a repeated `/republish` would post a second card. Runs never race: one concurrency
-   group, and a pending run replaced by a newer one is harmless because every run drains the
+   group at job level retains pending jobs with `queue: max`; every enabled job drains the
    whole inbox.
 
 `/analyze` of an RCL project or an `RPW/…` entry that already reached the Sejm answers about its

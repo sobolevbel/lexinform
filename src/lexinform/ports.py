@@ -29,6 +29,7 @@ from lexinform.models import (
     CommandState,
     Committee,
     CommitteeSitting,
+    DeliveryAlert,
     DeliveryPlan,
     DeliveryResolution,
     Digest,
@@ -572,6 +573,12 @@ class BillRepository(Protocol):
     def list_deferred_updates(self, channel_id: str) -> list[Publication]: ...
 
     def list_scheduled_deliveries(self, channel_id: str) -> list[Publication]: ...
+
+    def list_open_deliveries(self, channel_id: str) -> list[Publication]: ...
+
+    def get_delivery_alert(self, channel_id: str) -> DeliveryAlert | None: ...
+
+    def save_delivery_alert(self, alert: DeliveryAlert) -> None: ...
 
     def tag_update_group(self, publication_ids: tuple[int, ...], ref: str) -> None: ...
 
