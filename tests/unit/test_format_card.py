@@ -149,7 +149,8 @@ def test_a_joint_reply_walks_the_road_of_its_own_print_not_the_cards(
     text = MessageFormatter("ru").joint_bill(reply, primary, print_3039).text
     card = MessageFormatter("ru").new_bill(primary, print_3039).text
 
-    assert "Путь:</b> Сейм ✓" in text and "план" not in text.split("Путь")[1]
+    assert "Путь:" not in text
+    assert "Что дальше" in text
     assert "Путь:</b> план ✓ → RCL ✓ → Сейм ✓" in card  # the card's own road is unchanged
 
 
@@ -200,7 +201,8 @@ def test_card_groups_short_facts_and_separates_paragraphs(
     effective = text.index("Вступление в силу")
     stage = text.index("Стадия:")
     applicant = text.index("Инициатор:")
-    assert "\n\n" in text[practical:affected]
+    assert affected < practical
+    assert "\n\n" in text[affected:practical]
     assert "\n\n" in text[affected:effective]
     assert "\n\n" in text[effective:stage]
     assert "\n\n" not in text[stage:applicant]  # stage and applicant stay on adjacent lines
@@ -460,3 +462,21 @@ def test_a_card_names_the_tribunals_ruling(process_1962: ProcessDetail) -> None:
 
     assert "дальнейший шаг после решения Конституционного трибунала" in text
     assert "Решение Конституционного трибунала" in text
+
+
+@pytest.mark.parametrize("language", ["ru", "en"])
+def test_first_screen_preserves_conditions_and_exact_references(
+    process_3039: ProcessDetail, language: str
+) -> None:
+    analysis = make_analysis()
+    fact = "До 01.07.2027 сбор 200 PLN не применяется к старым заявлениям (art. 15 ust. 2); исключение: новые разрешения."
+    analysis.practical_impact = fact
+    analysis.affected_groups = ["Иностранцы со старыми заявлениями", "Заявители без решения"]
+    text = (
+        MessageFormatter(language).new_bill(bill_of(process_3039, analysis), None, today=TODAY).text
+    )
+
+    assert fact in text
+    assert all(group in text for group in analysis.affected_groups)
+    assert text.index(fact) < text.index(analysis.key_changes[0])
+    assert_telegram_html(text)

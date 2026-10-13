@@ -101,7 +101,6 @@ from lexinform.publication_titles import publication_title
 MESSAGE_LIMIT = 4096
 ELLIPSIS = "…"
 QUOTED_LINE_CHARS = 300  # Telegram takes 4096 characters in a command, and echoes them back
-SITTING_TEXT_CHARS = 240  # a roundup line quotes the agenda point, the card says the rest
 QUARTERS = {1: "I", 2: "II", 3: "III", 4: "IV"}
 
 # What the technical channel accepts (English, like the run report; the operator's language).
@@ -411,10 +410,17 @@ class MessageFormatter:
             changes_block = f"{ICON['key_changes']} <b>{esc(lb.key_changes)}</b>\n{bullets}"
 
         text = self._assemble(
-            [header, meta, self._intention_note(bill)],
+            [
+                header,
+                self._intention_note(bill),
+                self._reader_context(bill),
+                self._consultation_line(bill, today),
+                self._action_line(bill, today),
+            ],
             flexible=[summary_block, changes_block],
             tail=[
                 self._card_details(bill, today),
+                meta,
                 self._links(self._card_links(bill, print_info)),
                 self._card_tags(bill, today),
             ],
@@ -448,22 +454,20 @@ class MessageFormatter:
         lb = self._labels
         s = bill.summary
         details: list[str] = []
-        if a.practical_impact.strip():
-            details.append(
-                self._field(ICON["practical"], lb.practical_impact, esc(a.practical_impact.strip()))
-            )
-        if a.affected_groups:
-            groups = ", ".join(g.strip() for g in a.affected_groups)
-            details.append(self._field(ICON["affected"], lb.affected, esc(groups)))
         # Not on a plan's card: two blocks above it says there is no text yet, and a vacatio
         # legis can only be quoted from one — "не указано" there reads as a fact about the bill.
         if bill.wykaz is None:
             effective = a.effective_date.strip() if a.effective_date else lb.effective_date_unknown
             details.append(self._field(ICON["effective"], lb.effective_date, esc(effective)))
-        consultation = self._consultation_line(bill, today)
-        if consultation:
-            details.append(consultation)
-        steps = self._steps_block(bill, today)
+        steps = "\n".join(
+            line
+            for line in (
+                self._path_line(bill, today),
+                self._next_step_line(bill, today),
+                self._ended_line(bill, today),
+            )
+            if line
+        )
         if steps:
             details.append(steps)
 
@@ -1126,8 +1130,7 @@ class MessageFormatter:
         lb = self._labels
         item = news.item
         label = self._number_label(news.bill)
-        if name := self._mnemonic(news.bill):
-            label = f"{esc(name)} · {label}"
+        context = f"<b>{esc(self._context(news.bill))}</b>\n"
         url = self._post_url(news.card_message_id)
         ref = f'<a href="{html.escape(url, quote=True)}">{label}</a>' if url else label
         where = ""
@@ -1139,7 +1142,8 @@ class MessageFormatter:
         if news.cancelled:
             verdict = lb.agenda_dropped_header if news.still_meets else lb.agenda_cancelled_header
             return (
-                f"❌ <b>{ref}</b> — {where}{esc(lb.agenda_was_planned)} {self._agenda_when(item)}"
+                f"{context}❌ <b>{ref}</b> — {where}{esc(lb.agenda_was_planned)} "
+                f"{self._agenda_when(item)}"
                 f"\n{esc(verdict)}"
             )
         when = self._agenda_when(item)
@@ -1147,13 +1151,19 @@ class MessageFormatter:
             when += f" · {esc(item.room)}"
         if item.video_url:
             when += f" · {link(item.video_url, lb.link_video)}"
-        lines = [f"• <b>{ref}</b> — {where}{when}"]
+        lines = [f"{context}• <b>{ref}</b> — {where}{when}"]
         if item.text:
-            lines.append(f"<i>{esc(_clip(item.text, SITTING_TEXT_CHARS))}</i>")
+            purpose = self._agenda_purpose(item)
+            lines.append(f"{esc(purpose)}\n<i>{esc(item.text)}</i>")
         if news.moved_from is not None:
             lines.append(f"{ICON['note']} {self._moved_line(news.moved_from, item)}")
         lines.extend(self._sitting_notes(item))
         return "\n".join(lines)
+
+    def _agenda_purpose(self, item: AgendaItem) -> str:
+        return self._labels.agenda_purpose_labels.get(
+            item.purpose or "", self._labels.agenda_purpose_unknown
+        )
 
     def decision_deadline(self, bill: Bill, phase: Phase, *, today: dt.date) -> RenderedMessage:
         """Reply under the card as the Senate's or the President's constitutional term runs out.
@@ -2041,7 +2051,37 @@ class MessageFormatter:
                 f"<b>{esc(name)} · {self._number_label(bill)}</b>\n"
                 f"{icon} <b>{esc(label)}</b>{previous}"
             )
-        return f"{icon} <b>{esc(label)} — {self._number_label(bill)}</b>"
+        return (
+            f"{icon} <b>{esc(label)} — {self._number_label(bill)}</b>\n{esc(self._context(bill))}"
+        )
+
+    def _context(self, bill: Bill) -> str:
+        return self._mnemonic(bill) or (
+            lead(bill.analysis.analysis.summary)
+            if bill.analysis is not None and bill.analysis.analysis.summary.strip()
+            else publication_title(bill.summary.title)
+        )
+
+    def _reader_context(self, bill: Bill) -> str:
+        if bill.analysis is None:
+            return ""
+        a = bill.analysis.analysis
+        blocks = []
+        if a.affected_groups:
+            blocks.append(
+                self._field(
+                    ICON["affected"], self._labels.affected, esc("; ".join(a.affected_groups))
+                )
+            )
+        if a.practical_impact.strip():
+            blocks.append(
+                self._field(
+                    ICON["practical"],
+                    self._labels.practical_impact,
+                    esc(a.practical_impact.strip()),
+                )
+            )
+        return "\n\n".join(blocks)
 
     def _header(self, icon: str, label: str, bill: Bill, title: str | None = None) -> str:
         """`📜 <b>Label — druk nr 3039</b>` and the bill's title on its own line."""
@@ -2378,7 +2418,6 @@ class MessageFormatter:
         print, or the President's druk 316 inherits a «план ✓ → RCL ✓» it never passed through.
         """
         lines = [
-            self._path_line(bill, today, road=road or bill),
             self._next_step_line(bill, today),
             self._action_line(bill, today),
         ]

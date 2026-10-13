@@ -335,6 +335,19 @@ class AgendaItem(BaseModel):
     apply_email: str | None = None
     apply_by: dt.date | None = None
 
+    @property
+    def purpose(self) -> str | None:
+        text = self.text.casefold().strip()
+        prefixes = (
+            ("pierwsze czytanie", "first_reading"),
+            ("drugie czytanie", "second_reading"),
+            ("trzecie czytanie", "third_reading"),
+            ("rozpatrzenie uchwały senatu", "senate_amendments"),
+            ("głosowanie", "voting"),
+            ("wysłuchanie publiczne", "hearing"),
+        )
+        return next((purpose for prefix, purpose in prefixes if text.startswith(prefix)), None)
+
     def has_started(self, now: dt.datetime) -> bool:
         local = now.astimezone(ZoneInfo("Europe/Warsaw"))
         return self.last_date < local.date() or (

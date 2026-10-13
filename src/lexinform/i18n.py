@@ -269,6 +269,8 @@ class Labels:
     path_steps: dict[str, str] = field(default_factory=dict)
     stage_labels: dict[str, str] = field(default_factory=dict)
     rcl_stage_labels: dict[str, str] = field(default_factory=dict)
+    agenda_purpose_labels: dict[str, str] = field(default_factory=dict)
+    agenda_purpose_unknown: str = ""
     date_format: str = "%Y-%m-%d"
     short_months: tuple[str, ...] = ()
     # A month on its own, spelled in full: dates decline it («мая»), a heading does not («май»).
@@ -300,6 +302,17 @@ RU = Labels(
     partial_text_note="Анализ основан на неполном тексте документа.",
     new_stages="Новые стадии",
     reading_stage="{numeral} чтение на заседании Сейма",
+    agenda_purpose_labels={
+        "first_reading": "Первое чтение проекта",
+        "second_reading": "Второе чтение проекта",
+        "third_reading": "Третье чтение проекта",
+        "senate_amendments": "Рассмотрение постановления Сената",
+        "voting": "Голосование",
+        "hearing": "Публичные слушания",
+    },
+    agenda_purpose_unknown=(
+        "Цель пункта не уточнена в структурированных данных; ниже формулировка источника."
+    ),
     process_closed="Сейм отклонил проект, процесс завершён.",
     process_not_enacted="Процесс завершён: закон не принят.",
     process_veto_sustained=(
@@ -999,6 +1012,17 @@ EN = Labels(
     partial_text_note="The analysis is based on a partial text of the document.",
     new_stages="New stages",
     reading_stage="{numeral} reading at a Sejm sitting",
+    agenda_purpose_labels={
+        "first_reading": "First reading",
+        "second_reading": "Second reading",
+        "third_reading": "Third reading",
+        "senate_amendments": "Consideration of the Senate resolution",
+        "voting": "Voting",
+        "hearing": "Public hearing",
+    },
+    agenda_purpose_unknown=(
+        "The structured agenda does not specify the purpose; source wording follows."
+    ),
     process_closed="The Sejm rejected the bill; the process is over.",
     process_not_enacted="The process is over: no law was enacted.",
     process_veto_sustained=(
