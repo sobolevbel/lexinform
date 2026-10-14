@@ -1,6 +1,6 @@
 # База данных и миграции
 
-Статус: актуальный справочник · проверен 13 октября 2026 по локальному коду, схема **v38**.
+Статус: актуальный справочник · проверен 14 октября 2026 по локальному коду, схема **v43**.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
@@ -142,3 +142,25 @@ payload и ненужные memo очищаются, но идентичност
 Полная процедура — в
 [CONTRIBUTING.md](https://github.com/sobolevbel/lexinform/blob/main/CONTRIBUTING.md#database-schema-and-migrations).
 Downgrade нет: откат требует прежнего кода и прежнего дампа из истории `state`.
+
+## Разбор документов и продолжения (v41–v43)
+
+`bills.consultation_review_json` и `act_application_review_json` содержат исходный
+ReviewContext и проверенный DocumentReview, точные источники и hashes, время и baseline.
+`review_work_json` сохраняет work до скачивания и затем до результата batch. У secondary
+ответа собственный purpose/memo; он не меняет статус основного анализа. Pending work
+защищает memo от retention. Неизменный retained review применяется без новых токенов.
+
+`message_part` имеет отдельный ref `message/ROOT/INDEX`; `DeliveryPlan.continuation_ids`,
+`continuation_root`, `continuation_parent`, `continuation_index` связывают физическую цепочку.
+Все части готовятся до первой попытки; следующая ждёт sent предыдущей. Parent и HTML
+первой попытки сохраняются для retry; unknown разрешается оператором. Незавершённая цепочка
+защищает payload sent родителей от retention. Held effects завершаются последней частью.
+Первая часть может быть sent при failed/unknown продолжении: это состояние физических
+частей, а не подтверждение прочтения полного сообщения.
+
+`effective_rule_links` (v43) связывает `(term, number, channel_id, rule_ref)` с публикацией.
+Связь не удаляется при очистке payload; unknown или dismissed нельзя обойти другим ref.
+Стабильный ref содержит ELI, locator и подтверждённую дату, без wording/prompt version.
+Canonical history привязана к тому же ELI; первичное заполнение старого акта исключает
+прошедшие дополнительные даты до baseline.

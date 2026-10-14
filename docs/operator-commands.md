@@ -523,3 +523,20 @@ HTML, состав и ownership; dismiss не считается чтением.
 становится сроком подачи мнения. В отчёте digest_reader_parts — физические сообщения
 читателю, digest_events_covered — покрытые события, digest_queued_events — ожидающие
 события, digest_awaiting_approval — ещё не зарезервированные события.
+
+## Разбор документов и физические продолжения
+
+`/attention BILL` показывает ожидание источников отдельно от batch, его возраст,
+limitation и полноту последнего review. Новые purposes `consultation_review` и
+`act_application` доступны через существующий `LLM_BATCH_KINDS` после отдельной source/model QA;
+defaults их не включают. Это не разрешение на платный эксперимент или production rollout.
+
+`/delivery ROOT` перечисляет ID физических продолжений. Для unknown разрешайте конкретную
+часть: `confirm MESSAGE_ID`, `retry` или `dismiss REASON`. Следующая часть ждёт подтверждения
+предыдущей; dismiss прекращает ещё не начатое продолжение. Подтверждённая первая часть
+не означает успех остальных. Незавершённые части защищают `/forget` и `/republish`.
+
+`consultation_reviews_posted`, `act_reviews_posted`, `effective_rule_messages` считают основные
+сообщения соответствующего вида; `message_parts_sent` — дополнительные физические части.
+`digest_reader_parts` — читательские части дайджеста, `digest_events_covered` — события.
+Эти величины нельзя складывать как число «публикаций».

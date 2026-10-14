@@ -88,3 +88,9 @@ toward the deadline. Never resubmit an uncertain intent automatically.
 Digest-only events stay queued until their owning reader digest part is confirmed.
 Reserve digest_event_links before sending; retries and operator recovery act on the physical
 part, preserve its payload and membership, and release only its covered held changes.
+
+Document reviews use separate secondary batch purposes and exact source citations; participant
+positions never prove acceptance and project analyses never prove final-act applicability.
+Preserve pending review work, comparison snapshots and canonical history for the same ELI.
+Multipart deliveries freeze every physical part before the first attempt, wait for the saved
+parent, and retain parent payloads while any continuation remains unfinished.
