@@ -5,6 +5,10 @@ Extracted from `CLAUDE.md` on 2026-09-14 so that the rules of `sections.py`, `do
 Nothing here is new; every number was measured on the corpus (`CLAUDE.md` says what the
 corpus holds and how to re-run a measurement).
 
+Consultation reviews need their own selection rules: the law trimmer deliberately drops the
+very tables they analyse. See the [14 October corpus study](reviews/2026-10-14-consultation-text.md)
+for document layouts, measured reductions and unsafe shortcuts.
+
 ## Scanned paper, and a covering letter is not the document it transmits
 
 Measured with the project's own extractor (term 10, 12 Sept 2026): of 66 documents filed to prints

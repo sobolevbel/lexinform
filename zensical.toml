@@ -61,6 +61,7 @@ nav = [
   ] },
   { "Аудиты" = [
     { "Обзор" = "reviews/index.md" },
+    { "Текст консультаций · 14.10" = "reviews/2026-10-14-consultation-text.md" },
     { "Запуски и объединение постов · 13.10" = "reviews/2026-10-13-runs-and-publication-grouping.md" },
     { "GPT-6 Luna · 06.10" = "reviews/2026-10-06-luna-evaluation.md" },
     { "Векторы и поиск · 05.10" = "reviews/2026-10-05-semantic-search.md" },
