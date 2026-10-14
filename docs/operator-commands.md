@@ -527,9 +527,14 @@ HTML, состав и ownership; dismiss не считается чтением.
 ## Разбор документов и физические продолжения
 
 `/attention BILL` показывает ожидание источников отдельно от batch, его возраст,
-limitation и полноту последнего review. Новые purposes `consultation_review` и
-`act_application` доступны через существующий `LLM_BATCH_KINDS` после отдельной source/model QA;
-defaults их не включают. Это не разрешение на платный эксперимент или production rollout.
+limitation и полноту последнего review. `consultation_review` доступен через существующий
+`LLM_BATCH_KINDS` после отдельной source/model QA; defaults его не включают.
+Автоматический `act_application` отключён независимо от `LLM_BATCH_KINDS`: после публикации
+и вступления закона в силу отдельные разборы окончательного акта не отправляются.
+Старые review и batch work сохраняются; queued/failed публикации `act_application`,
+`effective_rules` и их продолжения пропускаются без изменения payload. Доставки `unknown`
+сохраняют свой статус и требуют аудированного решения оператора.
+Это не разрешение на платный эксперимент или production rollout.
 
 `/delivery ROOT` перечисляет ID физических продолжений. Для unknown разрешайте конкретную
 часть: `confirm MESSAGE_ID`, `retry` или `dismiss REASON`. Следующая часть ждёт подтверждения

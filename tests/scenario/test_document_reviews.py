@@ -8,11 +8,14 @@ import pytest
 from lexinform.models import (
     BatchRequest,
     ConsultationFinding,
+    DeliveryPlan,
     DocumentReview,
     DocumentReviewRecord,
     EffectiveRule,
     EvidenceCitation,
+    Publication,
     PublicationKind,
+    PublicationStatus,
     ReviewContext,
     ReviewDocument,
     ReviewWork,
@@ -20,7 +23,6 @@ from lexinform.models import (
 )
 from lexinform.services.analysis import Waiting
 from lexinform.services.tracking_result import TrackingResult
-from tests.fakes import FakeTextExtractor
 from tests.harness import World, act
 
 RESPONSE = "Pkt 1. Uwaga uwzględniona. Opłata wynosi 200 PLN, nie 300 PLN."
@@ -198,21 +200,12 @@ def test_review_batch_survives_restore_unknown_submission_and_preserves_bill_sta
     assert not w.llm.joint_contexts
 
 
-def test_late_act_review_has_one_notice_and_grouped_future_rules_without_canonical_repeat() -> None:
+def test_legacy_act_review_work_is_preserved_without_new_analysis_or_posts() -> None:
     w = World(batch=True, batch_kinds=frozenset({"act_application"}))
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
     w.repo.save_act(10, "3039", act())
     ctx = context(FINAL, role="final_act")
-    output = DocumentReview(
-        purpose="act_application",
-        complete=True,
-        summary="",
-        consultation_findings=(),
-        effective_rules=(rule(),),
-        unresolved=(),
-    )
-    w.batch.secondary_script[("3039", "act_application")] = output
     work = ReviewWork(
         memo_key=ctx.memo_key(10),
         purpose="act_application",
@@ -221,27 +214,18 @@ def test_late_act_review_has_one_notice_and_grouped_future_rules_without_canonic
         baseline_day=dt.date(2026, 9, 10),
     )
     w.repo.save_review_work(10, "3039", (work,))
-    reviews = w.container.document_reviews(dry_run=False)
-    reviews.advance(TrackingResult(), publish=True)
-    assert not w.publisher.texts(PublicationKind.ACT_APPLICATION)
-    w.analysis.submit_queued_batches()
-    w.batch.resolve()
-    w.analysis.collect_batches()
+    submitted = list(w.batch.submitted)
     w.clock.advance(days=30)
     w.repo.restore(w.repo.dump())
     result = TrackingResult()
-    reviews.advance(result, publish=True)
-    assert result.act_reviews_posted == 1
-    assert result.effective_rule_messages == 1
-    assert not w.bill("3039").review_work
-    text = w.publisher.texts(PublicationKind.EFFECTIVE_RULES)[0]
-    assert "24 сент 2026" in text and "не подавайте повторно" in text
-    assert "сегодня" not in text
-    w.container.poster(dry_run=False).start_run()
-    reviews.advance(TrackingResult(), publish=True)
-    assert len(w.publisher.texts(PublicationKind.ACT_APPLICATION)) == 1
-    assert len(w.publisher.texts(PublicationKind.EFFECTIVE_RULES)) == 1
-    assert not w.publisher.texts(PublicationKind.IN_FORCE)
+    w.container.document_reviews(dry_run=False).advance(result, publish=True)
+
+    assert w.bill("3039").review_work == (work,)
+    assert w.batch.submitted == submitted
+    assert not w.repo.list_queued_batch_intents()
+    assert result.act_reviews_posted == result.effective_rule_messages == 0
+    assert not w.publisher.texts(PublicationKind.ACT_APPLICATION)
+    assert not w.publisher.texts(PublicationKind.EFFECTIVE_RULES)
 
 
 def test_manually_labelled_real_rcl_response_rows_and_mutations() -> None:
@@ -389,51 +373,103 @@ def test_review_reports_the_run_limit_when_reservation_fails() -> None:
     )
 
 
-def test_effective_rule_ownership_survives_payload_retention_and_review_rewording() -> None:
+def test_legacy_queued_act_analysis_is_not_submitted() -> None:
     w = World(batch=True, batch_kinds=frozenset({"act_application"}))
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
-    w.repo.save_act(10, "3039", act())
-    ctx = context(FINAL, role="final_act")
-    output = DocumentReview(
-        purpose="act_application",
-        complete=True,
-        summary="",
-        consultation_findings=(),
-        effective_rules=(rule(),),
-        unresolved=(),
+    w.analysis.start_run()
+    assert isinstance(
+        w.analysis.request_document_review(w.bill("3039"), context(FINAL, role="final_act")),
+        Waiting,
     )
-    reviewed = validate_review(output, ctx)
+    pending = w.repo.list_queued_batch_intents()
+    assert pending
+    submitted = list(w.batch.submitted)
+
+    w.analysis.submit_queued_batches()
+
+    assert w.repo.list_queued_batch_intents() == pending
+    assert w.batch.submitted == submitted
+
+
+@pytest.mark.parametrize("kind", [PublicationKind.ACT_APPLICATION, PublicationKind.EFFECTIVE_RULES])
+@pytest.mark.parametrize(
+    "status", [PublicationStatus.QUEUED, PublicationStatus.FAILED, PublicationStatus.UNKNOWN]
+)
+def test_legacy_act_review_deliveries_are_stopped_without_changing_payloads(
+    kind: PublicationKind,
+    status: PublicationStatus,
+) -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.repo.save_act(10, "3039", act())
     record = DocumentReviewRecord(
-        review=reviewed, context=ctx, created_at=w.clock.now(), baseline_day=dt.date(2026, 9, 10)
+        review=DocumentReview(
+            purpose="act_application",
+            complete=True,
+            summary="",
+            consultation_findings=(),
+            effective_rules=(rule(),),
+            unresolved=(),
+        ),
+        context=context(FINAL, role="final_act"),
+        created_at=w.clock.now(),
     )
     w.repo.save_document_review(10, "3039", record)
-    w.clock.advance(days=30)
-    reviews = w.container.document_reviews(dry_run=False)
-    reviews.advance(TrackingResult(), publish=True)
-    owner = w.repo.effective_rule_publications(10, "3039", "@test")[0]
-    assert owner.status.value == "sent"
-    w.repo.prune_history(before=w.clock.now() + dt.timedelta(days=1), memo_before=w.clock.now())
-    w.repo.restore(w.repo.dump())
-    saved = w.repo.publication_by_id(owner.id or 0)
-    assert saved is not None and saved.delivery is None
-    changed = reviewed.effective_rules[0].model_copy(
-        update={
-            "change": "Иное оформление того же изменения",
-            "date_kind": "absolute",
-            "trigger": "new wording",
-        }
+    poster = w.container.poster(dry_run=False)
+    pub = poster.prepare_message(w.bill("3039"), kind, ref="legacy")
+    assert pub.id is not None
+    w.repo.mark_publication(pub.id, status, count_attempt=False)
+    saved = w.repo.publication_by_id(pub.id)
+    assert saved is not None
+
+    assert not poster.deliver(saved)
+    current = w.repo.publication_by_id(pub.id)
+    assert current is not None and current.delivery == saved.delivery
+    assert current.status is (
+        PublicationStatus.UNKNOWN
+        if status is PublicationStatus.UNKNOWN
+        else PublicationStatus.SKIPPED
     )
-    w.repo.save_document_review(
-        10,
-        "3039",
-        record.model_copy(
-            update={"review": reviewed.model_copy(update={"effective_rules": (changed,)})}
-        ),
+    assert w.bill("3039").act_application_review == record
+    assert not w.publisher.texts(kind)
+
+
+@pytest.mark.parametrize("kind", [PublicationKind.ACT_APPLICATION, PublicationKind.EFFECTIVE_RULES])
+def test_legacy_act_review_continuation_is_not_sent_after_confirmed_root(
+    kind: PublicationKind,
+) -> None:
+    w = World()
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    poster = w.container.poster(dry_run=False)
+    root_id = poster.record(w.bill("3039"), kind, PublicationStatus.SENT, ref="legacy")
+    child_id = w.repo.create_publication(
+        Publication(
+            term=10,
+            number="3039",
+            channel_id="@test",
+            kind=PublicationKind.MESSAGE_PART,
+            status=PublicationStatus.QUEUED,
+            ref="legacy/2",
+            created_at=w.clock.now(),
+            delivery=DeliveryPlan(
+                bill_json=w.bill("3039").model_dump_json(),
+                rendered_text="Продолжение разбора",
+                continuation_root=root_id,
+                continuation_parent=root_id,
+                continuation_index=2,
+            ),
+        )
     )
-    w.container.poster(dry_run=False).start_run()
-    reviews.advance(TrackingResult(), publish=True)
-    assert len(w.publisher.texts(PublicationKind.EFFECTIVE_RULES)) == 1
+    child = w.repo.publication_by_id(child_id)
+    assert child is not None
+
+    assert not poster.deliver(child)
+    saved = w.repo.publication_by_id(child_id)
+    assert saved is not None and saved.status is PublicationStatus.SKIPPED
+    assert saved.delivery == child.delivery
 
 
 def test_manually_labelled_final_act_special_dates_and_material_quote_mutations() -> None:
@@ -636,7 +672,7 @@ def test_real_final_act_transition_keeps_both_old_proceeding_conditions() -> Non
     ).effective_rules
 
 
-def test_primary_act_notices_are_timely_while_secondary_review_is_waiting() -> None:
+def test_primary_act_notices_continue_without_secondary_act_review() -> None:
     w = World(batch=True, batch_kinds=frozenset({"act_application"}))
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
@@ -648,53 +684,33 @@ def test_primary_act_notices_are_timely_while_secondary_review_is_waiting() -> N
         fetched_at=w.clock.now(),
     )
     w.gateway.acts[published.eli] = published
-    assert published.text_pdf_url is not None
-    content = b"%PDF-final-review"
-    w.gateway.files[published.text_pdf_url] = content
-    assert isinstance(w.extractor, FakeTextExtractor)
-    w.extractor.by_content[content] = (
-        FINAL + "\nArt. 2. Pozostałe przepisy i warunki przejściowe pozostają bez zmian."
-    )
-    original_rule = rule()
-    result_rule = original_rule.model_copy(
-        update={
-            "evidence": original_rule.evidence.model_copy(update={"document_id": published.eli})
-            if original_rule.evidence
-            else None,
-            "date_evidence": original_rule.date_evidence.model_copy(
-                update={"document_id": published.eli}
-            )
-            if original_rule.date_evidence
-            else None,
-        }
-    )
-    w.batch.secondary_script[("3039", "act_application")] = DocumentReview(
-        purpose="act_application",
-        complete=True,
-        summary="",
-        consultation_findings=(),
-        effective_rules=(result_rule,),
-        unresolved=(),
-    )
+
     first = w.run()
     assert first.acts_published == 1 and first.act_reviews_posted == 0
-    assert w.bill("3039").review_work and w.bill("3039").status.value == "analyzed"
-    notice = w.publication("3039", PublicationKind.ACT_PUBLISHED)
-    assert notice is not None and notice.delivery is not None
-    frozen = notice.delivery
+    assert not w.bill("3039").review_work
+    w.repo.save_document_review(
+        10,
+        "3039",
+        DocumentReviewRecord(
+            review=DocumentReview(
+                purpose="act_application",
+                complete=True,
+                summary="",
+                consultation_findings=(),
+                effective_rules=(rule(),),
+                unresolved=(),
+            ),
+            context=context(FINAL, role="final_act"),
+            created_at=w.clock.now(),
+        ),
+    )
     w.clock.advance(days=1)
     second = w.run()
     assert second.in_force_posted == 1 and second.act_reviews_posted == 0
-    w.batch.resolve()
-    third = w.run()
-    assert third.act_reviews_posted == 1
-    saved_notice = w.publication("3039", PublicationKind.ACT_PUBLISHED)
-    assert saved_notice is not None and saved_notice.delivery == frozen
+    assert "Как применяется окончательный акт" not in w.publisher.texts(PublicationKind.IN_FORCE)[0]
+    assert rule().change not in w.publisher.texts(PublicationKind.IN_FORCE)[0]
     assert not w.bill("3039").review_work
-    final = w.bill("3039").act_application_review
-    assert final is not None and final.context.act_eli == published.eli
-    assert final.context.documents[0].file_sha256 == hashlib.sha256(content).hexdigest()
-    assert "старых заявлений" in w.publisher.texts(PublicationKind.ACT_APPLICATION)[0]
+    assert not w.publisher.texts(PublicationKind.ACT_APPLICATION)
 
 
 def test_conflicting_general_date_is_not_a_confirmed_special_date() -> None:

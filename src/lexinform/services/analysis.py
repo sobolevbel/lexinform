@@ -655,9 +655,12 @@ class AnalysisService:
         intents = [
             i
             for i in intents
-            if self._options.require_batch
-            or (self._submits_batches and i.request.question.kind in self._options.batch_kinds)
-            or (isinstance(i.meta, BatchItemMeta) and i.meta.overflow)
+            if i.request.question.kind != "act_application"
+            and (
+                self._options.require_batch
+                or (self._submits_batches and i.request.question.kind in self._options.batch_kinds)
+                or (isinstance(i.meta, BatchItemMeta) and i.meta.overflow)
+            )
         ]
         answered = {
             intent.request.custom_id
@@ -1245,7 +1248,7 @@ class AnalysisService:
                 return
 
     def review_enabled(self, purpose: ReviewPurpose) -> bool:
-        return purpose in self._options.batch_kinds
+        return purpose != "act_application" and purpose in self._options.batch_kinds
 
     def review_context(
         self,

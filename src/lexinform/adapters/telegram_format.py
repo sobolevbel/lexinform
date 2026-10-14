@@ -945,10 +945,7 @@ class MessageFormatter:
             f"{ICON['journal']} {esc(act.display_address)} · {esc(lb.in_force_since)} "
             f"{self.fmt_date(act.entry_into_force)}"
         )
-        if bill.act_application_review is None:
-            facts += f"\n{ICON['note']} <i>{esc(lb.partial_vacatio_note)}</i>"
-        else:
-            facts += "\n\n" + self.act_application(bill, today=today).text
+        facts += f"\n{ICON['note']} <i>{esc(lb.partial_vacatio_note)}</i>"
         links_block = self._links(self._act_links(bill, act))
         tags = self._tags(bill, f"#{lb.tag_in_force}")
         text = self._reader_blocks(

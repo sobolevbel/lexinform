@@ -89,28 +89,10 @@ class DocumentReviews:
         self._repo.save_review_work(bill.term, bill.number, (*fresh.review_work, work))
 
     def advance(self, result: TrackingResult, *, publish: bool) -> None:
-        if self._analysis.review_enabled("act_application"):
-            for bill in self._repo.list_acts_for_review(self._channel_id):
-                stored_review = bill.act_application_review
-                periodic_check = stored_review is not None and (
-                    self._clock.now()
-                    >= (stored_review.checked_at or stored_review.created_at) + timedelta(days=7)
-                )
-                needs_review = (
-                    stored_review is None
-                    or (bill.act is not None and stored_review.context.act_eli != bill.act.eli)
-                    or periodic_check
-                )
-                if needs_review and not any(
-                    work.purpose == "act_application"
-                    and bill.act is not None
-                    and (work.act_eli or (work.context.act_eli if work.context else None))
-                    == bill.act.eli
-                    for work in bill.review_work
-                ):
-                    self.request(bill, "act_application", result, force_check=periodic_check)
         for bill in self._repo.list_review_work():
             for work in bill.review_work:
+                if work.purpose == "act_application":
+                    continue
                 try:
                     if not self._analysis.review_enabled(work.purpose) and work.context is None:
                         continue
@@ -168,8 +150,6 @@ class DocumentReviews:
                 except Exception as exc:
                     log.warning("document review for %s remains pending: %s", bill.number, exc)
                     result.partial_errors.append(f"document reviews: {type(exc).__name__}: {exc}")
-        for bill in self._repo.list_acts_for_review(self._channel_id):
-            self._effective_dates(bill)
         if not publish:
             return
         for pub in self._repo.list_due_deliveries(
@@ -184,10 +164,13 @@ class DocumentReviews:
             try:
                 sent = self._poster.deliver(pub)
                 fresh_pub = self._repo.publication_by_id(pub.id) if pub.id is not None else None
-                if (
-                    not sent
-                    and fresh_pub is not None
-                    and (fresh_pub.status is PublicationStatus.QUEUED and fresh_pub.attempts == 0)
+                if fresh_pub is not None and (
+                    fresh_pub.status is PublicationStatus.SKIPPED
+                    or (
+                        not sent
+                        and fresh_pub.status is PublicationStatus.QUEUED
+                        and fresh_pub.attempts == 0
+                    )
                 ):
                     continue
                 counter = {
@@ -274,47 +257,3 @@ class DocumentReviews:
             elif new is not None:
                 remaining.append(new)
         self._repo.save_review_work(bill.term, bill.number, tuple(remaining))
-
-    def _effective_dates(self, bill: Bill) -> None:
-        record, act = bill.act_application_review, bill.act
-        if record is None or act is None or record.context.act_eli != act.eli:
-            return
-        today = self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date()
-        covered = self._repo.effective_rule_refs(bill.term, bill.number, self._channel_id)
-        groups: dict[str, list[int]] = {}
-        for index, rule in enumerate(record.review.effective_rules):
-            ref = rule.event_ref(act.eli)
-            if (
-                rule.date is None
-                or rule.date > today
-                or rule.date < (record.baseline_day or today)
-                or rule.date == act.entry_into_force
-                or rule.date == record.context.canonical_date
-                or rule.date in record.canonical_dates
-                or ref in covered
-                or not rule.affected_groups
-                or not rule.change.strip()
-            ):
-                continue
-            groups.setdefault(rule.date.isoformat(), []).append(index)
-        for indices in groups.values():
-            rules = tuple(record.review.effective_rules[index] for index in indices)
-            refs = tuple(sorted(rule.event_ref(act.eli) for rule in rules))
-            ref = "effective-group/" + hashlib.sha256("|".join(refs).encode()).hexdigest()
-            narrowed = record.model_copy(
-                update={"review": record.review.model_copy(update={"effective_rules": rules})}
-            )
-            snapshot = bill.model_copy(update={"act_application_review": narrowed})
-            with self._repo.atomic():
-                pub = self._poster.prepare_message(
-                    snapshot,
-                    PublicationKind.EFFECTIVE_RULES,
-                    ref=ref,
-                    today=today,
-                )
-                assert pub.id is not None and pub.delivery is not None
-                if not pub.delivery.effective_rule_refs:
-                    self._repo.reserve_effective_rules(pub, refs)
-                    assert self._repo.replace_unattempted_delivery(
-                        pub.id, pub.delivery.model_copy(update={"effective_rule_refs": refs})
-                    )

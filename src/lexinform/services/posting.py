@@ -1189,6 +1189,18 @@ class Poster:
             return True
         if pub.status not in (PublicationStatus.QUEUED, PublicationStatus.FAILED):
             return False
+        root = (
+            self._repo.publication_by_id(pub.delivery.continuation_root)
+            if pub.delivery is not None and pub.delivery.continuation_root is not None
+            else pub
+        )
+        if root is not None and root.kind in (
+            PublicationKind.ACT_APPLICATION,
+            PublicationKind.EFFECTIVE_RULES,
+        ):
+            assert pub.id is not None
+            self._repo.mark_publication(pub.id, PublicationStatus.SKIPPED, count_attempt=False)
+            return False
         if pub.attempts >= self._max_attempts:
             return False
         assert pub.id is not None and pub.delivery is not None, (
