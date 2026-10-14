@@ -141,6 +141,7 @@ class Labels:
     agenda_dropped_header: str
     agenda_was_planned: str
     agenda_conditional: str
+    agenda_conditional_unknown: str
     agenda_conditional_short: str
     agenda_closed_note: str
     agenda_apply: str
@@ -364,9 +365,7 @@ RU = Labels(
         "voting": "Голосование",
         "hearing": "Публичные слушания",
     },
-    agenda_purpose_unknown=(
-        "Цель пункта не уточнена в структурированных данных; ниже формулировка источника."
-    ),
+    agenda_purpose_unknown="В повестке:",
     process_closed="Сейм отклонил проект, процесс завершён.",
     process_not_enacted="Процесс завершён: закон не принят.",
     process_veto_sustained=(
@@ -500,6 +499,7 @@ RU = Labels(
     agenda_dropped_header="Проект снят с повестки заседания",
     agenda_was_planned="было запланировано на",
     agenda_conditional="Заседание объявлено условно: состоится, только если",
+    agenda_conditional_unknown="Заседание объявлено условно; дату нужно подтвердить у комиссии.",
     agenda_conditional_short="условно",
     agenda_closed_note="Заседание закрытое — публику на него не пускают.",
     agenda_apply="Заявка на участие в слушании — на адрес",
@@ -624,7 +624,7 @@ RU = Labels(
     ),
     amendments_senate="Что меняют поправки Сената",
     amendments_committee="Что меняют поправки (по отчёту комиссии)",
-    link_amendments="Текст поправок (PDF)",
+    link_amendments="Текст поправок",
     link_supplement="Документ (PDF)",
     supplement_unreadable="Документ не удалось прочитать — он есть по ссылке ниже.",
     digest_header="Итоги недели",
@@ -1109,9 +1109,7 @@ EN = Labels(
         "voting": "Voting",
         "hearing": "Public hearing",
     },
-    agenda_purpose_unknown=(
-        "The structured agenda does not specify the purpose; source wording follows."
-    ),
+    agenda_purpose_unknown="On the agenda:",
     process_closed="The Sejm rejected the bill; the process is over.",
     process_not_enacted="The process is over: no law was enacted.",
     process_veto_sustained=(
@@ -1247,6 +1245,7 @@ EN = Labels(
     agenda_dropped_header="Bill taken off the sitting's agenda",
     agenda_was_planned="was planned for",
     agenda_conditional="The sitting is announced conditionally: it happens only if",
+    agenda_conditional_unknown="The sitting is conditional; confirm the date with the committee.",
     agenda_conditional_short="conditional",
     agenda_closed_note="The sitting is closed — the public is not admitted.",
     agenda_apply="To take part in the hearing, write to",
@@ -1370,7 +1369,7 @@ EN = Labels(
     ),
     amendments_senate="What the Senate's amendments change",
     amendments_committee="What the amendments change (per the committee's report)",
-    link_amendments="Amendments (PDF)",
+    link_amendments="Amendments",
     link_supplement="Document (PDF)",
     supplement_unreadable="The document could not be read — it is at the link below.",
     digest_header="The week in the channel",

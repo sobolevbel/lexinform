@@ -1,0 +1,31 @@
+{
+  "attachments": [
+    "3213.pdf",
+    "3213-uchwała.docx"
+  ],
+  "changeDate": "2026-10-14T15:14:51",
+  "deliveryDate": "2026-10-14",
+  "documentDate": "2026-10-14",
+  "number": "3213",
+  "processPrint": [
+    "316"
+  ],
+  "term": 10,
+  "title": "Uchwała Senatu w sprawie ustawy o asystencji osobistej osób z niepełnosprawnościami.",
+  "retrieved_on": "2026-10-14",
+  "pdf_pages": 21,
+  "pdf_pages_with_text": 1,
+  "sources": [
+    {
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/3213/3213.pdf",
+      "sha256": "60616640944bb40ab091c1963e75e6db97da26b7d9b8715b029cb448122ed81a",
+      "text_fixture": "senate_3213_cover.txt"
+    },
+    {
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/3213/3213-uchwa%C5%82a.docx",
+      "sha256": "3fb01ff9790b8b4e5c494644ed8ca6fb9855767ed3302434a4d630fd7caa2a87",
+      "text_fixture": "senate_3213_resolution.txt"
+    }
+  ],
+  "fixture_whitespace": "Trailing spaces and final empty lines removed; original bytes identified by sha256."
+}

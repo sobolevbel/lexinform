@@ -61,6 +61,7 @@ nav = [
   ] },
   { "Аудиты" = [
     { "Обзор" = "reviews/index.md" },
+    { "Карточки и поправки · 14.10" = "reviews/2026-10-14-reader-message-fixes.md" },
     { "Аудит больших изменений · 14.10" = "reviews/2026-10-14-large-changes-audit.md" },
     { "Текст консультаций · 14.10" = "reviews/2026-10-14-consultation-text.md" },
     { "Запуски и объединение постов · 13.10" = "reviews/2026-10-13-runs-and-publication-grouping.md" },

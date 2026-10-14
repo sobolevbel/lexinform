@@ -1,6 +1,7 @@
 """Following published bills: stage updates, re-analysis of new texts, closure, tracking scope."""
 
 import datetime as dt
+from pathlib import Path
 
 import pytest
 
@@ -584,6 +585,74 @@ def test_senate_amendments_are_summarised_from_the_senate_print() -> None:
     assert "🆕 <b>Что меняют поправки Сената</b>\nСенат смягчил проект" in text
     assert "• Убран сбор за дубликат" in text and 'href="' + SENATE_PRINT_URL in text
     assert "#сенат #поправки #важность5 #легализация #kadencja10druk3039" in text
+
+
+@pytest.mark.parametrize(
+    "injected",
+    [
+        "",
+        "w art. 16 termin składania wniosków określa się na dzień 1 grudnia 2027 r.;",
+        "w art. 16 kwotę 200 zł zastępuje się kwotą 300 zł;",
+        "w art. 16 wyrazy „przysługuje” zastępuje się wyrazami „nie przysługuje”;",
+        "w art. 16 dodaje się osoby posiadające zezwolenie na pobyt stały;",
+        "w art. 16 odesłanie do art. 15 ust. 2 zastępuje się odesłaniem do art. 15 ust. 3;",
+    ],
+)
+def test_senate_amendments_read_resolution_instead_of_mixed_scan_cover(injected: str) -> None:
+    fixtures = Path(__file__).parents[1] / "fixtures" / "sejm"
+    cover = (fixtures / "senate_3213_cover.txt").read_text()
+    resolution = (fixtures / "senate_3213_resolution.txt").read_text()
+    if injected:
+        resolution = resolution.replace(
+            "następujące poprawki:", f"następujące poprawki:\n{injected}", 1
+        )
+    pdf_url = "https://api.test/sejm/term10/prints/3213/3213.pdf"
+    word_url = "https://api.test/sejm/term10/prints/3213/3213-uchwa%C5%82a.docx"
+    w = World(
+        extractor=FakeTextExtractor(by_content={b"cover": cover, b"word": resolution}),
+        text_budget_chars=60_000,
+    )
+    w.add_bill("1929", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
+    w.run()
+    w.gateway.prints["3213"] = PrintInfo(
+        term=10,
+        number="3213",
+        title="Uchwała Senatu w sprawie ustawy o asystencji osobistej",
+        attachments=(
+            Attachment(print_number="3213", name="3213.pdf", url=pdf_url),
+            Attachment(print_number="3213", name="3213-uchwała.docx", url=word_url),
+        ),
+    )
+    w.gateway.files[pdf_url] = b"cover"
+    w.gateway.files[word_url] = b"word"
+    w.set_stages(
+        "1929",
+        REFERRED
+        + (
+            Stage(
+                stage_type="SenatePosition",
+                stage_name="Stanowisko Senatu",
+                date=dt.date(2026, 9, 8),
+                position="wniósł poprawki",
+                print_number="3213",
+            ),
+        ),
+    )
+    w.clock.advance(days=1)
+
+    report = w.run()
+    again = w.run()
+
+    assert (report.updates, report.reanalyzed, again.updates) == (1, 0, 0)
+    assert len(w.llm.amendment_contexts) == 1
+    ctx = w.llm.amendment_contexts[0]
+    assert ctx.text == resolution
+    assert "wprowadza do jej tekstu następujące poprawki" in ctx.text
+    assert "Szanowny Panie Marszałku" not in ctx.text
+    bill, change, _ = w.publisher.updates[0]
+    assert change.amendments is not None and change.amendments.source_url == word_url
+    text = MessageFormatter("ru").status_update(bill, change).text
+    assert f'href="{word_url}">Текст поправок (DOCX)</a>' in text
 
 
 def test_additional_committee_report_is_summarised_with_its_proposal() -> None:

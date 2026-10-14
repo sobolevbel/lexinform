@@ -9,6 +9,13 @@ Consultation reviews need their own selection rules: the law trimmer deliberatel
 very tables they analyse. See the [14 October corpus study](reviews/2026-10-14-consultation-text.md)
 for document layouts, measured reductions and unsafe shortcuts.
 
+For Senate amendment summaries, prefer the print's named `{number}-uchwała.docx`
+resolution to its PDF. Druk 3213 has 21 PDF pages with a text layer only on the cover;
+its separate DOCX contains the resolution and justification. This preference applies only
+to a SenatePosition document; ordinary bill PDFs keep their existing selection rules.
+If the named DOCX is absent, keep the PDF fallback. Corpus coverage and remaining limits
+are recorded in the [14 October message review](reviews/2026-10-14-reader-message-fixes.md).
+
 ## Scanned paper, and a covering letter is not the document it transmits
 
 Measured with the project's own extractor (term 10, 12 Sept 2026): of 66 documents filed to prints

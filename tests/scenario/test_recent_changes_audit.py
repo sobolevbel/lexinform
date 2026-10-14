@@ -213,7 +213,7 @@ def test_unknown_continuation_is_reported_in_its_first_run(workers: int, attempt
     w = World(reader_attention="on", workers=workers)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     analysis = make_analysis()
-    analysis.summary = "Материальное изменение для старых заявлений. " * 500
+    analysis.practical_impact = "Материальное изменение для старых заявлений. " * 500
     w.llm.script["3039"] = analysis
     w.publisher.unknown_continuation_attempt = attempt
 

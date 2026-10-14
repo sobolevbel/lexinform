@@ -36,14 +36,12 @@ Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony na te
 🔴 Важность: ●●●●● 5/5 — изменения в легализации пребывания
 🏷 Категория: легализация пребывания
 
-📝 О чём проект
-…
+👥 Кого касается: …
+💡 Что это значит на практике: …
 
 🔑 Ключевые изменения
 • …
 
-💡 Что это значит на практике: …
-👥 Кого касается: …
 📅 Вступление в силу: …
 🗣 Общественные консультации: 05.08.2026 — 04.09.2026 · форма для мнений на сайте Сейма
 
@@ -66,6 +64,11 @@ sitting with the bill on its agenda is already scheduled, otherwise with the usu
 **what you can do now** (send an opinion through the Sejm's consultation form until the deadline,
 write to the committee before its sitting, apply for a public hearing, send an opinion to the
 Senate committee; when there is nothing to do, the line says so and names the next window).
+
+Cards show the audience, practical effect and key changes. The general summary is a fallback
+when there is no practical explanation; a final-act card retains its labelled project analysis.
+Sitting notices use the saved mnemonic or Polish short title, with committee, date, room and
+stream on separate lines and the original agenda wording in its own paragraph.
 
 Replies cover: a reminder three days before a public consultation closes, the notice that the
 opinions received were published, a committee sitting or a Sejm sitting whose agenda names the

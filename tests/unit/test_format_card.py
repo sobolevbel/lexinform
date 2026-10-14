@@ -22,7 +22,7 @@ def test_card_contains_every_section(process_3039: ProcessDetail, print_3039: Pr
         "<b>O udzielaniu cudzoziemcom ochrony na terytorium Rzeczypospolitej Polskiej</b>"
     )
     assert "🔴 <b>Важность:</b> ●●●●● 5/5" in text
-    assert "О чём проект" in text and "Ключевые изменения" in text
+    assert "О чём проект" not in text and "Ключевые изменения" in text
     # The stage the bill stands on, then the referral under it; translated, the body stays Polish.
     assert "Стадия:</b> направлен на I чтение (3 сент 2026) · направлен в комиссию ASW" in text
     assert "PrzebiegProc.xsp?nr=3039" in text and "prints/3039/3039.pdf" in text
@@ -160,6 +160,7 @@ def test_card_escapes_model_output_and_notes_partial_text(
 ) -> None:
     analysis = make_analysis()
     analysis.summary = "Ссылка <b>жирный</b> & амперсанд"
+    analysis.practical_impact = ""
 
     text = (
         MessageFormatter("ru")
@@ -184,6 +185,7 @@ def test_card_preserves_long_blocks_for_lossless_physical_parts(
 ) -> None:
     analysis = make_analysis()
     analysis.summary = "с" * summary_len
+    analysis.practical_impact = ""
     analysis.key_changes = ["и" * change_len] * n_changes
 
     text = MessageFormatter("ru").new_bill(bill_of(process_3039, analysis), print_3039).text

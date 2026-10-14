@@ -15,7 +15,7 @@ class DeliveryRecoveryMachine(RuleBasedStateMachine):
         self.world = World(reader_attention="on")
         self.world.add_bill("3039", "Projekt ustawy o cudzoziemcach")
         analysis = make_analysis()
-        analysis.summary = "Старые заявления не подавать заново; 200 PLN. " * 220
+        analysis.practical_impact = "Старые заявления не подавать заново; 200 PLN. " * 220
         self.world.llm.script["3039"] = analysis
         self.world.publisher.unknown_continuation_attempt = 1
         self.world.run()

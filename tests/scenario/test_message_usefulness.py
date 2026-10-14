@@ -17,7 +17,8 @@ def test_card_puts_audience_consequence_and_action_before_details(language: str)
     analysis = bill.analysis.analysis
     text = MessageFormatter(language).new_bill(bill, None, today=dt.date(2026, 9, 7)).text
 
-    assert text.index(analysis.affected_groups[0]) < text.index(analysis.summary)
+    assert text.index(analysis.affected_groups[0]) < text.index(analysis.practical_impact)
+    assert analysis.summary not in text
     assert text.index(analysis.practical_impact) < text.index(analysis.key_changes[0])
     assert length(text) <= 4096
 

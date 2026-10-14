@@ -169,6 +169,25 @@ def test_the_prints_own_pdf_wins_over_everything_else() -> None:
     assert info.main_pdf is not None and info.main_pdf.name == "3039.pdf"
 
 
+@pytest.mark.parametrize("name", ["3213-uchwała.docx", "3213-uchwala.DOCX"])
+def test_senate_resolution_uses_its_named_word_text(name: str) -> None:
+    info = _print_with("3213", "3213.pdf", name)
+
+    resolution = info.senate_resolution
+
+    assert resolution is not None and resolution.name == name
+    assert info.main_pdf is not None and info.main_pdf.name == "3213.pdf"
+
+
+@pytest.mark.parametrize("name", ["3213-001.docx", "3214-uchwała.docx", "3213.docx"])
+def test_senate_resolution_keeps_pdf_when_no_named_resolution_exists(name: str) -> None:
+    info = _print_with("3213", name, "3213.pdf")
+
+    resolution = info.senate_resolution
+
+    assert resolution is not None and resolution.name == "3213.pdf"
+
+
 def test_change_dates_are_converted_from_warsaw_time_and_ue_status_parsed() -> None:
     raw = json.loads((FIXTURES / "process_3039.json").read_text())
     naive = datetime.fromisoformat(raw["changeDate"])

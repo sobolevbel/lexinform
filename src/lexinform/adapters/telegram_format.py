@@ -410,6 +410,8 @@ class MessageFormatter:
         )
         summary_label = lb.project_analysis_header if bill.act is not None else lb.about
         summary_block = f"{ICON['about']} <b>{esc(summary_label)}</b>\n{esc(a.summary.strip())}"
+        if a.practical_impact.strip() and bill.act is None:
+            summary_block = ""
         changes_block = ""
         if a.key_changes:
             bullets = "\n".join(f"• {esc(c.strip())}" for c in a.key_changes if c.strip())
@@ -836,7 +838,12 @@ class MessageFormatter:
                     link(stage.report_file, f"{lb.link_pdf} {stage.print_number or ''}".strip())
                 )
         if change.amendments is not None and change.amendments.source_url:
-            links.append(link(change.amendments.source_url, lb.link_amendments))
+            url = change.amendments.source_url
+            extension = urlsplit(url).path.rsplit(".", 1)[-1].upper()
+            label = lb.link_amendments
+            if extension in {"PDF", "DOCX", "DOC", "ODT"}:
+                label += f" ({extension})"
+            links.append(link(url, label))
         for record in change.supplements:
             if record.source_url:
                 label = lb.supplement_headers.get(record.source_kind, lb.link_supplement)
@@ -1205,8 +1212,7 @@ class MessageFormatter:
         return length(self._sittings_text(news)) <= MESSAGE_LIMIT
 
     def _sittings_text(self, news: Sequence[SittingNews]) -> str:
-        """One post for the sittings of a run: the Sejm's first, each line linked to its card,
-        which carries the summary and what the reader can do."""
+        """Every announced bill keeps its own agenda entry and card link."""
         lb = self._labels
         blocks = [f"{ICON['calendar']} <b>{esc(lb.sittings_header)}</b>"]
         lead: list[str] = []
@@ -1228,12 +1234,11 @@ class MessageFormatter:
         return "\n\n".join([*blocks, " ".join([*lead, *threads])])
 
     def _sitting_entry(self, news: SittingNews) -> str:
-        """A sitting in two or three lines; a retraction says which of two facts it is: the
-        sitting is off, or it meets without this bill."""
+        """Distinguish cancellation of the sitting from removal of the bill from its agenda."""
         lb = self._labels
         item = news.item
         label = self._number_label(news.bill)
-        context = f"<b>{esc(self._context(news.bill))}</b>\n"
+        context = esc(self._mnemonic(news.bill) or publication_title(news.bill.summary.title))
         url = self._post_url(news.card_message_id)
         ref = f'<a href="{html.escape(url, quote=True)}">{label}</a>' if url else label
         where = ""
@@ -1245,19 +1250,21 @@ class MessageFormatter:
         if news.cancelled:
             verdict = lb.agenda_dropped_header if news.still_meets else lb.agenda_cancelled_header
             return (
-                f"{context}❌ <b>{ref}</b> — {where}{esc(lb.agenda_was_planned)} "
+                f"❌ <b>{ref} · {context}</b>\n{where}{esc(lb.agenda_was_planned)} "
                 f"{self._agenda_when(item)}"
                 f"\n{esc(verdict)}"
             )
-        when = self._agenda_when(item)
+        lines = [f"<b>{ref} · {context}</b>"]
+        if where:
+            lines.append(where.removesuffix(" · "))
+        lines.append(f"{ICON['calendar']} {self._agenda_when(item)}")
         if item.room:
-            when += f" · {esc(item.room)}"
+            lines.append(esc(item.room))
         if item.video_url:
-            when += f" · {link(item.video_url, lb.link_video)}"
-        lines = [f"{context}• <b>{ref}</b> — {where}{when}"]
+            lines.append(link(item.video_url, lb.link_video))
         if item.text:
             purpose = self._agenda_purpose(item)
-            lines.append(f"{esc(purpose)}\n<i>{esc(item.text)}</i>")
+            lines.append(f"\n{esc(purpose)}\n<i>{esc(item.text)}</i>")
         if news.moved_from is not None:
             lines.append(f"{ICON['note']} {self._moved_line(news.moved_from, item)}")
         lines.extend(self._sitting_notes(item))
@@ -3114,7 +3121,9 @@ class MessageFormatter:
         lines: list[str] = []
         if item.condition is not None:
             what = lb.agenda_conditions.get(item.condition)
-            condition = f"{lb.agenda_conditional} {what}." if what else f"{lb.agenda_conditional}…"
+            condition = (
+                f"{lb.agenda_conditional} {what}." if what else lb.agenda_conditional_unknown
+            )
             lines.append(f"{ICON['note']} {esc(condition)}")
         if item.closed:
             lines.append(f"{ICON['note']} {esc(lb.agenda_closed_note)}")

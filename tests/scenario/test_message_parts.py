@@ -67,7 +67,7 @@ def test_interrupted_part_keeps_parent_and_text_across_restart(
     w = World(reader_attention="on")
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     analysis = make_analysis()
-    analysis.summary = (
+    analysis.practical_impact = (
         "Старые заявления не подавать заново; срок 1 декабря; 200 PLN; art. 15. " * 170
     )
     w.llm.script["3039"] = analysis

@@ -37,10 +37,11 @@ def test_the_sittings_roundup_names_each_sitting_in_a_line_linked_to_its_card(
     assert text.startswith("🗓 <b>Заседания</b>\n\n<b>Сейм</b>")
     assert text.index("<b>Сейм</b>") < text.index("<b>Комиссии</b>")
     card = '<a href="https://t.me/lexinform/7">druk nr 3039</a>'
-    assert f"• <b>{card}</b> — заседание Сейма № 65, 15-18 сент 2026" in text
+    assert f"<b>{card} · " in text
+    assert "\n🗓 заседание Сейма № 65, 15-18 сент 2026" in text
     assert (
-        f"• <b>{card}</b> — Komisja Administracji i Spraw Wewnętrznych (ASW) · "
-        "17 сент 2026, 09:00 (по времени Варшавы) · sala nr 412 · "
+        "\nKomisja Administracji i Spraw Wewnętrznych (ASW)\n"
+        "🗓 17 сент 2026, 09:00 (по времени Варшавы)\nsala nr 412\n"
     ) in text
     assert 'transmisje_arch.xsp?unid=1">Трансляция</a>' in text
     assert "<i>Pierwsze czytanie projektu (druk nr 3039)" in text
@@ -60,11 +61,32 @@ def test_a_sitting_taken_back_is_one_line_saying_which_fact_it_is(
 
     text = fmt.sittings([off]).text
     assert_telegram_html(text)
-    assert "❌ <b>druk nr 3039</b> — Komisja Administracji i Spraw Wewnętrznych (ASW) · " in text
+    assert "❌ <b>druk nr 3039 · " in text
+    assert "\nKomisja Administracji i Spraw Wewnętrznych (ASW) · " in text
     assert (
         "было запланировано на 17 сент 2026, 09:00 (по времени Варшавы)\nЗаседание отменено" in text
     )
     assert "Проект снят с повестки заседания" in fmt.sittings([dropped]).text
+
+
+def test_unknown_agenda_keeps_source_wording_under_a_separate_heading(
+    process_3039: ProcessDetail,
+) -> None:
+    bill = bill_of(process_3039)
+    assert bill.analysis is not None
+    bill.analysis.analysis.summary = "Проект меняет льготы и одновременно отменяет ст. 12 закона."
+    item = sitting(
+        text="Rozpatrzenie rządowego projektu ustawy (druk nr 3039).", condition="unknown"
+    )
+
+    text = MessageFormatter("ru").sittings([SittingNews(bill=bill, item=item)]).text
+
+    assert_telegram_html(text)
+    assert bill.analysis.analysis.summary not in text
+    assert f"\n\nВ повестке:\n<i>{item.text}</i>" in text
+    assert "структурированных данных" not in text
+    assert "дату нужно подтвердить у комиссии" in text
+    assert "только если…" not in text
 
 
 def test_sejm_sitting_in_english_writes_the_year_first(process_3039: ProcessDetail) -> None:
