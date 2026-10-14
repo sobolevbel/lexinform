@@ -93,7 +93,9 @@ you checked that no message arrived; it queues the original snapshot for the nex
 publishing/tracking phase. It does not send inside the command handler. An obsolete reminder
 can be closed with `dismiss REASON`; `dismissed` does not claim delivery.
 
-Only `unknown` can be resolved. A repeated command cannot queue a sent or already queued post.
+Only `unknown` can be confirmed or dismissed. `retry` also accepts a failed physical digest
+part after its three attempts are exhausted, resetting only that part with an audited decision.
+A repeated command cannot queue a sent or already queued post.
 A crash during the new attempt becomes `unknown` again and needs a new decision. The saved
 facts and parent are reused, with the current formatter for individual posts. Stage roundups
 also store the exact rendered HTML and all member publication IDs. `/delivery` on any member
@@ -551,3 +553,10 @@ queued/failed публикации и их продолжения ждут бе�
 сообщения соответствующего вида; `message_parts_sent` — дополнительные физические части.
 `digest_reader_parts` — читательские части дайджеста, `digest_events_covered` — события.
 Эти величины нельзя складывать как число «публикаций».
+
+
+Для failed физической части дайджеста, исчерпавшей три попытки, `/delivery ID retry`
+явно сбрасывает её лимит и сохраняет решение в аудите. `/digest publish` этого не делает.
+Dismiss первой или промежуточной части закрывает ещё не начатый хвост и его события
+как dismissed; ранее подтверждённые события остаются sent. Membership сохраняется,
+а решение можно найти по ID каждой закрытой физической части.

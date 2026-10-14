@@ -58,6 +58,7 @@ class Labels:
     joint_same: str
     current_summary: str
     changes_since_previous: str
+    card_part_superseded: str
     reanalyzed_note: str
     run_report_title: str
     tag_importance: str
@@ -388,6 +389,7 @@ RU = Labels(
     joint_same="По сути то же самое",
     current_summary="Суть проекта",
     changes_since_previous="Что изменилось с прошлого раза",
+    card_part_superseded="Карточка обновлена. Актуальный текст приведён выше.",
     reanalyzed_note="Текст проекта обновился, анализ выполнен заново.",
     run_report_title="lexinform run report",
     tag_importance="важность",
@@ -1132,6 +1134,7 @@ EN = Labels(
     joint_same="The same in substance",
     current_summary="Summary",
     changes_since_previous="What changed since the previous version",
+    card_part_superseded="The card was updated. The current text is above.",
     reanalyzed_note="The bill text was updated; the analysis was redone.",
     run_report_title="lexinform run report",
     tag_importance="importance",

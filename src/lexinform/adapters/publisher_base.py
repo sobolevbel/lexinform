@@ -77,6 +77,12 @@ class RenderingPublisher(ABC):
         text = self._formatter.new_bill(bill, print_info).text
         self._edit(Outgoing(PublicationKind.NEW_BILL, bill, text), message_id=message_id)
 
+    def render_card_parts(
+        self, bill: Bill, print_info: PrintInfo | None, *, minimum: int
+    ) -> tuple[str, ...]:
+        parts = self.split_message(self._formatter.new_bill(bill, print_info).text)
+        return parts + (self._formatter.superseded_card_part(),) * max(0, minimum - len(parts))
+
     def card_digest(self, bill: Bill) -> str:
         text = self._formatter.new_bill(bill, None).text
         return hashlib.sha256(text.encode()).hexdigest()

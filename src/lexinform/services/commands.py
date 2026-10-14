@@ -1020,7 +1020,13 @@ class CommandService:
                 return CommandOutcome(
                     status=OutcomeStatus.ERROR, note="publishing is off in this run"
                 )
-            if publication.status is not PublicationStatus.UNKNOWN:
+            exhausted_digest_retry = (
+                action == "retry"
+                and publication.kind is PublicationKind.DIGEST
+                and publication.status is PublicationStatus.FAILED
+                and publication.attempts >= 3
+            )
+            if publication.status is not PublicationStatus.UNKNOWN and not exhausted_digest_retry:
                 return CommandOutcome(
                     status=OutcomeStatus.ERROR,
                     delivery=publication,

@@ -676,6 +676,11 @@ class DigestService:
                 continue
             if part.status not in (PublicationStatus.QUEUED, PublicationStatus.FAILED):
                 return None
+            if part.attempts >= 3:
+                log.warning(
+                    "Digest part %s exhausted attempts; use /delivery %s retry", identity, identity
+                )
+                return None
             self._repo.mark_publication(identity, PublicationStatus.PENDING, count_attempt=False)
             if (
                 send_publication(
@@ -709,6 +714,7 @@ class DigestService:
                 ]
                 if any(
                     member is None
+                    or (member.status is PublicationStatus.FAILED and member.attempts >= 3)
                     or member.status
                     not in (
                         PublicationStatus.QUEUED,

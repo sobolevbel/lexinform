@@ -337,7 +337,7 @@ class StatusTrackingService:
             else None
         )
         self._cards = CardRefresher(
-            gateway, repo, publisher, channel_id=channel_id, max_edits=options.max_card_edits
+            gateway, repo, publisher, clock, channel_id=channel_id, max_edits=options.max_card_edits
         )
         self._rollover = TermRollover(repo, clock, poster, channel_id=channel_id)
 
@@ -433,7 +433,11 @@ class StatusTrackingService:
         return self._finish(result)
 
     def _finish(self, result: TrackingResult) -> TrackingResult:
-        result.attention = self._poster.attention_metrics()
+        metrics = self._poster.attention_metrics()
+        for key, count in result.attention.items():
+            metrics[key] = metrics.get(key, 0) + count
+        result.attention = metrics
+        result.partial_errors.extend(self._poster.delivery_errors())
         return result
 
     def _flush_updates(self, result: TrackingResult, *, publish: bool) -> None:

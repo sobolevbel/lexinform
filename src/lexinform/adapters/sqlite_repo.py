@@ -2243,7 +2243,15 @@ class SqliteBillRepository:
                 member = self.publication_by_id(identity)
                 if (
                     member is None
-                    or member.status is not PublicationStatus.UNKNOWN
+                    or not (
+                        member.status is PublicationStatus.UNKNOWN
+                        or (
+                            resolution.action == "retry"
+                            and member.kind is PublicationKind.DIGEST
+                            and member.status is PublicationStatus.FAILED
+                            and member.attempts >= 3
+                        )
+                    )
                     or member.channel_id != resolution.channel_id
                     or (
                         plan
@@ -2271,6 +2279,7 @@ class SqliteBillRepository:
                 for member in digest_members
             ):
                 return False
+            affected = list(identities)
             for identity in identities:
                 self._conn.execute(
                     "UPDATE publications SET status = ?, message_id = COALESCE(?, message_id),"
@@ -2286,20 +2295,7 @@ class SqliteBillRepository:
                     ),
                 )
                 if status == "dismissed":
-                    member = self.publication_by_id(identity)
-                    if member is not None and member.delivery is not None:
-                        for change_id in member.delivery.held_change_ids:
-                            owned = self.get_update_publication(change_id, resolution.channel_id)
-                            if (
-                                owned is not None
-                                and owned.id is not None
-                                and owned.status is PublicationStatus.QUEUED
-                                and owned.delivery is not None
-                                and owned.delivery.absorbed_by is not None
-                            ):
-                                self.mark_publication(
-                                    owned.id, PublicationStatus.DISMISSED, count_attempt=False
-                                )
+                    self._dismiss_delivery_effects(identity, resolution.reason)
             if status == "dismissed":
                 root = (
                     self.publication_by_id(plan.continuation_root)
@@ -2325,38 +2321,82 @@ class SqliteBillRepository:
                                 error="Previous physical part dismissed by operator.",
                                 count_attempt=False,
                             )
+                            self._dismiss_delivery_effects(child_id, resolution.reason)
                             stopped.add(child_id)
-                for member in digest_members:
-                    assert member.id is not None and member.delivery is not None
-                    self.mark_publication(
-                        member.id,
-                        PublicationStatus.DISMISSED,
-                        error=resolution.reason,
-                        count_attempt=False,
+                            affected.append(child_id)
+                if original.kind is PublicationKind.DIGEST and original.ref:
+                    root = self.get_publication(
+                        original.term,
+                        original.number,
+                        original.kind,
+                        original.channel_id,
+                        ref=original.ref.split(":part:", 1)[0],
                     )
-                    for change_id in member.delivery.held_change_ids:
-                        held = self.get_update_publication(change_id, member.channel_id)
-                        if (
-                            held is not None
-                            and held.id is not None
-                            and held.status is PublicationStatus.SKIPPED
-                        ):
+                    if root is not None and root.delivery is not None:
+                        tail = False
+                        for identity in root.delivery.digest_parts:
+                            if identity == original.id:
+                                tail = True
+                                continue
+                            child = self.publication_by_id(identity)
+                            if not tail or child is None:
+                                continue
+                            if child.status is not PublicationStatus.QUEUED or child.attempts:
+                                break
                             self.mark_publication(
-                                held.id,
+                                identity,
                                 PublicationStatus.DISMISSED,
-                                error=resolution.reason,
+                                error="Previous physical part dismissed by operator.",
                                 count_attempt=False,
                             )
+                            self._dismiss_delivery_effects(identity, resolution.reason)
+                            affected.append(identity)
             self._conn.execute(
                 "INSERT INTO delivery_resolutions"
                 " (publication_id, command_update_id, resolution_json) VALUES (?, ?, ?)",
                 (
                     resolution.publication_id,
                     resolution.command.update_id,
-                    resolution.model_dump_json(),
+                    resolution.model_copy(
+                        update={"publication_ids": tuple(affected)}
+                    ).model_dump_json(),
                 ),
             )
         return True
+
+    def _dismiss_delivery_effects(self, publication_id: int, reason: str | None) -> None:
+        publication = self.publication_by_id(publication_id)
+        if publication is None or publication.delivery is None:
+            return
+        plan = publication.delivery
+        owner_id = plan.continuation_root or publication_id
+        for change_id in plan.held_change_ids:
+            owned = self.get_update_publication(change_id, publication.channel_id)
+            if (
+                owned is not None
+                and owned.id is not None
+                and (
+                    owned.status is PublicationStatus.SKIPPED
+                    or (
+                        owned.status is PublicationStatus.QUEUED
+                        and owned.delivery is not None
+                        and owned.delivery.absorbed_by == owner_id
+                    )
+                )
+            ):
+                self.mark_publication(
+                    owned.id, PublicationStatus.DISMISSED, error=reason, count_attempt=False
+                )
+        for source in self.digest_sources(publication_id):
+            if (
+                source.id is not None
+                and source.status is PublicationStatus.QUEUED
+                and not source.attempts
+            ):
+                self.mark_publication(
+                    source.id, PublicationStatus.DISMISSED, error=reason, count_attempt=False
+                )
+                self._dismiss_delivery_effects(source.id, reason)
 
     def delivery_resolutions(self, publication_id: int) -> list[DeliveryResolution]:
         rows = self._conn.execute(
@@ -2458,6 +2498,28 @@ class SqliteBillRepository:
             (term, number, kind.value, channel_id),
         )
         return int(cur.rowcount)
+
+    def card_refresh_parts(self, card_id: int) -> list[Publication]:
+        root = self._conn.execute(
+            "SELECT ref FROM publications WHERE kind = 'message_part' AND ref LIKE ?"
+            " ORDER BY id DESC LIMIT 1",
+            (f"card/{card_id}/%/1",),
+        ).fetchone()
+        if root is None:
+            card = self.publication_by_id(card_id)
+            rows = self._conn.execute(
+                "SELECT * FROM publications WHERE kind = 'message_part' AND ref LIKE ? ORDER BY id",
+                (f"message/{card_id}/%",),
+            ).fetchall()
+            return ([card] if card is not None else []) + [
+                self._row_to_publication(row) for row in rows
+            ]
+        prefix = root["ref"].rsplit("/", 1)[0]
+        rows = self._conn.execute(
+            "SELECT * FROM publications WHERE kind = 'message_part' AND ref LIKE ? ORDER BY id",
+            (f"{prefix}/%",),
+        ).fetchall()
+        return [self._row_to_publication(row) for row in rows]
 
     def set_card_digest(self, publication_id: int, digest: str) -> None:
         """Remember what the card said when it was last sent or edited."""

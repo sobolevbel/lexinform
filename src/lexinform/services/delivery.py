@@ -153,6 +153,7 @@ class DeliveryService:
         finally:
             report.finished_at = self._clock.now()
             result.attention = self._poster.attention_metrics()
+            result.partial_errors.extend(self._poster.delivery_errors())
             merge_tracking(report, result, publish=True)
             if result.fatal_error:
                 report.errors.append("deliveries: " + result.fatal_error)

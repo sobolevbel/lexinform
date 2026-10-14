@@ -359,6 +359,10 @@ class Publisher(Protocol):
         """Replace the card `message_id` with the bill's card as it renders now."""
         ...
 
+    def render_card_parts(
+        self, bill: Bill, print_info: PrintInfo | None, *, minimum: int
+    ) -> tuple[str, ...]: ...
+
     def card_digest(self, bill: Bill) -> str:
         """Digest of the card as it would render now, without sending anything: what lets a run
         tell a card that is still true from one that has drifted."""
@@ -853,6 +857,8 @@ class BillRepository(Protocol):
     def delete_publication(
         self, term: int, number: str, kind: PublicationKind, channel_id: str
     ) -> int: ...
+
+    def card_refresh_parts(self, card_id: int) -> list[Publication]: ...
 
     def set_card_digest(self, publication_id: int, digest: str) -> None: ...
 

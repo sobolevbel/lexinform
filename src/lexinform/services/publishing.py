@@ -72,6 +72,7 @@ class PublishingResult:
     waiting: int = 0
     message_parts_sent: int = 0
     attention: dict[str, int] = field(default_factory=dict)
+    partial_errors: list[str] = field(default_factory=list)
     fatal_error: str | None = None
 
 
@@ -124,6 +125,7 @@ class PublishingService:
         self._attention_enabled = attention_enabled
         self._attention_assess = attention_assess
         self._parts_sent = 0
+        self._part_errors: list[str] = []
         self._delivery_attempts = delivery_attempts if delivery_attempts is not None else set[int]()
 
     @property
@@ -142,6 +144,7 @@ class PublishingService:
         """
         result = PublishingResult()
         self._parts_sent = 0
+        self._part_errors.clear()
         self._delivery_attempts.clear()
         candidates = self._repo.list_publish_candidates(
             self._channel_id,
@@ -541,14 +544,17 @@ class PublishingService:
         if message_id is None:
             return False
         if pub is not None and pub.delivery is not None:
-            self._parts_sent += send_continuations(
+            parts = send_continuations(
                 self._repo, self._clock, self._publisher, pub, self._delivery_attempts
             )
+            self._parts_sent += parts.sent
+            self._part_errors.extend(parts.errors)
         log.info("published druk %s as message %s", bill.number, message_id)
         return True
 
     def _count_attention(self, pub_id: int, result: PublishingResult) -> None:
         result.message_parts_sent = self._parts_sent
+        result.partial_errors = list(self._part_errors)
         pub = self._repo.publication_by_id(pub_id)
         if pub is None or pub.attention is None:
             return

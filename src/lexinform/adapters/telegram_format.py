@@ -383,6 +383,9 @@ class MessageFormatter:
         self._attention_enabled = attention_enabled
         self._language = language
 
+    def superseded_card_part(self) -> str:
+        return self._labels.card_part_superseded
+
     def new_bill(
         self, bill: Bill, print_info: PrintInfo | None, *, today: dt.date | None = None
     ) -> RenderedMessage:

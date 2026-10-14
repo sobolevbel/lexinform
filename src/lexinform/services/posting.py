@@ -124,6 +124,7 @@ class Poster:
         self._daily_roundup = daily_roundup
         self._daily_hour = daily_hour
         self._attention_metrics: dict[str, int] = {}
+        self._part_errors: list[str] = []
         self._counted: set[int] = set()
         self._told_windows: dict[tuple[int, str, str, date], tuple[int, int]] = {}
         self._attempted = delivery_attempts if delivery_attempts is not None else set[int]()
@@ -133,6 +134,7 @@ class Poster:
 
     def start_run(self, *, keep_attempts: bool = False) -> None:
         self._attention_metrics.clear()
+        self._part_errors.clear()
         self._counted.clear()
         self._told_windows.clear()
         if not keep_attempts:
@@ -1494,14 +1496,20 @@ class Poster:
 
         self._count_attention((pub_id,), sent)
         if sent is not None and pub is not None and pub.delivery is not None:
-            count = send_continuations(
+            parts = send_continuations(
                 self._repo, self._clock, self._publisher, pub, self._attempted
             )
-            count += pub.kind is PublicationKind.MESSAGE_PART
+            self._part_errors.extend(parts.errors)
+            count = parts.sent + (
+                pub.kind is PublicationKind.MESSAGE_PART and pub.delivery.edit_message_id is None
+            )
             self._attention_metrics["continuation_messages"] = (
                 self._attention_metrics.get("continuation_messages", 0) + count
             )
         return sent
+
+    def delivery_errors(self) -> list[str]:
+        return list(self._part_errors)
 
     def attention_metrics(self) -> dict[str, int]:
         metrics = dict(self._attention_metrics)

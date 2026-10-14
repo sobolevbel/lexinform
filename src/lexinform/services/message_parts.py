@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass, field
 from functools import partial
 
 from lexinform.errors import ServiceUnavailableError
@@ -9,15 +10,8 @@ from lexinform.services.publications import send_publication
 log = logging.getLogger(__name__)
 
 
-def freeze_parts(
-    repo: BillRepository, clock: Clock, publisher: Publisher, pub: Publication, text: str
-) -> Publication:
-    assert pub.id is not None and pub.delivery is not None
-    if pub.delivery.rendered_text:
-        return pub
-    texts = publisher.split_message(text)
-    plan = pub.delivery.model_copy(update={"rendered_text": texts[0]})
-    child_snapshot = Bill.model_validate_json(plan.bill_json).model_dump_json(
+def continuation_snapshot(bill: Bill) -> str:
+    return bill.model_dump_json(
         exclude={
             "analysis",
             "consultation_review",
@@ -31,6 +25,17 @@ def freeze_parts(
             "stages",
         }
     )
+
+
+def freeze_parts(
+    repo: BillRepository, clock: Clock, publisher: Publisher, pub: Publication, text: str
+) -> Publication:
+    assert pub.id is not None and pub.delivery is not None
+    if pub.delivery.rendered_text:
+        return pub
+    texts = publisher.split_message(text)
+    plan = pub.delivery.model_copy(update={"rendered_text": texts[0]})
+    child_snapshot = continuation_snapshot(Bill.model_validate_json(plan.bill_json))
     children: list[int] = []
     parent = pub.id
     with repo.atomic():
@@ -79,15 +84,21 @@ def continuation_ready(repo: BillRepository, pub: Publication) -> Publication | 
     return pub
 
 
+@dataclass
+class ContinuationResult:
+    sent: int = 0
+    errors: list[str] = field(default_factory=list)
+
+
 def send_continuations(
     repo: BillRepository,
     clock: Clock,
     publisher: Publisher,
     root: Publication,
     attempted: set[int],
-) -> int:
+) -> ContinuationResult:
     assert root.delivery is not None
-    count = 0
+    result = ContinuationResult()
     for identity in root.delivery.continuation_ids:
         if identity in attempted:
             break
@@ -107,9 +118,11 @@ def send_continuations(
                 repo, clock, identity, partial(publisher.publish_prepared, ready)
             )
         except ServiceUnavailableError as exc:
-            log.warning("Continuation %s remains unresolved: %s", identity, exc.describe())
+            error = f"Continuation {identity}: {exc.describe()}; inspect /delivery {identity}"
+            result.errors.append(error)
+            log.warning("%s", error)
             break
         if sent is None:
             break
-        count += 1
-    return count
+        result.sent += ready.delivery is not None and ready.delivery.edit_message_id is None
+    return result

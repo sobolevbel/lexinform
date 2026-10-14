@@ -470,6 +470,7 @@ class DailyPipeline:
         published = self._publishing.publish_new(
             min_score=opts.min_score, limit=opts.max_publish, publish=opts.publish, may_wait=True
         )
+        report.errors.extend(f"publishing: {error}" for error in published.partial_errors)
         report.published = published.published
         report.message_parts_sent += published.message_parts_sent
         report.joint_published = published.joined
