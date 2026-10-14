@@ -241,14 +241,21 @@ def test_a_file_the_waf_refuses_leaves_the_bill_pending() -> None:
     )
 
 
-def test_a_file_that_is_not_there_is_still_a_skip() -> None:
-    """A 404 is about the bill: the address is built by convention and can simply be wrong, so
-    retrying it every run would queue the bill for ever."""
-    w = World()
+@pytest.mark.parametrize("workers", [1, 4])
+def test_a_missing_rpw_file_is_retried_when_it_appears(workers: int) -> None:
+    w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT), workers=workers)
     w.gateway.submissions.append(submission(title="Rządowy projekt ustawy o ubezpieczeniach"))
-    assert submission_url() not in w.gateway.files  # the Sejm never published it there
+    assert submission_url() not in w.gateway.files
 
     report = w.run()
 
-    assert (report.text_prefilter_unanswered, report.text_prefilter_unreadable) == (0, 1)
-    assert w.bill(RPW).status is BillStatus.SKIPPED_TEXT_PREFILTER
+    assert (report.text_prefilter_unanswered, report.text_prefilter_unreadable) == (1, 0)
+    assert w.bill(RPW).status is BillStatus.TEXT_PREFILTER_PENDING
+    assert w.bill(RPW).analysis_attempts == 0
+    w.repo.restore(w.repo.dump())
+    w.gateway.files[submission_url()] = b"%PDF"
+
+    retried = w.run()
+
+    assert (retried.text_prefilter_hits, retried.analyzed, retried.published) == (1, 1, 1)
+    assert w.bill(RPW).status is BillStatus.ANALYZED

@@ -464,6 +464,12 @@ MIGRATIONS: tuple[str, ...] = (
         PRIMARY KEY (term, number, channel_id, rule_ref)
     );
     """,
+    """
+    UPDATE bills SET status = 'text_prefilter_pending'
+    WHERE number LIKE 'RPW/%' AND status = 'skipped_text_prefilter'
+      AND last_error LIKE 'text prefilter: OrkaUnreachableError:%: HTTP 404'
+      AND analysis_json IS NULL AND linked_number IS NULL AND discontinued_at IS NULL;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)

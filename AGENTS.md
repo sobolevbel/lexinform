@@ -70,6 +70,7 @@ Dependencies flow only in this direction:
 - `/processes` covers only printed bills; pre-print consultation entries live in `/bills`. API timestamps are naive `Europe/Warsaw` times, not `Z` timestamps. Paginate until empty; do not trust ignored API filters.
 - A bill being passed is not the same as in force. Use ELI/Dz.U. data for promulgation and entry into force.
 - Never probe attachments with `HEAD`; stream a bounded `GET`. `…-A` committee prints containing amendment proposals are not bill text.
+- Missing RPW files stay pending for text prefilter; an initial Orka 404 is not a relevance verdict.
 - RCL has no API. Its project pages are slow, and GitHub-hosted runners may be network-blocked; the initial list probe must stay short and single-attempt.
 - Large text goes through deterministic trimming and triage before full analysis. Cost limits are safeguards: skipped-cost rows are revivable with `lexinform reset --to analysis_pending`.
 

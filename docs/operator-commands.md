@@ -150,11 +150,11 @@ another command: `/show 3039 force` used to do nothing and say nothing, which re
 it did something. A `key=value` is only read as an option where the command knows the key, so a
 Sejm link full of them (`…druk.xsp?nr=3039`) is still just a link.
 
-`text_skipped` rides on `reprefilter` and is the only way back for a bill the **text** stage
-rejected. That skip is revisited by nothing: not by a later run, only by a changed title
-(`discovery._ingest`) or by `/unskip`, one bill at a time. So a row whose reason was never
-recorded, and a print whose PDF the Sejm had simply not uploaded when the run asked
-("no document to read"), stay closed until a run is asked for this. It costs downloads and
+`text_skipped` rides on `reprefilter` and revisits bills the **text** stage rejected. A content
+rejection stays closed until a changed title (`discovery._ingest`), `/unskip`, or this backfill.
+Missing print files and Orka refusals, including HTTP 404, stay pending and retry automatically.
+Migration v44 also requeues legacy RPW skips caused by HTTP 404. Older unreadable-file skips
+without that diagnosis still need operator recovery. Backfill costs downloads and
 keyword matching, no tokens — but a bill that passes becomes an analysis candidate, so the run
 after it pays for the readings and posts the cards; give it a `limit` you are willing to read.
 

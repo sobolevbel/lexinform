@@ -20,8 +20,9 @@ def _entry_batched_then_its_print_skipped(w: World) -> None:
 
 
 def test_a_print_its_own_text_already_skipped_is_not_scanned_again_when_its_entry_links() -> None:
-    w = World()
+    w = World(extractor=FakeTextExtractor("Art. 1. Dochody i wydatki budżetu państwa. " * 40))
     w.gateway.submissions.append(submission(title=BUDGET))
+    w.gateway.files[submission_url()] = b"%PDF-rpw"
     w.run()
     assert w.bill(RPW).status is BillStatus.SKIPPED_TEXT_PREFILTER
     w.clock.advance(days=1)

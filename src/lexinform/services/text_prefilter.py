@@ -137,12 +137,12 @@ class TextPrefilterService:
         if isinstance(exc, ServiceUnavailableError):
             raise exc
         if isinstance(exc, OrkaUnreachableError):
-            # Orka's WAF refuses by address and by the day; only its 404 is about the bill.
+            # RPW/34574/2026's PDF appeared after its first 404 on 14 October 2026.
             log.warning("text prefilter for druk %s: %s", bill.number, exc)
             return PrefilterLoad(
                 None,
                 f"text prefilter: {type(exc).__name__}: {exc}",
-                unanswered=not exc.file_is_missing,
+                unanswered=True,
             )
         log.warning("text prefilter for druk %s failed: %s", bill.number, exc)
         return PrefilterLoad(None, f"text prefilter failed: {type(exc).__name__}: {exc}")
@@ -211,13 +211,7 @@ class TextPrefilterService:
         return accepted
 
     def load(self, bill: Bill) -> PrefilterLoad:
-        """Network only. The bill text alone decides, so that is all this reads.
-
-        The text to scan, or the reason there is none; a 404, a damaged file or an unknown format
-        propagates for the caller to record — the bill is then skipped with the reason on file,
-        and `lexinform reprefilter --include-text-skipped` scans it again. An outage aborts the
-        phase instead, leaving the bills pending for the next run.
-        """
+        """Missing Orka files stay pending; downloaded files that cannot be read are skipped."""
         try:
             located = self._texts.locate(bill)
         except ServiceUnavailableError:

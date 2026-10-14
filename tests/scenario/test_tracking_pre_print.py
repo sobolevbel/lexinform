@@ -392,11 +392,13 @@ def test_title_miss_entry_is_scanned_by_the_text_prefilter_and_becomes_a_candida
 
 
 def test_print_of_a_title_miss_entry_goes_through_the_text_prefilter() -> None:
-    # The entry's own file is not on orka (a scan, a 404, a WAF that changed its mind), so its
-    # text stage ends in a skip whose reason the print cannot read. The print is served by the
-    # API and must be scanned rather than inherit that skip.
-    w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT))
+    w = World(
+        extractor=FakeTextExtractor(
+            FOREIGNER_TEXT, by_content={b"%PDF-rpw": "Art. 1. Zmiany podatkowe. " * 40}
+        )
+    )
     w.gateway.submissions.append(submission(title=NEUTRAL_TITLE, description="zmiany podatkowe"))
+    w.gateway.files[submission_url()] = b"%PDF-rpw"
     w.run()
     assert w.bill(RPW).status is BillStatus.SKIPPED_TEXT_PREFILTER
     w.gateway.submissions[0] = submission(

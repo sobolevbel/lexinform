@@ -870,12 +870,65 @@ def test_a_rollback_sqlite_refuses_does_not_leave_the_next_one_pretending(
     assert repo.get(10, "3039") is None
 
 
+def test_restore_revives_only_rpw_files_skipped_on_404(
+    tmp_path: Path, process_3039: ProcessDetail, now: datetime
+) -> None:
+    path = tmp_path / "v43.db"
+    with sqlite3.connect(path) as conn:
+        for migration in MIGRATIONS[:43]:
+            conn.executescript(migration)
+        conn.execute("PRAGMA user_version = 43")
+    legacy = SqliteBillRepository(path)
+    cases = (
+        ("RPW/1/2026", BillStatus.SKIPPED_TEXT_PREFILTER, "HTTP 404", True),
+        ("RPW/2/2026", BillStatus.SKIPPED_TEXT_PREFILTER, "HTTP 403", False),
+        ("RPW/3/2026", BillStatus.SKIPPED_PREFILTER, "HTTP 404", False),
+        ("4100", BillStatus.SKIPPED_TEXT_PREFILTER, "HTTP 404", False),
+        ("RPW/4/2026", BillStatus.SKIPPED_TEXT_PREFILTER, "no keyword hits", False),
+    )
+    for number, status, error, _ in cases:
+        legacy.upsert_summary(process_3039.model_copy(update={"number": number}), now=now)
+        reason = f"text prefilter: OrkaUnreachableError: GET https://orka.test/file.pdf: {error}"
+        legacy.set_status(10, number, status, reason=reason)
+    script = legacy.dump()
+    legacy.close()
+    current = SqliteBillRepository(":memory:")
+
+    current.restore(script)
+
+    assert current.schema_version == SCHEMA_VERSION
+    for number, status, error, revived in cases:
+        bill = current.get(10, number)
+        assert bill is not None
+        assert bill.status is (BillStatus.TEXT_PREFILTER_PENDING if revived else status)
+        assert bill.last_error is not None and bill.last_error.endswith(error)
+        assert bill.analysis_attempts == 0
+
+
 def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> None:
     legacy = sqlite3.connect(tmp_path / "v1.db")
     legacy.executescript(f"BEGIN;{MIGRATIONS[0]}PRAGMA user_version = 1;COMMIT;")
     legacy.execute(
         "INSERT INTO runs (started_at, since, mode, ok) VALUES ('2026-09-01T05:00:00+00:00',"
         " '2026-08-31T05:00:00+00:00', 'run', 1)"
+    )
+    reason = "text prefilter: OrkaUnreachableError: GET https://orka.test/file.pdf: HTTP 404"
+    legacy.execute(
+        "INSERT INTO bills (term, number, title, change_date, status, summary_json, last_error,"
+        " first_seen_at, last_checked_at) VALUES (10, 'RPW/1/2026', 't', '2026-09-01',"
+        " 'skipped_text_prefilter', ?, ?, '2026-09-01', '2026-09-01')",
+        (
+            json.dumps(
+                {
+                    "term": 10,
+                    "number": "RPW/1/2026",
+                    "title": "t",
+                    "document_type": "projekt ustawy",
+                    "change_date": "2026-09-01T00:00:00Z",
+                }
+            ),
+            reason,
+        ),
     )
     legacy_dump = "\n".join(legacy.iterdump()) + "\n"  # the v1 release wrote no version line
     legacy.close()
@@ -886,6 +939,9 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
 
     assert "user_version" not in legacy_dump
     assert repo.schema_version == SCHEMA_VERSION
+    revived = repo.get(10, "RPW/1/2026")
+    assert revived is not None and revived.status is BillStatus.TEXT_PREFILTER_PENDING
+    assert revived.last_error == reason
     assert repo.last_discovery_started_at() is not None  # v2 backfill: ok -> discovery_ok
     with sqlite3.connect(tmp_path / "current.db") as conn:
         publications = {r[1] for r in conn.execute("PRAGMA table_info(publications)")}
