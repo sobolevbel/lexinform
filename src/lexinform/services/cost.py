@@ -104,10 +104,18 @@ class CostLedger:
 
     @property
     def stopped(self) -> str | None:
-        """Set once the per-run limit has held work back, for the run report to say so. The
+        """Set once a cost limit has held work back, for the run report to say so. The
         analysis phase says it for itself (`AnalysisResult.stopped`); this is for the work that
         has no phase of its own — a re-analysis during tracking."""
         return self._stopped
 
     def stop(self, waiting: str) -> None:
         self._stopped = f"{self.over_budget}; {waiting}"
+
+    def stop_bill(
+        self, *, number: str, estimate_usd: float, limit_usd: float, waiting: str
+    ) -> None:
+        self._stopped = (
+            f"per-bill cost limit exceeded for {number} "
+            f"(request ≈{format_usd(estimate_usd)} > {format_usd(limit_usd)}); {waiting}"
+        )

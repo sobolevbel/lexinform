@@ -1352,9 +1352,15 @@ class AnalysisService:
             self._options.max_bill_cost_usd
             and request.estimated_cost_usd > self._options.max_bill_cost_usd
         ):
-            self._ledger.stop("document review exceeds per-bill cost limit")
+            self._ledger.stop_bill(
+                number=bill.number,
+                estimate_usd=request.estimated_cost_usd,
+                limit_usd=self._options.max_bill_cost_usd,
+                waiting="document review remains pending",
+            )
             return Waiting(self._clock.now())
         if not self._ledger.reserve(request.estimated_cost_usd):
+            self._ledger.stop("document review waits for the next run")
             return Waiting(self._clock.now())
         try:
             self._repo.save_batch_intent(

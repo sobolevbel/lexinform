@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from lexinform.models import (
+    BatchRequest,
     ConsultationFinding,
     DocumentReview,
     DocumentReviewRecord,
@@ -343,17 +344,49 @@ def test_a_quote_cannot_hide_exceptions_after_the_general_effective_clause() -> 
     assert not answer.complete
 
 
-def test_review_cost_guard_never_creates_a_synchronous_fallback() -> None:
-    w = World(batch=True, batch_kinds=frozenset({"consultation_review"}), max_bill_cost_usd=0.01)
+@pytest.mark.parametrize(("limit", "estimate"), [(0.01, 0.1), (2.0, 4.4416)])
+def test_review_cost_guard_never_creates_a_synchronous_fallback(
+    monkeypatch: pytest.MonkeyPatch, limit: float, estimate: float
+) -> None:
+    w = World(
+        batch=True,
+        batch_kinds=frozenset({"consultation_review"}),
+        max_bill_cost_usd=limit,
+        max_run_cost_usd=15.0,
+    )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
     w.analysis.start_run()
+    prepare = w.batch.prepare_request
+
+    def prepare_review(request: BatchRequest) -> BatchRequest:
+        return prepare(request).model_copy(update={"estimated_cost_usd": estimate})
+
+    monkeypatch.setattr(w.batch, "prepare_request", prepare_review)
     bill = w.bill("3039")
     before = bill.status
     assert isinstance(w.analysis.request_document_review(bill, context()), Waiting)
     assert not w.repo.list_queued_batch_intents()
-    assert w.analysis.stopped is not None
+    assert w.analysis.stopped == (
+        f"per-bill cost limit exceeded for 3039 (request ≈${estimate:.2f} > ${limit:.2f}); "
+        "document review remains pending"
+    )
     assert w.bill("3039").status == before
+
+
+def test_review_reports_the_run_limit_when_reservation_fails() -> None:
+    w = World(batch=True, max_bill_cost_usd=2.0, max_run_cost_usd=0.01)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.analysis.start_run()
+
+    assert isinstance(w.analysis.request_document_review(w.bill("3039"), context()), Waiting)
+
+    assert not w.repo.list_queued_batch_intents()
+    assert w.analysis.stopped == (
+        "run cost limit reached (spent/reserved ≈$0.00, next request exceeds $0.01); "
+        "document review waits for the next run"
+    )
 
 
 def test_effective_rule_ownership_survives_payload_retention_and_review_rewording() -> None:
