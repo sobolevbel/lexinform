@@ -20,6 +20,46 @@ from tests.harness import (
 FOREIGNER_TEXT = "Art. 1. Cudzoziemiec składa wniosek o zezwolenie na pobyt czasowy. " * 40
 
 
+@pytest.mark.parametrize(
+    "provision",
+    [
+        "Termin składania wniosku upływa 31 grudnia 2030 r.",
+        "Opłata wynosi 1000 zł.",
+        "Zezwolenie nie jest wymagane.",
+        "Przepis stosuje się wyłącznie do cudzoziemców posiadających pobyt stały.",
+        "Stosuje się art. 7 ust. 2 ustawy o cudzoziemcach.",
+    ],
+)
+def test_combined_project_reaches_analysis_instead_of_its_osr(provision: str) -> None:
+    bill = rcl_document(802123, "KSE - projekt_uzasadnienie - Projekt ustawy.pdf")
+    osr = rcl_document(802122, "KSE - OSR - Projekt ustawy.pdf")
+    project = rcl_project(
+        title="Projekt ustawy o zmianie niektórych ustaw",
+        keywords=(),
+        stages=(
+            rcl_stage(
+                6, "Komitet do Spraw Europejskich", "active", rcl_folder(1, "Projekt", osr, bill)
+            ),
+        ),
+    )
+    w = World(
+        extractor=FakeTextExtractor(
+            by_content={
+                b"%PDF-bill": FOREIGNER_TEXT + "Art. 2. " + provision,
+                b"%PDF-osr": "Nazwa projektu. Ocena skutków regulacji. " * 40,
+            }
+        )
+    )
+    w.add_rcl_project(project)
+    w.rcl.files[bill.url] = b"%PDF-bill"
+    w.rcl.files[osr.url] = b"%PDF-osr"
+
+    report = w.run(track=False)
+
+    assert (report.text_prefilter_hits, report.analyzed, report.published) == (1, 1, 1)
+    assert w.llm.contexts[0].text.count(provision) == 1
+
+
 def test_new_project_is_analysed_from_its_documents_and_published() -> None:
     w = World()
     w.add_rcl_project()

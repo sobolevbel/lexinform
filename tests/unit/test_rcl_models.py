@@ -2,6 +2,8 @@
 
 from datetime import date
 
+import pytest
+
 from lexinform.models import (
     RclDocument,
     RclFolder,
@@ -238,6 +240,33 @@ def test_one_file_that_is_the_bill_and_its_uzasadnienie_is_the_bill() -> None:
 
     # One file, one role: the same document handed over twice would be read (and paid for) twice.
     assert {role: d.id for role, d in picked.items()} == {"bill": 1}
+
+
+@pytest.mark.parametrize("osr_first", [True, False])
+def test_combined_bill_and_justification_beats_osr_named_after_the_project(osr_first: bool) -> None:
+    osr = _doc(802122, "KSE TRYB OBIEGOWY - OSR - Projekt ustawy_Kodeks karny (UC148).pdf")
+    bill = _doc(802123, "KSE TRYB OBIEGOWY - projekt_uzasadnienie - Projekt ustawy (UC148).pdf")
+    documents = (osr, bill) if osr_first else (bill, osr)
+    folder = RclFolder(id=10, name="Projekt", documents=documents)
+
+    picked = _project(_stage(6, "Komitet do Spraw Europejskich", "active", folder)).text_documents()
+
+    assert {role: document.id for role, document in picked.items()} == {
+        "bill": 802123,
+        "osr": 802122,
+    }
+
+
+def test_osr_alone_does_not_stand_in_for_the_bill() -> None:
+    folder = RclFolder(
+        id=10,
+        name="Projekt",
+        documents=(_doc(1, "OSR - Projekt ustawy_Kodeks karny (UC148).pdf"),),
+    )
+
+    picked = _project(_stage(6, "Komitet do Spraw Europejskich", "active", folder)).text_documents()
+
+    assert {role: document.id for role, document in picked.items()} == {"osr": 1}
 
 
 def test_the_bill_filed_as_a_numbered_appendix_is_still_the_bill() -> None:

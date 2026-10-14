@@ -164,4 +164,28 @@ few dozen pages that is substance throughout.
   an appendix detected before its uzasadnienie** — the druk 810 failure is closed across the term
   and not only on the print it was found on.
 
+## RCL fallback verification, 14 October 2026
+
+The audit of [run 239](https://github.com/sobolevbel/lexinform/actions/runs/38545917248)
+found that UC148's folder named every file after the project. With no standalone bill name,
+the fallback picked OSR document 802122 before the combined bill and justification 802123.
+An identified OSR is now excluded from fallback bill candidates; a combined bill and
+justification remains eligible. The OSR keeps its own role and the combined document is read once.
+
+Replay against `ff4d86b` covered 831 local corpus projects and the saved live UC148 catalog:
+4,313 reached stages, including 3,164 stages with readable project-folder files. The newest
+selection stayed unchanged for all 831 corpus projects. Three older stages of UD398
+(`RCL/12411105`) changed from an OSR to the actual combined bill and justification; their cached
+document texts confirmed the correction. UC148's live case changed from 802122 to 802123.
+Every changed selection was inspected; no other decisions changed.
+
+The replay also checked 4,120 filename mutations containing dates, amounts, negations, scope
+and article references, with no selection drift. Pipeline scenarios verify that five matching
+types of substantive provisions reach analysis once from the combined project rather than
+being lost behind its OSR. Selection changes no document text or legal values.
+
+Coverage excludes RCL states absent from the historical corpus, except the saved live UC148
+case. This is a document-selection replay, not an assessment of model analysis quality or
+the legal relevance of every corpus project.
+
 

@@ -357,7 +357,7 @@ def _bill_of_last_resort(documents: list[RclDocument]) -> RclDocument | None:
     and three file it as a numbered appendix, which the appendix rule drops. Reached only where
     the answer would otherwise be nothing, so it changes no project with a recognised bill.
     """
-    candidates = [d for d in documents if _names_a_bill(d.name)]
+    candidates = [d for d in documents if text_role(d.name) != "osr" and _names_a_bill(d.name)]
     return min(candidates, key=_rank) if candidates else None
 
 
