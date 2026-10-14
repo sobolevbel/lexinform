@@ -6,10 +6,10 @@ from pathlib import Path
 import pytest
 
 
-def execution_script() -> str:
+def execution_script(step: str = "Run lexinform") -> str:
     workflow = Path(__file__).parents[2] / ".github/workflows/daily.yml"
     lines = workflow.read_text().splitlines()
-    start = lines.index("      - name: Run lexinform")
+    start = lines.index(f"      - name: {step}")
     start = lines.index("        run: |", start) + 1
     script: list[str] = []
     for line in lines[start:]:
@@ -17,6 +17,53 @@ def execution_script() -> str:
             break
         script.append(line[10:])
     return "\n".join(script)
+
+
+@pytest.mark.parametrize("run", ["failure", "success"])
+@pytest.mark.parametrize(
+    ("dump", "expected"),
+    [
+        ("success", "state saved successfully"),
+        ("failure", "state save failed; the state may be unsaved"),
+        ("skipped", "state save skipped; the state may be unsaved"),
+        ("", "state save outcome unavailable; the state may be unsaved"),
+    ],
+)
+def test_failure_alert_reports_the_actual_state_save_outcome(
+    tmp_path: Path, run: str, dump: str, expected: str
+) -> None:
+    executable = tmp_path / "curl"
+    executable.write_text('#!/bin/sh\nprintf "%s\\n" "$@"\n')
+    executable.chmod(0o755)
+    environment = {
+        "PATH": f"{tmp_path}{os.pathsep}{os.defpath}",
+        "LEXINFORM_TELEGRAM_BOT_TOKEN": "fake-token",
+        "LEXINFORM_TELEGRAM_LOG_CHANNEL_ID": "test-channel",
+        "LEXINFORM_RUN_MESSAGE_ID": "123",
+        "RUN_URL": "https://example.test/run/243",
+        "RUN": run,
+        "RESTORE": "success",
+        "DUMP": dump,
+    }
+
+    result = subprocess.run(
+        ["bash", "-c", execution_script("Tell the log channel when the job failed around the run")],
+        env=environment,
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    messages = [line for line in result.stdout.splitlines() if line.startswith("text=")]
+    assert messages == [
+        "text=❌ lexinform: daily job failed "
+        f"(run: {run}, restore: success, dump/push: {dump}); "
+        f"{expected}: https://example.test/run/243"
+    ]
+    assert ("the state may be unsaved" in messages[0]) == (dump != "success")
+    assert "message_id=123" in result.stdout.splitlines()
 
 
 def test_only_enabled_jobs_share_a_non_replacing_state_queue() -> None:

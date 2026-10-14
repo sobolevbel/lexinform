@@ -291,8 +291,7 @@ jobs:
           done
           exit 1
 
-      # The run itself reports to the log channel; this covers everything around it (a failed
-      # restore, dump or push, a broken checkout), the cases where state may be lost.
+      # A failed pipeline can still save state through the always() dump step.
       - name: Tell the log channel when the job failed around the run
         if: ${{ !cancelled() && (failure() || steps.run.outcome == 'failure') }}
         env:
@@ -304,10 +303,16 @@ jobs:
           DUMP: ${{ steps.dump.outcome }}
         run: |
           [ -n "$LEXINFORM_TELEGRAM_LOG_CHANNEL_ID" ] || exit 0
+          case "$DUMP" in
+            success) state_status="state saved successfully" ;;
+            failure) state_status="state save failed; the state may be unsaved" ;;
+            skipped) state_status="state save skipped; the state may be unsaved" ;;
+            *) state_status="state save outcome unavailable; the state may be unsaved" ;;
+          esac
           curl --connect-timeout 10 --max-time 30 -fsS -o /dev/null -X POST \
             "https://api.telegram.org/bot${LEXINFORM_TELEGRAM_BOT_TOKEN}/sendMessage" \
             --data-urlencode "chat_id=${LEXINFORM_TELEGRAM_LOG_CHANNEL_ID}" \
-            --data-urlencode "text=❌ lexinform: daily job failed (run: ${RUN}, restore: ${RESTORE}, dump/push: ${DUMP}); the state may be unsaved: ${RUN_URL}" \
+            --data-urlencode "text=❌ lexinform: daily job failed (run: ${RUN}, restore: ${RESTORE}, dump/push: ${DUMP}); ${state_status}: ${RUN_URL}" \
             || true
           # A new message notifies the operator; the relay's "run started" is then removed.
           [ -n "$LEXINFORM_RUN_MESSAGE_ID" ] || exit 0
