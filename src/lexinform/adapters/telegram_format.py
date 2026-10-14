@@ -394,8 +394,8 @@ class MessageFormatter:
         today = today or self._today()
 
         header = self._header(ICON["new_bill"], self._card_header(bill, today), bill)
-        if self._attention_enabled:
-            header += f"\n<i>{esc(self._norm_state(bill, today))}</i>"
+        if self._attention_enabled and (state := self._norm_state(bill, today)):
+            header += f"\n<i>{esc(state)}</i>"
         meta = (
             f"{score_icon(a.score)} <b>{esc(lb.importance)}:</b> {importance_bar(a.score)} "
             f"{a.score}/5\n"
@@ -677,7 +677,8 @@ class MessageFormatter:
                 if assessment.urgency == "urgent" and assessment.deadline is not None:
                     marker += f" · {self.fmt_date(assessment.deadline)}"
                 header = f"<b>{esc(marker)}</b>\n{header}"
-            header += f"\n<i>{esc(self._norm_state(bill, today))}</i>"
+            if state := self._norm_state(bill, today):
+                header += f"\n<i>{esc(state)}</i>"
             if assessment.affected_groups:
                 groups = esc("; ".join(assessment.affected_groups))
                 first_screen = f"{esc(self._labels.affected)}: {groups}"
@@ -1186,10 +1187,8 @@ class MessageFormatter:
             f"• {self._stage_line(stage, today)}" for stage in told_stages(change.new_stages)
         ]
         lines = [f"<b>{reference}</b> — {esc(fit(subject, 180))}"]
-        if compact:
-            state = self._norm_state(bill, today)
-            if state != self._labels.norm_states["project"]:
-                lines.append(f"<i>{esc(state)}</i>")
+        if compact and (state := self._norm_state(bill, today)):
+            lines.append(f"<i>{esc(state)}</i>")
         if not compact or not stage_lines:
             lines.append(esc(self._event_header(change, event)))
         lines.extend(stage_lines)
@@ -2378,7 +2377,7 @@ class MessageFormatter:
         )
         if evidence.state is DecisionState.UNKNOWN:
             return self._labels.update_headers["decision_unknown"]
-        return states["passed"] if evidence.reading is ReadingOutcome.PASSED else states["project"]
+        return states["passed"] if evidence.reading is ReadingOutcome.PASSED else ""
 
     @staticmethod
     def _field(icon: str, label: str, value: str) -> str:

@@ -479,7 +479,6 @@ RU = Labels(
     attention_roundup="Коротко по проектам",
     previous_name="Прежнее имя: {}",
     norm_states={
-        "project": "Пока проект",
         "passed": "Принят Сеймом",
         "published": "Опубликован",
         "in_force": "Действует",
@@ -1223,7 +1222,6 @@ EN = Labels(
     attention_roundup="Briefly on the bills",
     previous_name="Previously: {}",
     norm_states={
-        "project": "Draft",
         "passed": "Passed by the Sejm",
         "published": "Published",
         "in_force": "In force",
