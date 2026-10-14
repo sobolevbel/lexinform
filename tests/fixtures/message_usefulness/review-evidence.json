@@ -1,0 +1,26 @@
+[
+  {
+    "outcome": "accepted",
+    "quote": "30\tArt. 1 ust. 2\tDariusz Bocheńczyk\tstr. 2, linijka 5, widnieje \"i oraz\", sugeruję wykasować \"i\" zostawiając \"oraz\"\t\tUwaga uwzględniona.",
+    "locator": "30\tArt. 1 ust. 2",
+    "source": "https://legislacja.rcl.gov.pl/docs//2/12403400/13165108/13165112/dokument778901.docx",
+    "file_sha256": "741ccf66fb4cba5e8a24d2d630141412e680623b1946d72e02a43f14a2e0cfd3",
+    "annotation": "Manual: final response cell, not the proposal column."
+  },
+  {
+    "outcome": "rejected",
+    "quote": "1\tUwaga ogólna\tKarol Mateusz Niedziałkowski\tObowiązujące krajowe regulacje, przede wszystkim ustawa z dnia 16 kwietnia 2004 r. o wyrobach budowlanych oraz rozporządzenie Ministra Infrastruktury i Budownictwa z dnia 17 listopada 2016 r. (Dz.U. 2016 poz. 1966) – utrwaliły nadmiernie szeroką, dalece wykraczającą poza prawo unijne, interpretację pojęcia „wyrobu budowlanego”. Praktyka polskiej administracji doprowadziła do objęcia reżimem oceny, deklaracji i znakowania „B” tysięcy elementów instalacyjnych, które w świetle prawa UE nie są wyrobami budowlanymi, lecz komponentami technicznymi, przeznaczonymi do zestawienia w instalację na miejscu budowy. Innymi słowy, prawo krajowe jest bardziej restrykcyjne niż przepisy unijne, co skutkuje wyższymi wymaganiami wobec krajowych producentów i daje przewagę konkurencyjną podmiotom działającym za granicą.\t\tUwaga nieuwzględniona. Projektowana ustawa w definicji wyrobu budowlanego odsyła do rozporządzenia 2024/3110, co oznacza, że będzie ona miała również zastosowanie do wyrobów wprowadzanych do obrotu w systemie krajowym (ze znakiem budowlanym). Z brzmienia definicji wynika, że elementy, które muszą najpierw zostać połączone w zestaw lub w inny wyrób budowlany, zanim zostaną w sposób trwały wbudowane w obiekt budowlany – nie są wyrobem budowlanym (w przeciwieństwie do zestawu tych elementów), zatem nie będą ich dotyczyły regulacje ustawy.",
+    "locator": "1\tUwaga ogólna",
+    "source": "https://legislacja.rcl.gov.pl/docs//2/12403400/13165108/13165112/dokument778901.docx",
+    "file_sha256": "741ccf66fb4cba5e8a24d2d630141412e680623b1946d72e02a43f14a2e0cfd3",
+    "annotation": "Manual: final response cell, not the proposal column."
+  },
+  {
+    "outcome": "partial",
+    "quote": "156\tArt.14 ust.2.\tSPS\tUsunąć art. 14., ust.2. i zastąpić go nowym.  Można sobie wyobrazić sytuację, że wyrób budowlany jest produkowany seryjnie dla danego zastosowania. Ten wyrób produkowany seryjnie powinien mieć możliwość być dopuszczonym do jednostkowego zastosowania w obiekcie budowlanym ale w zastosowaniu innym niż pierwotnie zamierzone. Z taką sytuacją można się spotkać, np w systemach ociepleń objętych ETA (lub KOT), w których jest dany tynk lub klej. Jednak z jakiegoś powodu nie można lub nie da się zastosować  tego tynku lub kleju i trzeba zastosować klej lub tynk objęty innym ETA na inny system ociepleń. Zarówno tynk i klej są produkowane seryjnie, ale jednostkowe dopuszczenie będzie dotyczyło zastosowania w innym systemie ociepleń niż ten objęty daną ETA/KOT. Konsekwentnie nie znajduje uzasadnienia dalszy zapis tego ust.: „Jednostkowemu zastosowaniu w obiekcie budowlanym nie podlegają wyroby budowlane produkowane seryjnie lub na zamówienie z wykorzystaniem komponentów dostępnych na stałe w ofercie producenta i przeznaczonych do powszechnego stosowania.”\tArt.14.  Bez uszczerbku dla art.14, ust.1 wyrób może być dopuszczony do jednostkowego zastosowania w obiekcie budowlanym nawet jeśli jest zgodny z art. 6. ust.1 lub stanowi przedmiot swobodnego obrotu handlowego, pod warunkiem, że to jednostkowe zastosowanie jest inne niż zamierzone zastosowanie wynikające z norm lub ocen technicznych, z którymi zgodny jest dany wyrób. . \tUwaga częściowo uwzględniona. Usunięto odniesienie do „komponentów dostępnych na stałe w ofercie producenta i przeznaczonych do powszechnego stosowania”.",
+    "locator": "156\tArt.14 ust.2.",
+    "source": "https://legislacja.rcl.gov.pl/docs//2/12403400/13165108/13165112/dokument778901.docx",
+    "file_sha256": "741ccf66fb4cba5e8a24d2d630141412e680623b1946d72e02a43f14a2e0cfd3",
+    "annotation": "Manual: final response cell, not the proposal column."
+  }
+]

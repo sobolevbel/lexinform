@@ -34,6 +34,7 @@ from lexinform.models import (
     DeliveryResolution,
     Digest,
     DigestPart,
+    DocumentReviewRecord,
     Editorial,
     IncomingCommand,
     JointContext,
@@ -57,6 +58,9 @@ from lexinform.models import (
     RclProjectSummary,
     RclStage,
     ReadyAnalysis,
+    ReviewPurpose,
+    ReviewSource,
+    ReviewWork,
     RunReport,
     SejmSitting,
     SejmTerm,
@@ -217,11 +221,19 @@ class Downloader(Protocol):
     def __call__(self, url: str, *, max_bytes: int | None = None) -> bytes: ...
 
 
+class ConsultationDocuments(Protocol):
+    def read(self, submission: BillSubmission) -> tuple[ReviewSource, ...]: ...
+
+
 class TextSource(Protocol):
     """Where a bill's text and fresh metadata come from. Network only: never touches the
     repository, so several bills can be located at once."""
 
     def locate(self, bill: Bill) -> LocatedText: ...
+
+    def supporting_documents(
+        self, bill: Bill, purpose: ReviewPurpose
+    ) -> tuple[ReviewSource, ...]: ...
 
 
 class TextIdentity(Protocol):
@@ -403,6 +415,8 @@ class Publisher(Protocol):
 
     def render_delivery(self, publication: Publication) -> str: ...
 
+    def split_message(self, text: str) -> tuple[str, ...]: ...
+
     def render_sittings(self, news: Sequence[SittingNews]) -> str: ...
 
     def render_digest(self, digest: Digest, *, draft: bool = False) -> tuple[str, ...]: ...
@@ -548,6 +562,24 @@ class BillRepository(Protocol):
     def atomic(self) -> AbstractContextManager[None]: ...
 
     def load_analysis_memo(self) -> dict[str, str]: ...
+
+    def save_review_work(self, term: int, number: str, work: tuple[ReviewWork, ...]) -> None: ...
+
+    def save_document_review(
+        self, term: int, number: str, review: DocumentReviewRecord
+    ) -> None: ...
+
+    def list_review_work(self) -> list[Bill]: ...
+
+    def list_acts_for_review(self, channel_id: str) -> list[Bill]: ...
+
+    def effective_rule_publications(
+        self, term: int, number: str, channel_id: str
+    ) -> list[Publication]: ...
+
+    def effective_rule_refs(self, term: int, number: str, channel_id: str) -> set[str]: ...
+
+    def reserve_effective_rules(self, pub: Publication, refs: tuple[str, ...]) -> None: ...
 
     def save_analysis_memo(
         self,

@@ -234,6 +234,21 @@ from lexinform.models.report import (
     PrefilterRejection,
     RunReport,
 )
+from lexinform.models.reviews import (
+    ConsultationFinding,
+    DocumentReview,
+    DocumentReviewRecord,
+    EffectiveRule,
+    EvidenceCitation,
+    ReviewContext,
+    ReviewDocument,
+    ReviewPurpose,
+    ReviewSource,
+    ReviewWork,
+    citation_document,
+    date_in_quote,
+    validate_review,
+)
 from lexinform.models.sejm import (
     HEARING_APPLICATION_EMAIL,
     ORKA_BASE_URL,
@@ -309,6 +324,19 @@ from lexinform.models.wykaz import (
 )
 
 __all__ = [
+    "ConsultationFinding",
+    "DocumentReview",
+    "DocumentReviewRecord",
+    "EffectiveRule",
+    "EvidenceCitation",
+    "ReviewContext",
+    "ReviewDocument",
+    "ReviewPurpose",
+    "ReviewSource",
+    "ReviewWork",
+    "citation_document",
+    "date_in_quote",
+    "validate_review",
     "process_evidence",
     "process_rejected",
     "FAILING_CHECK_MIN",

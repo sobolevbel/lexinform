@@ -451,6 +451,19 @@ class CommandService:
                 for post in posts
                 if post.attention is not None
             ]
+            notes.extend(
+                f"document review {work.purpose}: waiting for "
+                f"{'batch result' if work.context is not None else 'official documents'}"
+                f" · queued since {work.since.isoformat()}"
+                f" · {work.limitation}"
+                for work in bill.review_work
+            )
+            notes.extend(
+                f"document review {record.review.purpose}: complete={record.review.complete}"
+                f" · unresolved={len(record.review.unresolved)}"
+                for record in (bill.consultation_review, bill.act_application_review)
+                if record is not None
+            )
             return CommandOutcome(
                 status=OutcomeStatus.SHOWN,
                 bill=bill,

@@ -99,6 +99,10 @@ class PublicationKind(StrEnum):
     IN_FORCE = "in_force"
     CONSULTATION_DEADLINE = "consultation_deadline"
     CONSULTATION_RESULTS = "consultation_results"
+    CONSULTATION_REVIEW = "consultation_review"
+    ACT_APPLICATION = "act_application"
+    EFFECTIVE_RULES = "effective_rules"
+    MESSAGE_PART = "message_part"
     AGENDA = "agenda"
     AGENDA_CANCELLED = "agenda_cancelled"
     HEARING_DEADLINE = "hearing_deadline"
@@ -140,6 +144,9 @@ SourceKind = Literal[
     "committee_amendments",
     "government_position",
     "impact_assessment",
+    "consultation_response",
+    "consultation_position",
+    "final_act",
 ]
 AMENDMENT_SOURCES: frozenset[SourceKind] = frozenset({"senate_amendments", "committee_amendments"})
 SUPPLEMENT_SOURCES: frozenset[SourceKind] = frozenset({"government_position", "impact_assessment"})

@@ -184,7 +184,9 @@ def test_stage_update_carries_the_scheduled_sitting() -> None:
     text = MessageFormatter("ru").status_update(bill, change, today=dt.date(2026, 9, 9)).text
     assert "• 8 сент 2026: I чтение в комиссиях" in text  # the held stage, told now
     assert "Komisja Administracji i Spraw Wewnętrznych (ASW) (sprawozdanie)" in text
-    assert "· 17 сент 2026, 09:00" in text and "до заседания 17 сент 2026" in text
+    assert (
+        "· 17 сент 2026, 09:00 (по времени Варшавы)" in text and "до заседания 17 сент 2026" in text
+    )
 
 
 def test_rescheduled_sitting_is_posted_again_and_replaces_the_old_item() -> None:
@@ -444,7 +446,9 @@ def test_a_sitting_that_is_called_off_is_taken_back() -> None:
     bill, item, still_meets = w.publisher.agenda_cancellations[0]
     assert (bill.number, item.ref, still_meets) == ("3039", SITTING_REF, False)
     text = w.publisher.texts(PublicationKind.AGENDA)[-1]
-    assert "было запланировано на 17 сент 2026, 09:00\nЗаседание отменено" in text
+    assert (
+        "было запланировано на 17 сент 2026, 09:00 (по времени Варшавы)\nЗаседание отменено" in text
+    )
     assert "#заседаниекомиссии" in text  # one search finds the sitting and its retraction
 
 

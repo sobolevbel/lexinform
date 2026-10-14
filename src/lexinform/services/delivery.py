@@ -40,6 +40,9 @@ class DeliveryService:
             PublicationKind.ACT_PUBLISHED: "acts_published",
             PublicationKind.IN_FORCE: "in_force_posted",
             PublicationKind.CONSULTATION_RESULTS: "consultation_results_posted",
+            PublicationKind.CONSULTATION_REVIEW: "consultation_reviews_posted",
+            PublicationKind.ACT_APPLICATION: "act_reviews_posted",
+            PublicationKind.EFFECTIVE_RULES: "effective_rule_messages",
             PublicationKind.CONSULTATION_DEADLINE: "consultation_reminders",
         }
         for publication in self._repo.list_due_deliveries(
@@ -70,7 +73,11 @@ class DeliveryService:
                     )
                 ):
                     continue
-                result.count_post(sent, counters.get(publication.kind, "published"))
+                if publication.kind is PublicationKind.MESSAGE_PART:
+                    if not sent:
+                        result.failed += 1
+                else:
+                    result.count_post(sent, counters.get(publication.kind, "published"))
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return completed

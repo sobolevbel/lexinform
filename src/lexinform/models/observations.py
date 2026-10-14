@@ -53,6 +53,11 @@ class DeliveryPlan(BaseModel):
     proposed_destination: Literal["direct", "digest_only"] | None = None
     digest_eligible_at: dt.datetime | None = None
     digest_event_ids: tuple[int, ...] = ()
+    effective_rule_refs: tuple[str, ...] = ()
+    continuation_ids: tuple[int, ...] = ()
+    continuation_parent: int | None = None
+    continuation_root: int | None = None
+    continuation_index: int = 1
     participation: ParticipationSnapshot | None = None
     change_json: str = ""
     print_json: str | None = None
@@ -78,8 +83,16 @@ class DeliveryPlan(BaseModel):
     """A status update that also tells the act published in the same run."""
 
     def replayable(self, kind: PublicationKind) -> bool:
+        if kind is PublicationKind.MESSAGE_PART:
+            return bool(self.rendered_text) and self.reply_to is not None
         if kind is PublicationKind.DIGEST:
             return bool(self.rendered_text)
+        if kind in (
+            PublicationKind.CONSULTATION_REVIEW,
+            PublicationKind.ACT_APPLICATION,
+            PublicationKind.EFFECTIVE_RULES,
+        ):
+            return bool(self.bill_json)
         if self.sitting_group:
             return bool(self.group_text)
         if kind is PublicationKind.STATUS_UPDATE and self.update_group:

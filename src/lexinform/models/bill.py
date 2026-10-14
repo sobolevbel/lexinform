@@ -32,6 +32,7 @@ from lexinform.models.observations import DeliveryPlan, ObservedProcess
 from lexinform.models.participation import ConsultationWindow as ConsultationWindow
 from lexinform.models.participation import ParticipationSnapshot
 from lexinform.models.rcl import RclProject
+from lexinform.models.reviews import DocumentReviewRecord, ReviewWork
 from lexinform.models.sejm import (
     ActInfo,
     AgendaItem,
@@ -74,6 +75,9 @@ class Bill(BaseModel):
     stages: tuple[Stage, ...] = ()
     stages_fingerprint: str | None = None
     observed_closure_date: dt.date | None = None
+    consultation_review: DocumentReviewRecord | None = None
+    act_application_review: DocumentReviewRecord | None = None
+    review_work: tuple[ReviewWork, ...] = ()
     observed_process: ObservedProcess | None = None
     analysis: AnalysisRecord | None = None
     editorial: Editorial = Field(default_factory=Editorial)

@@ -62,6 +62,8 @@ class CardRefresher:
             )
             if card is None or card.status is not PublicationStatus.SENT or card.id is None:
                 continue
+            if card.delivery is not None and card.delivery.continuation_ids:
+                continue
             digest = self._publisher.card_digest(bill)
             if digest == card.rendered_sha256 or card.message_id is None:
                 continue

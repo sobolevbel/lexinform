@@ -28,6 +28,7 @@ from lexinform.adapters.llm_prompts import (
     system_prompt,
     triage_system_prompt,
 )
+from lexinform.adapters.review_prompts import REVIEW_PROMPT_VERSION, review_prompt, review_system
 from lexinform.analysis_records import RecordFactory, UsageFields
 from lexinform.errors import BatchNotSubmittedError, LlmUnavailableError
 from lexinform.models import (
@@ -47,6 +48,7 @@ from lexinform.models import (
     JointComparison,
     JointContext,
     JointRecord,
+    ReviewContext,
     ScannedDocument,
     SupplementContext,
     SupplementRecord,
@@ -98,6 +100,7 @@ class AnthropicAnalyzer:
     ) -> None:
         self._client = client
         self._model = model
+        self._language = output_language
         self._triage_model = triage_model or model
         self._effort = effort
         self._max_tokens = max_tokens
@@ -313,6 +316,8 @@ class AnthropicAnalyzer:
             system, prompt = self._amendments_system, build_amendments_prompt(ctx)
         elif isinstance(ctx, SupplementContext):
             system, prompt = self._supplement_system, build_supplement_prompt(ctx)
+        elif isinstance(ctx, ReviewContext):
+            system, prompt = review_system(self._language), review_prompt(ctx)
         else:
             system, prompt = self._joint_system, build_joint_prompt(ctx)
         payload: AnthropicBatchRequest = {
@@ -334,7 +339,9 @@ class AnthropicAnalyzer:
             update={
                 "payload_json": json.dumps(payload, ensure_ascii=False),
                 "model": model,
-                "prompt_version": PROMPT_VERSION,
+                "prompt_version": REVIEW_PROMPT_VERSION
+                if isinstance(ctx, ReviewContext)
+                else PROMPT_VERSION,
                 "estimated_cost_usd": estimate_batch_reservation(
                     model,
                     counted_tokens=tokens,

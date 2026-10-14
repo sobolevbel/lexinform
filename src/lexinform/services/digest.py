@@ -50,6 +50,9 @@ UPDATE_KINDS = (
     PublicationKind.ACT_PUBLISHED,
     PublicationKind.IN_FORCE,
     PublicationKind.CONSULTATION_RESULTS,
+    PublicationKind.CONSULTATION_REVIEW,
+    PublicationKind.ACT_APPLICATION,
+    PublicationKind.EFFECTIVE_RULES,
 )
 """The replies a week is worth telling again. The reminders and the agenda posts are not: each
 was about a date, and by Sunday that date has either passed or is in "what is ahead" below."""
@@ -401,6 +404,24 @@ class DigestService:
         if post.delivery is not None and post.delivery.change_json:
             change = StatusChange.model_validate_json(post.delivery.change_json)
         consequence = ""
+        if (
+            post.kind is PublicationKind.CONSULTATION_REVIEW
+            and bill.consultation_review is not None
+            and historical_snapshot
+        ):
+            consequence = " ".join(
+                finding.text_change or finding.reason
+                for finding in bill.consultation_review.review.consultation_findings
+                if finding.outcome != "unknown"
+            )
+        elif (
+            post.kind in (PublicationKind.ACT_APPLICATION, PublicationKind.EFFECTIVE_RULES)
+            and bill.act_application_review is not None
+            and historical_snapshot
+        ):
+            consequence = " ".join(
+                rule.change for rule in bill.act_application_review.review.effective_rules
+            )
         if analysis is not None:
             if change is not None and change.content_changed:
                 consequence = " ".join(analysis.changes_since_previous[:2])

@@ -471,6 +471,7 @@ class DailyPipeline:
             min_score=opts.min_score, limit=opts.max_publish, publish=opts.publish, may_wait=True
         )
         report.published = published.published
+        report.message_parts_sent += published.message_parts_sent
         report.joint_published = published.joined
         for key, count in published.attention.items():
             report.attention[key] = report.attention.get(key, 0) + count
@@ -498,7 +499,9 @@ class DailyPipeline:
         did not run, every followed bill, in case something moved without a visible change."""
         full = opts.full_track or not opts.discover or not report.discovery_ok or self._full_day()
         tracked = self._tracking.check_updates(
-            publish=opts.publish, changed_since=None if full else report.since
+            keep_delivery_attempts=True,
+            publish=opts.publish,
+            changed_since=None if full else report.since,
         )
         failed = self._merge_tracking(report, tracked, opts)
         if self._analysis.stopped:

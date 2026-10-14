@@ -32,8 +32,10 @@ from lexinform.models import (
 from lexinform.ports import BillRepository, Clock, Publisher, PublishResult, SejmGateway
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.joint import group_of, primary_of
+from lexinform.services.message_parts import freeze_parts, send_continuations
 from lexinform.services.publications import inherit_card, send_publication
 from lexinform.services.sources import fetch_print
+from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
 log = logging.getLogger(__name__)
 
@@ -68,6 +70,7 @@ class PublishingResult:
     skipped: int = 0
     failed: int = 0
     waiting: int = 0
+    message_parts_sent: int = 0
     attention: dict[str, int] = field(default_factory=dict)
     fatal_error: str | None = None
 
@@ -109,6 +112,7 @@ class PublishingService:
         analysis: AnalysisService | None = None,
         attention_enabled: bool = False,
         attention_assess: bool = True,
+        delivery_attempts: set[int] | None = None,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -119,6 +123,8 @@ class PublishingService:
         self._analysis = analysis
         self._attention_enabled = attention_enabled
         self._attention_assess = attention_assess
+        self._parts_sent = 0
+        self._delivery_attempts = delivery_attempts if delivery_attempts is not None else set[int]()
 
     @property
     def channel_id(self) -> str:
@@ -135,6 +141,8 @@ class PublishingService:
         row settles it, the way `--no-publish` does.
         """
         result = PublishingResult()
+        self._parts_sent = 0
+        self._delivery_attempts.clear()
         candidates = self._repo.list_publish_candidates(
             self._channel_id,
             min_score=min_score,
@@ -224,6 +232,24 @@ class PublishingService:
     def forget_card(self, bill: Bill) -> None:
         """Drop what the channel remembers of the bill's card, both kinds, so that the next
         `publish_bill` decides again (the operator's `/republish`)."""
+        card = self.card_of(bill)
+        if card is not None and card.delivery is not None:
+            unfinished = [
+                identity
+                for identity in card.delivery.continuation_ids
+                for part in (self._repo.publication_by_id(identity),)
+                if part is not None
+                and part.status
+                not in (
+                    PublicationStatus.SENT,
+                    PublicationStatus.DISMISSED,
+                )
+            ]
+            if unfinished:
+                raise ValueError(
+                    "Resolve unfinished physical parts before forgetting the card: "
+                    + ", ".join(map(str, unfinished))
+                )
         for kind in CARD_KINDS:
             self._repo.delete_publication(bill.term, bill.number, kind, self._channel_id)
 
@@ -472,6 +498,8 @@ class PublishingService:
     def _retag(self, bill: Bill, card: Publication, print_info: PrintInfo | None) -> None:
         """The card heads a thread that has a druk number now: re-render it in place so that it
         carries both tags. One attempt; a refusal is logged, the replies carry both tags anyway."""
+        if card.delivery is not None and card.delivery.continuation_ids:
+            return
         assert card.message_id is not None, (
             "_inherited_card returns only a sent card with its message id"
         )
@@ -490,7 +518,16 @@ class PublishingService:
         if (
             pub is not None
             and pub.delivery is not None
-            and pub.delivery.policy_version == "attention-v1"
+            and not pub.delivery.rendered_text
+            and not pub.attempts
+        ):
+            text = self._publisher.render_delivery(pub)
+            if utf16_length(text) > MESSAGE_LIMIT:
+                pub = freeze_parts(self._repo, self._clock, self._publisher, pub, text)
+        if (
+            pub is not None
+            and pub.delivery is not None
+            and (pub.delivery.policy_version == "attention-v1" or pub.delivery.continuation_ids)
         ):
             if not pub.delivery.rendered_text:
                 plan = pub.delivery.model_copy(
@@ -503,10 +540,15 @@ class PublishingService:
         message_id = send_publication(self._repo, self._clock, pub_id, send)
         if message_id is None:
             return False
+        if pub is not None and pub.delivery is not None:
+            self._parts_sent += send_continuations(
+                self._repo, self._clock, self._publisher, pub, self._delivery_attempts
+            )
         log.info("published druk %s as message %s", bill.number, message_id)
         return True
 
     def _count_attention(self, pub_id: int, result: PublishingResult) -> None:
+        result.message_parts_sent = self._parts_sent
         pub = self._repo.publication_by_id(pub_id)
         if pub is None or pub.attention is None:
             return

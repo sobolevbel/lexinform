@@ -916,7 +916,10 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "awaiting_batch_since",  # v32
         "observation_mode",  # v35
         "observation_basis",
-        "editorial_json",  # v36
+        "editorial_json",
+        "consultation_review_json",
+        "act_application_review_json",
+        "review_work_json",  # v36
     } <= bills
     assert {
         "ux_pub_once_per_kind",
@@ -1285,6 +1288,12 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("ALTER TABLE bills DROP COLUMN observation_mode")
         conn.execute("ALTER TABLE bills DROP COLUMN observation_basis")
         conn.execute("ALTER TABLE bills DROP COLUMN editorial_json")
+        conn.execute("ALTER TABLE bills DROP COLUMN consultation_review_json")
+        conn.execute("ALTER TABLE bills DROP COLUMN act_application_review_json")
+        conn.execute("ALTER TABLE bills DROP COLUMN review_work_json")
+        conn.execute("DROP INDEX ux_pub_review")
+        conn.execute("DROP INDEX ux_pub_message_part")
+        conn.execute("DROP TABLE effective_rule_links")
         conn.execute("DROP TABLE source_checks")
         conn.execute("DROP TABLE delivery_alerts")
         conn.execute("DROP TABLE digest_event_links")

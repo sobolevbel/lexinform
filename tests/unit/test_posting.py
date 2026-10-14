@@ -209,7 +209,7 @@ def test_a_queued_sitting_keeps_its_saved_card_link(repo: SqliteBillRepository, 
     assert publisher.agendas[0][2] == 42
 
 
-def test_an_oversized_sitting_is_failed_instead_of_partly_told(
+def test_an_oversized_sitting_keeps_all_facts_in_durable_parts(
     repo: SqliteBillRepository, bill: Bill
 ) -> None:
     publisher = FakePublisher()
@@ -221,12 +221,14 @@ def test_an_oversized_sitting_is_failed_instead_of_partly_told(
     poster.queue_sitting(planned)
     poster.flush_sittings(result)
 
-    assert publisher.sent == []
-    assert (result.agenda_posted, result.failed) == (0, 1)
+    assert (result.agenda_posted, result.failed) == (1, 0)
     row = repo.get_publication(
         bill.term, bill.number, PublicationKind.AGENDA, CHANNEL, ref=item.ref
     )
-    assert row is not None and row.status is PublicationStatus.FAILED
+    assert row is not None and row.status is PublicationStatus.SENT and row.delivery is not None
+    assert row.delivery.continuation_ids
+    assert len(publisher.sent) == len(row.delivery.continuation_ids) + 1
+    assert sum(message.text.count("x") for message in publisher.sent) >= 5000
 
 
 def test_held_changes_go_out_with_the_next_update_and_are_released(

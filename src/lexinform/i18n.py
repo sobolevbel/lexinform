@@ -269,6 +269,17 @@ class Labels:
     path_steps: dict[str, str] = field(default_factory=dict)
     stage_labels: dict[str, str] = field(default_factory=dict)
     rcl_stage_labels: dict[str, str] = field(default_factory=dict)
+    consultation_review_header: str = ""
+    act_application_header: str = ""
+    consultation_outcomes: dict[str, str] = field(default_factory=dict)
+    consultation_text_unconfirmed: str = ""
+    document_review_incomplete: str = ""
+    rule_date_unknown: str = ""
+    project_analysis_header: str = ""
+    message_part: str = ""
+    document_review_source: str = ""
+    calendar_timezone: str = ""
+    act_review_ready: str = ""
     digest_expectations: str = ""
     digest_coverage_warning: str = ""
     digest_route_unknown: str = ""
@@ -310,6 +321,29 @@ RU = Labels(
     partial_text_note="Анализ основан на неполном тексте документа.",
     new_stages="Новые стадии",
     reading_stage="{numeral} чтение на заседании Сейма",
+    consultation_review_header="Что дали консультации",
+    act_application_header="Как применяется окончательный акт",
+    consultation_outcomes={
+        "accepted": "Предложение принято",
+        "rejected": "Предложение отклонено",
+        "partial": "Принято частично",
+        "unknown": "Решение по предложению не подтверждено",
+    },
+    consultation_text_unconfirmed="Включение изменения в текст не подтверждено.",
+    document_review_incomplete=(
+        "Разбор неполный; неустановленные условия требуют проверки в официальных документах."
+    ),
+    rule_date_unknown="Календарная дата применения нормы не подтверждена.",
+    project_analysis_header="Исторический анализ проекта, до окончательного текста закона",
+    document_review_source="Документ-источник разбора",
+    calendar_timezone="(по времени Варшавы)",
+    act_review_ready=(
+        "Разобран окончательный текст: условия и исключения проверяйте по указанным нормам Dz.U."
+    ),
+    message_part=(
+        "Часть {index}/{total} · подготовлено {date}. Условия и исключения — во всём тексте;"
+        " прочитайте все части."
+    ),
     digest_expectations="Что ожидается",
     digest_coverage_warning=(
         "Ожидают доставки событий: {pending}; unknown доставок: {unknown}. "
@@ -400,7 +434,7 @@ RU = Labels(
     already_in_force_since="Уже действует с",
     entry_into_force_unknown="дата вступления в силу пока не указана",
     partial_vacatio_note=(
-        "Отдельные положения могут вступать в силу в другие сроки — см. текст закона."
+        "Это общая дата из ELI. Применение отдельных норм и переходные условия ещё не разобраны."
     ),
     in_force_header="С сегодняшнего дня действует",
     in_force_header_dated="Закон вступил в силу",
@@ -497,8 +531,8 @@ RU = Labels(
         "публичные консультации уже закрыты, но пока проект в правительстве остаётся:"
     ),
     action_in_force=(
-        "закон уже применяется: проверьте, касается ли вас изменение, и сверьте сроки и"
-        " документы с текстом Dz.U."
+        "откройте окончательный текст Dz.U. и проверьте условия для своей ситуации;"
+        " прежняя карточка описывала проект, а не окончательный закон."
     ),
     rcl_results_hint=(
         "поданные мнения (stanowiska) и ответ министерства опубликованы на странице проекта на RCL"
@@ -1026,6 +1060,30 @@ EN = Labels(
     partial_text_note="The analysis is based on a partial text of the document.",
     new_stages="New stages",
     reading_stage="{numeral} reading at a Sejm sitting",
+    consultation_review_header="What consultations achieved",
+    act_application_header="How the final act applies",
+    consultation_outcomes={
+        "accepted": "Proposal accepted",
+        "rejected": "Proposal rejected",
+        "partial": "Partially accepted",
+        "unknown": "Proposal outcome is not confirmed",
+    },
+    consultation_text_unconfirmed="Incorporation into the text is not confirmed.",
+    document_review_incomplete=(
+        "The review is incomplete; unresolved conditions need checking against official documents."
+    ),
+    rule_date_unknown="The rule's calendar application date is not confirmed.",
+    project_analysis_header="Historical draft analysis, before the final act text",
+    document_review_source="Review source document",
+    calendar_timezone="(Warsaw time)",
+    act_review_ready=(
+        "The final text has been reviewed: check conditions and exceptions against"
+        " its cited provisions."
+    ),
+    message_part=(
+        "Part {index}/{total} · prepared {date}. Conditions and exceptions span the"
+        " full text; read all parts."
+    ),
     digest_expectations="What is expected",
     digest_coverage_warning=(
         "Events awaiting delivery: {pending}; unknown deliveries: {unknown}. "
@@ -1117,7 +1175,10 @@ EN = Labels(
     enters_into_force="Enters into force",
     already_in_force_since="Already in force since",
     entry_into_force_unknown="entry-into-force date not stated yet",
-    partial_vacatio_note="Some provisions may enter into force on other dates — see the act.",
+    partial_vacatio_note=(
+        "This is the general ELI date. Individual provisions and transition rules have not yet"
+        " been reviewed."
+    ),
     in_force_header="In force from today",
     in_force_header_dated="The act has entered into force",
     in_force_since="in force since",

@@ -46,6 +46,7 @@ from lexinform.ports import (
 )
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.delivery import DeliveryService
+from lexinform.services.document_reviews import DocumentReviews
 from lexinform.services.posting import Poster
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.sources import SejmTextSource, fetch_print
@@ -258,6 +259,7 @@ class StatusTrackingService:
         senate: SenateGateway | None = None,
         poster: Poster | None = None,
         deliveries: DeliveryService | None = None,
+        document_reviews: DocumentReviews | None = None,
     ) -> None:
         channel_id = options.channel_id
         poster = poster or Poster(
@@ -275,6 +277,8 @@ class StatusTrackingService:
         )
         enricher = StageEnricher(gateway, club_breakdown=options.club_breakdown)
         consultations = _consultation_reminder(repo, clock, poster, options)
+        if consultations is not None:
+            consultations.set_reviews(document_reviews)
         # The act watcher is built before the linker, which asks it for the act of a print it
         # adopts: a project handed over long ago becomes a print whose act nothing else fetches.
         acts = ActWatcher(
@@ -301,6 +305,7 @@ class StatusTrackingService:
         self._repo = repo
         self._clock = clock
         self._analysis = analysis
+        self._document_reviews = document_reviews
         self._options = options
         self._poster = poster
         self._deliveries = deliveries or DeliveryService(
@@ -344,7 +349,12 @@ class StatusTrackingService:
         return result
 
     def check_updates(
-        self, *, publish: bool = True, changed_since: datetime | None = None, may_wait: bool = True
+        self,
+        *,
+        publish: bool = True,
+        changed_since: datetime | None = None,
+        may_wait: bool = True,
+        keep_delivery_attempts: bool = False,
     ) -> TrackingResult:
         """Look for news on published bills, whichever term they belong to.
 
@@ -353,7 +363,7 @@ class StatusTrackingService:
         of `_remind` and the card refresh see every followed bill either way.
         """
         result = TrackingResult()
-        self._poster.start_run()
+        self._poster.start_run(keep_attempts=keep_delivery_attempts)
         if publish and not self._retry_failed(result):
             return self._finish(result)
         if not self._pre_print.reconcile(result, publish=publish):
@@ -575,6 +585,8 @@ class StatusTrackingService:
     ) -> None:
         if publish:
             self._remind(everyone, result)
+        if result.fatal_error is None and self._document_reviews is not None:
+            self._document_reviews.advance(result, publish=publish)
         if result.fatal_error is None:
             self._cards.refresh(everyone, result, publish=publish)
 

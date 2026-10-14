@@ -18,6 +18,7 @@ from lexinform.models.analysis import (
 from lexinform.models.bill import LocatedText
 from lexinform.models.enums import SourceKind, TextSource
 from lexinform.models.report import CallKind
+from lexinform.models.reviews import DocumentReview, ReviewContext
 
 BatchProvider = Literal["anthropic", "openai"]
 BatchStatus = Literal["submitted", "ended", "failed"]
@@ -48,12 +49,29 @@ class JointQuestion(BaseModel):
     ctx: JointContext
 
 
+class DocumentReviewQuestion(BaseModel):
+    kind: Literal["consultation_review", "act_application"]
+    ctx: ReviewContext
+
+
 BatchQuestion = Annotated[
-    AnalysisQuestion | AmendmentsQuestion | SupplementQuestion | JointQuestion,
+    AnalysisQuestion
+    | AmendmentsQuestion
+    | SupplementQuestion
+    | JointQuestion
+    | DocumentReviewQuestion,
     Field(discriminator="kind"),
 ]
-BatchAnswer = Analysis | Amendments | DocumentDigest | JointComparison
-BatchKind = Literal["analysis", "reanalysis", "amendments", "supplement", "joint"]
+BatchAnswer = Analysis | Amendments | DocumentDigest | JointComparison | DocumentReview
+BatchKind = Literal[
+    "analysis",
+    "reanalysis",
+    "amendments",
+    "supplement",
+    "joint",
+    "consultation_review",
+    "act_application",
+]
 
 
 def batch_output_model(kind: CallKind) -> type[BatchAnswer]:
@@ -65,6 +83,8 @@ def batch_output_model(kind: CallKind) -> type[BatchAnswer]:
         return DocumentDigest
     if kind == "joint":
         return JointComparison
+    if kind in ("consultation_review", "act_application"):
+        return DocumentReview
     raise ValueError(f"Unsupported batch kind: {kind}")
 
 
@@ -90,7 +110,9 @@ class BatchRequest(BaseModel):
         return self.question.kind
 
     @property
-    def ctx(self) -> BillContext | AmendmentsContext | SupplementContext | JointContext:
+    def ctx(
+        self,
+    ) -> BillContext | AmendmentsContext | SupplementContext | JointContext | ReviewContext:
         return self.question.ctx
 
 
@@ -178,6 +200,7 @@ class DigestItemMeta(BaseModel):
     source_kind: SourceKind = "print"
     title: str = ""
     compared_with: list[str] = Field(default_factory=list)
+    review_context: ReviewContext | None = None
 
 
 def batch_item_meta(kind: str, raw: str) -> BatchItemMeta | DigestItemMeta:

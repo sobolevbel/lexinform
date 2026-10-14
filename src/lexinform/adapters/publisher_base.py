@@ -146,6 +146,9 @@ class RenderingPublisher(ABC):
     def render_delivery(self, publication: Publication) -> str:
         return self._formatter.delivery_preview(publication)
 
+    def split_message(self, text: str) -> tuple[str, ...]:
+        return self._formatter.message_parts(text)
+
     def render_sittings(self, news: Sequence[SittingNews]) -> str:
         return self._formatter.sittings(news).text
 

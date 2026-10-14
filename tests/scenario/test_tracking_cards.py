@@ -71,7 +71,7 @@ def test_a_finished_bill_says_so_on_its_card_and_is_then_left_alone() -> None:
     closed, _ = w.publisher.edited[-1]
     assert "Законопроект: процесс завершён" in closed.text
     assert "Уже действует с</b> 1 сент 2026" in closed.text
-    assert "Что можно сделать сейчас:</b> закон уже применяется" in closed.text
+    assert "Что можно сделать сейчас:</b> откройте окончательный текст" in closed.text
 
 
 def test_the_finished_card_is_not_edited_again() -> None:

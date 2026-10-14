@@ -49,6 +49,7 @@ from lexinform.models import (
     Committee,
     CommitteeSitting,
     DocumentDigest,
+    DocumentReview,
     IncomingCommand,
     JointComparison,
     JointContext,
@@ -749,6 +750,22 @@ class FakeBatchBackend:
                 "amendments": make_amendments(),
                 "supplement": make_digest(),
                 "joint": make_comparison(),
+                "consultation_review": DocumentReview(
+                    purpose="consultation_review",
+                    complete=False,
+                    summary="",
+                    consultation_findings=(),
+                    effective_rules=(),
+                    unresolved=("no scripted review",),
+                ),
+                "act_application": DocumentReview(
+                    purpose="act_application",
+                    complete=False,
+                    summary="",
+                    consultation_findings=(),
+                    effective_rules=(),
+                    unresolved=("no scripted review",),
+                ),
             }
             outcome = self.secondary_script.get(
                 (req.number, kind), self.script.get(req.number, defaults[kind])
@@ -804,6 +821,9 @@ class FakePublisher(RenderingPublisher):
     ) -> None:
         super().__init__(formatter or MessageFormatter("ru"))
         self.digest_send_attempts = 0
+        self.continuation_attempts = 0
+        self.fail_continuation_attempt: int | None = None
+        self.unknown_continuation_attempt: int | None = None
         self.fail_digest_attempt: int | None = None
         self.unknown_digest_attempt: int | None = None
         self.sent: list[Outgoing] = []  # every message as rendered, in the order it went out
@@ -843,6 +863,12 @@ class FakePublisher(RenderingPublisher):
         return FakePublishResult(message_id=self._next_id)
 
     def _deliver(self, message: Outgoing) -> FakePublishResult:
+        if message.kind is PublicationKind.MESSAGE_PART:
+            self.continuation_attempts += 1
+            if self.continuation_attempts == self.fail_continuation_attempt:
+                raise RuntimeError("continuation rejected")
+            if self.continuation_attempts == self.unknown_continuation_attempt:
+                raise DeliveryUncertainError("continuation timed out after send")
         if message.kind is PublicationKind.DIGEST:
             self.digest_send_attempts += 1
             if self.digest_send_attempts == self.fail_digest_attempt:

@@ -129,7 +129,17 @@ class RclWatcher:
                     result.changed += 1
                     self._poster.tell(fresh, change, result, publish=publish)
                 if results_due and self._consultations is not None:
-                    self._consultations.results_published(fresh, result, publish=publish)
+                    self._consultations.results_published(
+                        fresh.model_copy(update={"rcl": project}), result, publish=publish
+                    )
+                elif (
+                    self._consultations is not None
+                    and project.consultation is not None
+                    and project.consultation.results_published
+                ):
+                    self._consultations.review_documents(
+                        fresh.model_copy(update={"rcl": project}), result
+                    )
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return False

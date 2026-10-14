@@ -78,9 +78,8 @@ def test_in_force_reminder_is_posted_on_the_day_in_warsaw_time() -> None:
     text = MessageFormatter("ru").in_force(bill, today=bill.act.entry_into_force).text
     assert "С сегодняшнего дня действует — druk nr 3039" in text
     assert (
-        "Суть закона" in text
-        and "#вступилвсилу #важность5 #легализация #kadencja10druk3039" in text
-    )
+        "Общая дата" in text or "общая дата" in text
+    ) and "#вступилвсилу #важность5 #легализация #kadencja10druk3039" in text
     assert after.in_force_posted == 0 and len(w.publisher.in_force) == 1
 
 

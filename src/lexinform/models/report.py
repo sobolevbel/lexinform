@@ -31,7 +31,15 @@ class AnalysisVerdict(BaseModel):
 
 
 CallKind = Literal[
-    "analysis", "reanalysis", "triage", "change_review", "amendments", "supplement", "joint"
+    "analysis",
+    "reanalysis",
+    "triage",
+    "change_review",
+    "amendments",
+    "supplement",
+    "joint",
+    "consultation_review",
+    "act_application",
 ]
 
 
@@ -125,6 +133,10 @@ class RunReport(BaseModel):
     digest_reader_parts: int = 0
     digest_events_covered: int = 0
     consultation_results_posted: int = 0
+    consultation_reviews_posted: int = 0
+    act_reviews_posted: int = 0
+    effective_rule_messages: int = 0
+    message_parts_sent: int = 0
     agenda_posted: int = 0
     agenda_cancelled: int = 0
     discontinued: int = 0

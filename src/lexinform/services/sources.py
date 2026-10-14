@@ -8,6 +8,7 @@ text anywhere yet, so it is the one source the model still reads as metadata alo
 
 import logging
 from datetime import UTC, datetime
+from typing import Literal
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
@@ -19,12 +20,14 @@ from lexinform.models import (
     PrintInfo,
     ProcessDetail,
     RclProject,
+    ReviewPurpose,
+    ReviewSource,
     TextDocument,
     latest_text_document,
     submission_pdf_url,
     third_reading_kept_the_text,
 )
-from lexinform.ports import SejmGateway, TextSource
+from lexinform.ports import ConsultationDocuments, SejmGateway, TextSource
 
 log = logging.getLogger(__name__)
 
@@ -68,8 +71,11 @@ def original_document(print_info: PrintInfo | None) -> TextDocument | None:
 class SejmTextSource:
     """Numbered prints: the process (metadata, stages) and the print's main PDF."""
 
-    def __init__(self, gateway: SejmGateway) -> None:
+    def __init__(
+        self, gateway: SejmGateway, *, consultation_documents: ConsultationDocuments | None = None
+    ) -> None:
         self._gateway = gateway
+        self._consultation_documents = consultation_documents
 
     def locate(self, bill: Bill) -> LocatedText:
         detail = self._gateway.get_process(bill.term, bill.number)
@@ -77,6 +83,12 @@ class SejmTextSource:
         if document is None:
             document = original_document(fetch_print(self._gateway, bill))
         return LocatedText(summary=detail, stages=detail.stages, document=document)
+
+    def supporting_documents(self, bill: Bill, purpose: ReviewPurpose) -> tuple[ReviewSource, ...]:
+        sub = bill.submission
+        if self._consultation_documents is None or sub is None or not sub.consultation_results:
+            return ()
+        return self._consultation_documents.read(sub)
 
     def newer(
         self, bill: Bill, detail: ProcessDetail, print_info: PrintInfo | None
@@ -118,6 +130,9 @@ class MetadataOnlySource:
     def locate(self, bill: Bill) -> LocatedText:
         return LocatedText()
 
+    def supporting_documents(self, bill: Bill, purpose: ReviewPurpose) -> tuple[ReviewSource, ...]:
+        return ()
+
 
 class SubmissionTextSource:
     """Bills the Sejm has received but not numbered yet (`RPW/…`): the file on orka.sejm.gov.pl.
@@ -127,12 +142,24 @@ class SubmissionTextSource:
     convention `submission_pdf_url` knows.
     """
 
-    def __init__(self, base_url: str = ORKA_BASE_URL) -> None:
+    def __init__(
+        self,
+        base_url: str = ORKA_BASE_URL,
+        *,
+        consultation_documents: ConsultationDocuments | None = None,
+    ) -> None:
         self._base_url = base_url
+        self._consultation_documents = consultation_documents
 
     def locate(self, bill: Bill) -> LocatedText:
         url = submission_pdf_url(bill.term, bill.number, base_url=self._base_url)
         return LocatedText(document=TextDocument(url=url, kind="print"))
+
+    def supporting_documents(self, bill: Bill, purpose: ReviewPurpose) -> tuple[ReviewSource, ...]:
+        sub = bill.submission
+        if self._consultation_documents is None or sub is None or not sub.consultation_results:
+            return ()
+        return self._consultation_documents.read(sub)
 
 
 class SejmTextIdentity:
@@ -170,6 +197,74 @@ class RclTextSource:
             document=TextDocument(url=documents["bill"].url, kind="rcl", extra_urls=extras)
         )
 
+    def supporting_documents(self, bill: Bill, purpose: ReviewPurpose) -> tuple[ReviewSource, ...]:
+        project = bill.rcl
+        if project is None:
+            return ()
+        stages = [stage for stage in project.stages if stage.is_consultation and stage.reached]
+        responses = [
+            document
+            for stage in stages
+            for document in stage.documents("response")
+            if document.readable
+        ]
+        positions = [
+            document
+            for stage in stages
+            for document in stage.documents("positions")
+            if document.readable
+        ]
+        documents = responses or positions
+        role: Literal["response", "position"] = "response" if responses else "position"
+        result = tuple(
+            ReviewSource(
+                identity=f"rcl/{document.id}",
+                document=TextDocument(url=document.url, kind="rcl"),
+                role=role,
+                author=document.author or "",
+            )
+            for document in documents
+        )
+        current = project.text_documents().get("bill")
+        previous = bill.analysis
+        if current is not None:
+            result += (
+                ReviewSource(
+                    identity=f"rcl/{current.id}",
+                    document=TextDocument(url=current.url, kind="rcl"),
+                    role="project_text",
+                ),
+            )
+        saved_review = bill.consultation_review
+        baseline = (
+            next(
+                (doc for doc in saved_review.context.documents if doc.role == "comparison_text"),
+                None,
+            )
+            if saved_review
+            else None
+        )
+        if baseline is not None:
+            snapshot = baseline.model_copy(update={"role": "comparison_text"})
+            result += (
+                ReviewSource(
+                    identity=snapshot.identity,
+                    document=TextDocument(url=snapshot.url, kind="rcl"),
+                    role="comparison_text",
+                    snapshot=snapshot,
+                ),
+            )
+        elif previous is not None and previous.source_url and previous.text_sha256:
+            result += (
+                ReviewSource(
+                    identity="comparison/" + previous.text_sha256,
+                    document=TextDocument(url=previous.source_url, kind="rcl"),
+                    role="comparison_text",
+                    expected_digest=previous.text_sha256,
+                ),
+            )
+        return result
+
 
 class TextSources:
     """Routes a bill to the source of its text."""
@@ -195,6 +290,21 @@ class TextSources:
         if bill.is_pre_print:
             return self._submissions.locate(bill)
         return self._metadata.locate(bill)
+
+    def supporting_documents(self, bill: Bill, purpose: ReviewPurpose) -> tuple[ReviewSource, ...]:
+        if purpose == "act_application":
+            act = bill.act
+            if act is None or act.text_pdf_url is None:
+                return ()
+            return (
+                ReviewSource(
+                    identity=act.eli,
+                    document=TextDocument(url=act.text_pdf_url, kind="final_act"),
+                    role="final_act",
+                ),
+            )
+        source = self._rcl if bill.is_rcl else self._sejm if bill.has_process else self._submissions
+        return source.supporting_documents(bill, purpose)
 
 
 def _as_utc(value: datetime) -> datetime:

@@ -43,9 +43,11 @@ from lexinform.models import (
     window_closes_within,
 )
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway
+from lexinform.services.message_parts import continuation_ready, freeze_parts, send_continuations
 from lexinform.services.publications import send_publication, send_publications
 from lexinform.services.sources import fetch_print
 from lexinform.services.tracking_result import TrackingResult
+from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 from lexinform.usefulness import digest_reason
 
 log = logging.getLogger(__name__)
@@ -107,6 +109,7 @@ class Poster:
         max_group: int = 5,
         daily_roundup: bool = False,
         daily_hour: int = 18,
+        delivery_attempts: set[int] | None = None,
     ) -> None:
         self._repo = repo
         self._publisher = publisher
@@ -122,15 +125,16 @@ class Poster:
         self._attention_metrics: dict[str, int] = {}
         self._counted: set[int] = set()
         self._told_windows: dict[tuple[int, str, str, date], tuple[int, int]] = {}
-        self._attempted: set[int] = set()
+        self._attempted = delivery_attempts if delivery_attempts is not None else set[int]()
         self._sittings: dict[int, Publication] = {}
         self._updates: dict[int, Publication] = {}
 
-    def start_run(self) -> None:
+    def start_run(self, *, keep_attempts: bool = False) -> None:
         self._attention_metrics.clear()
         self._counted.clear()
         self._told_windows.clear()
-        self._attempted.clear()
+        if not keep_attempts:
+            self._attempted.clear()
         self._sittings.clear()
         self._updates.clear()
         for pub in self._repo.list_digest_candidates(
@@ -427,6 +431,10 @@ class Poster:
     def _send_sittings(
         self, pubs: list[Publication], news: list[SittingNews], result: TrackingResult
     ) -> None:
+        if len(pubs) == 1 and utf16_length(self._publisher.render_sittings(news)) > MESSAGE_LIMIT:
+            sent = self.deliver(pubs[0])
+            result.count_post(sent, "agenda_cancelled" if news[0].cancelled else "agenda_posted")
+            return
         if all(
             pub.delivery is not None and pub.delivery.policy_version == "attention-v1"
             for pub in pubs
@@ -725,9 +733,7 @@ class Poster:
             self._update_row(
                 bill,
                 change.id,
-                PublicationStatus.QUEUED
-                if delivery.policy_version == "attention-v1"
-                else PublicationStatus.PENDING,
+                PublicationStatus.QUEUED,
             )
         )
         snapshot = Bill.model_validate_json(delivery.bill_json)
@@ -1107,7 +1113,7 @@ class Poster:
             return stored
         card = self.card(bill)
         delivery = DeliveryPlan(
-            bill_json=bill.model_dump_json(),
+            bill_json=bill.model_dump_json(exclude={"review_work"} if bill.review_work else set()),
             attention=assess_attention(
                 bill,
                 kind,
@@ -1120,7 +1126,15 @@ class Poster:
             )
             if self._attention_mode != "off"
             else None,
-            policy_version="attention-v1" if self._attention_mode == "on" else "legacy",
+            policy_version="attention-v1"
+            if self._attention_mode == "on"
+            or kind
+            in (
+                PublicationKind.CONSULTATION_REVIEW,
+                PublicationKind.ACT_APPLICATION,
+                PublicationKind.EFFECTIVE_RULES,
+            )
+            else "legacy",
             today=today,
             item_json=item.model_dump_json() if item else None,
             moved_from_json=moved_from.model_dump_json() if moved_from else None,
@@ -1182,6 +1196,12 @@ class Poster:
         )
         if pub.id in self._attempted or pub.delivery.destination == "digest_only":
             return False
+        if pub.kind is PublicationKind.MESSAGE_PART:
+            ready = continuation_ready(self._repo, pub)
+            if ready is None:
+                return False
+            pub = ready
+        assert pub.delivery is not None and pub.id is not None
         if pub.delivery.policy_version == "attention-v1":
             pub = self._refresh_attention(pub)
             assert pub.delivery is not None and pub.id is not None
@@ -1242,6 +1262,12 @@ class Poster:
                 return False
             pub = self._freeze(pub)
         assert pub.id is not None and pub.delivery is not None
+        if not pub.delivery.rendered_text and not pub.attempts:
+            text = self._publisher.render_delivery(pub)
+            if utf16_length(text) > MESSAGE_LIMIT:
+                pub = freeze_parts(self._repo, self._clock, self._publisher, pub, text)
+                assert pub.delivery is not None
+        assert pub.id is not None and pub.delivery is not None
         self._attempted.add(pub.id)
         plan = pub.delivery
         bill = Bill.model_validate_json(plan.bill_json)
@@ -1264,11 +1290,9 @@ class Poster:
         )
         plan = pub.delivery.model_copy(update={"today": today})
         pub = pub.model_copy(update={"delivery": plan})
-        plan = plan.model_copy(update={"rendered_text": self._publisher.render_delivery(pub)})
-        assert pub.id is not None
-        if self._repo.replace_unattempted_delivery(pub.id, plan):
-            return pub.model_copy(update={"delivery": plan})
-        return pub
+        return freeze_parts(
+            self._repo, self._clock, self._publisher, pub, self._publisher.render_delivery(pub)
+        )
 
     def _schedule(self, plan: DeliveryPlan, kind: PublicationKind) -> DeliveryPlan:
         bill = Bill.model_validate_json(plan.bill_json)
@@ -1416,8 +1440,25 @@ class Poster:
         ).message_id
 
     def _send(self, pub_id: int, bill: Bill, send: Send) -> int | None:
+        pub = self._repo.publication_by_id(pub_id)
+        if (
+            pub is not None
+            and pub.delivery is not None
+            and not pub.delivery.rendered_text
+            and not pub.attempts
+        ):
+            text = self._publisher.render_delivery(pub)
+            if utf16_length(text) > MESSAGE_LIMIT:
+                pub = freeze_parts(self._repo, self._clock, self._publisher, pub, text)
+        if pub is not None and pub.delivery is not None and pub.delivery.continuation_ids:
+
+            def prepared_send(_: int | None) -> int:
+                return self._publisher.publish_prepared(pub).message_id
+
+            send = prepared_send
         card = self.card(bill)
         reply_to = card.message_id if card else None
+        self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
         sent = send_publication(
             self._repo,
             self._clock,
@@ -1426,6 +1467,14 @@ class Poster:
         )
 
         self._count_attention((pub_id,), sent)
+        if sent is not None and pub is not None and pub.delivery is not None:
+            count = send_continuations(
+                self._repo, self._clock, self._publisher, pub, self._attempted
+            )
+            count += pub.kind is PublicationKind.MESSAGE_PART
+            self._attention_metrics["continuation_messages"] = (
+                self._attention_metrics.get("continuation_messages", 0) + count
+            )
         return sent
 
     def attention_metrics(self) -> dict[str, int]:

@@ -37,6 +37,12 @@ from lexinform.adapters.llm_prompts import (
     gpt51_supplement_system_prompt,
     gpt51_system_prompt,
 )
+from lexinform.adapters.review_prompts import (
+    REVIEW_PROMPT_VERSION,
+    REVIEW_SCHEMA,
+    review_prompt,
+    review_system,
+)
 from lexinform.analysis_records import RecordFactory, UsageFields
 from lexinform.errors import BatchNotSubmittedError, LlmContextExceededError, LlmUnavailableError
 from lexinform.models import (
@@ -53,6 +59,7 @@ from lexinform.models import (
     JointComparison,
     JointContext,
     JointRecord,
+    ReviewContext,
     ScannedDocument,
     SupplementContext,
     SupplementRecord,
@@ -318,6 +325,8 @@ class OpenAiAnalyzer:
                 gpt51_supplement_system_prompt(self._language),
                 build_supplement_prompt(ctx),
             )
+        elif isinstance(ctx, ReviewContext):
+            system, prompt = review_system(self._language), review_prompt(ctx)
         else:
             system, prompt = gpt51_joint_system_prompt(self._language), build_joint_prompt(ctx)
         schema_name, schema = {
@@ -326,6 +335,8 @@ class OpenAiAnalyzer:
             "amendments": ("amendments", _AMENDMENTS_SCHEMA),
             "supplement": ("document_digest", _DOCUMENT_DIGEST_SCHEMA),
             "joint": ("joint_comparison", _JOINT_COMPARISON_SCHEMA),
+            "consultation_review": ("document_review", REVIEW_SCHEMA),
+            "act_application": ("document_review", REVIEW_SCHEMA),
         }[request.call_kind]
         payload = {
             "custom_id": request.custom_id,
@@ -355,7 +366,9 @@ class OpenAiAnalyzer:
             update={
                 "payload_json": json.dumps(payload, ensure_ascii=False),
                 "model": model,
-                "prompt_version": PROMPT_VERSION,
+                "prompt_version": REVIEW_PROMPT_VERSION
+                if isinstance(ctx, ReviewContext)
+                else PROMPT_VERSION,
                 "estimated_cost_usd": estimate_batch_reservation(
                     model,
                     counted_tokens=tokens,

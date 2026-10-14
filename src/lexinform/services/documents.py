@@ -43,6 +43,7 @@ class LoadedFile:
     text: str | None
     pages: int = 0
     oversize: bool = False
+    sha256: str | None = None
 
     @property
     def is_scan(self) -> bool:
@@ -112,7 +113,7 @@ class TextLoader:
                 continue
             if extra is not None:
                 parts.append(extra)
-        return LoadedFile(PAGE_BREAK.join(parts), pages=main.pages)
+        return LoadedFile(PAGE_BREAK.join(parts), pages=main.pages, sha256=main.sha256)
 
     def load_scan(self, url: str, *, cover_letter: bool) -> ScannedDocument | None:
         """The file itself, for a model to read as pages, cut down to the pages worth paying for
@@ -179,12 +180,13 @@ class TextLoader:
             return LoadedFile(None, oversize=True)
         started = time.perf_counter()
         text = self._extractor.extract(data)
+        digest = hashlib.sha256(data).hexdigest()
         pages = self._extractor.pages(data)
         log.info("%s: %d chars extracted in %.1fs", url, len(text), time.perf_counter() - started)
         if len(text.strip()) < MIN_TEXT_CHARS:
             log.warning("%s yielded almost no text (%d chars, %d pages)", url, len(text), pages)
-            return LoadedFile(None, pages=pages)
-        return LoadedFile(text, pages=pages)
+            return LoadedFile(None, pages=pages, sha256=digest)
+        return LoadedFile(text, pages=pages, sha256=digest)
 
     def _download(self, url: str) -> bytes | None:
         host = urlparse(url).hostname or ""

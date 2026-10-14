@@ -38,6 +38,7 @@ from lexinform.models import (
     DeliveryAlert,
     DeliveryPlan,
     DeliveryResolution,
+    DocumentReviewRecord,
     Editorial,
     IncomingCommand,
     JointRecord,
@@ -53,6 +54,7 @@ from lexinform.models import (
     PublicationStatus,
     RclProject,
     ReadyAnalysis,
+    ReviewWork,
     RunMode,
     RunReport,
     SenateAct,
@@ -441,6 +443,27 @@ MIGRATIONS: tuple[str, ...] = (
     );
     CREATE INDEX ix_digest_owner ON digest_event_links(owner_publication_id);
     """,
+    """
+    ALTER TABLE bills ADD COLUMN consultation_review_json TEXT;
+    ALTER TABLE bills ADD COLUMN act_application_review_json TEXT;
+    ALTER TABLE bills ADD COLUMN review_work_json TEXT;
+    CREATE UNIQUE INDEX ux_pub_review ON publications(term, number, kind, channel_id, ref)
+      WHERE kind IN ('consultation_review', 'act_application', 'effective_rules');
+    """,
+    """
+    CREATE UNIQUE INDEX ux_pub_message_part ON publications(channel_id, kind, ref)
+      WHERE kind = 'message_part';
+    """,
+    """
+    CREATE TABLE effective_rule_links (
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        rule_ref TEXT NOT NULL,
+        publication_id INTEGER NOT NULL REFERENCES publications(id),
+        PRIMARY KEY (term, number, channel_id, rule_ref)
+    );
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -809,6 +832,70 @@ class SqliteBillRepository:
 
     def load_analysis_memo(self) -> dict[str, str]:
         return dict(self._conn.execute("SELECT key, record_json FROM analysis_memo"))
+
+    def save_review_work(self, term: int, number: str, work: tuple[ReviewWork, ...]) -> None:
+        self._conn.execute(
+            "UPDATE bills SET review_work_json = ? WHERE term = ? AND number = ?",
+            (
+                json.dumps([item.model_dump(mode="json") for item in work]) if work else None,
+                term,
+                number,
+            ),
+        )
+
+    def save_document_review(self, term: int, number: str, review: DocumentReviewRecord) -> None:
+        column = (
+            "consultation_review_json"
+            if review.review.purpose == "consultation_review"
+            else "act_application_review_json"
+        )
+        self._conn.execute(
+            f"UPDATE bills SET {column} = ? WHERE term = ? AND number = ?",
+            (review.model_dump_json(), term, number),
+        )
+
+    def list_review_work(self) -> list[Bill]:
+        rows = self._conn.execute(
+            "SELECT * FROM bills WHERE review_work_json IS NOT NULL ORDER BY term, number"
+        ).fetchall()
+        return [self._row_to_bill(row) for row in rows]
+
+    def list_acts_for_review(self, channel_id: str) -> list[Bill]:
+        rows = self._conn.execute(
+            "SELECT b.* FROM bills b WHERE act_json IS NOT NULL AND status != 'linked'"
+            " AND EXISTS (SELECT 1 FROM publications p WHERE p.term=b.term AND p.number=b.number"
+            " AND p.channel_id=? AND p.kind='new_bill' AND p.status='sent')"
+            " ORDER BY b.term, b.number",
+            (channel_id,),
+        ).fetchall()
+        return [self._row_to_bill(row) for row in rows]
+
+    def effective_rule_publications(
+        self, term: int, number: str, channel_id: str
+    ) -> list[Publication]:
+        rows = self._conn.execute(
+            "SELECT * FROM publications WHERE term=? AND number=? AND channel_id=?"
+            " AND kind='effective_rules' ORDER BY id",
+            (term, number, channel_id),
+        ).fetchall()
+        return [self._row_to_publication(row) for row in rows]
+
+    def effective_rule_refs(self, term: int, number: str, channel_id: str) -> set[str]:
+        return {
+            row[0]
+            for row in self._conn.execute(
+                "SELECT rule_ref FROM effective_rule_links"
+                " WHERE term=? AND number=? AND channel_id=?",
+                (term, number, channel_id),
+            )
+        }
+
+    def reserve_effective_rules(self, pub: Publication, refs: tuple[str, ...]) -> None:
+        assert pub.id is not None
+        self._conn.executemany(
+            "INSERT INTO effective_rule_links VALUES (?, ?, ?, ?, ?)",
+            [(pub.term, pub.number, pub.channel_id, ref, pub.id) for ref in refs],
+        )
 
     def save_analysis_memo(
         self,
@@ -2208,6 +2295,31 @@ class SqliteBillRepository:
                                     owned.id, PublicationStatus.DISMISSED, count_attempt=False
                                 )
             if status == "dismissed":
+                root = (
+                    self.publication_by_id(plan.continuation_root)
+                    if plan is not None and plan.continuation_root is not None
+                    else original
+                )
+                stopped = {resolution.publication_id}
+                if root is not None and root.delivery is not None:
+                    for child_id in root.delivery.continuation_ids:
+                        child = self.publication_by_id(child_id)
+                        if (
+                            child is not None
+                            and child.delivery is not None
+                            and (
+                                child.delivery.continuation_parent in stopped
+                                and child.status is PublicationStatus.QUEUED
+                                and child.attempts == 0
+                            )
+                        ):
+                            self.mark_publication(
+                                child_id,
+                                PublicationStatus.DISMISSED,
+                                error="Previous physical part dismissed by operator.",
+                                count_attempt=False,
+                            )
+                            stopped.add(child_id)
                 for member in digest_members:
                     assert member.id is not None and member.delivery is not None
                     self.mark_publication(
@@ -2516,7 +2628,12 @@ class SqliteBillRepository:
                 " AND NOT EXISTS (SELECT 1"
                 " FROM json_each(publications.delivery_json, '$.digest_parts') part"
                 " JOIN publications member ON member.id = part.value"
-                " WHERE member.status NOT IN ('sent', 'dismissed'))",
+                " WHERE member.status NOT IN ('sent', 'dismissed'))"
+                " AND NOT EXISTS (SELECT 1 FROM publications child"
+                " WHERE child.status NOT IN ('sent', 'dismissed')"
+                " AND json_extract(child.delivery_json, '$.continuation_root') ="
+                " COALESCE(json_extract(publications.delivery_json, '$.continuation_root'),"
+                " publications.id))",
                 (_iso(before),),
             ).rowcount
             memos = self._conn.execute(
@@ -2525,7 +2642,8 @@ class SqliteBillRepository:
                   AND EXISTS (SELECT 1 FROM bills b WHERE b.term = m.term AND b.number = m.number
                     AND b.status IN ('analyzed', 'linked', 'skipped_prefilter',
                                      'skipped_text_prefilter', 'skipped_closed')
-                    AND b.awaiting_batch_since IS NULL AND b.ready_analysis_json IS NULL)
+                    AND b.awaiting_batch_since IS NULL AND b.ready_analysis_json IS NULL
+                    AND b.review_work_json IS NULL)
                   AND NOT EXISTS (SELECT 1 FROM publications p
                     WHERE p.term = m.term AND p.number = m.number
                       AND p.status NOT IN ('sent', 'skipped'))
@@ -2658,6 +2776,20 @@ class SqliteBillRepository:
                 date.fromisoformat(row["observed_closure_date"])
                 if row["observed_closure_date"]
                 else None
+            ),
+            consultation_review=DocumentReviewRecord.model_validate_json(
+                row["consultation_review_json"]
+            )
+            if row["consultation_review_json"]
+            else None,
+            act_application_review=DocumentReviewRecord.model_validate_json(
+                row["act_application_review_json"]
+            )
+            if row["act_application_review_json"]
+            else None,
+            review_work=tuple(
+                ReviewWork.model_validate(value)
+                for value in json.loads(row["review_work_json"] or "[]")
             ),
             observed_process=(
                 ObservedProcess.model_validate_json(row["observed_process_json"])

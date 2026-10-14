@@ -5,8 +5,9 @@ import datetime as dt
 
 import pytest
 
-from lexinform.adapters.telegram_format import MESSAGE_LIMIT, MessageFormatter
+from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import PrintInfo, ProcessDetail, Stage, StatusChange
+from lexinform.telegram_text import split_html
 from tests.fakes import joint_record, make_analysis, make_comparison
 from tests.formatting import ACT, TODAY, assert_telegram_html, bill_of, consulted
 from tests.harness import act
@@ -174,7 +175,7 @@ def test_card_escapes_model_output_and_notes_partial_text(
 @pytest.mark.parametrize(
     ("n_changes", "change_len", "summary_len"), [(12, 400, 3000), (30, 200, 500), (1, 10, 20000)]
 )
-def test_card_shrinks_the_flexible_blocks_to_the_limit(
+def test_card_preserves_long_blocks_for_lossless_physical_parts(
     process_3039: ProcessDetail,
     print_3039: PrintInfo,
     n_changes: int,
@@ -187,7 +188,10 @@ def test_card_shrinks_the_flexible_blocks_to_the_limit(
 
     text = MessageFormatter("ru").new_bill(bill_of(process_3039, analysis), print_3039).text
 
-    assert_telegram_html(text)
+    for part in split_html(text):
+        assert_telegram_html(part)
+    assert analysis.summary in text
+    assert all(change in text for change in analysis.key_changes)
     assert "PrzebiegProc.xsp?nr=3039" in text and "#kadencja10druk3039" in text  # fixed parts
 
 
@@ -309,7 +313,7 @@ def test_a_consultation_that_is_over_says_so_and_stops_inviting_opinions(
     assert "24 янв 2025" not in once_closed  # the end date is the fact that matters
 
 
-def test_fixed_blocks_alone_over_the_limit_are_cut_at_a_line_boundary(
+def test_long_fixed_blocks_are_preserved_across_balanced_parts(
     process_3039: ProcessDetail,
 ) -> None:
     long_title = " ".join(["Ustawa o zmianie ustawy o cudzoziemcach"] * 120)
@@ -318,8 +322,9 @@ def test_fixed_blocks_alone_over_the_limit_are_cut_at_a_line_boundary(
 
     text = MessageFormatter("ru").new_bill(bill, None).text
 
-    assert len(text) <= MESSAGE_LIMIT
-    assert_telegram_html(text)
+    for part in split_html(text):
+        assert_telegram_html(part)
+    assert long_title.count("Ustawa") == text.count("Ustawa") + 1
 
 
 def test_the_card_cites_the_act_the_way_everyone_else_does(process_3039: ProcessDetail) -> None:
@@ -342,7 +347,7 @@ def test_a_card_for_a_bill_already_in_force_says_so_and_links_the_act(
 
     assert "Законопроект: процесс завершён — druk nr 1962" in text
     assert "Уже действует с</b> 1 сент 2026" in text
-    assert "Что можно сделать сейчас:</b> закон уже применяется" in text
+    assert "Что можно сделать сейчас:</b> откройте окончательный текст" in text
     assert "Текст закона (PDF)" in text
 
 

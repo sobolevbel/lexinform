@@ -128,13 +128,22 @@ def assess_attention(
     elif kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
         importance = "important"
         reasons.append("new_anchor")
-    elif kind in (PublicationKind.ACT_PUBLISHED, PublicationKind.IN_FORCE) or with_act:
+    elif (
+        kind
+        in (
+            PublicationKind.ACT_PUBLISHED,
+            PublicationKind.IN_FORCE,
+            PublicationKind.ACT_APPLICATION,
+            PublicationKind.EFFECTIVE_RULES,
+        )
+        or with_act
+    ):
         importance = "important"
         reasons.append("act_evidence")
     elif kind in (PublicationKind.CONSULTATION_DEADLINE, PublicationKind.HEARING_DEADLINE):
         importance = "important"
         reasons.append("participation_reminder")
-    elif kind is PublicationKind.CONSULTATION_RESULTS:
+    elif kind in (PublicationKind.CONSULTATION_RESULTS, PublicationKind.CONSULTATION_REVIEW):
         importance = "important"
         reasons.append("participation_result")
     elif kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED):
@@ -168,6 +177,31 @@ def assess_attention(
     if with_act:
         importance = "important"
         reasons.append("act_evidence")
+    groups = (
+        tuple(bill.analysis.analysis.affected_groups)
+        if bill.analysis is not None
+        and (kind is PublicationKind.NEW_BILL or (change is not None and change.content_changed))
+        else ()
+    )
+    if kind is PublicationKind.CONSULTATION_REVIEW and bill.consultation_review is not None:
+        groups = tuple(
+            dict.fromkeys(
+                group
+                for finding in bill.consultation_review.review.consultation_findings
+                for group in finding.affected_groups
+            )
+        )
+    if (
+        kind in (PublicationKind.ACT_APPLICATION, PublicationKind.EFFECTIVE_RULES)
+        and bill.act_application_review is not None
+    ):
+        groups = tuple(
+            dict.fromkeys(
+                group
+                for rule in bill.act_application_review.review.effective_rules
+                for group in rule.affected_groups
+            )
+        )
     window = bill.consultation
     if (
         window is not None
@@ -226,6 +260,12 @@ def assess_attention(
         importance=importance,
         novelty="new_consequence"
         if "substantive_content" in reasons
+        or kind
+        in (
+            PublicationKind.CONSULTATION_REVIEW,
+            PublicationKind.ACT_APPLICATION,
+            PublicationKind.EFFECTIVE_RULES,
+        )
         else "new_decision"
         if "confirmed_decision" in reasons
         else "new_participation"
@@ -234,10 +274,7 @@ def assess_attention(
         urgency=urgency,
         reasons=tuple(dict.fromkeys(reasons)),
         explanation=" ".join(REASON_TEXT[reason] for reason in dict.fromkeys(reasons)),
-        affected_groups=tuple(bill.analysis.analysis.affected_groups)
-        if bill.analysis is not None
-        and (kind is PublicationKind.NEW_BILL or (change is not None and change.content_changed))
-        else (),
+        affected_groups=groups,
         action=action,
         deadline=deadline,
         deadline_source=source,

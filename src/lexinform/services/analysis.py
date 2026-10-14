@@ -53,6 +53,8 @@ from lexinform.models import (
     ChangedPassage,
     DigestItemMeta,
     DocumentDigest,
+    DocumentReview,
+    DocumentReviewRecord,
     JointBillDescription,
     JointComparison,
     JointContext,
@@ -63,6 +65,10 @@ from lexinform.models import (
     LocatedText,
     ProcessSummary,
     ReadyAnalysis,
+    ReviewContext,
+    ReviewDocument,
+    ReviewPurpose,
+    ReviewSource,
     ScannedDocument,
     SupplementContext,
     SupplementRecord,
@@ -76,6 +82,7 @@ from lexinform.models import (
     provider_of,
     stage_fingerprint,
     usage_of,
+    validate_review,
     window_closes_within,
 )
 from lexinform.models.batch import (
@@ -84,6 +91,7 @@ from lexinform.models.batch import (
     BatchJob,
     BatchKind,
     BatchQuestion,
+    DocumentReviewQuestion,
     JointQuestion,
     SupplementQuestion,
 )
@@ -830,7 +838,9 @@ class AnalysisService:
     ) -> None:
         now = self._clock.now()
         records = _batch_records(result, meta.prompt_version, now)
-        record: AmendmentsRecord | SupplementRecord | JointRecord | None = None
+        record: AmendmentsRecord | SupplementRecord | JointRecord | DocumentReviewRecord | None = (
+            None
+        )
         if item.call_kind == "amendments" and isinstance(result.answer, Amendments):
             record = records.amendments(result.answer, source_kind=meta.source_kind)
         elif item.call_kind == "supplement" and isinstance(result.answer, DocumentDigest):
@@ -839,6 +849,18 @@ class AnalysisService:
             )
         elif item.call_kind == "joint" and isinstance(result.answer, JointComparison):
             record = records.joint(result.answer, compared_with=meta.compared_with)
+        elif (
+            item.call_kind in ("consultation_review", "act_application")
+            and isinstance(result.answer, DocumentReview)
+            and meta.review_context is not None
+        ):
+            try:
+                reviewed = validate_review(result.answer, meta.review_context)
+                record = DocumentReviewRecord(
+                    review=reviewed, context=meta.review_context, **records.fields()
+                )
+            except ValueError as exc:
+                result = result.model_copy(update={"error": str(exc)})
         elif result.error is None:
             result = result.model_copy(update={"error": "batch answer does not match call kind"})
         with self._repo.atomic():
@@ -1221,6 +1243,137 @@ class AnalysisService:
                 self._repo.delete_batch_intents([key])
                 self._ledger.release(intent.request.estimated_cost_usd)
                 return
+
+    def review_enabled(self, purpose: ReviewPurpose) -> bool:
+        return purpose in self._options.batch_kinds
+
+    def review_context(
+        self,
+        bill: Bill,
+        purpose: ReviewPurpose,
+        documents: tuple[ReviewSource, ...],
+    ) -> ReviewContext | None:
+        if not self.review_enabled(purpose):
+            return None
+        sources: list[ReviewDocument] = []
+        for outcome in fan_out(
+            documents, self._read_review_document, workers=self._options.workers
+        ):
+            source = outcome.result()
+            if source is not None:
+                sources.append(source)
+        if not any(source.text.strip() for source in sources):
+            return None
+        act = bill.act
+        return ReviewContext(
+            number=bill.number,
+            title=bill.summary.title,
+            purpose=purpose,
+            documents=tuple(sources),
+            act_eli=act.eli if act else None,
+            promulgation_date=act.promulgation_date if act else None,
+            canonical_date=act.entry_into_force if act else None,
+            comparison_sha256=next(
+                (
+                    source.normalized_sha256
+                    for source in sources
+                    if source.role == "comparison_text"
+                ),
+                None,
+            ),
+        )
+
+    def _read_review_document(self, source: ReviewSource) -> ReviewDocument | None:
+        if source.snapshot is not None:
+            return source.snapshot
+        document = source.document
+        file = self._loader.read_document(document)
+        text = file.text or ""
+        if source.expected_digest is not None and text_digest(text) != source.expected_digest:
+            return None
+        return ReviewDocument(
+            identity=source.identity,
+            url=document.url,
+            role=source.role,
+            text=text,
+            sha256=hashlib.sha256(text.encode()).hexdigest(),
+            normalized_sha256=text_digest(text),
+            complete=bool(text.strip()) and not file.oversize,
+            file_sha256=file.sha256,
+            author=source.author,
+        )
+
+    def request_document_review(
+        self, bill: Bill, context: ReviewContext
+    ) -> DocumentReviewRecord | Waiting:
+        if context.number != bill.number:
+            raise ValueError("document review context belongs to a different bill")
+        key = context.memo_key(bill.term)
+        retained = (
+            bill.consultation_review
+            if context.purpose == "consultation_review"
+            else bill.act_application_review
+        )
+        if retained is not None and retained.context.memo_key(bill.term) == key:
+            self._remember_analysis(bill, key, retained)
+            return _reused(retained)
+        cached = self._memo.get(key)
+        if cached is not None:
+            record = DocumentReviewRecord.model_validate_json(cached)
+            self._remember_analysis(bill, key, record)
+            return _reused(record)
+        model = self._options.batch_models.get(context.purpose, "")
+        provider = provider_of(model)
+        request_key = key
+        if key in self._context_rejections:
+            model, provider, request_key = (
+                self._options.overflow_model,
+                self._options.overflow_provider,
+                "overflow:" + key,
+            )
+        job = self._repo.batch_job(request_key)
+        if job is not None and job.state != "failed":
+            return Waiting(job.since)
+        if job is not None and job.submissions >= SECONDARY_BATCH_SUBMISSIONS:
+            raise RuntimeError("document review batch failed; submission limit reached")
+        backend = self._batch_resolver(provider) if self._batch_resolver else self._batch
+        if not model or backend is None:
+            raise LlmUnavailableError("document review batch backend is unavailable")
+        request = backend.prepare_request(
+            BatchRequest(
+                custom_id=request_key,
+                term=bill.term,
+                number=bill.number,
+                question=DocumentReviewQuestion(kind=context.purpose, ctx=context),
+                model=model,
+            )
+        )
+        if (
+            self._options.max_bill_cost_usd
+            and request.estimated_cost_usd > self._options.max_bill_cost_usd
+        ):
+            self._ledger.stop("document review exceeds per-bill cost limit")
+            return Waiting(self._clock.now())
+        if not self._ledger.reserve(request.estimated_cost_usd):
+            return Waiting(self._clock.now())
+        try:
+            self._repo.save_batch_intent(
+                BatchIntent(
+                    request=request,
+                    meta=DigestItemMeta(
+                        memo_key=key,
+                        review_context=context,
+                        queued_at=self._clock.now(),
+                        prompt_version=request.prompt_version,
+                    ),
+                    provider=provider,
+                    created_at=self._clock.now(),
+                )
+            )
+        except Exception:
+            self._ledger.release(request.estimated_cost_usd)
+            raise
+        return Waiting(self._clock.now())
 
     def summarize_amendments(
         self,

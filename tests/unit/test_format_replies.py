@@ -40,7 +40,7 @@ def test_the_sittings_roundup_names_each_sitting_in_a_line_linked_to_its_card(
     assert f"• <b>{card}</b> — заседание Сейма № 65, 15-18 сент 2026" in text
     assert (
         f"• <b>{card}</b> — Komisja Administracji i Spraw Wewnętrznych (ASW) · "
-        "17 сент 2026, 09:00 · sala nr 412 · "
+        "17 сент 2026, 09:00 (по времени Варшавы) · sala nr 412 · "
     ) in text
     assert 'transmisje_arch.xsp?unid=1">Трансляция</a>' in text
     assert "<i>Pierwsze czytanie projektu (druk nr 3039)" in text
@@ -61,7 +61,9 @@ def test_a_sitting_taken_back_is_one_line_saying_which_fact_it_is(
     text = fmt.sittings([off]).text
     assert_telegram_html(text)
     assert "❌ <b>druk nr 3039</b> — Komisja Administracji i Spraw Wewnętrznych (ASW) · " in text
-    assert "было запланировано на 17 сент 2026, 09:00\nЗаседание отменено" in text
+    assert (
+        "было запланировано на 17 сент 2026, 09:00 (по времени Варшавы)\nЗаседание отменено" in text
+    )
     assert "Проект снят с повестки заседания" in fmt.sittings([dropped]).text
 
 
@@ -160,12 +162,13 @@ def test_act_notice_names_the_journal_the_date_and_the_staged_entry_caveat(
     assert "📖 <b>Опубликован в Dziennik Ustaw — druk nr 3039</b>" in text
     assert "Dz.U. 2026 poz. 1099 (опубликован 18 авг 2026)" in text
     assert "Вступает в силу:</b> 19 нояб 2026" in text
-    assert "Отдельные положения могут вступать в силу" in text
+    assert "Это общая дата из ELI" in text
     assert "дата вступления в силу пока не указана" in no_date
     # The moment to diarise the date, and the card is months up the thread: one sentence of the
     # summary and what is left to do, like every other reply carries. What the Sejm passed is an
     # ustawa, so the heading says so.
-    assert "<b>Суть закона:</b>" in text
+    assert "Разбор неполный" in text
+    assert "<b>Суть закона:</b>" not in text
     assert "остаётся подготовиться к вступлению в силу" in text
 
 
@@ -185,4 +188,4 @@ def test_the_in_force_reminder_does_not_claim_today_when_a_run_was_missed(
 
     assert fmt.in_force(late).text.startswith("⚖️ <b>Закон вступил в силу")
     assert fmt.in_force(due).text.startswith("⚖️ <b>С сегодняшнего дня действует")
-    assert "Что можно сделать сейчас:</b> закон уже применяется" in fmt.in_force(due).text
+    assert "Что можно сделать сейчас:</b> откройте окончательный текст" in fmt.in_force(due).text

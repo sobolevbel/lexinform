@@ -16,6 +16,7 @@ import openai
 
 from lexinform.adapters.batch_checkpoint import GitBatchCheckpoint
 from lexinform.adapters.console import ConsolePublisher, ConsoleReplier, ConsoleRunNotifier
+from lexinform.adapters.consultation_documents import SejmConsultationDocuments
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.github_inbox import GitHubInboxWriter
@@ -66,6 +67,7 @@ from lexinform.services.delivery import DeliveryService
 from lexinform.services.delivery_notifier import DeliveryNotifier
 from lexinform.services.digest import DigestService
 from lexinform.services.discovery import BillDiscoveryService
+from lexinform.services.document_reviews import DocumentReviews
 from lexinform.services.documents import TextLoader
 from lexinform.services.listener import CommandListener
 from lexinform.services.lookup import BillLookup
@@ -159,7 +161,9 @@ class Container:
         Downloads are routed by host to the client of that system."""
         if self._loader is None:
             downloaders: dict[str, Downloader] = {
-                _host(self.settings.sejm_api_base_url): self.gateway.download
+                _host(self.settings.sejm_api_base_url): self.gateway.download,
+                "www.sejm.gov.pl": self.gateway.download,
+                "sejm.gov.pl": self.gateway.download,
             }
             orka = _host(self.settings.orka_base_url)
             if orka not in downloaders:
@@ -185,11 +189,30 @@ class Container:
         return self._once("orka", OrkaClient).download
 
     def text_sources(self) -> TextSources:
-        rcl = RclTextSource() if self.rcl is not None else None
+        return self._once("text_sources", self._build_text_sources)
+
+    def _build_text_sources(self) -> TextSources:
+        reports = SejmConsultationDocuments(self.gateway.download)
         return TextSources(
-            SejmTextSource(self.gateway),
-            rcl=rcl,
-            submissions=SubmissionTextSource(self.settings.orka_base_url),
+            SejmTextSource(self.gateway, consultation_documents=reports),
+            rcl=RclTextSource() if self.rcl is not None else None,
+            submissions=SubmissionTextSource(
+                self.settings.orka_base_url, consultation_documents=reports
+            ),
+        )
+
+    def document_reviews(self, *, dry_run: bool) -> DocumentReviews:
+        return self._once(
+            f"document_reviews:{dry_run}",
+            lambda: DocumentReviews(
+                self.repo,
+                self.text_sources(),
+                self.analysis_service(),
+                self.poster(dry_run=dry_run),
+                self.clock,
+                channel_id=self.channel_id(),
+                max_attempts=self.settings.max_publish_attempts,
+            ),
         )
 
     def rcl_reader(self) -> RclProjectReader:
@@ -329,6 +352,8 @@ class Container:
                 "amendments": self.settings.llm_amendments_model,
                 "supplement": self.settings.llm_supplement_model,
                 "joint": self.settings.llm_joint_model,
+                "consultation_review": self.settings.llm_analysis_model,
+                "act_application": self.settings.llm_analysis_model,
             },
             batch_max_wait=timedelta(hours=self.settings.llm_batch_max_wait_hours),
         )
@@ -547,6 +572,7 @@ class Container:
                 analysis=self.analysis_service(),
                 attention_enabled=self.settings.reader_attention == "on",
                 attention_assess=self.settings.reader_attention != "off",
+                delivery_attempts=self._delivery_attempts(dry_run),
             ),
         )
 
@@ -614,6 +640,7 @@ class Container:
                 senate=self.senate,
                 poster=self.poster(dry_run=dry_run),
                 deliveries=self.delivery_service(dry_run=dry_run),
+                document_reviews=self.document_reviews(dry_run=dry_run),
             ),
         )
 
@@ -632,8 +659,12 @@ class Container:
                 max_group=self.settings.attention_max_group,
                 daily_roundup=self.settings.attention_roundup == "daily",
                 daily_hour=self.settings.attention_daily_hour,
+                delivery_attempts=self._delivery_attempts(dry_run),
             ),
         )
+
+    def _delivery_attempts(self, dry_run: bool) -> set[int]:
+        return self._once(f"delivery_attempts:{dry_run}", lambda: set[int]())
 
     def delivery_service(self, *, dry_run: bool) -> DeliveryService:
         return self._once(

@@ -64,7 +64,8 @@ def test_next_step_carries_the_scheduled_committee_sitting(process_3039: Process
 
     assert (
         "⏭ <b>Что дальше:</b> I чтение в комиссии — "
-        "Komisja Administracji i Spraw Wewnętrznych (ASW) · 17 сент 2026, 09:00" in text
+        "Komisja Administracji i Spraw Wewnętrznych (ASW) · 17 сент 2026, 09:00 (по времени Варшавы)"
+        in text
     )
     assert "до заседания 17 сент 2026" in text
     assert "⏭ <b>What comes next:</b> first reading in committee — Komisja" in en
@@ -81,7 +82,7 @@ def test_a_conditionally_announced_sitting_does_not_date_the_step_as_a_fact(
     text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
     en = MessageFormatter("en").new_bill(bill, None, today=TODAY).text
 
-    assert "· 17 сент 2026, 09:00 (условно)" in text
+    assert "· 17 сент 2026, 09:00 (по времени Варшавы) (условно)" in text
     assert "(conditional)" in en
 
 
@@ -100,7 +101,7 @@ def test_committee_phase_prefers_the_committee_sitting_over_the_plenary(
 
     text = MessageFormatter("ru").new_bill(bill, None, today=TODAY).text
 
-    assert "· 17 сент 2026, 09:00" in text
+    assert "· 17 сент 2026, 09:00 (по времени Варшавы)" in text
 
 
 def test_late_phases_name_what_follows(process_1962: ProcessDetail) -> None:

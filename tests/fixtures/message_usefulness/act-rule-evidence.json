@@ -1,0 +1,18 @@
+[
+  {
+    "quote": "art. 39 pkt 24 i 27, które wchodzą w życie z dniem 1 stycznia 2025 r.",
+    "locator": "art. 39 pkt 24",
+    "date": "2025-01-01",
+    "source": "https://eli.gov.pl/api/acts/DU/2024/1222/text.html",
+    "file_sha256": "ca84d3509d8df049c79097b59806309cab60de532c3f40361db9c718b29182aa",
+    "annotation": "Manual: Art. 124 explicit exception; date only, no audience or application advice."
+  },
+  {
+    "quote": "art. 49 i art. 106, które wchodzą w życie z dniem 18 października 2024 r.",
+    "locator": "art. 49",
+    "date": "2024-10-18",
+    "source": "https://eli.gov.pl/api/acts/DU/2024/1222/text.html",
+    "file_sha256": "ca84d3509d8df049c79097b59806309cab60de532c3f40361db9c718b29182aa",
+    "annotation": "Manual: Art. 124 explicit exception; date only, no audience or application advice."
+  }
+]

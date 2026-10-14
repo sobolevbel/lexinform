@@ -98,6 +98,7 @@ from lexinform.models import (
 )
 from lexinform.pricing import cost_usd, format_tokens, format_usd
 from lexinform.publication_titles import publication_title
+from lexinform.telegram_text import split_html
 
 MESSAGE_LIMIT = 4096
 ELLIPSIS = "…"
@@ -404,13 +405,14 @@ class MessageFormatter:
                 esc(lb.category_labels.get(a.category, a.category)),
             )
         )
-        summary_block = f"{ICON['about']} <b>{esc(lb.about)}</b>\n{esc(a.summary.strip())}"
+        summary_label = lb.project_analysis_header if bill.act is not None else lb.about
+        summary_block = f"{ICON['about']} <b>{esc(summary_label)}</b>\n{esc(a.summary.strip())}"
         changes_block = ""
         if a.key_changes:
             bullets = "\n".join(f"• {esc(c.strip())}" for c in a.key_changes if c.strip())
             changes_block = f"{ICON['key_changes']} <b>{esc(lb.key_changes)}</b>\n{bullets}"
 
-        text = self._assemble(
+        text = self._reader_blocks(
             [
                 header,
                 self._intention_note(bill),
@@ -600,7 +602,7 @@ class MessageFormatter:
         tags = self._tags(primary, self._number_tag(bill))
         steps = self._steps_block(primary, today or self._today(), road=bill)
         return RenderedMessage(
-            text=self._assemble(
+            text=self._reader_blocks(
                 [header, facts],
                 flexible=[self._joint_summary(bill), self._joint_differences(bill)],
                 tail=[steps, links_block, tags],
@@ -686,7 +688,7 @@ class MessageFormatter:
         act_block = ""
         if with_act and bill.act is not None:
             act_block = f"{ICON['published']} <b>{esc(lb.act_published_header)}</b>\n" + (
-                self._act_facts(bill.act)
+                self._act_facts(bill.act, reviewed=bill.act_application_review is not None)
             )
 
         stage_lines = [f"• {self._stage_line(st, today)}" for st in told_stages(change.new_stages)]
@@ -740,7 +742,7 @@ class MessageFormatter:
 
         # The new stages are what the post is for, and stages held since the last one are listed
         # here and released against it: shrunk away, they would be marked told and never told.
-        text = self._assemble(
+        text = self._reader_blocks(
             [header, first_screen, stages_block, act_block],
             flexible=[supplements_block, amendments_block, changes_block, summary_block],
             tail=[
@@ -886,25 +888,27 @@ class MessageFormatter:
         if act is None:
             raise ValueError(f"bill {bill.number} has no act")
         header = self._header(ICON["published"], lb.act_published_header, bill, act.title)
-        facts = self._act_facts(act)
+        facts = self._act_facts(
+            act,
+            reviewed=(
+                bill.act_application_review is not None
+                and bill.act_application_review.context.act_eli == act.eli
+            ),
+        )
         # The moment a reader has to diarise the date, and the last one before the channel goes
         # quiet for the vacatio legis: without a sentence of the summary the notice was two dates
         # under a Polish act title, and the card it replies to is months up the thread.
-        summary_block = ""
-        if bill.analysis is not None:
-            summary_block = self._summary_reminder(
-                bill.analysis.analysis.summary, full=False, law=True
-            )
+        summary_block = self._reader_context(bill)
         links_block = self._links(self._act_links(bill, act))
         tags = self._tags(bill, f"#{lb.tag_published}")
-        text = self._assemble(
+        text = self._reader_blocks(
             [header, facts],
             flexible=[summary_block],
             tail=[self._action_line(bill, self._today()), links_block, tags],
         )
         return RenderedMessage(text=text)
 
-    def _act_facts(self, act: ActInfo) -> str:
+    def _act_facts(self, act: ActInfo, *, reviewed: bool = False) -> str:
         """The Dziennik Ustaw address and when the act applies."""
         lb = self._labels
         lines = [self._field(ICON["journal"], lb.journal, esc(act.display_address))]
@@ -923,7 +927,8 @@ class MessageFormatter:
                     ICON["effective"], lb.enters_into_force, self.fmt_date(act.entry_into_force)
                 )
             )
-        lines.append(f"{ICON['note']} <i>{esc(lb.partial_vacatio_note)}</i>")
+        if not reviewed:
+            lines.append(f"{ICON['note']} <i>{esc(lb.partial_vacatio_note)}</i>")
         return "\n".join(lines)
 
     def in_force(self, bill: Bill, *, today: dt.date | None = None) -> RenderedMessage:
@@ -937,25 +942,16 @@ class MessageFormatter:
         header = self._header(ICON["in_force"], label, bill, act.title)
         facts = (
             f"{ICON['journal']} {esc(act.display_address)} · {esc(lb.in_force_since)} "
-            f"{self.fmt_date(act.entry_into_force)}\n"
-            f"{ICON['note']} <i>{esc(lb.partial_vacatio_note)}</i>"
+            f"{self.fmt_date(act.entry_into_force)}"
         )
-        summary_block = ""
-        practical = ""
-        if bill.analysis is not None:
-            a = bill.analysis.analysis
-            summary_block = (
-                f"{ICON['about']} <b>{esc(lb.act_summary)}</b>\n{esc(a.summary.strip())}"
-            )
-            if a.practical_impact.strip():
-                practical = self._field(
-                    ICON["practical"], lb.practical_impact, esc(a.practical_impact.strip())
-                )
+        if bill.act_application_review is None:
+            facts += f"\n{ICON['note']} <i>{esc(lb.partial_vacatio_note)}</i>"
+        else:
+            facts += "\n\n" + self.act_application(bill, today=today).text
         links_block = self._links(self._act_links(bill, act))
         tags = self._tags(bill, f"#{lb.tag_in_force}")
-        text = self._assemble(
+        text = self._reader_blocks(
             [header, facts],
-            flexible=[summary_block, practical],
             tail=[self._action_line(bill, today or self._today()), links_block, tags],
         )
         return RenderedMessage(text=text)
@@ -984,7 +980,9 @@ class MessageFormatter:
         next_step = self._next_step_line(bill, today)
         links_block = self._links(self._consultation_links(bill, window))
         tags = self._tags(bill, f"#{lb.tag_consultations}")
-        return RenderedMessage(text=self._assemble([header, facts, next_step, links_block, tags]))
+        return RenderedMessage(
+            text=self._reader_blocks([header, facts, next_step, links_block, tags])
+        )
 
     def consultation_results(self, bill: Bill, *, today: dt.date | None = None) -> RenderedMessage:
         """Reply under the card once the Sejm publishes the opinions received."""
@@ -1009,12 +1007,110 @@ class MessageFormatter:
         steps = self._steps_block(bill, today or self._today())
         links_block = self._links(self._consultation_links(bill, window))
         tags = self._tags(bill, f"#{lb.tag_consultation_results}")
-        return RenderedMessage(text=self._assemble([header, facts, steps, links_block, tags]))
+        return RenderedMessage(text=self._reader_blocks([header, facts, steps, links_block, tags]))
+
+    def consultation_review(self, bill: Bill, *, today: dt.date | None = None) -> RenderedMessage:
+        record = bill.consultation_review
+        if record is None:
+            raise ValueError("consultation review is unavailable")
+        lb = self._labels
+        blocks = [self._reply_header(ICON["consultation"], lb.consultation_review_header, bill)]
+        for finding in record.review.consultation_findings:
+            label = lb.consultation_outcomes[finding.outcome]
+            lines = [f"<b>{esc(label)}</b> · {esc(finding.proposal)}"]
+            if finding.evidence:
+                quoted = finding.evidence.quote.rsplit("\t", 1)[-1]
+                lines.append(f"<i>“{esc(quoted)}”</i>")
+            if finding.respondent:
+                lines.append(esc(finding.respondent))
+            if finding.reason:
+                lines.append(esc(finding.reason))
+            if finding.affected_groups:
+                lines.append(esc("; ".join(finding.affected_groups)))
+            if finding.text_change:
+                lines.append(esc(finding.text_change))
+            else:
+                lines.append(esc(lb.consultation_text_unconfirmed))
+            if finding.evidence:
+                source = next(
+                    (
+                        doc
+                        for doc in record.context.documents
+                        if doc.identity == finding.evidence.document_id
+                    ),
+                    None,
+                )
+                if source is not None:
+                    lines.append(link(source.url, finding.evidence.locator))
+            blocks.append("\n".join(lines))
+        if not record.review.complete:
+            blocks.append(esc(lb.document_review_incomplete))
+        blocks.append(
+            self._links(
+                [
+                    link(doc.url, lb.document_review_source)
+                    for doc in record.context.documents
+                    if doc.role in ("response", "position")
+                ]
+            )
+        )
+        blocks.append(self._steps_block(bill, today or self._today()))
+        return RenderedMessage(text=self._reader_blocks(blocks))
+
+    def act_application(self, bill: Bill, *, today: dt.date | None = None) -> RenderedMessage:
+        record = bill.act_application_review
+        if record is None:
+            raise ValueError("act application review is unavailable")
+        lb = self._labels
+        blocks = [
+            self._header(
+                ICON["in_force"],
+                lb.act_application_header,
+                bill,
+                bill.act.title if bill.act is not None else None,
+            )
+        ]
+        for rule in record.review.effective_rules:
+            lines = [
+                f"<b>{esc(rule.locator)}</b> · {esc(rule.change)}",
+                esc("; ".join(rule.affected_groups)),
+            ]
+            if rule.date is not None:
+                lines.append(f"{esc(lb.effective_date)}: {self.fmt_date(rule.date)}")
+            else:
+                lines.append(esc(lb.rule_date_unknown))
+            lines.extend(
+                esc(value)
+                for value in (
+                    *rule.conditions,
+                    *rule.exceptions,
+                    rule.old_applications,
+                    *rule.documents,
+                )
+                if value
+            )
+            if rule.evidence:
+                source = next(
+                    (
+                        doc
+                        for doc in record.context.documents
+                        if doc.identity == rule.evidence.document_id
+                    ),
+                    None,
+                )
+                if source is not None:
+                    lines.append(link(source.url, rule.evidence.locator))
+            blocks.append("\n".join(lines))
+        if not record.review.complete:
+            blocks.append(esc(lb.document_review_incomplete))
+        blocks.append(self._action_line(bill, today or self._today()))
+        blocks.append(self._next_step_line(bill, today or self._today()))
+        if bill.act is not None:
+            blocks.append(self._links(self._act_links(bill, bill.act)))
+        return RenderedMessage(text=self._reader_blocks(blocks))
 
     def sittings(self, news: Sequence[SittingNews]) -> RenderedMessage:
         text = self._sittings_text(news)
-        if length(text) > MESSAGE_LIMIT:
-            raise ValueError("sittings exceed the message limit; split the roundup")
         return RenderedMessage(text=text)
 
     def updates(self, news: Sequence[UpdateNews], *, today: dt.date) -> str:
@@ -1211,7 +1307,7 @@ class MessageFormatter:
             links.append(link(bill.senate.url, lb.link_senate_act))
         elif senate:
             links.append(link(SENATE_BILLS_URL, lb.link_senate_bills))
-        text = self._assemble(
+        text = self._reader_blocks(
             [header, facts],
             tail=[
                 self._action_line(bill, today, when_none=False),
@@ -1251,7 +1347,7 @@ class MessageFormatter:
             links.append(link(committee_web_url(bill.term, code), lb.link_committee))
         links_block = self._links(links)
         tags = self._tags(bill, f"#{lb.tag_hearing}")
-        return RenderedMessage(text=self._assemble([header, facts, links_block, tags]))
+        return RenderedMessage(text=self._reader_blocks([header, facts, links_block, tags]))
 
     def _act_links(self, bill: Bill, act: ActInfo) -> list[str]:
         lb = self._labels
@@ -1353,6 +1449,10 @@ class MessageFormatter:
                     ("in force: {}", report.in_force_posted),
                     ("consultation reminders: {}", report.consultation_reminders),
                     ("results: {}", report.consultation_results_posted),
+                    ("consultation review messages: {}", report.consultation_reviews_posted),
+                    ("act review messages: {}", report.act_reviews_posted),
+                    ("effective-rule messages: {}", report.effective_rule_messages),
+                    ("additional physical parts: {}", report.message_parts_sent),
                     ("agenda: {}", report.agenda_posted),
                     ("sittings called off: {}", report.agenda_cancelled),
                     ("hearings: {}", report.hearing_reminders),
@@ -1633,14 +1733,15 @@ class MessageFormatter:
             for row in rows:
                 block = "\n".join(value for value in (heading if first else "", row) if value)
                 if length(current + "\n\n" + block) > MESSAGE_LIMIT:
-                    parts.append(DigestPart(text=current, event_ids=tuple(event_ids)))
+                    if current != head:
+                        parts.append(DigestPart(text=current, event_ids=tuple(event_ids)))
                     event_ids = []
                     current = head
                     block = "\n".join(value for value in (heading, row) if value)
-                assert length(current + "\n\n" + block) <= MESSAGE_LIMIT, (
-                    "one digest event must fit"
-                )
-                current += "\n\n" + block
+                chunks = split_html(block, limit=MESSAGE_LIMIT - length(head) - 2)
+                for chunk in chunks[:-1]:
+                    parts.append(DigestPart(text=head + "\n\n" + chunk))
+                current += "\n\n" + chunks[-1]
                 if not draft:
                     event_ids.extend(
                         identity for identity in ownership.get(row, ()) if identity not in covered
@@ -1702,6 +1803,9 @@ class MessageFormatter:
             PublicationKind.ACT_PUBLISHED: lb.act_published_header,
             PublicationKind.IN_FORCE: lb.in_force_header,
             PublicationKind.CONSULTATION_RESULTS: lb.consultation_results_header,
+            PublicationKind.CONSULTATION_REVIEW: lb.consultation_review_header,
+            PublicationKind.ACT_APPLICATION: lb.act_application_header,
+            PublicationKind.EFFECTIVE_RULES: lb.act_application_header,
             PublicationKind.DECISION_DEADLINE: lb.digest_organ_deadline,
         }
         said = lb.update_headers.get(entry.event) or by_kind.get(entry.kind) or lb.update_header
@@ -1879,6 +1983,16 @@ class MessageFormatter:
             ]
             if plan is not None:
                 lines.append(f"destination: {plan.destination} · {esc(plan.destination_reason)}")
+                if plan.continuation_ids:
+                    lines.append(
+                        "continuation publications: " + ", ".join(map(str, plan.continuation_ids))
+                    )
+                if plan.continuation_parent is not None:
+                    lines.append(
+                        f"physical part: {plan.continuation_index}"
+                        f" · parent publication: {plan.continuation_parent}"
+                        f" · root: {plan.continuation_root}"
+                    )
                 age = max(0, (self._today() - pub.created_at.date()).days)
                 lines.append(f"age: {age} day(s) · eligible: {plan.digest_eligible_at}")
             if outcome.digest_owner is not None:
@@ -1966,6 +2080,10 @@ class MessageFormatter:
             return self.act_published(bill).text
         if kind is PublicationKind.CONSULTATION_RESULTS:
             return self.consultation_results(bill).text
+        if kind is PublicationKind.CONSULTATION_REVIEW:
+            return self.consultation_review(bill, today=plan.today).text
+        if kind in (PublicationKind.ACT_APPLICATION, PublicationKind.EFFECTIVE_RULES):
+            return self.act_application(bill, today=plan.today).text
         if kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED) and plan.item_json:
             return self.sittings([SittingNews.of(kind, plan)]).text
         if plan.today is not None:
@@ -2022,6 +2140,18 @@ class MessageFormatter:
         return f"<b>{self._number_label(bill)}</b> · {esc(bill.status)} · " + link(
             process_web_url(bill.term, bill.number), _clip(bill.reader_name, 90)
         )
+
+    def message_parts(self, text: str) -> tuple[str, ...]:
+        if length(text) <= MESSAGE_LIMIT:
+            return (text,)
+        parts = split_html(text, limit=MESSAGE_LIMIT - 160)
+        rendered: list[str] = []
+        for index, part in enumerate(parts, start=1):
+            label = self._labels.message_part.format(
+                index=index, total=len(parts), date=self.fmt_date(self._today())
+            )
+            rendered.append(f"<i>{esc(label)}</i>\n\n{part}")
+        return tuple(rendered)
 
     def _snapshot_body(self, snapshot: StatusSnapshot) -> str:
         lines = [
@@ -2187,6 +2317,15 @@ class MessageFormatter:
         )
 
     def _reader_context(self, bill: Bill) -> str:
+        if bill.act is not None:
+            record = bill.act_application_review
+            if record is None or record.context.act_eli != bill.act.eli:
+                return esc(self._labels.document_review_incomplete)
+            return esc(
+                self._labels.act_review_ready
+                if record.review.complete
+                else self._labels.document_review_incomplete
+            )
         if bill.analysis is None:
             return ""
         a = bill.analysis.analysis
@@ -2984,7 +3123,7 @@ class MessageFormatter:
         if item.kind == "committee":
             when = self.fmt_date(item.date)
             if item.start_time:
-                when += f", {item.start_time.strftime('%H:%M')}"
+                when += f", {item.start_time.strftime('%H:%M')} {lb.calendar_timezone}"
             return esc(when)
         span = self.fmt_date(item.date)
         if item.end_date and item.end_date != item.date:
@@ -3095,6 +3234,12 @@ class MessageFormatter:
                 shown += ", …"
             rendered.append(f"{esc(label.capitalize())}: {shown}")
         return totals + "\n  " + " · ".join(rendered)
+
+    @staticmethod
+    def _reader_blocks(
+        head: Sequence[str], *, flexible: Sequence[str] = (), tail: Sequence[str] = ()
+    ) -> str:
+        return "\n\n".join(block for block in (*head, *flexible, *tail) if block)
 
     @staticmethod
     def _assemble(

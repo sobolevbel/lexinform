@@ -1,0 +1,22 @@
+[
+  {
+    "locator": "Art. 91.",
+    "quote": "Art. 91. Do postępowań w sprawie wydania, zmiany i cofnięcia pozwolenia radiowego, o którym mowa w art. 143 ust. 1 ustawy uchylanej w art. 68 ust. 1, lub zmiany warunków wykorzystywania częstotliwości, wszczętych i niezakończonych przed dniem wejścia w życie ustawy, o której mowa w art. 1, stosuje się przepisy dotychczasowe.",
+    "change": "Для незавершённых производств о радиоразрешениях применяются прежние правила.",
+    "affected_groups": [
+      "участники производств о выдаче, изменении или отзыве радиоразрешения и условиях использования частот"
+    ],
+    "conditions": [
+      "производство начато до вступления в силу закона, указанного в art. 1",
+      "производство к этому моменту не завершено"
+    ],
+    "exceptions": [],
+    "old_applications": "Применяются прежние правила; это правило о радиоразрешениях, не об иммиграционных заявлениях.",
+    "date_kind": "conditional",
+    "date": null,
+    "trigger": "вступление в силу закона, указанного в art. 1",
+    "source": "https://eli.gov.pl/api/acts/DU/2024/1222/text.html",
+    "file_sha256": "ca84d3509d8df049c79097b59806309cab60de532c3f40361db9c718b29182aa",
+    "annotation": "Manual translation of Art. 91; both pre-entry start and unfinished status are necessary. No inferred calendar date."
+  }
+]

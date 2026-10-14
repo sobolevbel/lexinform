@@ -75,6 +75,12 @@ def complete_delivery(
     plan = publication.delivery
     if plan is None:
         return
+    if plan.continuation_ids and any(
+        part is None or part.status is not PublicationStatus.SENT
+        for identity in plan.continuation_ids
+        for part in (repo.publication_by_id(identity),)
+    ):
+        return
     repo.release_planned_changes(
         plan.held_change_ids, publication.channel_id, message_id=message_id, sent_at=sent_at
     )
@@ -84,6 +90,14 @@ def complete_delivery(
             publication.id, message_id=message_id, sent_at=sent_at
         ):
             complete_delivery(repo, source, message_id=message_id, sent_at=sent_at)
+    if plan.continuation_root is not None:
+        root = repo.publication_by_id(plan.continuation_root)
+        if (
+            root is not None
+            and root.status is PublicationStatus.SENT
+            and root.message_id is not None
+        ):
+            complete_delivery(repo, root, message_id=root.message_id, sent_at=sent_at)
     if publication.kind is not PublicationKind.STATUS_UPDATE or not plan.with_act:
         return
     notice = repo.get_publication(

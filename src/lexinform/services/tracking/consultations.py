@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import Bill, Publication, PublicationKind, PublicationStatus
 from lexinform.ports import BillRepository, Clock
+from lexinform.services.document_reviews import DocumentReviews
 from lexinform.services.posting import Poster
 from lexinform.services.tracking_result import TrackingResult
 
@@ -33,6 +34,14 @@ class ConsultationReminder:
         self._channel_id = channel_id
         self._local_tz = local_tz
         self._days_before = days_before
+        self._reviews: DocumentReviews | None = None
+
+    def set_reviews(self, reviews: DocumentReviews | None) -> None:
+        self._reviews = reviews
+
+    def review_documents(self, bill: Bill, result: TrackingResult) -> None:
+        if self._reviews is not None and self._poster.card(bill) is not None:
+            self._reviews.request(bill, "consultation_review", result)
 
     def prepare_results(self, bill: Bill) -> Publication | None:
         card = self._poster.card(bill)
@@ -43,8 +52,11 @@ class ConsultationReminder:
         return self._poster.prepare_message(bill, PublicationKind.CONSULTATION_RESULTS)
 
     def results_published(self, bill: Bill, result: TrackingResult, *, publish: bool) -> bool:
+        self.review_documents(bill, result)
         publication = self.prepare_results(bill)
         if publication is None or not publish:
+            return True
+        if publication.delivery is not None and publication.delivery.destination == "digest_only":
             return True
         sent = self._poster.deliver(publication)
         result.count_post(sent, "consultation_results_posted")
