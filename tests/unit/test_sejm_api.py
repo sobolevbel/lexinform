@@ -388,6 +388,27 @@ def test_client_errors_raise_without_a_retry() -> None:
     assert calls["n"] == 1
 
 
+def test_download_accepts_binary_files_without_changing_json_requests() -> None:
+    accepts: list[tuple[str, str]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        accepts.append((request.url.path, request.headers["Accept"]))
+        if request.url.path.endswith(".pdf"):
+            if request.headers["Accept"] == "application/json":
+                return httpx.Response(406)
+            return httpx.Response(200, content=b"%PDF", headers={"Content-Type": "application/pdf"})
+        return _fixture("print_3039.json")
+
+    client = _client(handler)
+
+    client.get_print(10, "3039")
+    body = client.download("https://api.test/eli/acts/DU/2026/203/text.pdf")
+    client.get_print(10, "3039")
+
+    assert body == b"%PDF"
+    assert [accept for _, accept in accepts] == ["application/json", "*/*", "application/json"]
+
+
 def test_download_streams_and_stops_once_the_limit_is_exceeded() -> None:
     body = b"x" * 1000
     methods: list[str] = []

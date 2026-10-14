@@ -277,7 +277,7 @@ class SejmApiClient:
 
     def download(self, url: str, *, max_bytes: int | None = None) -> bytes:
         """Stream the attachment; stop as soon as `max_bytes` is exceeded."""
-        response = self._request("GET", url, stream=True)
+        response = self._request("GET", url, stream=True, headers={"Accept": "*/*"})
         try:
             return read_bounded(response.iter_bytes(), url, max_bytes)
         finally:
@@ -297,6 +297,7 @@ class SejmApiClient:
         params: dict[str, str | int] | None = None,
         allow_404: bool = False,
         stream: bool = False,
+        headers: dict[str, str] | None = None,
     ) -> httpx.Response:
         """One request with retries; `stream=True` returns before the body is read (caller
         closes the response)."""
@@ -310,7 +311,7 @@ class SejmApiClient:
                     )
             attempt += 1
             try:
-                request = self._client.build_request(method, url, params=params)
+                request = self._client.build_request(method, url, params=params, headers=headers)
                 response = self._client.send(request, stream=stream)
             except httpx.TransportError as exc:
                 if attempt > self._max_retries:
