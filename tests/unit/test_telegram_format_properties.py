@@ -92,19 +92,21 @@ SLOW = settings(max_examples=60, deadline=None, suppress_health_check=[HealthChe
 
 @SLOW
 @given(data=st.data(), today=DAY)
-def test_every_card_is_a_message_telegram_accepts(data: st.DataObject, today: dt.date) -> None:
+def test_every_card_part_is_a_message_telegram_accepts(data: st.DataObject, today: dt.date) -> None:
     bill = data.draw(bills(_process()))
+    fmt = MessageFormatter("ru", today=lambda: today)
 
-    assert_telegram_html(MessageFormatter("ru").new_bill(bill, None, today=today).text)
+    for part in fmt.message_parts(fmt.new_bill(bill, None, today=today).text):
+        assert_telegram_html(part)
 
 
 @SLOW
 @given(data=st.data(), today=DAY)
-def test_every_reply_under_a_card_is_a_message_telegram_accepts(
+def test_every_reply_part_under_a_card_is_a_message_telegram_accepts(
     data: st.DataObject, today: dt.date
 ) -> None:
     bill = data.draw(bills(_process()))
-    fmt = MessageFormatter("ru")
+    fmt = MessageFormatter("ru", today=lambda: today)
     change = StatusChange(
         term=10,
         number=bill.number,
@@ -118,16 +120,21 @@ def test_every_reply_under_a_card_is_a_message_telegram_accepts(
         kind="sejm", ref="sejm/1/x", date=today, sitting_number=1, text=data.draw(TEXT)
     )
 
-    assert_telegram_html(fmt.status_update(bill, change, today=today).text)
-    assert_telegram_html(fmt.act_published(bill.model_copy(update={"act": act()})).text)
-    assert_telegram_html(fmt.in_force(bill.model_copy(update={"act": act()}), today=today).text)
-    assert_telegram_html(fmt.sittings([SittingNews(bill=bill, item=item)]).text)
     gone = SittingNews(bill=bill, item=item, cancelled=True)
-    assert_telegram_html(fmt.sittings([gone]).text)
-    assert_telegram_html(fmt.hearing_deadline(bill, hearing, today=today).text)
+    texts = [
+        fmt.status_update(bill, change, today=today).text,
+        fmt.act_published(bill.model_copy(update={"act": act()})).text,
+        fmt.in_force(bill.model_copy(update={"act": act()}), today=today).text,
+        fmt.sittings([SittingNews(bill=bill, item=item)]).text,
+        fmt.sittings([gone]).text,
+        fmt.hearing_deadline(bill, hearing, today=today).text,
+    ]
     if bill.consultation is not None and bill.consultation.end is not None:
-        assert_telegram_html(fmt.consultation_deadline(bill, today=today).text)
-        assert_telegram_html(fmt.consultation_results(bill, today=today).text)
+        texts.append(fmt.consultation_deadline(bill, today=today).text)
+        texts.append(fmt.consultation_results(bill, today=today).text)
+    for text in texts:
+        for part in fmt.message_parts(text):
+            assert_telegram_html(part)
 
 
 @SLOW
