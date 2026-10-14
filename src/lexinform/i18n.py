@@ -480,8 +480,11 @@ RU = Labels(
     previous_name="Прежнее имя: {}",
     norm_states={
         "passed": "Принят Сеймом",
+        "passed_dated": "Принят Сеймом {date}",
         "published": "Опубликован",
+        "published_dated": "Опубликован {date}",
         "in_force": "Действует",
+        "in_force_dated": "Действует с {date}",
         "ended": "Процесс завершён",
     },
     version_changes="Изменения между версиями проекта",
@@ -1223,8 +1226,11 @@ EN = Labels(
     previous_name="Previously: {}",
     norm_states={
         "passed": "Passed by the Sejm",
+        "passed_dated": "Passed by the Sejm on {date}",
         "published": "Published",
+        "published_dated": "Published on {date}",
         "in_force": "In force",
+        "in_force_dated": "In force since {date}",
         "ended": "Process ended",
     },
     version_changes="Changes between draft versions",

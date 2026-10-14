@@ -2366,9 +2366,10 @@ class MessageFormatter:
         states = self._labels.norm_states
         if bill.act is not None:
             day = bill.act.entry_into_force
-            if day is not None:
-                label = states["in_force"] if day <= today else states["published"]
-                return f"{label} · {self.fmt_date(day)}"
+            if day is not None and day <= today:
+                return states["in_force_dated"].format(date=self.fmt_date(day))
+            if published := bill.act.promulgation_date:
+                return states["published_dated"].format(date=self.fmt_date(published))
             return states["published"]
         if is_over(bill, today=today):
             return states["ended"]
@@ -2377,7 +2378,14 @@ class MessageFormatter:
         )
         if evidence.state is DecisionState.UNKNOWN:
             return self._labels.update_headers["decision_unknown"]
-        return states["passed"] if evidence.reading is ReadingOutcome.PASSED else ""
+        if evidence.reading is ReadingOutcome.PASSED:
+            day = (evidence.stage.date if evidence.stage is not None else None) or (
+                bill.summary.closure_date
+            )
+            if day is not None:
+                return states["passed_dated"].format(date=self.fmt_date(day))
+            return states["passed"]
+        return ""
 
     @staticmethod
     def _field(icon: str, label: str, value: str) -> str:
