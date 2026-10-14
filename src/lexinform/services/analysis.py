@@ -245,6 +245,7 @@ class AnalysisOptions:
     require_batch: bool = False
     batch_sync_within_days: int = 0
     batch_kinds: frozenset[BatchKind] = frozenset({"analysis", "reanalysis"})
+    consultation_reviews_enabled: bool = False
     batch_models: dict[BatchKind, str] = field(default_factory=dict)
     batch_max_wait: timedelta = timedelta(hours=6)
     change_review_max_ratio: float = 0.15
@@ -459,10 +460,13 @@ class AnalysisService:
         committed = sum(batch.estimated_cost_usd for batch in self._repo.list_open_llm_batches())
         committed += sum(
             intent.request.estimated_cost_usd
-            for intent in [
-                *self._repo.list_queued_batch_intents(),
-                *self._repo.list_submitting_batch_intents(),
-            ]
+            for intent in self._repo.list_queued_batch_intents()
+            if intent.request.question.kind != "consultation_review"
+            or self._options.consultation_reviews_enabled
+        )
+        committed += sum(
+            intent.request.estimated_cost_usd
+            for intent in self._repo.list_submitting_batch_intents()
         )
         self._ledger.start_run(reserved_usd=committed)
         self._accounted_items.clear()
@@ -656,6 +660,10 @@ class AnalysisService:
             i
             for i in intents
             if i.request.question.kind != "act_application"
+            and (
+                i.request.question.kind != "consultation_review"
+                or self._options.consultation_reviews_enabled
+            )
             and (
                 self._options.require_batch
                 or (self._submits_batches and i.request.question.kind in self._options.batch_kinds)
@@ -1248,7 +1256,11 @@ class AnalysisService:
                 return
 
     def review_enabled(self, purpose: ReviewPurpose) -> bool:
-        return purpose != "act_application" and purpose in self._options.batch_kinds
+        return (
+            purpose == "consultation_review"
+            and self._options.consultation_reviews_enabled
+            and purpose in self._options.batch_kinds
+        )
 
     def review_context(
         self,
@@ -1311,6 +1323,11 @@ class AnalysisService:
     ) -> DocumentReviewRecord | Waiting:
         if context.number != bill.number:
             raise ValueError("document review context belongs to a different bill")
+        if (
+            context.purpose == "consultation_review"
+            and not self._options.consultation_reviews_enabled
+        ):
+            return Waiting(self._clock.now())
         key = context.memo_key(bill.term)
         retained = (
             bill.consultation_review

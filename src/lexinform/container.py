@@ -348,6 +348,7 @@ class Container:
             submit_batches=self.settings.llm_batch_enabled,
             batch_sync_within_days=self.settings.llm_batch_sync_within_days,
             batch_kinds=self.settings.llm_batch_kinds,
+            consultation_reviews_enabled=self.settings.consultation_reviews_enabled,
             batch_models={
                 "amendments": self.settings.llm_amendments_model,
                 "supplement": self.settings.llm_supplement_model,
@@ -660,6 +661,7 @@ class Container:
                 daily_roundup=self.settings.attention_roundup == "daily",
                 daily_hour=self.settings.attention_daily_hour,
                 delivery_attempts=self._delivery_attempts(dry_run),
+                consultation_reviews_enabled=self.settings.consultation_reviews_enabled,
             ),
         )
 

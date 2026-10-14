@@ -48,6 +48,8 @@ class DeliveryService:
         for publication in self._repo.list_due_deliveries(
             self._channel_id, max_attempts=self._max_attempts
         ):
+            if self._poster.delivery_paused(publication):
+                continue
             if publication.kind in (
                 PublicationKind.NEW_BILL,
                 PublicationKind.JOINT_BILL,

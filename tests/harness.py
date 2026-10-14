@@ -313,6 +313,7 @@ class World:
         batch: bool = False,
         batch_kinds: frozenset[BatchKind] = frozenset({"analysis", "reanalysis"}),
         batch_max_wait_hours: float = 6,
+        consultation_reviews_enabled: bool = False,
         batch_script: dict[str, Analysis | Exception] | None = None,
         observe_unthreaded: bool = True,
         reader_attention: Literal["off", "shadow", "on"] = "shadow",
@@ -385,6 +386,7 @@ class World:
             llm_concurrency=workers,
             llm_batch_enabled=batch,
             llm_batch_kinds=batch_kinds,
+            consultation_reviews_enabled=consultation_reviews_enabled,
             llm_batch_max_wait_hours=batch_max_wait_hours,
             observe_unthreaded=observe_unthreaded,
         )

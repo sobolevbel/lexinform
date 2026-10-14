@@ -170,7 +170,12 @@ def test_relative_day_is_computed_only_from_confirmed_final_act_and_origin() -> 
 def test_review_batch_survives_restore_unknown_submission_and_preserves_bill_status(
     workers: int,
 ) -> None:
-    w = World(batch=True, workers=workers, batch_kinds=frozenset({"consultation_review"}))
+    w = World(
+        batch=True,
+        workers=workers,
+        batch_kinds=frozenset({"consultation_review"}),
+        consultation_reviews_enabled=True,
+    )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
     before = w.bill("3039").status
@@ -337,6 +342,7 @@ def test_review_cost_guard_never_creates_a_synchronous_fallback(
         batch_kinds=frozenset({"consultation_review"}),
         max_bill_cost_usd=limit,
         max_run_cost_usd=15.0,
+        consultation_reviews_enabled=True,
     )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
@@ -359,7 +365,12 @@ def test_review_cost_guard_never_creates_a_synchronous_fallback(
 
 
 def test_review_reports_the_run_limit_when_reservation_fails() -> None:
-    w = World(batch=True, max_bill_cost_usd=2.0, max_run_cost_usd=0.01)
+    w = World(
+        batch=True,
+        max_bill_cost_usd=2.0,
+        max_run_cost_usd=0.01,
+        consultation_reviews_enabled=True,
+    )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
     w.analysis.start_run()
@@ -534,7 +545,11 @@ def test_receipt_or_a_proposal_is_not_a_confirmed_acceptance(quote: str) -> None
 
 
 def test_retained_review_reuses_content_even_after_generic_memo_retention() -> None:
-    w = World(batch=True, batch_kinds=frozenset({"consultation_review"}))
+    w = World(
+        batch=True,
+        batch_kinds=frozenset({"consultation_review"}),
+        consultation_reviews_enabled=True,
+    )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
     ctx = context()
@@ -560,7 +575,11 @@ def test_government_review_identity_survives_term_rollover_without_crossing_prin
 
 
 def test_review_context_cannot_cross_bill_identity() -> None:
-    w = World(batch=True, batch_kinds=frozenset({"consultation_review"}))
+    w = World(
+        batch=True,
+        batch_kinds=frozenset({"consultation_review"}),
+        consultation_reviews_enabled=True,
+    )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
     with pytest.raises(ValueError, match="different bill"):

@@ -267,7 +267,7 @@ def test_failed_opinions_notice_is_retried_on_the_next_run() -> None:
 
 
 def test_published_opinions_are_announced_once() -> None:
-    w = World()
+    w = World(consultation_reviews_enabled=False, batch_kinds=frozenset({"consultation_review"}))
     project = _followed_project(w)
     with_positions = tuple(
         rcl_folder(

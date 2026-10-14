@@ -152,6 +152,11 @@ class Settings(BaseSettings):
     llm_batch_kinds: Annotated[frozenset[BatchKind], NoDecode] = frozenset(
         {"analysis", "reanalysis", "joint", "supplement", "amendments"}
     )
+    consultation_reviews_enabled: bool = Field(
+        default=False,
+        description="Enable analysis and delivery of consultation document reviews; disabled"
+        " while corpus quality checks are pending. Existing work and results are retained.",
+    )
     llm_batch_max_wait_hours: float = Field(
         default=6, gt=0, description="Legacy setting; waiting never enables synchronous calls."
     )

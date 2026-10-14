@@ -110,6 +110,7 @@ class Poster:
         daily_roundup: bool = False,
         daily_hour: int = 18,
         delivery_attempts: set[int] | None = None,
+        consultation_reviews_enabled: bool = False,
     ) -> None:
         self._repo = repo
         self._publisher = publisher
@@ -126,6 +127,7 @@ class Poster:
         self._counted: set[int] = set()
         self._told_windows: dict[tuple[int, str, str, date], tuple[int, int]] = {}
         self._attempted = delivery_attempts if delivery_attempts is not None else set[int]()
+        self._consultation_reviews_enabled = consultation_reviews_enabled
         self._sittings: dict[int, Publication] = {}
         self._updates: dict[int, Publication] = {}
 
@@ -1184,10 +1186,22 @@ class Poster:
         )
         return self.deliver(pub)
 
+    def delivery_paused(self, pub: Publication) -> bool:
+        if self._consultation_reviews_enabled:
+            return False
+        root = (
+            self._repo.publication_by_id(pub.delivery.continuation_root)
+            if pub.delivery is not None and pub.delivery.continuation_root is not None
+            else pub
+        )
+        return root is not None and root.kind is PublicationKind.CONSULTATION_REVIEW
+
     def deliver(self, pub: Publication) -> bool:
         if pub.status is PublicationStatus.SENT:
             return True
         if pub.status not in (PublicationStatus.QUEUED, PublicationStatus.FAILED):
+            return False
+        if self.delivery_paused(pub):
             return False
         root = (
             self._repo.publication_by_id(pub.delivery.continuation_root)

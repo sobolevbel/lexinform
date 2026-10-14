@@ -91,11 +91,9 @@ class DocumentReviews:
     def advance(self, result: TrackingResult, *, publish: bool) -> None:
         for bill in self._repo.list_review_work():
             for work in bill.review_work:
-                if work.purpose == "act_application":
+                if not self._analysis.review_enabled(work.purpose):
                     continue
                 try:
-                    if not self._analysis.review_enabled(work.purpose) and work.context is None:
-                        continue
                     if (
                         work.checked_at
                         and work.context is None
@@ -160,6 +158,8 @@ class DocumentReviews:
                 PublicationKind.ACT_APPLICATION,
                 PublicationKind.EFFECTIVE_RULES,
             ):
+                continue
+            if self._poster.delivery_paused(pub):
                 continue
             try:
                 sent = self._poster.deliver(pub)
