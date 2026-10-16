@@ -986,6 +986,7 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
         "ux_pub_joint",  # v12
         "ux_pub_decision",  # v17
         "ux_pub_agenda_cancelled",  # v19
+        "ux_pub_amendments_revision",
     } <= indexes
     with sqlite3.connect(tmp_path / "current.db") as conn:
         changes = {r[1] for r in conn.execute("PRAGMA table_info(status_changes)")}
@@ -1349,6 +1350,7 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("ALTER TABLE bills DROP COLUMN review_work_json")
         conn.execute("DROP INDEX ux_pub_review")
         conn.execute("DROP INDEX ux_pub_message_part")
+        conn.execute("DROP INDEX ux_pub_amendments_revision")
         conn.execute("DROP TABLE effective_rule_links")
         conn.execute("DROP TABLE source_checks")
         conn.execute("DROP TABLE delivery_alerts")

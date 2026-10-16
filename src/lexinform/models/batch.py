@@ -17,6 +17,7 @@ from lexinform.models.analysis import (
 )
 from lexinform.models.bill import LocatedText
 from lexinform.models.enums import SourceKind, TextSource
+from lexinform.models.observations import DeliveryPlan
 from lexinform.models.report import CallKind
 from lexinform.models.reviews import DocumentReview, ReviewContext
 
@@ -192,6 +193,13 @@ class BatchJob(BaseModel):
     submissions: int = 0
 
 
+class AmendmentRevisionTarget(BaseModel):
+    publication_id: int
+    channel_id: str
+    source_url: str
+    delivery: DeliveryPlan
+
+
 class DigestItemMeta(BaseModel):
     queued_at: dt.datetime | None = None
     memo_key: str
@@ -201,6 +209,7 @@ class DigestItemMeta(BaseModel):
     title: str = ""
     compared_with: list[str] = Field(default_factory=list)
     review_context: ReviewContext | None = None
+    amendment_revision: AmendmentRevisionTarget | None = None
 
 
 def batch_item_meta(kind: str, raw: str) -> BatchItemMeta | DigestItemMeta:

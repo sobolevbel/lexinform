@@ -117,6 +117,8 @@ COMMAND_HELP = (
     "• <code>/preview BILL [to=CHAT]</code> — the card as the channel would get it, rendered"
     " here only, or sent to a test chat\n"
     "• <code>/refresh BILL</code> — check this bill now: stages, act, sittings, its card\n"
+    "• <code>/amendments BILL [publication=ID] [force]</code> — повторно разобрать поправки"
+    " через batch и обновить прежнее сообщение\n"
     "• <code>/skip BILL</code> — silence a false positive (no analysis, no card)\n"
     "• <code>/unskip BILL</code> — restore saved analysis, or queue if none exists\n"
     "• <code>/reset BILL [to=STATUS]</code> — any status with a clean budget of attempts"
@@ -1458,6 +1460,7 @@ class MessageFormatter:
                     ("consultation review messages: {}", report.consultation_reviews_posted),
                     ("act review messages: {}", report.act_reviews_posted),
                     ("effective-rule messages: {}", report.effective_rule_messages),
+                    ("amendment messages updated: {}", report.amendment_messages_updated),
                     ("additional physical parts: {}", report.message_parts_sent),
                     ("agenda: {}", report.agenda_posted),
                     ("sittings called off: {}", report.agenda_cancelled),
@@ -2074,7 +2077,10 @@ class MessageFormatter:
             return self.new_bill(bill, info, today=plan.today).text
         if kind is PublicationKind.JOINT_BILL and plan.primary_json:
             return self.joint_bill(bill, Bill.model_validate_json(plan.primary_json), info).text
-        if kind is PublicationKind.STATUS_UPDATE and plan.change_json:
+        if (
+            kind in (PublicationKind.STATUS_UPDATE, PublicationKind.AMENDMENTS_REVISION)
+            and plan.change_json
+        ):
             change = StatusChange.model_validate_json(plan.change_json)
             return self.status_update(
                 bill,

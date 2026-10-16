@@ -196,6 +196,7 @@ class CommandName(StrEnum):
     FORGET = "forget"
     PREVIEW = "preview"
     REFRESH = "refresh"
+    AMENDMENTS = "amendments"
     FIND = "find"
     RUNS = "runs"
     COST = "cost"
@@ -219,6 +220,7 @@ NEEDS_REFERENCE = frozenset(
         CommandName.FORGET,
         CommandName.PREVIEW,
         CommandName.REFRESH,
+        CommandName.AMENDMENTS,
     }
 )
 NEEDS_QUERY = frozenset({CommandName.FIND})
@@ -321,6 +323,10 @@ OPTIONS: dict[CommandName, dict[str, Option]] = {
         "json": Option("json"),
     },
     CommandName.PREVIEW: {"to": Option("to", OptionKind.CHAT)},
+    CommandName.AMENDMENTS: {
+        "publication": Option("publication", OptionKind.COUNT, low=1),
+        "force": Option("force"),
+    },
     CommandName.RESET: {"to": Option("to", OptionKind.STATUS)},
     CommandName.OBSERVE: {"mode": Option("mode", OptionKind.OBSERVATION)},
     CommandName.RUNS: {"days": _DAYS, "all": Option("all")},

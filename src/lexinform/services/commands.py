@@ -44,6 +44,7 @@ from lexinform.models import (
 from lexinform.models.source_checks import observation_label, operator_observation
 from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier, Publisher
 from lexinform.pricing import cost_usd
+from lexinform.services.amendments import AmendmentsService
 from lexinform.services.analysis import AnalysisService, TooExpensiveError, Waiting
 from lexinform.services.digest import DigestResult, DigestService
 from lexinform.services.joint import primary_of
@@ -151,6 +152,7 @@ class CommandService:
         *,
         text_prefilter: TextPrefilterService | None = None,
         tracking: StatusTrackingService | None = None,
+        amendments: AmendmentsService | None = None,
         digest: DigestService | None = None,
         publisher_for: Callable[[str], Publisher] | None = None,
         status_days: int = 7,
@@ -167,6 +169,7 @@ class CommandService:
         self._language = language
         self._text_prefilter = text_prefilter
         self._tracking = tracking
+        self._amendments = amendments
         self._digest = digest
         self._publisher_for = publisher_for
         self._status_days = status_days
@@ -373,6 +376,15 @@ class CommandService:
             return CommandOutcome(
                 status=OutcomeStatus.NOT_FOUND,
                 note=f"{command.ref.label} is not in the database; /analyze fetches it",
+            )
+        if command.name is CommandName.AMENDMENTS:
+            if self._amendments is None:
+                return CommandOutcome(status=OutcomeStatus.ERROR, note="amendments service is off")
+            bill = self._lookup.continuation(bill_or_none)
+            return self._amendments.request(
+                bill,
+                publication_id=command.count("publication", 0) or None,
+                force_id=str(incoming.update_id) if command.force else "",
             )
         if command.name in (CommandName.SHOW, CommandName.REFRESH):
             return self._inspect(

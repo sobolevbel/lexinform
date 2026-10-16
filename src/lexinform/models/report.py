@@ -136,6 +136,7 @@ class RunReport(BaseModel):
     consultation_reviews_posted: int = 0
     act_reviews_posted: int = 0
     effective_rule_messages: int = 0
+    amendment_messages_updated: int = 0
     message_parts_sent: int = 0
     agenda_posted: int = 0
     agenda_cancelled: int = 0

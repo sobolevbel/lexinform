@@ -35,6 +35,7 @@ from lexinform.models.analysis import (
 )
 from lexinform.models.attention import AttentionAssessment as AttentionAssessment
 from lexinform.models.batch import (
+    AmendmentRevisionTarget,
     AmendmentsQuestion,
     AnalysisQuestion,
     BatchAnswer,
@@ -324,6 +325,7 @@ from lexinform.models.wykaz import (
 )
 
 __all__ = [
+    "AmendmentRevisionTarget",
     "ConsultationFinding",
     "DocumentReview",
     "DocumentReviewRecord",

@@ -849,6 +849,7 @@ class FakePublisher(RenderingPublisher):
         # Telegram can answer a post and be gone by the time the card is edited.
         self.decision_deadlines: list[tuple[Bill, Phase, int | None, date]] = []
         self.outage_on_edit: set[str] = set()
+        self.unknown_on_edit: set[str] = set()
         self._next_id = 100
 
     def _refuse(self, number: str) -> None:
@@ -882,6 +883,8 @@ class FakePublisher(RenderingPublisher):
     def _edit(self, message: Outgoing, *, message_id: int) -> None:
         if message.number in self.outage_on_edit:
             raise TelegramUnavailableError("editMessageText: ConnectError after 3 attempts")
+        if message.number in self.unknown_on_edit:
+            raise DeliveryUncertainError("editMessageText: timed out after edit")
         self._send(message.number)
         self.edited.append((message, message_id))
 

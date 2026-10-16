@@ -45,6 +45,9 @@ analysis of a changed text or a filed document.
 /preview 3039 to=-1001234567  …and sent to that chat instead (a test channel, or @name)
 /refresh 3039                 check this bill now: stages, act, sittings, its card — what the
                               next scheduled run would have found
+/amendments 1929              разобрать поправки заново через batch и обновить прежнее сообщение
+/amendments 1929 publication=136  выбрать конкретную публикацию с поправками
+/amendments 1929 force        запросить новый разбор после завершённого исправления
 /skip 3039                    silence a false positive: no analysis, no card (the card stays)
 /unskip 3039                  restore saved analysis; queue analysis only if none exists
 /reset 3039 to=skipped_cost   any status at all, with a clean budget of attempts
@@ -56,7 +59,7 @@ analysis of a changed text or a filed document.
 /forget 3039                  drop the card the channel remembers, post nothing (deleted by hand)
 ```
 
-`/show` and `/refresh` follow stored `linked` entries to the bill that continues them,
+`/show`, `/refresh` and `/amendments` follow stored `linked` entries to the bill that continues them,
 including a chain from wykaz through RCL to a Sejm print. The reply names that transition;
 `/refresh` checks the continuing bill and uses its existing card. A missing or cyclic link
 returns an error instead of presenting the old entry as the current legislative stage.
@@ -529,6 +532,39 @@ HTML, состав и ownership; dismiss не считается чтением.
 они не показываются в техотчёте и не вызывают повторных уведомлений. Публиковать
 дайджест необязательно; ожидание редакторского решения не считается проблемой доставки.
 Ожидание уже одобренных физических частей остаётся видимым в отчётах.
+
+## Повторный разбор опубликованных поправок
+
+`/amendments BILL` выбирает последнее отправленное сообщение со стадией поправок
+Сената или отчётом комиссии о поправках. `publication=ID` указывает ID из таблицы
+`publications`, который показывает `/delivery`, а не Telegram message ID и не номер druku.
+Для ошибочного разбора druku 1929 это `/amendments 1929 publication=136`.
+CLI: `lexinform amendments 1929 --publication 136`; для нового запроса после успеха — `--force`.
+
+Команда заново выбирает источник для исторической стадии, в том числе именованный
+DOCX постановления Сената. Контекст сравнения берётся из сохранённого снимка
+исходного сообщения. Поздние стадии и новый анализ законопроекта не подмешиваются.
+Нечитаемый или распознанный как скан источник отклоняется без публикации пустого разбора.
+
+Запрос всегда идёт через batch. Его метаданные сохраняют ID исходной публикации,
+адрес источника и снимок для редактирования. После получения ответа создаётся
+отдельная доставка `amendments_revision`; она редактирует тот же Telegram message ID.
+Исходные `status_changes`, публикация и обработанное наблюдение остаются историей.
+Снимки исправлений сохраняются при retention. Счётчик `amendment_messages_updated`
+означает отредактированные сообщения; продолжения учитываются отдельно.
+
+Повтор команды при queued/submitting/open batch не создаёт второй запрос, даже с `force`.
+После успеха прежний результат используется повторно, пока текст и контекст прежние;
+`force` явно запрашивает новый разбор. При failed/pending/unknown доставке команда
+показывает существующий `/delivery ID` и не меняет его payload. Ошибка batch сохраняется
+в результатах; повтор команды допускает ещё одну batch-попытку, после двух ошибок
+потребуется `force`. Неопределённая отправка провайдеру никогда не повторяется автоматически.
+
+Legacy-сообщения без снимка, общие подборки, дайджесты и уже состоящие из нескольких
+физических частей сообщения этой командой не редактируются. Если исправленный текст
+одиночного сообщения длиннее лимита Telegram, продолжения замораживаются перед
+редактированием и ждут его подтверждения. Новый `force` для такого multipart-исправления
+отклоняется. `/analyze force`, `/refresh` и `/republish` не заменяют эту операцию.
 
 ## Разбор документов и физические продолжения
 

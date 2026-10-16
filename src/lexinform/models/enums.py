@@ -95,6 +95,7 @@ class PublicationKind(StrEnum):
 
     NEW_BILL = "new_bill"
     STATUS_UPDATE = "status_update"
+    AMENDMENTS_REVISION = "amendments_revision"
     ACT_PUBLISHED = "act_published"
     IN_FORCE = "in_force"
     CONSULTATION_DEADLINE = "consultation_deadline"

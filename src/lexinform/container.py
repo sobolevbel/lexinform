@@ -61,6 +61,7 @@ from lexinform.ports import (
 )
 from lexinform.pricing import input_limit_of, price_of
 from lexinform.sections import TextBudget
+from lexinform.services.amendments import AmendmentsService
 from lexinform.services.analysis import AnalysisOptions, AnalysisService
 from lexinform.services.commands import CommandService
 from lexinform.services.delivery import DeliveryService
@@ -547,6 +548,7 @@ class Container:
                 self.clock,
                 text_prefilter=self.text_prefilter_service(),
                 tracking=self.tracking_service(dry_run=dry_run),
+                amendments=self.amendments_service(),
                 digest=self.digest_service(dry_run=dry_run),
                 publisher_for=lambda chat: self.publisher_for(chat, dry_run=dry_run),
                 language=self.settings.output_language,
@@ -559,6 +561,17 @@ class Container:
         if dry_run or self.publisher_override is not None:
             return self.publisher(dry_run=dry_run)
         return self.telegram_publisher(channel_id=channel_id)
+
+    def amendments_service(self) -> AmendmentsService:
+        return self._once(
+            "amendments",
+            lambda: AmendmentsService(
+                self.repo,
+                self.gateway,
+                self.analysis_service(),
+                channel_id=self.channel_id(),
+            ),
+        )
 
     def publishing_service(self, *, dry_run: bool) -> PublishingService:
         return self._once(

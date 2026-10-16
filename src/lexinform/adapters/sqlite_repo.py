@@ -470,6 +470,10 @@ MIGRATIONS: tuple[str, ...] = (
       AND last_error LIKE 'text prefilter: OrkaUnreachableError:%: HTTP 404'
       AND analysis_json IS NULL AND linked_number IS NULL AND discontinued_at IS NULL;
     """,
+    """
+    CREATE UNIQUE INDEX ux_pub_amendments_revision ON publications(channel_id, kind, ref)
+      WHERE kind = 'amendments_revision';
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -988,6 +992,14 @@ class SqliteBillRepository:
             (change_id, channel_id),
         ).fetchone()
         return self._row_to_publication(row) if row is not None else None
+
+    def list_amendment_revisions(self, publication_id: int) -> list[Publication]:
+        rows = self._conn.execute(
+            "SELECT * FROM publications WHERE kind = 'amendments_revision'"
+            " AND json_extract(delivery_json, '$.revision_of') = ? ORDER BY id DESC",
+            (publication_id,),
+        ).fetchall()
+        return [self._row_to_publication(row) for row in rows]
 
     def list_deferred_updates(self, channel_id: str) -> list[Publication]:
         """Only never-attempted, unowned individual updates can be absorbed by analysis."""
@@ -2692,6 +2704,7 @@ class SqliteBillRepository:
         with self.atomic():
             publications = self._conn.execute(
                 "UPDATE publications SET delivery_json = NULL WHERE status = 'sent'"
+                " AND kind != 'amendments_revision'"
                 " AND sent_at < ? AND delivery_json IS NOT NULL"
                 " AND NOT EXISTS (SELECT 1"
                 " FROM json_each(publications.delivery_json, '$.digest_parts') part"

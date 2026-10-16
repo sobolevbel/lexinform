@@ -43,6 +43,7 @@ class DeliveryService:
             PublicationKind.CONSULTATION_REVIEW: "consultation_reviews_posted",
             PublicationKind.ACT_APPLICATION: "act_reviews_posted",
             PublicationKind.EFFECTIVE_RULES: "effective_rule_messages",
+            PublicationKind.AMENDMENTS_REVISION: "amendment_messages_updated",
             PublicationKind.CONSULTATION_DEADLINE: "consultation_reminders",
         }
         for publication in self._repo.list_due_deliveries(

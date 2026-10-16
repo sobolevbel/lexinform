@@ -33,6 +33,7 @@ from lexinform.models import (
     AMENDMENT_SOURCES,
     FULL_TEXT_SOURCES,
     SUPPLEMENT_SOURCES,
+    AmendmentRevisionTarget,
     Amendments,
     AmendmentsContext,
     AmendmentsRecord,
@@ -64,12 +65,16 @@ from lexinform.models import (
     LlmCall,
     LocatedText,
     ProcessSummary,
+    Publication,
+    PublicationKind,
+    PublicationStatus,
     ReadyAnalysis,
     ReviewContext,
     ReviewDocument,
     ReviewPurpose,
     ReviewSource,
     ScannedDocument,
+    StatusChange,
     SupplementContext,
     SupplementRecord,
     TextDocument,
@@ -666,6 +671,7 @@ class AnalysisService:
             )
             and (
                 self._options.require_batch
+                or (isinstance(i.meta, DigestItemMeta) and i.meta.amendment_revision is not None)
                 or (self._submits_batches and i.request.question.kind in self._options.batch_kinds)
                 or (isinstance(i.meta, BatchItemMeta) and i.meta.overflow)
             )
@@ -876,6 +882,8 @@ class AnalysisService:
             result = result.model_copy(update={"error": "batch answer does not match call kind"})
         with self._repo.atomic():
             if record is not None:
+                if isinstance(record, AmendmentsRecord) and meta.amendment_revision is not None:
+                    self._queue_amendment_revision(item, meta.amendment_revision, record)
                 self._repo.save_analysis_memo(
                     meta.memo_key,
                     record.model_dump_json(),
@@ -899,6 +907,136 @@ class AnalysisService:
             self._memo.setdefault(meta.memo_key, record.model_dump_json())
             if meta.delivery_key:
                 self._memo[meta.delivery_key] = record.model_dump_json()
+
+    def _queue_amendment_revision(
+        self, item: LlmBatchItem, target: AmendmentRevisionTarget, record: AmendmentsRecord
+    ) -> None:
+        original = self._repo.publication_by_id(target.publication_id)
+        if (
+            original is None
+            or original.status is not PublicationStatus.SENT
+            or original.message_id != target.delivery.edit_message_id
+            or original.channel_id != target.channel_id
+            or (original.term, original.number) != (item.term, item.number)
+        ):
+            raise ValueError("The original amendment message no longer matches its saved target")
+        ref = f"amendments/{target.publication_id}/{item.custom_id}"
+        if (
+            self._repo.get_publication(
+                item.term,
+                item.number,
+                PublicationKind.AMENDMENTS_REVISION,
+                target.channel_id,
+                ref=ref,
+            )
+            is not None
+        ):
+            return
+        record.source_url = target.source_url
+        change = StatusChange.model_validate_json(target.delivery.change_json)
+        change.amendments = record
+        delivery = target.delivery.model_copy(update={"change_json": change.model_dump_json()})
+        self._repo.create_publication(
+            Publication(
+                term=item.term,
+                number=item.number,
+                kind=PublicationKind.AMENDMENTS_REVISION,
+                status=PublicationStatus.QUEUED,
+                channel_id=target.channel_id,
+                ref=ref,
+                created_at=self._clock.now(),
+                delivery=delivery,
+            )
+        )
+
+    def revise_amendments(
+        self,
+        bill: Bill,
+        document: TextDocument,
+        target: AmendmentRevisionTarget,
+        *,
+        proposal: str | None = None,
+        force_id: str = "",
+    ) -> Waiting | Publication:
+        assert bill.analysis is not None
+        loaded = self._load_text(document, trim=False)
+        if not loaded.text.strip() or loaded.scan is not None:
+            raise ValueError("Полный текст поправок не извлечён; исправление не запущено")
+        if self._too_expensive_to_digest(loaded):
+            raise ValueError("Разбор поправок превышает лимит стоимости документа")
+        context = AmendmentsContext(
+            number=bill.number,
+            title=bill.summary.title,
+            source_kind=document.kind,
+            text=loaded.text,
+            truncated=loaded.truncated,
+            previous_summary=bill.analysis.analysis.summary,
+            previous_key_changes=list(bill.analysis.analysis.key_changes),
+            proposal=proposal,
+        )
+        content_key = _memo_key(bill, "amendments", context)
+        revisions = self._repo.list_amendment_revisions(target.publication_id)
+        latest = revisions[0] if revisions else None
+        if (
+            not force_id
+            and latest is not None
+            and latest.delivery is not None
+            and latest.delivery.amendment_key == content_key
+        ):
+            return latest
+        generation = force_id or f"after/{latest.id if latest else 0}"
+        key = hashlib.sha256(
+            f"amendments-revision/{target.publication_id}/{content_key}/{generation}".encode()
+        ).hexdigest()
+        ref = f"amendments/{target.publication_id}/{key}"
+        existing = self._repo.get_publication(
+            bill.term, bill.number, PublicationKind.AMENDMENTS_REVISION, target.channel_id, ref=ref
+        )
+        if existing is not None:
+            return existing
+        job = self._repo.batch_job(key)
+        if job is not None:
+            if job.state != "failed":
+                return Waiting(job.since)
+            if job.submissions >= SECONDARY_BATCH_SUBMISSIONS:
+                raise ValueError("Batch разбора поправок не удался дважды; используйте force")
+        model = self._options.batch_models.get("amendments", "")
+        provider = provider_of(model)
+        backend = self._batch_resolver(provider) if self._batch_resolver else self._batch
+        if not model or backend is None:
+            raise LlmUnavailableError("batch backend is unavailable for amendments")
+        request = backend.prepare_request(
+            BatchRequest(
+                custom_id=key,
+                term=bill.term,
+                number=bill.number,
+                question=AmendmentsQuestion(ctx=context),
+                model=model,
+            )
+        )
+        if not self._ledger.reserve(request.estimated_cost_usd):
+            raise ValueError("Бюджет прогона исчерпан; повторите команду в следующем прогоне")
+        delivery = target.delivery.model_copy(update={"amendment_key": content_key})
+        now = self._clock.now()
+        try:
+            self._repo.save_batch_intent(
+                BatchIntent(
+                    request=request,
+                    provider=provider,
+                    created_at=now,
+                    meta=DigestItemMeta(
+                        memo_key=key,
+                        queued_at=now,
+                        prompt_version=request.prompt_version,
+                        source_kind=document.kind,
+                        amendment_revision=target.model_copy(update={"delivery": delivery}),
+                    ),
+                )
+            )
+        except Exception:
+            self._ledger.release(request.estimated_cost_usd)
+            raise
+        return Waiting(now)
 
     def _consume_current(
         self, item: LlmBatchItem, batch_result: BatchResult, now: datetime, *, active: bool

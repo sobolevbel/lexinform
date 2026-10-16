@@ -95,3 +95,8 @@ positions never prove acceptance and project analyses never prove final-act appl
 Preserve pending review work, comparison snapshots and canonical history for the same ELI.
 Multipart deliveries freeze every physical part before the first attempt, wait for the saved
 parent, and retain parent payloads while any continuation remains unfinished.
+
+Amendment revisions use the original message's saved bill, change and date; never rebuild
+historical context from the current bill. Queue a batch with its immutable edit target, then a
+separate amendments_revision delivery; preserve the original event and publication as audit history.
+Repeated commands cannot supersede a pending batch or an attempted or uncertain revision delivery.

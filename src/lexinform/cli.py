@@ -36,6 +36,7 @@ from lexinform.models import (
     BillSubmission,
     LlmBatch,
     LlmBatchItem,
+    OutcomeStatus,
     PendingBatch,
     PendingBatches,
     RclProject,
@@ -451,6 +452,34 @@ def analyze(
         for change in a.key_changes:
             typer.echo(f"  • {change}")
         typer.echo(f"\n{a.practical_impact}\nrationale: {a.rationale}")
+
+
+@app.command()
+def amendments(
+    number: Annotated[str, typer.Argument(help=NUMBER_HELP)],
+    publication: Annotated[
+        int | None, typer.Option("--publication", min=1, help="Original publication ID.")
+    ] = None,
+    force: Annotated[
+        bool,
+        typer.Option("--force", help="Request a fresh batch even after a successful revision."),
+    ] = False,
+) -> None:
+    """Queue amendment analysis and an edit of the original message after batch collection."""
+    c = _container()
+    try:
+        bill = _or_exit(lambda: c.bill_lookup().continuation(_load_bill(c, number)))
+        outcome = c.amendments_service().request(
+            bill,
+            publication_id=publication,
+            force_id=f"cli/{c.clock.now().isoformat()}" if force else "",
+        )
+        typer.echo(outcome.note)
+        if outcome.status is OutcomeStatus.ERROR:
+            raise typer.Exit(code=1)
+        c.analysis_service().submit_queued_batches()
+    finally:
+        c.close()
 
 
 @app.command()

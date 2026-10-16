@@ -1290,6 +1290,9 @@ class Poster:
                 return False
             pub = self._freeze(pub)
         assert pub.id is not None and pub.delivery is not None
+        if pub.kind is PublicationKind.AMENDMENTS_REVISION:
+            pub = self._freeze(pub)
+        assert pub.id is not None and pub.delivery is not None
         if not pub.delivery.rendered_text and not pub.attempts:
             text = self._publisher.render_delivery(pub)
             if utf16_length(text) > MESSAGE_LIMIT:
@@ -1386,6 +1389,7 @@ class Poster:
             or pub.attempts
             or pub.delivery.publication_ids
             or pub.delivery.rendered_text
+            or pub.delivery.edit_message_id is not None
         ):
             return pub
         plan = pub.delivery

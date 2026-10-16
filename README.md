@@ -206,6 +206,7 @@ cp .env.example .env            # both LLM API keys and Telegram credentials
 uv run lexinform show 3039                # what the API knows about a bill (no keys needed)
 uv run lexinform scan --since 2026-08-01  # discovery + prefilters, prints candidates
 uv run lexinform analyze 3039             # one LLM analysis into the local SQLite db
+uv run lexinform amendments 1929          # batch re-analysis of amendments; edits the old message
 uv run lexinform preview 3039             # render the card (--to <chat id> sends it)
 uv run lexinform run --dry-run            # full run, nothing posted, DB rolled back
 uv run lexinform run

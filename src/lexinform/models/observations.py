@@ -70,6 +70,8 @@ class DeliveryPlan(BaseModel):
     still_meets: bool = False
     reply_to: int | None = None
     edit_message_id: int | None = None
+    revision_of: int | None = None
+    amendment_key: str = ""
     held_change_ids: tuple[int, ...] = ()
     wait_until: dt.datetime | None = None
     absorbed_by: int | None = None
@@ -99,6 +101,8 @@ class DeliveryPlan(BaseModel):
             return bool(self.group_text) and all(item.change_json for item in self.update_group)
         if kind is PublicationKind.NEW_BILL:
             return True
+        if kind is PublicationKind.AMENDMENTS_REVISION:
+            return bool(self.change_json) and self.edit_message_id is not None
         if self.reply_to is None:
             return False
         if kind is PublicationKind.JOINT_BILL:
