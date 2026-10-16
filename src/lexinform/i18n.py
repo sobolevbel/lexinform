@@ -280,7 +280,6 @@ class Labels:
     project_analysis_header: str = ""
     message_part: str = ""
     document_review_source: str = ""
-    calendar_timezone: str = ""
     act_review_ready: str = ""
     digest_expectations: str = ""
     digest_coverage_warning: str = ""
@@ -338,7 +337,6 @@ RU = Labels(
     rule_date_unknown="Календарная дата применения нормы не подтверждена.",
     project_analysis_header="Исторический анализ проекта, до окончательного текста закона",
     document_review_source="Документ-источник разбора",
-    calendar_timezone="(по времени Варшавы)",
     act_review_ready=(
         "Разобран окончательный текст: условия и исключения проверяйте по указанным нормам Dz.U."
     ),
@@ -1079,7 +1077,6 @@ EN = Labels(
     rule_date_unknown="The rule's calendar application date is not confirmed.",
     project_analysis_header="Historical draft analysis, before the final act text",
     document_review_source="Review source document",
-    calendar_timezone="(Warsaw time)",
     act_review_ready=(
         "The final text has been reviewed: check conditions and exceptions against"
         " its cited provisions."

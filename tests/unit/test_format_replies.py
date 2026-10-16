@@ -40,8 +40,7 @@ def test_the_sittings_roundup_names_each_sitting_in_a_line_linked_to_its_card(
     assert f"<b>{card} · " in text
     assert "\n🗓 заседание Сейма № 65, 15-18 сент 2026" in text
     assert (
-        "\nKomisja Administracji i Spraw Wewnętrznych (ASW)\n"
-        "🗓 17 сент 2026, 09:00 (по времени Варшавы)\nsala nr 412\n"
+        "\nKomisja Administracji i Spraw Wewnętrznych (ASW)\n🗓 17 сент 2026, 09:00\nsala nr 412\n"
     ) in text
     assert 'transmisje_arch.xsp?unid=1">Трансляция</a>' in text
     assert "<i>Pierwsze czytanie projektu (druk nr 3039)" in text
@@ -63,9 +62,7 @@ def test_a_sitting_taken_back_is_one_line_saying_which_fact_it_is(
     assert_telegram_html(text)
     assert "❌ <b>druk nr 3039 · " in text
     assert "\nKomisja Administracji i Spraw Wewnętrznych (ASW) · " in text
-    assert (
-        "было запланировано на 17 сент 2026, 09:00 (по времени Варшавы)\nЗаседание отменено" in text
-    )
+    assert "было запланировано на 17 сент 2026, 09:00\nЗаседание отменено" in text
     assert "Проект снят с повестки заседания" in fmt.sittings([dropped]).text
 
 

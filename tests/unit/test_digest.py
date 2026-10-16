@@ -381,9 +381,9 @@ def test_committee_sittings_are_separate_groups_in_date_order() -> None:
 
     assert_telegram_html(text)
     assert text.count("Komisja Administracji i Spraw Wewnętrznych") == 2
-    assert text.index(
-        "17 сент 2026, 09:00 (по времени Варшавы)</b>\n• druk 3039 — Projekt"
-    ) < text.index("18 сент 2026, 09:00 (по времени Варшавы)</b>\n• druk 3039 — Projekt")
+    assert text.index("17 сент 2026, 09:00</b>\n• druk 3039 — Projekt") < text.index(
+        "18 сент 2026, 09:00</b>\n• druk 3039 — Projekt"
+    )
 
 
 def test_a_sitting_without_bill_entries_is_omitted() -> None:

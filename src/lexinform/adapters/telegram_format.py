@@ -3140,7 +3140,7 @@ class MessageFormatter:
         if item.kind == "committee":
             when = self.fmt_date(item.date)
             if item.start_time:
-                when += f", {item.start_time.strftime('%H:%M')} {lb.calendar_timezone}"
+                when += f", {item.start_time.strftime('%H:%M')}"
             return esc(when)
         span = self.fmt_date(item.date)
         if item.end_date and item.end_date != item.date:
