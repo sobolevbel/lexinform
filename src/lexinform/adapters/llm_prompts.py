@@ -357,6 +357,26 @@ def build_amendments_prompt(ctx: AmendmentsContext) -> str:
         else "sprawozdanie komisji o poprawkach"
     )
     lines = [f"Druk nr {ctx.number}", f"Tytuł: {ctx.title}", f"Dokument: {kind}"]
+    if ctx.scan is not None and ctx.source_check is not None:
+        source = ctx.source_check
+        lines.extend(
+            [
+                _SCAN_HEADER,
+                scan_note(ctx.scan),
+                "Przeczytaj wszystkie strony. Pismo przewodnie i samo uzasadnienie NIE są poprawkami.",
+                "Znajdź samą uchwałę Senatu i jej normatywny tekst poprawek do jednej z ustaw:",
+                *[f"- {subject}" for subject in source.expected_subjects],
+                f"Data etapu w API (może być błędna): {source.adopted_on}.",
+                f"Data druku: {source.document_date}; uchwalenie przez Sejm: {source.passed_on}.",
+                "W source_evidence podaj tytuł z uchwały, jej datę, decyzję, numer strony nagłówka,",
+                "wszystkie kolejne strony samych poprawek (numeracja PDF od 1) i dosłowną cytatę",
+                "jednej konkretnej poprawki. complete=true tylko gdy odczytano CAŁY tekst poprawek.",
+                "Jeżeli brak uchwały, poprawki są nieczytelne, dotyczą innej ustawy lub decyzja jest",
+                "inna niż poprawki: complete=false, nie zgaduj treści i zostaw changes puste.",
+            ]
+        )
+    else:
+        lines.append("source_evidence: null (źródło tekstowe sprawdzono przed analizą).")
     if ctx.proposal:
         lines.append(f"Wniosek komisji: {ctx.proposal}")
     lines.append("")
@@ -365,8 +385,9 @@ def build_amendments_prompt(ctx: AmendmentsContext) -> str:
     for change in ctx.previous_key_changes:
         lines.append(f"- {change}")
     lines.append("")
-    lines.append("=== TEKST DOKUMENTU Z POPRAWKAMI ===")
-    lines.append(ctx.text)
+    if ctx.scan is None:
+        lines.append("=== TEKST DOKUMENTU Z POPRAWKAMI ===")
+        lines.append(ctx.text)
     if ctx.truncated:
         lines.append("")
         lines.append("[TEKST OBCIĘTY: pokazano tylko część dokumentu]")

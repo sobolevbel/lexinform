@@ -11,7 +11,7 @@ import logging
 import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Literal
 
 from pydantic import BaseModel
@@ -129,6 +129,7 @@ from lexinform.sections import (
     has_cover_letter,
     trim_print,
 )
+from lexinform.senate_documents import validate_senate_scan
 from lexinform.services.cost import CostLedger
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 from lexinform.services.joint import primary_of, revive_prefilter_skips
@@ -370,6 +371,8 @@ def text_digest(text: str) -> str:
 
 def _memo_key(bill: Bill, purpose: str, context: BaseModel, *, legacy: bool = False) -> str:
     data = context.model_dump(mode="json", exclude={"scan", "text"})
+    if data.get("source_check") is None:
+        data.pop("source_check", None)
     payload = context.model_dump()
     text = str(payload.get("text", ""))
     data["text_sha256"] = text_digest(text)
@@ -675,6 +678,11 @@ class AnalysisService:
             and (
                 self._options.require_batch
                 or (isinstance(i.meta, DigestItemMeta) and i.meta.amendment_revision is not None)
+                or (
+                    isinstance(i.meta, DigestItemMeta)
+                    and i.meta.amendment_source is not None
+                    and i.meta.amendment_source.scan
+                )
                 or (self._submits_batches and i.request.question.kind in self._options.batch_kinds)
                 or (isinstance(i.meta, BatchItemMeta) and i.meta.overflow)
             )
@@ -862,7 +870,12 @@ class AnalysisService:
             None
         )
         if item.call_kind == "amendments" and isinstance(result.answer, Amendments):
-            record = records.amendments(result.answer, source_kind=meta.source_kind)
+            try:
+                if meta.amendment_source is not None and meta.amendment_source.scan:
+                    validate_senate_scan(result.answer.source_evidence, meta.amendment_source)
+                record = records.amendments(result.answer, source_kind=meta.source_kind)
+            except ValueError as exc:
+                result = result.model_copy(update={"error": str(exc)})
         elif item.call_kind == "supplement" and isinstance(result.answer, DocumentDigest):
             record = records.supplement(
                 result.answer, title=meta.title, source_kind=meta.source_kind
@@ -963,7 +976,7 @@ class AnalysisService:
     ) -> Waiting | Publication:
         assert bill.analysis is not None
         loaded = self._load_amendments_text(document)
-        if not loaded.text.strip() or loaded.scan is not None:
+        if not loaded.text.strip() and loaded.scan is None:
             raise ValueError("Полный текст поправок не извлечён; исправление не запущено")
         if self._too_expensive_to_digest(loaded):
             raise ValueError("Разбор поправок превышает лимит стоимости документа")
@@ -976,6 +989,8 @@ class AnalysisService:
             previous_summary=bill.analysis.analysis.summary,
             previous_key_changes=list(bill.analysis.analysis.key_changes),
             proposal=proposal,
+            scan=loaded.scan,
+            source_check=document.senate if loaded.scan else None,
         )
         content_key = _memo_key(bill, "amendments", context)
         revisions = self._repo.list_amendment_revisions(target.publication_id)
@@ -1032,6 +1047,7 @@ class AnalysisService:
                         queued_at=now,
                         prompt_version=request.prompt_version,
                         source_kind=document.kind,
+                        amendment_source=context.source_check,
                         amendment_revision=target.model_copy(update={"delivery": delivery}),
                     ),
                 )
@@ -1284,6 +1300,9 @@ class AnalysisService:
         *,
         may_wait: bool,
     ) -> Record | Waiting:
+        require_batch = self._options.require_batch or (
+            isinstance(question.ctx, AmendmentsContext) and question.ctx.scan is not None
+        )
         legacy_key = _memo_key(bill, question.kind, question.ctx, legacy=True)
         legacy_job = self._repo.batch_job(legacy_key)
         if legacy_job is not None and legacy_job.state in {"queued", "submitting", "open"}:
@@ -1298,7 +1317,7 @@ class AnalysisService:
         model = self._options.batch_models.get(kind, "")
         provider = provider_of(model)
         backend = self._batch_resolver(provider) if self._batch_resolver else self._batch
-        if self._options.require_batch or (
+        if require_batch or (
             may_wait
             and self._batches(bill)
             and kind in self._options.batch_kinds
@@ -1308,14 +1327,14 @@ class AnalysisService:
             job = self._repo.batch_job(key)
             now = self._clock.now()
             if job is not None and not self._files_again(job, key):
-                if self._options.require_batch:
+                if require_batch:
                     if job.state == "failed":
                         raise RuntimeError(f"{kind} batch failed; no synchronous fallback")
                     return Waiting(job.since)
                 if job.state != "failed" and now - job.since < self._options.batch_max_wait:
                     return Waiting(job.since)
             else:
-                if self._options.require_batch and (not model or backend is None):
+                if require_batch and (not model or backend is None):
                     raise LlmUnavailableError("batch backend is unavailable for the selected model")
                 assert backend is not None
                 request = backend.prepare_request(
@@ -1543,7 +1562,12 @@ class AnalysisService:
         return Waiting(self._clock.now())
 
     def senate_amendments_document(
-        self, info: PrintInfo, stage: Stage, *, titles: tuple[str, ...]
+        self,
+        info: PrintInfo,
+        stage: Stage,
+        *,
+        titles: tuple[str, ...],
+        passed_on: date | None = None,
     ) -> TextDocument | None:
         if (
             stage.date is None
@@ -1551,11 +1575,23 @@ class AnalysisService:
             or stage.position not in ("wniósł poprawki", "wniósł poprawkę")
         ):
             return None
-        return resolve_senate_document(self._loader, info, adopted_on=stage.date, titles=titles)
+        return resolve_senate_document(
+            self._loader, info, adopted_on=stage.date, titles=titles, passed_on=passed_on
+        )
 
     def _load_amendments_text(self, document: TextDocument) -> _Loaded:
         if document.kind != "senate_amendments":
             return self._load_text(document, trim=False)
+        if document.senate is not None and document.senate.scan:
+            scan = self._loader.load_scan(document.url, cover_letter=False)
+            if (
+                scan is None
+                or scan.sha256 != document.senate.sha256
+                or scan.pages != document.senate.pages
+                or scan.truncated
+            ):
+                raise ValueError("Полный скан постановления не прочитан или файл изменился")
+            return _Loaded("", False, "scan", scan=scan)
         text = verified_senate_text(self._loader, document)
         budgeted = self._budget.apply(text, self._keywords.spans(text))
         if budgeted.truncated:
@@ -1570,16 +1606,13 @@ class AnalysisService:
         proposal: str | None = None,
         may_wait: bool = False,
     ) -> AmendmentsRecord | Waiting | None:
-        """What the amendments in `document` change, against the bill's current analysis.
-        None when the document has no readable text (a scan) or costs more to read than the
-        per-bill limit allows: the update then only names the event, which is the same thing a
-        failed digest degrades to. Only an outage propagates."""
+        """Scanned Senate resolutions require a batch answer with verified source evidence."""
         assert bill.analysis is not None, (
             "the tracker looks for amendments only of an analysed bill"
         )
         assert document.kind in AMENDMENT_SOURCES, f"not an amendments document: {document.kind}"
         loaded = self._load_amendments_text(document)
-        if not loaded.text.strip():
+        if not loaded.text.strip() and loaded.scan is None:
             return None
         if self._too_expensive_to_digest(loaded):
             log.info(
@@ -1597,18 +1630,24 @@ class AnalysisService:
             previous_summary=bill.analysis.analysis.summary,
             previous_key_changes=list(bill.analysis.analysis.key_changes),
             proposal=proposal,
+            scan=loaded.scan,
+            source_check=document.senate if loaded.scan else None,
         )
         key = _memo_key(bill, "amendments", ctx)
         record = self._ask_or_wait(
             bill,
             AmendmentsQuestion(ctx=ctx),
             key,
-            DigestItemMeta(memo_key=key, source_kind=document.kind),
+            DigestItemMeta(
+                memo_key=key, source_kind=document.kind, amendment_source=ctx.source_check
+            ),
             AmendmentsRecord,
             lambda: self._llm.summarize_amendments(ctx),
             may_wait=may_wait,
         )
         if not isinstance(record, Waiting):
+            if ctx.source_check is not None:
+                validate_senate_scan(record.amendments.source_evidence, ctx.source_check)
             record.source_url = document.url
         return record
 

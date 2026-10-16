@@ -301,6 +301,7 @@ from lexinform.models.sejm import (
 )
 from lexinform.models.senate import (
     SENATE_BASE_URL,
+    AmendmentSourceEvidence,
     SenateAct,
     SenateCommittee,
     SenateResolutionEvidence,
@@ -327,6 +328,7 @@ from lexinform.models.wykaz import (
 )
 
 __all__ = [
+    "AmendmentSourceEvidence",
     "SenateResolutionEvidence",
     "SenateResolutionIdentity",
     "AmendmentRevisionTarget",

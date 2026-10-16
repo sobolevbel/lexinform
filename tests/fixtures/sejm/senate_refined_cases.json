@@ -1,0 +1,62 @@
+[
+  {
+    "term": 10,
+    "number": "2068",
+    "name": "2068-uchwała.docx",
+    "url": "https://api.sejm.gov.pl/sejm/term10/prints/2068/2068-uchwa%C5%82a.docx",
+    "sha256": "60ffb44cd9a81a718bb1d7b597b8a2ede6b3436a602f626df50fa53b14aed7ed",
+    "retrieved_at": "2026-10-16T19:33:21Z",
+    "fixture": "senate_10_2068_docx.txt",
+    "fixture_whitespace": "Trailing horizontal spaces and final empty lines removed."
+  },
+  {
+    "term": 9,
+    "number": "2219",
+    "name": "2219-uchwała.docx",
+    "url": "https://api.sejm.gov.pl/sejm/term9/prints/2219/2219-uchwa%C5%82a.docx",
+    "sha256": "c0a1df1f865af17242c523e79efb30d26a103af7684690a2b3fe41fb2184bb74",
+    "retrieved_at": "2026-10-16T19:24:48Z",
+    "fixture": "senate_9_2219_docx.txt",
+    "fixture_whitespace": "Trailing horizontal spaces and final empty lines removed."
+  },
+  {
+    "term": 10,
+    "number": "887",
+    "name": "887-uchwała.docx",
+    "url": "https://api.sejm.gov.pl/sejm/term10/prints/887/887-uchwa%C5%82a.docx",
+    "sha256": "47ac3e8a4f145d147da1784b0733bfa2b8e8280cf9962b860ff04822c049ec97",
+    "retrieved_at": "2026-10-16T19:31:35Z",
+    "fixture": "senate_10_887_docx.txt",
+    "fixture_whitespace": "Trailing horizontal spaces and final empty lines removed."
+  },
+  {
+    "term": 8,
+    "number": "1840",
+    "name": "1840-uchwała.docx",
+    "url": "https://api.sejm.gov.pl/sejm/term8/prints/1840/1840-uchwa%C5%82a.docx",
+    "sha256": "a23fdf51b50bf3bdc05d86072fcadd86664a554cb54044f7715ef3c570237d29",
+    "retrieved_at": "2026-10-16T19:13:51Z",
+    "fixture": "senate_8_1840_docx.txt",
+    "fixture_whitespace": "Trailing horizontal spaces and final empty lines removed."
+  },
+  {
+    "term": 9,
+    "number": "3506",
+    "name": "3506-uchwała.docx",
+    "url": "https://api.sejm.gov.pl/sejm/term9/prints/3506/3506-uchwa%C5%82a.docx",
+    "sha256": "bdca8271bb5d00a497b9da70a71e61d6a944a3ce34c68ae0aac851f126e8fa99",
+    "retrieved_at": "2026-10-16T19:29:53Z",
+    "fixture": "senate_9_3506_docx.txt",
+    "fixture_whitespace": "Trailing horizontal spaces and final empty lines removed. Space between leading indentation tabs removed."
+  },
+  {
+    "term": 9,
+    "number": "3505",
+    "name": "3505-uchwała.docx",
+    "url": "https://api.sejm.gov.pl/sejm/term9/prints/3505/3505-uchwa%C5%82a.docx",
+    "sha256": "b34877af97aeb43866be470ba092f3dabc60dc53f02c80e3692317a5d73426cd",
+    "retrieved_at": "2026-10-16T19:29:53Z",
+    "fixture": "senate_9_3505_docx.txt",
+    "fixture_whitespace": "Trailing horizontal spaces and final empty lines removed."
+  }
+]

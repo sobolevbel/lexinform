@@ -225,6 +225,7 @@ class AnthropicAnalyzer:
             build_amendments_prompt(ctx),
             Amendments,
             thinking=True,
+            scan=ctx.scan,
         )
         amendments = response.parsed_output
         if not isinstance(amendments, Amendments):
@@ -309,7 +310,11 @@ class AnthropicAnalyzer:
             return request
         ctx = request.ctx
         model = request.model or self._model
-        scan = ctx.scan if isinstance(ctx, (BillContext, SupplementContext)) else None
+        scan = (
+            ctx.scan
+            if isinstance(ctx, (BillContext, SupplementContext, AmendmentsContext))
+            else None
+        )
         if isinstance(ctx, BillContext):
             system, prompt = self._system, build_user_prompt(ctx)
         elif isinstance(ctx, AmendmentsContext):

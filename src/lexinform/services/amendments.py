@@ -15,6 +15,7 @@ from lexinform.models import (
     amendments_stage,
 )
 from lexinform.ports import BillRepository, SejmGateway
+from lexinform.senate_documents import adoption_before_senate
 from lexinform.services.analysis import AnalysisService, Waiting
 
 
@@ -68,7 +69,12 @@ class AmendmentsService:
                 assert stage.print_number is not None
                 info = self._gateway.get_print(bill.term, stage.print_number)
                 document = self._analysis.senate_amendments_document(
-                    info, stage, titles=(snapshot.summary.title,)
+                    info,
+                    stage,
+                    titles=(snapshot.summary.title,),
+                    passed_on=adoption_before_senate(
+                        snapshot.stages, info.document_date or stage.date
+                    ),
                 )
                 if document is None:
                     raise ValueError("Полный текст поправок Сената не подтверждён по содержимому")

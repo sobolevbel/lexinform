@@ -8,6 +8,7 @@ from typing import Self
 from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.models.enums import ApplicantType, Category, SourceKind, TextSource
+from lexinform.models.senate import AmendmentSourceEvidence, SenateResolutionIdentity
 
 
 class Analysis(BaseModel):
@@ -169,6 +170,7 @@ class Amendments(BaseModel):
         description="True if any amendment changes something for non-citizens."
     )
     confidence: float = Field(ge=0.0, le=1.0)
+    source_evidence: AmendmentSourceEvidence | None = None
 
 
 class AmendmentsRecord(BaseModel):
@@ -185,20 +187,6 @@ class AmendmentsRecord(BaseModel):
     output_tokens: int | None = None
     cache_read_input_tokens: int | None = None
     cache_creation_input_tokens: int | None = None
-
-
-class AmendmentsContext(BaseModel):
-    """What the model sees to summarise amendments: the current analysis and the document, with
-    the committee's proposal on them where there is one."""
-
-    number: str
-    title: str
-    source_kind: SourceKind
-    text: str
-    truncated: bool
-    previous_summary: str
-    previous_key_changes: list[str] = Field(default_factory=list)
-    proposal: str | None = None
 
 
 class JointComparison(BaseModel):
@@ -297,6 +285,23 @@ class ScannedDocument(BaseModel):
         lower its confidence for the same reason.
         """
         return self.of_pages - self.pages > self.cover_letter_pages
+
+
+class AmendmentsContext(BaseModel):
+    """What the model sees to summarise amendments: the current analysis and the document, with
+    the committee's proposal on them where there is one."""
+
+    number: str
+    title: str
+    source_kind: SourceKind
+    text: str
+    truncated: bool
+    previous_summary: str
+    previous_key_changes: list[str] = Field(default_factory=list)
+    proposal: str | None = None
+
+    scan: ScannedDocument | None = None
+    source_check: SenateResolutionIdentity | None = None
 
 
 class DocumentDigest(BaseModel):

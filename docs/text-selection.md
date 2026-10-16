@@ -11,11 +11,19 @@ for document layouts, measured reductions and unsafe shortcuts.
 
 Senate amendment summaries select attachments by their extracted contents. A candidate needs
 the formal resolution heading, date, subject, affirmative amendment decision, operative changes
-and a closing marker; the two subject statements must agree. Its subject must match the print
-or linked process title, and its date must match the Senate stage or the print's document date.
+and a closing marker. A closed single removal at a structured Word body end can stand without
+a signature; this exception never applies to a PDF or an unfinished clause. Subject statements
+must agree, or one must be exactly corroborated by the separate introductory paragraph of the
+justification. Its subject must match the print or linked process title. The date must match
+the stage or print date, or fall between Sejm adoption and the print's document date.
 The print number comes from that SenatePosition, never from an attachment's basename.
 All declared Word attachments are examined; a verified Word body takes precedence over PDF
-extraction. A complete readable PDF is the fallback. Competing Word versions remain unresolved.
+extraction. A complete readable PDF is the fallback when Word versions remain unresolved.
+An unreadable PDF can be a candidate for a mandatory whole-document batch with source evidence;
+it is not certified as a complete amendment text until its answer passes the source checks.
+The answer must name the act, resolution date, affirmative decision, complete consecutive
+amendment pages and a concrete quoted operation. Missing or conflicting evidence is not memoized
+and cannot revise a message. SHA-256 and page count are frozen; no cover pages are guessed away.
 Only structural phrases tolerate letter spacing; the amendments reach the model verbatim,
 with the cover removed and without a text-budget cut. A saved SHA-256 is rechecked before use.
 These checks apply to automatic tracking and `/amendments`; ordinary bill selection is separate.

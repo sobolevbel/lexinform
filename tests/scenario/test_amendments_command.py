@@ -6,6 +6,8 @@ from typer.testing import CliRunner
 
 from lexinform.cli import app
 from lexinform.models import (
+    AmendmentsContext,
+    AmendmentSourceEvidence,
     Attachment,
     Bill,
     DigestItemMeta,
@@ -348,16 +350,51 @@ def test_long_revision_freezes_continuations_and_waits_for_the_edit() -> None:
     assert len(w.batch.submitted) == 1
 
 
-def test_unreadable_new_source_is_not_analysed_as_an_empty_amendment() -> None:
-    w, _ = published_world()
+@pytest.mark.parametrize("verified", [False, True])
+def test_unreadable_word_uses_a_whole_pdf_batch_and_requires_source_evidence(
+    verified: bool,
+) -> None:
+    w, original = published_world()
+    assert original.id is not None
     assert isinstance(w.extractor, FakeTextExtractor)
     w.extractor.by_content[b"word"] = ""
+    evidence = AmendmentSourceEvidence(
+        subject="o asystencji osobistej osób z niepełnosprawnościami",
+        adopted_on=dt.date(2026, 10, 13),
+        decision="amendments",
+        complete=True,
+        resolution_page=1,
+        amendment_pages=[1],
+        amendment_quote="w art. 1 skreśla się pkt 2.",
+    )
+    w.batch.secondary_script[("1929", "amendments")] = make_amendments(
+        summary="Проверенные поправки из скана", source_evidence=evidence if verified else None
+    )
     w.command("/amendments 1929")
 
     w.run()
 
-    assert w.replier.replies[-1][1].status is OutcomeStatus.ERROR
-    assert not w.batch.submitted
+    assert w.replier.replies[-1][1].status is OutcomeStatus.QUEUED
+    assert len(w.batch.submitted) == 1
+    assert len(w.llm.amendment_contexts) == 1
+    request = w.batch.submitted[0]
+    assert request.question is not None
+    ctx = request.question.ctx
+    assert isinstance(ctx, AmendmentsContext)
+    assert ctx.text == "" and ctx.scan is not None
+    assert ctx.scan.data == "Y292ZXI=" and not ctx.scan.truncated
+    assert ctx.source_check and ctx.source_check.scan
+    w.repo.restore(w.repo.dump())
+    w.batch.resolve()
+
+    w.run()
+
+    revisions = w.repo.list_amendment_revisions(original.id)
+    assert bool(revisions) == verified
+    if verified:
+        assert revisions[0].status is PublicationStatus.SENT
+    else:
+        assert w.repo.publication_by_id(original.id) == original
 
 
 def test_unknown_continuation_is_reported_instead_of_completed_root() -> None:

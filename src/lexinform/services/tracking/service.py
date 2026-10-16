@@ -44,6 +44,7 @@ from lexinform.ports import (
     SenateGateway,
     WykazGateway,
 )
+from lexinform.senate_documents import adoption_before_senate
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.delivery import DeliveryService
 from lexinform.services.document_reviews import DocumentReviews
@@ -705,7 +706,12 @@ class StatusTrackingService:
                 log.warning("Senate print %s unavailable: %s", stage.print_number, exc)
                 return None
             document = self._analysis.senate_amendments_document(
-                senate_print, stage, titles=(detail.title_final or "", detail.title)
+                senate_print,
+                stage,
+                titles=(detail.title_final or "", detail.title),
+                passed_on=adoption_before_senate(
+                    detail.stages, senate_print.document_date or stage.date
+                ),
             )
             if document is None:
                 return None

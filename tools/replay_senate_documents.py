@@ -70,10 +70,17 @@ _MUTATIONS = (
 )
 
 
-def mutation_probes(text: str) -> int:
-    evidence = inspect_senate_resolution(text)
+def mutation_probes(text: str, *, word_eof: bool = False) -> int:
+    evidence = inspect_senate_resolution(text, word_eof=word_eof)
     assert evidence.complete and evidence.outcome == "amendments"
     offset = text.index(evidence.operative_text)
+    if word_eof:
+        for before, after in (("1–11", "1–12"), ("lit. b", "lit. c"), ("13–27", "13–28")):
+            changed = text.replace(before, after)
+            inspected = inspect_senate_resolution(changed, word_eof=True)
+            assert inspected.complete and changed == inspected.text
+            assert text_digest(changed) != text_digest(text)
+        return 3
     for amendment in _MUTATIONS:
         changed = text[:offset] + "\n" + amendment + "\n" + text[offset:]
         inspected = inspect_senate_resolution(changed)
@@ -135,7 +142,9 @@ def replay(root: Path, corpus: Path) -> dict[str, Any]:
             classification[f"{record.term}/extraction_error"] += 1
             continue
         text = extractor.extract((root / record.file).read_bytes())
-        evidence = inspect_senate_resolution(text)
+        evidence = inspect_senate_resolution(
+            text, word_eof=record.pages == 0 and Path(record.name).suffix.casefold() != ".pdf"
+        )
         reason = evidence.outcome if evidence.complete else evidence.limitation
         classification[f"{record.term}/{reason}"] += 1
         file_rows.append({"id": record.id, "reason": reason, "subject": evidence.subject})
@@ -181,7 +190,17 @@ def replay(root: Path, corpus: Path) -> dict[str, Any]:
         repeated = resolve_senate_document(loader, renamed, adopted_on=adopted_on, titles=titles)
         assert bool(document) == bool(repeated), key
         if document and repeated:
-            assert verified_senate_text(loader, document) == verified_senate_text(loader, repeated)
+            assert document.senate and repeated.senate
+            assert document.senate.scan == repeated.senate.scan
+            if document.senate.scan:
+                assert document.senate.sha256 == repeated.senate.sha256
+            else:
+                assert verified_senate_text(loader, document) == verified_senate_text(
+                    loader, repeated
+                )
+        if not amended:
+            assert document is None or (document.senate and document.senate.scan), key
+            document = None
         old = next(
             (
                 a
@@ -197,10 +216,26 @@ def replay(root: Path, corpus: Path) -> dict[str, Any]:
             old_evidence and old_evidence.complete and old_evidence.outcome == "amendments"
         )
         selected = next((r for r in available if document and r.url == document.url), None)
-        probes = mutation_probes(verified_senate_text(loader, document)) if document else 0
+        visual = bool(document and document.senate and document.senate.scan)
+        probes = (
+            mutation_probes(
+                verified_senate_text(loader, document),
+                word_eof=bool(document.senate and document.senate.word_eof),
+            )
+            if document and not visual
+            else 0
+        )
         if document:
             assert amended, (key, [stage.position for stage in links])
-        outcome = "selected" if document else "unresolved" if amended else "not_amendments"
+        outcome = (
+            "scan_pending_verification"
+            if visual
+            else "selected"
+            if document
+            else "unresolved"
+            if amended
+            else "not_amendments"
+        )
         counts[f"{row['term']}/{outcome}"] += 1
         counts["mutation_probes"] += probes
         rows.append(
@@ -211,6 +246,7 @@ def replay(root: Path, corpus: Path) -> dict[str, Any]:
                 "date": str(adopted_on),
                 "selected": selected.name if selected else None,
                 "selected_url": document.url if document else None,
+                "selection_mode": "scan" if visual else "text" if document else None,
                 "old_selected": old.name if old else None,
                 "old_structurally_complete": old_complete,
                 "old_inspection": old_evidence.model_dump(

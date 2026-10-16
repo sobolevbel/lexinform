@@ -48,6 +48,7 @@ from lexinform.errors import BatchNotSubmittedError, LlmContextExceededError, Ll
 from lexinform.models import (
     Amendments,
     AmendmentsContext,
+    AmendmentSourceEvidence,
     AmendmentsRecord,
     Analysis,
     AnalysisRecord,
@@ -137,8 +138,14 @@ _AMENDMENTS_SCHEMA: dict[str, Any] = {
         "changes": {"type": "array", "items": {"type": "string"}},
         "affects_foreigners": {"type": "boolean"},
         "confidence": {"type": "number"},
+        "source_evidence": {
+            "anyOf": [
+                {"type": "null"},
+                AmendmentSourceEvidence.model_json_schema(),
+            ]
+        },
     },
-    "required": ["summary", "changes", "affects_foreigners", "confidence"],
+    "required": ["summary", "changes", "affects_foreigners", "confidence", "source_evidence"],
     "additionalProperties": False,
 }
 
@@ -228,7 +235,7 @@ class OpenAiAnalyzer:
         amendments, usage = self._structured_call(
             system=gpt51_amendments_system_prompt(self._language),
             user_prompt=build_amendments_prompt(ctx),
-            scan=None,
+            scan=ctx.scan,
             schema_name="amendments",
             schema=_AMENDMENTS_SCHEMA,
             output_model=Amendments,
@@ -312,7 +319,11 @@ class OpenAiAnalyzer:
             return request
         ctx = request.ctx
         model = request.model or self._model
-        scan = ctx.scan if isinstance(ctx, (BillContext, SupplementContext)) else None
+        scan = (
+            ctx.scan
+            if isinstance(ctx, (BillContext, SupplementContext, AmendmentsContext))
+            else None
+        )
         if isinstance(ctx, BillContext):
             system, prompt = self._system, build_user_prompt(ctx)
         elif isinstance(ctx, AmendmentsContext):

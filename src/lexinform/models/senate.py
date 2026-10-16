@@ -17,6 +17,24 @@ class SenateResolutionIdentity(BaseModel):
     sha256: str
     subject: str
     adopted_on: dt.date
+    word_eof: bool = False
+    scan: bool = False
+    expected_subjects: tuple[str, ...] = ()
+    document_date: dt.date | None = None
+    passed_on: dt.date | None = None
+    pages: int = 0
+
+
+class AmendmentSourceEvidence(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    subject: str
+    adopted_on: dt.date | None
+    decision: Literal["amendments", "rejection", "acceptance", "unknown"]
+    complete: bool
+    resolution_page: int | None
+    amendment_pages: list[int]
+    amendment_quote: str
 
 
 class SenateResolutionEvidence(BaseModel):
@@ -24,11 +42,16 @@ class SenateResolutionEvidence(BaseModel):
 
     limitation: str
     subject: str = ""
+    heading_subject: str = ""
+    recited_subject: str = ""
     adopted_on: dt.date | None = None
+    passed_on: dt.date | None = None
     outcome: Literal["amendments", "rejection", "acceptance"] | None = None
     text: str = ""
     operative_text: str = ""
     justification: bool = False
+    word_eof: bool = False
+    corroborated_subject: bool = False
 
     @property
     def complete(self) -> bool:

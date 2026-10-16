@@ -20,6 +20,7 @@ from lexinform.models.enums import SourceKind, TextSource
 from lexinform.models.observations import DeliveryPlan
 from lexinform.models.report import CallKind
 from lexinform.models.reviews import DocumentReview, ReviewContext
+from lexinform.models.senate import SenateResolutionIdentity
 
 BatchProvider = Literal["anthropic", "openai"]
 BatchStatus = Literal["submitted", "ended", "failed"]
@@ -210,6 +211,7 @@ class DigestItemMeta(BaseModel):
     compared_with: list[str] = Field(default_factory=list)
     review_context: ReviewContext | None = None
     amendment_revision: AmendmentRevisionTarget | None = None
+    amendment_source: SenateResolutionIdentity | None = None
 
 
 def batch_item_meta(kind: str, raw: str) -> BatchItemMeta | DigestItemMeta:

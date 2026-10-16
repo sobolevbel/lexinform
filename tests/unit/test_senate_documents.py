@@ -1,8 +1,15 @@
+import datetime as dt
 from pathlib import Path
 
 import pytest
 
-from lexinform.senate_documents import inspect_senate_resolution, senate_subject_key
+from lexinform.models import AmendmentSourceEvidence, SenateResolutionIdentity
+from lexinform.senate_documents import (
+    inspect_senate_resolution,
+    resolution_date_matches,
+    senate_subject_key,
+    validate_senate_scan,
+)
 
 FIXTURES = Path(__file__).parents[1] / "fixtures/sejm"
 
@@ -127,3 +134,119 @@ def test_subject_identity_only_tolerates_layout_and_punctuation() -> None:
     assert senate_subject_key("o niepełno-\nsprawności") == senate_subject_key(
         "o niepełnosprawności"
     )
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "senate_8_1840_docx.txt",
+        "senate_9_2219_docx.txt",
+        "senate_10_887_docx.txt",
+        "senate_10_2068_docx.txt",
+    ],
+)
+def test_exact_third_title_in_justification_corroborates_a_retyped_title(name: str) -> None:
+    text = (FIXTURES / name).read_text()
+
+    evidence = inspect_senate_resolution(text)
+
+    assert evidence.complete and evidence.corroborated_subject
+    assert evidence.heading_subject != evidence.recited_subject
+    assert evidence.text == text
+
+
+def test_an_unrelated_mention_in_justification_is_not_a_title_witness(resolution: str) -> None:
+    changed = resolution.replace("w sprawie ustawy", "w sprawie ustawy nie", 1)
+    changed = changed[: changed.index("Uzasadnienie")]
+    changed += "\nUZASADNIENIE\nSenat omawiał też ustawę nie o asystencji osobistej.\n"
+
+    assert not inspect_senate_resolution(changed).complete
+
+
+def test_a_closed_single_removal_at_word_body_end_is_complete() -> None:
+    text = (FIXTURES / "senate_9_1211_docx.txt").read_text()
+
+    evidence = inspect_senate_resolution(text, word_eof=True)
+
+    assert evidence.complete and evidence.word_eof and evidence.text == text
+    assert not inspect_senate_resolution(text).complete
+
+
+@pytest.mark.parametrize("mutation", ["unfinished", "extra", "negative", "long"])
+def test_word_body_end_does_not_prove_an_arbitrary_amendment_is_complete(mutation: str) -> None:
+    text = (FIXTURES / "senate_9_1211_docx.txt").read_text()
+    texts = {
+        "unfinished": text.rstrip().removesuffix("."),
+        "extra": text + "\nw art. 2 dodaje się",
+        "negative": text.replace("skreśla się", "nie skreśla się"),
+        "long": text.replace("skreśla się", "dodaje się"),
+    }
+
+    assert not inspect_senate_resolution(texts[mutation], word_eof=True).complete
+
+
+def test_date_interval_is_bounded_by_adoption_and_print_not_a_fixed_tolerance() -> None:
+    stage, passed, printed = dt.date(2023, 7, 13), dt.date(2023, 6, 16), dt.date(2023, 7, 19)
+    assert resolution_date_matches(
+        dt.date(2023, 7, 14), stage=stage, document=printed, passed=passed
+    )
+    for actual in (dt.date(2023, 6, 15), dt.date(2023, 7, 20)):
+        assert not resolution_date_matches(actual, stage=stage, document=printed, passed=passed)
+    assert not resolution_date_matches(
+        dt.date(2023, 7, 14), stage=stage, document=printed, passed=None
+    )
+
+
+def scan_proof() -> tuple[AmendmentSourceEvidence, SenateResolutionIdentity]:
+    evidence = AmendmentSourceEvidence(
+        subject="o cudzoziemcach",
+        adopted_on=dt.date(2026, 10, 13),
+        decision="amendments",
+        complete=True,
+        resolution_page=2,
+        amendment_pages=[2, 3],
+        amendment_quote="w art. 1 skreśla się pkt 2.",
+    )
+    source = SenateResolutionIdentity(
+        sha256="raw",
+        subject=evidence.subject,
+        adopted_on=dt.date(2026, 10, 13),
+        scan=True,
+        pages=4,
+        expected_subjects=(evidence.subject,),
+    )
+    return evidence, source
+
+
+def test_complete_scan_evidence_is_checked_against_frozen_metadata() -> None:
+    evidence, source = scan_proof()
+    validate_senate_scan(evidence, source)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"complete": False},
+        {"decision": "acceptance"},
+        {"subject": "o niecudzoziemcach"},
+        {"adopted_on": None},
+        {"adopted_on": dt.date(2026, 10, 14)},
+        {"resolution_page": None},
+        {"resolution_page": 3},
+        {"amendment_pages": []},
+        {"amendment_pages": [2, 4]},
+        {"amendment_pages": [2, 3, 4, 5]},
+        {"amendment_pages": [2, 2, 3]},
+        {"amendment_quote": "Senat wniósł poprawki do ustawy."},
+    ],
+)
+def test_incomplete_or_conflicting_scan_evidence_is_refused(change: dict[str, object]) -> None:
+    evidence, source = scan_proof()
+    with pytest.raises(ValueError):
+        validate_senate_scan(evidence.model_copy(update=change), source)
+
+
+def test_missing_scan_evidence_is_refused() -> None:
+    _, source = scan_proof()
+    with pytest.raises(ValueError):
+        validate_senate_scan(None, source)
