@@ -67,10 +67,11 @@ class AmendmentsService:
             if stage.stage_type == "SenatePosition":
                 assert stage.print_number is not None
                 info = self._gateway.get_print(bill.term, stage.print_number)
-                resolution = info.senate_resolution
-                if resolution is None:
-                    raise ValueError("В druku Сената не найден документ с поправками")
-                document = TextDocument(url=resolution.url, kind="senate_amendments")
+                document = self._analysis.senate_amendments_document(
+                    info, stage, titles=(snapshot.summary.title,)
+                )
+                if document is None:
+                    raise ValueError("Полный текст поправок Сената не подтверждён по содержимому")
             else:
                 assert stage.report_file is not None
                 document = TextDocument(url=stage.report_file, kind="committee_amendments")

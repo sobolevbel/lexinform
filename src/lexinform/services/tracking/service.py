@@ -704,10 +704,12 @@ class StatusTrackingService:
             except Exception as exc:
                 log.warning("Senate print %s unavailable: %s", stage.print_number, exc)
                 return None
-            resolution = senate_print.senate_resolution
-            if resolution is None:
+            document = self._analysis.senate_amendments_document(
+                senate_print, stage, titles=(detail.title_final or "", detail.title)
+            )
+            if document is None:
                 return None
-            return _Amendments(TextDocument(url=resolution.url, kind="senate_amendments"), None)
+            return _Amendments(document, None)
         assert stage.report_file is not None, (
             "amendments_stage takes a committee report only with its file"
         )

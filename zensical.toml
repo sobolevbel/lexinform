@@ -61,6 +61,7 @@ nav = [
   ] },
   { "Аудиты" = [
     { "Обзор" = "reviews/index.md" },
+    { "Тексты поправок Сената · 16.10" = "reviews/2026-10-16-senate-document-content.md" },
     { "Повторный разбор поправок · 16.10" = "reviews/2026-10-16-amendments-command.md" },
     { "Карточки и поправки · 14.10" = "reviews/2026-10-14-reader-message-fixes.md" },
     { "Аудит больших изменений · 14.10" = "reviews/2026-10-14-large-changes-audit.md" },

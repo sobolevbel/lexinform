@@ -64,6 +64,7 @@ from lexinform.models import (
     LlmBatchItem,
     LlmCall,
     LocatedText,
+    PrintInfo,
     ProcessSummary,
     Publication,
     PublicationKind,
@@ -74,6 +75,7 @@ from lexinform.models import (
     ReviewPurpose,
     ReviewSource,
     ScannedDocument,
+    Stage,
     StatusChange,
     SupplementContext,
     SupplementRecord,
@@ -130,6 +132,7 @@ from lexinform.sections import (
 from lexinform.services.cost import CostLedger
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 from lexinform.services.joint import primary_of, revive_prefilter_skips
+from lexinform.services.senate_documents import resolve_senate_document, verified_senate_text
 
 log = logging.getLogger(__name__)
 
@@ -959,7 +962,7 @@ class AnalysisService:
         force_id: str = "",
     ) -> Waiting | Publication:
         assert bill.analysis is not None
-        loaded = self._load_text(document, trim=False)
+        loaded = self._load_amendments_text(document)
         if not loaded.text.strip() or loaded.scan is not None:
             raise ValueError("Полный текст поправок не извлечён; исправление не запущено")
         if self._too_expensive_to_digest(loaded):
@@ -1539,6 +1542,26 @@ class AnalysisService:
             raise
         return Waiting(self._clock.now())
 
+    def senate_amendments_document(
+        self, info: PrintInfo, stage: Stage, *, titles: tuple[str, ...]
+    ) -> TextDocument | None:
+        if (
+            stage.date is None
+            or stage.print_number != info.number
+            or stage.position not in ("wniósł poprawki", "wniósł poprawkę")
+        ):
+            return None
+        return resolve_senate_document(self._loader, info, adopted_on=stage.date, titles=titles)
+
+    def _load_amendments_text(self, document: TextDocument) -> _Loaded:
+        if document.kind != "senate_amendments":
+            return self._load_text(document, trim=False)
+        text = verified_senate_text(self._loader, document)
+        budgeted = self._budget.apply(text, self._keywords.spans(text))
+        if budgeted.truncated:
+            raise ValueError("Полный текст поправок Сената не помещается в бюджет текста")
+        return _Loaded(text, False, "pdf", whole=text)
+
     def summarize_amendments(
         self,
         bill: Bill,
@@ -1555,7 +1578,7 @@ class AnalysisService:
             "the tracker looks for amendments only of an analysed bill"
         )
         assert document.kind in AMENDMENT_SOURCES, f"not an amendments document: {document.kind}"
-        loaded = self._load_text(document, trim=False)
+        loaded = self._load_amendments_text(document)
         if not loaded.text.strip():
             return None
         if self._too_expensive_to_digest(loaded):

@@ -9,12 +9,19 @@ Consultation reviews need their own selection rules: the law trimmer deliberatel
 very tables they analyse. See the [14 October corpus study](reviews/2026-10-14-consultation-text.md)
 for document layouts, measured reductions and unsafe shortcuts.
 
-For Senate amendment summaries, prefer the print's named `{number}-uchwała.docx`
-resolution to its PDF. Druk 3213 has 21 PDF pages with a text layer only on the cover;
-its separate DOCX contains the resolution and justification. This preference applies only
-to a SenatePosition document; ordinary bill PDFs keep their existing selection rules.
-If the named DOCX is absent, keep the PDF fallback. Corpus coverage and remaining limits
-are recorded in the [14 October message review](reviews/2026-10-14-reader-message-fixes.md).
+Senate amendment summaries select attachments by their extracted contents. A candidate needs
+the formal resolution heading, date, subject, affirmative amendment decision, operative changes
+and a closing marker; the two subject statements must agree. Its subject must match the print
+or linked process title, and its date must match the Senate stage or the print's document date.
+The print number comes from that SenatePosition, never from an attachment's basename.
+All declared Word attachments are examined; a verified Word body takes precedence over PDF
+extraction. A complete readable PDF is the fallback. Competing Word versions remain unresolved.
+Only structural phrases tolerate letter spacing; the amendments reach the model verbatim,
+with the cover removed and without a text-budget cut. A saved SHA-256 is rechecked before use.
+These checks apply to automatic tracking and `/amendments`; ordinary bill selection is separate.
+See the [16 October corpus study](reviews/2026-10-16-senate-document-content.md) for measured
+coverage, source errors and the conservative exclusions. Druk 3213 has text on two cover pages
+of its 21-page PDF; its DOCX supplies the resolution and justification.
 
 ## Scanned paper, and a covering letter is not the document it transmits
 

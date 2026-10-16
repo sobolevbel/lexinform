@@ -27,7 +27,7 @@ WORD_URL = "https://api.test/sejm/term10/prints/3213/3213-uchwa%C5%82a.docx"
 SENATE = Stage(
     stage_type="SenatePosition",
     stage_name="Stanowisko Senatu",
-    date=dt.date(2026, 9, 8),
+    date=dt.date(2026, 10, 13),
     position="wniósł poprawki",
     print_number="3213",
 )
@@ -52,10 +52,12 @@ def published_world(*, workers: int = 1, attention: bool = False) -> tuple[World
     w.gateway.prints["3213"] = PrintInfo(
         term=10,
         number="3213",
-        title="Uchwała Senatu",
-        attachments=(Attachment(print_number="3213", name="3213.pdf", url=PDF_URL),),
+        title="Uchwała Senatu w sprawie ustawy o asystencji osobistej osób z niepełnosprawnościami",
+        attachments=(
+            Attachment(print_number="3213", name="3213.pdf", url=PDF_URL + "?historical"),
+        ),
     )
-    w.gateway.files[PDF_URL] = b"cover"
+    w.gateway.files[PDF_URL + "?historical"] = b"word"
     w.llm.amendments_script["1929"] = make_amendments(summary="Текст поправок отсутствует")
     w.set_stages("1929", REFERRED + (SENATE,))
     w.clock.advance(days=1)
@@ -67,11 +69,12 @@ def published_world(*, workers: int = 1, attention: bool = False) -> tuple[World
     w.gateway.prints["3213"] = w.gateway.prints["3213"].model_copy(
         update={
             "attachments": (
-                *w.gateway.prints["3213"].attachments,
+                Attachment(print_number="3213", name="3213.pdf", url=PDF_URL),
                 Attachment(print_number="3213", name="3213-uchwała.docx", url=WORD_URL),
             )
         }
     )
+    w.gateway.files[PDF_URL] = b"cover"
     w.gateway.files[WORD_URL] = b"word"
     w.batch.secondary_script[("1929", "amendments")] = make_amendments(
         summary="Исправленный разбор поправок Сената"

@@ -1,0 +1,86 @@
+[
+  {
+    "term": 9,
+    "number": "1637",
+    "name": "1637-uchwała.docx",
+    "url": "https://api.sejm.gov.pl/sejm/term9/prints/1637/1637-uchwa%C5%82a.docx",
+    "sha256": "6292a1d88e386913ae9f58c8207bac9b949554bb1bd46fe7ec4a031187b6aafe",
+    "retrieved_at": "2026-10-16T19:22:03Z",
+    "fixture": "senate_9_1637_docx.txt",
+    "extracted_characters": 736,
+    "fixture_characters": 732,
+    "fixture_whitespace": "Trailing horizontal spaces and final blank lines removed; original binary sha256 retained."
+  },
+  {
+    "term": 8,
+    "number": "31",
+    "name": "31.pdf",
+    "url": "https://api.sejm.gov.pl/sejm/term8/prints/31/31.pdf",
+    "sha256": "f7104bc3498ccb39d10985eafb460584c72b617cbcb692775e06d1ccadf3e756",
+    "retrieved_at": "2026-10-16T19:12:45Z",
+    "fixture": "senate_8_31_pdf.txt",
+    "extracted_characters": 7053,
+    "fixture_characters": 7053,
+    "fixture_whitespace": "Trailing horizontal spaces and final blank lines removed; original binary sha256 retained."
+  },
+  {
+    "term": 8,
+    "number": "1841",
+    "name": "1841.pdf",
+    "url": "https://api.sejm.gov.pl/sejm/term8/prints/1841/1841.pdf",
+    "sha256": "aa718ea5e18a843a8941badb178f93533926a8eb448695fcf4ae911597866f48",
+    "retrieved_at": "2026-10-16T19:15:35Z",
+    "fixture": "senate_8_1841_pdf.txt",
+    "extracted_characters": 2658,
+    "fixture_characters": 2658,
+    "fixture_whitespace": "Trailing horizontal spaces and final blank lines removed; original binary sha256 retained."
+  },
+  {
+    "term": 9,
+    "number": "1211",
+    "name": "1211-uchwała.docx",
+    "url": "https://api.sejm.gov.pl/sejm/term9/prints/1211/1211-uchwa%C5%82a.docx",
+    "sha256": "a65688838be6b1bbf5894017cb249618a1c23c921db147eb916149ee26037ac5",
+    "retrieved_at": "2026-10-16T19:20:54Z",
+    "fixture": "senate_9_1211_docx.txt",
+    "extracted_characters": 362,
+    "fixture_characters": 362,
+    "fixture_whitespace": "Trailing horizontal spaces and final blank lines removed; original binary sha256 retained."
+  },
+  {
+    "term": 10,
+    "number": "2140",
+    "name": "2140.docx",
+    "url": "https://api.sejm.gov.pl/sejm/term10/prints/2140/2140.docx",
+    "sha256": "cf2beac9c8c9cfd34230866a947b3f50ccb94001ac66506b306e7eb91a0d2476",
+    "retrieved_at": "2026-10-16T19:14:54Z",
+    "fixture": "senate_10_2140_docx.txt",
+    "extracted_characters": 895,
+    "fixture_characters": 892,
+    "fixture_whitespace": "Trailing horizontal spaces and final blank lines removed; original binary sha256 retained."
+  },
+  {
+    "term": 9,
+    "number": "1641",
+    "name": "1641-uchwała.docx",
+    "url": "https://api.sejm.gov.pl/sejm/term9/prints/1641/1641-uchwa%C5%82a.docx",
+    "sha256": "c80145fe27d655ec937222d28a79d7ff64d1477399b06f1968814fd00bd6aaf8",
+    "retrieved_at": "2026-10-16T19:22:14Z",
+    "fixture": "senate_9_1641_docx.txt",
+    "extracted_characters": 2880,
+    "fixture_characters": 2874,
+    "fixture_whitespace": "Trailing horizontal spaces and final blank lines removed; original binary sha256 retained."
+  },
+  {
+    "term": 9,
+    "number": "655",
+    "name": "655-uchwała.docx",
+    "url": "https://api.sejm.gov.pl/sejm/term9/prints/655/655-uchwa%C5%82a.docx",
+    "sha256": "169f7da36b8eb5ca2d1c995943a18cc85cd6f4d22910eeedf78e19cb73ebbf2c",
+    "retrieved_at": "2026-10-16T19:19:20Z",
+    "fixture": "senate_9_655_docx.txt",
+    "extracted_characters": 15460,
+    "fixture_characters": 15432,
+    "fixture_whitespace": "Trailing horizontal spaces and final blank lines removed; original binary sha256 retained."
+  }
+]

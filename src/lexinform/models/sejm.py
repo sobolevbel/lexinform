@@ -26,6 +26,7 @@ from lexinform.models.enums import (
     DocumentType,
     SourceKind,
 )
+from lexinform.models.senate import SenateResolutionIdentity
 
 NON_SEJM_PREFIXES = (PRE_PRINT_PREFIX, RCL_PREFIX, WYKAZ_PREFIX)
 
@@ -619,18 +620,6 @@ class PrintInfo(BaseModel):
         own = [a for a in pdfs if not _names_a_filing(a.name, self.number)]
         return min(own, key=lambda a: not _names_the_bill(a.name), default=None)
 
-    @property
-    def senate_resolution(self) -> Attachment | None:
-        """Named resolution DOCX avoids PDFs whose text layer contains only the cover letter."""
-        for attachment in self.attachments:
-            if re.fullmatch(
-                rf"{re.escape(self.number)}[- ]+uchwa[łl]a\.docx",
-                attachment.name.strip(),
-                re.I,
-            ):
-                return attachment
-        return self.main_pdf
-
 
 def supplement_kind(title: str) -> SourceKind | None:
     """What a document filed to a print after its submission is, or None when it is not worth a
@@ -855,6 +844,7 @@ class TextDocument(BaseModel):
     url: str
     kind: SourceKind
     extra_urls: tuple[str, ...] = ()
+    senate: SenateResolutionIdentity | None = None
 
 
 def latest_text_document(

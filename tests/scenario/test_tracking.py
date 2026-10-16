@@ -554,7 +554,16 @@ WITH_A_REPORT = WITH_REPORT + (
 
 
 def test_senate_amendments_are_summarised_from_the_senate_print() -> None:
-    w = World()
+    fixture = Path(__file__).parents[1] / "fixtures/sejm/senate_3213_resolution.txt"
+    resolution = (
+        fixture.read_text()
+        .replace("13 października 2026", "20 września 2026")
+        .replace("o asystencji osobistej osób z niepełnosprawnościami", "o cudzoziemcach")
+    )
+    w = World(
+        extractor=FakeTextExtractor(by_content={b"%PDF-senat": resolution}),
+        text_budget_chars=60_000,
+    )
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=REFERRED)
     w.run()
     w.gateway.prints["2994"] = PrintInfo(
@@ -617,7 +626,7 @@ def test_senate_amendments_read_resolution_instead_of_mixed_scan_cover(injected:
     w.gateway.prints["3213"] = PrintInfo(
         term=10,
         number="3213",
-        title="Uchwała Senatu w sprawie ustawy o asystencji osobistej",
+        title="Uchwała Senatu w sprawie ustawy o asystencji osobistej osób z niepełnosprawnościami",
         attachments=(
             Attachment(print_number="3213", name="3213.pdf", url=pdf_url),
             Attachment(print_number="3213", name="3213-uchwała.docx", url=word_url),
@@ -632,7 +641,7 @@ def test_senate_amendments_read_resolution_instead_of_mixed_scan_cover(injected:
             Stage(
                 stage_type="SenatePosition",
                 stage_name="Stanowisko Senatu",
-                date=dt.date(2026, 9, 8),
+                date=dt.date(2026, 10, 13),
                 position="wniósł poprawki",
                 print_number="3213",
             ),

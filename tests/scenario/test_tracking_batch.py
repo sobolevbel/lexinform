@@ -1,5 +1,7 @@
 """Batch digests defer the observation and deliver all accumulated news together."""
 
+from pathlib import Path
+
 import pytest
 
 from lexinform.errors import LlmUnavailableError
@@ -170,6 +172,17 @@ def test_amendment_batches_wait_only_when_enabled(
         batch=True,
         batch_kinds=frozenset({"amendments"}) if enabled else frozenset(),
         workers=workers,
+        text_budget_chars=60_000,
+        extractor=FakeTextExtractor(
+            by_content={
+                b"%PDF-senat": (
+                    Path(__file__).parents[1] / "fixtures/sejm/senate_3213_resolution.txt"
+                )
+                .read_text()
+                .replace("13 października 2026", "20 września 2026")
+                .replace("o asystencji osobistej osób z niepełnosprawnościami", "o cudzoziemcach")
+            }
+        ),
     )
     w.add_bill("3039", TITLE, stages=REFERRED if senate else WITH_REPORT)
     w.gateway.files[REPORT_URL] = b"%PDF-report"

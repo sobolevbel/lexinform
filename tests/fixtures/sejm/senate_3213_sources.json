@@ -14,7 +14,7 @@
   "title": "Uchwała Senatu w sprawie ustawy o asystencji osobistej osób z niepełnosprawnościami.",
   "retrieved_on": "2026-10-14",
   "pdf_pages": 21,
-  "pdf_pages_with_text": 1,
+  "pdf_pages_with_text": 2,
   "sources": [
     {
       "url": "https://api.sejm.gov.pl/sejm/term10/prints/3213/3213.pdf",
@@ -27,5 +27,6 @@
       "text_fixture": "senate_3213_resolution.txt"
     }
   ],
-  "fixture_whitespace": "Trailing spaces and final empty lines removed; original bytes identified by sha256."
+  "fixture_whitespace": "Trailing spaces and final empty lines removed; original bytes identified by sha256.",
+  "verification_note": "2026-10-16: all 21 pages re-extracted; the cover occupies pages 1-2, pages 3-21 yield no text."
 }

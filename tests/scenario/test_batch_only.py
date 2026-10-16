@@ -50,7 +50,7 @@ def _secondary_world(kind: CallKind) -> tuple[World, OverflowBatch, AnalysisServ
     analysis = replace(w.container, analysis_options_override=options).analysis_service()
     document = TextDocument(
         url="https://api.test/filed.pdf",
-        kind=("senate_amendments" if kind == "amendments" else "government_position"),
+        kind=("committee_amendments" if kind == "amendments" else "government_position"),
     )
     w.gateway.files[document.url] = b"%PDF"
 

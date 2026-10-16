@@ -4,10 +4,35 @@ import datetime as dt
 import difflib
 import re
 import unicodedata
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
 SENATE_BASE_URL = "https://www.senat.gov.pl"
+
+
+class SenateResolutionIdentity(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    sha256: str
+    subject: str
+    adopted_on: dt.date
+
+
+class SenateResolutionEvidence(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    limitation: str
+    subject: str = ""
+    adopted_on: dt.date | None = None
+    outcome: Literal["amendments", "rejection", "acceptance"] | None = None
+    text: str = ""
+    operative_text: str = ""
+    justification: bool = False
+
+    @property
+    def complete(self) -> bool:
+        return self.limitation == ""
 
 
 class SenateCommittee(BaseModel):
