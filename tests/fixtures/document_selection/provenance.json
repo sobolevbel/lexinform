@@ -1,0 +1,70 @@
+{
+  "12410906": {
+    "source": "corpus/12410906.json",
+    "source_sha256": "6db5d23a0e1c9169ab9d4cd045ccfaf245701c67199ddfa660a165417beafa5c",
+    "retained_stage_numbers": [
+      4
+    ]
+  },
+  "12321775": {
+    "source": "corpus/12321775.json",
+    "source_sha256": "190a704c67dbd7100a30cbce132ccdfeaddfa4d9b126a86b1a277a9879776ebb",
+    "retained_stage_numbers": [
+      12
+    ]
+  },
+  "12400754": {
+    "source": "corpus/12400754.json",
+    "source_sha256": "02eeefad00aa1a614fed6030d780dfd4f0e447e5c25ea3296c72d493f801e0d4",
+    "retained_stage_numbers": [
+      4
+    ]
+  },
+  "779502": {
+    "source": "documents/files/779502.docx",
+    "sha256": "1cd93dcd5a30a4f4655fb69372c18f36e3222a5697f35305f2ad5b5a9f6f54e8",
+    "bytes": 45994
+  },
+  "791866": {
+    "source": "documents/files/791866.docx",
+    "sha256": "79d974c34c7996e8f7884986478b30df0e2639f1f6b947af92ed13da356e77d5",
+    "bytes": 52281
+  },
+  "791867": {
+    "source": "documents/files/791867.docx",
+    "sha256": "564b79487ba199c73fad300d50d8e230478a3b49216d9b8f1b854f88d573eddb",
+    "bytes": 79742
+  },
+  "791873": {
+    "source": "documents/files/791873.docx",
+    "sha256": "82e0628fd7af9a1349303dcc6e85087c5b16ab6f7e22795791b21c1259820c46",
+    "bytes": 1237795
+  },
+  "418603": {
+    "source": "documents/files/418603.docx",
+    "sha256": "8501c9b1b7b3550f5184cc4ef70d9cbf90a7a5eb34b5bfd5cf10213e492afbfd",
+    "bytes": 117898
+  },
+  "418609": {
+    "source": "documents/files/418609.docx",
+    "sha256": "8bf2bd8fe6f94bdedb7edfe548d584a44868001be19111f58e88ddc435633cf2",
+    "bytes": 482678
+  },
+  "730985": {
+    "source": "documents/files/730985.pdf",
+    "sha256": "767b39d398a11aa7d68304011d15a3522b1c6be5210c15d1308aa7df8104cf33",
+    "bytes": 83863
+  },
+  "712314": {
+    "source": "documents/files/712314.zip",
+    "sha256": "3fa07de3dcc71492f729fc953b1b2eff00a8796691f7bea18a8f9b643f44dd68",
+    "bytes": 576111
+  },
+  "download": {
+    "url": "https://api.sejm.gov.pl/sejm/term8/prints/2864/2864-%20trzyletni%20plan%20mianowa%C5%84.pdf",
+    "retrieved_at": "2026-10-16T23:43:31.273832+00:00",
+    "bytes": 549296,
+    "sha256": "2db5c3c3d40937fedd1cf4aac519988a6f63481843546d753e69ccb4aca32d59",
+    "pages": 6
+  }
+}

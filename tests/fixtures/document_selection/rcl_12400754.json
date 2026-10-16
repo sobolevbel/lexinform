@@ -1,0 +1,140 @@
+{
+  "id": 12400754,
+  "title": "Projekt ustawy o zmianie ustawy – Prawo o szkolnictwie wyższym i nauce",
+  "applicant": "Minister Nauki i Szkolnictwa Wyższego",
+  "wykaz_number": "UDER86",
+  "wykaz_url": "https://www.gov.pl/web/premier/projekt-ustawy-o-zmianie-ustawy--prawo-o-szkolnictwie-wyzszym-i-nauce9",
+  "created": "2025-08-06",
+  "modified": "2026-05-28",
+  "departments": [
+    "szkolnictwo wyższe i nauka"
+  ],
+  "keywords": [
+    "SZKOLNICTWO WYŻSZE"
+  ],
+  "status": "otwarty",
+  "eu_note": null,
+  "term_label": "X",
+  "rm_number": "RM-0610-229-25",
+  "sejm_url": "http://www.sejm.gov.pl/Sejm7.nsf/agent.xsp?symbol=RPL&Id=RM-0610-229-25",
+  "print_number": null,
+  "stages": [
+    {
+      "id": 13147901,
+      "number": 4,
+      "name": "Opiniowanie",
+      "state": "reached",
+      "started": null,
+      "ended": null,
+      "modified": "2025-10-23",
+      "folders": [
+        {
+          "id": 13147905,
+          "name": "Projekt",
+          "modified": "2025-08-06",
+          "documents": [
+            {
+              "id": 730984,
+              "name": "W_OSR_PSWiN_ZM - zapomoga dla doktorantow.pdf",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12400754/13147901/13147905/dokument730984.pdf",
+              "created": "2025-08-06",
+              "author": "Minister Nauki i Szkolnictwa Wyższego"
+            },
+            {
+              "id": 730985,
+              "name": "W_UST_ZM_PSWiN - zapomogi dla doktorantów - za zgodność.pdf",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12400754/13147901/13147905/dokument730985.pdf",
+              "created": "2025-08-06",
+              "author": "Minister Nauki i Szkolnictwa Wyższego"
+            },
+            {
+              "id": 730986,
+              "name": "W_UZASAD_PSWiN_ZM - zapomogi dla doktorantow.pdf",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12400754/13147901/13147905/dokument730986.pdf",
+              "created": "2025-08-06",
+              "author": "Minister Nauki i Szkolnictwa Wyższego"
+            }
+          ]
+        },
+        {
+          "id": 13147903,
+          "name": "Pisma kierujące projekt do opiniowania",
+          "modified": "2025-08-06",
+          "documents": [
+            {
+              "id": 730987,
+              "name": "pismo przekazujące projekt do opiniowania.pdf",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12400754/13147901/13147903/dokument730987.pdf",
+              "created": "2025-08-06",
+              "author": "Minister Nauki i Szkolnictwa Wyższego"
+            }
+          ]
+        },
+        {
+          "id": 13147902,
+          "name": "Stanowiska zgłoszone w ramach opiniowania",
+          "modified": "2025-10-23",
+          "documents": [
+            {
+              "id": 744287,
+              "name": "KRASP - pismo przewodnie.pdf",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12400754/13147901/13147902/dokument744287.pdf",
+              "created": "2025-10-23",
+              "author": "Minister Nauki i Szkolnictwa Wyższego"
+            },
+            {
+              "id": 744288,
+              "name": "KRASP - UWAGI.pdf",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12400754/13147901/13147902/dokument744288.pdf",
+              "created": "2025-10-23",
+              "author": "Minister Nauki i Szkolnictwa Wyższego"
+            },
+            {
+              "id": 744289,
+              "name": "KRD - UWAGI.pdf",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12400754/13147901/13147902/dokument744289.pdf",
+              "created": "2025-10-23",
+              "author": "Minister Nauki i Szkolnictwa Wyższego"
+            },
+            {
+              "id": 744290,
+              "name": "KRUP - pismo przewodnie.pdf",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12400754/13147901/13147902/dokument744290.pdf",
+              "created": "2025-10-23",
+              "author": "Minister Nauki i Szkolnictwa Wyższego"
+            },
+            {
+              "id": 744291,
+              "name": "KRUP - UWAGI.pdf",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12400754/13147901/13147902/dokument744291.pdf",
+              "created": "2025-10-23",
+              "author": "Minister Nauki i Szkolnictwa Wyższego"
+            },
+            {
+              "id": 744292,
+              "name": "RAPORT z konsultacji.docx",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12400754/13147901/13147902/dokument744292.docx",
+              "created": "2025-10-23",
+              "author": "Minister Nauki i Szkolnictwa Wyższego"
+            }
+          ]
+        },
+        {
+          "id": 13147904,
+          "name": "Odniesienie się wnioskodawcy do uwag",
+          "modified": "2025-10-23",
+          "documents": [
+            {
+              "id": 744293,
+              "name": "RAPORT z konsultacji.docx - odniesienie do uwag",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12400754/13147901/13147904/dokument744293.docx",
+              "created": "2025-10-23",
+              "author": "Minister Nauki i Szkolnictwa Wyższego"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "consultation": null
+}

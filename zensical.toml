@@ -47,6 +47,7 @@ nav = [
   ] },
   { "Планы" = [
     { "Обзор" = "plans/index.md" },
+    { "Выбор документов для событий" = "plans/2026-10-17-document-selection.md" },
     { "Внимание и запоминающиеся имена" = "plans/2026-10-13-reader-attention.md" },
     { "Реализация внимания читателя" = "plans/2026-10-13-reader-attention-progress.md" },
     { "Полезность сообщений" = "plans/2026-10-13-message-usefulness.md" },

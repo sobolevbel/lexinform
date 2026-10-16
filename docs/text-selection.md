@@ -5,6 +5,11 @@ Extracted from `CLAUDE.md` on 2026-09-14 so that the rules of `sections.py`, `do
 Nothing here is new; every number was measured on the corpus (`CLAUDE.md` says what the
 corpus holds and how to re-run a measurement).
 
+The [17 October event-source audit and plan](plans/2026-10-17-document-selection.md)
+maps every legislative-document read path, records B97–B101 with strict-xfail reproductions,
+and distinguishes candidate selection, version evidence and extraction completeness.
+Its proposed rules are not implemented yet.
+
 Consultation reviews need their own selection rules: the law trimmer deliberately drops the
 very tables they analyse. See the [14 October corpus study](reviews/2026-10-14-consultation-text.md)
 for document layouts, measured reductions and unsafe shortcuts.

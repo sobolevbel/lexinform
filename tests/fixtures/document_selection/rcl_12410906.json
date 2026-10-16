@@ -1,0 +1,84 @@
+{
+  "id": 12410906,
+  "title": "projekt ustawy o zmianie ustawy – Prawo zamówień publicznych oraz ustawy o kosztach sądowych w sprawach cywilnych",
+  "applicant": "Prezes Urzędu Zamówień Publicznych",
+  "wykaz_number": "UD409",
+  "wykaz_url": "https://www.gov.pl/web/premier/projekt-ustawy-o-zmianie-ustawy--prawo-zamowien-publicznych-oraz-ustawy-o-kosztach-sadowych-w-sprawach-cywilnych",
+  "created": "2026-06-02",
+  "modified": "2026-08-11",
+  "departments": [
+    "gospodarka"
+  ],
+  "keywords": [
+    "ZAMÓWIENIA PUBLICZNE"
+  ],
+  "status": "otwarty",
+  "eu_note": null,
+  "term_label": "X",
+  "rm_number": null,
+  "sejm_url": null,
+  "print_number": null,
+  "stages": [
+    {
+      "id": 13207357,
+      "number": 4,
+      "name": "Opiniowanie",
+      "state": "active",
+      "started": null,
+      "ended": null,
+      "modified": "2026-08-11",
+      "folders": [
+        {
+          "id": 13207358,
+          "name": "Projekt",
+          "modified": "2026-08-11",
+          "documents": [
+            {
+              "id": 779502,
+              "name": "Projekt ustawy o zmianie ustawy Pzp oraz ustawy o kosztach sądowych ws. cywilnych (UD409).docx",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12410906/13207357/13207358/dokument779502.docx",
+              "created": "2026-06-02",
+              "author": "Prezes Urzędu Zamówień Publicznych"
+            },
+            {
+              "id": 779503,
+              "name": "UZP_uzasadnienie zmiana ustawy Pzp_02 06 2026 (UD 409).docx",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12410906/13207357/13207358/dokument779503.docx",
+              "created": "2026-06-02",
+              "author": "Prezes Urzędu Zamówień Publicznych"
+            },
+            {
+              "id": 779504,
+              "name": "Prezes UZP_OSR_ zmiana ustawy Pzp 02.06.26 (UD409).doc",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12410906/13207357/13207358/dokument779504.doc",
+              "created": "2026-06-02",
+              "author": "Prezes Urzędu Zamówień Publicznych"
+            },
+            {
+              "id": 791866,
+              "name": "10.08.2026_NOWY TEKST projektu ustawy UD409_zm Pzp.docx",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12410906/13207357/13207358/dokument791866.docx",
+              "created": "2026-08-11",
+              "author": "Prezes Urzędu Zamówień Publicznych"
+            },
+            {
+              "id": 791867,
+              "name": "10.08.2026_UZP_uzasadnienie do NOWEGO TEKSTU projektu ustawy UD409.docx",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12410906/13207357/13207358/dokument791867.docx",
+              "created": "2026-08-11",
+              "author": "Prezes Urzędu Zamówień Publicznych"
+            },
+            {
+              "id": 791873,
+              "name": "OSR do NOWEGO TEKSTU projektu ustawy zm. Pzp UD409_10.08.2026 r..docx",
+              "url": "https://legislacja.rcl.gov.pl/docs//2/12410906/13207357/13207358/dokument791873.docx",
+              "created": "2026-08-11",
+              "author": "Prezes Urzędu Zamówień Publicznych"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "consultation": null
+}
