@@ -56,6 +56,45 @@ def test_digest_only_event_is_never_drained_and_draft_is_not_coverage() -> None:
     assert len(w.publisher.sent) > before
 
 
+def test_unapproved_digest_waiting_stays_saved_without_reports_or_repeated_alerts() -> None:
+    w = World(reader_attention="on", attention_roundup="daily")
+    source = queued_event(w)
+    assert source.id is not None
+    calls = len(w.notifier.calls)
+
+    first = w.container.delivery_service(dry_run=False).run()
+    w.repo.restore(w.repo.dump())
+    w.clock.advance(hours=25)
+    second = w.container.delivery_service(dry_run=False).run()
+
+    assert first.is_empty and second.is_empty
+    assert second.attention["digest_queued_events"] == 1
+    assert second.attention["digest_awaiting_approval"] == 1
+    assert len(w.notifier.calls) == calls
+    assert w.repo.get_delivery_alert(CHANNEL) is None
+    assert w.repo.publication_by_id(source.id) == source
+    text = w.formatter.run_report(second, []).text
+    assert "digest_" not in text and "attention: delivery" not in text
+
+
+def test_approved_digest_waiting_keeps_delivery_alerts() -> None:
+    w = World(reader_attention="on")
+    queued_event(w)
+    w.publisher.fail_on = {DIGEST_NUMBER}
+    service = w.container.digest_service(dry_run=False)
+    assert service is not None
+    assert service.publish("2026-W37").failed
+    calls = len(w.notifier.calls)
+
+    report = w.container.delivery_service(dry_run=False).run()
+
+    assert not report.is_empty
+    assert report.attention["digest_awaiting_approval"] == 0
+    assert len(w.notifier.calls) == calls + 1
+    assert w.repo.get_delivery_alert(CHANNEL) is not None
+    assert "digest_queued_events: 1" in w.formatter.run_report(report, []).text
+
+
 def test_approved_digest_covers_exact_saved_event_and_survives_restore() -> None:
     w = World(reader_attention="on")
     source = queued_event(w)

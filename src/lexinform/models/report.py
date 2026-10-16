@@ -176,12 +176,24 @@ class RunReport(BaseModel):
         return not self.errors
 
     @property
+    def attention_notifications(self) -> dict[str, int]:
+        metrics = dict(self.attention)
+        if metrics.get("digest_queued_events", 0) <= metrics.get("digest_awaiting_approval", 0):
+            for key in (
+                "digest_queued_events",
+                "digest_awaiting_approval",
+                "digest_oldest_minutes",
+            ):
+                metrics.pop(key, None)
+        return metrics
+
+    @property
     def is_empty(self) -> bool:
         """Routine checks, batch waiting and timing alone are not run results."""
         values = self.model_dump()
         values["attention"] = {
             key: count
-            for key, count in self.attention.items()
+            for key, count in self.attention_notifications.items()
             if key not in {"daily_queued", "daily_oldest_minutes"}
         }
         return not any(

@@ -40,7 +40,7 @@ class DeliveryNotifier:
         warning = bool(
             report.attention.get("daily_overdue")
             or report.attention.get("participation_unavailable")
-            or report.attention.get("digest_queued_events")
+            or report.attention_notifications.get("digest_queued_events")
         )
         fingerprint = self._fingerprint() if warning else ""
         only_warning = (
@@ -88,6 +88,11 @@ class DeliveryNotifier:
                     Bill.model_validate_json(plan.bill_json), plan.participation
                 ).consultation
                 unavailable = window is None or window.end is None
-            if overdue or unavailable or plan.destination == "digest_only":
+            approved_digest = (
+                plan.destination == "digest_only"
+                and pub.id is not None
+                and self._repo.digest_owner(pub.id) is not None
+            )
+            if overdue or unavailable or approved_digest:
                 warnings.append((pub.id, pub.status.value, pub.attempts, pub.error))
         return hashlib.sha256(json.dumps(warnings).encode()).hexdigest()

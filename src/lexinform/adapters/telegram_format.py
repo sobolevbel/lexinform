@@ -1503,12 +1503,13 @@ class MessageFormatter:
                     f"covered events: {report.digest_events_covered}",
                 )
             )
-        if report.attention:
+        attention = report.attention_notifications
+        if attention:
             sections.append(
                 _section(
                     "👁",
                     "attention: delivery",
-                    *(f"{esc(key)}: {count}" for key, count in sorted(report.attention.items())),
+                    *(f"{esc(key)}: {count}" for key, count in sorted(attention.items())),
                 )
             )
         logs = ""
