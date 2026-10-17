@@ -29,6 +29,7 @@ class PypdfTextExtractor:
                     pages.append(page.extract_text() or "")
                 except Exception as exc:  # pypdf raises a zoo of exceptions on odd PDFs
                     log.warning("pypdf failed on page %d: %s", index + 1, exc)
+                    pages.append("")
         except Exception as exc:
             # An empty, truncated or encrypted file: the bill falls back to its metadata, as one
             # of an unknown format does. Raising would spend its three analysis attempts instead.

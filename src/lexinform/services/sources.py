@@ -10,6 +10,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Literal
 
+from lexinform.document_versions import normative_name
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     FULL_TEXT_SOURCES,
@@ -19,6 +20,7 @@ from lexinform.models import (
     LocatedText,
     PrintInfo,
     ProcessDetail,
+    RclDocument,
     RclProject,
     ReviewPurpose,
     ReviewSource,
@@ -27,6 +29,8 @@ from lexinform.models import (
     submission_pdf_url,
     third_reading_kept_the_text,
 )
+from lexinform.models.rcl import text_rank, text_role
+from lexinform.models.sejm import print_part_number
 from lexinform.ports import ConsultationDocuments, SejmGateway, TextSource
 
 log = logging.getLogger(__name__)
@@ -35,12 +39,15 @@ log = logging.getLogger(__name__)
 def fetch_print(gateway: SejmGateway, bill: Bill) -> PrintInfo | None:
     """The print, or None when the API has none for this number (a warning, not a failure)."""
     try:
-        return gateway.get_print(bill.term, bill.number)
+        info = gateway.get_print(bill.term, bill.number)
     except ServiceUnavailableError:
         raise
     except Exception as exc:
         log.warning("print %s unavailable: %s", bill.number, exc)
         return None
+    amendments = gateway.self_amendments(bill.term, bill.number)
+    related = {extra.number: extra for extra in (*info.additional_prints, *amendments)}
+    return info.model_copy(update={"additional_prints": tuple(related.values())})
 
 
 def print_of_project(gateway: SejmGateway, project: RclProject, term: int) -> str | None:
@@ -64,8 +71,33 @@ def print_of_project(gateway: SejmGateway, project: RclProject, term: int) -> st
 
 
 def original_document(print_info: PrintInfo | None) -> TextDocument | None:
-    pdf = print_info.main_pdf if print_info else None
-    return TextDocument(url=pdf.url, kind="print") if pdf else None
+    if print_info is None or not print_info.pdf_candidates:
+        return None
+    candidates = print_info.pdf_candidates
+    documents = tuple(
+        TextDocument(
+            url=pdf.url,
+            kind="print",
+            compare_versions=True,
+            required_urls=tuple(
+                other.url
+                for other in candidates
+                if other.url != pdf.url
+                and print_part_number(other.name, print_info.number) is not None
+            )
+            if print_part_number(pdf.name, print_info.number) is not None
+            else (),
+            amendment_urls=tuple(
+                a.url
+                for extra in print_info.additional_prints
+                if extra.title.strip().casefold().startswith("autopoprawka")
+                for a in extra.pdf_candidates[:1]
+            ),
+            version_basis=(f"sejm/{print_info.term}/print/{print_info.number}",),
+        )
+        for pdf in candidates
+    )
+    return documents[0].model_copy(update={"alternatives": documents[1:]})
 
 
 class SejmTextSource:
@@ -114,11 +146,29 @@ class SejmTextSource:
         if candidate.url != record.source_url:
             return candidate
         checked = record.source_checked_at or record.created_at
+        if candidate.amendment_urls and print_info is not None:
+            known = {part.url for part in record.selection.parts} if record.selection else set()
+            if any(
+                (
+                    extra.document_date is not None
+                    and extra.document_date > _as_utc(checked).date()
+                    or extra.change_date is not None
+                    and _as_utc(extra.change_date) > _as_utc(checked)
+                )
+                and any(
+                    pdf.url in candidate.amendment_urls and pdf.url not in known
+                    for pdf in extra.pdf_candidates
+                )
+                for extra in print_info.additional_prints
+            ):
+                return candidate
         if (
-            candidate.kind == "print"
-            and print_info is not None
+            print_info is not None
             and print_info.change_date is not None
             and _as_utc(print_info.change_date) > _as_utc(checked)
+        ) or (
+            candidate.kind in ("committee_report", "text_after3")
+            and _as_utc(detail.change_date) > _as_utc(checked)
         ):
             return candidate
         return None
@@ -190,11 +240,65 @@ class RclTextSource:
         documents = project.text_documents()
         if "bill" not in documents:
             return LocatedText()
-        extras = tuple(
-            documents[role].url for role in ("justification", "osr") if role in documents
+        main = documents["bill"]
+        stage = next(
+            st
+            for st in reversed(project.reached_stages)
+            if any(d.id == main.id for d in st.documents("project"))
+        )
+        available = [d for d in stage.documents("project") if d.readable]
+
+        def candidate(doc: RclDocument) -> TextDocument:
+            extras = tuple(
+                min(
+                    matches,
+                    key=lambda d: (
+                        "nowy tekst" not in d.name.lower(),
+                        text_rank(d.name, d.extension),
+                        d.url,
+                    ),
+                ).url
+                for role in ("justification", "osr")
+                if (
+                    matches := [
+                        d
+                        for d in available
+                        if text_role(d.name) == role and d.id != doc.id and d.created == doc.created
+                    ]
+                )
+            )
+            return TextDocument(
+                url=doc.url,
+                kind="rcl",
+                compare_versions=True,
+                normative_urls=tuple(
+                    d.url
+                    for d in available
+                    if d.id != doc.id and d.created == doc.created and normative_name(d.name)
+                ),
+                extra_urls=extras,
+                amendment_urls=tuple(
+                    dict.fromkeys(
+                        d.url
+                        for st in project.reached_stages
+                        for d in st.documents("project")
+                        if d.readable
+                        and d.id != doc.id
+                        and "autopoprawka" in d.name.casefold()
+                        and (doc.created is None or d.created is None or d.created >= doc.created)
+                    )
+                ),
+                version_basis=(f"rcl/{project.id}/stage/{stage.id}", doc.name),
+            )
+
+        alternatives = tuple(
+            candidate(d)
+            for d in sorted(available, key=lambda d: d.url)
+            if d.id != main.id
+            and (text_role(d.name) == "bill" or "autopoprawka" in d.name.casefold())
         )
         return LocatedText(
-            document=TextDocument(url=documents["bill"].url, kind="rcl", extra_urls=extras)
+            document=candidate(main).model_copy(update={"alternatives": alternatives})
         )
 
     def supporting_documents(self, bill: Bill, purpose: ReviewPurpose) -> tuple[ReviewSource, ...]:

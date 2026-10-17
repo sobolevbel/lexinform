@@ -60,6 +60,7 @@ class PrefilterLoad:
     problem: str | None
     pages: int = 0
     unanswered: bool = False
+    selection_state: str = ""
 
     @property
     def is_scan(self) -> bool:
@@ -155,6 +156,14 @@ class TextPrefilterService:
         guard. A file the host would not hand over is neither: the bill stays pending and the next
         run asks again.
         """
+        if loaded.selection_state in ("unsupported", "ambiguous"):
+            status = (
+                BillStatus.DOCUMENT_AMBIGUOUS
+                if loaded.selection_state == "ambiguous"
+                else BillStatus.DOCUMENT_UNSUPPORTED
+            )
+            self._repo.set_status(bill.term, bill.number, status, reason=loaded.problem)
+            return False
         if loaded.unanswered:
             self._repo.set_status(
                 bill.term,
@@ -235,7 +244,15 @@ class TextPrefilterService:
                 )
             log.info("%s has no readable text; text prefilter skipped", bill.number)
             return PrefilterLoad(None, "text prefilter: no document to read")
-        file = self._loader.read(located.document.url)
+        _, file = self._loader.select_document(located.document)
+        if file.selection.state == "waiting":
+            return PrefilterLoad(None, "; ".join(file.selection.rejected), unanswered=True)
+        if file.selection.state in ("unsupported", "ambiguous"):
+            return PrefilterLoad(
+                None,
+                f"text prefilter: {file.selection.state}: " + "; ".join(file.selection.rejected),
+                selection_state=file.selection.state,
+            )
         if file.text is None:
             return PrefilterLoad(None, _no_text(file), pages=file.pages)
         if not carries_the_document(file.text, min_chars=MIN_TEXT_CHARS, pages=file.pages):
@@ -247,7 +264,8 @@ class TextPrefilterService:
             # prints** are that case, every one with pages the model could have read, and the
             # invariant says a file keywords cannot search is not a file to drop.
             return PrefilterLoad(None, _no_document(file), pages=file.pages)
-        return PrefilterLoad(file.text, None)
+        amendments = [part.text for part in file.selection.parts if part.role == "self_amendment"]
+        return PrefilterLoad("\n\n".join((file.text, *amendments)), None)
 
 
 def _miss(counts: dict[str, int], min_distinct: int) -> str:

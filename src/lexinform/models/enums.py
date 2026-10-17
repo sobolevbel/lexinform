@@ -38,6 +38,8 @@ class BillStatus(StrEnum):
     DISCOVERED = "discovered"
     SKIPPED_PREFILTER = "skipped_prefilter"
     TEXT_PREFILTER_PENDING = "text_prefilter_pending"
+    DOCUMENT_UNSUPPORTED = "document_unsupported"
+    DOCUMENT_AMBIGUOUS = "document_ambiguous"
     SKIPPED_TEXT_PREFILTER = "skipped_text_prefilter"
     SKIPPED_COST = "skipped_cost"
     SKIPPED_CLOSED = "skipped_closed"

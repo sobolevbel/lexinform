@@ -685,9 +685,12 @@ def test_additional_committee_report_is_summarised_with_its_proposal() -> None:
 
 
 def test_unreadable_amendments_document_leaves_the_bare_event() -> None:
-    w = World(extractor=FakeTextExtractor(error=RuntimeError("no text layer")))
+    extractor = FakeTextExtractor()
+    w = World(extractor=extractor)
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=WITH_REPORT, with_pdf=False)
+    w.gateway.files[REPORT_URL] = b"%PDF"
     w.run()
+    extractor.error = RuntimeError("no text layer")
     w.gateway.files[A_REPORT_URL] = b"%PDF-A"
     w.set_stages("3039", WITH_A_REPORT)
     w.clock.advance(days=1)
@@ -929,6 +932,7 @@ def test_a_stage_the_sejm_publishes_late_is_held_and_told_with_the_next_post() -
     the cause of the first and repeated seven of its eleven lines."""
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach", stages=WITH_REPORT)
+    w.gateway.files[REPORT_URL] = b"%PDF"
     w.run()
     w.set_stages("3039", WITH_REPORT + (WORK_AFTER_SECOND_READING,))
     w.clock.advance(days=1)

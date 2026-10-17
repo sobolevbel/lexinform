@@ -20,9 +20,6 @@ def project(identity: int) -> RclProject:
     return RclProject.model_validate_json((FIXTURES / f"rcl_{identity}.json").read_bytes())
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError, reason="B97: an older RCL version wins by file order"
-)
 def test_new_rcl_text_and_its_justification_supersede_the_previous_version() -> None:
     picked = project(12410906).text_documents()
 
@@ -31,20 +28,12 @@ def test_new_rcl_text_and_its_justification_supersede_the_previous_version() -> 
     assert picked["osr"].id == 791873
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError, reason="B99: a draft regulation hides the available bill"
-)
 def test_rcl_implementing_regulation_does_not_replace_the_bill() -> None:
     picked = project(12321775).text_documents()
 
     assert picked["bill"].id == 418603
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="B100: za zgodność is mistaken for a compliance table",
-)
 def test_certified_bill_is_not_a_compliance_table() -> None:
     picked = project(12400754).text_documents()
 
@@ -52,9 +41,6 @@ def test_certified_bill_is_not_a_compliance_table() -> None:
     assert picked["bill"].id == 730985
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError, reason="B101: a staffing annex is picked as the budget bill"
-)
 def test_budget_print_selects_its_act_instead_of_the_first_pdf() -> None:
     info = parse_print(json.loads((FIXTURES / "print_8_2864.json").read_bytes()), term=8)
 
@@ -81,9 +67,6 @@ def archive_of(members: list[tuple[str, bytes]]) -> bytes:
     return buffer.getvalue()
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError, reason="B98: the first nested ZIP has only a justification"
-)
 def test_a_nested_regulation_justification_cannot_hide_the_sibling_bill_package() -> None:
     wrong = archive_of(
         [("UZASADNIENIE.docx", word("UZASADNIENIE\nNowelizacja rozporządzenia ministra."))]
@@ -112,9 +95,6 @@ def test_compliance_table_names_remain_excluded() -> None:
     assert "bill" not in changed.text_documents()
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError, reason="B102: the declared ZIP bill uses Deflate64"
-)
 def test_deflate64_package_does_not_silently_discard_its_bill() -> None:
     data = (FIXTURES / "deflate64_771111.zip").read_bytes()
     extractor = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
@@ -125,9 +105,6 @@ def test_deflate64_package_does_not_silently_discard_its_bill() -> None:
     assert "inwestycji uzupełniającej" in text
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError, reason="B103: a real RCL package uses three ZIP levels"
-)
 def test_signed_nested_bill_package_is_not_treated_as_an_empty_document() -> None:
     law = "USTAWA\nz dnia 17 marca 2025 r.\nArt. 1. Termin wynosi 30 dni."
     inner = archive_of([("1. Projekt ustawy/Projekt ustawy.docx", word(law))])
@@ -142,9 +119,6 @@ def test_signed_nested_bill_package_is_not_treated_as_an_empty_document() -> Non
     assert law in text
 
 
-@pytest.mark.xfail(
-    strict=True, raises=AssertionError, reason="B105: a normative annex is discarded by its name"
-)
 def test_statutory_annex_with_the_affected_services_survives_package_selection() -> None:
     law = "USTAWA\nz dnia 20 maja 2026 r.\nArt. 1. Dodaje się załącznik nr 16 w brzmieniu określonym w załączniku nr 2 do niniejszej ustawy."
     annex = "Załącznik nr 2\nWYKAZ USŁUG, O KTÓRYCH MOWA W ART. 105A UST. 1 PKT 2 USTAWY\n62.02.2\tUsługi związane z doradztwem w zakresie informatyki."
@@ -212,11 +186,6 @@ def extracted_investment_package(voltage: int) -> str:
     return extractor.extract(package)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    raises=AssertionError,
-    reason="B105: the selected package must retain its normative annex through trimming",
-)
 def test_selected_normative_annex_survives_extraction_and_trimming() -> None:
     text = extracted_investment_package(400)
 
@@ -225,20 +194,7 @@ def test_selected_normative_annex_survives_extraction_and_trimming() -> None:
     assert "Budowa linii 400 kV" in trimmed
 
 
-@pytest.mark.parametrize(
-    "annex_before_reasons",
-    [
-        True,
-        pytest.param(
-            False,
-            marks=pytest.mark.xfail(
-                strict=True,
-                raises=AssertionError,
-                reason="B105: a substantive annex mutation is invisible after OSR",
-            ),
-        ),
-    ],
-)
+@pytest.mark.parametrize("annex_before_reasons", [True, False])
 def test_normative_annex_voltage_change_changes_the_law_digest(annex_before_reasons: bool) -> None:
     if annex_before_reasons:
         original = investment_package(annex_before_reasons=True)

@@ -105,11 +105,7 @@ def test_single_stray_mention_is_rejected_but_kept_for_tuning(
     assert f"10/4100 | {bill.summary.title} | {bill.last_error}" in caplog.text
 
 
-def test_a_broken_pdf_is_a_verdict_and_a_file_not_there_yet_is_not() -> None:
-    """The Sejm lists a process before the print's file is attached to it, so "no file" is a
-    fact about the day: druk 3094 was judged five minutes before its PDF appeared (15 Sept 2026)
-    and the skip closed the row for good. A file that downloads and cannot be read is the other
-    thing, and stays a verdict."""
+def test_a_broken_pdf_is_unsupported_and_a_file_not_there_yet_waits() -> None:
     w = World(extractor=FakeTextExtractor(error=ValueError("not a PDF")))
     w.add_bill("4100", "Rządowy projekt ustawy o podatku")
     w.add_bill("4101", "Rządowy projekt ustawy o lasach", with_pdf=False)
@@ -122,8 +118,8 @@ def test_a_broken_pdf_is_a_verdict_and_a_file_not_there_yet_is_not() -> None:
     assert [(v.number, v.stage) for v in report.prefilter_details] == [("4100", "unreadable")]
     broken, missing = w.bill("4100"), w.bill("4101")
     # The reason is on record: a skip for lack of a text is not a keyword miss.
-    assert broken.status is BillStatus.SKIPPED_TEXT_PREFILTER
-    assert broken.last_error == "text prefilter failed: ValueError: not a PDF"
+    assert broken.status is BillStatus.DOCUMENT_UNSUPPORTED
+    assert broken.last_error is not None and "ValueError: not a PDF" in broken.last_error
     assert missing.status is BillStatus.TEXT_PREFILTER_PENDING
     assert missing.last_error == "text prefilter: the print has no file yet"
 
@@ -156,7 +152,7 @@ def test_a_scanned_print_goes_to_the_model_instead_of_being_skipped() -> None:
     assert ctx.text_source == "scan" and ctx.scan is not None and ctx.scan.pages == 12
 
 
-def test_a_file_with_neither_text_nor_pages_is_still_a_skip() -> None:
+def test_a_file_with_neither_text_nor_pages_is_unsupported() -> None:
     w = World(extractor=FakeTextExtractor("", page_count=0))
     w.add_bill("4100", "Poselski projekt ustawy o zmianie niektórych ustaw")
 
@@ -164,8 +160,8 @@ def test_a_file_with_neither_text_nor_pages_is_still_a_skip() -> None:
 
     assert (report.text_prefilter_scans, report.text_prefilter_unreadable) == (0, 1)
     bill = w.bill("4100")
-    assert bill.status is BillStatus.SKIPPED_TEXT_PREFILTER
-    assert bill.last_error == "text prefilter: no text layer and no pages to read"
+    assert bill.status is BillStatus.DOCUMENT_UNSUPPORTED
+    assert bill.last_error is not None and "no readable body" in bill.last_error
 
 
 def test_sejm_api_outage_leaves_bills_pending() -> None:

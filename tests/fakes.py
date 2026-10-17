@@ -220,6 +220,22 @@ class FakeSejmGateway:
             raise RuntimeError(f"no print {number} in term {term}")
         return info
 
+    def self_amendments(self, term: int, number: str) -> tuple[PrintInfo, ...]:
+        self._called("self_amendments", number)
+        return tuple(
+            sorted(
+                (
+                    info
+                    for info in self.prints.values()
+                    if info.term == term
+                    and info.title.strip().casefold().startswith("autopoprawka")
+                    and number in info.process_prints
+                    and info.number != number
+                ),
+                key=lambda info: (info.document_date or date.min, info.number),
+            )
+        )
+
     def get_act(self, eli: str) -> ActInfo | None:
         self._called("get_act", eli)
         return self.acts.get(eli)

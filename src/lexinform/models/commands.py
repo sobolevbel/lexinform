@@ -470,6 +470,7 @@ class StatusSnapshot(BaseModel):
     batches: tuple[LlmBatch, ...] = ()
     queued_intents: int = 0
     uncertain_intents: int = 0
+    document_work: dict[str, int] = Field(default_factory=dict)
     # `batch_pending` with neither an open batch item nor an intent: nothing will ever answer it.
     orphaned: tuple[Bill, ...] = ()
     awaiting_batch: tuple[Bill, ...] = ()

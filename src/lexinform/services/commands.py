@@ -69,6 +69,8 @@ WAITING = (
     BillStatus.TEXT_PREFILTER_PENDING,
     BillStatus.ANALYSIS_FAILED,
     BillStatus.SKIPPED_COST,
+    BillStatus.DOCUMENT_UNSUPPORTED,
+    BillStatus.DOCUMENT_AMBIGUOUS,
 )
 FORCE_HINT = "add `force` to analyse anyway"
 _CLOSURE_NOTES = {
@@ -869,6 +871,7 @@ class CommandService:
             batches=batches,
             queued_intents=len(queued),
             uncertain_intents=len(uncertain),
+            document_work=self._repo.count_document_work(),
             orphaned=tuple(b for b in in_flight if (b.term, b.number) not in held),
             awaiting_batch=tuple(
                 b for b in self._tracking.followed() if b.awaiting_batch_since is not None

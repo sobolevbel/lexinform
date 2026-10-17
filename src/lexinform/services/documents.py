@@ -10,16 +10,32 @@ Downloads are routed by host to the client of that system, so its outage semanti
 import base64
 import hashlib
 import logging
+import re
 import threading
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
+from lexinform.document_versions import (
+    bill_subject,
+    draft_version,
+    join_normative_parts,
+    regulation_support,
+    shared_amended_act,
+)
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
-from lexinform.models import ScannedDocument, TextDocument
-from lexinform.ports import Downloader, TextExtractor
-from lexinform.sections import PAGE_BREAK, scan_page_window
+from lexinform.law_digest import law_digest
+from lexinform.models import DocumentPart, DocumentSelection, ScannedDocument, TextDocument
+from lexinform.ports import Downloader, StructuredTextExtractor, TextExtractor
+from lexinform.sections import (
+    APPENDIX_KINDS,
+    PAGE_BREAK,
+    carries_the_document,
+    document_kind,
+    scan_page_window,
+    trim_print,
+)
 
 log = logging.getLogger(__name__)
 
@@ -44,6 +60,7 @@ class LoadedFile:
     pages: int = 0
     oversize: bool = False
     sha256: str | None = None
+    selection: DocumentSelection = DocumentSelection()
 
     @property
     def is_scan(self) -> bool:
@@ -100,20 +117,243 @@ class TextLoader:
         main file a caller falls back to reading as pages. An unreadable extra file is skipped.
         """
         main = self.read(document.url)
-        if main.text is None:
+        if main.text is None or document_kind(main.text) in APPENDIX_KINDS:
+            return main
+        if main.pages and not carries_the_document(
+            main.text, min_chars=MIN_TEXT_CHARS, pages=main.pages
+        ):
             return main
         parts = [main.text]
+        required_parts: list[DocumentPart] = []
+        for url in document.required_urls:
+            continuation = self.read(url)
+            if continuation.text is None:
+                return LoadedFile(
+                    None,
+                    selection=DocumentSelection(
+                        state="waiting", rejected=(f"{url}: required part unavailable",)
+                    ),
+                )
+            if document_kind(continuation.text) in APPENDIX_KINDS - {"annex"}:
+                continue
+            parts.append(continuation.text)
+            required_parts.extend(continuation.selection.parts)
+        evidence = [*main.selection.parts, *required_parts]
+        missing = list(main.selection.rejected)
+        normative: list[str] = []
+        for url in document.normative_urls:
+            try:
+                annex = self.read(url)
+            except ServiceUnavailableError:
+                raise
+            except Exception:
+                return LoadedFile(
+                    None,
+                    selection=DocumentSelection(
+                        state="waiting", rejected=(f"{url}: normative annex unavailable",)
+                    ),
+                )
+            if annex.text is None:
+                return LoadedFile(
+                    None,
+                    selection=DocumentSelection(
+                        state="waiting", rejected=(f"{url}: normative annex unreadable",)
+                    ),
+                )
+            if document_kind(annex.text) in APPENDIX_KINDS - {"annex"}:
+                return LoadedFile(
+                    None,
+                    selection=DocumentSelection(
+                        state="ambiguous", rejected=(f"{url}: normative annex role not confirmed",)
+                    ),
+                )
+            normative.append(annex.text)
+            evidence.extend(
+                part.model_copy(update={"role": "normative_annex"})
+                for part in annex.selection.parts
+            )
+        parts[0] = join_normative_parts(parts[0], normative)
+        for url in document.amendment_urls:
+            amendment = self.read(url)
+            if amendment.text is None:
+                return LoadedFile(
+                    None,
+                    selection=DocumentSelection(
+                        state="waiting", rejected=(f"{url}: self-amendment unavailable",)
+                    ),
+                )
+            evidence.extend(
+                part.model_copy(update={"role": "self_amendment"})
+                for part in amendment.selection.parts
+            )
         for url in document.extra_urls:
             try:
-                extra = self.load(url)
+                loaded = self.read(url)
+                extra = loaded.text
             except ServiceUnavailableError:
                 raise
             except Exception as exc:
                 log.warning("%s unreadable (%s: %s); skipped", url, type(exc).__name__, exc)
+                missing.append(f"{url}: {type(exc).__name__}")
                 continue
-            if extra is not None:
+            if extra is not None and regulation_support(extra):
+                missing.append(f"{url}: supporting draft regulation")
+            elif extra is not None:
                 parts.append(extra)
-        return LoadedFile(PAGE_BREAK.join(parts), pages=main.pages, sha256=main.sha256)
+                evidence.extend(loaded.selection.parts)
+            else:
+                missing.append(f"{url}: no extracted text")
+        return LoadedFile(
+            PAGE_BREAK.join(parts),
+            pages=main.pages,
+            sha256=main.sha256,
+            selection=main.selection.model_copy(
+                update={
+                    "parts": tuple(evidence),
+                    "rejected": tuple(missing),
+                    "version": document.version_basis,
+                }
+            ),
+        )
+
+    def select_document(self, document: TextDocument) -> tuple[TextDocument, LoadedFile]:
+        if document.compare_versions:
+            resolved = self._compare_versions(document)
+            if resolved is not None:
+                return resolved
+        rejected: list[str] = []
+        unavailable = False
+        oversize = False
+        ambiguous = False
+        for candidate in (document, *document.alternatives):
+            try:
+                main = self.read(candidate.url)
+            except ServiceUnavailableError:
+                raise
+            except Exception as exc:
+                if (
+                    candidate == document
+                    and not document.alternatives
+                    and not document.compare_versions
+                ):
+                    raise
+                unavailable = unavailable or not isinstance(exc, ValueError)
+                rejected.append(f"{candidate.url}: {type(exc).__name__}: {exc}")
+                continue
+            if main.text and document_kind(main.text) in APPENDIX_KINDS:
+                rejected.append(f"{candidate.url}: {document_kind(main.text)}")
+                continue
+            if (
+                main.text is None
+                and not main.is_scan
+                and (document.alternatives or document.compare_versions)
+            ):
+                oversize = oversize or main.oversize
+                ambiguous = ambiguous or main.selection.state == "ambiguous"
+                rejected.extend(main.selection.rejected)
+                reason = "download size limit" if main.oversize else "no readable body"
+                rejected.append(f"{candidate.url}: {reason}")
+                continue
+            return candidate, self._with_evidence(candidate, self.read_document(candidate))
+        return document, LoadedFile(
+            None,
+            oversize=oversize,
+            selection=DocumentSelection(
+                state="waiting" if unavailable else "ambiguous" if ambiguous else "unsupported",
+                rejected=tuple(rejected),
+            ),
+        )
+
+    def _compare_versions(self, document: TextDocument) -> tuple[TextDocument, LoadedFile] | None:
+        candidates: list[tuple[TextDocument, LoadedFile]] = []
+        for candidate in (document, *document.alternatives):
+            try:
+                file = self.read(candidate.url)
+            except ServiceUnavailableError:
+                raise
+            except Exception:
+                continue
+            if file.text is not None and document_kind(file.text) == "bill":
+                candidates.append((candidate, file))
+        if not candidates:
+            return None
+        subjects = {bill_subject(file.text or "") for _, file in candidates}
+        dates = [draft_version(file.text or "") for _, file in candidates]
+        same_subject = len(subjects) == 1 and "" not in subjects
+        if (
+            same_subject or shared_amended_act([file.text or "" for _, file in candidates])
+        ) and all(dates):
+            newest = max(date for date in dates if date is not None)
+            candidates = [
+                (candidate, file)
+                for candidate, file in candidates
+                if draft_version(file.text or "") == newest
+            ]
+        identities = {
+            law_digest(trim_print(file.text or "").text) or file.text for _, file in candidates
+        }
+        if len(identities) > 1:
+            return document, LoadedFile(
+                None,
+                selection=DocumentSelection(
+                    state="ambiguous",
+                    parts=tuple(part for _, file in candidates for part in file.selection.parts),
+                    rejected=tuple(
+                        f"{candidate.url}: conflicting bill version" for candidate, _ in candidates
+                    ),
+                ),
+            )
+        candidate, _ = candidates[0]
+        return candidate, self._with_evidence(candidate, self.read_document(candidate))
+
+    def _with_evidence(self, document: TextDocument, file: LoadedFile) -> LoadedFile:
+        if file.text is None or file.selection.state in ("waiting", "unsupported", "ambiguous"):
+            return file
+        main = self.read(document.url)
+        text = main.text or ""
+        kind = document_kind(text)
+        version = draft_version(text)
+        belonging = document.version_basis[:1]
+        roles = (
+            ("own bill heading and articles",)
+            if kind == "bill" and re.search(r"Art\.\s*1\b", text)
+            else ()
+        )
+        versions = (f"draft dated {version.isoformat()}",) if version else ()
+        annex_required = "załącznik" in trim_print(text).text.casefold()
+        annex_present = any(part.role == "normative_annex" for part in file.selection.parts)
+        complete = (
+            bool(re.search(r"ustawa\s+wchodzi\s+w\s+życie", text, re.I))
+            and not any(part.losses for part in file.selection.parts)
+            and (not annex_required or annex_present)
+            and not main.is_scan
+        )
+        coverage = (
+            ("bill body through commencement; selected normative parts extracted",)
+            if complete
+            else ()
+        )
+        state = (
+            "selected"
+            if all((belonging, roles, versions, coverage, file.selection.parts))
+            else "unverified"
+        )
+        selection = file.selection.model_copy(
+            update={
+                "state": state,
+                "belonging": belonging,
+                "role": roles,
+                "version": versions or file.selection.version,
+                "completeness": coverage,
+            }
+        )
+        return LoadedFile(
+            file.text,
+            pages=file.pages,
+            oversize=file.oversize,
+            sha256=file.sha256,
+            selection=selection,
+        )
 
     def load_scan(self, url: str, *, cover_letter: bool) -> ScannedDocument | None:
         """The file itself, for a model to read as pages, cut down to the pages worth paying for
@@ -179,14 +419,34 @@ class TextLoader:
         if data is None:
             return LoadedFile(None, oversize=True)
         started = time.perf_counter()
-        text = self._extractor.extract(data)
+        if isinstance(self._extractor, StructuredTextExtractor):
+            extracted = self._extractor.extract_document(data)
+            text = extracted.text
+            selection = extracted.selection
+        else:
+            text = self._extractor.extract(data)
+            selection = DocumentSelection(
+                parts=(
+                    DocumentPart(
+                        sha256=hashlib.sha256(data).hexdigest(),
+                        text=text,
+                        text_end=len(text),
+                        text_sha256=hashlib.sha256(text.encode()).hexdigest(),
+                    ),
+                )
+            )
+        selection = selection.model_copy(
+            update={
+                "parts": tuple(part.model_copy(update={"url": url}) for part in selection.parts)
+            }
+        )
         digest = hashlib.sha256(data).hexdigest()
         pages = self._extractor.pages(data)
         log.info("%s: %d chars extracted in %.1fs", url, len(text), time.perf_counter() - started)
         if len(text.strip()) < MIN_TEXT_CHARS:
             log.warning("%s yielded almost no text (%d chars, %d pages)", url, len(text), pages)
-            return LoadedFile(None, pages=pages, sha256=digest)
-        return LoadedFile(text, pages=pages, sha256=digest)
+            return LoadedFile(None, pages=pages, sha256=digest, selection=selection)
+        return LoadedFile(text, pages=pages, sha256=digest, selection=selection)
 
     def _download(self, url: str) -> bytes | None:
         host = urlparse(url).hostname or ""

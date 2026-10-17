@@ -3,7 +3,7 @@
 from collections.abc import Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager
 from datetime import date, datetime
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from lexinform.models import (
     ActInfo,
@@ -35,7 +35,9 @@ from lexinform.models import (
     Digest,
     DigestPart,
     DocumentReviewRecord,
+    DocumentWork,
     Editorial,
+    ExtractedDocument,
     IncomingCommand,
     JointContext,
     JointRecord,
@@ -119,6 +121,8 @@ class SejmGateway(Protocol):
     def get_process(self, term: int, number: str) -> ProcessDetail: ...
 
     def get_print(self, term: int, number: str) -> PrintInfo: ...
+
+    def self_amendments(self, term: int, number: str) -> tuple[PrintInfo, ...]: ...
 
     def get_voting(self, term: int, sitting: int, number: int) -> tuple[Vote, ...]: ...
 
@@ -247,6 +251,11 @@ class AuthorsResolver(Protocol):
     None when the text names nobody; only outages propagate."""
 
     def resolve(self, bill: Bill, text: str) -> BillAuthors | None: ...
+
+
+@runtime_checkable
+class StructuredTextExtractor(Protocol):
+    def extract_document(self, data: bytes) -> ExtractedDocument: ...
 
 
 class TextExtractor(Protocol):
@@ -523,6 +532,10 @@ class BillRepository(Protocol):
     dyskontynuacji, are scoped to a term. The command methods keep one row per Telegram update.
     """
 
+    def save_document_work(self, work: DocumentWork) -> None: ...
+
+    def list_document_work(self, *, due: datetime) -> list[DocumentWork]: ...
+
     def migrate(self) -> None: ...
 
     def close(self) -> None: ...
@@ -743,6 +756,8 @@ class BillRepository(Protocol):
         `change_date` first: the longest-stale rows are the likeliest to have a window already
         closed and untold."""
         ...
+
+    def count_document_work(self) -> dict[str, int]: ...
 
     def count_by_status(self) -> dict[str, int]:
         """How many bills sit in each status, the empty statuses left out."""

@@ -65,6 +65,12 @@ class AttachmentTooLargeError(RuntimeError):
         self.limit = limit
 
 
+class DocumentSelectionError(RuntimeError):
+    def __init__(self, state: str, reason: str) -> None:
+        super().__init__(f"{state}: {reason}")
+        self.state = state
+
+
 class LlmUnavailableError(ServiceUnavailableError):
     system = "LLM API"
 

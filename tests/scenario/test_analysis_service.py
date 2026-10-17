@@ -35,14 +35,15 @@ def test_missing_pdf_falls_back_to_metadata() -> None:
     assert w.publisher.new_bills[0][1] is None  # no print info on the card either
 
 
-def test_unreadable_pdf_falls_back_to_metadata_without_costing_an_attempt() -> None:
+def test_unreadable_pdf_is_unsupported_without_a_paid_metadata_verdict() -> None:
     w = World(extractor=FakeTextExtractor(error=ValueError("not a PDF")))
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
 
     report = w.run()
 
-    assert (report.analyzed, report.analysis_failures) == (1, 0)
-    assert w.llm.contexts[0].text_source == "metadata_only"
+    assert (report.analyzed, report.analysis_failures) == (0, 0)
+    assert not w.llm.contexts
+    assert w.bill("3039").status is BillStatus.DOCUMENT_UNSUPPORTED
     assert w.bill("3039").analysis_attempts == 0
 
 
@@ -54,8 +55,9 @@ def test_a_file_that_opens_as_an_appendix_is_not_analysed_in_the_bills_place() -
 
     report = w.run()
 
-    assert (report.analyzed, report.analysis_failures) == (1, 0)
-    assert w.llm.contexts[0].text_source == "metadata_only"
+    assert (report.analyzed, report.analysis_failures) == (0, 0)
+    assert not w.llm.contexts
+    assert w.bill("3039").status is BillStatus.DOCUMENT_UNSUPPORTED
 
 
 def test_a_print_opening_with_its_covering_letter_is_still_analysed() -> None:
@@ -70,15 +72,18 @@ def test_a_print_opening_with_its_covering_letter_is_still_analysed() -> None:
     assert w.llm.contexts[0].text_source == "pdf"
 
 
-def test_oversized_pdf_is_analysed_from_metadata() -> None:
+def test_oversized_pdf_is_unsupported_without_a_paid_metadata_verdict() -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.gateway.files[print_url("3039")] = b"%" * (10_000_000 + 1)  # one byte over the limit
 
     report = w.run()
 
-    assert (report.analyzed, report.published) == (1, 1)
-    assert w.llm.contexts[0].text_source == "metadata_only"
+    assert (report.analyzed, report.published) == (0, 0)
+    assert not w.llm.contexts
+    bill = w.bill("3039")
+    assert bill.status is BillStatus.DOCUMENT_UNSUPPORTED
+    assert bill.last_error is not None and "size limit" in bill.last_error
 
 
 def test_confident_triage_rejection_is_stored_as_a_non_relevant_analysis() -> None:

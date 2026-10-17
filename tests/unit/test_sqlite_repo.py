@@ -1010,6 +1010,8 @@ def test_restore_of_a_v1_dump_applies_every_later_migration(tmp_path: Path) -> N
     assert {"result_json", "accounted_at"} <= batch_items
     assert "forgotten_at" in batches  # v30
     assert "source_checks" in tables  # v35
+    assert "document_work" in tables
+    assert repo.list_document_work(due=datetime(2026, 10, 17, tzinfo=UTC)) == []
     assert "delivery_alerts" in tables  # v38
     assert repo.get_delivery_alert(CHANNEL) is None
     notice = DeliveryAlert(
@@ -1355,6 +1357,7 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("DROP TABLE source_checks")
         conn.execute("DROP TABLE delivery_alerts")
         conn.execute("DROP TABLE digest_event_links")
+        conn.execute("DROP TABLE document_work")
         conn.execute("PRAGMA user_version = 20")
     dump = source.dump()
     source.close()

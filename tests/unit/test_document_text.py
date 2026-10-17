@@ -218,7 +218,7 @@ def test_zip_reads_one_level_of_nesting_and_gives_up_on_junk() -> None:
     deeper = _zip({"outer.zip": _zip({"middle.zip": inner})})
 
     assert _router().extract(package) == "from pdf"
-    assert _router().extract(deeper) == ""  # two levels down is too deep
+    assert _router().extract(deeper) == "from pdf"
     assert _router().extract(_zip({"uwagi.xlsx": b"x", "notes.txt": b"y"})) == ""
 
 

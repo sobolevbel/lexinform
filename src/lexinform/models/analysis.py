@@ -7,6 +7,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from lexinform.models.documents import DocumentSelection
 from lexinform.models.enums import ApplicantType, Category, SourceKind, TextSource
 from lexinform.models.senate import AmendmentSourceEvidence, SenateResolutionIdentity
 
@@ -101,6 +102,7 @@ class AnalysisRecord(BaseModel):
     source_kind: SourceKind = "print"
     revision: int = 1
     text_sha256: str | None = None
+    selection: DocumentSelection = DocumentSelection()
     law_sha256: str | None = None
     """Version-prefixed law identity; unversioned legacy hashes cannot certify current text."""
     source_checked_at: dt.datetime | None = None

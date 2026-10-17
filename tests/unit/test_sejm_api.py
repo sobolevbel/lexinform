@@ -115,6 +115,43 @@ def test_process_and_print_parse_from_fixtures() -> None:
     assert info.additional_prints[0].number == "3039-001"
 
 
+def test_self_amendments_use_official_process_links_and_cache_the_catalog() -> None:
+    calls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.path)
+        return httpx.Response(
+            200,
+            json=[
+                {"number": "100", "title": "Rządowy projekt ustawy"},
+                {
+                    "number": "100-A",
+                    "title": "Autopoprawka do projektu ustawy",
+                    "processPrint": ["100"],
+                    "attachments": ["100-A.pdf"],
+                },
+                {
+                    "number": "100-B",
+                    "title": "Sprawozdanie komisji o projekcie z autopoprawką",
+                    "processPrint": ["100"],
+                },
+                {
+                    "number": "101-A",
+                    "title": "Autopoprawka do projektu ustawy",
+                    "processPrint": ["101"],
+                },
+            ],
+        )
+
+    client = _client(handler)
+    amendments = client.self_amendments(10, "100")
+
+    assert [p.number for p in amendments] == ["100-A"]
+    assert amendments[0].process_prints == ("100",)
+    assert [p.number for p in client.self_amendments(10, "101")] == ["101-A"]
+    assert calls == ["/sejm/term10/prints"]
+
+
 def _print_with(number: str, *names: str) -> PrintInfo:
     return PrintInfo(
         term=10,

@@ -7,21 +7,26 @@ re-analysed first and the update also lists what changed.
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
+    AmendmentsContext,
     AmendmentsRecord,
     Bill,
     BillPlan,
     BillStatus,
     CheckAspect,
+    DocumentWork,
     ObservationMode,
     PrintInfo,
     ProcessDetail,
+    Publication,
     PublicationKind,
+    PublicationStatus,
+    Stage,
     StatusChange,
     TextDocument,
     amendments_stage,
@@ -395,6 +400,7 @@ class StatusTrackingService:
         if quiet and result.fatal_error is None:
             quiet = [self._repo.get(b.term, b.number) or b for b in quiet]
             self._check_processes(quiet, result, publish=False, may_wait=may_wait, deliver=False)
+        self._retry_documents(result, publish=publish, may_wait=may_wait)
         self._flush_updates(result, publish=publish)
         self._remind_and_refresh(everyone, result, publish=publish)
         self._log_outcome(result, changed_since)
@@ -428,6 +434,7 @@ class StatusTrackingService:
             self._flush_updates(result, publish=publish)
             return self._finish(result)
         self._check_processes(one, result, publish=publish, may_wait=False)
+        self._retry_documents(result, publish=publish, may_wait=False)
         self._flush_updates(result, publish=publish)
         if result.fatal_error is None:
             self._cards.refresh(one, result, publish=publish)
@@ -694,12 +701,16 @@ class StatusTrackingService:
         stage = amendments_stage(changed)
         if stage is None:
             return None
+        return self._document_for_stage(stage, detail)
+
+    def _document_for_stage(self, stage: Stage, detail: ProcessDetail) -> _Amendments | None:
+        assert self._analysis is not None
         if stage.stage_type == "SenatePosition":
             assert stage.print_number is not None, (
                 "amendments_stage takes a Senate position only with its print"
             )
             try:
-                senate_print = self._gateway.get_print(bill.term, stage.print_number)
+                senate_print = self._gateway.get_print(detail.term, stage.print_number)
             except ServiceUnavailableError:
                 raise
             except Exception as exc:
@@ -721,6 +732,131 @@ class StatusTrackingService:
         )
         document = TextDocument(url=stage.report_file, kind="committee_amendments")
         return _Amendments(document, stage.proposal)
+
+    def _retry_documents(self, result: TrackingResult, *, publish: bool, may_wait: bool) -> None:
+        if self._analysis is None or result.fatal_error is not None:
+            return
+        for work in self._repo.list_document_work(due=self._clock.now()):
+            try:
+                self._retry_document(work, result, publish=publish, may_wait=may_wait)
+            except ServiceUnavailableError as exc:
+                result.abort(exc)
+                return
+            except Exception as exc:
+                self._defer_document(work, f"{type(exc).__name__}: {exc}")
+
+    def _defer_document(self, work: DocumentWork, problem: str) -> None:
+        attempts = work.attempts + 1
+        self._repo.save_document_work(
+            work.model_copy(
+                update={
+                    "attempts": attempts,
+                    "problem": problem,
+                    "state": "unsupported" if attempts >= 7 else "waiting",
+                    "next_at": self._clock.now() + timedelta(days=min(7, 2**attempts)),
+                }
+            )
+        )
+
+    def _retry_document(
+        self, work: DocumentWork, result: TrackingResult, *, publish: bool, may_wait: bool
+    ) -> None:
+        change = self._repo.get_status_change(work.change_id)
+        if change is None:
+            self._defer_document(work, "historical event unavailable")
+            return
+        original = self._repo.get_update_publication(work.change_id, self._options.channel_id)
+        if not publish or original is None or original.status is not PublicationStatus.SENT:
+            return
+        if any(
+            revision.status
+            in (
+                PublicationStatus.QUEUED,
+                PublicationStatus.FAILED,
+                PublicationStatus.PENDING,
+                PublicationStatus.UNKNOWN,
+            )
+            for revision in self._repo.list_amendment_revisions(original.id or 0)
+        ):
+            return
+        saved = original.delivery
+        if (
+            saved is None
+            or not saved.bill_json
+            or not saved.change_json
+            or saved.update_group
+            or saved.sitting_group
+            or saved.continuation_ids
+            or self._repo.digest_owner(original.id or 0) is not None
+        ):
+            self._defer_document(work, "historical delivery cannot be revised independently")
+            return
+        historical = Bill.model_validate_json(work.bill_json)
+        detail = ProcessDetail.model_validate_json(work.detail_json)
+        stage = Stage.model_validate_json(work.stage_json)
+        if work.document_json is None or work.context_json is None:
+            found = self._document_for_stage(stage, detail)
+            if found is None:
+                self._defer_document(work, "amendments document not confirmed")
+                return
+            assert self._analysis is not None
+            context = self._analysis.amendments_context(
+                historical, found.document, proposal=found.proposal
+            )
+            if context is None:
+                self._defer_document(work, "amendments document unreadable")
+                return
+            work = work.model_copy(
+                update={
+                    "document_json": found.document.model_dump_json(),
+                    "context_json": context.model_dump_json(),
+                }
+            )
+            self._repo.save_document_work(work)
+        assert work.document_json is not None and work.context_json is not None
+        document = TextDocument.model_validate_json(work.document_json)
+        context = AmendmentsContext.model_validate_json(work.context_json)
+        assert self._analysis is not None
+        record = self._analysis.summarize_amendments(
+            historical,
+            document,
+            proposal=context.proposal,
+            may_wait=may_wait,
+            context=context,
+        )
+        if isinstance(record, Waiting):
+            return
+        if record is None:
+            self._defer_document(work, "amendments document unreadable")
+            return
+        revised = StatusChange.model_validate_json(saved.change_json)
+        revised.amendments = record
+        delivery = saved.model_copy(
+            update={
+                "change_json": revised.model_dump_json(),
+                "edit_message_id": original.message_id,
+                "revision_of": original.id,
+                "today": saved.today
+                or original.created_at.astimezone(self._options.local_tz).date(),
+            }
+        )
+        with self._repo.atomic():
+            self._repo.save_status_change_amendments(work.change_id, record)
+            self._repo.create_publication(
+                Publication(
+                    term=work.term,
+                    number=work.number,
+                    kind=PublicationKind.AMENDMENTS_REVISION,
+                    status=PublicationStatus.QUEUED,
+                    channel_id=self._options.channel_id,
+                    ref=work.key,
+                    created_at=self._clock.now(),
+                    delivery=delivery,
+                )
+            )
+            self._repo.save_document_work(
+                work.model_copy(update={"state": "complete", "problem": ""})
+            )
 
     def _summarize_amendments(
         self, bill: Bill, found: _Amendments, result: TrackingResult, *, may_wait: bool
@@ -793,6 +929,27 @@ class StatusTrackingService:
             )
             if change is not None:
                 change = self._poster.record_change(change)
+                stage = amendments_stage(change.new_stages) if change is not None else None
+                if (
+                    change is not None
+                    and change.id is not None
+                    and stage is not None
+                    and change.amendments is None
+                ):
+                    now = self._clock.now()
+                    self._repo.save_document_work(
+                        DocumentWork(
+                            key=f"amendments/{change.id}",
+                            term=bill.term,
+                            number=bill.number,
+                            change_id=change.id,
+                            bill_json=bill.model_dump_json(),
+                            detail_json=detail.model_dump_json(),
+                            stage_json=stage.model_dump_json(),
+                            created_at=now,
+                            next_at=now + timedelta(days=1),
+                        )
+                    )
                 if change is not None and deliver:
                     if plan.should_publish(change):
                         self._poster.prepare(fresh, change)

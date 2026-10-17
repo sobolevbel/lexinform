@@ -39,6 +39,7 @@ from lexinform.models import (
     DeliveryPlan,
     DeliveryResolution,
     DocumentReviewRecord,
+    DocumentWork,
     Editorial,
     IncomingCommand,
     JointRecord,
@@ -473,6 +474,17 @@ MIGRATIONS: tuple[str, ...] = (
     """
     CREATE UNIQUE INDEX ux_pub_amendments_revision ON publications(channel_id, kind, ref)
       WHERE kind = 'amendments_revision';
+    """,
+    """
+    CREATE TABLE document_work (
+        key TEXT PRIMARY KEY,
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        state TEXT NOT NULL,
+        next_at TEXT NOT NULL,
+        work_json TEXT NOT NULL
+    );
+    CREATE INDEX ix_document_work_due ON document_work(state, next_at);
     """,
 )
 
@@ -1456,6 +1468,13 @@ class SqliteBillRepository:
             (BillStatus.SKIPPED_PREFILTER.value, BillStatus.SKIPPED_TEXT_PREFILTER.value),
         ).fetchall()
         return [self._row_to_bill(r) for r in rows]
+
+    def count_document_work(self) -> dict[str, int]:
+        return dict(
+            self._conn.execute(
+                "SELECT state, COUNT(*) FROM document_work WHERE state != 'complete' GROUP BY state"
+            )
+        )
 
     def count_by_status(self) -> dict[str, int]:
         rows = self._conn.execute(
@@ -2639,6 +2658,29 @@ class SqliteBillRepository:
         ).fetchall()
         return [self._row_to_status_change(r) for r in rows]
 
+    def save_document_work(self, work: DocumentWork) -> None:
+        self._conn.execute(
+            "INSERT INTO document_work(key, term, number, state, next_at, work_json) "
+            "VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET "
+            "state=excluded.state, next_at=excluded.next_at, work_json=excluded.work_json",
+            (
+                work.key,
+                work.term,
+                work.number,
+                work.state,
+                _utc_iso(work.next_at),
+                work.model_dump_json(),
+            ),
+        )
+
+    def list_document_work(self, *, due: datetime) -> list[DocumentWork]:
+        rows = self._conn.execute(
+            "SELECT work_json FROM document_work WHERE state='waiting' AND next_at <= ? "
+            "ORDER BY next_at, key",
+            (_utc_iso(due),),
+        ).fetchall()
+        return [DocumentWork.model_validate_json(row["work_json"]) for row in rows]
+
     def list_status_changes(self, term: int, number: str) -> list[StatusChange]:
         rows = self._conn.execute(
             "SELECT * FROM status_changes WHERE term = ? AND number = ? ORDER BY id",
@@ -2706,6 +2748,9 @@ class SqliteBillRepository:
                 "UPDATE publications SET delivery_json = NULL WHERE status = 'sent'"
                 " AND kind != 'amendments_revision'"
                 " AND sent_at < ? AND delivery_json IS NOT NULL"
+                " AND NOT EXISTS (SELECT 1 FROM document_work w"
+                " WHERE json_extract(w.work_json, '$.change_id') = publications.status_change_id"
+                " AND w.state != 'complete')"
                 " AND NOT EXISTS (SELECT 1"
                 " FROM json_each(publications.delivery_json, '$.digest_parts') part"
                 " JOIN publications member ON member.id = part.value"
@@ -2720,6 +2765,8 @@ class SqliteBillRepository:
             memos = self._conn.execute(
                 """
                 DELETE FROM analysis_memo AS m WHERE last_used_at < ?
+                  AND NOT EXISTS (SELECT 1 FROM document_work w
+                    WHERE w.term=m.term AND w.number=m.number AND w.state != 'complete')
                   AND EXISTS (SELECT 1 FROM bills b WHERE b.term = m.term AND b.number = m.number
                     AND b.status IN ('analyzed', 'linked', 'skipped_prefilter',
                                      'skipped_text_prefilter', 'skipped_closed')

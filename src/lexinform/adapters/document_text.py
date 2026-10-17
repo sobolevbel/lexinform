@@ -8,17 +8,25 @@ Both XML readers walk the tree themselves instead of `Element.iter()`: a .docx g
 twice, a nested table would be read twice, and in ODT tail text belongs after the children.
 """
 
+import hashlib
 import io
 import logging
 import re
+import struct
 import zipfile
+import zlib
 from collections.abc import Iterator
 from xml.etree import ElementTree as ET
 from zipfile import ZipInfo
 
+from inflate64 import Inflater
+
+from lexinform.document_versions import bill_subject, draft_version, regulation_support
+from lexinform.law_digest import law_digest
+from lexinform.models.documents import DocumentPart, DocumentSelection, ExtractedDocument
 from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
 from lexinform.ports import TextExtractor
-from lexinform.sections import APPENDIX_KINDS, PAGE_BREAK, Kind, document_kind
+from lexinform.sections import APPENDIX_KINDS, PAGE_BREAK, Kind, document_kind, trim_print
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +54,10 @@ _ODT_ROW_GROUPS = tuple(
 )
 _ODT_CELLS = (f"{_ODT_TABLE}table-cell", f"{_ODT_TABLE}covered-table-cell")
 _ODT_CONTAINERS = (f"{_ODT_TEXT}section", f"{_ODT_TEXT}list", f"{_ODT_TEXT}list-item")
-_MAX_ARCHIVE_DEPTH = 2  # RCL packages come as "letter.pdf + projekt.zip": one nesting level
+_MAX_ARCHIVE_DEPTH = 4
+_MAX_ARCHIVE_BYTES = 128_000_000
+_MAX_ARCHIVE_MEMBERS = 2048
+_MAX_XML_BYTES = 32_000_000
 _MAX_SPACES = 4096  # `<text:s text:c="N"/>`: the count is the file's to choose
 # The order the pieces of a bill package are read in: the bill, its uzasadnienie, the OSR (the
 # trimming in `sections` then drops what the analysis does not need).
@@ -65,20 +76,35 @@ class DocxTextExtractor:
 
     def extract(self, data: bytes) -> str:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
-            xml = archive.read("word/document.xml")
+            xml = _read_xml(archive, "word/document.xml")
+            notes: dict[str, str] = {}
+            for name, tag in (("footnotes", "footnote"), ("endnotes", "endnote")):
+                path = f"word/{name}.xml"
+                if path not in archive.namelist():
+                    continue
+                content = _read_xml(archive, path)
+                if _declares_entities(content):
+                    return ""
+                root = ET.fromstring(content)
+                namespace, _ = _split_tag(root.tag)
+                reader = _WordMl(namespace)
+                for note in root:
+                    identity = note.get(reader.tag("id"))
+                    if identity is not None:
+                        notes[f"{tag}/{identity}"] = "\n".join(reader.blocks(note))
         if _declares_entities(xml):
             return ""
-        return _wordml_text(ET.fromstring(xml))
+        return _wordml_text(ET.fromstring(xml), notes=notes)
 
 
-def _wordml_text(root: ET.Element) -> str:
+def _wordml_text(root: ET.Element, *, notes: dict[str, str] | None = None) -> str:
     """Text of a `w:document` element, wherever it came from: `word/document.xml` inside a .docx
     or the same element inlined in a Flat OPC file."""
     namespace, local = _split_tag(root.tag)
     if local not in _WORDML_ROOTS or namespace not in _WORDML_NAMESPACES:
         log.warning("not a WordprocessingML document (root %s); no text", root.tag)
         return ""
-    reader = _WordMl(namespace)
+    reader = _WordMl(namespace, notes=notes)
     body = root.find(reader.tag("body"))
     if body is None:
         log.warning("Word document without a body; no text")
@@ -121,6 +147,20 @@ class WordXmlTextExtractor:
         namespace, local = _split_tag(root.tag)
         if local in _WORDML_ROOTS and namespace in _WORDML_NAMESPACES:
             return _wordml_text(root)  # Word 2003 XML: the root is the document
+        notes: dict[str, str] = {}
+        for part in root.iter(f"{_PKG}part"):
+            if part.get(f"{_PKG}name") not in ("/word/footnotes.xml", "/word/endnotes.xml"):
+                continue
+            payload = part.find(f"{_PKG}xmlData")
+            if payload is None or not len(payload):
+                continue
+            namespace, _ = _split_tag(payload[0].tag)
+            reader = _WordMl(namespace)
+            for note in payload[0]:
+                _, local = _split_tag(note.tag)
+                identity = note.get(reader.tag("id"))
+                if identity is not None:
+                    notes[f"{local}/{identity}"] = "\n".join(reader.blocks(note))
         for part in root.iter(f"{_PKG}part"):
             if part.get(f"{_PKG}name") != "/word/document.xml":
                 continue
@@ -128,7 +168,7 @@ class WordXmlTextExtractor:
             if payload is None or len(payload) == 0:
                 log.warning("Flat OPC document part carries no XML; no text")
                 return ""
-            return _wordml_text(payload[0])
+            return _wordml_text(payload[0], notes=notes)
         log.warning("Word XML file with neither a document root nor a document part; no text")
         return ""
 
@@ -144,8 +184,9 @@ def _split_tag(tag: str) -> tuple[str, str]:
 class _WordMl:
     """Block and inline structure of WordprocessingML in one namespace (transitional or strict)."""
 
-    def __init__(self, namespace: str) -> None:
+    def __init__(self, namespace: str, *, notes: dict[str, str] | None = None) -> None:
         self._ns = f"{{{namespace}}}"
+        self._notes = notes or {}
 
     def tag(self, name: str) -> str:
         return f"{self._ns}{name}"
@@ -192,6 +233,14 @@ class _WordMl:
                 parts.append("\n")
             elif el.tag == self.tag("lastRenderedPageBreak"):
                 parts.append(PAGE_BREAK)
+            elif el.tag in (self.tag("footnoteReference"), self.tag("endnoteReference")):
+                local = "footnote" if el.tag == self.tag("footnoteReference") else "endnote"
+                identity = el.get(self.tag("id"), "")
+                note = self._notes.get(f"{local}/{identity}")
+                if note:
+                    parts.append(f" [przypis {identity}: {note}] ")
+                else:
+                    parts.append(f" [nieodczytany przypis {identity}] ")
             else:
                 self._inline(el, parts)  # runs, hyperlinks, fields, insertions, drawings
 
@@ -207,7 +256,7 @@ class OdtTextExtractor:
 
     def extract(self, data: bytes) -> str:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
-            xml = archive.read("content.xml")
+            xml = _read_xml(archive, "content.xml")
         if _declares_entities(xml):
             return ""
         body = ET.fromstring(xml).find(f"{_ODT_OFFICE}body/{_ODT_OFFICE}text")
@@ -311,7 +360,19 @@ class DocumentTextExtractor:
         self._max_part_chars = max_part_chars
 
     def extract(self, data: bytes) -> str:
-        return self._extract(data, depth=0)
+        return self.extract_document(data).text
+
+    def extract_document(self, data: bytes) -> ExtractedDocument:
+        parts: list[DocumentPart] = []
+        rejected: list[str] = []
+        self._collect(data, (), hashlib.sha256(data).hexdigest(), parts, rejected, [0, 0])
+        if len(parts) == 1 and not parts[0].members:
+            part = parts[0]
+            return ExtractedDocument(
+                text=part.text,
+                selection=DocumentSelection(parts=(part,), rejected=tuple(rejected)),
+            )
+        return self._select_parts(parts, rejected)
 
     def pages(self, data: bytes) -> int:
         """Only a PDF has pages of its own. A Word file paginates when it is rendered, and an
@@ -344,103 +405,172 @@ class DocumentTextExtractor:
         return ""
 
     def _zip(self, data: bytes, *, depth: int) -> str:
-        try:
-            return self._zip_members(data, depth=depth)
-        except zipfile.BadZipFile as exc:
-            log.warning("zip container not read (%s); no text", exc)
-            return ""
+        return self.extract_document(data).text
 
-    def _zip_members(self, data: bytes, *, depth: int) -> str:
-        """The bill, its uzasadnienie and its OSR, chosen after reading every member.
+    def _collect(
+        self,
+        data: bytes,
+        members: tuple[str, ...],
+        container: str,
+        parts: list[DocumentPart],
+        rejected: list[str],
+        usage: list[int],
+    ) -> None:
+        if data.startswith(_ZIP_MAGIC):
+            try:
+                with zipfile.ZipFile(io.BytesIO(data)) as archive:
+                    names = set(archive.namelist())
+                    if "word/document.xml" in names:
+                        text = self._docx.extract(data)
+                    elif "content.xml" in names and "mimetype" in names:
+                        text = self._odt.extract(data)
+                    else:
+                        if len(members) >= _MAX_ARCHIVE_DEPTH:
+                            rejected.append(f"{members}: archive depth limit")
+                            return
+                        for info in sorted(archive.infolist(), key=lambda i: i.filename):
+                            if not _is_readable(info.filename):
+                                continue
+                            usage[0] += info.file_size
+                            usage[1] += 1
+                            limit = self._max_member_bytes or 32_000_000
+                            if (
+                                info.file_size > limit
+                                or usage[0] > _MAX_ARCHIVE_BYTES
+                                or usage[1] > _MAX_ARCHIVE_MEMBERS
+                            ):
+                                rejected.append(f"{(*members, info.filename)}: unpacking limit")
+                                continue
+                            try:
+                                payload = _read_member(archive, info, data, limit)
+                                self._collect(
+                                    payload,
+                                    (*members, info.filename),
+                                    container,
+                                    parts,
+                                    rejected,
+                                    usage,
+                                )
+                            except Exception as exc:
+                                rejected.append(
+                                    f"{(*members, info.filename)}: {type(exc).__name__}: {exc}"
+                                )
+                        return
+            except (zipfile.BadZipFile, ET.ParseError, ValueError) as exc:
+                rejected.append(f"{members}: {type(exc).__name__}")
+                return
+        else:
+            text = self._extract(data, depth=len(members))
+        kind = document_kind(text) if text.strip() else "unknown"
+        role = _ROLE_OF_KIND.get(kind, "unknown")
+        pages = self.pages(data)
+        losses = tuple(
+            f"page {index}: no extracted text"
+            for index, page in enumerate(text.split(PAGE_BREAK), 1)
+            if pages and not page.strip()
+        ) + tuple(re.findall(r"\[nieodczytany przypis [^\]]+\]", text))
+        if pages and len(text.split(PAGE_BREAK)) != pages:
+            losses += ("text page coverage differs from the PDF page count",)
+        parts.append(
+            DocumentPart(
+                members=members,
+                container_sha256=container,
+                sha256=hashlib.sha256(data).hexdigest(),
+                role=role,
+                text=text,
+                text_end=len(text),
+                text_sha256=hashlib.sha256(text.encode()).hexdigest(),
+                pages=pages,
+                page_start=1 if pages else None,
+                page_end=pages or None,
+                losses=losses if text.strip() else ("no extracted text",),
+            )
+        )
 
-        Every member is read and asked what it is, and only what the model needs is kept. A nested
-        archive is opened only when the bill is not out here: the three seen on RCL were bundles
-        of draft regulations, told from the bill's own files by their text alone.
-        """
-        with zipfile.ZipFile(io.BytesIO(data)) as archive:
-            names = set(archive.namelist())
-            if "word/document.xml" in names:
-                return self._docx.extract(data)
-            if "content.xml" in names and "mimetype" in names:
-                return self._odt.extract(data)
-            if depth >= _MAX_ARCHIVE_DEPTH:
-                log.warning("archive nested too deep skipped")
-                return ""
-            loose = [i for i in archive.infolist() if _is_readable(i.filename) and not _is_zip(i)]
-            parts = self._pick_parts(archive, loose, depth=depth)
-            if "bill" not in parts:
-                parts = self._from_nested(archive, parts, depth=depth)
-        if not parts:
-            log.warning("archive holds no readable document; no text")
-        return PAGE_BREAK.join(parts[role] for role in _ROLE_ORDER if parts.get(role, "").strip())
-
-    def _pick_parts(
-        self, archive: zipfile.ZipFile, infos: list[ZipInfo], *, depth: int
-    ) -> dict[TextRole, str]:
-        """The best member for each role, its own text deciding what it is.
-
-        Content vetoes always and chooses where it can: a member whose text says it is a draft
-        regulation, a compliance table, a consultation report or a letter is never kept, whatever
-        its name; among the rest, one whose text names the role beats one that only carries the
-        right file name, which is the fallback for a layout `document_kind` does not know.
-        """
-        best: dict[TextRole, tuple[tuple[int, int, int], str]] = {}
-        for info in infos:
-            text = self._member_text(archive, info, depth=depth)
-            kind = document_kind(text) if text.strip() else "unknown"
-            if kind in _NOT_THE_BILL:
-                log.info("%s is a %s; not sent", info.filename, kind)
+    def _select_parts(self, parts: list[DocumentPart], rejected: list[str]) -> ExtractedDocument:
+        candidates: list[tuple[tuple[int, int, int, int], DocumentPart]] = []
+        supporting: list[DocumentPart] = []
+        annexes: list[DocumentPart] = []
+        for part in parts:
+            name = part.members[-1]
+            base = name.rsplit("/", 1)[-1]
+            kind = document_kind(part.text) if part.text.strip() else "unknown"
+            if kind != "bill" and _normative_annex(base, part.text):
+                annexes.append(part.model_copy(update={"role": "normative_annex"}))
                 continue
-            base = info.filename.rsplit("/", 1)[-1]
+            if kind in _NOT_THE_BILL or not part.text.strip():
+                rejected.append(f"{part.members}: {kind}")
+                continue
             role = _ROLE_OF_KIND.get(kind) or (_member_role(base) if kind == "unknown" else None)
-            if role is None:
+            if role in ("justification", "osr"):
+                if regulation_support(part.text, name=base):
+                    rejected.append(f"{part.members}: supporting draft regulation")
+                    continue
+                supporting.append(part.model_copy(update={"role": role}))
                 continue
-            if kind == "unknown" and self._max_part_chars and len(text) > self._max_part_chars:
-                # A bill, its uzasadnienie and its OSR name themselves in their first lines: all
-                # eighteen measured on 13 Sept 2026 did. A member this long that names itself as
-                # nothing is the runaway case the file name would otherwise wave through — the
-                # 954k-character consultation report of UD439 was filed as one.
-                log.warning("%s is %d chars and says nothing of itself; not sent", base, len(text))
+            if role != "bill":
                 continue
-            rank = (0 if kind != "unknown" else 1, *_member_rank(info))
-            if role not in best or rank < best[role][0]:
-                best[role] = (rank, text)
-        for role, (_, text) in best.items():
-            log.info("package: %s, %d chars", role, len(text))
-        return {role: text for role, (_, text) in best.items()}
-
-    def _from_nested(
-        self, archive: zipfile.ZipFile, parts: dict[TextRole, str], *, depth: int
-    ) -> dict[TextRole, str]:
-        """The bill from an archive inside the archive, when it is nowhere outside it."""
-        for info in archive.infolist():
-            if not _is_zip(info):
+            if kind == "unknown" and self._max_part_chars and len(part.text) > self._max_part_chars:
+                rejected.append(f"{part.members}: unrecognised long document")
                 continue
-            inner = self._member_text(archive, info, depth=depth)
-            if inner.strip():
-                log.info("%s holds the bill; read from there", info.filename)
-                return {"bill": inner}
-        return parts
-
-    def _member_text(self, archive: zipfile.ZipFile, member: ZipInfo, *, depth: int) -> str:
-        if self._max_member_bytes is not None and member.file_size > self._max_member_bytes:
-            log.warning(
-                "%s unpacks to %d bytes, over the %d limit; skipped",
-                member.filename,
-                member.file_size,
-                self._max_member_bytes,
+            rank = (
+                0 if kind == "bill" else 1,
+                len(part.members),
+                *text_rank(base, base.rsplit(".", 1)[-1].lower()),
             )
-            return ""
-        try:
-            data = archive.read(member)
-        except Exception as exc:
-            # Encrypted, AES, a compression method zipfile does not implement, a broken stream:
-            # the other members of the package are still worth reading.
-            log.warning(
-                "%s not unpacked (%s: %s); skipped", member.filename, type(exc).__name__, exc
+            candidates.append((rank, part.model_copy(update={"role": "bill"})))
+        if not candidates:
+            return ExtractedDocument(
+                text=PAGE_BREAK.join(p.text for p in supporting),
+                selection=DocumentSelection(
+                    state="unsupported", parts=tuple(supporting), rejected=tuple(rejected)
+                ),
             )
-            return ""
-        return self._extract(data, depth=depth + 1)
+        candidates.sort(key=lambda item: (item[0], item[1].members))
+        rank, main = candidates[0]
+        peers = [p for r, p in candidates if r[0] == rank[0]]
+        confirmed = [p for p in peers if document_kind(p.text) == "bill"]
+        if len(confirmed) > 1:
+            subjects = {bill_subject(p.text) for p in confirmed}
+            dates = [draft_version(p.text) for p in confirmed]
+            if len(subjects) == 1 and "" not in subjects and all(dates):
+                newest = max(date for date in dates if date is not None)
+                confirmed = [p for p in confirmed if draft_version(p.text) == newest]
+                main = confirmed[0]
+            identities = {law_digest(trim_print(p.text).text) or p.text.strip() for p in confirmed}
+            if len(identities) > 1:
+                return ExtractedDocument(
+                    selection=DocumentSelection(
+                        state="ambiguous", parts=tuple(confirmed), rejected=tuple(rejected)
+                    )
+                )
+        family = main.members[:-1]
+        kept = [main]
+        kept.extend(p for p in annexes if p.members[:-1] == family)
+        for role in ("justification", "osr"):
+            matches = [p for p in supporting if p.role == role and p.members[:-1] == family]
+            if matches:
+                kept.append(
+                    min(
+                        matches,
+                        key=lambda p: (
+                            text_rank(p.members[-1], p.members[-1].rsplit(".", 1)[-1].lower()),
+                            p.members,
+                        ),
+                    )
+                )
+        losses = tuple(rejected)
+        return ExtractedDocument(
+            text=PAGE_BREAK.join(p.text for p in kept),
+            selection=DocumentSelection(
+                parts=tuple(kept),
+                rejected=losses,
+                role=("bill heading",) if document_kind(main.text) == "bill" else (),
+                completeness=()
+                if losses or any(p.losses for p in kept)
+                else ("all selected members extracted",),
+            ),
+        )
 
 
 _ROLE_OF_KIND: dict[Kind, TextRole] = {
@@ -477,3 +607,44 @@ def _member_role(name: str) -> TextRole | None:
     if base.rsplit(".", 1)[-1].lower() not in READABLE_EXTENSIONS:
         return None
     return text_role(base)
+
+
+def _normative_annex(name: str, text: str) -> bool:
+    heading = text[:1200].lower() if document_kind(text) == "annex" else ""
+    label = name.lower()
+    return bool(re.search(r"za[łl][aą]cznik.*do (?:niniejszej )?ustawy", heading + "\n" + label))
+
+
+def _read_xml(archive: zipfile.ZipFile, name: str) -> bytes:
+    if archive.getinfo(name).file_size > _MAX_XML_BYTES:
+        raise ValueError("document XML size limit")
+    with archive.open(name) as stream:
+        content = stream.read(_MAX_XML_BYTES + 1)
+    if len(content) > _MAX_XML_BYTES:
+        raise ValueError("document XML size limit")
+    return content
+
+
+def _read_member(archive: zipfile.ZipFile, info: ZipInfo, data: bytes, limit: int) -> bytes:
+    if info.compress_type != 9:
+        with archive.open(info) as stream:
+            result = stream.read(limit + 1)
+    else:
+        if info.flag_bits & 1:
+            raise ValueError("encrypted Deflate64 member")
+        offset = info.header_offset
+        header = data[offset : offset + 30]
+        if len(header) != 30 or header[:4] != b"PK\x03\x04":
+            raise zipfile.BadZipFile("invalid local header")
+        name_size, extra_size = struct.unpack_from("<HH", header, 26)
+        start = offset + 30 + name_size + extra_size
+        compressed = data[start : start + info.compress_size]
+        inflater = Inflater()
+        result = inflater.inflate(compressed, min(limit, info.file_size) + 1)
+        if not inflater.eof:
+            raise zipfile.BadZipFile("incomplete or oversized Deflate64 stream")
+    if len(result) > limit or len(result) != info.file_size:
+        raise zipfile.BadZipFile("unpacked member size mismatch")
+    if zlib.crc32(result) != info.CRC:
+        raise zipfile.BadZipFile("member CRC mismatch")
+    return result

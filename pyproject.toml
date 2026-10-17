@@ -21,6 +21,7 @@ dependencies = [
   "anthropic>=1.4,<2",
   "beautifulsoup4>=4.13,<5",
   "httpx2>=2,<3",
+  "inflate64>=1.0.4,<2",
   "olefile>=0.47,<1",
   "openai>=3.17.0",
   "pydantic>=2.7,<3",
@@ -73,6 +74,7 @@ ignore = ["B008"]  # typer.Option in defaults
 "src/lexinform/adapters/llm_prompts.py" = ["E501"]
 
 [tool.mypy]
+mypy_path = "typings"
 python_version = "3.14"
 strict = true
 files = ["src", "tests"]

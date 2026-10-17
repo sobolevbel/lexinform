@@ -580,7 +580,11 @@ def _names_a_filing(name: str, number: str) -> bool:
 def _names_the_bill(name: str) -> bool:
     """`3115.pdf`, `2872 (z autopoprawką).pdf` or `3150-ustawa i załączniki…`, not an appendix."""
     return (
-        re.fullmatch(r"\d+(\s*\(.*\))?\.pdf|\d+-\s*(ustaw|projekt).*", name.strip(), re.I)
+        re.fullmatch(
+            r"(?:druk\s+nr\s*)?\d+(\s*\(.*\))?\.pdf|(?:druk\s+nr\s*)?\d+(?:\.pdf)?\s*-\s*(ustaw|projekt).*",
+            name.strip(),
+            re.I,
+        )
         is not None
     )
 
@@ -598,6 +602,7 @@ class PrintInfo(BaseModel):
     change_date: dt.datetime | None = None
     attachments: tuple[Attachment, ...] = ()
     additional_prints: tuple[PrintInfo, ...] = ()
+    process_prints: tuple[str, ...] = ()
 
     @property
     def web_url(self) -> str:
@@ -612,13 +617,55 @@ class PrintInfo(BaseModel):
         API answers `/prints/{n}` with a document filed *to* that number. A filing's file is named
         `{n}-004.pdf` or `{n}-s.pdf`, which over term 10 occurs on those three prints alone.
         """
-        preferred = f"{self.number}.pdf".lower()
-        pdfs = [a for a in self.attachments if a.is_pdf]
-        for a in pdfs:
-            if a.name.lower() == preferred:
-                return a
-        own = [a for a in pdfs if not _names_a_filing(a.name, self.number)]
-        return min(own, key=lambda a: not _names_the_bill(a.name), default=None)
+        return next(iter(self.pdf_candidates), None)
+
+    @property
+    def pdf_candidates(self) -> tuple[Attachment, ...]:
+        pdfs = [
+            a for a in self.attachments if a.is_pdf and not _names_a_filing(a.name, self.number)
+        ]
+        return tuple(
+            sorted(
+                pdfs,
+                key=lambda a: (
+                    0
+                    if a.name.lower() == f"{self.number}.pdf".lower()
+                    else 1
+                    if _names_the_bill(a.name)
+                    else 2
+                    if print_part_number(a.name, self.number) is not None
+                    else 3,
+                    print_part_number(a.name, self.number) or 0,
+                    a.name.casefold(),
+                    a.url,
+                ),
+            )
+        )
+
+
+def print_part_number(name: str, number: str) -> int | None:
+    match = re.fullmatch(
+        rf"{re.escape(number)}(?:\.pdf)?[.\s-]*(?:c|cz[.]?|część)?\s*(\d+|[IVX]+)\.pdf",
+        name.strip(),
+        re.I,
+    )
+    if match is None:
+        return None
+    part = match.group(1).upper()
+    if part.isdecimal():
+        return int(part)
+    return {
+        "I": 1,
+        "II": 2,
+        "III": 3,
+        "IV": 4,
+        "V": 5,
+        "VI": 6,
+        "VII": 7,
+        "VIII": 8,
+        "IX": 9,
+        "X": 10,
+    }.get(part)
 
 
 def supplement_kind(title: str) -> SourceKind | None:
@@ -845,6 +892,12 @@ class TextDocument(BaseModel):
     kind: SourceKind
     extra_urls: tuple[str, ...] = ()
     senate: SenateResolutionIdentity | None = None
+    alternatives: tuple[TextDocument, ...] = ()
+    compare_versions: bool = False
+    normative_urls: tuple[str, ...] = ()
+    required_urls: tuple[str, ...] = ()
+    amendment_urls: tuple[str, ...] = ()
+    version_basis: tuple[str, ...] = ()
 
 
 def latest_text_document(

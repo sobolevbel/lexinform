@@ -328,25 +328,28 @@ class RclProject(BaseModel):
 
 
 def _classify(documents: list[RclDocument]) -> dict[TextRole, RclDocument]:
-    picked: dict[TextRole, RclDocument] = {}
-    for role in ("justification", "osr", "bill"):
-        candidates = [d for d in documents if text_role(d.name) == role]
-        if not candidates:
-            continue
-        if role == "bill":
-            picked[role] = min(candidates, key=_rank)
-        else:
-            picked[role] = min(candidates, key=_format_rank)
-    if "bill" in picked:
-        return picked
-    fallback = _bill_of_last_resort(documents)
-    if fallback is None:
-        return picked
-    # One file can be all three documents at once, and then it is the bill: handing it to the
-    # analysis a second time as an "extra" would pay for the same text twice.
-    kept = {role: d for role, d in picked.items() if d.url != fallback.url}
-    kept["bill"] = fallback
-    return kept
+    bills = [d for d in documents if text_role(d.name) == "bill"]
+    main = min(bills, key=_version_rank) if bills else _bill_of_last_resort(documents)
+    if main is None:
+        return {
+            role: min(candidates, key=_version_rank)
+            for role in ("justification", "osr")
+            if (candidates := [d for d in documents if text_role(d.name) == role])
+        }
+    picked: dict[TextRole, RclDocument] = {"bill": main}
+    for role in ("justification", "osr"):
+        candidates = [d for d in documents if text_role(d.name) == role and d.url != main.url]
+        if main.created is not None:
+            candidates = [d for d in candidates if d.created == main.created]
+        if candidates:
+            picked[role] = min(candidates, key=_version_rank)
+    return picked
+
+
+def _version_rank(document: RclDocument) -> tuple[int, int, int, int, str]:
+    explicit = bool(re.search(r"nowy[\s_]+tekst", document.name, re.I))
+    date = document.created.toordinal() if document.created else 0
+    return (not explicit, -date, *_rank(document), document.url)
 
 
 def _bill_of_last_resort(documents: list[RclDocument]) -> RclDocument | None:
@@ -358,7 +361,7 @@ def _bill_of_last_resort(documents: list[RclDocument]) -> RclDocument | None:
     the answer would otherwise be nothing, so it changes no project with a recognised bill.
     """
     candidates = [d for d in documents if text_role(d.name) != "osr" and _names_a_bill(d.name)]
-    return min(candidates, key=_rank) if candidates else None
+    return min(candidates, key=_version_rank) if candidates else None
 
 
 def _names_a_bill(name: str) -> bool:
@@ -381,9 +384,9 @@ _NOT_A_TEXT_RE = re.compile(
     # multi-word pattern has to accept both.
     # "opinia" is word-bounded because "opiniowanie" is a stage, and a file called
     # "projekt - opiniowanie.pdf" is the bill as published for it.
-    r"tabel|zgodno|załącznik|zalacznik|zał\.|pismo|rozdzielnik"
+    r"tabel|(?:tabela|tabeli)[\s_]+zgodno|załącznik|zalacznik|zał\.|pismo|rozdzielnik"
     r"|rozbieżno|rozbiezno|raport[\s_]+z|zestawienie|formatka|wyliczenia|akty[\s_]+wykonawcze"
-    r"|autopoprawka|\bopinia\b|materia[łl][\s_]+uzupe[łl]niaj"
+    r"|autopoprawka|(?<![a-ząćęłńóśźż])opinia(?![a-ząćęłńóśźż])|materia[łl][\s_]+uzupe[łl]niaj"
 )
 # A ministry that files the bill as an attachment to its letter says which is which in a tag at
 # the end of the name: "załącznik do pismo 07.08.2026 uzgodnienia [projekt].pdf". The tag is the
@@ -409,6 +412,8 @@ def text_role(name: str) -> TextRole | None:
     tagged = _ROLE_TAG_RE.search(lowered)
     if tagged is not None:
         return _TAGGED_ROLE[tagged.group(1)]
+    if re.search(r"\brozp(?:[.\s_]|orz[aą]dze)", lowered):
+        return None
     if "uzasad" in lowered:
         return "justification"
     if _NOT_A_TEXT_RE.search(lowered):

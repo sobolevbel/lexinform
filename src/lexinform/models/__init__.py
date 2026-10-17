@@ -110,6 +110,12 @@ from lexinform.models.digest import (
     previous_week,
     week_bounds,
 )
+from lexinform.models.documents import (
+    DocumentPart,
+    DocumentSelection,
+    DocumentWork,
+    ExtractedDocument,
+)
 from lexinform.models.editorial import (
     Editorial as Editorial,
 )
@@ -328,6 +334,10 @@ from lexinform.models.wykaz import (
 )
 
 __all__ = [
+    "DocumentPart",
+    "DocumentSelection",
+    "DocumentWork",
+    "ExtractedDocument",
     "AmendmentSourceEvidence",
     "SenateResolutionEvidence",
     "SenateResolutionIdentity",

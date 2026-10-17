@@ -16,6 +16,7 @@ from lexinform.models.analysis import (
     SupplementContext,
 )
 from lexinform.models.bill import LocatedText
+from lexinform.models.documents import DocumentSelection
 from lexinform.models.enums import SourceKind, TextSource
 from lexinform.models.observations import DeliveryPlan
 from lexinform.models.report import CallKind
@@ -180,6 +181,7 @@ class BatchItemMeta(BaseModel):
     source_url: str | None
     revision: int
     text_sha256: str | None
+    selection: DocumentSelection = DocumentSelection()
     law_sha256: str | None = None
     prompt_version: str = ""
     generation: int = 0

@@ -1,0 +1,34 @@
+{
+  "before-implementation.json.gz": {
+    "gzip_sha256": "96363f7668eefd000857e27ad9d35caeb2dc5520938b34de67121be9ec1947a6",
+    "source_sha256": "ec3093d83ee80e50408f326bac0a4a041cb577fb6ffe94e6ce77be9e6b764177"
+  },
+  "candidates-final.json.gz": {
+    "gzip_sha256": "0f09cf98cf13fd1dbb16af2c9631c67c81c0b723488a66cb500f1d2ff65ea781",
+    "source_sha256": "ed9f66fec48609e973bc821dc521e7308b19a00edd76c021b025ed49c6f24e91"
+  },
+  "final-metadata.json.gz": {
+    "gzip_sha256": "c872fca767f18edad104fb2ace300e1002c2ecc6b24fd8edfb13ef4f758894bd",
+    "source_sha256": "9351a6ef9e66fc734ea5a5568f6a6fc4149f85847202e36d6f823d7db8992b87"
+  },
+  "package-acceptance.json.gz": {
+    "gzip_sha256": "b71eb404ec36c809eeb09391b9f2cd926089c3fe8566510da0baab0720deba29",
+    "source_sha256": "8f5147e1186f67df9bce4d660162b565db3635506497f46b632ae98aa86d86cc"
+  },
+  "package-old.json.gz": {
+    "gzip_sha256": "380a1a733590e760c88331f856da0b074465c62a98c23e14f04d46d991d9b428",
+    "source_sha256": "67913e90016469354078073a87ce68e530d3d4d7d224b0803bae52d7bdf4e887"
+  },
+  "senate-replay-implementation.json.gz": {
+    "gzip_sha256": "104cb3119a4f9254e6832aae30f455d437d344d58eab4c2f60b5337afac86f50",
+    "source_sha256": "d6ca2c5137f652fb45d2ebd82f012ad35c921d0883ba590c01fd0106b618d7a8"
+  },
+  "word-before.json.gz": {
+    "gzip_sha256": "2b6e2b06595c18b156b1c0faf14bd4f84149e039f840a7a9a8594ca2b41789a6",
+    "source_sha256": "dd10333d8a7bda03827c8f0cb592c030fafc7fedf6f822a1144e6a1ca279fc07"
+  },
+  "word-final.json.gz": {
+    "gzip_sha256": "b508d9b8de71591d4bf3a43e1e015ada0fadfc19fa6ba594ee3551eca61cb17b",
+    "source_sha256": "9a3bd8ac4e8005d13061599e5dd5eadb198a667a60ffa34087ee731787a62656"
+  }
+}

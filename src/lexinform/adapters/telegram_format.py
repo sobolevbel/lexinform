@@ -47,7 +47,6 @@ from lexinform.models import (
     PrintInfo,
     Publication,
     PublicationKind,
-    RclProject,
     ReadingOutcome,
     RunReport,
     SittingNews,
@@ -528,14 +527,21 @@ class MessageFormatter:
                 link(WYKAZ_REGISTER_URL, lb.link_wykaz),
             ]
         if bill.rcl is not None:
-            return self._rcl_links(bill.rcl)
+            return self._rcl_links(bill)
         if bill.is_pre_print:
             return [link(s.web_url, lb.link_submission_pdf)]
         if bill.act is not None:
             return self._act_links(bill, bill.act)
         links = self._sejm_links(bill)
         pdf = print_info.main_pdf if print_info else None
-        if pdf is not None:
+        selected_print = (
+            bill.analysis is not None
+            and bill.analysis.source_kind == "print"
+            and bool(bill.analysis.selection.parts)
+            and print_info is not None
+            and any(a.url == bill.analysis.source_url for a in print_info.attachments)
+        )
+        if pdf is not None and not selected_print:
             links.append(link(pdf.url, lb.link_pdf))
         elif bill.analysis is not None and bill.analysis.source_url:
             label = (
@@ -544,6 +550,8 @@ class MessageFormatter:
                 else lb.link_bill_text
             )
             links.append(link(bill.analysis.source_url, label))
+        elif pdf is not None:
+            links.append(link(pdf.url, lb.link_pdf))
         if s.rcl_link:
             # The government stage the print came through, and the door to everything the card
             # itself cannot carry once the thread is the druk's: the consultation letter with the
@@ -2173,6 +2181,8 @@ class MessageFormatter:
             f"👁 <b>followed</b>: {snapshot.followed}",
             _runs_line(snapshot),
         ]
+        if snapshot.document_work:
+            lines.append(f"📄 <b>document work</b>: {_counts(snapshot.document_work)}")
         if snapshot.waiting:
             lines.append(
                 "⏳ <b>waiting</b>\n"
@@ -2568,13 +2578,29 @@ class MessageFormatter:
             return lb.pre_print_note if bill.is_pre_print else lb.partial_text_note
         return lb.partial_text_note if record.truncated else ""
 
-    def _rcl_links(self, project: RclProject) -> list[str]:
+    def _rcl_links(self, bill: Bill) -> list[str]:
+        project = bill.rcl
+        assert project is not None
         lb = self._labels
         links = [link(project.web_url, lb.link_rcl_project)]
         documents = project.text_documents()
-        if "bill" in documents:
+        record = bill.analysis
+        main_url = record.source_url if record is not None else None
+        if main_url:
+            extension = urlsplit(main_url).path.rsplit(".", 1)[-1].upper()
+            links.append(link(main_url, f"{lb.link_bill_text} ({extension})"))
+        elif "bill" in documents:
             doc = documents["bill"]
             links.append(link(doc.url, f"{lb.link_bill_text} ({doc.extension.upper()})"))
+        if record is not None and record.selection.parts:
+            for role, label in (("justification", lb.link_justification), ("osr", lb.link_osr)):
+                urls = dict.fromkeys(
+                    part.url
+                    for part in record.selection.parts
+                    if part.role == role and part.url and part.url != main_url
+                )
+                links.extend(link(url, label) for url in urls)
+            documents = {}
         if "justification" in documents:
             links.append(link(documents["justification"].url, lb.link_justification))
         if "osr" in documents:

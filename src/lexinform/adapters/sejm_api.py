@@ -97,6 +97,8 @@ class SejmApiClient:
         self._backoff = backoff_seconds
         self._failed_requests: dict[str, int] = {}
         self._failure_lock = Lock()
+        self._prints_lock = Lock()
+        self._self_amendments: dict[int, dict[str, tuple[PrintInfo, ...]]] = {}
         # Looked up here and not bound as a default: a default binds at import and no test that
         # builds the container can then shorten the 1+2+4 seconds of a refused host.
         self._sleep = sleep or time.sleep
@@ -223,6 +225,28 @@ class SejmApiClient:
     def get_print(self, term: int, number: str) -> PrintInfo:
         data = self._get_json(f"/sejm/term{term}/prints/{quote(number)}")
         return parse_print(data, term=term, base_url=self._base_url)
+
+    def self_amendments(self, term: int, number: str) -> tuple[PrintInfo, ...]:
+        with self._prints_lock:
+            if term not in self._self_amendments:
+                data = self._get_json(f"/sejm/term{term}/prints")
+                if not isinstance(data, list):
+                    raise SejmApiError("Unexpected /prints payload")
+                related: dict[str, list[PrintInfo]] = {}
+                for raw in data:
+                    info = parse_print(raw, term=term, base_url=self._base_url)
+                    if not info.title.casefold().startswith("autopoprawka"):
+                        continue
+                    for parent in info.process_prints:
+                        if parent != info.number:
+                            related.setdefault(parent, []).append(info)
+                self._self_amendments[term] = {
+                    parent: tuple(
+                        sorted(infos, key=lambda p: (p.document_date or date.min, p.number))
+                    )
+                    for parent, infos in related.items()
+                }
+            return self._self_amendments[term].get(number, ())
 
     def get_act(self, eli: str) -> ActInfo | None:
         """The published act from the ELI API; None when the act is not (yet) indexed there."""
@@ -624,4 +648,5 @@ def parse_print(
         change_date=_aware_datetime(item.get("changeDate")),
         attachments=attachments,
         additional_prints=additional,
+        process_prints=tuple(str(n) for n in item.get("processPrint") or ()),
     )

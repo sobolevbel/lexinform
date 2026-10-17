@@ -147,9 +147,11 @@ def test_a_document_arriving_with_a_stage_is_told_under_the_stages_header() -> N
 
 
 def test_an_unreadable_document_is_still_named_and_linked() -> None:
-    w = World(extractor=FakeTextExtractor(error=RuntimeError("no text layer")))
+    extractor = FakeTextExtractor()
+    w = World(extractor=extractor)
     w.add_bill("3039", TITLE)
     w.run()
+    extractor.error = RuntimeError("no text layer")
     url = w.file_to_print("3039", GOVERNMENT_POSITION)
     w.clock.advance(days=1)
 

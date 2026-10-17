@@ -20,6 +20,7 @@ from lexinform.analysis_records import RecordFactory, UsageFields
 from lexinform.concurrency import fan_out
 from lexinform.errors import (
     BatchNotSubmittedError,
+    DocumentSelectionError,
     LlmContextExceededError,
     LlmUnavailableError,
     OrkaUnreachableError,
@@ -54,8 +55,10 @@ from lexinform.models import (
     ChangedPassage,
     DigestItemMeta,
     DocumentDigest,
+    DocumentPart,
     DocumentReview,
     DocumentReviewRecord,
+    DocumentSelection,
     JointBillDescription,
     JointComparison,
     JointContext,
@@ -282,6 +285,8 @@ class _Loaded:
     scan: ScannedDocument | None = None
     law: str | None = None
     whole: str | None = None
+    document: TextDocument | None = None
+    selection: DocumentSelection = DocumentSelection()
     """The trimmed text before the budget cut it: what a change between two texts is read from."""
 
     @property
@@ -601,6 +606,17 @@ class AnalysisService:
                 result.fatal_error = exc.describe()
                 log.error("aborting analysis phase: %s", result.fatal_error)
                 break
+            except DocumentSelectionError as exc:
+                result.unanswered += 1
+                status = (
+                    BillStatus.ANALYSIS_PENDING
+                    if exc.state == "waiting"
+                    else BillStatus.DOCUMENT_AMBIGUOUS
+                    if exc.state == "ambiguous"
+                    else BillStatus.DOCUMENT_UNSUPPORTED
+                )
+                self._repo.set_status(bill.term, bill.number, status, reason=str(exc))
+                continue
             except OrkaUnreachableError as exc:
                 # The file was not read because the host would not hand it over today, which
                 # says nothing about the bill. Analysing the metadata instead would write down
@@ -1079,6 +1095,7 @@ class AnalysisService:
                     "text_sha256": item.meta.text_sha256,
                     "law_sha256": item.meta.law_sha256,
                     "source_checked_at": now,
+                    "selection": item.meta.selection,
                 }
             )
             if active:
@@ -1473,7 +1490,13 @@ class AnalysisService:
             text=text,
             sha256=hashlib.sha256(text.encode()).hexdigest(),
             normalized_sha256=text_digest(text),
-            complete=bool(text.strip()) and not file.oversize,
+            complete=(
+                bool(text.strip())
+                and not file.oversize
+                and carries_the_document(text, min_chars=MIN_TEXT_CHARS, pages=file.pages)
+                and not file.selection.rejected
+                and file.selection.state not in ("ambiguous", "unsupported")
+            ),
             file_sha256=file.sha256,
             author=source.author,
         )
@@ -1581,7 +1604,10 @@ class AnalysisService:
 
     def _load_amendments_text(self, document: TextDocument) -> _Loaded:
         if document.kind != "senate_amendments":
-            return self._load_text(document, trim=False)
+            loaded = self._load_text(document, trim=False)
+            if loaded.truncated:
+                raise ValueError("Полный текст поправок комиссии не помещается в бюджет текста")
+            return loaded
         if document.senate is not None and document.senate.scan:
             scan = self._loader.load_scan(document.url, cover_letter=False)
             if (
@@ -1598,19 +1624,10 @@ class AnalysisService:
             raise ValueError("Полный текст поправок Сената не помещается в бюджет текста")
         return _Loaded(text, False, "pdf", whole=text)
 
-    def summarize_amendments(
-        self,
-        bill: Bill,
-        document: TextDocument,
-        *,
-        proposal: str | None = None,
-        may_wait: bool = False,
-    ) -> AmendmentsRecord | Waiting | None:
-        """Scanned Senate resolutions require a batch answer with verified source evidence."""
-        assert bill.analysis is not None, (
-            "the tracker looks for amendments only of an analysed bill"
-        )
-        assert document.kind in AMENDMENT_SOURCES, f"not an amendments document: {document.kind}"
+    def amendments_context(
+        self, bill: Bill, document: TextDocument, *, proposal: str | None = None
+    ) -> AmendmentsContext | None:
+        assert bill.analysis is not None
         loaded = self._load_amendments_text(document)
         if not loaded.text.strip() and loaded.scan is None:
             return None
@@ -1621,7 +1638,7 @@ class AnalysisService:
                 document.url,
             )
             return None
-        ctx = AmendmentsContext(
+        return AmendmentsContext(
             number=bill.number,
             title=bill.summary.title,
             source_kind=document.kind,
@@ -1633,6 +1650,24 @@ class AnalysisService:
             scan=loaded.scan,
             source_check=document.senate if loaded.scan else None,
         )
+
+    def summarize_amendments(
+        self,
+        bill: Bill,
+        document: TextDocument,
+        *,
+        proposal: str | None = None,
+        may_wait: bool = False,
+        context: AmendmentsContext | None = None,
+    ) -> AmendmentsRecord | Waiting | None:
+        """Scanned Senate resolutions require a batch answer with verified source evidence."""
+        assert bill.analysis is not None, (
+            "the tracker looks for amendments only of an analysed bill"
+        )
+        assert document.kind in AMENDMENT_SOURCES, f"not an amendments document: {document.kind}"
+        ctx = context or self.amendments_context(bill, document, proposal=proposal)
+        if ctx is None:
+            return None
         key = _memo_key(bill, "amendments", ctx)
         record = self._ask_or_wait(
             bill,
@@ -1797,7 +1832,7 @@ class AnalysisService:
         document = located.document
         try:
             loaded = self._load_text(document)
-        except OrkaUnreachableError:
+        except OrkaUnreachableError, DocumentSelectionError:
             if previous is None:
                 raise
             # A bill that already has an analysis keeps it, the same as for any other document
@@ -1805,6 +1840,9 @@ class AnalysisService:
             return _Prepared(
                 bill, located, "", "metadata_only", previous, first=False, unreadable=True
             )
+        if loaded.document is not None:
+            document = loaded.document
+            located = located.model_copy(update={"document": document})
         text, truncated, source = loaded.text, loaded.truncated, loaded.source
         if previous is not None and source not in FULL_TEXT_SOURCES:
             return _Prepared(bill, located, text, source, previous, first=False, unreadable=True)
@@ -1814,6 +1852,7 @@ class AnalysisService:
             (
                 document is not None
                 and self._text_identity is not None
+                and not document.amendment_urls
                 and self._text_identity.same_text(bill, previous, document)
             )
             or (digest is not None and digest == previous.text_sha256)
@@ -1826,8 +1865,10 @@ class AnalysisService:
             # the next run sees the same new document and reads it then.
             self._ledger.stop("the new text(s) wait for the next run")
             return _Prepared(bill, located, text, source, previous, first=False, deferred=True)
-        if previous is not None and self._changes_settled(
-            bill, loaded, previous, previous_document
+        if (
+            previous is not None
+            and not (document and document.amendment_urls)
+            and self._changes_settled(bill, loaded, previous, previous_document)
         ):
             return self._unchanged(bill, located, loaded, previous)
         meta = located.summary or bill.summary
@@ -1942,6 +1983,7 @@ class AnalysisService:
                     text_source=source,
                     source_kind=ctx.source_kind,
                     source_url=document.url if document else None,
+                    selection=loaded.selection.without_text(),
                     revision=previous.revision + 1 if previous else 1,
                     text_sha256=digest,
                     law_sha256=law,
@@ -1959,6 +2001,7 @@ class AnalysisService:
             self._ledger.charge(record, number=bill.number, kind=purpose)
         else:
             record = _reused(AnalysisRecord.model_validate_json(cached))
+        record.selection = loaded.selection.without_text()
         record.source_url = document.url if document else None
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
@@ -1988,6 +2031,7 @@ class AnalysisService:
                 "source_url": document.url,
                 "source_kind": document.kind,
                 "source_checked_at": self._clock.now(),
+                "selection": loaded.selection.without_text(),
                 "text_sha256": loaded.digest or previous.text_sha256,
                 "law_sha256": loaded.law or previous.law_sha256,
             }
@@ -2380,30 +2424,26 @@ class AnalysisService:
         (`scan`); the extracted text comes back either way, so the signatures are still resolved.
 
         An outage propagates, and so does orka refusing the file: an analysis of the metadata must
-        never be what a bill with a text ends up with. A missing or broken file falls back to the
-        metadata without costing an attempt. `trim=False` keeps the whole text.
+        never be what a bill with a text ends up with. `trim=False` keeps the whole text.
         """
         if document is None:
             return _Loaded("", False, "metadata_only")
         try:
-            file = self._loader.read_document(document)
+            document, file = self._loader.select_document(document)
         except ServiceUnavailableError:
             raise
         except OrkaUnreachableError as exc:
             if not exc.file_is_missing:
-                # The WAF's decision about our address on the day. Falling back to the metadata
-                # would turn it into a verdict on a text nobody has read; the caller waits.
                 raise
             log.warning("%s is not there (%s); using metadata only", document.url, exc)
             return _Loaded("", False, "metadata_only")
         except Exception as exc:
-            log.warning(
-                "%s unreadable (%s: %s); using metadata only",
-                document.url,
-                type(exc).__name__,
-                exc,
-            )
-            return _Loaded("", False, "metadata_only")
+            raise DocumentSelectionError(
+                "unsupported" if isinstance(exc, ValueError) else "waiting",
+                f"{document.url}: {type(exc).__name__}: {exc}",
+            ) from exc
+        if file.selection.state in ("waiting", "ambiguous", "unsupported"):
+            raise DocumentSelectionError(file.selection.state, "; ".join(file.selection.rejected))
         text = file.text
         if text is None or not carries_the_document(
             text, min_chars=MIN_TEXT_CHARS, pages=file.pages
@@ -2428,9 +2468,23 @@ class AnalysisService:
         if not trim:
             budgeted = self._budget.apply(text, self._keywords.spans(text))
             return _Loaded(
-                budgeted.text, budgeted.truncated, "pdf", law=law_digest(text), whole=text
+                budgeted.text,
+                budgeted.truncated,
+                "pdf",
+                law=law_digest(text),
+                whole=text,
+                document=document,
+                selection=file.selection,
             )
         trimmed = trim_print(text)
+        amendments = tuple(part for part in file.selection.parts if part.role == "self_amendment")
+        combined = trimmed.text
+        if amendments:
+            combined += (
+                "\n\nAUTOPOPRAWKI: odrębne propozycje zmian "
+                "do powyższego projektu; nie tekst jednolity.\n"
+            )
+            combined += "\n\n".join(f"Źródło: {part.url}\n{part.text}" for part in amendments)
         # Said whether anything was dropped or not: a text that goes in whole is the expensive
         # case, and it was the silent one — the package that cost $1.63 logged nothing at all.
         log.info(
@@ -2440,14 +2494,16 @@ class AnalysisService:
             len(trimmed.text),
             ", ".join(f"{d.name} {d.chars}" for d in trimmed.dropped) or "nothing",
         )
-        budgeted = self._budget.apply(trimmed.text, self._keywords.spans(trimmed.text))
+        budgeted = self._budget.apply(combined, self._keywords.spans(combined))
         source: TextSource = "documents" if document.kind == "rcl" else "pdf"
         return _Loaded(
             budgeted.text,
-            budgeted.truncated,
+            budgeted.truncated or any(part.losses for part in file.selection.parts),
             source,
-            law=law_digest(trimmed.text),
-            whole=trimmed.text,
+            law=None if amendments else law_digest(trimmed.text),
+            whole=combined,
+            document=document,
+            selection=file.selection,
         )
 
     def _load_scan(self, document: TextDocument, text: str) -> _Loaded:
@@ -2467,7 +2523,20 @@ class AnalysisService:
             scan.pages,
             scan.of_pages,
         )
-        return _Loaded(text, scan.truncated, "scan", scan)
+        selection = DocumentSelection(
+            belonging=document.version_basis[:1],
+            parts=(
+                DocumentPart(
+                    url=document.url,
+                    sha256=scan.sha256,
+                    pages=scan.of_pages,
+                    page_start=scan.cover_letter_pages + 1,
+                    page_end=scan.of_pages,
+                    losses=("text unavailable; sent as PDF pages",),
+                ),
+            ),
+        )
+        return _Loaded(text, scan.truncated, "scan", scan, document=document, selection=selection)
 
 
 def _submission_groups(intents: list[BatchIntent]) -> list[list[BatchIntent]]:
