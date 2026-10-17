@@ -9,7 +9,9 @@ from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.sejm_api import parse_print
+from lexinform.law_digest import law_digest
 from lexinform.models import RclProject
+from lexinform.sections import PAGE_BREAK, trim_print
 
 FIXTURES = Path(__file__).parents[1] / "fixtures/document_selection"
 
@@ -174,3 +176,79 @@ def test_deeper_support_must_not_replace_a_bill_with_a_regulation_justification(
 
     assert law in text
     assert justification not in text
+
+
+def investment_package(*, annex_before_reasons: bool) -> str:
+    law = (
+        "USTAWA\nz dnia 7 kwietnia 2025 r.\n"
+        "Art. 1. Wykaz strategicznych inwestycji w zakresie sieci przesyłowych "
+        "określa załącznik do niniejszej ustawy.\n"
+        "Art. 2. Inwestor realizuje inwestycje określone w wykazie na zasadach "
+        "określonych w ustawie.\nArt. 3. Ustawa wchodzi w życie po upływie 14 dni od dnia ogłoszenia."
+    )
+    annex = "Załącznik do ustawy\nWYKAZ INWESTYCJI\n1. Budowa linii 400 kV."
+    reasons = "UZASADNIENIE\nProjekt określa wykaz strategicznych inwestycji."
+    osr = (
+        "Nazwa projektu\nProjekt ustawy o inwestycjach\nOCENA SKUTKÓW REGULACJI\n"
+        "4. Podmioty, na które oddziałuje projekt\nInwestorzy\n"
+        "5. Informacje na temat zakresu, czasu trwania i podsumowanie wyników konsultacji\n"
+        "Projekt skierowano do konsultacji publicznych."
+    )
+    parts = (law, annex, reasons, osr) if annex_before_reasons else (law, reasons, osr, annex)
+    return PAGE_BREAK.join(parts)
+
+
+def extracted_investment_package(voltage: int) -> str:
+    law, reasons, osr, annex = investment_package(annex_before_reasons=False).split(PAGE_BREAK)
+    package = archive_of(
+        [
+            ("Projekt ustawy.docx", word(law)),
+            ("Uzasadnienie.docx", word(reasons)),
+            ("OSR.docx", word(osr)),
+            ("Załącznik do ustawy.docx", word(annex.replace("400 kV", f"{voltage} kV"))),
+        ]
+    )
+    extractor = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
+    return extractor.extract(package)
+
+
+@pytest.mark.xfail(
+    strict=True,
+    raises=AssertionError,
+    reason="B105: the selected package must retain its normative annex through trimming",
+)
+def test_selected_normative_annex_survives_extraction_and_trimming() -> None:
+    text = extracted_investment_package(400)
+
+    trimmed = trim_print(text).text
+
+    assert "Budowa linii 400 kV" in trimmed
+
+
+@pytest.mark.parametrize(
+    "annex_before_reasons",
+    [
+        True,
+        pytest.param(
+            False,
+            marks=pytest.mark.xfail(
+                strict=True,
+                raises=AssertionError,
+                reason="B105: a substantive annex mutation is invisible after OSR",
+            ),
+        ),
+    ],
+)
+def test_normative_annex_voltage_change_changes_the_law_digest(annex_before_reasons: bool) -> None:
+    if annex_before_reasons:
+        original = investment_package(annex_before_reasons=True)
+        changed = original.replace("400 kV", "500 kV")
+    else:
+        original = extracted_investment_package(400)
+        changed = extracted_investment_package(500)
+
+    previous = law_digest(trim_print(original).text)
+    current = law_digest(trim_print(changed).text)
+
+    assert previous is not None and current is not None
+    assert current != previous

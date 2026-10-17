@@ -41,7 +41,8 @@ P3 не означает, что расходы можно игнорирова�
 Рабочая логика пока не изменена; пять strict xfail падают с `--runxfail` именно
 на AssertionError. [План, корпусное покрытие и карта путей чтения](plans/2026-10-17-document-selection.md).
 Повторная [валидация исходниками и LLM](reviews/2026-10-17-document-selection-validation.md)
-подтвердила эти пять и добавила B102–B105; всего девять strict xfail, рабочие селекторы не изменены.
+подтвердила эти пять и добавила B102–B105. После итогового синтеза — 14 strict xfail для
+девяти дефектов и три проходящих контроля; рабочие селекторы не изменены.
 
 ### B97
 
@@ -82,6 +83,8 @@ P3 не означает, что расходы можно игнорирова�
 Оба исходных Word прочитаны; это пропуск доступного текста, не доказанный анализ regulation.
 
 Регрессия: `test_rcl_implementing_regulation_does_not_replace_the_bill`.
+Путь анализа: `test_rejecting_a_regulation_reaches_the_available_bill_before_analysis`
+проверяет текст модели и URL сохранённого analysis через World.
 Приёмка: роль подтверждается содержимым до окончательного выбора; отклонённое приложение
 не блокирует доступный правильный источник и не превращается в уверенный metadata-only результат.
 
@@ -121,6 +124,8 @@ VIII/2864: `PrintInfo.main_pdf` возвращает шестистраничн�
 Неподдерживаемый вход не должен превращаться в отрицательный текстовый prefilter.
 
 Регрессия: `test_deflate64_package_does_not_silently_discard_its_bill` с исходным внутренним ZIP.
+Путь префильтра: `test_recoverable_archive_failure_is_not_a_terminal_text_verdict`
+проверяет эти же байты при workers=1/4 без окончательного отказа из-за ошибки чтения.
 Приёмка: прочитать поддержанную упаковку или сохранить явное pending/unsupported с восстановлением;
 не подавлять проблему как «нет текста». [Доказательства](reviews/2026-10-17-document-selection-validation.md#b102-deflate64-теряется-внутри-объявленного-zip).
 
@@ -161,6 +166,9 @@ VIII/2864: `PrintInfo.main_pdf` возвращает шестистраничн�
 уменьшение справочного приложения. Production-публикация по этим проектам не проверялась.
 
 Регрессия: `test_statutory_annex_with_the_affected_services_survives_package_selection`.
+Дополнительные strict xfail: `test_selected_normative_annex_survives_extraction_and_trimming`
+и `test_normative_annex_voltage_change_changes_the_law_digest[False]`. Контроль с приложением
+перед обоснованием/OSR проходит: изменение 400 → 500 kV уже видно сравнению.
 Приёмка: сохранять связанные нормативные приложения и таблицы; самостоятельные проекты
 исполнительных актов и консультационные таблицы не включать в текст закона автоматически.
 
