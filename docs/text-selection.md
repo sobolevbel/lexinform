@@ -10,6 +10,8 @@ maps every legislative-document read path, records B97–B101 with strict-xfail 
 and distinguishes candidate selection, version evidence and extraction completeness.
 The [implementation and corpus acceptance](reviews/2026-10-17-document-selection-implementation.md)
 records the runtime fixes for B97–B105 and the remaining evidence boundaries.
+[The shared version policy and typed evidence](reviews/2026-10-17-document-policy-implementation.md)
+record the next deterministic change, including identical decisions for ZIP members and separate URLs.
 
 Consultation reviews need their own selection rules: the law trimmer deliberately drops the
 very tables they analyse. See the [14 October corpus study](reviews/2026-10-14-consultation-text.md)

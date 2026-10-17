@@ -18,29 +18,40 @@ _MONTHS = (
     "listopada",
     "grudnia",
 )
-_DRAFT = re.compile(
-    r"projekt\s+z\s+(?:dnia\s+)?(\d{1,2})\s+(" + "|".join(_MONTHS) + r")\s+(\d{4})",
-    re.I,
-)
 _SUBJECT = re.compile(r"^\s*u\s*s\s*t\s*a\s*w\s*a\s*$", re.I | re.M)
 _ARTICLE = re.compile(r"\bArt\.\s*1\b", re.I)
-_NUMERIC_DRAFT = re.compile(r"projekt\s+z\s+(?:dnia\s+)?(\d{1,2})[./-](\d{1,2})[./-](\d{4})", re.I)
+_PREFIX = (
+    r"(?im)^[ \t]*`?(?:(?:Etap:[^\n(]{1,120}\(\s*)|(?:Wersja\s*\d+(?:[.,]\d+)?\s+))?"
+    r"projekt(?:\s+ustawy)?\s*,?\s*(?:z\s+(?:dnia\s+)?)?"
+)
+_NUMERIC_DRAFT = re.compile(_PREFIX + r"(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})(?!\d)")
+_SPACED_DRAFT = re.compile(_PREFIX + r"(\d{1,2})[ \t]+(\d{1,2})[ \t]+(\d{4})(?!\d)")
+_DRAFT = re.compile(_PREFIX + r"(\d{1,2})\s+(" + "|".join(_MONTHS) + r")\s+(\d{4})(?!\d)")
+
+
+def draft_version_span(text: str) -> tuple[dt.date, int, int] | None:
+    heading = _SUBJECT.search(text[:1200])
+    article = _ARTICLE.search(text[:1200])
+    end = min(1200, heading.start() if heading else 1200, article.start() if article else 1200)
+    matches: list[tuple[dt.date, int, int]] = []
+    for pattern in (_NUMERIC_DRAFT, _SPACED_DRAFT, _DRAFT):
+        for match in pattern.finditer(text[:end]):
+            try:
+                month = (
+                    _MONTHS.index(match[2].casefold()) + 1 if pattern is _DRAFT else int(match[2])
+                )
+                value = dt.date(int(match[3]), month, int(match[1]))
+            except ValueError:
+                return None
+            matches.append((value, match.start(), match.end()))
+    if not matches or len({value for value, _, _ in matches}) != 1:
+        return None
+    return matches[0]
 
 
 def draft_version(text: str) -> dt.date | None:
-    numeric = _NUMERIC_DRAFT.search(text[:1200])
-    if numeric is not None:
-        try:
-            return dt.date(int(numeric[3]), int(numeric[2]), int(numeric[1]))
-        except ValueError:
-            return None
-    match = _DRAFT.search(text[:1200])
-    if match is None:
-        return None
-    try:
-        return dt.date(int(match[3]), _MONTHS.index(match[2].casefold()) + 1, int(match[1]))
-    except ValueError:
-        return None
+    match = draft_version_span(text)
+    return match[0] if match else None
 
 
 def bill_subject(text: str) -> str:
@@ -91,14 +102,14 @@ def regulation_support(text: str, *, name: str = "") -> bool:
     )
 
 
-def comparable_versions(texts: list[str], *, allow_shared_act: bool = True) -> tuple[int, ...]:
+def comparable_versions(texts: list[str]) -> tuple[int, ...]:
     if not texts:
         return ()
     subjects = {bill_subject(text) for text in texts}
     dates = [draft_version(text) for text in texts]
     same_subject = len(subjects) == 1 and "" not in subjects
     indices = tuple(range(len(texts)))
-    if (same_subject or (allow_shared_act and shared_amended_act(texts))) and all(dates):
+    if (same_subject or shared_amended_act(texts)) and all(dates):
         newest = max(date for date in dates if date is not None)
         indices = tuple(index for index in indices if dates[index] == newest)
     identities = {law_digest(trim_print(texts[i]).text) or texts[i] for i in indices}

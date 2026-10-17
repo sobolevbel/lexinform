@@ -189,17 +189,29 @@ def test_legacy_documents_do_not_acquire_verified_quality_on_restore() -> None:
     assert old.alternatives == () and old.amendment_urls == ()
 
 
-def test_numeric_rcl_draft_dates_select_the_actual_new_text() -> None:
+@pytest.mark.parametrize("workers", [1, 4])
+@pytest.mark.parametrize(
+    "headers",
+    [
+        ("Projekt z dnia 02.06.2026", "Projekt z dnia 10.08.2026"),
+        ("Projekt 02 06 2026", "Projekt 10 08 2026"),
+        ("Projekt, 02.06.2026", "Projekt ustawy z dnia 10 sierpnia 2026"),
+    ],
+)
+def test_numeric_rcl_draft_dates_select_the_actual_new_text(
+    workers: int, headers: tuple[str, str]
+) -> None:
     old = rcl_document(1, "Projekt ustawy.docx")
     new = rcl_document(2, "Projekt ustawy NOWY TEKST.docx")
-    before = law().replace("1 września 2026", "02.06.2026")
-    after = law(days=60).replace("1 września 2026", "10.08.2026")
+    before = headers[0] + "\n" + law().split("\n", 1)[1]
+    after = headers[1] + "\n" + law(days=60).split("\n", 1)[1]
     project = rcl_project(
         stages=(rcl_stage(1, "Projekt", "reached", rcl_folder(1, "Projekt", old, new)),),
         consultation=None,
     )
     world = World(
-        extractor=FakeTextExtractor(page_count=0, by_content={b"old": before, b"new": after})
+        extractor=FakeTextExtractor(page_count=0, by_content={b"old": before, b"new": after}),
+        workers=workers,
     )
     world.add_rcl_project(project)
     world.rcl.files.update({old.url: b"old", new.url: b"new"})
@@ -209,3 +221,14 @@ def test_numeric_rcl_draft_dates_select_the_actual_new_text() -> None:
     record = world.bill(f"RCL/{project.id}").analysis
     assert record is not None and record.source_url == new.url
     assert world.llm.contexts[0].text == after
+
+    assert record.selection.state == "selected"
+    assert any(
+        fact.kind == "draft_date" and fact.value == "2026-08-10" for fact in record.selection.facts
+    )
+    assert not any(part.text for part in record.selection.parts)
+    world.repo.restore(world.repo.dump())
+    restored = world.bill(f"RCL/{project.id}").analysis
+    assert restored is not None and restored.selection == record.selection
+    world.run(track=False)
+    assert len(world.llm.contexts) == 1

@@ -1,0 +1,24 @@
+{
+  "baseline_commit": "3f01768",
+  "refactor_commit": "39dd415",
+  "files": {
+    "date-changes.json.gz": "9c4fbc41fd3b6051d7062a2a471b98231054cb5f1d73d1c19d3e2624edd01ce9",
+    "packages-before.json.gz": "b71eb404ec36c809eeb09391b9f2cd926089c3fe8566510da0baab0720deba29",
+    "candidates-after.json.gz": "945f75547426175add443c9d0efc22e06b9fa4b49db0d02c45d8955813f83f56",
+    "senate-after.json.gz": "9e599c99ae4869f28c6010fc636fc3ebf37b0a7f7a9a77a91d122005e81796ae",
+    "packages-after.json.gz": "b71eb404ec36c809eeb09391b9f2cd926089c3fe8566510da0baab0720deba29",
+    "candidates-refactor.json.gz": "aa09ac7fc8570c153cc8305abec45856d7315662d1f7fdeb1166e3a7c3cfb0a9",
+    "candidates-before.json.gz": "0f09cf98cf13fd1dbb16af2c9631c67c81c0b723488a66cb500f1d2ff65ea781",
+    "restore.json.gz": "790dc4370385b62f5a9b6eaccb2180f229fb0b57741fca59c4175bada29b70b4",
+    "candidate-changes.json.gz": "8959220789a2f4ca0094146be9ef0e1346fe58127b04ac5fed164914fa266fc0",
+    "raw-controls.json.gz": "2dd3941717764b059957270f06486f5a6d0068112441cd69bad39e659f416665"
+  },
+  "code_sha256": {
+    "src/lexinform/document_versions.py": "1845e1c202f877c5c62d4ef3d47db81d8bd61c3bdb8e98102aca85e8549d6637",
+    "src/lexinform/document_selection.py": "a0ce37d9c2c14e0315f0e722b8b9623adb3a8273ca3a568981fde087222fe411",
+    "src/lexinform/models/documents.py": "732d0057ce24088c5113bd94b2aa9a89bafc0331cff4c3d290969577dff2730c",
+    "src/lexinform/services/documents.py": "98c080f19154145a0410ad48bc5a757611f054a3fcc2e6530a9ee53a3ff365bc",
+    "src/lexinform/adapters/document_text.py": "e15ea7560cc09453567b022b8a93ddf317fb66c40fc854565a5d7438b4ebe2a4",
+    "tools/validate_document_policy.py": "3115310c5f885ed072f386cbd24d299745ff388e3ccd212e1a11a27addfca961"
+  }
+}

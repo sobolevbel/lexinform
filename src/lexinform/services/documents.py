@@ -10,16 +10,15 @@ Downloads are routed by host to the client of that system, so its outage semanti
 import base64
 import hashlib
 import logging
-import re
 import threading
 import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
+from lexinform.document_selection import bill_selection
 from lexinform.document_versions import (
     comparable_versions,
-    draft_version,
     join_normative_parts,
     regulation_support,
 )
@@ -32,7 +31,6 @@ from lexinform.sections import (
     carries_the_document,
     document_kind,
     scan_page_window,
-    trim_print,
 )
 
 log = logging.getLogger(__name__)
@@ -293,44 +291,7 @@ class TextLoader:
     def _with_evidence(self, document: TextDocument, file: LoadedFile) -> LoadedFile:
         if file.text is None or file.selection.state in ("waiting", "unsupported", "ambiguous"):
             return file
-        main = self.read(document.url)
-        text = main.text or ""
-        kind = document_kind(text)
-        version = draft_version(text)
-        belonging = document.version_basis[:1]
-        roles = (
-            ("own bill heading and articles",)
-            if kind == "bill" and re.search(r"Art\.\s*1\b", text)
-            else ()
-        )
-        versions = (f"draft dated {version.isoformat()}",) if version else ()
-        annex_required = "załącznik" in trim_print(text).text.casefold()
-        annex_present = any(part.role == "normative_annex" for part in file.selection.parts)
-        complete = (
-            bool(re.search(r"ustawa\s+wchodzi\s+w\s+życie", text, re.I))
-            and not any(part.losses for part in file.selection.parts)
-            and (not annex_required or annex_present)
-            and not main.is_scan
-        )
-        coverage = (
-            ("bill body through commencement; selected normative parts extracted",)
-            if complete
-            else ()
-        )
-        state = (
-            "selected"
-            if all((belonging, roles, versions, coverage, file.selection.parts))
-            else "unverified"
-        )
-        selection = file.selection.model_copy(
-            update={
-                "state": state,
-                "belonging": belonging,
-                "role": roles,
-                "version": versions or file.selection.version,
-                "completeness": coverage,
-            }
-        )
+        selection = bill_selection(file.selection, source_basis=document.version_basis)
         return LoadedFile(
             file.text,
             pages=file.pages,

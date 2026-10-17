@@ -530,7 +530,7 @@ class DocumentTextExtractor:
         peers = [p for r, p in candidates if r[0] == rank[0]]
         confirmed = [p for p in peers if document_kind(p.text) == "bill"]
         if len(confirmed) > 1:
-            indices = comparable_versions([p.text for p in confirmed], allow_shared_act=False)
+            indices = comparable_versions([p.text for p in confirmed])
             if not indices:
                 return ExtractedDocument(
                     selection=DocumentSelection(

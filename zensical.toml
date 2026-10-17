@@ -63,6 +63,7 @@ nav = [
   ] },
   { "Аудиты" = [
     { "Обзор" = "reviews/index.md" },
+    { "Общая политика редакций · 17.10" = "reviews/2026-10-17-document-policy-implementation.md" },
     { "Исправление выбора документов · 17.10" = "reviews/2026-10-17-document-selection-implementation.md" },
     { "Валидация выбора документов · 17.10" = "reviews/2026-10-17-document-selection-validation.md" },
     { "Тексты поправок Сената · 16.10" = "reviews/2026-10-16-senate-document-content.md" },
