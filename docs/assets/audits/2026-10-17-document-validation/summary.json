@@ -1,0 +1,74 @@
+{
+  "baseline": "fac96a0",
+  "runtime_changed": false,
+  "budget_usd": 2,
+  "actual_cost_usd": 0.884275,
+  "batches": [
+    {
+      "model": "claude-haiku-4-5-20251001",
+      "id": "msgbatch_01Hkb3Sbtjvgu3T5omcmVbYj",
+      "input_tokens": 1078738,
+      "output_tokens": 71912,
+      "cost_usd": 0.719149,
+      "requests": 229,
+      "literal_quote_valid": 79
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "id": "msgbatch_01Fg1Y6bZ1zStJctSsebkJTS",
+      "input_tokens": 141306,
+      "output_tokens": 4764,
+      "cost_usd": 0.165126,
+      "requests": 22,
+      "literal_quote_valid": 16
+    }
+  ],
+  "new_defects": [
+    "B102",
+    "B103",
+    "B104",
+    "B105"
+  ],
+  "counts": {
+    "multiple_nested_checked": 62,
+    "bill_content_not_bill_name": 53,
+    "selected_wrong_content": 6,
+    "zip_named_annexes": 587,
+    "nested_nonbill_before_bill": 8,
+    "reextracted": 10
+  },
+  "pricing_source": "https://platform.claude.com/docs/en/about-claude/pricing",
+  "pytest": {
+    "passed": 2320,
+    "xfailed": 9,
+    "deselected": 32
+  },
+  "input_manifest": {
+    "documents/files/418603.docx": "8501c9b1b7b3550f5184cc4ef70d9cbf90a7a5eb34b5bfd5cf10213e492afbfd",
+    "documents/files/418609.docx": "8bf2bd8fe6f94bdedb7edfe548d584a44868001be19111f58e88ddc435633cf2",
+    "documents/files/712314.zip": "3fa07de3dcc71492f729fc953b1b2eff00a8796691f7bea18a8f9b643f44dd68",
+    "documents/files/730977.pdf": "767b39d398a11aa7d68304011d15a3522b1c6be5210c15d1308aa7df8104cf33",
+    "documents/files/730985.pdf": "767b39d398a11aa7d68304011d15a3522b1c6be5210c15d1308aa7df8104cf33",
+    "documents/files/779502.docx": "1cd93dcd5a30a4f4655fb69372c18f36e3222a5697f35305f2ad5b5a9f6f54e8",
+    "documents/files/779503.docx": "1cf162ba8544299adc7c73a1fc32b3d821dd3423e45bd13ac7921a126c200bec",
+    "documents/files/791866.docx": "79d974c34c7996e8f7884986478b30df0e2639f1f6b947af92ed13da356e77d5",
+    "documents/files/791867.docx": "564b79487ba199c73fad300d50d8e230478a3b49216d9b8f1b854f88d573eddb",
+    "documents/files/791873.docx": "82e0628fd7af9a1349303dcc6e85087c5b16ab6f7e22795791b21c1259820c46",
+    "documents/files/771111.zip": "8e18311642d03980c54f57cdd85fe3598526affc8b13b033b466ec9c7b8c4c78",
+    "documents/files/718474.zip": "0f48616f8de6a152c46f239af1bdbd062cc97c56bd3f830be071a870370070c3",
+    "documents/files/719233.zip": "ce529160ba474446bb04c608bdc49fcc6e9525601c33b1bd06bbc4041a286998",
+    "documents/files/709230.zip": "c1aa5cd0b987c5aebf5ad2b56d83698d6891232b772f5bb9e44905f552e48ce4",
+    "documents/files/711435.zip": "819b2d2700db7a4789d387b6a7433897b7edff6b34d44cd84b2b4dff94cae94a",
+    "documents/files/711610.zip": "1c43e9cc66d6d8d189e867d54d17ee8c643d8e3232749d91e163d17662b5538c",
+    "documents/files/618466.zip": "c895aac5acdf06e9ddaacc2958b6b968189190afc0e162c9cded7cd63e79904d",
+    "documents/files/736714.zip": "2c4c236a0f1dc0367d7aef2130757e17e4b4e39cfb3a12a523795be209fbad06",
+    "documents/files/778150.zip": "659ac5e0b08f211d09ba3d6fc9054c972299f9450a2b1ec55db4ca91fce44a03",
+    "documents/files/785848.zip": "8cf0d27204698815494901291edd868d5cb13a78375543f22233390e53cc1e4d",
+    "documents/files/711399.zip": "ab93ad9d04c726c4256144b05fa76cfee10062c1f1077c79350b7a4d2cd2c50c",
+    "documents/files/716936.zip": "687b0be9fa179ea27e62a9630d403dc498c35bbbf61817275c54882d16b7bb06",
+    "documents/files/719234.zip": "b59f55c461a6c1d7b4bd462870808b625bfdb353e0f53b5123858fc9f70845a4",
+    "documents/files/727826.zip": "4b669972942838ed8d72f9e80215aca5fd6bc4ef4e68f7bcda86d249dcc6ee3c",
+    "documents/files/784343.zip": "15ab6d8fb87134cd4c1abfc7b56070e75a10ef7820d2db7dcca145b842540ecb",
+    "documents/files/788889.zip": "08ec24488df390f0df06c1e3a8e4f6eb65b1bf3c41d32da295c4485343e3a2c7"
+  }
+}

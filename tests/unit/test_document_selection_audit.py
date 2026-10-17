@@ -108,3 +108,69 @@ def test_compliance_table_names_remain_excluded() -> None:
     )
 
     assert "bill" not in changed.text_documents()
+
+
+@pytest.mark.xfail(
+    strict=True, raises=AssertionError, reason="B102: the declared ZIP bill uses Deflate64"
+)
+def test_deflate64_package_does_not_silently_discard_its_bill() -> None:
+    data = (FIXTURES / "deflate64_771111.zip").read_bytes()
+    extractor = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
+
+    text = extractor.extract(data)
+
+    assert "Projekt z dnia 2 kwietnia 2026 r." in text
+    assert "inwestycji uzupełniającej" in text
+
+
+@pytest.mark.xfail(
+    strict=True, raises=AssertionError, reason="B103: a real RCL package uses three ZIP levels"
+)
+def test_signed_nested_bill_package_is_not_treated_as_an_empty_document() -> None:
+    law = "USTAWA\nz dnia 17 marca 2025 r.\nArt. 1. Termin wynosi 30 dni."
+    inner = archive_of([("1. Projekt ustawy/Projekt ustawy.docx", word(law))])
+    signed = archive_of(
+        [("1. Projekt ustawy.zip", inner), ("1. Projekt ustawy.zip.xades", b"signature")]
+    )
+    outer = archive_of([("1__Projekt_ustawy.zip", signed)])
+    extractor = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
+
+    text = extractor.extract(outer)
+
+    assert law in text
+
+
+@pytest.mark.xfail(
+    strict=True, raises=AssertionError, reason="B105: a normative annex is discarded by its name"
+)
+def test_statutory_annex_with_the_affected_services_survives_package_selection() -> None:
+    law = "USTAWA\nz dnia 20 maja 2026 r.\nArt. 1. Dodaje się załącznik nr 16 w brzmieniu określonym w załączniku nr 2 do niniejszej ustawy."
+    annex = "Załącznik nr 2\nWYKAZ USŁUG, O KTÓRYCH MOWA W ART. 105A UST. 1 PKT 2 USTAWY\n62.02.2\tUsługi związane z doradztwem w zakresie informatyki."
+    package = archive_of(
+        [
+            ("Projekt ustawy.docx", word(law)),
+            ("2026-05-20 zalacznik nr 2 do ustawy na RM.docx", word(annex)),
+        ]
+    )
+    extractor = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
+
+    text = extractor.extract(package)
+
+    assert law in text
+    assert "62.02.2" in text
+
+
+def test_deeper_support_must_not_replace_a_bill_with_a_regulation_justification() -> None:
+    law = "USTAWA\nz dnia 18 marca 2025 r.\nArt. 1. Termin wynosi 30 dni."
+    justification = "UZASADNIENIE\nPotrzeba opracowania projektu rozporządzenia Ministra."
+    deep = archive_of(
+        [("Projekt rozporządzenia.zip", archive_of([("Uzasadnienie.docx", word(justification))]))]
+    )
+    good = archive_of([("Projekt ustawy.docx", word(law))])
+    package = archive_of([("Zal. 2-9.zip", deep), ("Zal.zip", good)])
+    extractor = DocumentTextExtractor(PypdfTextExtractor(), DocxTextExtractor(), DocTextExtractor())
+
+    text = extractor.extract(package)
+
+    assert law in text
+    assert justification not in text

@@ -66,5 +66,13 @@
     "bytes": 549296,
     "sha256": "2db5c3c3d40937fedd1cf4aac519988a6f63481843546d753e69ccb4aca32d59",
     "pages": 6
+  },
+  "deflate64_771111": {
+    "source": "documents/files/771111.zip",
+    "source_sha256": "8e18311642d03980c54f57cdd85fe3598526affc8b13b033b466ec9c7b8c4c78",
+    "member": "projekt UD316 RM.zip",
+    "fixture_sha256": "adcf5ead302471ac3edc9eb78b12b85c8eda8a1c1995edff8c62bf0c25af9462",
+    "recovered_bill_member": "projekt ustawy UD316 02.04.2026 na RM.docx",
+    "recovered_bill_sha256": "1a031329c6f5510ef12f12f3dba5b9a310739b0242c39593119830511206f68d"
   }
 }
