@@ -7,7 +7,13 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 SelectionState = Literal["unverified", "selected", "waiting", "ambiguous", "unsupported"]
 DocumentRole = Literal[
-    "bill", "normative_annex", "justification", "osr", "self_amendment", "unknown"
+    "bill",
+    "normative_annex",
+    "normative_continuation",
+    "justification",
+    "osr",
+    "self_amendment",
+    "unknown",
 ]
 
 
@@ -29,10 +35,23 @@ class DocumentPart(BaseModel):
     losses: tuple[str, ...] = ()
 
 
+FactKind = Literal[
+    "official_link",
+    "bill_structure",
+    "draft_date",
+    "coverage",
+    "annex_reference",
+    "annex_heading",
+    "support_reference",
+    "norm_value",
+    "version_conflict",
+]
+
+
 class DocumentFact(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    kind: Literal["official_link", "bill_structure", "draft_date", "coverage"]
+    kind: FactKind
     value: str
     provenance: Literal["source_relation", "extracted_text"]
     part_index: int = Field(ge=0)
@@ -56,6 +75,40 @@ class DocumentFact(BaseModel):
         return self
 
 
+class DocumentLink(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    kind: Literal["normative_annex", "supporting"]
+    source_part: int = Field(ge=0)
+    target_part: int = Field(ge=0)
+    status: Literal["confirmed", "unknown", "conflicting"]
+    evidence: tuple[int, ...] = ()
+
+
+class DocumentCoverage(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    part_index: int = Field(ge=0)
+    stage: Literal["extraction", "analysis"] = "extraction"
+    start: int = Field(ge=0)
+    end: int = Field(ge=0)
+    page_start: int | None = None
+    page_end: int | None = None
+    losses: tuple[str, ...] = ()
+
+
+DocumentLimitation = Literal[
+    "support_applicability_unknown",
+    "missing_evidence",
+    "missing_own_annex",
+    "annex_link_unknown",
+    "foreign_annex",
+    "support_conflict",
+    "normative_text_omitted",
+    "draft_version_conflict",
+]
+
+
 class DocumentSelection(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -66,14 +119,21 @@ class DocumentSelection(BaseModel):
     version: tuple[str, ...] = ()
     completeness: tuple[str, ...] = ()
     parts: tuple[DocumentPart, ...] = ()
+    observed_parts: tuple[DocumentPart, ...] = ()
     rejected: tuple[str, ...] = ()
     facts: tuple[DocumentFact, ...] = ()
-    limitations: tuple[Literal["support_applicability_unknown", "missing_evidence"], ...] = ()
+    limitations: tuple[DocumentLimitation, ...] = ()
+    links: tuple[DocumentLink, ...] = ()
+    coverage: tuple[DocumentCoverage, ...] = ()
+    normative_sha256: str = ""
 
     def without_text(self) -> DocumentSelection:
         return self.model_copy(
             update={
                 "parts": tuple(part.model_copy(update={"text": ""}) for part in self.parts),
+                "observed_parts": tuple(
+                    part.model_copy(update={"text": ""}) for part in self.observed_parts
+                ),
             }
         )
 
@@ -114,6 +174,23 @@ class DocumentSelection(BaseModel):
                 or (part.text_end is not None and fact.end > part.text_end)
             ):
                 raise ValueError("evidence quote differs from the source span")
+        for link in self.links:
+            if max(link.source_part, link.target_part) >= len(self.parts):
+                raise ValueError("document link refers to an absent part")
+            if any(index >= len(self.facts) for index in link.evidence):
+                raise ValueError("document link refers to an absent fact")
+        for span in self.coverage:
+            if span.part_index >= len(self.parts) or span.end < span.start:
+                raise ValueError("invalid coverage coordinates")
+            part = self.parts[span.part_index]
+            if part.text_end is not None and span.end > part.text_end:
+                raise ValueError("coverage exceeds the source part")
+        if self.state == "selected" and (
+            any(link.status == "conflicting" for link in self.links)
+            or "normative_text_omitted" in self.limitations
+            or "missing_own_annex" in self.limitations
+        ):
+            raise ValueError("selected bundle has unresolved normative evidence")
         if self.state == "selected":
             required = {"official_link", "bill_structure", "draft_date", "coverage"}
             complete = any(

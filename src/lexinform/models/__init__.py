@@ -111,7 +111,9 @@ from lexinform.models.digest import (
     week_bounds,
 )
 from lexinform.models.documents import (
+    DocumentCoverage,
     DocumentFact,
+    DocumentLink,
     DocumentPart,
     DocumentSelection,
     DocumentWork,
@@ -335,7 +337,9 @@ from lexinform.models.wykaz import (
 )
 
 __all__ = [
+    "DocumentCoverage",
     "DocumentFact",
+    "DocumentLink",
     "DocumentPart",
     "DocumentSelection",
     "DocumentWork",

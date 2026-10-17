@@ -18,6 +18,7 @@ from pydantic import BaseModel
 
 from lexinform.analysis_records import RecordFactory, UsageFields
 from lexinform.concurrency import fan_out
+from lexinform.document_selection import selection_for_input
 from lexinform.errors import (
     BatchNotSubmittedError,
     DocumentSelectionError,
@@ -378,6 +379,8 @@ def _memo_key(bill: Bill, purpose: str, context: BaseModel, *, legacy: bool = Fa
     data = context.model_dump(mode="json", exclude={"scan", "text"})
     if data.get("source_check") is None:
         data.pop("source_check", None)
+    if data.get("support_applicability_unknown") is False:
+        data.pop("support_applicability_unknown", None)
     payload = context.model_dump()
     text = str(payload.get("text", ""))
     data["text_sha256"] = text_digest(text)
@@ -1900,6 +1903,9 @@ class AnalysisService:
             text_source=source,
             scan=loaded.scan,
             source_kind=document.kind if document and source in FULL_TEXT_SOURCES else "metadata",
+            support_applicability_unknown=(
+                "support_applicability_unknown" in loaded.selection.limitations
+            ),
             previous_summary=previous.analysis.summary if previous else None,
             previous_key_changes=list(previous.analysis.key_changes) if previous else [],
         )
@@ -1983,7 +1989,7 @@ class AnalysisService:
                     text_source=source,
                     source_kind=ctx.source_kind,
                     source_url=document.url if document else None,
-                    selection=loaded.selection.without_text(),
+                    selection=selection_for_input(loaded.selection, ctx.text).without_text(),
                     revision=previous.revision + 1 if previous else 1,
                     text_sha256=digest,
                     law_sha256=law,
@@ -2001,7 +2007,7 @@ class AnalysisService:
             self._ledger.charge(record, number=bill.number, kind=purpose)
         else:
             record = _reused(AnalysisRecord.model_validate_json(cached))
-        record.selection = loaded.selection.without_text()
+        record.selection = selection_for_input(loaded.selection, ctx.text).without_text()
         record.source_url = document.url if document else None
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
@@ -2031,7 +2037,7 @@ class AnalysisService:
                 "source_url": document.url,
                 "source_kind": document.kind,
                 "source_checked_at": self._clock.now(),
-                "selection": loaded.selection.without_text(),
+                "selection": selection_for_input(loaded.selection, loaded.text).without_text(),
                 "text_sha256": loaded.digest or previous.text_sha256,
                 "law_sha256": loaded.law or previous.law_sha256,
             }

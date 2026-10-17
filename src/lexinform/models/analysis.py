@@ -447,6 +447,7 @@ class BillContext(BaseModel):
     text: str
     truncated: bool
     text_source: TextSource
+    support_applicability_unknown: bool = False
     scan: ScannedDocument | None = Field(
         default=None,
         description=(

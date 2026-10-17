@@ -1,8 +1,15 @@
 import datetime as dt
+import hashlib
 import re
 
 from lexinform.law_digest import law_digest
 from lexinform.sections import trim_print
+
+
+def normative_annex_key(text: str) -> tuple[int, str]:
+    number = re.search(r"załącznik\s+nr\s+(\d+)\b", text[:1200], re.I)
+    return (int(number[1]) if number else 0, hashlib.sha256(text.encode()).hexdigest())
+
 
 _MONTHS = (
     "stycznia",
@@ -29,11 +36,11 @@ _SPACED_DRAFT = re.compile(_PREFIX + r"(\d{1,2})[ \t]+(\d{1,2})[ \t]+(\d{4})(?!\
 _DRAFT = re.compile(_PREFIX + r"(\d{1,2})\s+(" + "|".join(_MONTHS) + r")\s+(\d{4})(?!\d)")
 
 
-def draft_version_span(text: str) -> tuple[dt.date, int, int] | None:
+def draft_version_evidence(text: str) -> tuple[tuple[dt.date | None, int, int], ...]:
     heading = _SUBJECT.search(text[:1200])
     article = _ARTICLE.search(text[:1200])
     end = min(1200, heading.start() if heading else 1200, article.start() if article else 1200)
-    matches: list[tuple[dt.date, int, int]] = []
+    matches: list[tuple[dt.date | None, int, int]] = []
     for pattern in (_NUMERIC_DRAFT, _SPACED_DRAFT, _DRAFT):
         for match in pattern.finditer(text[:end]):
             try:
@@ -42,11 +49,17 @@ def draft_version_span(text: str) -> tuple[dt.date, int, int] | None:
                 )
                 value = dt.date(int(match[3]), month, int(match[1]))
             except ValueError:
-                return None
+                value = None
             matches.append((value, match.start(), match.end()))
+    return tuple(matches)
+
+
+def draft_version_span(text: str) -> tuple[dt.date, int, int] | None:
+    matches = draft_version_evidence(text)
     if not matches or len({value for value, _, _ in matches}) != 1:
         return None
-    return matches[0]
+    value, start, end = matches[0]
+    return (value, start, end) if value is not None else None
 
 
 def draft_version(text: str) -> dt.date | None:

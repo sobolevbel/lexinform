@@ -7,8 +7,10 @@ text anywhere yet, so it is the one source the model still reads as metadata alo
 """
 
 import logging
+import re
 from datetime import UTC, datetime
 from typing import Literal
+from urllib.parse import urlparse
 
 from lexinform.document_versions import normative_name
 from lexinform.errors import ServiceUnavailableError
@@ -32,6 +34,17 @@ from lexinform.models import (
 from lexinform.models.rcl import text_rank, text_role
 from lexinform.models.sejm import print_part_number
 from lexinform.ports import ConsultationDocuments, SejmGateway, TextSource
+
+
+def _rcl_link_conflict(project: RclProject, document: RclDocument) -> bool:
+    url = urlparse(document.url)
+    match = re.match(r"/docs/+\d+/(\d+)/", url.path)
+    return (
+        url.hostname == "legislacja.rcl.gov.pl"
+        and match is not None
+        and int(match[1]) != project.id
+    )
+
 
 log = logging.getLogger(__name__)
 
@@ -263,7 +276,10 @@ class RclTextSource:
                     matches := [
                         d
                         for d in available
-                        if text_role(d.name) == role and d.id != doc.id and d.created == doc.created
+                        if text_role(d.name) == role
+                        and d.id != doc.id
+                        and d.created == doc.created
+                        and not _rcl_link_conflict(project, d)
                     ]
                 )
             )
@@ -274,7 +290,10 @@ class RclTextSource:
                 normative_urls=tuple(
                     d.url
                     for d in available
-                    if d.id != doc.id and d.created == doc.created and normative_name(d.name)
+                    if d.id != doc.id
+                    and d.created == doc.created
+                    and normative_name(d.name)
+                    and not _rcl_link_conflict(project, d)
                 ),
                 extra_urls=extras,
                 amendment_urls=tuple(
@@ -285,10 +304,12 @@ class RclTextSource:
                         if d.readable
                         and d.id != doc.id
                         and "autopoprawka" in d.name.casefold()
+                        and not _rcl_link_conflict(project, d)
                         and (doc.created is None or d.created is None or d.created >= doc.created)
                     )
                 ),
                 version_basis=(f"rcl/{project.id}/stage/{stage.id}", doc.name),
+                official_link_conflict=_rcl_link_conflict(project, doc),
             )
 
         alternatives = tuple(

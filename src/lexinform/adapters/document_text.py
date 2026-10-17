@@ -21,7 +21,7 @@ from zipfile import ZipInfo
 
 from inflate64 import Inflater
 
-from lexinform.document_versions import comparable_versions, regulation_support
+from lexinform.document_versions import comparable_versions, normative_annex_key, regulation_support
 from lexinform.models.documents import DocumentPart, DocumentSelection, ExtractedDocument
 from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
 from lexinform.ports import TextExtractor
@@ -522,7 +522,10 @@ class DocumentTextExtractor:
             return ExtractedDocument(
                 text=PAGE_BREAK.join(p.text for p in supporting),
                 selection=DocumentSelection(
-                    state="unsupported", parts=tuple(supporting), rejected=tuple(rejected)
+                    observed_parts=tuple(parts),
+                    state="unsupported",
+                    parts=tuple(supporting),
+                    rejected=tuple(rejected),
                 ),
             )
         candidates.sort(key=lambda item: (item[0], item[1].members))
@@ -534,13 +537,21 @@ class DocumentTextExtractor:
             if not indices:
                 return ExtractedDocument(
                     selection=DocumentSelection(
-                        state="ambiguous", parts=tuple(confirmed), rejected=tuple(rejected)
+                        observed_parts=tuple(parts),
+                        state="ambiguous",
+                        parts=tuple(confirmed),
+                        rejected=tuple(rejected),
                     )
                 )
             main = confirmed[indices[0]]
         family = main.members[:-1]
         kept = [main]
-        kept.extend(p for p in annexes if p.members[:-1] == family)
+        kept.extend(
+            sorted(
+                (p for p in annexes if p.members[:-1] == family),
+                key=lambda p: normative_annex_key(p.text),
+            )
+        )
         for role in ("justification", "osr"):
             matches = [p for p in supporting if p.role == role and p.members[:-1] == family]
             if matches:
@@ -557,6 +568,7 @@ class DocumentTextExtractor:
         return ExtractedDocument(
             text=PAGE_BREAK.join(p.text for p in kept),
             selection=DocumentSelection(
+                observed_parts=tuple(parts),
                 parts=tuple(kept),
                 rejected=losses,
                 role=("bill heading",) if document_kind(main.text) == "bill" else (),
@@ -604,9 +616,13 @@ def _member_role(name: str) -> TextRole | None:
 
 
 def _normative_annex(name: str, text: str) -> bool:
-    heading = text[:1200].lower() if document_kind(text) == "annex" else ""
-    label = name.lower()
-    return bool(re.search(r"za[łl][aą]cznik.*do (?:niniejszej )?ustawy", heading + "\n" + label))
+    return bool(
+        re.search(
+            r"(?im)^\s*za[łl][aą]cznik[^\n]*do (?:(?:niniejszej|projektu) )?ustawy\b",
+            text[:1200],
+        )
+        or re.search(r"za[łl][aą]cznik.*do (?:(?:niniejszej|projektu) )?ustawy", name, re.I)
+    )
 
 
 def _read_xml(archive: zipfile.ZipFile, name: str) -> bytes:

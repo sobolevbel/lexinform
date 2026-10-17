@@ -289,3 +289,44 @@ def test_support_cannot_supply_the_bill_date_or_silently_prove_its_applicability
     assert result.state == "unverified"
     assert not any(fact.kind == "draft_date" for fact in result.facts)
     assert "support_applicability_unknown" in result.limitations
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_annex_order_and_member_names_do_not_change_the_normative_bundle(reverse: bool) -> None:
+    body = law().replace(
+        "Art. 2.",
+        "Art. 2. Wzór określa załącznik nr 1 do niniejszej ustawy. Wykaz określa załącznik nr 2 do niniejszej ustawy.",
+    )
+    annexes = [
+        "Załącznik nr 1 do projektu ustawy\nWZÓR\n200 zł\n" + "Dane wnioskodawcy. " * 20,
+        "Załącznik nr 2 do projektu ustawy\nWYKAZ\n300 zł\n" + "Dane załącznika. " * 20,
+    ]
+    ordered = list(reversed(annexes)) if reverse else annexes
+    entries = [("projekt.docx", word(body))] + [
+        (f"zalacznik-{i}.docx", word(text)) for i, text in enumerate(ordered)
+    ]
+    payloads = {"https://official.test/" + name: data for name, data in entries}
+    payloads["https://official.test/package"] = archive_of(entries)
+
+    def download(url: str, *, max_bytes: int | None = None) -> bytes:
+        return payloads[url]
+
+    loader = TextLoader({"official.test": download}, extractor(), max_bytes=1_000_000)
+    _, files = loader.select_document(
+        TextDocument(
+            kind="rcl",
+            version_basis=("rcl/1/stage/1",),
+            url="https://official.test/projekt.docx",
+            normative_urls=tuple(url for url in payloads if "zalacznik" in url),
+        )
+    )
+    _, package = loader.select_document(
+        TextDocument(
+            kind="rcl", version_basis=("rcl/1/stage/1",), url="https://official.test/package"
+        )
+    )
+
+    assert files.text is not None and package.text is not None
+    assert files.text.strip("\f") == package.text == "\f".join([body, *annexes])
+    assert files.selection.state == package.selection.state == "selected"
+    assert files.selection.normative_sha256 == package.selection.normative_sha256

@@ -2,6 +2,7 @@ import datetime as dt
 
 import pytest
 
+from lexinform.adapters.llm_prompts import build_user_prompt
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import Attachment, BillStatus, PrintInfo, TextDocument
 from lexinform.services.sources import SejmTextSource
@@ -232,3 +233,99 @@ def test_numeric_rcl_draft_dates_select_the_actual_new_text(
     assert restored is not None and restored.selection == record.selection
     world.run(track=False)
     assert len(world.llm.contexts) == 1
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+def test_an_annex_cut_from_the_model_input_is_recorded_as_incomplete(workers: int) -> None:
+    body = law()
+    annex = "Załącznik do projektu ustawy\nWYKAZ\n" + "Świadczenie wynosi 200 zł.\n" * 800
+    main = rcl_document(1, "Projekt ustawy.docx")
+    extra = rcl_document(2, "Załącznik do ustawy.docx")
+    project = rcl_project(
+        stages=(rcl_stage(1, "Projekt", "reached", rcl_folder(1, "Projekt", main, extra)),),
+        consultation=None,
+    )
+    world = World(
+        extractor=FakeTextExtractor(page_count=0, by_content={b"main": body, b"annex": annex}),
+        workers=workers,
+        text_budget_chars=1000,
+    )
+    world.add_rcl_project(project)
+    world.rcl.files.update({main.url: b"main", extra.url: b"annex"})
+
+    world.run(track=False)
+
+    record = world.bill(f"RCL/{project.id}").analysis
+    assert record is not None
+    assert record.selection.state == "unverified"
+    assert "normative_text_omitted" in record.selection.limitations
+    assert record.truncated
+
+
+def test_identical_annex_bytes_under_two_urls_are_one_normative_part() -> None:
+    main = rcl_document(1, "Projekt ustawy.docx")
+    first = rcl_document(2, "Załącznik do ustawy.docx")
+    alias = rcl_document(3, "Załącznik do ustawy kopia.docx")
+    annex = "Załącznik do projektu ustawy\nWYKAZ\n" + "Świadczenie wynosi 200 zł.\n" * 10
+    project = rcl_project(
+        stages=(rcl_stage(1, "Projekt", "reached", rcl_folder(1, "Projekt", main, first, alias)),),
+        consultation=None,
+    )
+    world = World(
+        extractor=FakeTextExtractor(page_count=0, by_content={b"main": law(), b"same-annex": annex})
+    )
+    world.add_rcl_project(project)
+    world.rcl.files.update({main.url: b"main", first.url: b"same-annex", alias.url: b"same-annex"})
+
+    world.run(track=False)
+
+    record = world.bill(f"RCL/{project.id}").analysis
+    assert record is not None
+    assert sum(part.role == "normative_annex" for part in record.selection.parts) == 1
+    assert world.llm.contexts[0].text.count("WYKAZ") == 1
+
+
+def test_a_foreign_project_url_cannot_win_by_its_more_recent_draft_date() -> None:
+    own = rcl_document(1, "Projekt ustawy.docx")
+    foreign = rcl_document(2, "Projekt ustawy NOWY TEKST.docx").model_copy(
+        update={"url": "https://legislacja.rcl.gov.pl/docs/2/99999999/1/2/dokument2.docx"}
+    )
+    project = rcl_project(
+        stages=(rcl_stage(1, "Projekt", "reached", rcl_folder(1, "Projekt", own, foreign)),),
+        consultation=None,
+    )
+    world = World(
+        extractor=FakeTextExtractor(
+            page_count=0, by_content={b"own": law(), b"foreign": law(day=2, days=60)}
+        )
+    )
+    world.add_rcl_project(project)
+    world.rcl.files.update({own.url: b"own", foreign.url: b"foreign"})
+
+    world.run(track=False)
+
+    record = world.bill(f"RCL/{project.id}").analysis
+    assert record is not None and record.source_url == own.url
+    assert world.llm.contexts[0].text == law()
+
+
+def test_unknown_support_applicability_reaches_the_model_without_reanalysis() -> None:
+    main = rcl_document(1, "Projekt ustawy.docx")
+    support = rcl_document(2, "Uzasadnienie.docx")
+    reasons = "UZASADNIENIE\n" + "Wyjaśnienie projektu i jego celu. " * 20
+    project = rcl_project(
+        stages=(rcl_stage(1, "Projekt", "reached", rcl_folder(1, "Projekt", main, support)),),
+        consultation=None,
+    )
+    world = World(
+        extractor=FakeTextExtractor(page_count=0, by_content={b"main": law(), b"support": reasons})
+    )
+    world.add_rcl_project(project)
+    world.rcl.files.update({main.url: b"main", support.url: b"support"})
+
+    world.run(track=False)
+    world.run(track=False)
+
+    assert len(world.llm.contexts) == 1
+    assert world.llm.contexts[0].support_applicability_unknown
+    assert "nie jest potwierdzone" in build_user_prompt(world.llm.contexts[0])

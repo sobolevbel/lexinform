@@ -898,6 +898,7 @@ class TextDocument(BaseModel):
     required_urls: tuple[str, ...] = ()
     amendment_urls: tuple[str, ...] = ()
     version_basis: tuple[str, ...] = ()
+    official_link_conflict: bool = False
 
 
 def latest_text_document(

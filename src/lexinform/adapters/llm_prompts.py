@@ -15,7 +15,7 @@ from lexinform.models import (
     TriageContext,
 )
 
-PROMPT_VERSION = "2026-10-v11"
+PROMPT_VERSION = "2026-10-v12"
 
 _LANGUAGE_NAMES = {"ru": "Russian", "pl": "Polish", "en": "English", "uk": "Ukrainian"}
 
@@ -550,6 +550,12 @@ def build_user_prompt(ctx: BillContext) -> str:
         lines.append("Dokument: sprawozdanie komisji (tekst projektu po poprawkach)")
     elif ctx.source_kind == "text_after3":
         lines.append("Dokument: tekst ustawy po III czytaniu")
+    if ctx.support_applicability_unknown:
+        lines.append(
+            "Zastosowanie uzasadnienia i OSR do tej redakcji nie jest potwierdzone. "
+            "Traktuj je jako materiał pomocniczy; ustalenia o treści nowej redakcji "
+            "muszą wynikać z tekstu normatywnego."
+        )
     if ctx.previous_summary:
         lines.append("")
         lines.append("=== POPRZEDNIA ANALIZA (wcześniejsza wersja projektu) ===")

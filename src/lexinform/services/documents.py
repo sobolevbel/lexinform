@@ -16,10 +16,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
-from lexinform.document_selection import bill_selection
+from lexinform.document_selection import bill_selection, deduplicate_bundle
 from lexinform.document_versions import (
     comparable_versions,
     join_normative_parts,
+    normative_annex_key,
     regulation_support,
 )
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
@@ -133,10 +134,14 @@ class TextLoader:
             if document_kind(continuation.text) in APPENDIX_KINDS - {"annex"}:
                 continue
             parts.append(continuation.text)
-            required_parts.extend(continuation.selection.parts)
+            required_parts.extend(
+                part.model_copy(update={"role": "normative_continuation"})
+                for part in continuation.selection.parts
+            )
         evidence = [*main.selection.parts, *required_parts]
         missing = list(main.selection.rejected)
         normative: list[str] = []
+        annex_parts: list[DocumentPart] = []
         for url in document.normative_urls:
             try:
                 annex = self.read(url)
@@ -164,11 +169,12 @@ class TextLoader:
                     ),
                 )
             normative.append(annex.text)
-            evidence.extend(
+            annex_parts.extend(
                 part.model_copy(update={"role": "normative_annex"})
                 for part in annex.selection.parts
             )
-        parts[0] = join_normative_parts(parts[0], normative)
+        evidence.extend(sorted(annex_parts, key=lambda p: normative_annex_key(p.text)))
+        parts[0] = join_normative_parts(parts[0], sorted(normative, key=normative_annex_key))
         for url in document.amendment_urls:
             amendment = self.read(url)
             if amendment.text is None:
@@ -222,6 +228,9 @@ class TextLoader:
         oversize = False
         ambiguous = False
         for candidate in (document, *document.alternatives):
+            if candidate.official_link_conflict:
+                rejected.append(f"{candidate.url}: official source identity conflict")
+                continue
             try:
                 main = self.read(candidate.url)
             except ServiceUnavailableError:
@@ -263,6 +272,8 @@ class TextLoader:
     def _compare_versions(self, document: TextDocument) -> tuple[TextDocument, LoadedFile] | None:
         candidates: list[tuple[TextDocument, LoadedFile]] = []
         for candidate in (document, *document.alternatives):
+            if candidate.official_link_conflict:
+                continue
             try:
                 file = self.read(candidate.url)
             except ServiceUnavailableError:
@@ -286,11 +297,31 @@ class TextLoader:
                 ),
             )
         candidate, _ = candidates[indices[0]]
-        return candidate, self._with_evidence(candidate, self.read_document(candidate))
+        loaded = self._with_evidence(candidate, self.read_document(candidate))
+        observed = tuple(
+            part
+            for _, file in candidates
+            for part in (file.selection.observed_parts or file.selection.parts)
+        )
+        return candidate, LoadedFile(
+            loaded.text,
+            pages=loaded.pages,
+            oversize=loaded.oversize,
+            sha256=loaded.sha256,
+            selection=loaded.selection.model_copy(update={"observed_parts": observed}),
+        )
 
     def _with_evidence(self, document: TextDocument, file: LoadedFile) -> LoadedFile:
         if file.text is None or file.selection.state in ("waiting", "unsupported", "ambiguous"):
             return file
+        text, parts = deduplicate_bundle(file.text or "", file.selection.parts)
+        file = LoadedFile(
+            text,
+            pages=file.pages,
+            oversize=file.oversize,
+            sha256=file.sha256,
+            selection=file.selection.model_copy(update={"parts": parts}),
+        )
         selection = bill_selection(file.selection, source_basis=document.version_basis)
         return LoadedFile(
             file.text,
@@ -382,7 +413,10 @@ class TextLoader:
             )
         selection = selection.model_copy(
             update={
-                "parts": tuple(part.model_copy(update={"url": url}) for part in selection.parts)
+                "parts": tuple(part.model_copy(update={"url": url}) for part in selection.parts),
+                "observed_parts": tuple(
+                    part.model_copy(update={"url": url}) for part in selection.observed_parts
+                ),
             }
         )
         digest = hashlib.sha256(data).hexdigest()
