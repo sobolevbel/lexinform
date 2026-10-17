@@ -1,0 +1,129 @@
+{
+  "baseline": "981e85c plus a frozen uncommitted candidate implementation",
+  "candidate_code_manifest": "code-manifest.json.gz",
+  "cases": 16,
+  "groups": 13,
+  "variants_per_case": 2,
+  "requests_first_batch": 96,
+  "requests_followup": 32,
+  "batches": [
+    "msgbatch_01P4Zez4y4ErUiFCpyyo7EAU",
+    "msgbatch_01MoWKJkm99iWCMtHa51sbPD"
+  ],
+  "profiles": [
+    {
+      "model": "claude-haiku-4-5-20251001",
+      "profile": "default-800",
+      "counts": {
+        "requests": 32,
+        "truncated": 0,
+        "input_tokens": 104766,
+        "output_tokens": 7545,
+        "parsed": 32,
+        "citation_valid": 26,
+        "matches": 25,
+        "validated_matches": 21,
+        "fact_correct": 24,
+        "false_preference": 0
+      },
+      "factual_correct_before_citation": 25,
+      "fully_checked": 20,
+      "comparable_pairs": 16,
+      "stable_preference_pairs": 11,
+      "actual_cost_usd": 0.0712455
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "profile": "default-800",
+      "counts": {
+        "requests": 32,
+        "truncated": 0,
+        "input_tokens": 134056,
+        "output_tokens": 10003,
+        "parsed": 32,
+        "citation_valid": 32,
+        "matches": 31,
+        "validated_matches": 31,
+        "fact_correct": 32,
+        "false_preference": 0
+      },
+      "factual_correct_before_citation": 32,
+      "fully_checked": 31,
+      "comparable_pairs": 16,
+      "stable_preference_pairs": 15,
+      "actual_cost_usd": 0.18407099999999996
+    },
+    {
+      "model": "claude-haiku-5-5",
+      "profile": "default-800",
+      "counts": {
+        "requests": 32,
+        "truncated": 26,
+        "input_tokens": 134056,
+        "output_tokens": 25069,
+        "invalid_output": 26,
+        "parsed": 6,
+        "citation_valid": 4,
+        "matches": 6,
+        "validated_matches": 4,
+        "fact_correct": 4,
+        "false_preference": 0
+      },
+      "factual_correct_before_citation": 6,
+      "fully_checked": 4,
+      "comparable_pairs": 1,
+      "stable_preference_pairs": 1,
+      "actual_cost_usd": 0.012970050000000004
+    },
+    {
+      "model": "claude-haiku-5-5",
+      "profile": "low-4000",
+      "counts": {
+        "requests": 32,
+        "truncated": 0,
+        "input_tokens": 134056,
+        "output_tokens": 26859,
+        "parsed": 32,
+        "citation_valid": 23,
+        "matches": 31,
+        "validated_matches": 22,
+        "fact_correct": 23,
+        "false_preference": 0
+      },
+      "factual_correct_before_citation": 32,
+      "fully_checked": 22,
+      "comparable_pairs": 16,
+      "stable_preference_pairs": 15,
+      "actual_cost_usd": 0.013417549999999999
+    }
+  ],
+  "prior_actual_cost_usd": 0.884275,
+  "new_actual_cost_usd": 0.28170409999999996,
+  "actual_cost_usd": 1.1659791,
+  "budget_usd": 2,
+  "new_ceiling_usd": 0.5,
+  "first_maximum_usd": 0.4483898,
+  "followup_maximum_usd": 0.0404628,
+  "pricing_source": "https://platform.claude.com/docs/en/about-claude/pricing",
+  "labels_precommitted": true,
+  "pilot_is_production_acceptance": false,
+  "residual_counts": {
+    "same_date_conflict": 42,
+    "same_header_date_parser_gap": 1,
+    "different_header_dates_parser_gap": 8,
+    "ordering_not_established_from_header": 25,
+    "strict_dates_but_other_conflict": 10
+  },
+  "residual_projects": 86,
+  "residual_stages": 154,
+  "final_runner_sha256": "1fdfca2a1ea8ff36471bbb0f837e56a5d1dd9bc2cd02ecf70d4c33419efa8664",
+  "cache_read_tokens": 0,
+  "cache_creation_tokens": 0,
+  "current_recheck_commit": "d9f3fe2",
+  "reused_prior_version_groups": [
+    "12337613",
+    "12350557",
+    "12350601"
+  ],
+  "has_independent_holdout": false
+}
