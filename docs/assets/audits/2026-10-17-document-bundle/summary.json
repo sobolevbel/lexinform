@@ -1,0 +1,69 @@
+{
+  "date": "2026-10-17",
+  "baseline_commit": "204fea9",
+  "holdout_cases": 40,
+  "tuning_cases": 20,
+  "requests": 80,
+  "models": {
+    "claude-sonnet-5-5": {
+      "raw_matches": 40,
+      "all_labelled_facts_correct": 40,
+      "strict_accepted": 28,
+      "additional_resolutions": 1,
+      "cost_usd": 0.240118
+    },
+    "claude-haiku-5-5": {
+      "raw_matches": 40,
+      "all_labelled_facts_correct": 28,
+      "strict_accepted": 26,
+      "additional_resolutions": 1,
+      "cost_usd": 0.0155794
+    }
+  },
+  "incremental_resolution_fraction": 0.1,
+  "required_fraction": 0.2,
+  "production_llm_selection_enabled": false,
+  "additional_cost_usd": 0.2556974,
+  "total_cost_usd": 1.4216765,
+  "additional_ceiling_usd": 0.5,
+  "overall_ceiling_usd": 2,
+  "batch_elapsed_seconds": 511.463012,
+  "open_intents": 0,
+  "corpus": {
+    "rcl_projects": 825,
+    "snapshots": 4276,
+    "before": {
+      "selected": 1832,
+      "unverified": 1383,
+      "waiting": 53,
+      "ambiguous": 132,
+      "unsupported": 671,
+      "no_candidate": 205
+    },
+    "after": {
+      "ambiguous": 132,
+      "no_candidate": 205,
+      "selected": 2261,
+      "unsupported": 671,
+      "unverified": 922,
+      "waiting": 85
+    },
+    "transitions": {
+      "unverified_to_selected": 438,
+      "unverified_to_waiting": 32,
+      "selected_to_unverified": 9
+    },
+    "changed_urls": 0,
+    "changed_text_lengths": 0,
+    "packages": 69,
+    "sejm_print_metadata": 11786,
+    "senate_selections": 701,
+    "senate_scan_candidates": 23
+  },
+  "tests": {
+    "passed": 2435,
+    "deselected": 32,
+    "mypy_files": 288
+  },
+  "implementation_commit": "bc94e04"
+}

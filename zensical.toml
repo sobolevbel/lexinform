@@ -63,6 +63,7 @@ nav = [
   ] },
   { "Аудиты" = [
     { "Обзор" = "reviews/index.md" },
+    { "Проверка комплекта и решение по LLM · 17.10" = "reviews/2026-10-17-document-bundle-acceptance.md" },
     { "Общая политика редакций · 17.10" = "reviews/2026-10-17-document-policy-implementation.md" },
     { "Исправление выбора документов · 17.10" = "reviews/2026-10-17-document-selection-implementation.md" },
     { "Валидация выбора документов · 17.10" = "reviews/2026-10-17-document-selection-validation.md" },

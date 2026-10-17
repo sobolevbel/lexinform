@@ -152,9 +152,18 @@ def submit(
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         counts = list(executor.map(count, requests))
     maximum = sum(row["maximum_usd"] for row in counts)
-    previous = float(read_json(prior)["actual_cost_usd"])
+    prior_accounting = read_json(prior)
+    previous = float(prior_accounting["actual_cost_usd"])
+    reserved = sum(
+        float(intent["reserved_usd"])
+        for intent in prior_accounting.get("open_intents", [])
+        if intent["state"] not in ("complete", "failed_before_submit")
+    )
+    if previous < 0 or reserved < 0:
+        raise ValueError("Invalid prior accounting")
     budget = {
         "prior_actual_cost_usd": previous,
+        "prior_reserved_usd": reserved,
         "maximum_cost_usd": maximum,
         "ceiling_usd": ceiling,
         "overall_ceiling_usd": 2,
@@ -166,7 +175,7 @@ def submit(
     }
     save(directory / "budget.json", budget)
     save(directory / "requests.json", requests)
-    if maximum > ceiling or maximum + previous > 2:
+    if maximum > ceiling or maximum + previous + reserved > 2:
         raise RuntimeError(f"Budget refused before submission: maximum ${maximum:.6f}")
     digest = hashlib.sha256((directory / "requests.json").read_bytes()).hexdigest()
     intent = directory / "batch-intent.json"
@@ -243,6 +252,11 @@ def collect(directory: Path, key: Path) -> None:
             [r.model_dump(mode="json") for r in client.messages.batches.results(batch.id)],
         )
     assess(directory)
+    assessed = read_json(directory / "assessed.json")
+    save(
+        directory / "batch-intent.json",
+        {**intent, "state": "complete", "actual_cost_usd": assessed["actual_cost_usd"]},
+    )
 
 
 def validate_answer(answer: EvidenceAnswer, question: dict[str, Any]) -> list[str]:

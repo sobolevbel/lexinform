@@ -203,3 +203,22 @@ def test_uncertain_intent_cannot_be_resubmitted(
         probe.submit(tmp_path, tmp_path / "unused", prior, ["claude-sonnet-5-5"], 0.5)
 
     assert probe.read_json(tmp_path / "batch-intent.json") == intent
+
+
+def test_another_uncertain_study_reserves_its_budget(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    probe.save(tmp_path / "cases.json", [{"id": "case", "question": question()}])
+    prior = tmp_path / "prior.json"
+    probe.save(
+        prior,
+        {"actual_cost_usd": 1.2, "open_intents": [{"state": "unknown", "reserved_usd": 0.7999}]},
+    )
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-value")
+    monkeypatch.setattr(anthropic, "Anthropic", FakeClient)
+
+    with pytest.raises(RuntimeError, match="Budget refused before submission"):
+        probe.submit(tmp_path, tmp_path / "unused", prior, ["claude-sonnet-5-5"], 0.5)
+
+    assert not (tmp_path / "batch-intent.json").exists()
+    assert probe.read_json(tmp_path / "budget.json")["prior_reserved_usd"] == 0.7999
