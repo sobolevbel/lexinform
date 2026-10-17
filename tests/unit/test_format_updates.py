@@ -6,9 +6,55 @@ import datetime as dt
 import pytest
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import ClubVotes, ProcessDetail, Stage, SupplementRecord, flatten_stages
+from lexinform.models import (
+    AttentionAssessment,
+    ClubVotes,
+    ProcessDetail,
+    Stage,
+    SupplementRecord,
+    flatten_stages,
+)
 from tests.fakes import make_analysis
-from tests.formatting import ACT, assert_telegram_html, bill_of, change_of
+from tests.formatting import ACT, NOW, assert_telegram_html, bill_of, change_of
+
+
+@pytest.mark.parametrize("explicit", [False, True])
+def test_important_update_starts_with_the_event_without_a_loud_importance_label(
+    process_3039: ProcessDetail, explicit: bool
+) -> None:
+    formatter = MessageFormatter(attention_enabled=True)
+    attention = (
+        AttentionAssessment(importance="important", detected_at=NOW, assessed_at=NOW)
+        if explicit
+        else None
+    )
+
+    text = formatter.status_update(
+        bill_of(process_3039), change_of("3039", [], content_changed=True), attention=attention
+    ).text
+
+    assert text.startswith("🆕 <b>Новая версия текста — druk nr 3039</b>")
+    assert "<b>Важно</b>" not in text
+
+
+def test_urgent_update_keeps_the_action_deadline(process_3039: ProcessDetail) -> None:
+    text = (
+        MessageFormatter(attention_enabled=True)
+        .status_update(
+            bill_of(process_3039),
+            change_of("3039", []),
+            attention=AttentionAssessment(
+                importance="important",
+                urgency="urgent",
+                deadline=dt.date(2026, 9, 10),
+                detected_at=NOW,
+                assessed_at=NOW,
+            ),
+        )
+        .text
+    )
+
+    assert text.startswith("<b>Нужно действовать · 10 сент 2026</b>")
 
 
 @pytest.mark.parametrize("closure_detected", [False, True])

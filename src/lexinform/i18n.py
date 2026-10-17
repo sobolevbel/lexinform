@@ -128,7 +128,6 @@ class Labels:
     next_step: str
     sittings_header: str
     updates_header: str
-    attention_important: str
     attention_urgent: str
     attention_roundup: str
     previous_name: str
@@ -278,6 +277,9 @@ class Labels:
     document_review_incomplete: str = ""
     rule_date_unknown: str = ""
     project_analysis_header: str = ""
+    rejected_project_header: str = ""
+    rejected_project_note: str = ""
+    proposed_changes: str = ""
     message_part: str = ""
     document_review_source: str = ""
     act_review_ready: str = ""
@@ -336,6 +338,9 @@ RU = Labels(
     ),
     rule_date_unknown="Календарная дата применения нормы не подтверждена.",
     project_analysis_header="Исторический анализ проекта, до окончательного текста закона",
+    rejected_project_header="Что предусматривал проект",
+    rejected_project_note="Проект не стал законом. Описанные ниже изменения не действуют.",
+    proposed_changes="Предлагавшиеся изменения",
     document_review_source="Документ-источник разбора",
     act_review_ready=(
         "Разобран окончательный текст: условия и исключения проверяйте по указанным нормам Dz.U."
@@ -473,7 +478,6 @@ RU = Labels(
     next_step="Что дальше",
     sittings_header="Заседания",
     updates_header="Что изменилось",
-    attention_important="Важно",
     attention_urgent="Нужно действовать",
     attention_roundup="Коротко по проектам",
     previous_name="Прежнее имя: {}",
@@ -1076,6 +1080,9 @@ EN = Labels(
     ),
     rule_date_unknown="The rule's calendar application date is not confirmed.",
     project_analysis_header="Historical draft analysis, before the final act text",
+    rejected_project_header="What the draft proposed",
+    rejected_project_note="The draft did not become law. The changes below do not apply.",
+    proposed_changes="Proposed changes",
     document_review_source="Review source document",
     act_review_ready=(
         "The final text has been reviewed: check conditions and exceptions against"
@@ -1218,7 +1225,6 @@ EN = Labels(
     next_step="What comes next",
     sittings_header="Sittings",
     updates_header="What changed",
-    attention_important="Important",
     attention_urgent="Action needed",
     attention_roundup="Briefly on the bills",
     previous_name="Previously: {}",

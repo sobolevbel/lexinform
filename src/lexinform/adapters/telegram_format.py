@@ -397,6 +397,7 @@ class MessageFormatter:
         lb = self._labels
         today = today or self._today()
 
+        historical = bill.act is None and is_over(bill, today=today)
         header = self._header(ICON["new_bill"], self._card_header(bill, today), bill)
         if self._attention_enabled and (state := self._norm_state(bill, today)):
             header += f"\n<i>{esc(state)}</i>"
@@ -409,18 +410,26 @@ class MessageFormatter:
                 esc(lb.category_labels.get(a.category, a.category)),
             )
         )
-        summary_label = lb.project_analysis_header if bill.act is not None else lb.about
+        summary_label = (
+            lb.rejected_project_header
+            if historical
+            else lb.project_analysis_header
+            if bill.act is not None
+            else lb.about
+        )
         summary_block = f"{ICON['about']} <b>{esc(summary_label)}</b>\n{esc(a.summary.strip())}"
-        if a.practical_impact.strip() and bill.act is None:
+        if a.practical_impact.strip() and bill.act is None and not historical:
             summary_block = ""
         changes_block = ""
         if a.key_changes:
             bullets = "\n".join(f"• {esc(c.strip())}" for c in a.key_changes if c.strip())
-            changes_block = f"{ICON['key_changes']} <b>{esc(lb.key_changes)}</b>\n{bullets}"
+            changes_label = lb.proposed_changes if historical else lb.key_changes
+            changes_block = f"{ICON['key_changes']} <b>{esc(changes_label)}</b>\n{bullets}"
 
         text = self._reader_blocks(
             [
                 header,
+                esc(lb.rejected_project_note) if historical else "",
                 self._intention_note(bill),
                 self._reader_context(bill),
                 self._consultation_line(bill, today),
@@ -465,7 +474,7 @@ class MessageFormatter:
         details: list[str] = []
         # Not on a plan's card: two blocks above it says there is no text yet, and a vacatio
         # legis can only be quoted from one — "не указано" there reads as a fact about the bill.
-        if bill.wykaz is None:
+        if bill.wykaz is None and not (bill.act is None and is_over(bill, today=today)):
             effective = a.effective_date.strip() if a.effective_date else lb.effective_date_unknown
             details.append(self._field(ICON["effective"], lb.effective_date, esc(effective)))
         steps = "\n".join(
@@ -681,13 +690,7 @@ class MessageFormatter:
                 now=dt.datetime.combine(today, dt.time(), tzinfo=ZoneInfo("Europe/Warsaw")),
                 with_act=with_act,
             )
-            marker = (
-                self._labels.attention_urgent
-                if assessment.urgency == "urgent"
-                else (
-                    self._labels.attention_important if assessment.importance == "important" else ""
-                )
-            )
+            marker = self._labels.attention_urgent if assessment.urgency == "urgent" else ""
             if marker:
                 if assessment.urgency == "urgent" and assessment.deadline is not None:
                     marker += f" · {self.fmt_date(assessment.deadline)}"
@@ -2335,7 +2338,9 @@ class MessageFormatter:
     def _context(self, bill: Bill) -> str:
         return self._mnemonic(bill) or (
             lead(bill.analysis.analysis.summary)
-            if bill.analysis is not None and bill.analysis.analysis.summary.strip()
+            if bill.analysis is not None
+            and bill.analysis.analysis.summary.strip()
+            and not (bill.act is None and is_over(bill, today=self._today()))
             else publication_title(bill.summary.title)
         )
 
@@ -2359,7 +2364,9 @@ class MessageFormatter:
                     ICON["affected"], self._labels.affected, esc("; ".join(a.affected_groups))
                 )
             )
-        if a.practical_impact.strip():
+        if a.practical_impact.strip() and not (
+            bill.act is None and is_over(bill, today=self._today())
+        ):
             blocks.append(
                 self._field(
                     ICON["practical"],

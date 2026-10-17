@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict
 
 from lexinform.models.bill import Bill, StatusChange
 from lexinform.models.events import fills_in_the_past, has_news
-from lexinform.models.evidence import decision_changes, process_evidence
+from lexinform.models.evidence import decision_changes, process_evidence, process_rejected
 from lexinform.models.observations import ObservedProcess
 from lexinform.models.sejm import ProcessDetail, Stage, TextDocument, diff_stages
 
@@ -19,9 +19,22 @@ class BillPlan(BaseModel):
     closure_detected: bool
     content_changed: bool
     decision_changed: bool = False
+    text_active: bool = True
 
     def should_publish(self, change: StatusChange, *, act_published: bool = False) -> bool:
         known = self.previous.stages if self.previous is not None else ()
+        if (
+            not self.text_active
+            and change.content_changed
+            and not (
+                change.new_stages
+                or change.closure_detected
+                or change.decision_changed
+                or change.supplements
+                or change.amendments
+            )
+        ):
+            return False
         return has_news(change, act_published=act_published) and (
             self.decision_changed or not fills_in_the_past(known, self.observed.stages)
         )
@@ -63,13 +76,23 @@ def plan_bill(
     previous = observation_of(bill)
     fresh = bill.model_copy(update={"summary": detail, "stages": detail.stages})
     observed = observe(fresh, closure_date=detail.closure_date)
+    text_active = (
+        fresh.act is not None
+        or detail.eli is not None
+        or not process_rejected(
+            process_evidence(
+                observed.stages, passed=observed.passed, closed=observed.closure_date is not None
+            )
+        )
+    )
     added = diff_stages(previous.stages, observed.stages) if previous else []
     decisions = decision_changes(previous.stages, observed.stages) if previous else ()
     added.extend(stage for stage in decisions if stage not in added)
     return BillPlan(
         previous=previous,
         observed=observed,
-        analysis_document=analysis_document,
+        analysis_document=analysis_document if text_active else None,
+        text_active=text_active,
         new_stages=tuple(added),
         decision_changed=bool(decisions)
         or (
@@ -90,7 +113,8 @@ def plan_bill(
         ),
         # A re-analysis committed ahead of this checkpoint is news on the terms it was read on.
         content_changed=(
-            previous is not None
+            text_active
+            and previous is not None
             and observed.analysis_revision != previous.analysis_revision
             and observed.analysis_sha256 != previous.analysis_sha256
             and bill.analysis is not None

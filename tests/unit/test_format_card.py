@@ -13,6 +13,31 @@ from tests.formatting import ACT, TODAY, assert_telegram_html, bill_of, consulte
 from tests.harness import act
 
 
+@pytest.mark.parametrize("language", ["ru", "en"])
+def test_rejected_card_marks_analysis_as_historical_and_omits_promised_effective_date(
+    process_3039: ProcessDetail, language: str
+) -> None:
+    rejected = process_3039.model_copy(
+        update={"passed": False, "closure_date": TODAY, "stages": ()}
+    )
+    analysis = make_analysis()
+    assert analysis.effective_date is not None
+    formatter = MessageFormatter(language, attention_enabled=True, today=lambda: TODAY)
+
+    text = formatter.new_bill(bill_of(rejected, analysis), None, today=TODAY).text
+
+    assert analysis.practical_impact not in text
+    assert analysis.effective_date not in text
+    assert analysis.summary in text
+    assert (
+        "Что предусматривал проект" in text
+        if language == "ru"
+        else "What the draft proposed" in text
+    )
+    assert "не действуют" in text if language == "ru" else "do not apply" in text
+    assert_telegram_html(text)
+
+
 def test_card_contains_every_section(process_3039: ProcessDetail, print_3039: PrintInfo) -> None:
     text = MessageFormatter("ru").new_bill(bill_of(process_3039), print_3039).text
 

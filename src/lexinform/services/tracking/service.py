@@ -917,6 +917,11 @@ class StatusTrackingService:
         # not part of `_stage_key`, so writing it moves no fingerprint and announces nothing.
         named = self._enricher.name_committees(bill.term, detail.stages)
         with self._repo.atomic():
+            if not plan.text_active and bill.status in (
+                BillStatus.BATCH_PENDING,
+                BillStatus.REANALYSIS_READY,
+            ):
+                self._repo.reset_bill(bill.term, bill.number, BillStatus.ANALYZED)
             self._repo.set_awaiting_batch(bill.term, bill.number, None)
             self._repo.upsert_summary(detail, now=self._clock.now())
             self._repo.save_stages(bill.term, bill.number, named, new_fp)
@@ -986,8 +991,10 @@ class StatusTrackingService:
         """
         detail = found.detail
         now = self._clock.now()
-        content_changed = paid and self._reanalyze_new_text(
-            bill, detail, plan.analysis_document, result
+        content_changed = (
+            paid
+            and plan.text_active
+            and self._reanalyze_new_text(bill, detail, plan.analysis_document, result)
         )
         content_changed = content_changed or plan.content_changed
         old_fp = bill.stages_fingerprint
