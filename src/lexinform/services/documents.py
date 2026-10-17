@@ -18,14 +18,12 @@ from dataclasses import dataclass
 from urllib.parse import urlparse
 
 from lexinform.document_versions import (
-    bill_subject,
+    comparable_versions,
     draft_version,
     join_normative_parts,
     regulation_support,
-    shared_amended_act,
 )
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
-from lexinform.law_digest import law_digest
 from lexinform.models import DocumentPart, DocumentSelection, ScannedDocument, TextDocument
 from lexinform.ports import Downloader, StructuredTextExtractor, TextExtractor
 from lexinform.sections import (
@@ -277,22 +275,8 @@ class TextLoader:
                 candidates.append((candidate, file))
         if not candidates:
             return None
-        subjects = {bill_subject(file.text or "") for _, file in candidates}
-        dates = [draft_version(file.text or "") for _, file in candidates]
-        same_subject = len(subjects) == 1 and "" not in subjects
-        if (
-            same_subject or shared_amended_act([file.text or "" for _, file in candidates])
-        ) and all(dates):
-            newest = max(date for date in dates if date is not None)
-            candidates = [
-                (candidate, file)
-                for candidate, file in candidates
-                if draft_version(file.text or "") == newest
-            ]
-        identities = {
-            law_digest(trim_print(file.text or "").text) or file.text for _, file in candidates
-        }
-        if len(identities) > 1:
+        indices = comparable_versions([file.text or "" for _, file in candidates])
+        if not indices:
             return document, LoadedFile(
                 None,
                 selection=DocumentSelection(
@@ -303,7 +287,7 @@ class TextLoader:
                     ),
                 ),
             )
-        candidate, _ = candidates[0]
+        candidate, _ = candidates[indices[0]]
         return candidate, self._with_evidence(candidate, self.read_document(candidate))
 
     def _with_evidence(self, document: TextDocument, file: LoadedFile) -> LoadedFile:

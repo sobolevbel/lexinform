@@ -1,6 +1,9 @@
 import datetime as dt
 import re
 
+from lexinform.law_digest import law_digest
+from lexinform.sections import trim_print
+
 _MONTHS = (
     "stycznia",
     "lutego",
@@ -86,3 +89,17 @@ def regulation_support(text: str, *, name: str = "") -> bool:
             re.I,
         )
     )
+
+
+def comparable_versions(texts: list[str], *, allow_shared_act: bool = True) -> tuple[int, ...]:
+    if not texts:
+        return ()
+    subjects = {bill_subject(text) for text in texts}
+    dates = [draft_version(text) for text in texts]
+    same_subject = len(subjects) == 1 and "" not in subjects
+    indices = tuple(range(len(texts)))
+    if (same_subject or (allow_shared_act and shared_amended_act(texts))) and all(dates):
+        newest = max(date for date in dates if date is not None)
+        indices = tuple(index for index in indices if dates[index] == newest)
+    identities = {law_digest(trim_print(texts[i]).text) or texts[i] for i in indices}
+    return indices if len(identities) == 1 else ()

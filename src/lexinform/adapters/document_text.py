@@ -21,12 +21,11 @@ from zipfile import ZipInfo
 
 from inflate64 import Inflater
 
-from lexinform.document_versions import bill_subject, draft_version, regulation_support
-from lexinform.law_digest import law_digest
+from lexinform.document_versions import comparable_versions, regulation_support
 from lexinform.models.documents import DocumentPart, DocumentSelection, ExtractedDocument
 from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
 from lexinform.ports import TextExtractor
-from lexinform.sections import APPENDIX_KINDS, PAGE_BREAK, Kind, document_kind, trim_print
+from lexinform.sections import APPENDIX_KINDS, PAGE_BREAK, Kind, document_kind
 
 log = logging.getLogger(__name__)
 
@@ -531,19 +530,14 @@ class DocumentTextExtractor:
         peers = [p for r, p in candidates if r[0] == rank[0]]
         confirmed = [p for p in peers if document_kind(p.text) == "bill"]
         if len(confirmed) > 1:
-            subjects = {bill_subject(p.text) for p in confirmed}
-            dates = [draft_version(p.text) for p in confirmed]
-            if len(subjects) == 1 and "" not in subjects and all(dates):
-                newest = max(date for date in dates if date is not None)
-                confirmed = [p for p in confirmed if draft_version(p.text) == newest]
-                main = confirmed[0]
-            identities = {law_digest(trim_print(p.text).text) or p.text.strip() for p in confirmed}
-            if len(identities) > 1:
+            indices = comparable_versions([p.text for p in confirmed], allow_shared_act=False)
+            if not indices:
                 return ExtractedDocument(
                     selection=DocumentSelection(
                         state="ambiguous", parts=tuple(confirmed), rejected=tuple(rejected)
                     )
                 )
+            main = confirmed[indices[0]]
         family = main.members[:-1]
         kept = [main]
         kept.extend(p for p in annexes if p.members[:-1] == family)
