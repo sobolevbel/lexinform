@@ -690,11 +690,6 @@ class MessageFormatter:
                 now=dt.datetime.combine(today, dt.time(), tzinfo=ZoneInfo("Europe/Warsaw")),
                 with_act=with_act,
             )
-            marker = self._labels.attention_urgent if assessment.urgency == "urgent" else ""
-            if marker:
-                if assessment.urgency == "urgent" and assessment.deadline is not None:
-                    marker += f" · {self.fmt_date(assessment.deadline)}"
-                header = f"<b>{esc(marker)}</b>\n{header}"
             if state := self._norm_state(bill, today):
                 header += f"\n<i>{esc(state)}</i>"
             if assessment.affected_groups:

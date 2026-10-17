@@ -44,7 +44,10 @@ def test_policy_groups_routine_events_but_releases_urgent_routine_immediately(wo
     urgent = w.publication("3041", PublicationKind.STATUS_UPDATE)
     assert urgent is not None and urgent.delivery is not None and urgent.attention is not None
     assert urgent.attention.importance == "routine" and urgent.attention.urgency == "urgent"
-    assert not urgent.delivery.update_group and "Нужно действовать" in urgent.delivery.rendered_text
+    assert not urgent.delivery.update_group
+    assert "Нужно действовать" not in urgent.delivery.rendered_text
+    deadline = w.formatter.fmt_date(w.clock.now().date() + dt.timedelta(days=2))
+    assert deadline in urgent.delivery.rendered_text
     assert urgent.status is PublicationStatus.SENT
     assert report.attention["urgent"] == 1
     assert report.attention["events"] == 3 and report.attention["messages"] == 2

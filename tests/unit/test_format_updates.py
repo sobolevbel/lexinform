@@ -15,7 +15,7 @@ from lexinform.models import (
     flatten_stages,
 )
 from tests.fakes import make_analysis
-from tests.formatting import ACT, NOW, assert_telegram_html, bill_of, change_of
+from tests.formatting import ACT, NOW, assert_telegram_html, bill_of, change_of, consulted
 
 
 @pytest.mark.parametrize("explicit", [False, True])
@@ -37,12 +37,15 @@ def test_important_update_starts_with_the_event_without_a_loud_importance_label(
     assert "<b>Важно</b>" not in text
 
 
-def test_urgent_update_keeps_the_action_deadline(process_3039: ProcessDetail) -> None:
+def test_urgent_update_starts_with_the_event_and_keeps_the_deadline_in_its_body(
+    process_3039: ProcessDetail,
+) -> None:
     text = (
         MessageFormatter(attention_enabled=True)
         .status_update(
-            bill_of(process_3039),
-            change_of("3039", []),
+            bill_of(process_3039, submission=consulted(consultation_end=dt.date(2026, 9, 10))),
+            change_of("3039", [], content_changed=True),
+            today=NOW.date(),
             attention=AttentionAssessment(
                 importance="important",
                 urgency="urgent",
@@ -54,7 +57,9 @@ def test_urgent_update_keeps_the_action_deadline(process_3039: ProcessDetail) ->
         .text
     )
 
-    assert text.startswith("<b>Нужно действовать · 10 сент 2026</b>")
+    assert text.startswith("🆕 <b>Новая версия текста — druk nr 3039</b>")
+    assert "Нужно действовать" not in text
+    assert "10 сент 2026" in text and "Что можно сделать сейчас" in text
 
 
 @pytest.mark.parametrize("closure_detected", [False, True])

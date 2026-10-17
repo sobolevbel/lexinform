@@ -128,7 +128,6 @@ class Labels:
     next_step: str
     sittings_header: str
     updates_header: str
-    attention_urgent: str
     attention_roundup: str
     previous_name: str
     norm_states: dict[str, str]
@@ -478,7 +477,6 @@ RU = Labels(
     next_step="Что дальше",
     sittings_header="Заседания",
     updates_header="Что изменилось",
-    attention_urgent="Нужно действовать",
     attention_roundup="Коротко по проектам",
     previous_name="Прежнее имя: {}",
     norm_states={
@@ -1225,7 +1223,6 @@ EN = Labels(
     next_step="What comes next",
     sittings_header="Sittings",
     updates_header="What changed",
-    attention_urgent="Action needed",
     attention_roundup="Briefly on the bills",
     previous_name="Previously: {}",
     norm_states={
