@@ -34,6 +34,22 @@ _PREFIX = (
 _NUMERIC_DRAFT = re.compile(_PREFIX + r"(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})(?!\d)")
 _SPACED_DRAFT = re.compile(_PREFIX + r"(\d{1,2})[ \t]+(\d{1,2})[ \t]+(\d{4})(?!\d)")
 _DRAFT = re.compile(_PREFIX + r"(\d{1,2})\s+(" + "|".join(_MONTHS) + r")\s+(\d{4})(?!\d)")
+_UPDATE = re.compile(
+    r"[ \t]*(?:r\.)?[ \t]*,[ \t]*aktualizacja(?:[ \t]+z[ \t]+dnia)?[ \t]*:?[ \t]*",
+    re.I,
+)
+_UPDATE_DATES = tuple(
+    re.compile(pattern.pattern.removeprefix(_PREFIX), re.I)
+    for pattern in (_NUMERIC_DRAFT, _SPACED_DRAFT, _DRAFT)
+)
+
+
+def _dated_match(match: re.Match[str]) -> dt.date | None:
+    try:
+        month = int(match[2]) if match[2].isdigit() else _MONTHS.index(match[2].casefold()) + 1
+        return dt.date(int(match[3]), month, int(match[1]))
+    except ValueError:
+        return None
 
 
 def draft_version_evidence(text: str) -> tuple[tuple[dt.date | None, int, int], ...]:
@@ -43,14 +59,28 @@ def draft_version_evidence(text: str) -> tuple[tuple[dt.date | None, int, int], 
     matches: list[tuple[dt.date | None, int, int]] = []
     for pattern in (_NUMERIC_DRAFT, _SPACED_DRAFT, _DRAFT):
         for match in pattern.finditer(text[:end]):
-            try:
-                month = (
-                    _MONTHS.index(match[2].casefold()) + 1 if pattern is _DRAFT else int(match[2])
+            value = _dated_match(match)
+            last = match.end()
+            if update := _UPDATE.match(text, last, end):
+                updated = next(
+                    (
+                        found
+                        for date in _UPDATE_DATES
+                        if (found := date.match(text, update.end(), end))
+                    ),
+                    None,
                 )
-                value = dt.date(int(match[3]), month, int(match[1]))
-            except ValueError:
-                value = None
-            matches.append((value, match.start(), match.end()))
+                revision = _dated_match(updated) if updated else None
+                last = updated.end() if updated else update.end()
+                value = (
+                    revision
+                    if value is not None
+                    and revision is not None
+                    and revision >= value
+                    and not _UPDATE.match(text, last, end)
+                    else None
+                )
+            matches.append((value, match.start(), last))
     return tuple(matches)
 
 
@@ -76,6 +106,9 @@ def bill_subject(text: str) -> str:
     if article is None:
         return ""
     title = body[: article.start()]
+    title = re.split(
+        r"(?im)^[ \t]*Rozdział[ \t]+(?:\d+|[IVXLCDM]+)[ \t]*(?:\n|$)", title, maxsplit=1
+    )[0]
     subject = re.search(r"\b(?:o\s+|Prawo\s+|Kodeks\s+).+", title, re.S)
     if subject is None:
         return ""

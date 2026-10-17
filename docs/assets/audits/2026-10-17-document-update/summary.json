@@ -1,0 +1,29 @@
+{
+  "baseline_commit": "030068a",
+  "cached_texts": 10411,
+  "changed_dates": 2,
+  "shortened_titles": 254,
+  "lost_titles": 0,
+  "rcl_snapshots": 4276,
+  "projects": 825,
+  "changed_decisions": 2,
+  "ambiguous_to_selected": 1,
+  "ambiguous_to_unverified": 1,
+  "changed_projects": [
+    "12390651",
+    "12390652"
+  ],
+  "raw_files": 22,
+  "container_cases": 20,
+  "semantic_mutations": 50,
+  "packages": 69,
+  "print_metadata": 11786,
+  "packages_metadata_unchanged": true,
+  "tests_passed": 2449,
+  "tests_deselected": 32,
+  "mypy_files": 288,
+  "new_paid_calls": 0,
+  "post_fix_regression_matches": 40,
+  "independent_new_holdout": false,
+  "package_replay_sha256": "8f5147e1186f67df9bce4d660162b565db3635506497f46b632ae98aa86d86cc"
+}

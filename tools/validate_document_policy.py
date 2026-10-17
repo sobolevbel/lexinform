@@ -57,10 +57,15 @@ def replay(corpus: Path, inventory: Path) -> dict[str, Any]:
     labelled = [g for g in groups if g["category"] == "different_header_dates_parser_gap"]
     pairs = [[doc["id"] for doc in group["documents"]] for group in labelled]
     pairs.append(["280566", "272563"])
+    pairs.append(["705153", "688101"])
+    update_dates = {"705153": "2025-02-14", "705164": "2025-02-14", "688101": "2024-10-18"}
     texts: dict[str, str] = {}
     hashes: dict[str, str] = {}
     dates: dict[str, dict[str, str | None]] = {}
-    for identity in dict.fromkeys(identity for pair in pairs for identity in pair):
+    identities_to_read = dict.fromkeys(
+        [*(identity for pair in pairs for identity in pair), "705164"]
+    )
+    for identity in identities_to_read:
         paths = list((corpus / "documents/files").glob(f"{identity}.*"))
         assert len(paths) == 1, (identity, paths)
         raw = paths[0].read_bytes()
@@ -75,7 +80,7 @@ def replay(corpus: Path, inventory: Path) -> dict[str, Any]:
                 for doc in group["documents"]
                 if doc["id"] == identity
             ),
-            str(actual) if actual else None,
+            update_dates.get(identity, str(actual) if actual else None),
         )
         assert str(actual) == expected, (identity, actual, expected)
         dates[identity] = {"expected": expected, "actual": str(actual) if actual else None}
@@ -119,6 +124,8 @@ def replay(corpus: Path, inventory: Path) -> dict[str, Any]:
             control = extractor.extract(word(expected_text))
             assert separate.text == archived.text, (identities, reverse)
             assert separate.selection.state == archived.selection.state, identities
+            if identities == ["705153", "688101"]:
+                assert separate.text is not None, "The explicit update must resolve h34"
             if separate.text is not None:
                 assert separate.text == control, identities
             else:

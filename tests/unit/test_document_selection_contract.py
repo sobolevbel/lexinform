@@ -330,3 +330,76 @@ def test_annex_order_and_member_names_do_not_change_the_normative_bundle(reverse
     assert files.text.strip("\f") == package.text == "\f".join([body, *annexes])
     assert files.selection.state == package.selection.state == "selected"
     assert files.selection.normative_sha256 == package.selection.normative_sha256
+
+
+@pytest.mark.parametrize(
+    "updated",
+    [
+        "14 lutego 2025 r.",
+        "14.02.2025",
+        "14 / 02 / 2025 r.",
+        "14 02 2025",
+        "z dnia: 14 lutego 2025 r.",
+    ],
+)
+def test_inline_update_supersedes_its_own_draft_date(updated: str) -> None:
+    header = "projekt z dnia 18 października 2024 r., aktualizacja " + updated
+    text = header + "\n" + law().split("\n", 1)[1]
+    result = bill_selection(
+        DocumentSelection(
+            parts=(
+                DocumentPart(
+                    role="bill",
+                    url="https://official.test/project",
+                    text=text,
+                    text_end=len(text),
+                    text_sha256=hashlib.sha256(text.encode()).hexdigest(),
+                ),
+            )
+        ),
+        source_basis=("official/project/1",),
+    )
+
+    assert draft_version(text) == dt.date(2025, 2, 14)
+    assert result.state == "selected"
+    fact = next(fact for fact in result.facts if fact.kind == "draft_date")
+    assert fact.value == "2025-02-14"
+    assert fact.quote.startswith("projekt z dnia 18 października 2024 r., aktualizacja")
+    assert "draft_version_conflict" not in result.limitations
+
+
+@pytest.mark.parametrize(
+    "update",
+    [
+        "14.02.2023",
+        "31.02.2025",
+        "14.02.20255",
+        "brak daty",
+        "14.02.2025 r., aktualizacja 15.02.2025 r.",
+    ],
+)
+def test_invalid_backdated_or_competing_updates_do_not_order_drafts(update: str) -> None:
+    text = "Projekt 18.10.2024 r., aktualizacja " + update + "\n" + law().split("\n", 1)[1]
+
+    assert draft_version(text) is None
+    assert not comparable_versions([text, law()])
+
+
+def test_unrelated_update_dates_do_not_replace_the_draft_date() -> None:
+    header = "Aktualizacja OSR 14.02.2027 r.\n" + law()
+    body = law().replace("Art. 2.", "Art. 2. Aktualizacja 14.02.2027 r.")
+    standalone = (
+        "Data sporządzenia\n18.10.2024 r.\nAktualizacja 14.02.2025 r.\nOCENA SKUTKÓW REGULACJI"
+    )
+
+    assert draft_version(header) == draft_version(body) == dt.date(2026, 9, 1)
+    assert draft_version(standalone) is None
+
+
+def test_chapter_headings_are_not_part_of_the_bill_title() -> None:
+    old = law().replace("Art. 1.", "Rozdział 1\nPrzepis ogólny\nArt. 1.")
+    updated = law(day=2, days=60).replace("Art. 1.", "Rozdział 1\nPrzepisy ogólne\nArt. 1.")
+    unrelated = updated.replace("o zmianie ustawy o cudzoziemcach", "o ochronie przyrody")
+
+    assert comparable_versions([old, updated]) == (1,)
+    assert not comparable_versions([old, unrelated])

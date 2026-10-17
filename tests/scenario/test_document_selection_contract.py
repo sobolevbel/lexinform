@@ -329,3 +329,33 @@ def test_unknown_support_applicability_reaches_the_model_without_reanalysis() ->
     assert len(world.llm.contexts) == 1
     assert world.llm.contexts[0].support_applicability_unknown
     assert "nie jest potwierdzone" in build_user_prompt(world.llm.contexts[0])
+
+
+@pytest.mark.parametrize("workers", [1, 4])
+def test_own_update_selects_the_new_draft_without_an_llm_resolver(workers: int) -> None:
+    old = rcl_document(1, "Projekt ustawy.docx", created=dt.date(2025, 3, 2))
+    new = rcl_document(2, "Projekt ustawy.docx", created=dt.date(2025, 3, 1))
+    original = law().replace(
+        "Projekt z dnia 1 września 2026 r.", "Projekt z dnia 18 października 2024 r."
+    )
+    updated = original.replace(
+        "2024 r.\nUSTAWA", "2024 r., aktualizacja 14 lutego 2025 r.\nUSTAWA"
+    ).replace("30 dni", "60 dni")
+    project = rcl_project(
+        stages=(rcl_stage(1, "Projekt", "reached", rcl_folder(1, "Projekt", old, new)),),
+        consultation=None,
+    )
+    world = World(
+        extractor=FakeTextExtractor(page_count=0, by_content={b"old": original, b"new": updated}),
+        workers=workers,
+    )
+    world.add_rcl_project(project)
+    world.rcl.files.update({old.url: b"old", new.url: b"new"})
+
+    world.run(track=False)
+
+    record = world.bill(f"RCL/{project.id}").analysis
+    assert record is not None and record.source_url == new.url
+    assert world.llm.contexts[0].text == updated
+    fact = next(fact for fact in record.selection.facts if fact.kind == "draft_date")
+    assert fact.value == "2025-02-14" and "aktualizacja" in fact.quote

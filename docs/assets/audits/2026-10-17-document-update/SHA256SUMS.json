@@ -1,0 +1,10 @@
+{
+  "candidate-changes.json.gz": "3e6a2ea7d570b072aa4436ad25c7224445adc4b9b03e49778b15c1dad4787b1d",
+  "candidates-after.json.gz": "bf59864a1e88b37b4c04cfef8a8e371a637d9818ca33ddc60d0824d4f42a0f9a",
+  "code-sha256.json": "235356626e2f8304f236849f66772c3123060924ed63d1cae8905a76bf2f0cc9",
+  "date-changes.json.gz": "9b4703259b68e6b949a379f20fad8a717a967c52ee98d91335bc56a19832c6d3",
+  "raw-controls.json.gz": "169c273608d7fd62fd9d27b1baeb1d01c470b7394fa52bb426d72df1eb422a03",
+  "regression-baseline.json.gz": "061261d2b274ba68d186df5c3553b3a4e4ed3b14e0f463d5e17fb7847d697a07",
+  "subject-changes.json.gz": "db505cf85e37d7b8263bf6c455eb842f3d626369b09be30b3991999fcedf430c",
+  "summary.json": "514af6fbbd8edb70d0a2bf180d42b5a71142fc994707d45f61e73019e0326fe8"
+}
