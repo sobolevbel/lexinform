@@ -33,6 +33,7 @@ class AnalysisVerdict(BaseModel):
 CallKind = Literal[
     "analysis",
     "reanalysis",
+    "explanation",
     "triage",
     "change_review",
     "amendments",

@@ -147,6 +147,75 @@ class BillLookup:
         term = ref.term if ref.term is not None else self._terms.current()
         return self._fetch(term, ref.value)
 
+    def read_ref(self, ref: BillRef) -> Bill:
+        """Read for a private explanation without enrolling an unknown bill in the pipeline."""
+        stored = self.find_ref(ref)
+        if stored is not None:
+            return self.continuation(stored)
+        term = ref.term if ref.term is not None else self._terms.current()
+        number = ref.value
+        if ref.kind is RefKind.RM:
+            project_id = self._projects.resolve_project_id(number) if self._projects else None
+            if project_id is None:
+                raise BillNotFoundError(f"{number}: RCL knows no project with this number")
+            number = rcl_number(project_id)
+        elif ref.kind is RefKind.WYKAZ:
+            number = wykaz_number(number)
+        return self._read(term, number)
+
+    def _read(self, term: int, number: str) -> Bill:
+        stored = self._repo.get(term, number)
+        if stored is not None:
+            return self.continuation(stored)
+        now = self._clock.now()
+        if is_rcl_number(number):
+            project = self.read_rcl_project(number)
+            printed = print_of_project(self._gateway, project, term)
+            if printed:
+                return self._read(term, printed)
+            return Bill(
+                summary=process_summary(project, term=term),
+                rcl=project,
+                stages=rcl_stages(project),
+                status=BillStatus.DISCOVERED,
+                first_seen_at=now,
+                last_checked_at=now,
+            )
+        if is_pre_print_number(number):
+            sub = self.find_submission(term, number)
+            if sub.print_number:
+                return self._read(term, sub.print_number)
+            return Bill(
+                summary=ProcessSummary.from_submission(sub),
+                submission=sub,
+                status=BillStatus.DISCOVERED,
+                first_seen_at=now,
+                last_checked_at=now,
+            )
+        if is_wykaz_number(number):
+            entry = self.read_wykaz_entry(number)
+            project_id = self._repo.find_rcl_project_of_plan(
+                entry.number, entry.published_at.date()
+            )
+            if project_id is not None:
+                return self._read(term, rcl_number(project_id))
+            return Bill(
+                summary=wykaz_summary(entry, term=term),
+                wykaz=entry,
+                status=BillStatus.DISCOVERED,
+                first_seen_at=now,
+                last_checked_at=now,
+            )
+        detail = self._gateway.get_process(term, number)
+        return Bill(
+            summary=detail,
+            submission=self._submission_of(term, number),
+            stages=detail.stages,
+            status=BillStatus.DISCOVERED,
+            first_seen_at=now,
+            last_checked_at=now,
+        )
+
     def read_rcl_project(self, number: str) -> RclProject:
         """The whole project from RCL: timeline, every reached stage's catalog, the letter."""
         if self._rcl_reader is None:

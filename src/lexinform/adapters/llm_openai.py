@@ -32,6 +32,7 @@ from lexinform.adapters.llm_prompts import (
     build_joint_prompt,
     build_supplement_prompt,
     build_user_prompt,
+    explanation_system_prompt,
     gpt51_amendments_system_prompt,
     gpt51_joint_system_prompt,
     gpt51_supplement_system_prompt,
@@ -326,6 +327,8 @@ class OpenAiAnalyzer:
         )
         if isinstance(ctx, BillContext):
             system, prompt = self._system, build_user_prompt(ctx)
+            if request.call_kind == "explanation":
+                system = explanation_system_prompt(self._language)
         elif isinstance(ctx, AmendmentsContext):
             system, prompt = (
                 gpt51_amendments_system_prompt(self._language),
@@ -343,6 +346,7 @@ class OpenAiAnalyzer:
         schema_name, schema = {
             "analysis": ("analysis", _ANALYSIS_SCHEMA),
             "reanalysis": ("analysis", _ANALYSIS_SCHEMA),
+            "explanation": ("analysis", _ANALYSIS_SCHEMA),
             "amendments": ("amendments", _AMENDMENTS_SCHEMA),
             "supplement": ("document_digest", _DOCUMENT_DIGEST_SCHEMA),
             "joint": ("joint_comparison", _JOINT_COMPARISON_SCHEMA),

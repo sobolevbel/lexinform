@@ -23,6 +23,7 @@ from lexinform.adapters.llm_prompts import (
     build_triage_prompt,
     build_user_prompt,
     change_review_system_prompt,
+    explanation_system_prompt,
     joint_system_prompt,
     supplement_system_prompt,
     system_prompt,
@@ -317,6 +318,8 @@ class AnthropicAnalyzer:
         )
         if isinstance(ctx, BillContext):
             system, prompt = self._system, build_user_prompt(ctx)
+            if request.call_kind == "explanation":
+                system = explanation_system_prompt(self._language)
         elif isinstance(ctx, AmendmentsContext):
             system, prompt = self._amendments_system, build_amendments_prompt(ctx)
         elif isinstance(ctx, SupplementContext):

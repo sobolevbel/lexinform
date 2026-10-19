@@ -33,7 +33,7 @@ def provider_of(model: str) -> BatchProvider:
 
 
 class AnalysisQuestion(BaseModel):
-    kind: Literal["analysis", "reanalysis"]
+    kind: Literal["analysis", "reanalysis", "explanation"]
     ctx: BillContext
 
 
@@ -69,6 +69,7 @@ BatchAnswer = Analysis | Amendments | DocumentDigest | JointComparison | Documen
 BatchKind = Literal[
     "analysis",
     "reanalysis",
+    "explanation",
     "amendments",
     "supplement",
     "joint",
@@ -78,7 +79,7 @@ BatchKind = Literal[
 
 
 def batch_output_model(kind: CallKind) -> type[BatchAnswer]:
-    if kind in ("analysis", "reanalysis"):
+    if kind in ("analysis", "reanalysis", "explanation"):
         return Analysis
     if kind == "amendments":
         return Amendments
@@ -214,6 +215,7 @@ class DigestItemMeta(BaseModel):
     review_context: ReviewContext | None = None
     amendment_revision: AmendmentRevisionTarget | None = None
     amendment_source: SenateResolutionIdentity | None = None
+    explanation: BatchItemMeta | None = None
 
 
 def batch_item_meta(kind: str, raw: str) -> BatchItemMeta | DigestItemMeta:

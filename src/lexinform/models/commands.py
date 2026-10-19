@@ -15,7 +15,7 @@ from urllib.parse import parse_qs, urlparse
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from lexinform.models.analysis import TokenUsage
+from lexinform.models.analysis import AnalysisRecord, TokenUsage
 from lexinform.models.batch import LlmBatch
 from lexinform.models.bill import Bill, Publication
 from lexinform.models.digest import week_bounds
@@ -187,6 +187,7 @@ class CommandName(StrEnum):
     REPREFILTER = "reprefilter"
     INDEX_RCL_NUMBERS = "index-rcl-numbers"
     ANALYZE = "analyze"
+    EXPLAIN = "explain"
     SHOW = "show"
     SKIP = "skip"
     UNSKIP = "unskip"
@@ -211,6 +212,7 @@ class CommandName(StrEnum):
 NEEDS_REFERENCE = frozenset(
     {
         CommandName.ANALYZE,
+        CommandName.EXPLAIN,
         CommandName.SHOW,
         CommandName.SKIP,
         CommandName.UNSKIP,
@@ -524,6 +526,7 @@ class CommandOutcome(BaseModel):
     digest_members: tuple[int, ...] = ()
     delivery_history: tuple[DeliveryResolution, ...] = ()
     as_json: bool = False
+    explanation: AnalysisRecord | None = None
     run_started_at: dt.datetime | None = None
     seconds: float | None = None
     usage: dict[str, TokenUsage] = Field(default_factory=dict)

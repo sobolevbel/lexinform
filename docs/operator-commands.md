@@ -39,6 +39,7 @@ analysis of a changed text or a filed document.
 /analyze 3039 force           analyse past the prefilter, a previous analysis and the cost guard
 /analyze 3039 publish         post the card of a relevant bill even below the score threshold
 /analyze 3039 json            add the stored analysis as raw JSON under the verdict
+/explain 3039                 полный разбор независимо от релевантности, только для оператора
 /show 3039                    what the database knows: status, hits, verdict, card, last stage
 /preview 3039                 the card as the channel would get it, rendered here and posted
                               nowhere else
@@ -163,9 +164,29 @@ without that diagnosis still need operator recovery. Backfill costs downloads an
 keyword matching, no tokens — but a bill that passes becomes an analysis candidate, so the run
 after it pays for the readings and posts the cards; give it a `limit` you are willing to read.
 
+`/explain RPW/35146/2026` запрашивает содержательный разбор проекта, даже если его
+отсеяли префильтр или triage. Это отдельный batch-purpose `explanation`: синхронного
+анализа нет, результат сохраняется в `analysis_memo` и не заменяет анализ для канала,
+статус проекта, наблюдения или очередь публикаций. Неизвестный проект читается без
+добавления в очередь обычного анализа. Связанные RPW/RCL номера ведут к продолжающему
+законопроекту. Команда объясняет суть, изменения, затронутые группы, практические
+последствия и сроки даже при `relevant=false`; оценка важности остаётся оценкой для
+иностранцев. Недоступный текст не подменяется разбором одних метаданных; сокращённый
+текст явно отмечается. Обычные ограничения стоимости сохраняются.
+
+Первый вызов отвечает, что разбор ожидает batch. После сбора результата повторите
+ту же `/explain`: бот покажет сохранённый текст в техническом канале без новых токенов.
+Автоматической отправки готового разбора под исходной командой пока нет. Повтор во время
+queued/submitting/open batch не создаёт второй запрос, даже после reset основного анализа.
+Неопределённая отправка не повторяется автоматически; ошибка batch показывается оператору.
+Изменение текста создаёт отдельный запрос, а смена prompt version сама по себе не создаёт его.
+Команда не принимает `force`, `publish` или `to=`. CLI: `uv run lexinform explain НОМЕР`.
+
 `/preview` answers with the card itself, links and tags and all, so the wording can be read
 before `/republish` sends it — and so that a bill held under the score threshold can be looked
-at without posting anything. For a print that will reply under another's card it shows the reply,
+at without posting anything. A full saved analysis can also be previewed when irrelevant;
+the reply labels that as an operator preview. When only triage excerpts are saved, it shows
+the rejection reason and suggests `/explain BILL`, without calling a model. For a print that will reply under another's card it shows the reply,
 and without the «чем отличается» block when no comparison is stored yet: that block is a model
 call, a read-only command spends nothing, and the note says the comparison is made when the reply
 goes out. `/refresh` runs the tracking phase for one bill: the reader waits

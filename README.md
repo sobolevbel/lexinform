@@ -208,6 +208,7 @@ uv run lexinform scan --since 2026-08-01  # discovery + prefilters, prints candi
 uv run lexinform analyze 3039             # one LLM analysis into the local SQLite db
 uv run lexinform amendments 1929          # batch re-analysis of amendments; edits the old message
 uv run lexinform preview 3039             # render the card (--to <chat id> sends it)
+uv run lexinform explain RPW/35146/2026   # batch explanation regardless of relevance; repeat for result
 uv run lexinform run --dry-run            # full run, nothing posted, DB rolled back
 uv run lexinform run
 ```
@@ -323,6 +324,7 @@ The rubric is in `src/lexinform/adapters/llm_prompts.py`; `PROMPT_VERSION` is st
 | `lexinform reprefilter [--limit N] [--include-text-skipped]` | Scan the texts of bills the title prefilter skipped (print PDFs; RCL projects are read again) |
 | `lexinform analyze NUMBER [--force] [--json]` | Analyse one bill |
 | `lexinform preview NUMBER [--to CHAT]` | Render or send the card |
+| `lexinform explain NUMBER` | Explain through batch regardless of relevance; repeat to read the result, without reader publication |
 | `lexinform track [--dry-run]` | Only the tracking phase |
 | `lexinform commands [--dry-run]` | Answer the operator commands waiting in `LEXINFORM_INBOX_DIR` (what the relay's `repository_dispatch` runs) |
 | `lexinform listen [--once] [--dry-run]` | The relay: file the technical channel's commands into the `inbox` branch (runs on a server) |

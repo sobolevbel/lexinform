@@ -48,6 +48,7 @@ from lexinform.models import (
     is_rcl_number,
     is_wykaz_number,
     merge_usage,
+    parse_reference,
     rcl_project_id,
     stage_fingerprint,
     usage_of,
@@ -478,6 +479,28 @@ def amendments(
         if outcome.status is OutcomeStatus.ERROR:
             raise typer.Exit(code=1)
         c.analysis_service().submit_queued_batches()
+    finally:
+        c.close()
+
+
+@app.command()
+def explain(number: Annotated[str, typer.Argument(help=NUMBER_HELP)]) -> None:
+    """Explain a bill through batch, regardless of relevance, without reader publication."""
+    c = _container()
+    try:
+        ref = parse_reference(number)
+        if ref is None:
+            raise typer.BadParameter("Неизвестный формат номера законопроекта")
+        bill = _or_exit(lambda: c.bill_lookup().read_ref(ref))
+        result = c.analysis_service().explain_bill(bill)
+        if isinstance(result, Waiting):
+            typer.echo(f"Разбор ожидает batch; повторите `lexinform explain {number}` позже.")
+        else:
+            typer.echo(f"{bill.number} · {bill.summary.title}")
+            typer.echo(c.formatter.explanation(bill, result).text)
+    except (ValueError, RuntimeError) as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=2) from None
     finally:
         c.close()
 

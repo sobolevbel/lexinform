@@ -28,6 +28,7 @@ from lexinform.models import (
     WYKAZ_REGISTER_URL,
     ActInfo,
     AgendaItem,
+    AnalysisRecord,
     AnalysisVerdict,
     ApplicantType,
     AttentionAssessment,
@@ -112,6 +113,8 @@ COMMAND_HELP = (
     " card when relevant and important enough, then follow it. <code>force</code> gets past the"
     " prefilter, a previous analysis and the cost guard, <code>publish</code> past the score"
     " threshold, <code>json</code> adds the raw verdict\n"
+    "• <code>/explain BILL</code> — разобрать независимо от релевантности через batch;"
+    " повтор команды покажет готовый разбор, без публикации читателям\n"
     "• <code>/show BILL</code> — what the database knows\n"
     "• <code>/preview BILL [to=CHAT]</code> — the card as the channel would get it, rendered"
     " here only, or sent to a test chat\n"
@@ -1968,7 +1971,12 @@ class MessageFormatter:
         blocks = [head]
         bill = outcome.bill
         if bill is not None:
-            blocks.append(self._bill_facts(bill, full=outcome.status in FULL_FACTS))
+            blocks.append(
+                self._bill_facts(
+                    bill,
+                    full=outcome.status in FULL_FACTS and outcome.explanation is None,
+                )
+            )
         if outcome.message_id is not None:
             posted = "card posted" if bill is not None else "posted"
             label = f"message {outcome.message_id}"
@@ -1988,6 +1996,8 @@ class MessageFormatter:
         """What a command answers with beyond its verdict: a rendered card, a list of matches,
         the state of the queues. These are what gets shrunk when the message is too long."""
         bill = outcome.bill
+        if outcome.explanation is not None and bill is not None:
+            return [self.explanation(bill, outcome.explanation).text]
         if outcome.delivery is not None:
             pub = outcome.delivery
             plan = pub.delivery
@@ -2067,6 +2077,39 @@ class MessageFormatter:
         if outcome.spend is not None:
             return [self._spend_body(outcome.spend)]
         return []
+
+    def explanation(self, bill: Bill, record: AnalysisRecord) -> RenderedMessage:
+        a, lb = record.analysis, self._labels
+        blocks = [f"<b>{esc(lb.about)}</b>\n{esc(a.summary)}"]
+        if a.key_changes:
+            blocks.append(
+                f"<b>{esc(lb.key_changes)}</b>\n"
+                + "\n".join(f"• {esc(change)}" for change in a.key_changes)
+            )
+        if a.affected_groups:
+            blocks.append(
+                f"<b>{esc(lb.affected)}</b>\n"
+                + ", ".join(esc(group) for group in a.affected_groups)
+            )
+        if a.practical_impact:
+            blocks.append(f"<b>{esc(lb.practical_impact)}</b>\n{esc(a.practical_impact)}")
+        if a.effective_date:
+            blocks.append(f"<b>{esc(lb.effective_date)}</b>\n{esc(a.effective_date)}")
+        blocks.append(f"<i>{esc(a.rationale)}</i>")
+        if record.truncated:
+            blocks.append("Разбор основан на неполном тексте.")
+        if record.source_url:
+            blocks.append(link(record.source_url, "Текст проекта"))
+        today = self._today()
+        blocks.extend(
+            line
+            for line in (
+                self._next_step_line(bill, today),
+                self._action_line(bill, today),
+            )
+            if line
+        )
+        return RenderedMessage(text=self._assemble(blocks))
 
     def delivery_preview(self, pub: Publication) -> str:
         plan = pub.delivery

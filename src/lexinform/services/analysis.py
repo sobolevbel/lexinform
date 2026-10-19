@@ -696,6 +696,7 @@ class AnalysisService:
             )
             and (
                 self._options.require_batch
+                or i.request.question.kind == "explanation"
                 or (isinstance(i.meta, DigestItemMeta) and i.meta.amendment_revision is not None)
                 or (
                     isinstance(i.meta, DigestItemMeta)
@@ -885,10 +886,36 @@ class AnalysisService:
     ) -> None:
         now = self._clock.now()
         records = _batch_records(result, meta.prompt_version, now)
-        record: AmendmentsRecord | SupplementRecord | JointRecord | DocumentReviewRecord | None = (
-            None
-        )
-        if item.call_kind == "amendments" and isinstance(result.answer, Amendments):
+        record: (
+            AnalysisRecord
+            | AmendmentsRecord
+            | SupplementRecord
+            | JointRecord
+            | DocumentReviewRecord
+            | None
+        ) = None
+        if (
+            item.call_kind == "explanation"
+            and isinstance(result.answer, Analysis)
+            and meta.explanation is not None
+        ):
+            source = meta.explanation
+            record = records.analysis(
+                result.answer,
+                input_chars=source.input_chars,
+                truncated=source.truncated,
+                text_source=source.text_source,
+            ).model_copy(
+                update={
+                    "source_url": source.source_url,
+                    "source_kind": source.source_kind,
+                    "text_sha256": source.text_sha256,
+                    "law_sha256": source.law_sha256,
+                    "source_checked_at": now,
+                    "selection": source.selection,
+                }
+            )
+        elif item.call_kind == "amendments" and isinstance(result.answer, Amendments):
             try:
                 if meta.amendment_source is not None and meta.amendment_source.scan:
                     validate_senate_scan(result.answer.source_evidence, meta.amendment_source)
@@ -1150,6 +1177,51 @@ class AnalysisService:
             item.batch_id, item.custom_id, consumed_at=now, result=batch_result
         )
         return record
+
+    def explain_bill(self, bill: Bill) -> AnalysisRecord | Waiting:
+        prepared = self._prepare(
+            bill,
+            self._texts.locate(bill),
+            previous=None,
+            triage=False,
+            submit_batch=True,
+            purpose="explanation",
+        )
+        if prepared.record is not None:
+            assert prepared.memo_key is not None
+            self._remember_analysis(bill, prepared.memo_key, prepared.record)
+            return prepared.record
+        request, source = prepared.batch_request, prepared.batch_meta
+        assert request is not None and source is not None and prepared.memo_key is not None
+        job = self._repo.batch_job(request.custom_id)
+        if job is not None:
+            if job.state == "failed":
+                raise RuntimeError("Разбор не получен: batch завершился с ошибкой")
+            return Waiting(job.since)
+        if len((request.payload_json or "").encode()) > 100_000_000:
+            raise ValueError("one batch request exceeds the 100 MB payload limit")
+        if not self._ledger.reserve(request.estimated_cost_usd):
+            raise ValueError("Разбор не поставлен в очередь: исчерпан бюджет прогона")
+        now = self._clock.now()
+        try:
+            self._repo.save_batch_intent(
+                BatchIntent(
+                    request=request,
+                    meta=DigestItemMeta(
+                        memo_key=prepared.memo_key,
+                        queued_at=now,
+                        prompt_version=request.prompt_version,
+                        explanation=source.model_copy(update={"located": None, "text": ""}),
+                    ),
+                    provider=prepared.batch_provider or self._options.batch_provider,
+                    created_at=now,
+                )
+            )
+        except Exception:
+            self._ledger.release(request.estimated_cost_usd)
+            raise
+        self.submit_queued_batches()
+        return Waiting(now)
 
     def analyze_bill(
         self, bill: Bill, *, ignore_cost_limit: bool = False
@@ -1823,6 +1895,7 @@ class AnalysisService:
         cost_guard: bool = True,
         triage: bool = True,
         submit_batch: bool = False,
+        purpose: Literal["analysis", "reanalysis", "explanation"] | None = None,
     ) -> _Prepared:
         """Load the text and ask the model. Network only: safe to run for several bills at once.
 
@@ -1847,6 +1920,8 @@ class AnalysisService:
             document = loaded.document
             located = located.model_copy(update={"document": document})
         text, truncated, source = loaded.text, loaded.truncated, loaded.source
+        if purpose == "explanation" and source not in FULL_TEXT_SOURCES:
+            raise ValueError("Текст проекта пока недоступен; повторите /explain после загрузки")
         if previous is not None and source not in FULL_TEXT_SOURCES:
             return _Prepared(bill, located, text, source, previous, first=False, unreadable=True)
         digest = loaded.digest
@@ -1911,7 +1986,8 @@ class AnalysisService:
         )
         original_ctx = ctx
         first = previous is None
-        purpose: Literal["analysis", "reanalysis"] = "analysis" if first else "reanalysis"
+        purpose = purpose or ("analysis" if first else "reanalysis")
+        generation = 0 if purpose == "explanation" else bill.analysis_generation
 
         def to_overflow(reason: str) -> tuple[BillContext, str]:
             log.info("%s: %s; using the overflow model", bill.number, reason)
@@ -1929,7 +2005,7 @@ class AnalysisService:
                 ctx, loaded, first=first, batch=submit_batch, cost_guard=cost_guard
             )
             key = _memo_key(bill, purpose, ctx)
-            custom_id = hashlib.sha256(f"{key}:{bill.analysis_generation}".encode()).hexdigest()
+            custom_id = hashlib.sha256(f"{key}:{generation}".encode()).hexdigest()
             if self._overflow_batch is not None and custom_id in self._context_rejections:
                 overflow = submit_batch = True
                 ctx, key = to_overflow("the primary batch rejected the context")
@@ -1950,7 +2026,7 @@ class AnalysisService:
                 "batch backend is unavailable for the selected analysis model"
             )
         if cached is None and submit_batch and backend is not None:
-            request_identity = f"{key}:{bill.analysis_generation}"
+            request_identity = f"{key}:{generation}"
             if overflow:
                 request_identity += f":overflow:{self._options.overflow_model}"
             custom_id = hashlib.sha256(request_identity.encode()).hexdigest()

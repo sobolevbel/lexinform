@@ -763,6 +763,7 @@ class FakeBatchBackend:
             defaults: dict[CallKind, BatchAnswer] = {
                 "analysis": make_analysis(),
                 "reanalysis": make_analysis(),
+                "explanation": make_analysis(),
                 "amendments": make_amendments(),
                 "supplement": make_digest(),
                 "joint": make_comparison(),

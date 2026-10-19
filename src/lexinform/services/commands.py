@@ -367,6 +367,24 @@ class CommandService:
             "only a bill command is left, and parse_command gives it a ref"
         )
         try:
+            if command.name is CommandName.EXPLAIN:
+                bill = self._lookup.read_ref(command.ref)
+                explanation = self._analysis.explain_bill(bill)
+                if isinstance(explanation, Waiting):
+                    return CommandOutcome(
+                        status=OutcomeStatus.QUEUED,
+                        bill=bill,
+                        note="Разбор ожидает batch. Повторите /explain "
+                        + bill.number
+                        + " после получения результата; повтор не создаёт новый запрос. "
+                        "Разбор сохраняется отдельно и не публикуется в читательском канале.",
+                    )
+                return CommandOutcome(
+                    status=OutcomeStatus.SHOWN,
+                    bill=bill.model_copy(update={"analysis": explanation}),
+                    explanation=explanation,
+                    note="Разбор по запросу; сохранён отдельно от анализа для канала.",
+                )
             if command.name is CommandName.ANALYZE:
                 bill = self._lookup.continuation(self._lookup.load_ref(command.ref))
                 done = self._analyze(bill, command, spent, min_score=min_score, publish=publish)
@@ -740,14 +758,18 @@ class CommandService:
                 return CommandOutcome(
                     status=OutcomeStatus.ERROR, bill=bill, note="not analysed: no card to render"
                 )
-        elif not bill.analysis.analysis.relevant:
+        elif bill.analysis.text_source == "excerpts":
             return CommandOutcome(
-                status=OutcomeStatus.ERROR,
+                status=OutcomeStatus.SHOWN,
                 bill=bill,
-                note="not relevant: the channel would never get this card",
+                explanation=bill.analysis,
+                note="Есть только предварительная оценка по фрагментам. "
+                f"Для полного разбора: /explain {bill.number}",
             )
         card = self._card(bill)
         note = f"the card in the channel is {card}" if card else "not posted to the channel"
+        if bill.analysis is not None and not bill.analysis.analysis.relevant:
+            note += "; нерелевантный проект: только предпросмотр"
         plan = self._publishing.plan(bill)
         if plan.inherited is not None:
             note = (
