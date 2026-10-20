@@ -340,7 +340,7 @@ class OpenAiAnalyzer:
                 build_supplement_prompt(ctx),
             )
         elif isinstance(ctx, ReviewContext):
-            system, prompt = review_system(self._language), review_prompt(ctx)
+            system, prompt = review_system(self._language, ctx.purpose), review_prompt(ctx)
         else:
             system, prompt = gpt51_joint_system_prompt(self._language), build_joint_prompt(ctx)
         schema_name, schema = {
@@ -351,6 +351,7 @@ class OpenAiAnalyzer:
             "supplement": ("document_digest", _DOCUMENT_DIGEST_SCHEMA),
             "joint": ("joint_comparison", _JOINT_COMPARISON_SCHEMA),
             "consultation_review": ("document_review", REVIEW_SCHEMA),
+            "commission_review": ("document_review", REVIEW_SCHEMA),
             "act_application": ("document_review", REVIEW_SCHEMA),
         }[request.call_kind]
         payload = {

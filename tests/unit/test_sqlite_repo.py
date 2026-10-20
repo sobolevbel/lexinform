@@ -1302,6 +1302,7 @@ def test_a_v1_dump_keeps_its_rows_and_their_values_through_every_migration(
     )
     assert bill.prefilter_hits == ["cudzoziemcy"]
     assert bill.summary.title == process_3039.title
+    assert bill.commission_review is None
     record = bill.analysis
     assert record is not None, "the legacy dump carries the analysis of druk 3039"
     assert (record.model, record.input_chars, record.truncated) == ("claude-opus-5", 12_345, True)
@@ -1348,9 +1349,11 @@ def test_restore_of_a_dump_that_still_says_skipped_joint(
         conn.execute("ALTER TABLE bills DROP COLUMN observation_basis")
         conn.execute("ALTER TABLE bills DROP COLUMN editorial_json")
         conn.execute("ALTER TABLE bills DROP COLUMN consultation_review_json")
+        conn.execute("ALTER TABLE bills DROP COLUMN commission_review_json")
         conn.execute("ALTER TABLE bills DROP COLUMN act_application_review_json")
         conn.execute("ALTER TABLE bills DROP COLUMN review_work_json")
         conn.execute("DROP INDEX ux_pub_review")
+        conn.execute("DROP INDEX ux_pub_commission_review")
         conn.execute("DROP INDEX ux_pub_message_part")
         conn.execute("DROP INDEX ux_pub_amendments_revision")
         conn.execute("DROP TABLE effective_rule_links")

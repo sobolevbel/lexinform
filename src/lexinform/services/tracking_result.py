@@ -23,6 +23,7 @@ PostCounter = Literal[
     "consultation_reminders",
     "consultation_results_posted",
     "consultation_reviews_posted",
+    "commission_reviews_posted",
     "act_reviews_posted",
     "effective_rule_messages",
     "amendment_messages_updated",
@@ -58,6 +59,7 @@ class TrackingResult:
     consultation_reminders: int = 0
     consultation_results_posted: int = 0
     consultation_reviews_posted: int = 0
+    commission_reviews_posted: int = 0
     act_reviews_posted: int = 0
     effective_rule_messages: int = 0
     amendment_messages_updated: int = 0
@@ -121,6 +123,7 @@ def merge_tracking(report: RunReport, tracked: TrackingResult, *, publish: bool)
     report.cards_refreshed += tracked.cards_refreshed
     report.consultation_results_posted += tracked.consultation_results_posted
     report.consultation_reviews_posted += tracked.consultation_reviews_posted
+    report.commission_reviews_posted += tracked.commission_reviews_posted
     report.act_reviews_posted += tracked.act_reviews_posted
     report.effective_rule_messages += tracked.effective_rule_messages
     report.amendment_messages_updated += tracked.amendment_messages_updated

@@ -40,6 +40,7 @@ CallKind = Literal[
     "supplement",
     "joint",
     "consultation_review",
+    "commission_review",
     "act_application",
 ]
 
@@ -135,6 +136,7 @@ class RunReport(BaseModel):
     digest_events_covered: int = 0
     consultation_results_posted: int = 0
     consultation_reviews_posted: int = 0
+    commission_reviews_posted: int = 0
     act_reviews_posted: int = 0
     effective_rule_messages: int = 0
     amendment_messages_updated: int = 0

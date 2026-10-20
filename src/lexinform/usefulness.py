@@ -57,6 +57,14 @@ def digest_reason(
         return "legal_commission_without_confirmed_consequence"
     if kind is PublicationKind.CONSULTATION_RESULTS:
         return "documents_without_confirmed_consequence"
+    if kind is PublicationKind.COMMISSION_REVIEW:
+        record = bill.commission_review
+        if record is None or not any(
+            item.text_change or (item.practical_impact and item.affected_groups)
+            for item in record.review.commission_findings
+        ):
+            return "commission_without_reader_consequence"
+        return ""
     if kind is PublicationKind.CONSULTATION_REVIEW:
         record = bill.consultation_review
         if record is None or not any(

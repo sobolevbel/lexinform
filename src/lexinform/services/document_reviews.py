@@ -10,7 +10,9 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
     ReviewPurpose,
+    ReviewSource,
     ReviewWork,
+    TextDocument,
 )
 from lexinform.models.reviews import review_signature
 from lexinform.ports import BillRepository, Clock, TextSource
@@ -51,21 +53,35 @@ class DocumentReviews:
     ) -> None:
         if not self._analysis.review_enabled(purpose):
             return
+        fresh = self._repo.get(bill.term, bill.number) or bill
+        if purpose == "commission_review":
+            if not any(
+                source.role in {"commission_position", "commission_response", "commission_minutes"}
+                for source in self._texts.supporting_documents(bill, purpose)
+            ):
+                return
+            pending = next((work for work in fresh.review_work if work.purpose == purpose), None)
+            if pending is not None:
+                if pending.context is not None:
+                    return
+                original = Bill.model_validate_json(pending.input_bill_json)
+                bill = bill.model_copy(update={"analysis": original.analysis})
         payload = bill.model_dump_json(
             exclude={
                 "last_checked_at",
                 "review_work",
                 "consultation_review",
+                "commission_review",
                 "act_application_review",
             }
         )
         key = "review-input:" + hashlib.sha256((purpose + payload).encode()).hexdigest()
         fresh = self._repo.get(bill.term, bill.number) or bill
-        prior = (
-            fresh.consultation_review
-            if purpose == "consultation_review"
-            else fresh.act_application_review
-        )
+        prior = {
+            "consultation_review": fresh.consultation_review,
+            "commission_review": fresh.commission_review,
+            "act_application": fresh.act_application_review,
+        }[purpose]
         if prior is not None and prior.source_key == key and not force_check:
             return
         if any(work.memo_key == key or work.source_key == key for work in fresh.review_work):
@@ -78,6 +94,7 @@ class DocumentReviews:
                 exclude={
                     "review_work",
                     "consultation_review",
+                    "commission_review",
                     "act_application_review",
                 }
             ),
@@ -85,8 +102,26 @@ class DocumentReviews:
             baseline_day=day,
             source_key=key,
             act_eli=bill.act.eli if bill.act is not None else None,
+            comparison_document=next(
+                (doc for doc in prior.context.documents if doc.role == "comparison_text"), None
+            )
+            if purpose == "commission_review" and prior is not None
+            else None,
         )
-        self._repo.save_review_work(bill.term, bill.number, (*fresh.review_work, work))
+        if purpose == "commission_review":
+            pending = next((item for item in fresh.review_work if item.purpose == purpose), None)
+            if pending is not None:
+                work = work.model_copy(
+                    update={
+                        "since": pending.since,
+                        "baseline_day": pending.baseline_day,
+                        "comparison_document": pending.comparison_document,
+                    }
+                )
+            remaining = tuple(item for item in fresh.review_work if item.purpose != purpose)
+            self._repo.save_review_work(bill.term, bill.number, (*remaining, work))
+        else:
+            self._repo.save_review_work(bill.term, bill.number, (*fresh.review_work, work))
 
     def advance(self, result: TrackingResult, *, publish: bool) -> None:
         for bill in self._repo.list_review_work():
@@ -104,6 +139,18 @@ class DocumentReviews:
                     if context is None:
                         snapshot = Bill.model_validate_json(work.input_bill_json)
                         sources = self._texts.supporting_documents(snapshot, work.purpose)
+                        if work.comparison_document is not None:
+                            comparison = work.comparison_document
+                            sources = tuple(
+                                source for source in sources if source.role != "comparison_text"
+                            ) + (
+                                ReviewSource(
+                                    identity=comparison.identity,
+                                    document=TextDocument(url=comparison.url, kind="rcl"),
+                                    role="comparison_text",
+                                    snapshot=comparison,
+                                ),
+                            )
                         context = self._analysis.review_context(snapshot, work.purpose, sources)
                         if context is None:
                             self._replace_work(
@@ -155,6 +202,7 @@ class DocumentReviews:
         ):
             if pub.kind not in (
                 PublicationKind.CONSULTATION_REVIEW,
+                PublicationKind.COMMISSION_REVIEW,
                 PublicationKind.ACT_APPLICATION,
                 PublicationKind.EFFECTIVE_RULES,
             ):
@@ -175,6 +223,7 @@ class DocumentReviews:
                     continue
                 counter = {
                     PublicationKind.CONSULTATION_REVIEW: "consultation_reviews_posted",
+                    PublicationKind.COMMISSION_REVIEW: "commission_reviews_posted",
                     PublicationKind.ACT_APPLICATION: "act_reviews_posted",
                     PublicationKind.EFFECTIVE_RULES: "effective_rule_messages",
                 }[pub.kind]
@@ -194,11 +243,11 @@ class DocumentReviews:
             self._replace_work(bill, work, None)
             return
         fresh = self._repo.get(bill.term, bill.number) or bill
-        previous = (
-            fresh.consultation_review
-            if purpose == "consultation_review"
-            else fresh.act_application_review
-        )
+        previous = {
+            "consultation_review": fresh.consultation_review,
+            "commission_review": fresh.commission_review,
+            "act_application": fresh.act_application_review,
+        }[purpose]
         baseline = (
             previous.baseline_day
             if previous is not None and previous.context.act_eli == record.context.act_eli
@@ -220,18 +269,24 @@ class DocumentReviews:
                 "canonical_dates": tuple(sorted(canonical)),
             }
         )
-        key = (
-            "consultation_review" if purpose == "consultation_review" else "act_application_review"
-        )
+        key = {
+            "consultation_review": "consultation_review",
+            "commission_review": "commission_review",
+            "act_application": "act_application_review",
+        }[purpose]
         snapshot = fresh.model_copy(update={key: record})
-        kind = (
-            PublicationKind.CONSULTATION_REVIEW
-            if purpose == "consultation_review"
-            else PublicationKind.ACT_APPLICATION
-        )
+        kind = {
+            "consultation_review": PublicationKind.CONSULTATION_REVIEW,
+            "commission_review": PublicationKind.COMMISSION_REVIEW,
+            "act_application": PublicationKind.ACT_APPLICATION,
+        }[purpose]
         with self._repo.atomic():
             self._repo.save_document_review(bill.term, bill.number, record)
-            meaningful = bool(record.review.consultation_findings or record.review.effective_rules)
+            meaningful = bool(
+                record.review.consultation_findings
+                or record.review.commission_findings
+                or record.review.effective_rules
+            )
             if meaningful and (
                 previous is None
                 or review_signature(previous.review) != review_signature(record.review)

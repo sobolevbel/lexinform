@@ -350,11 +350,13 @@ class Container:
             batch_sync_within_days=self.settings.llm_batch_sync_within_days,
             batch_kinds=self.settings.llm_batch_kinds,
             consultation_reviews_enabled=self.settings.consultation_reviews_enabled,
+            commission_reviews_enabled=self.settings.commission_reviews_enabled,
             batch_models={
                 "amendments": self.settings.llm_amendments_model,
                 "supplement": self.settings.llm_supplement_model,
                 "joint": self.settings.llm_joint_model,
                 "consultation_review": self.settings.llm_analysis_model,
+                "commission_review": self.settings.llm_analysis_model,
                 "act_application": self.settings.llm_analysis_model,
             },
             batch_max_wait=timedelta(hours=self.settings.llm_batch_max_wait_hours),
@@ -607,6 +609,7 @@ class Container:
                 draft_channel_id=self.drafts_channel_id(),
                 approve_label=APPROVE_DIGEST,
                 attention_enabled=s.reader_attention == "on",
+                delivery_paused=self.poster(dry_run=dry_run).delivery_paused,
                 weekday=s.digest_weekday,
                 local_tz=LOCAL_TZ,
                 closed_grace_days=s.track_closed_grace_days,
@@ -675,6 +678,7 @@ class Container:
                 daily_hour=self.settings.attention_daily_hour,
                 delivery_attempts=self._delivery_attempts(dry_run),
                 consultation_reviews_enabled=self.settings.consultation_reviews_enabled,
+                commission_reviews_enabled=self.settings.commission_reviews_enabled,
             ),
         )
 

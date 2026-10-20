@@ -51,6 +51,7 @@ UPDATE_KINDS = (
     PublicationKind.IN_FORCE,
     PublicationKind.CONSULTATION_RESULTS,
     PublicationKind.CONSULTATION_REVIEW,
+    PublicationKind.COMMISSION_REVIEW,
     PublicationKind.ACT_APPLICATION,
     PublicationKind.EFFECTIVE_RULES,
 )
@@ -121,6 +122,7 @@ class DigestService:
         closed_grace_days: int = 90,
         pending_decision_max_days: int = 1095,
         attention_enabled: bool = False,
+        delivery_paused: Callable[[Publication], bool] | None = None,
     ) -> None:
         self._repo = repo
         self._publisher = publisher
@@ -134,6 +136,7 @@ class DigestService:
         self._closed_grace_days = closed_grace_days
         self._pending_decision_max_days = pending_decision_max_days
         self._attention_enabled = attention_enabled
+        self._delivery_paused = delivery_paused or (lambda publication: False)
 
     def today(self) -> dt.date:
         """The reader's day, which is the Sejm's: a digest is due on a Warsaw Sunday."""
@@ -219,6 +222,8 @@ class DigestService:
                 ref=ref, message_id=existing.message_id, note="this week is in the channel already"
             )
         before_parts, before_events = self._delivery_totals(existing)
+        if existing is not None and self._delivery_paused(existing):
+            return DigestResult(ref=ref, note="digest delivery paused with its source review")
         week = self.build(ref)
         message_id = self._send(
             self._channel_id,
@@ -260,13 +265,15 @@ class DigestService:
             post for post in posts if post.id is None or self._repo.digest_owner(post.id) is None
         ]
         posts.extend(
-            self._repo.list_digest_candidates(
+            post
+            for post in self._repo.list_digest_candidates(
                 self._channel_id,
                 eligible_before=min(
                     self._clock.now() + dt.timedelta(milliseconds=1),
                     self._midnight(until + dt.timedelta(days=1)),
                 ),
             )
+            if not self._delivery_paused(post)
         )
         bills: dict[tuple[int, str], Bill] = {}
         cards: list[DigestEntry] = []
@@ -413,6 +420,15 @@ class DigestService:
                 finding.text_change or finding.reason
                 for finding in bill.consultation_review.review.consultation_findings
                 if finding.outcome != "unknown"
+            )
+        elif (
+            post.kind is PublicationKind.COMMISSION_REVIEW
+            and bill.commission_review is not None
+            and historical_snapshot
+        ):
+            consequence = " ".join(
+                item.text_change or item.practical_impact
+                for item in bill.commission_review.review.commission_findings
             )
         elif (
             post.kind in (PublicationKind.ACT_APPLICATION, PublicationKind.EFFECTIVE_RULES)
@@ -669,6 +685,8 @@ class DigestService:
                 )
             existing = self._repo.publication_by_id(identities[0])
         assert existing is not None and existing.delivery is not None
+        if self._delivery_paused(existing):
+            return None
         for identity in existing.delivery.digest_parts:
             part = self._repo.publication_by_id(identity)
             assert part is not None
@@ -707,6 +725,8 @@ class DigestService:
                     DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, channel, ref=root_ref
                 )
                 if root is None or root.delivery is None or not root.delivery.digest_parts:
+                    continue
+                if self._delivery_paused(root):
                     continue
                 members = [
                     self._repo.publication_by_id(identity)

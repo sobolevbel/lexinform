@@ -269,6 +269,10 @@ class Labels:
     path_steps: dict[str, str] = field(default_factory=dict)
     stage_labels: dict[str, str] = field(default_factory=dict)
     rcl_stage_labels: dict[str, str] = field(default_factory=dict)
+    commission_review_header: str = ""
+    commission_proposal: str = ""
+    commission_impact: str = ""
+    commission_incorporation: str = ""
     consultation_review_header: str = ""
     act_application_header: str = ""
     consultation_outcomes: dict[str, str] = field(default_factory=dict)
@@ -323,6 +327,10 @@ RU = Labels(
     partial_text_note="Анализ основан на неполном тексте документа.",
     new_stages="Новые стадии",
     reading_stage="{numeral} чтение на заседании Сейма",
+    commission_review_header="Замечания при юридической проверке",
+    commission_proposal="Замечание",
+    commission_impact="Что это может изменить",
+    commission_incorporation="Подтверждено в новой редакции",
     consultation_review_header="Что дали консультации",
     act_application_header="Как применяется окончательный акт",
     consultation_outcomes={
@@ -1072,6 +1080,10 @@ EN = Labels(
     partial_text_note="The analysis is based on a partial text of the document.",
     new_stages="New stages",
     reading_stage="{numeral} reading at a Sejm sitting",
+    commission_review_header="Remarks at legal review",
+    commission_proposal="Remark",
+    commission_impact="Potential practical effect",
+    commission_incorporation="Confirmed in the newer draft",
     consultation_review_header="What consultations achieved",
     act_application_header="How the final act applies",
     consultation_outcomes={

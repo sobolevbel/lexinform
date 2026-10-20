@@ -91,6 +91,7 @@ class DeliveryPlan(BaseModel):
             return bool(self.rendered_text)
         if kind in (
             PublicationKind.CONSULTATION_REVIEW,
+            PublicationKind.COMMISSION_REVIEW,
             PublicationKind.ACT_APPLICATION,
             PublicationKind.EFFECTIVE_RULES,
         ):

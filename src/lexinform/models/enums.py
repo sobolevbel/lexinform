@@ -103,6 +103,7 @@ class PublicationKind(StrEnum):
     CONSULTATION_DEADLINE = "consultation_deadline"
     CONSULTATION_RESULTS = "consultation_results"
     CONSULTATION_REVIEW = "consultation_review"
+    COMMISSION_REVIEW = "commission_review"
     ACT_APPLICATION = "act_application"
     EFFECTIVE_RULES = "effective_rules"
     MESSAGE_PART = "message_part"

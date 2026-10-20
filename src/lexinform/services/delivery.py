@@ -41,6 +41,7 @@ class DeliveryService:
             PublicationKind.IN_FORCE: "in_force_posted",
             PublicationKind.CONSULTATION_RESULTS: "consultation_results_posted",
             PublicationKind.CONSULTATION_REVIEW: "consultation_reviews_posted",
+            PublicationKind.COMMISSION_REVIEW: "commission_reviews_posted",
             PublicationKind.ACT_APPLICATION: "act_reviews_posted",
             PublicationKind.EFFECTIVE_RULES: "effective_rule_messages",
             PublicationKind.AMENDMENTS_REVISION: "amendment_messages_updated",

@@ -245,6 +245,7 @@ from lexinform.models.report import (
     RunReport,
 )
 from lexinform.models.reviews import (
+    CommissionFinding,
     ConsultationFinding,
     DocumentReview,
     DocumentReviewRecord,
@@ -348,6 +349,7 @@ __all__ = [
     "SenateResolutionEvidence",
     "SenateResolutionIdentity",
     "AmendmentRevisionTarget",
+    "CommissionFinding",
     "ConsultationFinding",
     "DocumentReview",
     "DocumentReviewRecord",

@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from typing import Literal
 from urllib.parse import urlparse
 
+from lexinform.commission_reviews import commission_sources
 from lexinform.document_versions import normative_name
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
@@ -346,6 +347,10 @@ class RclTextSource:
         project = bill.rcl
         if project is None:
             return ()
+        if purpose == "commission_review":
+            return self._commission_sources(bill)
+        if purpose != "consultation_review":
+            return ()
         stages = [stage for stage in project.stages if stage.is_consultation and stage.reached]
         responses = [
             document
@@ -409,6 +414,44 @@ class RclTextSource:
                 ),
             )
         return result
+
+    def _commission_sources(self, bill: Bill) -> tuple[ReviewSource, ...]:
+        project = bill.rcl
+        if project is None or not any(
+            stage.is_legal_commission for stage in project.reached_stages
+        ):
+            return ()
+        sources = commission_sources(bill)
+        current = self.locate(bill).document
+        if current is not None:
+            sources += (
+                ReviewSource(identity="project/current", document=current, role="project_text"),
+            )
+        saved = bill.commission_review
+        comparison = (
+            next((doc for doc in saved.context.documents if doc.role == "comparison_text"), None)
+            if saved
+            else None
+        )
+        if comparison is not None:
+            sources += (
+                ReviewSource(
+                    identity=comparison.identity,
+                    document=TextDocument(url=comparison.url, kind="rcl"),
+                    role="comparison_text",
+                    snapshot=comparison,
+                ),
+            )
+        elif bill.analysis is not None and bill.analysis.source_url and bill.analysis.text_sha256:
+            sources += (
+                ReviewSource(
+                    identity="comparison/" + bill.analysis.text_sha256,
+                    document=TextDocument(url=bill.analysis.source_url, kind="rcl"),
+                    role="comparison_text",
+                    expected_digest=bill.analysis.text_sha256,
+                ),
+            )
+        return sources
 
 
 class TextSources:

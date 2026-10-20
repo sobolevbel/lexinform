@@ -76,6 +76,7 @@ class Bill(BaseModel):
     stages_fingerprint: str | None = None
     observed_closure_date: dt.date | None = None
     consultation_review: DocumentReviewRecord | None = None
+    commission_review: DocumentReviewRecord | None = None
     act_application_review: DocumentReviewRecord | None = None
     review_work: tuple[ReviewWork, ...] = ()
     observed_process: ObservedProcess | None = None

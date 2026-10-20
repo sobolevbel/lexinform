@@ -53,7 +53,7 @@ class JointQuestion(BaseModel):
 
 
 class DocumentReviewQuestion(BaseModel):
-    kind: Literal["consultation_review", "act_application"]
+    kind: Literal["consultation_review", "commission_review", "act_application"]
     ctx: ReviewContext
 
 
@@ -74,6 +74,7 @@ BatchKind = Literal[
     "supplement",
     "joint",
     "consultation_review",
+    "commission_review",
     "act_application",
 ]
 
@@ -87,7 +88,7 @@ def batch_output_model(kind: CallKind) -> type[BatchAnswer]:
         return DocumentDigest
     if kind == "joint":
         return JointComparison
-    if kind in ("consultation_review", "act_application"):
+    if kind in ("consultation_review", "commission_review", "act_application"):
         return DocumentReview
     raise ValueError(f"Unsupported batch kind: {kind}")
 

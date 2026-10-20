@@ -152,6 +152,9 @@ class Settings(BaseSettings):
     llm_batch_kinds: Annotated[frozenset[BatchKind], NoDecode] = frozenset(
         {"analysis", "reanalysis", "joint", "supplement", "amendments"}
     )
+    commission_reviews_enabled: bool = Field(
+        default=False, description="Enable batch reviews of RCL legal commission documents."
+    )
     consultation_reviews_enabled: bool = Field(
         default=False,
         description="Enable analysis and delivery of consultation document reviews; disabled"

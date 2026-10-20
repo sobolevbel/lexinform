@@ -772,6 +772,14 @@ class FakeBatchBackend:
                 "amendments": make_amendments(),
                 "supplement": make_digest(),
                 "joint": make_comparison(),
+                "commission_review": DocumentReview(
+                    purpose="commission_review",
+                    complete=False,
+                    summary="",
+                    consultation_findings=(),
+                    effective_rules=(),
+                    unresolved=("no scripted review",),
+                ),
                 "consultation_review": DocumentReview(
                     purpose="consultation_review",
                     complete=False,

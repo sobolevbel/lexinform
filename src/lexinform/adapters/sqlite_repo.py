@@ -486,6 +486,11 @@ MIGRATIONS: tuple[str, ...] = (
     );
     CREATE INDEX ix_document_work_due ON document_work(state, next_at);
     """,
+    """
+    ALTER TABLE bills ADD COLUMN commission_review_json TEXT;
+    CREATE UNIQUE INDEX ux_pub_commission_review ON publications(term, number, channel_id, ref)
+      WHERE kind = 'commission_review';
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -866,11 +871,11 @@ class SqliteBillRepository:
         )
 
     def save_document_review(self, term: int, number: str, review: DocumentReviewRecord) -> None:
-        column = (
-            "consultation_review_json"
-            if review.review.purpose == "consultation_review"
-            else "act_application_review_json"
-        )
+        column = {
+            "consultation_review": "consultation_review_json",
+            "commission_review": "commission_review_json",
+            "act_application": "act_application_review_json",
+        }[review.review.purpose]
         self._conn.execute(
             f"UPDATE bills SET {column} = ? WHERE term = ? AND number = ?",
             (review.model_dump_json(), term, number),
@@ -2888,6 +2893,7 @@ class SqliteBillRepository:
 
     @staticmethod
     def _row_to_bill(row: sqlite3.Row) -> Bill:
+        columns = row.keys()
         stages = tuple(Stage.model_validate(s) for s in json.loads(row["stages_json"] or "[]"))
         analysis = (
             AnalysisRecord.model_validate_json(row["analysis_json"])
@@ -2905,6 +2911,11 @@ class SqliteBillRepository:
                 if row["observed_closure_date"]
                 else None
             ),
+            commission_review=DocumentReviewRecord.model_validate_json(
+                row["commission_review_json"]
+            )
+            if "commission_review_json" in columns and row["commission_review_json"]
+            else None,
             consultation_review=DocumentReviewRecord.model_validate_json(
                 row["consultation_review_json"]
             )

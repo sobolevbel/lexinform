@@ -325,7 +325,7 @@ class AnthropicAnalyzer:
         elif isinstance(ctx, SupplementContext):
             system, prompt = self._supplement_system, build_supplement_prompt(ctx)
         elif isinstance(ctx, ReviewContext):
-            system, prompt = review_system(self._language), review_prompt(ctx)
+            system, prompt = review_system(self._language, ctx.purpose), review_prompt(ctx)
         else:
             system, prompt = self._joint_system, build_joint_prompt(ctx)
         payload: AnthropicBatchRequest = {

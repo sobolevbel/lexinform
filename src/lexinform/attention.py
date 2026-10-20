@@ -144,6 +144,19 @@ def assess_attention(
     elif kind in (PublicationKind.CONSULTATION_DEADLINE, PublicationKind.HEARING_DEADLINE):
         importance = "important"
         reasons.append("participation_reminder")
+    elif kind is PublicationKind.COMMISSION_REVIEW:
+        findings = (
+            bill.commission_review.review.commission_findings if bill.commission_review else ()
+        )
+        importance = (
+            "important"
+            if any(
+                item.text_change or (item.practical_impact and item.affected_groups)
+                for item in findings
+            )
+            else "routine"
+        )
+        reasons.append("substantive_content" if importance == "important" else "routine_process")
     elif kind in (PublicationKind.CONSULTATION_RESULTS, PublicationKind.CONSULTATION_REVIEW):
         importance = "important"
         reasons.append("participation_result")
@@ -184,6 +197,14 @@ def assess_attention(
         and (kind is PublicationKind.NEW_BILL or (change is not None and change.content_changed))
         else ()
     )
+    if kind is PublicationKind.COMMISSION_REVIEW and bill.commission_review is not None:
+        groups = tuple(
+            dict.fromkeys(
+                group
+                for item in bill.commission_review.review.commission_findings
+                for group in item.affected_groups
+            )
+        )
     if kind is PublicationKind.CONSULTATION_REVIEW and bill.consultation_review is not None:
         groups = tuple(
             dict.fromkeys(
@@ -264,6 +285,7 @@ def assess_attention(
         or kind
         in (
             PublicationKind.CONSULTATION_REVIEW,
+            PublicationKind.COMMISSION_REVIEW,
             PublicationKind.ACT_APPLICATION,
             PublicationKind.EFFECTIVE_RULES,
         )

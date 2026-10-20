@@ -9,8 +9,17 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from lexinform.models.sejm import TextDocument, is_rcl_number
 
-ReviewPurpose = Literal["consultation_review", "act_application"]
-DocumentRole = Literal["response", "position", "project_text", "comparison_text", "final_act"]
+ReviewPurpose = Literal["consultation_review", "commission_review", "act_application"]
+DocumentRole = Literal[
+    "response",
+    "position",
+    "project_text",
+    "comparison_text",
+    "final_act",
+    "commission_position",
+    "commission_response",
+    "commission_minutes",
+]
 
 
 class ReviewDocument(BaseModel):
@@ -25,6 +34,7 @@ class ReviewDocument(BaseModel):
     complete: bool = True
     file_sha256: str | None = None
     author: str = ""
+    draft_date: dt.date | None = None
 
 
 class ReviewContext(BaseModel):
@@ -99,6 +109,12 @@ class EffectiveRule(BaseModel):
         return "effective/" + hashlib.sha256(json.dumps(fact).encode()).hexdigest()
 
 
+class CommissionFinding(ConsultationFinding):
+    proposal_evidence: EvidenceCitation | None
+    comparison_evidence: EvidenceCitation | None
+    practical_impact: str
+
+
 class DocumentReview(BaseModel):
     purpose: ReviewPurpose
     complete: bool
@@ -106,6 +122,7 @@ class DocumentReview(BaseModel):
     consultation_findings: tuple[ConsultationFinding, ...]
     effective_rules: tuple[EffectiveRule, ...]
     unresolved: tuple[str, ...]
+    commission_findings: tuple[CommissionFinding, ...] = ()
 
 
 class DocumentReviewRecord(BaseModel):
@@ -137,6 +154,7 @@ class ReviewWork(BaseModel):
     limitation: str = ""
     source_key: str = ""
     act_eli: str | None = None
+    comparison_document: ReviewDocument | None = None
 
 
 def _normalized(text: str) -> str:
@@ -190,6 +208,8 @@ def citation_document(
 def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentReview:
     if review.purpose != context.purpose:
         raise ValueError("document review purpose does not match its request")
+    if context.purpose == "commission_review":
+        return _validate_commission(review, context)
     findings: list[ConsultationFinding] = []
     unresolved = list(review.unresolved)
     required_role = "response" if context.purpose == "consultation_review" else "final_act"
@@ -328,6 +348,7 @@ def validate_review(review: DocumentReview, context: ReviewContext) -> DocumentR
     return review.model_copy(
         update={
             "consultation_findings": tuple(findings),
+            "commission_findings": (),
             "effective_rules": tuple(rules),
             "complete": complete,
             "unresolved": tuple(dict.fromkeys(unresolved)),
@@ -344,7 +365,125 @@ def review_signature(review: DocumentReview) -> str:
         rule.model_dump(mode="json", exclude={"evidence", "date_evidence"})
         for rule in review.effective_rules
     ]
-    return json.dumps({"findings": findings, "rules": rules}, sort_keys=True, ensure_ascii=False)
+    facts: dict[str, object] = {"findings": findings, "rules": rules}
+    if review.purpose == "commission_review":
+        facts["commission"] = [
+            item.model_dump(
+                exclude={"evidence", "text_evidence", "proposal_evidence", "comparison_evidence"}
+            )
+            for item in review.commission_findings
+        ]
+    return json.dumps(facts, sort_keys=True, ensure_ascii=False)
+
+
+def _validate_commission(review: DocumentReview, context: ReviewContext) -> DocumentReview:
+    sources: set[DocumentRole] = {
+        "commission_position",
+        "commission_minutes",
+        "commission_response",
+    }
+    unresolved = list(review.unresolved)
+    findings: list[CommissionFinding] = []
+    response_context = context.model_copy(
+        update={
+            "purpose": "consultation_review",
+            "documents": tuple(
+                doc.model_copy(update={"role": "response"})
+                if doc.role in {"commission_response", "commission_minutes"}
+                else doc
+                for doc in context.documents
+            ),
+        }
+    )
+    for item in review.commission_findings:
+        proposal = citation_document(item.proposal_evidence, context, sources)
+        if proposal is None or not proposal.complete:
+            unresolved.append(f"Commission proposal unconfirmed: {item.proposal}")
+            continue
+        checked = validate_review(
+            DocumentReview(
+                purpose="consultation_review",
+                complete=True,
+                summary="",
+                consultation_findings=(ConsultationFinding.model_validate(item.model_dump()),),
+                effective_rules=(),
+                unresolved=(),
+            ),
+            response_context,
+        ).consultation_findings[0]
+        response = citation_document(
+            item.evidence, context, {"commission_response", "commission_minutes"}
+        )
+        related = (
+            item.evidence is not None
+            and item.proposal_evidence is not None
+            and _has_locator(item.evidence.quote, item.proposal_evidence.locator)
+        )
+        complete_response = False
+        if response is not None and item.evidence is not None:
+            quote = _normalized(item.evidence.quote)
+            rows = _response_rows(response.text)
+            units = rows or tuple(re.split(r"\n\s*\n", response.text))
+            complete_response = any(quote == _normalized(unit) for unit in units)
+        supported = (
+            response is not None
+            and response.complete
+            and complete_response
+            and related
+            and checked.outcome != "unknown"
+        )
+        before = citation_document(item.comparison_evidence, context, {"comparison_text"})
+        after = citation_document(item.text_evidence, context, {"project_text"})
+        incorporated = (
+            supported
+            and checked.outcome in {"accepted", "partial"}
+            and before is not None
+            and after is not None
+            and before.complete
+            and after.complete
+            and before.normalized_sha256 == context.comparison_sha256
+            and before.draft_date is not None
+            and after.draft_date is not None
+            and after.draft_date > before.draft_date
+            and item.comparison_evidence is not None
+            and item.text_evidence is not None
+            and _normalized(item.comparison_evidence.locator).rstrip(".")
+            == _normalized(item.text_evidence.locator).rstrip(".")
+            and _normalized(item.comparison_evidence.quote) != _normalized(item.text_evidence.quote)
+        )
+        if not supported:
+            unresolved.append(f"Commission outcome unconfirmed: {item.proposal}")
+        if item.text_change and not incorporated:
+            unresolved.append(f"Incorporation in project unconfirmed: {item.proposal}")
+        findings.append(
+            item.model_copy(
+                update={
+                    "outcome": checked.outcome if supported else "unknown",
+                    "respondent": item.respondent
+                    if supported
+                    and item.evidence is not None
+                    and _normalized(item.respondent) in _normalized(item.evidence.quote)
+                    else "",
+                    "reason": checked.reason if supported else "",
+                    "evidence": checked.evidence if supported else None,
+                    "text_change": item.text_change if incorporated else None,
+                    "text_evidence": item.text_evidence if incorporated else None,
+                    "comparison_evidence": item.comparison_evidence if incorporated else None,
+                }
+            )
+        )
+    return review.model_copy(
+        update={
+            "consultation_findings": (),
+            "effective_rules": (),
+            "commission_findings": tuple(findings),
+            "complete": review.complete
+            and bool(findings)
+            and not unresolved
+            and all(doc.complete for doc in context.documents),
+            "unresolved": tuple(dict.fromkeys(unresolved)),
+        }
+    )
 
 
 _MONTHS = (

@@ -119,6 +119,7 @@ class Poster:
         daily_hour: int = 18,
         delivery_attempts: set[int] | None = None,
         consultation_reviews_enabled: bool = False,
+        commission_reviews_enabled: bool = False,
     ) -> None:
         self._repo = repo
         self._publisher = publisher
@@ -137,6 +138,7 @@ class Poster:
         self._told_windows: dict[tuple[int, str, str, date], tuple[int, int]] = {}
         self._attempted = delivery_attempts if delivery_attempts is not None else set[int]()
         self._consultation_reviews_enabled = consultation_reviews_enabled
+        self._commission_reviews_enabled = commission_reviews_enabled
         self._sittings: dict[int, Publication] = {}
         self._updates: dict[int, Publication] = {}
 
@@ -1143,6 +1145,7 @@ class Poster:
             or kind
             in (
                 PublicationKind.CONSULTATION_REVIEW,
+                PublicationKind.COMMISSION_REVIEW,
                 PublicationKind.ACT_APPLICATION,
                 PublicationKind.EFFECTIVE_RULES,
             )
@@ -1197,14 +1200,29 @@ class Poster:
         return self.deliver(pub)
 
     def delivery_paused(self, pub: Publication) -> bool:
-        if self._consultation_reviews_enabled:
-            return False
         root = (
             self._repo.publication_by_id(pub.delivery.continuation_root)
             if pub.delivery is not None and pub.delivery.continuation_root is not None
             else pub
         )
-        return root is not None and root.kind is PublicationKind.CONSULTATION_REVIEW
+        if root is not None and root.kind is PublicationKind.DIGEST and root.id is not None:
+            identities = root.delivery.digest_parts if root.delivery else ()
+            return any(
+                self.delivery_paused(source)
+                for identity in identities or (root.id,)
+                for source in self._repo.digest_sources(identity)
+                if source.status is not PublicationStatus.SENT
+            )
+        return root is not None and (
+            (
+                root.kind is PublicationKind.CONSULTATION_REVIEW
+                and not self._consultation_reviews_enabled
+            )
+            or (
+                root.kind is PublicationKind.COMMISSION_REVIEW
+                and not self._commission_reviews_enabled
+            )
+        )
 
     def deliver(self, pub: Publication) -> bool:
         if pub.status is PublicationStatus.SENT:

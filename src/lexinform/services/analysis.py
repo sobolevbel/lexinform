@@ -17,8 +17,10 @@ from typing import Literal
 from pydantic import BaseModel
 
 from lexinform.analysis_records import RecordFactory, UsageFields
+from lexinform.commission_reviews import commission_text_matches
 from lexinform.concurrency import fan_out
 from lexinform.document_selection import selection_for_input
+from lexinform.document_versions import draft_version
 from lexinform.errors import (
     BatchNotSubmittedError,
     DocumentSelectionError,
@@ -259,6 +261,7 @@ class AnalysisOptions:
     batch_sync_within_days: int = 0
     batch_kinds: frozenset[BatchKind] = frozenset({"analysis", "reanalysis"})
     consultation_reviews_enabled: bool = False
+    commission_reviews_enabled: bool = False
     batch_models: dict[BatchKind, str] = field(default_factory=dict)
     batch_max_wait: timedelta = timedelta(hours=6)
     change_review_max_ratio: float = 0.15
@@ -480,8 +483,14 @@ class AnalysisService:
         committed += sum(
             intent.request.estimated_cost_usd
             for intent in self._repo.list_queued_batch_intents()
-            if intent.request.question.kind != "consultation_review"
-            or self._options.consultation_reviews_enabled
+            if (
+                intent.request.question.kind != "consultation_review"
+                or self._options.consultation_reviews_enabled
+            )
+            and (
+                intent.request.question.kind != "commission_review"
+                or self.review_enabled("commission_review")
+            )
         )
         committed += sum(
             intent.request.estimated_cost_usd
@@ -690,6 +699,10 @@ class AnalysisService:
             i
             for i in intents
             if i.request.question.kind != "act_application"
+            and (
+                i.request.question.kind != "commission_review"
+                or self.review_enabled("commission_review")
+            )
             and (
                 i.request.question.kind != "consultation_review"
                 or self._options.consultation_reviews_enabled
@@ -929,7 +942,7 @@ class AnalysisService:
         elif item.call_kind == "joint" and isinstance(result.answer, JointComparison):
             record = records.joint(result.answer, compared_with=meta.compared_with)
         elif (
-            item.call_kind in ("consultation_review", "act_application")
+            item.call_kind in ("consultation_review", "commission_review", "act_application")
             and isinstance(result.answer, DocumentReview)
             and meta.review_context is not None
         ):
@@ -1509,9 +1522,12 @@ class AnalysisService:
 
     def review_enabled(self, purpose: ReviewPurpose) -> bool:
         return (
-            purpose == "consultation_review"
-            and self._options.consultation_reviews_enabled
-            and purpose in self._options.batch_kinds
+            purpose in self._options.batch_kinds
+            and {
+                "consultation_review": self._options.consultation_reviews_enabled,
+                "commission_review": self._options.commission_reviews_enabled,
+                "act_application": False,
+            }[purpose]
         )
 
     def review_context(
@@ -1523,13 +1539,34 @@ class AnalysisService:
         if not self.review_enabled(purpose):
             return None
         sources: list[ReviewDocument] = []
-        for outcome in fan_out(
-            documents, self._read_review_document, workers=self._options.workers
+        for requested, outcome in zip(
+            documents,
+            fan_out(documents, self._read_review_document, workers=self._options.workers),
+            strict=True,
         ):
             source = outcome.result()
             if source is not None:
                 sources.append(source)
+            elif purpose == "commission_review":
+                sources.append(
+                    ReviewDocument(
+                        identity=requested.identity,
+                        url=requested.document.url,
+                        role=requested.role,
+                        text="",
+                        sha256="",
+                        normalized_sha256="",
+                        complete=False,
+                        author=requested.author,
+                    )
+                )
         if not any(source.text.strip() for source in sources):
+            return None
+        if purpose == "commission_review" and not any(
+            source.complete
+            and source.role in {"commission_position", "commission_response", "commission_minutes"}
+            for source in sources
+        ):
             return None
         act = bill.act
         return ReviewContext(
@@ -1554,14 +1591,20 @@ class AnalysisService:
         if source.snapshot is not None:
             return source.snapshot
         document = source.document
-        file = self._loader.read_document(document)
+        if document.compare_versions:
+            document, file = self._loader.select_document(document)
+        else:
+            file = self._loader.read_document(document)
         text = file.text or ""
         if source.expected_digest is not None and text_digest(text) != source.expected_digest:
             return None
+        if not commission_text_matches(source.role, text):
+            return None
         return ReviewDocument(
-            identity=source.identity,
+            identity=source.identity if document.url == source.document.url else document.url,
             url=document.url,
             role=source.role,
+            draft_date=draft_version(text),
             text=text,
             sha256=hashlib.sha256(text.encode()).hexdigest(),
             normalized_sha256=text_digest(text),
@@ -1584,14 +1627,14 @@ class AnalysisService:
         if (
             context.purpose == "consultation_review"
             and not self._options.consultation_reviews_enabled
-        ):
+        ) or (context.purpose == "commission_review" and not self.review_enabled(context.purpose)):
             return Waiting(self._clock.now())
         key = context.memo_key(bill.term)
-        retained = (
-            bill.consultation_review
-            if context.purpose == "consultation_review"
-            else bill.act_application_review
-        )
+        retained = {
+            "consultation_review": bill.consultation_review,
+            "commission_review": bill.commission_review,
+            "act_application": bill.act_application_review,
+        }[context.purpose]
         if retained is not None and retained.context.memo_key(bill.term) == key:
             self._remember_analysis(bill, key, retained)
             return _reused(retained)

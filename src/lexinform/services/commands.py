@@ -493,7 +493,11 @@ class CommandService:
             notes.extend(
                 f"document review {record.review.purpose}: complete={record.review.complete}"
                 f" · unresolved={len(record.review.unresolved)}"
-                for record in (bill.consultation_review, bill.act_application_review)
+                for record in (
+                    bill.consultation_review,
+                    bill.commission_review,
+                    bill.act_application_review,
+                )
                 if record is not None
             )
             return CommandOutcome(

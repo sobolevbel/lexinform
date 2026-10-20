@@ -1083,6 +1083,58 @@ class MessageFormatter:
         blocks.append(self._steps_block(bill, today or self._today()))
         return RenderedMessage(text=self._reader_blocks(blocks))
 
+    def commission_review(self, bill: Bill, *, today: dt.date | None = None) -> RenderedMessage:
+        record = bill.commission_review
+        if record is None:
+            raise ValueError("commission review is unavailable")
+        lb = self._labels
+        blocks = [self._reply_header(ICON["consultation"], lb.commission_review_header, bill)]
+        for finding in record.review.commission_findings:
+            lines = [f"<b>{esc(lb.commission_proposal)}:</b> {esc(finding.proposal)}"]
+            if finding.practical_impact:
+                lines.append(f"<b>{esc(lb.commission_impact)}:</b> {esc(finding.practical_impact)}")
+            if finding.affected_groups:
+                lines.append(f"{esc(lb.affected)}: {esc('; '.join(finding.affected_groups))}")
+            lines.append(esc(lb.consultation_outcomes[finding.outcome]))
+            if finding.respondent:
+                lines.append(esc(finding.respondent))
+            if finding.reason:
+                lines.append(esc(finding.reason))
+            lines.append(
+                f"{esc(lb.commission_incorporation)}: {esc(finding.text_change)}"
+                if finding.text_change
+                else esc(lb.consultation_text_unconfirmed)
+            )
+            for evidence in (
+                finding.proposal_evidence,
+                finding.evidence,
+                finding.comparison_evidence,
+                finding.text_evidence,
+            ):
+                if evidence is None:
+                    continue
+                source = next(
+                    (
+                        doc
+                        for doc in record.context.documents
+                        if doc.identity == evidence.document_id
+                    ),
+                    None,
+                )
+                if source is not None:
+                    label = evidence.locator
+                    if source.draft_date is not None:
+                        label += f" · {self.fmt_date(source.draft_date)}"
+                    reference = link(source.url, label)
+                    if reference not in lines:
+                        lines.append(reference)
+            blocks.append("\n".join(lines))
+        if not record.review.complete:
+            blocks.append(esc(lb.document_review_incomplete))
+        blocks.append(self._steps_block(bill, today or self._today()))
+        blocks.append(self._tags(bill))
+        return RenderedMessage(text=self._reader_blocks(blocks))
+
     def act_application(self, bill: Bill, *, today: dt.date | None = None) -> RenderedMessage:
         record = bill.act_application_review
         if record is None:
@@ -1474,6 +1526,7 @@ class MessageFormatter:
                     ("consultation reminders: {}", report.consultation_reminders),
                     ("results: {}", report.consultation_results_posted),
                     ("consultation review messages: {}", report.consultation_reviews_posted),
+                    ("commission review messages: {}", report.commission_reviews_posted),
                     ("act review messages: {}", report.act_reviews_posted),
                     ("effective-rule messages: {}", report.effective_rule_messages),
                     ("amendment messages updated: {}", report.amendment_messages_updated),
@@ -1830,6 +1883,7 @@ class MessageFormatter:
             PublicationKind.IN_FORCE: lb.in_force_header,
             PublicationKind.CONSULTATION_RESULTS: lb.consultation_results_header,
             PublicationKind.CONSULTATION_REVIEW: lb.consultation_review_header,
+            PublicationKind.COMMISSION_REVIEW: lb.commission_review_header,
             PublicationKind.ACT_APPLICATION: lb.act_application_header,
             PublicationKind.EFFECTIVE_RULES: lb.act_application_header,
             PublicationKind.DECISION_DEADLINE: lb.digest_organ_deadline,
@@ -2149,6 +2203,8 @@ class MessageFormatter:
             return self.act_published(bill).text
         if kind is PublicationKind.CONSULTATION_RESULTS:
             return self.consultation_results(bill).text
+        if kind is PublicationKind.COMMISSION_REVIEW:
+            return self.commission_review(bill, today=plan.today).text
         if kind is PublicationKind.CONSULTATION_REVIEW:
             return self.consultation_review(bill, today=plan.today).text
         if kind in (PublicationKind.ACT_APPLICATION, PublicationKind.EFFECTIVE_RULES):

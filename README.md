@@ -92,6 +92,15 @@ is saved for the weekly digest. A changed draft or a participation deadline keep
 The current legal commission's draft may be filed directly in its catalog, outside any folder;
 invitations, minutes and privacy notices never stand in for the draft.
 
+RCL legal commission remarks have a separate, optional batch review (`commission_review`).
+Enable it with both `LEXINFORM_COMMISSION_REVIEWS_ENABLED=true` and `commission_review` in
+`LEXINFORM_LLM_BATCH_KINDS`; it uses `LEXINFORM_LLM_ANALYSIS_MODEL`. The default is off.
+New commission documents trigger a review of the remark, the recorded response and its
+practical effect. Acceptance needs an exact official decision citation; incorporation needs
+dated before/after draft citations. Unsupported outcomes stay unknown. Invitations alone do
+not trigger analysis, and existing history is not backfilled. Paused consultation reviews stay
+independent. Word comments and corrections available only inside draft attachments are not yet read.
+
 Every update is named after its event ("Сейм принял закон", "Направлен в комиссии", "Сенат внёс
 поправки"), lists the new stages in the reader's language and repeats one sentence of the
 summary (the whole text only when the analysis changed). Stages that only frame an event
