@@ -716,6 +716,7 @@ RU = Labels(
         "abandoned": "Проект больше не отслеживается",
         "discontinued": "Проект прекращён с концом каденции",
         "rcl_stage": "Новая стадия на RCL",
+        "rcl_legal_commission": "Юридическая проверка проекта",
         "consultation_opened": "Открылись публичные консультации",
         "rcl_to_sejm": "Проект направлен в Сейм",
         "rcl_closed": "Проект закрыт на RCL",
@@ -836,6 +837,10 @@ RU = Labels(
         "rcl_committees": (
             "комитеты Совета министров и Komisja Prawnicza, затем Rada Ministrów и направление"
             " в Сейм"
+        ),
+        "rcl_legal_commission": (
+            "завершение юридической проверки и подтверждение текста в Stały Komitet Rady Ministrów,"
+            " затем рассмотрение Советом министров"
         ),
         "rcl_council": "принятие Радой министров, затем направление в Сейм и номер druku",
         "rcl_to_sejm": "присвоение номера druku в Сейме, затем I чтение",
@@ -961,6 +966,9 @@ RU = Labels(
         "rcl_consultation": "пока ничего — консультации по проекту уже закрыты",
         "rcl_opinions": "пока ничего — проект проходит согласования внутри правительства",
         "rcl_committees": "пока ничего — проект в комитетах Совета министров",
+        "rcl_legal_commission": (
+            "новое окно участия не подтверждено; следим за итогами юридической проверки"
+        ),
         "rcl_council": "пока ничего — проект ждёт принятия Радой министров",
         "rcl_to_sejm": "пока ничего — ждём номер druku, затем I чтение и комиссия",
     },
@@ -1465,6 +1473,7 @@ EN = Labels(
         "abandoned": "Bill no longer followed",
         "discontinued": "Bill lapsed with the end of the term",
         "rcl_stage": "New stage on RCL",
+        "rcl_legal_commission": "Legal review of the draft",
         "consultation_opened": "The public consultation is open",
         "rcl_to_sejm": "Sent to the Sejm",
         "rcl_closed": "Project closed on RCL",
@@ -1590,6 +1599,11 @@ EN = Labels(
             "committees of the Council of Ministers and Komisja Prawnicza, then the Council and"
             " submission to the Sejm"
         ),
+        "rcl_legal_commission": (
+            "completion of legal review and confirmation of the text by"
+            " Stały Komitet Rady Ministrów,"
+            " then consideration by the Council of Ministers"
+        ),
         "rcl_council": "adoption by the Council of Ministers, then the Sejm and a print number",
         "rcl_to_sejm": "print number assignment in the Sejm, then the first reading",
     },
@@ -1681,6 +1695,9 @@ EN = Labels(
         "rcl_consultation": "nothing yet — the consultation on this draft has closed",
         "rcl_opinions": "nothing yet — the draft is being agreed inside the government",
         "rcl_committees": "nothing yet — the draft is with the Council of Ministers' committees",
+        "rcl_legal_commission": (
+            "no new participation window is confirmed; awaiting the results of legal review"
+        ),
         "rcl_council": "nothing yet — the draft awaits adoption by the Council of Ministers",
         "wykaz_to_rcl": (
             "nothing yet — waiting for the draft on RCL, which opens the consultation"

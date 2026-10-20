@@ -87,6 +87,11 @@ waits up to one hour from detection for a combined update, then is released on t
 run. Consultations opening, hearings, urgent bills and nearby participation deadlines are told
 immediately. New cards, substantive text changes, decisions and legal deadlines keep separate posts.
 
+With reader attention `on`, reaching Komisja Prawnicza without a confirmed substantive change
+is saved for the weekly digest. A changed draft or a participation deadline keeps its own update.
+The current legal commission's draft may be filed directly in its catalog, outside any folder;
+invitations, minutes and privacy notices never stand in for the draft.
+
 Every update is named after its event ("Сейм принял закон", "Направлен в комиссии", "Сенат внёс
 поправки"), lists the new stages in the reader's language and repeats one sentence of the
 summary (the whole text only when the analysis changed). Stages that only frame an event

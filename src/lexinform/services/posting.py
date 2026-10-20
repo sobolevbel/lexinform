@@ -57,7 +57,15 @@ Send = Callable[[int | None], int]
 
 UPDATE_ANALYSIS_WAIT = timedelta(hours=1)
 ROUNDUP_EVENTS = frozenset(
-    {"rcl_stage", "referral", "referrals", "committee_report", "subcommittee_report", "signed"}
+    {
+        "rcl_stage",
+        "rcl_legal_commission",
+        "referral",
+        "referrals",
+        "committee_report",
+        "subcommittee_report",
+        "signed",
+    }
 )
 
 
@@ -1333,6 +1341,7 @@ class Poster:
             kind,
             plan.attention,
             phase=phase,
+            change=StatusChange.model_validate_json(plan.change_json) if plan.change_json else None,
             today=self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date(),
         )
         if reason and self._attention_mode != "off":

@@ -15,6 +15,7 @@ from lexinform.models import (
     Stage,
     StatusChange,
     TextSource,
+    next_phase,
     process_summary,
     rcl_stages,
 )
@@ -25,6 +26,58 @@ from tests.harness import CONSULTATION_LETTER, RCL_CONSULTATION, rcl_project, rc
 NOW = dt.datetime(2026, 9, 7, tzinfo=dt.UTC)
 TODAY = dt.date(2026, 9, 7)
 COMMENT_FORM = "https://legislacja.rcl.gov.pl/projekt/12414100/komentarz"
+
+
+@pytest.mark.parametrize("language", ["ru", "en"])
+def test_legal_review_names_the_next_step_without_repeating_closed_consultations(
+    language: str,
+) -> None:
+    project = rcl_project(stages=(rcl_stage(10, "Komisja Prawnicza", "active"),))
+    bill = rcl_bill(project)
+    today = dt.date(2026, 10, 20)
+    change = StatusChange(
+        term=bill.term,
+        number=bill.number,
+        old_fingerprint="old",
+        new_fingerprint="legal-review",
+        new_stages=list(bill.stages),
+        detected_at=NOW,
+    )
+
+    phase = next_phase(bill, today=today)
+    formatter = MessageFormatter(language)
+    text = formatter.status_update(bill, change, today=today).text
+    card = formatter.new_bill(bill, None, today=today).text
+
+    assert phase is not None and phase.key == "rcl_legal_commission"
+    assert_telegram_html(text)
+    assert "Stały Komitet Rady Ministrów" in text
+    assert "1–3" not in text and "ePUAP" not in text
+    if language == "ru":
+        assert "Общественные консультации" not in text
+        assert "новое окно участия не подтверждено" in text
+        assert "Общественные консультации" in card
+    else:
+        assert "Public consultation" not in text
+        assert "no new participation window is confirmed" in text
+
+
+def test_new_text_during_legal_review_leads_with_the_substantive_event() -> None:
+    project = rcl_project(stages=(rcl_stage(10, "Komisja Prawnicza", "active"),))
+    bill = rcl_bill(project)
+    change = StatusChange(
+        term=bill.term,
+        number=bill.number,
+        old_fingerprint="old",
+        new_fingerprint="new-text",
+        new_stages=list(bill.stages),
+        content_changed=True,
+        detected_at=NOW,
+    )
+
+    text = MessageFormatter("ru").status_update(bill, change, today=TODAY).text
+
+    assert "<b>Новая версия текста — UC164</b>" in text
 
 
 @pytest.mark.parametrize("language", ["ru", "en"])

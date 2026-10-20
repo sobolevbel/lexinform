@@ -257,11 +257,17 @@ class RclTextSource:
         stage = next(
             st
             for st in reversed(project.reached_stages)
-            if any(d.id == main.id for d in st.documents("project"))
+            if any(d.id == main.id for d in project.stage_documents(st))
         )
-        available = [d for d in stage.documents("project") if d.readable]
+        available = [d for d in project.stage_documents(stage) if d.readable]
 
         def candidate(doc: RclDocument) -> TextDocument:
+            source_stage = next(
+                st
+                for st in reversed(project.reached_stages)
+                if any(d.id == doc.id for d in project.stage_documents(st))
+            )
+            source_documents = [d for d in project.stage_documents(source_stage) if d.readable]
             extras = tuple(
                 min(
                     matches,
@@ -275,7 +281,7 @@ class RclTextSource:
                 if (
                     matches := [
                         d
-                        for d in available
+                        for d in source_documents
                         if text_role(d.name) == role
                         and d.id != doc.id
                         and d.created == doc.created
@@ -289,7 +295,7 @@ class RclTextSource:
                 compare_versions=True,
                 normative_urls=tuple(
                     d.url
-                    for d in available
+                    for d in source_documents
                     if d.id != doc.id
                     and d.created == doc.created
                     and normative_name(d.name)
@@ -300,7 +306,7 @@ class RclTextSource:
                     dict.fromkeys(
                         d.url
                         for st in project.reached_stages
-                        for d in st.documents("project")
+                        for d in project.stage_documents(st)
                         if d.readable
                         and d.id != doc.id
                         and "autopoprawka" in d.name.casefold()
@@ -308,7 +314,7 @@ class RclTextSource:
                         and (doc.created is None or d.created is None or d.created >= doc.created)
                     )
                 ),
-                version_basis=(f"rcl/{project.id}/stage/{stage.id}", doc.name),
+                version_basis=(f"rcl/{project.id}/stage/{source_stage.id}", doc.name),
                 official_link_conflict=_rcl_link_conflict(project, doc),
             )
 
@@ -318,6 +324,20 @@ class RclTextSource:
             if d.id != main.id
             and (text_role(d.name) == "bill" or "autopoprawka" in d.name.casefold())
         )
+        if any(doc.id == main.id for doc in stage.loose_documents or ()):
+            filed = project.model_copy(
+                update={
+                    "stages": tuple(
+                        st.model_copy(update={"loose_documents": ()}) for st in project.stages
+                    )
+                }
+            ).text_documents()
+            previous = filed.get("bill")
+            if previous is not None and previous.url not in {
+                main.url,
+                *(doc.url for doc in alternatives),
+            }:
+                alternatives = (*alternatives, candidate(previous))
         return LocatedText(
             document=candidate(main).model_copy(update={"alternatives": alternatives})
         )

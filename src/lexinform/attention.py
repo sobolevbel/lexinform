@@ -22,6 +22,7 @@ from lexinform.models import (
 ROUTINE_EVENTS = frozenset(
     {
         "rcl_stage",
+        "rcl_legal_commission",
         "referral",
         "referrals",
         "committee_report",

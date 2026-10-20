@@ -308,6 +308,40 @@ def test_no_readable_document_means_no_text() -> None:
     assert _project(_stage(3, "Konsultacje publiczne", "reached", folder)).text_documents() == {}
 
 
+@pytest.mark.parametrize(
+    "name",
+    [
+        "KP - RCL - zaproszenie na KP - projekt ustawy.pdf",
+        "KP - RCL - protokół - projekt ustawy.pdf",
+        "Uwagi do projektu ustawy.docx",
+        "Stanowisko - projekt ustawy.docx",
+        "Załącznik do zaproszenia - klauzula informacyjna.pdf",
+        "4. OSR na KP.zip",
+    ],
+)
+def test_unfiled_procedural_documents_never_replace_the_bill(name: str) -> None:
+    earlier = _stage(
+        9,
+        "Stały Komitet Rady Ministrów",
+        "reached",
+        RclFolder(id=90, name="Projekt", documents=(_doc(1, "Projekt ustawy.docx"),)),
+    )
+    legal = _stage(10, "Komisja Prawnicza", "active").model_copy(
+        update={"loose_documents": (_doc(2, name),)}
+    )
+
+    assert _project(earlier, legal).text_documents()["bill"].id == 1
+
+
+def test_a_draft_ratifying_a_protocol_is_not_the_commissions_minutes() -> None:
+    draft = _doc(1, "Projekt ustawy o ratyfikacji Protokołu.docx")
+    legal = _stage(10, "Komisja Prawnicza", "active").model_copy(
+        update={"loose_documents": (draft,)}
+    )
+
+    assert _project(legal).text_documents()["bill"] == draft
+
+
 def test_fingerprint_changes_on_stage_progress_first_documents_new_text_and_sejm() -> None:
     empty = RclFolder(id=10, name="Stanowiska zgłoszone w ramach konsultacji publicznych")
     base = _project(_stage(3, "Konsultacje publiczne", "active", empty))

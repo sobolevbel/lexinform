@@ -332,7 +332,15 @@ def parse_stage_catalog(html: str, stage_id: int, *, base_url: str = RCL_BASE_UR
         folders.append(RclFolder(id=folder_id, name=name, modified=modified, documents=documents))
     # The catalog page is the only place `catalog_read` is set: a stage that came from the
     # timeline carries the folders nobody has looked for, which is not the same as none.
-    return stage.model_copy(update={"folders": tuple(folders), "catalog_read": True})
+    filed = {doc.id for folder in folders for doc in folder.documents}
+    loose = tuple(
+        doc
+        for li in node.select("li.doc")
+        if (doc := _parse_document(li, base_url)) is not None and doc.id not in filed
+    )
+    return stage.model_copy(
+        update={"folders": tuple(folders), "loose_documents": loose, "catalog_read": True}
+    )
 
 
 def _soup(html: str) -> BeautifulSoup:

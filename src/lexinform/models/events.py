@@ -120,6 +120,8 @@ def update_event(change: StatusChange, bill: Bill) -> str:
     ):
         return "decision_unknown"
     if named is not None:
+        if named in {"rcl_stage", "rcl_legal_commission"} and change.content_changed:
+            return "text_changed"
         return named
     if change.consultation_opened:
         # The letter can arrive under a stage the timeline already showed as reached, and then
@@ -262,6 +264,8 @@ def _stage_event(stage: Stage) -> str | None:
     """
     kind = stage.stage_type
     if kind == RCL_STAGE_TYPE:
+        if "komisja prawnicza" in stage.stage_name.lower():
+            return "rcl_legal_commission"
         return "rcl_to_sejm" if "sejm" in stage.stage_name.lower() else "rcl_stage"
     if kind == "Referral":
         return "referral_plenary" if stage.committee_code == "Sejm" else "referral"

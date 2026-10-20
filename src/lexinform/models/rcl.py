@@ -128,6 +128,8 @@ class RclStage(BaseModel):
     ended: dt.date | None = None
     modified: dt.date | None = None
     folders: tuple[RclFolder, ...] = ()
+    loose_documents: tuple[RclDocument, ...] | None = None
+    """None marks a legacy catalog not yet checked for unfiled documents."""
     catalog_read: bool = False
 
     @property
@@ -141,6 +143,10 @@ class RclStage(BaseModel):
     @property
     def is_sejm(self) -> bool:
         return "do sejmu" in self.name.lower()
+
+    @property
+    def is_legal_commission(self) -> bool:
+        return "komisja prawnicza" in self.name.lower()
 
     @property
     def group(self) -> StageGroup:
@@ -159,6 +165,21 @@ class RclStage(BaseModel):
     def documents(self, kind: FolderKind) -> tuple[RclDocument, ...]:
         folder = self.folder(kind)
         return folder.documents if folder else ()
+
+    def project_documents(self) -> tuple[RclDocument, ...]:
+        """Unfiled files need an explicit text role; invitations and minutes are not bill text."""
+        loose = tuple(
+            doc
+            for doc in self.loose_documents or ()
+            if not re.search(
+                r"(?:^|[-_])\s*(?:zaproszen|protok[oó][łl]|uwagi|stanowisk)", doc.name, re.I
+            )
+            and (
+                (_names_a_bill(doc.name) and re.search(r"\bprojekt\b", doc.name, re.I))
+                or text_role(doc.name) in {"justification", "osr"}
+            )
+        )
+        return self.documents("project") + (loose if "bill" in _classify(list(loose)) else ())
 
     def consultation_letter(self) -> RclDocument | None:
         """The pismo kierujące projekt do konsultacji, wherever the ministry filed it.
@@ -310,7 +331,9 @@ class RclProject(BaseModel):
     def without_documents(self) -> RclProject:
         """The skeleton kept for a project the pipeline gave up on: timeline, metadata and the
         consultation, but no folders or documents (most of the bytes, never read again)."""
-        stages = tuple(st.model_copy(update={"folders": ()}) for st in self.stages)
+        stages = tuple(
+            st.model_copy(update={"folders": (), "loose_documents": ()}) for st in self.stages
+        )
         return self.model_copy(update={"stages": stages})
 
     def text_documents(self) -> dict[TextRole, RclDocument]:
@@ -321,10 +344,16 @@ class RclProject(BaseModel):
         DOCX when a file is published in both formats.
         """
         for stage in reversed(self.reached_stages):
-            documents = [d for d in stage.documents("project") if d.readable]
+            documents = [d for d in self.stage_documents(stage) if d.readable]
             if documents:
                 return _classify(documents)
         return {}
+
+    def stage_documents(self, stage: RclStage) -> tuple[RclDocument, ...]:
+        current = self.current_stage
+        if current is not None and current.id == stage.id and current.is_legal_commission:
+            return stage.project_documents()
+        return stage.documents("project")
 
 
 def _classify(documents: list[RclDocument]) -> dict[TextRole, RclDocument]:

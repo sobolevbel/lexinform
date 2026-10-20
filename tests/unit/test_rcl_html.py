@@ -211,6 +211,17 @@ def test_stage_catalog_lists_folders_and_documents() -> None:
         "Minister Spraw Wewnętrznych i Administracji",
     )
     assert stage.documents("positions") == ()
+    assert stage.loose_documents == ()
+
+
+def test_legal_commission_catalog_keeps_documents_outside_folders() -> None:
+    stage = parse_stage_catalog(_page("katalog_13179001.html"), 13179001)
+
+    assert stage.is_legal_commission and stage.catalog_read
+    assert stage.folders == () and stage.loose_documents is not None
+    assert [doc.id for doc in stage.loose_documents] == [802925, 802926, 802927]
+    assert [doc.id for doc in stage.project_documents()] == [802926]
+    assert all(doc.created == date(2026, 10, 19) for doc in stage.loose_documents)
 
 
 def test_stage_catalog_of_an_unknown_stage_is_a_page_error() -> None:

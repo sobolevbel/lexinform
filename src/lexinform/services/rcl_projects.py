@@ -46,7 +46,7 @@ class RclProjectReader:
         for stage in list(reversed(project.reached_stages))[:TEXT_STAGE_ATTEMPTS]:
             read = self._rcl.get_stage(project.id, stage.id)
             project = project.with_stage(read)
-            if any(d.readable for d in read.documents("project")):
+            if any(d.readable for d in project.stage_documents(read)):
                 break
         return project
 
@@ -74,7 +74,12 @@ class RclProjectReader:
             # A project read for its newest text alone kept every other catalog closed for the
             # life of the row — the consultation letter among them — because this branch took the
             # timeline's own copy for a reading of the catalog.
-            if before is not None and before.catalog_read and before.modified == stage.modified:
+            if (
+                before is not None
+                and before.catalog_read
+                and (not stage.is_legal_commission or before.loose_documents is not None)
+                and before.modified == stage.modified
+            ):
                 project = project.with_stage(before)
             else:
                 project = project.with_stage(self._rcl.get_stage(stored.id, stage.id))

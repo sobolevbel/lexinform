@@ -716,6 +716,13 @@ class MessageFormatter:
         )
         closure = self._closure_line(bill, change, event)
         consultation = self._consultation_line(bill, today)
+        if (
+            bill.rcl is not None
+            and bill.rcl.current_stage is not None
+            and bill.rcl.current_stage.is_legal_commission
+            and not consultation_open(bill, today)
+        ):
+            consultation = ""
         # Terminal updates explain the outcome once, even when no new closure date arrives.
         over = (
             change.withdrawn
@@ -3127,6 +3134,12 @@ class MessageFormatter:
         lb = self._labels
         window = bill.consultation
         open_now = consultation_open(bill, today)
+        if (
+            not open_now
+            and project.current_stage is not None
+            and project.current_stage.is_legal_commission
+        ):
+            return []
         actions: list[str] = []
         if window is not None and window.email and open_now:
             polish = lb.action_in_polish.format(wykaz=project.wykaz_number or project.number)

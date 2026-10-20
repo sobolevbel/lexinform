@@ -142,6 +142,7 @@ PHASE_PATIENCE = {
     "rcl_opinions": 150,
     "rcl_council": 90,
     "rcl_committees": 120,
+    "rcl_legal_commission": 120,
     "wykaz": 210,
     "committee_work": 400,
 }
@@ -607,6 +608,8 @@ def _rcl_phase(bill: Bill, today: dt.date) -> Phase | None:
     if window is not None and _consulting(project, window, today):
         return Phase(key="rcl_consultation", date=window.end)
     current = project.current_stage
+    if current is not None and current.is_legal_commission:
+        return Phase(key="rcl_legal_commission")
     group = current.group if current else "opinions"
     return Phase(key=f"rcl_{group}")
 
