@@ -149,6 +149,10 @@ class RclStage(BaseModel):
         return "komisja prawnicza" in self.name.lower()
 
     @property
+    def is_review_body(self) -> bool:
+        return bool(re.search(r"komisj|komitet|rada legislacyjna|zespół", self.name, re.I))
+
+    @property
     def group(self) -> StageGroup:
         name = self.name.lower()
         if self.is_sejm:

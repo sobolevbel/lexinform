@@ -901,6 +901,10 @@ class BillRepository(Protocol):
         """Record which documents filed to the print the channel now knows about."""
         ...
 
+    def save_committee_documents(
+        self, term: int, number: str, sources: tuple[ReviewSource, ...]
+    ) -> None: ...
+
     def save_joint_comparison(self, term: int, number: str, record: JointRecord) -> None:
         """Store how this print differs from the others considered jointly with it."""
         ...

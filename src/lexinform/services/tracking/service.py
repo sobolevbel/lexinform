@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from lexinform.commission_reviews import filed_commission_sources
 from lexinform.concurrency import fan_out
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
@@ -157,7 +158,6 @@ def _rcl_watcher(
     analysis: AnalysisService | None,
     consultations: ConsultationReminder | None,
     options: TrackingOptions,
-    reviews: DocumentReviews | None,
 ) -> RclWatcher | None:
     if reader is None:
         return None
@@ -170,7 +170,6 @@ def _rcl_watcher(
         gateway,
         analysis=analysis,
         consultations=consultations,
-        reviews=reviews,
         local_tz=options.local_tz,
         workers=options.workers,
     )
@@ -343,7 +342,6 @@ class StatusTrackingService:
             analysis,
             consultations,
             options,
-            document_reviews,
         )
         self._wykaz = _wykaz_watcher(wykaz, rcl_reader, repo, clock, poster, analysis, options)
         self._agenda = _agenda_watcher(gateway, repo, clock, poster, enricher, options)
@@ -446,6 +444,9 @@ class StatusTrackingService:
             return self._finish(result)
         self._check_processes(one, result, publish=publish, may_wait=False)
         self._retry_documents(result, publish=publish, may_wait=False)
+        if result.fatal_error is None and self._document_reviews is not None:
+            self._document_reviews.observe_commissions(one, result)
+            self._document_reviews.advance(result, publish=publish)
         self._flush_updates(result, publish=publish)
         if result.fatal_error is None:
             self._cards.refresh(one, result, publish=publish)
@@ -609,6 +610,7 @@ class StatusTrackingService:
         if publish:
             self._remind(everyone, result)
         if result.fatal_error is None and self._document_reviews is not None:
+            self._document_reviews.observe_commissions(everyone, result)
             self._document_reviews.advance(result, publish=publish)
         if result.fatal_error is None:
             self._cards.refresh(everyone, result, publish=publish)
@@ -979,6 +981,9 @@ class StatusTrackingService:
         them twice."""
         if print_info is None:
             return
+        sources = filed_commission_sources(print_info)
+        if sources != bill.committee_documents:
+            self._repo.save_committee_documents(bill.term, bill.number, sources)
         filed = tuple(p.number for p in print_info.additional_prints)
         if filed != bill.seen_supplements:
             self._repo.save_seen_supplements(bill.term, bill.number, filed)

@@ -30,7 +30,6 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.services.analysis import AnalysisService
-from lexinform.services.document_reviews import DocumentReviews
 from lexinform.services.posting import Poster
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.sources import RclTextSource, print_of_project
@@ -57,7 +56,6 @@ class RclWatcher:
         consultations: ConsultationReminder | None,
         local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
         workers: int = 1,
-        reviews: DocumentReviews | None = None,
     ) -> None:
         self._reader = reader
         self._repo = repo
@@ -71,7 +69,6 @@ class RclWatcher:
         self._local_tz = local_tz
         self._texts = RclTextSource()
         self._workers = workers
-        self._reviews = reviews
 
     def check(
         self,
@@ -210,8 +207,6 @@ class RclWatcher:
     ) -> StatusChange | None:
         """Source observations advance only with their delivery work after network preparation."""
         fresh = bill
-        stored = bill.rcl
-        assert stored is not None
         content_changed = False
         document = self._texts.locate(bill.model_copy(update={"rcl": project})).document
         if bill.status is BillStatus.REANALYSIS_READY and bill.ready_analysis is not None:
@@ -242,30 +237,6 @@ class RclWatcher:
             self._repo.save_stages(bill.term, bill.number, stages, new_fp)
             change = self._detect_change(bill, project, stages, new_fp, content_changed)
             fresh = self._repo.get(bill.term, bill.number) or bill
-            if (
-                deliver
-                and self._reviews is not None
-                and (
-                    fresh.commission_review is not None
-                    or any(work.purpose == "commission_review" for work in fresh.review_work)
-                    or any(
-                        stage.is_legal_commission
-                        and stage.reached
-                        and not any(
-                            prior.id == stage.id
-                            and prior.reached
-                            and prior.modified == stage.modified
-                            for prior in stored.stages
-                        )
-                        for stage in project.stages
-                    )
-                )
-            ):
-                self._reviews.request(
-                    fresh.model_copy(update={"analysis": bill.analysis}),
-                    "commission_review",
-                    result,
-                )
             if change is not None and deliver:
                 self._poster.prepare(fresh, change)
             if deliver and self._results_due(bill, project) and self._consultations is not None:

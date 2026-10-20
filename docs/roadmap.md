@@ -8,9 +8,9 @@
 
 ## Сейчас
 
-- Проверить качество первых batch-разборов замечаний Komisja Prawnicza:
+- Проверить качество первых batch-разборов документов комиссий RCL, Сейма и Сената:
   локальная реализация `commission_review` готова, включение отдельным флагом и batch kind;
-  по умолчанию выключено. [Охват и ограничения](plans/2026-10-13-message-usefulness-progress.md#замечания-komisja-prawnicza-20-октября).
+  по умолчанию выключено. [Охват и ограничения](plans/2026-10-13-message-usefulness-progress.md#общий-механизм-комиссий-21-октября).
 
 - Проверить эксплуатацию [исправлений выбора документов B97–B105](reviews/2026-10-17-document-selection-implementation.md):
   базовая реализация и offline corpus replay готовы; production и backfill отдельно.

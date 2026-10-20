@@ -92,8 +92,10 @@ part, preserve its payload and membership, and release only its covered held cha
 
 Document reviews use separate secondary batch purposes and exact source citations; participant
 positions never prove acceptance and project analyses never prove final-act applicability.
-RCL commission reviews keep the proposal, recorded decision and draft incorporation separate;
-decisions need a complete response paragraph or row, incorporation needs dated before/after
+Commission reviews across RCL, Sejm and Senate keep proposals, recommendations and decisions separate;
+Minority motions never prove a committee recommendation, nor committee reports a chamber decision.
+The first Sejm committee-material catalog seeds already seen print IDs without historical review work.
+Confirmed government outcomes need a complete response paragraph or row; incorporation needs dated before/after
 citations, and pending contexts and the original comparison snapshot stay immutable.
 Preserve pending review work, comparison snapshots and canonical history for the same ELI.
 Multipart deliveries freeze every physical part before the first attempt, wait for the saved

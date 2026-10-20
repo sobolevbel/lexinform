@@ -77,7 +77,7 @@ class RclProjectReader:
             if (
                 before is not None
                 and before.catalog_read
-                and (not stage.is_legal_commission or before.loose_documents is not None)
+                and (not stage.is_review_body or before.loose_documents is not None)
                 and before.modified == stage.modified
             ):
                 project = project.with_stage(before)

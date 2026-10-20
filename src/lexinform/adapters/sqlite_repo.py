@@ -55,6 +55,7 @@ from lexinform.models import (
     PublicationStatus,
     RclProject,
     ReadyAnalysis,
+    ReviewSource,
     ReviewWork,
     RunMode,
     RunReport,
@@ -491,6 +492,9 @@ MIGRATIONS: tuple[str, ...] = (
     CREATE UNIQUE INDEX ux_pub_commission_review ON publications(term, number, channel_id, ref)
       WHERE kind = 'commission_review';
     """,
+    """
+    ALTER TABLE bills ADD COLUMN committee_documents_json TEXT;
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -868,6 +872,14 @@ class SqliteBillRepository:
                 term,
                 number,
             ),
+        )
+
+    def save_committee_documents(
+        self, term: int, number: str, sources: tuple[ReviewSource, ...]
+    ) -> None:
+        self._conn.execute(
+            "UPDATE bills SET committee_documents_json = ? WHERE term = ? AND number = ?",
+            (json.dumps([source.model_dump(mode="json") for source in sources]), term, number),
         )
 
     def save_document_review(self, term: int, number: str, review: DocumentReviewRecord) -> None:
@@ -2915,6 +2927,12 @@ class SqliteBillRepository:
                 row["commission_review_json"]
             )
             if "commission_review_json" in columns and row["commission_review_json"]
+            else None,
+            committee_documents=tuple(
+                ReviewSource.model_validate(item)
+                for item in json.loads(row["committee_documents_json"])
+            )
+            if "committee_documents_json" in columns and row["committee_documents_json"]
             else None,
             consultation_review=DocumentReviewRecord.model_validate_json(
                 row["consultation_review_json"]

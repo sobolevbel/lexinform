@@ -1091,11 +1091,27 @@ class MessageFormatter:
         blocks = [self._reply_header(ICON["consultation"], lb.commission_review_header, bill)]
         for finding in record.review.commission_findings:
             lines = [f"<b>{esc(lb.commission_proposal)}:</b> {esc(finding.proposal)}"]
+            source = next(
+                (
+                    doc
+                    for doc in record.context.documents
+                    if finding.proposal_evidence is not None
+                    and doc.identity == finding.proposal_evidence.document_id
+                ),
+                None,
+            )
+            if source is not None and source.body:
+                lines.insert(0, f"<b>{esc(source.body)}</b>")
             if finding.practical_impact:
                 lines.append(f"<b>{esc(lb.commission_impact)}:</b> {esc(finding.practical_impact)}")
             if finding.affected_groups:
                 lines.append(f"{esc(lb.affected)}: {esc('; '.join(finding.affected_groups))}")
-            lines.append(esc(lb.consultation_outcomes[finding.outcome]))
+            if finding.recommendation:
+                lines.append(
+                    f"<b>{esc(lb.commission_recommendation)}:</b> {esc(finding.recommendation)}"
+                )
+            if finding.outcome != "unknown" or not finding.recommendation:
+                lines.append(esc(lb.consultation_outcomes[finding.outcome]))
             if finding.respondent:
                 lines.append(esc(finding.respondent))
             if finding.reason:
@@ -1108,6 +1124,7 @@ class MessageFormatter:
             for evidence in (
                 finding.proposal_evidence,
                 finding.evidence,
+                finding.recommendation_evidence,
                 finding.comparison_evidence,
                 finding.text_evidence,
             ):

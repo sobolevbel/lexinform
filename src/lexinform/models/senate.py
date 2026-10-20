@@ -72,6 +72,16 @@ class SenateCommittee(BaseModel):
         return f"{SENATE_BASE_URL}/prace/komisje-senackie/komisja,{self.id}.html"
 
 
+class SenateReviewDocument(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    url: str
+    title: str
+    body: str
+    role: Literal["commission_report", "commission_position"]
+    date: dt.date | None = None
+
+
 class SenateAct(BaseModel):
     """The act's own page under "Ustawy uchwalone przez Sejm", as last read."""
 
@@ -84,6 +94,7 @@ class SenateAct(BaseModel):
     committees: tuple[SenateCommittee, ...] = ()
     committee_sittings: tuple[dt.date, ...] = ()
     committee_work_completed: bool = False
+    review_documents: tuple[SenateReviewDocument, ...] = ()
 
     def next_committee_sitting(self, today: dt.date) -> dt.date | None:
         return min((d for d in self.committee_sittings if d >= today), default=None)

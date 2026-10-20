@@ -153,7 +153,8 @@ class Settings(BaseSettings):
         {"analysis", "reanalysis", "joint", "supplement", "amendments"}
     )
     commission_reviews_enabled: bool = Field(
-        default=False, description="Enable batch reviews of RCL legal commission documents."
+        default=False,
+        description="Enable batch reviews of government, Sejm and Senate committee documents.",
     )
     consultation_reviews_enabled: bool = Field(
         default=False,

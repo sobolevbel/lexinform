@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from typing import Literal
 from urllib.parse import urlparse
 
-from lexinform.commission_reviews import commission_sources
+from lexinform.commission_reviews import commission_sources, parliamentary_commission_sources
 from lexinform.document_versions import normative_name
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
@@ -131,6 +131,14 @@ class SejmTextSource:
         return LocatedText(summary=detail, stages=detail.stages, document=document)
 
     def supporting_documents(self, bill: Bill, purpose: ReviewPurpose) -> tuple[ReviewSource, ...]:
+        if purpose == "commission_review":
+            sources = parliamentary_commission_sources(bill)
+            current = latest_text_document(bill.stages)
+            if current is not None:
+                sources += (
+                    ReviewSource(identity="project/current", document=current, role="project_text"),
+                )
+            return sources + _commission_comparison(bill)
         sub = bill.submission
         if self._consultation_documents is None or sub is None or not sub.consultation_results:
             return ()
@@ -417,41 +425,20 @@ class RclTextSource:
 
     def _commission_sources(self, bill: Bill) -> tuple[ReviewSource, ...]:
         project = bill.rcl
-        if project is None or not any(
-            stage.is_legal_commission for stage in project.reached_stages
-        ):
+        if project is None or not any(stage.is_review_body for stage in project.reached_stages):
             return ()
         sources = commission_sources(bill)
         current = self.locate(bill).document
         if current is not None:
             sources += (
-                ReviewSource(identity="project/current", document=current, role="project_text"),
-            )
-        saved = bill.commission_review
-        comparison = (
-            next((doc for doc in saved.context.documents if doc.role == "comparison_text"), None)
-            if saved
-            else None
-        )
-        if comparison is not None:
-            sources += (
                 ReviewSource(
-                    identity=comparison.identity,
-                    document=TextDocument(url=comparison.url, kind="rcl"),
-                    role="comparison_text",
-                    snapshot=comparison,
+                    identity="project/current",
+                    document=current,
+                    role="project_text",
+                    revision=str(project.modified),
                 ),
             )
-        elif bill.analysis is not None and bill.analysis.source_url and bill.analysis.text_sha256:
-            sources += (
-                ReviewSource(
-                    identity="comparison/" + bill.analysis.text_sha256,
-                    document=TextDocument(url=bill.analysis.source_url, kind="rcl"),
-                    role="comparison_text",
-                    expected_digest=bill.analysis.text_sha256,
-                ),
-            )
-        return sources
+        return sources + _commission_comparison(bill)
 
 
 class TextSources:
@@ -498,3 +485,32 @@ class TextSources:
 def _as_utc(value: datetime) -> datetime:
     """Naive datetimes in our own records are UTC; API timestamps arrive already aware."""
     return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+
+
+def _commission_comparison(bill: Bill) -> tuple[ReviewSource, ...]:
+    prior = bill.commission_review
+    comparison = (
+        next((doc for doc in prior.context.documents if doc.role == "comparison_text"), None)
+        if prior
+        else None
+    )
+    if comparison is not None:
+        return (
+            ReviewSource(
+                identity=comparison.identity,
+                role="comparison_text",
+                document=TextDocument(url=comparison.url, kind="print"),
+                snapshot=comparison,
+            ),
+        )
+    record = bill.analysis
+    if record is not None and record.source_url and record.text_sha256:
+        return (
+            ReviewSource(
+                identity="comparison/" + record.text_sha256,
+                role="comparison_text",
+                document=TextDocument(url=record.source_url, kind="print"),
+                expected_digest=record.text_sha256,
+            ),
+        )
+    return ()

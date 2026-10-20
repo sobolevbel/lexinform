@@ -21,7 +21,13 @@ from bs4 import BeautifulSoup, Tag
 from lexinform.adapters.browser_identity import BROWSER_HEADERS
 from lexinform.adapters.retries import backoff_delay
 from lexinform.errors import SenateUnavailableError
-from lexinform.models import SENATE_BASE_URL, SenateAct, SenateCommittee, senate_title_distance
+from lexinform.models import (
+    SENATE_BASE_URL,
+    SenateAct,
+    SenateCommittee,
+    SenateReviewDocument,
+    senate_title_distance,
+)
 
 __all__ = ["SenateClient", "SenatePageError", "parse_act", "parse_committee", "parse_listing"]
 
@@ -76,6 +82,7 @@ def parse_act(html: str, url: str) -> SenateAct:
     committees: list[SenateCommittee] = []
     sittings: list[date] = []
     completed: set[int] = set()
+    documents: dict[str, SenateReviewDocument] = {}
     for item in soup.select("ul.elementy > li"):
         when = _date(item.select_one("span.small"))
         heading = item.select_one("h3, h4")
@@ -105,6 +112,30 @@ def parse_act(html: str, url: str) -> SenateAct:
                         completed.add(committee.id)
                     else:
                         completed.discard(committee.id)
+        for anchor in item.select("a.file-desc[href]"):
+            section = anchor.find_parent("div", class_="collapse")
+            if section is not None and section.get("id") != "collapseOpinie":
+                continue
+            href = _absolute(str(anchor["href"]))
+            if not href.lower().split("?", 1)[0].endswith((".pdf", ".docx", ".doc")):
+                continue
+            text = anchor.get_text(" ", strip=True)
+            if link is not None:
+                documents[href] = SenateReviewDocument(
+                    url=href,
+                    title=text,
+                    body=link.get_text(" ", strip=True),
+                    role="commission_report",
+                    date=when,
+                )
+            elif re.search(r"opinia do ustaw", text, re.I):
+                documents[href] = SenateReviewDocument(
+                    url=href,
+                    title=text,
+                    body="Opinia opublikowana przez Senat",
+                    role="commission_position",
+                    date=when,
+                )
     return SenateAct(
         url=url,
         title=title.get_text(" ", strip=True),
@@ -113,6 +144,7 @@ def parse_act(html: str, url: str) -> SenateAct:
         committees=tuple(committees),
         committee_sittings=tuple(sorted(set(sittings))),
         committee_work_completed=bool(committees) and all(c.id in completed for c in committees),
+        review_documents=tuple(documents.values()),
     )
 
 

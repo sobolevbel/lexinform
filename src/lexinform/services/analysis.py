@@ -17,7 +17,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from lexinform.analysis_records import RecordFactory, UsageFields
-from lexinform.commission_reviews import commission_text_matches
+from lexinform.commission_reviews import COMMISSION_ROLES, commission_text_matches
 from lexinform.concurrency import fan_out
 from lexinform.document_selection import selection_for_input
 from lexinform.document_versions import draft_version
@@ -1558,14 +1558,14 @@ class AnalysisService:
                         normalized_sha256="",
                         complete=False,
                         author=requested.author,
+                        body=requested.body,
+                        forum=requested.forum,
                     )
                 )
         if not any(source.text.strip() for source in sources):
             return None
         if purpose == "commission_review" and not any(
-            source.complete
-            and source.role in {"commission_position", "commission_response", "commission_minutes"}
-            for source in sources
+            source.complete and source.role in COMMISSION_ROLES for source in sources
         ):
             return None
         act = bill.act
@@ -1617,6 +1617,8 @@ class AnalysisService:
             ),
             file_sha256=file.sha256,
             author=source.author,
+            body=source.body,
+            forum=source.forum,
         )
 
     def request_document_review(

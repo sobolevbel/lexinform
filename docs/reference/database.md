@@ -1,13 +1,13 @@
 # База данных и миграции
 
-Статус: актуальный справочник · проверен 20 октября 2026 по локальному коду, схема **v47**.
+Статус: актуальный справочник · проверен 21 октября 2026 по локальному коду, схема **v48**.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
 `SCHEMA_VERSION = len(MIGRATIONS)`, версия конкретной базы — `PRAGMA user_version`.
 После всех миграций: **17 таблиц, 28 явных индексов
 (13 обычных и 15 уникальных), 5 внешних ключей**. Автоиндексы `PRIMARY KEY` и
-`UNIQUE` в эти 28 не входят. Копия production dump также восстановлена в v47:
+`UNIQUE` в эти 28 не входят. Копия production dump также восстановлена в v48:
 `integrity_check=ok`, `foreign_key_check` не вернул ошибок.
 
 ## Визуальная схема
@@ -55,11 +55,20 @@ SQL объявляет внешние ключи:
 публикацию. Историческая публикация и `status_changes` сохраняются. Batch metadata
 содержит неизменяемую цель редактирования. Payload исправления не удаляется retention.
 
-В v47 `bills.commission_review_json` хранит отдельный разбор замечаний RCL, контекст
+В v47 `bills.commission_review_json` хранит общий разбор документов комиссий RCL, Сейма и Сената, контекст
 источников, цитаты и дату проверки. `ux_pub_commission_review` обеспечивает уникальность
 публикации по `(term, number, channel_id, ref)`. Незавершённая работа использует
 `review_work_json`; в ней сохраняется исходный comparison snapshot, а подготовленный
 batch context неизменяем. Старые dump получают `commission_review=NULL`.
+
+С 21 октября совместимые JSON-поля `body`/`forum` сохраняют орган и источник документа,
+`recommendation`/`recommendation_evidence` отделяют рекомендацию комиссии от принятия
+замечания. `source_fingerprint` в review/work отслеживает проверенный каталог, а
+`senate_json.review_documents` — отчёты и официальные заключения со страницы закона.
+В v48 `bills.committee_documents_json` сохраняет каталог отдельных материалов комиссий
+из Sejm `additionalPrints`: URL, роль, орган, forum и версию метаданных. NULL в старом dump
+означает неизвестный каталог, пустой список — проверенный пустой. Первичное заполнение
+учитывает прежние `seen_supplements` и не создаёт исторический batch.
 
 ## Снимки и обработанное состояние
 

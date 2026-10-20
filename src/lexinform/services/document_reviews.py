@@ -3,6 +3,11 @@ import logging
 from datetime import timedelta
 from zoneinfo import ZoneInfo
 
+from lexinform.commission_reviews import (
+    COMMISSION_ROLES,
+    commission_source_fingerprint,
+    legacy_filed_commission_baseline,
+)
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
@@ -14,7 +19,7 @@ from lexinform.models import (
     ReviewWork,
     TextDocument,
 )
-from lexinform.models.reviews import review_signature
+from lexinform.models.reviews import commission_finding_signature, review_signature
 from lexinform.ports import BillRepository, Clock, TextSource
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.posting import Poster
@@ -43,6 +48,42 @@ class DocumentReviews:
         self._channel_id = channel_id
         self._max_attempts = max_attempts
 
+    def observe_commissions(self, bills: list[Bill], result: TrackingResult) -> None:
+        if not self._analysis.review_enabled("commission_review"):
+            return
+        for before in bills:
+            fresh = self._repo.get(before.term, before.number) or before
+            if fresh.analysis is None:
+                continue
+            pending = next(
+                (work for work in fresh.review_work if work.purpose == "commission_review"), None
+            )
+            if pending is not None and pending.context is not None:
+                continue
+            snapshot = fresh.model_copy(update={"analysis": before.analysis})
+            sources = self._texts.supporting_documents(snapshot, "commission_review")
+            remarks = {source.identity for source in sources if source.role in COMMISSION_ROLES}
+            if not remarks:
+                continue
+            fingerprint = commission_source_fingerprint(sources)
+            previous_sources = self._texts.supporting_documents(before, "commission_review")
+            previous_sources += legacy_filed_commission_baseline(before, sources)
+            changed = fingerprint != commission_source_fingerprint(previous_sources)
+            prior = fresh.commission_review
+            if prior is not None:
+                known = {
+                    doc.identity for doc in prior.context.documents if doc.role in COMMISSION_ROLES
+                }
+                changed = changed or (
+                    prior.source_fingerprint != fingerprint
+                    if prior.source_fingerprint
+                    else known != remarks
+                )
+            if pending is not None:
+                changed = changed or pending.source_fingerprint != fingerprint
+            if changed:
+                self.request(snapshot, "commission_review", result)
+
     def request(
         self,
         bill: Bill,
@@ -54,11 +95,11 @@ class DocumentReviews:
         if not self._analysis.review_enabled(purpose):
             return
         fresh = self._repo.get(bill.term, bill.number) or bill
+        source_fingerprint = ""
         if purpose == "commission_review":
-            if not any(
-                source.role in {"commission_position", "commission_response", "commission_minutes"}
-                for source in self._texts.supporting_documents(bill, purpose)
-            ):
+            sources = self._texts.supporting_documents(bill, purpose)
+            source_fingerprint = commission_source_fingerprint(sources)
+            if not any(source.role in COMMISSION_ROLES for source in sources):
                 return
             pending = next((work for work in fresh.review_work if work.purpose == purpose), None)
             if pending is not None:
@@ -101,6 +142,7 @@ class DocumentReviews:
             since=self._clock.now(),
             baseline_day=day,
             source_key=key,
+            source_fingerprint=source_fingerprint,
             act_eli=bill.act.eli if bill.act is not None else None,
             comparison_document=next(
                 (doc for doc in prior.context.documents if doc.role == "comparison_text"), None
@@ -265,6 +307,7 @@ class DocumentReviews:
             update={
                 "baseline_day": baseline,
                 "source_key": work.source_key,
+                "source_fingerprint": work.source_fingerprint,
                 "checked_at": self._clock.now(),
                 "canonical_dates": tuple(sorted(canonical)),
             }
@@ -275,6 +318,23 @@ class DocumentReviews:
             "act_application": "act_application_review",
         }[purpose]
         snapshot = fresh.model_copy(update={key: record})
+        new_findings = record.review.commission_findings
+        if purpose == "commission_review" and previous is not None:
+            known_findings = {
+                commission_finding_signature(item, previous.context, authorities=record.context)
+                for item in previous.review.commission_findings
+            }
+            new_findings = tuple(
+                item
+                for item in new_findings
+                if commission_finding_signature(item, record.context) not in known_findings
+            )
+            message_record = record.model_copy(
+                update={
+                    "review": record.review.model_copy(update={"commission_findings": new_findings})
+                }
+            )
+            snapshot = snapshot.model_copy(update={key: message_record})
         kind = {
             "consultation_review": PublicationKind.CONSULTATION_REVIEW,
             "commission_review": PublicationKind.COMMISSION_REVIEW,
@@ -283,9 +343,7 @@ class DocumentReviews:
         with self._repo.atomic():
             self._repo.save_document_review(bill.term, bill.number, record)
             meaningful = bool(
-                record.review.consultation_findings
-                or record.review.commission_findings
-                or record.review.effective_rules
+                record.review.consultation_findings or new_findings or record.review.effective_rules
             )
             if meaningful and (
                 previous is None

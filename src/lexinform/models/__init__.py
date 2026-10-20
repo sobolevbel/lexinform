@@ -316,6 +316,7 @@ from lexinform.models.senate import (
     SenateCommittee,
     SenateResolutionEvidence,
     SenateResolutionIdentity,
+    SenateReviewDocument,
     senate_title_distance,
     senate_title_matches,
 )
@@ -508,6 +509,7 @@ __all__ = [
     "SENATE_BILLS_URL",
     "SENATE_BASE_URL",
     "SenateAct",
+    "SenateReviewDocument",
     "SenateCommittee",
     "senate_title_distance",
     "senate_title_matches",

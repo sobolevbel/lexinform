@@ -19,7 +19,9 @@ DocumentRole = Literal[
     "commission_position",
     "commission_response",
     "commission_minutes",
+    "commission_report",
 ]
+ReviewForum = Literal["government", "sejm", "senate", "unknown"]
 
 
 class ReviewDocument(BaseModel):
@@ -35,6 +37,8 @@ class ReviewDocument(BaseModel):
     file_sha256: str | None = None
     author: str = ""
     draft_date: dt.date | None = None
+    body: str = ""
+    forum: ReviewForum = "unknown"
 
 
 class ReviewContext(BaseModel):
@@ -54,7 +58,7 @@ class ReviewContext(BaseModel):
         return "\n\n".join(document.text for document in self.documents)
 
     def memo_key(self, term: int) -> str:
-        facts = {
+        facts: dict[str, object] = {
             "term": None if is_rcl_number(self.number) else term,
             "number": self.number,
             "purpose": self.purpose,
@@ -66,6 +70,16 @@ class ReviewContext(BaseModel):
             "canonical_date": str(self.canonical_date),
             "comparison_sha256": self.comparison_sha256,
         }
+        if self.purpose == "commission_review" and any(
+            doc.body or doc.forum != "unknown" for doc in self.documents
+        ):
+            facts["commission_authorities"] = sorted(
+                {
+                    (doc.role, doc.normalized_sha256, doc.body, doc.forum)
+                    for doc in self.documents
+                    if doc.body
+                }
+            )
         return (
             "document-review:"
             + hashlib.sha256(json.dumps(facts, sort_keys=True).encode()).hexdigest()
@@ -113,6 +127,8 @@ class CommissionFinding(ConsultationFinding):
     proposal_evidence: EvidenceCitation | None
     comparison_evidence: EvidenceCitation | None
     practical_impact: str
+    recommendation: str = ""
+    recommendation_evidence: EvidenceCitation | None = None
 
 
 class DocumentReview(BaseModel):
@@ -138,6 +154,7 @@ class DocumentReviewRecord(BaseModel):
     baseline_day: dt.date | None = None
     source_key: str = ""
     checked_at: dt.datetime | None = None
+    source_fingerprint: str = ""
     canonical_dates: tuple[dt.date, ...] = ()
 
 
@@ -155,6 +172,7 @@ class ReviewWork(BaseModel):
     source_key: str = ""
     act_eli: str | None = None
     comparison_document: ReviewDocument | None = None
+    source_fingerprint: str = ""
 
 
 def _normalized(text: str) -> str:
@@ -369,11 +387,78 @@ def review_signature(review: DocumentReview) -> str:
     if review.purpose == "commission_review":
         facts["commission"] = [
             item.model_dump(
-                exclude={"evidence", "text_evidence", "proposal_evidence", "comparison_evidence"}
+                exclude={
+                    "evidence",
+                    "text_evidence",
+                    "proposal_evidence",
+                    "comparison_evidence",
+                    "recommendation_evidence",
+                }
             )
             for item in review.commission_findings
         ]
     return json.dumps(facts, sort_keys=True, ensure_ascii=False)
+
+
+def commission_citation_document(
+    citation: EvidenceCitation | None, context: ReviewContext, roles: set[DocumentRole]
+) -> ReviewDocument | None:
+    found = citation_document(citation, context, roles)
+    if found is not None or citation is None:
+        return found
+    spaced_report = re.sub(r"\s+", "", citation.locator).casefold() == "sprawozdanie"
+    if not spaced_report and not re.match(
+        r"(?:wniosek|sprawozdanie|zaleceni|protokół|opinia|konkluzja|ustalenia|ustaleń|rozstrzygnięcie)\b",
+        citation.locator,
+        re.I,
+    ):
+        return None
+    return next(
+        (
+            doc
+            for doc in context.documents
+            if doc.identity == citation.document_id
+            and doc.role in roles
+            and citation.quote.strip()
+            and " ".join(citation.quote.split()) in " ".join(doc.text.split())
+            and (
+                _has_locator(citation.quote, citation.locator)
+                or (
+                    spaced_report
+                    and re.search(
+                        r"\bs\s*p\s*r\s*a\s*w\s*o\s*z\s*d\s*a\s*n\s*i\s*e\b", citation.quote, re.I
+                    )
+                )
+            )
+        ),
+        None,
+    )
+
+
+def commission_finding_signature(
+    finding: CommissionFinding, context: ReviewContext, *, authorities: ReviewContext | None = None
+) -> str:
+    citation = finding.proposal_evidence
+    source = next(
+        (doc for doc in context.documents if citation and doc.identity == citation.document_id),
+        None,
+    )
+    if source is not None and not source.body and authorities is not None:
+        source = next(
+            (doc for doc in authorities.documents if doc.identity == source.identity), source
+        )
+    facts = [source.body if source else "", source.forum if source else "unknown", finding.outcome]
+    for evidence in (
+        finding.proposal_evidence,
+        finding.evidence,
+        finding.recommendation_evidence,
+        finding.comparison_evidence,
+        finding.text_evidence,
+    ):
+        facts.extend(
+            (_normalized(evidence.locator), _normalized(evidence.quote)) if evidence else ("", "")
+        )
+    return json.dumps(facts, ensure_ascii=False)
 
 
 def _validate_commission(review: DocumentReview, context: ReviewContext) -> DocumentReview:
@@ -381,6 +466,7 @@ def _validate_commission(review: DocumentReview, context: ReviewContext) -> Docu
         "commission_position",
         "commission_minutes",
         "commission_response",
+        "commission_report",
     }
     unresolved = list(review.unresolved)
     findings: list[CommissionFinding] = []
@@ -390,13 +476,14 @@ def _validate_commission(review: DocumentReview, context: ReviewContext) -> Docu
             "documents": tuple(
                 doc.model_copy(update={"role": "response"})
                 if doc.role in {"commission_response", "commission_minutes"}
+                and doc.forum in {"unknown", "government"}
                 else doc
                 for doc in context.documents
             ),
         }
     )
     for item in review.commission_findings:
-        proposal = citation_document(item.proposal_evidence, context, sources)
+        proposal = commission_citation_document(item.proposal_evidence, context, sources)
         if proposal is None or not proposal.complete:
             unresolved.append(f"Commission proposal unconfirmed: {item.proposal}")
             continue
@@ -431,6 +518,35 @@ def _validate_commission(review: DocumentReview, context: ReviewContext) -> Docu
             and complete_response
             and related
             and checked.outcome != "unknown"
+            and response.forum in {"unknown", "government"}
+            and proposal.forum == response.forum
+            and proposal.body == response.body
+        )
+        recommendation = commission_citation_document(
+            item.recommendation_evidence, context, {"commission_report", "commission_minutes"}
+        )
+        recommended = (
+            recommendation is not None
+            and recommendation.complete
+            and proposal.forum == recommendation.forum
+            and proposal.body == recommendation.body
+            and item.recommendation_evidence is not None
+            and bool(
+                re.search(
+                    r"\b(?:pod)?komisj\w*|\bkomitet\w*|rada legislacyjna",
+                    item.recommendation_evidence.quote,
+                    re.I,
+                )
+            )
+            and bool(
+                re.search(
+                    r"wnos[izą]|wnioskuj|zalec|rekomend|opini\w*\s+(?:pozytywn|negatywn)",
+                    item.recommendation_evidence.quote,
+                    re.I,
+                )
+            )
+            and re.search(r"wniosk\w*\s+mniejszości", item.recommendation_evidence.quote, re.I)
+            is None
         )
         before = citation_document(item.comparison_evidence, context, {"comparison_text"})
         after = citation_document(item.text_evidence, context, {"project_text"})
@@ -451,7 +567,7 @@ def _validate_commission(review: DocumentReview, context: ReviewContext) -> Docu
             == _normalized(item.text_evidence.locator).rstrip(".")
             and _normalized(item.comparison_evidence.quote) != _normalized(item.text_evidence.quote)
         )
-        if not supported:
+        if not supported and not (recommended and item.recommendation):
             unresolved.append(f"Commission outcome unconfirmed: {item.proposal}")
         if item.text_change and not incorporated:
             unresolved.append(f"Incorporation in project unconfirmed: {item.proposal}")
@@ -469,6 +585,10 @@ def _validate_commission(review: DocumentReview, context: ReviewContext) -> Docu
                     "text_change": item.text_change if incorporated else None,
                     "text_evidence": item.text_evidence if incorporated else None,
                     "comparison_evidence": item.comparison_evidence if incorporated else None,
+                    "recommendation": item.recommendation if recommended else "",
+                    "recommendation_evidence": item.recommendation_evidence
+                    if recommended
+                    else None,
                 }
             )
         )
@@ -570,3 +690,6 @@ class ReviewSource(BaseModel):
     expected_digest: str | None = None
     author: str = ""
     snapshot: ReviewDocument | None = None
+    body: str = ""
+    forum: ReviewForum = "unknown"
+    revision: str = ""
