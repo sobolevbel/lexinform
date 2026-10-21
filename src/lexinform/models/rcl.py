@@ -221,6 +221,7 @@ class RclConsultation(BaseModel):
     response_published: bool = False
     # Every letter already read, so a closing or extension notice is fetched once, not each run.
     letters_read: tuple[str, ...] = ()
+    letter_parser: int = 0  # `rcl_letters.LETTER_PARSER` the letters were read with
 
     def is_open(self, today: dt.date) -> bool:
         return self.deadline is not None and self.deadline >= today

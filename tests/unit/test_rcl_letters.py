@@ -105,3 +105,46 @@ def test_the_instruction_is_what_gives_the_address() -> None:
 
     assert info.email == "dep.prawny@mswia.gov.pl"
     assert info.days == 14
+
+
+def test_a_letter_that_states_the_consultation_dates_as_fields_gives_them() -> None:
+    """UDER106's letter (RCL 12409404): the card said «срок был указан в письме» over these."""
+    letter = (
+        "Przedmiot konsultacji: Projekt ustawy o zmianie ustawy o pomocy państwa w wychowywaniu "
+        "dzieci Data rozpoczęcia konsultacji: 20.04.2026 r. Data zakończenia konsultacji: "
+        "11.05.2026 r. Cele i przesłanki konsultowanego projektu:"
+    )
+
+    info = parse_letter(letter)
+
+    assert (info.letter_date, info.deadline) == (date(2026, 4, 20), date(2026, 5, 11))
+    assert deadline_of(info, published=date(2026, 4, 20)) == date(2026, 5, 11)
+
+
+def test_a_term_glued_to_its_words_is_still_a_term() -> None:
+    info = parse_letter("Uprzejmie o stanowiska w terminie21 dniod dnia otrzymania pisma.")
+
+    assert info.days == 21
+
+
+def test_a_deadline_without_a_year_is_the_letters_year() -> None:
+    letter = (
+        "zwracam się z uprzejmą prośbą o zgłoszenie ewentualnych uwag do tego projektu w terminie "
+        "do dnia 31 grudnia br., również na adres: legislacja.nauka@mnisw.gov.pl"
+    )
+
+    info = parse_letter(letter)
+
+    assert deadline_of(info, published=date(2025, 12, 1)) == date(2025, 12, 31)
+
+
+def test_a_conference_registration_is_not_a_deadline_for_comments() -> None:
+    """Ministry of Finance letters invite to a conference "do dnia 23 maja br." in the same words."""
+    letter = (
+        "Konferencja odbędzie się w dniu 24 maja 2024 r. Wobec powyższego proszę o potwierdzenie "
+        "Państwa udziału w konferencji i przesłanie do dnia 23 maja br. do godz. 16.00 informacji."
+    )
+
+    info = parse_letter(letter)
+
+    assert deadline_of(info, published=date(2024, 5, 10)) is None

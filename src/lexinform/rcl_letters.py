@@ -33,9 +33,20 @@ _NUMERIC_DATE = r"(\d{1,2})[.\-/](\d{1,2})[.\-/](\d{4})"
 _DATE = rf"(?:{_WORD_DATE}|{_NUMERIC_DATE})"
 
 _LETTER_DATE = re.compile(rf"Warszawa,?\s*(?:dnia\s+)?{_DATE}", re.IGNORECASE)
-_DAYS = re.compile(r"w\s+(?:terminie|ciągu)\s+(\d{1,3})\s+dni", re.IGNORECASE)
+# The text layer of a .docx can glue the number to its words: "w terminie21 dniod dnia".
+_DAYS = re.compile(r"w\s+(?:terminie|ciągu)\s*(\d{1,3})\s*dni", re.IGNORECASE)
 _UNTIL = re.compile(rf"(?:w\s+terminie\s+)?do\s+(?:dnia\s+)?{_DATE}", re.IGNORECASE)
+_START = re.compile(rf"data\s+rozpocz[ęe]cia\s+konsultacji\w*\s*:?\s*{_DATE}", re.IGNORECASE)
+_END = re.compile(rf"(?:data|termin)\s+zako[ńn]czenia\s+konsultacji\w*\s*:?\s*{_DATE}", re.I)
+# "do dnia 31 grudnia br." is the year of the letter; only next to comments, as a letter also
+# asks for a conference registration "do dnia 23 maja br." in the same words.
+_UNTIL_THIS_YEAR = re.compile(
+    rf"(?:uwag|stanowisk|opini).{{0,250}}?\bdo\s+dnia\s+(\d{{1,2}})\s+({_MONTH_NAMES})"
+    r"\s+(?:br\b|bieżącego\s+roku)",
+    re.IGNORECASE,
+)
 MAX_CONSULTATION = timedelta(days=180)
+LETTER_PARSER = 1  # raised when the parser learns a form: a window read without a term is re-read
 _EMAIL = r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
 # An address counts when something tells the reader to send comments there. The instruction is
 # the whole discriminator: a ministry's letterhead labels its own switchboard with the same noun
@@ -63,6 +74,7 @@ class LetterInfo:
     days: int | None = None
     deadline: date | None = None
     email: str | None = None
+    this_year: tuple[int, int] | None = None  # (month, day) of a deadline given without a year
 
 
 def parse_letter(text: str) -> LetterInfo:
@@ -75,15 +87,19 @@ def parse_letter(text: str) -> LetterInfo:
     worse than none, because the reader acts on it.
     """
     flat = " ".join(text.split())
-    letter_date = _date_of(_LETTER_DATE.search(flat))
+    letter_date = _date_of(_START.search(flat)) or _date_of(_LETTER_DATE.search(flat))
     days_match = _DAYS.search(flat)
-    until = _UNTIL.search(flat)
+    until = _date_of(_END.search(flat)) or _date_of(_UNTIL.search(flat))
+    this_year = _UNTIL_THIS_YEAR.search(flat)
     address = _ADDRESS_EMAIL.search(flat)
     return LetterInfo(
         letter_date=letter_date,
         days=int(days_match.group(1)) if days_match else None,
-        deadline=_date_of(until),
+        deadline=until,
         email=address.group(1) if address else None,
+        this_year=(_MONTHS[this_year.group(2).lower()], int(this_year.group(1)))
+        if this_year
+        else None,
     )
 
 
@@ -98,6 +114,13 @@ def deadline_of(info: LetterInfo, *, published: date) -> date | None:
     start = info.letter_date or published
     if info.deadline is not None and start <= info.deadline <= start + MAX_CONSULTATION:
         return info.deadline
+    if info.days is None and info.this_year is not None:
+        month, day = info.this_year
+        try:
+            dated = date(start.year, month, day)
+        except ValueError:
+            return None
+        return dated if start <= dated <= start + MAX_CONSULTATION else None
     if info.days is None:
         return None
     return start + timedelta(days=info.days)

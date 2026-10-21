@@ -10,7 +10,7 @@ import logging
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import RclConsultation, RclDocument, RclProject, RclStage
 from lexinform.ports import RclGateway
-from lexinform.rcl_letters import deadline_of, parse_letter
+from lexinform.rcl_letters import LETTER_PARSER, deadline_of, parse_letter
 from lexinform.services.documents import TextLoader
 
 log = logging.getLogger(__name__)
@@ -111,6 +111,8 @@ class RclProjectReader:
         read = set(known.letters_read) if known is not None else set()
         if known is not None and known.letter_url is not None:
             read.add(known.letter_url)
+        if known is not None and known.deadline is None and known.letter_parser < LETTER_PARSER:
+            read = set()
         unread = [d for d in stage.consultation_letters() if d.url not in read]
         window = known
         for letter in unread:
@@ -120,7 +122,9 @@ class RclProjectReader:
             return RclConsultation(**facts)
         if unread and window.deadline is None:
             log.warning("consultation letters of %s give no deadline this run can use", project.id)
-        return window.model_copy(update={**facts, "letters_read": tuple(sorted(read))})
+        return window.model_copy(
+            update={**facts, "letters_read": tuple(sorted(read)), "letter_parser": LETTER_PARSER}
+        )
 
     def _read_letter(
         self, letter: RclDocument, stage: RclStage, project: RclProject

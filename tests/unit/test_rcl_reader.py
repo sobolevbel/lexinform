@@ -3,6 +3,7 @@
 import datetime as dt
 
 from lexinform.models import RclConsultation, RclDocument, RclProject
+from lexinform.rcl_letters import LETTER_PARSER
 from lexinform.services.documents import TextLoader
 from lexinform.services.rcl_projects import RclProjectReader
 from tests.fakes import FakeRclGateway, FakeTextExtractor
@@ -138,11 +139,26 @@ def test_a_closing_notice_does_not_erase_the_window_already_read() -> None:
 def test_a_window_taken_from_a_closing_notice_is_repaired_from_the_letter_beside_the_bill() -> None:
     reader, project, gateway = _consulted(CLOSING, beside=ORIGINAL)
 
-    window = reader.consultation(project, known=RclConsultation(letter_url=CLOSING.url))
+    known = RclConsultation(letter_url=CLOSING.url, letter_parser=LETTER_PARSER)
+
+    window = reader.consultation(project, known=known)
 
     assert window is not None
     assert (window.deadline, window.email) == (dt.date(2026, 5, 30), "sekretariat.dp@cyfra.gov.pl")
     assert set(window.letters_read) == {CLOSING.url, ORIGINAL.url}
+    assert _downloads(gateway) == [ORIGINAL.url]
+
+
+def test_a_window_read_without_a_term_by_an_older_parser_is_read_once_more() -> None:
+    reader, project, gateway = _consulted(ORIGINAL)
+    stale = RclConsultation(letter_url=ORIGINAL.url, letters_read=(ORIGINAL.url,))
+
+    window = reader.consultation(project, known=stale)
+    again = reader.consultation(project, known=window)
+
+    assert window is not None and window.deadline == dt.date(2026, 5, 30)
+    assert window.letter_parser == LETTER_PARSER
+    assert again == window
     assert _downloads(gateway) == [ORIGINAL.url]
 
 
