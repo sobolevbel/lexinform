@@ -29,7 +29,7 @@ _SUBJECT = re.compile(r"^\s*u\s*s\s*t\s*a\s*w\s*a\s*$", re.I | re.M)
 _ARTICLE = re.compile(r"\bArt\.\s*1\b", re.I)
 _PREFIX = (
     r"(?im)^[ \t]*`?(?:(?:Etap:[^\n(]{1,120}\(\s*)|(?:Wersja\s*\d+(?:[.,]\d+)?\s+))?"
-    r"projekt(?:\s+ustawy)?\s*,?\s*(?:z\s+(?:dnia\s+)?)?"
+    r"projekt(?:\s+ustawy)?\s*,?\s*(?:z\s+(?:dnia\s*)?)?"
 )
 _NUMERIC_DRAFT = re.compile(_PREFIX + r"(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})(?!\d)")
 _SPACED_DRAFT = re.compile(_PREFIX + r"(\d{1,2})[ \t]+(\d{1,2})[ \t]+(\d{4})(?!\d)")

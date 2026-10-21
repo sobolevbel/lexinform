@@ -208,7 +208,9 @@ def test_reanalysis_context_rejection_uses_opus_batch() -> None:
     assert isinstance(ctx, BillContext) and ctx.previous_summary is not None
 
 
-def test_a_re_analysis_no_model_takes_keeps_the_previous_analysis_rather_than_failing() -> None:
+def test_a_re_analysis_no_model_takes_keeps_the_previous_analysis_rather_than_failing(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """The tracking loop reads a new text first: a raise there would stop the bill's updates."""
     overflow = OverflowBatch(rejected=True)
     w = World(
@@ -240,6 +242,9 @@ def test_a_re_analysis_no_model_takes_keeps_the_previous_analysis_rather_than_fa
     analysis = w.bill("3039").analysis
     assert analysis is not None and analysis.revision == 1
     assert len(overflow.submitted) == 1
+    assert "reanalysis blocked" in caplog.text
+    assert "both primary and overflow models rejected the context" in caplog.text
+    assert "cannot be read" not in caplog.text
 
 
 @pytest.mark.usefixtures("small_context")

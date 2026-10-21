@@ -326,7 +326,7 @@ def test_llm_outage_during_the_re_analysis_does_not_lose_the_new_stages() -> Non
     ]
 
 
-def test_unreadable_new_text_keeps_the_previous_analysis() -> None:
+def test_unreadable_new_text_keeps_the_previous_analysis(caplog: pytest.LogCaptureFixture) -> None:
     w = World()
     w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     w.run()
@@ -341,6 +341,27 @@ def test_unreadable_new_text_keeps_the_previous_analysis() -> None:
     assert stored is not None and (stored.revision, stored.source_url) == (1, print_url("3039"))
     _, change, _ = w.publisher.updates[-1]
     assert not change.content_changed and len(change.new_stages) == 3
+    assert "reanalysis blocked" in caplog.text and "waiting:" in caplog.text
+    assert "KeyError" in caplog.text and REPORT_URL in caplog.text
+
+
+def test_empty_new_text_explains_why_the_previous_analysis_is_kept(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    w = World(extractor=FakeTextExtractor(page_count=0, by_content={b"empty": ""}))
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    saved = w.bill("3039").analysis
+    w.set_stages("3039", WITH_REPORT)
+    w.gateway.files[REPORT_URL] = b"empty"
+    w.clock.advance(days=1)
+
+    report = w.run()
+
+    assert report.ok and report.reanalyzed == 0 and w.bill("3039").analysis == saved
+    assert len(w.llm.contexts) == 1
+    assert "reanalysis blocked" in caplog.text
+    assert "no usable full text (source: metadata_only)" in caplog.text
 
 
 def test_updated_print_triggers_a_re_analysis_without_a_stage_change() -> None:

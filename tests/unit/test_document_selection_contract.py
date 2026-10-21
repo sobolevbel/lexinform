@@ -10,7 +10,7 @@ from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.document_selection import bill_selection
-from lexinform.document_versions import comparable_versions, draft_version
+from lexinform.document_versions import comparable_versions, draft_version, draft_version_span
 from lexinform.models import DocumentPart, DocumentSelection, TextDocument
 from lexinform.services.documents import TextLoader
 from tests.scenario.test_document_selection_contract import law
@@ -51,10 +51,12 @@ def test_conflicting_archive_versions_are_not_resolved_by_member_order() -> None
     assert first.text == reversed_result.text == ""
 
 
-def test_internal_version_and_subject_confirm_a_new_full_replacement() -> None:
+@pytest.mark.parametrize("glued_date", [False, True])
+def test_internal_version_and_subject_confirm_a_new_full_replacement(glued_date: bool) -> None:
+    previous = law().replace("dnia 1", "dnia1", 1) if glued_date else law()
     package = archive_of(
         [
-            ("old.zip", archive_of([("Projekt.docx", word(law()))])),
+            ("old.zip", archive_of([("Projekt.docx", word(previous))])),
             ("new.zip", archive_of([("Projekt po autopoprawce.docx", word(law(day=2, days=60)))])),
         ]
     )
@@ -171,6 +173,10 @@ def test_bill_support_is_not_taken_from_the_implementing_regulation() -> None:
         "Projekt 06 12 2023 r.",
         "Projekt ustawy z dnia 6 grudnia 2023 r.",
         "Projekt z 06 . 12 . 2023 r.",
+        "Projekt z dnia6 grudnia 2023 r.",
+        "Projekt z\u00a0dnia6\u00a0grudnia 2023\u00a0r.",
+        "Projekt z dnia06.12.2023 r.",
+        "Projekt z dnia06 12 2023 r.",
     ],
 )
 def test_draft_header_dates(header: str) -> None:
@@ -185,6 +191,12 @@ def test_draft_header_dates(header: str) -> None:
         "Projekt 31.02.2023 r.",
         "Projekt 06.12.20233 r.",
         "Projekt 6.12.2023 r.\nProjekt 7.12.2023 r.",
+        "Projekt z dnia31.02.2023 r.",
+        "Projekt z dnia06.12.20233 r.",
+        "Projekt z dnia6 grudnia 2023 r.\nProjekt z dnia7 grudnia 2023 r.",
+        "Pismo przekazujące projekt z dnia6 grudnia 2023 r.",
+        "Projekt rozporządzenia z dnia6 grudnia 2023 r.",
+        "Projekt z dnia6 grudnia 2023 r., aktualizacja 31.02.2025 r.",
     ],
 )
 def test_unrelated_invalid_or_conflicting_dates_do_not_order_editions(header: str) -> None:
@@ -196,8 +208,25 @@ def test_a_cited_law_date_cannot_become_a_draft_date() -> None:
     assert draft_version(law().split("\n", 1)[1] + "\nProjekt 06.12.2023") is None
 
 
+def test_missing_space_in_a_draft_date_keeps_the_original_evidence_span() -> None:
+    header = "Projekt z\u00a0dnia18\u00a0września 2026\u00a0r."
+    text = header + "\n" + law().split("\n", 1)[1]
+
+    span = draft_version_span(text)
+
+    assert span is not None and span[0] == dt.date(2026, 9, 18)
+    assert text[span[1] : span[2]] == header.removesuffix("\u00a0r.")
+
+
 def test_equal_dates_with_changed_norms_remain_ambiguous() -> None:
     assert not comparable_versions([law(), law(days=60)])
+
+
+def test_missing_date_space_does_not_resolve_equal_date_normative_conflicts() -> None:
+    old = law(day=18).replace("dnia 18", "dnia18", 1)
+    changed = law(day=18, days=60)
+
+    assert not comparable_versions([old, changed])
 
 
 def test_facts_are_bound_to_parts_and_survive_text_free_restore() -> None:

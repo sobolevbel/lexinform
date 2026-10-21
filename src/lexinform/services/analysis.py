@@ -328,8 +328,8 @@ class _Prepared:
     so several bills can be prepared at the same time.
 
     `first` marks a first analysis, which seeds the stages. Four flags say the model was not
-    asked: `unchanged` (a re-analysis found the analysed text under a new URL), `unreadable` (the
-    new document could not be read — an analysis of the metadata must never replace one of a
+    asked: `unchanged` (a re-analysis found the analysed text under a new URL), `unreadable_reason`
+    (the new document was not usable — an analysis of the metadata must never replace one of a
     text), `deferred` (the run's budget was spent; the text waits for the next run) and `queued`
     (filed to the batch instead — `record` is None then, `batch_request`/`batch_meta` carry what
     a submission needs).
@@ -343,7 +343,7 @@ class _Prepared:
     first: bool
     triage: TriageRecord | None = None
     unchanged: bool = False
-    unreadable: bool = False
+    unreadable_reason: str | None = None
     deferred: bool = False
     queued: bool = False
     batch_request: BatchRequest | None = None
@@ -1363,11 +1363,12 @@ class AnalysisService:
         if prepared.deferred:
             log.warning("%s: %s", bill.number, self._ledger.stopped)
             return bill, False
-        if prepared.unreadable:
+        if prepared.unreadable_reason is not None:
             log.warning(
-                "%s: %s cannot be read; the analysis of the previous text is kept",
+                "%s: reanalysis blocked for %s: %s; the previous analysis is kept",
                 bill.number,
                 document.url,
+                prepared.unreadable_reason,
             )
             return bill, False
         assert prepared.record is not None, (
@@ -1953,13 +1954,19 @@ class AnalysisService:
         document = located.document
         try:
             loaded = self._load_text(document)
-        except OrkaUnreachableError, DocumentSelectionError:
+        except (OrkaUnreachableError, DocumentSelectionError) as exc:
             if previous is None:
                 raise
             # A bill that already has an analysis keeps it, the same as for any other document
             # that could not be read: the card goes on describing the text it was written from.
             return _Prepared(
-                bill, located, "", "metadata_only", previous, first=False, unreadable=True
+                bill,
+                located,
+                "",
+                "metadata_only",
+                previous,
+                first=False,
+                unreadable_reason=str(exc) or type(exc).__name__,
             )
         if loaded.document is not None:
             document = loaded.document
@@ -1968,7 +1975,15 @@ class AnalysisService:
         if purpose == "explanation" and source not in FULL_TEXT_SOURCES:
             raise ValueError("Текст проекта пока недоступен; повторите /explain после загрузки")
         if previous is not None and source not in FULL_TEXT_SOURCES:
-            return _Prepared(bill, located, text, source, previous, first=False, unreadable=True)
+            return _Prepared(
+                bill,
+                located,
+                text,
+                source,
+                previous,
+                first=False,
+                unreadable_reason=f"no usable full text (source: {source})",
+            )
         digest = loaded.digest
         law = loaded.law
         if previous is not None and (
@@ -2077,9 +2092,14 @@ class AnalysisService:
             custom_id = hashlib.sha256(request_identity.encode()).hexdigest()
             if overflow and custom_id in self._context_rejections:
                 if not first:
-                    log.warning("%s: no model takes the new text's context", bill.number)
                     return _Prepared(
-                        bill, located, text, source, previous, first=False, unreadable=True
+                        bill,
+                        located,
+                        text,
+                        source,
+                        previous,
+                        first=False,
+                        unreadable_reason="both primary and overflow models rejected the context",
                     )
                 raise LlmContextExceededError("overflow batch also rejected the input context")
             return _Prepared(

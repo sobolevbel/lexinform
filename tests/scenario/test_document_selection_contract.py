@@ -69,6 +69,66 @@ def test_conflicting_word_and_pdf_cannot_be_resolved_by_format_rank(workers: int
     assert bill.analysis_attempts == 0
 
 
+@pytest.mark.parametrize("workers", [1, 4])
+@pytest.mark.parametrize("conflicting", [False, True])
+def test_rcl_reanalysis_with_a_glued_draft_date(
+    workers: int, conflicting: bool, caplog: pytest.LogCaptureFixture
+) -> None:
+    baseline = rcl_document(790412, "Projekt ustawy.docx")
+    previous = rcl_document(798659, "Projekt ustawy po KP.docx")
+    latest = rcl_document(801710, "PROJEKT PO KOMISJI PRAWNICZEJ.docx")
+    before = law(day=10).replace("września", "lipca", 1)
+    older = law(day=18).replace("dnia 18", "dnia18", 1)
+    after = law(day=18 if conflicting else 29, days=60)
+    world = World(
+        extractor=FakeTextExtractor(
+            page_count=0, by_content={b"baseline": before, b"older": older, b"latest": after}
+        ),
+        workers=workers,
+    )
+    project = world.add_rcl_project(
+        rcl_project(
+            stages=(
+                rcl_stage(
+                    9, "Stały Komitet Rady Ministrów", "reached", rcl_folder(9, "Projekt", baseline)
+                ),
+            ),
+            consultation=None,
+        )
+    )
+    world.rcl.files[baseline.url] = b"baseline"
+    world.run()
+    saved = world.bill(f"RCL/{project.id}").analysis
+    world.clock.advance(days=1)
+    stage = rcl_stage(10, "Komisja Prawnicza", "active").model_copy(
+        update={"loose_documents": (previous, latest)}
+    )
+    world.rcl.put(
+        project.model_copy(
+            update={"modified": world.clock.now().date(), "stages": (*project.stages, stage)}
+        )
+    )
+    world.rcl.files.update({previous.url: b"older", latest.url: b"latest"})
+
+    report = world.run()
+
+    stored = world.bill(f"RCL/{project.id}").analysis
+    assert report.ok and stored is not None
+    if conflicting:
+        assert stored == saved and report.reanalyzed == 0
+        assert len(world.llm.contexts) == 1
+        assert "reanalysis blocked" in caplog.text and "ambiguous:" in caplog.text
+        assert "conflicting bill version" in caplog.text
+        assert latest.url in caplog.text and previous.url in caplog.text
+        assert "cannot be read" not in caplog.text
+    else:
+        assert report.reanalyzed == 1 and stored.source_url == latest.url
+        assert stored.revision == 2 and world.llm.contexts[-1].text == after
+        assert "reanalysis blocked" not in caplog.text
+        world.repo.restore(world.repo.dump())
+        assert world.run().reanalyzed == 0 and len(world.llm.contexts) == 2
+
+
 def test_self_amendment_is_read_separately_from_its_baseline() -> None:
     baseline = rcl_document(1, "Projekt ustawy.docx")
     amendment = rcl_document(2, "Autopoprawka.docx")
