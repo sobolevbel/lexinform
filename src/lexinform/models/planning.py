@@ -23,21 +23,33 @@ class BillPlan(BaseModel):
 
     def should_publish(self, change: StatusChange, *, act_published: bool = False) -> bool:
         known = self.previous.stages if self.previous is not None else ()
-        if (
-            not self.text_active
-            and change.content_changed
-            and not (
-                change.new_stages
-                or change.closure_detected
-                or change.decision_changed
-                or change.supplements
-                or change.amendments
-            )
-        ):
+        if not self.text_active and tells_only_a_text(change):
             return False
         return has_news(change, act_published=act_published) and (
             self.decision_changed or not fills_in_the_past(known, self.observed.stages)
         )
+
+
+def tells_only_a_text(change: StatusChange) -> bool:
+    """The change is a new reading of the text and nothing else."""
+    return change.content_changed and not (
+        change.new_stages
+        or change.closure_detected
+        or change.decision_changed
+        or change.supplements
+        or change.amendments
+    )
+
+
+def text_still_matters(bill: Bill, *, closed: bool) -> bool:
+    """False once the road ended without a law: its text is then nobody's news (B106)."""
+    return (
+        bill.act is not None
+        or bill.summary.eli is not None
+        or not process_rejected(
+            process_evidence(bill.stages, passed=bill.summary.passed, closed=closed)
+        )
+    )
 
 
 def observation_of(bill: Bill) -> ObservedProcess | None:
@@ -76,15 +88,7 @@ def plan_bill(
     previous = observation_of(bill)
     fresh = bill.model_copy(update={"summary": detail, "stages": detail.stages})
     observed = observe(fresh, closure_date=detail.closure_date)
-    text_active = (
-        fresh.act is not None
-        or detail.eli is not None
-        or not process_rejected(
-            process_evidence(
-                observed.stages, passed=observed.passed, closed=observed.closure_date is not None
-            )
-        )
-    )
+    text_active = text_still_matters(fresh, closed=observed.closure_date is not None)
     added = diff_stages(previous.stages, observed.stages) if previous else []
     decisions = decision_changes(previous.stages, observed.stages) if previous else ()
     added.extend(stage for stage in decisions if stage not in added)

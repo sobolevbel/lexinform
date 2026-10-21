@@ -36,6 +36,8 @@ from lexinform.models import (
     iso_week,
     participation_view,
     previous_week,
+    tells_only_a_text,
+    text_still_matters,
     update_event,
     week_bounds,
 )
@@ -391,7 +393,7 @@ class DigestService:
         )
 
     def _entry(self, post: Publication, bills: dict[tuple[int, str], Bill]) -> DigestEntry | None:
-        """One post as the digest names it; None when its bill is gone from the database."""
+        """One post as the digest names it; None when its bill is gone or it told a dead text."""
         key = (post.term, post.number)
         if key not in bills:
             found = self._repo.get(post.term, post.number)
@@ -410,6 +412,13 @@ class DigestService:
         change = None
         if post.delivery is not None and post.delivery.change_json:
             change = StatusChange.model_validate_json(post.delivery.change_json)
+        if (
+            change is not None
+            and tells_only_a_text(change)
+            and not text_still_matters(bill, closed=bill.summary.closure_date is not None)
+        ):
+            # Sent before B106 closed it, it is still not a thing to remember about the week.
+            return None
         consequence = ""
         if (
             post.kind is PublicationKind.CONSULTATION_REVIEW

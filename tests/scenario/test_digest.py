@@ -10,18 +10,30 @@ from lexinform.keywords import KeywordPrefilter
 from lexinform.models import (
     DIGEST_NUMBER,
     DIGEST_TERM,
+    DeliveryPlan,
+    Publication,
     PublicationKind,
     PublicationStatus,
     RunMode,
     RunReport,
     SejmSitting,
+    Stage,
+    StatusChange,
     iso_week,
 )
 from lexinform.services.digest import DigestService
 from lexinform.services.terms import TermResolver
 from lexinform.settings import Settings
 from tests.fakes import FakeTextExtractor, make_analysis
-from tests.harness import CHANNEL, COMMITTEE_STAGES, REFERRED, SUPPORT_URL, World, submission
+from tests.harness import (
+    CHANNEL,
+    COMMITTEE_STAGES,
+    REFERRED,
+    SUPPORT_URL,
+    TERM,
+    World,
+    submission,
+)
 
 TITLE = "Poselski projekt ustawy o zmianie ustawy o cudzoziemcach"
 # The World's clock starts on Monday 2026-09-07; the digest's day is the Sunday that ends it.
@@ -296,6 +308,71 @@ def test_the_digest_names_an_update_by_what_it_said() -> None:
     (draft,) = _drafts(w)
     assert "Что изменилось" in draft
     assert "Направлен в комиссию" in draft
+
+
+REJECTED = (
+    *REFERRED,
+    Stage(
+        stage_name="I czytanie na posiedzeniu Sejmu",
+        stage_type="SejmReading",
+        date=dt.date(2026, 9, 8),
+        decision="odrzucono",
+    ),
+)
+
+
+def _sent_text_update(w: World, number: str, *, rejected: bool) -> None:
+    """A «new text» reply as one sent before B106 stopped them for a road that ended."""
+    bill = w.bill(number)
+    if rejected:
+        closed = bill.summary.model_copy(update={"closure_date": dt.date(2026, 9, 8)})
+        bill = bill.model_copy(update={"summary": closed, "stages": REJECTED})
+    change = StatusChange(
+        term=TERM,
+        number=number,
+        old_fingerprint="old",
+        new_fingerprint=f"text/{number}",
+        new_stages=[],
+        content_changed=True,
+        detected_at=w.clock.now(),
+    )
+    change_id = w.repo.add_status_change(change)
+    assert change_id is not None, "the fingerprint is new for this bill"
+    w.repo.create_publication(
+        Publication(
+            term=TERM,
+            number=number,
+            kind=PublicationKind.STATUS_UPDATE,
+            status=PublicationStatus.SENT,
+            channel_id=CHANNEL,
+            status_change_id=change_id,
+            message_id=200 + int(number[-1]),
+            created_at=w.clock.now(),
+            sent_at=w.clock.now(),
+            delivery=DeliveryPlan(
+                bill_json=bill.model_dump_json(),
+                change_json=change.model_dump_json(),
+                reply_to=w.card_id(number),
+            ),
+        )
+    )
+
+
+def test_a_new_text_of_a_bill_whose_road_ended_without_a_law_is_left_out() -> None:
+    """Druk 2111: «Новая версия текста» over a law the veto had killed headed draft W42."""
+    w = World()
+    w.add_bill("3039", TITLE)
+    w.add_bill("3041", TITLE)
+    w.run()
+    _sent_text_update(w, "3039", rejected=True)
+    _sent_text_update(w, "3041", rejected=False)
+    service = w.container.digest_service(dry_run=True)
+    assert service is not None, "World has a technical channel"
+
+    week = service.build(iso_week(w.clock.now().date()))
+
+    texts = [entry.number for entry in week.updates if entry.event == "text_changed"]
+    assert texts == ["3041"]
 
 
 def test_digest_groups_all_upcoming_sittings_and_omits_unfollowed_bills() -> None:

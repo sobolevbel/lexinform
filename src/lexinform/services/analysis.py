@@ -378,6 +378,17 @@ def text_digest(text: str) -> str:
     return "text-v2:" + hashlib.sha256(normalised.encode("utf-8")).hexdigest()
 
 
+def _same_text_read_again(previous: AnalysisRecord, fresh: AnalysisRecord) -> AnalysisRecord:
+    """An unversioned digest read again from its own file to the same digest names no change."""
+    old, new = previous.text_sha256 or "", fresh.text_sha256 or ""
+    if not old or ":" in old or new != f"text-v2:{old}" or previous.source_url != fresh.source_url:
+        return fresh
+    if fresh.analysis.changes_since_previous:
+        log.info("%s read again to the digest it had; no change is named", fresh.source_url)
+    analysis = fresh.analysis.model_copy(update={"changes_since_previous": []})
+    return fresh.model_copy(update={"analysis": analysis})
+
+
 def _memo_key(bill: Bill, purpose: str, context: BaseModel, *, legacy: bool = False) -> str:
     data = context.model_dump(mode="json", exclude={"scan", "text"})
     if data.get("source_check") is None:
@@ -1336,7 +1347,8 @@ class AnalysisService:
             "only a bill with a card is re-analysed, and a card needs an analysis"
         )
         if bill.status is BillStatus.REANALYSIS_READY and bill.ready_analysis is not None:
-            return bill.model_copy(update={"analysis": _reused(bill.ready_analysis.record)}), True
+            ready = _same_text_read_again(bill.analysis, _reused(bill.ready_analysis.record))
+            return bill.model_copy(update={"analysis": ready}), True
         if bill.status is BillStatus.BATCH_PENDING:
             # Already filed and not yet collected: re-detecting it now would queue it twice.
             return bill, False
@@ -1375,7 +1387,8 @@ class AnalysisService:
         if self._authors is not None and document.kind == "print" and prepared.text:
             described = bill if summary is None else bill.model_copy(update={"summary": summary})
             authors = self._authors.resolve(described, prepared.text) or authors
-        return bill.model_copy(update={"analysis": prepared.record, "authors": authors}), True
+        record = _same_text_read_again(bill.analysis, prepared.record)
+        return bill.model_copy(update={"analysis": record, "authors": authors}), True
 
     def may_wait_for_batch(self, bill: Bill) -> bool:
         if self._options.require_batch:

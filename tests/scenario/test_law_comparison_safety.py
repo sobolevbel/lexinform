@@ -8,6 +8,7 @@ from dataclasses import replace
 import pytest
 
 from lexinform.law_digest import law_digest
+from lexinform.models import PublicationKind
 from lexinform.models.report import CallKind
 from lexinform.services.analysis import Waiting, text_digest
 from tests.fakes import FakeTextExtractor
@@ -83,6 +84,36 @@ def test_unversioned_hashes_cannot_certify_a_reloaded_baseline(replace_source: b
     assert not w.llm.change_contexts
     stored = w.bill("3039").analysis
     assert stored is not None and stored.text_sha256 == text_digest(changed)
+
+
+def test_an_unversioned_record_read_again_from_its_own_file_announces_no_new_version() -> None:
+    """Druk 2846 (19 Oct 2026): the same `2846_u3.pdf` was read again when the process moved, and
+    the model, comparing two descriptions of one text, posted «Новая версия текста»."""
+    w = World(extractor=FakeTextExtractor(by_content={b"%PDF-druk": ACT}, page_count=1))
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.gateway.files[print_url("3039")] = b"%PDF-druk"
+    w.run()
+    previous = w.bill("3039").analysis
+    assert previous is not None and previous.text_sha256 == text_digest(ACT)
+    w.repo.save_analysis(
+        TERM,
+        "3039",
+        previous.model_copy(
+            update={"text_sha256": text_digest(ACT).split(":")[-1], "law_sha256": None}
+        ),
+    )
+    w.clock.advance(days=2)
+    w.gateway.prints["3039"] = w.gateway.prints["3039"].model_copy(
+        update={"change_date": w.clock.now().replace(tzinfo=None)}
+    )
+
+    report = w.run()
+
+    assert report.reanalyzed == 1  # read again, as an unversioned digest cannot vouch for it
+    stored = w.bill("3039").analysis
+    assert stored is not None and stored.text_sha256 == text_digest(ACT)
+    assert stored.analysis.changes_since_previous == []
+    assert not w.publisher.texts(PublicationKind.STATUS_UPDATE)
 
 
 @pytest.mark.parametrize("kind", SECONDARY_KINDS)

@@ -219,7 +219,14 @@ from lexinform.models.phases import (
     stalled_days,
     window_closes_within,
 )
-from lexinform.models.planning import BillPlan, observation_of, observe, plan_bill
+from lexinform.models.planning import (
+    BillPlan,
+    observation_of,
+    observe,
+    plan_bill,
+    tells_only_a_text,
+    text_still_matters,
+)
 from lexinform.models.rcl import (
     RCL_STAGE_TYPE,
     RclConsultation,
@@ -392,6 +399,8 @@ __all__ = [
     "observation_of",
     "observe",
     "plan_bill",
+    "tells_only_a_text",
+    "text_still_matters",
     "ObservedProcess",
     "DeliveryPlan",
     "UpdateNews",
