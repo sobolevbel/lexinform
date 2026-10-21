@@ -8,8 +8,10 @@ from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import (
     RCL_STAGE_TYPE,
     AnalysisRecord,
+    ApplicantType,
     Bill,
     BillStatus,
+    BillSubmission,
     RclConsultation,
     RclProject,
     Stage,
@@ -251,31 +253,62 @@ def test_card_from_metadata_only_explains_the_unreadable_text() -> None:
     assert "Текст проекта" not in text.split("🔗")[1]  # no document links without documents
 
 
-def test_update_lists_the_new_stage_and_announces_the_hand_over_to_the_sejm() -> None:
-    project = rcl_project(rm_number="RM-0610-139-26", consultation=None)
-    bill = rcl_bill(project)
+def _hand_over() -> StatusChange:
     sejm = Stage(
         stage_name="14. Skierowanie projektu ustawy do Sejmu",
         stage_type=RCL_STAGE_TYPE,
         date=dt.date(2026, 9, 2),
     )
-    change = StatusChange(
+    return StatusChange(
         term=10,
-        number=bill.number,
+        number=RCL_NUMBER,
         old_fingerprint="a",
         new_fingerprint="b",
         new_stages=[sejm],
         detected_at=NOW,
     )
 
-    text = MessageFormatter("ru").status_update(bill, change, today=TODAY).text
+
+RCL_NUMBER = "RCL/12414100"
+GOVERNMENT_ENTRY = BillSubmission(
+    term=10,
+    number="RPW/35455/2026",
+    title="Rządowy projekt ustawy o zmianie ustawy o udziale RP w SIS i VIS",
+    applicant=ApplicantType.GOVERNMENT,
+    date_of_receipt=dt.date(2026, 9, 3),
+    senders_number="RM-0610-139-26",
+)
+
+
+def test_update_lists_the_new_stage_and_announces_the_hand_over_to_the_sejm() -> None:
+    project = rcl_project(rm_number="RM-0610-139-26", consultation=RCL_CONSULTATION)
+    bill = rcl_bill(project)
+
+    text = MessageFormatter("ru").status_update(bill, _hand_over(), today=dt.date(2026, 9, 10)).text
 
     assert_telegram_html(text)
     assert "🔢 <b>Проект направлен в Сейм — UC164</b>" in text
     assert "• 2 сент 2026: <i>14. Skierowanie projektu ustawy do Sejmu</i>" in text
-    assert "Проект направлен в Сейм — ждём номер druku" in text
+    assert text.count("Проект направлен в Сейм") == 1  # the header, not a line repeating it
+    assert "Общественные консультации" not in text  # closed on 8 Sept: the card's history
     assert "Что дальше:</b> присвоение номера druku в Сейме, затем I чтение" in text
     assert ">Проект на RCL</a>" in text and "#UC164" in text
+
+
+def test_the_hand_over_names_the_sejms_entry_and_its_file_once_the_sejm_lists_it() -> None:
+    bill = rcl_bill(rcl_project(rm_number="RM-0610-139-26", consultation=None)).model_copy(
+        update={"submission": GOVERNMENT_ENTRY}
+    )
+    fmt = MessageFormatter("ru")
+
+    text = fmt.status_update(bill, _hand_over(), today=TODAY).text
+    card = fmt.new_bill(bill, None, today=TODAY).text
+
+    assert_telegram_html(text)
+    received = "📄 Сейм получил проект 3 сент 2026: <b>RPW/35455/2026</b>"
+    assert received in text and received in card
+    pdf = f'<a href="{GOVERNMENT_ENTRY.pdf_url}">PDF проекта (сайт Сейма)</a>'
+    assert pdf in text and pdf in card
 
 
 def test_consultation_reminder_and_results_point_to_the_ministry_and_the_project_page() -> None:

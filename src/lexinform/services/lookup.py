@@ -34,7 +34,7 @@ from lexinform.models import (
     wykaz_summary,
 )
 from lexinform.ports import BillRepository, Clock, ProjectResolver, SejmGateway, WykazGateway
-from lexinform.services.predecessors import rcl_predecessor
+from lexinform.services.predecessors import absorb_submission, rcl_predecessor
 from lexinform.services.rcl_projects import RclProjectReader
 from lexinform.services.sources import print_of_project
 from lexinform.services.terms import TermResolver
@@ -185,6 +185,11 @@ class BillLookup:
             sub = self.find_submission(term, number)
             if sub.print_number:
                 return self._read(term, sub.print_number)
+            continued = (
+                self._repo.find_by_rm_number(sub.senders_number) if sub.senders_number else None
+            )
+            if continued is not None:
+                return self.continuation(continued)
             return Bill(
                 summary=ProcessSummary.from_submission(sub),
                 submission=sub,
@@ -289,6 +294,9 @@ class BillLookup:
         """A `/bills` entry (RPW): applicant, consultation dates and the file the Sejm site
         serves under the RPW number. The entry names its print as soon as it has one."""
         sub = self.find_submission(term, number)
+        project = absorb_submission(self._repo, self._projects, sub)
+        if project is not None:
+            return self.continuation(project)
         summary = ProcessSummary.from_submission(sub)
         bill = self._repo.upsert_summary(summary, now=self._clock.now())
         self._repo.save_submission(bill.term, bill.number, sub)

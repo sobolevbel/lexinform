@@ -220,6 +220,7 @@ class BillSubmission(BaseModel):
     consultation_end: dt.date | None = None
     consultation_results: bool = False
     withdrawn_date: dt.date | None = None
+    senders_number: str | None = None  # RM number: all 561 government entries of term 10 have one
 
     @property
     def is_bill(self) -> bool:

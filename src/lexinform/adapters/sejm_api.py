@@ -540,6 +540,7 @@ def parse_submission(item: dict[str, Any], *, term: int) -> BillSubmission:
         consultation_end=_date(item.get("publicConsultationEndDate")),
         consultation_results=bool(item.get("consultationResults", False)),
         withdrawn_date=_date(item.get("withdrawnDate")),
+        senders_number=str(item.get("sendersNumber") or "").strip() or None,
     )
 
 

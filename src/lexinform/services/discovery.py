@@ -20,7 +20,7 @@ from lexinform.models import (
     is_over,
 )
 from lexinform.ports import BillRepository, Clock, EliGateway, ProjectResolver, SejmGateway
-from lexinform.services.predecessors import rcl_predecessor
+from lexinform.services.predecessors import absorb_submission, rcl_predecessor
 
 log = logging.getLogger(__name__)
 
@@ -174,6 +174,11 @@ class BillDiscoveryService:
             if not sub.is_bill or sub.print_number or sub.is_closed:
                 continue
             result.pre_print_seen += 1
+            if self._repo.get(sub.term, sub.number) is None:
+                project = absorb_submission(self._repo, self._projects, sub)
+                if project is not None:
+                    log.info("%s continues %s: no row of its own", sub.number, project.number)
+                    continue
             summary = ProcessSummary.from_submission(sub)
             if self._ingest(summary, result):
                 result.pre_print_new += 1

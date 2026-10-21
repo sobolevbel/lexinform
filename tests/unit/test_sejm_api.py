@@ -265,6 +265,7 @@ BILLS = [
         "dateOfReceipt": "2026-08-03",
         "number": "RPW/26666/2026",
         "print": "3039",
+        "sendersNumber": "RM-0610-171-26",
         "status": "WITHDRAWN",
         "withdrawnDate": "2026-09-01",
         "submissionType": "BILL",
@@ -308,6 +309,7 @@ def test_bills_endpoint_parses_submissions_with_and_without_a_print() -> None:
     assert first.public_consultation and first.consultation_end == date(2026, 9, 30)
     assert first.pdf_url.endswith("/10-RPW-29075-2026/$file/10-RPW-29075-2026.pdf")
     assert second.print_number == "3039" and second.is_closed and second.withdrawn_date
+    assert (first.senders_number, second.senders_number) == (None, "RM-0610-171-26")
 
 
 def test_the_bills_listing_includes_entries_received_on_its_first_day() -> None:

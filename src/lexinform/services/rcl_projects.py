@@ -89,6 +89,7 @@ class RclProjectReader:
                 "consultation": consultation,
                 "consultation_attempts": stored.consultation_attempts,
                 "print_number": stored.print_number,
+                "rm_number": project.rm_number or stored.rm_number,
             }
         )
 

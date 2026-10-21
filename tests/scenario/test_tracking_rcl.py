@@ -4,12 +4,20 @@ import datetime as dt
 from dataclasses import replace
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import BillStatus, ChangeReview, PublicationKind, RclProject
+from lexinform.models import (
+    ApplicantType,
+    BillStatus,
+    BillSubmission,
+    ChangeReview,
+    PublicationKind,
+    RclProject,
+)
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import (
     CONSULTATION_FOLDERS,
     ELI,
     RCL,
+    RCL_ID,
     START,
     TERM,
     World,
@@ -20,6 +28,8 @@ from tests.harness import (
     rcl_folder,
     rcl_project,
     rcl_stage,
+    submission,
+    submission_url,
     summary,
 )
 
@@ -587,7 +597,7 @@ def test_hand_over_to_the_sejm_then_the_druk_continues_the_thread() -> None:
 
     assert sent.updates == 1
     sent_text = MessageFormatter("ru").status_update(*w.publisher.updates[0][:2]).text
-    assert "Проект направлен в Сейм — ждём номер druku" in sent_text
+    assert "<b>Проект направлен в Сейм — UC164</b>" in sent_text
     assert (linked.published, linked.linked, linked.updates) == (0, 1, 1)
     assert len(w.publisher.new_bills) == 1  # no second card for the druk
     bill, change, reply_to = w.publisher.updates[1]
@@ -605,6 +615,155 @@ def test_hand_over_to_the_sejm_then_the_druk_continues_the_thread() -> None:
     edited, _ = w.publisher.edits[-1]
     assert edited.number == "3100"
     assert "#kadencja10druk3100 #UC164" in MessageFormatter("ru").new_bill(edited, None).text
+
+
+GOVERNMENT_RPW = "RPW/35455/2026"
+
+
+def _government_entry(w: World, title: str, **overrides: object) -> BillSubmission:
+    """The Sejm logged the project under an RPW number; RCL resolves the RM number it carries."""
+    w.rcl.rm_numbers["RM-0610-139-26"] = RCL_ID
+    entry = submission(
+        number=GOVERNMENT_RPW,
+        title=f"Rządowy {title[0].lower()}{title[1:]}",
+        applicant=ApplicantType.GOVERNMENT,
+        date_of_receipt=RM_DATE,
+        public_consultation=False,
+        consultation_start=None,
+        consultation_end=None,
+        senders_number="RM-0610-139-26",
+        **overrides,
+    )
+    w.gateway.submissions.append(entry)
+    w.gateway.files[submission_url(GOVERNMENT_RPW)] = b"%PDF"
+    return entry
+
+
+def _handed_over(project: RclProject, *, rm_number: str | None = "RM-0610-139-26") -> RclProject:
+    return _moved(
+        project,
+        *project.stages[:6],
+        rcl_stage(14, "Skierowanie projektu ustawy do Sejmu", "active", modified=RM_DATE),
+        modified=RM_DATE,
+        rm_number=rm_number,
+    )
+
+
+def test_the_sejms_entry_of_a_followed_project_is_told_in_its_thread_and_gets_no_card() -> None:
+    """UDER106 (21 Oct 2026): its RPW entry was read again and carded beside the project's card."""
+    w = World()
+    project = _followed_project(
+        w, rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.rcl.put(_handed_over(project))
+    _government_entry(w, project.title)
+
+    report = w.run()
+
+    assert w.repo.get(TERM, GOVERNMENT_RPW) is None
+    assert [bill.number for bill, _ in w.publisher.new_bills] == [RCL]
+    assert [ctx.number for ctx in w.llm.contexts] == [RCL]  # the entry's text is not read again
+    assert report.updates == 1
+    stored = w.bill(RCL)
+    assert stored.submission is not None and stored.submission.number == GOVERNMENT_RPW
+    bill, change, reply_to = w.publisher.updates[0]
+    assert reply_to == w.card_id(RCL)
+    text = MessageFormatter("ru").status_update(bill, change).text
+    assert f"Сейм получил проект 8 сент 2026: <b>{GOVERNMENT_RPW}</b>" in text
+
+
+def test_the_sejms_entry_names_the_project_before_rcl_shows_its_rm_number() -> None:
+    w = World()
+    project = _followed_project(
+        w, rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.rcl.put(_handed_over(project, rm_number=None))
+    _government_entry(w, project.title)
+
+    w.run()
+    w.clock.advance(days=1)
+    w.run(full_track=True)
+
+    assert w.repo.get(TERM, GOVERNMENT_RPW) is None
+    stored = w.bill(RCL).rcl
+    assert stored is not None and stored.rm_number == "RM-0610-139-26"  # kept over the refresh
+    assert w.rcl.calls.count("resolve_project_id:RM-0610-139-26") == 1
+
+
+def test_the_druk_of_a_project_the_sejm_logged_keeps_the_sejms_entry() -> None:
+    w = World()
+    project = _followed_project(
+        w, rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.rcl.put(_handed_over(project))
+    entry = _government_entry(w, project.title)
+    w.run()
+    w.clock.advance(days=1)
+    w.gateway.submissions[-1] = entry.model_copy(update={"print_number": "3100"})
+    druk = summary("3100", project.title, change="2026-09-09T09:00:00").model_copy(
+        update={"rcl_num": "RM-0610-139-26"}
+    )
+    w.gateway.processes.append(druk)
+    w.gateway.details["3100"] = detail(druk, START)
+
+    report = w.run()
+
+    assert report.linked == 1 and report.published == 0
+    printed = w.bill("3100")
+    assert printed.submission is not None and printed.submission.number == GOVERNMENT_RPW
+    assert w.card_id("3100") == w.card_id(RCL)
+    assert w.repo.get(TERM, GOVERNMENT_RPW) is None
+
+
+def test_an_entry_read_while_rcl_could_not_name_its_project_still_gets_no_card() -> None:
+    w = World(batch_only=True)
+    project = w.add_rcl_project(
+        rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.run()
+    w.batch.resolve()
+    w.run()
+    w.clock.advance(days=1)
+    w.rcl.put(_handed_over(project))
+    _government_entry(w, project.title)
+    w.rcl.outages.add("resolve_project_id")
+    w.run()
+    w.rcl.outages.clear()
+    w.batch.resolve()
+    w.clock.advance(days=1)
+
+    w.run()
+
+    assert w.bill(GOVERNMENT_RPW).analysis is not None  # read while nothing could tell
+    assert [bill.number for bill, _ in w.publisher.new_bills] == [RCL]
+
+
+def test_asking_for_the_sejms_entry_of_a_followed_project_answers_with_the_project() -> None:
+    w = World()
+    project = _followed_project(
+        w, rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.rcl.put(_handed_over(project))
+    _government_entry(w, project.title)
+
+    found = w.container.bill_lookup().load(GOVERNMENT_RPW)
+
+    assert found.number == RCL
+    assert w.repo.get(TERM, GOVERNMENT_RPW) is None
+
+
+def test_the_sejms_entry_of_a_skipped_project_is_judged_on_its_own() -> None:
+    w = World()
+    skipped = rcl_project(title="Projekt ustawy o zmianie niektórych ustaw", keywords=(), stages=())
+    w.add_rcl_project(skipped.model_copy(update={"rm_number": "RM-0610-139-26"}))
+    w.run()
+    w.clock.advance(days=1)
+    _government_entry(w, "Projekt ustawy o zmianie ustawy o cudzoziemcach")
+
+    w.run()
+
+    assert w.bill(GOVERNMENT_RPW).status is not BillStatus.LINKED
+    assert GOVERNMENT_RPW in [bill.number for bill, _ in w.publisher.new_bills]
 
 
 def test_druk_of_a_skipped_project_goes_the_normal_way() -> None:

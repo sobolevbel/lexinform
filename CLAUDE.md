@@ -716,7 +716,12 @@ Invariants worth keeping:
   (`docs/incident-3141.md`), so while an RCL project with a thread (`Bill.has_thread`) awaits its
   druk, discovery reads the detail of each new print not known to be a non-government one
   (`_with_rcl_num`) and joins it to that project before anything reads it; a quiet project's
-  druk is still judged on its own text. Past that gate the project gets no card of its own
+  druk is still judged on its own text. **A government `/bills` entry of a followed project is
+  that project's** (UDER106, 21 Oct 2026, was read again and carded beside its own thread):
+  `predecessors.absorb_submission` stores it on the RCL row by `sendersNumber` and no RPW row is
+  made, the card and the hand-over reply name it and link its file, the druk inherits it, and
+  `PublishingService.became_druk` refuses a card to an entry read while RCL could not name the
+  number. Past that gate the project gets no card of its own
   (`PublishingService.became_druk`), the linker keeps a druk's own card and analysis rather than
   overwriting them — and its status too whenever the druk was read on its own text or is being
   read in a batch (`_read_on_its_own`, B60: `save_analysis` resets the status and the generation,
@@ -1218,7 +1223,9 @@ branch history; the state branch is the backup.
   title on it); the OSR and the opinions appear nowhere in the process tree, which is why the bill
   has to remember which of them it has been told.
 - `rclNum` and `rclLink` exist only in a process's **detail**, never in the `/processes` or
-  `/bills` listing (verified 2026-09-11): finding the print an RCL project became means reading
+  `/bills` listing (verified 2026-09-11) — but a government `/bills` entry carries the same RM
+  number as `sendersNumber` (all 561 of term 10, unique, on no other applicant's entry; verified
+  2026-10-21), which is how its RCL project is found: finding the print an RCL project became means reading
   details one by one, so `find_process_by_rcl_num` narrows by the hand-over date and caps the
   number of lookups. The other direction is one request (`getIdFromLegislacja`) — **and that
   endpoint counts them**: about 90 in a row and it answers 403 with a 292-byte body until left

@@ -33,6 +33,7 @@ from lexinform.ports import BillRepository, Clock, Publisher, PublishResult, Sej
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.joint import group_of, primary_of
 from lexinform.services.message_parts import freeze_parts, send_continuations
+from lexinform.services.predecessors import rcl_predecessor
 from lexinform.services.publications import inherit_card, send_publication
 from lexinform.services.sources import fetch_print
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
@@ -447,7 +448,7 @@ class PublishingService:
         return bill.model_copy(update={"joint": record})
 
     def became_druk(self, bill: Bill) -> Bill | None:
-        """The druk this RCL project or RPW entry already is: the druk carries the thread."""
+        """The druk, or the followed RCL project, that already carries this entry's thread."""
         if bill.has_process or bill.status is BillStatus.LINKED:
             return None
         druk = None
@@ -458,8 +459,10 @@ class PublishingService:
                 druk = self._repo.find_print_by_rcl_num(bill.term, bill.rcl.rm_number)
         elif bill.submission is not None and bill.submission.print_number:
             druk = self._repo.get(bill.term, bill.submission.print_number)
+        elif bill.submission is not None and bill.submission.senders_number:
+            druk = rcl_predecessor(self._repo, None, bill.submission.senders_number)
         if druk is not None:
-            log.info("%s is druk %s already: no card of its own", bill.number, druk.number)
+            log.info("%s is %s already: no card of its own", bill.number, druk.number)
         return druk
 
     def _inherited_card(self, bill: Bill) -> Publication | None:

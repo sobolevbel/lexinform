@@ -35,6 +35,7 @@ from lexinform.models import (
     BackfillReport,
     Bill,
     BillStatus,
+    BillSubmission,
     CommandOutcome,
     ConsultationWindow,
     DecisionState,
@@ -715,14 +716,10 @@ class MessageFormatter:
             else ""
         )
         closure = self._closure_line(bill, change, event)
-        consultation = self._consultation_line(bill, today)
-        if (
-            bill.rcl is not None
-            and bill.rcl.current_stage is not None
-            and bill.rcl.current_stage.is_legal_commission
-            and not consultation_open(bill, today)
-        ):
-            consultation = ""
+        # A consultation that is over is the card's history, not news a reply has to repeat.
+        consultation = (
+            self._consultation_line(bill, today) if consultation_open(bill, today) else ""
+        )
         # Terminal updates explain the outcome once, even when no new closure date arrives.
         over = (
             change.withdrawn
@@ -818,9 +815,16 @@ class MessageFormatter:
         if event == "print_assigned":
             assigned = f"{ICON['print']} {esc(lb.print_assigned)}: <b>{esc(bill.number)}</b>"
             closure = f"{assigned}\n{closure}" if closure else assigned
-        elif bill.rcl is not None and bill.rcl.sent_to_sejm and reaches_sejm(change):
-            closure = f"{ICON['print']} {esc(lb.rcl_sent_to_sejm)}"
+        elif bill.submission is not None and bill.rcl is not None and reaches_sejm(change):
+            # The header already says the project went to the Sejm; the entry is what is new.
+            closure = self._received_line(bill.submission)
         return closure
+
+    def _received_line(self, sub: BillSubmission) -> str:
+        """`📄 Сейм получил проект 21 окт 2026: RPW/35455/2026` for a project the Sejm logged."""
+        when = esc(self.fmt_date(sub.date_of_receipt))
+        received = f"{esc(self._labels.rcl_received_by_sejm)} {when}"
+        return f"{ICON['doc_date']} {received}: <b>{esc(sub.number)}</b>"
 
     def _update_links(
         self, bill: Bill, change: StatusChange, *, with_act: bool = False
@@ -833,6 +837,8 @@ class MessageFormatter:
             links = [link(bill.wykaz.web_url, lb.link_wykaz_entry)]
         elif bill.rcl is not None:
             links = [link(s.web_url, lb.link_rcl_project)]
+            if bill.submission is not None and reaches_sejm(change):
+                links.append(link(bill.submission.pdf_url, lb.link_submission_pdf))
         else:
             links = self._sejm_links(bill)
         text_after3 = next((st.text_after3 for st in change.new_stages if st.text_after3), None)
@@ -2663,9 +2669,12 @@ class MessageFormatter:
             if project.wykaz_number:
                 who += f" · {esc(lb.rcl_wykaz)}: {esc(project.wykaz_number)}"
             when = f"{ICON['doc_date']} <b>{esc(lb.rcl_published)}:</b> "
-            return f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {who}\n{when}" + esc(
+            lines = f"{ICON['applicant']} <b>{esc(lb.applicant)}:</b> {who}\n{when}" + esc(
                 self.fmt_date(project.created)
             )
+            if bill.submission is not None:
+                lines += "\n" + self._received_line(bill.submission)
+            return lines
         if bill.wykaz is not None:
             entry = bill.wykaz
             who = applicant
@@ -2737,6 +2746,8 @@ class MessageFormatter:
             links.append(
                 link(project.wykaz_url, lb.link_wykaz if register else lb.link_ministry_plan)
             )
+        if bill.submission is not None:
+            links.append(link(bill.submission.pdf_url, lb.link_submission_pdf))
         return links
 
     def _consultation_line(self, bill: Bill, today: dt.date) -> str:

@@ -170,7 +170,7 @@ class Labels:
     action_rcl_window_closed: str
     action_in_force: str
     rcl_results_hint: str
-    rcl_sent_to_sejm: str
+    rcl_received_by_sejm: str
     link_rcl_project: str
     link_bill_text: str
     link_justification: str
@@ -551,7 +551,7 @@ RU = Labels(
     rcl_results_hint=(
         "поданные мнения (stanowiska) и ответ министерства опубликованы на странице проекта на RCL"
     ),
-    rcl_sent_to_sejm="Проект направлен в Сейм — ждём номер druku",
+    rcl_received_by_sejm="Сейм получил проект",
     link_rcl_project="Проект на RCL",
     link_bill_text="Текст проекта",
     link_justification="Uzasadnienie",
@@ -1310,7 +1310,7 @@ EN = Labels(
         "the opinions submitted (stanowiska) and the ministry's answer are on the project page"
         " on RCL"
     ),
-    rcl_sent_to_sejm="The bill went to the Sejm — waiting for the print number",
+    rcl_received_by_sejm="The Sejm received the bill",
     link_rcl_project="Project on RCL",
     link_bill_text="Bill text",
     link_justification="Uzasadnienie",
