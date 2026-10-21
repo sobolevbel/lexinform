@@ -552,6 +552,9 @@ def senate_position_reported(report: Stage, stages: Sequence[Stage]) -> Stage | 
     """The Senate's amending position a committee report answers: the report lists only votes."""
     if report.stage_type != "CommitteeReport" or not report.print_number:
         return None
+    # The API can file the Senate's position at the head of the tree (druk 1532 of term 9).
+    if report.is_additional_report:
+        return None
     top = list(stages)
     at = next(
         (

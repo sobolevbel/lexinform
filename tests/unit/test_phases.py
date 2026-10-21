@@ -37,6 +37,13 @@ def test_a_report_on_the_senates_position_answers_the_senates_amendments() -> No
     assert senate_position_reported(_report("2792-A"), stages) is None
 
 
+def test_a_senate_position_filed_at_the_head_of_the_tree_does_not_claim_the_a_report() -> None:
+    """Druk 1532 of term 9: the API put the Senate's position before the bill's own `Start`."""
+    misfiled = (SENATE, _work("Praca w komisjach po II czytaniu", _report("1597-A")))
+
+    assert senate_position_reported(_report("1597-A"), misfiled) is None
+
+
 @pytest.mark.parametrize(
     "before",
     [
