@@ -23,6 +23,7 @@ ROUTINE_EVENTS = frozenset(
     {
         "rcl_stage",
         "rcl_legal_commission",
+        "rcl_to_sejm",
         "referral",
         "referrals",
         "committee_report",

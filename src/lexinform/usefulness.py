@@ -6,10 +6,20 @@ from lexinform.models import (
     Bill,
     Phase,
     PublicationKind,
+    Stage,
     StatusChange,
     flatten_stages,
     is_substantive,
 )
+
+
+def _news_of_its_own(stage: Stage) -> bool:
+    """A committee to write to, a consultation to join, or the President's signature."""
+    if stage.stage_type == "Referral":
+        return True
+    if stage.stage_type == RCL_STAGE_TYPE:
+        return "konsultacje publiczne" in stage.stage_name.lower()
+    return stage.stage_type == "PresidentSignature"
 
 
 def digest_reason(
@@ -55,6 +65,13 @@ def digest_reason(
         )
     ):
         return "legal_commission_without_confirmed_consequence"
+    if (
+        kind is PublicationKind.STATUS_UPDATE
+        and change is not None
+        and assessment.importance == "routine"
+        and not any(_news_of_its_own(stage) for stage in flatten_stages(change.new_stages))
+    ):
+        return "routine_step_without_reader_action"
     if kind is PublicationKind.CONSULTATION_RESULTS:
         return "documents_without_confirmed_consequence"
     if kind is PublicationKind.COMMISSION_REVIEW:

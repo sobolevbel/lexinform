@@ -551,7 +551,14 @@ Invariants worth keeping:
   government project can act on, which went out headed «Обновление». Every reply carries the topic
   tags: `_tag_line` does it for the kinds that have one, and the status update and the joint reply,
   which build their tag line by hand, must add `_topic_tags` themselves — they were the two that
-  did not.
+  did not. **A step that gives the reader nothing new is not a message of its own** (decided
+  2026-10-22, after UDER106's «направлен в Сейм · пока ничего»): with `reader_attention=on` a
+  status update the attention rates `routine` goes `digest_only`
+  (`usefulness.digest_reason`, `routine_step_without_reader_action`) — an RCL stage, the
+  hand-over to the Sejm, a committee report with no new text, the hand-over to the President.
+  The card is re-rendered anyway and the digest lists the step. A committee referral (a new
+  address), an RCL consultation stage, the President's signature and anything urgent stay posts.
+  Replayed over the 30 updates production sent by 21 Oct 2026: 9 would have gone to the digest.
 - **What the Sejm publishes is largely scanned paper, and a covering letter is not the document it
   transmits.** `sections.carries_the_document` is what both the prefilter and the analysis ask: it
   cuts the transmittal letter (`without_cover_letter`) and then judges the paper by density — under
