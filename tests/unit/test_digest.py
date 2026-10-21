@@ -288,6 +288,43 @@ def test_an_open_consultation_is_dated_and_counted_down() -> None:
     assert "UC164" in text  # a government project is named by its wykaz number, as its card is
 
 
+def test_the_readers_digest_carries_no_delivery_bookkeeping_and_no_misplaced_advice() -> None:
+    """Draft W42 (18 Oct 2026) said «unknown доставок» to readers and asked for a wykaz number
+    under a Sejm survey."""
+    week = Digest(
+        ref="2026-W42",
+        since=dt.date(2026, 10, 12),
+        until=dt.date(2026, 10, 18),
+        pending_events=2,
+        consultations=(
+            Upcoming(
+                term=10,
+                number="3205",
+                title="Projekt",
+                action_url="https://opiniowanie.sejm.gov.pl/RPW-31544-2026",
+                deadline=dt.date(2026, 10, 21),
+            ),
+            Upcoming(
+                term=10,
+                number="RCL/12414100",
+                title="Projekt",
+                action_email="dep@mswia.gov.pl",
+                wykaz_number="UC164",
+                deadline=dt.date(2026, 10, 30),
+            ),
+        ),
+    )
+    formatter = MessageFormatter("ru", today=lambda: dt.date(2026, 10, 18), attention_enabled=True)
+
+    readers = "\n".join(formatter.digest_parts(week))
+    draft = "\n".join(formatter.digest_parts(week, draft=True))
+
+    assert "unknown" not in readers and "Полнота обзора" not in readers
+    assert "Полнота обзора" in draft
+    assert readers.count("Писать на польском.") == 2
+    assert readers.count("номер wykaz") == 1 and "номер wykaz: UC164" in readers
+
+
 def _sitting(**overrides: object) -> AgendaItem:
     facts: dict[str, object] = {
         "kind": "committee",

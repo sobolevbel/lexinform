@@ -293,6 +293,7 @@ class Labels:
     digest_source_unknown: str = ""
     digest_source: str = ""
     digest_submit_polish: str = ""
+    digest_quote_wykaz: str = ""
     digest_history_limited: str = ""
     digest_organ_deadline: str = ""
     agenda_purpose_labels: dict[str, str] = field(default_factory=dict)
@@ -366,7 +367,8 @@ RU = Labels(
     digest_route_unknown="Маршрут подачи пока не подтверждён.",
     digest_source_unknown="Источник окна не сохранён.",
     digest_source="Источник окна",
-    digest_submit_polish="Писать на польском; для проекта правительства укажите номер wykaz.",
+    digest_submit_polish="Писать на польском.",
+    digest_quote_wykaz="В письме укажите номер wykaz: {number}.",
     digest_history_limited="Исходный snapshot не сохранился; исторический исход не восстановлен.",
     digest_organ_deadline="Срок рассмотрения органом, не подачи мнения",
     agenda_purpose_labels={
@@ -1121,7 +1123,8 @@ EN = Labels(
     digest_route_unknown="The submission route is not confirmed.",
     digest_source_unknown="The window source was not saved.",
     digest_source="Window source",
-    digest_submit_polish="Write in Polish; quote the wykaz number for a government project.",
+    digest_submit_polish="Write in Polish.",
+    digest_quote_wykaz="Quote the wykaz number in the letter: {number}.",
     digest_history_limited=(
         "The original snapshot is unavailable; the historic outcome was not reconstructed."
     ),

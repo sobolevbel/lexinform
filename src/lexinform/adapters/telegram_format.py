@@ -686,6 +686,7 @@ class MessageFormatter:
             EVENT_ICON.get(event, ICON["update"]), self._event_header(change, event), bill
         )
         first_screen = ""
+        changes_listed = False
         if self._attention_enabled or attention is not None:
             assessment = attention or assess_attention(
                 bill,
@@ -700,9 +701,13 @@ class MessageFormatter:
                 groups = esc("; ".join(assessment.affected_groups))
                 first_screen = f"{esc(self._labels.affected)}: {groups}"
             if analysis is not None and change.content_changed and analysis.changes_since_previous:
+                # One list under one heading: split in two it read as two different lists.
                 first_screen += f"\n<b>{esc(self._labels.version_changes)}</b>\n" + "\n".join(
-                    f"• {esc(value)}" for value in analysis.changes_since_previous[:2]
+                    f"• {esc(value.strip())}"
+                    for value in analysis.changes_since_previous
+                    if value.strip()
                 )
+                changes_listed = True
         act_block = ""
         if with_act and bill.act is not None:
             act_block = f"{ICON['published']} <b>{esc(lb.act_published_header)}</b>\n" + (
@@ -736,11 +741,7 @@ class MessageFormatter:
         if analysis is not None and change.content_changed:
             # The card carries the summary; a reply repeats it only when the analysis changed.
             summary_block = self._summary_reminder(analysis.summary, full=True)
-            differences = (
-                analysis.changes_since_previous[2:]
-                if first_screen
-                else analysis.changes_since_previous
-            )
+            differences = [] if changes_listed else analysis.changes_since_previous
             bullets = "\n".join(f"• {esc(c.strip())}" for c in differences if c.strip())
             if bullets:
                 changes_block = (
@@ -856,8 +857,9 @@ class MessageFormatter:
         linked_text = text_after3 or (
             bill.analysis.source_url if bill.analysis and change.content_changed else None
         )
+        amendments_url = change.amendments.source_url if change.amendments is not None else None
         for stage in told_stages(change.new_stages):
-            if stage.report_file and stage.report_file != linked_text:
+            if stage.report_file and stage.report_file not in (linked_text, amendments_url):
                 links.append(
                     link(stage.report_file, f"{lb.link_pdf} {stage.print_number or ''}".strip())
                 )
@@ -1794,7 +1796,7 @@ class MessageFormatter:
                 (lb.digest_figures, ["\n".join(figures[1:])]),
             ]
         )
-        if week.pending_events or week.unknown_deliveries or week.checks_incomplete:
+        if draft and (week.pending_events or week.unknown_deliveries or week.checks_incomplete):
             sections.append(
                 (
                     "",
@@ -1871,6 +1873,8 @@ class MessageFormatter:
         else:
             lines.append(esc(self._labels.digest_route_unknown))
         lines.append(esc(self._labels.digest_submit_polish))
+        if window.wykaz_number:
+            lines.append(esc(self._labels.digest_quote_wykaz.format(number=window.wykaz_number)))
         if window.source_url:
             lines.append(link(window.source_url, self._labels.digest_source))
         else:

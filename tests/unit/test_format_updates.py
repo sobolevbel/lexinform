@@ -7,6 +7,7 @@ import pytest
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import (
+    AmendmentsRecord,
     AttentionAssessment,
     ClubVotes,
     ProcessDetail,
@@ -14,7 +15,7 @@ from lexinform.models import (
     SupplementRecord,
     flatten_stages,
 )
-from tests.fakes import make_analysis
+from tests.fakes import make_amendments, make_analysis
 from tests.formatting import ACT, NOW, assert_telegram_html, bill_of, change_of, consulted
 
 
@@ -231,6 +232,51 @@ def test_status_update_after_a_re_analysis_shows_the_diff(process_3039: ProcessD
     assert "Суть проекта" in text
     assert "🆕 <b>Что изменилось с прошлого раза</b>" in text and "Срок подачи сокращён" in text
     assert "Новые стадии" not in text
+
+
+def test_the_first_screen_lists_every_change_under_one_heading(process_3039: ProcessDetail) -> None:
+    """UD402 (17 Oct 2026): two changes under one heading, the other four under another."""
+    analysis = make_analysis(score=4)
+    analysis.changes_since_previous = ["Пилот вместо системы", "Экзамен 12 месяцев", "Сборы", "КРК"]
+    change = change_of("3039", [], content_changed=True)
+
+    text = (
+        MessageFormatter(attention_enabled=True)
+        .status_update(bill_of(process_3039, analysis), change)
+        .text
+    )
+
+    assert_telegram_html(text)
+    assert text.count("<b>Изменения между версиями проекта</b>") == 1
+    assert "Что изменилось с прошлого раза" not in text
+    assert all(f"• {value}" in text for value in analysis.changes_since_previous)
+
+
+def test_the_amendments_file_is_linked_once(process_3039: ProcessDetail) -> None:
+    """Druk 3157 (21 Oct 2026): «PDF 3193-A» and «Текст поправок (PDF)» were the same file."""
+    url = "https://api.sejm.gov.pl/sejm/term10/prints/3193-A/3193-A.pdf"
+    report = Stage(
+        stage_name="Sprawozdanie komisji",
+        stage_type="CommitteeReport",
+        date=dt.date(2026, 10, 21),
+        print_number="3193-A",
+        report_file=url,
+        proposal="przyjąć część poprawek",
+    )
+    change = change_of("3039", [report])
+    change.amendments = AmendmentsRecord(
+        amendments=make_amendments(),
+        model="m",
+        prompt_version="v",
+        source_url=url,
+        source_kind="committee_amendments",
+        created_at=NOW,
+    )
+
+    text = MessageFormatter("ru").status_update(bill_of(process_3039), change).text
+
+    assert text.count(f'href="{url}"') == 1
+    assert f'href="{url}">Текст поправок (PDF)</a>' in text
 
 
 def test_status_update_tags_name_the_events(process_1962: ProcessDetail) -> None:
