@@ -1,0 +1,24 @@
+{
+  "attachments": [
+    "3255.pdf"
+  ],
+  "changeDate": "2026-10-21T15:40:27",
+  "deliveryDate": "2026-10-21",
+  "documentDate": "2026-10-21",
+  "number": "3255",
+  "processPrint": [
+    "316"
+  ],
+  "term": 10,
+  "title": "Sprawozdanie Komisji Polityki Społecznej i Rodziny o uchwale Senatu w sprawie ustawy o asystencji osobistej osób z niepełnosprawnościami.",
+  "retrieved_on": "2026-10-21",
+  "pdf_pages": 3,
+  "sources": [
+    {
+      "url": "https://api.sejm.gov.pl/sejm/term10/prints/3255/3255.pdf",
+      "sha256": "fa861efc15d37cd24744e2d558a89fcf5946e71b239e3733bd5adc7cd06148cf",
+      "text_fixture": "committee_3255_senate_report.txt"
+    }
+  ],
+  "fixture_whitespace": "Pages joined by form feeds, trailing spaces and runs of empty lines removed; original bytes identified by sha256."
+}

@@ -164,7 +164,9 @@ The channel has already analysed a bill and described it. A new text of the bill
 
 AMENDMENTS_SYSTEM_PROMPT_TEMPLATE = """You are a legal analyst for a channel that informs foreigners living in Poland about Polish legislation.
 
-A bill the channel follows has received amendments: either the Senate's resolution (uchwała Senatu) with its amendments and justification, or a Sejm committee's additional report (sprawozdanie) that lists the amendments tabled at the second reading, or on the Senate's position, with the committee's recommendation for each. You receive that document together with the channel's current description of the bill. Explain what the amendments change.
+A bill the channel follows has received amendments: either the Senate's resolution (uchwała Senatu) with its amendments and justification, or a Sejm committee's additional report (sprawozdanie) that lists the amendments tabled at the second reading with the committee's recommendation for each. You receive that document together with the channel's current description of the bill. Explain what the amendments change.
+
+When the Senate's resolution comes with a Sejm committee's report on it, the report only lists, point by point, which of the Senate's amendments the committee recommends accepting or rejecting: explain what the Senate's amendments change from the resolution, and say from the report which of them the committee recommends accepting or rejecting.
 
 ## Output fields
 
@@ -184,7 +186,9 @@ A bill the channel follows has received amendments: either the Senate's resoluti
 
 GPT51_AMENDMENTS_SYSTEM_PROMPT_TEMPLATE = """You are a legal analyst for a channel that informs foreigners living in Poland about Polish legislation.
 
-A bill the channel follows has received amendments: either the Senate's resolution (uchwała Senatu) with its amendments and justification, or a Sejm committee's additional report (sprawozdanie) that lists the amendments tabled at the second reading, or on the Senate's position, with the committee's recommendation for each. You receive that document together with the channel's current description of the bill. Explain what the amendments change.
+A bill the channel follows has received amendments: either the Senate's resolution (uchwała Senatu) with its amendments and justification, or a Sejm committee's additional report (sprawozdanie) that lists the amendments tabled at the second reading with the committee's recommendation for each. You receive that document together with the channel's current description of the bill. Explain what the amendments change.
+
+When the Senate's resolution comes with a Sejm committee's report on it, the report only lists, point by point, which of the Senate's amendments the committee recommends accepting or rejecting: explain what the Senate's amendments change from the resolution, and say from the report which of them the committee recommends accepting or rejecting.
 
 ## Output fields
 
@@ -409,6 +413,10 @@ def build_amendments_prompt(ctx: AmendmentsContext) -> str:
     if ctx.truncated:
         lines.append("")
         lines.append("[TEKST OBCIĘTY: pokazano tylko część dokumentu]")
+    if ctx.recommendation:
+        lines.append("")
+        lines.append("=== SPRAWOZDANIE KOMISJI SEJMOWEJ O TYCH POPRAWKACH SENATU ===")
+        lines.append(ctx.recommendation)
     return "\n".join(lines)
 
 

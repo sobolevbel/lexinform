@@ -1,5 +1,57 @@
-from lexinform.models.phases import _phase_after
+import pytest
+
+from lexinform.models.phases import _phase_after, senate_position_reported
 from lexinform.models.sejm import Stage
+
+SENATE = Stage(
+    stage_type="SenatePosition",
+    stage_name="Stanowisko Senatu",
+    position="wniósł poprawki",
+    print_number="3213",
+)
+VETO = Stage(stage_type="Veto", stage_name="Weto Prezydenta")
+
+
+def _report(number: str) -> Stage:
+    return Stage(
+        stage_type="CommitteeReport",
+        stage_name="Sprawozdanie komisji",
+        print_number=number,
+        report_file=f"{number}.pdf",
+    )
+
+
+def _work(name: str, report: Stage) -> Stage:
+    return Stage(stage_type="CommitteeWork", stage_name=name, children=(report,))
+
+
+def test_a_report_on_the_senates_position_answers_the_senates_amendments() -> None:
+    report = _report("3255")
+    stages = (
+        _work("Praca w komisjach po II czytaniu", _report("2792-A")),
+        SENATE,
+        _work("Praca w komisjach nad stanowiskiem Senatu", report),
+    )
+
+    assert senate_position_reported(report, stages) is SENATE
+    assert senate_position_reported(_report("2792-A"), stages) is None
+
+
+@pytest.mark.parametrize(
+    "before",
+    [
+        (VETO,),
+        (SENATE, VETO),
+        (SENATE.model_copy(update={"position": "nie wniósł poprawek"}),),
+        (SENATE.model_copy(update={"print_number": None}),),
+    ],
+)
+def test_a_report_answering_no_amending_senate_position_reads_on_its_own(
+    before: tuple[Stage, ...],
+) -> None:
+    report = _report("3300")
+
+    assert senate_position_reported(report, (*before, _work("Praca w komisjach", report))) is None
 
 
 def test_an_unrecognised_last_stage_reads_as_unknown_not_over() -> None:

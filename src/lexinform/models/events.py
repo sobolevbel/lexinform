@@ -340,15 +340,24 @@ def _senate_event(stage: Stage) -> str:
     }.get(outcome, "senate")
 
 
+def senate_amended(stage: Stage) -> bool:
+    """The Senate's position brought amendments, in a resolution print of its own."""
+    position = (stage.position or "").lower()
+    return (
+        stage.stage_type == "SenatePosition"
+        and bool(stage.print_number)
+        and "popraw" in position
+        and "nie wniósł" not in position
+    )
+
+
 def amendments_stage(stages: list[Stage]) -> Stage | None:
     """The newest of the new stages that carries amendments as a document: the Senate's
     position with its resolution print, or a committee report that answers amendments (the
     "-A" print after the 2nd reading, the report on the Senate's position) rather than
     attaching a new bill text."""
     for stage in reversed(stages):
-        senate = stage.stage_type == "SenatePosition" and bool(stage.print_number)
-        position = (stage.position or "").lower()
-        if senate and "popraw" in position and "nie wniósł" not in position:
+        if senate_amended(stage):
             return stage
         report = stage.stage_type == "CommitteeReport" and bool(stage.report_file)
         proposal = (stage.proposal or "").lower()

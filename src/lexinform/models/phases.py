@@ -7,6 +7,7 @@ its deadlines and the public's windows are in `docs/legislative-process.md`.
 
 import datetime as dt
 import re
+from collections.abc import Sequence
 
 from pydantic import BaseModel, ConfigDict
 
@@ -20,7 +21,7 @@ from lexinform.models.bill import (
     veto_stood,
 )
 from lexinform.models.enums import ApplicantType, VetoOutcome
-from lexinform.models.events import hearings_due
+from lexinform.models.events import hearings_due, senate_amended
 from lexinform.models.evidence import (
     DecisionState,
     ReadingOutcome,
@@ -545,6 +546,30 @@ def _phase_after_committee_work(last: Stage, top: list[Stage]) -> Phase:
     if reports:
         return Phase(key="second_reading")
     return Phase(key="committee_work", committees=_latest_committees(top))
+
+
+def senate_position_reported(report: Stage, stages: Sequence[Stage]) -> Stage | None:
+    """The Senate's amending position a committee report answers: the report lists only votes."""
+    if report.stage_type != "CommitteeReport" or not report.print_number:
+        return None
+    top = list(stages)
+    at = next(
+        (
+            i
+            for i, stage in enumerate(top)
+            if any(
+                child.stage_type == "CommitteeReport" and child.print_number == report.print_number
+                for child in stage.children
+            )
+        ),
+        None,
+    )
+    if at is None:
+        return None
+    answered = next(
+        (st for st in reversed(top[:at]) if st.stage_type in ANSWERED_IN_COMMITTEE), None
+    )
+    return answered if answered is not None and senate_amended(answered) else None
 
 
 def _phase_after_referral(last: Stage) -> Phase:

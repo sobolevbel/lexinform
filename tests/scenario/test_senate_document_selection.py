@@ -3,9 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from lexinform.models import AmendmentsContext, Attachment, PrintInfo, Stage
+from lexinform.adapters.llm_prompts import build_amendments_prompt
+from lexinform.models import AmendmentsContext, Attachment, PrintInfo, PublicationKind, Stage
 from tests.fakes import FakeTextExtractor
-from tests.harness import REFERRED, World
+from tests.harness import REFERRED, World, print_url
 
 FIXTURES = Path(__file__).parents[1] / "fixtures/sejm"
 SUBJECT = "o asystencji osobistej osób z niepełnosprawnościami"
@@ -199,6 +200,69 @@ def test_known_conflicts_in_pdf_cannot_be_bypassed_by_visual_fallback(conflict: 
     w.run()
 
     assert not w.batch.submitted and not w.llm.amendment_contexts
+
+
+REPORT_URL = print_url("3255")
+
+
+def _committee_answers_the_senate(w: World, *, proposal: str = "przyjąć poprawki") -> None:
+    """Druk 3255: the committee's report on the Senate's resolution, a vote per amendment."""
+    w.gateway.files[REPORT_URL] = b"report-3255"
+    assert isinstance(w.extractor, FakeTextExtractor), "world_with_sources builds one"
+    report = (FIXTURES / "committee_3255_senate_report.txt").read_text()
+    w.extractor.by_content[b"report-3255"] = report
+    work = Stage(
+        stage_type="CommitteeWork",
+        stage_name="Praca w komisjach nad stanowiskiem Senatu",
+        date=dt.date(2026, 10, 21),
+        children=(
+            Stage(
+                stage_type="CommitteeReport",
+                stage_name="Sprawozdanie komisji",
+                date=dt.date(2026, 10, 21),
+                print_number="3255",
+                report_file=REPORT_URL,
+                proposal=proposal,
+            ),
+        ),
+    )
+    w.set_stages("1929", REFERRED + (STAGE, work))
+    w.clock.advance(days=1)
+
+
+def test_the_report_on_the_senates_amendments_is_read_beside_the_resolution() -> None:
+    """Druk 3255 (21 Oct 2026) lists «pkt N – przyjąć» and nothing else: read alone, it was
+    summarised as «the document does not describe the amendments»."""
+    resolution = (FIXTURES / "senate_3213_resolution.txt").read_text()
+    w = world_with_sources({"3213-uchwała.docx": resolution})
+    w.run()
+    _committee_answers_the_senate(w)
+
+    w.run()
+
+    ctx = w.llm.amendment_contexts[-1]
+    assert (ctx.source_kind, ctx.text) == ("senate_amendments", resolution)
+    assert ctx.proposal == "przyjąć poprawki"
+    assert ctx.recommendation is not None and "pkt 35 – przyjąć" in ctx.recommendation
+    prompt = build_amendments_prompt(ctx)
+    assert prompt.index("TEKST DOKUMENTU Z POPRAWKAMI") < prompt.index("SPRAWOZDANIE KOMISJI")
+    change = w.repo.list_status_changes(10, "1929")[-1]
+    assert change.amendments is not None
+    assert change.amendments.source_url == "https://api.test/3213-uchwała.docx"
+    text = w.publisher.texts(PublicationKind.STATUS_UPDATE)[-1]
+    assert "Что меняют поправки Сената" in text
+    assert text.count(REPORT_URL) == 1  # the report once, the resolution as the amendments
+
+
+def test_a_report_on_amendments_the_senate_did_not_confirm_gets_no_summary() -> None:
+    w = world_with_sources({"3213-uchwała.docx": (FIXTURES / "senate_3213_cover.txt").read_text()})
+    w.run()
+    _committee_answers_the_senate(w)
+
+    w.run()
+
+    assert not w.llm.amendment_contexts
+    assert w.repo.list_status_changes(10, "1929")[-1].amendments is None
 
 
 @pytest.mark.parametrize("name", ["senate_9_3505_docx.txt", "senate_9_3506_docx.txt"])

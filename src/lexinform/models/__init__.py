@@ -215,6 +215,7 @@ from lexinform.models.phases import (
     is_over,
     is_urgent,
     next_phase,
+    senate_position_reported,
     stalled_days,
     window_closes_within,
 )
@@ -587,6 +588,7 @@ __all__ = [
     "new_supplements",
     "supplement_kind",
     "next_phase",
+    "senate_position_reported",
     "stalled_days",
     "open_hearing",
     "normalize_wykaz_number",

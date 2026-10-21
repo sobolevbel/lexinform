@@ -50,7 +50,7 @@ from lexinform.ports import (
     SenateGateway,
     WykazGateway,
 )
-from lexinform.senate_documents import adoption_before_senate
+from lexinform.services.amendments import AmendmentsSource, amendments_source
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.delivery import DeliveryService
 from lexinform.services.document_reviews import DocumentReviews
@@ -216,14 +216,6 @@ def _agenda_watcher(
 
 
 @dataclass(frozen=True)
-class _Amendments:
-    """An amendments document found among the new stages, with the committee's proposal."""
-
-    document: TextDocument
-    proposal: str | None
-
-
-@dataclass(frozen=True)
 class _Supplement:
     """A document filed to the print since the last check and worth telling: its own print
     number and title, and the file to read it from."""
@@ -239,7 +231,7 @@ class _Found:
 
     detail: ProcessDetail
     print_info: PrintInfo | None
-    amendments: _Amendments | None
+    amendments: AmendmentsSource | None
     supplements: list[_Supplement]
 
 
@@ -700,7 +692,7 @@ class StatusTrackingService:
             )
         return found
 
-    def _amendments_document(self, bill: Bill, detail: ProcessDetail) -> _Amendments | None:
+    def _amendments_document(self, bill: Bill, detail: ProcessDetail) -> AmendmentsSource | None:
         """The Senate's resolution print or the committee's report on amendments, if one of
         the stages new since the stored tree carries amendments (network: the Senate print)."""
         if self._analysis is None or bill.analysis is None or bill.stages_fingerprint is None:
@@ -716,35 +708,16 @@ class StatusTrackingService:
             return None
         return self._document_for_stage(stage, detail)
 
-    def _document_for_stage(self, stage: Stage, detail: ProcessDetail) -> _Amendments | None:
+    def _document_for_stage(self, stage: Stage, detail: ProcessDetail) -> AmendmentsSource | None:
         assert self._analysis is not None
-        if stage.stage_type == "SenatePosition":
-            assert stage.print_number is not None, (
-                "amendments_stage takes a Senate position only with its print"
-            )
-            try:
-                senate_print = self._gateway.get_print(detail.term, stage.print_number)
-            except ServiceUnavailableError:
-                raise
-            except Exception as exc:
-                log.warning("Senate print %s unavailable: %s", stage.print_number, exc)
-                return None
-            document = self._analysis.senate_amendments_document(
-                senate_print,
-                stage,
-                titles=(detail.title_final or "", detail.title),
-                passed_on=adoption_before_senate(
-                    detail.stages, senate_print.document_date or stage.date
-                ),
-            )
-            if document is None:
-                return None
-            return _Amendments(document, None)
-        assert stage.report_file is not None, (
-            "amendments_stage takes a committee report only with its file"
+        return amendments_source(
+            self._gateway,
+            self._analysis,
+            stage,
+            detail.stages,
+            term=detail.term,
+            titles=(detail.title_final or "", detail.title),
         )
-        document = TextDocument(url=stage.report_file, kind="committee_amendments")
-        return _Amendments(document, stage.proposal)
 
     def _retry_documents(self, result: TrackingResult, *, publish: bool, may_wait: bool) -> None:
         if self._analysis is None or result.fatal_error is not None:
@@ -814,7 +787,10 @@ class StatusTrackingService:
                 return
             assert self._analysis is not None
             context = self._analysis.amendments_context(
-                historical, found.document, proposal=found.proposal
+                historical,
+                found.document,
+                proposal=found.proposal,
+                recommendation=found.recommendation,
             )
             if context is None:
                 self._defer_document(work, "amendments document unreadable")
@@ -872,7 +848,7 @@ class StatusTrackingService:
             )
 
     def _summarize_amendments(
-        self, bill: Bill, found: _Amendments, result: TrackingResult, *, may_wait: bool
+        self, bill: Bill, found: AmendmentsSource, result: TrackingResult, *, may_wait: bool
     ) -> AmendmentsRecord | Waiting | None:
         """Best effort: a failure degrades the update to the bare event; outages propagate."""
         assert self._analysis is not None, (
@@ -880,7 +856,11 @@ class StatusTrackingService:
         )
         try:
             record = self._analysis.summarize_amendments(
-                bill, found.document, proposal=found.proposal, may_wait=may_wait
+                bill,
+                found.document,
+                proposal=found.proposal,
+                recommendation=found.recommendation,
+                may_wait=may_wait,
             )
         except ServiceUnavailableError:
             raise
@@ -1128,7 +1108,7 @@ class StatusTrackingService:
         self,
         change: StatusChange,
         bill: Bill,
-        found: _Amendments,
+        found: AmendmentsSource,
         result: TrackingResult,
         *,
         may_wait: bool,

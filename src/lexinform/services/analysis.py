@@ -382,6 +382,8 @@ def _memo_key(bill: Bill, purpose: str, context: BaseModel, *, legacy: bool = Fa
     data = context.model_dump(mode="json", exclude={"scan", "text"})
     if data.get("source_check") is None:
         data.pop("source_check", None)
+    if data.get("recommendation") is None:
+        data.pop("recommendation", None)
     if data.get("support_applicability_unknown") is False:
         data.pop("support_applicability_unknown", None)
     payload = context.model_dump()
@@ -1031,6 +1033,7 @@ class AnalysisService:
         target: AmendmentRevisionTarget,
         *,
         proposal: str | None = None,
+        recommendation: TextDocument | None = None,
         force_id: str = "",
     ) -> Waiting | Publication:
         assert bill.analysis is not None
@@ -1039,18 +1042,7 @@ class AnalysisService:
             raise ValueError("Полный текст поправок не извлечён; исправление не запущено")
         if self._too_expensive_to_digest(loaded):
             raise ValueError("Разбор поправок превышает лимит стоимости документа")
-        context = AmendmentsContext(
-            number=bill.number,
-            title=bill.summary.title,
-            source_kind=document.kind,
-            text=loaded.text,
-            truncated=loaded.truncated,
-            previous_summary=bill.analysis.analysis.summary,
-            previous_key_changes=list(bill.analysis.analysis.key_changes),
-            proposal=proposal,
-            scan=loaded.scan,
-            source_check=document.senate if loaded.scan else None,
-        )
+        context = self._amendments_context_of(bill, document, loaded, proposal, recommendation)
         content_key = _memo_key(bill, "amendments", context)
         revisions = self._repo.list_amendment_revisions(target.publication_id)
         latest = revisions[0] if revisions else None
@@ -1746,7 +1738,12 @@ class AnalysisService:
         return _Loaded(text, False, "pdf", whole=text)
 
     def amendments_context(
-        self, bill: Bill, document: TextDocument, *, proposal: str | None = None
+        self,
+        bill: Bill,
+        document: TextDocument,
+        *,
+        proposal: str | None = None,
+        recommendation: TextDocument | None = None,
     ) -> AmendmentsContext | None:
         assert bill.analysis is not None
         loaded = self._load_amendments_text(document)
@@ -1759,6 +1756,24 @@ class AnalysisService:
                 document.url,
             )
             return None
+        return self._amendments_context_of(bill, document, loaded, proposal, recommendation)
+
+    def _amendments_context_of(
+        self,
+        bill: Bill,
+        document: TextDocument,
+        loaded: _Loaded,
+        proposal: str | None,
+        recommendation: TextDocument | None,
+    ) -> AmendmentsContext:
+        assert bill.analysis is not None
+        report = None
+        if recommendation is not None:
+            read = self._load_text(recommendation, trim=False)
+            if read.text.strip() and not read.truncated:
+                report = read.text
+            else:
+                log.info("%s: %s not read whole", bill.number, recommendation.url)
         return AmendmentsContext(
             number=bill.number,
             title=bill.summary.title,
@@ -1768,6 +1783,7 @@ class AnalysisService:
             previous_summary=bill.analysis.analysis.summary,
             previous_key_changes=list(bill.analysis.analysis.key_changes),
             proposal=proposal,
+            recommendation=report,
             scan=loaded.scan,
             source_check=document.senate if loaded.scan else None,
         )
@@ -1778,6 +1794,7 @@ class AnalysisService:
         document: TextDocument,
         *,
         proposal: str | None = None,
+        recommendation: TextDocument | None = None,
         may_wait: bool = False,
         context: AmendmentsContext | None = None,
     ) -> AmendmentsRecord | Waiting | None:
@@ -1786,7 +1803,9 @@ class AnalysisService:
             "the tracker looks for amendments only of an analysed bill"
         )
         assert document.kind in AMENDMENT_SOURCES, f"not an amendments document: {document.kind}"
-        ctx = context or self.amendments_context(bill, document, proposal=proposal)
+        ctx = context or self.amendments_context(
+            bill, document, proposal=proposal, recommendation=recommendation
+        )
         if ctx is None:
             return None
         key = _memo_key(bill, "amendments", ctx)

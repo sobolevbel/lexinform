@@ -301,6 +301,7 @@ class AmendmentsContext(BaseModel):
     previous_summary: str
     previous_key_changes: list[str] = Field(default_factory=list)
     proposal: str | None = None
+    recommendation: str | None = None  # the committee's report on the Senate's amendments
 
     scan: ScannedDocument | None = None
     source_check: SenateResolutionIdentity | None = None

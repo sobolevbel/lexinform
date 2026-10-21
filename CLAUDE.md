@@ -539,7 +539,11 @@ Invariants worth keeping:
   (`Labels.update_headers`); the closure line is dropped when the header already says it.
   Amendments (Senate resolution print, a committee report whose proposal is about poprawki) are
   summarised by a third model call (`AnalysisService.summarize_amendments`) after the change row
-  exists and stored on it (`amendments_json`); a failure degrades to the bare event. `has_news`
+  exists and stored on it (`amendments_json`); a failure degrades to the bare event. **A report on
+  the Senate's position is only votes** ("pkt 1 – przyjąć" ×35, druk 3255 of 1929): read alone it
+  was summarised as «документ не описывает поправки», so `amendments.amendments_source` reads the
+  Senate's resolution with the report beside it (`AmendmentsContext.recommendation`), and gives no
+  summary when the resolution cannot be confirmed (`senate_position_reported`). `has_news`
   gates the *Sejm* loop only: `RclWatcher` posts every change it records, because `rcl_fingerprint`
   already decides what counts (folder uploads alone do not). What a change with no new stage needs
   is a name, not a gate — `StatusChange.consultation_opened` gives one to the consultation that

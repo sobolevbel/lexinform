@@ -1,5 +1,8 @@
+import logging
+from dataclasses import dataclass
 from zoneinfo import ZoneInfo
 
+from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     AmendmentRevisionTarget,
     Bill,
@@ -10,13 +13,67 @@ from lexinform.models import (
     Publication,
     PublicationKind,
     PublicationStatus,
+    Stage,
     StatusChange,
     TextDocument,
     amendments_stage,
+    senate_position_reported,
 )
 from lexinform.ports import BillRepository, SejmGateway
 from lexinform.senate_documents import adoption_before_senate
 from lexinform.services.analysis import AnalysisService, Waiting
+
+log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class AmendmentsSource:
+    """What an amendments stage is read from, with the committee's proposal and its report."""
+
+    document: TextDocument
+    proposal: str | None = None
+    recommendation: TextDocument | None = None
+
+
+def amendments_source(
+    gateway: SejmGateway,
+    analysis: AnalysisService,
+    stage: Stage,
+    stages: tuple[Stage, ...],
+    *,
+    term: int,
+    titles: tuple[str, ...],
+) -> AmendmentsSource | None:
+    """A report on the Senate's amendments lists only votes: the resolution is read with it."""
+    senate = stage if stage.stage_type == "SenatePosition" else None
+    senate = senate or senate_position_reported(stage, stages)
+    if senate is None:
+        assert stage.report_file is not None, (
+            "amendments_stage takes a committee report only with its file"
+        )
+        report = TextDocument(url=stage.report_file, kind="committee_amendments")
+        return AmendmentsSource(report, stage.proposal)
+    assert senate.print_number is not None, "a Senate position with amendments has its print"
+    try:
+        info = gateway.get_print(term, senate.print_number)
+    except ServiceUnavailableError:
+        raise
+    except Exception as exc:
+        log.warning("Senate print %s unavailable: %s", senate.print_number, exc)
+        return None
+    document = analysis.senate_amendments_document(
+        info,
+        senate,
+        titles=titles,
+        passed_on=adoption_before_senate(stages, info.document_date or senate.date),
+    )
+    if document is None:
+        return None
+    if senate is stage:
+        return AmendmentsSource(document)
+    assert stage.report_file is not None, "amendments_stage takes a report only with its file"
+    report = TextDocument(url=stage.report_file, kind="committee_amendments")
+    return AmendmentsSource(document, stage.proposal, report)
 
 
 class AmendmentsService:
@@ -64,24 +121,16 @@ class AmendmentsService:
             stage = amendments_stage(change.new_stages)
             if stage is None:
                 raise ValueError("В сообщении нет стадии с поправками")
-            proposal = None
-            if stage.stage_type == "SenatePosition":
-                assert stage.print_number is not None
-                info = self._gateway.get_print(bill.term, stage.print_number)
-                document = self._analysis.senate_amendments_document(
-                    info,
-                    stage,
-                    titles=(snapshot.summary.title,),
-                    passed_on=adoption_before_senate(
-                        snapshot.stages, info.document_date or stage.date
-                    ),
-                )
-                if document is None:
-                    raise ValueError("Полный текст поправок Сената не подтверждён по содержимому")
-            else:
-                assert stage.report_file is not None
-                document = TextDocument(url=stage.report_file, kind="committee_amendments")
-                proposal = stage.proposal
+            source = amendments_source(
+                self._gateway,
+                self._analysis,
+                stage,
+                snapshot.stages,
+                term=bill.term,
+                titles=(snapshot.summary.title,),
+            )
+            if source is None:
+                raise ValueError("Полный текст поправок Сената не подтверждён по содержимому")
             saved = original.delivery
             delivery = DeliveryPlan(
                 bill_json=saved.bill_json,
@@ -100,14 +149,15 @@ class AmendmentsService:
             )
             result = self._analysis.revise_amendments(
                 snapshot,
-                document,
+                source.document,
                 AmendmentRevisionTarget(
                     publication_id=original.id,
                     channel_id=self._channel_id,
-                    source_url=document.url,
+                    source_url=source.document.url,
                     delivery=delivery,
                 ),
-                proposal=proposal,
+                proposal=source.proposal,
+                recommendation=source.recommendation,
                 force_id=force_id,
             )
             if isinstance(result, Waiting):

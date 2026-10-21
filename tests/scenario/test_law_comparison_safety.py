@@ -97,6 +97,7 @@ def test_legacy_secondary_work_is_not_resubmitted_under_a_new_hash(
     ctx = intent.request.ctx
     data = ctx.model_dump(mode="json", exclude={"scan", "text"})
     data.pop("source_check", None)
+    data.pop("recommendation", None)  # a field younger than the legacy keys
     text = str(ctx.model_dump().get("text", ""))
     text = re.sub(r"^\s*[–\-—]?\s*\d{1,4}\s*[–\-—]?\s*$", "", text, flags=re.MULTILINE)
     data["text_sha256"] = hashlib.sha256(re.sub(r"\s+", " ", text).strip().encode()).hexdigest()
