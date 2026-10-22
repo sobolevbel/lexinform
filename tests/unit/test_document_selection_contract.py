@@ -432,3 +432,98 @@ def test_chapter_headings_are_not_part_of_the_bill_title() -> None:
 
     assert comparable_versions([old, updated]) == (1,)
     assert not comparable_versions([old, unrelated])
+
+
+_AMENDED = (
+    "Niniejszą ustawą zmienia się ustawy: ustawę z dnia 20 kwietnia 2004 r. o promocji "
+    "zatrudnienia oraz ustawę z dnia 12 grudnia 2013 r. o cudzoziemcach. Niniejsza ustawa wdraża "
+    "dyrektywę (UE) 2024/1233 (Dz. Urz. UE L 2024/1233 z 30.04.2024, str. 1)."
+)
+_PUBLISHED = (
+    "Zmiany tekstu jednolitego wymienionej ustawy zostały ogłoszone w Dz. U. z 2025 r. "
+    "poz. 1080 i 1812."
+)
+
+
+def _rule(days: int) -> str:
+    return (
+        "Art. 1. W ustawie z dnia 12 grudnia 2013 r. o cudzoziemcach (Dz. U. z 2025 r. poz. 1079, "
+        "z późn. zm.{note}) w art. 7 termin 30 dni zastępuje się terminem "
+        f"{days} dni, a organ zawiadamia cudzoziemca o terminie na piśmie."
+    )
+
+
+_LATER = (
+    "Art. 2. Organ rozpatruje wniosek i doręcza decyzję stronie postępowania w terminie miesiąca.\n"
+    "Art. 3. Ustawa wchodzi w życie po upływie 14 dni od dnia ogłoszenia."
+)
+
+
+def pdf_with_notes(*, days: int = 30) -> str:
+    """The notes as a PDF's text layer sets them: at the foot of the page, in the body."""
+    return (
+        "15.07.2026.\nUSTAWA\nz dnia …\n"
+        "o zmianie ustawy o cudzoziemcach oraz niektórych innych ustaw1)\n"
+        + _rule(days).format(note="2)")
+        + "\n1) "
+        + _AMENDED.replace("promocji ", "promocji\n")
+        + "\n2) "
+        + _PUBLISHED
+        + "\n\f"
+        + _LATER
+    )
+
+
+def word_with_notes(*, days: int = 30, mark: str = ")\t") -> bytes:
+    """The same act as Word stores it, the notes in their own part."""
+    ns = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
+
+    def paragraph(text: str, note: str | None = None) -> str:
+        reference = (
+            f'<w:r><w:footnoteReference w:id="{note}"/></w:r><w:r><w:t>)</w:t></w:r>'
+            if note
+            else ""
+        )
+        return f'<w:p><w:r><w:t xml:space="preserve">{text}</w:t></w:r>{reference}</w:p>'
+
+    head, tail = _rule(days).split("{note}")
+    body = (
+        paragraph("15.07.2026.")
+        + paragraph("Ustawa")
+        + paragraph("z dnia …")
+        + paragraph("o zmianie ustawy o cudzoziemcach oraz niektórych innych ustaw", "1")
+        + f'<w:p><w:r><w:t xml:space="preserve">{head}</w:t></w:r>'
+        + '<w:r><w:footnoteReference w:id="2"/></w:r>'
+        + f'<w:r><w:t xml:space="preserve">){tail}</w:t></w:r></w:p>'
+        + "".join(paragraph(line) for line in _LATER.splitlines())
+    )
+    notes = "".join(
+        f'<w:footnote w:id="{key}"><w:p><w:r><w:t xml:space="preserve">'
+        f"{mark.format(key=key)}{text}</w:t></w:r></w:p></w:footnote>"
+        for key, text in (("1", _AMENDED), ("2", _PUBLISHED))
+    )
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr(
+            "word/document.xml", f"<w:document {ns}><w:body>{body}</w:body></w:document>"
+        )
+        archive.writestr("word/footnotes.xml", f"<w:footnotes {ns}>{notes}</w:footnotes>")
+    return buffer.getvalue()
+
+
+@pytest.mark.parametrize("mark", [")\t", "{key}) "])
+def test_one_edition_as_pdf_and_word_is_one_version_wherever_the_notes_stand(mark: str) -> None:
+    word_text = extractor().extract(word_with_notes(mark=mark))
+
+    assert "[przypis 1:" in word_text and "[przypis 2:" in word_text
+    assert comparable_versions([pdf_with_notes(), word_text]) == (0, 1)
+    assert comparable_versions([word_text, pdf_with_notes()]) == (0, 1)
+
+
+def test_notes_do_not_hide_a_changed_norm_between_pdf_and_word() -> None:
+    changed = extractor().extract(word_with_notes(days=60))
+
+    assert not comparable_versions([pdf_with_notes(), changed])
+    assert not comparable_versions(
+        [pdf_with_notes(days=60), extractor().extract(word_with_notes())]
+    )

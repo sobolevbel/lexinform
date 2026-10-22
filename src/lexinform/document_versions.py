@@ -1,6 +1,7 @@
 import datetime as dt
 import hashlib
 import re
+from collections.abc import Iterable
 
 from lexinform.law_digest import law_digest
 from lexinform.sections import trim_print
@@ -148,6 +149,12 @@ def regulation_support(text: str, *, name: str = "") -> bool:
     )
 
 
+_WORD_NOTE = re.compile(r" ?\[(?:przypis [^:\]\s]+: (.*?)|nieodczytany przypis [^\]\s]+)\] ", re.S)
+_NOTE_MARK = re.compile(r"^\W*(?:\d{1,2}\))?")
+MIN_NOTE_CHARS = 30
+"""A shorter Word note may be ordinary wording, so it is not cut out of the other files."""
+
+
 def comparable_versions(texts: list[str]) -> tuple[int, ...]:
     if not texts:
         return ()
@@ -158,5 +165,22 @@ def comparable_versions(texts: list[str]) -> tuple[int, ...]:
     if (same_subject or shared_amended_act(texts)) and all(dates):
         newest = max(date for date in dates if date is not None)
         indices = tuple(index for index in indices if dates[index] == newest)
-    identities = {law_digest(trim_print(texts[i]).text) or texts[i] for i in indices}
+    notes = {
+        chars: re.compile(r"[\W_]*".join(map(re.escape, chars)), re.I)
+        for i in indices
+        for match in _WORD_NOTE.finditer(texts[i])
+        if len(chars := re.sub(r"[\W_]+", "", _NOTE_MARK.sub("", match[1] or ""))) >= MIN_NOTE_CHARS
+    }
+    identities = {
+        law_digest(trim_print(cut := _without_notes(texts[i], notes.values())).text) or cut
+        for i in indices
+    }
     return indices if len(identities) == 1 else ()
+
+
+def _without_notes(text: str, notes: Iterable[re.Pattern[str]]) -> str:
+    """Word notes cut at their reference and their wording wherever a PDF set it."""
+    text = _WORD_NOTE.sub(" ", text)
+    for note in notes:
+        text = note.sub(" ", text)
+    return text
