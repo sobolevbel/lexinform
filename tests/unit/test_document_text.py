@@ -539,3 +539,19 @@ def test_word_2003_layout_hints_are_looked_through() -> None:
     data = _word_2003(f"<w:p><w:r><w:t>Art. 1.</w:t></w:r></w:p>{rows}")
 
     assert _router().extract(data) == "Art. 1.\nLp.\tUwaga"
+
+
+def test_a_word_2003_note_is_read_at_its_reference_like_any_word_note() -> None:
+    note = (
+        "<w:footnote><w:p><w:r><w:footnoteRef/></w:r><w:r><w:t>)</w:t></w:r><w:r><w:tab/></w:r>"
+        "<w:r><w:t>Niniejszą ustawą zmienia się ustawy.</w:t></w:r></w:p></w:footnote>"
+    )
+    data = _word_2003(
+        f"<w:p><w:r><w:t>o zmianie ustaw</w:t></w:r><w:r>{note}</w:r><w:r><w:t>)</w:t></w:r></w:p>"
+        f"<w:p><w:r><w:t>Art. 1.</w:t></w:r><w:r>{note}</w:r></w:p>"
+    )
+
+    assert _router().extract(data) == (
+        "o zmianie ustaw [przypis 1: )\tNiniejszą ustawą zmienia się ustawy.] )\n"
+        "Art. 1. [przypis 2: )\tNiniejszą ustawą zmienia się ustawy.] "
+    )

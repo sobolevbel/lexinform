@@ -1,6 +1,7 @@
 """Bounded technical equivalences, retaining the text that justifies each replacement."""
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from lexinform.sections import law_body
@@ -17,13 +18,28 @@ BLANK = re.compile(
 STAMP_HEADING = (
     r"^\s*(?:Opracowano|Za zgodność) pod względem prawnym,\s*legislacyjnym i redakcyjnym"
 )
-STAMP = re.compile(STAMP_HEADING + r"[^\d]{0,400}\Z", re.MULTILINE | re.IGNORECASE)
+PAGE_OR_DATE = (
+    r"[–—-]?[ \t]*\d{1,4}[ \t]*[–—-]?|\d{1,2}\.\d{1,2}\.\d{4}[ \t]*(?:r\.)?|\d{4}\.\d{2}\.\d{2}"
+)
+STAMP = re.compile(
+    STAMP_HEADING + r"[^\d]{0,400}?(?:\n[ \t ]*(?:" + PAGE_OR_DATE + r")[ \t ]*)*\s*\Z",
+    re.MULTILINE | re.IGNORECASE,
+)
+SIGNED = re.compile(
+    r"podpisan[oy]\s+(?:elektronicznie|kwalifikowanym\s+podpisem\s+elektronicznym)", re.IGNORECASE
+)
+OFFICE = re.compile(
+    r"dyrektor|zastępc|naczelnik|departament|wydział|minister|kierownik|radc|sekretar|\bz up\.",
+    re.IGNORECASE,
+)
+OFFICE_LINE = re.compile(r"[^\W\d_][^\d:;„”\"]{0,150}(?<!\.)")
 FOOTNOTE = re.compile(
     r"^\s*\d{1,2}\)\s*Zmiany\s+(?:tekstu\s+jednolitego\s+)?(?:wymienionej\s+)?"
     r"ustawy\s+(?:zostały\s+)?ogłoszon[eo]\s+w\s+"
     r"(?:Dz\.|U\.|z|r\.|poz\.|i|oraz|[\d\s,–-])+\.(?=\s*(?:\n|\Z))",
     re.MULTILINE | re.IGNORECASE,
 )
+YEAR_RANGE = re.compile(r"\b((?:19|20)\d\d)[ \t]*[-–−][ \t]*((?:19|20)\d\d)\b")
 TOKEN = re.compile(r"[^\W\d_]+|[+-]?\d+(?:[,.:/-]\d+)*|[<>≤≥=+/%]")
 NUMBER = re.compile(r"[+-]?\d+(?:,\d+)?")
 NAME = re.compile(r"[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:[- ][A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+){1,3}")
@@ -68,23 +84,24 @@ class TechnicalText:
 
 
 def signed_stamp(block: str) -> bool:
-    """An RCL stamp carrying only a role and one name, so nothing of the act follows it."""
+    """An RCL stamp of offices and one name, or no name and the e-signature, and nothing else."""
     lines = re.sub(STAMP_HEADING, "", block, count=1, flags=re.IGNORECASE).splitlines()
-    roles = names = 0
+    roles = names = signed = 0
     for line in lines:
-        line = " ".join(line.split()).strip()
-        if not line or line.strip("/()- ").lower() in {
-            "podpisano elektronicznie",
-            "podpisano kwalifikowanym podpisem elektronicznym",
-        }:
+        line = " ".join(line.split()).strip("/()-  ")
+        if not line or re.fullmatch(PAGE_OR_DATE, line):
             continue
-        if set(line.lower().split()) <= ROLE_WORDS:
+        if SIGNED.fullmatch(line):
+            signed += 1
+        elif set(line.lower().split()) <= ROLE_WORDS or (
+            OFFICE.search(line) and OFFICE_LINE.fullmatch(line)
+        ):
             roles += 1
         elif NAME.fullmatch(line):
             names += 1
         else:
             return False
-    return roles > 0 and names == 1
+    return roles > 0 and (names == 1 or (names == 0 and signed > 0))
 
 
 def technical_law(text: str) -> TechnicalText | None:
@@ -95,11 +112,15 @@ def technical_law(text: str) -> TechnicalText | None:
     body = extracted
     evidence: list[TechnicalEvidence] = []
 
-    def replace(pattern: re.Pattern[str], replacement: str, rule: str) -> None:
+    def replace(
+        pattern: re.Pattern[str], replacement: str | Callable[[re.Match[str]], str], rule: str
+    ) -> None:
         nonlocal body
 
         def matched(match: re.Match[str]) -> str:
-            value = match.expand(replacement)
+            value = (
+                match.expand(replacement) if isinstance(replacement, str) else replacement(match)
+            )
             if value != match.group():
                 evidence.append(TechnicalEvidence(rule, match.group(), value))
             return value
@@ -114,6 +135,7 @@ def technical_law(text: str) -> TechnicalText | None:
         evidence.append(TechnicalEvidence("editorial_signature", match.group(), ""))
         body = body[: match.start()]
     replace(re.compile(r"\b(rok|roku)\s+(20\d)\s+(\d)\b"), r"\1 \2\3", "split_year")
+    replace(YEAR_RANGE, lambda m: f"{m[1]}-{m[2]}" if m[1] < m[2] else m[0], "year_range_spacing")
     replace(
         re.compile(r"\b((?:art\.|ust\.|pkt)\s+\d+[a-z]*)\s*[-–−]\s*(\d+[a-z]*)\b"),
         r"\1-\2",

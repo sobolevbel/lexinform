@@ -107,13 +107,43 @@ def test_only_explicit_reference_ranges_ignore_spacing() -> None:
     assert law_digest(ACT + "Kwota 3 -5.") != law_digest(ACT + "Kwota 3-5.")
 
 
-def test_certification_requires_a_name_role_and_no_following_provision() -> None:
+def test_certification_requires_a_role_a_name_or_signature_and_no_following_provision() -> None:
     stamp = (
         "ZA ZGODNOŚĆ POD WZGLĘDEM PRAWNYM, LEGISLACYJNYM I REDAKCYJNYM\n"
         "Renata Łućko\nZastępca Dyrektora\n"
         "Departamentu Prawnego w Ministerstwie Finansów\n"
         "/- podpisano kwalifikowanym podpisem elektronicznym/\n"
     )
-    assert law_digest(ACT) == law_digest(ACT + stamp)
+    unnamed = stamp.replace("Renata Łućko", "")
+    assert law_digest(ACT) == law_digest(ACT + stamp) == law_digest(ACT + unnamed)
     assert law_digest(ACT) != law_digest(ACT + stamp + "Cudzoziemiec nie może podjąć pracy.")
-    assert law_digest(ACT) != law_digest(ACT + stamp.replace("Renata Łućko", ""))
+    assert law_digest(ACT) != law_digest(ACT + unnamed + "Cudzoziemiec nie może podjąć pracy.")
+    assert law_digest(ACT) != law_digest(
+        ACT + unnamed.replace("/- podpisano kwalifikowanym podpisem elektronicznym/\n", "")
+    )
+
+
+@pytest.mark.parametrize(
+    "trailer", ["\n1\n", "\n \n9\n", "\n24.02.2025 r.\n", "\n1\n01.12.2025 r.\n"]
+)
+def test_a_page_number_or_date_after_the_certification_is_part_of_it(trailer: str) -> None:
+    stamp = (
+        "Za zgodność pod względem prawnym, legislacyjnym i redakcyjnym\n"
+        "Paulina Kwiatkowska-Serafin\nNaczelnik Wydziału\nz up. Dyrektora\n"
+        "Departamentu Legislacyjnego\nw Ministerstwie Kultury i Dziedzictwa Narodowego\n"
+        "/podpisano kwalifikowanym podpisem elektronicznym/"
+    )
+    assert law_digest(ACT) == law_digest(ACT + stamp + trailer)
+    assert law_digest(ACT) != law_digest(ACT + stamp + trailer + "Art. 4. Uchyla się art. 2.")
+    assert law_digest(ACT) != law_digest(
+        ACT + stamp.replace("z up. Dyrektora", "Minister określi wzór wniosku.") + trailer
+    )
+
+
+def test_only_an_ascending_year_range_ignores_spacing() -> None:
+    before = ACT + "Limit wydatków w latach 2025-2034 wynosi 100 zł."
+    assert law_digest(before) == law_digest(before.replace("2025-2034", "2025 -2034"))
+    assert law_digest(before) == law_digest(before.replace("2025-2034", "2025 – 2034"))
+    assert law_digest(before) != law_digest(before.replace("2025-2034", "2025 -2035"))
+    descending = ACT + "Saldo 2034 -2025 zł."
+    assert law_digest(descending) != law_digest(descending.replace("2034 -2025", "2034-2025"))

@@ -186,6 +186,7 @@ class _WordMl:
     def __init__(self, namespace: str, *, notes: dict[str, str] | None = None) -> None:
         self._ns = f"{{{namespace}}}"
         self._notes = notes or {}
+        self._inline_notes = 0
 
     def tag(self, name: str) -> str:
         return f"{self._ns}{name}"
@@ -240,6 +241,11 @@ class _WordMl:
                     parts.append(f" [przypis {identity}: {note}] ")
                 else:
                     parts.append(f" [nieodczytany przypis {identity}] ")
+            elif el.tag in (self.tag("footnote"), self.tag("endnote")):
+                # Word 2003 XML keeps the note itself at its reference, numbered by order alone.
+                self._inline_notes += 1
+                note = "\n".join(self.blocks(el))
+                parts.append(f" [przypis {self._inline_notes}: {note}] ")
             else:
                 self._inline(el, parts)  # runs, hyperlinks, fields, insertions, drawings
 
