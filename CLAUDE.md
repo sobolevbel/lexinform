@@ -969,7 +969,8 @@ Invariants worth keeping:
   **everything** the week held and the renderer makes **one message** of it (decided
   2026-10-22): ⏰ the windows still open, 📌 one line per bill — its short name, the step and
   what it means, the bills with a decision first — 🗓 the sittings, and a line of what the bot
-  read, took and follows. A routine step is owned by the digest and confirmed with it but never
+  read, took and follows, with a second for the month before and the ask for support only in a
+  month's first digest. A routine step is owned by the digest and confirmed with it but never
   shown, and each section is capped (`DIGEST_MAIN_ROWS`, …) and shrunk until the post fits
   4,096 characters. The name is the bill's today, so a card carded before names came with the
   analysis is named by a `name` batch of its own on `llm_joint_model` (`TrackingService._name`,

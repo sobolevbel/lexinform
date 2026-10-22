@@ -90,7 +90,7 @@ def test_a_month_counts_what_was_taken_in_and_never_what_a_phase_looked_at() -> 
 
     assert (figures.month, figures.runs) == (dt.date(2026, 9, 1), 2)
     assert figures.discovered == 15
-    assert figures.dropped_by_keywords == 12
+    assert figures.keyword_hits == 3
     assert (figures.analyzed, figures.published) == (2, 2)
 
 
@@ -153,7 +153,7 @@ def test_a_week_with_no_run_records_states_no_figures() -> None:
     assert "Бот за неделю" not in MessageFormatter("ru").digest(week).text
 
 
-def test_may_is_declined_after_a_day_and_not_in_the_month_heading() -> None:
+def test_may_is_declined_after_a_day_and_not_in_the_month_line() -> None:
     fmt = MessageFormatter("ru")
     week = Digest(
         ref="2026-W22",
@@ -169,7 +169,7 @@ def test_may_is_declined_after_a_day_and_not_in_the_month_heading() -> None:
     assert fmt.fmt_date_range(dt.date(2026, 6, 29), dt.date(2026, 7, 2)) == "29 июня - 2 июля 2026"
     assert fmt.fmt_date(dt.date(2026, 3, 9)) == "9 марта 2026"
     assert "25-31 мая 2026" in text
-    assert "· май 2026" in text
+    assert "За май 2026:" in text
 
 
 def test_the_digest_names_the_week_its_cards_and_its_tag() -> None:
@@ -528,11 +528,50 @@ def test_an_open_consultation_says_what_the_bill_is() -> None:
 
 
 def test_the_ask_is_silent_when_there_is_nowhere_to_send_it() -> None:
-    week = Digest(ref="2026-W37", since=dt.date(2026, 9, 7), until=dt.date(2026, 9, 13))
+    week = Digest(
+        ref="2026-W40",
+        since=dt.date(2026, 9, 28),
+        until=dt.date(2026, 10, 4),
+        month=MonthFigures(month=dt.date(2026, 9, 1)),
+    )
 
     assert "поддержать" not in MessageFormatter("ru").digest(week).text
     with_url = MessageFormatter("ru", support_url="https://example.test/c").digest(week).text
     assert "поддержать" in with_url and "https://example.test/c" in with_url
+
+
+def test_the_ask_comes_once_a_month_and_not_every_week() -> None:
+    week = Digest(ref="2026-W37", since=dt.date(2026, 9, 7), until=dt.date(2026, 9, 13))
+
+    text = MessageFormatter("ru", support_url="https://example.test/c").digest(week).text
+
+    assert "поддержать" not in text
+
+
+def test_the_month_is_told_in_the_bots_own_block_in_the_words_of_the_week() -> None:
+    week = Digest(
+        ref="2026-W40",
+        since=dt.date(2026, 9, 28),
+        until=dt.date(2026, 10, 4),
+        figures=WeekFigures(discovered=70),
+        followed=35,
+        month=MonthFigures(
+            month=dt.date(2026, 9, 1),
+            discovered=295,
+            keyword_hits=49,
+            published=21,
+            usage={"claude-opus-5": TokenUsage(input=1_000_000)},
+        ),
+    )
+
+    text = MessageFormatter("ru").digest(week).text
+
+    assert (
+        "🤖 Бот за неделю: новых проектов просмотрено — 70, взято в канал — 0, на контроле — 35.\n"
+        "За сентябрь 2026: новых проектов просмотрено — 295, отобрано по ключевым словам — 49,"
+        " взято в канал — 21, модель обошлась в ≈ $" in text
+    )
+    assert "Итоги месяца" not in text
 
 
 def test_a_pressed_button_is_the_command_it_stands_for() -> None:

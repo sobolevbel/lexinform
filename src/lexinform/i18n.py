@@ -224,11 +224,7 @@ class Labels:
     supplement_unreadable: str
     digest_header: str
     digest_quiet: str
-    digest_month: str
-    digest_month_discovered: str
-    digest_month_dropped: str
-    digest_month_analyzed: str
-    digest_month_published: str
+    digest_month_stats: str
     digest_month_cost: str
     digest_support: str
     digest_and_more: str
@@ -633,12 +629,11 @@ RU = Labels(
     supplement_unreadable="Документ не удалось прочитать — он есть по ссылке ниже.",
     digest_header="Итоги недели",
     digest_quiet="Важных новостей на этой неделе не было.",
-    digest_month="Итоги месяца",
-    digest_month_discovered="просмотрено записей",
-    digest_month_dropped="отсеяно по ключевым словам",
-    digest_month_analyzed="прочитано моделью",
-    digest_month_published="опубликовано карточек",
-    digest_month_cost="расходы на модель",
+    digest_month_stats=(
+        "За {period}: новых проектов просмотрено — {seen}, отобрано по ключевым словам — {hits},"
+        " взято в канал — {taken}{cost}."
+    ),
+    digest_month_cost=", модель обошлась в ≈ {cost}",
     digest_support="Канал бесплатный и без рекламы. Если он вам полезен — можно поддержать:",
     digest_and_more="и ещё {} — смотрите в канале",
     digest_support_coffee="Buy me a coffee",
@@ -1382,12 +1377,11 @@ EN = Labels(
     supplement_unreadable="The document could not be read — it is at the link below.",
     digest_header="The week in the channel",
     digest_quiet="No news worth your attention this week.",
-    digest_month="The month in figures",
-    digest_month_discovered="entries seen",
-    digest_month_dropped="dropped by the keywords",
-    digest_month_analyzed="read by the model",
-    digest_month_published="cards published",
-    digest_month_cost="spent on the model",
+    digest_month_stats=(
+        "In {period}: new bills screened — {seen}, matched the keywords — {hits},"
+        " taken into the channel — {taken}{cost}."
+    ),
+    digest_month_cost=", the model cost ≈ {cost}",
     digest_support="The channel is free and carries no advertising. If it helps you:",
     digest_and_more="and {} more — see the channel",
     digest_support_coffee="Buy me a coffee",

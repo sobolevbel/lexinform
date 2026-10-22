@@ -451,8 +451,8 @@ def test_the_first_digest_of_a_month_carries_its_figures_and_the_ask() -> None:
     w.run()
 
     (draft,) = _drafts(w)
-    assert "Итоги месяца" in draft and "сентябрь 2026" in draft
-    assert "просмотрено записей" in draft and "отсеяно по ключевым словам" in draft
+    assert "За сентябрь 2026: новых проектов просмотрено" in draft
+    assert "отобрано по ключевым словам" in draft
     assert SUPPORT_URL in draft
 
 
@@ -463,7 +463,7 @@ def test_a_week_without_a_month_behind_it_carries_no_figures() -> None:
     w.run()
 
     (draft,) = _drafts(w)
-    assert "Итоги месяца" not in draft
+    assert "За сентябрь" not in draft and SUPPORT_URL not in draft
 
 
 def test_without_a_technical_channel_there_is_no_digest_at_all() -> None:

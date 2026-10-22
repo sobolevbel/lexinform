@@ -114,11 +114,6 @@ class MonthFigures(BaseModel):
     updates: int = 0
     usage: dict[str, TokenUsage] = Field(default_factory=dict)
 
-    @property
-    def dropped_by_keywords(self) -> int:
-        """Entries the keywords answered for, on the title or the text: the model never saw them."""
-        return max(0, self.discovered - self.keyword_hits)
-
     @classmethod
     def of(cls, month: dt.date, reports: list[RunReport]) -> Self:
         """The figures of the month `month` falls in, counting rows *taken in* and never the

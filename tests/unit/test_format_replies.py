@@ -5,7 +5,7 @@ import datetime as dt
 
 import pytest
 
-from lexinform.adapters.telegram_format import MessageFormatter
+from lexinform.adapters.telegram_format import MessageFormatter, lead
 from lexinform.models import ProcessDetail, SittingNews
 from tests.formatting import (
     ACT,
@@ -208,3 +208,23 @@ def test_the_in_force_reminder_does_not_claim_today_when_a_run_was_missed(
     assert fmt.in_force(late).text.startswith("⚖️ <b>Закон вступил в силу")
     assert fmt.in_force(due).text.startswith("⚖️ <b>С сегодняшнего дня действует")
     assert "Что можно сделать сейчас:</b> откройте окончательный текст" in fmt.in_force(due).text
+
+
+@pytest.mark.parametrize(
+    ("text", "first"),
+    [
+        (
+            "Отменяется ст. 3a в законе о покупке недвижимости. Остальное без изменений.",
+            "Отменяется ст. 3a в законе о покупке недвижимости.",
+        ),
+        ("Новый art. 329b: запрет въезда. Срок — 5 лет.", "Новый art. 329b: запрет въезда."),
+        (
+            "Стаж: 6 мес. для иностранцев, 12 мес. для врачей.",
+            "Стаж: 6 мес. для иностранцев, 12 мес. для врачей.",
+        ),
+        ("Вводится e-карта. «Новый» реестр с 2027 г.", "Вводится e-карта."),
+        ("Срок растёт до 10 лет! Успеть подать заявление.", "Срок растёт до 10 лет!"),
+    ],
+)
+def test_the_first_sentence_does_not_end_at_an_abbreviation(text: str, first: str) -> None:
+    assert lead(text) == first

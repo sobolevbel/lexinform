@@ -267,7 +267,6 @@ ICON = {
     "wykaz": "⏳",
     "deadline": "⏳",
     "digest": "🗞",
-    "month": "📊",
     "act": "⏰",
     "news": "📌",
     "bot": "🤖",
@@ -315,7 +314,8 @@ EVENT_ICON = {
     "consultation_opened": "🗣",
     "wykaz_withdrawn": "🚫",
 }
-_SENTENCE_END = re.compile(r"(?<=[.!?…])\s+")
+# Only a capital opens a sentence: «ст. 3a», «art. 258», «в т.ч. на», «6 мес. для» are no ends.
+_SENTENCE_END = re.compile(r"(?<=[.!?…])\s+(?=[«„\"(]?[A-ZА-ЯЁĄĆĘŁŃÓŚŹŻ])")
 _READING_NUMERAL = re.compile(r"^\s*(I{1,3})\s+czytanie", re.IGNORECASE)
 CLUBS_PER_SIDE = 4
 # Events whose header already tells how the process ended: a second sentence would repeat it.
@@ -1744,7 +1744,7 @@ class MessageFormatter:
         windows = [self._digest_window(w) for w in week.consultations if w.deadline is not None]
         news = [self._digest_line(entry) for entry in _week_news(week)]
         sittings = [self._digest_sitting(item, group) for item, group in _week_sittings(week)]
-        tail = [self._digest_stats(week), self._month_block(week.month), self._support_block()]
+        tail = [self._digest_stats(week), self._support_block(week.month)]
         if draft and (week.pending_events or week.unknown_deliveries or week.checks_incomplete):
             warning = lb.digest_coverage_warning.format(
                 pending=week.pending_events, unknown=week.unknown_deliveries
@@ -1829,13 +1829,38 @@ class MessageFormatter:
         return f"• {where} — {bills}"
 
     def _digest_stats(self, week: Digest) -> str:
-        """What the bot did this week, in a line a reader can read."""
-        if week.figures is None:
-            return ""
-        stats = self._labels.digest_stats.format(
-            seen=week.figures.discovered, taken=len(week.cards), followed=week.followed
+        """What the bot did this week and, in the first digest of a month, in the month before."""
+        lines = []
+        if week.figures is not None:
+            lines.append(
+                self._labels.digest_stats.format(
+                    seen=week.figures.discovered, taken=len(week.cards), followed=week.followed
+                )
+            )
+        if week.month is not None:
+            lines.append(self._month_line(week.month))
+        return f"{ICON['bot']} " + "\n".join(map(esc, lines)) if lines else ""
+
+    def _month_line(self, month: MonthFigures) -> str:
+        lb = self._labels
+        cost = cost_usd(month.usage)
+        spent = (
+            lb.digest_month_cost.format(cost=format_usd(cost))
+            if cost is not None and month.usage
+            else ""
         )
-        return f"{ICON['bot']} {esc(stats)}"
+        period = (
+            f"{lb.month_names[month.month.month - 1]} {month.month.year}"
+            if lb.month_names
+            else f"{month.month:%m.%Y}"
+        )
+        return lb.digest_month_stats.format(
+            period=period,
+            seen=month.discovered,
+            hits=month.keyword_hits,
+            taken=month.published,
+            cost=spent,
+        )
 
     def _digest_name(self, entry: DigestEntry | Upcoming) -> str:
         """The bill by its short name and its number, linked to its card."""
@@ -1878,29 +1903,10 @@ class MessageFormatter:
             return f"https://t.me/c/{self._channel[4:]}/{message_id}"
         return None
 
-    def _month_block(self, month: MonthFigures | None) -> str:
-        """What the month caught and what it cost; the first digest of a month carries it."""
+    def _support_block(self, month: MonthFigures | None) -> str:
+        """The ask: once a month beside its figures, and only where there is an address for it."""
         if month is None:
             return ""
-        lb = self._labels
-        rows = [
-            f"{esc(lb.digest_month_discovered)}: {month.discovered}",
-            f"{esc(lb.digest_month_dropped)}: {month.dropped_by_keywords}",
-            f"{esc(lb.digest_month_analyzed)}: {month.analyzed}",
-            f"{esc(lb.digest_month_published)}: {month.published}",
-        ]
-        cost = cost_usd(month.usage)
-        if cost is not None and month.usage:
-            rows.append(f"{esc(lb.digest_month_cost)}: ≈ {format_usd(cost)}")
-        period = (
-            f"{lb.month_names[month.month.month - 1]} {month.month.year}"
-            if lb.month_names
-            else f"{month.month:%m.%Y}"
-        )
-        return f"{ICON['month']} <b>{esc(lb.digest_month)}</b> · {period}\n" + " · ".join(rows)
-
-    def _support_block(self) -> str:
-        """The ask, and only where there is somewhere to send it."""
         lb = self._labels
         links = [
             link(url, label)
