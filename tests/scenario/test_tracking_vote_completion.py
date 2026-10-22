@@ -234,5 +234,5 @@ def test_digest_merges_the_decision_with_late_votes_and_keeps_membership() -> No
     assert result.published
     text = "\n".join(w.publisher.texts(PublicationKind.DIGEST))
     assert text.count("Сейм принял закон") == 1
-    assert "261 за" in text and "KO 1" in text
+    assert "Сейм принял закон: 261 за" in text  # the tally; the clubs are the card's
     assert w.repo.digest_owner(source.id) is not None

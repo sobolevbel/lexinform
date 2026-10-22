@@ -18,6 +18,7 @@ from lexinform.models import (
     PublicationStatus,
     Stage,
     StatusChange,
+    iso_week,
     parse_command,
     stage_fingerprint,
 )
@@ -140,6 +141,24 @@ def test_amendments_command_batches_full_resolution_and_edits_saved_message(
     w.run()
     assert len(w.batch.submitted) == 1
     assert len(w.repo.list_amendment_revisions(original.id)) == 1
+
+
+def test_the_digest_tells_the_amendments_the_message_was_last_edited_with() -> None:
+    w, original = published_world()
+    w.batch.secondary_script[("1929", "amendments")] = make_amendments(
+        changes=["Убран сбор за дубликат решения"]
+    )
+    w.command("/amendments 1929")
+    w.run(track=False)
+    w.batch.resolve()
+    w.run()
+    service = w.container.digest_service(dry_run=False)
+    assert service is not None
+
+    text = w.formatter.digest(service.build(iso_week(original.created_at.date()))).text
+
+    assert "Убран сбор за дубликат решения" in text
+    assert "Срок подачи заявления продлён" not in text  # the frozen post's first change
 
 
 def test_force_queues_new_revision_only_after_previous_delivery_completed() -> None:

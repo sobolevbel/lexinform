@@ -123,11 +123,7 @@ def test_weekly_figures_include_the_current_run_and_survive_rebuilding() -> None
     w.run()
 
     (draft,) = _drafts(w)
-    expected = (
-        "Найдено новых записей о законопроектах: 4",
-        "Отсеяно при проверке релевантности: 2",
-        "Опубликовано новых разборов: 1",
-    )
+    expected = ("новых проектов просмотрено — 4", "взято в канал — 1", "на контроле — 1")
     assert all(line in draft for line in expected)
     w.command(f"/digest publish ref={iso_week(w.clock.now().date())}")
     _commands_only(w)
@@ -291,7 +287,7 @@ def test_a_quiet_week_is_still_told() -> None:
     w.run()
 
     (draft,) = _drafts(w)
-    assert "На этой неделе в канале не было публикаций." in draft
+    assert "Важных новостей на этой неделе не было." in draft
 
 
 def test_the_digest_names_an_update_by_what_it_said() -> None:
@@ -306,8 +302,8 @@ def test_the_digest_names_an_update_by_what_it_said() -> None:
     w.run()
 
     (draft,) = _drafts(w)
-    assert "Что изменилось" in draft
-    assert "Направлен в комиссию" in draft
+    assert "— Направлен в комиссию" in draft  # the week's news of the bill, its card included
+    assert draft.count("druk 3039") == 1
 
 
 REJECTED = (
@@ -408,18 +404,16 @@ def test_digest_groups_all_upcoming_sittings_and_omits_unfollowed_bills() -> Non
     w.run()
 
     (draft,) = _drafts(w)
-    ahead = draft.split("Ближайшие заседания</b>\n")[1]
+    ahead = draft.split("Заседания</b>\n")[1]
     assert ahead.count("заседание Сейма № 65") == 1
     assert ahead.count("заседание Сейма № 66") == 1
     assert "заседание Сейма № 67" not in ahead
     assert "заседание Сейма № 68" not in ahead
     assert "druk 4100" not in ahead
     assert ahead.count(f'<a href="https://t.me/test/{w.card_id("3039")}">') == 2
-    assert ahead.count("druk 3039</a>") == 2
-    assert (
-        f'<a href="https://t.me/test/{w.card_id("3100")}">' in ahead
-        and "druk 3100</a> — O obywatelstwie" in ahead
-    )
+    assert ahead.count("· druk 3039</a>") == 2
+    assert f'<a href="https://t.me/test/{w.card_id("3100")}">' in ahead
+    assert "· druk 3100</a>" in ahead
 
 
 def test_an_inherited_card_appears_once_in_the_digest_not_under_two_numbers() -> None:

@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 from lexinform.models import (
     DIGEST_NUMBER,
     DIGEST_TERM,
+    AmendmentsRecord,
     Bill,
     DeliveryPlan,
     Digest,
@@ -61,6 +62,7 @@ UPDATE_KINDS = (
 was about a date, and by Sunday that date has either passed or is in "what is ahead" below."""
 
 SITTINGS_AHEAD_DAYS = 14
+CONFIDENT_AMENDMENTS = 0.5  # below it the summary says what the document lacks, not what it does
 SUNDAY = 6
 """The day an ISO week ends on, which is not the same question as the day a digest goes out."""
 
@@ -344,7 +346,8 @@ class DigestService:
                     decisions[decision_key] = len(merged)
                 merged.append(entry)
         updates = merged
-        consultations, sittings = self._ahead()
+        followed = self._followed()
+        consultations, sittings = self._ahead(followed)
         starts = self._midnight(since)
         ends = self._midnight(until + dt.timedelta(days=1))
         reports = self._repo.list_runs(since=starts)
@@ -374,6 +377,7 @@ class DigestService:
             sittings=tuple(sittings),
             month=self._month(ref),
             figures=WeekFigures.of(reports) if reports else None,
+            followed=len(followed),
             highlights=tuple(
                 sorted(
                     [
@@ -400,7 +404,7 @@ class DigestService:
             if found is None:
                 return None
             bills[key] = found
-        bill = bills[key]
+        current = bill = bills[key]
         if post.delivery is not None and post.delivery.bill_json:
             bill = participation_view(
                 Bill.model_validate_json(post.delivery.bill_json), post.delivery.participation
@@ -447,18 +451,31 @@ class DigestService:
             consequence = " ".join(
                 rule.change for rule in bill.act_application_review.review.effective_rules
             )
+        amendments = change.amendments if change is not None else None
+        if amendments is not None and post.id is not None:
+            amendments = self._revised_amendments(post.id) or amendments
+        if amendments is not None and amendments.amendments.confidence >= CONFIDENT_AMENDMENTS:
+            told = amendments.amendments
+            consequence = told.changes[0] if told.changes else told.summary
         if analysis is not None:
-            if change is not None and change.content_changed:
-                consequence = " ".join(analysis.changes_since_previous[:2])
-            elif post.kind in CARD_KINDS:
-                consequence = " ".join(analysis.key_changes[:2])
+            if change is not None and change.content_changed and analysis.changes_since_previous:
+                consequence = analysis.changes_since_previous[0]
+            elif post.kind in CARD_KINDS and analysis.key_changes:
+                consequence = analysis.key_changes[0]
+        # The name is today's: a bill named after its post was sent is still called by it.
+        name = current.editorial.mnemonic
         return DigestEntry(
             term=bill.term,
             number=bill.number,
             title=bill.summary.title,
-            mnemonic=bill.editorial.mnemonic.name if bill.editorial.mnemonic else "",
-            mnemonic_language=bill.editorial.mnemonic.language if bill.editorial.mnemonic else "ru",
+            mnemonic=name.name if name else "",
+            mnemonic_language=name.language if name else "ru",
             consequence=consequence,
+            card_message_id=post.delivery.reply_to
+            if post.delivery is not None and post.delivery.reply_to is not None
+            else post.message_id
+            if post.kind in CARD_KINDS
+            else None,
             organ_deadline=Phase.model_validate_json(post.delivery.phase_json).deadline
             if post.delivery is not None and post.delivery.phase_json
             else None,
@@ -475,7 +492,7 @@ class DigestService:
             else (),
             attention=post.attention,
             historical_snapshot=post.delivery is not None and bool(post.delivery.bill_json),
-            summary=analysis.summary if analysis is not None and post.delivery is not None else "",
+            summary=current.analysis.analysis.summary if current.analysis is not None else "",
             source_publication_ids=(post.id,)
             if post.id is not None
             and post.delivery is not None
@@ -493,6 +510,14 @@ class DigestService:
             else "",
         )
 
+    def _revised_amendments(self, publication_id: int) -> AmendmentsRecord | None:
+        """The summary `/amendments` last edited the post with: the frozen post keeps the old."""
+        for revision in self._repo.list_amendment_revisions(publication_id):
+            plan = revision.delivery
+            if revision.status is PublicationStatus.SENT and plan is not None and plan.change_json:
+                return StatusChange.model_validate_json(plan.change_json).amendments
+        return None
+
     def _event(self, post: Publication, bill: Bill) -> str:
         """What an update said, read from the change it was written for and not from the bill's
         state today, which has moved on since."""
@@ -501,13 +526,13 @@ class DigestService:
         change = self._repo.get_status_change(post.status_change_id)
         return update_event(change, bill) if change is not None else ""
 
-    def _ahead(self) -> tuple[list[Upcoming], list[Upcoming]]:
+    def _ahead(self, followed: list[Bill]) -> tuple[list[Upcoming], list[Upcoming]]:
         """What the followed bills still offer: an open consultation, a sitting in a fortnight."""
         today = self.today()
         horizon = today + dt.timedelta(days=SITTINGS_AHEAD_DAYS)
         consultations: list[Upcoming] = []
         sittings: list[Upcoming] = []
-        for bill in self._followed():
+        for bill in followed:
             window = bill.consultation
             if window is not None and window.end is not None and consultation_open(bill, today):
                 consultations.append(self._upcoming(bill, deadline=window.end))

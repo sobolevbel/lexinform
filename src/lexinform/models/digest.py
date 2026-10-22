@@ -59,6 +59,7 @@ class DigestEntry(BaseModel):
     kind: PublicationKind
     sent_at: dt.datetime
     message_id: int | None = None
+    card_message_id: int | None = None  # the card the post belongs to: the bill's thread
     score: int | None = None
     category: Category | None = None
     wykaz_number: str | None = None
@@ -181,6 +182,7 @@ class Digest(BaseModel):
     month: MonthFigures | None = None
     figures: WeekFigures | None = None
     highlights: tuple[DigestEntry, ...] = ()
+    followed: int = 0
     pending_events: int = 0
     unknown_deliveries: int = 0
     checks_incomplete: bool = False

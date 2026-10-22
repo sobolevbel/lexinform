@@ -88,7 +88,8 @@ def test_legal_review_is_delivered_only_by_its_confirmed_digest_part_after_resto
     assert owner is not None and owner.channel_id == CHANNEL
     assert saved.message_id == owner.message_id
     assert not w.publisher.texts(PublicationKind.STATUS_UPDATE)
-    assert "Юридическая проверка проекта" in "\n".join(w.publisher.texts(PublicationKind.DIGEST))
+    # Covered and not shown: a routine step is the card's, and the digest is a line a bill.
+    assert "Юридическая проверка" not in "\n".join(w.publisher.texts(PublicationKind.DIGEST))
 
 
 def test_open_consultation_is_not_hidden_by_legal_review() -> None:

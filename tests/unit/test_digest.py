@@ -129,27 +129,28 @@ def test_run_errors_do_not_hide_recorded_filtering_decisions() -> None:
 
 
 @pytest.mark.parametrize("draft", [False, True])
-@pytest.mark.parametrize("filtered", [None, 0, 2])
-def test_digest_omits_unknown_filtering_but_shows_known_counts(
-    draft: bool, filtered: int | None
-) -> None:
+def test_the_digest_says_in_one_line_what_the_bot_did(draft: bool) -> None:
     week = Digest(
         ref="2026-W37",
         since=dt.date(2026, 9, 7),
         until=dt.date(2026, 9, 13),
-        figures=WeekFigures(discovered=97, filtered=filtered),
+        figures=WeekFigures(discovered=97, filtered=2),
+        followed=12,
         cards=(_entry("3039"),),
     )
 
     text = MessageFormatter("ru").digest(week, draft=draft).text
 
-    assert "Найдено новых записей о законопроектах: 97" in text
-    assert "Опубликовано новых разборов: 1" in text
-    assert "нет полных данных" not in text
-    if filtered is None:
-        assert "Отсеяно при проверке релевантности" not in text
-    else:
-        assert f"Отсеяно при проверке релевантности: {filtered}" in text
+    assert (
+        "🤖 Бот за неделю: новых проектов просмотрено — 97, взято в канал — 1,"
+        " на контроле — 12." in text
+    )
+
+
+def test_a_week_with_no_run_records_states_no_figures() -> None:
+    week = Digest(ref="2026-W37", since=dt.date(2026, 9, 7), until=dt.date(2026, 9, 13))
+
+    assert "Бот за неделю" not in MessageFormatter("ru").digest(week).text
 
 
 def test_may_is_declined_after_a_day_and_not_in_the_month_heading() -> None:
@@ -182,13 +183,11 @@ def test_the_digest_names_the_week_its_cards_and_its_tag() -> None:
     text = MessageFormatter("ru", channel="@lexinform").digest(week).text
 
     assert_telegram_html(text)
-    assert "Итоги недели" in text and "7-13 сент 2026" in text
-    assert '<a href="https://t.me/lexinform/101">druk 3039</a>' in text
-    assert "🟠 4/5" in text
+    assert "Итоги недели</b> · 7-13 сент 2026" in text
+    assert '<a href="https://t.me/lexinform/101">' in text and "· druk 3039</a>" in text
+    assert "— Новый законопроект" in text
+    assert "4/5" not in text  # the card carries the score; a line a bill does not
     assert text.endswith("#дайджест")
-    assert "нет полных данных" not in text
-    assert "Найдено новых записей" not in text
-    assert "Отсеяно при проверке релевантности" not in text
 
 
 def test_only_the_draft_carries_the_button_note() -> None:
@@ -250,8 +249,8 @@ def test_a_busy_week_is_capped_and_says_how_many_it_left_out() -> None:
     text = MessageFormatter("ru").digest(week).text
 
     assert_telegram_html(text)
-    assert "druk 3009" in text and "druk 3010" not in text  # ten of them, in order
-    assert "и ещё 4" in text
+    assert "druk 3007" in text and "druk 3008" not in text  # eight of them, in order
+    assert "и ещё 6" in text
 
 
 def test_a_section_that_fits_says_nothing_about_a_remainder() -> None:
@@ -259,7 +258,7 @@ def test_a_section_that_fits_says_nothing_about_a_remainder() -> None:
         ref="2026-W37",
         since=dt.date(2026, 9, 7),
         until=dt.date(2026, 9, 13),
-        cards=tuple(_entry(str(3000 + i)) for i in range(10)),
+        cards=tuple(_entry(str(3000 + i)) for i in range(8)),
     )
 
     assert "и ещё" not in MessageFormatter("ru").digest(week).text
@@ -284,8 +283,8 @@ def test_an_open_consultation_is_dated_and_counted_down() -> None:
     text = MessageFormatter("ru", today=lambda: dt.date(2026, 9, 13)).digest(week).text
 
     assert_telegram_html(text)
-    assert "Идут консультации" in text and "20 сент 2026" in text
-    assert "UC164" in text  # a government project is named by its wykaz number, as its card is
+    assert "⏰ <b>Успеть</b>\n• до 20 сент 2026 — " in text
+    assert "· UC164" in text  # a government project is named by its wykaz number, as its card is
 
 
 def test_the_readers_digest_carries_no_delivery_bookkeeping_and_no_misplaced_advice() -> None:
@@ -321,8 +320,64 @@ def test_the_readers_digest_carries_no_delivery_bookkeeping_and_no_misplaced_adv
 
     assert "unknown" not in readers and "Полнота обзора" not in readers
     assert "Полнота обзора" in draft
-    assert readers.count("Писать на польском.") == 2
-    assert readers.count("номер wykaz") == 1 and "номер wykaz: UC164" in readers
+    assert '· <a href="https://opiniowanie.sejm.gov.pl/RPW-31544-2026">анкета для мнения</a>' in (
+        readers
+    )
+    assert "· замечания на dep@mswia.gov.pl" in readers
+    assert "wykaz" not in readers
+
+
+def test_a_routine_step_is_covered_by_the_digest_without_a_line_of_its_own() -> None:
+    week = Digest(
+        ref="2026-W42",
+        since=dt.date(2026, 10, 12),
+        until=dt.date(2026, 10, 18),
+        updates=(
+            _entry(
+                "RCL/12409404",
+                kind=PublicationKind.STATUS_UPDATE,
+                event="rcl_to_sejm",
+                wykaz_number="UDER106",
+                source_publication_ids=(164,),
+            ),
+            _entry("3039", kind=PublicationKind.STATUS_UPDATE, event="signed"),
+        ),
+    )
+
+    (part,) = MessageFormatter("ru").digest_layout(week)
+    (draft,) = MessageFormatter("ru").digest_layout(week, draft=True)
+
+    assert "UDER106" not in part.text and "— Президент подписал закон" in part.text
+    assert part.event_ids == (164,) and draft.event_ids == ()
+
+
+def test_a_bill_is_one_line_named_by_the_post_that_says_most() -> None:
+    card = _entry("3039", mnemonic="Цифровой курсант", card_message_id=101)
+    week = Digest(
+        ref="2026-W42",
+        since=dt.date(2026, 10, 12),
+        until=dt.date(2026, 10, 18),
+        cards=(card.model_copy(update={"consequence": "Карта курсанта"}),),
+        updates=(
+            _entry(
+                "3039",
+                kind=PublicationKind.STATUS_UPDATE,
+                event="text_changed",
+                mnemonic="Цифровой курсант",
+                consequence="Экзамен действует 12 месяцев, а не 24.",
+                card_message_id=101,
+                message_id=150,
+            ),
+        ),
+    )
+
+    text = MessageFormatter("ru", channel="@lexinform").digest(week).text
+
+    assert text.count("Цифровой курсант") == 1
+    assert (
+        '<a href="https://t.me/lexinform/101">Цифровой курсант · druk 3039</a>'
+        " — Новая версия текста: Экзамен действует 12 месяцев, а не 24." in text
+    )
 
 
 def _sitting(**overrides: object) -> AgendaItem:
@@ -403,14 +458,33 @@ def test_sitting_groups_list_linked_bills_with_titles(language: str) -> None:
     text = MessageFormatter(language, channel="@test").digest(week).text
 
     assert_telegram_html(text)
-    assert text.count("<b>" + ("заседание Сейма" if language == "ru" else "Sejm sitting")) == 1
-    assert '<a href="https://t.me/test/101">druk 3039</a> — O cudzoziemcach' in text
-    assert '<a href="https://t.me/test/102">druk 3100</a> — O obywatelstwie &amp; ochronie' in text
+    assert text.count("заседание Сейма" if language == "ru" else "Sejm sitting") == 1
+    assert '<a href="https://t.me/test/101">O cudzoziemcach · druk 3039</a>' in text
+    assert '<a href="https://t.me/test/102">O obywatelstwie &amp; ochronie · druk 3100</a>' in text
     assert text.count("druk 3039") == 1
     assert text.index("65,") < text.index("druk 3039") < text.index("druk 3100")
 
 
-def test_committee_sittings_are_separate_groups_in_date_order() -> None:
+def test_a_sitting_with_many_bills_names_them_by_number() -> None:
+    plenary = _sitting(kind="sejm", committee_code=None, committee_name=None, sitting_number=67)
+    week = _ahead().model_copy(
+        update={
+            "sittings": tuple(
+                Upcoming(
+                    term=10, number=number, title="Projekt ustawy o cudzoziemcach", sitting=plenary
+                )
+                for number in ("3003", "3141", "3146")
+            )
+        }
+    )
+
+    text = MessageFormatter("ru").digest(week).text
+
+    assert "— druk 3003, druk 3141, druk 3146" in text
+    assert "cudzoziemcach" not in text
+
+
+def test_committee_sittings_are_separate_lines_in_date_order() -> None:
     early = _sitting(sitting_number=136)
     later = _sitting(ref="ASW/137/2026-09-18", date=dt.date(2026, 9, 18), sitting_number=137)
 
@@ -418,8 +492,8 @@ def test_committee_sittings_are_separate_groups_in_date_order() -> None:
 
     assert_telegram_html(text)
     assert text.count("Komisja Administracji i Spraw Wewnętrznych") == 2
-    assert text.index("17 сент 2026, 09:00</b>\n• druk 3039 — Projekt") < text.index(
-        "18 сент 2026, 09:00</b>\n• druk 3039 — Projekt"
+    assert text.index("• 17 сент 2026, 09:00, Komisja") < text.index(
+        "• 18 сент 2026, 09:00, Komisja"
     )
 
 
@@ -428,7 +502,7 @@ def test_a_sitting_without_bill_entries_is_omitted() -> None:
         update={"sittings": (Upcoming(term=10, number="3039", title="Projekt"),)}
     )
 
-    assert "Ближайшие заседания" not in MessageFormatter("ru").digest(week).text
+    assert "Заседания" not in MessageFormatter("ru").digest(week).text
 
 
 def test_an_open_consultation_says_what_the_bill_is() -> None:

@@ -167,8 +167,55 @@ COMMAND_HELP = (
 # and the consultation window as well as the bill's title and score.
 FULL_FACTS = frozenset({OutcomeStatus.SHOWN, OutcomeStatus.REFRESHED})
 
-DIGEST_TITLE_CHARS = 90
-DIGEST_MAX_PER_SECTION = 10
+DIGEST_ACT_ROWS = 5
+DIGEST_MAIN_ROWS = 8
+DIGEST_SITTING_ROWS = 6
+DIGEST_NAMED_PER_SITTING = 2  # more bills than this at one sitting are listed by number alone
+DIGEST_NAME_CHARS = 70
+DIGEST_CONSEQUENCE_CHARS = 110
+# Steps a card shows by itself: the digest leaves them out unless the post named a consequence.
+DIGEST_ROUTINE_EVENTS = frozenset(
+    {
+        "",
+        "update",
+        "start",
+        "print_assigned",
+        "first_reading_referral",
+        "committee_work",
+        "committee_report",
+        "subcommittee_report",
+        "to_president",
+        "rcl_stage",
+        "rcl_legal_commission",
+        "rcl_to_sejm",
+    }
+)
+DIGEST_DECISIONS = frozenset(
+    {
+        "passed",
+        "rejected",
+        "not_enacted",
+        "committee_rejects",
+        "voting",
+        "veto",
+        "veto_overridden",
+        "veto_sustained",
+        "withdrawn_by_applicant",
+        "withdrawn",
+        "abandoned",
+        "discontinued",
+        "senate_no_amendments",
+        "senate_amendments",
+        "senate_rejected",
+        "senate_considered",
+        "signed",
+        "tribunal",
+        "tribunal_ruled",
+        "rcl_closed",
+        "wykaz_withdrawn",
+        "wykaz_adopted",
+    }
+)
 # The button under the draft, in the operator's language like everything else in that channel.
 APPROVE_DIGEST = "📣 Publish to the channel"
 # English, like every other line the technical channel gets; the digest under it is the reader's.
@@ -221,6 +268,9 @@ ICON = {
     "deadline": "⏳",
     "digest": "🗞",
     "month": "📊",
+    "act": "⏰",
+    "news": "📌",
+    "bot": "🤖",
     "support": "☕️",
 }
 # The header icon of a status update, by event (see `models.update_event`); 🔄 otherwise.
@@ -1677,308 +1727,145 @@ class MessageFormatter:
 
     def digest(self, week: Digest, *, draft: bool = False) -> RenderedMessage:
         """The week in the channel; `draft` adds the note only the technical channel's copy has."""
-        if self._attention_enabled:
-            return RenderedMessage(text=self.digest_parts(week, draft=draft)[0])
-        lb = self._labels
-        head = (
-            f"{ICON['digest']} <b>{esc(lb.digest_header)}</b>\n"
-            f"{self.fmt_date_range(week.since, week.until)}"
-        )
-        body = [
-            self._digest_block(lb.digest_cards, week.cards, self._digest_card),
-            self._digest_block(lb.digest_updates, week.updates, self._digest_update),
-            self._digest_block(lb.digest_consultations, week.consultations, self._digest_window),
-            self._digest_sittings(week.sittings),
-        ]
-        if week.is_empty:
-            body = [esc(lb.digest_quiet)]
-        tail = [self._month_block(week.month), self._support_block(), esc(lb.tag_digest)]
-        head_blocks = [head, DIGEST_DRAFT_NOTE] if draft else [head]
-        figures = week.figures
-        figure_lines = [f"<b>{esc(lb.digest_figures)}</b>"]
-        if figures is not None:
-            figure_lines.append(esc(lb.digest_found.format(figures.discovered)))
-            if figures.filtered is not None:
-                figure_lines.append(esc(lb.digest_filtered.format(figures.filtered)))
-        figure_lines.append(esc(lb.digest_published.format(len(week.cards))))
-        head_blocks.append("\n".join(figure_lines))
-        return RenderedMessage(text=self._assemble(head_blocks, flexible=body, tail=tail))
+        return RenderedMessage(text=self.digest_layout(week, draft=draft)[0].text)
 
     def digest_parts(self, week: Digest, *, draft: bool = False) -> tuple[str, ...]:
         return tuple(part.text for part in self.digest_layout(week, draft=draft))
 
     def digest_layout(self, week: Digest, *, draft: bool = False) -> tuple[DigestPart, ...]:
-        if not self._attention_enabled:
-            return (DigestPart(text=self.digest(week, draft=draft).text),)
+        """One message, a line a bill; it covers every event routed to it, routine ones unshown."""
         lb = self._labels
         head = (
-            f"{ICON['digest']} <b>{esc(lb.digest_header)}</b>\n"
+            f"{ICON['digest']} <b>{esc(lb.digest_header)}</b> · "
             f"{self.fmt_date_range(week.since, week.until)}"
         )
-        figures = [f"<b>{esc(lb.digest_figures)}</b>"]
-        if week.figures is not None:
-            figures.append(esc(lb.digest_found.format(week.figures.discovered)))
-            if week.figures.filtered is not None:
-                figures.append(esc(lb.digest_filtered.format(week.figures.filtered)))
-        figures.append(esc(lb.digest_published.format(len(week.cards))))
-        near = [
-            window
-            for window in week.consultations
-            if window.deadline is not None
-            and self._today() <= window.deadline <= self._today() + dt.timedelta(days=7)
-        ]
-        remaining_updates = [entry for entry in week.updates if entry not in week.highlights]
-        sections: list[tuple[str, list[str]]] = [
-            (lb.digest_remember, [self._digest_highlight(entry) for entry in week.highlights]),
-            (lb.digest_actions, [self._digest_action(window) for window in near]),
-            (
-                lb.digest_expectations,
-                [
-                    self._digest_update(entry)
-                    for entry in remaining_updates
-                    if entry.kind is PublicationKind.DECISION_DEADLINE
-                ],
-            ),
-        ]
-        sittings: dict[tuple[int, str, str], list[Upcoming]] = {}
-        for window in week.sittings:
-            if window.sitting is not None:
-                sittings.setdefault(
-                    (window.term, window.sitting.kind, window.sitting.ref), []
-                ).append(window)
-        for group in sorted(
-            sittings.values(),
-            key=lambda items: (
-                items[0].sitting.date if items[0].sitting else dt.date.max,
-                items[0].number,
-            ),
-        ):
-            item = group[0].sitting
-            assert item is not None
-            where = item.committee_name or item.committee_code or lb.sittings_sejm
-            title = f"{lb.digest_sittings} · {where} · {self._agenda_when(item)}"
-            rows = [
-                f"• {self._digest_ref(window)}"
-                + (
-                    f" — {esc(_clip(publication_title(window.title), 220))}"
-                    if not window.mnemonic
-                    else ""
-                )
-                for window in group
-            ]
-            sections.append((title, rows))
-        sections.extend(
-            [
-                (
-                    lb.digest_cards,
-                    [
-                        self._digest_card(entry)
-                        for entry in week.cards
-                        if entry not in week.highlights
-                    ],
-                ),
-                (
-                    lb.digest_updates,
-                    [
-                        self._digest_update(entry)
-                        for entry in remaining_updates
-                        if entry.kind is not PublicationKind.DECISION_DEADLINE
-                    ],
-                ),
-                (
-                    lb.digest_consultations,
-                    [
-                        self._digest_action(window)
-                        for window in week.consultations
-                        if window not in near
-                    ],
-                ),
-                (lb.digest_figures, ["\n".join(figures[1:])]),
-            ]
-        )
+        if draft:
+            head += f"\n\n{DIGEST_DRAFT_NOTE}"
+        windows = [self._digest_window(w) for w in week.consultations if w.deadline is not None]
+        news = [self._digest_line(entry) for entry in _week_news(week)]
+        sittings = [self._digest_sitting(item, group) for item, group in _week_sittings(week)]
+        tail = [self._digest_stats(week), self._month_block(week.month), self._support_block()]
         if draft and (week.pending_events or week.unknown_deliveries or week.checks_incomplete):
-            sections.append(
-                (
-                    "",
-                    [
-                        esc(
-                            lb.digest_coverage_warning.format(
-                                pending=week.pending_events, unknown=week.unknown_deliveries
-                            )
-                        )
-                    ],
-                )
+            warning = lb.digest_coverage_warning.format(
+                pending=week.pending_events, unknown=week.unknown_deliveries
             )
-        if week.is_empty:
-            sections.append(("", [esc(lb.digest_quiet)]))
-        tail = [
-            block
-            for block in (self._month_block(week.month), self._support_block(), esc(lb.tag_digest))
-            if block
-        ]
-        sections.append(("", tail))
-        ownership: dict[str, tuple[int, ...]] = {}
-        for entry in (*week.cards, *week.updates, *week.highlights):
-            for row in (
-                self._digest_card(entry),
-                self._digest_update(entry),
-                self._digest_highlight(entry),
-            ):
-                ownership[row] = tuple(
-                    dict.fromkeys((*ownership.get(row, ()), *entry.source_publication_ids))
-                )
-        parts: list[DigestPart] = []
-        event_ids: list[int] = []
-        covered: set[int] = set()
-        current = head + (f"\n\n{DIGEST_DRAFT_NOTE}" if draft else "")
-        for title, rows in sections:
-            heading = f"<b>{esc(title)}</b>" if title else ""
-            first = True
-            for row in rows:
-                block = "\n".join(value for value in (heading if first else "", row) if value)
-                if length(current + "\n\n" + block) > MESSAGE_LIMIT:
-                    if current != head:
-                        parts.append(DigestPart(text=current, event_ids=tuple(event_ids)))
-                    event_ids = []
-                    current = head
-                    block = "\n".join(value for value in (heading, row) if value)
-                chunks = split_html(block, limit=MESSAGE_LIMIT - length(head) - 2)
-                for chunk in chunks[:-1]:
-                    parts.append(DigestPart(text=head + "\n\n" + chunk))
-                current += "\n\n" + chunks[-1]
-                if not draft:
-                    event_ids.extend(
-                        identity for identity in ownership.get(row, ()) if identity not in covered
-                    )
-                    covered.update(event_ids)
-                first = False
-        parts.append(DigestPart(text=current, event_ids=tuple(event_ids)))
-        return tuple(parts)
+            tail.insert(0, f"<i>{esc(warning)}</i>")
+        tail.append(esc(lb.tag_digest))
 
-    def _digest_highlight(self, entry: DigestEntry) -> str:
-        return (
-            self._digest_update(entry)
-            if entry.kind not in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL)
-            else self._digest_card(entry)
-        )
+        def compose(caps: list[int]) -> str:
+            sections = [
+                self._digest_section(ICON["act"], lb.digest_section_act, windows, caps[0]),
+                self._digest_section(ICON["news"], lb.digest_section_main, news, caps[1]),
+                self._digest_section(
+                    ICON["calendar"], lb.digest_section_sittings, sittings, caps[2]
+                ),
+            ]
+            body = [section for section in sections if section] or [esc(lb.digest_quiet)]
+            return "\n\n".join([head, *body, *(block for block in tail if block)])
 
-    def _digest_action(self, window: Upcoming) -> str:
-        lines = [self._digest_window(window)]
-        if window.affected_groups:
-            lines.append(f"{esc(self._labels.affected)}: {esc('; '.join(window.affected_groups))}")
-        if window.action_email:
-            lines.append(f"{esc(self._labels.action_send_opinion)}: {esc(window.action_email)}")
-        elif window.action_url:
-            lines.append(link(window.action_url, self._labels.action_send_opinion))
-        else:
-            lines.append(esc(self._labels.digest_route_unknown))
-        lines.append(esc(self._labels.digest_submit_polish))
-        if window.wykaz_number:
-            lines.append(esc(self._labels.digest_quote_wykaz.format(number=window.wykaz_number)))
-        if window.source_url:
-            lines.append(link(window.source_url, self._labels.digest_source))
-        else:
-            lines.append(esc(self._labels.digest_source_unknown))
-        return "\n".join(lines)
+        caps = [DIGEST_ACT_ROWS, DIGEST_MAIN_ROWS, DIGEST_SITTING_ROWS]
+        text = compose(caps)
+        while length(text) > MESSAGE_LIMIT and max(caps) > 1:
+            caps[caps.index(max(caps))] -= 1
+            text = compose(caps)
+        events = () if draft else _week_events(week)
+        return (DigestPart(text=text, event_ids=events),)
 
-    def _digest_block[T](self, title: str, items: Sequence[T], row: Callable[[T], str]) -> str:
-        """One section, capped, and saying how many it left out: a week of 14 cards showed ten
-        and told the reader nothing about the other four."""
-        lines = [text for item in items[:DIGEST_MAX_PER_SECTION] if (text := row(item))]
-        if not lines:
+    def _digest_section(self, icon: str, title: str, rows: list[str], cap: int) -> str:
+        """A titled section capped at `cap` rows, saying how many it left out."""
+        if not rows:
             return ""
-        left = len(items) - len(lines)
-        if left > 0:
-            lines.append(f"• {esc(self._labels.digest_and_more.format(left))}")
-        return "\n".join([f"<b>{esc(title)}</b>", *lines])
+        left = len(rows) - min(cap, len(rows))
+        more = [f"• {esc(self._labels.digest_and_more.format(left))}"] if left else []
+        return "\n".join([f"{icon} <b>{esc(title)}</b>", *rows[:cap], *more])
 
-    def _digest_card(self, entry: DigestEntry) -> str:
-        score = f"{score_icon(entry.score)} {entry.score}/5 " if entry.score is not None else ""
-        title = esc(_clip(publication_title(entry.title), DIGEST_TITLE_CHARS))
-        row = f"• {score}{self._digest_ref(entry)} — {title}"
-        if entry.consequence:
-            row += f"\n{esc(entry.consequence)}"
-        if not entry.historical_snapshot:
-            row += f"\n<i>{esc(self._labels.digest_history_limited)}</i>"
-        return row
-
-    def _digest_update(self, entry: DigestEntry) -> str:
-        """What the reply said, by its event where it has one and by its kind where it has not."""
+    def _digest_line(self, entry: DigestEntry) -> str:
+        """What a bill's week came to: the event that says most, and one consequence of it."""
         lb = self._labels
         by_kind = {
+            PublicationKind.NEW_BILL: lb.digest_new_bill,
+            PublicationKind.JOINT_BILL: lb.digest_new_bill,
             PublicationKind.ACT_PUBLISHED: lb.act_published_header,
             PublicationKind.IN_FORCE: lb.in_force_header,
-            PublicationKind.CONSULTATION_RESULTS: lb.consultation_results_header,
             PublicationKind.CONSULTATION_REVIEW: lb.consultation_review_header,
             PublicationKind.COMMISSION_REVIEW: lb.commission_review_header,
-            PublicationKind.ACT_APPLICATION: lb.act_application_header,
-            PublicationKind.EFFECTIVE_RULES: lb.act_application_header,
-            PublicationKind.DECISION_DEADLINE: lb.digest_organ_deadline,
         }
-        said = lb.update_headers.get(entry.event) or by_kind.get(entry.kind) or lb.update_header
-        row = f"• {self._digest_ref(entry)} — {esc(said)}"
-        if entry.organ_deadline is not None:
-            row += f" · {self.fmt_date(entry.organ_deadline)}"
+        said = by_kind.get(entry.kind) or lb.update_headers.get(entry.event) or lb.update_header
+        row = f"• {self._digest_name(entry)} — {esc(said)}"
         if entry.consequence:
-            row += f"\n{esc(entry.consequence)}"
-        row += "".join(f"\n{self._voting_lines(vote)}" for vote in entry.votings)
-        if not entry.historical_snapshot:
-            row += f"\n<i>{esc(lb.digest_history_limited)}</i>"
+            row += f": {esc(_clip_words(lead(entry.consequence), DIGEST_CONSEQUENCE_CHARS))}"
+        elif entry.votings:
+            vote = entry.votings[-1]
+            row += (
+                f": {vote.yes} {esc(lb.votes_for)}, {vote.no} {esc(lb.votes_against)},"
+                f" {vote.abstain} {esc(lb.votes_abstain)}"
+            )
         return row
 
     def _digest_window(self, window: Upcoming) -> str:
-        """The section a reader acts on, so it says what the bill is: a bare number and a date
-        told them nothing, and a numeric channel gives the number no link either."""
-        left = ""
-        if window.deadline is not None:
-            days = (window.deadline - self._today()).days
-            left = f" · {self.fmt_date(window.deadline)} · {self._countdown(days)}"
-        title = esc(_clip(publication_title(window.title), DIGEST_TITLE_CHARS))
-        return f"• {self._digest_ref(window)} — {title}{left}"
+        """A consultation still open: by when, for which bill, and where the opinion goes."""
+        lb = self._labels
+        assert window.deadline is not None, "digest_layout lists only windows with a deadline"
+        row = f"• {esc(lb.digest_until.format(date=self.fmt_date(window.deadline)))}"
+        row += f" — {self._digest_name(window)}"
+        if window.action_email:
+            row += f" · {esc(lb.digest_by_email.format(email=window.action_email))}"
+        elif window.action_url:
+            row += f" · {link(window.action_url, lb.digest_by_survey)}"
+        return row
 
-    def _digest_sittings(self, windows: Sequence[Upcoming]) -> str:
-        groups: dict[tuple[int, str, str], tuple[AgendaItem, list[Upcoming]]] = {}
-        for window in windows:
-            item = window.sitting
-            if item is None:
-                continue
-            _, group = groups.setdefault((window.term, item.kind, item.ref), (item, []))
-            if not any(bill.number == window.number for bill in group):
-                group.append(window)
-        ordered = sorted(
-            groups.values(),
-            key=lambda group: (group[0].date, group[0].start_time or dt.time()),
-        )
-        return self._digest_block(self._labels.digest_sittings, ordered, self._digest_sitting)
+    def _digest_sitting(self, item: AgendaItem, windows: list[Upcoming]) -> str:
+        """One sitting a line: the bills by name when they fit, by number when there are many."""
+        lb = self._labels
+        where = self._agenda_when(item)
+        if item.committee_code:
+            where += f", {esc(item.committee_name or item.committee_code)}"
+        if any(window.sitting and window.sitting.condition for window in windows):
+            where += f" ({esc(lb.agenda_conditional_short)})"
+        if len(windows) <= DIGEST_NAMED_PER_SITTING:
+            bills = "; ".join(self._digest_name(window) for window in windows)
+        else:
+            bills = ", ".join(self._digest_ref(window) for window in windows)
+        return f"• {where} — {bills}"
 
-    def _digest_sitting(self, group: tuple[AgendaItem, list[Upcoming]]) -> str:
-        item, windows = group
-        where = (
-            f"{esc(item.committee_name or item.committee_code)}, " if item.committee_code else ""
+    def _digest_stats(self, week: Digest) -> str:
+        """What the bot did this week, in a line a reader can read."""
+        if week.figures is None:
+            return ""
+        stats = self._labels.digest_stats.format(
+            seen=week.figures.discovered, taken=len(week.cards), followed=week.followed
         )
-        conditional = any(window.sitting and window.sitting.condition for window in windows)
-        mark = f" ({esc(self._labels.agenda_conditional_short)})" if conditional else ""
-        rows = [
-            f"• {self._digest_ref(window)} — {esc(publication_title(window.title))}"
-            for window in windows[:DIGEST_MAX_PER_SECTION]
-        ]
-        left = len(windows) - len(rows)
-        if left:
-            rows.append(f"• {esc(self._labels.digest_and_more.format(left))}")
-        return "\n".join([f"<b>{where}{self._agenda_when(item)}{mark}</b>", *rows])
+        return f"{ICON['bot']} {esc(stats)}"
+
+    def _digest_name(self, entry: DigestEntry | Upcoming) -> str:
+        """The bill by its short name and its number, linked to its card."""
+        if entry.mnemonic and entry.mnemonic_language == self._language:
+            name = entry.mnemonic
+        else:
+            name = _clip_words(
+                lead(entry.summary) if entry.summary else publication_title(entry.title),
+                DIGEST_NAME_CHARS,
+            )
+        return self._digest_link(entry, f"{esc(name)} · {self._digest_number(entry)}")
 
     def _digest_ref(self, entry: DigestEntry | Upcoming) -> str:
-        """How the digest names a bill: its number as its own card names it (a government
-        project by its wykaz number), linked to its post where the channel has a public name."""
-        label = _number_ref(entry.number)
+        """The bill by its number alone, linked to its card: for a sitting with many bills."""
+        return self._digest_link(entry, self._digest_number(entry))
+
+    def _digest_number(self, entry: DigestEntry | Upcoming) -> str:
+        """The number its own card names it by: a government project by its wykaz number."""
         government = is_rcl_number(entry.number) or is_wykaz_number(entry.number)
         if entry.wykaz_number and government:
-            label = esc(entry.wykaz_number)
-        if entry.mnemonic and entry.mnemonic_language == self._language:
-            label = f"{esc(entry.mnemonic)} · {label}"
-        elif entry.summary:
-            label = f"{esc(lead(entry.summary))} · {label}"
-        url = self._post_url(entry.message_id)
+            return esc(entry.wykaz_number)
+        return _number_ref(entry.number)
+
+    def _digest_link(self, entry: DigestEntry | Upcoming, label: str) -> str:
+        message_id = (
+            entry.card_message_id or entry.message_id
+            if isinstance(entry, DigestEntry)
+            else entry.message_id
+        )
+        url = self._post_url(message_id)
         return f'<a href="{html.escape(url, quote=True)}">{label}</a>' if url else label
 
     def _post_url(self, message_id: int | None) -> str | None:
@@ -3633,6 +3520,75 @@ def _sitting_order(news: SittingNews) -> tuple[dt.date, dt.time, str]:
 
 def _clip(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
+
+
+def _clip_words(text: str, limit: int) -> str:
+    """Cut at a word boundary, so a name never ends in half a word."""
+    if len(text) <= limit:
+        return text
+    cut = text[: limit - 1]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return cut.rstrip(" ,;:—-") + "…"
+
+
+def _digest_rank(entry: DigestEntry) -> int | None:
+    """How much a post of the week says to a reader, 0 most; None for a step the card shows."""
+    if entry.kind in (PublicationKind.ACT_PUBLISHED, PublicationKind.IN_FORCE):
+        return 0
+    if entry.kind is PublicationKind.STATUS_UPDATE:
+        if entry.event in DIGEST_ROUTINE_EVENTS and not entry.consequence:
+            return None
+        return 0 if entry.event in DIGEST_DECISIONS else 1
+    if entry.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
+        return 2
+    if entry.kind in (PublicationKind.CONSULTATION_REVIEW, PublicationKind.COMMISSION_REVIEW):
+        return 3 if entry.consequence else None
+    return None
+
+
+def _week_news(week: Digest) -> list[DigestEntry]:
+    """One post a bill, the one that says most; a bill is its thread, whatever its number."""
+    best: dict[int | tuple[int, str], tuple[int, DigestEntry]] = {}
+    for entry in (*week.cards, *week.updates):
+        rank = _digest_rank(entry)
+        if rank is None:
+            continue
+        key = entry.card_message_id or (entry.term, entry.number)
+        held = best.get(key)
+        if held is None or (rank, -entry.sent_at.timestamp()) < (
+            held[0],
+            -held[1].sent_at.timestamp(),
+        ):
+            best[key] = (rank, entry)
+    ranked = sorted(best.values(), key=lambda pair: (pair[0], -pair[1].sent_at.timestamp()))
+    return [entry for _, entry in ranked]
+
+
+def _week_sittings(week: Digest) -> list[tuple[AgendaItem, list[Upcoming]]]:
+    """The sittings ahead with the followed bills each takes, in the order they meet."""
+    groups: dict[tuple[int, str, str], tuple[AgendaItem, list[Upcoming]]] = {}
+    for window in week.sittings:
+        item = window.sitting
+        if item is None:
+            continue
+        _, group = groups.setdefault((window.term, item.kind, item.ref), (item, []))
+        if not any(bill.number == window.number for bill in group):
+            group.append(window)
+    return sorted(
+        groups.values(), key=lambda group: (group[0].date, group[0].start_time or dt.time())
+    )
+
+
+def _week_events(week: Digest) -> tuple[int, ...]:
+    """Every event routed to the week's digest, the ones it leaves out included: it covers them."""
+    return tuple(
+        dict.fromkeys(
+            identity
+            for entry in (*week.cards, *week.updates, *week.highlights)
+            for identity in entry.source_publication_ids
+        )
+    )
 
 
 def _bullet(text: str) -> str:

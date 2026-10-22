@@ -223,17 +223,6 @@ class Labels:
     link_supplement: str
     supplement_unreadable: str
     digest_header: str
-    digest_figures: str
-    digest_found: str
-    digest_filtered: str
-    digest_published: str
-    digest_no_data: str
-    digest_cards: str
-    digest_updates: str
-    digest_remember: str
-    digest_actions: str
-    digest_consultations: str
-    digest_sittings: str
     digest_quiet: str
     digest_month: str
     digest_month_discovered: str
@@ -287,15 +276,15 @@ class Labels:
     message_part: str = ""
     document_review_source: str = ""
     act_review_ready: str = ""
-    digest_expectations: str = ""
     digest_coverage_warning: str = ""
-    digest_route_unknown: str = ""
-    digest_source_unknown: str = ""
-    digest_source: str = ""
-    digest_submit_polish: str = ""
-    digest_quote_wykaz: str = ""
-    digest_history_limited: str = ""
-    digest_organ_deadline: str = ""
+    digest_section_act: str = ""
+    digest_section_main: str = ""
+    digest_section_sittings: str = ""
+    digest_new_bill: str = ""
+    digest_until: str = ""
+    digest_by_survey: str = ""
+    digest_by_email: str = ""
+    digest_stats: str = ""
     agenda_purpose_labels: dict[str, str] = field(default_factory=dict)
     agenda_purpose_unknown: str = ""
     date_format: str = "%Y-%m-%d"
@@ -359,18 +348,21 @@ RU = Labels(
         "Часть {index}/{total} · подготовлено {date}. Условия и исключения — во всём тексте;"
         " прочитайте все части."
     ),
-    digest_expectations="Что ожидается",
     digest_coverage_warning=(
         "Ожидают доставки событий: {pending}; unknown доставок: {unknown}. "
         "Полнота обзора ограничена ожидающей работой или проверками источников."
     ),
-    digest_route_unknown="Маршрут подачи пока не подтверждён.",
-    digest_source_unknown="Источник окна не сохранён.",
-    digest_source="Источник окна",
-    digest_submit_polish="Писать на польском.",
-    digest_quote_wykaz="В письме укажите номер wykaz: {number}.",
-    digest_history_limited="Исходный snapshot не сохранился; исторический исход не восстановлен.",
-    digest_organ_deadline="Срок рассмотрения органом, не подачи мнения",
+    digest_section_act="Успеть",
+    digest_section_main="Главное",
+    digest_section_sittings="Заседания",
+    digest_new_bill="Новый законопроект",
+    digest_until="до {date}",
+    digest_by_survey="анкета для мнения",
+    digest_by_email="замечания на {email}",
+    digest_stats=(
+        "Бот за неделю: новых проектов просмотрено — {seen}, взято в канал — {taken},"
+        " на контроле — {followed}."
+    ),
     agenda_purpose_labels={
         "first_reading": "Первое чтение проекта",
         "second_reading": "Второе чтение проекта",
@@ -640,18 +632,7 @@ RU = Labels(
     link_supplement="Документ (PDF)",
     supplement_unreadable="Документ не удалось прочитать — он есть по ссылке ниже.",
     digest_header="Итоги недели",
-    digest_figures="Неделя в цифрах",
-    digest_found="Найдено новых записей о законопроектах: {}",
-    digest_filtered="Отсеяно при проверке релевантности: {}",
-    digest_published="Опубликовано новых разборов: {}",
-    digest_no_data="нет полных данных",
-    digest_cards="Новые законопроекты",
-    digest_updates="Что изменилось",
-    digest_remember="Что запомнить",
-    digest_actions="Что сделать на ближайшей неделе",
-    digest_consultations="Идут консультации — можно успеть",
-    digest_sittings="Ближайшие заседания",
-    digest_quiet="На этой неделе в канале не было публикаций.",
+    digest_quiet="Важных новостей на этой неделе не было.",
     digest_month="Итоги месяца",
     digest_month_discovered="просмотрено записей",
     digest_month_dropped="отсеяно по ключевым словам",
@@ -1115,20 +1096,21 @@ EN = Labels(
         "Part {index}/{total} · prepared {date}. Conditions and exceptions span the"
         " full text; read all parts."
     ),
-    digest_expectations="What is expected",
     digest_coverage_warning=(
         "Events awaiting delivery: {pending}; unknown deliveries: {unknown}. "
         "Pending work or source checks limit coverage."
     ),
-    digest_route_unknown="The submission route is not confirmed.",
-    digest_source_unknown="The window source was not saved.",
-    digest_source="Window source",
-    digest_submit_polish="Write in Polish.",
-    digest_quote_wykaz="Quote the wykaz number in the letter: {number}.",
-    digest_history_limited=(
-        "The original snapshot is unavailable; the historic outcome was not reconstructed."
+    digest_section_act="Act in time",
+    digest_section_main="The week's news",
+    digest_section_sittings="Sittings",
+    digest_new_bill="New bill",
+    digest_until="by {date}",
+    digest_by_survey="opinion form",
+    digest_by_email="comments to {email}",
+    digest_stats=(
+        "The bot this week: new bills screened — {seen}, taken into the channel — {taken},"
+        " followed — {followed}."
     ),
-    digest_organ_deadline="Organ decision deadline, not an opinion submission deadline",
     agenda_purpose_labels={
         "first_reading": "First reading",
         "second_reading": "Second reading",
@@ -1399,18 +1381,7 @@ EN = Labels(
     link_supplement="Document (PDF)",
     supplement_unreadable="The document could not be read — it is at the link below.",
     digest_header="The week in the channel",
-    digest_figures="The week in figures",
-    digest_found="New bill records found: {}",
-    digest_filtered="Filtered out during relevance checks: {}",
-    digest_published="New explainers published: {}",
-    digest_no_data="complete data unavailable",
-    digest_cards="New bills",
-    digest_updates="What changed",
-    digest_remember="What to remember",
-    digest_actions="What to do next week",
-    digest_consultations="Consultations still open",
-    digest_sittings="Sittings ahead",
-    digest_quiet="Nothing was posted in the channel this week.",
+    digest_quiet="No news worth your attention this week.",
     digest_month="The month in figures",
     digest_month_discovered="entries seen",
     digest_month_dropped="dropped by the keywords",

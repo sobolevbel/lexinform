@@ -182,7 +182,9 @@ def test_failed_digest_source_cannot_be_reassigned_to_a_second_week() -> None:
 
 
 @pytest.mark.parametrize("unknown", [False, True])
-def test_split_digest_confirms_only_the_successful_parts(unknown: bool) -> None:
+def test_one_digest_owns_every_event_of_its_week_and_confirms_them_only_when_sent(
+    unknown: bool,
+) -> None:
     w = World(reader_attention="on")
     source = queued_event(w)
     assert source.delivery is not None
@@ -227,9 +229,9 @@ def test_split_digest_confirms_only_the_successful_parts(unknown: bool) -> None:
             )
         )
     if unknown:
-        w.publisher.unknown_digest_attempt = w.publisher.digest_send_attempts + 2
+        w.publisher.unknown_digest_attempt = w.publisher.digest_send_attempts + 1
     else:
-        w.publisher.fail_digest_attempt = w.publisher.digest_send_attempts + 2
+        w.publisher.fail_digest_attempt = w.publisher.digest_send_attempts + 1
     service = w.container.digest_service(dry_run=False)
     assert service is not None
 
@@ -239,8 +241,9 @@ def test_split_digest_confirms_only_the_successful_parts(unknown: bool) -> None:
     else:
         assert service.publish("2026-W37").failed
 
+    # The message shows eight of the 26 and still owns them all: the rest are covered unshown.
     owners = {w.repo.digest_owner(identity) for identity in sources if identity is not None}
-    assert None not in owners and len(owners) >= 2
+    assert None not in owners and len(owners) == 1
     for identity in sources:
         assert identity is not None
         owner_id = w.repo.digest_owner(identity)
