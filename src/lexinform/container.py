@@ -355,6 +355,7 @@ class Container:
                 "amendments": self.settings.llm_amendments_model,
                 "supplement": self.settings.llm_supplement_model,
                 "joint": self.settings.llm_joint_model,
+                "name": self.settings.llm_joint_model,
                 "consultation_review": self.settings.llm_analysis_model,
                 "commission_review": self.settings.llm_analysis_model,
                 "act_application": self.settings.llm_analysis_model,
@@ -726,6 +727,7 @@ class Container:
             attention_max_group=settings.attention_max_group,
             attention_roundup=settings.attention_roundup,
             attention_daily_hour=settings.attention_daily_hour,
+            name_cards=settings.name_cards,
         )
 
     def pipeline(self, *, dry_run: bool) -> DailyPipeline:

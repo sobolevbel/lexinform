@@ -42,6 +42,7 @@ CallKind = Literal[
     "consultation_review",
     "commission_review",
     "act_application",
+    "name",
 ]
 
 

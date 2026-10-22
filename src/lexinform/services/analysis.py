@@ -52,6 +52,7 @@ from lexinform.models import (
     BatchResult,
     Bill,
     BillContext,
+    BillName,
     BillStatus,
     Category,
     ChangeContext,
@@ -70,6 +71,8 @@ from lexinform.models import (
     LlmBatchItem,
     LlmCall,
     LocatedText,
+    NameContext,
+    NameRecord,
     PrintInfo,
     ProcessSummary,
     Publication,
@@ -106,6 +109,7 @@ from lexinform.models.batch import (
     BatchQuestion,
     DocumentReviewQuestion,
     JointQuestion,
+    NameQuestion,
     SupplementQuestion,
 )
 from lexinform.ports import (
@@ -918,6 +922,7 @@ class AnalysisService:
             | SupplementRecord
             | JointRecord
             | DocumentReviewRecord
+            | NameRecord
             | None
         ) = None
         if (
@@ -954,6 +959,8 @@ class AnalysisService:
             )
         elif item.call_kind == "joint" and isinstance(result.answer, JointComparison):
             record = records.joint(result.answer, compared_with=meta.compared_with)
+        elif item.call_kind == "name" and isinstance(result.answer, BillName):
+            record = records.name(result.answer)
         elif (
             item.call_kind in ("consultation_review", "commission_review", "act_application")
             and isinstance(result.answer, DocumentReview)
@@ -1400,7 +1407,7 @@ class AnalysisService:
             self._clock.now() - bill.awaiting_batch_since < self._options.batch_max_wait
         )
 
-    def _ask_or_wait[Record: (AmendmentsRecord, SupplementRecord, JointRecord)](
+    def _ask_or_wait[Record: (AmendmentsRecord, SupplementRecord, JointRecord, NameRecord)](
         self,
         bill: Bill,
         question: BatchQuestion,
@@ -1939,6 +1946,28 @@ class AnalysisService:
             DigestItemMeta(memo_key=key, compared_with=[other.number for other in described]),
             JointRecord,
             lambda: self._llm.compare_joint(ctx),
+            may_wait=may_wait,
+        )
+
+    def name_bill(self, bill: Bill, *, may_wait: bool = False) -> NameRecord | Waiting:
+        """A short name for a bill analysed before names were asked with the analysis."""
+        assert bill.analysis is not None, "a bill is named only from its analysis"
+        answer = bill.analysis.analysis
+        ctx = NameContext(
+            number=bill.number,
+            title=bill.summary.title,
+            summary=answer.summary,
+            key_changes=list(answer.key_changes),
+            language=answer.mnemonic_language,
+        )
+        key = _memo_key(bill, "name", ctx)
+        return self._ask_or_wait(
+            bill,
+            NameQuestion(ctx=ctx),
+            key,
+            DigestItemMeta(memo_key=key),
+            NameRecord,
+            lambda: self._llm.name_bill(ctx),
             may_wait=may_wait,
         )
 

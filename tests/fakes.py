@@ -39,6 +39,7 @@ from lexinform.models import (
     BatchStatus,
     Bill,
     BillContext,
+    BillName,
     BillSubmission,
     Category,
     ChangeContext,
@@ -55,6 +56,8 @@ from lexinform.models import (
     JointContext,
     JointRecord,
     Mp,
+    NameContext,
+    NameRecord,
     Phase,
     PlenaryVoting,
     PrintInfo,
@@ -557,6 +560,16 @@ def make_comparison(
     )
 
 
+def make_name(**overrides: object) -> BillName:
+    fields: dict[str, object] = dict(
+        name="Молчаливый ВНЖ",
+        fallback="Ускоренный ВНЖ",
+        basis="Решение о ВНЖ считается принятым, если орган молчит.",
+    )
+    fields.update(overrides)
+    return BillName.model_validate(fields)
+
+
 def joint_record(compared_with: list[str], comparison: JointComparison) -> JointRecord:
     return JointRecord(
         comparison=comparison,
@@ -600,6 +613,7 @@ class FakeLlm:
         self.amendment_contexts: list[AmendmentsContext] = []
         self.supplement_contexts: list[SupplementContext] = []
         self.joint_contexts: list[JointContext] = []
+        self.name_contexts: list[NameContext] = []
         self.counted: list[str] = []
         self.finds_no_changes = False
         self.count_fails = False
@@ -705,6 +719,17 @@ class FakeLlm:
             output_tokens=self.JOINT_TOKENS[1],
         )
 
+    def name_bill(self, ctx: NameContext) -> NameRecord:
+        self.name_contexts.append(ctx)
+        return NameRecord(
+            proposal=make_name(),
+            model=self.MODEL,
+            prompt_version=PROMPT_VERSION,
+            created_at=datetime(2026, 9, 7, tzinfo=UTC),
+            input_tokens=self.JOINT_TOKENS[0],
+            output_tokens=self.JOINT_TOKENS[1],
+        )
+
     def summarize_amendments(self, ctx: AmendmentsContext) -> AmendmentsRecord:
         self.amendment_contexts.append(ctx)
         outcome = self.amendments_script.get(ctx.number, make_amendments())
@@ -772,6 +797,7 @@ class FakeBatchBackend:
                 "amendments": make_amendments(),
                 "supplement": make_digest(),
                 "joint": make_comparison(),
+                "name": make_name(),
                 "commission_review": DocumentReview(
                     purpose="commission_review",
                     complete=False,
@@ -797,9 +823,8 @@ class FakeBatchBackend:
                     unresolved=("no scripted review",),
                 ),
             }
-            outcome = self.secondary_script.get(
-                (req.number, kind), self.script.get(req.number, defaults[kind])
-            )
+            scripted = defaults[kind] if kind == "name" else self.script.get(req.number)
+            outcome = self.secondary_script.get((req.number, kind), scripted or defaults[kind])
             if isinstance(outcome, Exception):
                 yield BatchResult(
                     custom_id=req.custom_id,

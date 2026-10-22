@@ -157,3 +157,24 @@ def test_event_priority_does_not_use_project_score_and_unknown_is_protected() ->
         .status_update(bill, change, today=dt.date(2026, 9, 7))
         .text
     )
+
+
+def test_a_card_carded_without_a_name_is_named_through_a_batch_of_its_own() -> None:
+    w = World(batch=True, batch_only=True, name_cards=True)
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    w.batch.resolve()
+    w.run()
+    assert w.card_id("3039") is not None and w.bill("3039").editorial.mnemonic is None
+
+    w.batch.resolve()
+    w.run()
+    filed = len(w.batch.submitted)
+    w.run()
+
+    mnemonic = w.bill("3039").editorial.mnemonic
+    assert mnemonic is not None and mnemonic.name == "Молчаливый ВНЖ"
+    assert mnemonic.origin == "backfill"
+    card, message_id = w.publisher.edited[-1]
+    assert message_id == w.card_id("3039") and "Молчаливый ВНЖ" in card.text
+    assert len(w.batch.submitted) == filed

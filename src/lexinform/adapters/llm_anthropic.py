@@ -19,12 +19,14 @@ from lexinform.adapters.llm_prompts import (
     build_amendments_prompt,
     build_change_review_prompt,
     build_joint_prompt,
+    build_name_prompt,
     build_supplement_prompt,
     build_triage_prompt,
     build_user_prompt,
     change_review_system_prompt,
     explanation_system_prompt,
     joint_system_prompt,
+    name_system_prompt,
     supplement_system_prompt,
     system_prompt,
     triage_system_prompt,
@@ -42,6 +44,7 @@ from lexinform.models import (
     BatchResult,
     BatchStatus,
     BillContext,
+    BillName,
     ChangeContext,
     ChangeReview,
     ChangeReviewRecord,
@@ -49,6 +52,8 @@ from lexinform.models import (
     JointComparison,
     JointContext,
     JointRecord,
+    NameContext,
+    NameRecord,
     ReviewContext,
     ScannedDocument,
     SupplementContext,
@@ -303,6 +308,19 @@ class AnthropicAnalyzer:
             compared_with=[other.number for other in ctx.others],
         )
 
+    def name_bill(self, ctx: NameContext) -> NameRecord:
+        response = self._parse(
+            self._model,
+            name_system_prompt(ctx.language),
+            build_name_prompt(ctx),
+            BillName,
+            thinking=False,
+        )
+        proposal = response.parsed_output
+        if not isinstance(proposal, BillName):
+            raise LlmError("model returned no parsable structured output")
+        return self._records(getattr(response, "usage", None)).name(proposal)
+
     def _records(self, usage: Any) -> RecordFactory:
         return RecordFactory(self._model, PROMPT_VERSION, self._clock(), _usage_fields(usage))
 
@@ -326,6 +344,8 @@ class AnthropicAnalyzer:
             system, prompt = self._supplement_system, build_supplement_prompt(ctx)
         elif isinstance(ctx, ReviewContext):
             system, prompt = review_system(self._language, ctx.purpose), review_prompt(ctx)
+        elif isinstance(ctx, NameContext):
+            system, prompt = name_system_prompt(ctx.language), build_name_prompt(ctx)
         else:
             system, prompt = self._joint_system, build_joint_prompt(ctx)
         payload: AnthropicBatchRequest = {

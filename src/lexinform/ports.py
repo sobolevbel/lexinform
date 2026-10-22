@@ -45,6 +45,8 @@ from lexinform.models import (
     LlmBatchItem,
     LocatedText,
     Mp,
+    NameContext,
+    NameRecord,
     ObservationBasis,
     ObservationMode,
     ObservedProcess,
@@ -304,6 +306,10 @@ class JointBackend(Protocol):
     def compare_joint(self, ctx: JointContext) -> JointRecord:
         """How one print of a jointly considered group differs from the others, read off the
         channel's own description of each."""
+        ...
+
+    def name_bill(self, ctx: NameContext) -> NameRecord:
+        """The short name readers know a bill by, read off the channel's description of it."""
         ...
 
 

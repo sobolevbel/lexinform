@@ -10,9 +10,11 @@ from lexinform.models.analysis import (
     AmendmentsContext,
     Analysis,
     BillContext,
+    BillName,
     DocumentDigest,
     JointComparison,
     JointContext,
+    NameContext,
     SupplementContext,
 )
 from lexinform.models.bill import LocatedText
@@ -57,15 +59,21 @@ class DocumentReviewQuestion(BaseModel):
     ctx: ReviewContext
 
 
+class NameQuestion(BaseModel):
+    kind: Literal["name"] = "name"
+    ctx: NameContext
+
+
 BatchQuestion = Annotated[
     AnalysisQuestion
     | AmendmentsQuestion
     | SupplementQuestion
     | JointQuestion
-    | DocumentReviewQuestion,
+    | DocumentReviewQuestion
+    | NameQuestion,
     Field(discriminator="kind"),
 ]
-BatchAnswer = Analysis | Amendments | DocumentDigest | JointComparison | DocumentReview
+BatchAnswer = Analysis | Amendments | DocumentDigest | JointComparison | DocumentReview | BillName
 BatchKind = Literal[
     "analysis",
     "reanalysis",
@@ -76,6 +84,7 @@ BatchKind = Literal[
     "consultation_review",
     "commission_review",
     "act_application",
+    "name",
 ]
 
 
@@ -88,6 +97,8 @@ def batch_output_model(kind: CallKind) -> type[BatchAnswer]:
         return DocumentDigest
     if kind == "joint":
         return JointComparison
+    if kind == "name":
+        return BillName
     if kind in ("consultation_review", "commission_review", "act_application"):
         return DocumentReview
     raise ValueError(f"Unsupported batch kind: {kind}")
@@ -117,7 +128,14 @@ class BatchRequest(BaseModel):
     @property
     def ctx(
         self,
-    ) -> BillContext | AmendmentsContext | SupplementContext | JointContext | ReviewContext:
+    ) -> (
+        BillContext
+        | AmendmentsContext
+        | SupplementContext
+        | JointContext
+        | ReviewContext
+        | NameContext
+    ):
         return self.question.ctx
 
 

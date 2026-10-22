@@ -7,9 +7,11 @@ from lexinform.models import (
     AmendmentsRecord,
     Analysis,
     AnalysisRecord,
+    BillName,
     DocumentDigest,
     JointComparison,
     JointRecord,
+    NameRecord,
     SupplementRecord,
 )
 from lexinform.models.enums import SourceKind, TextSource
@@ -73,3 +75,6 @@ class RecordFactory:
 
     def joint(self, answer: JointComparison, *, compared_with: list[str]) -> JointRecord:
         return JointRecord(comparison=answer, compared_with=compared_with, **self.fields())
+
+    def name(self, answer: BillName) -> NameRecord:
+        return NameRecord(proposal=answer, **self.fields())

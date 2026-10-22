@@ -21,6 +21,7 @@ from lexinform.models import (
     BillStatus,
     CheckAspect,
     DocumentWork,
+    Mnemonic,
     ObservationMode,
     PrintInfo,
     ProcessDetail,
@@ -39,6 +40,7 @@ from lexinform.models import (
     plan_bill,
     stage_fingerprint,
     supplement_kind,
+    valid_mnemonic,
 )
 from lexinform.models.source_checks import observation_for
 from lexinform.ports import (
@@ -103,6 +105,7 @@ class TrackingOptions:
     attention_max_group: int = 5
     attention_roundup: str = "run"
     attention_daily_hour: int = 18
+    name_cards: bool = True
 
 
 def _consultation_reminder(
@@ -605,7 +608,39 @@ class StatusTrackingService:
             self._document_reviews.observe_commissions(everyone, result)
             self._document_reviews.advance(result, publish=publish)
         if result.fatal_error is None:
+            self._name(everyone)
             self._cards.refresh(everyone, result, publish=publish)
+
+    def _name(self, everyone: list[Bill]) -> None:
+        """A card from before names came with the analysis is named through a batch of its own."""
+        if self._analysis is None or not self._options.name_cards:
+            return
+        for bill in everyone:
+            if bill.editorial.mnemonic is not None or bill.analysis is None:
+                continue
+            try:
+                record = self._analysis.name_bill(bill, may_wait=True)
+            except ServiceUnavailableError as exc:
+                log.warning("naming stopped: %s", exc)
+                return
+            except Exception as exc:
+                log.warning("%s not named: %s", bill.number, exc)
+                continue
+            if isinstance(record, Waiting):
+                continue
+            proposal = record.proposal
+            name = next((n for n in (proposal.name, proposal.fallback) if valid_mnemonic(n)), "")
+            if not name:
+                continue
+            candidate = Mnemonic(
+                name=name,
+                language=bill.analysis.analysis.mnemonic_language,
+                basis=proposal.basis,
+                selected_at=record.created_at,
+                origin="backfill",
+            )
+            self._repo.save_editorial(bill.term, bill.number, bill.editorial.select(candidate))
+            log.info("%s named %r", bill.number, name)
 
     def _remind(self, everyone: list[Bill], result: TrackingResult) -> None:
         """The posts with a deadline behind them — three days for a consultation, the day itself

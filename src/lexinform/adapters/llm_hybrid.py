@@ -16,6 +16,8 @@ from lexinform.models import (
     ChangeReviewRecord,
     JointContext,
     JointRecord,
+    NameContext,
+    NameRecord,
     SupplementContext,
     SupplementRecord,
     TriageContext,
@@ -59,6 +61,9 @@ class HybridAnalyzer:
 
     def compare_joint(self, ctx: JointContext) -> JointRecord:
         return self._joint.compare_joint(ctx)
+
+    def name_bill(self, ctx: NameContext) -> NameRecord:
+        return self._joint.name_bill(ctx)
 
     def triage(self, ctx: TriageContext) -> TriageRecord:
         return self._triage.triage(ctx)

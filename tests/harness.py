@@ -320,6 +320,7 @@ class World:
         reader_attention: Literal["off", "shadow", "on"] = "shadow",
         attention_roundup: Literal["run", "daily"] = "run",
         attention_daily_hour: int = 18,
+        name_cards: bool = False,
     ) -> None:
         self.clock = FixedClock()
         self.repo = SqliteBillRepository(":memory:")
@@ -389,6 +390,7 @@ class World:
             llm_batch_kinds=batch_kinds,
             consultation_reviews_enabled=consultation_reviews_enabled,
             commission_reviews_enabled=commission_reviews_enabled,
+            name_cards=name_cards,
             llm_batch_max_wait_hours=batch_max_wait_hours,
             observe_unthreaded=observe_unthreaded,
         )

@@ -966,9 +966,14 @@ Invariants worth keeping:
   database) as cards and updates, plus what a reader can still act on, which the reminders and
   the agenda posts of the past week cannot be: each was about a date that has gone, so those
   kinds are left out and "what is ahead" comes from the followed bills instead. `Digest` carries
-  **everything** the week held and the renderer caps each section at `DIGEST_MAX_PER_SECTION`
-  and says how many it left out: week 37 of the real channel had 14 cards, and showing ten in
-  silence is the one thing a digest must not do. A sitting is marked «условно» where the card
+  **everything** the week held and the renderer makes **one message** of it (decided
+  2026-10-22): ⏰ the windows still open, 📌 one line per bill — its short name, the step and
+  what it means, the bills with a decision first — 🗓 the sittings, and a line of what the bot
+  read, took and follows. A routine step is owned by the digest and confirmed with it but never
+  shown, and each section is capped (`DIGEST_MAIN_ROWS`, …) and shrunk until the post fits
+  4,096 characters. The name is the bill's today, so a card carded before names came with the
+  analysis is named by a `name` batch of its own on `llm_joint_model` (`TrackingService._name`,
+  `name_cards`) and its card is edited to carry it. A sitting is marked «условно» where the card
   marks it, the consultations say what the bill is, and the week a digest is about is the last
   ISO one that **ended** (`current_ref` asks the calendar, not `digest_weekday`: a week ends on
   a Sunday whatever day the post goes out on). An update is
@@ -982,8 +987,8 @@ Invariants worth keeping:
 - **A batch request is written down before it is sent, and its answer before it is applied.**
   Every model call but the triage and the change review (both cheap gates on the triage model)
   goes to its model's batch API at half price (`require_batch`,
-  set by the container): the analysis and a re-analysis, the amendments, the digests and the
-  joint comparisons, with a manual `/analyze`, `force`, `/refresh` and `/republish` among them. A
+  set by the container): the analysis and a re-analysis, the amendments, the digests, the
+  joint comparisons and a card's name, with a manual `/analyze`, `force`, `/refresh` and `/republish` among them. A
   batch answer can take 24 hours and the run after it, and neither urgency (pilny, a
   consultation about to close) nor waiting buys a synchronous call; `llm_batch_enabled`,
   `_kinds`, `_provider`, `_sync_within_days` and `_max_wait_hours` are legacy. A secondary
@@ -1399,6 +1404,8 @@ Abbreviations (MSWiA, UdSC, ZUS, PESEL) stay Polish in the analysis, never МВ�
   for support. It is drafted into the technical channel with a publish button and never goes out
   unread; it asks the model nothing, so a week costs nothing. A quiet week is still told: silence
   is news in a channel about deadlines, and a reader must not have to guess whether the bot lives.
+  **Revised 2026-10-22**: one message a week, no routine steps in it, each bill named by its
+  short name with what the step means, and a line of the bot's own week.
 - **Bills found when their road is already over** (2026-09-12): no card and no analysis, whatever
   the source — but only when there is really nothing ahead (the act is out, the bill was rejected
   or withdrawn, the project or the plan was dropped), and a bill the Sejm has merely passed keeps

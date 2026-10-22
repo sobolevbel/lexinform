@@ -255,6 +255,37 @@ class JointRecord(BaseModel):
     cache_creation_input_tokens: int | None = None
 
 
+class NameContext(BaseModel):
+    """What a bill is named from: the channel's own description, never the text again."""
+
+    number: str
+    title: str
+    summary: str
+    key_changes: list[str] = Field(default_factory=list)
+    language: str = "ru"
+
+
+class BillName(BaseModel):
+    """Structured output: the short name readers will know the bill by."""
+
+    name: str = Field(description="Concrete memorable name, up to four words.")
+    fallback: str = Field(description="Neutral mechanism name, up to four words.")
+    basis: str = Field(description="The fact of the description the name rests on.")
+
+
+class NameRecord(BaseModel):
+    """A stored name proposal with its provenance."""
+
+    proposal: BillName
+    model: str
+    prompt_version: str
+    created_at: dt.datetime
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    cache_read_input_tokens: int | None = None
+    cache_creation_input_tokens: int | None = None
+
+
 class ScannedDocument(BaseModel):
     """A document the model reads as pages, because its file carries no text to read.
 
@@ -375,6 +406,7 @@ UsageRecord = (
     | AmendmentsRecord
     | SupplementRecord
     | JointRecord
+    | NameRecord
 )
 
 

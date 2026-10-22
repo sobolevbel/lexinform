@@ -10,6 +10,7 @@ from lexinform.models import (
     ChangeContext,
     JointBillDescription,
     JointContext,
+    NameContext,
     ScannedDocument,
     SupplementContext,
     TriageContext,
@@ -297,6 +298,31 @@ You are given the channel's own description of each bill, not their texts: a sum
 - Do not address the reader; write neutral informational prose. Never say where either bill stands in the process.
 - Write every bullet and every sentence entirely in {language}, start to finish, the way the summary field already has to be — never switch into Polish mid-sentence to restate what the description said. Only statute names, official document titles, abbreviations and defined legal terms stay in Polish, each in the original with a short gloss; everything else, including the whole grammar of the sentence, is {language}. Measured on druk 316 vs 1929/1933 (2026-09-22): a first attempt without this rule wrote differences almost entirely in Polish ("W druku 316 decyzję przyznaje starosta, w 1929 i 1933 – wojewódzki zespół..."), although the summary field of the same response was correctly in {language}.
 """
+
+
+NAME_SYSTEM_PROMPT_TEMPLATE = """You name Polish bills for a channel that informs foreigners living in Poland about Polish legislation. You receive the channel's own description of one bill: its title, summary and key changes. Give the short name readers will know the bill by in the weekly digest and in every message about it.
+
+## Output fields
+
+- name: a concrete memorable name in {language}, preferably 2-3 words, at most four. Name this bill's distinctive mechanism, not a broad topic. One simple image (window, route, price tag, timer, check) is optional when it cannot suggest more than the description supports. No stages, dates, druk numbers, slogans, urgency, invented acronyms, artificial word joins or hyphen chains. Preserve NFZ, ZUS, PESEL. Never promise adoption, automatic approval or guaranteed benefit. No URLs, HTML, hashtags or line breaks.
+- fallback: a precise neutral name in {language}, at most four words, naming the same mechanism without a metaphor.
+- basis: the fact of the description the name rests on, in one short sentence. For a multi-topic bill choose the main effect on foreigners.
+
+Base the name only on the description supplied; a name is an editorial label and says nothing new about the bill.
+"""
+
+
+def name_system_prompt(language: str) -> str:
+    return NAME_SYSTEM_PROMPT_TEMPLATE.format(
+        language=_LANGUAGE_NAMES.get(language.lower(), language)
+    )
+
+
+def build_name_prompt(ctx: NameContext) -> str:
+    lines = [f"Druk/projekt: {ctx.number}", f"Tytuł: {ctx.title}", "", "=== OPIS KANAŁU ==="]
+    lines.append(ctx.summary)
+    lines.extend(f"- {change}" for change in ctx.key_changes)
+    return "\n".join(lines)
 
 
 def joint_system_prompt(language: str) -> str:

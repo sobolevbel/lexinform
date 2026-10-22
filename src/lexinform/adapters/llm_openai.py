@@ -30,6 +30,7 @@ from lexinform.adapters.llm_prompts import (
     PROMPT_VERSION,
     build_amendments_prompt,
     build_joint_prompt,
+    build_name_prompt,
     build_supplement_prompt,
     build_user_prompt,
     explanation_system_prompt,
@@ -37,6 +38,7 @@ from lexinform.adapters.llm_prompts import (
     gpt51_joint_system_prompt,
     gpt51_supplement_system_prompt,
     gpt51_system_prompt,
+    name_system_prompt,
 )
 from lexinform.adapters.review_prompts import (
     REVIEW_PROMPT_VERSION,
@@ -57,10 +59,13 @@ from lexinform.models import (
     BatchResult,
     BatchStatus,
     BillContext,
+    BillName,
     DocumentDigest,
     JointComparison,
     JointContext,
     JointRecord,
+    NameContext,
+    NameRecord,
     ReviewContext,
     ScannedDocument,
     SupplementContext,
@@ -172,6 +177,17 @@ _JOINT_COMPARISON_SCHEMA: dict[str, Any] = {
         "confidence": {"type": "number"},
     },
     "required": ["same_substance", "summary", "differences", "confidence"],
+    "additionalProperties": False,
+}
+
+_BILL_NAME_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "fallback": {"type": "string"},
+        "basis": {"type": "string"},
+    },
+    "required": ["name", "fallback", "basis"],
     "additionalProperties": False,
 }
 
@@ -298,6 +314,17 @@ class OpenAiAnalyzer:
             compared_with=[other.number for other in ctx.others],
         )
 
+    def name_bill(self, ctx: NameContext) -> NameRecord:
+        proposal, usage = self._structured_call(
+            system=name_system_prompt(ctx.language),
+            user_prompt=build_name_prompt(ctx),
+            scan=None,
+            schema_name="bill_name",
+            schema=_BILL_NAME_SCHEMA,
+            output_model=BillName,
+        )
+        return self._records(usage).name(proposal)
+
     def _records(self, usage: _Usage) -> RecordFactory:
         return RecordFactory(self._model, PROMPT_VERSION, self._clock(), usage.fields())
 
@@ -341,6 +368,8 @@ class OpenAiAnalyzer:
             )
         elif isinstance(ctx, ReviewContext):
             system, prompt = review_system(self._language, ctx.purpose), review_prompt(ctx)
+        elif isinstance(ctx, NameContext):
+            system, prompt = name_system_prompt(ctx.language), build_name_prompt(ctx)
         else:
             system, prompt = gpt51_joint_system_prompt(self._language), build_joint_prompt(ctx)
         schema_name, schema = {
@@ -353,6 +382,7 @@ class OpenAiAnalyzer:
             "consultation_review": ("document_review", REVIEW_SCHEMA),
             "commission_review": ("document_review", REVIEW_SCHEMA),
             "act_application": ("document_review", REVIEW_SCHEMA),
+            "name": ("bill_name", _BILL_NAME_SCHEMA),
         }[request.call_kind]
         payload = {
             "custom_id": request.custom_id,

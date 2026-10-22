@@ -156,6 +156,10 @@ class Settings(BaseSettings):
         default=False,
         description="Enable batch reviews of government, Sejm and Senate committee documents.",
     )
+    name_cards: bool = Field(
+        default=True,
+        description="Ask a batch for the short name of a carded bill whose analysis gave none.",
+    )
     consultation_reviews_enabled: bool = Field(
         default=False,
         description="Enable analysis and delivery of consultation document reviews; disabled"
