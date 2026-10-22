@@ -3,7 +3,7 @@
 Everything a developer needs: setup, the daily commands, how the tests are built, how to try a
 change against real data, how to change the schema, and where each kind of change goes.
 Product and domain background lives in `README.md`, `docs/roadmap.md` and
-`docs/legislative-process.md`; the rules Claude Code follows are in `CLAUDE.md`.
+`docs/legislative-process.md`; the rules coding agents follow are in `AGENTS.md` (which `CLAUDE.md` imports) and `.claude/rules/`.
 
 ## Setup
 

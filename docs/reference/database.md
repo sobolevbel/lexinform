@@ -174,6 +174,39 @@ payload и ненужные memo очищаются, но идентичност
 [CONTRIBUTING.md](https://github.com/sobolevbel/lexinform/blob/main/CONTRIBUTING.md#database-schema-and-migrations).
 Downgrade нет: откат требует прежнего кода и прежнего дампа из истории `state`.
 
+## История версий v8–v35
+
+Сентябрь 2026. Более поздние версии описаны в разделах выше.
+
+| Версия | Что добавила |
+| --- | --- |
+| v8 | `rcl_json` |
+| v9 | `bills.discontinued_at`, `status_changes.discontinued` — конец каденции Сейма |
+| v10 | `bills.linked_wykaz_number` — druk, продолжающий RCL-ветку, сохраняет номер wykaz для тега |
+| v11 | уникальный индекс напоминаний о слушаниях (bill, channel, дата); `status_changes.amendments_json` — сводка поправок Сената или комиссии |
+| v12 | уникальный индекс ответов `joint_bill` (bill, channel) |
+| v13 | таблица `commands` — команды оператора по Telegram update id |
+| v14 | `commands.executed_at` — команда без ответа отвечается снова, но не выполняется повторно |
+| v15 | `bills.wykaz_json` — записи `WPL/UD408` |
+| v16 | `publications.rendered_sha256` — последний рендер карточки, чтобы найти расхождение без запроса к Telegram |
+| v17 | уникальный индекс напоминаний о конституционных сроках (bill, channel, фаза) |
+| v18 | `bills.supplements_json` (о каких поданных документах канал уже сказал), `status_changes.supplements_json` (дайджесты в обновлении) |
+| v19 | уникальный индекс отзыва заседания (bill, channel, `ref`) |
+| v20 | `bills.joint_json` — чем принт отличается от совместно рассматриваемых; повтор, `/preview` и `/republish` не платят снова |
+| v21 | статус `skipped_joint` упразднён: строка старого дампа переходит в `analysis_pending` |
+| v22 | `rcl_wykaz_numbers` — номер wykaz каждого проекта листинга RCL с датой создания (номера переиспользуются) |
+| v23 | недельный дайджест: `ux_pub_digest` на `(channel_id, kind, ref)`; `ix_pub_channel_sent` на `(channel_id, status, sent_at)` — без него SQLite выбирал `ix_pub_status` |
+| v24 | `bills.observed_closure_date` — заполнена из `closure_date` у строк со `stages_fingerprint`, поэтому деплой не объявил закрытий (инцидент 2111) |
+| v25 | `bills.observed_process_json` (неизменяемый baseline `ObservedProcess`), `publications.delivery_json` (факты для повтора, замороженные при отправке), `status_changes.consultation_opened`, `analysis_memo` |
+| v26 | `llm_batches`, `llm_batch_items` — отправка в batch API и bill каждого `custom_id` |
+| v27 | `llm_batch_intents` — запрос, сохранённый до вызова провайдера (`queued` повторяется, `submitting` ждёт сверки) |
+| v28 | `bills.analysis_generation` (reset делает старый ответ устаревшим), `bills.ready_analysis_json` |
+| v29 | `llm_batch_items.result_json`/`accounted_at` — ответ сохраняется до применения |
+| v30 | `llm_batches.forgotten_at` — собран и удалён у провайдера |
+| v31 | `bills.senate_json` — страница акта на senat.gov.pl: принт Сената, комиссии с e-mail, их заседания |
+| v32 | `awaiting_batch_since` — отложенные наблюдения не теряются за watermark discovery |
+| v35 | `bills.observation_mode`/`observation_basis` (NULL — неизвестно, а не выключено), `source_checks` (последний успех каждого аспекта, отказы и outages раздельно) |
+
 ## Разбор документов и продолжения (v41–v43)
 
 `bills.consultation_review_json` и `act_application_review_json` содержат исходный

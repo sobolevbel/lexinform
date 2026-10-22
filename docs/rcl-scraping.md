@@ -2,7 +2,7 @@
 
 Extracted from `CLAUDE.md` on 2026-09-14: markup, file formats, letters and probe results for
 `adapters/rcl_html.py`, `adapters/doc_text.py` and `adapters/wykaz_csv.py`. Read it when touching
-those; the invariants that govern *when* they run stay in `CLAUDE.md`.
+those; the invariants that govern *when* they run are in `.claude/rules/sources.md`.
 
 ## RCL lessons (verified live, Sept 2026)
 

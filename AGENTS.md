@@ -1,107 +1,170 @@
-# lexinform — instructions for Codex
+# lexinform — instructions for coding agents
 
-`lexinform` monitors Polish legislation that materially affects foreigners. It discovers Sejm bills and RCL government projects, scores them with an LLM, publishes Russian Telegram cards, and follows relevant matters through entry into force. Prioritise timely, actionable events (consultations, hearings, referrals and deadlines), not a legislative chronicle.
+Daily bot: finds Polish bills that affect foreigners (Sejm API; legislacja.rcl.gov.pl for
+government projects still with the ministries; the wykaz prac legislacyjnych RM on gov.pl for those
+only announced), scores them 1–5 with an LLM, posts Russian cards to a Telegram channel and follows
+each bill until the act is in force. The point is *timely action* — consultations, committee
+referrals, hearings, deadlines — not a chronicle.
 
-Read `README.md` for product context, `CONTRIBUTING.md` before changing code, and:
+## Where things are written
 
-- `docs/roadmap.md` for the open work;
-- `docs/legislative-process.md` for stages, legal deadlines and public participation windows;
-- `docs/operator-commands.md` for the technical channel's commands and the relay that carries them;
-- `docs/reference/database.md` for the schema source and migrations (`database.html` is historical).
+- **This file is the one instruction source for every agent.** `CLAUDE.md` only imports it
+  (`@AGENTS.md`) and adds Claude Code specifics, so Claude and Codex read the same rules. Keep it
+  short: a rule that matters in every session goes here; a rule about one area goes into that area's
+  file below; history, measurements and how something was found go into commit messages, `docs/` or
+  `docs/BUGS.md`. One fact lives in one place; elsewhere, point to it.
+- **Detailed invariants live in `.claude/rules/`, one file per area.** Claude Code loads a file
+  automatically when it reads or edits a matching path; any other agent reads the file for the
+  area before changing code there:
 
-For documentation work, read `docs/index.md` for the local portal and `docs/authoring.md` for editing it.
+  | Rules file | Area |
+  | --- | --- |
+  | `road.md` | stages, phases, "what comes next", term, card refresh, first-sight baseline, re-analysis |
+  | `messages.md` | sittings, replies, held changes, joint prints, filed documents, delivery |
+  | `documents.md` | scans, cover letters, which file is the bill, text digests, cost guard |
+  | `sources.md` | RPW/RCL/wykaz rows, linking, RCL watcher, consultation letters, unthreaded bills |
+  | `operations.md` | runs, operator commands, digest, batches, document reviews |
+  | `sejm-api.md` | verified facts about the Sejm API, orka, ELI, the Senate site, signatories |
+  | `database.md` | migrations and how state travels |
+
+- Docs read on demand: `docs/legislative-process.md` (road RCL → Sejm → Senate → President → Dz.U.,
+  deadlines, public windows, API stage vocabulary), `docs/text-selection.md` (what of a document
+  reaches the model), `docs/rcl-scraping.md` (RCL markup and files, wykaz CSV, probes),
+  `docs/llm-cost.md`, `docs/reference/database.md` (schema, migration history),
+  `docs/operator-commands.md`, `docs/roadmap.md` (open work), `docs/BUGS.md` (defects; read
+  "Classes we have already had" before hunting a new one), `CONTRIBUTING.md` (setup, tests, where a
+  change goes), `README.md` (product). Documentation work: `docs/index.md`, `docs/authoring.md`.
 
 ## Working rules
 
-- Python 3.14; use `uv`.
-- Before committing, run `uv run pytest -q && uv run mypy && uv run ruff check src tests`, then `uv run ruff format src tests`. Mypy is strict: no `type: ignore`, no local imports, and fully typed tests.
-- Tests marked `local_http` are excluded from the default gate; run `make test-local-http` only when a change needs CLI coverage through the local HTTP server.
-- Comments and docstrings state only a non-obvious external fact or invariant; keep them to one line. Commit messages are English. Commit each completed, coherent part; do not push unless asked or add `Co-Authored-By` trailers.
-- `.env` contains real secrets: do not read or print it. Keep `.env.example` aligned when adding settings.
-- Reader-facing wording is Russian (labels live in `i18n.py`); retain Polish legal titles and abbreviations unchanged.
-- Production state is the SQLite dump on the `state` branch, maintained by `.github/workflows/daily.yml`. Real-data dry runs must use a copy of that dump and `lexinform run --dry-run`; they still make real triage calls, while every other model call is prepared as a batch request and never submitted.
+- Python 3.14, `uv`. Before a commit: `uv run pytest -q && uv run mypy && uv run ruff check src
+  tests`, then `uv run ruff format src tests`. mypy is strict over `src` and `tests`: no `type:
+  ignore`, no local imports, tests fully typed. An `assert` that narrows a type states an invariant
+  and who guarantees it (`assert x is not None, "…"`); a value that can really be None is handled.
+  Tests marked `local_http` are outside the default gate; `make test-local-http` only when a change
+  needs CLI coverage through the local HTTP server.
+- **IMPORTANT — COMMENTS AND DOCSTRINGS ARE ONE LINE. ALWAYS. IF YOU ARE WRITING A THIRD LINE, STOP
+  AND CUT IT.** Say the measured number, the API quirk, the deadline — NEVER how it was discovered,
+  what went wrong before, or which bill it was found on (that goes in the commit message). The long
+  docstrings still in the repo are NOT the model to copy. A comment exists only where code cannot
+  speak: an outside fact, an invariant a later edit would silently break, or why the obvious way was
+  not taken. Never a restatement of the next line, a divider, a label over a group, or a docstring
+  written as a comment at the top of a body.
+- **Every measured claim can be re-run** against the corpus: an 11 GB checkout beside this one as
+  `lexinform-corpus`, its own git repo for scripts, checks and index (downloaded data untracked);
+  measurement paths in the rules are relative to it. It holds all 980 prints of term 10 with text,
+  825 RCL projects with every reached stage and 9,221 files, the whole wykaz, 827 orka submissions,
+  and the stage trees of all 5,533 processes of terms 8–10 (term 10 re-read 3 Oct 2026 under
+  `sejm/snapshots/`). Its `README.md` says how fresh each
+  source is; start at `INDEX.json` (druk, RCL id, `wpl:UC104`, RPW → files, labels, each other;
+  `cases` are ready-made sets such as `print.scan`, `document.unknown`). Older numbers rest on a 45-print sample.
+- **Validate every extraction, trimming, normalisation, fingerprint or text-comparison change on the
+  real corpus before committing**: replay prior matches, inspect changed decisions, inject meaningful
+  changes (dates, amounts, negations, scope, references). Similarity alone never proves
+  immateriality. Record coverage and exclusions; fixtures alone do not replace this.
+- Commit after each finished part; never push unless asked; no `Co-Authored-By`. A push of `main`
+  deploys everything: the bot (every `daily.yml` run checks out `main`) and, after green CI, the
+  relay on the VPS (`deploy-relay.yml` → `deploy/update.sh` over SSH).
+- Code, comments and **commit messages are English**. Reader messages are Russian (labels in
+  `i18n.py`, RU + EN); Polish law titles and abbreviations stay Polish.
+- `.env` holds real secrets, untracked: never read or print values; keep `.env.example` in step.
+  `tests/conftest.py` blanks every credential for every test (autouse) because `Settings()` reads
+  `.env`; a CLI test's `env` sets the token and log channel to "" as well.
+- Prod state = SQLite dump in the `state` branch, written by `.github/workflows/daily.yml` (cron
+  weekdays 01:23 and 13:23 UTC, weekend 06:23 UTC; GitHub starts schedules ~4–6 h late, so runs
+  land ~08:00–10:00 and ~18:00–21:00 Warsaw, midday on weekends). Real data: `git show
+  origin/state:lexinform.sql > /tmp/s.sql`, `LEXINFORM_DB_PATH=/tmp/t.db uv run lexinform db init
+  && … db restore /tmp/s.sql`, then `lexinform run --dry-run --since YYYY-MM-DD` (real triage
+  calls; every other model call prepared as a batch request and never submitted; DB rolled back).
 
-## Architecture and tests
+## Architecture
 
-Dependencies flow only in this direction:
+`models/` (pydantic + pure helpers; `enums`, `sejm`, `rcl`, `wykaz`, `analysis`, `bill` (the
+aggregate, `ConsultationWindow`, `process_stages`/`veto_stood`), `phases` (`Phase`, `next_phase`,
+`is_over`, deadlines, patience), `events`, `evidence`, `observations`, `planning`, `report`; all
+re-exported from `lexinform.models`) → `ports.py` (Protocols) → `adapters/` (Sejm API, ELI, orka,
+RCL scraper `rcl_html`, register CSV `wykaz_csv`, Senate site `senat_html`, PDF/Word text
+`document_text`, LLM providers, `publisher_base` (the `Publisher` port rendered once; Telegram and
+console only deliver), SQLite, `inbox_files`, `github_inbox`) → `services/` (commands, digest,
+lookup, listener (the relay), discovery, rcl_discovery + rcl_projects, wykaz_discovery, sources
+(`TextSources` → `SejmTextSource`, `RclTextSource`, `SubmissionTextSource`, `MetadataOnlySource`),
+documents (`TextLoader`), text_prefilter, analysis, signatories, publishing, posting, `tracking/`
+(service, pre_print, rcl, wykaz, linking, acts, senate, consultations, agenda, cards, deadlines,
+hearings, rollover, stages), pipeline) → `container.py` (manual wiring, typed on ports, each
+service built once) → `cli.py` (typer).
 
-`models/` → `ports.py` → `adapters/` / pure helpers → `services/` → `container.py` → `cli.py`.
+- Services import only ports, models and pure modules (`keywords`, `sections`, `law_digest`,
+  `agenda`, `authors`, `rcl_letters`, `concurrency`, …), never adapters. Generic services
+  (analysis, prefilter, formatter, `next_phase`) never branch on the source: they read
+  `Bill.has_process`, `Bill.consultation`, `Bill.rcl`, `Bill.wykaz` and the `TextSource` port.
+- Network work runs in parallel only through `concurrency.fan_out`; outcomes are consumed and every
+  repository write happens on the calling thread in input order. `workers=4` must equal `workers=1`.
+- Services take time from the `Clock`, never `datetime.now()`.
+- Tests: `tests/unit/` one module; `tests/scenario/` the pipeline over fakes (anything calling
+  `World()`); `tests/integration/` live systems. Fakes are in `tests/fakes.py`; `tests/harness.py::World` builds the real
+  `Container` from `Settings` naming fake hosts (injection points `llm`, `extractor`,
+  `publisher_override`, `notifier_override`); arrange with `add_bill`/`add_rcl_project`/
+  `set_stages`/`touch`, act with `run`, assert on the report, publisher records and
+  `bill`/`publication`. HTTP adapters use `httpx2.MockTransport`. The fake Sejm gateway answers per
+  term like the API. `FakePublisher` **is** `RenderingPublisher` with delivery overridden, so
+  `publisher.texts(kind)` is what the channel would show. Arrange-act-assert; never touch private
+  attributes.
 
-- `models` are Pydantic models and pure business helpers; re-export public types from `lexinform.models`.
-- Services depend on ports, models and pure modules, never concrete adapters. Generic services must not branch by source; use `Bill.has_process`, `Bill.consultation`, `Bill.rcl` and the `TextSource` port.
-- `container.py` is the real manual wiring. Keep it type-safe and build each service once.
-- Test through `tests/harness.py::World` and fakes in `tests/fakes.py`: arrange with public helpers, run the pipeline, assert reports/publications/models. Do not access private state. HTTP adapters use `httpx2.MockTransport`.
-- Parallelise network-only work with `concurrency.fan_out`; make repository writes in input order on the calling thread. `workers=4` must behave identically to `workers=1`.
-- Take time in services from the `Clock`, never `datetime.now()`.
-- Validate every extraction, trimming, normalization, fingerprint or text-comparison change on the real corpus before committing: replay prior matches, inspect changed decisions, and inject meaningful changes (dates, amounts, negations, scope and references). Similarity alone never proves immateriality. Record corpus coverage and exclusions; fixtures alone do not replace this check.
+## Invariants (index — details in the rules file named)
 
-## Invariants to preserve
+- Term from `/sejm/term`; the old term is drained, not dropped (`road.md`).
+- "What comes next" is derived from stages, agenda and statutory deadlines, never stored; no passed
+  date is printed (`road.md`).
+- First sight seeds a baseline and never replays history; a decision needs positive evidence;
+  missing decisions and unknown next steps never prove completion (`road.md`).
+- Stage fingerprint excludes rendering-only `Stage` fields (`road.md`).
+- A re-analysis needs a new normalised text, not a new URL, and is news only when the model names a
+  change (`road.md`).
+- Pending-before-send; stale `pending` becomes `unknown`, never auto-resent; `unknown` is resolved
+  only by an audited operator decision (`messages.md`).
+- Recording and telling a change are one pair; frame-only and routine steps are held or go to the
+  digest (`messages.md`).
+- Jointly considered prints share one card; later prints are `joint_bill` replies (`messages.md`).
+- A missing or refused file is never a verdict; outages never burn per-bill attempts (`documents.md`,
+  `operations.md`).
+- `/bills` rows are refreshed by the pre-print tracker only; RCL rows by the RCL watcher only
+  (`sources.md`).
+- Every model call except triage and change review is a batch, written down before it is sent
+  (`operations.md`).
+- Operator commands are recorded before they run and never re-run (`operations.md`).
+- Migrations are append-only (`database.md`).
 
-- Resolve the current Sejm term from `/sejm/term`. Discover only in that term, but keep tracking previous-term bills until resolved. Rollover marks unfinished Sejm work as lapsed; passed acts remain followed; RCL projects awaiting a print move to the new term.
-- Publishing is pending-before-send. Create a unique pending publication before delivery; retry `failed`, never automatically resend stale `pending` (they become `unknown`).
-- Resolve `unknown` only through an audited operator decision; retry its saved payload and parent, never reuse publication IDs, and keep `dismissed` distinct from `sent` or editorial holds.
-- Prints considered jointly receive one main card; later related prints are `joint_bill` replies. Prefer the government print as the initial card.
-- Discovery must not overwrite existing `/bills` rows. Only the pre-print tracker refreshes them, so changes such as a print assignment or consultation result remain detectable.
-- Discovery must not overwrite `observed_closure_date`: analysis and linking seed it, tracking advances it after recording the change. A closure present in the initial snapshot is not news.
-- `ObservedProcess` is the processed baseline; Sejm checkpoints commit it with status-change delivery work. Keep network calls outside that transaction.
-- Status updates distinguish queued delivery from editorial holds. Retry the saved per-channel payload and release only its included held-change IDs; never render an old event against a newer bill.
-- Before the first attention delivery attempt, refresh participation evidence separately from historical stages and analysis; missing windows hold reminders without attempts. Frozen payloads and attempted groups remain immutable.
-- Operator delivery-alert cursors advance only after successful notification, survive retention, and never change delivery identities or resolve `unknown`.
-- Missing decisions and unknown next steps do not prove completion. Senate decision evidence is compared separately from rendering-only stage fields.
-- Memoized analysis results are keyed by bill, normalized content, purpose and comparison context; reused results charge no new tokens. Worker threads never write the repository.
-- Unknown decisions are not successful decisions. Use the shared `VetoOutcome` evidence for veto headers, process completion and deadlines; committee proposals are not Sejm decisions.
-- Derive “what comes next” from stages, agenda and statutory deadlines; never persist it as independent state.
-- Not every stage merits a message. Frame-only transitions are held and included with the next substantive event. Keep rendering-only `Stage` fields out of the stage fingerprint.
-- Reanalyse only after normalized document text changes, not merely after a URL or attachment date changes. After a third reading, avoid a download only when the known conditions prove the adopted text is unchanged.
-- RPW and RCL entries have no Sejm process. When linked to a print, preserve their thread/card; a skipped RPW entry's print must still enter text prefilter.
-- RCL discovery reads a project once; the RCL watcher owns later full refreshes. Folder uploads alone are not news. Parse RCL HTML structurally with CSS selectors; treat its HTTP-200 “Request Rejected” page as an outage.
-- Service outages abort the phase and do not consume per-bill attempts. Other bill-level failures retry up to the configured limit.
+## Product decisions
 
-## Database state and migrations
-
-- SQLite schema version is `PRAGMA user_version`; `MIGRATIONS` in `adapters/sqlite_repo.py` is append-only. Never edit or reorder deployed migrations.
-- Add a migration by appending plain SQL, update models and row mappings with backward-compatible defaults, and extend the legacy-dump migration test in `tests/unit/test_sqlite_repo.py`.
-- `dump()` records the schema version; `restore()` replays then migrates old dumps. There is no downgrade: roll back code and restore a previous `state`-branch dump.
-- Every durable state commit includes the derived `pending-batches.json`, including batch checkpoints.
-- Retention keeps publication identities, batch token accounting and the last discovery watermark. Never expire uncertain work or a memo needed by pending analysis, tracking or delivery; legacy memos without ownership remain protected.
-
-## Important integration facts
-
-- `/processes` covers only printed bills; pre-print consultation entries live in `/bills`. API timestamps are naive `Europe/Warsaw` times, not `Z` timestamps. Paginate until empty; do not trust ignored API filters.
-- A bill being passed is not the same as in force. Use ELI/Dz.U. data for promulgation and entry into force.
-- Never probe attachments with `HEAD`; stream a bounded `GET`. `…-A` committee prints containing amendment proposals are not bill text.
-- Missing RPW files stay pending for text prefilter; an initial Orka 404 is not a relevance verdict.
-- RCL has no API. Its project pages are slow, and GitHub-hosted runners may be network-blocked; the initial list probe must stay short and single-attempt.
-- Large text goes through deterministic trimming and triage before full analysis. Cost limits are safeguards: skipped-cost rows are revivable with `lexinform reset --to analysis_pending`.
-
-## Product defaults
-
-- Default model: `gpt-5.1`; minimum publication score: 3. Triage texts at least 20k chars with `claude-sonnet-5`.
-- All supported model analyses use batch, including manual/forced and secondary calls; only triage is synchronous. Context overflow uses an Opus 5.5 batch and its batch price. Urgency and waiting time never enable synchronous fallback.
-- Do not add a likelihood-of-passage estimate.
-- Prompt-version changes alone must not reanalyse or repost an existing card. A materially new text may.
-- Every card/update includes what happens next and what readers can do now. RCL cards ask readers to write in Polish and cite the wykaz number.
-
-Secondary LLM batches pass results through analysis_memo without changing bill status. Deferred
-tracking keeps awaiting_batch_since until the observation checkpoint commits; queued time counts
-toward the deadline. Never resubmit an uncertain intent automatically.
-
-Digest-only events stay queued until their owning reader digest part is confirmed.
-Reserve digest_event_links before sending; retries and operator recovery act on the physical
-part, preserve its payload and membership, and release only its covered held changes.
-
-Document reviews use separate secondary batch purposes and exact source citations; participant
-positions never prove acceptance and project analyses never prove final-act applicability.
-Commission reviews across RCL, Sejm and Senate keep proposals, recommendations and decisions separate;
-Minority motions never prove a committee recommendation, nor committee reports a chamber decision.
-The first Sejm committee-material catalog seeds already seen print IDs without historical review work.
-Confirmed government outcomes need a complete response paragraph or row; incorporation needs dated before/after
-citations, and pending contexts and the original comparison snapshot stay immutable.
-Preserve pending review work, comparison snapshots and canonical history for the same ELI.
-Multipart deliveries freeze every physical part before the first attempt, wait for the saved
-parent, and retain parent payloads while any continuation remains unfinished.
-
-Amendment revisions use the original message's saved bill, change and date; never rebuild
-historical context from the current bill. Queue a batch with its immutable edit target, then a
-separate amendments_revision delivery; preserve the original event and publication as audit history.
-Repeated commands cannot supersede a pending batch or an attempted or uncertain revision delivery.
+- Analysis, amendments, supplement and joint model `gpt-5.1`, batch provider `openai`; above 272k
+  input tokens or on a context-overflow refusal, a separate batch on `llm_analysis_overflow_model`
+  (`claude-opus-5-5`) at its batch price. Triage of texts ≥ 20k chars on `claude-sonnet-5`
+  (synchronous, ~1 cent a bill). Scans routed at 1,600 tokens a page. Urgency and waiting never buy
+  a synchronous call.
+- `min_score` 3. Text prefilter: 2 distinct patterns or 3 hits; weak patterns (Straż Graniczna,
+  "legalizacja", "nierezydent") never decide alone; everyone's registers and benefits (PESEL,
+  mObywatel, NFZ, 800+, prawo jazdy, Kodeks wyborczy) are deliberately not patterns. The keyword
+  stage is over-inclusive on purpose: a false hit costs a call, a miss loses a bill.
+- Cost guards: `LEXINFORM_MAX_ANALYSIS_COST_USD` ($2 per first analysis; a longer text is cut down,
+  not refused; a re-analysis is never refused) and `LEXINFORM_MAX_RUN_COST_USD` ($15 a run); a term
+  costs ≈$44 because the triage rejects 62%. Skipped-cost rows revive with `lexinform reset --to
+  analysis_pending`. Details and rejected ideas: `docs/llm-cost.md`.
+- No "probability of passing" estimate. A new `PROMPT_VERSION` never re-analyses or re-posts
+  existing cards; only a materially new text does. The analysis never states where the bill stands
+  — the card does. Abbreviations (MSWiA, UdSC, ZUS, PESEL) stay Polish, never МВД.
+- Every card and update carries "what comes next" and "what you can do now", and every call to
+  action names an address. RCL cards ask readers to write in Polish and cite the wykaz number.
+  Committees are named, not coded; «Важность» shows the score without the scale legend; the Dz.U.
+  notice is a separate reply with one summary sentence; a sitting or hearing is told once per joint
+  group.
+- Every relevant RCL project is followed, not only open consultations; deadline and e-mail are
+  parsed from the letter deterministically. Wykaz plans get a «План правительства» card saying there
+  is no text yet; the RCL project and druk inherit it (one thread from plan to Dz.U.).
+- A bill found already over gets no card and no analysis; a bill merely passed by the Sejm keeps its
+  card. Of filed documents only the government's position on a bill it did not write and the OSR are
+  told; opinions are not.
+- Operator commands come from any admin of the technical channel through a relay on the owner's
+  mikrus VPS (384 MB: a `getUpdates` loop, not the bot) into the `inbox` branch and are executed by
+  GitHub Actions, so the state branch stays the only DB writer; every CLI subcommand is a command.
+- Weekly digest: one post (Sunday, Warsaw), drafted with a publish button, never sent unread, costs
+  nothing; a quiet week is still told.
