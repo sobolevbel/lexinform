@@ -1,3 +1,3 @@
-from lexinform.cli import app
+from lexinform.cli import main
 
-app()
+main()

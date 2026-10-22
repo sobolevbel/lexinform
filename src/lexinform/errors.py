@@ -16,6 +16,8 @@ class ServiceUnavailableError(RuntimeError):
 class StateCheckpointError(RuntimeError):
     """The writer cannot prove that its state snapshot is durable on the expected branch."""
 
+    exit_code = 75
+
 
 class SejmApiUnavailableError(ServiceUnavailableError):
     system = "Sejm API"

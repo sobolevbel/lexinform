@@ -206,6 +206,7 @@ jobs:
           if [ "$EVENT_NAME" = "schedule" ] && [ "$EVENT_SCHEDULE" = "43 * * * *" ]; then
             STATUS=0
             uv run --frozen --no-dev lexinform drain-deliveries || STATUS=$?
+            if [ "$STATUS" = "75" ]; then exit "$STATUS"; fi
             if [ "$INBOX_PRESENT" = "true" ] && compgen -G "$LEXINFORM_INBOX_DIR/*.json" >/dev/null; then
               uv run --frozen --no-dev lexinform commands || STATUS=$?
             fi
@@ -239,7 +240,8 @@ jobs:
             ARGS+=(--dry-run)
           fi
           STATUS=0
-          uv run --frozen --no-dev lexinform "$COMMAND" "${ARGS[@]}" || STATUS=$?
+          uv run --frozen --no-dev lexinform "$COMMAND" ${ARGS[@]+"${ARGS[@]}"} || STATUS=$?
+          if [ "$STATUS" = "75" ]; then exit "$STATUS"; fi
           # scan/reprefilter/index-rcl-numbers have no commands phase: drain it, even after a failure.
           if [ "$INBOX_PRESENT" = "true" ] && [ "$INPUT_DRY_RUN" != "true" ] \
             && [ "$COMMAND" != "run" ] && [ "$COMMAND" != "track" ] \

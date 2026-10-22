@@ -110,7 +110,7 @@ def test_inbox_deletions_require_a_confirmed_state_save() -> None:
 
 
 @pytest.mark.parametrize("pending_commands", [False, True])
-@pytest.mark.parametrize("drain_exit", [0, 3])
+@pytest.mark.parametrize("drain_exit", [0, 3, 75])
 def test_hourly_delivery_tick_preserves_inbox_and_delivery_failures(
     tmp_path: Path, pending_commands: bool, drain_exit: int
 ) -> None:
@@ -145,7 +145,43 @@ def test_hourly_delivery_tick_preserves_inbox_and_delivery_failures(
 
     assert result.returncode == drain_exit, result.stderr
     commands = ["run --frozen --no-dev lexinform drain-deliveries"]
-    if pending_commands:
+    if pending_commands and drain_exit != 75:
+        commands.append("run --frozen --no-dev lexinform commands")
+    assert result.stdout.splitlines() == commands
+
+
+@pytest.mark.parametrize("drain_exit", [3, 75])
+def test_manual_fatal_checkpoint_stops_the_following_commands_process(
+    tmp_path: Path, drain_exit: int
+) -> None:
+    executable = tmp_path / "uv"
+    executable.write_text(
+        '#!/bin/sh\nprintf "%s\\n" "$*"\n'
+        'if [ "$5" = "drain-deliveries" ]; then exit "$DRAIN_EXIT"; fi\n'
+    )
+    executable.chmod(0o755)
+    result = subprocess.run(
+        ["bash", "-c", execution_script()],
+        env={
+            "PATH": f"{tmp_path}{os.pathsep}{os.defpath}",
+            "INBOX_PRESENT": "true",
+            "EVENT_NAME": "workflow_dispatch",
+            "EVENT_TYPE": "",
+            "INPUT_COMMAND": "drain-deliveries",
+            "INPUT_OPTIONS": "",
+            "INPUT_SINCE": "",
+            "INPUT_DRY_RUN": "false",
+            "DRAIN_EXIT": str(drain_exit),
+        },
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == drain_exit, result.stderr
+    commands = ["run --frozen --no-dev lexinform drain-deliveries"]
+    if drain_exit != 75:
         commands.append("run --frozen --no-dev lexinform commands")
     assert result.stdout.splitlines() == commands
 

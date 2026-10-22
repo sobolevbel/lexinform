@@ -13,7 +13,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from zoneinfo import ZoneInfo
 
-from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError
+from lexinform.errors import OrkaUnreachableError, ServiceUnavailableError, StateCheckpointError
 from lexinform.models import (
     DISPATCHED,
     FAILING_CHECK_MIN,
@@ -265,6 +265,8 @@ class CommandService:
         halfway has still spent what it spent, and the report must say so."""
         try:
             outcome = self._execute(incoming, spent, min_score=min_score, publish=publish)
+        except StateCheckpointError:
+            raise
         except ServiceUnavailableError as exc:
             result.fatal_error = exc.describe()
             log.error("aborting commands phase: %s", result.fatal_error)

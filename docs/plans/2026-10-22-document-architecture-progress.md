@@ -234,7 +234,7 @@ remote CI/deploy не запускались; push и production effects отс�
 ### J007. DA1: CAS для существующих state writers
 
 Дата: 23 октября 2026. Статус: DA1.7 принято локально; DA1.8/DA1.10 частично.
-Implementation commit: подготовлен к фиксации. Исходная версия: `43078c4`.
+Implementation commit: `f837f68`. Исходная версия: `43078c4`.
 
 `GitStateCheckpoint` сохраняет SQL и polling manifest с CAS от local restore/последнего
 подтверждённого checkpoint. До записи проверяется remote baseline; push использует явный lease.
@@ -262,3 +262,37 @@ Production remote не изменялся; тестовые push выполня�
 Rollback для форматов: `43078c4` читает тот же state; при чужом tip writer нужно остановить
 и сверить действия, а не возвращать прежний reset/redump. Старый dump после внешних эффектов
 автоматически не восстанавливается. Push/CI/deploy/live нового кода не выполнялись.
+
+<a id="j008"></a>
+### J008. DA1.5: остановка при потере durable state
+
+Дата: 23 октября 2026. Статус: принято локально для существующих batch checkpoints;
+DA1.5 в целом остаётся частично выполненным до переноса reader senders.
+Implementation commit: подготовлен к фиксации. Исходная версия: `f837f68`.
+
+`DailyPipeline._phase` и `run` пробрасывают `StateCheckpointError`; `finally` сохраняет
+диагностику и учёт вызовов, затем ошибка доходит до вызывающего кода. `CommandService`
+пробрасывает её до записи executed/handled, ответа и удаления inbox. Классификация обычных
+outage/ошибок остаётся прежней. Прямые submit/collect уже пробрасывали этот тип; лишние
+изменения в secondary analysis/publishing/tracking не потребовались.
+
+Оба CLI entrypoint используют `cli.main`, который возвращает **75** для checkpoint failure.
+Workflow не запускает следующий commands process после этого кода ни в hourly tick,
+ни в ручном запуске; обычный exit 3 продолжает прежний drain commands. Для нового теста
+ручного запуска исправлено безопасное раскрытие пустого ARGS при `set -u` в macOS Bash 3.2.
+
+Новые сценарии проверяют ноль provider calls до pre-submit checkpoint, остановку следующей
+model group после receipt failure, отсутствие forget/reader sends/команд после collect failure,
+started-only состояние `/analyze` и `/explain` и сохранение отчёта. Отдельные subprocess tests
+проверяют exit 75 реальных `lexinform` и `python -m lexinform`; KeyboardInterrupt остаётся 130.
+`make test-local-http` после смены entrypoint: **21 passed**.
+
+Первый полный gate обнаружил проблему пустого Bash массива в новом workflow тесте; она
+исправлена, целевые CLI/workflow/checkpoint tests и финальный полный offline pytest прошли
+(один ожидаемый strict xfail DA5). Strict mypy — 304 файла, Ruff check/format успешны.
+Schema 48, polling v1, цены/defaults и сохранённые payload formats не менялись;
+увеличение SQL state этим фрагментом не вводится. Rollback по форматам: `f837f68`, но он
+ещё не останавливает дальнейшие фазы при этой ошибке. Push/CI/deploy/live не выполнялись.
+
+Уточнение карты J005: под `PublicationPoster` подразумевается фактический класс `Poster`
+из `services/posting.py`; перечисленные методы принадлежат ему.

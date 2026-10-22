@@ -14,7 +14,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.logging_setup import MemoryLogHandler
 from lexinform.models import PrefilterRejection, RunMode, RunReport, merge_usage
 from lexinform.ports import BillRepository, Clock, RunNotifier
@@ -128,8 +128,7 @@ class DailyPipeline:
         return self._clock.now() - self._first_run_lookback
 
     def run(self, opts: RunOptions) -> RunReport:
-        """One whole run: every failure is caught, because the report is how the run is heard
-        from and a process that crashes says nothing at all."""
+        """Record phase outcomes and stop the run when its durable state checkpoint fails."""
         started = self._clock.now()
         report = RunReport(
             started_at=started,
@@ -156,6 +155,10 @@ class DailyPipeline:
                     report.term,
                 )
                 self._execute(opts, report.term, report.since, report)
+        except StateCheckpointError as exc:
+            log.exception("run stopped because state persistence failed: %s", exc)
+            report.errors.append(f"state persistence failed: {exc}")
+            raise
         except Exception as exc:
             log.exception("run failed unexpectedly: %s", exc)
             report.errors.append(f"unexpected failure: {type(exc).__name__}: {exc}")
@@ -331,13 +334,12 @@ class DailyPipeline:
 
     @staticmethod
     def _phase(report: RunReport, name: str, action: Callable[[], None]) -> None:
-        """Run one phase; an outage or a bug ends the phase, not the run.
-
-        `in_report` keeps these log lines out of the captured warnings: they are errors already.
-        """
+        """Isolate phase failures except loss of durable state ownership."""
         started = time.perf_counter()
         try:
             action()
+        except StateCheckpointError:
+            raise
         except ServiceUnavailableError as exc:
             message = f"{name}: {exc.describe()}"
             log.error(message, extra={"in_report": True})

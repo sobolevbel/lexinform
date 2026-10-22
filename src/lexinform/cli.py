@@ -25,7 +25,7 @@ from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier, 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.concurrency import fan_out
 from lexinform.container import Container, build_container
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.i18n import labels_for
 from lexinform.logging_setup import configure_logging
 from lexinform.models import (
@@ -501,6 +501,8 @@ def explain(number: Annotated[str, typer.Argument(help=NUMBER_HELP)]) -> None:
         else:
             typer.echo(f"{bill.number} · {bill.summary.title}")
             typer.echo(c.formatter.explanation(bill, result).text)
+    except StateCheckpointError:
+        raise
     except (ValueError, RuntimeError) as exc:
         typer.echo(str(exc), err=True)
         raise typer.Exit(code=2) from None
@@ -1373,6 +1375,9 @@ def _or_exit[T](action: Callable[[], T]) -> T:
 def main() -> None:
     try:
         app()
+    except StateCheckpointError as exc:
+        typer.echo(str(exc), err=True)
+        sys.exit(exc.exit_code)
     except KeyboardInterrupt:
         sys.exit(130)
 
