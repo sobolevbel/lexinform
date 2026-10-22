@@ -76,6 +76,39 @@ def test_only_enabled_jobs_share_a_non_replacing_state_queue() -> None:
     assert options == {"group": "lexinform-daily", "cancel-in-progress": "false", "queue": "max"}
 
 
+def test_final_state_save_uses_the_shared_checkpoint_writer(tmp_path: Path) -> None:
+    executable = tmp_path / "uv"
+    executable.write_text('#!/bin/sh\nprintf "%s\\n" "$*"\n')
+    executable.chmod(0o755)
+    result = subprocess.run(
+        ["bash", "-c", execution_script("Dump database and push state branch")],
+        env={
+            "PATH": f"{tmp_path}{os.pathsep}{os.defpath}",
+            "STATE_FILE": "state/lexinform.sql",
+            "STATE_BRANCH": "state",
+        },
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.splitlines() == [
+        "run --frozen --no-dev lexinform db checkpoint state/lexinform.sql --branch state"
+    ]
+
+
+def test_inbox_deletions_require_a_confirmed_state_save() -> None:
+    workflow = Path(__file__).parents[2] / ".github/workflows/daily.yml"
+    text = workflow.read_text()
+    step = text.split("      - name: Commit handled commands and push inbox branch\n", 1)[1]
+    condition = step.splitlines()[0]
+
+    assert "steps.dump.outcome == 'success'" in condition
+    assert "inputs.dry_run != true" in condition
+
+
 @pytest.mark.parametrize("pending_commands", [False, True])
 @pytest.mark.parametrize("drain_exit", [0, 3])
 def test_hourly_delivery_tick_preserves_inbox_and_delivery_failures(

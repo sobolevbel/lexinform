@@ -255,29 +255,12 @@ jobs:
         if: ${{ always() && inputs.dry_run != true && steps.restore.outcome == 'success' && steps.run.outcome != 'skipped' }}
         run: |
           set -euo pipefail
-          git -C state config user.name "github-actions[bot]"
-          git -C state config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Someone may have pushed to the branch meanwhile (e.g. a manual dump). The branch holds
-          # the dump and its polling manifest, so regenerate both on top of the
-          # fetched tip instead (this run's database is the newer state either way).
-          for attempt in 1 2 3; do
-            uv run --frozen --no-dev lexinform db dump "$STATE_FILE"
-            git -C state add -A
-            if git -C state diff --cached --quiet; then
-              echo "state unchanged"; exit 0
-            fi
-            git -C state commit -m "state: $(date -u +%Y-%m-%dT%H:%MZ)"
-            if git -C state push origin "HEAD:$STATE_BRANCH"; then exit 0; fi
-            echo "push rejected, fetching the branch again (attempt $attempt)"
-            git -C state fetch origin "$STATE_BRANCH"
-            git -C state reset --hard "origin/$STATE_BRANCH"
-          done
-          exit 1
+          uv run --frozen --no-dev lexinform db checkpoint "$STATE_FILE" --branch "$STATE_BRANCH"
 
       # The run deleted the command files it answered; commit the deletions. The relay only adds
       # files and the run only removes them, so a rebase onto a moved branch never conflicts.
       - name: Commit handled commands and push inbox branch
-        if: ${{ always() && inputs.dry_run != true && steps.inbox.outputs.present == 'true' && steps.run.outcome != 'skipped' }}
+        if: ${{ always() && inputs.dry_run != true && steps.inbox.outputs.present == 'true' && steps.run.outcome != 'skipped' && steps.dump.outcome == 'success' }}
         run: |
           set -euo pipefail
           git -C inbox config user.name "github-actions[bot]"

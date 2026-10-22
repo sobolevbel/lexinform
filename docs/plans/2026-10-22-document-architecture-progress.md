@@ -198,7 +198,7 @@ Rollback DA0: `49ee2d0`; runtime/schema/in-flight форматы этим фра
 ### J006. DA0.5–DA0.7: offline corpus gate
 
 Дата: 23 октября 2026. Статус: DA0.7 принято локально; DA0.5–DA0.6 частично.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `43078c418b08eb362baab17110066b254a7ba378`.
 
 Добавлен `make corpus-check` с обязательными `CORPUS`/`CORPUS_OUTPUT` и профилями
 extraction/selection/comparison/delivery. Семь CI cases включают оригинальный RCL Word,
@@ -229,3 +229,36 @@ Artifact: `/private/tmp/lexinform-da0-20261023/document-selection.json`, SHA-256
 remote CI/deploy не запускались; push и production effects отсутствуют.
 Проверки: полный offline pytest (один strict xfail DA5), mypy (302 файла), Ruff check/format,
 `make docs-check`, `git diff --check` и `make corpus-check` на CI-срезе успешны.
+
+<a id="j007"></a>
+### J007. DA1: CAS для существующих state writers
+
+Дата: 23 октября 2026. Статус: DA1.7 принято локально; DA1.8/DA1.10 частично.
+Implementation commit: подготовлен к фиксации. Исходная версия: `43078c4`.
+
+`GitStateCheckpoint` сохраняет SQL и polling manifest с CAS от local restore/последнего
+подтверждённого checkpoint. До записи проверяется remote baseline; push использует явный lease.
+Чужой tip не перезаписывается даже при неизменном dump. После потерянного подтверждения push
+успех допустим только при remote tip = exact prepared commit. Сбой оставляет локальный commit
+для расследования; reset/rebase/redump не выполняется. Ошибки snapshot/Git типизированы
+`StateCheckpointError`. `GitBatchCheckpoint` сохраняет прежний callable API через общий writer.
+
+`db checkpoint` использован в финальном шаге daily workflow. Inbox deletion push требует
+`steps.dump.outcome == 'success'`. Это защищает от публикации удаления команд без финального
+сохранения state, но не заменяет started/outcome checkpoints каждой команды DA1.10.
+
+Тесты на временных Git remotes: fresh restore, absent branch, foreign tip при изменённом и
+неизменном dump, гонка check/push, lost acknowledgement, отказ push, dump failure, сохранность
+локального commit и чужих staged файлов; CLI init/checkpoint/restore и workflow guard.
+Полный offline pytest, strict mypy, Ruff успешны; `make test-local-http` — **21 passed**.
+Production remote не изменялся; тестовые push выполнялись только во временные локальные remotes.
+
+Схема **48**, polling manifest **v1**, JSON/defaults/in-flight batch formats без изменений.
+Новые ключи, secrets, архивы и таблицы не нужны; SQL dump не растёт из-за нового payload.
+Имеющийся workflow lock сохранён; процедура эксклюзивного manual maintenance ещё не реализована.
+Каждая физическая читательская отправка пока не защищена remote checkpoint, а fatal propagation
+через services ещё выполняется следующим фрагментом. DA1 целиком не завершён.
+
+Rollback для форматов: `43078c4` читает тот же state; при чужом tip writer нужно остановить
+и сверить действия, а не возвращать прежний reset/redump. Старый dump после внешних эффектов
+автоматически не восстанавливается. Push/CI/deploy/live нового кода не выполнялись.

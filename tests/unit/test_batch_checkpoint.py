@@ -84,5 +84,5 @@ def test_rejected_push_is_not_reported_as_a_durable_checkpoint(tmp_path: Path) -
         lambda: "-- submitting\n", tmp_path / "state.sql", "state", lambda: []
     )
 
-    with pytest.raises(RuntimeError, match="git push"):
+    with pytest.raises(RuntimeError, match="git ls-remote"):
         checkpoint()

@@ -19,6 +19,7 @@ from lexinform.adapters.github_inbox import (
     GitHubInboxWriter,
     GitHubUnavailableError,
 )
+from lexinform.adapters.state_checkpoint import GitStateCheckpoint
 from lexinform.adapters.state_snapshot import write_state_snapshot
 from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier, send_and_retract
 from lexinform.adapters.telegram_format import MessageFormatter
@@ -70,7 +71,9 @@ app = typer.Typer(
     no_args_is_help=True,
     pretty_exceptions_enable=False,
 )
-db_app = typer.Typer(help="Database maintenance (init, dump, restore).", no_args_is_help=True)
+db_app = typer.Typer(
+    help="Database maintenance (init, dump, checkpoint, restore).", no_args_is_help=True
+)
 app.add_typer(db_app, name="db")
 
 NUMBER_HELP = (
@@ -1188,6 +1191,22 @@ def db_dump(output: Annotated[Path, typer.Argument(help="Path of the SQL dump to
     finally:
         c.close()
     typer.echo(f"dumped to {output}")
+
+
+@db_app.command("checkpoint")
+def db_checkpoint(
+    output: Annotated[Path, typer.Argument(help="SQL dump path in the checked-out state branch.")],
+    branch: Annotated[
+        str, typer.Option(help="Remote state branch whose baseline must match.")
+    ] = "state",
+) -> None:
+    """Commit and persist a SQL snapshot without overwriting another state writer."""
+    c = _container()
+    try:
+        GitStateCheckpoint(c.repo.dump, output, branch, c.repo.list_open_llm_batches)()
+    finally:
+        c.close()
+    typer.echo(f"checkpoint saved to {branch}: {output}")
 
 
 @db_app.command("restore")

@@ -13,6 +13,10 @@ class ServiceUnavailableError(RuntimeError):
         return f"{self.system} unavailable: {self}"
 
 
+class StateCheckpointError(RuntimeError):
+    """The writer cannot prove that its state snapshot is durable on the expected branch."""
+
+
 class SejmApiUnavailableError(ServiceUnavailableError):
     system = "Sejm API"
 
