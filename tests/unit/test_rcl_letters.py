@@ -138,6 +138,19 @@ def test_a_deadline_without_a_year_is_the_letters_year() -> None:
     assert deadline_of(info, published=date(2025, 12, 1)) == date(2025, 12, 31)
 
 
+def test_a_deadline_without_a_year_needs_no_dnia() -> None:
+    letter = (
+        "zwracam się z uprzejmą prośbą o zgłoszenie ewentualnych uwag do projektu ustawy o zmianie "
+        "niektórych ustaw w związku z usprawnieniem funkcjonowania rynku kapitałowego, w terminie "
+        "do 20 kwietnia br. (również w wersji elektronicznej edytowalnej na adres e-mail: "
+        "jakub.kopciewski@mf.gov.pl)."
+    )
+
+    info = parse_letter(letter)
+
+    assert deadline_of(info, published=date(2026, 3, 31)) == date(2026, 4, 20)
+
+
 def test_a_conference_registration_is_not_a_deadline_for_comments() -> None:
     """Ministry of Finance letters invite to a conference "do dnia 23 maja br." in the same words."""
     letter = (

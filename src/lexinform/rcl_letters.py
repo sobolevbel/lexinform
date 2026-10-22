@@ -38,15 +38,15 @@ _DAYS = re.compile(r"w\s+(?:terminie|ciągu)\s*(\d{1,3})\s*dni", re.IGNORECASE)
 _UNTIL = re.compile(rf"(?:w\s+terminie\s+)?do\s+(?:dnia\s+)?{_DATE}", re.IGNORECASE)
 _START = re.compile(rf"data\s+rozpocz[ęe]cia\s+konsultacji\w*\s*:?\s*{_DATE}", re.IGNORECASE)
 _END = re.compile(rf"(?:data|termin)\s+zako[ńn]czenia\s+konsultacji\w*\s*:?\s*{_DATE}", re.I)
-# "do dnia 31 grudnia br." is the year of the letter; only next to comments, as a letter also
+# "(do dnia) 31 grudnia br." is the year of the letter; only next to comments, as a letter also
 # asks for a conference registration "do dnia 23 maja br." in the same words.
 _UNTIL_THIS_YEAR = re.compile(
-    rf"(?:uwag|stanowisk|opini).{{0,250}}?\bdo\s+dnia\s+(\d{{1,2}})\s+({_MONTH_NAMES})"
+    rf"(?:uwag|stanowisk|opini).{{0,250}}?\bdo\s+(?:dnia\s+)?(\d{{1,2}})\s+({_MONTH_NAMES})"
     r"\s+(?:br\b|bieżącego\s+roku)",
     re.IGNORECASE,
 )
 MAX_CONSULTATION = timedelta(days=180)
-LETTER_PARSER = 1  # raised when the parser learns a form: a window read without a term is re-read
+LETTER_PARSER = 2  # raised when the parser learns a form: a window read without a term is re-read
 _EMAIL = r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"
 # An address counts when something tells the reader to send comments there. The instruction is
 # the whole discriminator: a ministry's letterhead labels its own switchboard with the same noun
