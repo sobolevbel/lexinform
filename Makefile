@@ -2,13 +2,16 @@
 
 UV ?= uv
 ARGS ?=
+CORPUS ?=
+CORPUS_OUTPUT ?=
+CORPUS_PROFILES ?= extraction,selection,comparison,delivery
 RUN = $(UV) run --frozen
 WEB = $(RUN) --all-packages --all-groups
 DOCS = $(RUN) --group docs
 BOT_PATHS = src tests tools
 WEB_PATHS = web/src web/tests web/stubs
 
-.PHONY: help sync test test-unit test-scenario test-local-http test-integration coverage lint typecheck format format-check check docs docs-build docs-check web-sync web-test web-lint web-typecheck web-format web-check web-serve
+.PHONY: help sync test test-unit test-scenario test-local-http test-integration coverage corpus-check lint typecheck format format-check check docs docs-build docs-check web-sync web-test web-lint web-typecheck web-format web-check web-serve
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  make %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -34,6 +37,10 @@ test-integration: ## Run live integration tests (network required)
 
 coverage: ## Run bot tests with a coverage report
 	$(RUN) pytest --cov --cov-report=term-missing $(ARGS)
+
+corpus-check: ## Replay explicit offline corpus/output paths (CORPUS=... CORPUS_OUTPUT=...)
+	@test -n "$(CORPUS)" -a -n "$(CORPUS_OUTPUT)" || { echo "Set CORPUS and CORPUS_OUTPUT explicitly"; exit 2; }
+	$(RUN) python -m tools.corpus_check --corpus "$(CORPUS)" --output "$(CORPUS_OUTPUT)" --profiles "$(CORPUS_PROFILES)"
 
 lint: ## Check bot and tools with Ruff
 	$(RUN) ruff check $(BOT_PATHS)

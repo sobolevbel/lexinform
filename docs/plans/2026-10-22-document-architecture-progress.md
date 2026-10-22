@@ -118,7 +118,7 @@ git-история подтверждает состав изменений, н�
 ### J005. DA0: исходная приёмка
 
 Дата: 23 октября 2026. Статус: DA0.1–DA0.4 приняты локально. Исходный commit: `49ee2d0`.
-Implementation commit: подготовлен к фиксации; хеш будет добавлен следующей записью журнала.
+Implementation commit: `28262c7f5ac3d162228287f9365d703c61402883`.
 DA0.5–DA0.7 выполняются отдельно и этой записью не закрываются.
 
 Подготовлены production-профиль World и регрессия неточного coverage; offline corpus runner
@@ -193,3 +193,39 @@ latency, дневного прироста или полного raw-хране�
 Полный offline pytest прошёл с одним ожидаемым strict xfail DA5; strict mypy — 302 файла,
 Ruff check/format `src tests tools` успешны. Push, CI, deploy и production run не выполнялись.
 Rollback DA0: `49ee2d0`; runtime/schema/in-flight форматы этим фрагментом не меняются.
+
+<a id="j006"></a>
+### J006. DA0.5–DA0.7: offline corpus gate
+
+Дата: 23 октября 2026. Статус: DA0.7 принято локально; DA0.5–DA0.6 частично.
+Implementation commit: подготовлен к фиксации.
+
+Добавлен `make corpus-check` с обязательными `CORPUS`/`CORPUS_OUTPUT` и профилями
+extraction/selection/comparison/delivery. Семь CI cases включают оригинальный RCL Word,
+два ранее проверенных metadata fixtures, смысловые мутации и три существующих сценария
+operator recovery. Manifest закрепляет SHA, официальный ID и связи, coverage и ограничения,
+группу инициативы, split, ожидание и основание. Код/lock hashes и dirty flag записываются
+в результат. Machine labels не допускаются как независимый holdout; использованный holdout
+помечается regression. Срез целиком regression, выводов о holdout accuracy нет.
+
+Runner запрещает сеть при выполнении cases, не перезаписывает результат и не пишет во входы.
+Отсутствующий corpus/input/profile даёт `not_run` и ненулевой exit, повреждённый SHA и неизвестное
+поле ожидания — failure. Связанные official IDs/relations не разделяются между splits.
+Проверены также symlink traversal, network blocking и сохранность входных bytes.
+CI выполняет срез и сохраняет manifest результата отдельным artifact.
+
+Полные external replays пока не перенесены в этот manifest. Именно поэтому DA0.5–DA0.6
+остаются открытыми: срез не заменяет population replay и независимую разметку.
+`tests/fixtures/corpus_check/README.md` фиксирует происхождение и команды.
+
+Дополнительно существующий `tools/replay_document_selection.py` выполнен на внешнем корпусе:
+4276 RCL snapshots, 11786 print metadata rows, 69 пакетов; ошибок чтения нет, все 330
+проверенных date/amount/negation/scope/reference мутаций изменили fingerprint.
+Это baseline текущих решений, не доказательство правильности каждого выбора.
+Artifact: `/private/tmp/lexinform-da0-20261023/document-selection.json`, SHA-256
+`9f8224375f7e68fda584392dae435202d67ec19574cc4f952754243fe43be54d`.
+
+Схема/defaults/state не меняются; rollback runtime не требуется. CI только настроен,
+remote CI/deploy не запускались; push и production effects отсутствуют.
+Проверки: полный offline pytest (один strict xfail DA5), mypy (302 файла), Ruff check/format,
+`make docs-check`, `git diff --check` и `make corpus-check` на CI-срезе успешны.

@@ -38,6 +38,15 @@ jobs:
         run: uv run mypy
       - name: Test
         run: uv run pytest --cov --cov-report=term-missing
+      - name: Replay offline corpus regression slice
+        run: make corpus-check CORPUS=tests/fixtures/corpus_check CORPUS_OUTPUT="${{ runner.temp }}/corpus-check.json"
+      - name: Save corpus coverage and decisions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: corpus-check-${{ matrix.python-version }}
+          path: ${{ runner.temp }}/corpus-check.json
+          if-no-files-found: warn
 
   web:
     runs-on: ubuntu-latest

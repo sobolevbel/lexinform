@@ -1,0 +1,190 @@
+{
+  "version": 1,
+  "scope": "Small redistributable CI regression slice, not the external release corpus.",
+  "exclusions": [
+    "No full external RCL/Sejm population, corpus downloads or network/model calls.",
+    "Selection uses cached stage metadata, not complete raw page reparsing.",
+    "Comparison mutations are synthetic; no independent holdout is claimed.",
+    "Delivery uses existing fake-provider recovery scenarios; remote runner-loss and new-card checkpoint durability are outside this slice."
+  ],
+  "cases": [
+    {
+      "id": "rcl-779502-original-word",
+      "profile": "extraction",
+      "kind": "extract",
+      "initiative": "RCL/12410906",
+      "split": "regression",
+      "inputs": [
+        {
+          "path": "rcl_779502.docx",
+          "sha256": "1cd93dcd5a30a4f4655fb69372c18f36e3222a5697f35305f2ad5b5a9f6f54e8",
+          "coverage": "raw",
+          "official_id": "RCL/document/779502",
+          "relations": [
+            "RCL/12410906"
+          ]
+        }
+      ],
+      "expected": {
+        "kind": "bill",
+        "contains_text": [
+          "Projekt z dnia 02.06.2026 r.",
+          "Art. 1.",
+          "Prawo zamówień publicznych"
+        ]
+      },
+      "basis": "Official Word document from legislacja.rcl.gov.pl, checked opening and normative article text; fixture provenance records the original SHA.",
+      "oracle": "human_review"
+    },
+    {
+      "id": "budget-8-2864-main-pdf",
+      "profile": "selection",
+      "kind": "print",
+      "initiative": "Sejm/8/2864",
+      "split": "regression",
+      "inputs": [
+        {
+          "path": "print_8_2864.json",
+          "sha256": "cad92615968766aab48b60226ed8774cdc13dfd502f74e499c19a4c42f719e9c",
+          "coverage": "cached",
+          "official_id": "Sejm/8/2864",
+          "relations": []
+        }
+      ],
+      "expected": {
+        "main_pdf": "2864  - ustawa i załączniki.pdf"
+      },
+      "basis": "Official Sejm attachment titles distinguish the act and annexes from the three-year appointment plan; existing manually inspected regression.",
+      "oracle": "source_metadata"
+    },
+    {
+      "id": "rcl-12410906-current-edition",
+      "profile": "selection",
+      "kind": "rcl",
+      "initiative": "RCL/12410906",
+      "split": "regression",
+      "inputs": [
+        {
+          "path": "rcl_12410906.json",
+          "sha256": "a74ee43e5129393738540d6f0fd3995ad8c2b74ff4d0b75e5c4dc226475213f2",
+          "coverage": "excerpt",
+          "official_id": "RCL/12410906",
+          "relations": [
+            "RCL/document/791866",
+            "RCL/document/791867",
+            "RCL/document/791873"
+          ]
+        }
+      ],
+      "expected": {
+        "bill": 791866,
+        "justification": 791867,
+        "osr": 791873
+      },
+      "basis": "Retained official stage 4 metadata: the new bill, justification and OSR supersede the previous edition; regression not a full-project replay.",
+      "oracle": "source_metadata"
+    },
+    {
+      "id": "meaningful-law-mutations",
+      "profile": "comparison",
+      "kind": "compare",
+      "initiative": "synthetic:comparison",
+      "split": "regression",
+      "inputs": [
+        {
+          "path": "synthetic_law.txt",
+          "sha256": "7659b5464eee828ac926da397bbd23e2b287b2567c97c96f40be12283cfd214c",
+          "coverage": "synthetic",
+          "official_id": "synthetic:comparison:before",
+          "relations": []
+        },
+        {
+          "path": "synthetic_law.txt",
+          "sha256": "7659b5464eee828ac926da397bbd23e2b287b2567c97c96f40be12283cfd214c",
+          "coverage": "synthetic",
+          "official_id": "synthetic:comparison:after",
+          "relations": []
+        }
+      ],
+      "expected": {
+        "route": "digest",
+        "meaningful_mutations_missed": 0,
+        "mutation_families": [
+          "deadline",
+          "year",
+          "negation",
+          "decimal",
+          "standalone_number",
+          "reference",
+          "scope",
+          "deadline_swap"
+        ]
+      },
+      "basis": "Self-authored legal-like text; identical input agrees, changes to deadlines, year, negation, decimal, isolated number, legal reference and scope must not auto-match.",
+      "oracle": "synthetic_invariant"
+    },
+    {
+      "id": "delivery-confirm",
+      "profile": "delivery",
+      "kind": "delivery",
+      "initiative": "synthetic:delivery",
+      "split": "regression",
+      "inputs": [
+        {
+          "path": "delivery_confirm.json",
+          "sha256": "7a721547140dd9a61054c3526cbcc39f54c3fa47042da52d39088d9bdb2e8145",
+          "coverage": "synthetic",
+          "official_id": "synthetic:delivery:confirm",
+          "relations": []
+        }
+      ],
+      "expected": {
+        "invariant_passed": true
+      },
+      "basis": "Existing offline fake-provider regression verifies operator recovery after dump/restore; it does not prove remote runner-loss durability.",
+      "oracle": "synthetic_invariant"
+    },
+    {
+      "id": "delivery-retry",
+      "profile": "delivery",
+      "kind": "delivery",
+      "initiative": "synthetic:delivery",
+      "split": "regression",
+      "inputs": [
+        {
+          "path": "delivery_retry.json",
+          "sha256": "95bf53f319a94ed5590e6db7f6c4a5e4de1980d73af5ade4f4a317a34acb7278",
+          "coverage": "synthetic",
+          "official_id": "synthetic:delivery:retry",
+          "relations": []
+        }
+      ],
+      "expected": {
+        "invariant_passed": true
+      },
+      "basis": "Existing offline fake-provider regression verifies operator recovery after dump/restore; it does not prove remote runner-loss durability.",
+      "oracle": "synthetic_invariant"
+    },
+    {
+      "id": "delivery-dismiss",
+      "profile": "delivery",
+      "kind": "delivery",
+      "initiative": "synthetic:delivery",
+      "split": "regression",
+      "inputs": [
+        {
+          "path": "delivery_dismiss.json",
+          "sha256": "29d696f2d5eebccd805275801240ff5f2729869fc0b6c47b662999b4eb622d5e",
+          "coverage": "synthetic",
+          "official_id": "synthetic:delivery:dismiss",
+          "relations": []
+        }
+      ],
+      "expected": {
+        "invariant_passed": true
+      },
+      "basis": "Existing offline fake-provider regression verifies operator recovery after dump/restore; it does not prove remote runner-loss durability.",
+      "oracle": "synthetic_invariant"
+    }
+  ]
+}
