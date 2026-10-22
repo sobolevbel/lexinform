@@ -47,6 +47,7 @@ nav = [
   ] },
   { "Планы" = [
     { "Обзор" = "plans/index.md" },
+    { "Документы и история результатов" = "plans/2026-10-22-document-architecture.md" },
     { "Выбор документов для событий" = "plans/2026-10-17-document-selection.md" },
     { "Проверка комплекта и LLM" = "plans/2026-10-17-document-selection-evidence.md" },
     { "Внимание и запоминающиеся имена" = "plans/2026-10-13-reader-attention.md" },
@@ -63,6 +64,7 @@ nav = [
   ] },
   { "Аудиты" = [
     { "Обзор" = "reviews/index.md" },
+    { "Архитектура документов · 22.10" = "reviews/2026-10-22-document-architecture.md" },
     { "Проверка комплекта и решение по LLM · 17.10" = "reviews/2026-10-17-document-bundle-acceptance.md" },
     { "Общая политика редакций · 17.10" = "reviews/2026-10-17-document-policy-implementation.md" },
     { "Исправление выбора документов · 17.10" = "reviews/2026-10-17-document-selection-implementation.md" },
