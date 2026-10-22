@@ -112,5 +112,84 @@ git-история подтверждает состав изменений, н�
 | Выпуск | Push, CI, deploy и production-наблюдение отдельными результатами/ссылками |
 | Откат и остаток | Поддерживаемый rollback commit, ограничения, следующий пункт |
 
-Пока здесь нет записей о реализации DA0–DA10. При первой такой записи удалить эту
-текущую сводную строку; исходные датированные записи подготовки остаются историей.
+## Реализация
+
+<a id="j005"></a>
+### J005. DA0: исходная приёмка
+
+Дата: 23 октября 2026. Статус: DA0.1–DA0.4 приняты локально. Исходный commit: `49ee2d0`.
+Implementation commit: подготовлен к фиксации; хеш будет добавлен следующей записью журнала.
+DA0.5–DA0.7 выполняются отдельно и этой записью не закрываются.
+
+Подготовлены production-профиль World и регрессия неточного coverage; offline corpus runner
+выделен в следующий фрагмент. Runtime, схема и настройки в DA0 не меняются.
+
+#### DA0.1: исходная версия и конфигурация
+
+Код `49ee2d0ad140da9c7b5771e7d8c860e072c561cd`, SQLite schema **48**.
+`Container.analysis_options` требует batch независимо от legacy batch flags.
+23 октября read-only `gh variable list` подтвердил `reader_attention=on`,
+`attention_roundup=daily`, batch kinds `analysis,reanalysis,joint,supplement,amendments,consultation_review,act_application`.
+Переменные включения consultation/commission reviews отсутствуют; defaults обоих — `false`.
+`name_cards=true` по Settings, отдельной repository variable нет. Это снимок конфигурации,
+а не доказательство успешного production run. Secrets и `.env` не читались.
+
+| Потребитель | Владелец подготовки / точный источник |
+| --- | --- |
+| Prefilter | `TextPrefilterService.load` → `TextSources.locate` → `TextLoader.select_document` |
+| Основной анализ, reanalysis | `AnalysisService._prepare`, `_prepare_first`, `_load_text`; batch payload и memo |
+| Comparison/change review | `AnalysisService._changes_settled`: повторное чтение baseline с проверкой hash; `law_diff` и sync change review |
+| Senate amendments | `senate_amendments_document`, `_load_amendments_text`, `_amendments_context`; resolution + отдельная recommendation |
+| Supplements | `digest_supplement` → `_load_text(trim=False)`; свой batch purpose |
+| Joint | `compare_joint`: описания уже проанализированных инициатив, не повторное чтение raw |
+| Consultation/commission/final-act | `DocumentReviewService` → `review_context`, `_read_review_document`, `request_document_review`; paused purposes не включались |
+| `/explain` | `CommandService` → `AnalysisService.explain_bill` → `_prepare(purpose="explanation")` |
+| `/amendments` | `AmendmentsService`: исторический bill/change/date, сохранённый edit target; общий amendments input |
+| Авторы | `SejmAuthorsResolver.resolve`: текст сопроводительного письма + справочник депутатов |
+| Редакционные имена | `AnalysisService.name_bill`: summary/key_changes из AnalysisRecord, свой batch |
+
+`TextSources` выбирает Sejm/RCL/submission/metadata source; чтение файлов сосредоточено
+в `TextLoader`. Таблица фиксирует владельцев, не заявляет единое хранение всех их входов.
+
+#### DA0.2: внешние эффекты
+
+| Эффект | Владелец и текущая граница |
+| --- | --- |
+| Новая/joint карточка | `PublishingService.publish_bill`, `_publish_joint`, `_send` |
+| Обычный update и edit update | `PublicationPoster.status_update`, `_send_update`, `deliver`, `_dispatch` |
+| Группы стадий | `flush_updates`, `_flush_update_batch`, `retry_update_group`; membership в DeliveryPlan |
+| Заседания при off/shadow/on | `flush_sittings`, `_send_sittings`, `_retry_sitting_group`; legacy callback ещё live-render |
+| Digest при off/shadow/on | `DigestService.publish`, `_send`, `_send_parts`; legacy callback ещё live-render |
+| Continuations | `message_parts.send_continuations`; дочерний reply target от receipt родителя |
+| Исправление amendments | `AmendmentsService` → `amendments_revision` через Poster, исходный event сохраняется |
+| Refresh/multipart card edits | `CardRefreshService.refresh`, `_edit`, `_edit_parts`; одиночный edit ещё прямой |
+| Retag/source inheritance | `PublishingService._retag`; прямой card edit |
+| Linking/rollover rerender | `PublicationPoster.rerender_card`; прямой card edit |
+| Общий исход send | `publications.send_publication(s)`: локальная SQL-транзакция, без remote boundary |
+| Технические ответы/отчёты | `RunNotifier`, `OperatorReplier`, digest drafter: вне гарантии reader queue |
+| Commands/inbox | `CommandService.handle_pending`: локальные started/executed/handled; relay/GitHubInboxWriter отдельно от reader queue |
+
+#### DA0.3–DA0.4: проверяемые контракты
+
+`World(profile="production")` требует batch, сохраняя default обычных тестов.
+Новые сценарии проверяют workers 1/4, ожидание 48 часов без sync fallback, generation,
+supplement baseline, frozen payload, crash/unknown и multipart; отдельный on/daily сценарий
+проверяет восстановление и выпуск группы в 18:00 Warsaw. Восстановление использует сохранённый
+SQL и новый Container; потеря runner до remote checkpoint этим не доказана.
+
+`test_prepared_input_coverage.py` закрепляет 1164 → 559 и допустимое удаление consultation
+report. Strict xfail отмечает неверный analysis span; исправление остаётся DA5.
+
+#### Дополнительные исходные измерения
+
+На **локальном cached** `origin/state` = `78d56f17cd880ca5f41cf747f272605431a5aff7`
+без fetch/pipeline восстановлена копия. SQL SHA-256:
+`a550053b3617167c55ea11b877b516fc06cc42f4362b6dcb6112aae3912d9090`.
+SQL: 36 779 974 bytes; SQLite: 37 732 352; gzip SQL: 8 352 242.
+Локальные restore/dump: 0.438/0.192 s. Это один прогон на этом компьютере, не прогноз GitHub
+latency, дневного прироста или полного raw-хранения; DA2.1/DA1.9 не закрыты.
+Результат: `/private/tmp/lexinform-da0-20261023/state-baseline.json`.
+
+Полный offline pytest прошёл с одним ожидаемым strict xfail DA5; strict mypy — 302 файла,
+Ruff check/format `src tests tools` успешны. Push, CI, deploy и production run не выполнялись.
+Rollback DA0: `49ee2d0`; runtime/schema/in-flight форматы этим фрагментом не меняются.

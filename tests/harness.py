@@ -300,6 +300,7 @@ class World:
         analysis_model: str = "claude-opus-5",
         overflow_batch: FakeBatchBackend | None = None,
         batch_only: bool = False,
+        profile: Literal["default", "production"] = "default",
         triage: bool = False,
         triage_script: dict[str, Triage | Exception] | None = None,
         joint_script: dict[str, JointComparison | Exception] | None = None,
@@ -417,7 +418,7 @@ class World:
         )
         self.container.analysis_options_override = replace(
             self.container.analysis_options(),
-            require_batch=batch_only,
+            require_batch=batch_only or profile == "production",
         )
         self.discovery = self.container.discovery_service()
         self.analysis = self.container.analysis_service()
