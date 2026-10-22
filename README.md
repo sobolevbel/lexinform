@@ -265,6 +265,12 @@ server that is always on (`lexinform listen`):
 
 ## Configuration
 
+Every model call except the triage uses its model's batch API — manual and forced analyses,
+amendments, document digests and joint comparisons included; the model name selects the provider,
+context overflow queues a separate Opus batch, and neither urgency nor waiting falls back to a
+synchronous call (the legacy batch enable/provider/kind/deadline settings override nothing). A dry
+run prepares requests without submitting them.
+
 Batch submission on ephemeral runners requires `LEXINFORM_LLM_BATCH_STATE_FILE` pointing to
 the SQL dump in a checked-out Git state worktree and `LEXINFORM_LLM_BATCH_STATE_BRANCH` (default
 `state`). The daily workflow sets these and checkpoints state before sending work to the provider.
@@ -405,9 +411,3 @@ See [authoring](docs/authoring.md) for installation and checks.
 ## License
 
 MIT. Data comes from the public Sejm API; summaries are machine-generated and are not legal advice.
-
-All supported analysis models use batch, including manual and forced analyses, amendments,
-document digests and joint comparisons. Only triage is synchronous. The model selects its
-provider; context overflow queues a separate Opus batch. There is no synchronous fallback for
-urgent bills or long waits. Legacy batch enable/provider/kind/deadline settings no longer
-override this policy. A dry run prepares requests without submitting batches.

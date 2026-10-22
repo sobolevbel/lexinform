@@ -15,22 +15,17 @@ cp .env.example .env          # keys are only needed for `analyze`, `preview --t
 ```
 
 `.env` is untracked and holds real secrets: never paste its values anywhere. `ANTHROPIC_API_KEY`
-and `OPENAI_API_KEY` are read without a prefix (each SDK wants its own that way); everything else
-is `LEXINFORM_*`. Five calls, five independent models: triage always stays on Claude
-(`LEXINFORM_LLM_TRIAGE_MODEL`); the full analysis, amendments, filed-document digests and joint
-comparisons (`LEXINFORM_LLM_ANALYSIS_MODEL` / `_AMENDMENTS_MODEL` / `_SUPPLEMENT_MODEL` /
-`_JOINT_MODEL`) default to GPT-5.1. Both API keys are needed with the defaults: Anthropic handles
-triage and batch analysis overflow (`LEXINFORM_LLM_ANALYSIS_OVERFLOW_MODEL=claude-opus-5-5`).
-An input above GPT-5.1's 272k-token ceiling, or rejected by the API for exceeding context, goes
-to Opus. Scans are estimated at 1600 tokens per page. The per-bill cost guard uses Opus's
-batch price; it can still shorten expensive texts or refuse expensive first-analysis scans.
-All analysis calls use the selected model's batch API: first analysis, re-analysis, amendments,
-document digests and joint comparisons. Only triage is synchronous. Manual `/analyze`, including
-`force`, acknowledges the queue; collection applies the result later. Urgency and elapsed waiting
-time never switch a request to synchronous billing. Unknown submission outcomes remain pending
-until audited recovery. Failed secondary batches follow the existing failure reporting path.
-Legacy `LLM_BATCH_ENABLED`, `_KINDS`, `_PROVIDER`, `_SYNC_WITHIN_DAYS` and `_MAX_WAIT_HOURS`
-settings remain readable for compatibility but do not override this policy in the application.
+and `OPENAI_API_KEY` are read without a prefix; everything else is `LEXINFORM_*`. Both keys are
+needed with the defaults: triage stays on Claude (`LEXINFORM_LLM_TRIAGE_MODEL`, the only
+synchronous call), while analysis, amendments, filed-document digests and joint comparisons
+(`LEXINFORM_LLM_ANALYSIS_MODEL` / `_AMENDMENTS_MODEL` / `_SUPPLEMENT_MODEL` / `_JOINT_MODEL`)
+default to GPT-5.1 through its batch API; an input above GPT-5.1's 272k-token ceiling, or rejected
+for context, goes to an Opus batch (`LEXINFORM_LLM_ANALYSIS_OVERFLOW_MODEL`), whose batch price the
+per-bill cost guard uses (scans are estimated at 1,600 tokens a page; the guard shortens an
+expensive text or refuses an expensive first-analysis scan). Manual `/analyze`, `force` included,
+only acknowledges the queue; unknown submission outcomes stay pending until audited recovery. The
+legacy `LLM_BATCH_ENABLED`, `_KINDS`, `_PROVIDER`, `_SYNC_WITHIN_DAYS` and `_MAX_WAIT_HOURS`
+settings are still read but override nothing.
 
 ## The check before every commit
 
@@ -82,10 +77,7 @@ negations, scope and legal references. A high similarity score does not establis
 is immaterial. Record coverage and exclusions; unit fixtures alone are not enough. Keep corpus
 inputs and historical results read-only, and write each experiment's output to a separate path.
 
-Comments carry what the code cannot: a fact from outside the repo (an API quirk, a legal deadline,
-a measured number), an invariant a later edit would silently break, or why the obvious way was not
-taken. Not a restatement of the next line, not a divider, not a label over a group of fields or
-methods. What needs a paragraph becomes a function with a good name and a docstring.
+Comments and docstrings follow the one-line rule in [`AGENTS.md`](AGENTS.md#working-rules).
 
 ## Local documentation
 
