@@ -143,7 +143,7 @@ texts: 1,623 SHA-256 values and 75 absent digests (`None`).
 
 Thus 618 of the previous 621 deterministic matches survived. Three unchanged RCL texts now
 need a review: a grammatical `z`, an unfilled appendix-date marker, and table coefficients
-misidentified as page numbers. These are recorded as [B79](BUGS.md#b79). Another RCL pair
+misidentified as page numbers. These are recorded as [B79](archive/bugs.md#b79). Another RCL pair
 crossed from full reading to review because removing footnote markers lowered its changed-word
 ratio to 14.91%. No previously reviewed or fully read pair became an automatic match.
 The old model calibration cannot establish the model's response to the changed prompts.
