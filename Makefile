@@ -5,6 +5,10 @@ ARGS ?=
 CORPUS ?=
 CORPUS_OUTPUT ?=
 CORPUS_PROFILES ?= extraction,selection,comparison,delivery
+CORPUS_SUITE ?= manifest
+CORPUS_MODE ?=
+CORPUS_REFERENCE ?=
+CORPUS_REFERENCE_SHA256 ?=
 RUN = $(UV) run --frozen
 WEB = $(RUN) --all-packages --all-groups
 DOCS = $(RUN) --group docs
@@ -40,7 +44,7 @@ coverage: ## Run bot tests with a coverage report
 
 corpus-check: ## Replay explicit offline corpus/output paths (CORPUS=... CORPUS_OUTPUT=...)
 	@test -n "$(CORPUS)" -a -n "$(CORPUS_OUTPUT)" || { echo "Set CORPUS and CORPUS_OUTPUT explicitly"; exit 2; }
-	$(RUN) python -m tools.corpus_check --corpus "$(CORPUS)" --output "$(CORPUS_OUTPUT)" --profiles "$(CORPUS_PROFILES)"
+	$(RUN) python -m tools.corpus_check --corpus "$(CORPUS)" --output "$(CORPUS_OUTPUT)" --profiles "$(CORPUS_PROFILES)" --suite "$(CORPUS_SUITE)" $(if $(CORPUS_MODE),--mode "$(CORPUS_MODE)") $(if $(CORPUS_REFERENCE),--reference "$(CORPUS_REFERENCE)") $(if $(CORPUS_REFERENCE_SHA256),--reference-sha256 "$(CORPUS_REFERENCE_SHA256)")
 
 lint: ## Check bot and tools with Ruff
 	$(RUN) ruff check $(BOT_PATHS)

@@ -23,6 +23,7 @@ from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.adapters.sejm_api import parse_print
 from lexinform.models import RclProject
 from lexinform.sections import document_kind
+from tools.corpus_external import run_external
 from tools.probe_law_comparison import decide
 from tools.probe_law_mutations import mutations
 
@@ -268,6 +269,10 @@ def main() -> None:
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--profiles", default=",".join(PROFILES))
+    parser.add_argument("--suite", choices=("manifest", "external"), default="manifest")
+    parser.add_argument("--mode", choices=("baseline", "compare"))
+    parser.add_argument("--reference", type=Path)
+    parser.add_argument("--reference-sha256")
     args = parser.parse_args()
     requested = args.profiles.split(",")
     if any(profile not in PROFILES for profile in requested):
@@ -275,8 +280,28 @@ def main() -> None:
     profiles = tuple(profile for profile in PROFILES if profile in requested)
     if len(profiles) != len(requested):
         parser.error("Profiles must be nonempty and unique")
+    if args.suite == "external" and args.mode is None:
+        parser.error("External suite needs explicit --mode baseline or --mode compare")
+    if args.suite == "manifest" and any((args.mode, args.reference, args.reference_sha256)):
+        parser.error("Mode and reference options apply only to the external suite")
     try:
-        code = run(args.corpus, args.output, profiles)
+        code = (
+            run_external(
+                args.corpus,
+                args.output,
+                profiles,
+                mode=args.mode,
+                reference=args.reference,
+                reference_sha256=args.reference_sha256,
+                context={
+                    "code_sha": code_version(),
+                    "code_dirty": code_dirty(),
+                    "source_sha256": source_fingerprints(),
+                },
+            )
+            if args.suite == "external"
+            else run(args.corpus, args.output, profiles)
+        )
     except ValueError as exc:
         parser.error(str(exc))
     raise SystemExit(code)

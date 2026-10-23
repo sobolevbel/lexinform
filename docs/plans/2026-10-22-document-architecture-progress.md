@@ -300,10 +300,38 @@ Schema 48, polling v1, цены/defaults и сохранённые payload forma
 <a id="j009"></a>
 ### J009. DA0.5–DA0.6: полные external replay
 
-Дата: 23 октября 2026. Статус: в работе. Исходная версия: `560a397`.
-Implementation commit: не зафиксировано. Расширяется общий corpus runner для существующих
-external replay, с отдельными baseline/compare, явной provenance фактически прочитанных
-источников и запретом изменения входов. Приёмка/coverage ещё не подтверждены.
+Дата: 23 октября 2026. Статус: runner принят локально; полная corpus-приёмка не завершена.
+Исходная версия: `560a397`. Implementation commit: подготовлен к фиксации.
+
+`make corpus-check` получил явный `CORPUS_SUITE=external` и обязательный baseline/compare mode.
+Baseline записывает machine observations как `recorded`, а не правовой вердикт. Compare требует
+SHA complete baseline, тот же набор profiles и отвергает изменения входов или решений.
+Путь корпуса/output обязателен, overwrite запрещён; сеть, запись во входы, `.env` и symlink escape
+блокируются. Для прочитанных входов записываются initial/final SHA, официальный ID, связи из INDEX,
+raw/cached coverage и regression split. Изменение файла во время replay — failure.
+
+Объединены raw Word/nested-ZIP replay, cached RCL candidates, существующие transition comparisons,
+controlled mutations и fixed fake-delivery slice. Каждая обязательная операция имеет непустую
+содержательную population: print metadata не заменяет raw packages/candidates, comparison pairs
+не заменяют mutations. Включены regression tests этих ложнозелёных состояний и приоритет failure
+над отдельными cache gaps. Missing inputs остаются явным nonzero `not_run`, сеть их не восполняет.
+Команды и ограничения: `tests/fixtures/corpus_check/README.md`.
+
+Standalone DOC/PDF, полный ZIP inventory, независимые legal labels, отдельные Senate/process/
+policy inventories пока исключены. Existing transition replay исключает kind `rpw`, сохраняя
+`rpw-without-rule`; полное покрытие RPW не заявляется. Все external observations — machine baseline,
+не independent holdout. Связи Sejm/RPW/RCL ещё не исчерпывающе нормализованы.
+
+Первый полный observational запуск начат на этой копии корпуса до последних API/input-hash guards;
+его fingerprints фиксируют именно запущенный код. На момент фиксации tool запуск ещё выполняется,
+итогового JSON нет; приёмка этим запуском не заявляется. Уже обнаружены исторические cached-text
+gaps. Ожидаемый output: `/private/tmp/lexinform-da0-external-20261023-first.json`; результат и hash
+будут добавлены отдельной записью после завершения. DA0.5–DA0.6 остаются частичными.
+
+Runtime extraction/selection/comparison не менялись; schema/state/defaults и размер SQL dump
+этим tool не изменяются. Push/CI/deploy/live не выполнялись.
+Полный offline gate: 2775 passed и один strict xfail DA5; mypy — 310 файлов,
+Ruff check/format, CI manifest slice и strict docs-check успешны.
 
 <a id="j010"></a>
 ### J010. DA1.1: общий checkpoint port и production wiring
@@ -369,7 +397,7 @@ CI corpus slice и localhost CLI (21 passed) успешны.
 ### J012. DA1.9/DA2.1: измерение копии state
 
 Дата: 23 октября 2026. Статус: локальный benchmark принят; DA1.9/DA2.1 остаются частичными.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `7988a97`.
 
 `tools/benchmark_state_checkpoint.py` принимает существующий local SQL, новый JSON output и
 1–20 iterations. Всегда создаёт собственный temporary bare remote/worktree, запрещает
@@ -389,5 +417,5 @@ Artifact: `/private/tmp/lexinform-checkpoint-benchmark-20261023.json`.
 Результат содержит code/source hashes и dirty flag; это synthetic local filesystem transport.
 Не измерены GitHub latency/repacking, production daily growth, raw-объёмы и storage budget.
 Полный offline pytest с одним strict xfail DA5, mypy (310 файлов) и Ruff прошли.
-Поэтому benchmark не разрешает batching физически начатых reader effects без checkpoint,
+Benchmark не разрешает batching физически начатых reader effects без checkpoint,
 не выбирает S3 и не завершает DA2.1. Production/remote state не менялись.

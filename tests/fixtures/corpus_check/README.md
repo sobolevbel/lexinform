@@ -33,4 +33,32 @@ The manifest's exclusions are copied into every result. Comparison reuses the ex
 `probe_law_comparison.decide` and `probe_law_mutations.mutations` replay functions. Delivery
 reuses three fixed offline scenarios with fake providers and an in-memory repository.
 Network connections are blocked while cases execute; no corpus script or model client is run.
-The remaining existing full-corpus replay scripts still require separate release-gate runs.
+The full external corpus is a separate release gate with explicit observational baselines:
+
+```sh
+make corpus-check CORPUS=../lexinform-corpus CORPUS_OUTPUT=/tmp/external-baseline-new.json \
+  CORPUS_SUITE=external CORPUS_MODE=baseline
+```
+
+External baseline success is `recorded`, not a statement of legal correctness. Review its
+observations before accepting it as a regression reference. A subsequent comparison requires
+that complete baseline and its SHA-256, obtained independently with `shasum -a 256`:
+
+```sh
+make corpus-check CORPUS=../lexinform-corpus CORPUS_OUTPUT=/tmp/external-compare-new.json \
+  CORPUS_SUITE=external CORPUS_MODE=compare \
+  CORPUS_REFERENCE=/tmp/external-baseline-new.json CORPUS_REFERENCE_SHA256=<sha256>
+```
+
+Use the same profiles for both runs. Missing inputs or empty requested populations return
+`not_run` with exit 2; errors or changed inputs/decisions return a failure. Neither a missing
+text cache nor an interrupted run is a complete baseline. The runner records first/final input
+hashes and refuses a baseline if inputs change during replay. It never fetches missing files.
+
+The external suite combines raw Word/nested-ZIP extraction, cached RCL candidate selection,
+recorded transition comparisons, controlled mutations and the fixed fake-delivery slice.
+Standalone DOC/PDF, a complete ZIP inventory, independent legal labels, and separate Senate,
+process-evidence and policy inventories remain outside its coverage. Transitions of kind `rpw`
+are excluded by the existing comparison replay; `rpw-without-rule` transitions are retained.
+All external observations are machine baselines in the regression split. The input manifest
+suite above remains the independently packaged CI slice.
