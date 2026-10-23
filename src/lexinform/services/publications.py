@@ -2,9 +2,9 @@ import logging
 from collections.abc import Callable, Sequence
 from datetime import datetime
 
-from lexinform.errors import DeliveryUncertainError, ServiceUnavailableError
+from lexinform.errors import DeliveryUncertainError, ServiceUnavailableError, StateCheckpointError
 from lexinform.models import Publication, PublicationKind, PublicationStatus
-from lexinform.ports import BillRepository, Clock, PublishResult
+from lexinform.ports import BillRepository, Clock, PublishResult, StateCheckpoint
 
 log = logging.getLogger(__name__)
 
@@ -14,8 +14,10 @@ def send_publication(
     clock: Clock,
     pub_id: int,
     send: Callable[[], PublishResult | int],
+    *,
+    checkpoint: StateCheckpoint | None = None,
 ) -> int | None:
-    return send_publications(repo, clock, (pub_id,), send)
+    return send_publications(repo, clock, (pub_id,), send, checkpoint=checkpoint)
 
 
 def send_publications(
@@ -23,23 +25,35 @@ def send_publications(
     clock: Clock,
     pub_ids: Sequence[int],
     send: Callable[[], PublishResult | int],
+    *,
+    checkpoint: StateCheckpoint | None = None,
 ) -> int | None:
     """The caller persists pending work before sending; only definite failures spend attempts."""
+    if checkpoint is not None:
+        checkpoint()
     try:
         sent = send()
+    except StateCheckpointError:
+        raise
     except DeliveryUncertainError as exc:
         with repo.atomic():
             for pub_id in pub_ids:
                 repo.mark_publication(
                     pub_id, PublicationStatus.UNKNOWN, error=exc.describe(), count_attempt=False
                 )
+        if checkpoint is not None:
+            checkpoint()
         raise
     except ServiceUnavailableError as exc:
         _fail_deliveries(repo, pub_ids, exc.describe(), count_attempt=False)
+        if checkpoint is not None:
+            checkpoint()
         raise
     except Exception as exc:
         log.exception("publications %s failed: %s", pub_ids, exc)
         _fail_deliveries(repo, pub_ids, f"{type(exc).__name__}: {exc}", count_attempt=True)
+        if checkpoint is not None:
+            checkpoint()
         return None
     message_id = sent if isinstance(sent, int) else sent.message_id
     documents = None if isinstance(sent, int) else list(sent.document_message_ids)
@@ -55,6 +69,8 @@ def send_publications(
             publication = repo.publication_by_id(pub_id)
             assert publication is not None, "pending work is persisted before send"
             complete_delivery(repo, publication, message_id=message_id, sent_at=clock.now())
+    if checkpoint is not None:
+        checkpoint()
     return message_id
 
 

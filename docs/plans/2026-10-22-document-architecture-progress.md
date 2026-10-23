@@ -301,7 +301,7 @@ Schema 48, polling v1, цены/defaults и сохранённые payload forma
 ### J009. DA0.5–DA0.6: полные external replay
 
 Дата: 23 октября 2026. Статус: runner принят локально; полная corpus-приёмка не завершена.
-Исходная версия: `560a397`. Implementation commit: подготовлен к фиксации.
+Исходная версия: `560a397`. Implementation commit: `e2dcc83`.
 
 `make corpus-check` получил явный `CORPUS_SUITE=external` и обязательный baseline/compare mode.
 Baseline записывает machine observations как `recorded`, а не правовой вердикт. Compare требует
@@ -419,3 +419,27 @@ Artifact: `/private/tmp/lexinform-checkpoint-benchmark-20261023.json`.
 Полный offline pytest с одним strict xfail DA5, mypy (310 файлов) и Ruff прошли.
 Benchmark не разрешает batching физически начатых reader effects без checkpoint,
 не выбирает S3 и не завершает DA2.1. Production/remote state не менялись.
+
+<a id="j013"></a>
+### J013. DA1.4–DA1.5: checkpoint contract общего send helper
+
+Дата: 23 октября 2026. Статус: подготовительная API-стадия; production senders ещё не подключены.
+Исходная версия: `e2dcc83`. Implementation commit: подготовлен к фиксации.
+
+`send_publication`/`send_publications` принимают optional `StateCheckpoint`. При подключённом
+port уже сохранённый caller pending checkpoint'ится до API, receipt и связанные effects —
+после local atomic. Definite failure, outage и unknown также checkpoint'ятся после записи исхода.
+Checkpoint и API выполняются вне SQL atomic helper. Typed `StateCheckpointError` не превращается
+в delivery failed и не расходует attempt; failure последнего checkpoint сохраняет локальный
+исход и останавливает вызывающий код. Старый вызов без port сохраняет прежнее поведение.
+
+16 сценариев проверяют single/group, exact frozen payload, pending/outcome dump/restore,
+освобождение только успешных held effects, integer receipt compatibility, все delivery outcomes,
+ноль API до pre-failure и сохранение pending→unknown после потери post-checkpoint.
+Это проверка контракта helper; полная потеря runner с actual Git remote и подключение каждого
+reader producer относятся к следующей стадии. DA1.4–DA1.5 остаются частичными.
+
+Schema, persisted formats, цены/defaults, существующий порядок активных sends и SQL объём
+не меняются. Rollback по форматам: `e2dcc83`. Push/CI/deploy/live не выполнялись.
+Полный offline pytest прошёл с одним strict xfail DA5; mypy — 311 файлов,
+Ruff check/format и strict docs-check успешны.

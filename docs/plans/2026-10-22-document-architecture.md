@@ -368,10 +368,10 @@ DA6–DA7 не требуют предварительно включать но
   операцию. Проверить reuse существующих `MESSAGE_PART`/edit target и `_edit_parts`;
   если они не выражают нужный контракт, обосновать минимальный отдельный kind в ADR.
   Не менять identity исходной карточки, которая остаётся `sent` во время исправления.
-- [ ] DA1.4. Зафиксировать порядок: локальная транзакция frozen pending → удалённый checkpoint →
+- [ ] DA1.4. **Частично: [J013](2026-10-22-document-architecture-progress.md#j013).** Зафиксировать порядок: локальная транзакция frozen pending → удалённый checkpoint →
   API → локальная транзакция исхода/effects → удалённый checkpoint исхода → следующий reader effect.
   Сеть и git push не выполняются внутри SQL-транзакции.
-- [ ] DA1.5. **Частично: [J008](2026-10-22-document-architecture-progress.md#j008).** У checkpoint отдельная fatal ошибка сохранения. Она не попадает в общий delivery
+- [ ] DA1.5. **Частично: [J008](2026-10-22-document-architecture-progress.md#j008), [J013](2026-10-22-document-architecture-progress.md#j013).** У checkpoint отдельная fatal ошибка сохранения. Она не попадает в общий delivery
   `except Exception`, не становится `failed` с расходом попытки и не разрешает продолжить отправки.
   Неуспех до API означает ноль вызовов Telegram. Неуспех после API останавливает следующие эффекты.
   Проверить проброс через pipeline/phases, commands и collect: изоляция ошибок фаз не должна
