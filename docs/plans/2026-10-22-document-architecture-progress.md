@@ -354,7 +354,7 @@ mypy (309 файлов) и Ruff успешны.
 Attempted legacy rows без HTML остаются на прежнем callback; pending/unknown не переписываются.
 19 новых сценариев проверяют parity, state/formatter/time drift, multipart и legacy fallback.
 Изменения render-hook тестов следуют фактическому публичному `publish_prepared`.
-Producer commit: подготовлен к фиксации; поддерживаемый rollback — `c4fb961`, который уже читает
+Producer commit: `4e0a9d0`; поддерживаемый rollback — `c4fb961`, который уже читает
 saved HTML всех modes. Сама схема v48 и JSON fields не меняются.
 
 Для одной synthetic World card: HTML 1513 bytes; заполнение пустого поля добавляет 1545 bytes
@@ -388,5 +388,6 @@ Git objects до GC: 75 907 780 bytes в каждом repo; после GC local/
 Artifact: `/private/tmp/lexinform-checkpoint-benchmark-20261023.json`.
 Результат содержит code/source hashes и dirty flag; это synthetic local filesystem transport.
 Не измерены GitHub latency/repacking, production daily growth, raw-объёмы и storage budget.
+Полный offline pytest с одним strict xfail DA5, mypy (310 файлов) и Ruff прошли.
 Поэтому benchmark не разрешает batching физически начатых reader effects без checkpoint,
 не выбирает S3 и не завершает DA2.1. Production/remote state не менялись.
