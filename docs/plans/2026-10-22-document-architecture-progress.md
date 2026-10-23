@@ -679,7 +679,7 @@ prepared delivery, а этот вспомогательный список по�
 
 Дата: 23 октября 2026. Статус: вертикаль принята локально.
 База выпуска: `8c0be61`, совместимый reader: `cc3b5c8`.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `3987b83`.
 
 Новые сообщения STATUS_UPDATE с исходным QUEUED/attempts=0 сохраняют exact HTML и все
 MESSAGE_PART до первой попытки в off/shadow/on. Общая delivery boundary checkpoint'ит pending
@@ -734,3 +734,32 @@ Ruff check/format, localhost CLI — 21 passed, strict docs-check и `git diff -
 Независимый review не нашёл blockers после исправления nested command scope.
 Parser/selection/normalisation не менялись; новый полный corpus replay не запускался.
 Push/CI/deploy/live не выполнялись. Следующие вертикали: long single sitting, notices, edits.
+
+<a id="j021"></a>
+### J021. DA1.2: совместимый reader frozen sitting перед top-level producer
+
+Дата: 23 октября 2026. Статус: reader-first стадия принята локально. База: `3987b83`.
+Implementation commit: подготовлен к фиксации.
+
+Saved sitting с rendered_text идёт через prepared transport до любой проверки размера,
+нового render, grouping и expiry. Это защищает пограничный multipart: после отделения physical
+reply target от card link повторный render мог бы стать короче лимита и превратиться в другую
+группу. Drop не удаляет уже frozen sitting. Legacy saved reply под карточку сохраняется;
+reader также понимает top-level root с reply_to=None и receipt parents дочерних частей.
+Операторское recovery разрешено для frozen AGENDA/AGENDA_CANCELLED с saved item_json,
+даже когда root не является ответом. Новый producer и checkpoint scope ещё не включены.
+
+FakePublisher записывает один логический SittingNews после successful prepared root,
+не засчитывая MESSAGE_PART повторным заседанием. Ссылка карточки остаётся в canonical HTML;
+при root reply_to=None доменный card_message_id тоже None, без чтения текущей карточки.
+Новых полей, schema/backend/raw-архива нет, прирост persisted payload от reader отсутствует.
+
+21 reader scenario case проверяет off/shadow/on, announcement/cancellation, short/near-limit
+HTML с двумя children, exact parents, текущую card 999 и clock +120 дней, dump/restore,
+запрещённые render/legacy callbacks, unknown, audited retry/confirm и сохранение legacy reply 42.
+12 fake cases проверяют один логический root, detached snapshots, refusal/outage/unknown
+без ложного success и canonical-only children. Полный gate: 3028 passed + один прежний
+strict xfail DA5, `/private/tmp/lexinform-frozen-sitting-reader-full-20261023.xml`;
+mypy — 321 файлов, Ruff check/format, strict docs-check и `git diff --check` успешны.
+CLI/wiring, parser/selection/normalisation не менялись; новый полный corpus replay не запускался.
+Push/CI/deploy/live не выполнялись. Следующий выпуск включает long sitting producer/checkpoints.

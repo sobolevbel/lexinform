@@ -98,6 +98,11 @@ class DeliveryPlan(BaseModel):
             return bool(self.bill_json)
         if self.sitting_group:
             return bool(self.group_text)
+        if (
+            kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED)
+            and self.rendered_text
+        ):
+            return bool(self.item_json)
         if kind is PublicationKind.STATUS_UPDATE and self.update_group:
             return bool(self.group_text) and all(item.change_json for item in self.update_group)
         if kind is PublicationKind.NEW_BILL:

@@ -200,6 +200,11 @@ Reader использует любой saved `rendered_text`, включая к�
 Shared attempted set сохраняется между end-of-term, commands, publishing и tracking;
 одна physical попытка за execution, следующий запуск может повторить definite failure.
 
+Reader frozen sittings использует сохранённый HTML до re-render/grouping/expiry, сохраняет
+legacy target и понимает top-level root с reply_to=None; children используют receipt parent.
+Frozen AGENDA/AGENDA_CANCELLED с item_json доступны операторскому recovery независимо от reply.
+Новый top-level producer длинного одиночного sitting пока не включён.
+
 Длинное одиночное sitting через `deliver`, status update edits, refresh/retag/rollover edits
 и остальные reader effects пока работают по прежнему контракту. Полная граница остаётся задачей
 [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).

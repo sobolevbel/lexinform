@@ -369,7 +369,9 @@ class Poster:
         if pub is None or pub.id is None:
             return
         if pub.status in (PublicationStatus.QUEUED, PublicationStatus.FAILED):
-            if pub.delivery is not None and pub.delivery.sitting_group:
+            if pub.delivery is not None and (
+                pub.delivery.sitting_group or pub.delivery.rendered_text
+            ):
                 return
             self._sittings.pop(pub.id, None)
             self._repo.mark_publication(pub.id, PublicationStatus.SKIPPED, count_attempt=False)
@@ -389,6 +391,18 @@ class Poster:
                     self._send_sittings(batch, news, result)
                     batch, news = [], []
                 self._retry_sitting_group(pub, result)
+                continue
+            if pub.delivery.rendered_text:
+                if batch:
+                    self._send_sittings(batch, news, result)
+                    batch, news = [], []
+                sent = self.deliver(pub)
+                result.count_post(
+                    sent,
+                    "agenda_cancelled"
+                    if pub.kind is PublicationKind.AGENDA_CANCELLED
+                    else "agenda_posted",
+                )
                 continue
             if pub.delivery.policy_version == "attention-v1":
                 pub = self._refresh_attention(pub)

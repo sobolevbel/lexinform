@@ -1008,6 +1008,12 @@ class FakePublisher(RenderingPublisher):
             bill = Bill.model_validate_json(plan.bill_json)
             change = StatusChange.model_validate_json(plan.change_json)
             self.updates.append((bill, change, plan.reply_to))
+        elif (
+            publication.kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED)
+            and not plan.update_group
+            and not plan.sitting_group
+        ):
+            self._record_sittings((SittingNews.of(publication.kind, plan),))
         return result
 
     def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:

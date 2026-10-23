@@ -361,7 +361,7 @@ DA6–DA7 не требуют предварительно включать но
   конфигурации останавливает запуск sender, а не включает noop. Настройки и `.env.example`
   изменяются вместе; dry-run не делает push. Сохранить fail-closed batch protocol:
   intent `submitting` должен быть удалённо сохранён до submit провайдеру.
-- [ ] DA1.2. **Частично: [J011](2026-10-22-document-architecture-progress.md#j011), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018); reader-first: [J019](2026-10-22-document-architecture-progress.md#j019), [J020](2026-10-22-document-architecture-progress.md#j020).** Перед каждым reader API effect сохранить в существующей очереди точные HTML,
+- [ ] DA1.2. **Частично: [J011](2026-10-22-document-architecture-progress.md#j011), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020); reader-first: [J019](2026-10-22-document-architecture-progress.md#j019), [J021](2026-10-22-document-architecture-progress.md#j021).** Перед каждым reader API effect сохранить в существующей очереди точные HTML,
   channel, reply/edit target, flags, physical-part identity, membership и revision target.
   Freeze обязателен и при attention off/shadow: legacy digest/sittings не остаются live-render путями.
 - [ ] DA1.3. Перевести refresh/retag/rollover и обычные редактирования карточки на сохранённую
