@@ -20,6 +20,7 @@ from lexinform.models import (
     BillPlan,
     BillStatus,
     CheckAspect,
+    DeliveryPlan,
     DocumentWork,
     Mnemonic,
     ObservationMode,
@@ -859,14 +860,17 @@ class StatusTrackingService:
             return
         revised = StatusChange.model_validate_json(saved.change_json)
         revised.amendments = record
-        delivery = saved.model_copy(
-            update={
-                "change_json": revised.model_dump_json(),
-                "edit_message_id": original.message_id,
-                "revision_of": original.id,
-                "today": saved.today
-                or original.created_at.astimezone(self._options.local_tz).date(),
-            }
+        delivery = DeliveryPlan(
+            bill_json=saved.bill_json,
+            change_json=revised.model_dump_json(),
+            participation=saved.participation,
+            attention=saved.attention,
+            policy_version=saved.policy_version,
+            today=saved.today or original.created_at.astimezone(self._options.local_tz).date(),
+            reply_to=saved.reply_to,
+            edit_message_id=original.message_id,
+            revision_of=original.id,
+            with_act=saved.with_act,
         )
         with self._repo.atomic():
             self._repo.save_status_change_amendments(work.change_id, record)

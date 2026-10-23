@@ -945,7 +945,7 @@ Push/CI/deploy/live не выполнялись.
 ### J026. DA1.2/DA1.4–DA1.6: checkpoints сохранённых review/revision
 
 Дата: 23–24 октября 2026. База: `d86a377`. Статус: принято локально.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `cdbd695`.
 
 CONSULTATION_REVIEW, COMMISSION_REVIEW и AMENDMENTS_REVISION с сохранённым HTML,
 включая их MESSAGE_PART children, получают общую pre/post checkpoint boundary.
@@ -969,3 +969,31 @@ Parser/selection/normalisation не меняются, полный corpus replay
 
 Готовность push разрешена пользователем 24 октября; до следующего content fix push не
 выполняется. Следующий выпуск исправляет наследование старого HTML при auto amendments.
+
+<a id="j027"></a>
+### J027. DA1.2: новый payload автоматической amendments revision
+
+Дата: 24 октября 2026. База: `cdbd695`. Статус: принято локально.
+Implementation commit: подготовлен к фиксации.
+
+Auto amendments строит свежий DeliveryPlan из historical bill/change/participation/attention/
+policy/date/reply/edit/revision_of/with_act. Старый rendered_text и physical membership/effects
+не наследуются. Original SENT publication не меняется, существующая correction не пересоздаётся.
+
+12 новых production World cases проверяют off/shadow/on, short/multipart corrected text,
+неизменность historical bill/date/target и original SENT payload, отделение held effects,
+QUEUED/FAILED0/FAILED1/PENDING/UNKNOWN immutability и unknown→audited retry с exact новым HTML.
+Повтор work не создаёт новый batch. Целевой набор recovery/manual/review/unknown: 179 passed.
+Mutation старого producer даёт семь ожидаемых corrected-text failures; пять immutability controls
+проходят. Исправление восстановлено, 12/12 новых cases повторно прошли.
+
+Полный gate: 3305 passed + один прежний strict xfail DA5,
+`/private/tmp/lexinform-auto-amendments-full-20261024.xml`; mypy — 328 файлов,
+Ruff check/format, strict docs-check и `git diff --check` успешны. CLI/wiring не меняются.
+Schema 48/polling v1 прежние; новый план использует существующие поля. Дополнительная raw/
+analysis копия не создаётся; исправленный HTML заменяет ошибочно унаследованный HTML в том же
+revision payload. Размер зависит от исправленного содержания и количества его частей.
+Parser/selection/normalisation не меняются; полный corpus replay не повторялся.
+
+Push задержан независимой pre-push проверкой: подтверждено неверное abandoned для успешного
+review после повторной submission в соседнем `dcffe40`. Следующая стадия устраняет его до push.

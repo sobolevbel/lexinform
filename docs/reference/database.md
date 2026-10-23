@@ -224,6 +224,8 @@ receipt/confirm; legacy projection пока остаётся у прежнего
 Сохранённые consultation/commission reviews и amendments revisions с HTML, включая parts,
 используют ту же pre/post boundary. Review-work handler пробрасывает fatal checkpoint error.
 Paused flags и прежнее отклонение FAILED legacy без HTML сохраняются.
+Автоматическая amendments revision создаёт свежий semantic plan из исторического контекста;
+она не наследует старые HTML, physical membership и held/digest effects исходной публикации.
 
 Refresh/retag/rollover edits
 и остальные reader effects пока работают по прежнему контракту. Полная граница остаётся задачей
