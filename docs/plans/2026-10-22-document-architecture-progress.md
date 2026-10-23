@@ -769,7 +769,7 @@ Push/CI/deploy/live не выполнялись. Следующий выпуск
 
 Дата: 23 октября 2026. Статус: вертикаль принята локально.
 База выпуска и совместимый reader: `26e6bac`.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `a967a9c`.
 
 Новый QUEUED/attempts=0 AGENDA/AGENDA_CANCELLED длиннее лимита Telegram рендерится как
 sitting roundup с исходной card link, затем сохраняется с physical root reply_to=None.
@@ -808,3 +808,52 @@ production forecast. Schema 48/polling v1 и отсутствие raw/archive/ba
 Ruff check/format, strict docs-check и `git diff --check` успешны. CLI/wiring,
 parser/selection/normalisation не менялись; новый полный corpus replay не запускался.
 Push/CI/deploy/live не выполнялись. Следующая вертикаль — notices с сохранённой датой.
+
+<a id="j023"></a>
+### J023. DA1.2/DA1.4–DA1.6: notices и сохранённая дата напоминаний
+
+Дата: 23 октября 2026. Статус: вертикаль принята локально.
+База: `5199e89`; предыдущая архитектурная стадия: `a967a9c`.
+Implementation commit: подготовлен к фиксации.
+
+ACT_PUBLISHED, CONSULTATION_RESULTS, IN_FORCE, CONSULTATION_DEADLINE, DECISION_DEADLINE
+и HEARING_DEADLINE проходят frozen root/parts и общий pre/post checkpoint во всех modes.
+Существующая очередь, identities, parent receipts и atomic effects сохранены. Новые kinds,
+поля, schema, polling format и backend не вводятся. Attempted legacy FAILED0/1 без HTML
+сохраняет прежние snapshot/date/callback, без создания новых frozen parts.
+
+Legacy first-send сохраняет plan.today для четырёх dated reminders. Attention-v1 сохраняет
+свою прежнюю последовательность refresh → availability/absorption/expiry → freeze с текущим
+днём. Переключение на frozen transport не меняет дату задержанного legacy сообщения и не
+включает attention expiry в off/shadow. Уже frozen payload не пересобирается при retry.
+Неполные date/phase/hearing отклоняются до API вместо отправки preview error читателю.
+Prepared decision reminder сохраняет Outgoing.detail=phase.key, как legacy callback.
+FakePublisher восстанавливает domain bookkeeping шести kinds только после успешного root,
+из saved JSON/date/phase/hearing; edits/groups/children не становятся новыми notices.
+
+71 scenario case проверяет modes × kinds, remote pending HTML/date/target до API, receipt,
+synthetic three-part layout и root/final checkpoint failures, runner loss/unknown, audited
+retry/confirm через fresh clone, исходный payload после clock +120 дней, legacy FAILED0/1,
+transport outcomes/counters, incomplete inputs, dry-run/no-publish и прежние expiry guards.
+27 fake cases проверяют HTML/Outgoing/detail/domain parity, detached snapshots и refusals.
+Целевой набор: 98 passed; existing focused набор — 74 passed.
+
+Фактический Poster из `5199e89` прочитал новые failed frozen payload после temp remote/fresh
+clone в 18/18 случаях kinds × off/shadow/on. При изменённых Bill/card/time и запрещённых
+render/legacy callbacks сохранены HTML/reply/plan, terminal retry ничего не отправил.
+Это old module с текущими imported helpers/models/adapter, только format compatibility;
+старый sender не является active rollback с новой durability. Artifact:
+`/private/tmp/lexinform-notice-qualification-20261023.json`,
+SHA `d8e6244b8e9924faa24418fe04c5dfad6d04ea1488d9725a94fd02732308a037`;
+reproducer: `/private/tmp/test_lexinform_notice_qualification_20261023.py`.
+
+В том же synthetic artifact измерен incremental SQLite quote(delivery_json) против фактического
+старого producer: off/shadow +936…1432 bytes на notice, on — 0. Это один field literal,
+без иных строк/gzip/Git overhead, не весь dump и не production forecast. Raw/archive/S3 нет.
+
+Полный gate: 3172 passed + один прежний strict xfail DA5,
+`/private/tmp/lexinform-notices-activation-full-20261023.xml`; mypy — 324 файла,
+Ruff check/format, strict docs-check и `git diff --check` успешны. Runtime CLI/wiring не менялись.
+Parser/selection/normalisation этот выпуск не меняет; полный corpus replay не повторялся.
+Два соседних исправления в базе `5199e89` сохранены, их изменения не приписываются этой стадии.
+Push/CI/deploy/live не выполнялись. Следующий выпуск — reader card revision и атомарный digest.

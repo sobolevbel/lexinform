@@ -1014,6 +1014,42 @@ class FakePublisher(RenderingPublisher):
             and not plan.sitting_group
         ):
             self._record_sittings((SittingNews.of(publication.kind, plan),))
+        elif (
+            publication.kind
+            in (
+                PublicationKind.ACT_PUBLISHED,
+                PublicationKind.CONSULTATION_RESULTS,
+                PublicationKind.IN_FORCE,
+                PublicationKind.CONSULTATION_DEADLINE,
+                PublicationKind.DECISION_DEADLINE,
+                PublicationKind.HEARING_DEADLINE,
+            )
+            and not plan.update_group
+            and not plan.sitting_group
+        ):
+            bill = Bill.model_validate_json(plan.bill_json)
+            if publication.kind is PublicationKind.ACT_PUBLISHED:
+                self.acts.append((bill, plan.reply_to))
+            elif publication.kind is PublicationKind.CONSULTATION_RESULTS:
+                self.consultation_results.append((bill, plan.reply_to))
+            elif publication.kind is PublicationKind.IN_FORCE:
+                self.in_force.append((bill, plan.reply_to))
+            else:
+                assert plan.today is not None, "a prepared reminder saves the day it describes"
+                if publication.kind is PublicationKind.CONSULTATION_DEADLINE:
+                    self.consultations.append((bill, plan.reply_to, plan.today))
+                elif publication.kind is PublicationKind.DECISION_DEADLINE:
+                    assert plan.phase_json is not None, (
+                        "a prepared decision reminder saves its phase"
+                    )
+                    phase = Phase.model_validate_json(plan.phase_json)
+                    self.decision_deadlines.append((bill, phase, plan.reply_to, plan.today))
+                else:
+                    assert plan.hearing_json is not None, (
+                        "a prepared hearing reminder saves its hearing"
+                    )
+                    hearing = Stage.model_validate_json(plan.hearing_json)
+                    self.hearings.append((bill, hearing, plan.reply_to, plan.today))
         return result
 
     def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:

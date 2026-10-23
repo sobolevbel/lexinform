@@ -206,7 +206,13 @@ link и top-level root reply_to=None, children используют receipt pare
 проходит pre/post checkpoint. Frozen sitting с item_json доступен операторскому recovery
 независимо от reply. Attempted legacy noHTML не переписывается и может сохранить прежний refusal.
 
-Status update edits, notices, refresh/retag/rollover edits
+Новые notices об акте, вступлении в силу, итогах консультаций и consultation/decision/hearing
+deadlines сохраняют HTML/parts и pre/post checkpoints во всех modes. Legacy dated first-send
+сохраняет plan.today; attention-v1 сохраняет прежние refresh/expiry и текущую дату при freeze.
+Attempted legacy без HTML сохраняет исходные snapshot/date/callback. Incomplete reminder
+не отправляет preview error вместо читательского сообщения.
+
+Status update edits, review/revision deliveries, refresh/retag/rollover edits
 и остальные reader effects пока работают по прежнему контракту. Полная граница остаётся задачей
 [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
 

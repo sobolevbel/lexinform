@@ -173,6 +173,9 @@ class RenderingPublisher(ABC):
             None if plan.sitting_group else bill,
             plan.group_text or plan.rendered_text,
             None if plan.sitting_group else plan.reply_to,
+            Phase.model_validate_json(plan.phase_json).key
+            if publication.kind is PublicationKind.DECISION_DEADLINE and plan.phase_json
+            else "",
             action=(plan.approve_label, f"digest:{plan.digest_ref}")
             if plan.approve_label
             else None,

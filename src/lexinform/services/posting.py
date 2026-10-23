@@ -67,6 +67,17 @@ ROUNDUP_EVENTS = frozenset(
         "signed",
     }
 )
+FROZEN_REPLIES = frozenset(
+    {
+        PublicationKind.STATUS_UPDATE,
+        PublicationKind.ACT_PUBLISHED,
+        PublicationKind.CONSULTATION_RESULTS,
+        PublicationKind.IN_FORCE,
+        PublicationKind.CONSULTATION_DEADLINE,
+        PublicationKind.DECISION_DEADLINE,
+        PublicationKind.HEARING_DEADLINE,
+    }
+)
 
 
 def routine_update(bill: Bill, change: StatusChange, plan: DeliveryPlan) -> bool:
@@ -1329,7 +1340,7 @@ class Poster:
                 self._repo.mark_publication(pub.id, PublicationStatus.SKIPPED, count_attempt=False)
                 self._attention_metrics["expired"] = self._attention_metrics.get("expired", 0) + 1
                 return False
-            if pub.kind is not PublicationKind.STATUS_UPDATE or (
+            if pub.kind not in FROZEN_REPLIES or (
                 pub.status is PublicationStatus.QUEUED and not pub.attempts
             ):
                 pub = self._freeze(pub)
@@ -1347,7 +1358,7 @@ class Poster:
             )
         return self._send(pub.id, bill, lambda _: self._dispatch(pub.kind, bill, plan)) is not None
 
-    def _freeze(self, pub: Publication) -> Publication:
+    def _freeze(self, pub: Publication, *, keep_today: bool = False) -> Publication:
         assert pub.delivery is not None and pub.id is not None
         if pub.delivery.rendered_text:
             return pub
@@ -1361,9 +1372,20 @@ class Poster:
                 return self._freeze_sitting(pub, text)
         today = (
             pub.delivery.today
-            if pub.delivery.edit_message_id is not None
+            if pub.delivery.edit_message_id is not None or keep_today
             else self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date()
         )
+        if pub.kind in FROZEN_REPLIES and pub.kind not in (
+            PublicationKind.STATUS_UPDATE,
+            PublicationKind.ACT_PUBLISHED,
+            PublicationKind.CONSULTATION_RESULTS,
+        ):
+            if today is None:
+                raise ValueError("The saved reminder lacks its date")
+            if pub.kind is PublicationKind.DECISION_DEADLINE and pub.delivery.phase_json is None:
+                raise ValueError("The saved decision reminder lacks its phase")
+            if pub.kind is PublicationKind.HEARING_DEADLINE and pub.delivery.hearing_json is None:
+                raise ValueError("The saved hearing reminder lacks its hearing")
         plan = pub.delivery.model_copy(update={"today": today})
         pub = pub.model_copy(update={"delivery": plan})
         return freeze_parts(
@@ -1536,15 +1558,12 @@ class Poster:
         if (
             pub is not None
             and pub.delivery is not None
-            and (
-                pub.kind is not PublicationKind.STATUS_UPDATE
-                or pub.status is PublicationStatus.QUEUED
-            )
+            and (pub.kind not in FROZEN_REPLIES or pub.status is PublicationStatus.QUEUED)
             and not pub.delivery.rendered_text
             and not pub.attempts
         ):
-            if pub.kind is PublicationKind.STATUS_UPDATE and pub.delivery.edit_message_id is None:
-                pub = self._freeze(pub)
+            if pub.kind in FROZEN_REPLIES and pub.delivery.edit_message_id is None:
+                pub = self._freeze(pub, keep_today=pub.kind is not PublicationKind.STATUS_UPDATE)
             else:
                 assert pub.delivery is not None, (
                     "stored rows selected for freezing retain their plan"
@@ -1618,7 +1637,7 @@ class Poster:
             return self._checkpoint
         if (
             root is not None
-            and root.kind is PublicationKind.STATUS_UPDATE
+            and root.kind in FROZEN_REPLIES
             and root.delivery is not None
             and root.delivery.edit_message_id is None
         ):

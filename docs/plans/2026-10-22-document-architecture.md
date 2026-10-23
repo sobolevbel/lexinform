@@ -361,14 +361,14 @@ DA6–DA7 не требуют предварительно включать но
   конфигурации останавливает запуск sender, а не включает noop. Настройки и `.env.example`
   изменяются вместе; dry-run не делает push. Сохранить fail-closed batch protocol:
   intent `submitting` должен быть удалённо сохранён до submit провайдеру.
-- [ ] DA1.2. **Частично: [J011](2026-10-22-document-architecture-progress.md#j011), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022); reader-first: [J019](2026-10-22-document-architecture-progress.md#j019), [J021](2026-10-22-document-architecture-progress.md#j021).** Перед каждым reader API effect сохранить в существующей очереди точные HTML,
+- [ ] DA1.2. **Частично: [J011](2026-10-22-document-architecture-progress.md#j011), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022), [J023](2026-10-22-document-architecture-progress.md#j023); reader-first: [J019](2026-10-22-document-architecture-progress.md#j019), [J021](2026-10-22-document-architecture-progress.md#j021).** Перед каждым reader API effect сохранить в существующей очереди точные HTML,
   channel, reply/edit target, flags, physical-part identity, membership и revision target.
   Freeze обязателен и при attention off/shadow: legacy digest/sittings не остаются live-render путями.
 - [ ] DA1.3. Перевести refresh/retag/rollover и обычные редактирования карточки на сохранённую
   операцию. Проверить reuse существующих `MESSAGE_PART`/edit target и `_edit_parts`;
   если они не выражают нужный контракт, обосновать минимальный отдельный kind в ADR.
   Не менять identity исходной карточки, которая остаётся `sent` во время исправления.
-- [ ] DA1.4. **Частично: [J013](2026-10-22-document-architecture-progress.md#j013), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022).** Зафиксировать порядок: локальная транзакция frozen pending → удалённый checkpoint →
+- [ ] DA1.4. **Частично: [J013](2026-10-22-document-architecture-progress.md#j013), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022), [J023](2026-10-22-document-architecture-progress.md#j023).** Зафиксировать порядок: локальная транзакция frozen pending → удалённый checkpoint →
   API → локальная транзакция исхода/effects → удалённый checkpoint исхода → следующий reader effect.
   Сеть и git push не выполняются внутри SQL-транзакции.
 - [ ] DA1.5. **Частично: [J008](2026-10-22-document-architecture-progress.md#j008), [J013](2026-10-22-document-architecture-progress.md#j013), [J015](2026-10-22-document-architecture-progress.md#j015), [J016](2026-10-22-document-architecture-progress.md#j016).** У checkpoint отдельная fatal ошибка сохранения. Она не попадает в общий delivery
@@ -376,7 +376,7 @@ DA6–DA7 не требуют предварительно включать но
   Неуспех до API означает ноль вызовов Telegram. Неуспех после API останавливает следующие эффекты.
   Проверить проброс через pipeline/phases, commands и collect: изоляция ошибок фаз не должна
   проглотить persistence failure и запустить другой reader sender в том же процессе.
-- [ ] DA1.6. **Частично: [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022).** Все части multipart готовятся до первой попытки. Дочерняя часть получает реальный
+- [ ] DA1.6. **Частично: [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022), [J023](2026-10-22-document-architecture-progress.md#j023).** Все части multipart готовятся до первой попытки. Дочерняя часть получает реальный
   parent из сохранённого receipt, затем exact reply target checkpoint'ится до её API-вызова.
   Группы сохраняют все publication IDs; release держится за прежнюю физическую часть/группу.
 - [x] DA1.7. [J007](2026-10-22-document-architecture-progress.md#j007). Каждый push состояния — CAS относительно подтверждённого SHA, из которого
