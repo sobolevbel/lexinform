@@ -221,7 +221,11 @@ receipt/confirm; legacy projection пока остаётся у прежнего
 Новые status update edits также сохраняют HTML/parts и исходный today; каждый edit/child
 использует общий checkpoint. Attempted legacy без HTML сохраняет прежний callback.
 
-Review/revision initial deliveries, refresh/retag/rollover edits
+Сохранённые consultation/commission reviews и amendments revisions с HTML, включая parts,
+используют ту же pre/post boundary. Review-work handler пробрасывает fatal checkpoint error.
+Paused flags и прежнее отклонение FAILED legacy без HTML сохраняются.
+
+Refresh/retag/rollover edits
 и остальные reader effects пока работают по прежнему контракту. Полная граница остаётся задачей
 [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
 

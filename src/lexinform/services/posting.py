@@ -1638,6 +1638,18 @@ class Poster:
         )
         if root is not None and root.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
             return self._checkpoint
+        if (
+            root is not None
+            and root.kind
+            in (
+                PublicationKind.CONSULTATION_REVIEW,
+                PublicationKind.COMMISSION_REVIEW,
+                PublicationKind.AMENDMENTS_REVISION,
+            )
+            and root.delivery is not None
+            and root.delivery.rendered_text
+        ):
+            return self._checkpoint
         if root is not None and card_revision_owner(self._repo, root) is not None:
             return self._checkpoint
         if (

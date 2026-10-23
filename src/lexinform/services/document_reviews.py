@@ -8,7 +8,7 @@ from lexinform.commission_reviews import (
     commission_source_fingerprint,
     legacy_filed_commission_baseline,
 )
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.models import (
     Bill,
     DocumentReviewRecord,
@@ -239,6 +239,8 @@ class DocumentReviews:
                         result.waiting += 1
                         continue
                     self._apply(bill, work, record)
+                except StateCheckpointError:
+                    raise
                 except ServiceUnavailableError as exc:
                     result.partial_errors.append(f"document reviews: {exc.describe()}")
                     return

@@ -899,7 +899,7 @@ Push/CI/deploy/live не выполнялись.
 ### J025. DA1.2/DA1.4–DA1.6: сохранённые status-update edits
 
 Дата: 23 октября 2026. База: `dcffe40`; предыдущая архитектурная стадия: `8ea5084`.
-Статус: вертикаль принята локально. Implementation commit: подготовлен к фиксации.
+Статус: вертикаль принята локально. Implementation commit: `d86a377`.
 
 Новые QUEUED0 STATUS_UPDATE edits сохраняют HTML/parts до первой попытки во всех modes.
 Root редактирует исходный physical target, новые продолжения отвечают сохранённому receipt
@@ -940,3 +940,32 @@ review/revision deliveries, command lifecycle и single-card producer.
 `/private/tmp/lexinform-update-edit-full-20261023.xml`; mypy — 326 файлов,
 Ruff check/format, strict docs-check и `git diff --check` успешны. CLI/wiring не меняются.
 Push/CI/deploy/live не выполнялись.
+
+<a id="j026"></a>
+### J026. DA1.2/DA1.4–DA1.6: checkpoints сохранённых review/revision
+
+Дата: 23–24 октября 2026. База: `d86a377`. Статус: принято локально.
+Implementation commit: подготовлен к фиксации.
+
+CONSULTATION_REVIEW, COMMISSION_REVIEW и AMENDMENTS_REVISION с сохранённым HTML,
+включая их MESSAGE_PART children, получают общую pre/post checkpoint boundary.
+DocumentReviews.advance пробрасывает StateCheckpointError через общий work handler.
+Новый producer не включается, текущие flags и paused defaults не меняются.
+
+64 новых production World cases покрывают modes × kinds, three-part remote pending/receipts,
+root/final checkpoint failures с потерей local completion, frozen edit target и неизменность
+исходного event, unknown/audited retry/confirm, final held effects, default pause и skip
+ACT_APPLICATION/EFFECTIVE_RULES. Legacy FAILED0/1 без HTML сохраняет прежний отказ до API/CP
+без переписывания payload; FAILED0/1 с HTML использует сохранённый reader. Целевой набор с
+существующими review/amendment scenarios: 191 passed. Mutation отдельно подтверждает selector
+и fatal guard; обычная ошибка review сохраняет прежнюю изоляцию.
+
+Полный gate: 3293 passed + один прежний strict xfail DA5,
+`/private/tmp/lexinform-review-checkpoints-full-20261023.xml`; mypy — 327 файлов,
+Ruff check/format и `git diff --check` успешны. CLI/wiring не менялись. Strict docs-check
+выполнен перед фиксацией. Schema 48/polling v1 прежние; новых persisted payload полей нет,
+incremental payload growth — 0, dump/push overhead относится к общим checkpoint из J012.
+Parser/selection/normalisation не меняются, полный corpus replay не повторялся.
+
+Готовность push разрешена пользователем 24 октября; до следующего content fix push не
+выполняется. Следующий выпуск исправляет наследование старого HTML при auto amendments.
