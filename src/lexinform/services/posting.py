@@ -1516,7 +1516,7 @@ class Poster:
             text = self._publisher.render_delivery(pub)
             if utf16_length(text) > MESSAGE_LIMIT:
                 pub = freeze_parts(self._repo, self._clock, self._publisher, pub, text)
-        if pub is not None and pub.delivery is not None and pub.delivery.continuation_ids:
+        if pub is not None and pub.delivery is not None and pub.delivery.rendered_text:
 
             def prepared_send(_: int | None) -> int:
                 return self._publisher.publish_prepared(pub).message_id

@@ -593,7 +593,7 @@ Push/CI/deploy/live не выполнялись.
 
 Дата: 23 октября 2026. Статус: reader digest вертикаль принята локально.
 База выпуска: `a086df4`; совместимый reader сохранённых частей: `45345e8`.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `1eae096`.
 
 Новые reader digests используют сохранённые physical parts и membership в off/shadow/on.
 Все части и reservations создаются атомарно до первого pending/API; перед каждым reader
@@ -639,3 +639,37 @@ on уже сохранял этот формат. Это только поле p
 compression или истории Git; не весь dump и не production forecast. Artifact и SHA — J017.
 DA1 остаётся частичным: одиночные updates, длинные одиночные sittings и card edits ещё
 не переведены. Push/CI/deploy/live не выполнялись.
+
+<a id="j019"></a>
+### J019. DA1.2: reader коротких saved updates перед новым producer
+
+Дата: 23 октября 2026. Статус: reader-first стадия принята локально. База: `1eae096`.
+Implementation commit: подготовлен к фиксации.
+
+`Poster._send` выбирает prepared transport при любом saved `rendered_text`, а не только
+при наличии continuation IDs. Короткий legacy update теперь сохраняет exact HTML и прежний
+reply/edit target при изменении текущей карточки. Уже сохранённая дата edits остаётся в plan.
+Generic `deliver` и attention-v1 callback уже умели читать такой payload; закрыт прямой
+legacy `status_update`. Новый producer, расширение checkpoint scope и persisted поля не добавлены.
+Рост dump от этой reader-only стадии отсутствует.
+
+18 scenario cases проверяют off/shadow/on × short post/edit, exact HTML без повторного
+formatter/render_delivery, saved reply 777 при текущей card 999, edit target/date, dump/restore,
+повтор terminal вызова без второго send/edit, pending/unknown/dismissed. Отдельно после receipt
+в одной транзакции завершены только saved held IDs и ACT_PUBLISHED с тем же message ID;
+поздний held, добавленный после сохранения plan, не освобождён. Целевой gate: 67 passed,
+`/private/tmp/lexinform-frozen-update-reader-focused-final-20261023.xml`.
+
+Полный gate: 2920 passed + один прежний strict xfail DA5,
+`/private/tmp/lexinform-architecture-frozen-update-reader-final-20261023.xml`;
+mypy — 317 файлов, Ruff check/format, strict docs-check и `git diff --check` успешны.
+Независимый reviewer не нашёл blockers и отдельно прогнал исходную 15-case матрицу.
+Parser/selection/normalisation, CLI/wiring и persisted formats этой стадией не менялись;
+нового полного corpus replay не было. Push/CI/deploy/live не выполнялись.
+
+Дальнейшая producer-вертикаль требует отдельной приёмки: новые сообщения STATUS_UPDATE
+и их MESSAGE_PART, pre/post checkpoints, одна попытка за запуск и last-child receipt вместе
+с held/act effects. FAILED/attempts=0 после outage не является новой доставкой. При реализации
+нужно сохранить domain bookkeeping `FakePublisher.updates`: canonical sent/edited уже видят
+prepared delivery, а этот вспомогательный список пока её не отражает. Edit producer и обычные
+правки карточки остаются отдельными задачами.

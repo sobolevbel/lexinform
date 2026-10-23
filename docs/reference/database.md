@@ -192,6 +192,10 @@ API. Каждая часть checkpoint'ит pending до API и receipt/source 
 Attempted legacy digest без частей checkpoint'ит статус, сохраняя прежний render callback.
 Technical draft не резервирует source events и не получает reader checkpoints.
 
+Reader одиночных updates использует любой сохранённый `rendered_text`, включая короткий
+legacy payload: exact HTML и reply/edit target не пересобираются из текущей карточки.
+Это совместимый reader; producer коротких legacy updates и scope checkpoints ещё прежние.
+
 Одиночные updates, длинное одиночное sitting через `deliver`, refresh/retag/rollover edits
 и остальные reader effects пока работают по прежнему контракту. Полная граница остаётся задачей
 [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
