@@ -6,7 +6,13 @@ from typing import Any
 import pytest
 
 from lexinform.adapters.telegram_format import MessageFormatter
-from lexinform.models import ApplicantType, BillStatus, CheckAspect, PublicationStatus
+from lexinform.models import (
+    SILENCED_BY_OPERATOR,
+    ApplicantType,
+    BillStatus,
+    CheckAspect,
+    PublicationStatus,
+)
 from tests.fakes import FakeTextExtractor, make_analysis
 from tests.harness import RPW, TERM, World, submission, submission_url
 
@@ -419,6 +425,32 @@ def test_print_of_a_title_miss_entry_goes_through_the_text_prefilter() -> None:
     assert (bill.number, bill.status) == ("3100", BillStatus.ANALYZED)
     assert print_info is not None and "text:cudzoziemcy" in bill.prefilter_hits
     assert w.bill(RPW).status is BillStatus.LINKED
+
+
+def test_the_print_of_an_entry_the_operator_silenced_stays_silenced() -> None:
+    w = World(extractor=FakeTextExtractor(FOREIGNER_TEXT))
+    w.gateway.submissions.append(submission(title=NEUTRAL_TITLE, description="zmiany podatkowe"))
+    w.run()
+    w.repo.reset_bill(TERM, RPW, BillStatus.SKIPPED_PREFILTER, reason=SILENCED_BY_OPERATOR)
+    w.gateway.submissions[0] = submission(
+        title=NEUTRAL_TITLE, description="zmiany podatkowe", print_number="3100"
+    )
+    w.add_bill("3100", NEUTRAL_TITLE)
+    w.touch("3100", dt.datetime(2026, 9, 8, 9, 0))
+    w.clock.advance(days=1)
+    published = len(w.publisher.new_bills)
+
+    report = w.run()
+    w.clock.advance(days=1)
+    w.run()
+
+    printed = w.bill("3100")
+    assert report.linked == 1
+    assert (printed.status, printed.last_error) == (
+        BillStatus.SKIPPED_PREFILTER,
+        SILENCED_BY_OPERATOR,
+    )
+    assert len(w.publisher.new_bills) == published
 
 
 def test_print_of_a_title_miss_entry_stays_skipped_without_the_text_prefilter() -> None:

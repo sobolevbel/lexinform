@@ -50,9 +50,13 @@ columns, probes): `docs/rcl-scraping.md`.
   metadata. The print inherits the card (`tracking/linking.py::Linker`: `new_bill` row aliased with
   the same `message_id`). The print copies the entry's status except a prefilter skip
   (`skipped_prefilter`/`skipped_text_prefilter`) → `text_prefilter_pending` (the entry's file may
-  have been a scan or a WAF refusal; the print's PDF is the text the Sejm works from). RPW → print
+  have been a scan or a WAF refusal; the print's PDF is the text the Sejm works from); an operator's
+  `/skip` (`SILENCED_BY_OPERATOR`) is copied with its reason. RPW → print
   via `/bills`; RCL → Sejm discovery notices a druk whose `rclNum` names a followed project (stored
   RM number, else `getIdFromLegislacja?number=…`), stores it on the RCL row, the RCL watcher links.
+  A druk whose `/bills` entry already has a row is stamped on the entry's project too (by
+  `rclNum` or `sendersNumber`), and `PublishingService.became_druk` gives no card to a druk whose
+  RCL project holds a sent card: it stamps the number and the RCL watcher links it that run (B116).
   `rclNum` is detail-only, so while a threaded RCL project (`Bill.has_thread`) awaits its druk,
   discovery reads details of new prints not known non-government (`_with_rcl_num`); a quiet
   project's druk is judged on its own text. **A government `/bills` entry of a followed project is

@@ -469,8 +469,10 @@ class PublishingService:
 
     def became_druk(self, bill: Bill) -> Bill | None:
         """The druk, or the followed RCL project, that already carries this entry's thread."""
-        if bill.has_process or bill.status is BillStatus.LINKED:
+        if bill.status is BillStatus.LINKED:
             return None
+        if bill.has_process:
+            return self._threaded_project(bill)
         druk = None
         if bill.rcl is not None:
             if bill.rcl.print_number:
@@ -484,6 +486,28 @@ class PublishingService:
         if druk is not None:
             log.info("%s is %s already: no card of its own", bill.number, druk.number)
         return druk
+
+    def _threaded_project(self, druk: Bill) -> Bill | None:
+        """The carded RCL project this druk continues, stamped so the RCL watcher links it."""
+        rm_number = druk.summary.rcl_num or (
+            druk.submission.senders_number if druk.submission is not None else None
+        )
+        project = rcl_predecessor(self._repo, None, rm_number)
+        if project is None or not self.has_sent_card(project):
+            return None
+        assert project.rcl is not None, "rcl_predecessor returns only a row with its project"
+        if project.rcl.print_number != druk.number:
+            self._repo.save_rcl(
+                project.term,
+                project.number,
+                project.rcl.model_copy(update={"print_number": druk.number}),
+            )
+        log.info(
+            "druk %s continues %s: tracking links it into that thread",
+            druk.number,
+            project.number,
+        )
+        return project
 
     def _inherited_card(self, bill: Bill) -> Publication | None:
         """The sent card of the row this print continues (its RPW entry or its RCL project).

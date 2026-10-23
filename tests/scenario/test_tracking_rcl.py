@@ -5,6 +5,7 @@ from dataclasses import replace
 
 from lexinform.adapters.telegram_format import MessageFormatter
 from lexinform.models import (
+    SILENCED_BY_OPERATOR,
     ApplicantType,
     BillStatus,
     BillSubmission,
@@ -736,6 +737,89 @@ def test_an_entry_read_while_rcl_could_not_name_its_project_still_gets_no_card()
 
     assert w.bill(GOVERNMENT_RPW).analysis is not None  # read while nothing could tell
     assert [bill.number for bill, _ in w.publisher.new_bills] == [RCL]
+
+
+def _entry_row_beside_the_project(w: World) -> RclProject:
+    """A followed project whose Sejm entry got a row of its own, silenced by the operator."""
+    project = w.add_rcl_project(
+        rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.run()
+    w.batch.resolve()
+    w.run()
+    w.clock.advance(days=1)
+    w.rcl.put(_handed_over(project))
+    _government_entry(w, project.title)
+    w.rcl.outages.add("resolve_project_id")
+    w.run()
+    w.rcl.outages.clear()
+    w.batch.resolve()
+    w.clock.advance(days=1)
+    w.run()
+    w.repo.reset_bill(
+        TERM, GOVERNMENT_RPW, BillStatus.SKIPPED_PREFILTER, reason=SILENCED_BY_OPERATOR
+    )
+    w.clock.advance(days=1)
+    return project
+
+
+def _druk_of_the_entry(w: World, project: RclProject, *, rcl_num: str | None) -> None:
+    entry = next(sub for sub in w.gateway.submissions if sub.number == GOVERNMENT_RPW)
+    w.gateway.submissions[w.gateway.submissions.index(entry)] = entry.model_copy(
+        update={"print_number": "3100"}
+    )
+    druk = summary("3100", project.title, change="2026-09-12T09:00:00").model_copy(
+        update={"rcl_num": rcl_num}
+    )
+    w.gateway.processes.append(druk)
+    w.gateway.details["3100"] = detail(druk, START)
+
+
+def test_the_druk_of_a_silenced_sejm_entry_continues_the_projects_thread() -> None:
+    """UDER106 (23 Oct 2026): druk 3267 was carded beside the project's card."""
+    w = World(batch_only=True)
+    project = _entry_row_beside_the_project(w)
+    _druk_of_the_entry(w, project, rcl_num="RM-0610-139-26")
+
+    report = w.run(since=w.clock.now() - dt.timedelta(hours=12))  # the project is not in it
+    w.batch.resolve()
+    w.clock.advance(days=1)
+    w.run(full_track=True)
+
+    assert report.linked == 2
+    assert [bill.number for bill, _ in w.publisher.new_bills] == [RCL]
+    assert w.card_id("3100") == w.card_id(RCL)
+    assert w.bill(RCL).status is BillStatus.LINKED
+    assert w.bill("3100").status is not BillStatus.SKIPPED_PREFILTER
+
+
+def test_a_druk_whose_project_holds_the_thread_gets_no_card_and_tracking_links_it() -> None:
+    w = World()
+    project = _followed_project(
+        w, rcl_project(title="Projekt ustawy o zmianie ustawy o cudzoziemcach")
+    )
+    w.rcl.put(_handed_over(project))
+    w.run()
+    w.clock.advance(days=1)
+    druk = summary("3100", project.title, change="2026-09-12T09:00:00").model_copy(
+        update={"rcl_num": "RM-0610-139-26"}
+    )
+    w.repo.upsert_summary(druk, now=w.clock.now())
+    analysis = w.bill(RCL).analysis
+    assert analysis is not None, "the project was analysed on the first run"
+    w.repo.save_analysis(TERM, "3100", analysis)
+    w.gateway.processes.append(druk)
+    w.gateway.details["3100"] = detail(druk, START)
+
+    published = w.container.publishing_service(dry_run=False).publish_new(min_score=3, limit=10)
+    stamped = w.bill(RCL).rcl
+    report = w.run()
+
+    assert published.published == 0
+    assert stamped is not None and stamped.print_number == "3100"
+    assert report.linked == 1
+    assert [bill.number for bill, _ in w.publisher.new_bills] == [RCL]
+    assert w.card_id("3100") == w.card_id(RCL)
 
 
 def test_asking_for_the_sejms_entry_of_a_followed_project_answers_with_the_project() -> None:

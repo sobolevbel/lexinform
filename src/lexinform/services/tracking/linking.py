@@ -10,6 +10,7 @@ import logging
 from datetime import datetime
 
 from lexinform.models import (
+    SILENCED_BY_OPERATOR,
     Bill,
     BillStatus,
     PrintInfo,
@@ -79,7 +80,11 @@ class Linker:
         api.sejm.gov.pl and costs a download and no tokens, so it is scanned instead.
         """
         skipped = (BillStatus.SKIPPED_PREFILTER, BillStatus.SKIPPED_TEXT_PREFILTER)
-        if pre.status in skipped and self._text_prefilter:
+        if (
+            pre.status in skipped
+            and self._text_prefilter
+            and pre.last_error != SILENCED_BY_OPERATOR
+        ):
             if own is not None and own.status is BillStatus.SKIPPED_TEXT_PREFILTER:
                 return own.status
             return BillStatus.TEXT_PREFILTER_PENDING
@@ -124,7 +129,16 @@ class Linker:
             change = self._print_change(bill, pre, detail, content_changed=changed, now=now)
         alias = None
         with self._repo.atomic():
-            self._adopt(pre, print_number, detail, stages, now=now, status=status, read=read)
+            self._adopt(
+                pre,
+                print_number,
+                detail,
+                stages,
+                now=now,
+                status=status,
+                read=read,
+                silenced=own is not None and own.last_error == SILENCED_BY_OPERATOR,
+            )
             # Saving an analysis resets the status and the generation, so a pending batch too.
             if bill.analysis is not None and not read:
                 self._repo.save_analysis(bill.term, bill.number, bill.analysis)
@@ -200,6 +214,7 @@ class Linker:
         now: datetime,
         status: BillStatus,
         read: bool,
+        silenced: bool = False,
     ) -> None:
         """The print takes over what the entry knew, never over a reading of its own."""
         self._repo.upsert_summary(detail, now=now)
@@ -211,7 +226,14 @@ class Linker:
         )
         self._repo.save_observed_closure(pre.term, print_number, detail.closure_date)
         if not read:
-            self._repo.set_status(pre.term, print_number, status, prefilter_hits=pre.prefilter_hits)
+            self._repo.set_status(
+                pre.term,
+                print_number,
+                status,
+                prefilter_hits=pre.prefilter_hits,
+                reason=SILENCED_BY_OPERATOR if pre.last_error == SILENCED_BY_OPERATOR else None,
+                clear_reason=silenced and status is not BillStatus.SKIPPED_PREFILTER,
+            )
             if status is not pre.status and status is BillStatus.TEXT_PREFILTER_PENDING:
                 log.info(
                     "druk %s: %s was skipped by the prefilter; the print's text is scanned next",

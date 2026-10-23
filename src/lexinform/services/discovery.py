@@ -153,6 +153,18 @@ class BillDiscoveryService:
             return summary
         return summary.model_copy(update={"rcl_num": detail.rcl_num, "rcl_link": detail.rcl_link})
 
+    def _hand_to_project(
+        self, summary: ProcessSummary, project: Bill, senders_number: str | None
+    ) -> None:
+        """Stamp the druk on the followed RCL project: the RCL watcher links it this run."""
+        assert project.rcl is not None, "rcl_predecessor returns only a row with its project"
+        rm_number = summary.rcl_num or senders_number or project.rcl.rm_number
+        self._repo.save_rcl(
+            project.term,
+            project.number,
+            project.rcl.model_copy(update={"print_number": summary.number, "rm_number": rm_number}),
+        )
+
     def _find_submission(self, summary: ProcessSummary) -> BillSubmission | None:
         """The /bills entry of a numbered print: consultation dates, applicant, RPW number."""
         try:
@@ -212,10 +224,15 @@ class BillDiscoveryService:
             submission = self._find_submission(summary)
             if submission is not None:
                 if self._repo.get(summary.term, submission.number) is not None:
+                    project = rcl_predecessor(
+                        self._repo, None, summary.rcl_num or submission.senders_number
+                    )
+                    if project is not None:
+                        self._hand_to_project(summary, project, submission.senders_number)
                     log.info(
                         "druk %s continues %s; linked by tracking",
                         summary.number,
-                        submission.number,
+                        project.number if project is not None else submission.number,
                     )
                     return False
                 summary = summary.model_copy(update={"applicant": submission.applicant})
@@ -227,16 +244,7 @@ class BillDiscoveryService:
             if from_detail and project is not None and not project.has_thread:
                 project = None
             if project is not None:
-                assert project.rcl is not None, (
-                    "rcl_predecessor returns only a row with its project"
-                )
-                self._repo.save_rcl(
-                    project.term,
-                    project.number,
-                    project.rcl.model_copy(
-                        update={"print_number": summary.number, "rm_number": summary.rcl_num}
-                    ),
-                )
+                self._hand_to_project(summary, project, None)
                 log.info("druk %s continues %s; linked by tracking", summary.number, project.number)
                 return False
         bill = self._repo.upsert_summary(summary, now=now)
