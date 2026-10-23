@@ -218,7 +218,10 @@ Explicit revision_of применяет operation.rendered_sha256 к карто�
 receipt/confirm; legacy projection пока остаётся у прежнего CardRefresher. Edit confirm
 принимает только сохранённый target. Новый обычный card edit producer ещё не включён.
 
-Status update edits, review/revision initial deliveries, refresh/retag/rollover edits
+Новые status update edits также сохраняют HTML/parts и исходный today; каждый edit/child
+использует общий checkpoint. Attempted legacy без HTML сохраняет прежний callback.
+
+Review/revision initial deliveries, refresh/retag/rollover edits
 и остальные reader effects пока работают по прежнему контракту. Полная граница остаётся задачей
 [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
 

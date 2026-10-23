@@ -862,7 +862,7 @@ Push/CI/deploy/live не выполнялись. Следующий выпуск
 ### J024. DA1.3: reader card revision и атомарный desired digest
 
 Дата: 23 октября 2026. База: `60a4278`.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `8ea5084`.
 
 MESSAGE_PART edit root получает logical owner из существующего revision_of либо legacy
 card/ref. Owner должен быть SENT NEW_BILL того же bill/term/channel с тем же physical edit
@@ -893,4 +893,50 @@ producer, затем общий retag/rollover путь и отдельная п
 Ruff check/format, strict docs-check и `git diff --check` успешны. Local HTTP CLI — 21 passed.
 Parser/selection/normalisation не меняются; полный corpus replay не повторялся.
 Соседние незакоммиченные изменения document reviews/retention в этот commit не включены.
+Push/CI/deploy/live не выполнялись.
+
+<a id="j025"></a>
+### J025. DA1.2/DA1.4–DA1.6: сохранённые status-update edits
+
+Дата: 23 октября 2026. База: `dcffe40`; предыдущая архитектурная стадия: `8ea5084`.
+Статус: вертикаль принята локально. Implementation commit: подготовлен к фиксации.
+
+Новые QUEUED0 STATUS_UPDATE edits сохраняют HTML/parts до первой попытки во всех modes.
+Root редактирует исходный physical target, новые продолжения отвечают сохранённому receipt
+предыдущей части; каждый API effect имеет общий pre/post checkpoint. Исходная SENT публикация
+и status-change identity не переписываются. Сохранённый today относится к исходному сообщению;
+multipart label «подготовлено» — ко дню первой подготовки. Retry не меняет ни одну дату.
+Отсутствующая исходная дата отклоняется до pending/API. Legacy FAILED0/1 без HTML сохраняет
+прежний callback/payload и не получает придуманного frozen входа. Attention=on продолжает
+направлять новые late-vote enrichments в digest; reader поддерживает ранее сохранённые edits.
+
+Новые сценарии создают late-vote intent обычным production World. Для multipart fault matrix
+к нему добавлены synthetic stage lines: это приёмка транспорта, не измерение реальной длины
+голосования. Проверяются remote pending/HTML/дата/target/части, root/final checkpoint failures,
+fresh-clone retry/unknown при смене attention mode, invalid date и legacy callback compatibility.
+Прежний тест исключения edits сужен до FAILED0/1; новая QUEUED0 ветка принята отдельно.
+Целевой набор late votes/update checkpoints: 105 passed.
+
+Фактический Poster из `dcffe40` прочитал новый frozen edit после temp remote/fresh clone
+в 12/12 случаях: producer off/shadow × short/synthetic three-part × reader off/shadow/on.
+Render/split/legacy callbacks запрещены; изменены текущие title/stages/card target и clock
++120 дней. Сохранены exact HTML, исходные target/date, parent chain и прежний SENT event;
+terminal retry не имеет эффекта. Использованы текущие imported helpers/models/adapter:
+это format compatibility, не полный исторический runtime и не прежняя durability.
+Artifact: `/private/tmp/lexinform-update-edit-qualification-20261023/qualification.json`,
+SHA `3aa0b54f833aa121d649c86c00c01d45f10c4e93356c9656a4a7f47c152af579`;
+reproducer: `reproduce.py` в том же каталоге.
+
+Incremental SQLite quote(delivery_json), root + все новые children: short +1108 bytes,
+synthetic 75-stage/three-part +14611 bytes в off/shadow. Сравнение — перед/после freeze одного
+сохранённого intent; это payload literals, без других строк/gzip/Git overhead, не production forecast.
+
+Новых kinds/полей/schema/polling/backend/raw archive нет. Parser/selection/normalisation не
+меняются; corpus replay для этой транспортной стадии не требуется. Соседний commit `dcffe40`
+про очистку batch payloads сохранён и не приписывается этому выпуску. Следом — сохранённые
+review/revision deliveries, command lifecycle и single-card producer.
+
+Полный gate: 3229 passed + один прежний strict xfail DA5,
+`/private/tmp/lexinform-update-edit-full-20261023.xml`; mypy — 326 файлов,
+Ruff check/format, strict docs-check и `git diff --check` успешны. CLI/wiring не меняются.
 Push/CI/deploy/live не выполнялись.

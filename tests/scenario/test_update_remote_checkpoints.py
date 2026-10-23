@@ -420,8 +420,9 @@ def test_failed_long_status_drains_its_legacy_plan_without_inventing_frozen_part
 
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
-def test_legacy_status_edit_is_outside_the_new_freeze_and_remote_checkpoint_scope(
-    tmp_path: Path, mode: Mode
+@pytest.mark.parametrize("attempted", [False, True])
+def test_failed_legacy_status_edit_keeps_its_callback_outside_the_new_checkpoint_scope(
+    tmp_path: Path, mode: Mode, attempted: bool
 ) -> None:
     case = queued(mode, with_act=False)
     world = case.world
@@ -429,6 +430,9 @@ def test_legacy_status_edit_is_outside_the_new_freeze_and_remote_checkpoint_scop
         update={"edit_message_id": 444, "policy_version": "legacy"}
     )
     assert world.repo.replace_unattempted_delivery(case.identity, edit)
+    world.repo.mark_publication(
+        case.identity, PublicationStatus.FAILED, error="legacy refusal", count_attempt=attempted
+    )
     remote = connect(world, tmp_path)
     baseline = git(remote, "rev-parse", "state")
     before_sent, before_edits = len(world.publisher.sent), len(world.publisher.edited)

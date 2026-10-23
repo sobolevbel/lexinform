@@ -1375,6 +1375,12 @@ class Poster:
             if pub.delivery.edit_message_id is not None or keep_today
             else self._clock.now().astimezone(ZoneInfo("Europe/Warsaw")).date()
         )
+        if (
+            pub.kind is PublicationKind.STATUS_UPDATE
+            and pub.delivery.edit_message_id is not None
+            and today is None
+        ):
+            raise ValueError("The saved update edit lacks its original date")
         if pub.kind in FROZEN_REPLIES and pub.kind not in (
             PublicationKind.STATUS_UPDATE,
             PublicationKind.ACT_PUBLISHED,
@@ -1562,7 +1568,9 @@ class Poster:
             and not pub.delivery.rendered_text
             and not pub.attempts
         ):
-            if pub.kind in FROZEN_REPLIES and pub.delivery.edit_message_id is None:
+            if pub.kind in FROZEN_REPLIES and (
+                pub.kind is PublicationKind.STATUS_UPDATE or pub.delivery.edit_message_id is None
+            ):
                 pub = self._freeze(pub, keep_today=pub.kind is not PublicationKind.STATUS_UPDATE)
             else:
                 assert pub.delivery is not None, (
@@ -1649,7 +1657,10 @@ class Poster:
             root is not None
             and root.kind in FROZEN_REPLIES
             and root.delivery is not None
-            and root.delivery.edit_message_id is None
+            and (
+                root.delivery.edit_message_id is None
+                or (root.kind is PublicationKind.STATUS_UPDATE and root.delivery.rendered_text)
+            )
         ):
             return self._checkpoint
         return None
