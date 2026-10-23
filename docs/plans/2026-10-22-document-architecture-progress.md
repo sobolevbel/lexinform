@@ -644,7 +644,7 @@ DA1 остаётся частичным: одиночные updates, длинн�
 ### J019. DA1.2: reader коротких saved updates перед новым producer
 
 Дата: 23 октября 2026. Статус: reader-first стадия принята локально. База: `1eae096`.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `cc3b5c8`.
 
 `Poster._send` выбирает prepared transport при любом saved `rendered_text`, а не только
 при наличии continuation IDs. Короткий legacy update теперь сохраняет exact HTML и прежний
