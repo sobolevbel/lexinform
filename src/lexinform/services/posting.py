@@ -44,7 +44,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
 from lexinform.services.message_parts import continuation_ready, freeze_parts, send_continuations
-from lexinform.services.publications import send_publication, send_publications
+from lexinform.services.publications import card_revision_owner, send_publication, send_publications
 from lexinform.services.sources import fetch_print
 from lexinform.services.tracking_result import TrackingResult
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
@@ -1591,8 +1591,8 @@ class Poster:
             send = prepared_send
         card = self.card(bill)
         reply_to = card.message_id if card else None
-        self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
         checkpoint = self._delivery_checkpoint(pub)
+        self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
         sent = send_publication(
             self._repo,
             self._clock,
@@ -1630,6 +1630,16 @@ class Poster:
         )
         if root is not None and root.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
             return self._checkpoint
+        if root is not None and card_revision_owner(self._repo, root) is not None:
+            return self._checkpoint
+        if (
+            root is not None
+            and root.kind is PublicationKind.MESSAGE_PART
+            and root.delivery is not None
+            and root.delivery.revision_of is not None
+            and root.delivery.edit_message_id is not None
+        ):
+            raise ValueError("The saved card revision has no matching delivered owner")
         if root is not None and root.kind in (
             PublicationKind.AGENDA,
             PublicationKind.AGENDA_CANCELLED,

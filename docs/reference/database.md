@@ -212,7 +212,13 @@ deadlines сохраняют HTML/parts и pre/post checkpoints во всех mo
 Attempted legacy без HTML сохраняет исходные snapshot/date/callback. Incomplete reminder
 не отправляет preview error вместо читательского сообщения.
 
-Status update edits, review/revision deliveries, refresh/retag/rollover edits
+Card revision reader использует MESSAGE_PART с frozen edit target и logical revision_of;
+legacy card/ref тоже распознаётся. Owner должен соответствовать bill/term/channel/target.
+Explicit revision_of применяет operation.rendered_sha256 к карточке атомарно с последним
+receipt/confirm; legacy projection пока остаётся у прежнего CardRefresher. Edit confirm
+принимает только сохранённый target. Новый обычный card edit producer ещё не включён.
+
+Status update edits, review/revision initial deliveries, refresh/retag/rollover edits
 и остальные reader effects пока работают по прежнему контракту. Полная граница остаётся задачей
 [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
 

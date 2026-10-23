@@ -364,7 +364,7 @@ DA6–DA7 не требуют предварительно включать но
 - [ ] DA1.2. **Частично: [J011](2026-10-22-document-architecture-progress.md#j011), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022), [J023](2026-10-22-document-architecture-progress.md#j023); reader-first: [J019](2026-10-22-document-architecture-progress.md#j019), [J021](2026-10-22-document-architecture-progress.md#j021).** Перед каждым reader API effect сохранить в существующей очереди точные HTML,
   channel, reply/edit target, flags, physical-part identity, membership и revision target.
   Freeze обязателен и при attention off/shadow: legacy digest/sittings не остаются live-render путями.
-- [ ] DA1.3. Перевести refresh/retag/rollover и обычные редактирования карточки на сохранённую
+- [ ] DA1.3. **Reader-first: [J024](2026-10-22-document-architecture-progress.md#j024).** Перевести refresh/retag/rollover и обычные редактирования карточки на сохранённую
   операцию. Проверить reuse существующих `MESSAGE_PART`/edit target и `_edit_parts`;
   если они не выражают нужный контракт, обосновать минимальный отдельный kind в ADR.
   Не менять identity исходной карточки, которая остаётся `sent` во время исправления.

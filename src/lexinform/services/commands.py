@@ -1080,6 +1080,17 @@ class CommandService:
                     delivery=publication,
                     note=f"only unknown deliveries can be resolved; status: {publication.status}",
                 )
+            if (
+                action == "confirm"
+                and publication.delivery is not None
+                and publication.delivery.edit_message_id is not None
+                and command.delivery_message_id != publication.delivery.edit_message_id
+            ):
+                return CommandOutcome(
+                    status=OutcomeStatus.ERROR,
+                    delivery=publication,
+                    note=f"confirm the saved edit target {publication.delivery.edit_message_id}",
+                )
             if action == "retry":
                 if publication.delivery is None or not publication.delivery.replayable(
                     publication.kind

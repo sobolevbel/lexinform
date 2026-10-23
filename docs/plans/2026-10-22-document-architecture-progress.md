@@ -814,7 +814,7 @@ Push/CI/deploy/live не выполнялись. Следующая вертик
 
 Дата: 23 октября 2026. Статус: вертикаль принята локально.
 База: `5199e89`; предыдущая архитектурная стадия: `a967a9c`.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `60a4278`.
 
 ACT_PUBLISHED, CONSULTATION_RESULTS, IN_FORCE, CONSULTATION_DEADLINE, DECISION_DEADLINE
 и HEARING_DEADLINE проходят frozen root/parts и общий pre/post checkpoint во всех modes.
@@ -857,3 +857,40 @@ Ruff check/format, strict docs-check и `git diff --check` успешны. Runti
 Parser/selection/normalisation этот выпуск не меняет; полный corpus replay не повторялся.
 Два соседних исправления в базе `5199e89` сохранены, их изменения не приписываются этой стадии.
 Push/CI/deploy/live не выполнялись. Следующий выпуск — reader card revision и атомарный digest.
+
+<a id="j024"></a>
+### J024. DA1.3: reader card revision и атомарный desired digest
+
+Дата: 23 октября 2026. База: `60a4278`.
+Implementation commit: подготовлен к фиксации.
+
+MESSAGE_PART edit root получает logical owner из существующего revision_of либо legacy
+card/ref. Owner должен быть SENT NEW_BILL того же bill/term/channel с тем же physical edit
+target. Root/children такой операции используют общую pre/post checkpoint boundary.
+Некорректный explicit owner блокирует API до pending, не оставляя ложный начатый intent.
+Операторский confirm любого сохранённого edit обязан назвать именно edit_message_id.
+
+Только новый explicit revision_of формат применяет desired digest из operation root
+rendered_sha256 к логической карточке в одной транзакции с последним receipt/confirm.
+Original card остаётся SENT, её identity/message/payload не меняются. Legacy card/ref reader
+сохраняет прежнюю projection/report семантику: его digest обновляет прежний CardRefresher,
+чтобы reader-first стадия не меняла cards_refreshed и не активировала новый producer.
+Без saved desired digest, при failed/unknown/dismissed или незавершённых children projection
+не меняется. Retention может удалить original payload, сохраняя unresolved operation/target.
+
+32 seeded production World cases проверяют modes3 × single/multipart × explicit/legacy,
+remote pending/HTML/targets/receipt parents, root/final pre/post failures, no-auto unknown,
+audited retry/confirm/dismiss/mismatched target, retention→final confirm без API, missing digest,
+пять invalid owner cases и наследуемый physical parent при отдельном logical owner.
+Целевой набор с existing cards/commands/amendments: 133 passed.
+
+Новый producer пока не включён; новых kinds, полей, schema, polling/backend/raw-архива нет.
+Накладные persisted данные эта reader-first стадия не создаёт. Следующая стадия — single-card
+producer, затем общий retag/rollover путь и отдельная приёмка multipart growth/projection.
+
+Полный gate: 3204 passed + один прежний strict xfail DA5,
+`/private/tmp/lexinform-card-revision-reader-full-20261023.xml`; mypy — 325 файлов,
+Ruff check/format, strict docs-check и `git diff --check` успешны. Local HTTP CLI — 21 passed.
+Parser/selection/normalisation не меняются; полный corpus replay не повторялся.
+Соседние незакоммиченные изменения document reviews/retention в этот commit не включены.
+Push/CI/deploy/live не выполнялись.

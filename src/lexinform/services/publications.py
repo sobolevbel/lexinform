@@ -84,6 +84,38 @@ def _fail_deliveries(
             )
 
 
+def card_revision_owner(repo: BillRepository, publication: Publication) -> Publication | None:
+    plan = publication.delivery
+    if (
+        publication.kind is not PublicationKind.MESSAGE_PART
+        or plan is None
+        or plan.continuation_root is not None
+        or plan.edit_message_id is None
+    ):
+        return None
+    owner_id = plan.revision_of
+    if owner_id is None:
+        pieces = (publication.ref or "").split("/")
+        if len(pieces) != 4 or pieces[0] != "card" or pieces[-1] != "1":
+            return None
+        try:
+            owner_id = int(pieces[1])
+        except ValueError:
+            return None
+    owner = repo.publication_by_id(owner_id)
+    if (
+        owner is None
+        or owner.kind is not PublicationKind.NEW_BILL
+        or owner.status is not PublicationStatus.SENT
+        or owner.channel_id != publication.channel_id
+        or owner.term != publication.term
+        or owner.number != publication.number
+        or owner.message_id != plan.edit_message_id
+    ):
+        return None
+    return owner
+
+
 def complete_delivery(
     repo: BillRepository, publication: Publication, *, message_id: int, sent_at: datetime
 ) -> None:
@@ -97,6 +129,15 @@ def complete_delivery(
         for part in (repo.publication_by_id(identity),)
     ):
         return
+    owner = card_revision_owner(repo, publication)
+    if (
+        owner is not None
+        and plan.revision_of is not None
+        and publication.status is PublicationStatus.SENT
+        and publication.rendered_sha256
+    ):
+        assert owner.id is not None, "a revision targets a stored sent card"
+        repo.set_card_digest(owner.id, publication.rendered_sha256)
     repo.release_planned_changes(
         plan.held_change_ids, publication.channel_id, message_id=message_id, sent_at=sent_at
     )
