@@ -479,7 +479,7 @@ Exit 2 (`not_run`) ожидаем из-за отсутствующего кэш�
 ### J015. DA1.2/DA1.4–DA1.6: remote boundary новых карточек и их частей
 
 Дата: 23 октября 2026. Статус: вертикаль новых/joint карточек принята локально.
-Исходная версия: `4373141`. Implementation commit: подготовлен к фиксации.
+Исходная версия: `4373141`. Implementation commit: `d5839f4`.
 
 Container подключает shared checkpoint к PublishingService и Poster. Новая/joint карточка,
 каждое её продолжение и повтор сохранённой части проходят pending checkpoint → API → outcome
