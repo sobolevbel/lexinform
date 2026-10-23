@@ -21,7 +21,7 @@ from lexinform.models import (
     ReviewWork,
     validate_review,
 )
-from lexinform.services.analysis import Waiting
+from lexinform.services.analysis import SECONDARY_BATCH_SUBMISSIONS, Waiting
 from lexinform.services.tracking_result import TrackingResult
 from tests.harness import World, act
 
@@ -753,3 +753,44 @@ def test_conflicting_general_date_is_not_a_confirmed_special_date() -> None:
         unresolved=(),
     )
     assert validate_review(output, ctx).effective_rules[0].date is None
+
+
+def test_a_review_failed_at_every_submission_keeps_no_documents_and_is_not_retried() -> None:
+    w = World(
+        batch=True,
+        batch_kinds=frozenset({"consultation_review"}),
+        consultation_reviews_enabled=True,
+    )
+    w.add_bill("3039", "Projekt ustawy o cudzoziemcach")
+    w.run()
+    ctx = context()
+    work = ReviewWork(
+        memo_key=ctx.memo_key(10),
+        purpose="consultation_review",
+        context=ctx,
+        source_key="review-input:3039",
+        since=w.clock.now(),
+        baseline_day=dt.date(2026, 9, 10),
+    )
+    w.repo.save_review_work(10, "3039", (work,))
+    w.batch.secondary_script[("3039", "consultation_review")] = RuntimeError(
+        "response is incomplete"
+    )
+    reviews = w.container.document_reviews(dry_run=False)
+    for _ in range(SECONDARY_BATCH_SUBMISSIONS):
+        w.analysis.start_run()
+        reviews.advance(TrackingResult(), publish=True)
+        w.analysis.submit_queued_batches()
+        w.batch.resolve()
+        w.analysis.collect_batches()
+    submitted = len(w.batch.submitted)
+
+    result = TrackingResult()
+    w.analysis.start_run()
+    reviews.advance(result, publish=True)
+    reviews.advance(result, publish=True)
+
+    (left,) = w.bill("3039").review_work
+    assert left.abandoned and left.source_key == work.source_key
+    assert submitted == SECONDARY_BATCH_SUBMISSIONS == len(w.batch.submitted)
+    assert not result.partial_errors

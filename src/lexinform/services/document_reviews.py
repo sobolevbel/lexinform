@@ -1,6 +1,6 @@
 import hashlib
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from lexinform.commission_reviews import (
@@ -102,7 +102,7 @@ class DocumentReviews:
             if not any(source.role in COMMISSION_ROLES for source in sources):
                 return
             pending = next((work for work in fresh.review_work if work.purpose == purpose), None)
-            if pending is not None:
+            if pending is not None and not pending.abandoned:
                 if pending.context is not None:
                     return
                 original = Bill.model_validate_json(pending.input_bill_json)
@@ -168,6 +168,14 @@ class DocumentReviews:
     def advance(self, result: TrackingResult, *, publish: bool) -> None:
         for bill in self._repo.list_review_work():
             for work in bill.review_work:
+                if work.abandoned:
+                    continue
+                if work.context is not None and self._analysis.review_exhausted(
+                    bill.term, work.context
+                ):
+                    log.info("document review %s for %s abandoned", work.purpose, bill.number)
+                    self._replace_work(bill, work, abandoned(work, self._clock.now()))
+                    continue
                 if not self._analysis.review_enabled(work.purpose):
                     continue
                 try:
@@ -370,3 +378,15 @@ class DocumentReviews:
             elif new is not None:
                 remaining.append(new)
         self._repo.save_review_work(bill.term, bill.number, tuple(remaining))
+
+
+def abandoned(work: ReviewWork, now: datetime) -> ReviewWork:
+    """The review's batch failed at every allowed submission: its documents are not kept."""
+    return work.model_copy(
+        update={
+            "context": None,
+            "input_bill_json": "",
+            "checked_at": now,
+            "limitation": "Review failed at every batch submission; not retried.",
+        }
+    )

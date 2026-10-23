@@ -2804,10 +2804,12 @@ class SqliteBillRepository:
             items = self._conn.execute(
                 """
                 UPDATE llm_batch_items
-                SET meta_json = json_remove(meta_json, '$.text', '$.located'),
+                SET meta_json = json_remove(
+                    meta_json, '$.text', '$.located', '$.review_context',
+                    '$.explanation.text', '$.explanation.located'),
                   result_json = json_remove(result_json, '$.answer', '$.analysis')
-                WHERE consumed_at < ? AND accounted_at < ?
-                  AND batch_id IN (SELECT batch_id FROM llm_batches WHERE forgotten_at < ?)
+                WHERE consumed_at IS NOT NULL AND accounted_at IS NOT NULL
+                  AND batch_id IN (SELECT batch_id FROM llm_batches WHERE forgotten_at IS NOT NULL)
                   AND EXISTS (SELECT 1 FROM bills b
                     WHERE b.term = llm_batch_items.term AND b.number = llm_batch_items.number
                       AND b.status IN ('analyzed', 'linked', 'skipped_prefilter',
@@ -2815,10 +2817,11 @@ class SqliteBillRepository:
                       AND b.awaiting_batch_since IS NULL AND b.ready_analysis_json IS NULL)
                   AND (length(json_extract(meta_json, '$.text')) > 0
                     OR json_type(meta_json, '$.located') = 'object'
+                    OR json_type(meta_json, '$.review_context') = 'object'
+                    OR length(json_extract(meta_json, '$.explanation.text')) > 0
                     OR json_type(result_json, '$.answer') = 'object'
                     OR json_type(result_json, '$.analysis') = 'object')
-                """,
-                (_iso(before), _iso(before), _iso(before)),
+                """
             ).rowcount
         return {"delivery_payloads": publications, "analysis_memos": memos, "batch_payloads": items}
 

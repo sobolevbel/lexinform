@@ -174,6 +174,11 @@ class ReviewWork(BaseModel):
     comparison_document: ReviewDocument | None = None
     source_fingerprint: str = ""
 
+    @property
+    def abandoned(self) -> bool:
+        """No context to send nor snapshot to build one from: kept so it is not asked again."""
+        return self.context is None and not self.input_bill_json
+
 
 def _normalized(text: str) -> str:
     return " ".join(text.split()).casefold()

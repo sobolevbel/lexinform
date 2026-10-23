@@ -1635,6 +1635,18 @@ class AnalysisService:
             forum=source.forum,
         )
 
+    def review_exhausted(self, term: int, context: ReviewContext) -> bool:
+        """Whether the review's batch failed as often as it may be submitted."""
+        job = self._repo.batch_job(self._review_request_key(context.memo_key(term)))
+        return (
+            job is not None
+            and job.state == "failed"
+            and job.submissions >= SECONDARY_BATCH_SUBMISSIONS
+        )
+
+    def _review_request_key(self, key: str) -> str:
+        return "overflow:" + key if key in self._context_rejections else key
+
     def request_document_review(
         self, bill: Bill, context: ReviewContext
     ) -> DocumentReviewRecord | Waiting:
@@ -1661,13 +1673,9 @@ class AnalysisService:
             return _reused(record)
         model = self._options.batch_models.get(context.purpose, "")
         provider = provider_of(model)
-        request_key = key
-        if key in self._context_rejections:
-            model, provider, request_key = (
-                self._options.overflow_model,
-                self._options.overflow_provider,
-                "overflow:" + key,
-            )
+        request_key = self._review_request_key(key)
+        if request_key != key:
+            model, provider = self._options.overflow_model, self._options.overflow_provider
         job = self._repo.batch_job(request_key)
         if job is not None and job.state != "failed":
             return Waiting(job.since)
