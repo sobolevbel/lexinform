@@ -317,7 +317,7 @@ def test_a_withdrawal_waits_for_a_still_unsent_card_instead_of_replying_to_nothi
     withdrawal is not lost, only delayed to the run whose card finally sends."""
     w = World()
     w.gateway.submissions.append(submission())
-    monkeypatch.setattr(w.publisher, "publish_new_bill", _fail_new_bill)
+    monkeypatch.setattr(w.publisher, "publish_prepared", _fail_new_bill)
     w.run()
     card = w.publication(RPW)
     assert card is not None and card.status is PublicationStatus.FAILED

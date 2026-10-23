@@ -3,7 +3,7 @@ from dataclasses import replace
 
 import pytest
 
-from lexinform.models import Bill, BillStatus, PrintInfo, PublicationKind, PublicationStatus
+from lexinform.models import BillStatus, Publication, PublicationKind, PublicationStatus
 from lexinform.ports import PublishResult
 from tests.fakes import make_analysis
 from tests.harness import COMMITTEE_STAGES, TERM, World
@@ -157,15 +157,15 @@ def test_interrupted_card_is_unknown_after_restore_and_never_retried(
     world.add_bill("3039", TITLE)
     world.run()
     world.batch.resolve()
-    send = world.publisher.publish_new_bill
+    send = world.publisher.publish_prepared
 
-    def interrupted(bill: Bill, print_info: PrintInfo | None) -> PublishResult:
+    def interrupted(publication: Publication) -> PublishResult:
         if accepted:
-            send(bill, print_info)
+            send(publication)
         raise KeyboardInterrupt("runner stopped before recording the delivery result")
 
     with monkeypatch.context() as patch:
-        patch.setattr(world.publisher, "publish_new_bill", interrupted)
+        patch.setattr(world.publisher, "publish_prepared", interrupted)
         with pytest.raises(KeyboardInterrupt):
             world.run()
     pending = world.publication("3039")

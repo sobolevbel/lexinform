@@ -361,7 +361,7 @@ DA6–DA7 не требуют предварительно включать но
   конфигурации останавливает запуск sender, а не включает noop. Настройки и `.env.example`
   изменяются вместе; dry-run не делает push. Сохранить fail-closed batch protocol:
   intent `submitting` должен быть удалённо сохранён до submit провайдеру.
-- [ ] DA1.2. **В работе: [J011](2026-10-22-document-architecture-progress.md#j011).** Перед каждым reader API effect сохранить в существующей очереди точные HTML,
+- [ ] DA1.2. **Частично: [J011](2026-10-22-document-architecture-progress.md#j011).** Перед каждым reader API effect сохранить в существующей очереди точные HTML,
   channel, reply/edit target, flags, physical-part identity, membership и revision target.
   Freeze обязателен и при attention off/shadow: legacy digest/sittings не остаются live-render путями.
 - [ ] DA1.3. Перевести refresh/retag/rollover и обычные редактирования карточки на сохранённую
@@ -386,7 +386,7 @@ DA6–DA7 не требуют предварительно включать но
 - [ ] DA1.8. **Частично: [J007](2026-10-22-document-architecture-progress.md#j007).** Финальный workflow dump пользуется тем же контрактом, всегда включает polling manifest.
   Lock охватывает scheduled/commands/collect/drain и maintenance. Ручная запись не разрешает
   параллельный writer; процедура maintenance явно получает эксклюзивное владение.
-- [ ] DA1.9. Измерить dump/push latency и объём на копии state. Без измерений не объединять
+- [ ] DA1.9. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012).** Измерить dump/push latency и объём на копии state. Без измерений не объединять
   несколько физически начатых отправок в один checkpoint ради производительности.
   При неприемлемых затратах сравнить постоянный runtime; второе delivery-хранилище не вводить по умолчанию.
 - [ ] DA1.10. **Частично: [J007](2026-10-22-document-architecture-progress.md#j007).** Связать commands/inbox с подтверждённым state: сохранять started до исполнения,
@@ -438,7 +438,7 @@ DA2.1 и описание текущего профиля обязательны
 и retention могут выпускаться самостоятельно на текущей SQLite. При отложенном расширении
 задачи blob store отметить неприменимыми с основанием. Это допустимое завершение DA2.
 
-- [ ] DA2.1. Измерить объёмы реально потребляемых raw файлов, повторные байты, дневной прирост,
+- [ ] DA2.1. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012).** Измерить объёмы реально потребляемых raw файлов, повторные байты, дневной прирост,
   размеры dump и времени backup/restore. Страты: Sejm, RCL, Senate, ELI, ZIP, Word, сканы.
   Читать существующий корпус; отсутствие raw bytes считать исключением. Сравнить варианты
   §1.2, сроки, сжатие и резервные копии; указать пределы экстраполяции из корпуса на живой поток.

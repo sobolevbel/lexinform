@@ -36,7 +36,6 @@ from lexinform.services.message_parts import freeze_parts, send_continuations
 from lexinform.services.predecessors import rcl_predecessor
 from lexinform.services.publications import inherit_card, send_publication
 from lexinform.services.sources import fetch_print
-from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
 log = logging.getLogger(__name__)
 
@@ -527,24 +526,10 @@ class PublishingService:
             and not pub.delivery.rendered_text
             and not pub.attempts
         ):
-            text = self._publisher.render_delivery(pub)
-            if utf16_length(text) > MESSAGE_LIMIT:
-                pub = freeze_parts(self._repo, self._clock, self._publisher, pub, text)
-        if (
-            pub is not None
-            and pub.delivery is not None
-            and (
-                pub.delivery.policy_version == "attention-v1"
-                or pub.delivery.continuation_ids
-                or pub.delivery.rendered_text
+            pub = freeze_parts(
+                self._repo, self._clock, self._publisher, pub, self._publisher.render_delivery(pub)
             )
-        ):
-            if not pub.delivery.rendered_text:
-                plan = pub.delivery.model_copy(
-                    update={"rendered_text": self._publisher.render_delivery(pub)}
-                )
-                assert self._repo.replace_unattempted_delivery(pub_id, plan)
-                pub = pub.model_copy(update={"delivery": plan})
+        if pub is not None and pub.delivery is not None and pub.delivery.rendered_text:
             send = partial(self._publisher.publish_prepared, pub)
         self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
         message_id = send_publication(self._repo, self._clock, pub_id, send)

@@ -334,8 +334,8 @@ Rollback по формату: `560a397`; старый код игнорируе�
 <a id="j011"></a>
 ### J011. DA1.2: frozen HTML новых и joint карточек
 
-Дата: 23 октября 2026. Статус: совместимый reader принят локально; producer ещё не включён.
-Исходная версия reader: `d90797a`. Reader commit: подготовлен к фиксации.
+Дата: 23 октября 2026. Статус: reader и producer приняты локально для новых/joint карточек.
+Исходная версия reader: `d90797a`. Reader commit: `c4fb961`.
 
 Сначала выпущен reader, который использует уже сохранённый `rendered_text` для NEW_BILL/
 JOINT_BILL во всех attention modes, включая `legacy` policy. Он не меняет producer off/shadow.
@@ -348,3 +348,45 @@ Remote boundary reader sends, остальные эффекты и заверш�
 Schema/форматы/defaults не меняются; rollback reader по имеющимся production formats —
 `d90797a`. Push/CI/deploy/live не выполнялись. Полный offline pytest с одним strict xfail DA5,
 mypy (309 файлов) и Ruff успешны.
+
+Следующий producer сохраняет HTML всех новых/joint карточек в off/shadow/on до отправки,
+использует saved HTML при retry и готовит все physical parts до первого API call.
+Attempted legacy rows без HTML остаются на прежнем callback; pending/unknown не переписываются.
+19 новых сценариев проверяют parity, state/formatter/time drift, multipart и legacy fallback.
+Изменения render-hook тестов следуют фактическому публичному `publish_prepared`.
+Producer commit: подготовлен к фиксации; поддерживаемый rollback — `c4fb961`, который уже читает
+saved HTML всех modes. Сама схема v48 и JSON fields не меняются.
+
+Для одной synthetic World card: HTML 1513 bytes; заполнение пустого поля добавляет 1545 bytes
+к SQL literal в off/shadow. Режим on уже сохранял этот HTML; это не новый прирост для него.
+Artifact: `/private/tmp/lexinform-da0-20261023/card-payload-growth.json`.
+Это не оценка дневного production роста. Действующие retention/pending/unknown защиты сохранены;
+нового архива raw файлов нет. Remote boundary перед reader API пока не добавлена.
+Полный offline pytest с одним strict xfail DA5, mypy (310 файлов), Ruff check/format,
+CI corpus slice и localhost CLI (21 passed) успешны.
+
+<a id="j012"></a>
+### J012. DA1.9/DA2.1: измерение копии state
+
+Дата: 23 октября 2026. Статус: локальный benchmark принят; DA1.9/DA2.1 остаются частичными.
+Implementation commit: подготовлен к фиксации.
+
+`tools/benchmark_state_checkpoint.py` принимает существующий local SQL, новый JSON output и
+1–20 iterations. Всегда создаёт собственный temporary bare remote/worktree, запрещает
+сетевые Git protocols и глобальные Git config/hooks. Исходный dump не меняется, временные
+SQL/Git данные удаляются. Пять тестов проверяют запреты overwrite/input writes, лимит итераций
+и реальный roundtrip с точным числом changed/unchanged commits.
+
+Копия cached state J005, input SHA `a550053b3617167c55ea11b877b516fc06cc42f4362b6dcb6112aae3912d9090`:
+SQL 36 779 974 bytes, gzip 8 352 242; schema 48. Restore/dump 0.432/0.215 s.
+Initial checkpoint 2.335 s, unchanged 0.369 s, шесть changed samples 1.653–2.013 s.
+Три synthetic report rows увеличили SQL на 5178 bytes, gzip на 180 bytes.
+Восемь вызовов дали семь commits; SQLite после них — 37 740 544 bytes.
+Git objects до GC: 75 907 780 bytes в каждом repo; после GC local/remote:
+8 413 888 / 8 414 370 bytes. GC занял 4.518 s.
+
+Artifact: `/private/tmp/lexinform-checkpoint-benchmark-20261023.json`.
+Результат содержит code/source hashes и dirty flag; это synthetic local filesystem transport.
+Не измерены GitHub latency/repacking, production daily growth, raw-объёмы и storage budget.
+Поэтому benchmark не разрешает batching физически начатых reader effects без checkpoint,
+не выбирает S3 и не завершает DA2.1. Production/remote state не менялись.
