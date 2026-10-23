@@ -1636,8 +1636,20 @@ class AnalysisService:
         )
 
     def review_exhausted(self, term: int, context: ReviewContext) -> bool:
-        """Whether the review's batch failed as often as it may be submitted."""
-        job = self._repo.batch_job(self._review_request_key(context.memo_key(term)))
+        """Exhausted submissions stop only reviews without a reusable validated result."""
+        key = context.memo_key(term)
+        if key in self._memo:
+            return False
+        bill = self._repo.get(term, context.number)
+        if bill is not None:
+            retained = {
+                "consultation_review": bill.consultation_review,
+                "commission_review": bill.commission_review,
+                "act_application": bill.act_application_review,
+            }[context.purpose]
+            if retained is not None and retained.context.memo_key(term) == key:
+                return False
+        job = self._repo.batch_job(self._review_request_key(key))
         return (
             job is not None
             and job.state == "failed"

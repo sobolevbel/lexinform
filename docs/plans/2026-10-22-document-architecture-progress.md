@@ -974,7 +974,7 @@ Parser/selection/normalisation не меняются, полный corpus replay
 ### J027. DA1.2: новый payload автоматической amendments revision
 
 Дата: 24 октября 2026. База: `cdbd695`. Статус: принято локально.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `9df9849`.
 
 Auto amendments строит свежий DeliveryPlan из historical bill/change/participation/attention/
 policy/date/reply/edit/revision_of/with_act. Старый rendered_text и physical membership/effects
@@ -997,3 +997,39 @@ Parser/selection/normalisation не меняются; полный corpus replay
 
 Push задержан независимой pre-push проверкой: подтверждено неверное abandoned для успешного
 review после повторной submission в соседнем `dcffe40`. Следующая стадия устраняет его до push.
+
+<a id="j028"></a>
+### J028. Pre-push correction: успех review после повторной submission
+
+Дата: 24 октября 2026. База: `9df9849`. Статус: принято локально.
+Implementation commit: подготовлен к фиксации.
+
+Независимая проверка пакета выявила в `dcffe40` неверный exhaustion: batch_job.state=failed
+означает и consumed successful item. После failed → success при submissions=2 проверка до
+memo lookup превращала ReviewWork в abandoned, не применяя уже сохранённый успешный результат.
+Подтверждено на fakes; production-инцидент этим не установлен. Reproducer artifact:
+`/private/tmp/lexinform-prepush-review-20261024/review-success-after-retry.json`,
+SHA `21cdc4176215cc4d290abb6535bca6cf4eddc3fd8cdbed9b465366f7fd194c15`.
+
+Граница исправления: recoverable successful memo или retained same-context review не означает
+exhaustion; обычный request_document_review переиспользует результат и применяет его.
+
+Семь новых production World cases проверяют first failure → second success с accounted/
+unaccounted и fresh restore, сохранение memo при retention/cleanup, применение retained
+same-context review без memo и прежний abandon только двух действительно failed submissions.
+Primary context refusal сохраняет rejection metadata после cleanup/restart; queued overflow
+остаётся тем же intent, а его successful second result применяется из memo. Дополнительной
+ошибки удаления context_exceeded не обнаружено, код её обработки не меняется.
+
+Целевой набор: 148 passed. Mutation без guard: шесть ожидаемых success-recovery failures;
+genuine both-failed control проходит. Final source и новый regression byte-identical проверенному
+patch `1a732c71d2c7d43f71de879cc578a788ce6f0ea039d0113767bd8ac1181d8756`.
+Пакетный pre-push audit других новых blockers не выявил; full gate выполняется отдельно.
+
+Полный gate: 3312 passed + один прежний strict xfail DA5,
+`/private/tmp/lexinform-review-retry-full-20261024.xml`; mypy — 329 файлов,
+Ruff check/format, strict docs-check и `git diff --check` успешны. CLI/wiring не меняются.
+Schema/форматы/retention/backend прежние; новых persisted данных и model calls нет. Сохранение
+уже полученного результата предшествует проверке счётчика submissions. Corpus replay не нужен:
+extraction/selection/normalisation не меняются. Defect [B118](../BUGS.md#b118) исправлен локально.
+Пакет готов к разрешённому push; remote SHA/CI/deploy фиксируются отдельно после проверки.

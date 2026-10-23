@@ -3,7 +3,7 @@
 ## Как пользоваться
 
 Текущие баги сгруппированы по статусу, внутри группы — по влиянию на читателя.
-Номера B1…B115 постоянные:
+Номера B1…B118 постоянные:
 старые обозначения `#4` и `B4` означают одну запись.
 `open` — воспроизведённый дефект; `candidate` — ещё не доказанная гипотеза.
 `deferred` — подтверждённый дефект, отложенный по решению владельца;
@@ -23,6 +23,19 @@ P3 не означает, что расходы можно игнорирова�
 [повторяющиеся ошибки](development/failure-patterns.md) — памятка для аудита.
 
 ## Open
+
+### B118
+
+**P1 · fixed locally · 24.10.2026.** Успешный review после повторной batch submission считался исчерпанным.
+
+Воспроизведено на production-profile World с fakes: первая submission failed, вторая success,
+validated memo сохранён. `batch_job.state=failed` означает и consumed successful item;
+новая проверка `review_exhausted` из `dcffe40` до memo lookup превращала work в abandoned,
+не применяя успешный результат. Production-инцидент этим не установлен.
+Теперь recoverable memo либо retained review с тем же context key проверяется до exhaustion.
+Регрессия: `test_successful_second_submission_is_applied_from_memo_before_exhaustion`;
+accounting, cleanup, restore, overflow и genuine two-failure control покрыты тем же модулем.
+Исправление и приёмка: [J028](plans/2026-10-22-document-architecture-progress.md#j028).
 
 ### B117
 
