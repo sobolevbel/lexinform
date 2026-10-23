@@ -25,7 +25,13 @@ from lexinform.document_versions import comparable_versions, normative_annex_key
 from lexinform.models.documents import DocumentPart, DocumentSelection, ExtractedDocument
 from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
 from lexinform.ports import TextExtractor
-from lexinform.sections import APPENDIX_KINDS, PAGE_BREAK, Kind, document_kind
+from lexinform.sections import (
+    APPENDIX_KINDS,
+    PAGE_BREAK,
+    Kind,
+    document_kind,
+    reads_through_justification,
+)
 
 log = logging.getLogger(__name__)
 
@@ -474,7 +480,9 @@ class DocumentTextExtractor:
             for index, page in enumerate(text.split(PAGE_BREAK), 1)
             if pages and not page.strip()
         ) + tuple(re.findall(r"\[nieodczytany przypis [^\]]+\]", text))
-        if pages and len(text.split(PAGE_BREAK)) != pages:
+        chunks = len(text.split(PAGE_BREAK))
+        # The PDF extractor strips textless edge pages: past a whole act and its reasons, annexes.
+        if pages and chunks != pages and not (chunks < pages and reads_through_justification(text)):
             losses += ("text page coverage differs from the PDF page count",)
         parts.append(
             DocumentPart(

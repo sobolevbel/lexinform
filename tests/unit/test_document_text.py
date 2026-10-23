@@ -555,3 +555,44 @@ def test_a_word_2003_note_is_read_at_its_reference_like_any_word_note() -> None:
         "o zmianie ustaw [przypis 1: )\tNiniejszą ustawą zmienia się ustawy.] )\n"
         "Art. 1. [przypis 2: )\tNiniejszą ustawą zmienia się ustawy.] "
     )
+
+
+_BODY = PAGE_BREAK.join(
+    (
+        "Projekt\nUSTAWA\nArt. 1. W ustawie o cudzoziemcach wprowadza się zmiany.",
+        "Art. 2. Ustawa wchodzi w życie po upływie 30 dni od dnia ogłoszenia.",
+        "UZASADNIENIE\nProjekt zmienia zasady pobytu.",
+    )
+)
+_COVERAGE = "text page coverage differs from the PDF page count"
+
+
+def test_textless_edge_pages_around_a_whole_bill_are_not_a_loss() -> None:
+    """RPW-18566-2026: a scanned letter, seven text pages and thirteen pages of signatures."""
+    pdf = FakeTextExtractor(_BODY, page_count=8)
+    extractor = DocumentTextExtractor(pdf, DocxTextExtractor(), DocTextExtractor())
+
+    part = extractor.extract_document(b"%PDF-1.7").selection.parts[0]
+
+    assert part.losses == ()
+
+
+def test_textless_pages_beside_a_body_without_commencement_are_a_loss() -> None:
+    cut = _BODY.split(PAGE_BREAK, 1)[0]
+    pdf = FakeTextExtractor(cut, page_count=8)
+    extractor = DocumentTextExtractor(pdf, DocxTextExtractor(), DocTextExtractor())
+
+    part = extractor.extract_document(b"%PDF-1.7").selection.parts[0]
+
+    assert part.losses == (_COVERAGE,)
+
+
+def test_textless_pages_after_an_act_without_its_reasons_are_a_loss() -> None:
+    """Druk 1315: the act's text ends at commencement and its uzasadnienie is a scan."""
+    act = _BODY.rsplit(PAGE_BREAK, 1)[0]
+    pdf = FakeTextExtractor(act, page_count=40)
+    extractor = DocumentTextExtractor(pdf, DocxTextExtractor(), DocTextExtractor())
+
+    part = extractor.extract_document(b"%PDF-1.7").selection.parts[0]
+
+    assert part.losses == (_COVERAGE,)

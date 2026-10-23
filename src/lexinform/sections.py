@@ -494,6 +494,7 @@ def trim_print(text: str) -> TrimmedText:
 
 
 _FIRST_ARTICLE_RE = re.compile(r"\bArt\.\s*1\.(?!\d)")
+_COMMENCEMENT_RE = re.compile(r"wchodzi\s+w\s+życie", re.IGNORECASE)
 _TRIM_MARKER_RE = re.compile(r"\n?\[pominięto: [^\]]*\]\n?")
 
 
@@ -511,6 +512,16 @@ def law_body(text: str, *, preserve_numbers: bool = False) -> str | None:
     rest = joined[start.start() :]
     ends = [m.start() for rx in (_JUSTIFICATION_RE, _OSR_RE, _DSR_RE) if (m := rx.search(rest))]
     return rest[: min(ends)] if ends else rest
+
+
+def reads_through_justification(text: str) -> bool:
+    """The act from its first article through commencement, its uzasadnienie or OSR after it."""
+    start = _FIRST_ARTICLE_RE.search(text)
+    if start is None:
+        return False
+    rest = text[start.start() :]
+    ends = [m.start() for rx in (_JUSTIFICATION_RE, _OSR_RE, _DSR_RE) if (m := rx.search(rest))]
+    return bool(ends) and _COMMENCEMENT_RE.search(rest[: min(ends)]) is not None
 
 
 def _drop(dropped: list[DroppedSection], kept: list[str], name: str, chars: int) -> None:
