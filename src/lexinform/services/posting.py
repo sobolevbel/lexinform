@@ -42,7 +42,7 @@ from lexinform.models import (
     update_event,
     window_closes_within,
 )
-from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway
+from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
 from lexinform.services.message_parts import continuation_ready, freeze_parts, send_continuations
 from lexinform.services.publications import send_publication, send_publications
 from lexinform.services.sources import fetch_print
@@ -120,6 +120,7 @@ class Poster:
         delivery_attempts: set[int] | None = None,
         consultation_reviews_enabled: bool = False,
         commission_reviews_enabled: bool = False,
+        checkpoint: StateCheckpoint | None = None,
     ) -> None:
         self._repo = repo
         self._publisher = publisher
@@ -139,6 +140,7 @@ class Poster:
         self._attempted = delivery_attempts if delivery_attempts is not None else set[int]()
         self._consultation_reviews_enabled = consultation_reviews_enabled
         self._commission_reviews_enabled = commission_reviews_enabled
+        self._checkpoint = checkpoint
         self._sittings: dict[int, Publication] = {}
         self._updates: dict[int, Publication] = {}
 
@@ -1518,17 +1520,24 @@ class Poster:
         card = self.card(bill)
         reply_to = card.message_id if card else None
         self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
+        checkpoint = self._card_checkpoint(pub)
         sent = send_publication(
             self._repo,
             self._clock,
             pub_id,
             lambda: send(reply_to),
+            checkpoint=checkpoint,
         )
 
         self._count_attention((pub_id,), sent)
         if sent is not None and pub is not None and pub.delivery is not None:
             parts = send_continuations(
-                self._repo, self._clock, self._publisher, pub, self._attempted
+                self._repo,
+                self._clock,
+                self._publisher,
+                pub,
+                self._attempted,
+                checkpoint=checkpoint,
             )
             self._part_errors.extend(parts.errors)
             count = parts.sent + (
@@ -1538,6 +1547,18 @@ class Poster:
                 self._attention_metrics.get("continuation_messages", 0) + count
             )
         return sent
+
+    def _card_checkpoint(self, pub: Publication | None) -> StateCheckpoint | None:
+        if pub is None:
+            return None
+        root = (
+            self._repo.publication_by_id(pub.delivery.continuation_root)
+            if pub.delivery is not None and pub.delivery.continuation_root is not None
+            else pub
+        )
+        if root is not None and root.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
+            return self._checkpoint
+        return None
 
     def delivery_errors(self) -> list[str]:
         return list(self._part_errors)

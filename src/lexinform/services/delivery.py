@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.logging_setup import MemoryLogHandler
 from lexinform.models import Bill, PublicationKind, PublicationStatus, RunMode, RunReport
 from lexinform.ports import BillRepository, Clock, RunNotifier
@@ -147,6 +147,9 @@ class DeliveryService:
             if result.fatal_error is None:
                 self._poster.flush_sittings(result)
                 self._poster.flush_updates(result)
+        except StateCheckpointError as exc:
+            report.errors.append(f"state persistence failed: {exc}")
+            raise
         except ServiceUnavailableError as exc:
             result.abort(exc, failed=True)
         except Exception as exc:

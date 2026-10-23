@@ -173,9 +173,17 @@ Workflow задаёт `LEXINFORM_STATE_CHECKPOINT_REQUIRED=true`; отсутст
 state работает noop. Dry-run не делает push; `--no-publish` по-прежнему выполняет batch-анализ
 и сохраняет его обязательный pre-submit checkpoint. Общий writer собирается один раз в Container.
 
-Эта граница пока охватывает batch checkpoint и финальное сохранение workflow.
-Обычные reader sends ещё не получают remote checkpoint перед каждым API-вызовом;
-потеря runner остаётся отдельной задачей [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
+Shared checkpoint также охватывает NEW_BILL/JOINT_BILL и их MESSAGE_PART: frozen pending
+сохраняется до API, receipt и связанные effects — после local atomic и до следующей отправки.
+Продолжение сохраняет реальный reply target из receipt родителя до своего API; восстановленные
+failed/queued части идут через ту же границу. При post-save failure удалённый pending после
+потери runner становится unknown, а не разрешением повторить отправку. Operator retry сохраняет
+audit вместе с pending до повторного API. Attempted legacy card без HTML сохраняет прежний
+render callback; exact HTML этой старой попытки задним числом не восстанавливается.
+
+Updates, digest/sittings, refresh/retag/rollover edits и остальные reader effects пока работают
+по прежнему контракту. Полная долговечная граница доставки остаётся задачей
+[архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
 
 `restore()` сначала проигрывает SQL в отдельной базе в памяти. После успешной проверки
 заменяет таблицы целевой базы, временно отключив внешние ключи, восстанавливает версию

@@ -16,7 +16,7 @@ from functools import partial
 from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.models import (
     SILENCED_BY_OPERATOR,
     ApplicantType,
@@ -29,7 +29,14 @@ from lexinform.models import (
     PublicationStatus,
     is_over,
 )
-from lexinform.ports import BillRepository, Clock, Publisher, PublishResult, SejmGateway
+from lexinform.ports import (
+    BillRepository,
+    Clock,
+    Publisher,
+    PublishResult,
+    SejmGateway,
+    StateCheckpoint,
+)
 from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.joint import group_of, primary_of
 from lexinform.services.message_parts import freeze_parts, send_continuations
@@ -114,6 +121,7 @@ class PublishingService:
         attention_enabled: bool = False,
         attention_assess: bool = True,
         delivery_attempts: set[int] | None = None,
+        checkpoint: StateCheckpoint | None = None,
     ) -> None:
         self._gateway = gateway
         self._repo = repo
@@ -127,6 +135,7 @@ class PublishingService:
         self._parts_sent = 0
         self._part_errors: list[str] = []
         self._delivery_attempts = delivery_attempts if delivery_attempts is not None else set[int]()
+        self._checkpoint = checkpoint
 
     @property
     def channel_id(self) -> str:
@@ -430,6 +439,8 @@ class PublishingService:
             record = self._analysis.compare_joint(
                 bill, others, may_wait=may_wait and self._analysis.may_wait_for_batch(bill)
             )
+        except StateCheckpointError:
+            raise
         except Exception as exc:
             log.warning(
                 "%s not compared with %s (%s: %s); the reply says what it can",
@@ -532,12 +543,19 @@ class PublishingService:
         if pub is not None and pub.delivery is not None and pub.delivery.rendered_text:
             send = partial(self._publisher.publish_prepared, pub)
         self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
-        message_id = send_publication(self._repo, self._clock, pub_id, send)
+        message_id = send_publication(
+            self._repo, self._clock, pub_id, send, checkpoint=self._checkpoint
+        )
         if message_id is None:
             return False
         if pub is not None and pub.delivery is not None:
             parts = send_continuations(
-                self._repo, self._clock, self._publisher, pub, self._delivery_attempts
+                self._repo,
+                self._clock,
+                self._publisher,
+                pub,
+                self._delivery_attempts,
+                checkpoint=self._checkpoint,
             )
             self._parts_sent += parts.sent
             self._part_errors.extend(parts.errors)

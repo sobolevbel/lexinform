@@ -424,7 +424,7 @@ Benchmark не разрешает batching физически начатых rea
 ### J013. DA1.4–DA1.5: checkpoint contract общего send helper
 
 Дата: 23 октября 2026. Статус: подготовительная API-стадия; production senders ещё не подключены.
-Исходная версия: `e2dcc83`. Implementation commit: подготовлен к фиксации.
+Исходная версия: `e2dcc83`. Implementation commit: `4373141`.
 
 `send_publication`/`send_publications` принимают optional `StateCheckpoint`. При подключённом
 port уже сохранённый caller pending checkpoint'ится до API, receipt и связанные effects —
@@ -443,3 +443,78 @@ Schema, persisted formats, цены/defaults, существующий поря�
 не меняются. Rollback по форматам: `e2dcc83`. Push/CI/deploy/live не выполнялись.
 Полный offline pytest прошёл с одним strict xfail DA5; mypy — 311 файлов,
 Ruff check/format и strict docs-check успешны.
+
+<a id="j014"></a>
+### J014. DA0.5–DA0.6: результаты внешних replay
+
+Дата: 23 октября 2026. Статус: наблюдения получены; complete baseline не принят.
+
+Первый полный запуск J009 завершился `not_run`: 13 703 input paths, 1390 missing cached texts,
+ноль error observations. Он записал 4276 RCL stage candidate decisions, 1028 transition pairs,
+3067 Word files, 69 nested packages и metadata 11 786 Sejm prints. Fake delivery — три сценария
+в одной aggregate observation. Он начат с HEAD `560a397` и dirty source fingerprints до последних
+guards; этот результат не является проверкой финальных API/initial-final SHA guards.
+Artifact: `/private/tmp/lexinform-da0-external-20261023-first.json`, 22 286 054 bytes,
+SHA `c9d38599574157befb5cafaa7127ff8faade28dfbd25fc841a4fa66bf13898bf`.
+
+Controlled mutation replay: 1698 document paths, 6594 probes. Ни одного пропуска в text digest;
+547 совпадений старого law digest после мутации (528 year, 14 decimal, 5 standalone number),
+553 совпадения experimental guarded signature (539 year, 14 decimal); union — 558 probes.
+Это наблюдения отдельных representations, не доказательство пропущенной production публикации
+и не независимая разметка правового смысла. Нужны разбор конкретных spans и acceptance DA6;
+алгоритмы по этим aggregate counts не изменялись.
+
+Финальная версия runner повторно запущена для extraction/selection/delivery: HEAD `e2dcc83`,
+dirty fingerprints helper-стадии; 12 472 input paths, те же 1390 missing cached texts,
+ноль изменившихся во время replay inputs и error observations. Содержательные populations:
+69 packages, 3067 Word files, 4276 candidates, три fake delivery scenarios.
+Artifact: `/private/tmp/lexinform-da0-external-current-20261023.json`, 21 504 690 bytes,
+SHA `50f12e3eb2a096b3da88e7479d2ae42fd390ca58793f9ce8d6db1581d025f433`.
+Exit 2 (`not_run`) ожидаем из-за отсутствующего кэша. Ни один из этих JSON не принимается
+как complete SHA-pinned reference для compare. Comparison/mutations второй раз не выполнялись;
+их алгоритмы не менялись. DA0.5–DA0.6 остаются частичными, остальные исключения J009 сохранены.
+Корпус, production state и сеть не изменялись/не использовались.
+
+<a id="j015"></a>
+### J015. DA1.2/DA1.4–DA1.6: remote boundary новых карточек и их частей
+
+Дата: 23 октября 2026. Статус: вертикаль новых/joint карточек принята локально.
+Исходная версия: `4373141`. Implementation commit: подготовлен к фиксации.
+
+Container подключает shared checkpoint к PublishingService и Poster. Новая/joint карточка,
+каждое её продолжение и повтор сохранённой части проходят pending checkpoint → API → outcome
+checkpoint. Ready child сохраняет реальный reply target родителя до своего API call.
+Восстановленные failed/queued continuations идут через тот же port в delivery drain/tracking;
+операторский retry карточки сохраняет audit вместе с pending до повторного API.
+Неподключённый локальный запуск использует прежний noop; dry-run не делает push.
+
+Fatal persistence error пробрасывается из delivery drain с сохранением отчёта и через pipeline/
+commands до CLI exit 75; после ошибки нет следующего reader effect. Best-effort joint comparison
+также не проглатывает этот тип. Сегодня compare_joint сам не вызывает Git checkpoint; этот тест
+фиксирует требуемый контракт ошибки, а не найденный реальный Git call внутри сравнения.
+
+22 сценария production World с batches и временными bare Git remotes проверяют off/shadow/on,
+NEW_BILL/JOINT_BILL, multipart, exact HTML/reply target до API, frozen children до root send,
+потерю runner до API, принятую отправку с потерянным ответом, pre/post-save failures, foreign tip,
+receipt родителя, продолжение после restore, delivery drain и audit operator retry.
+Свежая World восстанавливается из нового Git clone удалённого SQL; исходная SQLite не копируется.
+Checkpoint после receipt обязателен перед следующей physical send, группировка для скорости
+не вводится. Localhost CLI — 21 passed.
+
+Область гарантии — новые/joint send и их MESSAGE_PART. Updates, digest/sittings, refresh/retag/
+rollover edits и остальные reader effects ещё не переведены. Attempted legacy rows без HTML
+сохраняют прежний callback: pending identity теперь durable, но exact HTML задним числом
+не утверждается. Commands started/executed/handled в целом ещё не checkpoint'ятся отдельно;
+retry audit покрывается pre-send checkpoint только при фактической отправке этой вертикали.
+Поэтому DA1.2/DA1.4–DA1.6/DA1.10 и весь DA1 не отмечены завершёнными.
+
+Schema 48, polling manifest v1, payload fields/defaults и цены не меняются. Новых raw archives,
+S3 или persisted fields нет; HTML уже добавлялся J011. Появляются два checkpoint на physical send,
+что увеличивает число Git snapshots; local synthetic measurement — J012, GitHub latency и
+долгосрочный production рост истории пока не измерены. Format reader `4373141` читает эти rows,
+но не является безопасным active fallback: при откате сначала остановить reader effects,
+сохранить remote pending/unknown и продолжать только с кодом, сохраняющим durable boundary.
+Push/CI/deploy/live не выполнялись.
+Полный gate: 2813 passed и один strict xfail DA5, mypy — 312 файлов, Ruff check/format,
+strict docs-check и `git diff --check` успешны. Независимый read-only review call paths
+не нашёл блокирующих дефектов и подтвердил отсутствие активации остальных send/edit путей.

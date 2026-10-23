@@ -609,6 +609,7 @@ class Container:
                 attention_enabled=self.settings.reader_attention == "on",
                 attention_assess=self.settings.reader_attention != "off",
                 delivery_attempts=self._delivery_attempts(dry_run),
+                checkpoint=self.state_checkpoint(dry_run=dry_run),
             ),
         )
 
@@ -699,6 +700,7 @@ class Container:
                 delivery_attempts=self._delivery_attempts(dry_run),
                 consultation_reviews_enabled=self.settings.consultation_reviews_enabled,
                 commission_reviews_enabled=self.settings.commission_reviews_enabled,
+                checkpoint=self.state_checkpoint(dry_run=dry_run),
             ),
         )
 

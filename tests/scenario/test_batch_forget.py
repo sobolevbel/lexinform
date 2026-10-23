@@ -7,6 +7,7 @@ import pytest
 
 from lexinform.adapters.batch_checkpoint import GitBatchCheckpoint
 from lexinform.errors import LlmUnavailableError
+from lexinform.models import PublicationStatus
 from lexinform.services.pipeline import RunOptions
 from tests.harness import TERM, World
 
@@ -44,15 +45,19 @@ def test_with_a_checkpoint_the_batch_is_forgotten_after_the_state_is_pushed(
         ),
     )
     forgotten_at_push: list[list[str]] = []
+    card_at_push: list[PublicationStatus | None] = []
 
     def push(checkpoint: GitBatchCheckpoint) -> None:
         forgotten_at_push.append(list(w.batch.forgotten))
+        card = w.publication("3039")
+        card_at_push.append(card.status if card is not None else None)
 
     monkeypatch.setattr(GitBatchCheckpoint, "__call__", push)
 
     checkpointed.pipeline(dry_run=False).run(RunOptions(term=TERM))
 
-    assert forgotten_at_push == [[]]
+    assert forgotten_at_push == [[], ["batch-1"], ["batch-1"]]
+    assert card_at_push == [None, PublicationStatus.PENDING, PublicationStatus.SENT]
     assert w.batch.forgotten == ["batch-1"]
 
 

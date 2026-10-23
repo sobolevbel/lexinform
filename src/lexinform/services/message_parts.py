@@ -4,7 +4,7 @@ from functools import partial
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import Bill, DeliveryPlan, Publication, PublicationKind, PublicationStatus
-from lexinform.ports import BillRepository, Clock, Publisher
+from lexinform.ports import BillRepository, Clock, Publisher, StateCheckpoint
 from lexinform.services.publications import send_publication
 
 log = logging.getLogger(__name__)
@@ -96,6 +96,8 @@ def send_continuations(
     publisher: Publisher,
     root: Publication,
     attempted: set[int],
+    *,
+    checkpoint: StateCheckpoint | None = None,
 ) -> ContinuationResult:
     assert root.delivery is not None
     result = ContinuationResult()
@@ -115,7 +117,11 @@ def send_continuations(
         attempted.add(identity)
         try:
             sent = send_publication(
-                repo, clock, identity, partial(publisher.publish_prepared, ready)
+                repo,
+                clock,
+                identity,
+                partial(publisher.publish_prepared, ready),
+                checkpoint=checkpoint,
             )
         except ServiceUnavailableError as exc:
             error = f"Continuation {identity}: {exc.describe()}; inspect /delivery {identity}"
