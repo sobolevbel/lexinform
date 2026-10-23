@@ -192,11 +192,15 @@ API. Каждая часть checkpoint'ит pending до API и receipt/source 
 Attempted legacy digest без частей checkpoint'ит статус, сохраняя прежний render callback.
 Technical draft не резервирует source events и не получает reader checkpoints.
 
-Reader одиночных updates использует любой сохранённый `rendered_text`, включая короткий
-legacy payload: exact HTML и reply/edit target не пересобираются из текущей карточки.
-Это совместимый reader; producer коротких legacy updates и scope checkpoints ещё прежние.
+Новые одиночные STATUS_UPDATE без edit target сохраняют HTML и все части в off/shadow/on.
+Root и MESSAGE_PART checkpoint'ят pending до API и receipt/effects после него; последняя часть
+освобождает только saved held IDs и завершает связанный ACT_PUBLISHED. Исходный FAILED без HTML
+не сбрасывается в QUEUED и сохраняет legacy callback с checkpoints статуса.
+Reader использует любой saved `rendered_text`, включая короткий legacy payload и edits.
+Shared attempted set сохраняется между end-of-term, commands, publishing и tracking;
+одна physical попытка за execution, следующий запуск может повторить definite failure.
 
-Одиночные updates, длинное одиночное sitting через `deliver`, refresh/retag/rollover edits
+Длинное одиночное sitting через `deliver`, status update edits, refresh/retag/rollover edits
 и остальные reader effects пока работают по прежнему контракту. Полная граница остаётся задачей
 [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
 

@@ -1000,6 +1000,14 @@ class FakePublisher(RenderingPublisher):
             elif plan.primary_json:
                 primary = Bill.model_validate_json(plan.primary_json)
                 self.joint_bills.append((bill, primary, plan.reply_to))
+        elif (
+            publication.kind is PublicationKind.STATUS_UPDATE
+            and not plan.update_group
+            and not plan.sitting_group
+        ):
+            bill = Bill.model_validate_json(plan.bill_json)
+            change = StatusChange.model_validate_json(plan.change_json)
+            self.updates.append((bill, change, plan.reply_to))
         return result
 
     def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:

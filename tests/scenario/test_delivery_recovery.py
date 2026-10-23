@@ -193,17 +193,15 @@ def test_a_second_crash_requires_a_new_operator_decision(
     w, identity = interrupted_update()
     w.command(f"/delivery {identity} retry")
     _commands_only(w)
-    send = w.publisher.publish_status_update
+    send = w.publisher.publish_prepared
 
-    def crash(
-        bill: Bill, change: StatusChange, reply_to: int | None, *, with_act: bool = False
-    ) -> PublishResult:
+    def crash(publication: Publication) -> PublishResult:
         if accepted:
-            send(bill, change, reply_to, with_act=with_act)
+            send(publication)
         raise KeyboardInterrupt("process stopped without recording the result")
 
     with monkeypatch.context() as patch:
-        patch.setattr(w.publisher, "publish_status_update", crash)
+        patch.setattr(w.publisher, "publish_prepared", crash)
         with pytest.raises(KeyboardInterrupt):
             w.run()
     w.repo.restore(w.repo.dump())

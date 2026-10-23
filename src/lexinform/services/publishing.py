@@ -142,8 +142,17 @@ class PublishingService:
         """The channel the cards go to: what a caller counting its posts must ask about."""
         return self._channel_id
 
+    def start_run(self) -> None:
+        self._delivery_attempts.clear()
+
     def publish_new(
-        self, *, min_score: int, limit: int, publish: bool = True, may_wait: bool = True
+        self,
+        *,
+        min_score: int,
+        limit: int,
+        publish: bool = True,
+        may_wait: bool = True,
+        keep_delivery_attempts: bool = False,
     ) -> PublishingResult:
         """Post the cards this run has earned.
 
@@ -154,7 +163,8 @@ class PublishingService:
         result = PublishingResult()
         self._parts_sent = 0
         self._part_errors.clear()
-        self._delivery_attempts.clear()
+        if not keep_delivery_attempts:
+            self.start_run()
         candidates = self._repo.list_publish_candidates(
             self._channel_id,
             min_score=min_score,

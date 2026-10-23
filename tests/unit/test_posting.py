@@ -281,6 +281,7 @@ def test_retry_does_not_consume_stages_held_after_the_original_plan(
     first.id = repo.add_status_change(first)
     later.id = repo.add_status_change(later)
     assert not poster.status_update(bill, first)  # Telegram rejected it: the row is `failed`
+    poster.start_run()
     poster.hold(bill, later)  # a later run holds a service stage: a newer row than the failed one
     publisher.fail_on = set()
 

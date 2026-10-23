@@ -184,14 +184,17 @@ class CommandService:
         run_started_at: dt.datetime,
         publish: bool = True,
         dry_run: bool = False,
+        keep_delivery_attempts: bool = False,
     ) -> CommandsResult:
         """Answer every waiting command; `run_started_at` is the run's own start, which every
         reply names. `dry_run` is the run's option, not the service's: the inbox is then left
         as it is, because its files belong to a real run (the database is rolled back with
         them)."""
         result = CommandsResult()
-        if self._digest is not None:
-            self._digest.start_run()
+        if not keep_delivery_attempts:
+            self._publishing.start_run()
+            if self._digest is not None:
+                self._digest.start_run()
         for incoming in self._inbox.pending():
             if not self._handle_one(
                 incoming,
@@ -857,7 +860,7 @@ class CommandService:
                 note="no card in the channel: an update would have nothing to reply under."
                 " /analyze BILL publish posts the card first",
             )
-        result = self._tracking.check_bill(bill, publish=publish)
+        result = self._tracking.check_bill(bill, publish=publish, keep_delivery_attempts=True)
         merge_usage(spent, result.usage)
         if result.fatal_error is not None:
             raise _SourceDownError(result.fatal_error)

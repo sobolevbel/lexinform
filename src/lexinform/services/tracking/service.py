@@ -422,7 +422,9 @@ class StatusTrackingService:
             if wanted is not None and wanted != (bill.observation_mode, bill.observation_basis):
                 self._repo.set_observation(bill.term, bill.number, *wanted)
 
-    def check_bill(self, bill: Bill, *, publish: bool = True) -> TrackingResult:
+    def check_bill(
+        self, bill: Bill, *, publish: bool = True, keep_delivery_attempts: bool = False
+    ) -> TrackingResult:
         """Everything a run would look at for one bill, now: its source's watcher, its process
         and its card. The reminders are left out — they are due-date queries over the whole
         channel, and the operator asked about this bill.
@@ -432,7 +434,7 @@ class StatusTrackingService:
         (`CommandService._refresh`) checks it before asking.
         """
         result = TrackingResult()
-        self._poster.start_run()
+        self._poster.start_run(keep_attempts=keep_delivery_attempts)
         one = [bill]
         if not self._check_other_sources(one, one, result, publish=publish):
             self._flush_updates(result, publish=publish)

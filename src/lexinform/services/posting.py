@@ -731,6 +731,8 @@ class Poster:
                 return False
             if existing.status is PublicationStatus.SENT:
                 return True
+            if existing.id in self._attempted:
+                return False
             if existing.delivery is not None and existing.delivery.update_group:
                 return self.retry_update_group(existing, TrackingResult())
             if existing.status in (
@@ -750,26 +752,18 @@ class Poster:
             # Attempted or uncertain sends can never be absorbed into a later analysis update.
             delivery = delivery.model_copy(update={"wait_until": None})
             assert self._repo.replace_unsent_update_delivery(change.id, self._channel_id, delivery)
-        pub_id = self._repo.create_publication(
-            self._update_row(
-                bill,
-                change.id,
-                PublicationStatus.QUEUED,
-            )
-        )
+        pub = self._repo.get_update_publication(change.id, self._channel_id)
+        assert pub is not None and pub.id is not None, "prepare stores the update and its plan"
+        pub_id = pub.id
         snapshot = Bill.model_validate_json(delivery.bill_json)
         planned_change = StatusChange.model_validate_json(delivery.change_json)
-        if delivery.policy_version == "attention-v1":
-            pub = self._repo.publication_by_id(pub_id)
-            assert pub is not None
-            pub = self._freeze(pub)
-            self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
-            return (
-                self._send(
-                    pub_id, snapshot, lambda _: self._publisher.publish_prepared(pub).message_id
-                )
-                is not None
-            )
+        if (
+            delivery.policy_version == "attention-v1"
+            and pub.status is PublicationStatus.QUEUED
+            and not pub.attempts
+        ):
+            self._freeze(pub)
+        self._attempted.add(pub_id)
         message_id = self._send(
             pub_id,
             snapshot,
@@ -1321,21 +1315,17 @@ class Poster:
                 self._repo.mark_publication(pub.id, PublicationStatus.SKIPPED, count_attempt=False)
                 self._attention_metrics["expired"] = self._attention_metrics.get("expired", 0) + 1
                 return False
-            pub = self._freeze(pub)
+            if pub.kind is not PublicationKind.STATUS_UPDATE or (
+                pub.status is PublicationStatus.QUEUED and not pub.attempts
+            ):
+                pub = self._freeze(pub)
         assert pub.id is not None and pub.delivery is not None
         if pub.kind is PublicationKind.AMENDMENTS_REVISION:
             pub = self._freeze(pub)
         assert pub.id is not None and pub.delivery is not None
-        if not pub.delivery.rendered_text and not pub.attempts:
-            text = self._publisher.render_delivery(pub)
-            if utf16_length(text) > MESSAGE_LIMIT:
-                pub = freeze_parts(self._repo, self._clock, self._publisher, pub, text)
-                assert pub.delivery is not None
-        assert pub.id is not None and pub.delivery is not None
         self._attempted.add(pub.id)
         plan = pub.delivery
         bill = Bill.model_validate_json(plan.bill_json)
-        self._repo.mark_publication(pub.id, PublicationStatus.PENDING, count_attempt=False)
         if plan.rendered_text:
             return (
                 self._send(pub.id, bill, lambda _: self._publisher.publish_prepared(pub).message_id)
@@ -1477,6 +1467,10 @@ class Poster:
 
     def _dispatch(self, kind: PublicationKind, bill: Bill, plan: DeliveryPlan) -> int:
         reply = plan.reply_to
+        if kind is PublicationKind.STATUS_UPDATE:
+            return self._send_update(
+                bill, StatusChange.model_validate_json(plan.change_json), plan, reply
+            )
         if kind is PublicationKind.ACT_PUBLISHED:
             return self._publisher.publish_act_published(bill, reply).message_id
         if kind is PublicationKind.CONSULTATION_RESULTS:
@@ -1510,12 +1504,19 @@ class Poster:
         if (
             pub is not None
             and pub.delivery is not None
+            and (
+                pub.kind is not PublicationKind.STATUS_UPDATE
+                or pub.status is PublicationStatus.QUEUED
+            )
             and not pub.delivery.rendered_text
             and not pub.attempts
         ):
-            text = self._publisher.render_delivery(pub)
-            if utf16_length(text) > MESSAGE_LIMIT:
-                pub = freeze_parts(self._repo, self._clock, self._publisher, pub, text)
+            if pub.kind is PublicationKind.STATUS_UPDATE and pub.delivery.edit_message_id is None:
+                pub = self._freeze(pub)
+            else:
+                text = self._publisher.render_delivery(pub)
+                if utf16_length(text) > MESSAGE_LIMIT:
+                    pub = freeze_parts(self._repo, self._clock, self._publisher, pub, text)
         if pub is not None and pub.delivery is not None and pub.delivery.rendered_text:
 
             def prepared_send(_: int | None) -> int:
@@ -1525,7 +1526,7 @@ class Poster:
         card = self.card(bill)
         reply_to = card.message_id if card else None
         self._repo.mark_publication(pub_id, PublicationStatus.PENDING, count_attempt=False)
-        checkpoint = self._card_checkpoint(pub)
+        checkpoint = self._delivery_checkpoint(pub)
         sent = send_publication(
             self._repo,
             self._clock,
@@ -1553,7 +1554,7 @@ class Poster:
             )
         return sent
 
-    def _card_checkpoint(self, pub: Publication | None) -> StateCheckpoint | None:
+    def _delivery_checkpoint(self, pub: Publication | None) -> StateCheckpoint | None:
         if pub is None:
             return None
         root = (
@@ -1562,6 +1563,13 @@ class Poster:
             else pub
         )
         if root is not None and root.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
+            return self._checkpoint
+        if (
+            root is not None
+            and root.kind is PublicationKind.STATUS_UPDATE
+            and root.delivery is not None
+            and root.delivery.edit_message_id is None
+        ):
             return self._checkpoint
         return None
 

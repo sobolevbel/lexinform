@@ -673,3 +673,64 @@ Parser/selection/normalisation, CLI/wiring и persisted formats этой ста�
 нужно сохранить domain bookkeeping `FakePublisher.updates`: canonical sent/edited уже видят
 prepared delivery, а этот вспомогательный список пока её не отражает. Edit producer и обычные
 правки карточки остаются отдельными задачами.
+
+<a id="j020"></a>
+### J020. DA1.2/DA1.4–DA1.6: одиночные status updates и их части
+
+Дата: 23 октября 2026. Статус: вертикаль принята локально.
+База выпуска: `8c0be61`, совместимый reader: `cc3b5c8`.
+Implementation commit: подготовлен к фиксации.
+
+Новые сообщения STATUS_UPDATE с исходным QUEUED/attempts=0 сохраняют exact HTML и все
+MESSAGE_PART до первой попытки в off/shadow/on. Общая delivery boundary checkpoint'ит pending
+до каждого physical API и receipt/effects после него. Root и дочерние части используют одну
+границу; final child завершает только сохранённые held IDs и связанный ACT_PUBLISHED.
+В этой вертикали edit_message_id остаётся вне нового checkpoint scope.
+
+Direct status_update переиспользует publication после prepare, не сбрасывая FAILED в QUEUED
+посредством upsert. FAILED/attempts=0 после outage и FAILED/attempts=1 без HTML остаются на
+legacy callback, в том числе для длинного текста: исходный HTML прежней попытки не придумывается.
+Статус такого retry сохраняется до/после API; exact HTML guarantee относится к frozen payload.
+У остальных kinds прежняя implicit long-freeze семантика пока сохранена.
+
+Physical update может быть начат один раз за execution. Общий attempted set сбрасывается перед
+pipeline или standalone command drain, сохраняется между end-of-term, commands, publishing и
+tracking. Несколько refresh в одной очереди его не очищают; standalone check_bill/publish_new
+сохраняют отдельный scope по умолчанию. Следующий запуск может повторить definite failure,
+а unknown требует операторского решения. FakePublisher отражает prepared single updates
+в прежнем domain bookkeeping из saved JSON; edits/groups исключены, второго render/send нет.
+
+67 новых scenario cases с production World проверяют temp Git remote/fresh clone, exact
+short/multipart HTML, receipt до следующей части, root/final-child pre/post failures,
+локальные и remote effects, runner loss, audited retry/confirm, unknown, outage и definite
+failure. Матрица legacy FAILED0/1 × short/long × legacy/attention-v1 × off/shadow/on
+защищает исходный payload; long delivery drain также проверен. Проверены excluded edits,
+dry-run/no-publish, repeated direct calls, две refresh-команды и следующий execution.
+Четыре rollover cases проходят end-of-term → commands (пустая очередь и /status) → publishing
+→ tracking: одна physical попытка при definite/outage. Ещё восемь fake cases проверяют
+domain parity, saved snapshots, отказ транспорта и отсутствие второго render/send.
+Исходные recovery fault injections перенесены с legacy callback на prepared transport,
+с прежними assertions unknown/audit/доставки; unit «later run» теперь явно начинает новый scope.
+
+Фактический Poster из `8c0be61` прочитал новые frozen failed payload после fresh clone:
+6/6 short/3-part × off/shadow/on. При изменённых текущих Bill/card/time сохранены HTML,
+identity/порядок частей, receipt parents, included/later held и act effects; повтор не отправлен.
+Artifact: `/private/tmp/lexinform-old-status-reader-qualification-20261023-81978.json`,
+SHA `6a3553b4c3e5c210cd6e5b93cee0dcfc36aeeb7fd27ba62ade03b3006d68aa09`.
+Это old module с текущими imported helpers/models/adapter, проверка формата, не old durability.
+Безопасный rollback сохраняет remote pending/unknown и сначала останавливает reader effects.
+
+В том же synthetic artifact измерены SQLite quote(delivery_json) literals: short off/shadow
+получили +1414 bytes относительно прежнего producer; on уже сохранял этот HTML. Multipart
+тоже уже сохранялся прежним producer во всех modes: incremental delta — 0. Сравнение с
+unfrozen queued root отдельно отражено в JSON и не выдаётся за новый overhead этого выпуска.
+Это payload literals без иных строк, gzip и истории Git, не весь dump и не production forecast.
+Schema 48, polling v1, raw/archive/backend прежние.
+
+Проверки: 67 новых remote scenario cases и восемь fake cases зелёные; existing focused suite —
+200 passed. Полный gate — 2995 passed + один прежний strict xfail DA5,
+`/private/tmp/lexinform-status-update-vertical-final-20261023.xml`; mypy — 319 файлов,
+Ruff check/format, localhost CLI — 21 passed, strict docs-check и `git diff --check` успешны.
+Независимый review не нашёл blockers после исправления nested command scope.
+Parser/selection/normalisation не менялись; новый полный corpus replay не запускался.
+Push/CI/deploy/live не выполнялись. Следующие вертикали: long single sitting, notices, edits.

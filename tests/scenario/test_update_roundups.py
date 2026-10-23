@@ -5,12 +5,11 @@ import pytest
 from lexinform.adapters.telegram_format import length
 from lexinform.errors import DeliveryUncertainError, TelegramUnavailableError
 from lexinform.models import (
-    Bill,
     BillStatus,
+    Publication,
     PublicationKind,
     PublicationStatus,
     Stage,
-    StatusChange,
 )
 from lexinform.ports import PublishResult
 from lexinform.services.digest import DigestService
@@ -296,13 +295,11 @@ def test_operator_retry_of_a_deferred_stage_never_absorbs_new_analysis(
     w.run()
     w.clock.advance(hours=1)
 
-    def uncertain(
-        bill: Bill, change: StatusChange, reply_to: int | None, *, with_act: bool = False
-    ) -> PublishResult:
+    def uncertain(publication: Publication) -> PublishResult:
         raise DeliveryUncertainError("response lost")
 
     with monkeypatch.context() as patch:
-        patch.setattr(w.publisher, "publish_status_update", uncertain)
+        patch.setattr(w.publisher, "publish_prepared", uncertain)
         w.run()
     pending = w.publication("3039", PublicationKind.STATUS_UPDATE)
     assert pending is not None and pending.id is not None and pending.delivery is not None
@@ -501,13 +498,11 @@ def test_dismissing_a_combined_update_closes_its_deferred_stage(
     assert deferred is not None and deferred.id is not None
     w.batch.resolve()
 
-    def uncertain(
-        bill: Bill, change: StatusChange, reply_to: int | None, *, with_act: bool = False
-    ) -> PublishResult:
+    def uncertain(publication: Publication) -> PublishResult:
         raise DeliveryUncertainError("response lost")
 
     with monkeypatch.context() as patch:
-        patch.setattr(w.publisher, "publish_status_update", uncertain)
+        patch.setattr(w.publisher, "publish_prepared", uncertain)
         w.run()
     combined = w.publication("3039", PublicationKind.STATUS_UPDATE)
     assert combined is not None and combined.id is not None

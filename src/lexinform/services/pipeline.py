@@ -140,6 +140,7 @@ class DailyPipeline:
         captured.install()
         run_id: int | None = None
         self._analysis.start_run(dry_run=opts.dry_run)
+        self._publishing.start_run()
         if self._digest is not None:
             self._digest.start_run()
         try:
@@ -362,6 +363,7 @@ class DailyPipeline:
             run_started_at=report.started_at,
             publish=opts.publish,
             dry_run=opts.dry_run,
+            keep_delivery_attempts=True,
         )
         report.commands_handled = handled.handled
         report.commands_failed = handled.failed
@@ -472,7 +474,11 @@ class DailyPipeline:
 
     def _publish(self, opts: RunOptions, report: RunReport) -> None:
         published = self._publishing.publish_new(
-            min_score=opts.min_score, limit=opts.max_publish, publish=opts.publish, may_wait=True
+            min_score=opts.min_score,
+            limit=opts.max_publish,
+            publish=opts.publish,
+            may_wait=True,
+            keep_delivery_attempts=True,
         )
         report.errors.extend(f"publishing: {error}" for error in published.partial_errors)
         report.published = published.published
