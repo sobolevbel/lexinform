@@ -533,7 +533,11 @@ class PublishingService:
         if (
             pub is not None
             and pub.delivery is not None
-            and (pub.delivery.policy_version == "attention-v1" or pub.delivery.continuation_ids)
+            and (
+                pub.delivery.policy_version == "attention-v1"
+                or pub.delivery.continuation_ids
+                or pub.delivery.rendered_text
+            )
         ):
             if not pub.delivery.rendered_text:
                 plan = pub.delivery.model_copy(

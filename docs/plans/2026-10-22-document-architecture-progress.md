@@ -309,7 +309,7 @@ external replay, с отдельными baseline/compare, явной provenance
 ### J010. DA1.1: общий checkpoint port и production wiring
 
 Дата: 23 октября 2026. Статус: DA1.1 принято локально. Исходная версия: `560a397`.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `d90797a`.
 
 `StateCheckpoint` — callable port; Container строит один shared writer и локальный noop.
 Settings добавляет `state_checkpoint_required=false`; production workflow задаёт `true`.
@@ -334,7 +334,17 @@ Rollback по формату: `560a397`; старый код игнорируе�
 <a id="j011"></a>
 ### J011. DA1.2: frozen HTML новых и joint карточек
 
-Дата: 23 октября 2026. Статус: в работе. Исходная версия: `560a397`.
-Implementation commit: не зафиксировано. Готовится законченный перенос card producer
-на frozen prepared HTML во всех attention modes, с отдельной совместимостью legacy work.
+Дата: 23 октября 2026. Статус: совместимый reader принят локально; producer ещё не включён.
+Исходная версия reader: `d90797a`. Reader commit: подготовлен к фиксации.
+
+Сначала выпущен reader, который использует уже сохранённый `rendered_text` для NEW_BILL/
+JOINT_BILL во всех attention modes, включая `legacy` policy. Он не меняет producer off/shadow.
+Шесть сценариев повторов по 3 modes × 2 kinds проверяют точный saved HTML и reply target.
+FakePublisher теперь учитывает успешные prepared cards так же, как обычные отправки.
+Reader становится поддерживаемым rollback для следующего включения producer; без этого
+прежний off/shadow handler мог бы проигнорировать сохранённый HTML и снова его отрендерить.
+
 Remote boundary reader sends, остальные эффекты и завершение DA1 этим не заявляются.
+Schema/форматы/defaults не меняются; rollback reader по имеющимся production formats —
+`d90797a`. Push/CI/deploy/live не выполнялись. Полный offline pytest с одним strict xfail DA5,
+mypy (309 файлов) и Ruff успешны.

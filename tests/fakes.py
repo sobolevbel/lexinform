@@ -63,6 +63,7 @@ from lexinform.models import (
     PrintInfo,
     ProcessDetail,
     ProcessSummary,
+    Publication,
     PublicationKind,
     RclProject,
     RclProjectSummary,
@@ -967,6 +968,22 @@ class FakePublisher(RenderingPublisher):
     def publish_new_bill(self, bill: Bill, print_info: PrintInfo | None) -> PublishResult:
         result = super().publish_new_bill(bill, print_info)
         self.new_bills.append((bill, print_info))
+        return result
+
+    def publish_prepared(self, publication: Publication) -> PublishResult:
+        result = super().publish_prepared(publication)
+        plan = publication.delivery
+        assert plan is not None, "prepared delivery requires its saved payload"
+        if plan.edit_message_id is not None or not plan.rendered_text:
+            return result
+        if publication.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
+            bill = Bill.model_validate_json(plan.bill_json)
+            info = PrintInfo.model_validate_json(plan.print_json) if plan.print_json else None
+            if publication.kind is PublicationKind.NEW_BILL:
+                self.new_bills.append((bill, info))
+            elif plan.primary_json:
+                primary = Bill.model_validate_json(plan.primary_json)
+                self.joint_bills.append((bill, primary, plan.reply_to))
         return result
 
     def edit_new_bill(self, bill: Bill, print_info: PrintInfo | None, *, message_id: int) -> None:
