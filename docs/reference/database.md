@@ -183,9 +183,17 @@ render callback; exact HTML этой старой попытки задним ч
 
 Shared update groups и сохранённые sitting groups также checkpoint'ят всех участников до API
 и общий receipt после него. Новые sitting groups сохраняют HTML/membership в off/shadow/on;
-старые attempted legacy без membership остаются на прежнем callback. Одиночные updates,
-длинное одиночное sitting через `deliver`, digest, refresh/retag/rollover edits и остальные
-reader effects пока работают по прежнему контракту. Полная граница доставки остаётся задачей
+старые attempted legacy без membership остаются на прежнем callback.
+
+Новые reader digests во всех attention modes сохраняют части и source membership до первого
+API. Каждая часть checkpoint'ит pending до API и receipt/source completion после него.
+Команда и финальная digest phase разделяют scope попыток: одна physical часть отправляется
+не более одного раза за запуск; следующий запуск может повторить definite failure.
+Attempted legacy digest без частей checkpoint'ит статус, сохраняя прежний render callback.
+Technical draft не резервирует source events и не получает reader checkpoints.
+
+Одиночные updates, длинное одиночное sitting через `deliver`, refresh/retag/rollover edits
+и остальные reader effects пока работают по прежнему контракту. Полная граница остаётся задачей
 [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
 
 `restore()` сначала проигрывает SQL в отдельной базе в памяти. После успешной проверки

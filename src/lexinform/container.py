@@ -631,6 +631,7 @@ class Container:
                 approve_label=APPROVE_DIGEST,
                 attention_enabled=s.reader_attention == "on",
                 delivery_paused=self.poster(dry_run=dry_run).delivery_paused,
+                checkpoint=self.state_checkpoint(dry_run=dry_run),
                 weekday=s.digest_weekday,
                 local_tz=LOCAL_TZ,
                 closed_grace_days=s.track_closed_grace_days,

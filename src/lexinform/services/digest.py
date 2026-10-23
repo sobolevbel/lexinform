@@ -42,7 +42,7 @@ from lexinform.models import (
     update_event,
     week_bounds,
 )
-from lexinform.ports import BillRepository, Clock, Publisher
+from lexinform.ports import BillRepository, Clock, Publisher, StateCheckpoint
 from lexinform.services.publications import send_publication
 
 log = logging.getLogger(__name__)
@@ -127,6 +127,7 @@ class DigestService:
         pending_decision_max_days: int = 1095,
         attention_enabled: bool = False,
         delivery_paused: Callable[[Publication], bool] | None = None,
+        checkpoint: StateCheckpoint | None = None,
     ) -> None:
         self._repo = repo
         self._publisher = publisher
@@ -141,6 +142,11 @@ class DigestService:
         self._pending_decision_max_days = pending_decision_max_days
         self._attention_enabled = attention_enabled
         self._delivery_paused = delivery_paused or (lambda publication: False)
+        self._checkpoint = checkpoint
+        self._attempted: set[int] = set()
+
+    def start_run(self) -> None:
+        self._attempted.clear()
 
     def today(self) -> dt.date:
         """The reader's day, which is the Sejm's: a digest is due on a Warsaw Sunday."""
@@ -158,8 +164,12 @@ class DigestService:
         today = self.today()
         return iso_week(today) if today.weekday() == SUNDAY else previous_week(today)
 
-    def run(self, *, current_report: RunReport | None = None) -> DigestResult:
+    def run(
+        self, *, current_report: RunReport | None = None, keep_attempts: bool = False
+    ) -> DigestResult:
         """The digest phase of a run: draft the week on its day, and nothing on any other."""
+        if not keep_attempts:
+            self.start_run()
         resumed = self._resume_parts()
         if resumed is not None:
             return resumed
@@ -212,8 +222,10 @@ class DigestService:
             return DigestResult(ref=ref, failed=True, note=f"{ref} was not posted, see the log")
         return DigestResult(ref=ref, drafted=True, message_id=message_id)
 
-    def publish(self, ref: str) -> DigestResult:
+    def publish(self, ref: str, *, keep_attempts: bool = False) -> DigestResult:
         """Post the week's digest to the readers' channel, rebuilt from the database first."""
+        if not keep_attempts:
+            self.start_run()
         existing = self._repo.get_publication(
             DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, self._channel_id, ref=ref
         )
@@ -617,8 +629,8 @@ class DigestService:
             existing is not None
             and existing.delivery is not None
             and existing.delivery.digest_parts
-        ) or (self._attention_enabled and existing is None):
-            assert publisher is not None
+        ) or (existing is None and (self._attention_enabled or channel_id == self._channel_id)):
+            assert publisher is not None, "digest draft and publish supply their channel publisher"
             return self._send_parts(channel_id, week, publisher, ref=ref, existing=existing)
         if existing is not None and existing.status in (
             PublicationStatus.PENDING,
@@ -632,6 +644,12 @@ class DigestService:
                 existing.status,
             )
             return None
+        if (
+            channel_id == self._channel_id
+            and existing is not None
+            and existing.id in self._attempted
+        ):
+            return None
         pub_id = self._repo.create_publication(
             Publication(
                 term=DIGEST_TERM,
@@ -643,7 +661,15 @@ class DigestService:
                 created_at=self._clock.now(),
             )
         )
-        return send_publication(self._repo, self._clock, pub_id, post)
+        if channel_id == self._channel_id:
+            self._attempted.add(pub_id)
+        return send_publication(
+            self._repo,
+            self._clock,
+            pub_id,
+            post,
+            checkpoint=self._checkpoint if channel_id == self._channel_id else None,
+        )
 
     def _delivery_totals(self, root: Publication | None) -> tuple[int, int]:
         if root is None or root.id is None:
@@ -733,10 +759,18 @@ class DigestService:
                     "Digest part %s exhausted attempts; use /delivery %s retry", identity, identity
                 )
                 return None
+            if channel_id == self._channel_id:
+                if identity in self._attempted:
+                    return None
+                self._attempted.add(identity)
             self._repo.mark_publication(identity, PublicationStatus.PENDING, count_attempt=False)
             if (
                 send_publication(
-                    self._repo, self._clock, identity, partial(publisher.publish_prepared, part)
+                    self._repo,
+                    self._clock,
+                    identity,
+                    partial(publisher.publish_prepared, part),
+                    checkpoint=self._checkpoint if channel_id == self._channel_id else None,
                 )
                 is None
             ):

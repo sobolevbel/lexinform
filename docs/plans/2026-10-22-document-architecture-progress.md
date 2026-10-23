@@ -550,7 +550,7 @@ strict docs-check и `git diff --check` успешны. Parser/selection/normali
 
 Дата: 23 октября 2026. Статус: shared-send вертикаль принята локально.
 Исходный совместимый reader: `45345e8`; база выпуска: `7209319`.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `a086df4`.
 
 `retry_update_group` и `_retry_sitting_group` подключены к shared checkpoint. Все member rows
 переходят в pending одной транзакцией до remote save; общий receipt/effects — одной транзакцией
@@ -587,3 +587,55 @@ Artifact с source hashes: `/private/tmp/lexinform-architecture-payload-growth-2
 SHA `3d35c19f4b092b3172bfbe39c239b81d667e1255407150bc31b4fe7f71174f7b`.
 Каждая physical группа получает два checkpoints; история Git отдельно не измерялась сверх J012.
 Push/CI/deploy/live не выполнялись.
+
+<a id="j018"></a>
+### J018. DA1.2/DA1.4–DA1.6: reader digest и одна попытка за запуск
+
+Дата: 23 октября 2026. Статус: reader digest вертикаль принята локально.
+База выпуска: `a086df4`; совместимый reader сохранённых частей: `45345e8`.
+Implementation commit: подготовлен к фиксации.
+
+Новые reader digests используют сохранённые physical parts и membership в off/shadow/on.
+Все части и reservations создаются атомарно до первого pending/API; перед каждым reader
+API выполняется remote checkpoint, после него receipt и completion ровно его source events
+сохраняются вместе до следующей части. Container передаёт общий state writer; dry-run
+сохраняет noop. Существующие saved parts читаются независимо от attention mode.
+Attempted legacy digest без частей остаётся на старом callback с checkpoints статуса;
+исходный HTML прежней попытки задним числом не восстанавливается. Technical draft сохраняет
+прежний approval button, не резервирует source events и не получает reader checkpoints.
+
+Полный gate выявил повтор физической попытки после definite failure: `/digest publish` и
+финальная digest phase могли отправить одну часть дважды в одном pipeline execution.
+Теперь DigestService хранит ephemeral attempted IDs в пределах запуска; commands и digest
+phase разделяют этот scope. Следующий pipeline run, standalone command drain или direct
+publish получает новый scope и может повторить подтверждённый отказ. UNKNOWN по-прежнему
+не повторяется автоматически. Счётчики не ослаблены, исходный regression test сохранён.
+
+48 новых scenario tests покрывают real formatter и synthetic multipart, checkpoints 1–6,
+remote-only restore, потерю runner/response, audited retry, command fatal без acknowledgement,
+dry-run/no-publish, draft и legacy fallback. На сбое последнего post-checkpoint локально
+последняя часть и её source уже SENT, а в remote owner UNKNOWN/source QUEUED и зарезервирован:
+recovery не присваивает receipt, не завершает source и не отправляет часть повторно.
+Lifecycle matrix проверяет modes × definite/outage × одну/две команды, следующий запуск,
+standalone drains и independent direct publish. Целевой gate: 103 passed.
+
+Общий gate всех стадий J016–J018: 2902 passed + один прежний strict xfail DA5,
+`/private/tmp/lexinform-architecture-delivery-continuation-final-20261023.xml`;
+mypy — 316 файлов, Ruff check/format, localhost CLI — 21 passed, CI manifest slice,
+strict docs-check и `git diff --check` успешны. Parser/selection/normalisation не менялись;
+полный внешний corpus повторно не запускался.
+
+Фактический DigestService из `45345e8` прочитал новый frozen payload после fresh clone
+в off/shadow/on: 3/3, прежний HTML и source completion сохранены. Это old module с текущими
+helpers, проверка формата, не прежней durability. Artifact:
+`/private/tmp/lexinform-digest-rollback-20261023.json`,
+SHA `238c31442dba15b8eff8d412c240d1931c6bca7db7fc3d8a3e282ab615fcea99`.
+Активный rollback требует остановить reader effects и сохранить remote pending/unknown;
+совместимость формата не разрешает возврат к sender без checkpoint.
+
+Schema 48 и polling v1 прежние, raw/archive/backend не добавлены. Synthetic одностраничный
+digest: payload SQL literal 1300 bytes, прирост к прежнему NULL в off/shadow — 1296 bytes;
+on уже сохранял этот формат. Это только поле payload, без иных строк, membership links,
+compression или истории Git; не весь dump и не production forecast. Artifact и SHA — J017.
+DA1 остаётся частичным: одиночные updates, длинные одиночные sittings и card edits ещё
+не переведены. Push/CI/deploy/live не выполнялись.

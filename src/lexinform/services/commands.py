@@ -190,6 +190,8 @@ class CommandService:
         as it is, because its files belong to a real run (the database is rolled back with
         them)."""
         result = CommandsResult()
+        if self._digest is not None:
+            self._digest.start_run()
         for incoming in self._inbox.pending():
             if not self._handle_one(
                 incoming,
@@ -990,7 +992,7 @@ class CommandService:
             return CommandOutcome(
                 status=OutcomeStatus.DIGESTED, note=f"{ref} not posted: this run does not publish"
             )
-        done = self._digest.publish(ref)
+        done = self._digest.publish(ref, keep_attempts=True)
         return self._digest_outcome(
             done, done.published, f"{ref} posted to the channel", message_id=done.message_id
         )

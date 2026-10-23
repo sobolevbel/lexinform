@@ -140,6 +140,8 @@ class DailyPipeline:
         captured.install()
         run_id: int | None = None
         self._analysis.start_run(dry_run=opts.dry_run)
+        if self._digest is not None:
+            self._digest.start_run()
         try:
             self._repo.migrate()
             report.since = self.resolve_since(opts.since)
@@ -516,7 +518,7 @@ class DailyPipeline:
 
     def _draft_digest(self, report: RunReport) -> None:
         assert self._digest is not None, "run() starts this phase only with a digest service"
-        result = self._digest.run(current_report=report)
+        result = self._digest.run(current_report=report, keep_attempts=True)
         report.digest_drafted = result.drafted
         report.digest_reader_parts += result.reader_parts
         report.digest_events_covered += result.covered_events
