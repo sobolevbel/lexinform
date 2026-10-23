@@ -518,3 +518,29 @@ Push/CI/deploy/live не выполнялись.
 Полный gate: 2813 passed и один strict xfail DA5, mypy — 312 файлов, Ruff check/format,
 strict docs-check и `git diff --check` успешны. Независимый read-only review call paths
 не нашёл блокирующих дефектов и подтвердил отсутствие активации остальных send/edit путей.
+
+<a id="j016"></a>
+### J016. DA1.5: fatal persistence error во вложенных tracking handlers
+
+Дата: 23 октября 2026. Статус: contract tests приняты локально. Исходная версия: `45345e8`.
+Implementation commit: подготовлен к фиксации.
+
+Перед расширением reader boundary четыре best-effort catch получают явный проброс
+`StateCheckpointError`: Sejm `_post_news`, pre-print `_apply`, RCL и Wykaz `_link_pending`.
+Persistence failure не классифицируется как обычная ошибка одного дела; следующий bill,
+reader effect и pipeline phase не продолжаются. Существующие source outages и обычные
+per-bill ошибки сохраняют прежнюю изоляцию. Это самостоятельная подготовка контракта ошибки;
+новые sender kinds самим этим фрагментом не активируются.
+
+Schema, payload/defaults, цены и SQL объём не меняются. Rollback по форматам — `45345e8`,
+но более слабый error contract непригоден для последующего расширенного sender wiring.
+Шесть сценариев через публичные World/Poster/Linker проверяют остановку следующего дела,
+reader effect, digest phase и `/refresh` command acknowledgement; обычный per-bill failure
+по-прежнему изолируется. Это injected typed collaborator failures, не доказательство реального
+Git call внутри каждого handler. Mutation check: без ровно четырёх guards падают все пять
+typed-failure сценариев, ordinary control остаётся зелёным; source восстановлены до gate.
+Artifact: `/private/tmp/lexinform-tracking-checkpoint-guard-mutation.txt`.
+Общий offline gate после подготовки трёх независимых фрагментов: 2902 passed, один strict xfail
+DA5; mypy — 316 файлов, Ruff check/format, localhost CLI (21 passed), CI manifest slice,
+strict docs-check и `git diff --check` успешны. Parser/selection/normalisation не менялись,
+полный внешний корпус повторно не запускался. Push/CI/deploy/live не выполнялись.

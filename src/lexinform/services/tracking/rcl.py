@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from zoneinfo import ZoneInfo
 
 from lexinform.concurrency import fan_out
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.models import (
     Bill,
     BillStatus,
@@ -184,6 +184,8 @@ class RclWatcher:
             )
             try:
                 self._linker.link(bill, bill.rcl.print_number, result, publish=publish)
+            except StateCheckpointError:
+                raise
             except ServiceUnavailableError as exc:
                 result.abort(exc)
                 return False

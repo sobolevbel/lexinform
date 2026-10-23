@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 
 from lexinform.commission_reviews import filed_commission_sources
 from lexinform.concurrency import fan_out
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.models import (
     AmendmentsContext,
     AmendmentsRecord,
@@ -546,6 +546,8 @@ class StatusTrackingService:
                     self._acts.check(bill, detail, result, publish=False)
                     continue
                 self._post_news(bill, detail, change, result, publish=publish)
+            except StateCheckpointError:
+                raise
             except ServiceUnavailableError as exc:
                 result.abort(exc, failed=True)
                 return

@@ -9,7 +9,7 @@ listing tells when the Sejm publishes the opinions received in a consultation
 
 import logging
 
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.models import (
     Bill,
     BillSubmission,
@@ -127,6 +127,8 @@ class PrePrintReconciler:
             return True
         try:
             self._apply(bill, sub, result, publish=publish)
+        except StateCheckpointError:
+            raise
         except ServiceUnavailableError as exc:
             result.abort(exc)
             return False

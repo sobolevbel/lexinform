@@ -12,7 +12,7 @@ A row that simply disappears from the register says the same as `Wycofany` and i
 import logging
 from collections.abc import Sequence
 
-from lexinform.errors import ServiceUnavailableError
+from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.models import (
     Bill,
     CheckAspect,
@@ -280,6 +280,8 @@ class WykazWatcher:
             )
             try:
                 self._linker.link(bill, bill.wykaz.rcl_project_id, result, publish=publish)
+            except StateCheckpointError:
+                raise
             except ServiceUnavailableError as exc:
                 result.abort(exc)
                 return False
