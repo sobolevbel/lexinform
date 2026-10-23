@@ -3,11 +3,13 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Never
 
 import pytest
 
 from lexinform import cli
 from lexinform.errors import StateCheckpointError
+from lexinform.settings import Settings
 
 
 def test_checkpoint_failure_has_a_distinct_process_exit_code(
@@ -35,6 +37,18 @@ def test_keyboard_interrupt_retains_its_exit_code(monkeypatch: pytest.MonkeyPatc
         cli.main()
 
     assert failure.value.code == 130
+
+
+def test_startup_does_not_convert_checkpoint_configuration_failure_to_an_ordinary_exit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def reject_configuration(settings: Settings) -> Never:
+        raise StateCheckpointError("missing production checkpoint")
+
+    monkeypatch.setattr(cli, "build_container", reject_configuration)
+
+    with pytest.raises(StateCheckpointError, match="missing production checkpoint"):
+        cli.run()
 
 
 @pytest.mark.parametrize("entrypoint", ["module", "console"])
@@ -65,4 +79,4 @@ def test_real_entrypoints_preserve_the_fatal_checkpoint_exit(
     )
 
     assert result.returncode == 75, result.stderr
-    assert "state checkpoint failed: git ls-remote" in result.stderr
+    assert "state checkpoint requires a valid Git worktree" in result.stderr

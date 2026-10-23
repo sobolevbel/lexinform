@@ -356,12 +356,12 @@ DA6–DA7 не требуют предварительно включать но
 `adapters/batch_checkpoint.py`, state snapshot adapter, `.github/workflows/daily.yml`.
 Названия новых kinds/полей выбираются после инвентаризации, не отдельной параллельной очередью.
 
-- [ ] DA1.1. Обобщить порт checkpoint с noop для локального неподключённого запуска
+- [x] DA1.1. [J010](2026-10-22-document-architecture-progress.md#j010). Обобщить порт checkpoint с noop для локального неподключённого запуска
   и обязательной реализацией для production. При ожидаемом remote state отсутствие/ошибка
   конфигурации останавливает запуск sender, а не включает noop. Настройки и `.env.example`
   изменяются вместе; dry-run не делает push. Сохранить fail-closed batch protocol:
   intent `submitting` должен быть удалённо сохранён до submit провайдеру.
-- [ ] DA1.2. Перед каждым reader API effect сохранить в существующей очереди точные HTML,
+- [ ] DA1.2. **В работе: [J011](2026-10-22-document-architecture-progress.md#j011).** Перед каждым reader API effect сохранить в существующей очереди точные HTML,
   channel, reply/edit target, flags, physical-part identity, membership и revision target.
   Freeze обязателен и при attention off/shadow: legacy digest/sittings не остаются live-render путями.
 - [ ] DA1.3. Перевести refresh/retag/rollover и обычные редактирования карточки на сохранённую

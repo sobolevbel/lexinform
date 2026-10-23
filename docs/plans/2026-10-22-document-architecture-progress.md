@@ -268,7 +268,7 @@ Rollback для форматов: `43078c4` читает тот же state; пр
 
 Дата: 23 октября 2026. Статус: принято локально для существующих batch checkpoints;
 DA1.5 в целом остаётся частично выполненным до переноса reader senders.
-Implementation commit: подготовлен к фиксации. Исходная версия: `f837f68`.
+Implementation commit: `560a397`. Исходная версия: `f837f68`.
 
 `DailyPipeline._phase` и `run` пробрасывают `StateCheckpointError`; `finally` сохраняет
 диагностику и учёт вызовов, затем ошибка доходит до вызывающего кода. `CommandService`
@@ -296,3 +296,45 @@ Schema 48, polling v1, цены/defaults и сохранённые payload forma
 
 Уточнение карты J005: под `PublicationPoster` подразумевается фактический класс `Poster`
 из `services/posting.py`; перечисленные методы принадлежат ему.
+
+<a id="j009"></a>
+### J009. DA0.5–DA0.6: полные external replay
+
+Дата: 23 октября 2026. Статус: в работе. Исходная версия: `560a397`.
+Implementation commit: не зафиксировано. Расширяется общий corpus runner для существующих
+external replay, с отдельными baseline/compare, явной provenance фактически прочитанных
+источников и запретом изменения входов. Приёмка/coverage ещё не подтверждены.
+
+<a id="j010"></a>
+### J010. DA1.1: общий checkpoint port и production wiring
+
+Дата: 23 октября 2026. Статус: DA1.1 принято локально. Исходная версия: `560a397`.
+Implementation commit: подготовлен к фиксации.
+
+`StateCheckpoint` — callable port; Container строит один shared writer и локальный noop.
+Settings добавляет `state_checkpoint_required=false`; production workflow задаёт `true`.
+Старые имена state file/branch сохранены, `.env.example` обновлён. Отсутствующие SQL path,
+branch, Git parent или origin останавливают создание sender; CLI startup сохраняет fatal
+exit 75. Согласованность remote tip проверяется самим writer при сохранении.
+Финальный `db checkpoint` использует тот же port с явным путём из CLI.
+
+Dry-run checkpoint — noop и не делает push; общий AnalysisService сохраняет проверку
+конфигурации при построении, но `start_run(dry_run=True)` не вызывает remote checkpoint.
+`--no-publish` запрещает reader sends, сохраняя обязательный pre-submit batch checkpoint:
+этот режим по-прежнему анализирует документы. Локальный collector получает прежний `None`,
+чтобы noop не позволил преждевременно забыть ответы провайдера без durable save.
+
+Проверены local/configured/shared, required missing/invalid config, оба entrypoints,
+dry-run ноль push/submit и no-publish batch checkpoint без reader sends. Полный offline pytest,
+mypy (309 файлов), Ruff, localhost CLI (21 passed) успешны.
+Новых persisted данных/форматов, SQL-миграций и изменения размера dump нет.
+Rollback по формату: `560a397`; старый код игнорирует новый env flag и сохраняет более слабую
+проверку конфигурации. Push/CI/deploy/live не выполнялись.
+
+<a id="j011"></a>
+### J011. DA1.2: frozen HTML новых и joint карточек
+
+Дата: 23 октября 2026. Статус: в работе. Исходная версия: `560a397`.
+Implementation commit: не зафиксировано. Готовится законченный перенос card producer
+на frozen prepared HTML во всех attention modes, с отдельной совместимостью legacy work.
+Remote boundary reader sends, остальные эффекты и завершение DA1 этим не заявляются.

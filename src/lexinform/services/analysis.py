@@ -119,6 +119,7 @@ from lexinform.ports import (
     BillRepository,
     Clock,
     LlmAnalyzer,
+    StateCheckpoint,
     TextIdentity,
 )
 from lexinform.ports import TextSource as TextSourcePort
@@ -468,7 +469,7 @@ class AnalysisService:
         triage: KeywordPrefilter | None = None,
         batch: BatchBackend | None = None,
         batch_resolver: Callable[[BatchProvider], BatchBackend | None] | None = None,
-        batch_checkpoint: Callable[[], None] | None = None,
+        batch_checkpoint: StateCheckpoint | None = None,
     ) -> None:
         self._repo = repo
         self._texts = texts

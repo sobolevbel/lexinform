@@ -90,6 +90,10 @@ class Clock(Protocol):
     def now(self) -> datetime: ...
 
 
+class StateCheckpoint(Protocol):
+    def __call__(self) -> None: ...
+
+
 class SejmGateway(Protocol):
     """The Sejm REST API (api.sejm.gov.pl); `ServiceUnavailableError` when it is down."""
 

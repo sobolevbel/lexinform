@@ -82,8 +82,12 @@ class Settings(BaseSettings):
     )
 
     db_path: Path = Path("lexinform.db")
+    state_checkpoint_required: bool = Field(
+        default=False,
+        description="Refuse external work when the Git state checkpoint is unconfigured.",
+    )
     llm_batch_state_file: Path | None = Field(
-        default=None, description="Git state dump checkpoint before and after remote submission."
+        default=None, description="SQL snapshot path for shared Git state checkpoints."
     )
     llm_batch_state_branch: str = "state"
 

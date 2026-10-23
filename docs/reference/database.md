@@ -164,6 +164,10 @@ commit сохраняется; автоматического обхода ко�
 Ошибка `StateCheckpointError` прекращает текущий pipeline/command, CLI возвращает **75**;
 workflow после этого не запускает следующий commands process. Диагностический отчёт
 текущего запуска сохраняется, а неисполненная команда не помечается executed/handled.
+Workflow задаёт `LEXINFORM_STATE_CHECKPOINT_REQUIRED=true`; отсутствие пути SQL, допустимой
+ветки, Git worktree или `origin` останавливает создание sender. Локально без настроенного
+state работает noop. Dry-run не делает push; `--no-publish` по-прежнему выполняет batch-анализ
+и сохраняет его обязательный pre-submit checkpoint. Общий writer собирается один раз в Container.
 
 Эта граница пока охватывает batch checkpoint и финальное сохранение workflow.
 Обычные reader sends ещё не получают remote checkpoint перед каждым API-вызовом;

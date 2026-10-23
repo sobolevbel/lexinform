@@ -15,6 +15,7 @@ import anthropic
 import openai
 
 from lexinform.adapters.batch_checkpoint import GitBatchCheckpoint
+from lexinform.adapters.checkpoint import NoopStateCheckpoint, validate_checkpoint_configuration
 from lexinform.adapters.console import ConsolePublisher, ConsoleReplier, ConsoleRunNotifier
 from lexinform.adapters.consultation_documents import SejmConsultationDocuments
 from lexinform.adapters.doc_text import DocTextExtractor
@@ -41,6 +42,7 @@ from lexinform.adapters.telegram import (
 from lexinform.adapters.telegram_format import APPROVE_DIGEST, MessageFormatter
 from lexinform.adapters.wykaz_csv import WykazClient
 from lexinform.clock import SystemClock
+from lexinform.errors import StateCheckpointError
 from lexinform.keywords import KeywordPrefilter
 from lexinform.models import BatchProvider, provider_of
 from lexinform.ports import (
@@ -56,6 +58,7 @@ from lexinform.ports import (
     RunNotifier,
     SejmApi,
     SenateGateway,
+    StateCheckpoint,
     TextExtractor,
     WykazGateway,
 )
@@ -312,6 +315,27 @@ class Container:
     def analysis_service(self) -> AnalysisService:
         return self._once("analysis", self._build_analysis_service)
 
+    def state_checkpoint(self, *, dry_run: bool = False) -> StateCheckpoint:
+        if dry_run:
+            return self._once("state_checkpoint:dry_run", NoopStateCheckpoint)
+        return self._once("state_checkpoint", self._build_state_checkpoint)
+
+    def _build_state_checkpoint(self) -> StateCheckpoint:
+        path = self.settings.llm_batch_state_file
+        if path is None:
+            if self.settings.state_checkpoint_required:
+                raise StateCheckpointError(
+                    "LEXINFORM_STATE_CHECKPOINT_REQUIRED needs LEXINFORM_LLM_BATCH_STATE_FILE"
+                )
+            return NoopStateCheckpoint()
+        validate_checkpoint_configuration(path, self.settings.llm_batch_state_branch)
+        return GitBatchCheckpoint(
+            self.repo.dump,
+            path,
+            self.settings.llm_batch_state_branch,
+            self.repo.list_open_llm_batches,
+        )
+
     def analysis_options(self) -> AnalysisOptions:
         if self.analysis_options_override is not None:
             return self.analysis_options_override
@@ -364,6 +388,7 @@ class Container:
         )
 
     def _build_analysis_service(self) -> AnalysisService:
+        checkpoint = self.state_checkpoint()
         return AnalysisService(
             self.repo,
             self.text_sources(),
@@ -382,14 +407,7 @@ class Container:
             batch=self.batch_backend(),
             batch_resolver=self.batch_backend_for,
             batch_checkpoint=(
-                GitBatchCheckpoint(
-                    self.repo.dump,
-                    self.settings.llm_batch_state_file,
-                    self.settings.llm_batch_state_branch,
-                    self.repo.list_open_llm_batches,
-                )
-                if self.settings.llm_batch_state_file is not None
-                else None
+                checkpoint if self.settings.llm_batch_state_file is not None else None
             ),
         )
 
@@ -445,6 +463,7 @@ class Container:
         )
 
     def publisher(self, *, dry_run: bool) -> Publisher:
+        self.state_checkpoint(dry_run=dry_run)
         if self.publisher_override is not None:
             return self.publisher_override
         if dry_run:

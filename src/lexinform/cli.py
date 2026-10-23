@@ -19,7 +19,6 @@ from lexinform.adapters.github_inbox import (
     GitHubInboxWriter,
     GitHubUnavailableError,
 )
-from lexinform.adapters.state_checkpoint import GitStateCheckpoint
 from lexinform.adapters.state_snapshot import write_state_snapshot
 from lexinform.adapters.telegram import TelegramBotClient, TelegramRunNotifier, send_and_retract
 from lexinform.adapters.telegram_format import MessageFormatter
@@ -153,6 +152,11 @@ def run(
     try:
         c = build_container(settings)
         pipeline = c.pipeline(dry_run=dry_run)
+    except StateCheckpointError as exc:
+        _report_startup_failure(settings, f"state checkpoint configuration failed: {exc}")
+        if c is not None:
+            c.close()
+        raise
     except Exception as exc:
         _report_startup_failure(settings, f"startup failed: {type(exc).__name__}: {exc}")
         if c is not None:
@@ -1205,7 +1209,14 @@ def db_checkpoint(
     """Commit and persist a SQL snapshot without overwriting another state writer."""
     c = _container()
     try:
-        GitStateCheckpoint(c.repo.dump, output, branch, c.repo.list_open_llm_batches)()
+        c.settings = c.settings.model_copy(
+            update={
+                "llm_batch_state_file": output,
+                "llm_batch_state_branch": branch,
+                "state_checkpoint_required": True,
+            }
+        )
+        c.state_checkpoint()()
     finally:
         c.close()
     typer.echo(f"checkpoint saved to {branch}: {output}")
