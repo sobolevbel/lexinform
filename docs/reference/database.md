@@ -181,8 +181,11 @@ failed/queued части идут через ту же границу. При po
 audit вместе с pending до повторного API. Attempted legacy card без HTML сохраняет прежний
 render callback; exact HTML этой старой попытки задним числом не восстанавливается.
 
-Updates, digest/sittings, refresh/retag/rollover edits и остальные reader effects пока работают
-по прежнему контракту. Полная долговечная граница доставки остаётся задачей
+Shared update groups и сохранённые sitting groups также checkpoint'ят всех участников до API
+и общий receipt после него. Новые sitting groups сохраняют HTML/membership в off/shadow/on;
+старые attempted legacy без membership остаются на прежнем callback. Одиночные updates,
+длинное одиночное sitting через `deliver`, digest, refresh/retag/rollover edits и остальные
+reader effects пока работают по прежнему контракту. Полная граница доставки остаётся задачей
 [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
 
 `restore()` сначала проигрывает SQL в отдельной базе в памяти. После успешной проверки

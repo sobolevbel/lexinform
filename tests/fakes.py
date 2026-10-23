@@ -6,7 +6,7 @@ gateway and `outage_on` on the publisher raise the phase-fatal `ServiceUnavailab
 `fail_on` raises an ordinary per-bill error.
 """
 
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 
@@ -874,8 +874,10 @@ class FakePublisher(RenderingPublisher):
         *,
         outage_on: set[str] | None = None,
         formatter: MessageFormatter | None = None,
+        publication_by_id: Callable[[int], Publication | None] | None = None,
     ) -> None:
         super().__init__(formatter or MessageFormatter("ru"))
+        self._publication_by_id = publication_by_id
         self.digest_send_attempts = 0
         self.continuation_attempts = 0
         self.fail_continuation_attempt: int | None = None
@@ -971,9 +973,23 @@ class FakePublisher(RenderingPublisher):
         return result
 
     def publish_prepared(self, publication: Publication) -> PublishResult:
-        result = super().publish_prepared(publication)
         plan = publication.delivery
         assert plan is not None, "prepared delivery requires its saved payload"
+        news: tuple[SittingNews, ...] = ()
+        if plan.sitting_group and self._publication_by_id is not None:
+            members = [self._publication_by_id(identity) for identity in plan.sitting_group]
+            lines: list[SittingNews] = []
+            for member in members:
+                assert member is not None and member.delivery is not None, (
+                    "sitting groups retain every member's saved payload"
+                )
+                lines.append(SittingNews.of(member.kind, member.delivery))
+            news = tuple(lines)
+            for line in news:
+                self._refuse(line.bill.number)
+        result = super().publish_prepared(publication)
+        if news:
+            self._record_sittings(news)
         if plan.edit_message_id is not None or not plan.rendered_text:
             return result
         if publication.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
@@ -1037,13 +1053,16 @@ class FakePublisher(RenderingPublisher):
         for line in news:
             self._refuse(line.bill.number)  # a failing bill fails the post it is a line of
         result = super().publish_sittings(news)
+        self._record_sittings(news)
+        return result
+
+    def _record_sittings(self, news: Sequence[SittingNews]) -> None:
         self.sittings.append(tuple(news))
         for line in news:
             if line.cancelled:
                 self.agenda_cancellations.append((line.bill, line.item, line.still_meets))
             else:
                 self.agendas.append((line.bill, line.item, line.card_message_id))
-        return result
 
     def publish_hearing_deadline(
         self, bill: Bill, hearing: Stage, reply_to: int | None, *, today: date

@@ -344,7 +344,11 @@ class World:
             support_url=SUPPORT_URL,
             attention_enabled=reader_attention == "on",
         )
-        self.publisher = FakePublisher(fail_on=fail_publish, formatter=self.formatter)
+        self.publisher = FakePublisher(
+            fail_on=fail_publish,
+            formatter=self.formatter,
+            publication_by_id=self.repo.publication_by_id,
+        )
         self.notifier = FakeNotifier()
         self.inbox = FakeInbox()
         self.replier = FakeReplier()

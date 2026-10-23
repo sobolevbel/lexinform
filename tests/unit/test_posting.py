@@ -57,10 +57,23 @@ def _poster(repo: SqliteBillRepository, publisher: FakePublisher, attempts: int 
     )
 
 
+def _publisher(
+    repo: SqliteBillRepository,
+    *,
+    fail_on: set[str] | None = None,
+    outage_on: set[str] | None = None,
+) -> FakePublisher:
+    return FakePublisher(
+        fail_on=fail_on,
+        outage_on=outage_on,
+        publication_by_id=repo.publication_by_id,
+    )
+
+
 def test_successful_post_replies_to_the_card_and_is_recorded_as_sent(
     repo: SqliteBillRepository, bill: Bill
 ) -> None:
-    publisher = FakePublisher()
+    publisher = _publisher(repo)
 
     sent = _poster(repo, publisher).act_published(bill)
 
@@ -73,7 +86,7 @@ def test_successful_post_replies_to_the_card_and_is_recorded_as_sent(
 def test_failed_post_is_recorded_with_the_error_and_counted_as_an_attempt(
     repo: SqliteBillRepository, bill: Bill
 ) -> None:
-    poster = _poster(repo, FakePublisher(fail_on={"3039"}))
+    poster = _poster(repo, _publisher(repo, fail_on={"3039"}))
 
     sent = poster.in_force(bill, today=dt.date(2026, 9, 7))
 
@@ -89,7 +102,7 @@ def test_failed_post_is_recorded_with_the_error_and_counted_as_an_attempt(
 def test_post_is_blocked_once_the_attempts_are_exhausted(
     repo: SqliteBillRepository, bill: Bill
 ) -> None:
-    poster = _poster(repo, FakePublisher(fail_on={"3039"}), attempts=2)
+    poster = _poster(repo, _publisher(repo, fail_on={"3039"}), attempts=2)
 
     poster.consultation_results(bill)
     poster.consultation_results(bill)
@@ -98,7 +111,7 @@ def test_post_is_blocked_once_the_attempts_are_exhausted(
 
 
 def test_outage_marks_the_row_failed_and_propagates(repo: SqliteBillRepository, bill: Bill) -> None:
-    poster = _poster(repo, FakePublisher(outage_on={"3039"}))
+    poster = _poster(repo, _publisher(repo, outage_on={"3039"}))
 
     with pytest.raises(TelegramUnavailableError):
         poster.consultation_deadline(bill, today=dt.date(2026, 9, 27))
@@ -109,7 +122,7 @@ def test_outage_marks_the_row_failed_and_propagates(repo: SqliteBillRepository, 
 
 
 def test_agenda_posts_are_tracked_per_sitting(repo: SqliteBillRepository, bill: Bill) -> None:
-    poster = _poster(repo, FakePublisher())
+    poster = _poster(repo, _publisher(repo))
     other = SITTING.model_copy(update={"ref": "sejm/65/2026-09-15", "kind": "sejm"})
 
     poster.queue_sitting(
@@ -122,7 +135,7 @@ def test_agenda_posts_are_tracked_per_sitting(repo: SqliteBillRepository, bill: 
 
 
 def test_the_sittings_of_a_run_go_out_as_one_post(repo: SqliteBillRepository, bill: Bill) -> None:
-    publisher = FakePublisher()
+    publisher = _publisher(repo)
     poster = _poster(repo, publisher)
     other = SITTING.model_copy(update={"ref": "sejm/65/2026-09-15", "kind": "sejm"})
     result = TrackingResult()
@@ -144,7 +157,7 @@ def test_the_sittings_of_a_run_go_out_as_one_post(repo: SqliteBillRepository, bi
 def test_a_failed_sittings_post_leaves_every_line_to_retry(
     repo: SqliteBillRepository, bill: Bill
 ) -> None:
-    poster = _poster(repo, FakePublisher(fail_on={"3039"}))
+    poster = _poster(repo, _publisher(repo, fail_on={"3039"}))
     result = TrackingResult()
 
     poster.queue_sitting(
@@ -160,7 +173,7 @@ def test_a_failed_sittings_post_leaves_every_line_to_retry(
 def test_long_roundup_keeps_every_sitting_and_its_application_address(
     repo: SqliteBillRepository, bill: Bill
 ) -> None:
-    publisher = FakePublisher()
+    publisher = _publisher(repo)
     poster = _poster(repo, publisher)
     result = TrackingResult()
     for number in range(8):
@@ -196,7 +209,7 @@ def test_long_roundup_keeps_every_sitting_and_its_application_address(
 
 
 def test_a_queued_sitting_keeps_its_saved_card_link(repo: SqliteBillRepository, bill: Bill) -> None:
-    publisher = FakePublisher()
+    publisher = _publisher(repo)
     poster = _poster(repo, publisher)
     planned = poster.prepare_message(bill, PublicationKind.AGENDA, ref=SITTING.ref, item=SITTING)
     card = poster.card(bill)
@@ -212,7 +225,7 @@ def test_a_queued_sitting_keeps_its_saved_card_link(repo: SqliteBillRepository, 
 def test_an_oversized_sitting_keeps_all_facts_in_durable_parts(
     repo: SqliteBillRepository, bill: Bill
 ) -> None:
-    publisher = FakePublisher()
+    publisher = _publisher(repo)
     poster = _poster(repo, publisher)
     item = SITTING.model_copy(update={"room": "x" * 5000})
     planned = poster.prepare_message(bill, PublicationKind.AGENDA, ref=item.ref, item=item)
@@ -234,7 +247,7 @@ def test_an_oversized_sitting_keeps_all_facts_in_durable_parts(
 def test_held_changes_go_out_with_the_next_update_and_are_released(
     repo: SqliteBillRepository, bill: Bill, now: dt.datetime
 ) -> None:
-    publisher = FakePublisher()
+    publisher = _publisher(repo)
     poster = _poster(repo, publisher)
     reading = Stage(stage_name="I czytanie w komisjach", stage_type="Reading")
     report = Stage(stage_name="Sprawozdanie komisji", stage_type="CommitteeReport")
@@ -259,7 +272,7 @@ def test_held_changes_go_out_with_the_next_update_and_are_released(
 def test_retry_does_not_consume_stages_held_after_the_original_plan(
     repo: SqliteBillRepository, bill: Bill, now: dt.datetime
 ) -> None:
-    publisher = FakePublisher(fail_on={"3039"})
+    publisher = _publisher(repo, fail_on={"3039"})
     poster = _poster(repo, publisher)
     report = Stage(stage_name="Sprawozdanie komisji", stage_type="CommitteeReport")
     reading = Stage(stage_name="II czytanie", stage_type="Reading")
@@ -291,7 +304,7 @@ def _change(bill: Bill, stages: list[Stage], fingerprint: str, now: dt.datetime)
 
 
 def test_recorded_skip_counts_as_posted(repo: SqliteBillRepository, bill: Bill) -> None:
-    poster = _poster(repo, FakePublisher())
+    poster = _poster(repo, _publisher(repo))
 
     poster.record(bill, PublicationKind.IN_FORCE, PublicationStatus.SKIPPED)
 

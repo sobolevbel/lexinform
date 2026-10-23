@@ -169,7 +169,7 @@ class RenderingPublisher(ABC):
         assert plan is not None and (plan.rendered_text or plan.group_text)
         bill = Bill.model_validate_json(plan.bill_json) if plan.bill_json else None
         outgoing = Outgoing(
-            publication.kind,
+            PublicationKind.AGENDA if plan.sitting_group else publication.kind,
             None if plan.sitting_group else bill,
             plan.group_text or plan.rendered_text,
             None if plan.sitting_group else plan.reply_to,

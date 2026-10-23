@@ -523,7 +523,7 @@ strict docs-check и `git diff --check` успешны. Независимый r
 ### J016. DA1.5: fatal persistence error во вложенных tracking handlers
 
 Дата: 23 октября 2026. Статус: contract tests приняты локально. Исходная версия: `45345e8`.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `7209319`.
 
 Перед расширением reader boundary четыре best-effort catch получают явный проброс
 `StateCheckpointError`: Sejm `_post_news`, pre-print `_apply`, RCL и Wykaz `_link_pending`.
@@ -544,3 +544,46 @@ Artifact: `/private/tmp/lexinform-tracking-checkpoint-guard-mutation.txt`.
 DA5; mypy — 316 файлов, Ruff check/format, localhost CLI (21 passed), CI manifest slice,
 strict docs-check и `git diff --check` успешны. Parser/selection/normalisation не менялись,
 полный внешний корпус повторно не запускался. Push/CI/deploy/live не выполнялись.
+
+<a id="j017"></a>
+### J017. DA1.2/DA1.4–DA1.6: shared updates и сводки заседаний
+
+Дата: 23 октября 2026. Статус: shared-send вертикаль принята локально.
+Исходный совместимый reader: `45345e8`; база выпуска: `7209319`.
+Implementation commit: подготовлен к фиксации.
+
+`retry_update_group` и `_retry_sitting_group` подключены к shared checkpoint. Все member rows
+переходят в pending одной транзакцией до remote save; общий receipt/effects — одной транзакцией
+после физического API и до следующей отправки. Saved text/membership immutable при retry и
+переключении attention mode. Новые QUEUED/attempts=0 sitting groups теперь сохраняют group_text
+и IDs также в off/shadow; существующий reader уже читает их независимо от mode.
+Физический sitting roundup, включая отмену, сохраняет прежний Outgoing kind AGENDA и тот же HTML.
+
+Attempted legacy sitting без сохранённого membership оставлен на прежнем callback. Одиночный
+update и длинное одиночное sitting через `deliver` этим фрагментом не переводятся. Поэтому
+DA1.2/DA1.4–DA1.6 остаются частичными. Новые гарантии относятся к перечисленным shared sends.
+FakePublisher восстанавливает исторические SittingNews по узкому publication_by_id из World,
+сохраняя domain bookkeeping и отказ любого участника до API; второй send/рендер не добавлен.
+
+31 scenario test с production batches и временными Git remotes проверяет exact payload/IDs
+до API, pre/post failure, runner loss, accepted/lost response, remote-only restore, operator retry
+из второго member после смены mode, missing member и legacy fallback. Pipeline regressions
+проверяют проброс fatal из tracking и отсутствие следующей фазы/редактирования. Ещё четыре
+fake tests проверяют grouped transport и отказы второго участника. Общий gate J016 зелёный.
+
+Фактический Poster из `45345e8` прочитал новые failed groups после fresh clone: 6/6
+(updates/sittings × off/shadow/on), неизменные HTML/membership, один physical send и общий ID
+при изменённых текущих Bill и clock +120 дней. Renderer/legacy callbacks были запрещены.
+Artifact: `/private/tmp/lexinform-old-poster-compatibility-20261023-55194.json`,
+SHA `f10f6fd5fdfee007e8bf21e0ad31d21b4146acccd538532634710d04c7672f3b`.
+Это old module с текущими imported helpers/models/adapter, проверка формата, не old durability.
+Безопасный active rollback не возвращает sender без checkpoint: сначала остановить эффекты
+и сохранить remote pending/unknown.
+
+Schema 48, polling v1 и persisted поля прежние; raw-архива и нового backend нет. Для synthetic
+sitting из двух members новые group fields добавили 1718 bytes SQL literals суммарно в
+off/shadow; on уже сохранял их. Это полевая оценка, не размер всего dump и не дневной forecast.
+Artifact с source hashes: `/private/tmp/lexinform-architecture-payload-growth-20261023-groups-digest-final-values.json`,
+SHA `3d35c19f4b092b3172bfbe39c239b81d667e1255407150bc31b4fe7f71174f7b`.
+Каждая physical группа получает два checkpoints; история Git отдельно не измерялась сверх J012.
+Push/CI/deploy/live не выполнялись.

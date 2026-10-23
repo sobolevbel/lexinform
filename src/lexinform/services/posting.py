@@ -342,6 +342,7 @@ class Poster:
             self._clock,
             identities,
             lambda: self._publisher.publish_updates(plan.group_text),
+            checkpoint=self._checkpoint,
         )
         self._count_attention(identities, sent)
         result.count_post(sent is not None)
@@ -452,7 +453,7 @@ class Poster:
             result.count_post(sent, "agenda_cancelled" if news[0].cancelled else "agenda_posted")
             return
         if all(
-            pub.delivery is not None and pub.delivery.policy_version == "attention-v1"
+            pub.delivery is not None and pub.status is PublicationStatus.QUEUED and not pub.attempts
             for pub in pubs
         ):
             group_ids = tuple(pub.id for pub in pubs if pub.id is not None)
@@ -509,7 +510,11 @@ class Poster:
                 )
         self._attempted.update(identities)
         sent = send_publications(
-            self._repo, self._clock, identities, lambda: self._publisher.publish_prepared(pub)
+            self._repo,
+            self._clock,
+            identities,
+            lambda: self._publisher.publish_prepared(pub),
+            checkpoint=self._checkpoint,
         )
         self._count_attention(identities, sent)
         for member in members:
