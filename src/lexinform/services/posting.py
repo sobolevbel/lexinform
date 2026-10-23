@@ -1351,6 +1351,14 @@ class Poster:
         assert pub.delivery is not None and pub.id is not None
         if pub.delivery.rendered_text:
             return pub
+        if (
+            pub.kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED)
+            and pub.status is PublicationStatus.QUEUED
+            and not pub.attempts
+        ):
+            text = self._publisher.render_sittings((SittingNews.of(pub.kind, pub.delivery),))
+            if utf16_length(text) > MESSAGE_LIMIT:
+                return self._freeze_sitting(pub, text)
         today = (
             pub.delivery.today
             if pub.delivery.edit_message_id is not None
@@ -1360,6 +1368,16 @@ class Poster:
         pub = pub.model_copy(update={"delivery": plan})
         return freeze_parts(
             self._repo, self._clock, self._publisher, pub, self._publisher.render_delivery(pub)
+        )
+
+    def _freeze_sitting(self, pub: Publication, text: str) -> Publication:
+        assert pub.delivery is not None, "only a saved sitting reaches the physical-part producer"
+        return freeze_parts(
+            self._repo,
+            self._clock,
+            self._publisher,
+            pub.model_copy(update={"delivery": pub.delivery.model_copy(update={"reply_to": None})}),
+            text,
         )
 
     def _schedule(self, plan: DeliveryPlan, kind: PublicationKind) -> DeliveryPlan:
@@ -1528,9 +1546,24 @@ class Poster:
             if pub.kind is PublicationKind.STATUS_UPDATE and pub.delivery.edit_message_id is None:
                 pub = self._freeze(pub)
             else:
-                text = self._publisher.render_delivery(pub)
+                assert pub.delivery is not None, (
+                    "stored rows selected for freezing retain their plan"
+                )
+                sitting = (
+                    pub.kind in (PublicationKind.AGENDA, PublicationKind.AGENDA_CANCELLED)
+                    and pub.status is PublicationStatus.QUEUED
+                )
+                text = (
+                    self._publisher.render_sittings((SittingNews.of(pub.kind, pub.delivery),))
+                    if sitting
+                    else self._publisher.render_delivery(pub)
+                )
                 if utf16_length(text) > MESSAGE_LIMIT:
-                    pub = freeze_parts(self._repo, self._clock, self._publisher, pub, text)
+                    pub = (
+                        self._freeze_sitting(pub, text)
+                        if sitting
+                        else freeze_parts(self._repo, self._clock, self._publisher, pub, text)
+                    )
         if pub is not None and pub.delivery is not None and pub.delivery.rendered_text:
 
             def prepared_send(_: int | None) -> int:
@@ -1577,6 +1610,11 @@ class Poster:
             else pub
         )
         if root is not None and root.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
+            return self._checkpoint
+        if root is not None and root.kind in (
+            PublicationKind.AGENDA,
+            PublicationKind.AGENDA_CANCELLED,
+        ):
             return self._checkpoint
         if (
             root is not None

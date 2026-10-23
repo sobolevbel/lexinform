@@ -739,7 +739,7 @@ Push/CI/deploy/live не выполнялись. Следующие вертик
 ### J021. DA1.2: совместимый reader frozen sitting перед top-level producer
 
 Дата: 23 октября 2026. Статус: reader-first стадия принята локально. База: `3987b83`.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `26e6bac`.
 
 Saved sitting с rendered_text идёт через prepared transport до любой проверки размера,
 нового render, grouping и expiry. Это защищает пограничный multipart: после отделения physical
@@ -763,3 +763,48 @@ strict xfail DA5, `/private/tmp/lexinform-frozen-sitting-reader-full-20261023.xm
 mypy — 321 файлов, Ruff check/format, strict docs-check и `git diff --check` успешны.
 CLI/wiring, parser/selection/normalisation не менялись; новый полный corpus replay не запускался.
 Push/CI/deploy/live не выполнялись. Следующий выпуск включает long sitting producer/checkpoints.
+
+<a id="j022"></a>
+### J022. DA1.2/DA1.4–DA1.6: длинное одиночное sitting
+
+Дата: 23 октября 2026. Статус: вертикаль принята локально.
+База выпуска и совместимый reader: `26e6bac`.
+Implementation commit: подготовлен к фиксации.
+
+Новый QUEUED/attempts=0 AGENDA/AGENDA_CANCELLED длиннее лимита Telegram рендерится как
+sitting roundup с исходной card link, затем сохраняется с physical root reply_to=None.
+Все части готовы до первого pending/API, каждый child получает сохранённый receipt parent.
+Общая boundary checkpoint'ит root/части до API и receipt после него. Оба публичных входа,
+flush_sittings и deliver, используют этот формат; attention refresh/availability guards
+выполняются до freeze. group_text/sitting_group не используются для multipart root.
+
+Это также исправляет прежний layout: длинный root уходил ответом под карточкой, хотя сводки
+заседаний должны быть top-level. Уже attempted saved HTML/targets остаются прежними;
+legacy noHTML FAILED0/1 не получает придуманного frozen payload или новых parts и сохраняет
+прежний refusal/error. Его полноценное восстановление не засчитывается в приёмку новой доставки.
+
+40 production World cases с temp Git remotes проверяют modes3 × announcement/cancellation,
+оба входа, exact HTML/card URL при текущей card 999, top-level root, receipt parents,
+root/final pre/post failure, runner loss/unknown, fresh clone, mode change, audited retry/confirm,
+legacy immutability. Вместе с reader compatibility: 61 passed.
+
+Фактический Poster из `26e6bac` прочитал новые failed frozen roots после temp remote/fresh
+clone: 6/6 off/shadow/on × announcement/cancellation. При Bill/card/time drift и запрещённых
+render/legacy callbacks сохранены exact HTML/card link, top-level root, child receipt parents,
+порядок частей и один logical sitting; повтор terminal доставки не отправлен. Artifact:
+`/private/tmp/lexinform-old-long-sitting-reader-qualification-20261023-24221.json`,
+SHA `24a22eabbe8f4ac25453829b914e3b61a0a3401d6296a26aa2860ae66ea7143b`.
+Это old module с текущими imported helpers/models/adapter, только format compatibility;
+active rollback не возвращается к sender без checkpoints.
+
+В том же synthetic artifact root+children SQLite quote(delivery_json) сравнены с фактическим
+старым producer `26e6bac`: +1 byte в off/shadow и −7 bytes в on для announcement/cancellation.
+HTML layout совпал; разница относится к reply_to и необязательному today, не используемому
+sitting renderer. Это payload literals без иных строк/gzip/Git overhead, не весь dump и не
+production forecast. Schema 48/polling v1 и отсутствие raw/archive/backend сохранены.
+
+Полный gate: 3068 passed + один прежний strict xfail DA5,
+`/private/tmp/lexinform-long-sitting-activation-full-20261023.xml`; mypy — 322 файла,
+Ruff check/format, strict docs-check и `git diff --check` успешны. CLI/wiring,
+parser/selection/normalisation не менялись; новый полный corpus replay не запускался.
+Push/CI/deploy/live не выполнялись. Следующая вертикаль — notices с сохранённой датой.
