@@ -1002,7 +1002,7 @@ review после повторной submission в соседнем `dcffe40`. �
 ### J028. Pre-push correction: успех review после повторной submission
 
 Дата: 24 октября 2026. База: `9df9849`. Статус: принято локально.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `c8feef1`.
 
 Независимая проверка пакета выявила в `dcffe40` неверный exhaustion: batch_job.state=failed
 означает и consumed successful item. После failed → success при submissions=2 проверка до
@@ -1033,3 +1033,53 @@ Schema/форматы/retention/backend прежние; новых persisted д�
 уже полученного результата предшествует проверке счётчика submissions. Corpus replay не нужен:
 extraction/selection/normalisation не меняются. Defect [B118](../BUGS.md#b118) исправлен локально.
 Пакет готов к разрешённому push; remote SHA/CI/deploy фиксируются отдельно после проверки.
+
+<a id="j029"></a>
+### J029. DA1.10: долговечный lifecycle commands/inbox
+
+Дата: 24 октября 2026. База: `c8feef1`. Статус: принято локально.
+Implementation commit: подготовлен к фиксации.
+
+Предыдущий пакет отправлен в main: `git push` и независимый `ls-remote` подтвердили
+`c8feef121aaf3d592bab4ba59e8860eb833f4f2d`. Release evidence приведён ниже; live pipeline
+вручную не запускался. Текущая стадия остаётся локальной до отдельного push.
+
+Release-проверка завершена: [CI 40042313295](https://github.com/sobolevbel/lexinform/actions/runs/40042313295)
+и [Deploy relay 40042607759](https://github.com/sobolevbel/lexinform/actions/runs/40042607759)
+успешны с точным headSha `c8feef121aaf3d592bab4ba59e8860eb833f4f2d`. Deploy log подтверждает
+`5199e8983195 -> c8feef121aaf` и `lexinform-listen up 45 s after restart`, без mismatch warning.
+Это workflow/log evidence, не прямая проверка VPS/Telegram или production pipeline. Artifact:
+`/private/tmp/lexinform-release-c8feef1-20261024/evidence.json`,
+SHA `649ecbc46f661bfb96e2f55019901be73a5156588692c62344325df2019773cc`.
+
+CommandService получает общий StateCheckpoint: started до исполнения, каждый unhandled outcome
+до технического ответа, handled до inbox.done. Повтор уже выполненной команды сохраняет
+состояние перед ответом, не запускает исполнение заново. Dry suppresses новые checkpoints/ack;
+обычный dry Container по-прежнему отвечает за noop всех вложенных сервисов.
+
+20 новых cases используют production World, реальные FileInbox files, temp bare remote и fresh
+clone. Проверяются три failure boundaries, no next command, uncertain started без повторного
+исполнения, потеря handled receipt с допустимым повтором только ответа, same-service outcome
+revalidation, already-handled re-read, technical reply outage/generic/typed failure, dry override,
+normal dry pipeline, no-publish status audit, resolution audit durability и read-only cost/runs CLI.
+Прежний ordinal digest failure injection заменён на явные PENDING/SENT boundaries, с проверкой
+числа physical API effects. 214 affected cases и два профильных workflow checks прошли в mirror.
+
+Независимый DA1.8 audit: canonical active state writer только daily.yml; все workflow routes
+имеют общий lexinform-daily lock, final db checkpoint пишет SQL+pending-batches manifest через
+CAS. Relay пишет inbox, VPS poller читает manifest/dispatch, deploy state не пишет. 20 fake-shell
+workflow tests прошли; активный обход не найден. Остаток DA1.8 — эксклюзивная maintenance
+procedure для direct manual CLI, который сам GitHub lock не приобретает. Report:
+`/private/tmp/lexinform-state-writer-audit-20261024/report.md`,
+SHA `123a0616ebd1f5defff9dad6e067c0e45164563c5a73927de89e8ebfd40ccbbf`.
+
+Полный gate: 3332 passed + один прежний strict xfail DA5,
+`/private/tmp/lexinform-command-checkpoints-full-20261024.xml`; mypy — 330 файлов,
+Ruff check/format, strict docs-check и `git diff --check` успешны. Local HTTP CLI — 21 passed.
+После паузы XML целиком проверен (0 failures/errors), Ruff/format/mypy повторены; source не менялся.
+Schema 48/polling v1 и inbox protocol прежние, новых persisted fields/backend/raw archive нет.
+Свежая команда добавляет три checkpoint calls, replay без handled — два, handled re-read — один;
+это calls существующего writer, не обещание фиксированного числа новых Git commits.
+Technical reply допускает прежний повтор после outage/lost handled; reader execution не повторяется.
+Extraction/selection/normalisation не меняются, corpus replay не требуется. DA1.10 принят локально;
+push этой стадии, CI/deploy и отсутствие ручного live run отмечаются отдельно.

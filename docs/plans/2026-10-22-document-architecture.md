@@ -389,7 +389,7 @@ DA6–DA7 не требуют предварительно включать но
 - [ ] DA1.9. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012).** Измерить dump/push latency и объём на копии state. Без измерений не объединять
   несколько физически начатых отправок в один checkpoint ради производительности.
   При неприемлемых затратах сравнить постоянный runtime; второе delivery-хранилище не вводить по умолчанию.
-- [ ] DA1.10. **Частично: [J007](2026-10-22-document-architecture-progress.md#j007), [J015](2026-10-22-document-architecture-progress.md#j015).** Связать commands/inbox с подтверждённым state: сохранять started до исполнения,
+- [x] DA1.10. **Принято локально: [J007](2026-10-22-document-architecture-progress.md#j007), [J015](2026-10-22-document-architecture-progress.md#j015), [J029](2026-10-22-document-architecture-progress.md#j029).** Связать commands/inbox с подтверждённым state: сохранять started до исполнения,
   recovery audit до повторного API-вызова, executed/outcome после исполнения и до ответа,
   handled до удаления inbox-файла; на каждой границе нужен подтверждённый checkpoint.
   Не публиковать удаления inbox, если checkpoint, покрывающий эти command IDs, не подтверждён.

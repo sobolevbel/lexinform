@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from lexinform.adapters.batch_checkpoint import GitBatchCheckpoint
 from lexinform.errors import DeliveryUncertainError, StateCheckpointError
 from lexinform.models import (
     DIGEST_NUMBER,
@@ -374,19 +375,34 @@ def test_runner_loss_and_operator_retry_preserve_digest_payload_membership_and_a
     )
 
 
-@pytest.mark.parametrize("at", [1, 2])
+@pytest.mark.parametrize("boundary", [PublicationStatus.PENDING, PublicationStatus.SENT])
 def test_digest_command_checkpoint_failure_stops_later_commands_without_acknowledging(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, at: int
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, boundary: PublicationStatus
 ) -> None:
     world, _ = pending_event()
     connect(world, tmp_path)
     incoming = world.command(f"/digest publish ref={REF}")
     later = world.command("/status")
-    reject_checkpoint(monkeypatch, at)
+    original = GitBatchCheckpoint.__call__
+    before = len(world.publisher.sent)
+    observed: list[PublicationStatus] = []
+
+    def checkpoint(writer: GitBatchCheckpoint) -> None:
+        row = world.repo.get_publication(
+            DIGEST_TERM, DIGEST_NUMBER, PublicationKind.DIGEST, CHANNEL, ref=REF
+        )
+        if row is not None and row.status is boundary:
+            observed.append(row.status)
+            raise StateCheckpointError("injected reader checkpoint failure")
+        original(writer)
+
+    monkeypatch.setattr(GitBatchCheckpoint, "__call__", checkpoint)
 
     with pytest.raises(StateCheckpointError, match="reader checkpoint failure"):
         world.run(discover=False, analyze=False, track=False, max_publish=0)
 
+    assert observed == [boundary]
+    assert len(world.publisher.sent) - before == int(boundary is PublicationStatus.SENT)
     command = world.repo.command_state(incoming.update_id)
     assert command is not None, "commands are recorded before a reader effect is attempted"
     assert command.executed_at is None and command.handled_at is None

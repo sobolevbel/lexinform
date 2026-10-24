@@ -192,6 +192,11 @@ API. Каждая часть checkpoint'ит pending до API и receipt/source 
 Attempted legacy digest без частей checkpoint'ит статус, сохраняя прежний render callback.
 Technical draft не резервирует source events и не получает reader checkpoints.
 
+CommandService checkpoint'ит started до исполнения, unhandled outcome до ответа и handled
+до inbox.done, включая повтор уже обработанного файла. Replayed executed command повторяет
+только технический ответ. StateCheckpointError фатален; unavailable reply остаётся для повтора,
+generic reply error сохраняет прежний handled/failure-note контракт. Dry suppresses новые CP/ack.
+
 Новые одиночные STATUS_UPDATE без edit target сохраняют HTML и все части в off/shadow/on.
 Root и MESSAGE_PART checkpoint'ят pending до API и receipt/effects после него; последняя часть
 освобождает только saved held IDs и завершает связанный ACT_PUBLISHED. Исходный FAILED без HTML

@@ -42,7 +42,14 @@ from lexinform.models import (
     valid_mnemonic,
 )
 from lexinform.models.source_checks import observation_label, operator_observation
-from lexinform.ports import BillRepository, Clock, CommandInbox, OperatorReplier, Publisher
+from lexinform.ports import (
+    BillRepository,
+    Clock,
+    CommandInbox,
+    OperatorReplier,
+    Publisher,
+    StateCheckpoint,
+)
 from lexinform.pricing import cost_usd
 from lexinform.services.amendments import AmendmentsService
 from lexinform.services.analysis import AnalysisService, TooExpensiveError, Waiting
@@ -160,6 +167,7 @@ class CommandService:
         status_days: int = 7,
         status_bills: int = 10,
         language: str = "ru",
+        checkpoint: StateCheckpoint | None = None,
     ) -> None:
         self._repo = repo
         self._inbox = inbox
@@ -176,6 +184,7 @@ class CommandService:
         self._publisher_for = publisher_for
         self._status_days = status_days
         self._status_bills = status_bills
+        self._checkpoint = checkpoint
 
     def handle_pending(
         self,
@@ -224,6 +233,8 @@ class CommandService:
         the next run repeats the answer alone.
         """
         earlier = self._earlier_state(incoming)
+        if earlier is None:
+            self._save_state(dry_run=dry_run)
         if earlier is not None and earlier.handled_at is not None:
             log.info("command %d answered before; inbox file dropped", incoming.update_id)
             self._done(incoming, dry_run=dry_run)
@@ -245,6 +256,7 @@ class CommandService:
             }
         )
         _count_usage(result, spent)
+        self._save_state(dry_run=dry_run)
         try:
             self._answer(incoming, outcome, dry_run=dry_run)
         except ServiceUnavailableError as exc:
@@ -324,6 +336,8 @@ class CommandService:
         line = outcome.line()
         try:
             self._replier.reply(incoming, outcome)
+        except StateCheckpointError:
+            raise
         except ServiceUnavailableError:
             raise
         except Exception as exc:
@@ -334,7 +348,12 @@ class CommandService:
 
     def _done(self, incoming: IncomingCommand, *, dry_run: bool) -> None:
         if not dry_run:
+            self._save_state(dry_run=False)
             self._inbox.done(incoming)
+
+    def _save_state(self, *, dry_run: bool) -> None:
+        if not dry_run and self._checkpoint is not None:
+            self._checkpoint()
 
     def _execute(
         self,

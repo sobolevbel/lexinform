@@ -574,6 +574,7 @@ class Container:
                 digest=self.digest_service(dry_run=dry_run),
                 publisher_for=lambda chat: self.publisher_for(chat, dry_run=dry_run),
                 language=self.settings.output_language,
+                checkpoint=self.state_checkpoint(dry_run=dry_run),
             ),
         )
 
