@@ -1472,7 +1472,7 @@ Deploy relay [40109726656](https://github.com/sobolevbel/lexinform/actions/runs/
 <a id="j039"></a>
 ### J039. DA2.1: воспроизводимая инвентаризация raw файлов корпуса
 
-Дата: 24 октября 2026. База: `af612e8`. Статус: выполнено локально, ожидает commit/push.
+Дата: 24 октября 2026. База: `af612e8`. Реализация: `feb1266`, запушено; CI/deploy успешны.
 
 Dev-only tools.measure_corpus_files читает пять явных каталогов: RCL, Sejm term-10 prints,
 filed documents, self-amendments и RPW. Сохраняются path/hash/size каждого physical file,
@@ -1522,3 +1522,53 @@ Deploy relay [40110751655](https://github.com/sobolevbel/lexinform/actions/runs/
 на том же SHA. CI: 3777 passed + прежний xfail, mypy 346, corpus/docs/web green. Log
 `22320c536b62 -> af612e88339a`, relay up 45 s после restart, mismatch отсутствует.
 Только metadata/log verification, без ручного pipeline/SSH/Telegram send.
+
+<a id="j040"></a>
+### J040. DA1.2/DA1.6: оставшаяся legacy work в изолированном state snapshot
+
+Дата: 24 октября 2026. Статус: read-only аудит выполнен; runtime implementation неприменима.
+Code `feb126606ecc4a0fc62d9c8480073d3ec95268aa`; state
+`eacaf4beb864becab25b5a7152aa7d5c1f6f57dc` (commit 24.10.2026 14:51:50 UTC).
+
+SQL восстановлен в новую временную SQLite; после restore выполнялись только SELECT/model
+validation. Pipeline, recovery, paid calls, Telegram, workflow dispatch и canonical state writes
+не запускались. Snapshot описывает этот подтверждённый remote commit, не outcome текущего job.
+Schema 48; dump 14516854 bytes, SHA
+`822df39928c7116842aebf88b8bcd9f8e93566ced79b62c4b99bd5b2f2599f80`.
+
+Publication states: 144 sent, 4 skipped, 5 queued; pending/unknown/failed отсутствуют.
+Все пять active rows имеют attempts=0, saved plan/Bill snapshot и пока не имеют exact HTML.
+ID 131/132 — consultation_review, 186/187 — consultation_results, destination digest_only;
+ID 200 — direct status_update. Все пять DeliveryPlan/Bill читаются текущими моделями.
+Нет active legacy multipart/group memberships или начатых попыток без payload в этом snapshot.
+Это не доказательство отсутствия таких данных в старых backup либо следующих запусках.
+101 sent и 4 skipped не имеют exact payload; терминальные rows не объявляются retry work,
+а исторический exact HTML не восстанавливается из сегодняшнего formatter.
+
+Воспроизводимый основной запрос на pinned dump:
+
+```sql
+SELECT status, COUNT(*) FROM publications GROUP BY status;
+SELECT id, kind, status, attempts, delivery_json IS NOT NULL AS has_plan
+FROM publications WHERE status IN ('queued', 'pending', 'failed', 'unknown') ORDER BY id;
+```
+
+Артефакт `/private/tmp/lexinform-da1-legacy-j040-20261024.json`, SHA
+`eecb23fd919d94a131cdc32a750c42b03306aea48825ea0108a3ec7541648eae`;
+script `/private/tmp/lexinform-da1-legacy-j040-audit.py`, SHA
+`dc13eef0fa626a6d06f7fb00b8b6eb0df83648adecdd5f09ed7132eb1634304e`.
+Model validation artifact SHA
+`f3d64814ec4c5e2fbb466099a060ce925c7ea17df91bd3087a1b38756888b623`.
+Новой таблицы, полей, defaults, миграции и runtime rollback нет; очередь сохранена как есть.
+DA1.2/DA1.6 остаются частичными: следующий шаг — явный контракт чтения/попытки для старых
+snapshot без exact HTML/membership, сохраняя защиту uncertain work. Один этот snapshot не даёт
+основания для массового backfill; он не выполнялся.
+
+Реализация J039 `feb126606ecc4a0fc62d9c8480073d3ec95268aa` проверена независимо: CI
+[40111255110](https://github.com/sobolevbel/lexinform/actions/runs/40111255110), автоматический
+Deploy relay [40111574670](https://github.com/sobolevbel/lexinform/actions/runs/40111574670) success
+на том же SHA. CI: 3782 passed + прежний xfail, mypy 347, corpus/docs/web green. Log
+`af612e88339a -> feb126606ecc`, relay up 45 s после restart, mismatch отсутствует.
+Только metadata/log verification, без ручного pipeline/SSH/Telegram send.
+Для J040 source gate остаётся действительным: изменена только документация по прочитанным
+данным; strict docs build/link check и diff check успешны.
