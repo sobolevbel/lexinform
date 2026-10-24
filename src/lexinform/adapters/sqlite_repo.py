@@ -65,6 +65,8 @@ from lexinform.models import (
     StatusChange,
     SupplementRecord,
     WykazEntry,
+    card_edit_owner_id,
+    failed_card_edit_resolution_allowed,
     rcl_num_key,
     valid_mnemonic,
 )
@@ -2299,6 +2301,7 @@ class SqliteBillRepository:
                             and member.status is PublicationStatus.FAILED
                             and member.attempts >= 3
                         )
+                        or self._failed_card_edit_resolution_allowed(member, resolution.action)
                     )
                     or member.channel_id != resolution.channel_id
                     or (
@@ -2411,6 +2414,17 @@ class SqliteBillRepository:
                 ),
             )
         return True
+
+    def _failed_card_edit_resolution_allowed(self, publication: Publication, action: str) -> bool:
+        plan = publication.delivery
+        root = (
+            self.publication_by_id(plan.continuation_root)
+            if plan is not None and plan.continuation_root is not None
+            else publication
+        )
+        owner_id = card_edit_owner_id(root) if root is not None else None
+        owner = self.publication_by_id(owner_id) if owner_id is not None else None
+        return failed_card_edit_resolution_allowed(publication, root, owner, action)
 
     def _dismiss_delivery_effects(self, publication_id: int, reason: str | None) -> None:
         publication = self.publication_by_id(publication_id)

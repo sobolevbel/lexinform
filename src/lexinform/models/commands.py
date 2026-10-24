@@ -91,6 +91,67 @@ class DeliveryResolution(BaseModel):
         }[self.action]
 
 
+def card_edit_owner_id(root: Publication) -> int | None:
+    plan = root.delivery
+    if (
+        root.kind is not PublicationKind.MESSAGE_PART
+        or plan is None
+        or plan.continuation_root is not None
+        or plan.edit_message_id is None
+    ):
+        return None
+    if plan.revision_of is not None:
+        return plan.revision_of
+    pieces = (root.ref or "").split("/")
+    if len(pieces) != 4 or pieces[0] != "card" or pieces[-1] != "1":
+        return None
+    try:
+        return int(pieces[1])
+    except ValueError:
+        return None
+
+
+def failed_card_edit_resolution_allowed(
+    publication: Publication,
+    root: Publication | None,
+    owner: Publication | None,
+    action: str,
+) -> bool:
+    plan = publication.delivery
+    if (
+        action not in ("retry", "dismiss")
+        or publication.kind is not PublicationKind.MESSAGE_PART
+        or publication.status is not PublicationStatus.FAILED
+        or publication.id is None
+        or plan is None
+        or not plan.rendered_text
+        or plan.publication_ids
+        or root is None
+        or root.id is None
+        or root.delivery is None
+        or not root.delivery.rendered_text
+        or root.delivery.publication_ids
+        or owner is None
+        or owner.id is None
+        or owner.id != card_edit_owner_id(root)
+        or owner.kind is not PublicationKind.NEW_BILL
+        or owner.status is not PublicationStatus.SENT
+        or owner.message_id is None
+        or root.delivery.edit_message_id != owner.message_id
+        or (root.term, root.number, root.channel_id) != (owner.term, owner.number, owner.channel_id)
+        or (publication.term, publication.number, publication.channel_id)
+        != (root.term, root.number, root.channel_id)
+    ):
+        return False
+    if publication.id == root.id:
+        return plan.continuation_root is None
+    return (
+        root.status is PublicationStatus.SENT
+        and plan.continuation_root == root.id
+        and publication.id in root.delivery.continuation_ids
+    )
+
+
 class ChannelPost(BaseModel):
     """One Telegram update as the relay sees it: a post in some channel (or chat)."""
 

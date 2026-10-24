@@ -97,8 +97,11 @@ you checked that no message arrived; it queues the original snapshot for the nex
 publishing/tracking phase. It does not send inside the command handler. An obsolete reminder
 can be closed with `dismiss REASON`; `dismissed` does not claim delivery.
 
-Only `unknown` can be confirmed or dismissed. `retry` also accepts a failed physical digest
-part after its three attempts are exhausted, resetting only that part with an audited decision.
+Only `unknown` can be confirmed. `retry` and `dismiss` also accept a failed physical card-edit
+operation with frozen HTML, a valid saved card owner and its original target; a child must belong
+to its sent root. This audited recovery has no attempt-count threshold and preserves the payload.
+`retry` also accepts a failed physical digest part after its three attempts are exhausted,
+resetting only that part with an audited decision.
 A repeated command cannot queue a sent or already queued post.
 A crash during the new attempt becomes `unknown` again and needs a new decision. The saved
 facts and parent are reused, with the current formatter for individual posts. Stage roundups
@@ -611,6 +614,9 @@ queued/failed публикации и их продолжения ждут бе�
 часть: `confirm MESSAGE_ID`, `retry` или `dismiss REASON`. Следующая часть ждёт подтверждения
 предыдущей; dismiss прекращает ещё не начатое продолжение. Подтверждённая первая часть
 не означает успех остальных. Незавершённые части защищают `/forget` и `/republish`.
+Сохранённая правка карточки в `failed` тоже допускает audited `retry` или `dismiss REASON`;
+`confirm` остаётся только для `unknown` и принимает исходный edit target. Отклонённая редакция
+не возникает заново при обычном refresh с тем же desired hash; новая редакция остаётся возможной.
 
 `consultation_reviews_posted`, `act_reviews_posted`, `effective_rule_messages` считают основные
 сообщения соответствующего вида; `message_parts_sent` — дополнительные физические части.

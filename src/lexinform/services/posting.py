@@ -44,7 +44,12 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
 from lexinform.services.message_parts import continuation_ready, freeze_parts, send_continuations
-from lexinform.services.publications import card_revision_owner, send_publication, send_publications
+from lexinform.services.publications import (
+    card_revision_owner,
+    open_card_edit_ids,
+    send_publication,
+    send_publications,
+)
 from lexinform.services.sources import fetch_print
 from lexinform.services.tracking_result import TrackingResult
 from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
@@ -641,6 +646,8 @@ class Poster:
         nothing would ever render the card that says the bill lapsed.
         """
         if card.message_id is None or card.id is None:
+            return False
+        if open_card_edit_ids(self._repo, card):
             return False
         # A linked print can still carry its RPW analysis while its own batch is pending.
         if print_info is None and bill.has_process:

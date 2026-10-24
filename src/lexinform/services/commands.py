@@ -30,12 +30,15 @@ from lexinform.models import (
     OutcomeStatus,
     PrintInfo,
     PriorityOverride,
+    Publication,
     PublicationKind,
     PublicationStatus,
     SpendSnapshot,
     StatusSnapshot,
     TokenUsage,
+    card_edit_owner_id,
     closure_event,
+    failed_card_edit_resolution_allowed,
     is_over,
     merge_usage,
     parse_command,
@@ -1093,7 +1096,12 @@ class CommandService:
                 and publication.status is PublicationStatus.FAILED
                 and publication.attempts >= 3
             )
-            if publication.status is not PublicationStatus.UNKNOWN and not exhausted_digest_retry:
+            failed_card_edit = self._failed_card_edit_resolution_allowed(publication, action)
+            if (
+                publication.status is not PublicationStatus.UNKNOWN
+                and not exhausted_digest_retry
+                and not failed_card_edit
+            ):
                 return CommandOutcome(
                     status=OutcomeStatus.ERROR,
                     delivery=publication,
@@ -1183,6 +1191,17 @@ class CommandService:
             delivery_history=tuple(self._repo.delivery_resolutions(command.delivery_id)),
             note="queued for the next publishing/tracking phase" if action == "retry" else "",
         )
+
+    def _failed_card_edit_resolution_allowed(self, publication: Publication, action: str) -> bool:
+        plan = publication.delivery
+        root = (
+            self._repo.publication_by_id(plan.continuation_root)
+            if plan is not None and plan.continuation_root is not None
+            else publication
+        )
+        owner_id = card_edit_owner_id(root) if root is not None else None
+        owner = self._repo.publication_by_id(owner_id) if owner_id is not None else None
+        return failed_card_edit_resolution_allowed(publication, root, owner, action)
 
     def _republish(self, bill: Bill, *, publish: bool) -> CommandOutcome:
         if bill.analysis is None or not bill.analysis.analysis.relevant:

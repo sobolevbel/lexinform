@@ -1063,7 +1063,10 @@ def republish(
         typer.echo(f"{number}: current card in {c.channel_id()}: {state}")
         if not yes and not typer.confirm("Send the card again?"):
             raise typer.Exit(code=1)
-        publishing.forget_card(bill)
+        try:
+            publishing.forget_card(bill)
+        except ValueError as exc:
+            raise typer.BadParameter(str(exc)) from None
         ok = publishing.publish_bill(bill)
         fresh = publishing.card_of(bill)
         typer.echo(
@@ -1105,7 +1108,10 @@ def forget(
         )
         if not yes and not typer.confirm("Forget it, posting nothing?"):
             raise typer.Exit(code=1)
-        publishing.forget_card(bill)
+        try:
+            publishing.forget_card(bill)
+        except ValueError as exc:
+            raise typer.BadParameter(str(exc)) from None
         typer.echo("forgotten; the next run decides whether the bill gets a card again")
     finally:
         c.close()

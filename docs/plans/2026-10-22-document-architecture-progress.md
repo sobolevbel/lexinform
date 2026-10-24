@@ -1038,7 +1038,7 @@ extraction/selection/normalisation не меняются. Defect [B118](../BUGS.
 ### J029. DA1.10: долговечный lifecycle commands/inbox
 
 Дата: 24 октября 2026. База: `c8feef1`. Статус: принято локально.
-Implementation commit: подготовлен к фиксации.
+Implementation commit: `4499492`.
 
 Предыдущий пакет отправлен в main: `git push` и независимый `ls-remote` подтвердили
 `c8feef121aaf3d592bab4ba59e8860eb833f4f2d`. Release evidence приведён ниже; live pipeline
@@ -1083,3 +1083,56 @@ Schema 48/polling v1 и inbox protocol прежние, новых persisted fiel
 Technical reply допускает прежний повтор после outage/lost handled; reader execution не повторяется.
 Extraction/selection/normalisation не меняются, corpus replay не требуется. DA1.10 принят локально;
 push этой стадии, CI/deploy и отсутствие ручного live run отмечаются отдельно.
+
+<a id="j030"></a>
+### J030. DA1.3 reader-first: владельцы, барьеры и восстановление card edits
+
+Дата: 24 октября 2026. База: `4499492`. Статус: выполнено локально, ожидает commit/push.
+
+Общий open_card_edit_ids находит active MESSAGE_PART root/child для того же channel/physical
+target, включая другой logical alias и SENT root с незавершённым child. Forget/republish не
+удаляет owner такой операции; CLI показывает actionable IDs. Прежний original multipart guard
+сохраняется. Старые CardRefresher/Poster.rerender/Publishing._retag проверяют тот же barrier до
+source lookup/direct API, без нового producer, query port, полей или schema.
+
+В том же deployable срезе FAILED frozen card-edit root/child получает audited retry/dismiss
+при любом числе definite attempts: общий pure qualifier используется CommandService и SQLite,
+проверяет owner/target/membership, исключает чужие kinds и group membership. Confirm остаётся
+только для UNKNOWN. Explicit revision_of и legacy card/ref читаются одним pure owner parser.
+Retry не переписывает payload, dismiss не применяет desired digest. CardRefresher сохраняет
+остановку последней DISMISSED desired edition, включая SENT root с dismissed child, но разрешает
+новый desired hash. Delivery drain не считает ошибкой уже SENT child из устаревшего snapshot.
+Разделение барьеров и recovery оставило бы exhausted legacy edits без поддерживаемого выхода;
+поэтому они выпускаются одним коммитом до активации нового producer.
+
+Это защита unresolved work до активации нового writer. Format compatibility предыдущего reader
+не означает полный active fallback старых senders: rollback останавливает новые эффекты,
+сохраняет pending/unknown и использует совместимый saved-delivery recovery.
+
+62 новых forget cases покрывают четыре active статуса, explicit/legacy roots, SENT-root child,
+aliases, terminal/unrelated controls, command forget/republish и CLI safety IDs. 223 focused
+regressions прошли; mutation без service guard даёт 45 ожидаемых safety failures и 17 controls.
+После restoration guard+CLI suite — 115 passed, включая local HTTP.
+
+85 новых barrier cases проверяют три direct entrypoints с active root/children/alias до lookup
+и API, settled/unrelated controls и сохранность saved recovery. 337 focused regressions прошли;
+mutation без entrypoint checks даёт 52 ожидаемых failures и 33 controls; restored 85/85 прошли.
+
+68 новых recovery cases покрывают attempts 0/1/3, explicit/legacy root/child, command+repository
+validation, чужие kinds/owners/targets/membership, сохранение payload/audit после remote restore
+и прежний digest control. Mutation без recovery даёт 32 ожидаемых failures и 36 controls;
+restored 68/68 прошли. Ещё 10 dismissed cases проверяют same-hash stop, SENT-root child,
+new-hash recovery и malformed/unrelated controls; mutation даёт 2 failures и 8 controls.
+Всего 225 новых cases; новых persisted данных, портов/schema/backend, producer flags или raw archive нет.
+Новые намерения не создаются: используются существующие operation IDs и физические targets.
+
+Общий gate: 3557 passed + прежний strict xfail, mypy 334 files, Ruff check/format 359 files,
+diff check и strict docs build/link check прошли. Local HTTP CLI: 21 passed.
+Extraction/selection/normalisation не меняются, corpus replay не требуется. DA1.3 остаётся
+частичным: новый single/multipart producer и перевод остальных callers ещё впереди.
+
+Предыдущая стадия `4499492534b76e161950fd4f30fd0bb8f818963c` запушена; CI
+[40064273501](https://github.com/sobolevbel/lexinform/actions/runs/40064273501) и автоматический
+Deploy relay [40064533089](https://github.com/sobolevbel/lexinform/actions/runs/40064533089)
+успешны для того же SHA. Deploy log: `c8feef121aaf -> 4499492534b7`, relay up 45 s после restart.
+Это проверка workflow/logs, без ручного live run, SSH и Telegram send.

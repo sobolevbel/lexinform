@@ -222,6 +222,14 @@ legacy card/ref тоже распознаётся. Owner должен соотв
 Explicit revision_of применяет operation.rendered_sha256 к карточке атомарно с последним
 receipt/confirm; legacy projection пока остаётся у прежнего CardRefresher. Edit confirm
 принимает только сохранённый target. Новый обычный card edit producer ещё не включён.
+Active card-edit root/child блокирует forget/republish и прежние direct card editors того же
+channel/physical target, включая aliases. SENT root с unresolved child остаётся защищённым.
+CLI safety error перечисляет operations, которые сначала нужно разрешить.
+FAILED frozen card-edit root/child допускает audited retry/dismiss независимо от числа попыток;
+общая чистая проверка service/repository требует действительного owner/target и membership.
+Confirm остаётся только для UNKNOWN. Retry сохраняет exact payload; dismiss не применяет digest
+и останавливает прежнюю desired edition при refresh. Новая desired edition допустима.
+Повторное чтение уже SENT child из прежнего retry snapshot не считается delivery failure.
 
 Новые status update edits также сохраняют HTML/parts и исходный today; каждый edit/child
 использует общий checkpoint. Attempted legacy без HTML сохраняет прежний callback.

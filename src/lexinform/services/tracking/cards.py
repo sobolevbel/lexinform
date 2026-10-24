@@ -23,7 +23,11 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway
 from lexinform.services.message_parts import continuation_snapshot, send_continuations
-from lexinform.services.publications import send_publication
+from lexinform.services.publications import (
+    card_revision_owner,
+    open_card_edit_ids,
+    send_publication,
+)
 from lexinform.services.sources import fetch_print
 from lexinform.services.tracking_result import TrackingResult
 
@@ -74,11 +78,23 @@ class CardRefresher:
             )
             if card is None or card.status is not PublicationStatus.SENT or card.id is None:
                 continue
+            if open_card_edit_ids(self._repo, card):
+                continue
             digest = self._publisher.card_digest(bill)
             if digest == card.rendered_sha256 or card.message_id is None:
                 continue
+            parts = self._repo.card_refresh_parts(card.id)
+            if (
+                parts
+                and parts[0].delivery is not None
+                and parts[0].delivery.rendered_text
+                and parts[0].rendered_sha256 == digest
+                and any(part.status is PublicationStatus.DISMISSED for part in parts)
+                and card_revision_owner(self._repo, parts[0]) == card
+            ):
+                continue
             try:
-                if len(self._repo.card_refresh_parts(card.id)) > 1:
+                if len(parts) > 1:
                     refreshed = self._edit_parts(bill, card, digest, result)
                 else:
                     refreshed = self._edit(bill, card.message_id)

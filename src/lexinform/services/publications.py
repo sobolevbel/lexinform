@@ -3,7 +3,7 @@ from collections.abc import Callable, Sequence
 from datetime import datetime
 
 from lexinform.errors import DeliveryUncertainError, ServiceUnavailableError, StateCheckpointError
-from lexinform.models import Publication, PublicationKind, PublicationStatus
+from lexinform.models import Publication, PublicationKind, PublicationStatus, card_edit_owner_id
 from lexinform.ports import BillRepository, Clock, PublishResult, StateCheckpoint
 
 log = logging.getLogger(__name__)
@@ -84,24 +84,36 @@ def _fail_deliveries(
             )
 
 
+def open_card_edit_ids(repo: BillRepository, card: Publication) -> tuple[int, ...]:
+    if card.message_id is None:
+        return ()
+    edits: list[int] = []
+    for part in repo.list_open_deliveries(card.channel_id):
+        if part.kind is not PublicationKind.MESSAGE_PART or part.delivery is None:
+            continue
+        root = (
+            repo.publication_by_id(part.delivery.continuation_root)
+            if part.delivery.continuation_root is not None
+            else part
+        )
+        if (
+            root is not None
+            and root.kind is PublicationKind.MESSAGE_PART
+            and root.channel_id == card.channel_id
+            and root.delivery is not None
+            and root.delivery.edit_message_id == card.message_id
+        ):
+            assert part.id is not None, "list_open_deliveries returns stored operations"
+            edits.append(part.id)
+    return tuple(edits)
+
+
 def card_revision_owner(repo: BillRepository, publication: Publication) -> Publication | None:
-    plan = publication.delivery
-    if (
-        publication.kind is not PublicationKind.MESSAGE_PART
-        or plan is None
-        or plan.continuation_root is not None
-        or plan.edit_message_id is None
-    ):
-        return None
-    owner_id = plan.revision_of
+    owner_id = card_edit_owner_id(publication)
     if owner_id is None:
-        pieces = (publication.ref or "").split("/")
-        if len(pieces) != 4 or pieces[0] != "card" or pieces[-1] != "1":
-            return None
-        try:
-            owner_id = int(pieces[1])
-        except ValueError:
-            return None
+        return None
+    plan = publication.delivery
+    assert plan is not None, "card_edit_owner_id selects a saved physical edit root"
     owner = repo.publication_by_id(owner_id)
     if (
         owner is None

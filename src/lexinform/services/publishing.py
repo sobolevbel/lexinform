@@ -41,7 +41,7 @@ from lexinform.services.analysis import AnalysisService, Waiting
 from lexinform.services.joint import group_of, primary_of
 from lexinform.services.message_parts import freeze_parts, send_continuations
 from lexinform.services.predecessors import rcl_predecessor
-from lexinform.services.publications import inherit_card, send_publication
+from lexinform.services.publications import inherit_card, open_card_edit_ids, send_publication
 from lexinform.services.sources import fetch_print
 
 log = logging.getLogger(__name__)
@@ -271,6 +271,13 @@ class PublishingService:
                 raise ValueError(
                     "Resolve unfinished physical parts before forgetting the card: "
                     + ", ".join(map(str, unfinished))
+                )
+        if card is not None and card.message_id is not None:
+            edits = open_card_edit_ids(self._repo, card)
+            if edits:
+                raise ValueError(
+                    "Resolve unfinished card edit operations before forgetting the card: "
+                    + ", ".join(map(str, edits))
                 )
         for kind in CARD_KINDS:
             self._repo.delete_publication(bill.term, bill.number, kind, self._channel_id)
@@ -549,6 +556,8 @@ class PublishingService:
         """The card heads a thread that has a druk number now: re-render it in place so that it
         carries both tags. One attempt; a refusal is logged, the replies carry both tags anyway."""
         if card.delivery is not None and card.delivery.continuation_ids:
+            return
+        if open_card_edit_ids(self._repo, card):
             return
         assert card.message_id is not None, (
             "_inherited_card returns only a sent card with its message id"

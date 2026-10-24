@@ -68,6 +68,13 @@ class DeliveryService:
                     if publication.id is not None
                     else None
                 )
+                if (
+                    publication.kind is PublicationKind.MESSAGE_PART
+                    and not sent
+                    and latest is not None
+                    and latest.status is PublicationStatus.SENT
+                ):
+                    continue
                 if latest is not None and (
                     latest.status is PublicationStatus.SKIPPED
                     or (
