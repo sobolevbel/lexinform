@@ -257,7 +257,7 @@ def test_edit_without_original_date_is_rejected_before_pending_or_api() -> None:
 
 @pytest.mark.parametrize("mode", ["off", "shadow"])
 @pytest.mark.parametrize("attempted", [False, True])
-def test_attempted_legacy_edit_without_html_checkpoints_its_original_callback_and_payload(
+def test_attempted_legacy_edit_freezes_html_and_keeps_the_original_publication(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: Mode, attempted: bool
 ) -> None:
     case = late_vote(mode)
@@ -266,16 +266,36 @@ def test_attempted_legacy_edit_without_html_checkpoints_its_original_callback_an
     world.repo.mark_publication(
         case.identity, PublicationStatus.FAILED, error="legacy refusal", count_attempt=attempted
     )
+    expected = world.publisher.render_delivery(row(world, case.identity))
+    frozen = saved.model_copy(
+        update={"rendered_text": expected, "render_origin": "legacy_snapshot"}
+    )
     remote = connect(world, tmp_path)
     before_tip = git(remote, "rev-parse", "state")
     before = len(world.publisher.edited)
-    monkeypatch.setattr(world.publisher, "render_delivery", refuse_render)
+    original = world.publisher.publish_prepared
+
+    def checkpointed(publication: Publication) -> PublishResult:
+        durable = World()
+        durable.repo.restore(git(remote, "show", "state:state.sql"))
+        assert row(durable, case.identity).status is PublicationStatus.PENDING
+        assert plan(durable, case.identity) == publication.delivery == frozen
+        assert row(durable, case.original.id or 0) == case.original
+        return original(publication)
+
+    monkeypatch.setattr(world.publisher, "publish_prepared", checkpointed)
+    monkeypatch.setattr(world.publisher, "edit_status_update", refuse_render)
     world.clock.advance(days=25)
 
     assert world.container.poster(dry_run=False).deliver(row(world, case.identity))
 
-    assert plan(world, case.identity) == saved and not saved.rendered_text
+    assert plan(world, case.identity) == frozen
     assert len(world.publisher.edited) - before == 1
     assert world.publisher.edited[-1][1] == case.original.message_id
     assert row(world, case.original.id or 0) == case.original
     assert git(remote, "rev-parse", "state") != before_tip
+    durable = World()
+    durable.repo.restore(git(remote, "show", "state:state.sql"))
+    assert row(durable, case.identity).status is PublicationStatus.SENT
+    assert plan(durable, case.identity) == frozen
+    assert row(durable, case.original.id or 0) == case.original

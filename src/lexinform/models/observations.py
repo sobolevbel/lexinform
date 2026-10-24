@@ -46,6 +46,7 @@ class DeliveryPlan(BaseModel):
     attention_history: tuple[AttentionAssessment, ...] = ()
     policy_version: str = "legacy"
     rendered_text: str = ""
+    render_origin: Literal["legacy_snapshot"] | None = None
     disable_notification: bool = False
     schedule: DeliverySchedule | None = None
     destination: Literal["direct", "digest_only"] = "direct"

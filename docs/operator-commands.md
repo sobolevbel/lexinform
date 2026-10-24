@@ -106,12 +106,16 @@ root membership, parent, index, bill, term and channel match. The sent root rema
 resetting only that part with an audited decision.
 A repeated command cannot queue a sent or already queued post.
 A crash during the new attempt becomes `unknown` again and needs a new decision. The saved
-facts and parent are reused, with the current formatter for individual posts. Stage roundups
+facts and parent are reused; frozen HTML is replayed verbatim, while remaining semantic-only
+legacy handlers may use the current formatter. Stage roundups
 also store the exact rendered HTML and all member publication IDs. `/delivery` on any member
 shows the shared message and resolves every member together; a partial group cannot be retried
 or confirmed. The saved HTML is sent once, as a top-level post, and never rebuilt from newer bills.
 Legacy sittings without saved shared membership retain per-row recovery; confirming one row
 does not resolve the other historical rows for the same physical message.
+An eligible failed legacy single-message status edit freezes HTML from its saved Bill, change,
+date and target before retry. `/delivery` marks it as a legacy snapshot whose earlier HTML is
+unavailable. This adds a payload for the new attempt without claiming historical reconstruction.
 The preview may be shortened to fit Telegram. Records without a complete saved plan and parent
 cannot be retried; confirmation or dismissal still works. Digest records without a delivery
 plan also cannot be retried this way. Commands address only the configured reader channel.

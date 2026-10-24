@@ -1990,6 +1990,8 @@ class MessageFormatter:
             ]
             if plan is not None:
                 lines.append(f"destination: {plan.destination} · {esc(plan.destination_reason)}")
+                if plan.render_origin == "legacy_snapshot":
+                    lines.append("HTML frozen from legacy snapshot; earlier HTML unavailable.")
                 if plan.continuation_ids:
                     lines.append(
                         "continuation publications: " + ", ".join(map(str, plan.continuation_ids))

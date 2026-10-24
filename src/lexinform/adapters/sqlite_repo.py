@@ -16,6 +16,7 @@ from pathlib import Path
 from pydantic import TypeAdapter
 
 from lexinform.json_storage import compact_json, storage_json
+from lexinform.legacy_delivery import legacy_status_edit
 from lexinform.models import (
     PRE_PRINT_PREFIX,
     RCL_PREFIX,
@@ -71,6 +72,7 @@ from lexinform.models import (
     valid_mnemonic,
 )
 from lexinform.models.batch import BatchJob, batch_item_meta
+from lexinform.telegram_text import MESSAGE_LIMIT, utf16_length
 
 _STAGES = TypeAdapter(tuple[Stage, ...])
 _COMPACT_SNAPSHOTS: dict[str, Callable[[str], str]] = {
@@ -1015,6 +1017,42 @@ class SqliteBillRepository:
             ),
         )
         return cur.rowcount == 1
+
+    def freeze_legacy_status_edit(self, publication_id: int, delivery: DeliveryPlan) -> bool:
+        row = self._conn.execute(
+            "SELECT * FROM publications WHERE id = ?", (publication_id,)
+        ).fetchone()
+        if row is None:
+            return False
+        original = self._row_to_publication(row)
+        if (
+            not legacy_status_edit(original)
+            or not delivery.rendered_text.strip()
+            or utf16_length(delivery.rendered_text) > MESSAGE_LIMIT
+            or delivery.render_origin != "legacy_snapshot"
+            or self.digest_owner(publication_id) is not None
+            or self.digest_sources(publication_id)
+        ):
+            return False
+        saved = original.delivery
+        assert saved is not None, "legacy_status_edit requires a saved semantic edit snapshot"
+        if delivery != saved.model_copy(
+            update={"rendered_text": delivery.rendered_text, "render_origin": "legacy_snapshot"}
+        ):
+            return False
+        raw: dict[str, object] = json.loads(row["delivery_json"])
+        raw.update(rendered_text=delivery.rendered_text, render_origin="legacy_snapshot")
+        changed = self._conn.execute(
+            "UPDATE publications SET delivery_json = ?"
+            " WHERE id = ? AND status = 'failed' AND attempts = ? AND delivery_json = ?",
+            (
+                json.dumps(raw, ensure_ascii=False, separators=(",", ":")),
+                publication_id,
+                original.attempts,
+                row["delivery_json"],
+            ),
+        )
+        return changed.rowcount == 1
 
     def get_update_publication(self, change_id: int, channel_id: str) -> Publication | None:
         row = self._conn.execute(

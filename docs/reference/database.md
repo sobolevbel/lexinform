@@ -243,7 +243,7 @@ JOINT_BILL с SENT root, exact membership/parent/index и совпадающим
 Service и repository используют общий pure qualifier; root receipt и payload не переписываются.
 
 Новые status update edits также сохраняют HTML/parts и исходный today; каждый edit/child
-использует общий checkpoint. Attempted legacy без HTML сохраняет прежний callback.
+использует общий checkpoint. Узкий freeze для FAILED legacy edit описан ниже.
 
 Сохранённые consultation/commission reviews и amendments revisions с HTML, включая parts,
 используют ту же pre/post boundary. Review-work handler пробрасывает fatal checkpoint error.
@@ -254,6 +254,13 @@ Paused flags и прежнее отклонение FAILED legacy без HTML с
 Legacy attempted sitting callback и STATUS_UPDATE edit без HTML также используют pre/post
 checkpoint. Их исторические HTML и shared membership не восстанавливаются из предположений;
 старый sitting без membership сохраняет per-row operator recovery.
+Одночастный FAILED STATUS_UPDATE edit с legacy policy, исходными Bill/change/today/target,
+без participation override, HTML и physical membership может сохранить первый HTML перед retry.
+Узкий writer добавляет только HTML и optional `render_origin=legacy_snapshot`; status, attempts,
+source fields, flags и target неизменны. UNKNOWN/PENDING и иные shapes не переписываются.
+Неизвестные JSON-поля сохраняются; CAS сравнивает исходный raw payload и счётчик попыток.
+Этот origin означает новый freeze сохранённого контекста, а не восстановленный HTML прежней
+попытки; `/delivery` показывает это явно. Старый reader использует обычный prepared payload.
 Некоторые attempted legacy rows без HTML сохраняют прежние callbacks. Полная граница остаётся задачей
 [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
 

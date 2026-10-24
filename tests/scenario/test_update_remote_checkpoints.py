@@ -421,7 +421,7 @@ def test_failed_long_status_drains_its_legacy_plan_without_inventing_frozen_part
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
 @pytest.mark.parametrize("attempted", [False, True])
-def test_failed_legacy_status_edit_checkpoints_its_compatible_callback(
+def test_failed_legacy_status_edit_checkpoints_frozen_html_and_keeps_its_target(
     tmp_path: Path, mode: Mode, attempted: bool
 ) -> None:
     case = queued(mode, with_act=False)
@@ -436,14 +436,24 @@ def test_failed_legacy_status_edit_checkpoints_its_compatible_callback(
     remote = connect(world, tmp_path)
     baseline = git(remote, "rev-parse", "state")
     before_sent, before_edits = len(world.publisher.sent), len(world.publisher.edited)
+    frozen = edit.model_copy(
+        update={
+            "rendered_text": world.publisher.render_delivery(row(world, case.identity)),
+            "render_origin": "legacy_snapshot",
+        }
+    )
 
     assert send(case)
 
     assert git(remote, "rev-parse", "state") != baseline
-    assert plan(world, case.identity) == edit
+    assert plan(world, case.identity) == frozen
     assert len(world.publisher.sent) == before_sent
     assert len(world.publisher.edited) == before_edits + 1
     assert world.publisher.edited[-1][1] == row(world, case.identity).message_id == 444
+    durable = World()
+    durable.repo.restore(git(remote, "show", "state:state.sql"))
+    assert row(durable, case.identity).status is PublicationStatus.SENT
+    assert plan(durable, case.identity) == frozen
 
 
 @pytest.mark.parametrize("dry_run", [False, True])

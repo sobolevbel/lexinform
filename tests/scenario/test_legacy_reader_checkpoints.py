@@ -12,7 +12,7 @@ from tests.scenario.test_update_remote_checkpoints import plan, queued, row, sen
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
 @pytest.mark.parametrize("attempted", [False, True])
 @pytest.mark.parametrize("boundary", [1, 2])
-def test_legacy_no_html_status_edit_has_a_remote_boundary_without_rewriting_its_plan(
+def test_legacy_status_edit_freezes_its_saved_context_at_the_remote_boundary(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: Mode, attempted: bool, boundary: int
 ) -> None:
     case = queued(mode, with_act=False)
@@ -23,6 +23,12 @@ def test_legacy_no_html_status_edit_has_a_remote_boundary_without_rewriting_its_
     assert world.repo.replace_unattempted_delivery(case.identity, saved)
     world.repo.mark_publication(case.identity, PublicationStatus.FAILED, count_attempt=attempted)
     before = row(world, case.identity)
+    frozen = saved.model_copy(
+        update={
+            "rendered_text": world.publisher.render_delivery(before),
+            "render_origin": "legacy_snapshot",
+        }
+    )
     remote = connect(world, tmp_path)
     edits = len(world.publisher.edited)
     reject_checkpoint(monkeypatch, boundary)
@@ -31,14 +37,14 @@ def test_legacy_no_html_status_edit_has_a_remote_boundary_without_rewriting_its_
         send(case)
 
     assert len(world.publisher.edited) - edits == int(boundary == 2)
-    assert plan(world, case.identity) == saved
+    assert plan(world, case.identity) == frozen
     assert row(world, case.identity).attempts == before.attempts
     fresh = restored(remote, world, tmp_path)
     current = row(fresh, case.identity)
-    assert current.delivery == saved
     if boundary == 1:
         assert current == before
     else:
+        assert current.delivery == frozen
         assert current.status is PublicationStatus.PENDING
         fresh.repo.mark_stale_pending_as_unknown(now=fresh.clock.now())
         assert row(fresh, case.identity).status is PublicationStatus.UNKNOWN

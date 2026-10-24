@@ -1572,3 +1572,55 @@ Deploy relay [40111574670](https://github.com/sobolevbel/lexinform/actions/runs/
 Только metadata/log verification, без ручного pipeline/SSH/Telegram send.
 Для J040 source gate остаётся действительным: изменена только документация по прочитанным
 данным; strict docs build/link check и diff check успешны.
+
+<a id="j041"></a>
+### J041. DA1.2/DA1.4: exact payload для определённо failed legacy status edit
+
+Дата: 24 октября 2026. База: `b03e418`. Статус: принят ограниченный срез; DA1 остаётся частичным.
+
+Ограниченный single-message status edit получает HTML из saved Bill/change/today до API.
+Новый узкий repository method допускает только FAILED legacy edit без физической membership,
+participation override и прежнего HTML; source fields, targets, flags, attempts и status сохраняются.
+Нельзя заменить UNKNOWN/PENDING, новый target или semantic context. Render origin явно отмечает
+legacy snapshot: исторический exact HTML не реконструируется. Это совместимый optional JSON field,
+schema 48/polling v1 и backend прежние. Формат prepared payload уже читается `b03e418`.
+
+Multipart/group и другие attempted legacy kinds этим срезом не активируются. Прежние двенадцать
+boundary tests расширяются с сохранения semantic plan на сохранение также первого exact HTML;
+остальные семь legacy cases сохраняют прежний контракт. Новые guard/recovery cases приняты.
+
+Финальный focused gate: 92 passed (45 новых repository guards, 28 новых production World cases,
+19 прежних boundary/recovery cases). На прежнем `posting.py` три pre-API invariants падают без
+ошибок setup; source восстановлен в finally. Исходные fixture ошибки FK/natural key/attempts
+и вызов отсутствующего setter исправлены через публичные repository методы.
+
+Дополнительная regression воспроизвела потерю unknown JSON fields при полной сериализации
+только что добавленным writer. Запись теперь объединяет ровно HTML/origin с исходным raw JSON,
+а CAS сравнивает исходную JSON-строку и attempts; неизвестные поля сохраняются. Первый full gate
+прерван на этой новой проверке и не считается приёмкой. Следующий полный прогон выявил 10 старых
+assertions на callback без HTML: 3845 passed, 10 failed, один прежний xfail, без errors.
+Они расширены на pre-API remote HTML/target и сохранность исходной adoption publication,
+не удалены. Оба соответствующих модуля: 89 passed; окончательный full gate зелёный.
+
+Actual source `b03e418` прочитал prepared payload через fresh local Git clone и выполнил
+6/6 сочетаний off/shadow/on × with_act. Один edit target 444, тот же HTML/attempts, без нового
+post и повторного API; receipt сохранён удалённо, новый reader после old dump сохранил origin.
+Это ограниченный frozen-edit путь на fakes/current dependencies, не проверка всего old pipeline.
+Qualification `/private/tmp/lexinform-legacy-freeze-j041-compat-final-20261024/qualification.json`.
+Source hashes в артефакте сверяются с root после финального исправления writer.
+Synthetic whole-dump increments шести cases: +971/+1427/+971/+1427/+920/+1423 bytes;
+это first HTML плюс origin, не production growth forecast. Optional null origin добавляет
+21 byte при новой полной сериализации plan; существующие rows массово не переписываются.
+
+SHA qualification: `3c02211b0ab2e3d42526b35e9eaf7698e0b7b3786e6200197a703187c66c58c7`.
+На изолированной копии pinned J040 state все 94/94 сохранённых DeliveryPlan читаются новой
+моделью; origin отсутствующих исторических HTML остаётся None, schema 48.
+Artifact `/private/tmp/lexinform-legacy-freeze-j041-old-state-validation-20261024.json`, SHA
+`c96d8c691abea26f6d66257467d2ff70dceb3b9d3cfa198d0cd99f6171f00b15`.
+Выполнялись только SELECT/model validation; pipeline и production state не менялись.
+
+Приёмка: 3855 passed + один прежний strict xfail DA5, errors/failures 0, mypy 350 файлов,
+Ruff check/format 378 файлов, local HTTP 21 passed, strict docs build/link check и diff check green.
+XML `/private/tmp/lexinform-legacy-freeze-j041-accepted-20261024.xml`.
+DA1.2/DA1.4 не закрыты: остальные attempted legacy kinds, multipart/groups и связанные
+исторические неопределённости не получили выдуманные HTML или membership.
