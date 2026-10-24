@@ -78,13 +78,13 @@ class RenderingPublisher(ABC):
         self._edit(Outgoing(PublicationKind.NEW_BILL, bill, text), message_id=message_id)
 
     def render_card_parts(
-        self, bill: Bill, print_info: PrintInfo | None, *, minimum: int
+        self, bill: Bill, print_info: PrintInfo | None, *, minimum: int, today: date | None = None
     ) -> tuple[str, ...]:
-        parts = self.split_message(self._formatter.new_bill(bill, print_info).text)
+        parts = self.split_message(self._formatter.new_bill(bill, print_info, today=today).text)
         return parts + (self._formatter.superseded_card_part(),) * max(0, minimum - len(parts))
 
-    def card_digest(self, bill: Bill) -> str:
-        text = self._formatter.new_bill(bill, None).text
+    def card_digest(self, bill: Bill, *, today: date | None = None) -> str:
+        text = self._formatter.new_bill(bill, None, today=today).text
         return hashlib.sha256(text.encode()).hexdigest()
 
     def publish_joint_bill(

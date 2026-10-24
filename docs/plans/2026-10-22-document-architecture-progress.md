@@ -1087,7 +1087,7 @@ push этой стадии, CI/deploy и отсутствие ручного liv
 <a id="j030"></a>
 ### J030. DA1.3 reader-first: владельцы, барьеры и восстановление card edits
 
-Дата: 24 октября 2026. База: `4499492`. Статус: выполнено локально, ожидает commit/push.
+Дата: 24 октября 2026. База: `4499492`. Реализация: `4a2d62d`, запушено; CI/deploy успешны.
 
 Общий open_card_edit_ids находит active MESSAGE_PART root/child для того же channel/physical
 target, включая другой logical alias и SENT root с незавершённым child. Forget/republish не
@@ -1136,3 +1136,60 @@ Extraction/selection/normalisation не меняются, corpus replay не т�
 Deploy relay [40064533089](https://github.com/sobolevbel/lexinform/actions/runs/40064533089)
 успешны для того же SHA. Deploy log: `c8feef121aaf -> 4499492534b7`, relay up 45 s после restart.
 Это проверка workflow/logs, без ручного live run, SSH и Telegram send.
+
+<a id="j031"></a>
+### J031. DA1.3: сохранённая одиночная правка карточки
+
+Дата: 24 октября 2026. База: `4a2d62d`. Статус: выполнено локально, ожидает commit/push.
+
+База `4a2d62dc860c8735ccb96c223989bb7c739fcf1d` независимо проверена: CI
+[40065099743](https://github.com/sobolevbel/lexinform/actions/runs/40065099743) и автоматический
+Deploy relay [40065341441](https://github.com/sobolevbel/lexinform/actions/runs/40065341441)
+успешны на том же SHA; log `4499492534b7 -> 4a2d62dc860c`, relay up 45 s после restart,
+CI-head mismatch отсутствует. Ручного live run, SSH или Telegram send не было.
+
+Обычный single-to-single refresh создаёт отдельную immutable MESSAGE_PART operation с exact HTML,
+компактным continuation snapshot, saved edit target, logical revision_of, today и desired hash.
+Исходная карточка остаётся SENT; desired digest применяется атомарно только с receipt/confirm.
+Generation ref включает предыдущую operation identity, поэтому A→B→A→B не переиспользует старую
+доставку. Active и qualified dismissed barriers J030 сохраняются; новый desired hash допустим.
+Legacy multipart и рост single-to-many пока сохраняют прежний путь и не считаются переведёнными.
+
+Одна дата из Clock используется для digest и HTML даже при print lookup через полночь Warsaw.
+Общий execution attempted set исключает повтор definite failure между command refresh и tracking
+того же запуска; следующий запуск может повторить saved operation. Delivery retry считает
+cards_refreshed по подтверждённому переходу owner digest. Pre/post checkpoint error остаётся fatal.
+Полные Bill/analysis/reviews, raw файлы, новая schema и backend не добавляются.
+
+29 новых scenarios покрывают off/shadow/on, exact remote intent/receipt, CP failures до/после
+API, lost response→UNKNOWN, definite retry, audited confirm/dismiss, active barriers, A/B/A/B,
+одну попытку command+tracking, Warsaw midnight и dismissed samehash/newhash после retention.
+Интеграция сохранила qualified J030 guard вместо более широкого дублирующего DISMISSED check;
+malformed owner/target/channel/noHTML controls продолжают разрешать настоящий refresh.
+Один прежний vacatio assertion теперь проверяет actual edited HTML: saved Bill намеренно compact.
+400 affected scenarios приняты в mirror с отдельным исправлением трёх новых retention fixtures;
+источники runtime после broad gate менялись только эквивалентным Ruff flattening.
+Root full gate проверяется отдельно. Actual reader `8ea5084` после fresh clone читает новый
+payload во всех 3 modes (format/projection/no duplicate); это не квалификация всего старого runtime.
+Integration patch SHA `4521c620a8a870ab495a9c8fdc109114430764c9f3bc2f47b0e1b7db6b777a83`,
+qualification SHA `3be942b7e0391b9855b2a14669c60204fd8ccc1df820146615fb4999fac77dbc`.
+
+Root gate: 3586 passed + прежний strict xfail; mypy 336 files, Ruff check/format 361 files,
+local HTTP CLI 21 passed, strict docs build/link check и diff check успешны. После паузы полный
+JUnit XML проверен (0 errors/failures), 20 changed/preserved files совпали с qualified manifest;
+Ruff/format/mypy повторены. Извлечение, выбор и нормализация не меняются, corpus replay не нужен.
+
+До активации выполнено bounded offline измерение frozen producer `ca08be6` на базе `dcffe40`:
+50 подтверждённых single edits, 10 quiet runs, retention через Clock +91 день и равный no-edit
+control. Whole dump: 33 746 → 324 707 bytes после 50 edits → 36 211 после retention; все 50
+identities сохранены, terminal payloads очищены. Равный очищенный control — 20 564 bytes;
+остаточная дельта 15 647 включает identities и другие final metadata/analysis, не цену одной строки.
+Gzip: 6 924 → 14 164 → 7 717 bytes. Quiet runs не создают edits/revisions, но хранят run reports.
+Git history сохраняет прежние snapshots: 162 reachable commits, 2 174 260 bytes loose remote;
+GC на изолированной копии даёт 173 007 bytes, без удаления reachable history.
+FAILED/UNKNOWN forks сохраняют exact plans после retention и fresh clone. Median local checkpoint
+0.1125–0.1249 s — измерение локального Git, не прогноз GitHub latency или production роста.
+Артефакт `/private/tmp/lexinform-single-card-storage-20261023/measurement.json`, SHA
+`43a8e00f56cd276d2f6f0753ae587e12366ceb34efa7aa2ea274a1ed28a8a92a`.
+Persisted layout single producer при интеграции не меняется; воспроизводимый repo tool следует
+отдельной стадией. DA1.9 остаётся частичным; по этим данным checkpoints не объединяются.

@@ -136,5 +136,5 @@ def test_an_act_with_a_vacatio_legis_still_ahead_keeps_its_card_true() -> None:
     report = w.run()
 
     assert report.cards_refreshed == 1
-    edited, _ = w.publisher.edits[0]
-    assert "вступление в силу 19 нояб 2026" in MessageFormatter("ru").new_bill(edited, None).text
+    edited, _ = w.publisher.edited[0]
+    assert "вступление в силу 19 нояб 2026" in edited.text

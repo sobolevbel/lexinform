@@ -1,16 +1,9 @@
-"""Keeping a card true after it was posted.
-
-Everything the card says about *now* is derived from the day it was rendered, and the message was
-written once. A run re-renders every followed bill's card and edits it where the text has
-drifted; the digest of what was last sent (`publications.rendered_sha256`) makes a quiet run free.
-
-A card that outlives its bill is re-rendered one last time and then left alone — the digest is
-what makes that true, a finished card being stable. Refusing to render it at all kept a rejected
-bill's card inviting opinions to a committee for ever.
-"""
+"""Keep followed cards true while retaining every attempted physical edit."""
 
 import logging
+from datetime import date
 from functools import partial
+from zoneinfo import ZoneInfo
 
 from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
@@ -21,7 +14,7 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
 )
-from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway
+from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
 from lexinform.services.message_parts import continuation_snapshot, send_continuations
 from lexinform.services.publications import (
     card_revision_owner,
@@ -44,6 +37,9 @@ class CardRefresher:
         *,
         channel_id: str,
         max_edits: int,
+        checkpoint: StateCheckpoint | None = None,
+        local_tz: ZoneInfo = ZoneInfo("Europe/Warsaw"),
+        delivery_attempts: set[int] | None = None,
     ) -> None:
         self._clock = clock
         self._gateway = gateway
@@ -51,18 +47,12 @@ class CardRefresher:
         self._publisher = publisher
         self._channel_id = channel_id
         self._max_edits = max_edits
+        self._checkpoint = checkpoint
+        self._local_tz = local_tz
+        self._attempted = delivery_attempts if delivery_attempts is not None else set[int]()
 
     def refresh(self, bills: list[Bill], result: TrackingResult, *, publish: bool) -> None:
-        """Re-render the card of every followed bill and edit the ones that have drifted.
-
-        Each row is read again: the phases above may have re-analysed the bill, moved its stages
-        or handed its thread to a successor since `bills` was listed. Drift is the only test — a
-        second one on `next_phase` fired a run before the card would have said the road ended. A
-        `LINKED` row is skipped, its card belonging to the successor.
-
-        An outage is caught rather than raised: this is the last, cosmetic step of the phase, and
-        letting it out would throw away everything the phase already posted and spent.
-        """
+        """Only confirmed physical edits advance the logical card digest."""
         if not publish:
             return
         edited = 0
@@ -80,7 +70,8 @@ class CardRefresher:
                 continue
             if open_card_edit_ids(self._repo, card):
                 continue
-            digest = self._publisher.card_digest(bill)
+            today = self._clock.now().astimezone(self._local_tz).date()
+            digest = self._publisher.card_digest(bill, today=today)
             if digest == card.rendered_sha256 or card.message_id is None:
                 continue
             parts = self._repo.card_refresh_parts(card.id)
@@ -97,7 +88,7 @@ class CardRefresher:
                 if len(parts) > 1:
                     refreshed = self._edit_parts(bill, card, digest, result)
                 else:
-                    refreshed = self._edit(bill, card.message_id)
+                    refreshed = self._edit_single(bill, card, digest, today)
             except ServiceUnavailableError as exc:
                 result.abort(exc)
                 return
@@ -105,6 +96,65 @@ class CardRefresher:
                 self._repo.set_card_digest(card.id, digest)
                 result.cards_refreshed += 1
                 edited += 1
+
+    def _edit_single(self, bill: Bill, card: Publication, digest: str, today: date) -> bool:
+        assert card.id is not None and card.message_id is not None, "refresh targets a sent card"
+        current = self._repo.card_refresh_parts(card.id)
+        if not current:
+            return False
+        previous = current[0]
+        if previous.kind is PublicationKind.MESSAGE_PART and previous.status not in (
+            PublicationStatus.SENT,
+            PublicationStatus.DISMISSED,
+        ):
+            return False
+        print_info = fetch_print(self._gateway, bill) if bill.has_process else None
+        texts = self._publisher.render_card_parts(bill, print_info, minimum=1, today=today)
+        if len(texts) != 1:
+            return self._edit(bill, card.message_id)
+        ref = f"card/{card.id}/{digest}-{previous.id}/1"
+        existing = self._repo.get_publication(
+            bill.term, bill.number, PublicationKind.MESSAGE_PART, card.channel_id, ref=ref
+        )
+        if existing is not None:
+            return False
+        with self._repo.atomic():
+            identity = self._repo.create_publication(
+                Publication(
+                    term=bill.term,
+                    number=bill.number,
+                    channel_id=card.channel_id,
+                    kind=PublicationKind.MESSAGE_PART,
+                    status=PublicationStatus.QUEUED,
+                    created_at=self._clock.now(),
+                    ref=ref,
+                    delivery=DeliveryPlan(
+                        bill_json=continuation_snapshot(bill),
+                        rendered_text=texts[0],
+                        edit_message_id=card.message_id,
+                        revision_of=card.id,
+                        today=today,
+                        reply_to=card.message_id,
+                        continuation_parent=card.id,
+                        continuation_index=1,
+                    ),
+                )
+            )
+            self._repo.set_card_digest(identity, digest)
+            self._repo.mark_publication(identity, PublicationStatus.PENDING, count_attempt=False)
+            operation = self._repo.publication_by_id(identity)
+            assert operation is not None, "the immutable operation is saved before its edit"
+        self._attempted.add(identity)
+        return (
+            send_publication(
+                self._repo,
+                self._clock,
+                identity,
+                partial(self._publisher.publish_prepared, operation),
+                checkpoint=self._checkpoint,
+            )
+            is not None
+        )
 
     def _edit_parts(
         self, bill: Bill, card: Publication, digest: str, result: TrackingResult

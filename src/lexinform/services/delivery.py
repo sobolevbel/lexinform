@@ -3,9 +3,17 @@ from datetime import timedelta
 
 from lexinform.errors import ServiceUnavailableError, StateCheckpointError
 from lexinform.logging_setup import MemoryLogHandler
-from lexinform.models import Bill, PublicationKind, PublicationStatus, RunMode, RunReport
+from lexinform.models import (
+    Bill,
+    Publication,
+    PublicationKind,
+    PublicationStatus,
+    RunMode,
+    RunReport,
+)
 from lexinform.ports import BillRepository, Clock, RunNotifier
 from lexinform.services.posting import Poster
+from lexinform.services.publications import card_revision_owner
 from lexinform.services.tracking_result import PostCounter, TrackingResult, merge_tracking
 
 log = logging.getLogger(__name__)
@@ -62,7 +70,12 @@ class DeliveryService:
                 self._poster.queue_sitting(publication)
                 continue
             try:
+                card = self._revision_card(publication)
                 sent = self._poster.deliver(publication)
+                if card is not None and card.id is not None:
+                    refreshed = self._repo.publication_by_id(card.id)
+                    if refreshed is not None and refreshed.rendered_sha256 != card.rendered_sha256:
+                        result.cards_refreshed += 1
                 latest = (
                     self._repo.publication_by_id(publication.id)
                     if publication.id is not None
@@ -130,6 +143,19 @@ class DeliveryService:
                 result.abort(exc, failed=True)
                 return completed
         return completed
+
+    def _revision_card(self, publication: Publication) -> Publication | None:
+        plan = publication.delivery
+        if plan is None:
+            return None
+        root = (
+            self._repo.publication_by_id(plan.continuation_root)
+            if plan.continuation_root is not None
+            else publication
+        )
+        if root is None or root.delivery is None or root.delivery.revision_of is None:
+            return None
+        return card_revision_owner(self._repo, root)
 
     def run(self, *, dry_run: bool = False) -> RunReport:
         started = self._clock.now()

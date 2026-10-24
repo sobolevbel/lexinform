@@ -364,7 +364,7 @@ DA6–DA7 не требуют предварительно включать но
 - [ ] DA1.2. **Частично: [J011](2026-10-22-document-architecture-progress.md#j011), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022), [J023](2026-10-22-document-architecture-progress.md#j023), [J025](2026-10-22-document-architecture-progress.md#j025); reader-first: [J019](2026-10-22-document-architecture-progress.md#j019), [J021](2026-10-22-document-architecture-progress.md#j021), [J026](2026-10-22-document-architecture-progress.md#j026), [J027](2026-10-22-document-architecture-progress.md#j027).** Перед каждым reader API effect сохранить в существующей очереди точные HTML,
   channel, reply/edit target, flags, physical-part identity, membership и revision target.
   Freeze обязателен и при attention off/shadow: legacy digest/sittings не остаются live-render путями.
-- [ ] DA1.3. **Reader-first: [J024](2026-10-22-document-architecture-progress.md#j024), [J030](2026-10-22-document-architecture-progress.md#j030).** Перевести refresh/retag/rollover и обычные редактирования карточки на сохранённую
+- [ ] DA1.3. **Частично: [J031](2026-10-22-document-architecture-progress.md#j031); reader-first: [J024](2026-10-22-document-architecture-progress.md#j024), [J030](2026-10-22-document-architecture-progress.md#j030).** Перевести refresh/retag/rollover и обычные редактирования карточки на сохранённую
   операцию. Проверить reuse существующих `MESSAGE_PART`/edit target и `_edit_parts`;
   если они не выражают нужный контракт, обосновать минимальный отдельный kind в ADR.
   Не менять identity исходной карточки, которая остаётся `sent` во время исправления.
@@ -386,7 +386,7 @@ DA6–DA7 не требуют предварительно включать но
 - [ ] DA1.8. **Частично: [J007](2026-10-22-document-architecture-progress.md#j007).** Финальный workflow dump пользуется тем же контрактом, всегда включает polling manifest.
   Lock охватывает scheduled/commands/collect/drain и maintenance. Ручная запись не разрешает
   параллельный writer; процедура maintenance явно получает эксклюзивное владение.
-- [ ] DA1.9. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012).** Измерить dump/push latency и объём на копии state. Без измерений не объединять
+- [ ] DA1.9. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012), [J031](2026-10-22-document-architecture-progress.md#j031).** Измерить dump/push latency и объём на копии state. Без измерений не объединять
   несколько физически начатых отправок в один checkpoint ради производительности.
   При неприемлемых затратах сравнить постоянный runtime; второе delivery-хранилище не вводить по умолчанию.
 - [x] DA1.10. **Принято локально: [J007](2026-10-22-document-architecture-progress.md#j007), [J015](2026-10-22-document-architecture-progress.md#j015), [J029](2026-10-22-document-architecture-progress.md#j029).** Связать commands/inbox с подтверждённым state: сохранять started до исполнения,

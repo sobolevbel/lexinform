@@ -51,6 +51,7 @@ from lexinform.ports import (
     Publisher,
     SejmGateway,
     SenateGateway,
+    StateCheckpoint,
     WykazGateway,
 )
 from lexinform.services.amendments import AmendmentsSource, amendments_source
@@ -263,8 +264,11 @@ class StatusTrackingService:
         poster: Poster | None = None,
         deliveries: DeliveryService | None = None,
         document_reviews: DocumentReviews | None = None,
+        checkpoint: StateCheckpoint | None = None,
+        delivery_attempts: set[int] | None = None,
     ) -> None:
         channel_id = options.channel_id
+        attempted = delivery_attempts if delivery_attempts is not None else set[int]()
         poster = poster or Poster(
             repo,
             publisher,
@@ -277,6 +281,8 @@ class StatusTrackingService:
             max_group=options.attention_max_group,
             daily_roundup=options.attention_roundup == "daily",
             daily_hour=options.attention_daily_hour,
+            checkpoint=checkpoint,
+            delivery_attempts=attempted,
         )
         enricher = StageEnricher(gateway, club_breakdown=options.club_breakdown)
         consultations = _consultation_reminder(repo, clock, poster, options)
@@ -348,7 +354,15 @@ class StatusTrackingService:
             else None
         )
         self._cards = CardRefresher(
-            gateway, repo, publisher, clock, channel_id=channel_id, max_edits=options.max_card_edits
+            gateway,
+            repo,
+            publisher,
+            clock,
+            channel_id=channel_id,
+            max_edits=options.max_card_edits,
+            checkpoint=checkpoint,
+            local_tz=options.local_tz,
+            delivery_attempts=attempted,
         )
         self._rollover = TermRollover(repo, clock, poster, channel_id=channel_id)
 

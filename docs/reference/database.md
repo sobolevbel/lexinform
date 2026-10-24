@@ -221,7 +221,9 @@ Card revision reader использует MESSAGE_PART с frozen edit target и 
 legacy card/ref тоже распознаётся. Owner должен соответствовать bill/term/channel/target.
 Explicit revision_of применяет operation.rendered_sha256 к карточке атомарно с последним
 receipt/confirm; legacy projection пока остаётся у прежнего CardRefresher. Edit confirm
-принимает только сохранённый target. Новый обычный card edit producer ещё не включён.
+принимает только сохранённый target. Обычный single-to-single refresh сохраняет отдельную
+MESSAGE_PART operation с compact snapshot, HTML, today, desired hash и explicit revision_of;
+pre/post checkpoint покрывает edit. Общий attempted set не повторяет failure того же запуска.
 Active card-edit root/child блокирует forget/republish и прежние direct card editors того же
 channel/physical target, включая aliases. SENT root с unresolved child остаётся защищённым.
 CLI safety error перечисляет operations, которые сначала нужно разрешить.
@@ -240,7 +242,7 @@ Paused flags и прежнее отклонение FAILED legacy без HTML с
 Автоматическая amendments revision создаёт свежий semantic plan из исторического контекста;
 она не наследует старые HTML, physical membership и held/digest effects исходной публикации.
 
-Refresh/retag/rollover edits
+Multipart/growth refresh, retag/rollover edits
 и остальные reader effects пока работают по прежнему контракту. Полная граница остаётся задачей
 [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
 

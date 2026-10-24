@@ -379,10 +379,10 @@ class Publisher(Protocol):
         ...
 
     def render_card_parts(
-        self, bill: Bill, print_info: PrintInfo | None, *, minimum: int
+        self, bill: Bill, print_info: PrintInfo | None, *, minimum: int, today: date | None = None
     ) -> tuple[str, ...]: ...
 
-    def card_digest(self, bill: Bill) -> str:
+    def card_digest(self, bill: Bill, *, today: date | None = None) -> str:
         """Digest of the card as it would render now, without sending anything: what lets a run
         tell a card that is still true from one that has drifted."""
         ...

@@ -681,6 +681,8 @@ class Container:
                 poster=self.poster(dry_run=dry_run),
                 deliveries=self.delivery_service(dry_run=dry_run),
                 document_reviews=self.document_reviews(dry_run=dry_run),
+                checkpoint=self.state_checkpoint(dry_run=dry_run),
+                delivery_attempts=self._delivery_attempts(dry_run),
             ),
         )
 

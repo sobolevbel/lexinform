@@ -990,7 +990,11 @@ class FakePublisher(RenderingPublisher):
         result = super().publish_prepared(publication)
         if news:
             self._record_sittings(news)
-        if plan.edit_message_id is not None or not plan.rendered_text:
+        if plan.edit_message_id is not None:
+            if publication.kind is PublicationKind.MESSAGE_PART and plan.revision_of is not None:
+                self.edits.append((Bill.model_validate_json(plan.bill_json), plan.edit_message_id))
+            return result
+        if not plan.rendered_text:
             return result
         if publication.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
             bill = Bill.model_validate_json(plan.bill_json)
