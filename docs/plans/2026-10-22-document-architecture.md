@@ -371,7 +371,7 @@ DA6–DA7 не требуют предварительно включать но
 - [ ] DA1.4. **Частично: [J013](2026-10-22-document-architecture-progress.md#j013), [J015](2026-10-22-document-architecture-progress.md#j015), [J017](2026-10-22-document-architecture-progress.md#j017), [J018](2026-10-22-document-architecture-progress.md#j018), [J020](2026-10-22-document-architecture-progress.md#j020), [J022](2026-10-22-document-architecture-progress.md#j022), [J023](2026-10-22-document-architecture-progress.md#j023), [J025](2026-10-22-document-architecture-progress.md#j025), [J026](2026-10-22-document-architecture-progress.md#j026).** Зафиксировать порядок: локальная транзакция frozen pending → удалённый checkpoint →
   API → локальная транзакция исхода/effects → удалённый checkpoint исхода → следующий reader effect.
   Сеть и git push не выполняются внутри SQL-транзакции.
-- [ ] DA1.5. **Частично: [J008](2026-10-22-document-architecture-progress.md#j008), [J013](2026-10-22-document-architecture-progress.md#j013), [J015](2026-10-22-document-architecture-progress.md#j015), [J016](2026-10-22-document-architecture-progress.md#j016), [J026](2026-10-22-document-architecture-progress.md#j026).** У checkpoint отдельная fatal ошибка сохранения. Она не попадает в общий delivery
+- [x] DA1.5. **Принято локально: [J036](2026-10-22-document-architecture-progress.md#j036), [J035](2026-10-22-document-architecture-progress.md#j035); прежние fault matrices — в журнале.** У checkpoint отдельная fatal ошибка сохранения. Она не попадает в общий delivery
   `except Exception`, не становится `failed` с расходом попытки и не разрешает продолжить отправки.
   Неуспех до API означает ноль вызовов Telegram. Неуспех после API останавливает следующие эффекты.
   Проверить проброс через pipeline/phases, commands и collect: изоляция ошибок фаз не должна
@@ -386,7 +386,7 @@ DA6–DA7 не требуют предварительно включать но
 - [ ] DA1.8. **Частично: [J007](2026-10-22-document-architecture-progress.md#j007).** Финальный workflow dump пользуется тем же контрактом, всегда включает polling manifest.
   Lock охватывает scheduled/commands/collect/drain и maintenance. Ручная запись не разрешает
   параллельный writer; процедура maintenance явно получает эксклюзивное владение.
-- [ ] DA1.9. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012), [J031](2026-10-22-document-architecture-progress.md#j031).** Измерить dump/push latency и объём на копии state. Без измерений не объединять
+- [ ] DA1.9. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012), [J031](2026-10-22-document-architecture-progress.md#j031), [J036](2026-10-22-document-architecture-progress.md#j036).** Измерить dump/push latency и объём на копии state. Без измерений не объединять
   несколько физически начатых отправок в один checkpoint ради производительности.
   При неприемлемых затратах сравнить постоянный runtime; второе delivery-хранилище не вводить по умолчанию.
 - [x] DA1.10. **Принято локально: [J007](2026-10-22-document-architecture-progress.md#j007), [J015](2026-10-22-document-architecture-progress.md#j015), [J029](2026-10-22-document-architecture-progress.md#j029).** Связать commands/inbox с подтверждённым state: сохранять started до исполнения,

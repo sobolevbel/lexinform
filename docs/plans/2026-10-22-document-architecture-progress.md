@@ -1333,7 +1333,7 @@ Deploy relay [40105197512](https://github.com/sobolevbel/lexinform/actions/runs/
 <a id="j035"></a>
 ### J035. DA1.4/DA1.5: checkpoints старых sitting/status-edit callbacks
 
-Дата: 24 октября 2026. База: `d1edc19`. Статус: выполнено локально, ожидает commit/push.
+Дата: 24 октября 2026. База: `d1edc19`. Реализация: `512ef45`, запушено; CI/deploy проверяются отдельно.
 
 Два оставшихся legacy callback пути получают тот же pre/post checkpoint: attempted sittings
 без frozen group/HTML и FAILED STATUS_UPDATE edit без HTML. Прежние IDs, payloads, targets,
@@ -1364,3 +1364,43 @@ Deploy relay [40106241518](https://github.com/sobolevbel/lexinform/actions/runs/
 на том же SHA. CI: 3733 passed + прежний xfail, mypy 341, corpus/docs/web green. Log
 `6656cce8193d -> d1edc198c690`, relay up 45 s после restart, mismatch отсутствует.
 Только metadata/log verification, без ручного pipeline/SSH/Telegram send.
+
+<a id="j036"></a>
+### J036. DA1.9 и CLI acceptance: повторяемые offline measurements
+
+Дата: 24 октября 2026. База: `512ef45`. Статус: выполнено локально, ожидает commit/push.
+
+Dev-only tools.measure_delivery_state использует текущий код и production World с fakes,
+сохраняет code/source/fixture hashes, измеряет whole SQLite/dump/gzip, reachable Git history,
+local checkpoint/push/clone/restore timings. Режим ограничен 1–50 edits и 0–20 quiet runs;
+output должен быть новым. Сокеты и non-file Git transport заблокированы, environment очищен;
+оригиналы, production dump и backend не используются. Временные DB/remotes/clones удаляются.
+No-edit control имеет тот же initial SQL/final Clock; retained delta не объявляется ценой строки.
+GC выполняется только на копии и не удаляет reachable history. FAILED/UNKNOWN forks сохраняют
+exact plans/targets после 91 дней и fresh clone, без дополнительных model calls.
+
+7 новых tests проверяют N=1/2, quiet identities, whole-state/history/retention, unresolved work,
+environment restoration, bounds и refusal to overwrite. Ещё 4 subprocess cases используют
+реальный cli.main/Typer с fake Container: collect-batches/drain-deliveries, reader pre/post CP,
+exit 75, API delta 0/1 и remote QUEUED/PENDING. Console/module entry wrappers отдельно покрыты
+прежними tests. Новые subprocess запрещают сокеты и используют явно выбранный source tree.
+Финальный mirror focused gate 11/11 прошёл; root full gate выполняется.
+
+Root CLI sample N=10/quiet=3: 47 local checkpoints/pushes; whole dump 33737 → 89956 → 95308 →
+23731 bytes (baseline/edits/quiet/retention), gzip 6887 → 8589 → 8729 → 5224. Все 10 identities
+сохранены, 10 terminal payloads очищены; quiet runs не создают revisions/edits. No-edit retained
+delta +3176 bytes включает metadata/current analysis. Финальная reachable history: 35 commits,
+332743 bytes loose files / 37369 после GC на копии. Local median CP 0.1271 s не прогнозирует
+GitHub latency. Это новый bounded sample, не повтор прежнего N=50 и не production-growth forecast.
+Артефакт `/private/tmp/lexinform-delivery-acceptance-j036-measurement-20261024.json`.
+Integration patch SHA `2f213fcb50d28a1e4d01ccf91bf8787b44bd32547d915892b344f1b76d964daa`.
+Runtime, schema/polling/storage policy прежние; полный DA1 не закрывается.
+
+Root full gate: 3763 passed + прежний strict xfail, mypy 345 files, Ruff check/format 372 files,
+strict docs build/link check и diff check успешны. Четыре новых CLI subprocess cases входят
+в default gate; local HTTP gate предыдущей runtime стадии остаётся действительным, source
+runtime в этом срезе не меняется. J036 measurement SHA
+`681c47c81f5cd50bd1bdf1989f66318b765f0866678786658609a42f54551085`.
+DA1.5 принят локально с прежними fault matrices и J035: обе известные legacy CP обходные ветки
+закрыты, collect/drain exit-75 acceptance воспроизводится через CLI. DA1.9 остаётся частичным:
+hosted latency и production daily-growth здесь не измерялись; granularity checkpoints не меняется.
