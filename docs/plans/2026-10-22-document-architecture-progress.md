@@ -1233,7 +1233,7 @@ Deploy relay [40103242049](https://github.com/sobolevbel/lexinform/actions/runs/
 <a id="j033"></a>
 ### J033. DA1.3: единая сохранённая multipart edition карточки
 
-Дата: 24 октября 2026. База: `35a2dc6`. Статус: выполнено локально, ожидает commit/push.
+Дата: 24 октября 2026. База: `35a2dc6`. Реализация: `6656cce`, запушено; CI/deploy успешны.
 
 Общий edit_card заменяет direct fallback всех трёх callers для single-to-many, many-to-many,
 роста и сокращения. В одной SQL transaction до первого API сохраняются immutable root/children,
@@ -1296,3 +1296,36 @@ initial NEW_BILL multipart continuation после трёх definite failures б
 `/delivery child retry` отвергается как не-UNKNOWN. Это не card-edit revision и не расширяется
 в этой стадии; DA1.6/recovery остаётся открытым. Fake production World evidence:
 `/private/tmp/lexinform-initial-card-child-recovery-gap-20261024.json`; live data не использовались.
+
+<a id="j034"></a>
+### J034. DA1.6 recovery: исчерпавшая попытки часть первоначальной карточки
+
+Дата: 24 октября 2026. База: `6656cce`. Статус: выполнено локально, ожидает commit/push; B119 fixed locally.
+
+Общий pure failed_card_part_resolution_allowed расширяет прежний card-edit qualifier только
+на frozen MESSAGE_PART исходного NEW_BILL/JOINT_BILL. Для audited retry/dismiss проверяются
+SENT root с receipt/HTML, bill/term/channel, root membership, parent/index; edit/revision/group
+shapes отвергаются. Возраст/число definite attempts не являются разрешением на автоматическую
+повторную отправку: необходим сохранённый операторский audit. Confirm остаётся только UNKNOWN.
+Root, exact child payload, другие delivery kinds и прежнее digest threshold правило не меняются.
+Schema/polling/backend прежние. Service и SQLite используют тот же qualifier, SQL не добавляется.
+
+55 новых scenarios: NEW_BILL/JOINT_BILL × off/shadow/on × attempts 0/1/3 × retry/dismiss,
+audit до API через remote checkpoint/fresh clone, exact original parts после clock +120 дней,
+неизменность root и 17 malformed identity/membership/parent/index/confirm controls.
+Targeted 106/106 (38 новых + 68 прежних card-edit cases), затем финальные 55/55 прошли в mirror.
+На прежнем qualifier шесть retry/attempts=3 cases падают без ошибок setup; source восстановлен
+в finally. Root full gate проверяется отдельно. Patch SHA
+`0f5934a547f71f784bf0c6c1536f75af94bb04e247e32b290e811e4fa891eee2`.
+
+Root full gate: 3733 passed + прежний strict xfail; mypy 341 files, Ruff check/format 366 files,
+local HTTP CLI 21 passed, strict docs build/link check и diff check успешны. После полного gate
+уточнён только diagnostic message type-narrowing assert; его predicate и runtime не менялись,
+новые 55 cases и static checks повторены перед commit. Извлечение/выбор/нормализация не меняются.
+
+Предыдущая стадия `6656cce8193d71cc5d4b06dd5b3fd5ef1f063db9` проверена независимо: CI
+[40104840853](https://github.com/sobolevbel/lexinform/actions/runs/40104840853) и автоматический
+Deploy relay [40105197512](https://github.com/sobolevbel/lexinform/actions/runs/40105197512) success
+на том же SHA. CI: 3678 passed + прежний xfail, mypy 340, corpus/docs/web green. Log
+`35a2dc61e367 -> 6656cce8193`, relay up 45 s после restart; mismatch отсутствует.
+Это metadata/log verification, без ручного pipeline/SSH/Telegram send.

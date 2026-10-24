@@ -38,7 +38,7 @@ from lexinform.models import (
     TokenUsage,
     card_edit_owner_id,
     closure_event,
-    failed_card_edit_resolution_allowed,
+    failed_card_part_resolution_allowed,
     is_over,
     merge_usage,
     parse_command,
@@ -1096,11 +1096,11 @@ class CommandService:
                 and publication.status is PublicationStatus.FAILED
                 and publication.attempts >= 3
             )
-            failed_card_edit = self._failed_card_edit_resolution_allowed(publication, action)
+            failed_card_part = self._failed_card_part_resolution_allowed(publication, action)
             if (
                 publication.status is not PublicationStatus.UNKNOWN
                 and not exhausted_digest_retry
-                and not failed_card_edit
+                and not failed_card_part
             ):
                 return CommandOutcome(
                     status=OutcomeStatus.ERROR,
@@ -1192,7 +1192,7 @@ class CommandService:
             note="queued for the next publishing/tracking phase" if action == "retry" else "",
         )
 
-    def _failed_card_edit_resolution_allowed(self, publication: Publication, action: str) -> bool:
+    def _failed_card_part_resolution_allowed(self, publication: Publication, action: str) -> bool:
         plan = publication.delivery
         root = (
             self._repo.publication_by_id(plan.continuation_root)
@@ -1201,7 +1201,7 @@ class CommandService:
         )
         owner_id = card_edit_owner_id(root) if root is not None else None
         owner = self._repo.publication_by_id(owner_id) if owner_id is not None else None
-        return failed_card_edit_resolution_allowed(publication, root, owner, action)
+        return failed_card_part_resolution_allowed(publication, root, owner, action)
 
     def _republish(self, bill: Bill, *, publish: bool) -> CommandOutcome:
         if bill.analysis is None or not bill.analysis.analysis.relevant:

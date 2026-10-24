@@ -111,7 +111,7 @@ def card_edit_owner_id(root: Publication) -> int | None:
         return None
 
 
-def failed_card_edit_resolution_allowed(
+def failed_card_part_resolution_allowed(
     publication: Publication,
     root: Publication | None,
     owner: Publication | None,
@@ -131,7 +131,28 @@ def failed_card_edit_resolution_allowed(
         or root.delivery is None
         or not root.delivery.rendered_text
         or root.delivery.publication_ids
-        or owner is None
+        or (publication.term, publication.number, publication.channel_id)
+        != (root.term, root.number, root.channel_id)
+    ):
+        return False
+    if root.kind in (PublicationKind.NEW_BILL, PublicationKind.JOINT_BILL):
+        members = root.delivery.continuation_ids
+        if publication.id not in members:
+            return False
+        index = members.index(publication.id)
+        return (
+            root.status is PublicationStatus.SENT
+            and root.message_id is not None
+            and root.delivery.edit_message_id is None
+            and root.delivery.continuation_root is None
+            and root.delivery.revision_of is None
+            and plan.edit_message_id is None
+            and plan.continuation_root == root.id
+            and plan.continuation_parent == (root.id if index == 0 else members[index - 1])
+            and plan.continuation_index == index + 2
+        )
+    if (
+        owner is None
         or owner.id is None
         or owner.id != card_edit_owner_id(root)
         or owner.kind is not PublicationKind.NEW_BILL
@@ -139,8 +160,6 @@ def failed_card_edit_resolution_allowed(
         or owner.message_id is None
         or root.delivery.edit_message_id != owner.message_id
         or (root.term, root.number, root.channel_id) != (owner.term, owner.number, owner.channel_id)
-        or (publication.term, publication.number, publication.channel_id)
-        != (root.term, root.number, root.channel_id)
     ):
         return False
     if publication.id == root.id:

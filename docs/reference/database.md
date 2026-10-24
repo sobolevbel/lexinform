@@ -238,6 +238,9 @@ FAILED frozen card-edit root/child допускает audited retry/dismiss не
 Confirm остаётся только для UNKNOWN. Retry сохраняет exact payload; dismiss не применяет digest
 и останавливает прежнюю desired edition при refresh. Новая desired edition допустима.
 Повторное чтение уже SENT child из прежнего retry snapshot не считается delivery failure.
+Audited retry/dismiss также допускает FAILED frozen continuation первоначального NEW_BILL или
+JOINT_BILL с SENT root, exact membership/parent/index и совпадающими bill/term/channel.
+Service и repository используют общий pure qualifier; root receipt и payload не переписываются.
 
 Новые status update edits также сохраняют HTML/parts и исходный today; каждый edit/child
 использует общий checkpoint. Attempted legacy без HTML сохраняет прежний callback.

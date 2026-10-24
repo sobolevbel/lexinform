@@ -96,7 +96,7 @@ from lexinform.models.commands import (
     StatusSnapshot,
     card_edit_owner_id,
     command_for_callback,
-    failed_card_edit_resolution_allowed,
+    failed_card_part_resolution_allowed,
     parse_command,
     parse_reference,
 )
@@ -413,7 +413,7 @@ __all__ = [
     "UpdateSnapshot",
     "DeliveryResolution",
     "card_edit_owner_id",
-    "failed_card_edit_resolution_allowed",
+    "failed_card_part_resolution_allowed",
     "command_for_callback",
     "DIGEST_NUMBER",
     "DIGEST_TERM",

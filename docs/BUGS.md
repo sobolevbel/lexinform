@@ -3,7 +3,7 @@
 ## Как пользоваться
 
 Текущие баги сгруппированы по статусу, внутри группы — по влиянию на читателя.
-Номера B1…B118 постоянные:
+Номера B1…B119 постоянные:
 старые обозначения `#4` и `B4` означают одну запись.
 `open` — воспроизведённый дефект; `candidate` — ещё не доказанная гипотеза.
 `deferred` — подтверждённый дефект, отложенный по решению владельца;
@@ -23,6 +23,19 @@ P3 не означает, что расходы можно игнорирова�
 [повторяющиеся ошибки](development/failure-patterns.md) — памятка для аудита.
 
 ## Open
+
+### B119
+
+**P1 · fixed locally · 24.10.2026.** Исчерпавшее попытки продолжение первоначальной карточки не имело операторского recovery.
+
+Production-profile World с fakes: root NEW_BILL либо JOINT_BILL отправлен, frozen child трижды
+получил definite refusal. Root остаётся sent, child failed/attempts=3, автоматический retry
+закончился. `/delivery child retry` отвергается как не-UNKNOWN, а forget защищает незавершённую
+цепочку. Production-инцидент этим не установлен. Регрессия:
+`tests/scenario/test_initial_card_part_recovery.py`; шесть retry cases падают на прежнем qualifier.
+Общий service/repository qualifier теперь допускает audited retry/dismiss только
+для frozen original card continuation с SENT root и совпадающими identity/membership/parent/index.
+Payload, root receipt и audit history сохраняются; confirm остаётся только для UNKNOWN.
 
 ### B118
 

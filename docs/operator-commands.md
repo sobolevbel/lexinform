@@ -100,6 +100,8 @@ can be closed with `dismiss REASON`; `dismissed` does not claim delivery.
 Only `unknown` can be confirmed. `retry` and `dismiss` also accept a failed physical card-edit
 operation with frozen HTML, a valid saved card owner and its original target; a child must belong
 to its sent root. This audited recovery has no attempt-count threshold and preserves the payload.
+The same actions accept a frozen continuation of a sent original card or joint reply when its
+root membership, parent, index, bill, term and channel match. The sent root remains unchanged.
 `retry` also accepts a failed physical digest part after its three attempts are exhausted,
 resetting only that part with an audited decision.
 A repeated command cannot queue a sent or already queued post.
@@ -615,6 +617,7 @@ queued/failed публикации и их продолжения ждут бе�
 предыдущей; dismiss прекращает ещё не начатое продолжение. Подтверждённая первая часть
 не означает успех остальных. Незавершённые части защищают `/forget` и `/republish`.
 Сохранённая правка карточки в `failed` тоже допускает audited `retry` или `dismiss REASON`;
+то же относится к frozen продолжению исходной sent карточки или joint reply с проверенным root.
 `confirm` остаётся только для `unknown` и принимает исходный edit target. Отклонённая редакция
 не возникает заново при обычном refresh с тем же desired hash; новая редакция остаётся возможной.
 
