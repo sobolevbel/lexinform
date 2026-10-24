@@ -251,6 +251,9 @@ Paused flags и прежнее отклонение FAILED legacy без HTML с
 Автоматическая amendments revision создаёт свежий semantic plan из исторического контекста;
 она не наследует старые HTML, physical membership и held/digest effects исходной публикации.
 
+Legacy attempted sitting callback и STATUS_UPDATE edit без HTML также используют pre/post
+checkpoint. Их исторические HTML и shared membership не восстанавливаются из предположений;
+старый sitting без membership сохраняет per-row operator recovery.
 Некоторые attempted legacy rows без HTML сохраняют прежние callbacks. Полная граница остаётся задачей
 [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
 

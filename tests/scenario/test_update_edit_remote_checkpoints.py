@@ -257,7 +257,7 @@ def test_edit_without_original_date_is_rejected_before_pending_or_api() -> None:
 
 @pytest.mark.parametrize("mode", ["off", "shadow"])
 @pytest.mark.parametrize("attempted", [False, True])
-def test_attempted_legacy_edit_without_html_keeps_its_original_callback_and_payload(
+def test_attempted_legacy_edit_without_html_checkpoints_its_original_callback_and_payload(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: Mode, attempted: bool
 ) -> None:
     case = late_vote(mode)
@@ -278,4 +278,4 @@ def test_attempted_legacy_edit_without_html_keeps_its_original_callback_and_payl
     assert len(world.publisher.edited) - before == 1
     assert world.publisher.edited[-1][1] == case.original.message_id
     assert row(world, case.original.id or 0) == case.original
-    assert git(remote, "rev-parse", "state") == before_tip
+    assert git(remote, "rev-parse", "state") != before_tip

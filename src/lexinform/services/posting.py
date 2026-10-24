@@ -508,7 +508,11 @@ class Poster:
                 self._repo.mark_publication(pub.id, PublicationStatus.PENDING, count_attempt=False)
         self._attempted.update(identities)
         message_id = send_publications(
-            self._repo, self._clock, identities, lambda: self._publisher.publish_sittings(news)
+            self._repo,
+            self._clock,
+            identities,
+            lambda: self._publisher.publish_sittings(news),
+            checkpoint=self._checkpoint,
         )
         self._count_attention(tuple(identities), message_id)
         for pub in pubs:
@@ -1678,8 +1682,7 @@ class Poster:
             and root.kind in FROZEN_REPLIES
             and root.delivery is not None
             and (
-                root.delivery.edit_message_id is None
-                or (root.kind is PublicationKind.STATUS_UPDATE and root.delivery.rendered_text)
+                root.delivery.edit_message_id is None or root.kind is PublicationKind.STATUS_UPDATE
             )
         ):
             return self._checkpoint

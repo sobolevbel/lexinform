@@ -1300,7 +1300,7 @@ initial NEW_BILL multipart continuation после трёх definite failures б
 <a id="j034"></a>
 ### J034. DA1.6 recovery: исчерпавшая попытки часть первоначальной карточки
 
-Дата: 24 октября 2026. База: `6656cce`. Статус: выполнено локально, ожидает commit/push; B119 fixed locally.
+Дата: 24 октября 2026. База: `6656cce`. Реализация: `d1edc19`, запушено; B119 fixed locally, CI/deploy успешны.
 
 Общий pure failed_card_part_resolution_allowed расширяет прежний card-edit qualifier только
 на frozen MESSAGE_PART исходного NEW_BILL/JOINT_BILL. Для audited retry/dismiss проверяются
@@ -1329,3 +1329,38 @@ Deploy relay [40105197512](https://github.com/sobolevbel/lexinform/actions/runs/
 на том же SHA. CI: 3678 passed + прежний xfail, mypy 340, corpus/docs/web green. Log
 `35a2dc61e367 -> 6656cce8193`, relay up 45 s после restart; mismatch отсутствует.
 Это metadata/log verification, без ручного pipeline/SSH/Telegram send.
+
+<a id="j035"></a>
+### J035. DA1.4/DA1.5: checkpoints старых sitting/status-edit callbacks
+
+Дата: 24 октября 2026. База: `d1edc19`. Статус: выполнено локально, ожидает commit/push.
+
+Два оставшихся legacy callback пути получают тот же pre/post checkpoint: attempted sittings
+без frozen group/HTML и FAILED STATUS_UPDATE edit без HTML. Прежние IDs, payloads, targets,
+attempt budgets и callbacks сохраняются; отсутствующие исторические HTML/membership не создаются.
+До API remote получает PENDING; после receipt — SENT/FAILED/UNKNOWN. Failure до API не вызывает
+publisher, после API останавливает дальнейшие эффекты; remote-only Pending становится UNKNOWN
+и не повторяется автоматически. Это закрывает checkpoint bypass, не legacy exact-payload gap.
+
+19 новых production World cases: off/shadow/on, FAILED0/1 status edit, обе CP boundaries,
+fresh Git clone, сохранение plan/attempts и отсутствие новых API после UNKNOWN. Отдельный case
+показывает прежний per-row recovery старого sitting без persisted membership: confirm одной строки
+не разрешает остальные. Старые 120 affected cases прошли в mirror; 9 новых post-failure assertions
+уточнены на delta, поскольку restore helper сохраняет общий FakePublisher с прежними receipts.
+После исправления fixtures все 19/19 новых cases прошли; source runtime не менялся.
+На прежних callbacks две pre-API fault regressions ожидаемо падают; runtime source восстановлен
+в finally. Root full gate выполняется. Patch SHA
+`58cf869df739734c3c2729ca9d6b3acbf1f7e1af2eea3088aea6001fdcb4fe67`.
+Schema/polling/backend прежние; новых persisted fields/raw данных/paid calls нет.
+
+Root full gate: 3752 passed + прежний strict xfail, mypy 342 files, Ruff check/format 367 files,
+local HTTP CLI 21 passed, strict docs build/link check и diff check успешны.
+Выбор, извлечение и нормализация не меняются. DA1.2 exact legacy HTML/membership и финальная
+CLI collect/drain acceptance остаются отдельными задачами; весь DA1 не закрывается.
+
+База `d1edc198c69067ef0358eafb2068e645d18286b7` проверена независимо: CI
+[40105825118](https://github.com/sobolevbel/lexinform/actions/runs/40105825118), автоматический
+Deploy relay [40106241518](https://github.com/sobolevbel/lexinform/actions/runs/40106241518) success
+на том же SHA. CI: 3733 passed + прежний xfail, mypy 341, corpus/docs/web green. Log
+`6656cce8193d -> d1edc198c690`, relay up 45 s после restart, mismatch отсутствует.
+Только metadata/log verification, без ручного pipeline/SSH/Telegram send.

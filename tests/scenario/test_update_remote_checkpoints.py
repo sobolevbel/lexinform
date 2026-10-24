@@ -421,7 +421,7 @@ def test_failed_long_status_drains_its_legacy_plan_without_inventing_frozen_part
 
 @pytest.mark.parametrize("mode", ["off", "shadow", "on"])
 @pytest.mark.parametrize("attempted", [False, True])
-def test_failed_legacy_status_edit_keeps_its_callback_outside_the_new_checkpoint_scope(
+def test_failed_legacy_status_edit_checkpoints_its_compatible_callback(
     tmp_path: Path, mode: Mode, attempted: bool
 ) -> None:
     case = queued(mode, with_act=False)
@@ -439,7 +439,7 @@ def test_failed_legacy_status_edit_keeps_its_callback_outside_the_new_checkpoint
 
     assert send(case)
 
-    assert git(remote, "rev-parse", "state") == baseline
+    assert git(remote, "rev-parse", "state") != baseline
     assert plan(world, case.identity) == edit
     assert len(world.publisher.sent) == before_sent
     assert len(world.publisher.edited) == before_edits + 1
