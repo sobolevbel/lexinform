@@ -38,6 +38,7 @@ from lexinform.ports import (
     StateCheckpoint,
 )
 from lexinform.services.analysis import AnalysisService, Waiting
+from lexinform.services.card_edits import edit_single_card
 from lexinform.services.joint import group_of, primary_of
 from lexinform.services.message_parts import freeze_parts, send_continuations
 from lexinform.services.predecessors import rcl_predecessor
@@ -535,7 +536,7 @@ class PublishingService:
         assert bill.linked_number is not None, (
             "_inherited_card finds a card only through linked_number"
         )
-        inherit_card(
+        alias = inherit_card(
             self._repo,
             term=bill.term,
             number=bill.number,
@@ -549,19 +550,36 @@ class PublishingService:
             bill.linked_number,
             card.message_id,
         )
-        self._retag(bill, card, print_info)
+        self._retag(bill, alias, print_info, predecessor=card)
         return True
 
-    def _retag(self, bill: Bill, card: Publication, print_info: PrintInfo | None) -> None:
-        """The card heads a thread that has a druk number now: re-render it in place so that it
-        carries both tags. One attempt; a refusal is logged, the replies carry both tags anyway."""
-        if card.delivery is not None and card.delivery.continuation_ids:
+    def _retag(
+        self,
+        bill: Bill,
+        card: Publication,
+        print_info: PrintInfo | None,
+        *,
+        predecessor: Publication,
+    ) -> None:
+        """The inherited logical owner keeps its physical predecessor's message target."""
+        if predecessor.delivery is not None and predecessor.delivery.continuation_ids:
             return
         if open_card_edit_ids(self._repo, card):
             return
-        assert card.message_id is not None, (
-            "_inherited_card returns only a sent card with its message id"
+        saved = edit_single_card(
+            self._repo,
+            self._clock,
+            self._publisher,
+            bill,
+            card,
+            print_info,
+            channel_id=self._channel_id,
+            checkpoint=self._checkpoint,
+            delivery_attempts=self._delivery_attempts,
         )
+        if saved is not None:
+            return
+        assert card.message_id is not None, "an inherited card retains the sent physical target"
         try:
             self._publisher.edit_new_bill(bill, print_info, message_id=card.message_id)
         except ServiceUnavailableError:

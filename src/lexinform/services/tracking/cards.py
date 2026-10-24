@@ -15,9 +15,9 @@ from lexinform.models import (
     PublicationStatus,
 )
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
+from lexinform.services.card_edits import dismissed_card_edit, edit_single_card
 from lexinform.services.message_parts import continuation_snapshot, send_continuations
 from lexinform.services.publications import (
-    card_revision_owner,
     open_card_edit_ids,
     send_publication,
 )
@@ -75,14 +75,7 @@ class CardRefresher:
             if digest == card.rendered_sha256 or card.message_id is None:
                 continue
             parts = self._repo.card_refresh_parts(card.id)
-            if (
-                parts
-                and parts[0].delivery is not None
-                and parts[0].delivery.rendered_text
-                and parts[0].rendered_sha256 == digest
-                and any(part.status is PublicationStatus.DISMISSED for part in parts)
-                and card_revision_owner(self._repo, parts[0]) == card
-            ):
+            if dismissed_card_edit(self._repo, card, parts, digest):
                 continue
             try:
                 if len(parts) > 1:
@@ -98,63 +91,25 @@ class CardRefresher:
                 edited += 1
 
     def _edit_single(self, bill: Bill, card: Publication, digest: str, today: date) -> bool:
-        assert card.id is not None and card.message_id is not None, "refresh targets a sent card"
-        current = self._repo.card_refresh_parts(card.id)
-        if not current:
-            return False
-        previous = current[0]
-        if previous.kind is PublicationKind.MESSAGE_PART and previous.status not in (
-            PublicationStatus.SENT,
-            PublicationStatus.DISMISSED,
-        ):
-            return False
-        print_info = fetch_print(self._gateway, bill) if bill.has_process else None
-        texts = self._publisher.render_card_parts(bill, print_info, minimum=1, today=today)
-        if len(texts) != 1:
-            return self._edit(bill, card.message_id)
-        ref = f"card/{card.id}/{digest}-{previous.id}/1"
-        existing = self._repo.get_publication(
-            bill.term, bill.number, PublicationKind.MESSAGE_PART, card.channel_id, ref=ref
+        result = edit_single_card(
+            self._repo,
+            self._clock,
+            self._publisher,
+            bill,
+            card,
+            None,
+            channel_id=self._channel_id,
+            checkpoint=self._checkpoint,
+            local_tz=self._local_tz,
+            digest=digest,
+            today=today,
+            load_print=partial(fetch_print, self._gateway, bill) if bill.has_process else None,
+            delivery_attempts=self._attempted,
         )
-        if existing is not None:
-            return False
-        with self._repo.atomic():
-            identity = self._repo.create_publication(
-                Publication(
-                    term=bill.term,
-                    number=bill.number,
-                    channel_id=card.channel_id,
-                    kind=PublicationKind.MESSAGE_PART,
-                    status=PublicationStatus.QUEUED,
-                    created_at=self._clock.now(),
-                    ref=ref,
-                    delivery=DeliveryPlan(
-                        bill_json=continuation_snapshot(bill),
-                        rendered_text=texts[0],
-                        edit_message_id=card.message_id,
-                        revision_of=card.id,
-                        today=today,
-                        reply_to=card.message_id,
-                        continuation_parent=card.id,
-                        continuation_index=1,
-                    ),
-                )
-            )
-            self._repo.set_card_digest(identity, digest)
-            self._repo.mark_publication(identity, PublicationStatus.PENDING, count_attempt=False)
-            operation = self._repo.publication_by_id(identity)
-            assert operation is not None, "the immutable operation is saved before its edit"
-        self._attempted.add(identity)
-        return (
-            send_publication(
-                self._repo,
-                self._clock,
-                identity,
-                partial(self._publisher.publish_prepared, operation),
-                checkpoint=self._checkpoint,
-            )
-            is not None
-        )
+        if result is not None:
+            return result
+        assert card.message_id is not None, "legacy refresh targets a sent card"
+        return self._edit(bill, card.message_id)
 
     def _edit_parts(
         self, bill: Bill, card: Publication, digest: str, result: TrackingResult

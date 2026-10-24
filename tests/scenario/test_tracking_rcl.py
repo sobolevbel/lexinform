@@ -615,7 +615,7 @@ def test_hand_over_to_the_sejm_then_the_druk_continues_the_thread() -> None:
     assert {message for _, message in w.publisher.edits} == {card_id}
     edited, _ = w.publisher.edits[-1]
     assert edited.number == "3100"
-    assert "#kadencja10druk3100 #UC164" in MessageFormatter("ru").new_bill(edited, None).text
+    assert "#kadencja10druk3100 #UC164" in w.publisher.edited[-1][0].text
 
 
 GOVERNMENT_RPW = "RPW/35455/2026"
@@ -977,7 +977,7 @@ def test_the_druk_of_a_project_whose_act_is_out_brings_the_act_with_it() -> None
     assert stored.act is not None and stored.act.entry_into_force == dt.date(2026, 3, 5)
     edited, message_id = w.publisher.edits[-1]
     assert (edited.number, message_id) == ("3100", w.card_id(RCL))
-    card = MessageFormatter("ru").new_bill(edited, None).text
+    card = w.publisher.edited[-1][0].text
     assert "Dz.U. 2026 poz. 1099" in card
     assert "публикация в Dziennik Ustaw" not in card
     assert "без движения" not in card

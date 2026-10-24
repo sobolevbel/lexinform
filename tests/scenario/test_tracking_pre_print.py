@@ -129,9 +129,7 @@ def test_assigned_print_number_continues_the_thread_under_the_new_number() -> No
     # The card is the print's own now, in the entry's message, and carries both tags.
     edited, edited_message = w.publisher.edits[0]
     assert (edited.number, edited_message) == ("3100", card_id)
-    assert (
-        "#kadencja10druk3100 #RPW_29075_2026" in MessageFormatter("ru").new_bill(edited, None).text
-    )
+    assert "#kadencja10druk3100 #RPW_29075_2026" in w.publisher.edited[0][0].text
     analysis = w.bill("3100").analysis
     assert analysis is not None and analysis.revision == 2
     assert analysis.source_url is not None
@@ -218,7 +216,16 @@ def test_the_inherited_card_links_the_print_pdf_while_its_analysis_is_pending(
     assert w.bill("3100").status is BillStatus.BATCH_PENDING
     assert len(w.publisher.new_bills) == 1
     rendered, rendered_id = w.publisher.edited[-1]
-    assert rendered.bill is not None and rendered.bill.analysis == old_analysis
+    expected = (
+        MessageFormatter("ru")
+        .new_bill(
+            w.bill("3100").model_copy(update={"analysis": old_analysis}),
+            w.gateway.prints["3100"],
+            today=w.clock.now().date(),
+        )
+        .text
+    )
+    assert rendered.text == expected
     assert rendered_id == card_id
     assert f'<a href="{pdf.url}">PDF</a>' in rendered.text
     assert submission_url() not in rendered.text

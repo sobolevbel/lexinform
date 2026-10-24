@@ -12,6 +12,7 @@ import logging
 from collections.abc import Callable
 from datetime import date, timedelta
 from enum import StrEnum
+from functools import partial
 from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
@@ -43,6 +44,7 @@ from lexinform.models import (
     window_closes_within,
 )
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
+from lexinform.services.card_edits import edit_single_card
 from lexinform.services.message_parts import continuation_ready, freeze_parts, send_continuations
 from lexinform.services.publications import (
     card_revision_owner,
@@ -638,18 +640,27 @@ class Poster:
     def rerender_card(
         self, bill: Bill, card: Publication, *, print_info: PrintInfo | None = None
     ) -> bool:
-        """Re-render the card in place from `bill` as it stands now; one attempt, a refusal is
-        logged and not retried.
-
-        For a thread that gained a number this is the tags; for a term that ended it is the whole
-        card, which `CardRefresher` cannot reach — `list_tracked` drops a discontinued row, so
-        nothing would ever render the card that says the bill lapsed.
-        """
+        """Freeze qualified single edits while retaining the legacy multipart path."""
         if card.message_id is None or card.id is None:
             return False
         if open_card_edit_ids(self._repo, card):
             return False
-        # A linked print can still carry its RPW analysis while its own batch is pending.
+        saved = edit_single_card(
+            self._repo,
+            self._clock,
+            self._publisher,
+            bill,
+            card,
+            print_info,
+            channel_id=self._channel_id,
+            checkpoint=self._checkpoint,
+            delivery_attempts=self._attempted,
+            load_print=partial(fetch_print, self._gateway, bill)
+            if print_info is None and bill.has_process
+            else None,
+        )
+        if saved is not None:
+            return saved
         if print_info is None and bill.has_process:
             print_info = fetch_print(self._gateway, bill)
         try:

@@ -2561,6 +2561,14 @@ class SqliteBillRepository:
         )
         return int(cur.rowcount)
 
+    def card_aliases(self, channel_id: str, message_id: int) -> list[Publication]:
+        rows = self._conn.execute(
+            "SELECT * FROM publications WHERE channel_id = ? AND message_id = ?"
+            " AND kind = 'new_bill' AND status = 'sent' ORDER BY id",
+            (channel_id, message_id),
+        ).fetchall()
+        return [self._row_to_publication(row) for row in rows]
+
     def card_refresh_parts(self, card_id: int) -> list[Publication]:
         root = self._conn.execute(
             "SELECT ref FROM publications WHERE kind = 'message_part' AND ref LIKE ?"

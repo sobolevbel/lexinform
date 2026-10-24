@@ -1140,7 +1140,7 @@ Deploy relay [40064533089](https://github.com/sobolevbel/lexinform/actions/runs/
 <a id="j031"></a>
 ### J031. DA1.3: сохранённая одиночная правка карточки
 
-Дата: 24 октября 2026. База: `4a2d62d`. Статус: выполнено локально, ожидает commit/push.
+Дата: 24 октября 2026. База: `4a2d62d`. Реализация: `635e7af`, запушено; CI/deploy успешны.
 
 База `4a2d62dc860c8735ccb96c223989bb7c739fcf1d` независимо проверена: CI
 [40065099743](https://github.com/sobolevbel/lexinform/actions/runs/40065099743) и автоматический
@@ -1193,3 +1193,39 @@ FAILED/UNKNOWN forks сохраняют exact plans после retention и fres
 `43a8e00f56cd276d2f6f0753ae587e12366ceb34efa7aa2ea274a1ed28a8a92a`.
 Persisted layout single producer при интеграции не меняется; воспроизводимый repo tool следует
 отдельной стадией. DA1.9 остаётся частичным; по этим данным checkpoints не объединяются.
+
+<a id="j032"></a>
+### J032. DA1.3: общий single-card editor и логический владелец наследуемой карточки
+
+Дата: 24 октября 2026. База: `635e7af`. Статус: выполнено локально, ожидает commit/push.
+
+CardRefresher, Poster.rerender_card и Publishing._retag используют один edit_single_card.
+Наследование передаёт сохранённый alias нового bill как revision owner, сохраняя прежний
+physical target. Read-only card_aliases на прежней таблице находит SENT logical owners;
+никакой schema/migration не вводится. Active root/child другого alias блокирует конкурирующее
+редактирование до print lookup и API. Общая qualified dismissed проверка сохраняет J030 controls.
+Единые execution attempts и Clock day используются во всех трёх callers; lookup выполняется
+после определения saved day. Multipart/growth пока сохраняют прежний путь.
+
+32 новых cases покрывают двух дополнительных callers во всех modes, exact remote intent/receipt,
+CP failure до/после API, UNKNOWN→audited recovery, alias ownership/active barrier, один attempt
+между publishing/command и normal tracking, а также midnight during Poster print lookup.
+Три существующих assertions проверяют actual edited HTML вместо восстановления из compact Bill.
+Broad mirror gate: 435 passed и 3 новых fixture failures; corrected final replay: 48/48.
+Fixture publishing сначала seeds process baseline, чтобы следующий tracking не создавал отдельно
+ожидаемую semantic edition. Runtime этим исправлением не менялся; root full gate выполняется.
+Integration patch SHA `a4a78ef74f98d0a09bb6d789c2863fa202d76c90c0a323f81deb774898581255`;
+root Ruff изменил только формат нового test file. Actual reader `8ea5084` после fresh clone
+прочитал 6/6 новых saved operations; это bounded format/projection qualification.
+Synthetic quote(delivery_json) increment: 3721 bytes для Poster, 3586 для alias retag;
+это не whole dump/production-growth estimate. Нового backend/raw archive/paid calls нет.
+
+Root full gate: 3618 passed + прежний strict xfail, mypy 338 files, Ruff check/format 363 files,
+local HTTP CLI 21 passed; strict docs build/link check и diff check успешны. Corpus replay не нужен:
+извлечение, выбор, trimming и нормализация не меняются. DA1.3 остаётся частичным до multipart/growth.
+
+Предыдущая стадия `635e7af38193d6e7d78cc1294cad64cfa802c5d0` запушена и независимо проверена:
+CI [40102880393](https://github.com/sobolevbel/lexinform/actions/runs/40102880393), автоматический
+Deploy relay [40103242049](https://github.com/sobolevbel/lexinform/actions/runs/40103242049) success
+на том же SHA; log `4a2d62dc860c -> 635e7af38193`, relay up 45 s после restart, mismatch отсутствует.
+Это только metadata/log verification, без ручного pipeline/SSH/Telegram send.
