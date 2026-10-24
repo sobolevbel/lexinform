@@ -1,6 +1,8 @@
+import json
 import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -213,4 +215,96 @@ def test_manual_delivery_dry_run_keeps_the_workflow_from_executing_inbox(tmp_pat
     assert result.returncode == 0, result.stderr
     assert result.stdout.splitlines() == [
         "run --frozen --no-dev lexinform drain-deliveries --dry-run"
+    ]
+
+
+@pytest.mark.parametrize("limit", ["", "0", "5", '5"; touch injected; echo "'])
+@pytest.mark.parametrize("text_skipped", [False, True])
+def test_manual_backfill_precedes_index_and_run_with_literal_arguments(
+    tmp_path: Path, limit: str, text_skipped: bool
+) -> None:
+    executable = tmp_path / "uv"
+    executable.write_text(
+        f"#!{sys.executable}\nimport json, sys\nprint(json.dumps(sys.argv[1:]))\n"
+    )
+    executable.chmod(0o755)
+
+    result = subprocess.run(
+        ["bash", "-c", execution_script()],
+        env={
+            "PATH": f"{tmp_path}{os.pathsep}{os.defpath}",
+            "INBOX_PRESENT": "false",
+            "EVENT_NAME": "workflow_dispatch",
+            "EVENT_TYPE": "",
+            "INPUT_COMMAND": "run",
+            "INPUT_OPTIONS": "--no-publish",
+            "INPUT_SINCE": "2026-10-24",
+            "INPUT_DRY_RUN": "false",
+            "INPUT_INDEX_RCL_SINCE": "2026-10-01",
+            "INPUT_REPREFILTER_LIMIT": limit,
+            "INPUT_REPREFILTER_TEXT_SKIPPED": str(text_skipped).lower(),
+        },
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    commands = [
+        ["index-rcl-numbers", "--since", "2026-10-01"],
+        ["run", "--no-publish", "--since", "2026-10-24"],
+    ]
+    if limit not in ("", "0"):
+        backfill = ["reprefilter", "--limit", limit]
+        if text_skipped:
+            backfill.append("--include-text-skipped")
+        commands.insert(0, backfill)
+    assert [json.loads(line) for line in result.stdout.splitlines()] == [
+        ["run", "--frozen", "--no-dev", "lexinform", *command] for command in commands
+    ]
+    assert not (tmp_path / "injected").exists()
+
+
+@pytest.mark.parametrize("backfill_exit", [1, 75, 124])
+def test_failed_backfill_keeps_partial_work_and_stops_later_processes(
+    tmp_path: Path, backfill_exit: int
+) -> None:
+    executable = tmp_path / "uv"
+    executable.write_text(
+        f"#!{sys.executable}\n"
+        "import json, os, sys\nfrom pathlib import Path\n"
+        "print(json.dumps(sys.argv[1:]))\n"
+        "if sys.argv[5] == 'reprefilter':\n"
+        "    Path('partial-progress').write_text('first bill scanned')\n"
+        "    sys.exit(int(os.environ['BACKFILL_EXIT']))\n"
+    )
+    executable.chmod(0o755)
+
+    result = subprocess.run(
+        ["bash", "-c", execution_script()],
+        env={
+            "PATH": f"{tmp_path}{os.pathsep}{os.defpath}",
+            "INBOX_PRESENT": "true",
+            "EVENT_NAME": "workflow_dispatch",
+            "EVENT_TYPE": "",
+            "INPUT_COMMAND": "run",
+            "INPUT_OPTIONS": "",
+            "INPUT_SINCE": "",
+            "INPUT_DRY_RUN": "false",
+            "INPUT_INDEX_RCL_SINCE": "2026-10-01",
+            "INPUT_REPREFILTER_LIMIT": "5",
+            "INPUT_REPREFILTER_TEXT_SKIPPED": "false",
+            "BACKFILL_EXIT": str(backfill_exit),
+        },
+        cwd=tmp_path,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == backfill_exit, result.stderr
+    assert (tmp_path / "partial-progress").read_text() == "first bill scanned"
+    assert [json.loads(line) for line in result.stdout.splitlines()] == [
+        ["run", "--frozen", "--no-dev", "lexinform", "reprefilter", "--limit", "5"]
     ]

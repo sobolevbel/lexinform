@@ -383,7 +383,7 @@ DA6–DA7 не требуют предварительно включать но
   восстановлена база, либо собственного последнего подтверждённого checkpoint.
   Убрать fetch/reset/redump поверх чужого tip. При неизвестном исходе push сначала проверить,
   стал ли remote ровно подготовленным commit; чужой или несогласованный tip останавливает writer.
-- [ ] DA1.8. **Частично: [J007](2026-10-22-document-architecture-progress.md#j007), [J037](2026-10-22-document-architecture-progress.md#j037).** Финальный workflow dump пользуется тем же контрактом, всегда включает polling manifest.
+- [ ] DA1.8. **Частично: [J007](2026-10-22-document-architecture-progress.md#j007), [J037](2026-10-22-document-architecture-progress.md#j037), [J038](2026-10-22-document-architecture-progress.md#j038).** Финальный workflow dump пользуется тем же контрактом, всегда включает polling manifest.
   Lock охватывает scheduled/commands/collect/drain и maintenance. Ручная запись не разрешает
   параллельный writer; процедура maintenance явно получает эксклюзивное владение.
 - [ ] DA1.9. **Частично: [J012](2026-10-22-document-architecture-progress.md#j012), [J031](2026-10-22-document-architecture-progress.md#j031), [J036](2026-10-22-document-architecture-progress.md#j036).** Измерить dump/push latency и объём на копии state. Без измерений не объединять

@@ -3,7 +3,7 @@
 ## Как пользоваться
 
 Текущие баги сгруппированы по статусу, внутри группы — по влиянию на читателя.
-Номера B1…B119 постоянные:
+Номера B1…B120 постоянные:
 старые обозначения `#4` и `B4` означают одну запись.
 `open` — воспроизведённый дефект; `candidate` — ещё не доказанная гипотеза.
 `deferred` — подтверждённый дефект, отложенный по решению владельца;
@@ -23,6 +23,19 @@ P3 не означает, что расходы можно игнорирова�
 [повторяющиеся ошибки](development/failure-patterns.md) — памятка для аудита.
 
 ## Open
+
+### B120
+
+**P3 · fixed locally · 24.10.2026.** Ошибка pre-run backfill пропускала финальное сохранение его прогресса.
+
+`reprefilter_limit` запускал отдельный step до Run. При его неуспехе Run становился skipped,
+а условие final dump требовало начатого Run: уже записанные локальные строки не попадали
+в state. Это установленный workflow path, не доказанный production-инцидент.
+Теперь backfill входит в ограниченный Run step и использует тот же final checkpoint;
+неуспех останавливает index/run/commands. Input передаётся как один аргумент через environment.
+Регрессии: `test_failed_backfill_keeps_partial_work_and_stops_later_processes` и
+`test_final_workflow_checkpoint_restores_partial_backfill_after_the_run_step_fails`;
+три unit cases падают на прежнем Run script, fresh clone восстанавливает прогресс после исправления.
 
 ### B119
 

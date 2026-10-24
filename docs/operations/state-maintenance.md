@@ -21,10 +21,11 @@ Scheduled run, inbox commands, collect, drain и workflow maintenance испол
 4. Проверяйте записанный outcome, состояние нужной publication и итоговый checkpoint.
    Успешный job сам по себе не доказывает успех каждого операторского действия.
 
-Для backfill с сохраняемым промежуточным прогрессом используйте отдельную `/reprefilter`
-внутри Run step. Старый pre-run input `reprefilter_limit` выполняется раньше Run: при его
-ошибке Run может быть skipped, а условие final save тогда не сохраняет локальный прогресс.
-Это известное ограничение, а не отдельный writer.
+Отдельная `/reprefilter` и backfill `/run reprefilter=N` выполняются внутри ограниченного
+Run step. Ошибка backfill останавливает последующие index/run/commands, но не final save:
+при исправном checkpoint уже обработанные строки сохраняются. Backfill и следующие фазы
+делят 35 минут Run step; job оставляет время на финальное сохранение до своего timeout.
+Dry run по-прежнему не сохраняет локальные изменения.
 
 ## Изолированная локальная копия
 

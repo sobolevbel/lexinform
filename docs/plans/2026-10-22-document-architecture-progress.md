@@ -1415,7 +1415,7 @@ Deploy relay [40107287291](https://github.com/sobolevbel/lexinform/actions/runs/
 <a id="j037"></a>
 ### J037. DA1.8: поддерживаемый путь обслуживания state
 
-Дата: 24 октября 2026. База: `dfa662f`. Статус: выполнено локально, ожидает commit/push.
+Дата: 24 октября 2026. База: `dfa662f`. Реализация: `22320c5`, запушено; CI/deploy успешны.
 
 [Инструкция](../operations/state-maintenance.md) закрепляет существующий общий daily job
 для scheduled/commands/collect/drain/maintenance: restore выполняется после получения lock,
@@ -1434,4 +1434,35 @@ DA1.8 остаётся частичным. Нового writer, lease/backend, w
 Deploy relay [40108750196](https://github.com/sobolevbel/lexinform/actions/runs/40108750196) success
 на том же SHA. CI: 3763 passed + прежний xfail, mypy 345, corpus/docs/web green. Log
 `512ef457ca5a -> dfa662fe6905`, relay up 45 s после restart, mismatch отсутствует.
+Только metadata/log verification, без ручного pipeline/SSH/Telegram send.
+
+<a id="j038"></a>
+### J038. DA1.8: partial backfill сохраняется при неуспехе Run
+
+Дата: 24 октября 2026. База: `22320c5`. Статус: выполнено локально, ожидает commit/push.
+
+Pre-run reprefilter_limit перенесён в существующий Run script. Его неуспех оставляет Run
+начатым, поэтому общий final checkpoint больше не skipped и сохраняет завершённые строки.
+set -e останавливает последующие index/run/commands, включая exit 75; checkpoint и inbox guards
+не ослаблены. Backfill делит 35-minute Run budget с остальными фазами, оставляя время final save.
+Limit/text-skipped передаются через environment и argument array; свободный input не становится
+shell code. Старый standalone step удалён, schema/state writer/backend/polling не меняются.
+
+11 новых unit cases проверяют порядок, optional flag, пустой/нулевой limit, literal input,
+partial progress и exit 1/75/124. Три scenario cases выполняют настоящий CLI db checkpoint
+через финальный workflow script и свежий local Git clone: после simulated backfill failure
+обработанный bill восстанавливается вместе с polling manifest, дальнейший reader process запрещён.
+Targeted gate: 34 passed. На прежнем Run script три unit regressions падают; workflow восстановлен
+в finally. Первый mutation probe не запустил pytest из-за cache permissions и не считается проверкой.
+Отдельный raw SQL/disaster-restore ownership protocol остаётся открытым; DA1.8 не закрывается.
+
+Root full gate: 3777 passed + прежний strict xfail, mypy 346 files, Ruff check/format 373 files,
+local HTTP CLI 21 passed, strict docs build/link check и diff check успешны. Извлечение,
+нормализация и выбор документов не меняются; полный внешний corpus replay не запускался.
+
+База `22320c536b628130d1cd7bd867a49d5371354582` проверена независимо: CI
+[40109288269](https://github.com/sobolevbel/lexinform/actions/runs/40109288269), автоматический
+Deploy relay [40109726656](https://github.com/sobolevbel/lexinform/actions/runs/40109726656) success
+на том же SHA. CI: 3763 passed + прежний xfail, mypy 345, corpus/docs/web green. Log
+`dfa662fe6905 -> 22320c536b62`, relay up 45 s после restart, mismatch отсутствует.
 Только metadata/log verification, без ручного pipeline/SSH/Telegram send.

@@ -148,22 +148,6 @@ jobs:
           MISSING_OK: ${{ steps.state.outputs.created == 'true' && '--missing-ok' || '' }}
         run: uv run --frozen --no-dev lexinform db restore "$STATE_FILE" $MISSING_OK
 
-      # Backfill: bills skipped by title before the text prefilter existed (or while a file type
-      # was unreadable) get their text scanned; the run below analyses and posts the hits.
-      # `reprefilter_text_skipped` widens it to text-stage skips, which nothing else reopens.
-      - name: Re-run the text prefilter on skipped bills
-        if: ${{ inputs.reprefilter_limit != '' && inputs.reprefilter_limit != '0' }}
-        env:
-          LEXINFORM_RCL_PROXY_URL: ${{ secrets.LEXINFORM_RCL_PROXY_URL }}
-          LEXINFORM_LOG_LEVEL: INFO
-          TEXT_SKIPPED: ${{ inputs.reprefilter_text_skipped && '--include-text-skipped' || '' }}
-          # For the backfill's own report. It posts to the log channel only, but the Telegram
-          # client is built through `require_telegram`, which wants the readers' channel too.
-          LEXINFORM_TELEGRAM_BOT_TOKEN: ${{ secrets.LEXINFORM_TELEGRAM_BOT_TOKEN }}
-          LEXINFORM_TELEGRAM_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_CHANNEL_ID }}
-          LEXINFORM_TELEGRAM_LOG_CHANNEL_ID: ${{ secrets.LEXINFORM_TELEGRAM_LOG_CHANNEL_ID }}
-        run: uv run --frozen --no-dev lexinform reprefilter --limit "${{ inputs.reprefilter_limit }}" $TEXT_SKIPPED
-
       # The run exits 1 when it had errors, but whatever it did publish is recorded in the
       # database, so the state must be saved anyway (otherwise the next run would post duplicates).
       # The relay's event runs the commands phase alone; the schedule and the button run the
@@ -192,6 +176,8 @@ jobs:
           LEXINFORM_STATE_CHECKPOINT_REQUIRED: "true"
           INPUT_SINCE: ${{ inputs.since }}
           INPUT_INDEX_RCL_SINCE: ${{ inputs.index_rcl_since }}
+          INPUT_REPREFILTER_LIMIT: ${{ inputs.reprefilter_limit }}
+          INPUT_REPREFILTER_TEXT_SKIPPED: ${{ inputs.reprefilter_text_skipped }}
           INPUT_DRY_RUN: ${{ inputs.dry_run }}
           # Through the environment and never interpolated into the script: the Actions tab lets
           # a human type anything here, and `${{ }}` in a `run:` block is that text becoming code.
@@ -212,6 +198,14 @@ jobs:
               uv run --frozen --no-dev lexinform commands || STATUS=$?
             fi
             exit "$STATUS"
+          fi
+          # Backfill shares the bounded Run step so its partial progress reaches final persistence.
+          if [ -n "${INPUT_REPREFILTER_LIMIT:-}" ] && [ "$INPUT_REPREFILTER_LIMIT" != "0" ]; then
+            PREFILTER_ARGS=(--limit "$INPUT_REPREFILTER_LIMIT")
+            if [ "${INPUT_REPREFILTER_TEXT_SKIPPED:-}" = "true" ]; then
+              PREFILTER_ARGS+=(--include-text-skipped)
+            fi
+            uv run --frozen --no-dev lexinform reprefilter "${PREFILTER_ARGS[@]}"
           fi
           # The join between a plan of the wykaz and its project on RCL is published in the
           # listing and nowhere else, so the years before this bot have to be read once.

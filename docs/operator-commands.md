@@ -158,6 +158,10 @@ asked to build, since the state branch is only pushed by a real run.
 *and then* a whole run, which is what the composition is for (two dispatches would be two runs),
 the second is the backfill alone.
 
+Both execute inside the bounded Run step. A failed backfill stops later work, while the final
+checkpoint still saves completed local changes. Backfill and later phases share its 35-minute
+limit; dry runs keep their changes local.
+
 An option a command does not know is answered rather than ignored, including one that belongs to
 another command: `/show 3039 force` used to do nothing and say nothing, which reads exactly like
 it did something. A `key=value` is only read as an option where the command knows the key, so a
