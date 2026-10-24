@@ -497,13 +497,16 @@ paid calls или объявления материалов архивирова
 **Изменяемые места:** `models/documents.py`, extractors PDF/Word/ODT/DOC,
 `StructuredTextExtractor`, `document_text.py`, `document_facts.py`, `services/documents.py`.
 
-- [ ] DA3.1. Отделить раскрытие контейнеров/физическое извлечение от выбора юридического комплекта.
+- [ ] DA3.1. **Частично: [J042](2026-10-22-document-architecture-progress.md#j042).** Отделить раскрытие контейнеров/физическое извлечение от выбора юридического комплекта.
   Возвращать все наблюдённые части, member chain, parent/container/member SHA, отклонения и limits.
 - [ ] DA3.2. Ввести стабильные в пределах extraction координаты блоков: PDF page/index,
   Word XML part + paragraph/table row/cell/note, ODT/DOC собственные адреса или явный unknown.
   Word не получает выдуманную пагинацию. Между версиями экстрактора ID блока может меняться.
   Старые `DocumentFact.block_id=part:N` сохраняют прежнюю схему: нынешний validator не допускает
   произвольный block ID. Новые координаты получают явную версию и совместимый reader/validator.
+  PDF page records собирать до `_normalize_whitespace(...).strip()`: split готовой строки теряет
+  пустые крайние страницы. Для Word адрес XML/cell/note фиксировать внутри обхода `_WordMl`,
+  до склейки строк и inline notes; координаты не восстанавливать из итогового plain text.
 - [ ] DA3.3. Сохранить порядок, структуру таблиц, сноски и связь с местом вызова; указать view
   tracked changes/fields и неподдержанные объекты. «Есть текст» не доказывает полное чтение.
   Не расширять поддержку форматов скрыто внутри механического переноса.

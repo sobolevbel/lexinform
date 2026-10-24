@@ -17,6 +17,15 @@ Consultation reviews need their own selection rules: the law trimmer deliberatel
 very tables they analyse. See the [14 October corpus study](reviews/2026-10-14-consultation-text.md)
 for document layouts, measured reductions and unsafe shortcuts.
 
+`DocumentTextExtractor.extract_parts` returns an immutable `ExtractedParts` before legal bundle
+selection: input SHA, every extracted readable member with its chain and hashes, and physical
+unpacking failures. Roles remain unknown. `extract_document` assigns the existing roles and
+applies the existing bundle policy; `extract` remains its string interface. Format readers,
+readable extensions, archive limits and physical-loss heuristics are unchanged. This in-memory
+boundary adds no stored text or raw-file archive. Block coordinates, parent-container hashes,
+versioned extraction manifests and structured failures remain work in
+[DA3](plans/2026-10-22-document-architecture.md#da3).
+
 Senate amendment summaries select attachments by their extracted contents. A candidate needs
 the formal resolution heading, date, subject, affirmative amendment decision, operative changes
 and a closing marker. A closed single removal at a structured Word body end can stand without

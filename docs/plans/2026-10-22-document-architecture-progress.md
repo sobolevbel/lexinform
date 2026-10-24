@@ -1624,3 +1624,59 @@ Ruff check/format 378 файлов, local HTTP 21 passed, strict docs build/link
 XML `/private/tmp/lexinform-legacy-freeze-j041-accepted-20261024.xml`.
 DA1.2/DA1.4 не закрыты: остальные attempted legacy kinds, multipart/groups и связанные
 исторические неопределённости не получили выдуманные HTML или membership.
+
+<a id="j042"></a>
+### J042. DA3.1: физическое извлечение до юридического выбора
+
+Дата: 24 октября 2026. База: `1e3785114aa18c963245df002aba3aaf199f7551` (J041).
+Статус: принят ограниченный механический перенос; DA3 остаётся частичным.
+
+`DocumentTextExtractor.extract_parts` возвращает immutable `ExtractedParts`: SHA входных байтов,
+прочитанные части с member chain/root-container/member/text SHA и physical rejections.
+Роли остаются unknown; прежний `extract_document` назначает их после физического сбора и затем
+выполняет прежний выбор. Публичный `extract` и потребители TextLoader сохраняют прежний интерфейс.
+Новые 8 cases проверяют независимость от legal classifier/selector, сохранность отвергаемых
+позже частей, вложенные ZIP, прежние unpacking limits, malformed bytes и отсутствие Word pagination.
+Focused gate с прежними document/bundle/selection-contract tests: 133 passed.
+
+DA3.1 остаётся частичным: допустимые расширения и существующие format-reader/physical-loss
+heuristics не меняются. Не заявлены все неизвестные ZIP entries, parent-container SHA,
+структурированные причины отказа, block coordinates, extractor/dependency versions и durable
+ExtractionResult. Текущий root-container SHA не переименован в SHA непосредственного parent.
+Модель используется в активном пути в памяти, но не добавлена в Bill/DeliveryPlan/SQLite.
+Schema 48, persisted selection JSON, архив и storage backend не изменены; роста dump от среза нет.
+
+Raw baseline `b03e418` + J041 (J041 не меняет extraction):
+`/private/tmp/lexinform-extraction-j042-before-20261024.json`, SHA
+`0535699cbeb8a64c2fc0442e1a5ce79c65fd1803fcce6e364829357010b80473`.
+Обычный tracked runner `python -m tools.corpus_check --profiles extraction --suite external`
+с явными baseline/compare, corpus/output/reference paths даёт 3067 Word/DOCM/XML и 69 сложных
+ZIP, 5700 input paths. Ноль missing, error observations или изменившихся во время replay inputs.
+Compare выполнен в отдельной временной копии, пока root проходил J041 gate: source fingerprints
+трёх изменённых файлов зафиксированы до/после, затем файлы перенесены в root byte-for-byte.
+Артефакт `/private/tmp/lexinform-extraction-j042-prototype-after-20261024.json`, SHA
+`b43bcfab0d7e7e2b0264f0ac6561f9f83a03f0edd5713b4d3c328290fb88c0ad`, status passed:
+ноль changed observations и changed inputs; 4185 Word и 330 ZIP date/amount/negation/scope/reference
+probes меняют прежний law digest. Это machine regression baseline, не независимый legal oracle;
+остальные PDF/DOC/ODT, family transitions и полный корпус raw не покрыты этим replay.
+Wrapper с явным prototype PYTHONPATH/source hashes:
+`/private/tmp/lexinform-extraction-j042-prototype-replay.py`.
+
+Дополнительно на тех же 69 ZIP сравнены полные модели `ExtractedDocument`, включая все
+`DocumentSelection`/parts/roles/rejections/losses, со старым actual extractor source: 69/69 equal.
+Artifact `/private/tmp/lexinform-extraction-j042-selection-compare-20261024.json`, SHA
+`ac4c1b8a2762d8da5c8c05ec3d37d04735e91a267c3df70efcc8af539cca95e3`;
+script `/private/tmp/lexinform-extraction-j042-selection-compare.py`.
+Сеть заблокирована, корпус только читается, production/paid calls не использовались.
+
+Финальная приёмка root: 3863 passed + один прежний strict xfail DA5, errors/failures 0,
+mypy 351 файл, Ruff check/format 379 файлов, local HTTP 21 passed, strict docs build/link check
+и diff check green. XML `/private/tmp/lexinform-extraction-j042-full-20261024.xml`.
+Source hashes после полного gate совпадают с corpus-qualified prototype.
+J041 запушен; CI [40118209265](https://github.com/sobolevbel/lexinform/actions/runs/40118209265)
+success на точном `1e3785114aa18c963245df002aba3aaf199f7551`.
+Автоматический Deploy relay
+[40118649493](https://github.com/sobolevbel/lexinform/actions/runs/40118649493) success на том же SHA:
+`b03e41835534 -> 1e3785114aa1`, relay up 45 s после restart, без mismatch. Evidence
+`/private/tmp/lexinform-release-j041-20261024.json`. Это CI/deploy metadata и logs;
+ручной production pipeline, SSH и Telegram send не запускались.

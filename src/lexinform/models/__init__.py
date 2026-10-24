@@ -124,6 +124,7 @@ from lexinform.models.documents import (
     DocumentSelection,
     DocumentWork,
     ExtractedDocument,
+    ExtractedParts,
 )
 from lexinform.models.editorial import (
     Editorial as Editorial,
@@ -360,6 +361,7 @@ __all__ = [
     "DocumentSelection",
     "DocumentWork",
     "ExtractedDocument",
+    "ExtractedParts",
     "AmendmentSourceEvidence",
     "SenateResolutionEvidence",
     "SenateResolutionIdentity",

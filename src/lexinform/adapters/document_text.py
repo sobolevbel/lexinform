@@ -22,7 +22,12 @@ from zipfile import ZipInfo
 from inflate64 import Inflater
 
 from lexinform.document_versions import comparable_versions, normative_annex_key, regulation_support
-from lexinform.models.documents import DocumentPart, DocumentSelection, ExtractedDocument
+from lexinform.models.documents import (
+    DocumentPart,
+    DocumentSelection,
+    ExtractedDocument,
+    ExtractedParts,
+)
 from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
 from lexinform.ports import TextExtractor
 from lexinform.sections import (
@@ -373,10 +378,20 @@ class DocumentTextExtractor:
     def extract(self, data: bytes) -> str:
         return self.extract_document(data).text
 
-    def extract_document(self, data: bytes) -> ExtractedDocument:
+    def extract_parts(self, data: bytes) -> ExtractedParts:
         parts: list[DocumentPart] = []
         rejected: list[str] = []
-        self._collect(data, (), hashlib.sha256(data).hexdigest(), parts, rejected, [0, 0])
+        digest = hashlib.sha256(data).hexdigest()
+        self._collect(data, (), digest, parts, rejected, [0, 0])
+        return ExtractedParts(input_sha256=digest, parts=tuple(parts), rejected=tuple(rejected))
+
+    def extract_document(self, data: bytes) -> ExtractedDocument:
+        extracted = self.extract_parts(data)
+        parts: list[DocumentPart] = []
+        for part in extracted.parts:
+            kind = document_kind(part.text) if part.text.strip() else "unknown"
+            parts.append(part.model_copy(update={"role": _ROLE_OF_KIND.get(kind, "unknown")}))
+        rejected = list(extracted.rejected)
         if len(parts) == 1 and not parts[0].members:
             part = parts[0]
             return ExtractedDocument(
@@ -472,8 +487,6 @@ class DocumentTextExtractor:
                 return
         else:
             text = self._extract(data, depth=len(members))
-        kind = document_kind(text) if text.strip() else "unknown"
-        role = _ROLE_OF_KIND.get(kind, "unknown")
         pages = self.pages(data)
         losses = tuple(
             f"page {index}: no extracted text"
@@ -489,7 +502,6 @@ class DocumentTextExtractor:
                 members=members,
                 container_sha256=container,
                 sha256=hashlib.sha256(data).hexdigest(),
-                role=role,
                 text=text,
                 text_end=len(text),
                 text_sha256=hashlib.sha256(text.encode()).hexdigest(),

@@ -203,6 +203,14 @@ class DocumentSelection(BaseModel):
         return self
 
 
+class ExtractedParts(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    input_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    parts: tuple[DocumentPart, ...] = ()
+    rejected: tuple[str, ...] = ()
+
+
 class ExtractedDocument(BaseModel):
     model_config = ConfigDict(frozen=True)
 
