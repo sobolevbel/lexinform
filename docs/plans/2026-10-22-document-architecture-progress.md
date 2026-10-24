@@ -1333,7 +1333,7 @@ Deploy relay [40105197512](https://github.com/sobolevbel/lexinform/actions/runs/
 <a id="j035"></a>
 ### J035. DA1.4/DA1.5: checkpoints старых sitting/status-edit callbacks
 
-Дата: 24 октября 2026. База: `d1edc19`. Реализация: `512ef45`, запушено; CI/deploy проверяются отдельно.
+Дата: 24 октября 2026. База: `d1edc19`. Реализация: `512ef45`, запушено; CI/deploy успешны.
 
 Два оставшихся legacy callback пути получают тот же pre/post checkpoint: attempted sittings
 без frozen group/HTML и FAILED STATUS_UPDATE edit без HTML. Прежние IDs, payloads, targets,
@@ -1368,7 +1368,7 @@ Deploy relay [40106241518](https://github.com/sobolevbel/lexinform/actions/runs/
 <a id="j036"></a>
 ### J036. DA1.9 и CLI acceptance: повторяемые offline measurements
 
-Дата: 24 октября 2026. База: `512ef45`. Статус: выполнено локально, ожидает commit/push.
+Дата: 24 октября 2026. База: `512ef45`. Реализация: `dfa662f`, запушено; CI/deploy успешны.
 
 Dev-only tools.measure_delivery_state использует текущий код и production World с fakes,
 сохраняет code/source/fixture hashes, измеряет whole SQLite/dump/gzip, reachable Git history,
@@ -1404,3 +1404,34 @@ runtime в этом срезе не меняется. J036 measurement SHA
 DA1.5 принят локально с прежними fault matrices и J035: обе известные legacy CP обходные ветки
 закрыты, collect/drain exit-75 acceptance воспроизводится через CLI. DA1.9 остаётся частичным:
 hosted latency и production daily-growth здесь не измерялись; granularity checkpoints не меняется.
+
+База `512ef457ca5aff48095c8811bfd3eb3779e0dd6e` проверена независимо: CI
+[40106873014](https://github.com/sobolevbel/lexinform/actions/runs/40106873014), автоматический
+Deploy relay [40107287291](https://github.com/sobolevbel/lexinform/actions/runs/40107287291) success
+на том же SHA. CI: 3752 passed + прежний xfail, mypy 342, corpus/docs/web green. Log
+`d1edc198c690 -> 512ef457ca5a`, relay up 45 s после restart, mismatch отсутствует.
+Только metadata/log verification, без ручного pipeline/SSH/Telegram send.
+
+<a id="j037"></a>
+### J037. DA1.8: поддерживаемый путь обслуживания state
+
+Дата: 24 октября 2026. База: `dfa662f`. Статус: выполнено локально, ожидает commit/push.
+
+[Инструкция](../operations/state-maintenance.md) закрепляет существующий общий daily job
+для scheduled/commands/collect/drain/maintenance: restore выполняется после получения lock,
+локальные db tools сами его не приобретают. Command outcome, итоговый checkpoint и удаление
+inbox различаются; зелёный job не объявляется доказательством успеха каждой команды.
+Сохранено известное ограничение pre-run reprefilter_limit при skipped Run/final save.
+Для исключительного arbitrary SQL/disaster restore пока нет готового ownership protocol;
+DA1.8 остаётся частичным. Нового writer, lease/backend, workflow dispatch или runtime mutation нет.
+
+20 workflow unit tests passed; strict docs build/link check, diff check, sidebar/TOC и переход
+к контракту dump/restore проверены в локальном браузере. Runtime не менялся; полный source gate
+предыдущего коммита остаётся действительным. Локальный HTTP server остановлен после просмотра.
+
+Предыдущая стадия `dfa662fe69056f608a455ab75c77d932b462ba7b` проверена независимо: CI
+[40108352543](https://github.com/sobolevbel/lexinform/actions/runs/40108352543), автоматический
+Deploy relay [40108750196](https://github.com/sobolevbel/lexinform/actions/runs/40108750196) success
+на том же SHA. CI: 3763 passed + прежний xfail, mypy 345, corpus/docs/web green. Log
+`512ef457ca5a -> dfa662fe6905`, relay up 45 s после restart, mismatch отсутствует.
+Только metadata/log verification, без ручного pipeline/SSH/Telegram send.

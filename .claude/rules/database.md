@@ -12,6 +12,8 @@ paths:
 Schema, tables and what each version added: `docs/reference/database.md`; retention:
 `docs/state-retention.md`.
 
+- Canonical maintenance uses the shared daily job; local DB tools do not acquire its lock; see `docs/operations/state-maintenance.md`.
+
 - `PRAGMA user_version`; source of truth `MIGRATIONS` in `adapters/sqlite_repo.py` (script `i` →
   version `i + 1`, `SCHEMA_VERSION = len(MIGRATIONS)`), each script in its own transaction, so a
   failed script leaves the previous version. **Append-only**: never edit or reorder deployed scripts.

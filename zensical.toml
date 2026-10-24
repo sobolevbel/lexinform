@@ -17,6 +17,7 @@ nav = [
   ] },
   { "Эксплуатация" = [
     { "Обзор" = "operations/index.md" },
+    { "Обслуживание state" = "operations/state-maintenance.md" },
     { "Команды оператора" = "operator-commands.md" },
     { "Telegram: частота запросов" = "operations/telegram.md" },
     { "RCL proxy" = "rcl-proxy.md" },
