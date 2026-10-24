@@ -1439,7 +1439,7 @@ Deploy relay [40108750196](https://github.com/sobolevbel/lexinform/actions/runs/
 <a id="j038"></a>
 ### J038. DA1.8: partial backfill сохраняется при неуспехе Run
 
-Дата: 24 октября 2026. База: `22320c5`. Статус: выполнено локально, ожидает commit/push.
+Дата: 24 октября 2026. База: `22320c5`. Реализация: `af612e8`, запушено; CI/deploy успешны.
 
 Pre-run reprefilter_limit перенесён в существующий Run script. Его неуспех оставляет Run
 начатым, поэтому общий final checkpoint больше не skipped и сохраняет завершённые строки.
@@ -1459,10 +1459,66 @@ Targeted gate: 34 passed. На прежнем Run script три unit regressions
 Root full gate: 3777 passed + прежний strict xfail, mypy 346 files, Ruff check/format 373 files,
 local HTTP CLI 21 passed, strict docs build/link check и diff check успешны. Извлечение,
 нормализация и выбор документов не меняются; полный внешний corpus replay не запускался.
+Форматы/defaults прежние, migration не нужна; совместимый rollback — `22320c5` с возвратом
+описанного ограничения backfill. Следующий шаг: проверить CI/automatic deploy этого SHA.
 
 База `22320c536b628130d1cd7bd867a49d5371354582` проверена независимо: CI
 [40109288269](https://github.com/sobolevbel/lexinform/actions/runs/40109288269), автоматический
 Deploy relay [40109726656](https://github.com/sobolevbel/lexinform/actions/runs/40109726656) success
 на том же SHA. CI: 3763 passed + прежний xfail, mypy 345, corpus/docs/web green. Log
 `dfa662fe6905 -> 22320c536b62`, relay up 45 s после restart, mismatch отсутствует.
+Только metadata/log verification, без ручного pipeline/SSH/Telegram send.
+
+<a id="j039"></a>
+### J039. DA2.1: воспроизводимая инвентаризация raw файлов корпуса
+
+Дата: 24 октября 2026. База: `af612e8`. Статус: выполнено локально, ожидает commit/push.
+
+Dev-only tools.measure_corpus_files читает пять явных каталогов: RCL, Sejm term-10 prints,
+filed documents, self-amendments и RPW. Сохраняются path/hash/size каждого physical file,
+общие и раздельные totals, exact-byte duplicates и cross-family aliases. ZIP не раскрывается.
+Input symlinks, overwrite и output внутри корпуса отвергаются; missing roots явные,
+пустая выборка не считается успешным измерением. Сеть, модели, production DB и архив не нужны.
+
+| Family | Files | Bytes | Unique bytes внутри family |
+| --- | ---: | ---: | ---: |
+| RCL | 10411 | 5085328706 | 4602441005 |
+| Sejm prints | 2630 | 3166113469 | 3166113469 |
+| Sejm filings | 570 | 715940968 | 714127037 |
+| Sejm self-amendments | 66 | 40124793 | 40124793 |
+| RPW | 827 | 2577018000 | 2577018000 |
+
+Всего 14504 files / 11584525936 bytes; global 12354 unique contents / 11098773686 bytes.
+Точные дубли: 2150 files / 485752250 bytes (около 4.2%). Две cross-family duplicate groups
+учитываются глобально один раз; сумма family unique totals не является global unique total.
+Обе cross-family пары — `599-s`/`1768-s`, известные корпусу позиции правительства, сохранённые
+также вместо отсутствующего print. Это ещё одна причина не считать inventory потоком bill inputs.
+По suffix: PDF 7576, Word DOC/DOCM/DOCX 5111, ZIP 1803, XML 13, ODT 1; suffix не доказывает
+валидность формата, роль или scan/text coverage. Cached text, research derivatives, ранний
+архив и metadata Senate/ELI исключены. Полнота/свежесть и реальное production consumption
+этим не устанавливаются; дневной прирост, raw compression, retention/backup budget не измерены.
+
+Index SHA `76c3683bf35edbe914c5847dd4bbe9dfe63d0e0faa5047cc4a207cc0d5c1649a`,
+tool SHA `fc8e85aa780f04ad96ed5d3ca1a677f9a691a39ed8f53590f9f4d8b38cef8626`.
+Первый probe из temporary candidate и повтор из root tool дали одинаковый file manifest.
+Артефакт `/private/tmp/lexinform-corpus-files-j039-final-20261024.json`, SHA
+`c98c36a31422552665a27074ab7541e3fcba0d621690d6f836fff84f550c2f78` (3183524 bytes).
+Manifest остаётся локальным измерением; в git и production dump он не добавляется.
+Пять новых tests проверяют cross-family math, aliases, неизменность inputs, output guards,
+file/directory symlinks и отсутствие raw bytes. Focused gate: 5 passed.
+Runtime, schema и профиль хранения прежние. Выбор S3/backend отложен, DA2.1 остаётся частичным.
+Миграция, production flags и persisted fields неприменимы; rollback — `af612e8`, локальный
+JSON не является runtime state. Следующий шаг DA2.1: consumed-file coverage и дневной прирост,
+а для DA5 нужна явная карта происхождения фрагментов до исправления анализа coverage.
+
+Root full gate: 3782 passed + прежний strict xfail, mypy 347 files, Ruff check/format 375 files,
+strict docs build/link check и diff check успешны. Local HTTP CLI предыдущей runtime стадии:
+21 passed; CLI/wiring продукта здесь не меняются. Полный внешний extraction/selection replay
+не запускался: tool только читает байты и не вызывает extractor/selection/runtime services.
+
+База `af612e88339a3692dea21eac4187a534be16e25d` проверена независимо: CI
+[40110347744](https://github.com/sobolevbel/lexinform/actions/runs/40110347744), автоматический
+Deploy relay [40110751655](https://github.com/sobolevbel/lexinform/actions/runs/40110751655) success
+на том же SHA. CI: 3777 passed + прежний xfail, mypy 346, corpus/docs/web green. Log
+`22320c536b62 -> af612e88339a`, relay up 45 s после restart, mismatch отсутствует.
 Только metadata/log verification, без ручного pipeline/SSH/Telegram send.
