@@ -1197,7 +1197,7 @@ Persisted layout single producer при интеграции не меняетс
 <a id="j032"></a>
 ### J032. DA1.3: общий single-card editor и логический владелец наследуемой карточки
 
-Дата: 24 октября 2026. База: `635e7af`. Статус: выполнено локально, ожидает commit/push.
+Дата: 24 октября 2026. База: `635e7af`. Реализация: `35a2dc6`, запушено; CI/deploy успешны.
 
 CardRefresher, Poster.rerender_card и Publishing._retag используют один edit_single_card.
 Наследование передаёт сохранённый alias нового bill как revision owner, сохраняя прежний
@@ -1229,3 +1229,70 @@ CI [40102880393](https://github.com/sobolevbel/lexinform/actions/runs/4010288039
 Deploy relay [40103242049](https://github.com/sobolevbel/lexinform/actions/runs/40103242049) success
 на том же SHA; log `4a2d62dc860c -> 635e7af38193`, relay up 45 s после restart, mismatch отсутствует.
 Это только metadata/log verification, без ручного pipeline/SSH/Telegram send.
+
+<a id="j033"></a>
+### J033. DA1.3: единая сохранённая multipart edition карточки
+
+Дата: 24 октября 2026. База: `35a2dc6`. Статус: выполнено локально, ожидает commit/push.
+
+Общий edit_card заменяет direct fallback всех трёх callers для single-to-many, many-to-many,
+роста и сокращения. В одной SQL transaction до первого API сохраняются immutable root/children,
+весь exact HTML, компактные snapshots, desired hash, today, explicit logical owner, targets и
+membership. Каждый physical intent/receipt проходит pre/post checkpoint вне SQL transaction.
+Новые append parts используют receipt предыдущей части; сокращение помечает прежний хвост
+superseded text. Исходная карточка остаётся SENT, её digest применяется только после всех receipts.
+
+Физическая edition выбирается среди SENT aliases. После retention используются подтверждённые
+receipts и сохранённые edit targets; audited absent appended tail не воссоздаётся сам.
+Интеграция выявила дефект frozen draft: похожий ref и surviving hash позволяли подавить настоящую
+карточку или использовать чужой target из malformed child. Новый выбор проверяет root owner,
+bill/term/channel/receipt, полную доступную membership и child root/parent/index до API.
+Повреждённая цепочка блокируется с warning. Unrelated single root не подавляет подтверждённую
+исходную edition. Pruned SENT root + DISMISSED child сохраняет same-hash stop; новый hash
+использует только проверенные физические targets. Это runtime validation, не schema/backfill.
+
+Сохранены J030 early barriers, audited FAILED recovery и единые execution attempts/Clock day.
+Один общий результат считает только действительно новые физические сообщения; receipt edit не
+считается новым post. Rollover перед reset metrics сохраняет только свой новый delta/error slice.
+Повторный stale SENT child guard из draft удалён: он уже принят в J030. Child service outage
+сохраняет прежний partial_errors контракт; полного phase-abort для этой ветки стадия не обещает.
+
+47 новых multipart cases frozen draft и 13 retention/validation cases добавлены к прежним
+single/caller regressions. Первые 108 affected cases прошли в mirror, включая все 13 новых;
+7 осмысленных malformed controls падали до добавления validation. После этого добавлен только
+diagnostic warning и удалён дублирующий stale-child guard. Дополнительный mirror broad gate
+прерван ради полного root gate; его частичный результат не считается приёмкой.
+Integration patch SHA `81c5027489cab31c713a3add5b5ee268b0db6d6437ce7e3038b355576a4eaf8c`.
+Schema 48/polling v1, backend и raw-storage policy прежние; полные analysis/reviews не копируются.
+
+Первый root gate выявил 3 прежних assertions об одном direct edit после снятия reader barrier:
+новый producer обязан обновлять все подтверждённые физические части известной edition, включая
+superseded хвост. Два теста теперь проверяют точный список target IDs; runtime не менялся.
+Corrected affected gate: 177 passed (active barriers + new multipart/retention + callers).
+Полный root gate перезапущен; первый незавершённый XML не считается приёмкой.
+
+Финальный root gate: 3678 passed + прежний strict xfail; mypy 340 files, Ruff check/format
+365 files, local HTTP CLI 21 passed, strict docs build/link check и diff check успешны.
+Production API sender search не находит direct card edit fallback в services. DA1.3 принят
+локально; DA1 в целом остаётся частичным из-за legacy/noHTML и оставшихся recovery/acceptance задач.
+Выбор, извлечение и нормализация документов не менялись; corpus replay для этого среза не нужен.
+
+Actual Poster/publications/DeliveryService из reader-first `4a2d62d` прочитали 12/12 новых
+mode/shape payload после fresh local Git clone: exact HTML/targets/replies, final logical digest,
+отсутствие повторной API и чистый report. Qualification ограничена этими импортированными
+модулями/форматом, не всем историческим runtime; SHA
+`e23bd41571e846f32a354edbabed48563f9d5d76e4d0dac972c367652e78bba9`.
+Synthetic quote(delivery_json) increments прежние: single-to-four +33548 bytes, three-to-three
++21, three-to-ten +77, shrink с сохранением хвоста +21. Whole-state/daily-growth выводов из них нет.
+
+База `35a2dc61e367b2752d04640effdc4316c743a5e2` проверена независимо: CI
+[40103492565](https://github.com/sobolevbel/lexinform/actions/runs/40103492565) и автоматический
+Deploy relay [40103855001](https://github.com/sobolevbel/lexinform/actions/runs/40103855001) success
+на том же SHA; log `635e7af38193 -> 35a2dc61e367`, relay up 45 s после restart, mismatch нет.
+Это metadata/log verification без ручного pipeline/SSH/Telegram send.
+
+При инвентаризации оставшихся recovery shapes отдельно воспроизведён прежний пробел:
+initial NEW_BILL multipart continuation после трёх definite failures блокирует forget, но
+`/delivery child retry` отвергается как не-UNKNOWN. Это не card-edit revision и не расширяется
+в этой стадии; DA1.6/recovery остаётся открытым. Fake production World evidence:
+`/private/tmp/lexinform-initial-card-child-recovery-gap-20261024.json`; live data не использовались.

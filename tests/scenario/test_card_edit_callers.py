@@ -8,7 +8,7 @@ import pytest
 from lexinform.errors import StateCheckpointError
 from lexinform.models import Bill, PrintInfo, Publication, PublicationKind, PublicationStatus
 from lexinform.ports import PublishResult
-from lexinform.services.card_edits import edit_single_card
+from lexinform.services.card_edits import edit_card
 from lexinform.services.publications import inherit_card
 from tests.harness import CHANNEL, TERM, World, act
 from tests.scenario.test_card_remote_checkpoints import (
@@ -175,7 +175,7 @@ def test_an_active_predecessor_edit_blocks_successor_retag_and_other_editors(
     assert alias.id != predecessor.id and alias.message_id == predecessor.message_id
     assert latest(world, number) == alias
     assert not world.container.poster(dry_run=False).rerender_card(world.bill(number), alias)
-    assert not edit_single_card(
+    assert not edit_card(
         world.repo,
         world.clock,
         world.publisher,
@@ -183,7 +183,7 @@ def test_an_active_predecessor_edit_blocks_successor_retag_and_other_editors(
         predecessor,
         None,
         channel_id=CHANNEL,
-    )
+    ).completed
     assert latest(world, "3039") == active
     assert owned(world, "3039") == predecessor
     assert len(world.publisher.edited) == before
@@ -213,7 +213,7 @@ def test_reusable_card_editor_rejects_mismatched_owner_without_sending(mismatch:
         world.repo.mark_publication(owner.id or 0, PublicationStatus.UNKNOWN, count_attempt=False)
     before = len(world.publisher.edited)
 
-    assert not edit_single_card(
+    assert not edit_card(
         world.repo,
         world.clock,
         world.publisher,
@@ -221,7 +221,7 @@ def test_reusable_card_editor_rejects_mismatched_owner_without_sending(mismatch:
         wrong,
         None,
         channel_id="@other" if mismatch == "channel" else CHANNEL,
-    )
+    ).completed
 
     assert len(world.publisher.edited) == before
     assert latest(world, "3039").kind is PublicationKind.NEW_BILL
@@ -244,35 +244,24 @@ def test_card_alias_query_scopes_physical_identity_to_sent_cards_and_channel() -
     assert world.repo.card_aliases(CHANNEL, predecessor.message_id or 0) == [predecessor]
 
 
-def test_publishing_preserves_legacy_multipart_retag_skip() -> None:
+def test_publishing_retags_multipart_predecessor_with_a_new_explicit_edition() -> None:
     world = ready_world(long=True)
     world.run()
     predecessor = card(world)
-    assert predecessor.delivery is not None and predecessor.delivery.continuation_ids, (
-        "the production fixture published a multipart card"
-    )
+    physical = world.repo.card_refresh_parts(predecessor.id or 0)
+    assert len(physical) > 1, "the production fixture published a multipart card"
     bill = successor(world)
     before = len(world.publisher.edited)
 
     assert world.container.publishing_service(dry_run=False).publish_bill(bill)
 
     alias = owned(world, bill.number)
-    assert latest(world, bill.number) == alias
-    assert alias.rendered_sha256 is None
+    edition = world.repo.card_refresh_parts(alias.id or 0)
+    assert alias.rendered_sha256 == edition[0].rendered_sha256
     assert owned(world, "3039") == predecessor
-    assert len(world.publisher.edited) == before
-    assert (
-        edit_single_card(
-            world.repo,
-            world.clock,
-            world.publisher,
-            bill,
-            alias,
-            None,
-            channel_id=CHANNEL,
-        )
-        is None
-    )
+    assert len(world.publisher.edited) == before + len(edition)
+    assert [part.message_id for part in edition] == [part.message_id for part in physical]
+    assert edition[0].delivery is not None and edition[0].delivery.revision_of == alias.id
 
 
 def test_an_unfinished_predecessor_part_blocks_alias_card_edits() -> None:

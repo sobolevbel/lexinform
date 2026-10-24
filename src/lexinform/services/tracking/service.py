@@ -370,7 +370,13 @@ class StatusTrackingService:
         """The Sejm moved on to `current`: announce the lapsed bills of `previous` and carry its
         RCL projects over (see `TermRollover`). Cheap and idempotent once done."""
         result = TrackingResult()
+        parts_before = self._poster.attention_metrics().get("continuation_messages", 0)
+        errors_before = len(self._poster.delivery_errors())
         self._rollover.close_term(previous, current, result, publish=publish)
+        parts = self._poster.attention_metrics().get("continuation_messages", 0) - parts_before
+        if parts:
+            result.attention["continuation_messages"] = parts
+        result.partial_errors.extend(self._poster.delivery_errors()[errors_before:])
         return result
 
     def check_updates(

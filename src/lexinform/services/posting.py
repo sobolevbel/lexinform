@@ -17,7 +17,6 @@ from zoneinfo import ZoneInfo
 
 from lexinform.attention import assess_attention
 from lexinform.delivery_schedule import daily_schedule, sitting_is_close
-from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     AgendaItem,
     Bill,
@@ -44,7 +43,7 @@ from lexinform.models import (
     window_closes_within,
 )
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
-from lexinform.services.card_edits import edit_single_card
+from lexinform.services.card_edits import edit_card
 from lexinform.services.message_parts import continuation_ready, freeze_parts, send_continuations
 from lexinform.services.publications import (
     card_revision_owner,
@@ -640,12 +639,12 @@ class Poster:
     def rerender_card(
         self, bill: Bill, card: Publication, *, print_info: PrintInfo | None = None
     ) -> bool:
-        """Freeze qualified single edits while retaining the legacy multipart path."""
+        """Freeze the complete physical edition before editing a card in place."""
         if card.message_id is None or card.id is None:
             return False
         if open_card_edit_ids(self._repo, card):
             return False
-        saved = edit_single_card(
+        saved = edit_card(
             self._repo,
             self._clock,
             self._publisher,
@@ -659,20 +658,11 @@ class Poster:
             if print_info is None and bill.has_process
             else None,
         )
-        if saved is not None:
-            return saved
-        if print_info is None and bill.has_process:
-            print_info = fetch_print(self._gateway, bill)
-        try:
-            self._publisher.edit_new_bill(bill, print_info, message_id=card.message_id)
-        except ServiceUnavailableError:
-            raise
-        except Exception as exc:
-            log.warning("card of %s not re-rendered: %s: %s", bill.number, type(exc).__name__, exc)
-            return False
-        self._repo.set_card_digest(card.id, self._publisher.card_digest(bill))
-        log.info("card of %s re-rendered in place", bill.number)
-        return True
+        self._part_errors.extend(saved.errors)
+        self._attention_metrics["continuation_messages"] = (
+            self._attention_metrics.get("continuation_messages", 0) + saved.new_messages
+        )
+        return saved.completed
 
     def record_change(self, change: StatusChange) -> StatusChange | None:
         """Write the change down before anything is said about it; None when an earlier run

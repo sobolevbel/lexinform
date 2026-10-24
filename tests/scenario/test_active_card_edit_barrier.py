@@ -173,10 +173,13 @@ def test_reader_only_barrier_keeps_frozen_recovery_available_then_releases_direc
         assert world.publisher.edited[-1][1] == operation.delivery.edit_message_id
     assert world.publication("3039") == baseline
     before = len(world.publisher.edited)
+    targets = [case.card.message_id]
+    if legacy and child:
+        targets.append(row(world, case.operation).message_id)
 
     edit(case, "poster")
 
-    assert len(world.publisher.edited) == before + 1
+    assert [target for _, target in world.publisher.edited[before:]] == targets
 
 
 @pytest.mark.parametrize("action", ["confirm", "dismiss"])
@@ -205,8 +208,11 @@ def test_unknown_edits_remain_blocked_until_audited_resolution_releases_the_barr
     assert world.repo.delivery_resolutions(case.operation)[0].command == incoming
     assert not open_card_edit_ids(world.repo, case.card)
     assert readers_before(world) == before
+    targets = [case.card.message_id]
+    if legacy and child and action == "confirm":
+        targets.append(row(world, case.operation).message_id)
     edit(case, "poster")
-    assert len(world.publisher.edited) == before[1] + 1
+    assert [target for _, target in world.publisher.edited[before[1] :]] == targets
 
 
 def test_reader_barrier_handles_missing_card_target_without_querying_other_messages() -> None:

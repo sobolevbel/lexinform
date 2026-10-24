@@ -224,8 +224,12 @@ receipt/confirm; legacy projection пока остаётся у прежнего
 принимает только сохранённый target. Обычный single-to-single refresh сохраняет отдельную
 MESSAGE_PART operation с compact snapshot, HTML, today, desired hash и explicit revision_of;
 pre/post checkpoint покрывает edit. Общий attempted set не повторяет failure того же запуска.
-Тот же single editor используется retag/rollover; наследуемый alias становится logical owner,
+Общий editor поддерживает single/multipart, рост и сокращение во всех callers. Exact parts и
+membership фиксируются до первого API; при сокращении старые messages получают superseded text.
+Retag/rollover используют ту же операцию; наследуемый alias становится logical owner,
 а physical target остаётся прежним. SENT aliases читаются из существующей таблицы.
+Edition validation проверяет owner и child root/parent/index перед повторным использованием
+physical targets, включая pruned SENT root с сохранившимся DISMISSED child.
 Active card-edit root/child блокирует forget/republish и прежние direct card editors того же
 channel/physical target, включая aliases. SENT root с unresolved child остаётся защищённым.
 CLI safety error перечисляет operations, которые сначала нужно разрешить.
@@ -244,8 +248,7 @@ Paused flags и прежнее отклонение FAILED legacy без HTML с
 Автоматическая amendments revision создаёт свежий semantic plan из исторического контекста;
 она не наследует старые HTML, physical membership и held/digest effects исходной публикации.
 
-Multipart/growth edits
-и остальные reader effects пока работают по прежнему контракту. Полная граница остаётся задачей
+Некоторые attempted legacy rows без HTML сохраняют прежние callbacks. Полная граница остаётся задачей
 [архитектурного плана](../plans/2026-10-22-document-architecture.md#da1).
 
 `restore()` сначала проигрывает SQL в отдельной базе в памяти. После успешной проверки

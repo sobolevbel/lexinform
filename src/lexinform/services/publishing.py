@@ -38,7 +38,7 @@ from lexinform.ports import (
     StateCheckpoint,
 )
 from lexinform.services.analysis import AnalysisService, Waiting
-from lexinform.services.card_edits import edit_single_card
+from lexinform.services.card_edits import edit_card
 from lexinform.services.joint import group_of, primary_of
 from lexinform.services.message_parts import freeze_parts, send_continuations
 from lexinform.services.predecessors import rcl_predecessor
@@ -325,7 +325,7 @@ class PublishingService:
         if plan.primary is not None:
             return self._publish_joint(plan, result, identity, may_wait=may_wait)
         if plan.inherited is not None:
-            return self._inherit_card(plan.bill, plan.inherited, plan.print_info)
+            return self._inherit_card(plan.bill, plan.inherited, plan.print_info, result)
         bill, print_info = plan.bill, plan.print_info
         pub_id = self._repo.create_publication(
             Publication(
@@ -530,7 +530,9 @@ class PublishingService:
             return None
         return card
 
-    def _inherit_card(self, bill: Bill, card: Publication, print_info: PrintInfo | None) -> bool:
+    def _inherit_card(
+        self, bill: Bill, card: Publication, print_info: PrintInfo | None, result: PublishingResult
+    ) -> bool:
         """The print joins the thread of the entry it continues: the card is already in the
         channel, only the record of it is missing (every tracker joins on the print's own row)."""
         assert bill.linked_number is not None, (
@@ -550,7 +552,7 @@ class PublishingService:
             bill.linked_number,
             card.message_id,
         )
-        self._retag(bill, alias, print_info, predecessor=card)
+        self._retag(bill, alias, print_info, result)
         return True
 
     def _retag(
@@ -558,15 +560,12 @@ class PublishingService:
         bill: Bill,
         card: Publication,
         print_info: PrintInfo | None,
-        *,
-        predecessor: Publication,
+        result: PublishingResult,
     ) -> None:
-        """The inherited logical owner keeps its physical predecessor's message target."""
-        if predecessor.delivery is not None and predecessor.delivery.continuation_ids:
-            return
+        """The successor keeps every physical predecessor target."""
         if open_card_edit_ids(self._repo, card):
             return
-        saved = edit_single_card(
+        saved = edit_card(
             self._repo,
             self._clock,
             self._publisher,
@@ -577,15 +576,10 @@ class PublishingService:
             checkpoint=self._checkpoint,
             delivery_attempts=self._delivery_attempts,
         )
-        if saved is not None:
-            return
-        assert card.message_id is not None, "an inherited card retains the sent physical target"
-        try:
-            self._publisher.edit_new_bill(bill, print_info, message_id=card.message_id)
-        except ServiceUnavailableError:
-            raise
-        except Exception as exc:
-            log.warning("card of %s not re-tagged: %s: %s", bill.number, type(exc).__name__, exc)
+        self._parts_sent += saved.new_messages
+        self._part_errors.extend(saved.errors)
+        result.message_parts_sent += saved.new_messages
+        result.partial_errors.extend(saved.errors)
 
     def _primary_of(self, bill: Bill) -> tuple[Bill, int] | None:
         return primary_of(self._repo, bill, self._channel_id)

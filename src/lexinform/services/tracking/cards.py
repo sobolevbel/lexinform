@@ -1,7 +1,6 @@
-"""Keep followed cards true while retaining every attempted physical edit."""
+"""Keep followed cards true with immutable physical editions."""
 
 import logging
-from datetime import date
 from functools import partial
 from zoneinfo import ZoneInfo
 
@@ -9,18 +8,12 @@ from lexinform.errors import ServiceUnavailableError
 from lexinform.models import (
     Bill,
     BillStatus,
-    DeliveryPlan,
-    Publication,
     PublicationKind,
     PublicationStatus,
 )
 from lexinform.ports import BillRepository, Clock, Publisher, SejmGateway, StateCheckpoint
-from lexinform.services.card_edits import dismissed_card_edit, edit_single_card
-from lexinform.services.message_parts import continuation_snapshot, send_continuations
-from lexinform.services.publications import (
-    open_card_edit_ids,
-    send_publication,
-)
+from lexinform.services.card_edits import edit_card
+from lexinform.services.publications import open_card_edit_ids
 from lexinform.services.sources import fetch_print
 from lexinform.services.tracking_result import TrackingResult
 
@@ -74,113 +67,31 @@ class CardRefresher:
             digest = self._publisher.card_digest(bill, today=today)
             if digest == card.rendered_sha256 or card.message_id is None:
                 continue
-            parts = self._repo.card_refresh_parts(card.id)
-            if dismissed_card_edit(self._repo, card, parts, digest):
-                continue
             try:
-                if len(parts) > 1:
-                    refreshed = self._edit_parts(bill, card, digest, result)
-                else:
-                    refreshed = self._edit_single(bill, card, digest, today)
+                outcome = edit_card(
+                    self._repo,
+                    self._clock,
+                    self._publisher,
+                    bill,
+                    card,
+                    None,
+                    channel_id=self._channel_id,
+                    checkpoint=self._checkpoint,
+                    local_tz=self._local_tz,
+                    digest=digest,
+                    today=today,
+                    delivery_attempts=self._attempted,
+                    load_print=partial(fetch_print, self._gateway, bill)
+                    if bill.has_process
+                    else None,
+                )
             except ServiceUnavailableError as exc:
                 result.abort(exc)
                 return
-            if refreshed:
-                self._repo.set_card_digest(card.id, digest)
+            result.partial_errors.extend(outcome.errors)
+            result.attention["continuation_messages"] = (
+                result.attention.get("continuation_messages", 0) + outcome.new_messages
+            )
+            if outcome.completed:
                 result.cards_refreshed += 1
                 edited += 1
-
-    def _edit_single(self, bill: Bill, card: Publication, digest: str, today: date) -> bool:
-        result = edit_single_card(
-            self._repo,
-            self._clock,
-            self._publisher,
-            bill,
-            card,
-            None,
-            channel_id=self._channel_id,
-            checkpoint=self._checkpoint,
-            local_tz=self._local_tz,
-            digest=digest,
-            today=today,
-            load_print=partial(fetch_print, self._gateway, bill) if bill.has_process else None,
-            delivery_attempts=self._attempted,
-        )
-        if result is not None:
-            return result
-        assert card.message_id is not None, "legacy refresh targets a sent card"
-        return self._edit(bill, card.message_id)
-
-    def _edit_parts(
-        self, bill: Bill, card: Publication, digest: str, result: TrackingResult
-    ) -> bool:
-        assert card.id is not None
-        current = self._repo.card_refresh_parts(card.id)
-        if not current or any(
-            part.status is not PublicationStatus.SENT or part.message_id is None for part in current
-        ):
-            return False
-        if current[0].rendered_sha256 == digest:
-            return True
-        print_info = fetch_print(self._gateway, bill) if bill.has_process else None
-        texts = self._publisher.render_card_parts(bill, print_info, minimum=len(current))
-        identities: list[int] = []
-        snapshot = continuation_snapshot(bill)
-        with self._repo.atomic():
-            for index, text in enumerate(texts):
-                identity = self._repo.create_publication(
-                    Publication(
-                        term=bill.term,
-                        number=bill.number,
-                        channel_id=card.channel_id,
-                        kind=PublicationKind.MESSAGE_PART,
-                        status=PublicationStatus.QUEUED,
-                        created_at=self._clock.now(),
-                        ref=f"card/{card.id}/{digest}-{current[0].id}/{index + 1}",
-                        delivery=DeliveryPlan(
-                            bill_json=snapshot,
-                            rendered_text=text,
-                            edit_message_id=current[index].message_id
-                            if index < len(current)
-                            else None,
-                            continuation_parent=identities[-1] if identities else card.id,
-                            reply_to=card.message_id if not identities else None,
-                            continuation_root=identities[0] if identities else None,
-                            continuation_index=index + 1,
-                        ),
-                    )
-                )
-                identities.append(identity)
-            root = self._repo.publication_by_id(identities[0])
-            assert root is not None and root.delivery is not None
-            plan = root.delivery.model_copy(update={"continuation_ids": tuple(identities[1:])})
-            assert self._repo.replace_unattempted_delivery(identities[0], plan)
-            self._repo.set_card_digest(identities[0], digest)
-            root = root.model_copy(update={"delivery": plan})
-        self._repo.mark_publication(identities[0], PublicationStatus.PENDING, count_attempt=False)
-        sent = send_publication(
-            self._repo, self._clock, identities[0], partial(self._publisher.publish_prepared, root)
-        )
-        if sent is None:
-            return False
-        parts = send_continuations(self._repo, self._clock, self._publisher, root, set())
-        result.partial_errors.extend(parts.errors)
-        result.attention["continuation_messages"] = (
-            result.attention.get("continuation_messages", 0) + parts.sent
-        )
-        completed = self._repo.card_refresh_parts(card.id)
-        return all(part.status is PublicationStatus.SENT for part in completed)
-
-    def _edit(self, bill: Bill, message_id: int) -> bool:
-        """Edit the card in place, reading the print so it keeps its link to the PDF. The digest
-        is taken without the print, so a run that changes nothing costs no request; this one is
-        paid only when the card really moved."""
-        print_info = fetch_print(self._gateway, bill) if bill.has_process else None
-        try:
-            self._publisher.edit_new_bill(bill, print_info, message_id=message_id)
-        except ServiceUnavailableError:
-            raise
-        except Exception as exc:
-            log.warning("card of %s not refreshed: %s: %s", bill.number, type(exc).__name__, exc)
-            return False
-        return True
