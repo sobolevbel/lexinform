@@ -17,10 +17,10 @@ Backend хранения не выбирается. Production state, Telegram �
   отсутствие обязательных inputs не считается успехом.
 - [x] C3. Переизвлечение 118 empty ZIP и 59 PDF в отдельную generation, исходный кеш сохранён.
   Сохранить raw/extraction hashes, limits/ошибки/роли; recovered text не объявлять юридически полным.
-- [ ] C4. Адресная докачка семи отсутствующих RCL originals и повтор трёх consultation refusals.
+- [x] C4. Адресная докачка семи отсутствующих RCL originals и повтор трёх consultation refusals.
   Проверить формат/размер/HTML, no overwrite, provenance и повторные решения. Ошибки источника
   сохраняются как недоступность; отсутствие после отказа не заполняется выдуманными данными.
-- [ ] C5a. Датированный snapshot Sejm prints/processes/bills и diff к прошлому снимку.
+- [x] C5a. Датированный snapshot Sejm prints/processes/bills и diff к прошлому снимку.
   Новый индекс явно указывает свежий bills listing и прежние cached prints/process trees.
 - [ ] C5b. Свежий supplementary catalog и адресные RPW/supplement downloads по required cases.
   Листинги не подменяют новые process trees или оригиналы; массовой докачки пока нет.
@@ -48,7 +48,7 @@ Finished parts коммитятся отдельно. Общие helpers не м
 
 ### C001. Общие примитивы исследовательских scripts
 
-Статус: принят локально. `corpus_runtime`, `corpus_artifacts`, `corpus_rcl` объединяют guards,
+Статус: принят локально, commit `48bfe02`. `corpus_runtime`, `corpus_artifacts`, `corpus_rcl` объединяют guards,
 code provenance, pinned artifacts, cache adapters и построение исторических stage cases.
 Девять прежних tools используют общие функции; прежние imports/CLI сохранены через re-exports.
 Низкоуровневые helpers не импортируют pytest/World/suites, что проверено отдельным subprocess.
@@ -60,9 +60,11 @@ Health больше не принимает document-like filename из version 
 Raw files, cached text и runtime src этой частью не менялись.
 Общий gate рабочего набора: 4078 tests, errors/failures/skips/xfails 0; strict mypy 380 файлов,
 Ruff src/tests/tools green. XML: `out/corpus/2026-10-25-corpus-improvements-tests.xml`.
-Статусы остальных частей обновляются после их отдельных implementation commits.
+Последующие части и их проверки записаны ниже.
 
 ### C002. Реестр, поколения и общий путь чтения
+
+Статус: принят локально, commit `3217e80`.
 
 `corpus_runs` запускает прежние suites, сохраняет started/result/log/code.tar.gz и recursive
 artifact manifest с SHA. Нельзя занять существующий ID, подменить output/corpus/suite или preset
@@ -113,3 +115,63 @@ Evidence spans проверены валидатором. Это огранич�
 XML `out/corpus/2026-10-25-corpus-improvements-qualified.xml`. Strict docs build и ссылки green.
 Python sources совпали со snapshot проверенного CI slice `c002-ci-qualified` (passed).
 Все 15 выбранных run manifests проверены; статусы recorded/passed/not_run сохранены.
+
+### C003. Адресная докачка и свежие листинги
+
+Статус: данные применены и проверены; maintenance tools проходят тот же полный gate.
+
+`corpus_http` объединяет allowlisted HTTPS, redirects, complete response, byte/time limits и
+public response provenance. `corpus_collect` разделяет download/install: source run проверяется
+по manifest, originals/cache создаются только при отсутствии или точном совпадении bytes,
+старые index rows сохраняются. Advisory lock и content check защищают atomic index publish.
+Новые installation runs сохраняют `index-before.json` для обратного воспроизведения.
+
+`c004-rcl-gaps`: скачаны **7/7** missing originals, всего **550134 raw bytes**:
+300535, 300536, 300677, 301219, 412632, 418667, 418672. Все семь кешей непустые.
+787416, 787418, 787427 по-прежнему HTTP 200 HTML; они остались unavailable, без fake originals.
+`c004-install-new-rcl`: 10411 прежних index records сохранены, добавлены семь новых.
+Повтор `c004-repeat-install-qualified` получил семь already_installed без изменений index/raw/cache.
+Первый install предшествовал добавлению автоматического index-before snapshot. Его точные
+прежние bytes восстановлены из unchanged records и проверены по прежнему SHA
+`cef6187dcfc72f522819a2ff39d4a7965ef2d984a883db626bd7eb90544bd19f`;
+сохранены отдельно в `out/corpus/input-snapshots/` с provenance, sealed run не редактировался.
+
+`c005-sejm-metadata` сравнивает 25 октября с 3 октября:
+
+| Listing | Rows now | Added IDs | Changed IDs | Removed IDs |
+| --- | ---: | ---: | ---: | ---: |
+| prints | 3501 | 130 | 36 | 0 |
+| processes | 1761 | 43 | 102 | 0 |
+| bills | 1352 | 28 | 20 | 0 |
+
+Снимок опубликован в corpus `sejm/snapshots/2026-10-25/term10` без замены старого.
+Requests, hashes, response dates и pagination сохранены. Листинги читаются последовательно;
+атомарный snapshot сервера не заявляется. Новых process detail trees, supplementary catalogs
+или RPW attachments эта операция не даёт.
+
+Corpus `scripts/index.py --sejm-snapshot 2026-10-25` использует новый bills listing, добавляет
+metadata input hashes/source roots и `document.cached_empty`. Перегенерирован INDEX:
+3368 entities, 10418 RCL docs, 833 RPW records. Ни одна entity не удалена; изменились только
+rpw links у 42 entities и document lists у двух RCL projects. Сверены все 3032 input hashes.
+Это обновление указателя, не новая правовая разметка и не обновление всех исторических данных.
+
+### Хранение и следующий приоритет
+
+Рабочие результаты находятся в постоянном ignored `out/corpus/runs`, а не `/tmp`.
+Для ранних запусков до automatic code snapshots сохранён общий точный архив исходников
+`out/corpus/source-snapshots/fd651588d892493255f0a67840148524525533dd548defac36f07e87a2d7e4ad.tar.gz`.
+У следующих запусков свой code snapshot входит в manifest. Малый сохраняемый отчёт:
+[implementation evidence](../assets/audits/2026-10-25-corpus/implementation.json).
+Локальный durable каталог не является off-device backup; remote/retention policy пока не выбраны.
+
+После обновления пройдён прежний `scripts/verify.py`: corpus intact. Отдельная raw опись
+захешировала **14511** физических файлов пяти families, **11585076070 bytes**;
+exact-byte duplicates — **485752250 bytes** (около 4,2%). Это физические downloaded containers,
+не число законопроектов, не прогноз production storage и не проверка правовой полноты.
+Raw inventory SHA и totals сохранены в implementation evidence. Originals не дедуплицировались,
+download paths сохранены; изменения не добавляют документы или эти отчёты в SQLite dump.
+
+Следующая полезная работа — C6b, затем C5b по конкретным недостающим cases. OCR только там,
+где просмотр оригинала подтверждает потребность; платные модели и массовый backfill не запущены.
+Переиспользовать общие HTTP/extraction/artifact helpers в остальных legacy collectors стоит
+постепенно с их resume keys и corpus comparisons, а не переписывать весь scripts каталог сразу.

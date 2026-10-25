@@ -1,0 +1,414 @@
+{
+  "version": 1,
+  "date": "2026-10-25",
+  "scope": "Corpus tools and bounded source refresh; no runtime policy or production-state changes",
+  "runs": {
+    "c001-health-original": {
+      "suite": "health",
+      "status": "recorded",
+      "observations": 10418,
+      "returncode": 0,
+      "manifest_sha256": "ad731563f5d8349f82944585dcbe968831b56bfa8df6f3b1dd6c506f41e722e9",
+      "result_sha256": "0c673c1e5972f832f2ea36af657d51db6c8e88867d34cd5e2512e942a5cf8688"
+    },
+    "c001-health-refactor": {
+      "suite": "health",
+      "status": "recorded",
+      "observations": 10418,
+      "returncode": 0,
+      "manifest_sha256": "2e70dd8a3ea680b3ba6f672b8c733d726773a610d917b04eed69d1ca5fd8e316",
+      "result_sha256": "4a801f83ba1dfda26b989719212b644a3cdb5e3d9153c691a73401603af74f9b"
+    },
+    "c002-ci-qualified": {
+      "suite": "ci",
+      "status": "passed",
+      "observations": 7,
+      "returncode": 0,
+      "manifest_sha256": "fdcea95fa0d7075eef1b6cd08578d4146ec3f46fbfdd158c84fa17b1071e2d6a",
+      "result_sha256": "8e700309e92b8c5a9966c259238cc6eb258da603b7c33a958074b6c3cdc3d5d4"
+    },
+    "c003-empty-rcl": {
+      "suite": "reextract",
+      "status": "recorded",
+      "observations": 177,
+      "returncode": 0,
+      "manifest_sha256": "0899cdd7496d56f1dfff71577051a14e1b613137faf63bce85771f13b84f0cd7",
+      "result_sha256": "9e0386be3efb18602f631652510db0122f91174db11127f46a546013fe3effa9"
+    },
+    "c003-replay-preserved-generation": {
+      "suite": "reextract",
+      "status": "recorded",
+      "observations": 177,
+      "returncode": 0,
+      "manifest_sha256": "9ff093260589ad95fe1a74356e046d9924021a0b50b1c9627bbd52df936db2fd",
+      "result_sha256": "08db638c763fa8e4c42afb00d9ce89c67aff698de2990e155b76891582313236"
+    },
+    "c004-rcl-gaps": {
+      "suite": "sources",
+      "status": "recorded",
+      "observations": 10,
+      "returncode": 0,
+      "manifest_sha256": "4861dcd620aaf3ee9862b292178a24f3946f6c4ef1e2fd0fdd949542a3747e3a",
+      "result_sha256": "1418e2b96416dacd9dfa9192216b84691a2660eb7396e55bf38e8b91d2656d39"
+    },
+    "c004-install-new-rcl": {
+      "suite": "install",
+      "status": "recorded",
+      "observations": 7,
+      "returncode": 0,
+      "manifest_sha256": "f5bc2c4ad1d5525d395703c4472321faea4e39b35f6dcb6ec30626b2ee0ea382",
+      "result_sha256": "604266975f36bc16119fc370f33c6ee0ee9313b5e371070e681a6960fd725c58"
+    },
+    "c004-repeat-install-qualified": {
+      "suite": "install",
+      "status": "recorded",
+      "observations": 7,
+      "returncode": 0,
+      "manifest_sha256": "58950f05e54b4340393d395bb0142fc42c7160fbf1ca16020152b7ab2effbeea",
+      "result_sha256": "7db0f74eb6f248a074bdc03147293bea7914d76bca9013b07e0d31120501bede"
+    },
+    "c005-sejm-metadata": {
+      "suite": "sejm-snapshot",
+      "status": "recorded",
+      "observations": 3,
+      "returncode": 0,
+      "manifest_sha256": "6c14ca72603e52278e36ce72b9755fb9bb8d5665eb2ea9b2c988f9498dd10341",
+      "result_sha256": "8c9c9dc104aa32bd4f585d127e73167d8ea1e08689e2c3ea01786e6a4136d6d1"
+    },
+    "c006-review-queue-qualified": {
+      "suite": "annotations",
+      "status": "recorded",
+      "observations": 177,
+      "returncode": 0,
+      "manifest_sha256": "c22d7f71d1dff8392dc3ac4aa481017fbcb9b3ea383d1d832ed44cc8a17bbe6b",
+      "result_sha256": "1843b881a45a3d55510b9ac0d1cb86dc7875508fe14cbfe17c6e2eb2749c1449"
+    },
+    "c007-candidates-old-view": {
+      "suite": "candidates",
+      "status": "recorded",
+      "observations": 4276,
+      "returncode": 0,
+      "manifest_sha256": "b8b54595c6df6e795627be62a83a8b452e7d272cf25dc6357b636deb67602c49",
+      "result_sha256": "3a475691cddb44749fc016cc5cf775e98bac05f0c26e53d4ef771e7a00c44da6"
+    },
+    "c007-candidates-new-generation": {
+      "suite": "candidates",
+      "status": "recorded",
+      "observations": 4276,
+      "returncode": 0,
+      "manifest_sha256": "94f00dae603f92b9427d8aa7a78e2f88ba981706ada0fe171c0b3f1cea15dec2",
+      "result_sha256": "d2c8d04a8b0255ee8938ed1b3117592e899ef392f9c559e4ea44d6d249a8ce94"
+    },
+    "c007-process-guarded": {
+      "suite": "process",
+      "status": "recorded",
+      "observations": 3294,
+      "returncode": 0,
+      "manifest_sha256": "fc667eb89a6d6d876af17e3dd406d94a832b29eecfb8a591382f39615598fff2",
+      "result_sha256": "ab42d09d966d9da9f7aff62dcbd2573479cb2048832f91b64987365febb34055"
+    },
+    "c007-senate-guarded": {
+      "suite": "senate",
+      "status": "recorded",
+      "observations": 816,
+      "returncode": 0,
+      "manifest_sha256": "6585b6af58e63b9adb7f0877884fc2f5489defdbd8ab37580284d477c698005f",
+      "result_sha256": "915bad2b49f94cb8e63d20a95d6f7005de9a04f7dcb9d91c68cc9c397f48f6dc"
+    },
+    "c007-selection-after-install": {
+      "suite": "external",
+      "status": "not_run",
+      "observations": 20407,
+      "returncode": 2,
+      "manifest_sha256": "ad18c476f48964e35df6c1aa7461cb2a7d6363281ac74a61898f47aca7f600b7",
+      "result_sha256": "23f2e3e477827355b3861243d82a6ee0ed45601403f2ee93bbd8180a7b60c145"
+    }
+  },
+  "candidate_generation_diff": {
+    "sha256": "547d174d0e3dede814db982c1c78f113be9d951e3c08ad15fa75667525fc029c",
+    "changes": [
+      {
+        "id": "12389003/5",
+        "before": {
+          "state": "unverified",
+          "chars": 20309,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12389003/13078519/13078520/dokument719977.pdf"
+        },
+        "after": {
+          "state": "unverified",
+          "chars": 338647,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12389003/13078519/13078520/dokument711445.zip"
+        }
+      },
+      {
+        "id": "12389503/5",
+        "before": {
+          "state": "unsupported",
+          "chars": 0,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12389503/13080864/13080865/dokument711435.zip"
+        },
+        "after": {
+          "state": "selected",
+          "chars": 139732,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12389503/13080864/13080865/dokument711435.zip"
+        }
+      },
+      {
+        "id": "12395102/12",
+        "before": {
+          "state": "unsupported",
+          "chars": 0,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12395102/13113851/13113852/dokument709230.zip"
+        },
+        "after": {
+          "state": "selected",
+          "chars": 43688,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12395102/13113851/13113852/dokument709230.zip"
+        }
+      },
+      {
+        "id": "12395102/14",
+        "before": {
+          "state": "unsupported",
+          "chars": 0,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12395102/13113851/13113852/dokument709230.zip"
+        },
+        "after": {
+          "state": "selected",
+          "chars": 43688,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12395102/13113851/13113852/dokument709230.zip"
+        }
+      },
+      {
+        "id": "12396003/10",
+        "before": {
+          "state": "waiting",
+          "chars": 0,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument752694.zip"
+        },
+        "after": {
+          "state": "selected",
+          "chars": 283073,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument752694.zip"
+        }
+      },
+      {
+        "id": "12396003/9",
+        "before": {
+          "state": "waiting",
+          "chars": 0,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument752694.zip"
+        },
+        "after": {
+          "state": "selected",
+          "chars": 283073,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument752694.zip"
+        }
+      },
+      {
+        "id": "12397401/12",
+        "before": {
+          "state": "unsupported",
+          "chars": 0,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12397401/13125858/13125859/dokument719233.zip"
+        },
+        "after": {
+          "state": "selected",
+          "chars": 20528,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12397401/13125858/13125859/dokument719233.zip"
+        }
+      },
+      {
+        "id": "12397401/14",
+        "before": {
+          "state": "unsupported",
+          "chars": 0,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12397401/13125858/13125859/dokument719233.zip"
+        },
+        "after": {
+          "state": "selected",
+          "chars": 20528,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12397401/13125858/13125859/dokument719233.zip"
+        }
+      },
+      {
+        "id": "12397401/9",
+        "before": {
+          "state": "unverified",
+          "chars": 1463,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12397401/13125847/13125848/dokument718877.pdf"
+        },
+        "after": {
+          "state": "selected",
+          "chars": 20400,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12397401/13125847/13125848/dokument718474.zip"
+        }
+      },
+      {
+        "id": "12403752/12",
+        "before": {
+          "state": "unsupported",
+          "chars": 0,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12403752/13166863/13166864/dokument771111.zip"
+        },
+        "after": {
+          "state": "unverified",
+          "chars": 104315,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12403752/13166863/13166864/dokument771111.zip"
+        }
+      },
+      {
+        "id": "12403752/14",
+        "before": {
+          "state": "unsupported",
+          "chars": 0,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12403752/13166863/13166864/dokument771111.zip"
+        },
+        "after": {
+          "state": "unverified",
+          "chars": 104315,
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12403752/13166863/13166864/dokument771111.zip"
+        }
+      }
+    ]
+  },
+  "assertions": {
+    "old_health_observations_equal": true,
+    "process_observations_and_summary_equal": true,
+    "pinned_old_index_reextract_observations_equal": true,
+    "repeat_install_index_unchanged": true
+  },
+  "exclusions": [
+    "Known diagnostics remain consumed regression, not independent holdout or gold.",
+    "170 old caches still empty; 3 consultation sources unavailable; external selection has 1383 missing cached texts.",
+    "Sejm snapshots refresh listings only, not detail trees, RPW attachment bytes or supplementary catalogs.",
+    "Persistent local out/corpus is ignored, not an off-device backup; storage backend undecided."
+  ],
+  "gate": {
+    "status": "passed",
+    "log": "out/corpus/2026-10-25-corpus-improvements-qualified.log",
+    "xml": "out/corpus/2026-10-25-corpus-improvements-qualified.xml",
+    "tests": 4085,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xfail": 0,
+    "seconds": 579.501,
+    "xml_sha256": "dd24dcc2ad451934ef98ca463be5b2a74069c7bf667541dd1db82973edc7fc3e",
+    "code_snapshot": {
+      "files": 425,
+      "path": "code.tar.gz",
+      "sha256": "63aa29daf1ada3f664c2533c0598cdc54f319c0f811b22c4499b162e254b0ddc"
+    },
+    "strict_mypy_files": 381,
+    "ruff": "passed src/tests/tools",
+    "docs": "strict build and local links passed",
+    "source_unchanged_since_ci_slice": true
+  },
+  "raw_inventory": {
+    "totals": {
+      "files": 14511,
+      "bytes": 11585076070,
+      "unique_contents": 12361,
+      "unique_bytes": 11099323820,
+      "duplicate_files": 2150,
+      "duplicate_bytes": 485752250
+    },
+    "by_family": {
+      "rcl": {
+        "files": 10418,
+        "bytes": 5085878840,
+        "unique_contents": 8271,
+        "unique_bytes": 4602991139,
+        "duplicate_files": 2147,
+        "duplicate_bytes": 482887701
+      },
+      "sejm_print": {
+        "files": 2630,
+        "bytes": 3166113469,
+        "unique_contents": 2630,
+        "unique_bytes": 3166113469,
+        "duplicate_files": 0,
+        "duplicate_bytes": 0
+      },
+      "sejm_filing": {
+        "files": 570,
+        "bytes": 715940968,
+        "unique_contents": 569,
+        "unique_bytes": 714127037,
+        "duplicate_files": 1,
+        "duplicate_bytes": 1813931
+      },
+      "sejm_self_amendment": {
+        "files": 66,
+        "bytes": 40124793,
+        "unique_contents": 66,
+        "unique_bytes": 40124793,
+        "duplicate_files": 0,
+        "duplicate_bytes": 0
+      },
+      "rpw": {
+        "files": 827,
+        "bytes": 2577018000,
+        "unique_contents": 827,
+        "unique_bytes": 2577018000,
+        "duplicate_files": 0,
+        "duplicate_bytes": 0
+      }
+    },
+    "inventory": [
+      {
+        "family": "rcl",
+        "path": "documents/files",
+        "state": "measured"
+      },
+      {
+        "family": "sejm_print",
+        "path": "sejm/term10/files",
+        "state": "measured"
+      },
+      {
+        "family": "sejm_filing",
+        "path": "sejm/term10/supplements/files",
+        "state": "measured"
+      },
+      {
+        "family": "sejm_self_amendment",
+        "path": "sejm/term10/autopoprawki/files",
+        "state": "measured"
+      },
+      {
+        "family": "rpw",
+        "path": "rpw/term10/files",
+        "state": "measured"
+      }
+    ],
+    "exclusions": [
+      "An available-file inventory is not a record of production consumption or daily growth.",
+      "PDF/Word/ZIP names do not prove format validity, legal role or that a scan has text.",
+      "ZIP members are not expanded; physical containers are measured as downloaded.",
+      "Research copies, derived files, text caches and the first-collection archive are excluded.",
+      "Senate HTML and ELI JSON metadata do not establish available raw document bytes.",
+      "Retention, backup replication, gzip sizes and backend cost are not measured or selected."
+    ],
+    "index_sha256": "91824ccee560d6ce7c0b54d7f8bab801080dd4a5fcddff2147c3180d273f4a5d",
+    "tool_sha256": "fc8e85aa780f04ad96ed5d3ca1a677f9a691a39ed8f53590f9f4d8b38cef8626",
+    "report_sha256": "8f0f1cbcdf7284e225371462ae94cbebb24bce52a2a7eeaea115dd2d2d23a266"
+  },
+  "legacy_verify": {
+    "status": "passed",
+    "output": "corpus intact",
+    "sha256": "48dc6440461e4eaded9032f9910894d037f95732c506d8ac3ac78d9c5be94404",
+    "script_sha256": "c7f681f22145d1c1526f0352076ec7f163a681cd984d9561e90eae53a6355de3"
+  },
+  "corpus_repository": {
+    "commit": "056262fbb3d2238954bf92278c65fbbf7ac843de",
+    "status": "clean",
+    "remote": "not configured"
+  },
+  "commits": {
+    "shared_corpus_code": "48bfe023e44b479bbb9c9fc91f23bcbd9c518209",
+    "runs_generations_reviews": "3217e80",
+    "corpus_index": "056262fbb3d2238954bf92278c65fbbf7ac843de"
+  }
+}

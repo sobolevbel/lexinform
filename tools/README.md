@@ -72,6 +72,37 @@ validator requires literal spans and rejects consumed or agent-reviewed cases as
 holdout. Creating a queue never creates gold labels; readers must inspect the original where the
 excerpt is insufficient. Full relation/span adjudication and a fresh human holdout remain separate work.
 
+## Explicit public collection
+
+These entry points allow public source requests only when `--allow-network` is present.
+They are not runnable through an offline registry suite. No credentials, models or state DB are used.
+
+```bash
+uv run --offline --frozen python -m tools.corpus_collect download \
+  --allow-network --corpus "$corpus_path" --root "$run_root" --id new-rcl-gaps \
+  --health "$health_path" --health-sha256 "$health_sha"
+uv run --offline --frozen python -m tools.corpus_collect install \
+  --corpus "$corpus_path" --root "$run_root" --id new-rcl-install \
+  --source-run "$run_root/new-rcl-gaps"
+uv run --offline --frozen python -m tools.corpus_snapshot download \
+  --allow-network --root "$run_root" --id new-sejm-metadata --term 10 \
+  --reference "$corpus_path/sejm/snapshots/2026-10-03/term10"
+uv run --offline --frozen python -m tools.corpus_snapshot publish \
+  --source-run "$run_root/new-sejm-metadata" --corpus "$corpus_path" --name YYYY-MM-DD
+```
+
+RCL collection executes the nonempty missing-original plan from a pinned health report. Optional
+`--consultations /path/to/download-status.json` retries its explicit failed URLs. Downloads check
+HTTPS hosts/redirects, complete responses, byte/time limits and attachment signatures; HTML
+refusals stay unavailable. Installation verifies the sealed source run, never replaces existing
+bytes, preserves old index records, saves the before-index and uses an advisory lock plus content
+check before atomic index publication. Identical repeat installation records `already_installed`.
+
+Sejm collection paginates fresh `prints`, `processes`, `bills` listings and records request
+provenance plus added/removed/changed metadata against the chosen reference. Publication creates
+one new dated snapshot. Listings do not refresh process detail trees, supplementary catalogs or
+RPW attachment bytes. Select further downloads by the cases that need them.
+
 ## RCL corpus health and repair queue
 
 ```bash
