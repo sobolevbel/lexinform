@@ -1772,3 +1772,74 @@ strict docs build/link check и diff check green. XML
 `/private/tmp/lexinform-pdf-pages-j043-accepted-20261025.xml`.
 Source fingerprints root после полного gate совпадают с corpus-qualified исходниками.
 Сеть и запись в inputs были запрещены внутри replay; schema 48 и storage defaults прежние.
+
+<a id="j044"></a>
+### J044. DA3: страницы PDF связаны с физической частью файла
+
+Дата: 25 октября 2026. База: `9e617937f6e558ef32b940ed323b4f62925abc69` (J043).
+Статус: принят ограниченный физический PDF-срез; DA3 остаётся частичным.
+
+`ExtractedParts.pdf_pages` связывает `PdfTextExtraction` с `part_index`: validator требует
+существующую единственную часть и совпадение SHA её bytes с input SHA page manifest.
+Member chain остаётся на этой части, включая nested ZIP. Одинаковые bytes в разных members
+имеют отдельные физические ссылки, не сливаются по SHA. JSON round trip сохраняет связи.
+Optional port `PdfPageTextExtractor` не требует новых методов от прежних `TextExtractor` fakes
+или adapters; без него нет выдуманных page records.
+
+`extract_parts` собирает PDF pages по умолчанию одним вызовом page reader; нормализованная
+строка берётся из того же результата. `extract_document` явно отключает удержание page records:
+обычный pipeline не накапливает raw page text всего ZIP рядом с прежними строками.
+Это opt-out от удержания результата, не обход совместимой J043 projection у PDF adapter.
+Прежний порядок распознавания PDF/OLE/ZIP/Word XML/preamble сохранён: embedded PDF header
+в DOC/XML не превращает файл в PDF. Legal roles, selected bundle и прежние coverage losses
+не исправляются скрыто. Replay теперь получает pages через `DocumentTextExtractor.extract_parts`,
+а не обходным прямым вызовом PDF reader.
+
+Новые 9 tests: root PDF, blank-edge coordinates, duplicate bytes в nested members, legacy path
+без удержания pages, старый порт, OLE/XML с embedded PDF header, absent/different/duplicate
+physical references. Focused 78 passed, mypy 355 файлов, Ruff check/format green.
+Первый full prototype прогон остановлен: копия не содержала tracked workflow files/Git context,
+которые требуют прежние tests. Эти failures не засчитаны как регрессия или green gate;
+полная копия восстановлена с прежним HEAD и offline origin, после чего gate перезапущен.
+
+DA3 остаётся частичным: это PDF page-level coordinates с coarse block `pdf-page:N:0`;
+Word/ODT/DOC structure, full processing manifest, PreparedInput links и retention ещё впереди.
+Нет сохранённых raw bytes, новых DB fields/migration, S3, backfill или paid calls.
+
+Cumulative Word/ZIP compare с тем же committed J042 baseline passed: 3067 / 69,
+ноль changed/missing/error/unstable inputs и source changes; все 4185 + 330 mutations обнаружены.
+Artifact `/private/tmp/lexinform-extraction-j044-after-20261025.json`, SHA
+`35eb28a8124760f96b12a8dab94d5bb567b04cfb97d10234b612e1297efe55b7`;
+source proof `.sources.json`, wrapper J043. Полные модели 69 ZIP также равны baseline,
+errors/changes/input/code 0: `/private/tmp/lexinform-zip-selection-j044-after-20261025.json`, SHA
+`c217ea00928e6364d07cd02a4c8f8743a9d0c35b4b7df2e12612422dd8cb4b79`.
+
+PDF replay через физические части passed: 114 observations/114 manifests, 10670 страниц,
+ноль changed legacy text/полных selection hashes/law digest/raw page coordinates и hashes.
+Все 210 mutations обнаружены; errors/changed inputs/code 0.
+`/private/tmp/lexinform-pdf-pages-j044-after-20261025.json`, SHA
+`fa17f6520b237b91b8f565aed3081e1a68e83a489381279b3161f55045095ed4`.
+Полный prototype gate затем дал 3893 passed, один прежний strict xfail и два failures:
+`lexinform` console entrypoint отсутствовал в PATH этой копии. Это не засчитано как приёмка;
+окончательный полный gate выполняется после переноса в рабочий checkout через uv.
+
+J043 выпущен: CI [40174425042](https://github.com/sobolevbel/lexinform/actions/runs/40174425042)
+и Deploy relay [40174698024](https://github.com/sobolevbel/lexinform/actions/runs/40174698024)
+success на точном `9e617937f6e558ef32b940ed323b4f62925abc69`; test job — 3886 passed,
+32 deselected, один прежний strict xfail. Deploy log: `eabbc6b0679a -> 9e617937f6e5`,
+relay up 45 s после restart, mismatch отсутствует. Evidence
+`/private/tmp/lexinform-release-j043-20261025.json`. Это metadata/log verification;
+ручной production pipeline, SSH и Telegram send не запускались.
+
+В pinned PDF population 1585 страниц имеют пустой extracted text SHA; позиции всех сохранены.
+Это не утверждение о визуально пустых страницах или OCR. Фактических page/tree read errors
+в этих 114 corpus files нет; failed-page/late-tree-error контракты проверены synthetic tests.
+
+Финальная приёмка рабочего checkout: 3895 passed + один прежний strict xfail DA5,
+failures/errors 0, mypy 355 файлов, Ruff check/format 384 файла, local HTTP 21 passed,
+strict docs build/link check и diff check green. XML
+`/private/tmp/lexinform-pdf-parts-j044-root-20261025.xml`.
+Все source fingerprints root после полного gate совпадают с corpus-qualified prototype.
+Console entrypoint tests также проходят в рабочем uv environment; prototype PATH исправлен
+отдельной проверкой 5 entrypoint tests, production code/test assertions не менялись.
+Schema 48, persisted selection JSON, batch/memo semantics и storage backend прежние.

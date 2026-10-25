@@ -497,9 +497,9 @@ paid calls или объявления материалов архивирова
 **Изменяемые места:** `models/documents.py`, extractors PDF/Word/ODT/DOC,
 `StructuredTextExtractor`, `document_text.py`, `document_facts.py`, `services/documents.py`.
 
-- [ ] DA3.1. **Частично: [J042](2026-10-22-document-architecture-progress.md#j042).** Отделить раскрытие контейнеров/физическое извлечение от выбора юридического комплекта.
+- [ ] DA3.1. **Частично: [J042](2026-10-22-document-architecture-progress.md#j042), [J044](2026-10-22-document-architecture-progress.md#j044).** Отделить раскрытие контейнеров/физическое извлечение от выбора юридического комплекта.
   Возвращать все наблюдённые части, member chain, parent/container/member SHA, отклонения и limits.
-- [ ] DA3.2. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043).** Ввести стабильные в пределах extraction координаты блоков: PDF page/index,
+- [ ] DA3.2. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J044](2026-10-22-document-architecture-progress.md#j044).** Ввести стабильные в пределах extraction координаты блоков: PDF page/index,
   Word XML part + paragraph/table row/cell/note, ODT/DOC собственные адреса или явный unknown.
   Word не получает выдуманную пагинацию. Между версиями экстрактора ID блока может меняться.
   Старые `DocumentFact.block_id=part:N` сохраняют прежнюю схему: нынешний validator не допускает

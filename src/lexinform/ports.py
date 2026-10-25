@@ -50,6 +50,7 @@ from lexinform.models import (
     ObservationBasis,
     ObservationMode,
     ObservedProcess,
+    PdfTextExtraction,
     Phase,
     PlenaryVoting,
     PrintInfo,
@@ -262,6 +263,11 @@ class AuthorsResolver(Protocol):
 @runtime_checkable
 class StructuredTextExtractor(Protocol):
     def extract_document(self, data: bytes) -> ExtractedDocument: ...
+
+
+@runtime_checkable
+class PdfPageTextExtractor(Protocol):
+    def extract_pages(self, data: bytes) -> PdfTextExtraction: ...
 
 
 class TextExtractor(Protocol):

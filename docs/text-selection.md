@@ -34,8 +34,14 @@ observed prefix pages remain available, while the legacy string still becomes em
 pypdf text view, not to spans in that normalised string. A canonical manifest SHA identifies
 the result; it does not imply stored bytes, OCR, table structure or complete legal coverage.
 These records stay in memory and do not change persisted `DocumentSelection` or `part:N` facts.
+`ExtractedParts.pdf_pages` links each PDF manifest to an existing physical part by index and
+matching byte SHA, including members of nested ZIPs. Identical bytes in separate members keep
+separate physical links. `extract_parts` exposes these records by default when the PDF reader
+supports `PdfPageTextExtractor`; legacy readers leave them absent. `extract_document` opts out
+of retaining raw page records across members while preserving the same string projection.
 Pinned raw-PDF compatibility replay uses `tools/replay_pdf_pages.py` and
-`tools/corpus/pdf-pages-v1.json`; other formats and ZIP selection need their separate replay.
+`tools/corpus/pdf-pages-v1.json`; it reads page records through the physical-parts API.
+Other formats and ZIP selection need their separate replay.
 
 Senate amendment summaries select attachments by their extracted contents. A candidate needs
 the formal resolution heading, date, subject, affirmative amendment decision, operative changes

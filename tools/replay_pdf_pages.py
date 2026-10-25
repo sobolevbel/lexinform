@@ -81,7 +81,10 @@ def snapshot(data: bytes, page_reader: PageReader) -> tuple[dict[str, Any], str 
     if page_reader == "library":
         physical = library_pages(data)
     else:
-        extracted = pdf.extract_pages(data)
+        parts = extractor.extract_parts(data)
+        if len(parts.pdf_pages) != 1 or parts.pdf_pages[0].part_index != 0:
+            raise ValueError("A raw PDF must expose page records through its physical part")
+        extracted = parts.pdf_pages[0].extraction
         restored = type(extracted).model_validate_json(extracted.model_dump_json())
         if restored.manifest_sha256 != extracted.manifest_sha256:
             raise ValueError("Physical PDF manifest changes after a JSON round trip")

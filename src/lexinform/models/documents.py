@@ -263,12 +263,32 @@ class PdfTextExtraction(BaseModel):
         return self
 
 
+class PdfPartExtraction(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    part_index: int = Field(ge=0)
+    extraction: PdfTextExtraction
+
+
 class ExtractedParts(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     input_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
     parts: tuple[DocumentPart, ...] = ()
     rejected: tuple[str, ...] = ()
+    pdf_pages: tuple[PdfPartExtraction, ...] = ()
+
+    @model_validator(mode="after")
+    def pdf_pages_refer_to_physical_parts(self) -> Self:
+        seen: set[int] = set()
+        for result in self.pdf_pages:
+            index = result.part_index
+            if index >= len(self.parts) or index in seen:
+                raise ValueError("PDF page records require one existing physical part")
+            if self.parts[index].sha256 != result.extraction.input_sha256:
+                raise ValueError("PDF page records refer to different physical bytes")
+            seen.add(index)
+        return self
 
 
 class ExtractedDocument(BaseModel):

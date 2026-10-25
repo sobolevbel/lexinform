@@ -27,9 +27,11 @@ from lexinform.models.documents import (
     DocumentSelection,
     ExtractedDocument,
     ExtractedParts,
+    PdfPartExtraction,
+    PdfTextExtraction,
 )
 from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
-from lexinform.ports import TextExtractor
+from lexinform.ports import PdfPageTextExtractor, TextExtractor
 from lexinform.sections import (
     APPENDIX_KINDS,
     PAGE_BREAK,
@@ -378,15 +380,21 @@ class DocumentTextExtractor:
     def extract(self, data: bytes) -> str:
         return self.extract_document(data).text
 
-    def extract_parts(self, data: bytes) -> ExtractedParts:
+    def extract_parts(self, data: bytes, *, include_pdf_pages: bool = True) -> ExtractedParts:
         parts: list[DocumentPart] = []
         rejected: list[str] = []
+        pdf_pages: list[PdfPartExtraction] | None = [] if include_pdf_pages else None
         digest = hashlib.sha256(data).hexdigest()
-        self._collect(data, (), digest, parts, rejected, [0, 0])
-        return ExtractedParts(input_sha256=digest, parts=tuple(parts), rejected=tuple(rejected))
+        self._collect(data, (), digest, parts, rejected, [0, 0], pdf_pages)
+        return ExtractedParts(
+            input_sha256=digest,
+            parts=tuple(parts),
+            rejected=tuple(rejected),
+            pdf_pages=tuple(pdf_pages or ()),
+        )
 
     def extract_document(self, data: bytes) -> ExtractedDocument:
-        extracted = self.extract_parts(data)
+        extracted = self.extract_parts(data, include_pdf_pages=False)
         parts: list[DocumentPart] = []
         for part in extracted.parts:
             kind = document_kind(part.text) if part.text.strip() else "unknown"
@@ -415,20 +423,30 @@ class DocumentTextExtractor:
         head = data[:1024]
         return head.startswith(b"%PDF") or (b"%PDF-" in head and not head.startswith(_ZIP_MAGIC))
 
-    def _extract(self, data: bytes, *, depth: int) -> str:
+    def _extract(
+        self, data: bytes, *, depth: int, include_pdf_pages: bool
+    ) -> tuple[str, PdfTextExtraction | None]:
         head = data[:1024]
         if head.startswith(b"%PDF"):
-            return self._pdf.extract(data)
+            return self._pdf_text(data, include_pdf_pages=include_pdf_pages)
         if head.startswith(_OLE_MAGIC):
-            return self._doc.extract(data)
+            return self._doc.extract(data), None
         if head.startswith(_ZIP_MAGIC):
-            return self._zip(data, depth=depth)
+            return self._zip(data, depth=depth), None
         if _is_word_xml(head):
-            return self._word_xml.extract(data)
-        if b"%PDF-" in head:  # a PDF behind a preamble; checked after the containers, whose
-            return self._pdf.extract(data)  # stored members may hold a PDF near the start
+            return self._word_xml.extract(data), None
+        if b"%PDF-" in head:
+            return self._pdf_text(data, include_pdf_pages=include_pdf_pages)
         log.warning("document of unknown format (starts with %r); no text", data[:8])
-        return ""
+        return "", None
+
+    def _pdf_text(
+        self, data: bytes, *, include_pdf_pages: bool
+    ) -> tuple[str, PdfTextExtraction | None]:
+        if include_pdf_pages and isinstance(self._pdf, PdfPageTextExtractor):
+            result = self._pdf.extract_pages(data)
+            return result.legacy_text, result
+        return self._pdf.extract(data), None
 
     def _zip(self, data: bytes, *, depth: int) -> str:
         return self.extract_document(data).text
@@ -441,7 +459,9 @@ class DocumentTextExtractor:
         parts: list[DocumentPart],
         rejected: list[str],
         usage: list[int],
+        pdf_pages: list[PdfPartExtraction] | None,
     ) -> None:
+        pdf_result: PdfTextExtraction | None = None
         if data.startswith(_ZIP_MAGIC):
             try:
                 with zipfile.ZipFile(io.BytesIO(data)) as archive:
@@ -476,6 +496,7 @@ class DocumentTextExtractor:
                                     parts,
                                     rejected,
                                     usage,
+                                    pdf_pages,
                                 )
                             except Exception as exc:
                                 rejected.append(
@@ -486,7 +507,9 @@ class DocumentTextExtractor:
                 rejected.append(f"{members}: {type(exc).__name__}")
                 return
         else:
-            text = self._extract(data, depth=len(members))
+            text, pdf_result = self._extract(
+                data, depth=len(members), include_pdf_pages=pdf_pages is not None
+            )
         pages = self.pages(data)
         losses = tuple(
             f"page {index}: no extracted text"
@@ -511,6 +534,9 @@ class DocumentTextExtractor:
                 losses=losses if text.strip() else ("no extracted text",),
             )
         )
+
+        if pdf_pages is not None and pdf_result is not None:
+            pdf_pages.append(PdfPartExtraction(part_index=len(parts) - 1, extraction=pdf_result))
 
     def _select_parts(self, parts: list[DocumentPart], rejected: list[str]) -> ExtractedDocument:
         candidates: list[tuple[tuple[int, int, int, int], DocumentPart]] = []
