@@ -1843,3 +1843,71 @@ strict docs build/link check и diff check green. XML
 Console entrypoint tests также проходят в рабочем uv environment; prototype PATH исправлен
 отдельной проверкой 5 entrypoint tests, production code/test assertions не менялись.
 Schema 48, persisted selection JSON, batch/memo semantics и storage backend прежние.
+
+<a id="j045"></a>
+### J045. DA5: исправление завышенного покрытия подготовленного текста
+
+Дата: 25 октября 2026. База: `be49fd4f53a340230d853ba652ea2145f8f5de13` (J044).
+Статус: принят локально; DA5.3 закрыт, DA5.1–DA5.2 частично.
+
+Воспроизведён strict xfail DA0.4 с `--runxfail`: source 1164, prepared text 559,
+analysis span ошибочно 0–1164. В source 512 символов проекта и удаляемый consultation report;
+служебная пометка об удалении не является прочитанным фрагментом источника.
+
+`trim_print` теперь строит in-memory `TextProjection`: source SHA/length, ordered emitted
+segments с точными source offsets либо явным generated origin. Координаты задаются при
+сохранении страницы/OSR-prefix, не обратным substring search. Slicing учитывает прежний strip;
+соседние literal pages, включая пустые, объединяются в один range, чтобы не раздувать metadata.
+Публичные text/dropped результаты должны остаться byte-for-byte прежними.
+
+`selection_for_input` получает exact ranges только при полном совпадении упорядоченной сборки
+всех parts или её детерминированной trim projection с фактическим input. Generated markers
+не входят в source ranges. Неподтверждённая сборка, budget excerpts, дополнительные инструкции
+и повторение одного фрагмента вместо двух частей дают 0–0 с loss `input coverage unknown`.
+Прежние legal/admissibility checks и `normative_text_omitted` policy этим срезом не меняются;
+совпадение substring больше не назначает analysis span до конца исходного part.
+Полная цепочка budget/cost fitting и durable PreparedInput остаются DA5.1–DA5.2/DA5.4–DA5.6.
+
+Strict xfail снят после прохождения точного assertion 0–512; тест остаётся обычной регрессией.
+Новые проверки: generated marker, повтор текста/parts, table/note text, несколько excerpts,
+Unicode positions, strip/slicing, copy validation, gaps/overruns и compact adjacent-page maps.
+117 focused tests green; новый replay runner отдельно ловит changed bytes/reference SHA.
+Mypy 358 файлов, Ruff check/format 388 файлов, без suppressions.
+
+Tracked runner `tools/replay_input_coverage.py` берёт raw population из pinned extraction
+catalog и `tools/corpus/pdf-pages-v1.json`: 3067 Word/XML, 69 ZIP, 114 PDF (3250 files).
+Проверяются extracted/trimmed/budget input hashes, прежние selection decisions/limitations,
+law digest и round trip новых source/generated segments. Сравнение coverage хранится отдельно
+от core changes. Это machine regression oracle без новых official relations или paid calls.
+
+Baseline исполняет committed source из `git archive be49fd4`; SHA файлов сверены с `git show`.
+Proof `/private/tmp/lexinform-input-map-j045-base-source-20261025.json`.
+Export честно имеет `code_sha=unknown`; source fingerprints и proof фиксируют происхождение.
+Baseline `/private/tmp/lexinform-input-map-j045-before-20261025.json`, SHA
+`d261569f4b4e68a154763248c45239ca203636a65bf71cf7a1774d32c639b0ad`,
+3250 observations, errors/changed inputs/code 0. Network/input writes запрещены в replay.
+Новый runner поймал несовпадение tuple/list в собственном JSON compare; исправлена сериализация
+oracle fields, production text и test assertions не ослаблялись.
+
+Окончательный compare passed: 3250 observations, core changes/errors/changed inputs/code 0,
+3250 проверок round trip. У 842 файлов изменились coverage metadata (trim 569,
+budget 1000 — 842, budget 24000 — 709), при прежних строках и selection decisions.
+`/private/tmp/lexinform-input-map-j045-after2-20261025.json`, SHA
+`78c0f672f35ee86d38a0e513c4e854383e3f4db8c49c1126aac46eecff1b28f3`.
+Сумма text-stripped selection JSON для trim: 4789594 → 4789697 bytes (+103),
+для budget 1000 +21173 bytes, budget 24000 +9830; не более четырёх analysis ranges на case.
+Это измерение corpus metadata, не прогноз размера production dump. Schema 48 и payload retention прежние.
+
+Финальный gate: 3921 passed, failures/errors/skips/xfails 0, mypy 358 файлов, Ruff 388,
+local HTTP 21 passed, strict docs build/link check и diff check green.
+XML `/private/tmp/lexinform-input-map-j045-final2-20261025.xml`, SHA
+`281e2901ce5d45c4fbca6e9bd04092488bc54e4a2ce75967bc0070d233246a57`.
+Фактический input budget без карты честно получает unknown, а не выдуманный exact range.
+Изменение полноты/admissibility после cost fitting и исторические provider requests остаются открыты.
+
+J044 выпущен: CI [40175128467](https://github.com/sobolevbel/lexinform/actions/runs/40175128467)
+и Deploy relay [40175534380](https://github.com/sobolevbel/lexinform/actions/runs/40175534380)
+success на точном `be49fd4f53a340230d853ba652ea2145f8f5de13`; test job 3895 passed,
+32 deselected, один прежний strict xfail. Deploy log: `9e617937f6e5 -> be49fd4f53a3`,
+relay up 45 s после restart, mismatch отсутствует. Evidence
+`/private/tmp/lexinform-release-j044-20261025.json`; это metadata/log verification.

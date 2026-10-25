@@ -43,6 +43,14 @@ Pinned raw-PDF compatibility replay uses `tools/replay_pdf_pages.py` and
 `tools/corpus/pdf-pages-v1.json`; it reads page records through the physical-parts API.
 Other formats and ZIP selection need their separate replay.
 
+`trim_print.projection` records source positions while trimming and gives generated omission
+markers no source origin. Adjacent copied pages coalesce into one range. `selection_for_input`
+uses this map only when the entire ordered part assembly or its traced trim equals the actual
+input. Other transformations keep explicit `input coverage unknown` losses and zero ranges;
+substring presence alone does not establish exact coverage. Selection policy is unchanged.
+Budget/cost-fitting trace composition and durable PreparedInput remain in
+[DA5](plans/2026-10-22-document-architecture.md#da5).
+
 Senate amendment summaries select attachments by their extracted contents. A candidate needs
 the formal resolution heading, date, subject, affirmative amendment decision, operative changes
 and a closing marker. A closed single removal at a structured Word body end can stand without

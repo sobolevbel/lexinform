@@ -19,6 +19,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
+from lexinform.text_projection import SourcePiece, TextProjection, project_pieces
+
 PAGE_BREAK = "\f"
 
 # A page break is a line break, and Python's `^`/`$` do not know it: in MULTILINE they turn on
@@ -246,6 +248,7 @@ class DroppedSection:
 class TrimmedText:
     text: str
     dropped: tuple[DroppedSection, ...] = ()
+    projection: TextProjection | None = None
 
 
 def _section_start(page: str, current: str, *, after_osr: bool = False) -> str:
@@ -470,10 +473,11 @@ def trim_print(text: str) -> TrimmedText:
     """
     pages = text.split(PAGE_BREAK)
     running_head = _running_head(pages)
-    kept: list[str] = []
+    kept: list[SourcePiece] = []
     dropped: list[DroppedSection] = []
     current = KEEP
     after_osr = False
+    offset = 0
     for page in pages:
         current = _section_start(
             strip_page_furniture(page, running_head), current, after_osr=after_osr
@@ -481,16 +485,19 @@ def trim_print(text: str) -> TrimmedText:
         if current in (OSR, OSR_TAIL):
             after_osr = True
         if current == OSR and (cut := _OSR_CUT_RE.search(page)):
-            kept.append(page[: cut.start()].rstrip())
+            kept.append(SourcePiece(page[: cut.start()].rstrip(), offset))
             _drop(dropped, kept, OSR_TAIL, len(page) - cut.start())
             current = OSR_TAIL
         elif current in _DROPPED:
             _drop(dropped, kept, current, len(page))
         else:
-            kept.append(page)
-    if not any(page for page in kept if not page.startswith("\n[pominięto: ")):
-        return TrimmedText(text=text.strip())
-    return TrimmedText(text=PAGE_BREAK.join(kept).strip(), dropped=tuple(dropped))
+            kept.append(SourcePiece(page, offset))
+        offset += len(page) + len(PAGE_BREAK)
+    if not any(piece.text for piece in kept if not piece.text.startswith("\n[pominięto: ")):
+        projection = project_pieces(text, (SourcePiece(text, 0),), strip=True)
+        return TrimmedText(text=projection.text, projection=projection)
+    projection = project_pieces(text, kept, separator=PAGE_BREAK, strip=True)
+    return TrimmedText(text=projection.text, dropped=tuple(dropped), projection=projection)
 
 
 _FIRST_ARTICLE_RE = re.compile(r"\bArt\.\s*1\.(?!\d)")
@@ -524,13 +531,13 @@ def reads_through_justification(text: str) -> bool:
     return bool(ends) and _COMMENCEMENT_RE.search(rest[: min(ends)]) is not None
 
 
-def _drop(dropped: list[DroppedSection], kept: list[str], name: str, chars: int) -> None:
-    if dropped and dropped[-1].name == name and kept and kept[-1].startswith("\n[pominięto: "):
+def _drop(dropped: list[DroppedSection], kept: list[SourcePiece], name: str, chars: int) -> None:
+    if dropped and dropped[-1].name == name and kept and kept[-1].text.startswith("\n[pominięto: "):
         dropped[-1] = DroppedSection(name, dropped[-1].chars + chars)
-        kept[-1] = _marker(dropped[-1])
+        kept[-1] = SourcePiece(_marker(dropped[-1]))
         return
     dropped.append(DroppedSection(name, chars))
-    kept.append(_marker(dropped[-1]))
+    kept.append(SourcePiece(_marker(dropped[-1])))
 
 
 def _marker(section: DroppedSection) -> str:

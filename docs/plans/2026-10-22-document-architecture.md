@@ -329,6 +329,7 @@ DA6–DA7 не требуют предварительно включать но
   До исправления — characterization текущего результата либо strict xfail с привязкой к DA5;
   законченный коммит не оставляет обычный падающий тест. Исправление — отдельный коммит DA5,
   после него ожидание ошибки удаляется.
+  Исправлено в [J045](2026-10-22-document-architecture-progress.md#j045): обычный тест проверяет точный source span 0–512.
 - [ ] DA0.5. **Частично: [J006](2026-10-22-document-architecture-progress.md#j006), [J009](2026-10-22-document-architecture-progress.md#j009).** Свести существующие replay в один планируемый `make corpus-check` с профилями
   extraction/selection/comparison/delivery и явно заданными corpus/output путями.
   Runner не меняет входы, отказывается перезаписывать результаты и не вызывает сеть/модели.
@@ -584,16 +585,16 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 **Изменяемые места:** `sections.py`, `keywords.py`/excerpts, бюджет текста, `_load_text`,
 `_fit_to_budget`, `selection_for_input`, batch contexts/meta, provider request preparation.
 
-- [ ] DA5.1. Ввести `PreparedInput` с ordered segments: extraction/block ref, source span,
+- [ ] DA5.1. **Частично: [J045](2026-10-22-document-architecture-progress.md#j045), in-memory trim projection.** Ввести `PreparedInput` с ordered segments: extraction/block ref, source span,
   transformation, emitted span, роль, losses. Зафиксировать идентичность итоговой строки
   и контекста; их payload хранится по DA2 с обязательной защитой незавершённых запросов.
   Для сгенерированного разделителя/инструкции указать system origin, а не фиктивную цитату источника.
   Проверить повторение текста между extraction, PreparedInput, provider request и batch metadata;
   общий неизменяемый payload адресуется ссылками при сохранении точного воспроизводимого request.
-- [ ] DA5.2. Сделать trimming/excerpts/cost fitting преобразованиями с картой диапазонов.
+- [ ] DA5.2. **Частично: [J045](2026-10-22-document-architecture-progress.md#j045), trimming exact, неподтверждённые excerpts unknown.** Сделать trimming/excerpts/cost fitting преобразованиями с картой диапазонов.
   Простая проверка substring и `end=len(part.text)` не является точной картой coverage.
   Там, где карта пока недоступна, сохранять unknown/coarse coverage и не заявлять exact.
-- [ ] DA5.3. Исправить регрессию DA0.4: bill retained range не включает удалённый consultation
+- [x] DA5.3. [J045](2026-10-22-document-architecture-progress.md#j045). Исправить регрессию DA0.4: bill retained range не включает удалённый consultation
   appendix. Проверить повторяющийся фрагмент, склейку, footnotes, tables и несколько excerpts;
   одинаковый текст в другом месте не подтверждает чтение нужной нормативной части.
 - [ ] DA5.4. Разделить extraction coverage, selection completeness и actual input coverage.

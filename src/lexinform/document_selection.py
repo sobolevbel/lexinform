@@ -17,6 +17,7 @@ from lexinform.models.documents import (
     DocumentSelection,
 )
 from lexinform.sections import PAGE_BREAK, document_kind, trim_print
+from lexinform.text_projection import SourcePiece, TextProjection, project_pieces
 
 
 def bill_selection(
@@ -160,8 +161,12 @@ def _part_role(part: DocumentPart) -> DocumentPart:
 
 def selection_for_input(selection: DocumentSelection, text: str) -> DocumentSelection:
     coverage = [span for span in selection.coverage if span.stage != "analysis"]
+    projection = _input_projection(selection, text)
     missing = False
+    offset = 0
     for index, part in enumerate(selection.parts):
+        start = offset
+        offset += len(part.text) + len(PAGE_BREAK)
         if part.role not in ("bill", "normative_annex", "normative_continuation"):
             continue
         expected = (
@@ -171,15 +176,20 @@ def selection_for_input(selection: DocumentSelection, text: str) -> DocumentSele
         )
         present = bool(expected.strip()) and expected.strip() in text
         missing = missing or not present
-        coverage.append(
-            DocumentCoverage(
-                part_index=index,
-                stage="analysis",
-                start=0,
-                end=len(part.text) if present else 0,
-                losses=() if present else ("normative part omitted from prepared input",),
+        losses: tuple[str, ...] = () if present else ("normative part omitted from prepared input",)
+        spans = _part_input_ranges(projection, start, len(part.text))
+        if projection is None:
+            losses += ("input coverage unknown",)
+        for begin, end in spans or [(0, 0)]:
+            coverage.append(
+                DocumentCoverage(
+                    part_index=index,
+                    stage="analysis",
+                    start=begin,
+                    end=end,
+                    losses=losses,
+                )
             )
-        )
     limitations: tuple[DocumentLimitation, ...] = tuple(
         reason for reason in selection.limitations if reason != "normative_text_omitted"
     )
@@ -193,6 +203,32 @@ def selection_for_input(selection: DocumentSelection, text: str) -> DocumentSele
             "state": "unverified" if missing and selection.state == "selected" else selection.state,
         }
     )
+
+
+def _input_projection(selection: DocumentSelection, text: str) -> TextProjection | None:
+    if not selection.parts:
+        return None
+    source = PAGE_BREAK.join(part.text for part in selection.parts)
+    if source == text:
+        return project_pieces(source, (SourcePiece(source, 0),))
+    trimmed = trim_print(source)
+    return trimmed.projection if trimmed.text == text else None
+
+
+def _part_input_ranges(
+    projection: TextProjection | None, start: int, length: int
+) -> list[tuple[int, int]]:
+    if projection is None:
+        return []
+    result: list[tuple[int, int]] = []
+    for segment in projection.segments:
+        if segment.source_start is None:
+            continue
+        begin = max(start, segment.source_start)
+        end = min(start + length, segment.source_start + segment.end - segment.start)
+        if begin < end:
+            result.append((begin - start, end - start))
+    return result
 
 
 def deduplicate_bundle(
