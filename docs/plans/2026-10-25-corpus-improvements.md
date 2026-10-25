@@ -1,7 +1,8 @@
 # Улучшение корпуса и исследовательских инструментов
 
 Открыт 25 октября 2026. База `c8f1d83`. Автоматические C5b/C6b/C7b проверены и закоммичены
-локально 25–26 октября; открыто человеческое прочтение C6c. Продолжение и evidence ниже.
+локально 25–26 октября; 26 октября добавлены форма и проверяемая запись человеческих ответов.
+Открыто только само человеческое прочтение C6c. Продолжение и evidence ниже.
 Основание — [обзор корпуса](../reviews/2026-10-25-corpus-workflow.md).
 
 Цель: воспроизводимые измерения, общие безопасные примитивы scripts, восстановление отсутствующих
@@ -31,6 +32,9 @@ Backend хранения не выбирается. Production state, Telegram �
 - [x] C6b. Физический разбор 170 still-empty originals; результаты и previews ниже.
 - [x] C6b. Подготовить отдельный pending human holdout из ранее не использованных инициатив.
   Три оригинала зарезервированы до извлечения; новый human oracle ещё не создан.
+- [x] C6c0. Форма ручной проверки и валидируемая запись ответов поверх sealed queues:
+  страницы оригинала, точные цитаты, закрытые словари, конфликты reviewers; agent reviews
+  не становятся labels. Формы для holdout и 170 empty originals собраны.
 - [ ] C6c. Человеческое прочтение: обязательность приложений, спорные связи, подтверждение
   независимости инициатив и evidence нового holdout. Machine labels не закрывают эту часть.
 - [x] C7a. Подключить 13 существующих suites к общему запуску, включая process/Senate;
@@ -292,3 +296,43 @@ Strict docs build и локальные ссылки green.
 индекс/описание отдельного corpus repository — `ec70eca`. Push не выполнялся.
 Остался C6c: реальные человеческие evidence и разрешение неизвестных связей/приложений.
 Pending human queue доступна в `out/corpus/runs/c006b-human-holdout/result.html`.
+
+### C006c. Форма и запись человеческой проверки
+
+Статус: инструмент принят локально, commit `650ae3f`; человеческих ответов пока нет.
+
+Прежний validator принимал evidence только как span извлечённого текста. У 170 из 177 cases
+очереди C6a этот текст пуст, а три holdout originals намеренно не извлекались, поэтому прочитанное
+человеком в оригинале некуда было записать. `corpus_review` добавляет offline suites
+`review-form` и `review` поверх sealed `holdout`, `empty-review` или `annotations` queue.
+
+Форма даёт ссылки на оригиналы, раскрытые ZIP members, page-1 previews с проверкой SHA
+по manifest очереди, число страниц, закрытые словари ответов и поля цитат. Legal text она
+не читает. Черновик хранится в браузере, сохранение выгружает answers JSON с SHA manifest очереди.
+`review` до записи проверяет весь файл: reviewer и дату, объявленные прочитанные страницы или
+диапазоны, хотя бы одну цитату на каждый ответ кроме `unknown`. `text_layer` цитата должна быть
+на этой странице PDF или в тексте Word/ODF; `visual` привязана к объявленной странице, но не к
+текстовому слою. Цитата без offsets должна встречаться в прочитанной выдержке ровно один раз.
+Один отвергнутый case отвергает весь файл. Labels образуют только human reviews; расхождение
+людей остаётся `conflict`. `holdout` возможен только при согласном `independent_initiative: yes`
+и без agent review; уже потреблённые очереди остаются `regression`.
+
+| Run | Cases | Originals | PDF pages | Manifest SHA |
+| --- | ---: | ---: | ---: | --- |
+| `c006c-holdout-form` | 3 | 3 | 50 | `62be5a0aeb1cf115a2b7a737f799983dcdce70d0d4f6d95605509baca3ade0b1` |
+| `c006c-empty-originals-form` | 170 | 355 | 1636 | `c77fdc48db0a85eb74a94e2f2a1bc6c85012acd737ecae458ddd354b2d699b5c` |
+
+Во второй форме 296 ссылок на раскрытые members и 169 previews; 1636 страниц совпадают с картой
+C6b. Обе формы собраны на чистом коде, manifests проверены, изменённых входов нет.
+Форма проверена в браузере на реальной empty-review очереди: черновик переживает reload,
+export → import → export идентичен, выгрузка принята `review` с итогом 1 reviewed / 169 pending,
+все cases `regression`. Это проверка формата в scratch, затем удалённая; ответом reviewer она не
+является и в runs не записана. Агент открывал только формы, не holdout originals.
+
+Полный offline gate: **4130 tests**, failures/errors/skips/xfails 0, 697,567 s; strict mypy
+387 файлов, Ruff и format green. XML: `out/corpus/2026-10-26-c006c-review-tests.xml`.
+
+Для C6c человек открывает `out/corpus/runs/c006c-holdout-form/result.html` и
+`out/corpus/runs/c006c-empty-originals-form/result.html` из файловой системы, читает оригиналы,
+сохраняет answers JSON и записывает его suite `review` (команды в `tools/README.md`).
+До этого holdout остаётся `holdout_pending`, а роли, связи и приложения — `unknown`.
