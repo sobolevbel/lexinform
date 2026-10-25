@@ -49,6 +49,14 @@ def grouped(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def supplementary(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {**part, "parent": str(row["number"]), "parentTitle": row.get("title", "")}
+        for row in rows
+        for part in row.get("additionalPrints") or []
+    ]
+
+
 def snapshot(
     reference: Path, root: Path, identity: str, term: int, client: httpx.Client
 ) -> dict[str, Any]:

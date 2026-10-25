@@ -9,7 +9,7 @@ import httpx2 as httpx
 
 from tools.corpus_artifacts import digest
 
-PUBLIC_HOSTS = frozenset(("legislacja.rcl.gov.pl", "api.sejm.gov.pl"))
+PUBLIC_HOSTS = frozenset(("legislacja.rcl.gov.pl", "api.sejm.gov.pl", "orka.sejm.gov.pl"))
 
 
 @dataclass(frozen=True)

@@ -29,7 +29,7 @@ SUITES = {
     "scan": ("replay_scan_inputs", ()),
 }
 
-RECORD_ONLY = ("sources", "install", "sejm-snapshot")
+RECORD_ONLY = ("sources", "install", "sejm-snapshot", "sejm-catalogue", "sejm-sources")
 
 
 def observations(report: dict[str, Any]) -> dict[str, Any]:
