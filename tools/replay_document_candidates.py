@@ -2,39 +2,16 @@
 
 import argparse
 import datetime as dt
-import gzip
 import json
 import logging
-import re
 from collections import Counter
 from pathlib import Path
 
-from lexinform.models import Bill, BillStatus, RclProject, process_summary
 from lexinform.sections import document_kind
 from lexinform.services.documents import TextLoader
-from lexinform.services.sources import RclTextSource
-
-
-class CachedExtractor:
-    def __init__(self, corpus: Path) -> None:
-        self.corpus = corpus
-
-    def extract(self, data: bytes) -> str:
-        path = self.corpus / f"documents/text/{data.decode()}.txt.gz"
-        return gzip.decompress(path.read_bytes()).decode() if path.exists() else ""
-
-    def pages(self, data: bytes) -> int:
-        return 0
-
-    def select_pages(self, data: bytes, *, first: int, count: int) -> bytes:
-        raise AssertionError("Cached text replay cannot validate scanned pages")
-
-
-def document_id(url: str, *, max_bytes: int | None = None) -> bytes:
-    match = re.search(r"dokument(\d+)", url)
-    if match is None:
-        raise ValueError("URL absent from the RCL document corpus")
-    return match[1].encode()
+from tools.corpus_rcl import CachedExtractor as CachedExtractor
+from tools.corpus_rcl import document_id as document_id
+from tools.corpus_rcl import projects, stage_cases
 
 
 def main() -> None:
@@ -43,7 +20,6 @@ def main() -> None:
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
     logging.basicConfig(level=logging.ERROR)
-    source = RclTextSource()
     loader = TextLoader(
         {"legislacja.rcl.gov.pl": document_id},
         CachedExtractor(args.corpus),
@@ -53,35 +29,20 @@ def main() -> None:
     results: dict[str, object] = {}
     counts: Counter[str] = Counter()
     now = dt.datetime(2026, 10, 17, tzinfo=dt.UTC)
-    for path in sorted((args.corpus / "corpus").glob("1*.json")):
-        project = RclProject.model_validate_json(path.read_bytes())
-        for stage in project.reached_stages:
-            snapshot = project.model_copy(
-                update={
-                    "stages": tuple(st for st in project.stages if st.number <= stage.number),
-                }
-            )
-            bill = Bill(
-                summary=process_summary(snapshot, term=10),
-                rcl=snapshot,
-                status=BillStatus.ANALYSIS_PENDING,
-                first_seen_at=now,
-                last_checked_at=now,
-            )
-            located = source.locate(bill)
-            key = f"{project.id}/{stage.number}"
-            if located.document is None:
+    for path, project in projects(args.corpus):
+        for case in stage_cases(path, project, as_of=now):
+            if case.document is None:
                 counts["no_candidate"] += 1
-                results[key] = {"state": "no_candidate"}
+                results[case.identity] = {"state": "no_candidate"}
                 continue
-            selected, file = loader.select_document(located.document)
+            selected, file = loader.select_document(case.document)
             state = (
                 "waiting"
                 if file.text is None and file.selection.state == "unverified"
                 else file.selection.state
             )
             counts[state] += 1
-            results[key] = {
+            results[case.identity] = {
                 "state": state,
                 "url": selected.url,
                 "kind": document_kind(file.text or ""),

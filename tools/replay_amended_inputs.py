@@ -12,10 +12,11 @@ from lexinform.keywords import KeywordPrefilter
 from lexinform.models import TextDocument
 from lexinform.sections import PAGE_BREAK, TextBudget, trim_print
 from lexinform.services.documents import TextLoader
-from tools.corpus_check import code_version, source_fingerprints
-from tools.corpus_external import CorpusReads, RequiredCachedExtractor
+from tools.corpus_artifacts import digest, read_artifact, write_json
+from tools.corpus_rcl import RequiredCachedExtractor
+from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 from tools.replay_document_candidates import document_id
-from tools.replay_input_coverage import check_projection, digest, read_artifact
+from tools.replay_input_coverage import check_projection
 
 
 def snapshot(document: TextDocument, loader: TextLoader, *, mapped: bool) -> dict[str, Any]:
@@ -143,9 +144,7 @@ def run(corpus: Path, inventory: Path, inventory_sha256: str, output: Path, *, m
     result["missing_inputs"] = sorted(reads.missing)
     failed = bool(result["errors"] or result["changed_inputs"] or result["changed_code"])
     result["status"] = "failed" if failed else "recorded"
-    with target.open("x") as stream:
-        json.dump(result, stream, sort_keys=True, ensure_ascii=False, indent=2)
-        stream.write("\n")
+    write_json(target, result)
     return int(failed)
 
 

@@ -17,8 +17,7 @@ from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtr
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.law_digest import law_digest
 from lexinform.sections import trim_print
-from tools.corpus_check import code_version, source_fingerprints
-from tools.corpus_external import CorpusReads
+from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 
 PageReader = Literal["library", "adapter"]
 

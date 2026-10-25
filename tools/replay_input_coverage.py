@@ -1,7 +1,6 @@
 """Compare raw-corpus prepared text and input coverage against an explicit committed baseline."""
 
 import argparse
-import hashlib
 import json
 import logging
 from pathlib import Path
@@ -16,19 +15,10 @@ from lexinform.keywords import KeywordPrefilter
 from lexinform.law_digest import law_digest
 from lexinform.sections import PAGE_BREAK, TextBudget, trim_print
 from lexinform.text_projection import TextProjection
-from tools.corpus_check import code_version, source_fingerprints
-from tools.corpus_external import CorpusReads
+from tools.corpus_artifacts import digest as digest
+from tools.corpus_artifacts import read_artifact as read_artifact
+from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 from tools.replay_pdf_pages import PdfReplayManifest
-
-
-def digest(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def read_artifact(path: Path) -> bytes:
-    if path.name == ".env" or path.resolve().name == ".env":
-        raise ValueError("A credential file is not a replay artifact")
-    return path.read_bytes()
 
 
 def snapshot(data: bytes, *, mapped: bool) -> dict[str, Any]:

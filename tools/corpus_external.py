@@ -1,19 +1,12 @@
 """Orchestrate frozen external replays as observations or SHA-pinned regression comparisons."""
 
-import builtins
 import datetime as dt
 import hashlib
-import io
 import json
-import os
 import re
-import socket
-import sys
 from collections.abc import Callable
-from contextlib import ExitStack
 from pathlib import Path
-from typing import IO, Any, Literal
-from unittest.mock import patch
+from typing import Any, Literal
 
 from tests.scenario.test_delivery_recovery import (
     test_confirm_an_accepted_delivery_does_not_send_again,
@@ -21,12 +14,13 @@ from tests.scenario.test_delivery_recovery import (
     test_retry_uses_saved_snapshot_and_parent_once_after_restart,
 )
 
-from lexinform.models import Bill, BillStatus, RclProject, process_summary
 from lexinform.services.documents import TextLoader
-from lexinform.services.sources import RclTextSource
+from tools.corpus_rcl import RequiredCachedExtractor as RequiredCachedExtractor
+from tools.corpus_rcl import document_id, projects, stage_cases
+from tools.corpus_runtime import CorpusReads as CorpusReads
+from tools.corpus_runtime import blocked_network as blocked_network
 from tools.probe_law_comparison import run as compare_laws
 from tools.probe_law_mutations import run as mutate_laws
-from tools.replay_document_candidates import CachedExtractor, document_id
 from tools.replay_document_selection import replay as replay_documents
 
 Mode = Literal["baseline", "compare"]
@@ -40,92 +34,7 @@ EXCLUSIONS = (
 )
 
 
-class CorpusReads:
-    def __init__(self, root: Path) -> None:
-        self.root = root.resolve()
-        self.paths: set[str] = set()
-        self.active: set[str] = set()
-        self.missing: set[str] = set()
-        self.initial_sha256: dict[str, str | None] = {}
-        self.allowed = (
-            Path(__file__).resolve().parents[1],
-            Path(sys.prefix).resolve(),
-            Path(sys.base_prefix).resolve(),
-        )
-        self._open = builtins.open
-        self._io_open = io.open
-
-    def require(self, path: Path) -> None:
-        resolved = path.resolve()
-        if not resolved.is_relative_to(self.root):
-            raise ValueError(f"Corpus input escapes root: {path}")
-        relative = str(resolved.relative_to(self.root))
-        self.paths.add(relative)
-        self.active.add(relative)
-        if relative not in self.initial_sha256:
-            digest = None
-            if resolved.is_file():
-                with self._open(resolved, "rb") as stream:
-                    digest = hashlib.file_digest(stream, "sha256").hexdigest()
-            self.initial_sha256[relative] = digest
-        if not resolved.is_file():
-            self.missing.add(relative)
-
-    def _checked(self, file: Any, mode: str) -> None:
-        if any(flag in mode for flag in "wax+"):
-            raise PermissionError("External replay inputs are read-only; writes are prohibited")
-        if isinstance(file, int):
-            return
-        lexical = Path(os.fsdecode(file)).absolute()
-        path = lexical.resolve()
-        if lexical.is_relative_to(self.root) and not path.is_relative_to(self.root):
-            raise PermissionError(f"Corpus symlink escapes root: {lexical}")
-        if path.name == ".env":
-            raise PermissionError("External replay must not read .env")
-        if path.is_relative_to(self.root):
-            self.require(path)
-        elif not any(path.is_relative_to(root) for root in self.allowed):
-            raise PermissionError(f"External replay cannot read outside its corpus: {path}")
-
-    def open(self, file: Any, mode: str = "r", *args: Any, **kwargs: Any) -> IO[Any]:
-        self._checked(file, mode)
-        return self._open(file, mode, *args, **kwargs)
-
-    def io_open(self, file: Any, mode: str = "r", *args: Any, **kwargs: Any) -> IO[Any]:
-        self._checked(file, mode)
-        return self._io_open(file, mode, *args, **kwargs)
-
-    def guard(self) -> ExitStack:
-        stack = ExitStack()
-        stack.enter_context(patch.object(builtins, "open", self.open))
-        stack.enter_context(patch.object(io, "open", self.io_open))
-        for owner, name in (
-            (socket.socket, "connect"),
-            (socket.socket, "connect_ex"),
-            (socket.socket, "sendto"),
-            (socket, "create_connection"),
-            (socket, "getaddrinfo"),
-        ):
-            stack.enter_context(patch.object(owner, name, blocked_network))
-        return stack
-
-
-def blocked_network(*args: Any, **kwargs: Any) -> None:
-    raise RuntimeError("External corpus replay prohibits network/model access")
-
-
-class RequiredCachedExtractor(CachedExtractor):
-    def __init__(self, corpus: Path, reads: CorpusReads) -> None:
-        super().__init__(corpus)
-        self.reads = reads
-
-    def extract(self, data: bytes) -> str:
-        self.reads.require(self.corpus / f"documents/text/{data.decode()}.txt.gz")
-        return super().extract(data)
-
-
 def replay_candidates(root: Path, reads: CorpusReads) -> dict[str, Any]:
-    source = RclTextSource()
     loader = TextLoader(
         {"legislacja.rcl.gov.pl": document_id},
         RequiredCachedExtractor(root, reads),
@@ -134,26 +43,14 @@ def replay_candidates(root: Path, reads: CorpusReads) -> dict[str, Any]:
     )
     now = dt.datetime(2026, 10, 17, tzinfo=dt.UTC)
     results: dict[str, Any] = {}
-    for path in sorted((root / "corpus").glob("1*.json")):
-        project = RclProject.model_validate_json(path.read_bytes())
-        for stage in project.reached_stages:
-            snapshot = project.model_copy(
-                update={"stages": tuple(st for st in project.stages if st.number <= stage.number)}
-            )
-            bill = Bill(
-                summary=process_summary(snapshot, term=10),
-                rcl=snapshot,
-                status=BillStatus.ANALYSIS_PENDING,
-                first_seen_at=now,
-                last_checked_at=now,
-            )
-            located = source.locate(bill)
-            key = f"{project.id}/{stage.number}"
-            if located.document is None:
-                results[key] = {"state": "no_candidate"}
+    for path, project in projects(root):
+        for case in stage_cases(path, project, as_of=now):
+            document = case.document
+            if document is None:
+                results[case.identity] = {"state": "no_candidate"}
                 continue
-            selected, file = loader.select_document(located.document)
-            results[key] = {
+            selected, file = loader.select_document(document)
+            results[case.identity] = {
                 "state": "waiting"
                 if file.text is None and file.selection.state == "unverified"
                 else file.selection.state,
@@ -168,7 +65,7 @@ def replay_candidates(root: Path, reads: CorpusReads) -> dict[str, Any]:
                     *sorted(
                         f"documents/text/{identity}.txt.gz"
                         for identity in set(
-                            re.findall(r"dokument(\d+)", located.document.model_dump_json())
+                            re.findall(r"dokument(\d+)", document.model_dump_json())
                         )
                         if f"documents/text/{identity}.txt.gz" in reads.paths
                     ),

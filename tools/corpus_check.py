@@ -4,7 +4,6 @@ import argparse
 import hashlib
 import json
 import socket
-import subprocess
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Literal
@@ -24,6 +23,9 @@ from lexinform.adapters.sejm_api import parse_print
 from lexinform.models import RclProject
 from lexinform.sections import document_kind
 from tools.corpus_external import run_external
+from tools.corpus_runtime import code_dirty as code_dirty
+from tools.corpus_runtime import code_version as code_version
+from tools.corpus_runtime import source_fingerprints as source_fingerprints
 from tools.probe_law_comparison import decide
 from tools.probe_law_mutations import mutations
 
@@ -176,38 +178,6 @@ def check_case(root: Path, case: CorpusCase) -> dict[str, Any]:
     except Exception as exc:
         result.update(status="failed", reason=f"{type(exc).__name__}: {exc}")
     return result
-
-
-def code_version() -> str:
-    result = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=Path(__file__).resolve().parents[1],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return result.stdout.strip() if result.returncode == 0 else "unknown"
-
-
-def source_fingerprints() -> dict[str, str]:
-    root = Path(__file__).resolve().parents[1]
-    paths = [root / "uv.lock"]
-    for directory in ("src", "tests", "tools"):
-        paths.extend(sorted((root / directory).rglob("*.py")))
-    return {
-        str(path.relative_to(root)): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths
-    }
-
-
-def code_dirty() -> bool:
-    result = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=all"],
-        cwd=Path(__file__).resolve().parents[1],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return result.returncode != 0 or bool(result.stdout.strip())
 
 
 def run(corpus: Path, output: Path, profiles: tuple[Profile, ...] = PROFILES) -> int:

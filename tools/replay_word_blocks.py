@@ -13,9 +13,8 @@ from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.models import ExtractedParts, WordDetailedExtraction, WordTextExtraction
-from tools.corpus_check import code_version, source_fingerprints
-from tools.corpus_external import CorpusReads
-from tools.replay_input_coverage import digest, read_artifact
+from tools.corpus_artifacts import digest, read_artifact
+from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 
 
 def word_envelope(data: bytes, reader: DocxTextExtractor) -> ExtractedParts:

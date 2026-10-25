@@ -62,7 +62,7 @@ def test_candidate_gaps_include_source_urls_and_historical_case_without_changing
                 rcl_folder(
                     1,
                     "Projekt",
-                    rcl_document(999, "Projekt ustawy.docx"),
+                    rcl_document(999, "Projekt ustawy dokument999999.docx"),
                     rcl_document(1000, "Autopoprawka.docx"),
                 ),
             ),
@@ -76,6 +76,7 @@ def test_candidate_gaps_include_source_urls_and_historical_case_without_changing
 
     result = json.loads(output.read_bytes())
     assert result["candidate_cohort"] == {"projects": 1, "stages": 1, "cases": 1}
+    assert "999999" not in result["records"]
     missing = result["records"]["1000"]
     assert missing["raw_state"] == missing["text_state"] == "missing"
     assert missing["references"][0]["case"] == f"{project.id}/1"

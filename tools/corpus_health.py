@@ -10,11 +10,9 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-from lexinform.models import Bill, BillStatus, RclProject, process_summary
-from lexinform.services.sources import RclTextSource
-from tools.corpus_check import source_fingerprints
-from tools.corpus_external import CorpusReads
-from tools.replay_input_coverage import digest
+from tools.corpus_artifacts import digest, write_json
+from tools.corpus_rcl import projects, stage_cases
+from tools.corpus_runtime import CorpusReads, source_fingerprints
 
 TEXT_LIMIT = 32_000_000
 DOCUMENT_URL = re.compile(r"dokument(\d+)\.[A-Za-z0-9]+(?:$|[?#])")
@@ -30,24 +28,13 @@ def local_path(root: Path, relative: str) -> Path:
 def amendment_candidates(root: Path) -> tuple[dict[str, list[dict[str, str]]], dict[str, int]]:
     references: dict[str, list[dict[str, str]]] = defaultdict(list)
     counts: Counter[str] = Counter()
-    source = RclTextSource()
     now = dt.datetime(2026, 10, 25, tzinfo=dt.UTC)
-    for path in sorted(local_path(root, "corpus").glob("1*.json")):
-        project = RclProject.model_validate_json(path.read_bytes())
+    local_path(root, "corpus")
+    for path, project in projects(root):
         counts["projects"] += 1
-        for stage in project.reached_stages:
+        for case in stage_cases(path, project, as_of=now):
             counts["stages"] += 1
-            snapshot = project.model_copy(
-                update={"stages": tuple(s for s in project.stages if s.number <= stage.number)}
-            )
-            bill = Bill(
-                summary=process_summary(snapshot, term=10),
-                rcl=snapshot,
-                status=BillStatus.ANALYSIS_PENDING,
-                first_seen_at=now,
-                last_checked_at=now,
-            )
-            document = source.locate(bill).document
+            document = case.document
             if document is None or not document.amendment_urls:
                 continue
             counts["cases"] += 1
@@ -58,9 +45,13 @@ def amendment_candidates(root: Path) -> tuple[dict[str, list[dict[str, str]]], d
                     pending.extend((f"{field}.{key}", item) for key, item in value.items())
                 elif isinstance(value, list):
                     pending.extend((f"{field}[{i}]", item) for i, item in enumerate(value))
-                elif isinstance(value, str) and (match := DOCUMENT_URL.search(value)):
+                elif (
+                    isinstance(value, str)
+                    and value.startswith(("https://", "http://"))
+                    and (match := DOCUMENT_URL.search(value))
+                ):
                     references[match[1]].append(
-                        {"case": f"{project.id}/{stage.number}", "field": field, "url": value}
+                        {"case": case.identity, "field": field, "url": value}
                     )
     return references, dict(counts)
 
@@ -196,9 +187,7 @@ def run(corpus: Path, output: Path, *, check_text: bool = False) -> None:
     if output.is_symlink() or target.exists() or target.is_relative_to(corpus.resolve()):
         raise ValueError("Output must be new and outside the corpus")
     result = inspect(corpus, check_text=check_text)
-    with target.open("x") as stream:
-        json.dump(result, stream, ensure_ascii=False, sort_keys=True, indent=2)
-        stream.write("\n")
+    write_json(target, result)
     print(json.dumps({"counts": result["counts"], "actions": result["action_counts"]}))
 
 

@@ -21,9 +21,9 @@ from lexinform.models.batch import BatchItemMeta
 from lexinform.sections import TextBudget, document_kind, excerpt_projection, trim_print
 from lexinform.services import analysis as analysis_module
 from lexinform.text_projection import TextProjection
-from tools.corpus_check import code_version, source_fingerprints
-from tools.corpus_external import CorpusReads
-from tools.replay_input_coverage import check_projection, digest, read_artifact
+from tools.corpus_artifacts import digest, read_artifact
+from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
+from tools.replay_input_coverage import check_projection
 
 
 def runtime_snapshot(text: str, *, batch: bool, mapped: bool) -> dict[str, Any]:

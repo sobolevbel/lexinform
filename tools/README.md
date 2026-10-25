@@ -1,5 +1,13 @@
 # Offline measurements
 
+## Shared corpus code
+
+`corpus_runtime` owns read-only/network guards and code provenance; `corpus_artifacts` owns
+artifact hashing, credential-file rejection and exclusive JSON publication. `corpus_rcl`
+owns historical stage construction and cached-text adapters. Replays import these modules
+directly; old entry points retain compatible re-exports. Domain selection stays in lexinform.
+Low-level helpers do not load test suites or World just to calculate a hash.
+
 ## RCL corpus health and repair queue
 
 ```bash

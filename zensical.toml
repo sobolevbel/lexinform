@@ -48,6 +48,7 @@ nav = [
   ] },
   { "Планы" = [
     { "Обзор" = "plans/index.md" },
+    { "Корпус и scripts" = "plans/2026-10-25-corpus-improvements.md" },
     { "Документы и история результатов" = "plans/2026-10-22-document-architecture.md" },
     { "Реализация архитектуры документов" = "plans/2026-10-22-document-architecture-progress.md" },
     { "Выбор документов для событий" = "plans/2026-10-17-document-selection.md" },
