@@ -26,6 +26,8 @@ SUITES = {
     "empty-review": ("corpus_empty_review", ()),
     "physical": ("corpus_physical", ()),
     "holdout": ("corpus_holdout", ()),
+    "review-form": ("corpus_review", ("--mode", "form")),
+    "review": ("corpus_review", ("--mode", "record")),
     "candidates": ("replay_document_candidates", ()),
     "process": ("corpus_legacy_suites", ("--kind", "process")),
     "senate": ("corpus_legacy_suites", ("--kind", "senate")),

@@ -32,8 +32,8 @@ that current code generated it. Diffs separate observations, input identities an
 means an incomplete requested check. An empty population never becomes a completed run.
 
 Offline suites: `health`, `ci`, `external`, `pdf`, `word`, `input`, `cost`, `amendments`,
-`reextract`, `annotations`, `empty-review`, `physical`, `holdout`, `candidates`, `process`, `senate`,
-`scan`. Extra arguments follow `--`;
+`reextract`, `annotations`, `empty-review`, `physical`, `holdout`, `review-form`, `review`,
+`candidates`, `process`, `senate`, `scan`. Extra arguments follow `--`;
 each child module's `--help` lists its required pins/options. `external` uses the existing
 corpus-check profiles; the default `ci` suite requires a manifest corpus such as
 `tests/fixtures/corpus_check`. Process/Senate wrappers preserve old observation semantics and
@@ -117,6 +117,36 @@ collected regression files. Its JSON/HTML contains metadata and original links, 
 legal text. `holdout_pending` becomes a usable holdout only after a human confirms relations and
 records actual read scope/evidence; neither a small purpose-selected cohort nor byte independence
 establishes independent legal correctness.
+
+## Recording human review
+
+```bash
+queue="$run_root/c006b-human-holdout"
+queue_sha=$(shasum -a 256 "$queue/manifest.json" | cut -d ' ' -f 1)
+uv run --offline --frozen python -m tools.corpus_runs run \
+  --root "$run_root" --id new-review-form --suite review-form --corpus "$corpus_path" -- \
+  --queue "$queue" --queue-sha256 "$queue_sha"
+answers_sha=$(shasum -a 256 /path/to/review-answers.json | cut -d ' ' -f 1)
+uv run --offline --frozen python -m tools.corpus_runs run \
+  --root "$run_root" --id new-review --suite review --corpus "$corpus_path" -- \
+  --queue "$queue" --queue-sha256 "$queue_sha" \
+  --answers /path/to/review-answers.json --answers-sha256 "$answers_sha"
+```
+
+`review-form` accepts a sealed `holdout`, `empty-review` or `annotations` queue and writes
+`result.html`: links to originals, unpacked archive members and verified page-1 previews, page
+counts, closed answer vocabularies and quote fields. Open it from disk; the draft stays in the
+browser and "Сохранить ответы" downloads the answers JSON. The form reads no legal text.
+
+`review` validates every answers file before writing anything: the queue SHA, a named reviewer,
+the declared read pages or text ranges, and at least one quote for each answer other than
+`unknown`. A `text_layer` quote must occur on that PDF page or in the Word/ODF text; a `visual`
+quote is bound to a declared page but not to a text layer. A text quote without offsets must
+occur exactly once inside the declared range. One rejected case rejects the submission.
+Only human reviews form labels; agent reviews stay alongside as observations. Disagreeing humans
+stay `conflict`. A reserved case becomes `holdout` only when humans agree on
+`independent_initiative: yes` and no agent reviewed it; previously consumed queues stay
+`regression`. Several `--answers`/`--answers-sha256` pairs record several reviewers in one run.
 
 ## Explicit public collection
 
