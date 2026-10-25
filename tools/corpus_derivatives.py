@@ -14,7 +14,7 @@ from lexinform.sections import document_kind
 from tools.corpus_artifacts import digest, read_artifact, write_json
 from tools.corpus_extraction import MAX_BYTES as MAX_BYTES
 from tools.corpus_extraction import OPTIONS as OPTIONS
-from tools.corpus_extraction import bounded_reader
+from tools.corpus_extraction import ExtractionCache, bounded_reader
 from tools.corpus_health import local_path
 from tools.corpus_runtime import CorpusReads, code_version, source_fingerprints
 
@@ -26,6 +26,7 @@ def run(
     output: Path,
     *,
     index_snapshot: Path | None = None,
+    cache: Path | None = None,
 ) -> int:
     root, target = corpus.resolve(strict=True), output.resolve()
     if output.is_symlink() or target.exists() or target.is_relative_to(root):
@@ -48,6 +49,9 @@ def run(
     if digest(index_bytes) != baseline["read_inputs"]["documents/index.json"]:
         raise ValueError("Document index changed since health inspection")
     index = json.loads(index_bytes)
+    if cache is not None and cache.resolve().is_relative_to(root):
+        raise ValueError("Extraction cache must be outside the corpus")
+    cache_reader = ExtractionCache(cache) if cache is not None else None
     reader = bounded_reader()
     generation = target.with_suffix("")
     generation.mkdir()
@@ -58,6 +62,7 @@ def run(
     ):
         row: dict[str, Any] = {"state": "not_run", "extraction": None}
         compressed = None
+        data = None
         with reads.guard():
             cached = local_path(root, item["text_path"]).read_bytes()
             if digest(cached) != baseline["read_inputs"][item["text_path"]]:
@@ -80,19 +85,24 @@ def run(
                 else:
                     data = path.read_bytes()
                     row["raw_sha256"] = digest(data)
-                    try:
+        if data is not None:
+            try:
+                if cache_reader is not None:
+                    extracted = cache_reader.extract_document(data, reads=reads)
+                else:
+                    with reads.guard():
                         extracted = reader.extract_document(data)
-                        text = extracted.text
-                        row.update(
-                            state="recovered" if text.strip() else "still_empty",
-                            chars=len(text),
-                            text_sha256=digest(text.encode()),
-                            kind=document_kind(text),
-                            selection=extracted.selection.without_text().model_dump(mode="json"),
-                        )
-                        compressed = gzip.compress(text.encode(), mtime=0)
-                    except Exception as exc:
-                        row.update(state="failed", error=f"{type(exc).__name__}: {exc}")
+                text = extracted.text
+                row.update(
+                    state="recovered" if text.strip() else "still_empty",
+                    chars=len(text),
+                    text_sha256=digest(text.encode()),
+                    kind=document_kind(text),
+                    selection=extracted.selection.without_text().model_dump(mode="json"),
+                )
+                compressed = gzip.compress(text.encode(), mtime=0)
+            except Exception as exc:
+                row.update(state="failed", error=f"{type(exc).__name__}: {exc}")
         if compressed is not None:
             text_sha = row["text_sha256"]
             if text_sha not in objects:
@@ -130,6 +140,12 @@ def run(
             "Inputs above 32 MB remain explicit exclusions; pages without text are not OCRed.",
         ],
     }
+    if cache_reader is not None:
+        result["cache"] = {
+            "identity_sha256": cache_reader.identity_sha256,
+            "hits": cache_reader.hits,
+            "misses": cache_reader.misses,
+        }
     write_json(target, result)
     return int(failed)
 
@@ -141,6 +157,7 @@ def main() -> None:
     parser.add_argument("--health-sha256", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--index-snapshot", type=Path)
+    parser.add_argument("--cache", type=Path)
     args = parser.parse_args()
     logging.basicConfig(level=logging.ERROR)
     raise SystemExit(
@@ -150,6 +167,7 @@ def main() -> None:
             args.health_sha256,
             args.output,
             index_snapshot=args.index_snapshot,
+            cache=args.cache,
         )
     )
 

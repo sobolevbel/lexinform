@@ -23,6 +23,7 @@ SUITES = {
     "amendments": ("replay_amended_inputs", ()),
     "reextract": ("corpus_derivatives", ()),
     "annotations": ("corpus_annotations", ()),
+    "physical": ("corpus_physical", ()),
     "candidates": ("replay_document_candidates", ()),
     "process": ("corpus_legacy_suites", ("--kind", "process")),
     "senate": ("corpus_legacy_suites", ("--kind", "senate")),
