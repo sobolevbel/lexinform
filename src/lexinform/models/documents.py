@@ -1,9 +1,12 @@
 import datetime as dt
 import hashlib
+import json
 import re
 from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from lexinform.pdf_projection import legacy_pdf_text
 
 SelectionState = Literal["unverified", "selected", "waiting", "ambiguous", "unsupported"]
 DocumentRole = Literal[
@@ -200,6 +203,63 @@ class DocumentSelection(BaseModel):
             )
             if not complete or any(part.losses for part in self.parts):
                 raise ValueError("selected documents require four independent evidence checks")
+        return self
+
+
+class PdfPageText(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    number: int = Field(ge=1)
+    text: str = ""
+    error_type: str | None = None
+
+    @property
+    def block_id(self) -> str:
+        return f"pdf-page:{self.number}:0"
+
+    @property
+    def text_sha256(self) -> str:
+        return hashlib.sha256(self.text.encode()).hexdigest()
+
+    @model_validator(mode="after")
+    def failed_page_has_no_text(self) -> Self:
+        if self.error_type is not None and self.text:
+            raise ValueError("A failed page cannot claim extracted text")
+        return self
+
+
+class PdfTextExtraction(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    version: Literal["pdf-pages-v1"] = "pdf-pages-v1"
+    text_view: Literal["pypdf-default"] = "pypdf-default"
+    legacy_projection: Literal["pdf-whitespace-v1"] = "pdf-whitespace-v1"
+    input_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    pypdf_version: str = Field(min_length=1)
+    pages: tuple[PdfPageText, ...] = ()
+    error_type: str | None = None
+
+    @property
+    def legacy_text(self) -> str:
+        if self.error_type is not None:
+            return ""
+        return legacy_pdf_text(page.text for page in self.pages)
+
+    @property
+    def page_count(self) -> int | None:
+        return len(self.pages) if self.error_type is None else None
+
+    @property
+    def manifest_sha256(self) -> str:
+        canonical = json.dumps(
+            self.model_dump(mode="json"), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
+        return hashlib.sha256(canonical.encode()).hexdigest()
+
+    @model_validator(mode="after")
+    def pages_follow_physical_order(self) -> Self:
+        if any(page.number != number for number, page in enumerate(self.pages, 1)):
+            raise ValueError("PDF page records must retain consecutive physical positions")
         return self
 
 

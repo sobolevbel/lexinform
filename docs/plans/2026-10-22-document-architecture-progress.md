@@ -1680,3 +1680,95 @@ success на точном `1e3785114aa18c963245df002aba3aaf199f7551`.
 `b03e41835534 -> 1e3785114aa1`, relay up 45 s после restart, без mismatch. Evidence
 `/private/tmp/lexinform-release-j041-20261024.json`. Это CI/deploy metadata и logs;
 ручной production pipeline, SSH и Telegram send не запускались.
+
+<a id="j043"></a>
+### J043. DA3.2/DA3.4/DA3.5: физические страницы PDF и совместимая строка
+
+Дата: 24–25 октября 2026. База: `eabbc6b0679afd5f05dffa7c60460f9a3d13f92f` (J042).
+Статус: принят ограниченный PDF-срез; DA3 остаётся частичным.
+
+`PdfTextExtraction`/`PdfPageText` сохраняют raw pypdf page text до whitespace projection,
+порядок всех страниц (включая пустые), input SHA, pypdf version, contract `pdf-pages-v1`,
+view/projection versions и error types. Block ID `pdf-page:N:0` локален данному manifest:
+это одна текстовая запись на физическую страницу, не layout/table reconstruction.
+Canonical SHA и JSON round trip проверяются отдельно от прежних business fingerprints.
+Ошибка страницы отличается от пустого text layer. При ошибке дерева сохраняется наблюдённый
+prefix, total page count остаётся unknown; legacy consumer по-прежнему получает пустую строку.
+`extract` читает результат через прежнюю whitespace projection; выбор, trimming, Fact `part:N`,
+scan byte windows, persisted JSON, schema 48, defaults и storage backend не изменены.
+Результат в памяти не обещает сохранённых raw bytes либо полного юридического прочтения.
+
+Новый tracked replay: `tools/replay_pdf_pages.py`, pinned cases `tools/corpus/pdf-pages-v1.json`.
+114 raw PDF / 330346602 bytes: Sejm scan/cover/text, длинный druk 948 (2025 страниц), RCL
+по metadata kinds и RPW по page-count sample. Это machine metadata/library oracle, не legal truth.
+Пять RPW indexed files отсутствуют либо превышают 32 MB; исключения записаны в manifest.
+Первый генератор ошибочно запрашивал term-8 druk 2864 в term-10 INDEX и затем отсутствующий RPW;
+baseline до исправления не создавался. Популяция теперь зафиксирована по доступным bounded raw
+files, её SHA `8fc8680391deb0aff7730f01381dbda95c33f2e5d2900b4c6e104ff0d3ce5e3b`.
+Generator `/private/tmp/lexinform-pdf-pages-j043-manifest.py`.
+
+Baseline до изменения parser: 114 observations / 10670 страниц, errors 0, изменившихся inputs
+и кода нет; 210 date/amount/negation/scope/reference probes меняют прежний law digest.
+Artifact `/private/tmp/lexinform-pdf-pages-j043-before-20261024.json`, SHA
+`c2798897a1d9e481031e7768896327c0264a3ce09b5d6ec7de2b78862e871e76`.
+Adapter compare проверяет legacy text/полную selection SHA, physical positions/raw page hashes,
+error types, immutable input SHA и manifest round trip. Network/input writes запрещены;
+смена case population/reference/input/code не может тихо дать passed.
+Отдельно повторяются прежние 3067 Word/XML и 69 ZIP по pinned J042 baseline.
+
+Новые 23 tests покрывают blank edges, mixed/failed pages, late tree failure, real PDF с пустыми
+страницами, manifest identity/serialization, reader guard и ошибки replay. Focused с прежними
+PDF/document/bundle/selection/sections: 184 passed; mypy 354 файла и Ruff check/format green.
+Прототипный lint с absolute paths не применил relative per-file rules и не считается gate;
+финальный root lint успешен без ослабления правил. DA3 остаётся частичным: Word/ODT/DOC блоки,
+связи blocks→PreparedInput, полный code/options manifest и durable retention ещё не реализованы.
+
+Предыдущий J042 уже выпущен: CI
+[40118861481](https://github.com/sobolevbel/lexinform/actions/runs/40118861481) и Deploy relay
+[40119193691](https://github.com/sobolevbel/lexinform/actions/runs/40119193691) success на точном
+`eabbc6b0679afd5f05dffa7c60460f9a3d13f92f`; log `1e3785114aa1 -> eabbc6b0679a`, relay up 45 s,
+без mismatch. Evidence `/private/tmp/lexinform-release-j042-20261024.json` сохранён при выпуске;
+это metadata/log verification, не ручной production run или Telegram delivery proof.
+
+25 октября временные артефакты 24 октября отсутствовали; незавершённые прогоны не засчитаны.
+Baseline восстановлен повторным исполнением committed J042 source из `git archive HEAD`,
+не новым parser в режиме baseline. Сверены байты PDF/document extractor и models с `git show`;
+proof `/private/tmp/lexinform-j043-baseline-source-20261025.json`. Export без Git metadata
+честно записывает `code_sha=unknown`; его происхождение задают этот proof и source fingerprints.
+Pinned case manifest, INDEX и raw input SHA остаются прежними. Приёмка ниже использует новые
+артефакты 25 октября, а не исчезнувшие логи. Ручной production run и paid calls не запускались.
+
+Повторный raw PDF baseline: 114 файлов / 10670 страниц, errors 0, changed inputs/code 0,
+210 probes / missed 0. Artifact `/private/tmp/lexinform-pdf-pages-j043-before-20261025.json`,
+SHA `9eac4d4325ac40bfea279c4588871d45ab57577cc893cc258f1caf8e5b6cc47b`.
+Повторный Word/ZIP baseline: 3067 / 69, missing/error/unstable 0;
+`/private/tmp/lexinform-extraction-j043-before-20261025.json`, SHA
+`46dc8dd087083a484a62969041e71b8fd7e6a703f83db6faf3c3f935db59ce05`.
+Первый full gate 25 октября: 3885 passed, один прежний strict xfail и один environmental
+failure в token counter: отсутствовал удалённый вместе с `/private/tmp` словарь `o200k_base`.
+Публичный SHA-проверяемый словарь tiktoken восстановлен без модельных API; полный gate
+перезапущен. Код теста/adapter и правила проверки не ослаблялись.
+
+Повторный Word/ZIP compare passed: 3067 Word/XML + 69 ZIP, ноль changed observations,
+missing/error/unstable inputs, source fingerprints до/после равны. Все 4185 + 330 mutation
+probes обнаружены. Artifact `/private/tmp/lexinform-extraction-j043-after-20261025.json`, SHA
+`8ae8bb945f05ef77b460c0ffdedada2655d495e6efaba027f0a4fab60b224053`;
+source proof в одноимённом `.sources.json`, wrapper
+`/private/tmp/lexinform-extraction-compare-20261025.py`.
+Отдельная сверка полных `ExtractedDocument` моделей тех же 69 ZIP: 69/69 equal,
+errors/changed inputs/code 0. `/private/tmp/lexinform-zip-selection-j043-after-20261025.json`,
+SHA `ab5c1f3d180c54f78e136fefa7adde1e49d9acbd719040e2a5b5d595aa3dbb5b`;
+wrapper `/private/tmp/lexinform-zip-selection-20261025.py`.
+
+PDF adapter compare passed: 114/114 legacy text/полные selection hashes и 10670 raw page
+positions/hashes равны baseline; 114 manifests прошли byte-SHA/JSON round trip, errors 0,
+изменившихся inputs/code нет, все 210 mutations обнаружены.
+`/private/tmp/lexinform-pdf-pages-j043-after-20261025.json`, SHA
+`bc38855bb1248ee537e1a7686475e22eca5ed1c2ce8260a0ad42e1b5aaa899b1`.
+
+Финальная приёмка рабочего checkout 25 октября: 3886 passed + один прежний strict xfail DA5,
+failures/errors 0, mypy 354 файла, Ruff check/format 383 файла, local HTTP 21 passed,
+strict docs build/link check и diff check green. XML
+`/private/tmp/lexinform-pdf-pages-j043-accepted-20261025.xml`.
+Source fingerprints root после полного gate совпадают с corpus-qualified исходниками.
+Сеть и запись в inputs были запрещены внутри replay; schema 48 и storage defaults прежние.

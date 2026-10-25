@@ -26,6 +26,17 @@ boundary adds no stored text or raw-file archive. Block coordinates, parent-cont
 versioned extraction manifests and structured failures remain work in
 [DA3](plans/2026-10-22-document-architecture.md#da3).
 
+`PypdfTextExtractor.extract_pages` now returns `PdfTextExtraction` (`pdf-pages-v1`): input SHA,
+pypdf version, raw page text, physical `pdf-page:N:0` coordinates and per-page read errors.
+Empty pages retain their positions. A page-tree failure leaves the total page count unknown;
+observed prefix pages remain available, while the legacy string still becomes empty.
+`legacy_text` applies the unchanged `pdf-whitespace-v1` projection. Raw page hashes refer to the
+pypdf text view, not to spans in that normalised string. A canonical manifest SHA identifies
+the result; it does not imply stored bytes, OCR, table structure or complete legal coverage.
+These records stay in memory and do not change persisted `DocumentSelection` or `part:N` facts.
+Pinned raw-PDF compatibility replay uses `tools/replay_pdf_pages.py` and
+`tools/corpus/pdf-pages-v1.json`; other formats and ZIP selection need their separate replay.
+
 Senate amendment summaries select attachments by their extracted contents. A candidate needs
 the formal resolution heading, date, subject, affirmative amendment decision, operative changes
 and a closing marker. A closed single removal at a structured Word body end can stand without

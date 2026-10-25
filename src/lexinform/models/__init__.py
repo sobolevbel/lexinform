@@ -125,6 +125,8 @@ from lexinform.models.documents import (
     DocumentWork,
     ExtractedDocument,
     ExtractedParts,
+    PdfPageText,
+    PdfTextExtraction,
 )
 from lexinform.models.editorial import (
     Editorial as Editorial,
@@ -362,6 +364,8 @@ __all__ = [
     "DocumentWork",
     "ExtractedDocument",
     "ExtractedParts",
+    "PdfPageText",
+    "PdfTextExtraction",
     "AmendmentSourceEvidence",
     "SenateResolutionEvidence",
     "SenateResolutionIdentity",

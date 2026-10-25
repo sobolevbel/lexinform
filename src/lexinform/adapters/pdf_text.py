@@ -1,41 +1,45 @@
 """PDF text extraction with pypdf."""
 
+import hashlib
 import io
 import logging
-import re
 
-from pypdf import PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter, __version__
 
-from lexinform.sections import PAGE_BREAK
+from lexinform.models import PdfPageText, PdfTextExtraction
 
 log = logging.getLogger(__name__)
 
-_MULTI_BLANK_RE = re.compile(r"\n{3,}")
-_TRAILING_SPACES_RE = re.compile(r"[ \t]+\n")
-
 
 class PypdfTextExtractor:
-    """Extracts text from text-based PDFs (Sejm prints are not scanned).
-
-    Pages are joined with `PAGE_BREAK` so `sections.trim_print` can see where appendices start.
-    """
+    """Physical PDF page text with the compatible whitespace-normalised string projection."""
 
     def extract(self, data: bytes) -> str:
-        pages: list[str] = []
+        return self.extract_pages(data).legacy_text
+
+    def extract_pages(self, data: bytes) -> PdfTextExtraction:
+        pages: list[PdfPageText] = []
+        error_type: str | None = None
         try:
             reader = PdfReader(io.BytesIO(data))
-            for index, page in enumerate(reader.pages):
+            for number, page in enumerate(reader.pages, 1):
+                text = ""
+                error: str | None = None
                 try:
-                    pages.append(page.extract_text() or "")
+                    text = page.extract_text() or ""
                 except Exception as exc:  # pypdf raises a zoo of exceptions on odd PDFs
-                    log.warning("pypdf failed on page %d: %s", index + 1, exc)
-                    pages.append("")
+                    log.warning("pypdf failed on page %d: %s", number, exc)
+                    error = type(exc).__name__
+                pages.append(PdfPageText(number=number, text=text, error_type=error))
         except Exception as exc:
-            # An empty, truncated or encrypted file: the bill falls back to its metadata, as one
-            # of an unknown format does. Raising would spend its three analysis attempts instead.
             log.warning("pdf not read (%s: %s); no text", type(exc).__name__, exc)
-            return ""
-        return _normalize_whitespace(PAGE_BREAK.join(pages))
+            error_type = type(exc).__name__
+        return PdfTextExtraction(
+            input_sha256=hashlib.sha256(data).hexdigest(),
+            pypdf_version=__version__,
+            pages=tuple(pages),
+            error_type=error_type,
+        )
 
     def pages(self, data: bytes) -> int:
         try:
@@ -59,9 +63,3 @@ class PypdfTextExtractor:
             )
             return data
         return out.getvalue()
-
-
-def _normalize_whitespace(text: str) -> str:
-    text = text.replace("\r\n", "\n").replace("\xa0", " ")
-    text = _TRAILING_SPACES_RE.sub("\n", text)
-    return _MULTI_BLANK_RE.sub("\n\n", text).strip()
