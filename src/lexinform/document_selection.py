@@ -159,9 +159,26 @@ def _part_role(part: DocumentPart) -> DocumentPart:
     return part
 
 
-def selection_for_input(selection: DocumentSelection, text: str) -> DocumentSelection:
+def selection_for_input(
+    selection: DocumentSelection, text: str, *, projection: TextProjection | None = None
+) -> DocumentSelection:
     coverage = [span for span in selection.coverage if span.stage != "analysis"]
-    projection = _input_projection(selection, text)
+    if projection is None:
+        projection = _input_projection(selection, text)
+    else:
+        source = PAGE_BREAK.join(part.text for part in selection.parts)
+        if (
+            projection.text != text
+            or projection.source_length != len(source)
+            or projection.source_sha256 != hashlib.sha256(source.encode()).hexdigest()
+        ):
+            raise ValueError("Input projection differs from the selected text assembly")
+        for segment in projection.segments:
+            if segment.source_start is not None and (
+                text[segment.start : segment.end]
+                != source[segment.source_start : segment.source_start + segment.end - segment.start]
+            ):
+                raise ValueError("Input projection copy differs from the selected text assembly")
     missing = False
     offset = 0
     for index, part in enumerate(selection.parts):

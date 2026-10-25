@@ -83,7 +83,7 @@ def test_replay_checks_projection_round_trip_without_changing_prepared_text(tmp_
 
     result = json.loads(after.read_bytes())
     assert result["status"] == "passed" and not result["core_changes"] and not result["errors"]
-    assert not result["coverage_changes"]
+    assert result["coverage_changes"] == ["sample.pdf"]
     assert len(result["observations"]) == 3
     assert all(row["mapping"]["round_trip"] for row in result["observations"].values())
     assert all(len(row["mapping"]["variants"]) == 8 for row in result["observations"].values())

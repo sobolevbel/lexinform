@@ -14,7 +14,7 @@ from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.document_selection import bill_selection, selection_for_input
 from lexinform.keywords import KeywordPrefilter
 from lexinform.law_digest import law_digest
-from lexinform.sections import TextBudget, trim_print
+from lexinform.sections import PAGE_BREAK, TextBudget, trim_print
 from lexinform.text_projection import TextProjection
 from tools.corpus_check import code_version, source_fingerprints
 from tools.corpus_external import CorpusReads
@@ -59,9 +59,9 @@ def snapshot(data: bytes, *, mapped: bool) -> dict[str, Any]:
         variants[name] = sections.excerpts(
             variants[parent], keywords.spans(variants[parent]), head_chars=head, max_chars=maximum
         )
-    selections = {key: selection_for_input(selected, text) for key, text in variants.items()}
     projection = getattr(prepared, "projection", None)
     mapping = None
+    projections: dict[str, TextProjection] = {}
     if mapped:
         if projection is None or projection.source_sha256 != digest(extracted.text.encode()):
             raise ValueError("Prepared text must expose a projection of the exact extracted source")
@@ -86,6 +86,15 @@ def snapshot(data: bytes, *, mapped: bool) -> dict[str, Any]:
                 raise ValueError("Traced transformation changed its emitted text")
             maps[name] = check_projection(trace, extracted.text)
         mapping = {**maps["trim"], "variants": maps}
+    assembly_matches = PAGE_BREAK.join(part.text for part in selected.parts) == extracted.text
+    selections = {}
+    for name, text in variants.items():
+        input_trace = projections.get(name) if assembly_matches else None
+        selections[name] = (
+            selection_for_input(selected, text, projection=input_trace)
+            if input_trace is not None
+            else selection_for_input(selected, text)
+        )
     return {
         "core": {
             "input_sha256": digest(data),
@@ -196,7 +205,7 @@ def run(
         "independent_legal_oracle": False,
         "exclusions": [
             "No paid calls, actual provider tokenization or production history replay.",
-            "Trim/excerpts/budget maps are checked in memory; runtime cost fitting is not wired.",
+            "Runtime budget maps are wired; cost fitting/amendment assembly remain unknown.",
             "Source admissibility has no new official relations or independent legal oracle.",
         ],
         "observations": {},

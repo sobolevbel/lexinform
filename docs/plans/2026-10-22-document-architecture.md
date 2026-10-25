@@ -585,13 +585,13 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
 **Изменяемые места:** `sections.py`, `keywords.py`/excerpts, бюджет текста, `_load_text`,
 `_fit_to_budget`, `selection_for_input`, batch contexts/meta, provider request preparation.
 
-- [ ] DA5.1. **Частично: [J045](2026-10-22-document-architecture-progress.md#j045), [J050](2026-10-22-document-architecture-progress.md#j050), in-memory trim/excerpts/budget projections.** Ввести `PreparedInput` с ordered segments: extraction/block ref, source span,
+- [ ] DA5.1. **Частично: [J045](2026-10-22-document-architecture-progress.md#j045), [J050](2026-10-22-document-architecture-progress.md#j050), [J051](2026-10-22-document-architecture-progress.md#j051), trim/excerpts/budget maps и runtime initial-budget coverage.** Ввести `PreparedInput` с ordered segments: extraction/block ref, source span,
   transformation, emitted span, роль, losses. Зафиксировать идентичность итоговой строки
   и контекста; их payload хранится по DA2 с обязательной защитой незавершённых запросов.
   Для сгенерированного разделителя/инструкции указать system origin, а не фиктивную цитату источника.
   Проверить повторение текста между extraction, PreparedInput, provider request и batch metadata;
   общий неизменяемый payload адресуется ссылками при сохранении точного воспроизводимого request.
-- [ ] DA5.2. **Частично: [J045](2026-10-22-document-architecture-progress.md#j045), [J050](2026-10-22-document-architecture-progress.md#j050), trimming/excerpts/TextBudget exact в памяти; runtime cost fitting пока не передаёт карту.** Сделать trimming/excerpts/cost fitting преобразованиями с картой диапазонов.
+- [ ] DA5.2. **Частично: [J045](2026-10-22-document-architecture-progress.md#j045), [J050](2026-10-22-document-architecture-progress.md#j050), [J051](2026-10-22-document-architecture-progress.md#j051), initial TextBudget передаёт карту в анализ/batch; runtime cost fitting и amendments assembly пока unknown.** Сделать trimming/excerpts/cost fitting преобразованиями с картой диапазонов.
   Простая проверка substring и `end=len(part.text)` не является точной картой coverage.
   Там, где карта пока недоступна, сохранять unknown/coarse coverage и не заявлять exact.
 - [x] DA5.3. [J045](2026-10-22-document-architecture-progress.md#j045). Исправить регрессию DA0.4: bill retained range не включает удалённый consultation

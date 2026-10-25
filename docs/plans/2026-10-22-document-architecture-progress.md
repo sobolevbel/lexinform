@@ -2282,3 +2282,79 @@ acceptance `/private/tmp/lexinform-budget-j050-accepted-20261025.json`, SHA
 Скрипты `/private/tmp/lexinform-budget-j050-mapped-replay-20261025.py` и
 `/private/tmp/lexinform-budget-j050-accept-20261025.py`; hashes inputs/wrapper/mutation runner
 содержатся в acceptance artifact. Никаких provider calls, corpus writes или production replay.
+
+<a id="j051"></a>
+### J051. DA5: карта первоначального бюджета доходит до анализа и batch
+
+Дата: 25 октября 2026. База: `c7ac8c682fe403f34b3572f79dab17f82405a1ec` (J050).
+Статус: принят локально; focused unit/scenario, полный gate и окончательный raw compare green.
+DA5 остаётся частичным: cost fitting, amendments assembly, immutable PreparedInput refs и
+разделение completeness policy требуют следующих срезов.
+
+`selection_for_input` принимает явную projection, проверяет точный output и SHA/длину
+ordered selected assembly, сверяет copied characters и пересекает source ranges с каждой part.
+Чужая identity, неверный output и forged copy отвергаются. Legacy callers без карты сохраняют
+осторожный inference и unknown. Repeated fragment в другом файле не даёт coverage первому;
+generated markers и вырезанный consultation appendix не попадают в нормативный диапазон.
+
+`_Loaded` несёт карту первоначального `TextBudget`, composed через trim к исходной сборке.
+Она доступна только при точном равенстве file text и canonical selected assembly. Обычный
+анализ и frozen batch metadata получают ranges без второй копии текста. Дополнительный cost
+fitting, self-amendments assembly и иные неподтверждённые сборки остаются unknown; `_unchanged`
+не расширяет новые budget claims для прежнего анализа. Normative omission/completeness policy
+не менялась, state/limitations и provider/memo identity должны совпасть с baseline.
+
+Проверены конкретные part-local ranges после нескольких excerpts, repeated parts, trim+budget,
+foreign identity/output/copy, sync/batch на workers 1/4 и сохранение metadata через dump/restore.
+Отдельный scenario подтверждает unknown после реального дополнительного cost fitting. Старые
+J045 regressions/characterizations сохранены. Projections не сериализуются в provider request;
+в существующей selection хранятся только ranges, schema 48 и storage backend прежние.
+
+Предварительный prototype replay: 3250 inputs, 26000 variants, core/input/decision changes 0,
+850 files с ожидаемым уточнением analysis coverage; extraction ranges не менялись. После этого
+рабочий mypy нашёл повторное использование имени `trace` для optional value в replay runner;
+исправлено переименованием, окончательные gate/raw replay запущены заново. Prototype artifact
+`/private/tmp/lexinform-budget-j051-after-20261025.json` не считается финальной квалификацией.
+
+J050 выпущен: CI [40201809960](https://github.com/sobolevbel/lexinform/actions/runs/40201809960)
+и Deploy relay [40202294283](https://github.com/sobolevbel/lexinform/actions/runs/40202294283)
+success на `c7ac8c682fe403f34b3572f79dab17f82405a1ec`; test/web/docs green,
+4015 passed, 32 deselected. Deploy `a6166c46cd4d -> c7ac8c682fe4`, relay up 45 s после restart,
+mismatch отсутствует. Evidence `/private/tmp/lexinform-release-j050-20261025.json`;
+это metadata/log verification, не реальный production run или проверка Telegram delivery.
+
+Окончательный tracked compare accepted на текущих source fingerprints: 3067 Word/XML, 69 ZIP,
+114 PDF, всего 3250 inputs и 26000 variants. Text/extraction/selection/input SHA, law digest,
+dropped sections, states/limitations совпали; core changes/errors/changed inputs/code 0.
+Analysis coverage уточнена у 850 files: caps 1000 и keywords-1000 по 841, caps 24000 и
+keywords-24000 по 385, triage 724, cost-like cuts по 850. Extraction coverage и trim-only
+coverage не менялись. Все восемь maps каждого input прошли literal round-trip.
+Concrete samples reviewed: `339907.docx`, `480108.zip`, `341524.pdf`; unknown 0..0 заменён
+раздельными retained ranges, нормативная неполнота сохранена, generated markers исключены.
+
+Reference `/private/tmp/lexinform-budget-j050-after-20261025.json`, SHA
+`7adb9dc298436ef1256d77502575e8e98d612806b122b6fa4ab9a72f5870c718`;
+final `/private/tmp/lexinform-budget-j051-final-20261025.json`, SHA
+`53b56ae663f0553362b019515053c3c3c65dd1486df9a0f440c8f17859f79311`;
+acceptance `/private/tmp/lexinform-budget-j051-accepted-20261025.json`, SHA
+`037f50425c1d38e524a282dfc9d6c12e7263af8bafe29ae97680ab11a38a1209`.
+Prototype observations совпали с final, но его прежние fingerprints не подменяют final proof.
+Скрипт `/private/tmp/lexinform-budget-j051-accept-20261025.py` сверяет также full gate/default cap.
+
+Размер stripped selection JSON: максимальная прибавка на один matrix input 431 bytes для
+keywords-1000, 898 для keywords-24000, 1052 для triage; trim-only delta 0. Это metadata по
+восьми тестовым входам, не восемь сохраняемых payloads и не прогноз production SQL dump.
+Дополнительный raw probe берёт все семь inputs с selected-extraction upper bound >1.5M chars,
+проверяет фактический default cap 1500000 и карты до исходных строк. Три входа budget-truncated;
+outputs/decisions/coverage/JSON size равны J049 baseline. Это не восполняет отсутствующие
+official source relations. Новые maps не дублируют ни raw files, ни полные тексты в dump.
+Default before `/private/tmp/lexinform-budget-default-j051-before-20261025.json`, SHA
+`827df40eb8bcdf6165213df2fc5ab7bdb04b54e3371133c10d49d8d1486293f1`;
+after `/private/tmp/lexinform-budget-default-j051-after-20261025.json`, SHA
+`7a717e300f5f1361573b30c99ed3ad3260594baa2fba3223323951217c52755c`.
+
+Финальный gate: 4026 passed, failures/errors/skips/xfails 0, mypy 368 файлов,
+Ruff check/format и strict docs build/link check green; HTTP adapters не менялись.
+XML `/private/tmp/lexinform-budget-j051-full-20261025.xml`, SHA
+`c5a375253bb41373db34ada535281d7d1ac6d074bab555d66cb5c07eb8d3601d`.
+Рабочие source fingerprints совпадают с final corpus proof и default-cap probe.

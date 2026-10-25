@@ -133,6 +133,7 @@ from lexinform.pricing import (
 )
 from lexinform.sections import (
     APPENDIX_KINDS,
+    PAGE_BREAK,
     TextBudget,
     carries_the_document,
     document_kind,
@@ -145,6 +146,7 @@ from lexinform.services.cost import CostLedger
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 from lexinform.services.joint import primary_of, revive_prefilter_skips
 from lexinform.services.senate_documents import resolve_senate_document, verified_senate_text
+from lexinform.text_projection import TextProjection
 
 log = logging.getLogger(__name__)
 
@@ -294,9 +296,10 @@ class _Loaded:
     scan: ScannedDocument | None = None
     law: str | None = None
     whole: str | None = None
+    """The trimmed text before the budget cut it: what a change between two texts is read from."""
     document: TextDocument | None = None
     selection: DocumentSelection = DocumentSelection()
-    """The trimmed text before the budget cut it: what a change between two texts is read from."""
+    projection: TextProjection | None = None
 
     @property
     def digest(self) -> str | None:
@@ -313,6 +316,10 @@ class _Loaded:
         return (self.law is not None and self.law == record.law_sha256) or (
             self.digest is not None and self.digest == record.text_sha256
         )
+
+    def input_selection(self, text: str) -> DocumentSelection:
+        projection = self.projection if self.text == text else None
+        return selection_for_input(self.selection, text, projection=projection).without_text()
 
     def estimate(self, input_price: float) -> float:
         """What the model will charge to read it, before it is asked."""
@@ -2212,7 +2219,7 @@ class AnalysisService:
                     text_source=source,
                     source_kind=ctx.source_kind,
                     source_url=document.url if document else None,
-                    selection=selection_for_input(loaded.selection, ctx.text).without_text(),
+                    selection=loaded.input_selection(ctx.text),
                     revision=previous.revision + 1 if previous else 1,
                     text_sha256=digest,
                     law_sha256=law,
@@ -2230,7 +2237,7 @@ class AnalysisService:
             self._ledger.charge(record, number=bill.number, kind=purpose)
         else:
             record = _reused(AnalysisRecord.model_validate_json(cached))
-        record.selection = selection_for_input(loaded.selection, ctx.text).without_text()
+        record.selection = loaded.input_selection(ctx.text)
         record.source_url = document.url if document else None
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
@@ -2704,6 +2711,11 @@ class AnalysisService:
                 whole=text,
                 document=document,
                 selection=file.selection,
+                projection=(
+                    budgeted.projection
+                    if text == PAGE_BREAK.join(part.text for part in file.selection.parts)
+                    else None
+                ),
             )
         trimmed = trim_print(text)
         amendments = tuple(part for part in file.selection.parts if part.role == "self_amendment")
@@ -2724,6 +2736,14 @@ class AnalysisService:
             ", ".join(f"{d.name} {d.chars}" for d in trimmed.dropped) or "nothing",
         )
         budgeted = self._budget.apply(combined, self._keywords.spans(combined))
+        projection = None
+        if (
+            not amendments
+            and trimmed.projection is not None
+            and budgeted.projection is not None
+            and text == PAGE_BREAK.join(part.text for part in file.selection.parts)
+        ):
+            projection = budgeted.projection.compose(trimmed.projection)
         source: TextSource = "documents" if document.kind == "rcl" else "pdf"
         return _Loaded(
             budgeted.text,
@@ -2733,6 +2753,7 @@ class AnalysisService:
             whole=combined,
             document=document,
             selection=file.selection,
+            projection=projection,
         )
 
     def _load_scan(self, document: TextDocument, text: str) -> _Loaded:
