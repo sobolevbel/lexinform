@@ -43,6 +43,17 @@ Pinned raw-PDF compatibility replay uses `tools/replay_pdf_pages.py` and
 `tools/corpus/pdf-pages-v1.json`; it reads page records through the physical-parts API.
 Other formats and ZIP selection need their separate replay.
 
+`DocxTextExtractor.extract_blocks` exposes a separate in-memory `WordTextExtraction`
+(`word-blocks-v1`, `legacy-word-body-v1`). Paragraphs, table rows and cells carry real XML
+child-index paths within `word/document.xml`; ordered top-level paragraph/row references
+reproduce the unchanged legacy string without duplicating nested cell text. Input/XML hashes,
+Python version and canonical manifest SHA identify this result. Word still has no page count.
+The view retains existing insertion/deletion, cached-field, MC fallback and inline-note rules;
+note-part coordinates, full layout and completeness remain unknown. `body_state=read` means a
+supported body was traversed in that view. The rich leaf is not yet bound to `ExtractedParts`;
+ordinary `extract` retains no block inventory. No fields are added to stored selections or SQL.
+`tools/replay_word_blocks.py` checks legacy text and resolves each path in the original XML.
+
 `trim_print.projection` records source positions while trimming and gives generated omission
 markers no source origin. Adjacent copied pages coalesce into one range. `selection_for_input`
 uses this map only when the entire ordered part assembly or its traced trim equals the actual

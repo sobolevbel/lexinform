@@ -7,6 +7,7 @@ from typing import Literal, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lexinform.pdf_projection import legacy_pdf_text
+from lexinform.word_projection import legacy_word_text
 
 SelectionState = Literal["unverified", "selected", "waiting", "ambiguous", "unsupported"]
 DocumentRole = Literal[
@@ -260,6 +261,72 @@ class PdfTextExtraction(BaseModel):
     def pages_follow_physical_order(self) -> Self:
         if any(page.number != number for number, page in enumerate(self.pages, 1)):
             raise ValueError("PDF page records must retain consecutive physical positions")
+        return self
+
+
+WordBodyState = Literal["read", "missing", "unsupported"]
+
+
+class WordTextBlock(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    xml_part: Literal["word/document.xml"] = "word/document.xml"
+    kind: Literal["paragraph", "table_row", "table_cell"]
+    path: tuple[int, ...] = Field(min_length=1)
+    text: str = ""
+
+    @property
+    def block_id(self) -> str:
+        return f"word-xml:{self.xml_part}:{'/'.join(str(index) for index in self.path)}"
+
+    @property
+    def text_sha256(self) -> str:
+        return hashlib.sha256(self.text.encode()).hexdigest()
+
+    @model_validator(mode="after")
+    def child_positions_are_nonnegative(self) -> Self:
+        if any(index < 0 for index in self.path):
+            raise ValueError("Word XML child positions must be nonnegative")
+        return self
+
+
+class WordTextExtraction(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    version: Literal["word-blocks-v1"] = "word-blocks-v1"
+    text_view: Literal["legacy-word-body-v1"] = "legacy-word-body-v1"
+    input_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    xml_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    python_version: str = Field(min_length=1)
+    body_state: WordBodyState
+    blocks: tuple[WordTextBlock, ...] = ()
+    legacy_blocks: tuple[str, ...] = ()
+
+    @property
+    def legacy_text(self) -> str:
+        blocks = {block.block_id: block.text for block in self.blocks}
+        return legacy_word_text(blocks[identity] for identity in self.legacy_blocks)
+
+    @property
+    def manifest_sha256(self) -> str:
+        data = json.dumps(
+            self.model_dump(mode="json"), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
+        return hashlib.sha256(data.encode()).hexdigest()
+
+    @model_validator(mode="after")
+    def physical_blocks_and_projection_agree(self) -> Self:
+        paths = [block.path for block in self.blocks]
+        if paths != sorted(paths) or len(set(paths)) != len(paths):
+            raise ValueError("Word blocks require unique paths in XML order")
+        blocks = {block.block_id: block for block in self.blocks}
+        if len(set(self.legacy_blocks)) != len(self.legacy_blocks) or any(
+            identity not in blocks or blocks[identity].kind == "table_cell"
+            for identity in self.legacy_blocks
+        ):
+            raise ValueError("Word projection must refer to distinct paragraph or row blocks")
+        if self.body_state != "read" and (self.blocks or self.legacy_blocks):
+            raise ValueError("An unread Word body cannot claim physical blocks")
         return self
 
 

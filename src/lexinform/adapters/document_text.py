@@ -13,9 +13,11 @@ import io
 import logging
 import re
 import struct
+import sys
 import zipfile
 import zlib
 from collections.abc import Iterator
+from typing import Literal
 from xml.etree import ElementTree as ET
 from zipfile import ZipInfo
 
@@ -29,6 +31,9 @@ from lexinform.models.documents import (
     ExtractedParts,
     PdfPartExtraction,
     PdfTextExtraction,
+    WordBodyState,
+    WordTextBlock,
+    WordTextExtraction,
 )
 from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
 from lexinform.ports import PdfPageTextExtractor, TextExtractor
@@ -39,6 +44,7 @@ from lexinform.sections import (
     document_kind,
     reads_through_justification,
 )
+from lexinform.word_projection import legacy_word_text
 
 log = logging.getLogger(__name__)
 
@@ -57,7 +63,6 @@ _MC_FALLBACK = "{http://schemas.openxmlformats.org/markup-compatibility/2006}Fal
 # empty document. They carry nothing themselves and are looked through, like a content control.
 _WX = "{http://schemas.microsoft.com/office/word/2003/auxHint}"
 _TRANSPARENT = (f"{_WX}sect", f"{_WX}sub-section")
-_TIDY_PAGE_BREAK = re.compile(rf"\n?{PAGE_BREAK}\n?")  # a break at a paragraph edge, once
 _ODT_TEXT = "{urn:oasis:names:tc:opendocument:xmlns:text:1.0}"
 _ODT_TABLE = "{urn:oasis:names:tc:opendocument:xmlns:table:1.0}"
 _ODT_OFFICE = "{urn:oasis:names:tc:opendocument:xmlns:office:1.0}"
@@ -87,6 +92,31 @@ class DocxTextExtractor:
         return data
 
     def extract(self, data: bytes) -> str:
+        return self._read(data)[0]
+
+    def extract_blocks(self, data: bytes) -> WordTextExtraction:
+        blocks: list[WordTextBlock] = []
+        projection: list[str] = []
+        text, xml_sha256, state = self._read(data, blocks=blocks, projection=projection)
+        result = WordTextExtraction(
+            input_sha256=hashlib.sha256(data).hexdigest(),
+            xml_sha256=xml_sha256,
+            python_version=sys.version.split()[0],
+            body_state=state,
+            blocks=tuple(sorted(blocks, key=lambda block: block.path)),
+            legacy_blocks=tuple(projection),
+        )
+        if result.legacy_text != text:
+            raise ValueError("Word block projection differs from the legacy text view")
+        return result
+
+    def _read(
+        self,
+        data: bytes,
+        *,
+        blocks: list[WordTextBlock] | None = None,
+        projection: list[str] | None = None,
+    ) -> tuple[str, str, WordBodyState]:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             xml = _read_xml(archive, "word/document.xml")
             notes: dict[str, str] = {}
@@ -96,7 +126,7 @@ class DocxTextExtractor:
                     continue
                 content = _read_xml(archive, path)
                 if _declares_entities(content):
-                    return ""
+                    return "", hashlib.sha256(xml).hexdigest(), "unsupported"
                 root = ET.fromstring(content)
                 namespace, _ = _split_tag(root.tag)
                 reader = _WordMl(namespace)
@@ -105,24 +135,45 @@ class DocxTextExtractor:
                     if identity is not None:
                         notes[f"{tag}/{identity}"] = "\n".join(reader.blocks(note))
         if _declares_entities(xml):
-            return ""
-        return _wordml_text(ET.fromstring(xml), notes=notes)
+            return "", hashlib.sha256(xml).hexdigest(), "unsupported"
+        root = ET.fromstring(xml)
+        namespace, local = _split_tag(root.tag)
+        state: WordBodyState = "read"
+        if local not in _WORDML_ROOTS or namespace not in _WORDML_NAMESPACES:
+            state = "unsupported"
+        elif root.find(f"{{{namespace}}}body") is None:
+            state = "missing"
+        return (
+            _wordml_text(root, notes=notes, blocks=blocks, projection=projection),
+            hashlib.sha256(xml).hexdigest(),
+            state,
+        )
 
 
-def _wordml_text(root: ET.Element, *, notes: dict[str, str] | None = None) -> str:
+def _wordml_text(
+    root: ET.Element,
+    *,
+    notes: dict[str, str] | None = None,
+    blocks: list[WordTextBlock] | None = None,
+    projection: list[str] | None = None,
+) -> str:
     """Text of a `w:document` element, wherever it came from: `word/document.xml` inside a .docx
     or the same element inlined in a Flat OPC file."""
     namespace, local = _split_tag(root.tag)
     if local not in _WORDML_ROOTS or namespace not in _WORDML_NAMESPACES:
         log.warning("not a WordprocessingML document (root %s); no text", root.tag)
         return ""
-    reader = _WordMl(namespace, notes=notes)
+    reader = _WordMl(namespace, notes=notes, blocks=blocks, projection=projection)
     body = root.find(reader.tag("body"))
     if body is None:
         log.warning("Word document without a body; no text")
         return ""
-    text = "\n".join(reader.blocks(body))
-    return _TIDY_PAGE_BREAK.sub(PAGE_BREAK, text)
+    path = (
+        (next(index for index, child in enumerate(root) if child is body),)
+        if blocks is not None
+        else None
+    )
+    return legacy_word_text(reader.blocks(body, path=path, project=True))
 
 
 _PKG = "{http://schemas.microsoft.com/office/2006/xmlPackage}"
@@ -196,36 +247,75 @@ def _split_tag(tag: str) -> tuple[str, str]:
 class _WordMl:
     """Block and inline structure of WordprocessingML in one namespace (transitional or strict)."""
 
-    def __init__(self, namespace: str, *, notes: dict[str, str] | None = None) -> None:
+    def __init__(
+        self,
+        namespace: str,
+        *,
+        notes: dict[str, str] | None = None,
+        blocks: list[WordTextBlock] | None = None,
+        projection: list[str] | None = None,
+    ) -> None:
         self._ns = f"{{{namespace}}}"
         self._notes = notes or {}
         self._inline_notes = 0
+        self._blocks = blocks
+        self._projection = projection
 
     def tag(self, name: str) -> str:
         return f"{self._ns}{name}"
 
-    def blocks(self, node: ET.Element) -> Iterator[str]:
-        """Paragraphs and table rows of a body or a table cell, in order."""
-        for child in node:
+    def blocks(
+        self, node: ET.Element, *, path: tuple[int, ...] | None = None, project: bool = False
+    ) -> Iterator[str]:
+        """Paragraphs and logical table rows in the current legacy Word view."""
+        for index, child in enumerate(node):
+            child_path = (*path, index) if path is not None else None
             if child.tag == self.tag("p"):
-                yield self.paragraph(child)
+                text = self.paragraph(child)
+                self._record("paragraph", child_path, text, project=project)
+                yield text
             elif child.tag == self.tag("tbl"):
-                yield from self._table(child)
+                yield from self._table(child, path=child_path, project=project)
             elif child.tag in (self.tag("sdt"), self.tag("sdtContent"), *_TRANSPARENT):
-                yield from self.blocks(child)  # content controls and Word 2003's layout hints
+                yield from self.blocks(child, path=child_path, project=project)
 
-    def _table(self, table: ET.Element) -> Iterator[str]:
-        for row in self._direct(table, "tr"):
-            cells = [" ".join(self.blocks(cell)) for cell in self._direct(row, "tc")]
-            yield "\t".join(cells)
+    def _record(
+        self,
+        kind: Literal["paragraph", "table_row", "table_cell"],
+        path: tuple[int, ...] | None,
+        text: str,
+        *,
+        project: bool = False,
+    ) -> None:
+        if self._blocks is None or self._projection is None or path is None:
+            return
+        block = WordTextBlock(kind=kind, path=path, text=text)
+        self._blocks.append(block)
+        if project:
+            self._projection.append(block.block_id)
 
-    def _direct(self, node: ET.Element, name: str) -> Iterator[ET.Element]:
-        """Direct children `name`, looking through the content controls that may wrap them."""
-        for child in node:
+    def _table(
+        self, table: ET.Element, *, path: tuple[int, ...] | None, project: bool
+    ) -> Iterator[str]:
+        for row, row_path in self._direct(table, "tr", path):
+            cells: list[str] = []
+            for cell, cell_path in self._direct(row, "tc", row_path):
+                text = " ".join(self.blocks(cell, path=cell_path))
+                self._record("table_cell", cell_path, text)
+                cells.append(text)
+            text = "\t".join(cells)
+            self._record("table_row", row_path, text, project=project)
+            yield text
+
+    def _direct(
+        self, node: ET.Element, name: str, path: tuple[int, ...] | None
+    ) -> Iterator[tuple[ET.Element, tuple[int, ...] | None]]:
+        for index, child in enumerate(node):
+            child_path = (*path, index) if path is not None else None
             if child.tag == self.tag(name):
-                yield child
+                yield child, child_path
             elif child.tag in (self.tag("sdt"), self.tag("sdtContent"), *_TRANSPARENT):
-                yield from self._direct(child, name)
+                yield from self._direct(child, name, child_path)
 
     def paragraph(self, p: ET.Element) -> str:
         parts: list[str] = []

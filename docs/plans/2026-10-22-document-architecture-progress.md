@@ -1911,3 +1911,72 @@ success на точном `be49fd4f53a340230d853ba652ea2145f8f5de13`; test job 3
 32 deselected, один прежний strict xfail. Deploy log: `9e617937f6e5 -> be49fd4f53a3`,
 relay up 45 s после restart, mismatch отсутствует. Evidence
 `/private/tmp/lexinform-release-j044-20261025.json`; это metadata/log verification.
+
+<a id="j046"></a>
+### J046. DA3: XML-координаты абзацев, строк и ячеек Word
+
+Дата: 25 октября 2026. База: `f2f2c374c701ff1104daac356436b9a38703d2cd` (J045). Статус: принят локально; DA3.2–DA3.5 остаются частичными из-за остальных форматов, note parts и durable manifests.
+
+`DocxTextExtractor.extract_blocks` возвращает immutable `WordTextExtraction` (`word-blocks-v1`):
+SHA входного ZIP и `word/document.xml`, Python version, legacy view и body state,
+упорядоченные `WordTextBlock` с XML child-index path, kind и text SHA. Адреса фиксируются
+внутри `_WordMl` до объединения строк/ячеек; content controls и вложенные таблицы сохраняют
+свои реальные промежуточные XML positions. Сортировка paths задаёт XML order.
+
+`legacy_blocks` перечисляет только верхние paragraph/row fragments. Cell paragraphs и nested
+rows остаются адресуемыми, но не удваивают прежний текст. Pure `legacy_word_text` повторяет
+прежний join и page-break cleanup; результат rich projection проверяется против того же
+legacy чтения. Обычный `extract` не удерживает блоки. Word по-прежнему не имеет pagination.
+Canonical manifest SHA и JSON round trip защищают привязку к input/XML и порядок.
+
+View сохраняет прежние insertion/deletion/field/MC_Fallback правила. Сноски остаются inline
+на месте вызова с прежними missing-note markers; адреса footnotes/endnotes parts ещё unknown.
+`body_state=read` означает поддержанный root с body в legacy view, не полное прочтение документа.
+Header/footer/drawing paragraph inventory, merged-cell layout и правовая полнота не заявлены.
+Flat OPC, Word 2003, ODT и DOC получают новые coordinates отдельными срезами; их старое чтение
+нельзя менять побочно. Здесь rich Word leaf ещё не связан с `ExtractedParts`/PreparedInput.
+Нет новых SQL fields/migration, raw archive, storage decision, paid calls или backfill.
+
+115 focused tests green: реальные paths paragraph/cell/row, nested/control structure, strict
+OOXML, blank/page breaks, MC_Fallback, insertions/deletions/cached fields, notes, missing/unsafe
+body, identity/JSON round trip, wrong/duplicate paths и replay reference/input guards.
+Mypy 361 файлов, Ruff check/format 392 файла. Исходники подготовлены отдельно от рабочего J045;
+до/после каждого replay фиксируются source fingerprints.
+
+Tracked runner `tools/replay_word_blocks.py`: raw named DOCX/DOCM population из pinned extraction
+catalog, 3054 files. Baseline — committed `be49fd4` leaf reader в изолированном export.
+`/private/tmp/lexinform-word-j046-before-20261025.json`, SHA
+`6c1ae787d8fc02983a85083a688244ad36b1a28cbbc05252b8fd55fa10f77335`.
+
+Adapter compare passed: 3054 legacy text/exception observations равны baseline, errors/changed
+inputs/code 0. 3052 manifests прошли input/XML SHA, JSON round trip и проверку каждого XML path
+по элементу исходного дерева: 1972231 paragraph/row/cell coordinates. Два прежних ValueError
+сохранены без выдуманных блоков. Report хранит manifest hashes/counts, не миллионы block texts.
+`/private/tmp/lexinform-word-j046-after-20261025.json`, SHA
+`d59579ae7bd51cf510350871280d692ce5e2e99121e32c8acaf9945af445bb53`.
+Это machine regression/structure oracle без новых legal labels или claims о визуальной полноте.
+
+Совместимость общего `_WordMl` дополнительно проверена прежним external extraction replay:
+3067 Word/XML и 69 ZIP, все 5700 исходных путей сохранны, changes/missing/errors 0,
+lost/new automatic matches 0. Это включает Flat OPC/Word 2003 и прежний выбор комплекта,
+а не только новый DOCX leaf. `/private/tmp/lexinform-word-j046-legacy-20261025.json`, SHA
+`5d38eefeab74ce171f71289d0fb78eb7528d5e78df0aa2194c3ecd65687be93a`;
+source guard `.sources.json` подтверждает неизменность кода во время replay.
+Два DOCX без манифеста (`657792.docx`, `657796.docx`) сохраняют прежний
+`ValueError: document XML size limit`; лимит не повышен ради зелёного результата.
+После переноса в рабочий checkout source fingerprints совпали с corpus-qualified prototype.
+
+J045 выпущен: commit `f2f2c374c701ff1104daac356436b9a38703d2cd`,
+CI [40191493135](https://github.com/sobolevbel/lexinform/actions/runs/40191493135)
+и Deploy relay [40191899479](https://github.com/sobolevbel/lexinform/actions/runs/40191899479)
+success на этом SHA; все test/web/docs jobs green. Test job: 3921 passed, 32 deselected,
+xfail больше нет. Deploy log `be49fd4f53a3 -> f2f2c374c701`, relay up 45 s после restart,
+mismatch отсутствует. Evidence `/private/tmp/lexinform-release-j045-20261025.json`;
+это metadata/log verification, без ручного production run, SSH или Telegram send.
+
+Финальный рабочий gate: 3938 passed, failures/errors/skips/xfails 0, mypy 361 файлов,
+Ruff check/format 392, local HTTP 21 passed, strict docs build/link check и diff check green.
+XML `/private/tmp/lexinform-word-j046-root-20261025.xml`, SHA
+`8a962c9f1407c04810828fa9a51f83207aba7059589e0c6cdda68577c444d9e7`.
+Source fingerprints рабочего checkout совпадают с qualified replay; обычная строка и selection
+не меняются. Новые блоки ещё не привязаны к physical parts; это следующий отдельный срез.
