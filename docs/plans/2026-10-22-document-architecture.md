@@ -591,7 +591,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
   Для сгенерированного разделителя/инструкции указать system origin, а не фиктивную цитату источника.
   Проверить повторение текста между extraction, PreparedInput, provider request и batch metadata;
   общий неизменяемый payload адресуется ссылками при сохранении точного воспроизводимого request.
-- [ ] DA5.2. **Частично: [J045](2026-10-22-document-architecture-progress.md#j045), [J050](2026-10-22-document-architecture-progress.md#j050), [J051](2026-10-22-document-architecture-progress.md#j051), initial TextBudget передаёт карту в анализ/batch; runtime cost fitting и amendments assembly пока unknown.** Сделать trimming/excerpts/cost fitting преобразованиями с картой диапазонов.
+- [ ] DA5.2. **Частично: [J045](2026-10-22-document-architecture-progress.md#j045), [J050](2026-10-22-document-architecture-progress.md#j050), [J051](2026-10-22-document-architecture-progress.md#j051), [J052](2026-10-22-document-architecture-progress.md#j052), trim/budget/cost fitting передают карту в анализ/batch; amendments assembly пока unknown.** Сделать trimming/excerpts/cost fitting преобразованиями с картой диапазонов.
   Простая проверка substring и `end=len(part.text)` не является точной картой coverage.
   Там, где карта пока недоступна, сохранять unknown/coarse coverage и не заявлять exact.
 - [x] DA5.3. [J045](2026-10-22-document-architecture-progress.md#j045). Исправить регрессию DA0.4: bill retained range не включает удалённый consultation

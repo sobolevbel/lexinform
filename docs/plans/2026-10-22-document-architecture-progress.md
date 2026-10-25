@@ -2358,3 +2358,91 @@ Ruff check/format и strict docs build/link check green; HTTP adapters не ме
 XML `/private/tmp/lexinform-budget-j051-full-20261025.xml`, SHA
 `c5a375253bb41373db34ada535281d7d1ac6d074bab555d66cb5c07eb8d3601d`.
 Рабочие source fingerprints совпадают с final corpus proof и default-cap probe.
+
+<a id="j052"></a>
+### J052. DA5: точные диапазоны после cost fitting и перехода на overflow
+
+Дата: 25 октября 2026. База: `b0185b4d27f4a5e52412ca6acfa910cd8cc1b613` (J051).
+Статус: принят локально; полный gate, raw/runtime compare и meaningful mutations green.
+DA5 остаётся частичным: amendments assembly, полнота нормативного комплекта, scan derivatives
+и immutable PreparedInput refs требуют отдельных срезов.
+
+`_FittedContext` связывает конкретный `BillContext` с его in-memory projection, отвергает чужой
+output и выдаёт stripped selection. `_shorten` возвращает traced excerpt вместо строки; оба
+последовательных сокращения compose ranges к первоначальной сборке. При preflight overflow,
+синхронном отказе и сохранённом batch context rejection расчёт начинается с исходного контекста
+и его карты. Результат/memo и frozen batch metadata используют карту именно отправленного input.
+
+Стоимость, token ceilings, minimum cut, overflow routing, текст/порядок requests и memo identity
+сохраняются. Неподтверждённая первоначальная сборка остаётся unknown; `_unchanged` не расширяет
+новые claims для прежнего анализа. Projections не сериализуются в provider JSON или SQLite;
+существующая selection получает ranges. Schema 48, files/raw retention и storage backend прежние.
+
+Focused checks: sync/batch на workers 1/4, две последовательные cuts с повторным token count,
+все три пути overflow, восстановление rejected batch через dump/restore и отсутствие новой карты
+в provider JSON. Подставная карта с чужой source identity вызывает per-bill failure до model call.
+Первые fixtures не достигали целевых веток: preflight раньше второго cut и одинаковый provider
+для primary/overflow. Fixtures уточнены под реальные условия; production policy не менялась.
+
+`tools/replay_cost_inputs.py` проверяет все 3250 raw inputs из SHA-pinned J051 inventory,
+сверяет extraction/selection/trim hashes и запускает cost cases при bill heading и >=40000
+trimmed chars. Runtime использует text-only single-part fake view через настоящий pipeline;
+это не новая правовая оценка bundles или проверка scans. Контексты/token recounts, frozen
+request payload/custom ID, result/meta без selection и исходы сравниваются с committed baseline.
+На новом коде публичный excerpt dependency наблюдается без изменения результата; source map
+из observed cuts независимо проводится через trim/budget и сверяется с persisted ranges.
+Network, corpus writes и `.env` reads запрещены; environment очищен, Settings harness использует
+`_env_file=None`, repository SQLite только в памяти, все providers и доставки подставные.
+
+J051 выпущен: CI [40203144650](https://github.com/sobolevbel/lexinform/actions/runs/40203144650)
+и Deploy relay [40203621327](https://github.com/sobolevbel/lexinform/actions/runs/40203621327)
+success на `b0185b4d27f4a5e52412ca6acfa910cd8cc1b613`; test/web/docs green,
+4026 passed, 32 deselected. Deploy `c7ac8c682fe4 -> b0185b4d27f4`, relay up 45 s после restart,
+mismatch отсутствует. Evidence `/private/tmp/lexinform-release-j051-20261025.json`;
+это metadata/log verification без ручного production run или Telegram send.
+
+J052 corpus accepted: все 3250 raw inputs совпали с J051 по extraction/selection/trim hashes.
+Для 252 bill-heading inputs >=40000 trimmed chars проверены 504 runtime cases: sync и batch.
+494 отправленных fake contexts имеют проверенную карту, 10 исходов без отправки совпали с
+baseline. Все contexts/token recounts, frozen payload/custom ID, memo-derived identities и
+result/meta без selection совпали с committed J051 source export. Runtime core changes 0;
+errors/changed inputs/code 0. Результаты двух independent recordings сведены acceptance script.
+
+Уточнены только analysis ranges после 111 cuts: 91 sync и 20 batch, 91 raw file. Extraction
+coverage и losses кроме `input coverage unknown` прежние. Reviewed samples: `513269.docx`,
+`1058__1058.pdf`, `480108.zip`; retained intervals раздельные, generated markers исключены.
+Остальные 2998 inputs не входят в runtime cost cohort, их raw decisions/hash всё равно сверены;
+scans и физическая bundle policy новым runtime fake view не квалифицируются.
+
+Baseline `/private/tmp/lexinform-cost-j052-before-20261025.json`, SHA
+`243703aa037b4e4eeb5ad0a01004c9344340f8d64013bf5bf20f62bda051abb7`;
+after `/private/tmp/lexinform-cost-j052-after-20261025.json`, SHA
+`80a5102bd6ade4d697d2a9d3f0a858cf05aa55384e4265404b4816046b963c98`;
+proof `/private/tmp/lexinform-cost-j052-accepted-20261025.json`, SHA
+`933e6fc3ccda41622d18ce7e425dd15756b69aed88796eb682bc9f6f9143c3ec`.
+Скрипт `/private/tmp/lexinform-cost-j052-accept-20261025.py`; tracked runner воспроизводит
+recordings, умеет direct compare с pinned baseline. Это machine regression, не legal oracle.
+
+Meaningful probes: 8 raw-derived Word sources, 48 изменений срока/суммы/отрицания/круга лиц/
+статьи/даты, по семь вариантов на source и два runtime modes, всего 112 cases. Контрольная
+clause искусственная, не юридическое свидетельство; все семь final-input fingerprints каждого
+source различны в обоих modes, новые карты проходят literal round-trip, old/new cores равны.
+Первый probe не засчитан: искусственный USTAWA prefix перед обоснованием не делает его bill.
+Final probe использует тот же bill-heading cohort, что tracked runner; 16 неподходящих controls
+явно исключены. Production policy ради проверки не менялась. Artifacts
+`/private/tmp/lexinform-cost-mutations-j052-before2-20261025.json`, SHA
+`a74ba117212fe8a7f1ed5b5b253749994d54614c734da52b65a83aaf5302d03e`, и
+`/private/tmp/lexinform-cost-mutations-j052-after2-20261025.json`, SHA
+`b0bba313fcfb1de732d26501ed35fe220ecc9cda25bfad2560343b3f3343459e`.
+Bounds/selection/exclusions заданы в `/private/tmp/lexinform-cost-mutations-j052-20261025.py`.
+
+Metadata-only delta: максимум 6135 bytes на один stress case, суммарно 82420 bytes по обоим
+modes для 252 sources. Это stripped selection JSON при fake cost limit $0.30, не прогноз
+production SQL dump; оба modes одного source не сохраняются одновременно. Новых копий raw
+files или полных текстов не добавлено, backfill существующих analyses не выполняется.
+
+Финальный gate: 4037 passed, failures/errors/skips/xfails 0, mypy 369 файлов,
+Ruff check/format и strict docs build/link check green. HTTP adapters не менялись.
+XML `/private/tmp/lexinform-cost-j052-full-20261025.xml`, SHA
+`eff85c79b7a084dc28725bd79b129f557b6dec669baf000bd8e850979dbc9a19`.
+Рабочие source fingerprints совпадают с raw/runtime и final mutation recordings.

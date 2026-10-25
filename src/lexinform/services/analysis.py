@@ -137,6 +137,7 @@ from lexinform.sections import (
     TextBudget,
     carries_the_document,
     document_kind,
+    excerpt_projection,
     excerpts,
     has_cover_letter,
     trim_print,
@@ -317,10 +318,6 @@ class _Loaded:
             self.digest is not None and self.digest == record.text_sha256
         )
 
-    def input_selection(self, text: str) -> DocumentSelection:
-        projection = self.projection if self.text == text else None
-        return selection_for_input(self.selection, text, projection=projection).without_text()
-
     def estimate(self, input_price: float) -> float:
         """What the model will charge to read it, before it is asked."""
         if self.scan is not None:
@@ -332,6 +329,21 @@ class _Loaded:
         if self.scan is not None:
             return f"{self.scan.pages} scanned page(s)"
         return f"{tokens} tokens" if tokens is not None else f"~{len(self.text)} chars"
+
+
+@dataclass(frozen=True)
+class _FittedContext:
+    ctx: BillContext
+    projection: TextProjection | None
+
+    def __post_init__(self) -> None:
+        if self.projection is not None and self.projection.text != self.ctx.text:
+            raise ValueError("Fitted context differs from its text projection")
+
+    def input_selection(self, selection: DocumentSelection) -> DocumentSelection:
+        return selection_for_input(
+            selection, self.ctx.text, projection=self.projection
+        ).without_text()
 
 
 @dataclass(frozen=True)
@@ -2138,26 +2150,27 @@ class AnalysisService:
         purpose = purpose or ("analysis" if first else "reanalysis")
         generation = 0 if purpose == "explanation" else bill.analysis_generation
 
-        def to_overflow(reason: str) -> tuple[BillContext, str]:
+        def to_overflow(reason: str) -> tuple[_FittedContext, str]:
             log.info("%s: %s; using the overflow model", bill.number, reason)
             fitted = self._fit_to_budget(
                 original_ctx, loaded, first=first, cost_guard=cost_guard, batch=True, overflow=True
             )
-            return fitted, _memo_key(bill, purpose, fitted)
+            return fitted, _memo_key(bill, purpose, fitted.ctx)
 
         overflow = self._needs_overflow(ctx, batch=submit_batch)
         if overflow:
             submit_batch = True
-            ctx, key = to_overflow("input exceeds the primary model's context")
+            fitted, key = to_overflow("input exceeds the primary model's context")
         else:
-            ctx = self._fit_to_budget(
+            fitted = self._fit_to_budget(
                 ctx, loaded, first=first, batch=submit_batch, cost_guard=cost_guard
             )
-            key = _memo_key(bill, purpose, ctx)
+            key = _memo_key(bill, purpose, fitted.ctx)
             custom_id = hashlib.sha256(f"{key}:{generation}".encode()).hexdigest()
             if self._overflow_batch is not None and custom_id in self._context_rejections:
                 overflow = submit_batch = True
-                ctx, key = to_overflow("the primary batch rejected the context")
+                fitted, key = to_overflow("the primary batch rejected the context")
+        ctx = fitted.ctx
         cached = self._memo.get(key) if cost_guard else None
         record: AnalysisRecord | None = None
         if cached is None and not submit_batch:
@@ -2167,7 +2180,8 @@ class AnalysisService:
                 if self._overflow_batch is None:
                     raise
                 overflow = submit_batch = True
-                ctx, key = to_overflow("the primary model rejected the context")
+                fitted, key = to_overflow("the primary model rejected the context")
+                ctx = fitted.ctx
                 cached = self._memo.get(key) if cost_guard else None
         backend = self._overflow_batch if overflow else self._batch
         if cached is None and submit_batch and backend is None:
@@ -2219,7 +2233,7 @@ class AnalysisService:
                     text_source=source,
                     source_kind=ctx.source_kind,
                     source_url=document.url if document else None,
-                    selection=loaded.input_selection(ctx.text),
+                    selection=fitted.input_selection(loaded.selection),
                     revision=previous.revision + 1 if previous else 1,
                     text_sha256=digest,
                     law_sha256=law,
@@ -2237,7 +2251,7 @@ class AnalysisService:
             self._ledger.charge(record, number=bill.number, kind=purpose)
         else:
             record = _reused(AnalysisRecord.model_validate_json(cached))
-        record.selection = loaded.input_selection(ctx.text)
+        record.selection = fitted.input_selection(loaded.selection)
         record.source_url = document.url if document else None
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
@@ -2385,23 +2399,10 @@ class AnalysisService:
         batch: bool = False,
         cost_guard: bool = True,
         overflow: bool = False,
-    ) -> BillContext:
-        """The context the model is actually sent: this one, or a shorter one that fits the
-        per-bill cost limit.
-
-        The model counts a text's input itself, free and exact; a scan is priced from its pages
-        (1,600 tokens each, measured) rather than uploading tens of megabytes to learn a number.
-
-        A text over the limit is cut down, not refused — the triage has already said the bill
-        matters, and the card says «неполный текст» either way. A scan cannot be thinned, its
-        pages being substance throughout, so there the answer is still to refuse.
-
-        `first` is what every refusal turns on: a re-analysis is cut to fit but never raises, or
-        it would land in the tracking loop's per-bill `except`, fail on the same text every run
-        and keep a card describing the text before this one.
-
-        The model's input ceiling cuts the same way, even under `force`: over it the call fails.
-        """
+    ) -> _FittedContext:
+        """Fit the original context and its copy map to the model's cost and input limits."""
+        projection = loaded.projection if ctx.text == loaded.text else None
+        fitted = _FittedContext(ctx, projection)
         limit = self._options.max_bill_cost_usd if cost_guard else 0.0
         price = (
             self._options.batch_input_price_usd_per_mtok
@@ -2422,28 +2423,30 @@ class AnalysisService:
         if not limit:
             price = None
         if price is None and ceiling is None:
-            return ctx
+            return fitted
         tokens = None if loaded.scan is not None else counter.count_input_tokens(ctx)
         if tokens is None:
             cost = loaded.estimate(price) if price is not None else 0.0
             if cost > limit and first:
                 raise TooExpensiveError(cost, limit, measure=loaded.measure(None))
-            return ctx
+            return fitted
         cost = input_cost(tokens, price) if price is not None else 0.0
         over_by = max(cost / limit if limit else 0.0, tokens / ceiling if ceiling else 0.0)
         if over_by <= 1:
-            return ctx
+            return fitted
         shorter = self._shorten(ctx.text, over_by=over_by)
         if shorter is None:
             if not first:
-                return ctx
+                return fitted
             raise TooExpensiveError(cost, limit, measure=loaded.measure(tokens))
-        reduced = ctx.model_copy(update={"text": shorter, "truncated": True})
+        reduced = ctx.model_copy(update={"text": shorter.text, "truncated": True})
+        projection = shorter.compose(projection) if projection is not None else None
         counted = counter.count_input_tokens(reduced)
         if ceiling is not None and counted is not None and counted > ceiling:
-            again = self._shorten(shorter, over_by=counted / ceiling)
+            again = self._shorten(shorter.text, over_by=counted / ceiling)
             if again is not None:
-                reduced = reduced.model_copy(update={"text": again})
+                reduced = reduced.model_copy(update={"text": again.text})
+                projection = again.compose(projection) if projection is not None else None
                 counted = counter.count_input_tokens(reduced)
         log.info(
             "%s: %d tokens at %s, over the limit %s or the ceiling %s; sending %d of %d chars",
@@ -2466,20 +2469,16 @@ class AnalysisService:
                 limit,
                 measure=f"{counted} tokens after trimming to {len(reduced.text)} chars",
             )
-        return reduced
+        return _FittedContext(reduced, projection)
 
-    def _shorten(self, text: str, *, over_by: float) -> str | None:
-        """The text cut to what the cost limit pays for: the head of the bill, the head of the
-        justification and a window around every keyword hit, in document order.
-
-        `over_by` is how many times the counted input overshot the limit, so the same ratio on
-        the characters lands inside it whatever the text tokenizes at; `_FIT_MARGIN` leaves room
-        for the prompt and schema. None when too little is left to be a document.
-        """
+    def _shorten(self, text: str, *, over_by: float) -> TextProjection | None:
+        """Trace the same keyword cut, leaving room for the prompt and schema."""
         target = int(len(text) / over_by * _FIT_MARGIN)
         if target < _FIT_MIN_CHARS:
             return None
-        return excerpts(text, self._keywords.spans(text), head_chars=target // 4, max_chars=target)
+        return excerpt_projection(
+            text, self._keywords.spans(text), head_chars=target // 4, max_chars=target
+        )
 
     def _worth_triaging(self, loaded: _Loaded) -> bool:
         """Whether the cheap pass has something to judge.
