@@ -1,0 +1,220 @@
+{
+  "exclusions": [
+    "Only the indicated first pages were viewed; all other pages remain unread.",
+    "Visual transcriptions are page evidence and are not spans in the empty extracted text.",
+    "No human oracle, OCR text generation, whole-document role or required-annex decision."
+  ],
+  "observations": [
+    {
+      "date": "2026-10-25",
+      "evidence": [
+        {
+          "kind": "visual_transcription",
+          "page": 1,
+          "preview_path": "out/corpus/runs/c006b-empty-originals-qualified/result/80f8d4d4f773ba5f65d2a2e378072e9d820401c083916bf49c1c09742f061acf.png",
+          "preview_sha256": "1ab96afa4d96be697c7b705a8d9a6ec34d85821326fd4bf0b20f839514761c10",
+          "quote": "w załączeniu przekazuję projekt ustawy",
+          "region_normalized_xyxy": [
+            0.1,
+            0.36,
+            0.92,
+            0.47
+          ]
+        }
+      ],
+      "id": "doc:158276",
+      "ocr_need_confirmed_pages": [
+        1
+      ],
+      "raw_path": "documents/files/158276.pdf",
+      "raw_sha256": "80f8d4d4f773ba5f65d2a2e378072e9d820401c083916bf49c1c09742f061acf",
+      "read_pages": [
+        1
+      ],
+      "read_scope": "original_pages",
+      "relation_conflicts": "unknown",
+      "required_annexes": "unknown",
+      "reviewer": "Codex",
+      "reviewer_kind": "agent",
+      "source_url": "https://legislacja.rcl.gov.pl/docs//2/12271302/12283680/12283682/dokument158276.pdf",
+      "split": "regression",
+      "unread_pages": [
+        2
+      ],
+      "visible_page_kind": "letter",
+      "whole_document_role": "unknown"
+    },
+    {
+      "date": "2026-10-25",
+      "evidence": [
+        {
+          "kind": "visual_transcription",
+          "page": 1,
+          "preview_path": "out/corpus/runs/c006b-empty-originals-qualified/result/d8aba6eedabb88c8cc88fa5b3e8f26533d4a3b1c795e01d2ec1208e3a1153698.png",
+          "preview_sha256": "7d971bc8647286272bf09dc994a26bcfbe042466053ac50e562cb589d2594c8c",
+          "quote": "Projekt z dnia 19 stycznia 2015 r.",
+          "region_normalized_xyxy": [
+            0.54,
+            0.07,
+            0.92,
+            0.11
+          ]
+        }
+      ],
+      "id": "doc:158279",
+      "ocr_need_confirmed_pages": [
+        1
+      ],
+      "raw_path": "documents/files/158279.pdf",
+      "raw_sha256": "d8aba6eedabb88c8cc88fa5b3e8f26533d4a3b1c795e01d2ec1208e3a1153698",
+      "read_pages": [
+        1
+      ],
+      "read_scope": "original_pages",
+      "relation_conflicts": "unknown",
+      "required_annexes": "unknown",
+      "reviewer": "Codex",
+      "reviewer_kind": "agent",
+      "source_url": "https://legislacja.rcl.gov.pl/docs//2/12271302/12283680/12283681/dokument158279.pdf",
+      "split": "regression",
+      "unread_pages": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "visible_page_kind": "bill_heading",
+      "whole_document_role": "unknown"
+    },
+    {
+      "date": "2026-10-25",
+      "evidence": [
+        {
+          "kind": "visual_transcription",
+          "page": 1,
+          "preview_path": "out/corpus/runs/c006b-empty-originals-qualified/result/a1a7e3fadcacb6e9ffddd775543f922201baaf6ff6fb806b70f6fd375c1c3a14.png",
+          "preview_sha256": "aaecc0ca0170a54ea56f42b0eea28744a18c273daef9c184cdfebf4dba5d4582",
+          "quote": "Przesyłam w załączeniu projekt ustawy",
+          "region_normalized_xyxy": [
+            0.12,
+            0.38,
+            0.93,
+            0.46
+          ]
+        }
+      ],
+      "id": "doc:162963",
+      "ocr_need_confirmed_pages": [
+        1
+      ],
+      "raw_path": "documents/files/162963.pdf",
+      "raw_sha256": "a1a7e3fadcacb6e9ffddd775543f922201baaf6ff6fb806b70f6fd375c1c3a14",
+      "read_pages": [
+        1
+      ],
+      "read_scope": "original_pages",
+      "relation_conflicts": "unknown",
+      "required_annexes": "unknown",
+      "reviewer": "Codex",
+      "reviewer_kind": "agent",
+      "source_url": "https://legislacja.rcl.gov.pl/docs//2/12271302/12283695/12283696/dokument162963.pdf",
+      "split": "regression",
+      "unread_pages": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
+      ],
+      "visible_page_kind": "letter",
+      "whole_document_role": "unknown"
+    }
+  ],
+  "scope": "Agent observations of three original first pages; no full-package legal adjudication",
+  "source_result_sha256": "c27c970af7d54b39d43944db7a57bb77b158b35b75bcc8623cc7a1bf87757e5f",
+  "status": "recorded",
+  "version": 1
+}

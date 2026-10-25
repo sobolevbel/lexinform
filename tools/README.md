@@ -32,7 +32,8 @@ that current code generated it. Diffs separate observations, input identities an
 means an incomplete requested check. An empty population never becomes a completed run.
 
 Offline suites: `health`, `ci`, `external`, `pdf`, `word`, `input`, `cost`, `amendments`,
-`reextract`, `annotations`, `candidates`, `process`, `senate`, `scan`. Extra arguments follow `--`;
+`reextract`, `annotations`, `empty-review`, `physical`, `holdout`, `candidates`, `process`, `senate`,
+`scan`. Extra arguments follow `--`;
 each child module's `--help` lists its required pins/options. `external` uses the existing
 corpus-check profiles; the default `ci` suite requires a manifest corpus such as
 `tests/fixtures/corpus_check`. Process/Senate wrappers preserve old observation semantics and
@@ -86,6 +87,12 @@ Originals, caches and machine labels stay unchanged. After an append-only index 
 `--index-snapshot /path/to/old-index.json` to replay against the exact pinned index bytes.
 New installations save those bytes as `index-before.json` in their installation run.
 
+Add `--cache "$PWD/out/corpus/extraction-cache"` to reuse bounded extraction across runs.
+Entries are keyed by original SHA, extractor contract/options, Python/library versions and runtime
+source hashes. Every hit verifies identity and result hashes; corrupt entries fail explicitly and
+are never replaced. All source URL/role observations remain separate. A cache is optional and stays
+outside the corpus; the default reader and historical caches are unchanged.
+
 Pass `--derivatives /path/to/generation/result.json --derivatives-sha256 SHA` to the `candidates`
 or `annotations` suite to explicitly read a new generation. The shared reader checks both raw
 source identity and derived text identity; the default view continues using original caches.
@@ -94,6 +101,22 @@ pending JSON template with source ranges, relation groups and reviewer/basis fie
 validator requires literal spans and rejects consumed or agent-reviewed cases as independent
 holdout. Creating a queue never creates gold labels; readers must inspect the original where the
 excerpt is insufficient. Full relation/span adjudication and a fresh human holdout remain separate work.
+
+The `empty-review` suite takes `--generation PATH --generation-sha256 SHA` and optionally `--previews`.
+It pins every still-empty original, inventories bounded archive leaves, records PDF page text hashes
+and readable unselected parts, and writes JSON/HTML review material. Previews render only page 1 of
+each distinct PDF leaf with Poppler. A textless page asks for original review before OCR; an archive
+of readable letters can have an empty bill selection. Machine kinds do not resolve roles, annex
+requirements or initiative relations. These diagnostic cases stay consumed regression material.
+
+The `holdout` suite takes `--baseline-index PATH --baseline-sha256 SHA --inventory PATH
+--inventory-sha256 SHA --source-run DIR --source-sha256 MANIFEST_SHA`. It reserves newly collected,
+unprinted non-government RPW groups, excluding all initiatives in the pinned historical index,
+original-byte aliases and size-matching direct ZIP members. It also excludes aliases of newly
+collected regression files. Its JSON/HTML contains metadata and original links, without reading
+legal text. `holdout_pending` becomes a usable holdout only after a human confirms relations and
+records actual read scope/evidence; neither a small purpose-selected cohort nor byte independence
+establishes independent legal correctness.
 
 ## Explicit public collection
 
@@ -126,6 +149,16 @@ provenance plus added/removed/changed metadata against the chosen reference. Pub
 one new dated snapshot. Listings do not refresh process detail trees, supplementary catalogs or
 RPW attachment bytes. Select further downloads by the cases that need them.
 
+`python -m tools.corpus_sejm_sources catalogue` derives a dated supplementary catalog from pinned
+`prints.json` and requires explicit `--rpw ID=purpose` or `--supplement ID=purpose` cases. It also
+accepts `--reserve-rpw ID=purpose` for raw-only pending human cohorts. `download --allow-network`
+fetches only those required attachments using the common bounded public HTTP reader. `install`
+verifies the sealed source run, preserves old RPW records and creates raw/cache/record files only
+when absent or byte-identical. Reserved sources are excluded from extraction and installation.
+`publish-catalogue` adds `supplements.json` and its provenance to an existing dated Sejm snapshot.
+Each operation records its repeat command; HTML refusals stay unavailable. Consult `--help` for
+paths and required run IDs. Historical snapshots and download resume keys are preserved.
+
 ## RCL corpus health and repair queue
 
 ```bash
@@ -144,6 +177,13 @@ Code and read-input hashes are recorded, changes during inspection are rejected,
 corpus writes and `.env` reads are blocked. Existing outputs and symlink inputs are refused.
 This scope excludes other uncollected catalog entries, Sejm/RPW/Senate and legal correctness.
 Keep reports in a durable project directory rather than `/tmp`; `out/` remains Git-ignored.
+
+The `physical` suite extends the observation to five raw families, their saved text caches and
+catalogued Senate sources. It hashes original bytes, checks bounded PDF/ZIP/OLE/XML containers,
+ZIP CRC and gzip/UTF-8 caches, and reports missing recorded acquisitions, limits and unsupported
+formats. Parser failures remain separate from demonstrated corruption. PDF rendering, nested ZIP
+validation, full OLE/RTF decoding and legal completeness are explicit exclusions. `recorded` means
+that the inventory completed, not that every source is valid or every required input is available.
 
 Provider token-count probes and the full test gate also need the `tiktoken` vocabulary cache.
 `uv --offline` controls dependency resolution, not a library's first vocabulary download.

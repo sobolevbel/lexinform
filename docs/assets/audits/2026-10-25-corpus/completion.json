@@ -1,0 +1,255 @@
+{
+  "agent_page_observations_sha256": "a5ddfcd4a163d652a041274b46a62e5ea8e50ca87a7f2720c773cb55feff6665",
+  "cache": {
+    "counts": {
+      "recovered": 7,
+      "still_empty": 170
+    },
+    "diffs": {
+      "c007b-cache-diff.json": "de1276495c3556b73338f91c8f0744b824856f28dfef868fe05d867cb7f8f4f7",
+      "c007b-cache-versus-prior-generation.json": "a09b5325cc74d088a0455e4eb6ec7c7fc42d2526d1f99811e1533dcb3f6ffba7"
+    },
+    "first": {
+      "hits": 15,
+      "identity_sha256": "145c0885ab72dbc919438e1120d1d01024b184f99da29eccf008ac9e73f421f3",
+      "misses": 162
+    },
+    "second": {
+      "hits": 177,
+      "identity_sha256": "145c0885ab72dbc919438e1120d1d01024b184f99da29eccf008ac9e73f421f3",
+      "misses": 0
+    }
+  },
+  "completed_local_date": "2026-10-26",
+  "corpus_commit": "ec70eca",
+  "corpus_index_diff_sha256": "de73da38770887f449b2dca95a8955480d144826dc8cc380bdf7b28bdf80730d",
+  "empty_review": {
+    "action_counts": {
+      "review_original_pages_before_ocr": 60,
+      "review_readable_unselected_parts": 108,
+      "review_unsupported_members": 19
+    },
+    "changed_inputs": [],
+    "leaf_states": {
+      "inspected": 295,
+      "unsupported": 60
+    },
+    "preview_count": 161
+  },
+  "exclusions": [
+    "Human review of required annexes, disputed relations and independent initiative membership remains open as C6c.",
+    "No production state, Telegram, paid models, mass backfill or runtime selection policy changes.",
+    "934-002 remains unavailable after conflicting attachment names/404; no partial installation.",
+    "Six old RPW originals/cache are absent; bounded and parser-failed inputs remain explicit physical outcomes.",
+    "The prior external selection suite remains not_run; this inventory does not close its missing cached sources.",
+    "Ignored local out/corpus artifacts are durable locally but are not an off-device backup."
+  ],
+  "gate": {
+    "command": "UV_CACHE_DIR=/private/tmp/lexinform-uv-cache TIKTOKEN_CACHE_DIR=$PWD/.cache/tiktoken uv run --offline --frozen pytest -q --junitxml=out/corpus/2026-10-25-corpus-completion-qualified-tests.xml",
+    "errors": 0,
+    "failures": 0,
+    "format": "passed src/tests and owned tools",
+    "ruff": "passed src/tests/tools",
+    "seconds": 669.891,
+    "skipped": 0,
+    "source_unchanged_since_final_ci_slice": true,
+    "status": "passed",
+    "strict_mypy_files": 386,
+    "tests": 4116,
+    "xfail": 0,
+    "xml": "out/corpus/2026-10-25-corpus-completion-qualified-tests.xml",
+    "xml_sha256": "b0b1f0ce36eff084f651a263df887ae5452f114b2465d1419afbc15e61e280f8"
+  },
+  "holdout": {
+    "cases": [
+      "rpw:RPW/35346/2026",
+      "rpw:RPW/35635/2026",
+      "rpw:RPW/35783/2026"
+    ],
+    "consumed_entities": 13786,
+    "consumed_raw_identities": 12367,
+    "groups": 3,
+    "human_oracle_created": false,
+    "read_scope": "not_read",
+    "status": "holdout_pending"
+  },
+  "physical": {
+    "by_family": {
+      "rcl": {
+        "limit_exceeded": 4,
+        "parse_failed": 1,
+        "valid_container": 10413
+      },
+      "rpw": {
+        "limit_exceeded": 5,
+        "missing": 6,
+        "valid_container": 825
+      },
+      "sejm_filing": {
+        "valid_container": 572
+      },
+      "sejm_print": {
+        "limit_exceeded": 2,
+        "valid_container": 2628
+      },
+      "sejm_self_amendment": {
+        "valid_container": 66
+      },
+      "senate_resolution": {
+        "valid_container": 1825
+      }
+    },
+    "changed_code": false,
+    "changed_inputs": [],
+    "counts": {
+      "limit_exceeded": 11,
+      "missing": 6,
+      "parse_failed": 1,
+      "valid_container": 16329
+    },
+    "raw_totals": {
+      "bytes": 12073227147,
+      "duplicate_bytes": 485752250,
+      "duplicate_files": 2150,
+      "files": 16341,
+      "unique_bytes": 11587474897,
+      "unique_contents": 14191
+    },
+    "text_counts": {
+      "empty": 1237,
+      "missing": 6,
+      "readable": 13454
+    }
+  },
+  "preview_verification_diff_sha256": "de3ba642968241f7fb946d60da996b495c85898bc609a626c28b6b42cbe4f02c",
+  "runs": {
+    "c005b-catalogue": {
+      "error": "",
+      "manifest_sha256": "a4ba4d2f18215b64a04f96d3fcfad9cc07401113b1128588e050907415a5af93",
+      "observations": 9,
+      "result_sha256": "9a3d4bbaedff87b6348003f7bc5f1ced4356e6ca791accb816423b55ec97468b",
+      "returncode": 0,
+      "status": "recorded",
+      "suite": "sejm-catalogue"
+    },
+    "c005b-install-required": {
+      "error": "",
+      "manifest_sha256": "3271363aa2945f46f9995fec7ee77be5d3be18d0976f3a47dfa134184296d611",
+      "observations": 5,
+      "result_sha256": "ff651592c0468aa6a24d4bb9e076d1de844c0f4303d956fe5e916aa7e6226fef",
+      "returncode": 0,
+      "status": "recorded",
+      "suite": "install"
+    },
+    "c005b-repeat-install": {
+      "error": "",
+      "manifest_sha256": "87031c344363fde866a027dbf6516bd5bf3655ebc1b639e4fa08889d02b0fe75",
+      "observations": 5,
+      "result_sha256": "65964bd1c4b150ee77c7965a0b2735ba92ff9c11a40f665dd37e070c232c4103",
+      "returncode": 0,
+      "status": "recorded",
+      "suite": "install"
+    },
+    "c005b-required-sources": {
+      "error": "",
+      "manifest_sha256": "a7a1a10753b5b5c9d535abd9f46106d6e60de4179de6dbc65a15b1015e189754",
+      "observations": 9,
+      "result_sha256": "4d9e974c3b278675a3d44c7646f81739fc151b668fc61e0ec558dc3f92544fc9",
+      "returncode": 0,
+      "status": "recorded",
+      "suite": "sejm-sources"
+    },
+    "c005b-required-sources-network": {
+      "error": "",
+      "manifest_sha256": "4012795e6aae0d58bc337c3e0341113f149e17c018d33a2e248f067c00698a54",
+      "observations": 9,
+      "result_sha256": "49832af418554139de0618ef219436e8f538c329230e2c8f4d6d3e1dc2f57485",
+      "returncode": 0,
+      "status": "recorded",
+      "suite": "sejm-sources"
+    },
+    "c006b-empty-originals": {
+      "error": "FileNotFoundError: [Errno 2] No such file or directory: '/Users/sobaleu/projects/lexinform/out/corpus/runs/c006b-empty-originals/result.json'",
+      "manifest_sha256": "31b7a73e206e5481c7253ee77cfab087b3fe0c6dc32ac365782bc35eca38513f",
+      "observations": 0,
+      "returncode": 1,
+      "status": "failed",
+      "suite": "empty-review"
+    },
+    "c006b-empty-originals-preview-verified": {
+      "error": "",
+      "manifest_sha256": "d3151590ddab3d6617280f88abc9b78ec27eb4c7f94c7af9238b89e8c3ba35c3",
+      "observations": 170,
+      "result_sha256": "e09c191603ddb143c33f863a1e3944b5ada92111a91e958c6f000c089ce7dcc2",
+      "returncode": 0,
+      "status": "recorded",
+      "suite": "empty-review"
+    },
+    "c006b-empty-originals-qualified": {
+      "error": "",
+      "manifest_sha256": "a70c86f3714e6753dd82b00aef4d5294ad24b491c740a8b1b260e8365ca2c0ef",
+      "observations": 170,
+      "result_sha256": "c27c970af7d54b39d43944db7a57bb77b158b35b75bcc8623cc7a1bf87757e5f",
+      "returncode": 0,
+      "status": "recorded",
+      "suite": "empty-review"
+    },
+    "c006b-human-holdout": {
+      "error": "",
+      "manifest_sha256": "3b8846cd6f625a19d1da4033d88b0ed8e4764d4f7b2c013d0a2c8a23f208c820",
+      "observations": 3,
+      "result_sha256": "68597d89c2472d6bb1101d5dc31e8fce45e7c78cdb6207008091300f76ae9cf1",
+      "returncode": 0,
+      "status": "recorded",
+      "suite": "holdout"
+    },
+    "c007b-cache-first": {
+      "error": "",
+      "manifest_sha256": "ed5f8a120afdce03a282423ca976966f7b2bfd780e4a7dac5fb78de77cefe40a",
+      "observations": 177,
+      "result_sha256": "9128fec318b17af2f83d01a8b27459a842c193ce622e27ba3862bd4915cc670a",
+      "returncode": 0,
+      "status": "recorded",
+      "suite": "reextract"
+    },
+    "c007b-cache-second": {
+      "error": "",
+      "manifest_sha256": "48ca9367d62a4432485eedd60e3312cfdd5f94045b888f1fc8381fa4e581b300",
+      "observations": 177,
+      "result_sha256": "a8e09db143070854cfdee677c0591009b0feaa46bb720a0b1e41f4d223db6f3a",
+      "returncode": 0,
+      "status": "recorded",
+      "suite": "reextract"
+    },
+    "c007b-ci-final": {
+      "error": "",
+      "manifest_sha256": "99cf835d03fbd56fc62175bbc27b16b0c94e4c1a3c391a634bce429e3cd98e8e",
+      "observations": 7,
+      "result_sha256": "8e7be5ee6ca36f1018ca3cfd66f2c8422cc9328de0c3ef40de801701a8df3e4a",
+      "returncode": 0,
+      "status": "passed",
+      "suite": "ci"
+    },
+    "c007b-ci-preview-verified": {
+      "error": "",
+      "manifest_sha256": "b6abca8a3502533d7bd884d98edfbce619ed63f4c2702ab9c34cde0f000b5ec4",
+      "observations": 7,
+      "result_sha256": "86a878fe27a9fe9687e57ec127bfca69ea76afc02e87b3cbb3641b89c25ce61a",
+      "returncode": 0,
+      "status": "passed",
+      "suite": "ci"
+    },
+    "c007b-physical-six-families": {
+      "error": "",
+      "manifest_sha256": "e55f1d0ed328e29d4557a056e8c05b6dcf3e4953faf5bb004a2fb1f44a942179",
+      "observations": 16347,
+      "result_sha256": "7f2ac18e291a92e5eb23baf8f9945b55cf856c6785a98be8e76662eb48276e51",
+      "returncode": 0,
+      "status": "recorded",
+      "suite": "physical"
+    }
+  },
+  "scope": "Completed automated C5b/C6b/C7b; source-based human adjudication remains open",
+  "started_local_date": "2026-10-25",
+  "version": 1
+}

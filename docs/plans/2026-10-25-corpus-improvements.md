@@ -1,7 +1,7 @@
 # Улучшение корпуса и исследовательских инструментов
 
-Открыт 25 октября 2026. База `c8f1d83`. Статус: первая поставка проверена локально;
-оставшиеся C5b/C6b/C7b перечислены явно.
+Открыт 25 октября 2026. База `c8f1d83`. Автоматические C5b/C6b/C7b проверены и закоммичены
+локально 25–26 октября; открыто человеческое прочтение C6c. Продолжение и evidence ниже.
 Основание — [обзор корпуса](../reviews/2026-10-25-corpus-workflow.md).
 
 Цель: воспроизводимые измерения, общие безопасные примитивы scripts, восстановление отсутствующих
@@ -22,19 +22,21 @@ Backend хранения не выбирается. Production state, Telegram �
   сохраняются как недоступность; отсутствие после отказа не заполняется выдуманными данными.
 - [x] C5a. Датированный snapshot Sejm prints/processes/bills и diff к прошлому снимку.
   Новый индекс явно указывает свежий bills listing и прежние cached prints/process trees.
-- [ ] C5b. Свежий supplementary catalog и адресные RPW/supplement downloads по required cases.
+- [x] C5b. Свежий supplementary catalog и адресные RPW/supplement downloads по required cases.
   Листинги не подменяют новые process trees или оригиналы; массовой докачки пока нет.
 - [x] C6a. Очередь relation/span annotation и локальный просмотр источников/decision diff.
   Oracle/basis/read scope явные; граф инициатив удерживает связанные редакции в одном split.
   Machine labels и уже использованный holdout остаются regression, новая независимая разметка
   требует реального прочтения исходников; заполнение этой очереди отдельно ниже.
-- [ ] C6b. Разобрать 170 still-empty originals, необходимые приложения и спорные связи;
-  подготовить отдельный новый human holdout из ранее не использованных инициатив.
+- [x] C6b. Физический разбор 170 still-empty originals; результаты и previews ниже.
+- [x] C6b. Подготовить отдельный pending human holdout из ранее не использованных инициатив.
+  Три оригинала зарезервированы до извлечения; новый human oracle ещё не создан.
+- [ ] C6c. Человеческое прочтение: обязательность приложений, спорные связи, подтверждение
+  независимости инициатив и evidence нового holdout. Machine labels не закрывают эту часть.
 - [x] C7a. Подключить 13 существующих suites к общему запуску, включая process/Senate;
   проверить missing-input и отрицательные контроли, сохранить старые imports/CLI.
-- [ ] C7b. Общий physical-health inventory остальных families и cross-run extraction cache
-  по raw/options/version identity. В поставке есть raw inventory, профильные replays и дедупликация
-  внутри поколения; это не полная физическая проверка всех файлов и не общий persistent cache.
+- [x] C7b. Общий physical-health inventory остальных families и cross-run extraction cache
+  по raw/options/version identity; результаты продолжения ниже.
 
 ## Правила приёмки
 
@@ -155,7 +157,7 @@ metadata input hashes/source roots и `document.cached_empty`. Перегене�
 rpw links у 42 entities и document lists у двух RCL projects. Сверены все 3032 input hashes.
 Это обновление указателя, не новая правовая разметка и не обновление всех исторических данных.
 
-### Хранение и следующий приоритет
+### Хранение и приоритет после первой поставки
 
 Рабочие результаты находятся в постоянном ignored `out/corpus/runs`, а не `/tmp`.
 Для ранних запусков до automatic code snapshots сохранён общий точный архив исходников
@@ -171,7 +173,122 @@ exact-byte duplicates — **485752250 bytes** (около 4,2%). Это физи
 Raw inventory SHA и totals сохранены в implementation evidence. Originals не дедуплицировались,
 download paths сохранены; изменения не добавляют документы или эти отчёты в SQLite dump.
 
-Следующая полезная работа — C6b, затем C5b по конкретным недостающим cases. OCR только там,
-где просмотр оригинала подтверждает потребность; платные модели и массовый backfill не запущены.
+Приоритетом после первой поставки были C6b, затем C5b по конкретным недостающим cases.
+Их продолжение ниже. OCR только там, где просмотр оригинала подтверждает потребность;
+платные модели и массовый backfill не запущены.
 Переиспользовать общие HTTP/extraction/artifact helpers в остальных legacy collectors стоит
 постепенно с их resume keys и corpus comparisons, а не переписывать весь scripts каталог сразу.
+
+### C005b. Supplementary catalog и обязательные источники
+
+`corpus_sejm_sources` строит supplementary catalog из pinned свежего prints listing, хранит diff
+и явные причины required downloads. `catalogue`, `download`, `install` и publication сохраняют
+команду повтора, provenance и SHA; запись каждого запроса и данные остаются в sealed runs.
+HTTPS Orka добавлен в общий allowlist с прежними ограничениями redirects, времени и размера.
+
+`c005b-catalogue`: 2479 rows / 2466 unique IDs; против прежнего supplementary listing —
+73 added / 3 removed / 1 changed ID. Это смена листинга, не доказательство удаления документа.
+В свежем bills listing 70 RPW отсутствовали в прежнем acquisition index; массовой докачки нет.
+Supplementary catalog опубликован дополнительно в `sejm/snapshots/2026-10-25/term10`,
+исторический каталог не заменён.
+
+`c005b-required-sources-network` скачал три required RPW (31529, 31544, 32084 за 2026 год),
+два полных supplements (2553-s, 3039-005) и три отдельных raw-only источника для human holdout.
+У 934-002 два conflicting attachment names: `934-002.pdf` отвечает 404, `934-008.pdf` сохранён;
+весь required case остаётся unavailable, частичная установка не выполнена. Первая попытка
+без сетевого доступа сохранена отдельно как unavailable, не подменяет успешный public-source run.
+
+`c005b-install-required` установил пять полных cases, сохранив прежний RPW index и все его rows.
+`c005b-repeat-install` дал пять `already_installed`. RPW/31529 имеет 21 страницу без текста;
+2553-s — 10 страниц и 706 извлечённых символов. Наличие оригинала не закрывает scan/completeness.
+Новые human sources никогда не проходили extraction/install и лежат только в collection run.
+
+После `scripts/index.py --sejm-snapshot 2026-10-25`: 3368 → 3371 entities, добавлены только
+три RPW. Из прежних entities изменились только supplementary lists druki 2553/3039;
+удалений нет. Прежние INDEX.json/INDEX.md сохранены по SHA в `out/corpus/input-snapshots/`.
+Diff — `out/corpus/c005b-index-diff.json`; прежний `scripts/verify.py` снова даёт corpus intact.
+
+### C006b. Разбор пустых selections и новая человеческая выборка
+
+`corpus_empty_review` читает все still-empty originals из pinned generation, отдельно рассматривает
+каждый bounded ZIP member, физические PDF pages и читаемые unselected parts. Role, принадлежность
+и обязательность приложений остаются unknown до содержательного evidence. JSON/HTML отделяет
+physical/parser errors, unsupported members, readable unselected parts и pages без текстового слоя.
+Preview показывает только первую страницу PDF; это не полное прочтение документа.
+Перед rendering проверяется SHA фактически раскрытого PDF member: одинаковые имена в ZIP
+не могут подменить preview другого документа. Duplicate-name и PDF page-error regressions
+добавлены после независимого review; initial full gate заменён повтором на исправленном коде.
+
+`c006b-empty-originals-qualified`: **170 originals / 355 leaves**, 295 inspected и 60 unsupported
+members. Actions пересекаются: 108 originals с readable unselected parts, 60 с PDF pages без текста,
+19 с unsupported members. Карта содержит 1636 PDF pages, из них 991 без извлечённого текста.
+161 distinct PDF preview сохранён, rendering errors 0; inputs/code unchanged. Первая попытка
+`c006b-empty-originals` сохранена как failed: во время неё обновился INDEX после C5b.
+Повтор выполнен на стабильном индексе; guard не отключался, failed run не переименован в успех.
+После проверки SHA перед preview полный повтор `c006b-empty-originals-preview-verified`
+сохранил все 170 observations; diff `c006b-preview-sha-validation-diff.json` имеет status=same.
+Все три визуально прочитанные страницы byte-identical новому rendering.
+
+Просмотрены страницы 1 originals 158276/158279/162963: видны соответственно письмо, заголовок
+проекта и письмо, хотя на этих страницах извлечение пустое. Это подтверждает потребность OCR
+этих трёх страниц; остальные страницы и правовая роль всего комплекта не прочитаны.
+[Page observations](../assets/audits/2026-10-25-corpus/agent-page-observations.json) сохраняет raw/image
+SHA, page coordinates, точные visual transcriptions, reviewer_kind=agent и split=regression.
+OCR не запускался. Обязательность упомянутых приложений и спорные связи не выведены из названий.
+
+`corpus_holdout` консервативно исключает все инициативы прежнего INDEX и raw byte aliases:
+старый `checks/00_replay.py` читал весь RPW index, поэтому старые orphan RPW не стали новым holdout.
+`c006b-human-holdout`: **3 pending cases / 3 groups**, RPW/35346/2026, RPW/35635/2026,
+RPW/35783/2026. Все 14511 прежних raw paths сверены по SHA; 6032 ZIP/docx/xlsx/odt containers
+проверены на прямые вложения совпадающего размера, unavailable 0. Исключены также hashes новых
+regression downloads. Всего 12367 известных consumed raw identities и 13786 indexed entity/doc
+identities. Baseline INDEX сохранён до установки, его SHA согласован с pinned raw inventory.
+
+Статус каждого нового case — `holdout_pending`, read_scope=`not_read`, reviewer/oracle=null.
+Агент видел только метаданные и hashes, не legal text. HTML содержит ссылки на оригиналы;
+человек должен подтвердить независимость и связи, затем записать фактический read scope/evidence.
+Вложенные ZIP для alias-проверки не раскрывались рекурсивно; выборка маленькая и адресная,
+не случайная оценка всего корпуса. Готового human oracle эта работа не заявляет.
+
+### C007b. Persistent extraction cache и physical health
+
+`ExtractionCache` сохраняет bounded extraction в append-only entries по raw SHA,
+extractor/options/contract, версиям Python/libraries и SHA runtime sources. Hashes identity/result
+проверяются на каждом попадании, corruption не перезаписывается. `corpus_derivatives --cache`
+включает его явно; default generation и старые corpus caches работают по-прежнему.
+
+`c007b-cache-first`: 177 originals, 162 misses / 15 same-byte hits.
+`c007b-cache-second`: 177 hits / 0 misses. Оба дали 7 recovered / 170 still_empty.
+Observations и входные hashes совпали между прогонами и с прежним pinned C003 generation;
+diffs `c007b-cache-diff.json` и `c007b-cache-versus-prior-generation.json` имеют status=same.
+Изменений extraction policy нет.
+
+`corpus_physical` проверяет пять raw families, их сохранённые gzip/UTF-8 caches и catalog-defined
+Senate originals. Hashes и recorded acquisition gaps отдельны от bounded PDF/ZIP/OLE/XML checks;
+parser failure и неподдержанный ZIP codec не выдаются за доказанную порчу bytes. Nested containers,
+полное декодирование OLE/RTF, rendering всех PDF и юридическая полнота явно вне этого inventory.
+
+`c007b-physical-six-families`: **16341 raw files / 12073227147 bytes**, 16347 keyed observations
+с учётом шести отсутствующих RPW originals. 16329 valid containers, 11 bounded exclusions,
+один strict PDF parse failure (`documents/files/714802.pdf`, PdfReadError; не вердикт о порче).
+Все 1825 Senate originals прошли container checks. Text caches: 13454 readable, 1237 empty,
+6 missing. Это число пустых кешей всех шести families, не 170 RCL selections из C006b.
+Изменённых входов/кода нет; manifest и все artifacts проверены.
+
+### Gate и локальные коммиты продолжения
+
+Полный offline gate исправленного кода: **4116 tests**, failures/errors/skips/xfails 0,
+669,891 s. Strict mypy — 386 файлов; Ruff src/tests/tools и format green. XML:
+`out/corpus/2026-10-25-corpus-completion-qualified-tests.xml`. Финальный CI slice
+`c007b-ci-preview-verified` passed; Python sources полного gate совпали с его snapshot.
+Strict docs build и локальные ссылки green.
+
+Все 14 manifests продолжения проверены, включая сохранённый failed initial empty-review run;
+его статус не заменялся. Малый сохраняемый отчёт —
+[completion evidence](../assets/audits/2026-10-25-corpus/completion.json).
+Исторический external selection `not_run` не объявлен passed по результатам physical inventory.
+
+Локальные коммиты: C5b `198d0da`, C7b `511e199`, C6b `e9536a9`;
+индекс/описание отдельного corpus repository — `ec70eca`. Push не выполнялся.
+Остался C6c: реальные человеческие evidence и разрешение неизвестных связей/приложений.
+Pending human queue доступна в `out/corpus/runs/c006b-human-holdout/result.html`.
