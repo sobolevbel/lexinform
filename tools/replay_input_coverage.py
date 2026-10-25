@@ -7,12 +7,15 @@ import logging
 from pathlib import Path
 from typing import Any, Literal
 
+from lexinform import sections
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
 from lexinform.document_selection import bill_selection, selection_for_input
+from lexinform.keywords import KeywordPrefilter
 from lexinform.law_digest import law_digest
 from lexinform.sections import TextBudget, trim_print
+from lexinform.text_projection import TextProjection
 from tools.corpus_check import code_version, source_fingerprints
 from tools.corpus_external import CorpusReads
 from tools.replay_pdf_pages import PdfReplayManifest
@@ -39,38 +42,50 @@ def snapshot(data: bytes, *, mapped: bool) -> dict[str, Any]:
     extracted = reader.extract_document(data)
     selected = bill_selection(extracted.selection, source_basis=())
     prepared = trim_print(extracted.text)
-    variants = {"trim": prepared.text}
-    variants.update(
-        {str(limit): TextBudget(limit).apply(prepared.text).text for limit in (1000, 24000)}
+    keywords = KeywordPrefilter()
+    spans = keywords.spans(prepared.text)
+    budgets = {str(limit): TextBudget(limit).apply(prepared.text) for limit in (1000, 24000)}
+    budgets.update(
+        {
+            f"keywords-{limit}": TextBudget(limit).apply(prepared.text, spans)
+            for limit in (1000, 24000)
+        }
     )
+    variants = {"trim": prepared.text}
+    variants.update({key: budget.text for key, budget in budgets.items()})
+    variants["triage"] = sections.excerpts(prepared.text, spans)
+    fitting = (("cost-1", "keywords-24000", 600, 2400), ("cost-2", "cost-1", 300, 1200))
+    for name, parent, head, maximum in fitting:
+        variants[name] = sections.excerpts(
+            variants[parent], keywords.spans(variants[parent]), head_chars=head, max_chars=maximum
+        )
     selections = {key: selection_for_input(selected, text) for key, text in variants.items()}
     projection = getattr(prepared, "projection", None)
     mapping = None
     if mapped:
         if projection is None or projection.source_sha256 != digest(extracted.text.encode()):
             raise ValueError("Prepared text must expose a projection of the exact extracted source")
-        chunks = []
-        offset = 0
-        generated = 0
-        for segment in projection.segments:
-            if segment.start != offset:
-                raise ValueError("Projection does not partition the prepared input")
-            text = prepared.text[segment.start : segment.end]
-            if segment.source_start is None:
-                generated += len(text)
-            else:
-                original = extracted.text[segment.source_start : segment.source_start + len(text)]
-                if original != text:
-                    raise ValueError("Projection source range differs from the emitted text")
-            chunks.append(text)
-            offset = segment.end
-        if "".join(chunks) != prepared.text or offset != len(prepared.text):
-            raise ValueError("Projection round trip changed the prepared input")
-        mapping = {
-            "segments": len(projection.segments),
-            "generated_chars": generated,
-            "round_trip": True,
-        }
+        projections = {"trim": projection}
+        for key, budget in budgets.items():
+            if budget.projection is None:
+                raise ValueError("TextBudget must expose an exact projection")
+            projections[key] = budget.projection.compose(projection)
+        projections["triage"] = sections.excerpt_projection(prepared.text, spans).compose(
+            projection
+        )
+        for name, parent, head, maximum in fitting:
+            projections[name] = sections.excerpt_projection(
+                variants[parent],
+                keywords.spans(variants[parent]),
+                head_chars=head,
+                max_chars=maximum,
+            ).compose(projections[parent])
+        maps = {}
+        for name, trace in projections.items():
+            if trace.text != variants[name]:
+                raise ValueError("Traced transformation changed its emitted text")
+            maps[name] = check_projection(trace, extracted.text)
+        mapping = {**maps["trim"], "variants": maps}
     return {
         "core": {
             "input_sha256": digest(data),
@@ -79,6 +94,7 @@ def snapshot(data: bytes, *, mapped: bool) -> dict[str, Any]:
             "law_digest": law_digest(prepared.text),
             "dropped": [[section.name, section.chars] for section in prepared.dropped],
             "inputs": {key: digest(text.encode()) for key, text in variants.items()},
+            "truncated": {key: budget.truncated for key, budget in budgets.items()},
             "decisions": {
                 key: {"state": value.state, "limitations": list(value.limitations)}
                 for key, value in selections.items()
@@ -94,6 +110,28 @@ def snapshot(data: bytes, *, mapped: bool) -> dict[str, Any]:
         },
         "mapping": mapping,
     }
+
+
+def check_projection(projection: TextProjection, source: str) -> dict[str, Any]:
+    if projection.source_sha256 != digest(source.encode()) or projection.source_length != len(
+        source
+    ):
+        raise ValueError("Projection input identity differs from the extracted source")
+    offset, generated = 0, 0
+    chunks = []
+    for segment in projection.segments:
+        if segment.start != offset:
+            raise ValueError("Projection does not partition the prepared input")
+        text = projection.text[segment.start : segment.end]
+        if segment.source_start is None:
+            generated += len(text)
+        elif source[segment.source_start : segment.source_start + len(text)] != text:
+            raise ValueError("Projection source range differs from the emitted text")
+        chunks.append(text)
+        offset = segment.end
+    if "".join(chunks) != projection.text or offset != len(projection.text):
+        raise ValueError("Projection round trip changed the prepared input")
+    return {"segments": len(projection.segments), "generated_chars": generated, "round_trip": True}
 
 
 def run(
@@ -139,7 +177,7 @@ def run(
             raise ValueError("Reference SHA mismatch")
         previous = json.loads(raw)
         if (
-            previous.get("suite") != "input-coverage-v1"
+            previous.get("suite") != "input-coverage-v2"
             or previous.get("status") != "recorded"
             or previous.get("catalog_sha256") != catalog_sha256
             or previous.get("pdf_manifest_sha256") != digest(raw_pdf)
@@ -149,7 +187,7 @@ def run(
         raise ValueError("Baseline does not accept a reference")
     before = source_fingerprints()
     result: dict[str, Any] = {
-        "suite": "input-coverage-v1",
+        "suite": "input-coverage-v2",
         "code_sha": code_version(),
         "source_sha256": before,
         "catalog_sha256": catalog_sha256,
@@ -158,7 +196,7 @@ def run(
         "independent_legal_oracle": False,
         "exclusions": [
             "No paid calls, actual provider tokenization or production history replay.",
-            "Exact ranges require ordered assembly or traced trim; other transforms are unknown.",
+            "Trim/excerpts/budget maps are checked in memory; runtime cost fitting is not wired.",
             "Source admissibility has no new official relations or independent legal oracle.",
         ],
         "observations": {},

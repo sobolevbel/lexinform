@@ -57,6 +57,49 @@ class TextProjection:
             self.text[start:end], self.source_sha256, self.source_length, tuple(segments)
         )
 
+    def compose(self, source: TextProjection) -> TextProjection:
+        """Resolve this transformation through the preceding projection."""
+        if (
+            self.source_length != len(source.text)
+            or self.source_sha256 != hashlib.sha256(source.text.encode()).hexdigest()
+        ):
+            raise ValueError("Projection input differs from the preceding output")
+        segments: list[TextSegment] = []
+        for segment in self.segments:
+            if segment.source_start is None:
+                _append_segment(segments, segment.start, segment.end, None)
+                continue
+            copied = source.slice(
+                segment.source_start, segment.source_start + segment.end - segment.start
+            )
+            if copied.text != self.text[segment.start : segment.end]:
+                raise ValueError("Copied text differs from the preceding output")
+            for original in copied.segments:
+                _append_segment(
+                    segments,
+                    segment.start + original.start,
+                    segment.start + original.end,
+                    original.source_start,
+                )
+        return TextProjection(
+            self.text, source.source_sha256, source.source_length, tuple(segments)
+        )
+
+
+def _append_segment(segments: list[TextSegment], start: int, end: int, origin: int | None) -> None:
+    if segments and (
+        (origin is None and segments[-1].source_start is None)
+        or (
+            origin is not None
+            and segments[-1].source_start is not None
+            and segments[-1].source_start + segments[-1].end - segments[-1].start == origin
+        )
+    ):
+        previous = segments[-1]
+        segments[-1] = TextSegment(previous.start, end, previous.source_start)
+    else:
+        segments.append(TextSegment(start, end, origin))
+
 
 def project_pieces(
     source: str, pieces: Sequence[SourcePiece], *, separator: str = "", strip: bool = False
@@ -72,18 +115,7 @@ def project_pieces(
         if origin is not None and (origin < 0 or source[origin : origin + len(text)] != text):
             raise ValueError("Copied text differs from its declared source position")
         fragments.append(text)
-        if segments and (
-            (origin is None and segments[-1].source_start is None)
-            or (
-                origin is not None
-                and segments[-1].source_start is not None
-                and segments[-1].source_start + segments[-1].end - segments[-1].start == origin
-            )
-        ):
-            last = segments[-1]
-            segments[-1] = TextSegment(last.start, offset + len(text), last.source_start)
-        else:
-            segments.append(TextSegment(offset, offset + len(text), origin))
+        _append_segment(segments, offset, offset + len(text), origin)
         offset += len(text)
 
     for index, piece in enumerate(pieces):

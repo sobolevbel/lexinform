@@ -558,13 +558,22 @@ def excerpts(
     max_chars: int = 24_000,
     fill_head: bool = False,
 ) -> str:
-    """The start of the bill, the start of the justification and text around each keyword hit.
+    """The two heads and keyword windows in document order, with omission markers between them."""
+    return excerpt_projection(
+        text, spans, head_chars=head_chars, window=window, max_chars=max_chars, fill_head=fill_head
+    ).text
 
-    Segments are merged when they overlap and returned in document order. Windows are added until
-    `max_chars` is reached; the two heads are always included. `fill_head` gives what the windows
-    left unspent back to the head, and only a cap asks for it — the triage digest is paid for by
-    the character, so few keywords should mean less read, not more.
-    """
+
+def excerpt_projection(
+    text: str,
+    spans: Sequence[tuple[int, int]],
+    *,
+    head_chars: int = 3000,
+    window: int = _WINDOW,
+    max_chars: int = 24_000,
+    fill_head: bool = False,
+) -> TextProjection:
+    """Trace the copied excerpt ranges; inserted omission markers have no source position."""
     merged: list[tuple[int, int]] = [(0, min(head_chars, len(text)))]
     if match := _JUSTIFICATION_RE.search(text):
         _merge_in(merged, (match.start(), min(match.start() + head_chars, len(text))))
@@ -578,7 +587,13 @@ def excerpts(
         used += added
     if fill_head and used < max_chars:
         _merge_in(merged, (0, min(merged[0][1] + max_chars - used, len(text))))
-    return "\n[...]\n".join(text[start:end].strip() for start, end in merged)
+    pieces: list[SourcePiece] = []
+    for start, end in merged:
+        if pieces:
+            pieces.append(SourcePiece("\n[...]\n"))
+        part = text[start:end]
+        pieces.append(SourcePiece(part.strip(), start + len(part) - len(part.lstrip())))
+    return project_pieces(text, pieces)
 
 
 def _merge_in(merged: list[tuple[int, int]], piece: tuple[int, int]) -> None:
@@ -608,16 +623,11 @@ def _uncovered(merged: Sequence[tuple[int, int]], piece: tuple[int, int]) -> int
 class BudgetedText:
     text: str
     truncated: bool
+    projection: TextProjection | None = None
 
 
 class TextBudget:
-    """Safety cap on the characters sent to the model.
-
-    `excerpts` keeps the head, the start of the justification and a window around each of
-    `spans`; passing the keyword hits as `spans` makes the cut a choice rather than a guillotine,
-    the relevant passages usually not being in the first pages. Half the cap goes to the two
-    heads, and each window is narrowed with the cap, or a fixed width would never fit a small one.
-    """
+    """Cap the model's text with traced heads and keyword windows."""
 
     def __init__(self, max_chars: int) -> None:
         if max_chars <= 0:
@@ -626,20 +636,20 @@ class TextBudget:
 
     def apply(self, text: str, spans: Sequence[tuple[int, int]] = ()) -> BudgetedText:
         if len(text) <= self._max:
-            return BudgetedText(text=text, truncated=False)
-        cut = excerpts(
+            return BudgetedText(
+                text=text,
+                truncated=False,
+                projection=project_pieces(text, (SourcePiece(text, 0),)),
+            )
+        cut = excerpt_projection(
             text,
             spans,
-            # A quarter each: `excerpts` keeps both heads whatever it is asked for, so a half
-            # each fills the cap before the first window is measured and no keyword hit is ever
-            # kept. What the windows do not take goes back to the head, or a text with no
-            # justification heading would come back a quarter of the length the cap allows —
-            # a cap gives what it is asked for.
+            # Each mandatory head gets a quarter so keyword windows can fit within the cap.
             head_chars=self._max // 4,
             window=min(_WINDOW, self._max // 8),
             max_chars=self._max,
             fill_head=True,
         )
-        # `excerpts` counts the text it keeps and not the markers it joins it with, and this is a
-        # cap: what it is asked for is what it gives.
-        return BudgetedText(text=cut[: self._max], truncated=True)
+        # The cap includes generated markers, which excerpts excludes from its window budget.
+        projection = cut.slice(0, min(self._max, len(cut.text)))
+        return BudgetedText(text=projection.text, truncated=True, projection=projection)

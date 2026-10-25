@@ -99,3 +99,62 @@ def test_osr_cut_and_surviving_pages_keep_their_actual_offsets() -> None:
             assert segment.source_start + segment.end - segment.start <= source.index(
                 "5. Informacje"
             )
+
+
+def test_composition_resolves_copies_across_generated_markers_and_original_gaps() -> None:
+    original = project_pieces(
+        "left OMIT right", (SourcePiece("left", 0), SourcePiece("--"), SourcePiece("right", 10))
+    )
+    cut = project_pieces(original.text, (SourcePiece("eft--rig", 1), SourcePiece("!")))
+
+    composed = cut.compose(original)
+
+    assert composed.text == "eft--rig!"
+    assert composed.source_sha256 == original.source_sha256
+    assert composed.source_length == 15
+    assert composed.segments == (
+        TextSegment(0, 3, 1),
+        TextSegment(3, 5),
+        TextSegment(5, 8, 10),
+        TextSegment(8, 9),
+    )
+
+
+def test_composition_coalesces_adjacent_copies_and_generated_segments() -> None:
+    source = project_pieces("abcdef", (SourcePiece("abc", 0), SourcePiece("?")))
+    cut = project_pieces(
+        source.text, (SourcePiece("abc", 0), SourcePiece("?", 3), SourcePiece("!"))
+    )
+
+    assert cut.compose(source).segments == (TextSegment(0, 3, 0), TextSegment(3, 5))
+
+
+def test_composition_never_assigns_an_origin_to_a_generated_repeat() -> None:
+    source = project_pieces("same same", (SourcePiece("same", 0),))
+    cut = project_pieces(source.text, (SourcePiece("same"),))
+
+    assert cut.compose(source).segments == (TextSegment(0, 4),)
+
+
+@pytest.mark.parametrize("other", ["abcd", "abcde"])
+def test_composition_rejects_wrong_intermediate_identity(other: str) -> None:
+    source = project_pieces("abc", (SourcePiece("abc", 0),))
+    cut = project_pieces(other, (SourcePiece(other, 0),))
+
+    with pytest.raises(ValueError, match="input differs"):
+        cut.compose(source)
+
+
+def test_composition_rejects_a_forged_copy_even_with_the_correct_input_hash() -> None:
+    source = project_pieces("abc", (SourcePiece("abc", 0),))
+    cut = TextProjection("xyz", source.source_sha256, 3, (TextSegment(0, 3, 0),))
+
+    with pytest.raises(ValueError, match="Copied text differs"):
+        cut.compose(source)
+
+
+def test_empty_composition_keeps_the_original_identity() -> None:
+    source = project_pieces("abc", (SourcePiece("abc", 0),))
+    cut = project_pieces(source.text, ())
+
+    assert cut.compose(source) == TextProjection("", source.source_sha256, 3, ())

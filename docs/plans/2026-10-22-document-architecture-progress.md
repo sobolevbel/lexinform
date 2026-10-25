@@ -2211,3 +2211,74 @@ member decoder и tracked note replay checker; Deflate64 CRC/size bounds сох�
 Суммарные corpus counts описывают observations, не уникальные юридические документы.
 Все source fingerprints рабочего checkout совпадают с qualified raw note replay.
 Area rules теперь охватывают `models/word_notes.py`; новый storage/profile не включён.
+
+<a id="j050"></a>
+### J050. DA5: точные карты excerpts и ограничения длины текста
+
+Дата: 25 октября 2026. База: `a6166c46cd4dddda79ea4a653b9110297e72a608` (J049).
+Статус: принят локально; raw corpus compare и полный gate green.
+DA5 остаётся частичным.
+
+`excerpt_projection` выполняет прежний выбор двух heads и keyword windows, возвращая точные
+source offsets после `strip` и отдельные generated segments для вставленных markers.
+Даже совпавший с пропущенным исходным текстом marker остаётся generated. Прежний `excerpts`
+возвращает строку через тот же путь. `TextBudget.apply` добавляет in-memory projection, включая
+identity для текста без сокращения и clipping посередине marker при достижении cap.
+
+`TextProjection.compose` переносит диапазоны через предыдущую карту к исходной строке,
+проверяет SHA/длину промежуточного текста и сами copied characters. Generated fragments не
+становятся цитатами источника; соседние непрерывные диапазоны объединяются. Проверены repeated
+text, whitespace/Unicode, пустые входы, caps 1–1000, generated joins, две последовательные
+cost-like cuts, чужая identity и forged copy с верным SHA. Replay runner имеет negative test:
+неизменный output с картой от другого input отвергается.
+
+Это отдельный deployable срез перед runtime propagation: `_Loaded`, `_fit_to_budget`, actual
+analysis coverage и persisted provider request пока не получают эту карту. Прежние unknown
+coverage и policy completeness сохраняются. Нет schema migration, новых SQLite payloads или
+добавления файлов в dump; новые projections живут только в памяти. Storage backend не выбран.
+
+Tracked `replay_input_coverage` версии `input-coverage-v2` проверяет восемь видов входа:
+trim, caps 1000/24000 без spans и с реальными keyword spans, triage excerpts и две cost-like
+cuts. Старые v1 references не принимаются за совместимые. Baseline использует committed J049
+source export с новой версией только replay tool; его fingerprints явно записаны. Это regression
+oracle, не независимая правовая оценка и не проверка реальной provider tokenization.
+
+J049 выпущен: CI [40197541697](https://github.com/sobolevbel/lexinform/actions/runs/40197541697)
+и Deploy relay [40198013117](https://github.com/sobolevbel/lexinform/actions/runs/40198013117)
+success на `a6166c46cd4dddda79ea4a653b9110297e72a608`; test/web/docs jobs green,
+3991 passed, 32 deselected. Deploy `4061e5c1d0e6 -> a6166c46cd4d`, relay up 45 s после restart,
+mismatch отсутствует. Evidence `/private/tmp/lexinform-release-j049-20261025.json`;
+это metadata/log verification без ручного production run, SSH или Telegram send.
+
+J050 controlled probes: восемь raw-derived Word sources, 56 cases (8 controls и 48 изменений
+срока, суммы, отрицания, круга лиц, статьи и даты). Test clauses искусственно добавлены в начало
+реального extracted text, не являются юридическим свидетельством; bounds 24k–1M chars и первые
+восемь подходящих Word inputs явно заданы в скрипте. Все 56 outputs совпадают с committed J049
+reader на trim/budget/triage/two cost-like cuts; в каждом виде входа сохранены все семь различий.
+Карты после нескольких преобразований round-trip к точным исходным позициям. Inputs/code stable,
+network, corpus writes и чтение `.env` запрещены guard. Artifacts
+`/private/tmp/lexinform-budget-mutations-j050-before-20261025.json`, SHA
+`d648ed3f94cd45a80590361a1f3f1c8c5f2423e5dbd6b257422c16b5ec5c7e9b`, и
+`/private/tmp/lexinform-budget-mutations-j050-after-20261025.json`, SHA
+`75a12f00c80cb1970d53c54c13f30f08f8b861a0e2d908a00c8c568ed25c97c6`.
+
+J050 полный gate: 4015 passed, failures/errors/skips/xfails 0, mypy 366 файлов, Ruff check/format
+и strict docs build/link check green. HTTP adapters не менялись, отдельный local HTTP gate не
+требовался. XML `/private/tmp/lexinform-budget-j050-full-20261025.xml`, SHA
+`3ce91159849a0ec553ec5322b3301534b9237df5b41d5bdbd4544f0a07d5eac4`.
+
+Raw compare accepted: 3067 Word/XML, 69 ZIP и 114 PDF, всего 3250 inputs и 26000 variants.
+Extracted/selected/input text SHA, law digest, dropped sections, states/limitations и прежняя
+coverage совпали во всех observations. Все 26000 composed maps прошли round-trip; errors,
+changed inputs/code и core/coverage changes 0. Prior selected-file decisions не изменились.
+Baseline `/private/tmp/lexinform-budget-j050-before-20261025.json`, SHA
+`0483a5dcf887ccb11718bc513f7c63a6141cb94adb9382c395da251f9896ce21`;
+after `/private/tmp/lexinform-budget-j050-after-20261025.json`, SHA
+`7adb9dc298436ef1256d77502575e8e98d612806b122b6fa4ab9a72f5870c718`;
+acceptance `/private/tmp/lexinform-budget-j050-accepted-20261025.json`, SHA
+`a9de71eb312de8e46ddc37e748c8422a23099a45531b763f0fe750a00c432219`.
+Независимые snapshots записаны baseline recorder; внешний wrapper явно включает `mapped=True`
+на новом коде, acceptance script сравнивает cores/coverage и проверяет fingerprints/mutants.
+Скрипты `/private/tmp/lexinform-budget-j050-mapped-replay-20261025.py` и
+`/private/tmp/lexinform-budget-j050-accept-20261025.py`; hashes inputs/wrapper/mutation runner
+содержатся в acceptance artifact. Никаких provider calls, corpus writes или production replay.
