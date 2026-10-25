@@ -1,0 +1,200 @@
+{
+  "version": 1,
+  "scope": "Agent-reviewed diagnostic excerpts; not gold or an independent holdout",
+  "queue_result_sha256": "1843b881a45a3d55510b9ac0d1cb86dc7875508fe14cbfe17c6e2eb2749c1449",
+  "reviewed_cases": [
+    {
+      "id": "doc:709230",
+      "status": "reviewed_excerpt",
+      "reviewer": "Codex",
+      "reviewer_kind": "agent",
+      "read_scope": "excerpt",
+      "text_sha256": "5f17f94beba02bd4b4c8d55a4ab205d05fe9c7f7a28ae8aec9e7bccc3de685fa",
+      "group": "doc:706723",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12395102/13113851/13113852/dokument709230.zip",
+      "split": "regression",
+      "used_for_tuning": true,
+      "independent_oracle": false,
+      "label": {
+        "visible_opening_role": "draft_bill",
+        "whole_package_role": "unknown",
+        "belongs_to": "unknown",
+        "required_annexes": "unknown"
+      },
+      "evidence": [
+        {
+          "start": 0,
+          "end": 250,
+          "quote": "Projekt z dnia 17.03.2025 r.\nUSTAWA\nz dnia ………….. 2025 r.\no zmianie ustawy o planowaniu i zagospodarowaniu przestrzennym oraz niektórych innych ustaw [przypis 2: ) Niniejszą ustawą zmienia się ustawy: ustawę z dnia 5 lipca 2018 r. o ułatwieniach w pr"
+        }
+      ],
+      "basis": "Opening and ending of the selected derivative inspected; package completeness and relations not adjudicated."
+    },
+    {
+      "id": "doc:711435",
+      "status": "reviewed_excerpt",
+      "reviewer": "Codex",
+      "reviewer_kind": "agent",
+      "read_scope": "excerpt",
+      "text_sha256": "b56435c5e42677005abbcfad171ad54958464cd4bd7e407e9259dfd887249b1b",
+      "group": "doc:683220",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12389503/13080864/13080865/dokument711435.zip",
+      "split": "regression",
+      "used_for_tuning": true,
+      "independent_oracle": false,
+      "label": {
+        "visible_opening_role": "draft_bill",
+        "whole_package_role": "unknown",
+        "belongs_to": "unknown",
+        "required_annexes": "unknown"
+      },
+      "evidence": [
+        {
+          "start": 0,
+          "end": 250,
+          "quote": "Projekt z dnia 17 marca 2025 r.\nUstawa\nz dnia ……………. 2025 r.\no zmianie ustawy o ochronie praw nabywcy lokalu mieszkalnego lub domu jednorodzinnego oraz Deweloperskim Funduszu Gwarancyjnym oraz niektórych innych ustaw [przypis 1: )\tNiniejszą ustawą zm"
+        }
+      ],
+      "basis": "Opening and ending of the selected derivative inspected; package completeness and relations not adjudicated."
+    },
+    {
+      "id": "doc:711445",
+      "status": "reviewed_excerpt",
+      "reviewer": "Codex",
+      "reviewer_kind": "agent",
+      "read_scope": "excerpt",
+      "text_sha256": "45ae9ecfe0ca4f5faac6561e67a1b4860dad758de0b5e94396b252292e75e207",
+      "group": "doc:681129",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12389003/13078519/13078520/dokument711445.zip",
+      "split": "regression",
+      "used_for_tuning": true,
+      "independent_oracle": false,
+      "label": {
+        "visible_opening_role": "draft_bill",
+        "whole_package_role": "unknown",
+        "belongs_to": "unknown",
+        "required_annexes": "unknown"
+      },
+      "evidence": [
+        {
+          "start": 0,
+          "end": 250,
+          "quote": "Projekt z dnia 20 marca 2025 r.\nUstawa \nz dnia ………………. r.\no zmianie ustawy o Centralnej Ewidencji i Informacji o Działalności Gospodarczej i Punkcie Informacji dla Przedsiębiorcy oraz niektórych innych ustaw [przypis 2: )\tNiniejszą ustawą zmienia się"
+        }
+      ],
+      "basis": "Opening and ending of the selected derivative inspected; package completeness and relations not adjudicated."
+    },
+    {
+      "id": "doc:718474",
+      "status": "reviewed_excerpt",
+      "reviewer": "Codex",
+      "reviewer_kind": "agent",
+      "read_scope": "excerpt",
+      "text_sha256": "feebf9284754ecfd7dee9a6a5e66a0171655b84342cb3875e650043da8c95200",
+      "group": "doc:715558",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12397401/13125847/13125848/dokument718474.zip",
+      "split": "regression",
+      "used_for_tuning": true,
+      "independent_oracle": false,
+      "label": {
+        "visible_opening_role": "draft_bill",
+        "whole_package_role": "unknown",
+        "belongs_to": "unknown",
+        "required_annexes": "unknown"
+      },
+      "evidence": [
+        {
+          "start": 0,
+          "end": 250,
+          "quote": "Projekt ustawy z dnia 16 maja 2025 r.\nustawa\nz dnia……………\nzmieniająca ustawę o zmianie ustawy o planowaniu i zagospodarowaniu przestrzennym oraz niektórych innych ustaw\nArt. 1. W ustawie z dnia 7 lipca 2023 r. o zmianie ustawy o planowaniu i zagospoda"
+        }
+      ],
+      "basis": "Opening and ending of the selected derivative inspected; package completeness and relations not adjudicated."
+    },
+    {
+      "id": "doc:719233",
+      "status": "reviewed_excerpt",
+      "reviewer": "Codex",
+      "reviewer_kind": "agent",
+      "read_scope": "excerpt",
+      "text_sha256": "b5227373688e1715592465e4cc5b91a6a2a259ad3f80d1e2c213c63c2fdeb92c",
+      "group": "doc:715558",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12397401/13125858/13125859/dokument719233.zip",
+      "split": "regression",
+      "used_for_tuning": true,
+      "independent_oracle": false,
+      "label": {
+        "visible_opening_role": "draft_bill",
+        "whole_package_role": "unknown",
+        "belongs_to": "unknown",
+        "required_annexes": "unknown"
+      },
+      "evidence": [
+        {
+          "start": 0,
+          "end": 250,
+          "quote": "Projekt ustawy z dnia 26 maja 2025 r.\nustawa\nz dnia……………\nzmieniająca ustawę o zmianie ustawy o planowaniu i zagospodarowaniu przestrzennym oraz niektórych innych ustaw\nArt. 1. W ustawie z dnia 7 lipca 2023 r. o zmianie ustawy o planowaniu i zagospoda"
+        }
+      ],
+      "basis": "Opening and ending of the selected derivative inspected; package completeness and relations not adjudicated."
+    },
+    {
+      "id": "doc:754701",
+      "status": "reviewed_excerpt",
+      "reviewer": "Codex",
+      "reviewer_kind": "agent",
+      "read_scope": "excerpt",
+      "text_sha256": "e09bf3f6f1701c6421f9a41623c2ef7a161eb46bf857464cc68972d3557e93c9",
+      "group": "doc:741769",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12396003/13118118/13118119/dokument754701.zip",
+      "split": "regression",
+      "used_for_tuning": true,
+      "independent_oracle": false,
+      "label": {
+        "visible_opening_role": "supporting_budget",
+        "whole_package_role": "unknown",
+        "belongs_to": "unknown",
+        "required_annexes": "unknown"
+      },
+      "evidence": [
+        {
+          "start": 0,
+          "end": 250,
+          "quote": "DODATKOWE ZAPOTRZEBOWANIE ETATOWE W ZWIĄZKU\nZ WEJŚCIEM W ŻYCIE NOWELIZACJI ROZPORZĄDZENIA REMIT\nW związku ze zwiększoną liczbą zadań przypisanych Prezesowi URE przez nowelizację\nrozporządzenia REMIT z 2024 r. (wykaz nowych zadań poniżej), konieczne j"
+        }
+      ],
+      "basis": "Opening and ending of the selected derivative inspected; package completeness and relations not adjudicated."
+    },
+    {
+      "id": "doc:771111",
+      "status": "reviewed_excerpt",
+      "reviewer": "Codex",
+      "reviewer_kind": "agent",
+      "read_scope": "excerpt",
+      "text_sha256": "89c68c3dd8f29cad728c1ddb0e3d8d6fb0346726984367c6e26baa8426893a30",
+      "group": "doc:745519",
+      "url": "https://legislacja.rcl.gov.pl/docs//2/12403752/13166863/13166864/dokument771111.zip",
+      "split": "regression",
+      "used_for_tuning": true,
+      "independent_oracle": false,
+      "label": {
+        "visible_opening_role": "draft_bill",
+        "whole_package_role": "unknown",
+        "belongs_to": "unknown",
+        "required_annexes": "unknown"
+      },
+      "evidence": [
+        {
+          "start": 0,
+          "end": 250,
+          "quote": "Projekt z dnia 2 kwietnia 2026 r.\nustawa\nz dnia …\no zmianie ustawy o planowaniu i zagospodarowaniu przestrzennym oraz niektórych innych ustaw [przypis 1: )\tNiniejszą ustawą zmienia się ustawy: ustawę z dnia 5 lipca 2018 r. o ułatwieniach w przygotowa"
+        }
+      ],
+      "basis": "Opening and ending of the selected derivative inspected; package completeness and relations not adjudicated."
+    }
+  ],
+  "exclusions": [
+    "Evidence concerns the selected derivative, not the whole physical package.",
+    "Legal completeness, source belonging and required annexes remain unknown."
+  ]
+}

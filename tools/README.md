@@ -8,6 +8,70 @@ owns historical stage construction and cached-text adapters. Replays import thes
 directly; old entry points retain compatible re-exports. Domain selection stays in lexinform.
 Low-level helpers do not load test suites or World just to calculate a hash.
 
+## Run registry and decision diffs
+
+Run from the lexinform checkout. Each ID creates a new directory; existing runs are never reused.
+
+```bash
+corpus_path=/path/to/lexinform-corpus
+run_root="$PWD/out/corpus/runs"
+uv run --offline --frozen python -m tools.corpus_runs run \
+  --root "$run_root" --id new-health --suite health --corpus "$corpus_path" -- --check-text
+uv run --offline --frozen python -m tools.corpus_runs verify "$run_root/new-health"
+uv run --offline --frozen python -m tools.corpus_runs register \
+  --root "$run_root" --id old-health --suite health --artifact /path/to/old-health.json
+uv run --offline --frozen python -m tools.corpus_runs diff \
+  "$run_root/old-health" "$run_root/new-health" --output "$PWD/out/corpus/new-health-diff.json"
+```
+
+The directory contains started command/options, a snapshot of Python sources and `uv.lock`, the
+child log, results, recursive artifact hashes and a sealed manifest. `verify` detects absent or
+changed artifacts. Registration preserves an old report's producer provenance; it does not claim
+that current code generated it. Diffs separate observations, input identities and coverage.
+`recorded` means completed observation, `passed` means declared assertions passed, and `not_run`
+means an incomplete requested check. An empty population never becomes a completed run.
+
+Offline suites: `health`, `ci`, `external`, `pdf`, `word`, `input`, `cost`, `amendments`,
+`reextract`, `annotations`, `candidates`, `process`, `senate`. Extra arguments follow `--`;
+each child module's `--help` lists its required pins/options. `external` uses the existing
+corpus-check profiles; the default `ci` suite requires a manifest corpus such as
+`tests/fixtures/corpus_check`. Process/Senate wrappers preserve old observation semantics and
+record missing inputs. Senate's default supplement is
+`sejm/supplements/2026-10-16-senate-resolutions` inside the declared corpus.
+Candidate results describe available cached views; consult `missing_inputs` and
+`complete_population` before interpreting them as coverage. Raw extraction, scan completeness
+and legal correctness still require their own checks. The registry supplies no independent oracle.
+
+`out/` survives temporary-directory cleanup but is ignored by Git and is not a backup. Keep the
+whole important run directory, its referenced inputs and original reports when copying elsewhere.
+Storage backend and automatic retention are intentionally undecided.
+
+## New derivative generations and annotation queue
+
+```bash
+health_path="$run_root/new-health/result.json"
+health_sha=$(shasum -a 256 "$health_path" | cut -d ' ' -f 1)
+uv run --offline --frozen python -m tools.corpus_runs run \
+  --root "$run_root" --id new-empty-generation --suite reextract --corpus "$corpus_path" -- \
+  --health "$health_path" --health-sha256 "$health_sha"
+```
+
+The checked health inventory pins the cohort, document index and old empty caches. Re-extraction
+uses a bounded extractor and writes deduplicated gzip objects under this run's result directory.
+Raw and extracted hashes, options, library versions, observed parts and exclusions remain explicit.
+Originals, caches and machine labels stay unchanged. After an append-only index update, use
+`--index-snapshot /path/to/old-index.json` to replay against the exact pinned index bytes.
+New installations save those bytes as `index-before.json` in their installation run.
+
+Pass `--derivatives /path/to/generation/result.json --derivatives-sha256 SHA` to the `candidates`
+or `annotations` suite to explicitly read a new generation. The shared reader checks both raw
+source identity and derived text identity; the default view continues using original caches.
+`annotations` also requires `--health` and `--health-sha256`. It writes a local HTML viewer and a
+pending JSON template with source ranges, relation groups and reviewer/basis fields. Its evidence
+validator requires literal spans and rejects consumed or agent-reviewed cases as independent
+holdout. Creating a queue never creates gold labels; readers must inspect the original where the
+excerpt is insufficient. Full relation/span adjudication and a fresh human holdout remain separate work.
+
 ## RCL corpus health and repair queue
 
 ```bash

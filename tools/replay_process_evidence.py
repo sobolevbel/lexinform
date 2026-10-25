@@ -11,9 +11,10 @@ from typing import Any
 
 from lexinform.adapters.sejm_api import parse_process_detail
 from lexinform.models import Bill, BillStatus, ObservedProcess, is_over, next_phase
+from tools.corpus_artifacts import write_json
 
 
-def replay(corpus: Path, destination: Path) -> None:
+def report(corpus: Path) -> dict[str, Any]:
     now = dt.datetime(2026, 10, 3, tzinfo=dt.UTC)
     rows: list[dict[str, object]] = []
     coverage: Counter[int] = Counter()
@@ -50,20 +51,18 @@ def replay(corpus: Path, destination: Path) -> None:
                 }
             )
             coverage[term] += 1
-    destination.write_text(
-        json.dumps(
-            {
-                "coverage": dict(coverage),
-                "sources": sources,
-                "exclusions": "Non-BILL records; no act contents loaded.",
-                "rows": rows,
-            },
-            ensure_ascii=False,
-            indent=2,
-        )
-        + "\n"
-    )
-    print(json.dumps({"coverage": dict(coverage), "rows": len(rows)}))
+    return {
+        "coverage": dict(coverage),
+        "sources": sources,
+        "exclusions": "Non-BILL records; no act contents loaded.",
+        "rows": rows,
+    }
+
+
+def replay(corpus: Path, destination: Path) -> None:
+    payload = report(corpus)
+    write_json(destination, payload)
+    print(json.dumps({"coverage": payload["coverage"], "rows": len(payload["rows"])}))
 
 
 if __name__ == "__main__":

@@ -1,16 +1,20 @@
 """Share read-only replay guards and code provenance without importing replay suites."""
 
 import builtins
+import gzip
 import hashlib
 import io
 import os
 import socket
 import subprocess
 import sys
+import tarfile
 from contextlib import ExitStack
 from pathlib import Path
 from typing import IO, Any
 from unittest.mock import patch
+
+from tools.corpus_artifacts import digest
 
 
 class CorpusReads:
@@ -129,3 +133,28 @@ def code_dirty() -> bool:
         check=False,
     )
     return result.returncode != 0 or bool(result.stdout.strip())
+
+
+def capture_code(directory: Path, fingerprints: dict[str, str]) -> dict[str, Any]:
+    root = Path(__file__).resolve().parents[1]
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w") as archive:
+        for relative, expected in sorted(fingerprints.items()):
+            path = root / relative
+            if (
+                path.resolve() != path
+                or not path.resolve().is_relative_to(root)
+                or path.name == ".env"
+            ):
+                raise ValueError("Code snapshot path escapes the project")
+            raw = path.read_bytes()
+            if digest(raw) != expected:
+                raise ValueError("Code changed before its snapshot was captured")
+            entry = tarfile.TarInfo(relative)
+            entry.size, entry.mode = len(raw), 0o644
+            archive.addfile(entry, io.BytesIO(raw))
+    data = gzip.compress(buffer.getvalue(), mtime=0)
+    target = directory / "code.tar.gz"
+    with target.open("xb") as stream:
+        stream.write(data)
+    return {"path": target.name, "sha256": digest(data), "files": len(fingerprints)}
