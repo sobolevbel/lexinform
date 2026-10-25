@@ -32,11 +32,19 @@ from lexinform.models.documents import (
     PdfPartExtraction,
     PdfTextExtraction,
     WordBodyState,
+    WordDetailedExtraction,
     WordPartExtraction,
     WordTextBlock,
     WordTextExtraction,
 )
 from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
+from lexinform.models.word_notes import (
+    NotePartName,
+    WordNote,
+    WordNoteCall,
+    WordNoteExtraction,
+    WordNoteXmlPart,
+)
 from lexinform.ports import PdfPageTextExtractor, TextExtractor, WordBlockTextExtractor
 from lexinform.sections import (
     APPENDIX_KINDS,
@@ -82,6 +90,74 @@ _MAX_SPACES = 4096  # `<text:s text:c="N"/>`: the count is the file's to choose
 _ROLE_ORDER: dict[TextRole, int] = {"bill": 0, "justification": 1, "osr": 2}
 
 
+class _WordNoteOrigins:
+    def __init__(self) -> None:
+        self.parts: list[WordNoteXmlPart] = []
+        self.notes: list[WordNote] = []
+        self.calls: list[WordNoteCall] = []
+        self.losses: list[str] = []
+        self.targets: dict[str, int] = {}
+        self.seen: set[str] = set()
+
+    def part(self, name: NotePartName, content: bytes, root: ET.Element | None) -> bool:
+        namespace, local = _split_tag(root.tag) if root is not None else ("", "")
+        supported = namespace in _WORDML_NAMESPACES and local == name[5:-4]
+        self.parts.append(
+            WordNoteXmlPart(
+                name=name,
+                sha256=hashlib.sha256(content).hexdigest(),
+                state="refused" if root is None else "read" if supported else "unsupported",
+            )
+        )
+        return supported
+
+    def note(
+        self, part: NotePartName, index: int, identity: str, text: str, *, supported: bool
+    ) -> None:
+        kind = "footnote" if part == "word/footnotes.xml" else "endnote"
+        key = f"{kind}/{identity}"
+        if key in self.seen:
+            self.losses.append(f"duplicate note ID: {key}")
+        self.seen.add(key)
+        if supported:
+            self.targets[key] = len(self.notes)
+            self.notes.append(WordNote(xml_part=part, path=(index,), identity=identity, text=text))
+        else:
+            self.targets.pop(key, None)
+            self.losses.append("note entry outside the supported XML view")
+
+    def reference(
+        self,
+        kind: Literal["footnote", "endnote"],
+        identity: str,
+        path: tuple[int, ...],
+        paragraph: tuple[int, ...],
+        legacy: dict[str, str],
+    ) -> None:
+        key = f"{kind}/{identity}"
+        target = self.targets.get(key)
+        state: Literal["expanded", "empty", "missing", "unverified"]
+        part = "word/footnotes.xml" if kind == "footnote" else "word/endnotes.xml"
+        if target is not None:
+            state = "expanded" if self.notes[target].text else "empty"
+        elif key in legacy or any(
+            item.name == part and item.state != "read" for item in self.parts
+        ):
+            state = "unverified"
+        else:
+            state = "missing"
+        self.calls.append(
+            WordNoteCall(
+                path=path,
+                paragraph_path=paragraph,
+                kind=kind,
+                identity=identity,
+                state=state,
+                target=target,
+            )
+        )
+
+
 class DocxTextExtractor:
     """Paragraphs of `word/document.xml`, tables as tab-separated rows, `\\f` at page breaks."""
 
@@ -96,9 +172,29 @@ class DocxTextExtractor:
         return self._read(data)[0]
 
     def extract_blocks(self, data: bytes) -> WordTextExtraction:
+        return self._blocks(data)
+
+    def extract_with_notes(self, data: bytes) -> WordDetailedExtraction:
+        notes = _WordNoteOrigins()
+        body = self._blocks(data, notes=notes)
+        return WordDetailedExtraction(
+            body=body,
+            notes=WordNoteExtraction(
+                input_sha256=body.input_sha256,
+                body_manifest_sha256=body.manifest_sha256,
+                parts=tuple(notes.parts),
+                notes=tuple(notes.notes),
+                calls=tuple(notes.calls),
+                losses=tuple(dict.fromkeys(notes.losses)),
+            ),
+        )
+
+    def _blocks(self, data: bytes, *, notes: _WordNoteOrigins | None = None) -> WordTextExtraction:
         blocks: list[WordTextBlock] = []
         projection: list[str] = []
-        text, xml_sha256, state = self._read(data, blocks=blocks, projection=projection)
+        text, xml_sha256, state = self._read(
+            data, blocks=blocks, projection=projection, origins=notes
+        )
         result = WordTextExtraction(
             input_sha256=hashlib.sha256(data).hexdigest(),
             xml_sha256=xml_sha256,
@@ -117,24 +213,41 @@ class DocxTextExtractor:
         *,
         blocks: list[WordTextBlock] | None = None,
         projection: list[str] | None = None,
+        origins: _WordNoteOrigins | None = None,
     ) -> tuple[str, str, WordBodyState]:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             xml = _read_xml(archive, "word/document.xml")
             notes: dict[str, str] = {}
             for name, tag in (("footnotes", "footnote"), ("endnotes", "endnote")):
-                path = f"word/{name}.xml"
+                path: NotePartName = (
+                    "word/footnotes.xml" if name == "footnotes" else "word/endnotes.xml"
+                )
                 if path not in archive.namelist():
                     continue
                 content = _read_xml(archive, path)
                 if _declares_entities(content):
+                    if origins is not None:
+                        origins.part(path, content, None)
                     return "", hashlib.sha256(xml).hexdigest(), "unsupported"
                 root = ET.fromstring(content)
+                supported = origins.part(path, content, root) if origins is not None else False
                 namespace, _ = _split_tag(root.tag)
                 reader = _WordMl(namespace)
-                for note in root:
+                for index, note in enumerate(root):
                     identity = note.get(reader.tag("id"))
                     if identity is not None:
-                        notes[f"{tag}/{identity}"] = "\n".join(reader.blocks(note))
+                        text = "\n".join(reader.blocks(note))
+                        notes[f"{tag}/{identity}"] = text
+                        if origins is not None:
+                            origins.note(
+                                path,
+                                index,
+                                identity,
+                                text,
+                                supported=supported and note.tag == reader.tag(tag),
+                            )
+                    elif origins is not None:
+                        origins.losses.append("note entry without an ID was not read")
         if _declares_entities(xml):
             return "", hashlib.sha256(xml).hexdigest(), "unsupported"
         root = ET.fromstring(xml)
@@ -145,7 +258,7 @@ class DocxTextExtractor:
         elif root.find(f"{{{namespace}}}body") is None:
             state = "missing"
         return (
-            _wordml_text(root, notes=notes, blocks=blocks, projection=projection),
+            _wordml_text(root, notes=notes, blocks=blocks, projection=projection, origins=origins),
             hashlib.sha256(xml).hexdigest(),
             state,
         )
@@ -157,14 +270,14 @@ def _wordml_text(
     notes: dict[str, str] | None = None,
     blocks: list[WordTextBlock] | None = None,
     projection: list[str] | None = None,
+    origins: _WordNoteOrigins | None = None,
 ) -> str:
-    """Text of a `w:document` element, wherever it came from: `word/document.xml` inside a .docx
-    or the same element inlined in a Flat OPC file."""
+    """The legacy body view of a supported WordprocessingML document element."""
     namespace, local = _split_tag(root.tag)
     if local not in _WORDML_ROOTS or namespace not in _WORDML_NAMESPACES:
         log.warning("not a WordprocessingML document (root %s); no text", root.tag)
         return ""
-    reader = _WordMl(namespace, notes=notes, blocks=blocks, projection=projection)
+    reader = _WordMl(namespace, notes=notes, blocks=blocks, projection=projection, origins=origins)
     body = root.find(reader.tag("body"))
     if body is None:
         log.warning("Word document without a body; no text")
@@ -255,7 +368,9 @@ class _WordMl:
         notes: dict[str, str] | None = None,
         blocks: list[WordTextBlock] | None = None,
         projection: list[str] | None = None,
+        origins: _WordNoteOrigins | None = None,
     ) -> None:
+        self._origins = origins
         self._ns = f"{{{namespace}}}"
         self._notes = notes or {}
         self._inline_notes = 0
@@ -272,7 +387,7 @@ class _WordMl:
         for index, child in enumerate(node):
             child_path = (*path, index) if path is not None else None
             if child.tag == self.tag("p"):
-                text = self.paragraph(child)
+                text = self.paragraph(child, path=child_path)
                 self._record("paragraph", child_path, text, project=project)
                 yield text
             elif child.tag == self.tag("tbl"):
@@ -318,13 +433,21 @@ class _WordMl:
             elif child.tag in (self.tag("sdt"), self.tag("sdtContent"), *_TRANSPARENT):
                 yield from self._direct(child, name, child_path)
 
-    def paragraph(self, p: ET.Element) -> str:
+    def paragraph(self, p: ET.Element, *, path: tuple[int, ...] | None = None) -> str:
         parts: list[str] = []
-        self._inline(p, parts)
+        self._inline(p, parts, path=path, paragraph=path)
         return "".join(parts)
 
-    def _inline(self, node: ET.Element, parts: list[str]) -> None:
-        for el in node:
+    def _inline(
+        self,
+        node: ET.Element,
+        parts: list[str],
+        *,
+        path: tuple[int, ...] | None = None,
+        paragraph: tuple[int, ...] | None = None,
+    ) -> None:
+        for index, el in enumerate(node):
+            child_path = (*path, index) if path is not None else None
             if el.tag == _MC_FALLBACK:
                 continue  # the same text box again, drawn for old Word versions
             if el.tag == self.tag("t"):
@@ -338,8 +461,12 @@ class _WordMl:
             elif el.tag == self.tag("lastRenderedPageBreak"):
                 parts.append(PAGE_BREAK)
             elif el.tag in (self.tag("footnoteReference"), self.tag("endnoteReference")):
-                local = "footnote" if el.tag == self.tag("footnoteReference") else "endnote"
+                local: Literal["footnote", "endnote"] = (
+                    "footnote" if el.tag == self.tag("footnoteReference") else "endnote"
+                )
                 identity = el.get(self.tag("id"), "")
+                if self._origins is not None and child_path is not None and paragraph is not None:
+                    self._origins.reference(local, identity, child_path, paragraph, self._notes)
                 note = self._notes.get(f"{local}/{identity}")
                 if note:
                     parts.append(f" [przypis {identity}: {note}] ")
@@ -348,10 +475,12 @@ class _WordMl:
             elif el.tag in (self.tag("footnote"), self.tag("endnote")):
                 # Word 2003 XML keeps the note itself at its reference, numbered by order alone.
                 self._inline_notes += 1
+                if self._origins is not None:
+                    self._origins.losses.append("inline Word notes lack note-part origins")
                 note = "\n".join(self.blocks(el))
                 parts.append(f" [przypis {self._inline_notes}: {note}] ")
             else:
-                self._inline(el, parts)  # runs, hyperlinks, fields, insertions, drawings
+                self._inline(el, parts, path=child_path, paragraph=paragraph)
 
 
 class OdtTextExtractor:

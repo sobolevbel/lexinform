@@ -500,7 +500,7 @@ paid calls или объявления материалов архивирова
 
 - [ ] DA3.1. **Частично: [J042](2026-10-22-document-architecture-progress.md#j042), [J044](2026-10-22-document-architecture-progress.md#j044), [J047](2026-10-22-document-architecture-progress.md#j047).** Отделить раскрытие контейнеров/физическое извлечение от выбора юридического комплекта.
   Возвращать все наблюдённые части, member chain, parent/container/member SHA, отклонения и limits.
-- [ ] DA3.2. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J044](2026-10-22-document-architecture-progress.md#j044), [J046](2026-10-22-document-architecture-progress.md#j046), [J047](2026-10-22-document-architecture-progress.md#j047), PDF и Word body.** Ввести стабильные в пределах extraction координаты блоков: PDF page/index,
+- [ ] DA3.2. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J044](2026-10-22-document-architecture-progress.md#j044), [J046](2026-10-22-document-architecture-progress.md#j046), [J047](2026-10-22-document-architecture-progress.md#j047), [J048](2026-10-22-document-architecture-progress.md#j048), PDF/Word body и OOXML notes.** Ввести стабильные в пределах extraction координаты блоков: PDF page/index,
   Word XML part + paragraph/table row/cell/note, ODT/DOC собственные адреса или явный unknown.
   Word не получает выдуманную пагинацию. Между версиями экстрактора ID блока может меняться.
   Старые `DocumentFact.block_id=part:N` сохраняют прежнюю схему: нынешний validator не допускает
@@ -508,7 +508,7 @@ paid calls или объявления материалов архивирова
   PDF page records собирать до legacy whitespace projection: split готовой строки теряет
   пустые крайние страницы. Для Word адрес XML/cell/note фиксировать внутри обхода `_WordMl`,
   до склейки строк и inline notes; координаты не восстанавливать из итогового plain text.
-- [ ] DA3.3. **Частично: [J046](2026-10-22-document-architecture-progress.md#j046), Word body order/table paths и явный legacy view; note-part coordinates остаются.** Сохранить порядок, структуру таблиц, сноски и связь с местом вызова; указать view
+- [ ] DA3.3. **Частично: [J046](2026-10-22-document-architecture-progress.md#j046), Word body order/table paths и явный legacy view; [J048](2026-10-22-document-architecture-progress.md#j048) добавляет OOXML note origins, остальные форматы остаются.** Сохранить порядок, структуру таблиц, сноски и связь с местом вызова; указать view
   tracked changes/fields и неподдержанные объекты. «Есть текст» не доказывает полное чтение.
   Не расширять поддержку форматов скрыто внутри механического переноса.
 - [ ] DA3.4. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J046](2026-10-22-document-architecture-progress.md#j046), PDF/Word manifests только в памяти.** Хранить `ExtractionResult`: input ref, format, extractor/code/dependency/options versions,

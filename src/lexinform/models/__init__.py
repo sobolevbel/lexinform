@@ -128,6 +128,7 @@ from lexinform.models.documents import (
     PdfPageText,
     PdfPartExtraction,
     PdfTextExtraction,
+    WordDetailedExtraction,
     WordPartExtraction,
     WordTextBlock,
     WordTextExtraction,
@@ -349,6 +350,7 @@ from lexinform.models.source_checks import (
     ObservationMode,
     SourceCheck,
 )
+from lexinform.models.word_notes import WordNote, WordNoteCall, WordNoteExtraction, WordNoteXmlPart
 from lexinform.models.wykaz import (
     BILL_KIND,
     REGISTER_PAGE_URL,
@@ -371,6 +373,11 @@ __all__ = [
     "PdfPageText",
     "PdfPartExtraction",
     "PdfTextExtraction",
+    "WordNote",
+    "WordNoteCall",
+    "WordNoteExtraction",
+    "WordNoteXmlPart",
+    "WordDetailedExtraction",
     "WordPartExtraction",
     "WordTextBlock",
     "WordTextExtraction",

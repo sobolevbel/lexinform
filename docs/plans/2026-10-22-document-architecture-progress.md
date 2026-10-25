@@ -2058,3 +2058,81 @@ comparison proof `/private/tmp/lexinform-comparison-j047-accepted-20261025.json`
 Оба `.sources.json` guards green; candidate fingerprints совпадают с рабочим checkout.
 Скрипты исполнения/сверки: `/private/tmp/lexinform-compare-profile-20261025.py` и
 `/private/tmp/lexinform-compare-recorded-20261025.py`; policy functions остаются tracked tools.
+
+<a id="j048"></a>
+### J048. DA3: XML-источники сносок Word и места их вызова
+
+Дата: 25 октября 2026. База: `b522a00288b25db207b00ef3a7da2de91dc64a7b` (J047).
+Статус: принят локально; DA3.2–DA3.3 частично, OOXML note origins проверены.
+
+`extract_with_notes` возвращает immutable `WordDetailedExtraction`: прежний `word-blocks-v1`
+body и отдельный `WordNoteExtraction` (`word-notes-v1`) с input SHA/body manifest SHA.
+Старый body schema/hash не расширяется. Note manifest содержит XML part SHA, реальные child
+paths сносок в `word/footnotes.xml`/`word/endnotes.xml`, paths вызовов в основном XML и ссылку
+на существующий paragraph block. Адреса фиксируются внутри исходного обхода, не поиском текста.
+
+Вызовы различают expanded/empty/missing/unverified. Повтор ID сохраняет обе прочитанные позиции,
+указывает последний legacy target и loss. Неподдержанный root/entry может сохранить прежний текст,
+но не получает выдуманный exact origin. XML с entity declaration сохраняет прежний отказ чтения.
+Note без ID по-прежнему не читается. MC_Fallback не дублирует вызовы; inline Word 2003 notes,
+standalone XML и вызовы внутри самих note parts остаются вне этой версии reference view.
+Табличная структура внутри сноски не объявляется полностью сохранённой.
+
+Один read строит body и notes; обычные `extract`/`extract_blocks` не удерживают note manifest.
+Привязка к physical parts — следующий срез. SQL/schema 48, batch/memo/provider semantics,
+хранение оригиналов и backend не меняются. Модели отвергают другие input/body SHA, отсутствующий
+paragraph/target, иной note kind/ID, неверный last target, повтор/отрицательные XML positions.
+
+96 focused tests: footnotes/endnotes, вложенный hyperlink/table call, strict OOXML, duplicate,
+empty/whitespace/missing, unsupported/refused XML, missing ID, MC fallback, inline notes,
+JSON round trip и независимая negative-проверка XML target в runner. Изменения сроков, сумм,
+отрицания, адресатов, ссылки на статью и даты сохраняют разные text/source identities.
+Mypy 364 файлов, Ruff check/format 395, без suppressions.
+
+Baseline из `git archive b522a00` записан committed reader, без `.git` и `.env` в export.
+`/private/tmp/lexinform-word-notes-j048-before-20261025.json`, SHA
+`ad28597cfad046689cbd92d2782370a44979b163760ee098ea64fe18cd99db6f`,
+3054 raw DOCX/DOCM, status recorded. Tracked runner `tools/replay_word_blocks.py` mode `notes`
+сверяет legacy text/exception observations и разрешает note/call XML coordinates по raw bytes.
+Отдельный mode `parts` committed baseline фиксирует прежние body manifest SHA.
+Network/input writes запрещены guards; artifacts содержат hashes/counts, не block texts.
+
+J047 выпущен: CI [40193778298](https://github.com/sobolevbel/lexinform/actions/runs/40193778298)
+и Deploy relay [40194121279](https://github.com/sobolevbel/lexinform/actions/runs/40194121279)
+success на `b522a00288b25db207b00ef3a7da2de91dc64a7b`; test/web/docs jobs green,
+3950 passed, 32 deselected, без xfail. Deploy `6d21a59ec9f0 -> b522a00288b2`, relay up 45 s
+после restart, mismatch отсутствует. Evidence `/private/tmp/lexinform-release-j047-20261025.json`;
+это metadata/log verification без ручного production run, SSH или Telegram send.
+
+Final note replay passed: 3054 text/exception observations совпадают с baseline;
+3052 manifests, 17135 note positions и 5317 reference positions проверены по исходному XML.
+5313 calls expanded, 4 empty; missing/unverified встречаются в focused tests, не в этом corpus slice.
+Notes parts 5576; observed note entries включают служебные/unreferenced IDs, это не число
+юридических сносок. Changes/errors/changed inputs/code 0. Artifact
+`/private/tmp/lexinform-word-notes-j048-after-20261025.json`, SHA
+`f7ccb5018557fad02a7c57d415632d325e817d1cbe02065a8e01d7bb9506abcb`.
+Все 3052 прежних body manifests/physical summaries равны committed baseline:
+`/private/tmp/lexinform-word-notes-j048-body-before-20261025.json`, SHA
+`4ee97ff90c7892fa0c05c86fcda5e885ebf6631b613eb9f8f6ea416d629b10b1`;
+comparison proof `/private/tmp/lexinform-word-notes-j048-body-compare-20261025.json`, SHA
+`b08ddd1861701f81fac8f45aebd44b45dd4678097d76ec384cac8a6a3f9472ca`.
+
+Legacy extraction replay: 3067 Word/XML и 69 ZIP, 5700 inputs, 19198 observations,
+changes/missing/error observations/lost or new automatic matches 0; source guard green.
+`/private/tmp/lexinform-word-notes-j048-legacy-20261025.json`, SHA
+`7192bb8a17a974dbac1e9df1daafa25a30f74592358ea3c2684abb76d7128409`.
+
+Controlled corpus probes: восемь raw-derived документов с адресованными сносками, 56 cases
+(8 controls + 48 изменений срока, суммы, отрицания, круга лиц, статьи и даты). В test derivatives
+сохраняются только три Word text XML parts; control clause добавлена искусственно и не является
+правовым свидетельством. Committed old reader и новый reader дают одинаковый текст во всех
+cases; семь вариантов каждого source различаются, XML note origins сохраняются, inputs/code
+не менялись. `/private/tmp/lexinform-note-mutations-j048-20261025/adapter.json`, SHA
+`7f287901f398d3903b9e087a7df01a4e793ea27c843c24e57ddad1535081698e`;
+скрипт `/private/tmp/lexinform-note-mutations-j048-20261025.py`, corpus/sample bounds явные.
+
+Финальный gate: 3979 passed, failures/errors/skips/xfails 0, mypy 364 файлов, Ruff 395,
+local HTTP 21 passed, strict docs build/link check и diff check green. XML
+`/private/tmp/lexinform-notes-j048-full-20261025.xml`, SHA
+`17dcfea6c22922313ed3b6d671ea99cee1823581c88efa04eceb108ae90a4971`.
+Точные retained spans после trim/budget и provider input этим срезом не заявляются.

@@ -58,6 +58,16 @@ port leaves these records absent for legacy readers. `include_word_blocks=False`
 `tools/replay_word_blocks.py` checks legacy text and resolves each path in the original XML;
 mode `parts` exercises this physical binding.
 
+`DocxTextExtractor.extract_with_notes` returns `WordDetailedExtraction`: the same v1 body and
+an independent `word-notes-v1` manifest bound to its SHA. It records hashes of footnote/endnote
+XML parts, note element paths, and reference paths within body paragraphs before flattening.
+Calls distinguish expanded, empty, missing and unverified origins. Duplicate IDs preserve the
+legacy last entry and report a loss; nonstandard XML can retain legacy text with unknown origin.
+Inline Word 2003 notes and note-internal references are outside this reference view. The notes
+manifest adds no persisted fields and is not yet linked through the physical-parts API.
+Replay mode `notes` validates both note and reference coordinates in original XML. These origins
+do not assert retained note spans after trimming, budget fitting or provider request preparation.
+
 `trim_print.projection` records source positions while trimming and gives generated omission
 markers no source origin. Adjacent copied pages coalesce into one range. `selection_for_input`
 uses this map only when the entire ordered part assembly or its traced trim equals the actual

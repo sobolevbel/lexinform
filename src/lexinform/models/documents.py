@@ -6,6 +6,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from lexinform.models.word_notes import WordNoteExtraction
 from lexinform.pdf_projection import legacy_pdf_text
 from lexinform.word_projection import legacy_word_text
 
@@ -327,6 +328,25 @@ class WordTextExtraction(BaseModel):
             raise ValueError("Word projection must refer to distinct paragraph or row blocks")
         if self.body_state != "read" and (self.blocks or self.legacy_blocks):
             raise ValueError("An unread Word body cannot claim physical blocks")
+        return self
+
+
+class WordDetailedExtraction(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    body: WordTextExtraction
+    notes: WordNoteExtraction
+
+    @model_validator(mode="after")
+    def notes_refer_to_the_same_body(self) -> Self:
+        if (
+            self.body.input_sha256 != self.notes.input_sha256
+            or self.body.manifest_sha256 != self.notes.body_manifest_sha256
+        ):
+            raise ValueError("Word notes refer to a different body extraction")
+        paragraphs = {block.path for block in self.body.blocks if block.kind == "paragraph"}
+        if any(call.paragraph_path not in paragraphs for call in self.notes.calls):
+            raise ValueError("Word note call refers to an absent paragraph")
         return self
 
 
