@@ -1,0 +1,34 @@
+{
+  "artifact_sha256": {
+    "out/corpus/2026-10-25-ci-corpus.json": "c89c63e21a4958e733a561e2bff2b67794fd1c4fa076bc41318fe357424503ee",
+    "out/corpus/2026-10-25-corpus-tools-tests-cached.xml": "16745c24f8891af7439f3d59be67c43fcf2aea56a82cfa566b7c8a74d08ac9b0",
+    "out/corpus/2026-10-25-corpus-tools-tests.xml": "2f3cb42742faad663dc6c9804be42396e28ca2b9458e129e9c85447bc9ad6932",
+    "out/corpus/2026-10-25-rcl-health.json": "0c673c1e5972f832f2ea36af657d51db6c8e88867d34cd5e2512e942a5cf8688",
+    "out/corpus/2026-10-25-release-j053.json": "ec0abd3f4b5612e4cee422e7427fe3b30c18651d6792f0d9bbc14d1a56e5a31c"
+  },
+  "ci_corpus_slice": "passed",
+  "date": "2026-10-25",
+  "docs": "strict build and link checks passed",
+  "exclusions": [
+    "Initial full gate failed only because the temporary tokenizer vocabulary cache was absent; its XML is preserved.",
+    "RCL health is availability and bounded cached-text decoding, not raw integrity or a legal oracle.",
+    "No production pipeline, source downloads, OCR, model calls or corpus writes performed."
+  ],
+  "mypy_source_files": 374,
+  "ruff": "src/tests/tools check and format passed",
+  "source_manifest_unchanged_since_health": true,
+  "status": "passed",
+  "tests": {
+    "errors": "0",
+    "failures": "0",
+    "hostname": "Yauhenis-MacBook-Pro.local",
+    "name": "pytest",
+    "skipped": "0",
+    "tests": "4053",
+    "time": "585.942",
+    "timestamp": "2026-10-25T19:12:24.967332+01:00"
+  },
+  "tokenizer_cache": {
+    "fb374d419588a4632f3f557e76b4b70aebbca790": "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d"
+  }
+}

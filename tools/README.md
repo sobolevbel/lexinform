@@ -1,5 +1,37 @@
 # Offline measurements
 
+## RCL corpus health and repair queue
+
+```bash
+mkdir -p out/corpus
+uv run --offline --frozen python -m tools.corpus_health \
+  --corpus /path/to/lexinform-corpus \
+  --output out/corpus/new-rcl-health.json --check-text
+```
+
+The report inspects every indexed RCL original/cache and references selected from historical
+self-amendment candidates. It distinguishes missing originals from missing/broken derived text,
+empty text and indexed availability. Actions carry public URLs, candidate fields and stage IDs;
+they are recommendations, never executed repairs. `--check-text` validates bounded gzip/UTF-8
+reads; without it, existing caches are explicitly unchecked. Raw bytes are not parsed or hashed.
+Code and read-input hashes are recorded, changes during inspection are rejected, and network,
+corpus writes and `.env` reads are blocked. Existing outputs and symlink inputs are refused.
+This scope excludes other uncollected catalog entries, Sejm/RPW/Senate and legal correctness.
+Keep reports in a durable project directory rather than `/tmp`; `out/` remains Git-ignored.
+
+Provider token-count probes and the full test gate also need the `tiktoken` vocabulary cache.
+`uv --offline` controls dependency resolution, not a library's first vocabulary download.
+Warm a persistent local cache once with network access, then set the same path for offline runs:
+
+```bash
+TIKTOKEN_CACHE_DIR="$PWD/.cache/tiktoken" uv run --frozen python -c \
+  'import tiktoken; print(tiktoken.encoding_for_model("gpt-5.1").name)'
+TIKTOKEN_CACHE_DIR="$PWD/.cache/tiktoken" uv run --offline --frozen pytest -q
+```
+
+The loader verifies its expected vocabulary SHA. This is a public data download, not a model
+call; `.cache/` is ignored and no setting or secret is added to `.env`.
+
 `measure_delivery_state.py` is a development-only benchmark requiring `tests.harness`,
 the development dependencies and the checkpointed single-card revision producer.
 From the repository root, after installing dependencies:

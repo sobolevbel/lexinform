@@ -2546,3 +2546,61 @@ approval review не смог завершиться из-за usage limit, пр
 После указанного времени сброса лимита проверка снова доступна: 25 октября, 19:06 Warsaw,
 `git ls-remote origin refs/heads/main` успешно подтвердил точный J052 SHA `4fbce754bd0b3fc59ba7ac5b6d41513f578cfed5`.
 Повтор выполнен после устранения временного ограничения, не альтернативным путём в обход review.
+
+<a id="j054"></a>
+### J054. Корпус: health report, очередь действий и обзор следующих улучшений
+
+Дата: 25 октября 2026. Runtime-база J053: `c793c42cba320837f023081b581662071e834eba`.
+Статус: инструмент, read-only проход и общий gate приняты локально.
+J053 закоммичен после его 4047-test gate и повторных 38 focused tests; проверка разрешений
+восстановилась после времени сброса. Следующий инструмент не меняет runtime обработки документов.
+
+Добавлен `tools/corpus_health.py`: индексированные RCL originals/caches и required references
+исторического self-amendment cohort. Сеть, writes в корпус и `.env` запрещены; output новый
+и вне корпуса. Отчёт различает missing raw, missing/broken cache, empty text, size limit,
+несколько raw aliases и неиндексированный кандидат. Actions содержат URL, stage ID и поле
+зависимости; tool не выполняет download/re-extraction/OCR и не объявляет raw integrity.
+
+Свежий `--check-text`: 10411 indexed documents имеют original/cache; 10234 непустых UTF-8
+текста, 177 empty, broken gzip/UTF-8 0. К 355 candidates из 825 projects/4276 stages нужны
+ещё семь документов без raw/cache/index: 300535, 300536, 300677, 301219 (RCL/12294859)
+и 412632, 418667, 418672 (RCL/12321775). Первые два — alternatives; часть остальных также
+альтернативы, остальные main/self-amendment dependencies. Доступность URL в сети не проверялась.
+Прочитанные 11237 input paths и code fingerprints зафиксированы и не менялись во время прохода.
+
+Полный JSON: `out/corpus/2026-10-25-rcl-health.json`, 5583522 bytes, SHA
+`0c673c1e5972f832f2ea36af657d51db6c8e88867d34cd5e2512e942a5cf8688`.
+Компактная tracked сводка —
+[summary.json](../assets/audits/2026-10-25-corpus/summary.json), 14825 bytes, SHA
+`00275d9f759f24840e5b9c7183c2d4986e3d6d4b2976caf8b00e6e04971106f2`.
+`out/` остаётся ignored; проектный каталог устойчивее `/tmp`, но сам по себе не является backup.
+Шесть новых tests проверяют offline repair/download distinction, empty/corrupt cache,
+candidate provenance, сохранность входов, no overwrite и symlink/path guards.
+
+[Обзор корпуса и предложения](../reviews/2026-10-25-corpus-workflow.md) сводит выполненные
+raw/cached/CI/holdout/mutation проверки и их exclusions. Приоритеты: постоянные run manifests
+и versioned generators/acceptance, общий diff поверх существующих runners, preflight/action
+queue, relation/span labels и новый групповой holdout. Download paths остаются resume keys,
+докачка семи files и повтор трёх consultation refusals предлагаются отдельным проходом.
+Массовая перекачка и новый storage backend не вводятся. Общий SQL schema/state/dump прежние.
+
+Первый общий gate J054 дал 4052 passed и один failure: отсутствовал vocabulary cache tiktoken,
+локальный `count_input_tokens` пытался получить `o200k_base` и встретил DNS refusal.
+Это не regression extraction/selection и не paid model call. Сохранён failed XML
+`out/corpus/2026-10-25-corpus-tools-tests.xml`; тест не отключался и assert не ослаблялся.
+Официальный vocabulary получен штатным loader с expected SHA в ignored `.cache/tiktoken`;
+повторный полный gate использует этот явный persistent TIKTOKEN_CACHE_DIR.
+README tools дополнен повторяемой подготовкой offline environment.
+
+J053 выпущен: CI [40220264364](https://github.com/sobolevbel/lexinform/actions/runs/40220264364)
+и Deploy relay [40220771569](https://github.com/sobolevbel/lexinform/actions/runs/40220771569)
+success на `c793c42cba320837f023081b581662071e834eba`, test/web/docs green,
+4047 passed, 32 deselected. Deploy `4fbce754bd0b -> c793c42cba32`, relay up 45 s после restart.
+Evidence `out/corpus/2026-10-25-release-j053.json`; это CI/relay verification,
+не ручной production pipeline, paid LLM, state/backfill или Telegram reader delivery.
+
+Повторный gate после подготовки tokenizer cache: 4053 passed, errors/failures/skips/xfails 0,
+mypy 374 файлов, Ruff check/format src/tests/tools, strict docs build/link check и
+`git diff --check` green. CI manifest corpus slice passed; health source fingerprints прежние.
+XML `out/corpus/2026-10-25-corpus-tools-tests-cached.xml`; hashes и cache identity — в
+[validation.json](../assets/audits/2026-10-25-corpus/validation.json).

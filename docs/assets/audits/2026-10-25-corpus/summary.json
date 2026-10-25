@@ -1,0 +1,377 @@
+{
+  "action_counts": {
+    "fetch_source": 7,
+    "index_document": 7,
+    "review_empty_text": 177
+  },
+  "candidate_cohort": {
+    "cases": 355,
+    "projects": 825,
+    "stages": 4276
+  },
+  "counts": {
+    "raw_missing": 7,
+    "raw_present": 10411,
+    "text_empty": 177,
+    "text_missing": 7,
+    "text_readable": 10234
+  },
+  "date": "2026-10-25",
+  "documents_index_sha256": "cef6187dcfc72f522819a2ff39d4a7965ef2d984a883db626bd7eb90544bd19f",
+  "exclusions": [
+    "Raw availability is not byte integrity, legal role or completeness.",
+    "The candidate cohort follows current code over saved metadata, not a legal oracle.",
+    "Only RCL document files and the self-amendment cohort are inspected.",
+    "Missing candidate files are not a mandate to download every RCL catalog entry.",
+    "No downloads, OCR, model calls, extraction or production state changes are performed."
+  ],
+  "indexed_documents": 10411,
+  "missing_sources": [
+    {
+      "action": "fetch_source",
+      "id": "300535",
+      "network_required": true,
+      "reason": "Raw source absent; cached text cannot recreate it",
+      "references": [
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[3].url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300535.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[3].url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300535.pdf"
+        }
+      ],
+      "urls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300535.pdf"
+      ]
+    },
+    {
+      "action": "fetch_source",
+      "id": "300536",
+      "network_required": true,
+      "reason": "Raw source absent; cached text cannot recreate it",
+      "references": [
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[4].url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300536.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[4].url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300536.pdf"
+        }
+      ],
+      "urls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300536.pdf"
+      ]
+    },
+    {
+      "action": "fetch_source",
+      "id": "300677",
+      "network_required": true,
+      "reason": "Raw source absent; cached text cannot recreate it",
+      "references": [
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[0].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        },
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[1].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        },
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[2].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        },
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[3].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        },
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[4].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        },
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[5].url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        },
+        {
+          "case": "12294859/11",
+          "field": "document.amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[0].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[1].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[2].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[3].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[4].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[5].url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+        }
+      ],
+      "urls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument300677.pdf"
+      ]
+    },
+    {
+      "action": "fetch_source",
+      "id": "301219",
+      "network_required": true,
+      "reason": "Raw source absent; cached text cannot recreate it",
+      "references": [
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[0].amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[1].amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[2].amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[3].amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[4].amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[5].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/11",
+          "field": "document.alternatives[6].url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/11",
+          "field": "document.amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[0].amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[1].amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[2].amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[3].amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[4].amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[5].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.alternatives[6].url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        },
+        {
+          "case": "12294859/9",
+          "field": "document.amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+        }
+      ],
+      "urls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12294859/12412714/12412715/dokument301219.pdf"
+      ]
+    },
+    {
+      "action": "fetch_source",
+      "id": "412632",
+      "network_required": true,
+      "reason": "Raw source absent; cached text cannot recreate it",
+      "references": [
+        {
+          "case": "12321775/10",
+          "field": "document.url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument412632.docx"
+        },
+        {
+          "case": "12321775/9",
+          "field": "document.url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument412632.docx"
+        }
+      ],
+      "urls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument412632.docx"
+      ]
+    },
+    {
+      "action": "fetch_source",
+      "id": "418667",
+      "network_required": true,
+      "reason": "Raw source absent; cached text cannot recreate it",
+      "references": [
+        {
+          "case": "12321775/10",
+          "field": "document.alternatives[0].url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418667.pdf"
+        },
+        {
+          "case": "12321775/10",
+          "field": "document.alternatives[1].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418667.pdf"
+        },
+        {
+          "case": "12321775/10",
+          "field": "document.amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418667.pdf"
+        },
+        {
+          "case": "12321775/12",
+          "field": "document.amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418667.pdf"
+        },
+        {
+          "case": "12321775/14",
+          "field": "document.amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418667.pdf"
+        },
+        {
+          "case": "12321775/9",
+          "field": "document.alternatives[0].url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418667.pdf"
+        },
+        {
+          "case": "12321775/9",
+          "field": "document.alternatives[1].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418667.pdf"
+        },
+        {
+          "case": "12321775/9",
+          "field": "document.amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418667.pdf"
+        }
+      ],
+      "urls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418667.pdf"
+      ]
+    },
+    {
+      "action": "fetch_source",
+      "id": "418672",
+      "network_required": true,
+      "reason": "Raw source absent; cached text cannot recreate it",
+      "references": [
+        {
+          "case": "12321775/10",
+          "field": "document.alternatives[0].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418672.pdf"
+        },
+        {
+          "case": "12321775/10",
+          "field": "document.alternatives[1].url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418672.pdf"
+        },
+        {
+          "case": "12321775/10",
+          "field": "document.amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418672.pdf"
+        },
+        {
+          "case": "12321775/12",
+          "field": "document.amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418672.pdf"
+        },
+        {
+          "case": "12321775/14",
+          "field": "document.amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418672.pdf"
+        },
+        {
+          "case": "12321775/9",
+          "field": "document.alternatives[0].amendment_urls[0]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418672.pdf"
+        },
+        {
+          "case": "12321775/9",
+          "field": "document.alternatives[1].url",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418672.pdf"
+        },
+        {
+          "case": "12321775/9",
+          "field": "document.amendment_urls[1]",
+          "url": "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418672.pdf"
+        }
+      ],
+      "urls": [
+        "https://legislacja.rcl.gov.pl/docs//2/12321775/12592328/12592329/dokument418672.pdf"
+      ]
+    }
+  ],
+  "read_inputs": 11237,
+  "read_manifest_sha256": "be4d6750f60682052f3a2486860aa2e6e4be911ffd064a0d5547f28f3bc70298",
+  "report_bytes": 5583522,
+  "report_path": "out/corpus/2026-10-25-rcl-health.json",
+  "report_sha256": "0c673c1e5972f832f2ea36af657d51db6c8e88867d34cd5e2512e942a5cf8688",
+  "scope": "Indexed RCL files plus self-amendment candidates",
+  "source_manifest_sha256": "c7308022efa6b054b02a4e2968f846d59de2b5165fc73f7589c2860c73a6debc",
+  "status": "recorded",
+  "tool_sha256": "eedfc4e5fb2ccdcd46619d59c9ace74125214c2742b515092d7359a016a2fccb"
+}
