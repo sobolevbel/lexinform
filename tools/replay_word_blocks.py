@@ -12,13 +12,13 @@ from xml.etree import ElementTree as ET
 from lexinform.adapters.doc_text import DocTextExtractor
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
 from lexinform.adapters.pdf_text import PypdfTextExtractor
-from lexinform.models import WordTextExtraction
+from lexinform.models import ExtractedParts, WordDetailedExtraction, WordTextExtraction
 from tools.corpus_check import code_version, source_fingerprints
 from tools.corpus_external import CorpusReads
 from tools.replay_input_coverage import digest, read_artifact
 
 
-def physical_word(data: bytes, reader: DocxTextExtractor) -> WordTextExtraction:
+def word_envelope(data: bytes, reader: DocxTextExtractor) -> ExtractedParts:
     extracted = DocumentTextExtractor(
         PypdfTextExtractor(), reader, DocTextExtractor()
     ).extract_parts(data, include_pdf_pages=False)
@@ -32,7 +32,20 @@ def physical_word(data: bytes, reader: DocxTextExtractor) -> WordTextExtraction:
     linked = extracted.word_blocks[0]
     if linked.part_index != 0 or extracted.rejected:
         raise RuntimeError("Word manifest has an invalid physical link")
-    return linked.extraction
+    return extracted
+
+
+def physical_word(data: bytes, reader: DocxTextExtractor) -> WordTextExtraction:
+    return word_envelope(data, reader).word_blocks[0].extraction
+
+
+def physical_notes(data: bytes, reader: DocxTextExtractor) -> WordDetailedExtraction:
+    result = word_envelope(data, reader)
+    if len(result.word_notes) != 1 or result.word_notes[0].part_index != 0:
+        raise RuntimeError("A Word note manifest must bind to its single physical part")
+    return WordDetailedExtraction(
+        body=result.word_blocks[0].extraction, notes=result.word_notes[0].extraction
+    )
 
 
 def snapshot(
@@ -44,7 +57,11 @@ def snapshot(
     try:
         if adapter:
             if with_notes:
-                detailed = reader.extract_with_notes(data)
+                detailed = (
+                    physical_notes(data, reader)
+                    if physical_parts
+                    else reader.extract_with_notes(data)
+                )
                 result = detailed.body
             else:
                 result = (
@@ -158,7 +175,7 @@ def run(
     catalog_sha256: str,
     output: Path,
     *,
-    mode: Literal["library", "adapter", "parts", "notes"],
+    mode: Literal["library", "adapter", "parts", "notes", "notes-parts"],
     reference: Path | None = None,
     reference_sha256: str | None = None,
 ) -> int:
@@ -199,7 +216,9 @@ def run(
     before = source_fingerprints()
     result: dict[str, Any] = {
         "suite": "word-blocks-v1",
-        "entrypoint": "word_notes"
+        "entrypoint": "physical_word_notes"
+        if mode == "notes-parts"
+        else "word_notes"
         if mode == "notes"
         else "physical_parts"
         if mode == "parts"
@@ -232,8 +251,8 @@ def run(
                 core, physical = snapshot(
                     data,
                     adapter=mode != "library",
-                    physical_parts=mode == "parts",
-                    with_notes=mode == "notes",
+                    physical_parts=mode in ("parts", "notes-parts"),
+                    with_notes=mode in ("notes", "notes-parts"),
                 )
                 result["observations"][name] = core
                 if physical is not None:
@@ -269,7 +288,9 @@ def main() -> None:
     parser.add_argument("--catalog", type=Path, required=True)
     parser.add_argument("--catalog-sha256", required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--mode", choices=("library", "adapter", "parts", "notes"), required=True)
+    parser.add_argument(
+        "--mode", choices=("library", "adapter", "parts", "notes", "notes-parts"), required=True
+    )
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--reference-sha256")
     args = parser.parse_args()

@@ -37,10 +37,10 @@ def inputs(tmp_path: Path, *, corrupt: bool = False) -> tuple[Path, Path, str, P
     return corpus, catalog, hashlib.sha256(catalog.read_bytes()).hexdigest(), source
 
 
-@pytest.mark.parametrize("mode", ["adapter", "parts", "notes"])
+@pytest.mark.parametrize("mode", ["adapter", "parts", "notes", "notes-parts"])
 @pytest.mark.parametrize("corrupt", [False, True])
 def test_replay_preserves_text_or_explicit_leaf_failure_without_fabricated_blocks(
-    tmp_path: Path, corrupt: bool, mode: Literal["adapter", "parts", "notes"]
+    tmp_path: Path, corrupt: bool, mode: Literal["adapter", "parts", "notes", "notes-parts"]
 ) -> None:
     corpus, catalog, sha, _ = inputs(tmp_path, corrupt=corrupt)
     before, after = tmp_path / "before.json", tmp_path / "after.json"

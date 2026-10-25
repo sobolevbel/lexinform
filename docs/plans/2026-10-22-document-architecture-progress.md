@@ -2136,3 +2136,78 @@ local HTTP 21 passed, strict docs build/link check и diff check green. XML
 `/private/tmp/lexinform-notes-j048-full-20261025.xml`, SHA
 `17dcfea6c22922313ed3b6d671ea99cee1823581c88efa04eceb108ae90a4971`.
 Точные retained spans после trim/budget и provider input этим срезом не заявляются.
+
+<a id="j049"></a>
+### J049. DA3: сноски связаны с физическими частями и body manifests
+
+Дата: 25 октября 2026. База: `4061e5c1d0e6dd2f62afa16c3c5fc28366039c38` (J048).
+Статус: принят локально; physical/legacy/ZIP corpus checks и полный gate green. DA3 остаётся частичным.
+
+`ExtractedParts.word_notes` содержит `WordPartNoteExtraction`: physical part index и отдельный
+notes manifest. Он ссылается на существующий `word_blocks` body через input SHA/body manifest SHA;
+JSON не содержит второй копии body. Orphan/duplicate/wrong-index и чужие input/body SHA отвергаются.
+Word note origins по-прежнему не являются retained spans или доказательством прочтения моделью.
+
+Optional `WordNoteTextExtractor` даёт body и notes одним read. `extract_parts` использует его
+по умолчанию; `include_word_notes=False` оставляет только body, выключение body отключает и notes.
+Legacy/body-only readers не получают выдуманные notes. Обычный `extract_document` сохраняет
+прежнюю string-only обработку без удержания новых inventories; schema 48, persisted selections,
+batch/memo/provider payloads и storage backend прежние. Word 2003/Flat OPC/ODT/DOC coordinates,
+внутренняя структура таблиц сносок и unknown objects остаются открытыми в DA3.
+
+103 focused tests green, mypy 365 файлов, Ruff check/format 396. Проверены root/nested/duplicate
+byte identity, одна операция чтения, оба opt-outs, body-only reader, round trip, отсутствие копии
+body в note manifest и orphan/duplicate/wrong-index/foreign SHA bindings. Existing negative XML
+origin replay остаётся активен. Tracked runner получил mode `notes-parts`.
+
+Raw note replay passed: 3054 observations совпали с J048 committed baseline text/exception
+records; 3052 physical manifests сохраняют те же body/note SHA/counts/losses, что leaf J048.
+Artifact `/private/tmp/lexinform-notes-parts-j049-after-20261025.json`, SHA
+`e550497c2924d4e5dd46822ce555374ec5d0004d12fb0836b64d7b817a85b21f`.
+Все XML paths независимо разрешены в raw input; missing/unverified branches покрыты focused
+cases. Network/input writes запрещены, source fingerprints не менялись во время replay.
+
+Legacy extraction compare passed: 3067 Word/XML и 69 ZIP, 5700 inputs, 19198 observations,
+changes/missing/error observations/lost or new automatic matches 0, source guard green.
+`/private/tmp/lexinform-notes-parts-j049-legacy-20261025.json`, SHA
+`7e75bc5da00e04ba6a16653fd20a58f923e25f7d989414c950cecaea973e37d7`.
+Дополнительный raw archive replay проверяет именно rich physical API на всех 69 ZIP,
+сверяет прежние parts/body hashes и разрешает member bytes к independent leaf XML checker.
+
+J048 выпущен: CI [40196248484](https://github.com/sobolevbel/lexinform/actions/runs/40196248484)
+и Deploy relay [40196704734](https://github.com/sobolevbel/lexinform/actions/runs/40196704734)
+success на `4061e5c1d0e6dd2f62afa16c3c5fc28366039c38`; test/web/docs jobs green,
+3979 passed, 32 deselected, без xfail. Deploy `b522a00288b2 -> 4061e5c1d0e6`, relay up 45 s
+после restart, mismatch отсутствует. Evidence `/private/tmp/lexinform-release-j048-20261025.json`;
+это metadata/log verification, не ручной production run или Telegram send.
+
+Первый дополнительный ZIP checker не засчитан: стандартный `zipfile.read` не раскрыл member
+Deflate64. Application decoder поддерживает его; checker повторяется с существующим bounded
+member decoder, CRC/size checks и проверкой полученных bytes против physical SHA.
+Это не независимый oracle распаковки; последующая проверка XML coordinates остаётся отдельной.
+Production code и test assertions ради checker не менялись.
+
+Финальный рабочий gate: 3991 passed, failures/errors/skips/xfails 0, mypy 365 файлов,
+Ruff check/format 396, local HTTP 21 passed, strict docs build/link check и diff check green.
+XML `/private/tmp/lexinform-notes-parts-j049-full-20261025.xml`, SHA
+`b597ee49db3a4f91401dce51ac02fe14b72bac6e63320c0fe56a49d4d19699fb`.
+Проверки body/note/raw identities не меняют legal selection, source tracking или persisted state.
+
+Дополнительный rich archive qualification passed: все 69 raw ZIP, 1697 physical parts,
+1062 Word body/note manifests. Прежние part payload hashes, rejections и body manifest SHA равны
+committed baseline; каждый body имеет ровно одну notes binding. 5222 note и 1296 call positions
+проверены independent leaf XML checker после раскрытия member chain и сверки physical SHA.
+Changes/changed inputs/missing note bindings 0; source/input guards green. Это machine regression,
+не legal oracle, не независимый decoder oracle и не доказательство полноты чтения.
+
+Baseline `/private/tmp/lexinform-note-archives-j049-before-20261025.json`, SHA
+`c3199ec6af3acbc94f65432a2f60af0ba7198faca4ebde49b3dab21529c5774e`;
+after `/private/tmp/lexinform-note-archives-j049-after-20261025.json`, SHA
+`21ebabfa01236dd41e73b66679472bad86b315b0973d304eaca52cff3cee0a0f`;
+proof `/private/tmp/lexinform-note-archives-j049-accepted-20261025.json`, SHA
+`01a9eed5898e961f4421c8cb91f71ed746b6bd804caa6f2ac6529e9d3ac8ab9b`.
+Скрипт `/private/tmp/lexinform-note-archives-j049-20261025.py` использует существующий bounded
+member decoder и tracked note replay checker; Deflate64 CRC/size bounds сохранены.
+Суммарные corpus counts описывают observations, не уникальные юридические документы.
+Все source fingerprints рабочего checkout совпадают с qualified raw note replay.
+Area rules теперь охватывают `models/word_notes.py`; новый storage/profile не включён.

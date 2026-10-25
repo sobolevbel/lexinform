@@ -364,6 +364,13 @@ class WordPartExtraction(BaseModel):
     extraction: WordTextExtraction
 
 
+class WordPartNoteExtraction(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    part_index: int = Field(ge=0)
+    extraction: WordNoteExtraction
+
+
 class ExtractedParts(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -372,9 +379,10 @@ class ExtractedParts(BaseModel):
     rejected: tuple[str, ...] = ()
     pdf_pages: tuple[PdfPartExtraction, ...] = ()
     word_blocks: tuple[WordPartExtraction, ...] = ()
+    word_notes: tuple[WordPartNoteExtraction, ...] = ()
 
     @model_validator(mode="after")
-    def pdf_pages_refer_to_physical_parts(self) -> Self:
+    def manifests_refer_to_physical_parts(self) -> Self:
         seen: set[int] = set()
         for result in self.pdf_pages:
             index = result.part_index
@@ -393,6 +401,14 @@ class ExtractedParts(BaseModel):
                 raise ValueError("Word blocks refer to different physical bytes")
             if part.text != word_result.extraction.legacy_text:
                 raise ValueError("Word blocks differ from the physical part text")
+            seen.add(index)
+        bodies = {result.part_index: result.extraction for result in self.word_blocks}
+        seen.clear()
+        for note_result in self.word_notes:
+            index = note_result.part_index
+            if index not in bodies or index in seen:
+                raise ValueError("Word notes require one existing body manifest")
+            WordDetailedExtraction(body=bodies[index], notes=note_result.extraction)
             seen.add(index)
         return self
 

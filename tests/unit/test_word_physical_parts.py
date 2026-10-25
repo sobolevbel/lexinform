@@ -4,7 +4,13 @@ import pytest
 from pydantic import ValidationError
 
 from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
-from lexinform.models import DocumentPart, ExtractedParts, WordPartExtraction, WordTextExtraction
+from lexinform.models import (
+    DocumentPart,
+    ExtractedParts,
+    WordDetailedExtraction,
+    WordPartExtraction,
+    WordTextExtraction,
+)
 from tests.fakes import FakeTextExtractor
 from tests.unit.test_physical_extraction import archive, docx
 
@@ -12,7 +18,12 @@ from tests.unit.test_physical_extraction import archive, docx
 class CountingWord(DocxTextExtractor):
     def __init__(self) -> None:
         self.block_reads = 0
+        self.note_reads = 0
         self.string_reads = 0
+
+    def extract_with_notes(self, data: bytes) -> WordDetailedExtraction:
+        self.note_reads += 1
+        return super().extract_with_notes(data)
 
     def extract(self, data: bytes) -> str:
         self.string_reads += 1
@@ -39,7 +50,7 @@ def test_word_blocks_refer_to_root_physical_bytes_and_exact_part_text() -> None:
     assert linked.extraction.input_sha256 == result.parts[0].sha256 == result.input_sha256
     assert result.parts[0].text == linked.extraction.legacy_text == "Art. 1. Termin 30 dni."
     assert result.parts[0].role == "unknown" and result.parts[0].pages == 0
-    assert word.block_reads == 1 and word.string_reads == 0
+    assert word.block_reads + word.note_reads == 1 and word.string_reads == 0
     assert ExtractedParts.model_validate_json(result.model_dump_json()) == result
 
 
@@ -66,7 +77,7 @@ def test_normal_legal_selection_and_explicit_opt_out_do_not_retain_word_blocks()
 
     assert not physical.word_blocks
     assert physical.parts[0].text == selected.text == "USTAWA"
-    assert word.block_reads == 0 and word.string_reads == 2
+    assert word.block_reads == word.note_reads == 0 and word.string_reads == 2
 
 
 def test_a_legacy_reader_does_not_fabricate_word_block_records() -> None:

@@ -64,8 +64,13 @@ XML parts, note element paths, and reference paths within body paragraphs before
 Calls distinguish expanded, empty, missing and unverified origins. Duplicate IDs preserve the
 legacy last entry and report a loss; nonstandard XML can retain legacy text with unknown origin.
 Inline Word 2003 notes and note-internal references are outside this reference view. The notes
-manifest adds no persisted fields and is not yet linked through the physical-parts API.
-Replay mode `notes` validates both note and reference coordinates in original XML. These origins
+manifest adds no persisted fields. `ExtractedParts.word_notes` links it to the matching body
+manifest and physical part by index, input SHA and body manifest SHA. Duplicate ZIP members
+keep separate links. The optional `WordNoteTextExtractor` port gathers body and notes in one
+read; body-only readers leave note records absent. `include_word_notes=False` retains only
+body blocks; disabling body blocks also disables their dependent notes.
+Replay modes `notes` and `notes-parts` validate note and reference coordinates through leaf
+and physical-parts APIs respectively. These origins
 do not assert retained note spans after trimming, budget fitting or provider request preparation.
 
 `trim_print.projection` records source positions while trimming and gives generated omission

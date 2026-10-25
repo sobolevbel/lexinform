@@ -17,6 +17,7 @@ paths:
   - "src/lexinform/services/cost.py"
   - "src/lexinform/services/rcl_projects.py"
   - "src/lexinform/models/documents.py"
+  - "src/lexinform/models/word_notes.py"
   - "src/lexinform/models/analysis.py"
   - "tests/scenario/test_text_prefilter.py"
   - "tests/scenario/test_analysis*.py"

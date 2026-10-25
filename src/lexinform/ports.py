@@ -81,6 +81,7 @@ from lexinform.models import (
     TriageRecord,
     UpdateNews,
     Vote,
+    WordDetailedExtraction,
     WordTextExtraction,
     WykazEntry,
 )
@@ -274,6 +275,11 @@ class PdfPageTextExtractor(Protocol):
 @runtime_checkable
 class WordBlockTextExtractor(Protocol):
     def extract_blocks(self, data: bytes) -> WordTextExtraction: ...
+
+
+@runtime_checkable
+class WordNoteTextExtractor(Protocol):
+    def extract_with_notes(self, data: bytes) -> WordDetailedExtraction: ...
 
 
 class TextExtractor(Protocol):

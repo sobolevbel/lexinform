@@ -34,6 +34,7 @@ from lexinform.models.documents import (
     WordBodyState,
     WordDetailedExtraction,
     WordPartExtraction,
+    WordPartNoteExtraction,
     WordTextBlock,
     WordTextExtraction,
 )
@@ -45,7 +46,12 @@ from lexinform.models.word_notes import (
     WordNoteExtraction,
     WordNoteXmlPart,
 )
-from lexinform.ports import PdfPageTextExtractor, TextExtractor, WordBlockTextExtractor
+from lexinform.ports import (
+    PdfPageTextExtractor,
+    TextExtractor,
+    WordBlockTextExtractor,
+    WordNoteTextExtractor,
+)
 from lexinform.sections import (
     APPENDIX_KINDS,
     PAGE_BREAK,
@@ -601,24 +607,35 @@ class DocumentTextExtractor:
         return self.extract_document(data).text
 
     def extract_parts(
-        self, data: bytes, *, include_pdf_pages: bool = True, include_word_blocks: bool = True
+        self,
+        data: bytes,
+        *,
+        include_pdf_pages: bool = True,
+        include_word_blocks: bool = True,
+        include_word_notes: bool = True,
     ) -> ExtractedParts:
         parts: list[DocumentPart] = []
         rejected: list[str] = []
         pdf_pages: list[PdfPartExtraction] | None = [] if include_pdf_pages else None
         word_blocks: list[WordPartExtraction] | None = [] if include_word_blocks else None
         digest = hashlib.sha256(data).hexdigest()
-        self._collect(data, (), digest, parts, rejected, [0, 0], pdf_pages, word_blocks)
+        word_notes: list[WordPartNoteExtraction] | None = (
+            [] if include_word_notes and include_word_blocks else None
+        )
+        self._collect(data, (), digest, parts, rejected, [0, 0], pdf_pages, word_blocks, word_notes)
         return ExtractedParts(
             input_sha256=digest,
             parts=tuple(parts),
             rejected=tuple(rejected),
             pdf_pages=tuple(pdf_pages or ()),
             word_blocks=tuple(word_blocks or ()),
+            word_notes=tuple(word_notes or ()),
         )
 
     def extract_document(self, data: bytes) -> ExtractedDocument:
-        extracted = self.extract_parts(data, include_pdf_pages=False, include_word_blocks=False)
+        extracted = self.extract_parts(
+            data, include_pdf_pages=False, include_word_blocks=False, include_word_notes=False
+        )
         parts: list[DocumentPart] = []
         for part in extracted.parts:
             kind = document_kind(part.text) if part.text.strip() else "unknown"
@@ -685,15 +702,21 @@ class DocumentTextExtractor:
         usage: list[int],
         pdf_pages: list[PdfPartExtraction] | None,
         word_blocks: list[WordPartExtraction] | None,
+        word_notes: list[WordPartNoteExtraction] | None,
     ) -> None:
         pdf_result: PdfTextExtraction | None = None
         word_result: WordTextExtraction | None = None
+        note_result: WordNoteExtraction | None = None
         if data.startswith(_ZIP_MAGIC):
             try:
                 with zipfile.ZipFile(io.BytesIO(data)) as archive:
                     names = set(archive.namelist())
                     if "word/document.xml" in names:
-                        if word_blocks is not None and isinstance(
+                        if word_notes is not None and isinstance(self._docx, WordNoteTextExtractor):
+                            detailed = self._docx.extract_with_notes(data)
+                            word_result, note_result = detailed.body, detailed.notes
+                            text = word_result.legacy_text
+                        elif word_blocks is not None and isinstance(
                             self._docx, WordBlockTextExtractor
                         ):
                             word_result = self._docx.extract_blocks(data)
@@ -730,6 +753,7 @@ class DocumentTextExtractor:
                                     usage,
                                     pdf_pages,
                                     word_blocks,
+                                    word_notes,
                                 )
                             except Exception as exc:
                                 rejected.append(
@@ -773,6 +797,10 @@ class DocumentTextExtractor:
         if word_blocks is not None and word_result is not None:
             word_blocks.append(
                 WordPartExtraction(part_index=len(parts) - 1, extraction=word_result)
+            )
+        if word_notes is not None and note_result is not None:
+            word_notes.append(
+                WordPartNoteExtraction(part_index=len(parts) - 1, extraction=note_result)
             )
 
     def _select_parts(self, parts: list[DocumentPart], rejected: list[str]) -> ExtractedDocument:
