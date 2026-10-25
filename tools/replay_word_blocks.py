@@ -9,18 +9,40 @@ from pathlib import Path
 from typing import Any, Literal
 from xml.etree import ElementTree as ET
 
-from lexinform.adapters.document_text import DocxTextExtractor
+from lexinform.adapters.doc_text import DocTextExtractor
+from lexinform.adapters.document_text import DocumentTextExtractor, DocxTextExtractor
+from lexinform.adapters.pdf_text import PypdfTextExtractor
+from lexinform.models import WordTextExtraction
 from tools.corpus_check import code_version, source_fingerprints
 from tools.corpus_external import CorpusReads
 from tools.replay_input_coverage import digest, read_artifact
 
 
-def snapshot(data: bytes, *, adapter: bool) -> tuple[dict[str, Any], dict[str, Any] | None]:
+def physical_word(data: bytes, reader: DocxTextExtractor) -> WordTextExtraction:
+    extracted = DocumentTextExtractor(
+        PypdfTextExtractor(), reader, DocTextExtractor()
+    ).extract_parts(data, include_pdf_pages=False)
+    if not extracted.word_blocks:
+        if any(part.text for part in extracted.parts):
+            raise RuntimeError("Word parts have text without their manifest")
+        reader.extract(data)
+        raise RuntimeError("Word parts lost a readable manifest")
+    if len(extracted.parts) != 1 or len(extracted.word_blocks) != 1:
+        raise RuntimeError("A single Word input must retain one physical part")
+    linked = extracted.word_blocks[0]
+    if linked.part_index != 0 or extracted.rejected:
+        raise RuntimeError("Word manifest has an invalid physical link")
+    return linked.extraction
+
+
+def snapshot(
+    data: bytes, *, adapter: bool, physical_parts: bool = False
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
     reader = DocxTextExtractor()
     result = None
     try:
         if adapter:
-            result = reader.extract_blocks(data)
+            result = physical_word(data, reader) if physical_parts else reader.extract_blocks(data)
             text = result.legacy_text
         else:
             text = reader.extract(data)
@@ -78,7 +100,7 @@ def run(
     catalog_sha256: str,
     output: Path,
     *,
-    mode: Literal["library", "adapter"],
+    mode: Literal["library", "adapter", "parts"],
     reference: Path | None = None,
     reference_sha256: str | None = None,
 ) -> int:
@@ -101,7 +123,7 @@ def run(
     if not inputs:
         raise ValueError("Word population must not be empty")
     previous = None
-    if mode == "adapter":
+    if mode in ("adapter", "parts"):
         if reference is None or reference_sha256 is None:
             raise ValueError("Adapter replay needs a pinned library baseline")
         raw_reference = read_artifact(reference)
@@ -119,6 +141,7 @@ def run(
     before = source_fingerprints()
     result: dict[str, Any] = {
         "suite": "word-blocks-v1",
+        "entrypoint": "physical_parts" if mode == "parts" else "word_leaf",
         "code_sha": code_version(),
         "source_sha256": before,
         "catalog_sha256": catalog_sha256,
@@ -144,7 +167,9 @@ def run(
                 data = path.read_bytes()
                 if digest(data) != sha:
                     raise ValueError("Raw input SHA mismatch")
-                core, physical = snapshot(data, adapter=mode == "adapter")
+                core, physical = snapshot(
+                    data, adapter=mode != "library", physical_parts=mode == "parts"
+                )
                 result["observations"][name] = core
                 if physical is not None:
                     result["physical"][name] = physical
@@ -179,7 +204,7 @@ def main() -> None:
     parser.add_argument("--catalog", type=Path, required=True)
     parser.add_argument("--catalog-sha256", required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--mode", choices=("library", "adapter"), required=True)
+    parser.add_argument("--mode", choices=("library", "adapter", "parts"), required=True)
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--reference-sha256")
     args = parser.parse_args()

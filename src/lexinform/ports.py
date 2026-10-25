@@ -81,6 +81,7 @@ from lexinform.models import (
     TriageRecord,
     UpdateNews,
     Vote,
+    WordTextExtraction,
     WykazEntry,
 )
 from lexinform.models.batch import BatchJob
@@ -268,6 +269,11 @@ class StructuredTextExtractor(Protocol):
 @runtime_checkable
 class PdfPageTextExtractor(Protocol):
     def extract_pages(self, data: bytes) -> PdfTextExtraction: ...
+
+
+@runtime_checkable
+class WordBlockTextExtractor(Protocol):
+    def extract_blocks(self, data: bytes) -> WordTextExtraction: ...
 
 
 class TextExtractor(Protocol):

@@ -1980,3 +1980,81 @@ XML `/private/tmp/lexinform-word-j046-root-20261025.xml`, SHA
 `8a962c9f1407c04810828fa9a51f83207aba7059589e0c6cdda68577c444d9e7`.
 Source fingerprints рабочего checkout совпадают с qualified replay; обычная строка и selection
 не меняются. Новые блоки ещё не привязаны к physical parts; это следующий отдельный срез.
+
+<a id="j047"></a>
+### J047. DA3: привязка Word-блоков к физическим частям
+
+Дата: 25 октября 2026. База: `6d21a59ec9f0ee5053fc237ae0e07b040e889e93` (J046). Статус: принят локально; physical/legacy/comparison corpus checks и полный gate green. DA3 остаётся частичным.
+
+`ExtractedParts.word_blocks` связывает `WordTextExtraction` с одним существующим physical part
+через `WordPartExtraction.part_index`, input SHA и точное равенство legacy text. Повторяющиеся
+bytes в разных ZIP members сохраняют отдельные связи и member chains. Неверный индекс,
+дубликат связи, иной SHA или текст отклоняются validator; persisted `part:N` facts не меняются.
+
+`WordBlockTextExtractor` — optional structural port. `extract_parts` получает Word manifests
+по умолчанию, если reader поддерживает его; старые readers сохраняют прежние strings без
+выдуманных blocks. `include_word_blocks=False` и обычный `extract_document` не удерживают
+инвентарь блоков. Один rich Word read одновременно даёт физические блоки и прежний текст.
+Неподдержанный body сохраняет SHA/state с manifest без блоков; malformed/limited XML — прежний
+rejection без fake part/manifest. Обычный путь выбора/анализа не переключается на новую policy.
+
+Расширен `tools/replay_word_blocks.py`: mode `parts` читает через physical-parts API и проверяет
+те же text/exception observations и XML paths против pinned leaf baseline J046. При отсутствующем
+manifest повторяется прежний leaf read: readable Word не может незаметно потерять блоки,
+прежний leaf failure остаётся failure observation. Raw files, source fingerprints и reference
+SHA защищены прежним read-only guard. Общий external extraction replay дополнительно проверяет
+legacy selection, Word/XML и ZIP; corpus artifacts содержат hashes/counts, не block texts.
+
+84 focused tests green, mypy 362 файлов, Ruff check/format 393. Проверены root/nested/duplicate
+physical identity, opt-out и legacy reader, unsupported/malformed body и четыре повреждения
+binding; runner tests проверяют leaf и physical entrypoints. SQL/schema, archive/backend,
+PreparedInput и note-part addresses остаются прежними; storage decisions здесь нет.
+
+Physical-parts compare passed: 3054 text/exception observations совпали с committed leaf
+baseline J046; 3052 manifests и 1972231 XML coordinates проверены через новый entrypoint.
+Changes/errors/changed inputs/code 0. Artifact
+`/private/tmp/lexinform-word-parts-j047-after-20261025.json`, SHA
+`1400b363be733d5045fa7b8d4a269b040586bede27eb999beee4478db9cef377`.
+Два прежних size-limit failures сохраняют отсутствие part/manifest.
+
+Legacy external replay также passed: 3067 Word/XML и 69 ZIP, 5700 inputs, 19198 observations;
+changes/missing/error observations/lost or new automatic matches 0. Artifact
+`/private/tmp/lexinform-word-parts-j047-legacy-20261025.json`, SHA
+`a6c34989c406a66faee4a9d6e2a0b338f486f67b17d2ec11b2ff6c3bd5b35848`.
+Source guard `.sources.json` подтверждает неизменность кода, SHA
+`6796b9884d8817dcc2b2997a8f9c623959d78ecc0683b5c16cb94a1575f2be69`.
+Обычный reader/selection contract сохранён; raw files остаются вне production state.
+
+J046 выпущен: commit `6d21a59ec9f0ee5053fc237ae0e07b040e889e93`,
+CI [40192339730](https://github.com/sobolevbel/lexinform/actions/runs/40192339730)
+и Deploy relay [40192776738](https://github.com/sobolevbel/lexinform/actions/runs/40192776738)
+success на этом SHA; test/web/docs jobs green, 3938 passed, 32 deselected, без xfail.
+Deploy log: `f2f2c374c701 -> 6d21a59ec9f0`, relay up 45 s после restart, mismatch отсутствует.
+Evidence `/private/tmp/lexinform-release-j046-20261025.json`; это metadata/log verification.
+
+Финальный рабочий gate: 3950 passed, failures/errors/skips/xfails 0, mypy 362 файлов,
+Ruff check/format 393, local HTTP 21 passed, strict docs build/link check и diff check green.
+XML `/private/tmp/lexinform-word-parts-j047-root-20261025.xml`, SHA
+`c629c60945232db9ccac73af0d589dc5654d404b73f81b57473cd81024dec719`.
+Физический manifest/part SHA и текст проверяются до legal selection; обычный путь анализа
+сохраняет прежнюю policy и не удерживает новые block inventories. Schema 48 прежняя.
+
+Дополнительный comparison profile до/после всех трёх срезов: committed `be49fd4` и рабочий J047
+независимо записаны через `run_external(..., ("comparison",), mode="baseline")`; snapshots затем
+сверены существующим `compare_rows`, с проверкой source guards, population и всех input SHA.
+1028 реальных пар, 6594 controlled mutations на 1698 documents, 2169 input paths;
+changes/changed inputs/lost or new automatic matches 0. Семейства: сроки/перестановка сроков,
+год, отрицание, десятичная запись, отдельное число, ссылка на статью и круг адресатов.
+Text-digest misses 0 до/после; прежние digest/guard совпадения в synthetic probes сохранены.
+Они включают реквизиты цитирования и не являются независимыми legal labels или доказательством
+неизменности права. Новая normalization/selection policy этим сравнением не вводится.
+
+Baseline `/private/tmp/lexinform-comparison-j045-before-20261025.json`, SHA
+`ae00d62f9e3f5acfa690383a9d7a872b3faa60767e4c8ae32b52efd310ba7864`;
+candidate `/private/tmp/lexinform-comparison-j047-candidate-20261025.json`, SHA
+`3cefa8cc184f015ca286301a06d5401c5cb79abb1c794a9f6068c1ee65c3e1fa`;
+comparison proof `/private/tmp/lexinform-comparison-j047-accepted-20261025.json`, SHA
+`ecc3921654b79aabc65b41db6808663f1e0f0d5272a13c3c777a3703c5a8ff4f`.
+Оба `.sources.json` guards green; candidate fingerprints совпадают с рабочим checkout.
+Скрипты исполнения/сверки: `/private/tmp/lexinform-compare-profile-20261025.py` и
+`/private/tmp/lexinform-compare-recorded-20261025.py`; policy functions остаются tracked tools.

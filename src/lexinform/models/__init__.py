@@ -128,6 +128,7 @@ from lexinform.models.documents import (
     PdfPageText,
     PdfPartExtraction,
     PdfTextExtraction,
+    WordPartExtraction,
     WordTextBlock,
     WordTextExtraction,
 )
@@ -370,6 +371,7 @@ __all__ = [
     "PdfPageText",
     "PdfPartExtraction",
     "PdfTextExtraction",
+    "WordPartExtraction",
     "WordTextBlock",
     "WordTextExtraction",
     "AmendmentSourceEvidence",

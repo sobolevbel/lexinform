@@ -50,9 +50,13 @@ reproduce the unchanged legacy string without duplicating nested cell text. Inpu
 Python version and canonical manifest SHA identify this result. Word still has no page count.
 The view retains existing insertion/deletion, cached-field, MC fallback and inline-note rules;
 note-part coordinates, full layout and completeness remain unknown. `body_state=read` means a
-supported body was traversed in that view. The rich leaf is not yet bound to `ExtractedParts`;
-ordinary `extract` retains no block inventory. No fields are added to stored selections or SQL.
-`tools/replay_word_blocks.py` checks legacy text and resolves each path in the original XML.
+supported body was traversed in that view. `ExtractedParts.word_blocks` binds each manifest to
+its physical part by index, byte SHA and
+exact legacy text, including duplicate members of nested ZIPs. The optional `WordBlockTextExtractor`
+port leaves these records absent for legacy readers. `include_word_blocks=False` and the ordinary
+`extract_document` path retain no block inventory. No fields are added to stored selections or SQL.
+`tools/replay_word_blocks.py` checks legacy text and resolves each path in the original XML;
+mode `parts` exercises this physical binding.
 
 `trim_print.projection` records source positions while trimming and gives generated omission
 markers no source origin. Adjacent copied pages coalesce into one range. `selection_for_input`

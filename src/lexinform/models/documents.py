@@ -337,6 +337,13 @@ class PdfPartExtraction(BaseModel):
     extraction: PdfTextExtraction
 
 
+class WordPartExtraction(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    part_index: int = Field(ge=0)
+    extraction: WordTextExtraction
+
+
 class ExtractedParts(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -344,6 +351,7 @@ class ExtractedParts(BaseModel):
     parts: tuple[DocumentPart, ...] = ()
     rejected: tuple[str, ...] = ()
     pdf_pages: tuple[PdfPartExtraction, ...] = ()
+    word_blocks: tuple[WordPartExtraction, ...] = ()
 
     @model_validator(mode="after")
     def pdf_pages_refer_to_physical_parts(self) -> Self:
@@ -354,6 +362,17 @@ class ExtractedParts(BaseModel):
                 raise ValueError("PDF page records require one existing physical part")
             if self.parts[index].sha256 != result.extraction.input_sha256:
                 raise ValueError("PDF page records refer to different physical bytes")
+            seen.add(index)
+        seen.clear()
+        for word_result in self.word_blocks:
+            index = word_result.part_index
+            if index >= len(self.parts) or index in seen:
+                raise ValueError("Word blocks require one existing physical part")
+            part = self.parts[index]
+            if part.sha256 != word_result.extraction.input_sha256:
+                raise ValueError("Word blocks refer to different physical bytes")
+            if part.text != word_result.extraction.legacy_text:
+                raise ValueError("Word blocks differ from the physical part text")
             seen.add(index)
         return self
 

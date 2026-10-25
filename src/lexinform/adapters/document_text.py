@@ -32,11 +32,12 @@ from lexinform.models.documents import (
     PdfPartExtraction,
     PdfTextExtraction,
     WordBodyState,
+    WordPartExtraction,
     WordTextBlock,
     WordTextExtraction,
 )
 from lexinform.models.rcl import READABLE_EXTENSIONS, TextRole, text_rank, text_role
-from lexinform.ports import PdfPageTextExtractor, TextExtractor
+from lexinform.ports import PdfPageTextExtractor, TextExtractor, WordBlockTextExtractor
 from lexinform.sections import (
     APPENDIX_KINDS,
     PAGE_BREAK,
@@ -470,21 +471,25 @@ class DocumentTextExtractor:
     def extract(self, data: bytes) -> str:
         return self.extract_document(data).text
 
-    def extract_parts(self, data: bytes, *, include_pdf_pages: bool = True) -> ExtractedParts:
+    def extract_parts(
+        self, data: bytes, *, include_pdf_pages: bool = True, include_word_blocks: bool = True
+    ) -> ExtractedParts:
         parts: list[DocumentPart] = []
         rejected: list[str] = []
         pdf_pages: list[PdfPartExtraction] | None = [] if include_pdf_pages else None
+        word_blocks: list[WordPartExtraction] | None = [] if include_word_blocks else None
         digest = hashlib.sha256(data).hexdigest()
-        self._collect(data, (), digest, parts, rejected, [0, 0], pdf_pages)
+        self._collect(data, (), digest, parts, rejected, [0, 0], pdf_pages, word_blocks)
         return ExtractedParts(
             input_sha256=digest,
             parts=tuple(parts),
             rejected=tuple(rejected),
             pdf_pages=tuple(pdf_pages or ()),
+            word_blocks=tuple(word_blocks or ()),
         )
 
     def extract_document(self, data: bytes) -> ExtractedDocument:
-        extracted = self.extract_parts(data, include_pdf_pages=False)
+        extracted = self.extract_parts(data, include_pdf_pages=False, include_word_blocks=False)
         parts: list[DocumentPart] = []
         for part in extracted.parts:
             kind = document_kind(part.text) if part.text.strip() else "unknown"
@@ -550,14 +555,22 @@ class DocumentTextExtractor:
         rejected: list[str],
         usage: list[int],
         pdf_pages: list[PdfPartExtraction] | None,
+        word_blocks: list[WordPartExtraction] | None,
     ) -> None:
         pdf_result: PdfTextExtraction | None = None
+        word_result: WordTextExtraction | None = None
         if data.startswith(_ZIP_MAGIC):
             try:
                 with zipfile.ZipFile(io.BytesIO(data)) as archive:
                     names = set(archive.namelist())
                     if "word/document.xml" in names:
-                        text = self._docx.extract(data)
+                        if word_blocks is not None and isinstance(
+                            self._docx, WordBlockTextExtractor
+                        ):
+                            word_result = self._docx.extract_blocks(data)
+                            text = word_result.legacy_text
+                        else:
+                            text = self._docx.extract(data)
                     elif "content.xml" in names and "mimetype" in names:
                         text = self._odt.extract(data)
                     else:
@@ -587,6 +600,7 @@ class DocumentTextExtractor:
                                     rejected,
                                     usage,
                                     pdf_pages,
+                                    word_blocks,
                                 )
                             except Exception as exc:
                                 rejected.append(
@@ -627,6 +641,10 @@ class DocumentTextExtractor:
 
         if pdf_pages is not None and pdf_result is not None:
             pdf_pages.append(PdfPartExtraction(part_index=len(parts) - 1, extraction=pdf_result))
+        if word_blocks is not None and word_result is not None:
+            word_blocks.append(
+                WordPartExtraction(part_index=len(parts) - 1, extraction=word_result)
+            )
 
     def _select_parts(self, parts: list[DocumentPart], rejected: list[str]) -> ExtractedDocument:
         candidates: list[tuple[tuple[int, int, int, int], DocumentPart]] = []
