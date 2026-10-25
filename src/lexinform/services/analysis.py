@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from lexinform.analysis_records import RecordFactory, UsageFields
 from lexinform.commission_reviews import COMMISSION_ROLES, commission_text_matches
 from lexinform.concurrency import fan_out
+from lexinform.document_input import amended_input_projection, append_self_amendments
 from lexinform.document_selection import selection_for_input
 from lexinform.document_versions import draft_version
 from lexinform.errors import (
@@ -2718,13 +2719,7 @@ class AnalysisService:
             )
         trimmed = trim_print(text)
         amendments = tuple(part for part in file.selection.parts if part.role == "self_amendment")
-        combined = trimmed.text
-        if amendments:
-            combined += (
-                "\n\nAUTOPOPRAWKI: odrębne propozycje zmian "
-                "do powyższego projektu; nie tekst jednolity.\n"
-            )
-            combined += "\n\n".join(f"Źródło: {part.url}\n{part.text}" for part in amendments)
+        combined = append_self_amendments(trimmed.text, amendments)
         # Said whether anything was dropped or not: a text that goes in whole is the expensive
         # case, and it was the silent one — the package that cost $1.63 logged nothing at all.
         log.info(
@@ -2736,6 +2731,10 @@ class AnalysisService:
         )
         budgeted = self._budget.apply(combined, self._keywords.spans(combined))
         projection = None
+        if amendments and trimmed.projection is not None and budgeted.projection is not None:
+            amended = amended_input_projection(file.selection, trimmed.projection, combined)
+            if amended is not None:
+                projection = budgeted.projection.compose(amended)
         if (
             not amendments
             and trimmed.projection is not None

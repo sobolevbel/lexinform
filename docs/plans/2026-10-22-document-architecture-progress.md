@@ -2446,3 +2446,103 @@ Ruff check/format и strict docs build/link check green. HTTP adapters не ме
 XML `/private/tmp/lexinform-cost-j052-full-20261025.xml`, SHA
 `eff85c79b7a084dc28725bd79b129f557b6dec669baf000bd8e850979dbc9a19`.
 Рабочие source fingerprints совпадают с raw/runtime и final mutation recordings.
+
+<a id="j053"></a>
+### J053. DA5: карта сборки отдельно обозначенных autopoprawki
+
+Дата: 25 октября 2026. База: `4fbce754bd0b3fc59ba7ac5b6d41513f578cfed5` (J052).
+Статус: реализован и принят локально; окончание выпуска записывается отдельно.
+DA5.2 остаётся частичным: неподтверждённые сборки и прочие виды PreparedInput требуют
+отдельных срезов; политика полноты нормативного комплекта DA5.4 пока не меняется.
+
+`document_input` сохраняет прежнюю строку основного текста и отдельных self-amendments.
+Карта учитывает порядок parts в selection и иной порядок их показа: основной текст/support,
+затем отдельно обозначенные предложения. Generated separator, инструкция «не сводный текст»
+и URL labels не получают координат источника. Карта доступна только когда ordered non-amendment
+parts точно воспроизводят вход `trim_print`; SHA/length и итоговый output проверяются.
+При несовпадении остаётся unknown, без подбора диапазонов по похожести или совпавшим строкам.
+Budget/cost fitting compose эту карту через J051–J052, анализ и batch сохраняют прежний формат
+stripped selection. Дополнительных копий файлов/полных текстов в SQLite и новой схемы нет.
+
+Unit/scenario checks покрывают повторяющиеся предложения, перестановку поддержки и поправок,
+generated trim marker, неизвестную сборку/чужую identity/output, обычный и batch input,
+первоначальный budget и дополнительное сокращение стоимости. Политика выбора файла, роль
+предложения, стоимость и содержимое model request остаются прежними.
+
+Inventory взят из 825 RCL projects и 4276 reached-stage snapshots: 355 исторических кандидатов
+с amendment URLs. Предварительные 349 «fully cached» проверяли только наличие main/amendment/
+extra paths, не нормативные ссылки и не пригодность текста. Final replay заново вызывает
+настоящий `TextLoader`, включает normative URLs/альтернативы и сохраняет SHA всех прочитанных
+paths. Снимки corpus заморожены; это не текущая правовая истина.
+
+`tools/replay_amended_inputs.py` сопоставляет committed J052 source export и новый код:
+выбранный документ, selection/input hashes, dropped sections, state/limitations, затем отдельно
+coverage и stripped JSON size. Матрица — полный input и caps 1000/24000 с keywords и без них.
+Guard запрещает сеть, файловые записи и `.env`; cache-read offsets не являются raw/page maps.
+В baseline export заимствованы только replay/probe scripts. Первый before recording отвергнут:
+во время его работы добавлен probe script, поэтому changed-code guard сработал. Before replay
+запущен повторно на неизменных fingerprints, production policy ради проверки не ослаблялась.
+
+J052 выпущен: CI [40207029019](https://github.com/sobolevbel/lexinform/actions/runs/40207029019)
+и Deploy relay [40207415494](https://github.com/sobolevbel/lexinform/actions/runs/40207415494)
+success на `4fbce754bd0b3fc59ba7ac5b6d41513f578cfed5`; test/web/docs green,
+4037 passed, 32 deselected. Deploy `b0185b4d27f4 -> 4fbce754bd0b`, relay up 45 s после restart.
+Evidence `/private/tmp/lexinform-release-j052-20261025.json`; это CI/relay verification,
+не ручной production run, paid LLM, backfill или проверка Telegram reader delivery.
+
+Final corpus recordings: 355 сборок, errors/changed inputs/code 0. Прочитаны 825 metadata
+paths и 556 cache paths; семь кешированных извлечений отсутствуют. Из 355 сборок 292 дали
+text view, 63 не дали пригодного входа. У 291 text view карта восстановлена, всего 1455 maps
+с literal round-trip; это не 291 отправленный анализ. В числе карт 168 selected, 121 unverified,
+две waiting views; policy/gating не меняются. Оставшаяся readable view `12397401/9` после
+fallback уже не имеет отдельных amendment parts и не получает нового утверждения о карте.
+Две inventory rows с normative URLs остаются blocked при прежней политике/cache availability.
+
+Всего проверено 1460 input variants. Document/selection/input hashes, dropped sections,
+states/limitations совпали; extraction coverage и losses кроме `input coverage unknown`
+не менялись. Analysis ranges уточнены в 1420 variants у 284 сборок, без promotion роли
+предложения до нормативного baseline. Семь mapped assemblies без нормативных analysis spans
+не получают их искусственно. Reviewed: `12326400/10` (`512521.zip` cached text), keywords cap
+даёт раздельные retained ranges; `12311506/11` — parts reorder без фиктивных analysis spans;
+`12397401/9` — fallback без отдельного amendment. Raw ZIP extraction этим cache replay
+не квалифицируется повторно, page/scans и недостающий кеш не восстанавливаются.
+
+Inventory `/private/tmp/lexinform-amendment-cohort-j053-probe-20261025.json`, SHA
+`637652a2f91dc5707fd77d80ffa075b1b72a8b5472577f9b0ffbcd070dff62a7`;
+baseline `/private/tmp/lexinform-amendment-j053-before2-20261025.json`, SHA
+`7d49cded87194e5e6799c4dc8e05c3a44aed6d05d51d25a47024704949b5f7df`;
+after `/private/tmp/lexinform-amendment-j053-after-20261025.json`, SHA
+`f050287c48004836510aa4f50964fb4695d809735f94c2b1a04b1ae2c3bf6aa6`.
+
+Meaningful probes: восемь unique main URLs, по шесть изменений срока/суммы/отрицания/круга
+лиц/статьи/даты отдельно в основном тексте и предложении. Всего 96 mutations, 16 controls,
+112 cases и 336 views полного input/caps 1000/24000. Artificial clauses добавлены к реально
+прочитанным cached parts; факты legal completeness для них не заявляются. Семь full-input
+hashes на каждый target/source различны, старые/новые строки совпали, все карты round-trip.
+Границы выбранного cohort и 11 неподходящих controls записаны в probe output.
+Before `/private/tmp/lexinform-amendment-mutations-j053-before-20261025.json`, SHA
+`76535e0eb7374a37841dd255ae49a97232e1c9225b9bea5515a80363a7e93d11`;
+after `/private/tmp/lexinform-amendment-mutations-j053-after-20261025.json`, SHA
+`2670e60253dc3356e80fc12b56c76fccc8d2aaebd42f55c26319e9bb71eba022`.
+Скрипт `/private/tmp/lexinform-amendment-mutations-j053-20261025.py`.
+
+Stripped selection JSON delta: максимум 91 byte для full input, 748 bytes для keyword-24000,
+суммарно 195021 bytes по всей матрице пяти вариантов и повторных исторических стадий.
+Это не прогноз production dump и не пять сохраняемых запросов на каждую стадию.
+Новая projection остаётся in-memory, schema 48 и retention прежние, backfill не выполняется.
+
+Финальный gate: 4047 passed, failures/errors/skips/xfails 0, mypy 373 файлов,
+Ruff check/format для src/tests/tools и strict docs build/link check green.
+Acceptance script подтвердил pinned recordings, неизменные source fingerprints и XML gate
+с 4047 tests, errors/failures/skipped 0, 623.471 s. Tool outputs этой сессии содержат результат;
+после смены среды временные файлы `/private/tmp/lexinform-amendment-j053-*` недоступны.
+Это ограничение сохранности измерений, не повод восстанавливать их содержимое по памяти.
+
+Перед коммитом read-only `git ls-remote origin refs/heads/main` не был выполнен: automatic
+approval review не смог завершиться из-за usage limit, предложено повторить после 18:25.
+Отказ не был признанием команды небезопасной. Коммит и push не выполнялись в обход проверки;
+локальные изменения и журнал готовы к завершению после восстановления approval review.
+
+После указанного времени сброса лимита проверка снова доступна: 25 октября, 19:06 Warsaw,
+`git ls-remote origin refs/heads/main` успешно подтвердил точный J052 SHA `4fbce754bd0b3fc59ba7ac5b6d41513f578cfed5`.
+Повтор выполнен после устранения временного ограничения, не альтернативным путём в обход review.
