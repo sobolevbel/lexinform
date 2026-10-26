@@ -147,6 +147,10 @@ contiguous page window, including any cover-letter or triage cut. A triage rejec
 actual opening window. Legacy records without this manifest remain unknown; the manifest itself
 does not retain PDF bytes or promise historical replay. Memo reuse and quiet tracking retain the original paid
 input manifest, including unknown legacy provenance; a fresh download does not replace it.
+Amendment and supplement results retain the same compact manifest as `scan_input`, captured
+before submission in `DigestItemMeta` and copied from there at collection. Amendment revisions
+carry it into the frozen delivery and saved change. Legacy pending items and memo answers retain
+unknown provenance; collecting or reusing them does not infer a manifest from today's file.
 If page selection returns the full file,
 the reported window describes that file and its actual page limit still applies.
 A file with neither text nor pages (a Word

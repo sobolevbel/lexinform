@@ -5,8 +5,14 @@ from collections.abc import Callable
 import pytest
 
 from lexinform.adapters.llm_prompts import scan_note
-from lexinform.models import AmendmentsContext, BatchRequest, DocumentSelection, ScannedDocument
-from lexinform.models.batch import AmendmentsQuestion
+from lexinform.models import (
+    AmendmentsContext,
+    BatchRequest,
+    DocumentSelection,
+    ScannedDocument,
+    SupplementContext,
+)
+from lexinform.models.batch import AmendmentsQuestion, SupplementQuestion
 from lexinform.ports import BatchBackend
 from lexinform.services.documents import TextLoader
 from tests.fakes import FakeSejmGateway, FakeTextExtractor
@@ -88,12 +94,14 @@ def test_legacy_scans_and_text_selection_gain_no_manufactured_manifest_or_json_f
 
 
 @pytest.mark.parametrize("factory", [openai_backend, anthropic_backend])
+@pytest.mark.parametrize("supplement", [False, True])
 def test_exact_metadata_preserves_provider_payload_and_estimated_price(
     factory: Callable[[], BatchBackend],
+    supplement: bool,
 ) -> None:
     _, scan = loaded_scan()
     backend = factory()
-    context = AmendmentsContext(
+    context: AmendmentsContext | SupplementContext = AmendmentsContext(
         number="1",
         title="Projekt",
         source_kind="print",
@@ -102,15 +110,31 @@ def test_exact_metadata_preserves_provider_payload_and_estimated_price(
         previous_summary="Opis",
         scan=scan,
     )
-    request = BatchRequest(
-        custom_id="scan", term=10, number="1", question=AmendmentsQuestion(ctx=context)
+    if supplement:
+        context = SupplementContext(
+            number="1",
+            title="Projekt",
+            document_title="Stanowisko Rządu",
+            source_kind="government_position",
+            text="",
+            truncated=False,
+            previous_summary="Opis",
+            scan=scan,
+        )
+    question = (
+        AmendmentsQuestion(ctx=context)
+        if isinstance(context, AmendmentsContext)
+        else SupplementQuestion(ctx=context)
     )
+    request = BatchRequest(custom_id="scan", term=10, number="1", question=question)
     legacy = request.model_copy(
         update={
-            "question": AmendmentsQuestion(
-                ctx=context.model_copy(
-                    update={"scan": scan.model_copy(update={"scan_input": None})}
-                )
+            "question": question.model_copy(
+                update={
+                    "ctx": context.model_copy(
+                        update={"scan": scan.model_copy(update={"scan_input": None})}
+                    )
+                }
             )
         }
     )

@@ -191,6 +191,9 @@ class AmendmentsRecord(BaseModel):
     source_url: str
     source_kind: SourceKind
     created_at: dt.datetime
+    scan_input: ScanInputManifest | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     input_tokens: int | None = None
     output_tokens: int | None = None
     cache_read_input_tokens: int | None = None
@@ -396,6 +399,9 @@ class SupplementRecord(BaseModel):
     model: str = ""
     prompt_version: str = ""
     created_at: dt.datetime | None = None
+    scan_input: ScanInputManifest | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     input_tokens: int | None = None
     output_tokens: int | None = None
     cache_read_input_tokens: int | None = None

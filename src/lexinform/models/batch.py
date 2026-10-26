@@ -23,6 +23,7 @@ from lexinform.models.enums import SourceKind, TextSource
 from lexinform.models.observations import DeliveryPlan
 from lexinform.models.report import CallKind
 from lexinform.models.reviews import DocumentReview, ReviewContext
+from lexinform.models.scan_input import ScanInputManifest
 from lexinform.models.senate import SenateResolutionIdentity
 
 BatchProvider = Literal["anthropic", "openai"]
@@ -234,6 +235,9 @@ class DigestItemMeta(BaseModel):
     review_context: ReviewContext | None = None
     amendment_revision: AmendmentRevisionTarget | None = None
     amendment_source: SenateResolutionIdentity | None = None
+    scan_input: ScanInputManifest | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     explanation: BatchItemMeta | None = None
 
 

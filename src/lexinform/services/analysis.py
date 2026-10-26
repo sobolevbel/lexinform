@@ -1001,6 +1001,8 @@ class AnalysisService:
                 result = result.model_copy(update={"error": str(exc)})
         elif result.error is None:
             result = result.model_copy(update={"error": "batch answer does not match call kind"})
+        if isinstance(record, (AmendmentsRecord, SupplementRecord)):
+            record.scan_input = meta.scan_input
         with self._repo.atomic():
             if record is not None:
                 if isinstance(record, AmendmentsRecord) and meta.amendment_revision is not None:
@@ -1143,6 +1145,7 @@ class AnalysisService:
                         prompt_version=request.prompt_version,
                         source_kind=document.kind,
                         amendment_source=context.source_check,
+                        scan_input=context.scan.scan_input if context.scan else None,
                         amendment_revision=target.model_copy(update={"delivery": delivery}),
                     ),
                 )
@@ -1533,6 +1536,8 @@ class AnalysisService:
             record = sync_call()
         finally:
             self._ledger.release(estimate)
+        if isinstance(record, (AmendmentsRecord, SupplementRecord)):
+            record.scan_input = meta.scan_input
         self._ledger.charge(record, number=bill.number, kind=kind)
         self._remember_analysis(bill, key, record)
         self._cancel_queued_digest(key)
@@ -1880,7 +1885,10 @@ class AnalysisService:
             AmendmentsQuestion(ctx=ctx),
             key,
             DigestItemMeta(
-                memo_key=key, source_kind=document.kind, amendment_source=ctx.source_check
+                memo_key=key,
+                source_kind=document.kind,
+                amendment_source=ctx.source_check,
+                scan_input=ctx.scan.scan_input if ctx.scan else None,
             ),
             AmendmentsRecord,
             lambda: self._llm.summarize_amendments(ctx),
@@ -1955,7 +1963,11 @@ class AnalysisService:
             SupplementQuestion(ctx=ctx),
             key,
             DigestItemMeta(
-                memo_key=key, delivery_key=delivery_key, source_kind=document.kind, title=title
+                memo_key=key,
+                delivery_key=delivery_key,
+                source_kind=document.kind,
+                title=title,
+                scan_input=ctx.scan.scan_input if ctx.scan else None,
             ),
             SupplementRecord,
             lambda: self._llm.digest_supplement(ctx),

@@ -403,6 +403,11 @@ def test_unreadable_word_uses_a_whole_pdf_batch_and_requires_source_evidence(
     assert ctx.text == "" and ctx.scan is not None
     assert ctx.scan.data == "Y292ZXI=" and not ctx.scan.truncated
     assert ctx.source_check and ctx.source_check.scan
+    manifest = ctx.scan.scan_input
+    assert manifest is not None, "the revision reads a newly downloaded PDF"
+    item = w.repo.list_llm_batch_items(w.repo.list_open_llm_batches()[0].batch_id)[0]
+    assert isinstance(item.meta, DigestItemMeta), "the revision uses secondary batch metadata"
+    assert item.meta.scan_input == manifest
     w.repo.restore(w.repo.dump())
     w.batch.resolve()
 
@@ -412,6 +417,12 @@ def test_unreadable_word_uses_a_whole_pdf_batch_and_requires_source_evidence(
     assert bool(revisions) == verified
     if verified:
         assert revisions[0].status is PublicationStatus.SENT
+        delivery = revisions[0].delivery
+        assert delivery is not None, "a sent revision retains its frozen delivery"
+        amendment = StatusChange.model_validate_json(delivery.change_json).amendments
+        assert amendment is not None and amendment.scan_input == manifest, (
+            "the verified revision freezes the answer with its exact input manifest"
+        )
     else:
         assert w.repo.publication_by_id(original.id) == original
 

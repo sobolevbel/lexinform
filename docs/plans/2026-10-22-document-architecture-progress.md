@@ -2731,3 +2731,62 @@ Ruff check/format src/tests/tools и docs build/links green. XML `out/corpus/j05
 CI manifest slice 7 observations passed, captured code snapshot сохранён.
 [Acceptance evidence](../assets/audits/2026-10-26-scan-reuse/validation.json) фиксирует before/after XML,
 неизменность физического PDF-кода J055 и canceled/skipped исход прежнего выпуска.
+
+J055–J056 выпущены на `b168eda55e3ab71a649afa6e248773efccbacc8f`: CI
+[40289298750](https://github.com/sobolevbel/lexinform/actions/runs/40289298750) success,
+test/web/docs green, 4105 passed / 32 deselected, strict mypy 386 файлов. Deploy relay
+[40289814162](https://github.com/sobolevbel/lexinform/actions/runs/40289814162) success:
+`14c506d00720 → b168eda55e3a`, сервис up 45 s после restart.
+Evidence: `out/corpus/j056/release.json`; independent scheduled bot runs не аудировались.
+
+<a id="j057"></a>
+### J057. DA3/DA5: scan provenance вторичных результатов и исправлений
+
+Дата: 26 октября 2026. База: `b168eda55e3ab71a649afa6e248773efccbacc8f`.
+Статус: реализован и принят локально; интеграция со свежим main и выпуск проверяются отдельно.
+
+`AmendmentsRecord` и `SupplementRecord` получают необязательный компактный `scan_input`.
+Manifest записывается вместе с request в `DigestItemMeta` при обычной постановке и отдельном
+`revise_amendments`. Collect переносит именно frozen metadata до сохранения memo и revision
+delivery. Синхронный compatibility-путь supplement сохраняет manifest до memoization.
+Текстовые/bare/legacy records не получают null-поле; schema и raw/PDF storage не меняются.
+
+Повторное применение memo сохраняет исходный manifest или unknown, включая смену сериализации
+свежего PDF с прежней source identity. Pending items старого кода с отсутствующим manifest
+успешно собираются после restore и не получают выдуманную историю. Повторный collect сохраняет
+один memo, обходится без download; поправки по сканам по-прежнему требуют batch, а Senate source
+evidence валидируется до применения. Успешный `/amendments` сохраняет manifest в frozen change;
+ответ без подтверждения источника не создаёт исправление сообщения.
+
+Область оставшихся работ: хранение completed derivatives и версии обработки DA3/DA5;
+общая immutable result/application history DA6. Joint/name не принимают PDF, reviews сейчас
+принимают `ReviewDocument.text`; им scan metadata не приписывается. Новых backend, retention,
+платных вызовов и production backfill этот срез не вводит.
+
+До изменения девять новых сценариев failed на отсутствии сохраняемого manifest. После:
+focused suite **112 passed**; полный gate **4120 passed**, errors/failures/skips/xfails 0,
+strict mypy 387 файлов, Ruff check/format src/tests/tools, strict docs build/links green.
+Provider checks для amendments и supplement подтверждают равенство payload и стоимости у
+OpenAI и Anthropic. Новые сценарии проверяют workers=1/4, pending restore, повторный collect,
+legacy pending/memo, смену сериализации при reuse и frozen revision delivery.
+
+Защитный replay Сената: **1825 файлов / 816 observations**, **701 selected**, **23 scan pending**;
+**4903 mutations** и **11398 negative controls**. `j057-senate-baseline` и
+`j057-senate-current` совпали: zero changed outcomes/inputs. Это saved text и проверка SHA
+сохранённых raw, не новый extraction/OCR или чтение scan моделью. Девять file/AST checks
+подтверждают неизменность физического PDF-кода, loaders и memo identity; J055 raw replay
+остаётся свидетельством того же физического кода. CI manifest slice **7 observations passed**.
+Ошибочный путь первого observer сохранён как `j057-ci: not_run`; правильный
+`tests/fixtures/corpus_check` использован в `j057-ci-v2`.
+
+Четыре production-profile fixtures с fake providers: pending amendments/supplement добавляют
+по **299 SQL / 7 gzip bytes**; completed amendments **598 / 124**, completed supplement
+**897 / 133**. SQLite не вырос у первых трёх fixtures, вырос на 8192 bytes у completed supplement.
+Хеш сериализованного request, custom ID и estimated cost прежние. Все четыре DB прошли
+integrity/foreign-key checks; исходный `b168eda` восстановил pending requests и прочитал
+completed memos. Rollback может потерять audit fields при повторной сериализации старым reader;
+сохранённый provider request остаётся пригодным. Это bounded measurements, не production forecast.
+
+[Acceptance evidence](../assets/audits/2026-10-26-secondary-scan-input/validation.json) содержит
+hashes XML/run manifests, размеры, повторяемый observer и проверенный rollback; локальные outputs
+в `out/corpus/j057` и `out/corpus/runs/j057-*`. Backend/retention/defaults и SQLite schema прежние.
