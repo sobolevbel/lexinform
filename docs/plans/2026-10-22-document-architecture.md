@@ -603,7 +603,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
   Потерянное обязательное приложение снимает доказанную полноту после всех сокращений.
   Текст OSR/обоснования не становится нормативным baseline; предупреждение о неизвестной
   применимости поддержки доходит в prompt.
-- [ ] DA5.5. **Частично: [J055](2026-10-22-document-architecture-progress.md#j055), компактный exact-input manifest, full/triage page windows и совместимость старых memo identities.** Сохранить scan derivatives из DA3, точные page maps и параметры triage/full scan.
+- [ ] DA5.5. **Частично: [J055](2026-10-22-document-architecture-progress.md#j055), компактный exact-input manifest, full/triage page windows; [J056](2026-10-22-document-architecture-progress.md#j056), сохранение paid-input identity при memo reuse и quiet tracking.** Сохранить scan derivatives из DA3, точные page maps и параметры triage/full scan.
   Token counting, fallback, overflow и output schema относятся к тому же immutable input.
 - [ ] DA5.6. При постановке batch фиксировать PreparedInput ref, сериализованный request либо
   достаточный проверяемый request manifest, исходный prompt/schema/options. После submit

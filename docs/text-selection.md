@@ -145,7 +145,7 @@ file's `sha256`, standing where a text's digest would. New primary analyses also
 `selection.scan_input`: the exact attached PDF SHA/size, original SHA/size/page count and the
 contiguous page window, including any cover-letter or triage cut. A triage rejection records its
 actual opening window. Legacy records without this manifest remain unknown; the manifest itself
-does not retain PDF bytes or promise historical replay. A memo reuse retains the original paid
+does not retain PDF bytes or promise historical replay. Memo reuse and quiet tracking retain the original paid
 input manifest, including unknown legacy provenance; a fresh download does not replace it.
 If page selection returns the full file,
 the reported window describes that file and its actual page limit still applies.

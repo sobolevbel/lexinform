@@ -445,6 +445,11 @@ def _memo_key(bill: Bill, purpose: str, context: BaseModel, *, legacy: bool = Fa
     return hashlib.sha256(encoded.encode()).hexdigest()
 
 
+def _reused_selection(current: DocumentSelection, paid: DocumentSelection) -> DocumentSelection:
+    """A fresh observation cannot certify the scan input of an earlier paid call."""
+    return current.model_copy(update={"scan_input": paid.scan_input})
+
+
 def _source_of(record: AnalysisRecord | None) -> TextDocument | None:
     """The file a stored analysis was read from, as far as the record itself can name it."""
     if record is None or record.source_url is None or record.text_source not in FULL_TEXT_SOURCES:
@@ -2253,10 +2258,8 @@ class AnalysisService:
         else:
             record = _reused(AnalysisRecord.model_validate_json(cached))
         input_selection = fitted.input_selection(loaded.selection)
-        if cached is not None and loaded.scan is not None:
-            input_selection = input_selection.model_copy(
-                update={"scan_input": record.selection.scan_input}
-            )
+        if cached is not None:
+            input_selection = _reused_selection(input_selection, record.selection)
         record.selection = input_selection
         record.source_url = document.url if document else None
         record.source_kind = ctx.source_kind
@@ -2282,12 +2285,15 @@ class AnalysisService:
         """The analysis stands for the new document: only the pointer and its digests move."""
         document = located.document
         assert document is not None, "a text digest comes only from a document that was read"
+        selection = _reused_selection(
+            selection_for_input(loaded.selection, loaded.text).without_text(), previous.selection
+        )
         pointer = previous.model_copy(
             update={
                 "source_url": document.url,
                 "source_kind": document.kind,
                 "source_checked_at": self._clock.now(),
-                "selection": selection_for_input(loaded.selection, loaded.text).without_text(),
+                "selection": selection,
                 "text_sha256": loaded.digest or previous.text_sha256,
                 "law_sha256": loaded.law or previous.law_sha256,
             }

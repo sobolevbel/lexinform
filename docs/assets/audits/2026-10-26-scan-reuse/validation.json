@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "stage": "J056",
+  "base": "56107503198d4a876e23baf4f7f63f3d5895163e",
+  "scope": "Preserve paid scan identity when refreshing observation projections; no new extraction or storage behavior",
+  "regressions_before": {
+    "tests": "2",
+    "errors": "0",
+    "failures": "2",
+    "skipped": "0",
+    "time": "0.979"
+  },
+  "regressions_before_sha256": "9b94fa8b2f04fcc6c291656bbde6c31cb094c43a48b830b5d9dae1d5b2d6bcae",
+  "focused_after": {
+    "tests": "52",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "time": "1.803"
+  },
+  "focused_after_sha256": "3e354eeecfb4ff5eb81523ab3c206493e29cb32bf2c8f6bc46d887a5bdb22589",
+  "physical_code_identical_to_J055": {
+    "src/lexinform/services/documents.py": "5979ba4287bafa59320cfdb1ed526ccd9180357c4744558d435cdeaea576cab6",
+    "src/lexinform/models/scan_input.py": "736fda5637d14c2c5d7f7de19480b42dd19a73a3324910d592445c2520aeaa8e",
+    "src/lexinform/adapters/pdf_text.py": "e46eb0795a68ce41900b5837740474cbc62ce0bfdbd3c3c1822a2ccbd4754101",
+    "src/lexinform/models/documents.py": "79bf620398bbbaffdbd9c2df997344489f7c0b0d15b4c166043deb0282260c81",
+    "ScannedDocument_ast": "a26c65b361e135f731d3237b242dd311af75600e119160a6dda7a5b9fcb76d6e"
+  },
+  "J055_release_hold": {
+    "ci_run": 40286471212,
+    "ci_conclusion": "cancelled",
+    "relay_run": 40287027668,
+    "relay_conclusion": "skipped"
+  },
+  "quality": {
+    "status": "passed",
+    "mypy_files": 386,
+    "ruff": "passed src/tests/tools",
+    "docs": "strict build and links passed",
+    "tests": 4105,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "xfail": 0,
+    "seconds": 580.669,
+    "xml_sha256": "096052f4a7766d50cdb9dc29ae02869f25897bf5bfb15646dbb750f5cc05cc4e"
+  },
+  "exclusions": [
+    "This retains only scan input provenance; general immutable computation/application history remains DA6 work.",
+    "No source archives, new SQL fields/schema, model calls or manual production pipeline.",
+    "CI/relay statuses do not establish outcomes of independent scheduled bot runs."
+  ],
+  "ci_slice": {
+    "status": "passed",
+    "observations": 7,
+    "manifest_sha256": "e5166a1a2203eff8d416b19e8a4dc03cf3691dd02a42c1c08971a810868dbd3c",
+    "code_snapshot": {
+      "files": 431,
+      "path": "code.tar.gz",
+      "sha256": "93e085a7ad0f973456d459f2832639d78c025e30dfe1f4732a6656e4072620e1"
+    }
+  }
+}

@@ -2692,3 +2692,42 @@ locked package versions не менялись;
 strict mypy 385 файлов, Ruff check/format src/tests/tools, strict docs build/links и diff check green.
 XML `out/corpus/j055/final-tests.xml`; данные и hashes — в acceptance evidence.
 CI, push и deploy записываются отдельно после фактического выпуска.
+
+<a id="j056"></a>
+### J056. DA5: paid scan identity сохраняется при quiet tracking
+
+Дата: 26 октября 2026. База J055: `56107503198d4a876e23baf4f7f63f3d5895163e`.
+Статус: реализован и принят локально; полный gate и CI manifest slice green.
+
+Дополнительное ревью J055 выявило второй путь обновления projection: `_unchanged` заменяет
+selection при quiet reanalysis, не вызывая модель. Свежий `loaded.selection.scan_input` мог
+заменить manifest прежнего оплаченного запроса, а у legacy record создать неподтверждённую
+историю чтения. Корпусный PDF compare проверяет подготовку bytes/page maps, но эту lifecycle
+границу не покрывает; поэтому появились отдельные stateful scenarios.
+
+`_reused_selection` теперь задаёт общий инвариант для cached result и `_unchanged`: evidence
+актуального наблюдения обновляется, `scan_input` остаётся от paid record, включая unknown.
+Source pointer, source_checked_at и нынешние digests сохраняют прежнюю семантику применения;
+created_at, фактический input, memo key и число вызовов модели не переписываются. Это точечная
+защита scan provenance, не реализация всей immutable result/application history DA6.
+
+`test_scan_input_reuse.py` проверяет current/legacy record после изменения сериализации PDF
+с тем же source digest. Public `reanalyze_bill` обновляет source_checked_at, возвращает None,
+сохраняет created_at и исходный manifest; calls остаётся один. До fix оба сценария failed;
+после fix focused suite 52 passed, strict mypy 386 файлов и Ruff green. PDF loader, page reader,
+ScanInputManifest и ScannedDocument не менялись; corpus acceptance J055 относится к тому же
+физическому коду. Новые storage fields, schema или дополнительные PDF bytes не добавляются.
+
+J055 отправлен в main. Его CI
+[40286471212](https://github.com/sobolevbel/lexinform/actions/runs/40286471212)
+был cancelled до завершения после обнаружения этого пути; docs/web passed, основной test job
+остановлен. Автоматический Deploy relay
+[40287027668](https://github.com/sobolevbel/lexinform/actions/runs/40287027668) skipped.
+Это статусы CI/relay, не утверждение об исходах независимых scheduled bot runs.
+Итоговый выпуск J055–J056 проверяется отдельно после нового полного gate.
+
+J056 полный gate: **4105 passed**, errors/failures/skips/xfails 0; strict mypy 386 файлов,
+Ruff check/format src/tests/tools и docs build/links green. XML `out/corpus/j056/tests.xml`;
+CI manifest slice 7 observations passed, captured code snapshot сохранён.
+[Acceptance evidence](../assets/audits/2026-10-26-scan-reuse/validation.json) фиксирует before/after XML,
+неизменность физического PDF-кода J055 и canceled/skipped исход прежнего выпуска.
