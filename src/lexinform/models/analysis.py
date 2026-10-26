@@ -1,14 +1,17 @@
 """The LLM side: what the model sees (contexts), what it answers (Analysis, Triage) and how
 the answers are stored, plus token accounting."""
 
+import base64
 import datetime as dt
+import hashlib
 from collections.abc import Mapping
 from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from lexinform.models.documents import DocumentSelection
 from lexinform.models.enums import ApplicantType, Category, SourceKind, TextSource
+from lexinform.models.scan_input import ScanInputManifest
 from lexinform.models.senate import AmendmentSourceEvidence, SenateResolutionIdentity
 
 
@@ -124,6 +127,9 @@ class TriageRecord(BaseModel):
     triage: Triage
     model: str
     prompt_version: str
+    scan_input: ScanInputManifest | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     input_tokens: int | None = None
     output_tokens: int | None = None
     cache_read_input_tokens: int | None = None
@@ -287,12 +293,7 @@ class NameRecord(BaseModel):
 
 
 class ScannedDocument(BaseModel):
-    """A document the model reads as pages, because its file carries no text to read.
-
-    `data` is the file itself, base64 without line breaks, as the API's document block wants it.
-    It is never stored: what the analysis keeps of a scan is `sha256`, which plays the part
-    `text_sha256` plays for a text, so a republished scan is recognised as the same document.
-    """
+    """PDF bytes for the model, the original file identity and an optional exact page manifest."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -301,12 +302,30 @@ class ScannedDocument(BaseModel):
     pages: int = Field(description="How many pages were sent.")
     of_pages: int = Field(description="How many the document has.")
     sha256: str
+    scan_input: ScanInputManifest | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     cover_letter_pages: int = Field(
         default=0,
         description=(
             "How many of the pages not sent were the letter handing the document to the Marshal."
         ),
     )
+
+    @model_validator(mode="after")
+    def exact_input(self) -> Self:
+        if self.scan_input is not None:
+            data = base64.b64decode(self.data, validate=True)
+            manifest = self.scan_input
+            if (
+                manifest.source_sha256 != self.sha256
+                or manifest.source_pages != self.of_pages
+                or manifest.page_count != self.pages
+                or manifest.input_bytes != len(data)
+                or manifest.input_sha256 != hashlib.sha256(data).hexdigest()
+            ):
+                raise ValueError("Scan input manifest differs from its attached PDF")
+        return self
 
     @property
     def truncated(self) -> bool:

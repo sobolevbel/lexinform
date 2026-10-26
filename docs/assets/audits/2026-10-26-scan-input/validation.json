@@ -1,0 +1,183 @@
+{
+  "version": 1,
+  "stage": "J055",
+  "date": "2026-10-26",
+  "scope": "Exact PDF window manifests, primary result/batch and triage provenance; preserve paid-input identity on memo reuse",
+  "base_commit": "14c506d0072013083434b006ac416eaa6f883484",
+  "raw_inventory": {
+    "sha256": "d5266122ca0be893d88cb57856d0ebb093b3f9112bae008ad7582d7358b49e2f",
+    "inputs": 1521,
+    "sejm": 988,
+    "rpw": 474,
+    "rcl": 59
+  },
+  "runs": {
+    "j055-scan-baseline": {
+      "status": "recorded",
+      "observations": 3042,
+      "returncode": 0,
+      "manifest_sha256": "2b6ea1fb900f93d3a1b68bf073e8124a699c1afaaa8aae413831fbaefcac3d0d",
+      "result_sha256": "e6970a50d5472184f1bf2bb94d4fbbc484cc28db52561e505b4a0d3f079ca45a"
+    },
+    "j055-scan-current": {
+      "status": "failed",
+      "observations": 2948,
+      "returncode": 1,
+      "manifest_sha256": "bee5c1e538cea48d50bfbddb88afc6a85e7b16a9c8c53c724f36c460fcd1c828",
+      "result_sha256": "e44b86b0b184d1c1d3b9f142d57def6dc79598aa9e192c503c00a3c6ad922382"
+    },
+    "j055-scan-current-v2": {
+      "status": "recorded",
+      "observations": 3042,
+      "returncode": 0,
+      "manifest_sha256": "9f7487721846089f380a367193a10d90f0fb718d7db371c13b538ed4f34dee0b",
+      "result_sha256": "0c9b45bf11496cb578bf0caa45603c739aa0f0cbf77355c8876c8123f6b5ea32"
+    }
+  },
+  "comparison": {
+    "status": "same",
+    "changes": 0,
+    "changed_inputs": 0,
+    "sha256": "c62c20aa3d4b6f9e5b28998fd0b9be630e2112a3a0b948b4b13c7e93a9f1d872"
+  },
+  "validated_scan_manifests": 5880,
+  "no_scan_outcomes": 102,
+  "mutation_probes": {
+    "rcl": {
+      "checks": {
+        "amount/cover=False": true,
+        "amount/cover=True": true,
+        "date/cover=False": true,
+        "date/cover=True": true,
+        "negation/cover=False": true,
+        "negation/cover=True": true,
+        "reference/cover=False": true,
+        "reference/cover=True": true,
+        "scope/cover=False": true,
+        "scope/cover=True": true
+      },
+      "source": "documents/files/158276.pdf"
+    },
+    "rpw": {
+      "checks": {
+        "amount/cover=False": true,
+        "amount/cover=True": true,
+        "date/cover=False": true,
+        "date/cover=True": true,
+        "negation/cover=False": true,
+        "negation/cover=True": true,
+        "reference/cover=False": true,
+        "reference/cover=True": true,
+        "scope/cover=False": true,
+        "scope/cover=True": true
+      },
+      "source": "rpw/term10/files/RPW-10073-2026.pdf"
+    },
+    "sejm": {
+      "checks": {
+        "amount/cover=False": true,
+        "amount/cover=True": true,
+        "date/cover=False": true,
+        "date/cover=True": true,
+        "negation/cover=False": true,
+        "negation/cover=True": true,
+        "reference/cover=False": true,
+        "reference/cover=True": true,
+        "scope/cover=False": true,
+        "scope/cover=True": true
+      },
+      "source": "sejm/term10/files/1000__1000.pdf"
+    }
+  },
+  "failed_attempt": {
+    "cause": "47 JBIG2 streams required an absent external decoder in the initial checker",
+    "resolution": "Compare encoded stream bytes and decoding parameters, including JBIG2Globals; no decoding or binary installation",
+    "old_report_kept": true,
+    "pilot_observations": 94,
+    "pilot_sha256": "221e80d77e49c79965c5609aaf9918b7a5d224f3ea0052c1874fcc758f4b4528"
+  },
+  "memo_regressions": {
+    "before": {
+      "tests": "4",
+      "errors": "0",
+      "failures": "4",
+      "skipped": "0",
+      "time": "0.902"
+    },
+    "before_sha256": "8aa999bdbebf21a42845400e909047f57723ee2b6e3fe0c626bd7c0189d36c91",
+    "fixed_focused": {
+      "tests": "50",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "1.599"
+    },
+    "fixed_focused_sha256": "0fb0c474758c243339bdf60274f158615a3a039b91c9b5c9a4f7afe2643b1f1b"
+  },
+  "physical_code_unchanged_after_memo_fix": {
+    "src/lexinform/services/documents.py": "5979ba4287bafa59320cfdb1ed526ccd9180357c4744558d435cdeaea576cab6",
+    "src/lexinform/models/scan_input.py": "736fda5637d14c2c5d7f7de19480b42dd19a73a3324910d592445c2520aeaa8e",
+    "src/lexinform/adapters/pdf_text.py": "e46eb0795a68ce41900b5837740474cbc62ce0bfdbd3c3c1822a2ccbd4754101",
+    "src/lexinform/models/documents.py": "79bf620398bbbaffdbd9c2df997344489f7c0b0d15b4c166043deb0282260c81",
+    "ScannedDocument_ast": "a26c65b361e135f731d3237b242dd311af75600e119160a6dda7a5b9fcb76d6e"
+  },
+  "state": {
+    "scope": "One pending primary scan in the production-profile World; fake providers only",
+    "measurements": {
+      "old": {
+        "sql_bytes": 14167,
+        "gzip_bytes": 3720,
+        "sqlite_bytes": 249856
+      },
+      "new": {
+        "sql_bytes": 14764,
+        "gzip_bytes": 3857,
+        "sqlite_bytes": 249856
+      }
+    }
+  },
+  "state_observer": {
+    "sha256": "e1f21a77bdde981ef59a83fd2f605a881a379417c3192acd7bf3c0ecc90befc9",
+    "source": "import gzip\nimport json\nimport sqlite3\nfrom pathlib import Path\n\nimport pytest\n\nfrom lexinform.models import ScannedDocument\nfrom lexinform.services.documents import TextLoader\nfrom tests.fakes import FakeTextExtractor\nfrom tests.harness import World\n\n\ndef test_pending_scan_metadata_size(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:\n    current = World(extractor=FakeTextExtractor('', page_count=30), profile='production', triage=True)\n    current.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n    current.run(track=False)\n    original = TextLoader.load_scan\n\n    def legacy(loader: TextLoader, url: str, *, cover_letter: bool) -> ScannedDocument | None:\n        scan = original(loader, url, cover_letter=cover_letter)\n        return scan.model_copy(update={'scan_input': None}) if scan else None\n\n    monkeypatch.setattr(TextLoader, 'load_scan', legacy)\n    old = World(extractor=FakeTextExtractor('', page_count=30), profile='production', triage=True)\n    old.add_bill('3039', 'Projekt ustawy o cudzoziemcach')\n    old.run(track=False)\n    assert current.batch.submitted[0].custom_id == old.batch.submitted[0].custom_id\n    report = {'scope': 'One pending primary scan in the production-profile World; fake providers only', 'measurements': {}}\n    for name, world in [('old', old), ('new', current)]:\n        sql = world.repo.dump()\n        raw = sql.encode()\n        if name == 'new':\n            with Path('/Users/sobaleu/projects/lexinform/out/corpus/j055/final-pending.sql').open('x') as saved:\n                saved.write(sql)\n        path = tmp_path / f'{name}.db'\n        with sqlite3.connect(path) as db:\n            db.executescript(sql)\n            assert db.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n        report['measurements'][name] = {'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)), 'sqlite_bytes': path.stat().st_size}\n    with Path('/Users/sobaleu/projects/lexinform/out/corpus/j055/state-sizes-final.json').open('x') as stream:\n        json.dump(report, stream, indent=2)\n",
+    "command": "Materialize source, change artifact output paths to a new directory, then run pytest -p tests.conftest PATH_TO_OBSERVER.py from the checkout with its locked development dependencies"
+  },
+  "rollback": {
+    "status": "passed",
+    "old_code": "14c506d",
+    "open_batches": 1,
+    "items": 1,
+    "memo_records": 1,
+    "legacy_source_sha256": "315d429b7714cedb6ad04ac31240145257692630457f3c88253c5beceac76027"
+  },
+  "baseline_source_archive_sha256": "0416cb7f73cb60e1cd5410508ac7e2e2602b1589a92a1569ad2ace70295f416d",
+  "quality": {
+    "status": "passed",
+    "xml": "out/corpus/j055/final-tests.xml",
+    "mypy_files": 385,
+    "ruff": "passed src/tests/tools",
+    "lock": "uv lock --check --offline passed; locked package versions unchanged",
+    "tests": 4103,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "xfail": 0,
+    "seconds": 595.184,
+    "xml_sha256": "173bbb2c7edfe27736cc694a21a7b6064342f380a6a9e195162179980677c4db"
+  },
+  "exclusions": [
+    "No saved completed PDF derivatives, production DB changes, paid model calls or storage backend selection.",
+    "Page-map checks compare encoded streams/parameters and page structure; no rendered pixels or legal-completeness oracle.",
+    "The compact-state measurement is one synthetic pending scan, not production growth.",
+    "Secondary-consumer persistence and extractor/options lineage remain separate DA3/DA5 work."
+  ],
+  "ci_slice": {
+    "status": "passed",
+    "observations": 7,
+    "manifest_sha256": "9bfe9bf81f3151bcbb2f8c98c1540b76928b4596360a2c51f121d7c022ffe14e",
+    "code_snapshot": {
+      "files": 430,
+      "path": "code.tar.gz",
+      "sha256": "97c49bbc4f134cea9a6e7fec9b6dfb9f7c3e261cd6e2a499ccb3fdeaa85380a1"
+    }
+  }
+}

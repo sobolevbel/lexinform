@@ -24,7 +24,13 @@ from lexinform.document_versions import (
     regulation_support,
 )
 from lexinform.errors import AttachmentTooLargeError, ServiceUnavailableError
-from lexinform.models import DocumentPart, DocumentSelection, ScannedDocument, TextDocument
+from lexinform.models import (
+    DocumentPart,
+    DocumentSelection,
+    ScanInputManifest,
+    ScannedDocument,
+    TextDocument,
+)
 from lexinform.ports import Downloader, StructuredTextExtractor, TextExtractor
 from lexinform.sections import (
     APPENDIX_KINDS,
@@ -332,14 +338,7 @@ class TextLoader:
         )
 
     def load_scan(self, url: str, *, cover_letter: bool) -> ScannedDocument | None:
-        """The file itself, for a model to read as pages, cut down to the pages worth paying for
-        (`sections.scan_page_window`); None when it has no pages (a Word file, an archive) or is
-        too big for the API to take.
-
-        Downloaded again rather than kept beside the text: a scan is the exception, and the
-        biggest prints run to tens of megabytes. `sha256` is of the whole file, not of the pages
-        sent: it says which document this is, and the trimming is ours to change.
-        """
+        """Return bounded PDF bytes with separate original and exact-input identities."""
         data = self._download(url)
         if data is None:
             return None
@@ -355,6 +354,10 @@ class TextLoader:
         selected = data
         if (window.first, window.count) != (0, pages):
             selected = self._extractor.select_pages(data, first=window.first, count=window.count)
+            if selected == data:
+                window = scan_page_window(pages, cover_letter=False)
+                if window.count > MAX_SCAN_PAGES:
+                    return None
             log.info("%s: %d of %d pages kept for the model", url, window.count, pages)
         if len(selected) > MAX_SCAN_BYTES:
             log.warning(
@@ -364,12 +367,23 @@ class TextLoader:
                 MAX_SCAN_BYTES // 1024,
             )
             return None
+        source_sha = hashlib.sha256(data).hexdigest()
         return ScannedDocument(
             data=base64.standard_b64encode(selected).decode("ascii"),
             pages=window.count,
             of_pages=pages,
             cover_letter_pages=window.first,
-            sha256=hashlib.sha256(data).hexdigest(),
+            sha256=source_sha,
+            scan_input=ScanInputManifest(
+                source_sha256=source_sha,
+                source_bytes=len(data),
+                source_pages=pages,
+                input_sha256=hashlib.sha256(selected).hexdigest(),
+                input_bytes=len(selected),
+                first_page=window.first + 1,
+                page_count=window.count,
+                transformations=("cover_letter",) if window.first else (),
+            ),
         )
 
     def first_pages(self, scan: ScannedDocument, count: int) -> ScannedDocument | None:
@@ -387,7 +401,11 @@ class TextLoader:
         if selected is data or len(selected) >= len(data):
             return None
         return scan.model_copy(
-            update={"data": base64.standard_b64encode(selected).decode("ascii"), "pages": count}
+            update={
+                "data": base64.standard_b64encode(selected).decode("ascii"),
+                "pages": count,
+                "scan_input": scan.scan_input.opening(selected, count) if scan.scan_input else None,
+            }
         )
 
     def _fetch(self, url: str) -> LoadedFile:

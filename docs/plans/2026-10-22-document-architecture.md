@@ -517,7 +517,7 @@ paid calls или объявления материалов архивирова
   запись без перезаписи прежней; доступность её содержимого определяется профилем хранения.
 - [ ] DA3.5. **Частично: [J043](2026-10-22-document-architecture-progress.md#j043), [J046](2026-10-22-document-architecture-progress.md#j046), PDF/Word.** Первым adapter поверх блоков воспроизводит прежнюю строку и нынешние selection
   outcomes. Удаление бизнес-выбора из физического adapter — отдельная задача DA4.
-- [ ] DA3.6. Разделить SHA полного PDF и exact derived bytes выбранных страниц/triage window.
+- [ ] DA3.6. **Частично: [J055](2026-10-22-document-architecture-progress.md#j055), SHA исходника/отправленных bytes и точная contiguous page map, primary analysis/batch и triage rejection. Хранение completed derivatives и остальные consumers остаются.** Разделить SHA полного PDF и exact derived bytes выбранных страниц/triage window.
   Состав и срок хранения обоих определяет DA2; обязательный незавершённый request не теряет вход.
   Для заявления exact-input replay должны быть сохранены точные отправленные bytes.
   Manifest связывает page mapping, source page count и options; неизвестное покрытие остаётся unknown.
@@ -603,7 +603,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
   Потерянное обязательное приложение снимает доказанную полноту после всех сокращений.
   Текст OSR/обоснования не становится нормативным baseline; предупреждение о неизвестной
   применимости поддержки доходит в prompt.
-- [ ] DA5.5. Сохранить scan derivatives из DA3, точные page maps и параметры triage/full scan.
+- [ ] DA5.5. **Частично: [J055](2026-10-22-document-architecture-progress.md#j055), компактный exact-input manifest, full/triage page windows и совместимость старых memo identities.** Сохранить scan derivatives из DA3, точные page maps и параметры triage/full scan.
   Token counting, fallback, overflow и output schema относятся к тому же immutable input.
 - [ ] DA5.6. При постановке batch фиксировать PreparedInput ref, сериализованный request либо
   достаточный проверяемый request manifest, исходный prompt/schema/options. После submit

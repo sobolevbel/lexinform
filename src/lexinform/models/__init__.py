@@ -283,6 +283,7 @@ from lexinform.models.reviews import (
     date_in_quote,
     validate_review,
 )
+from lexinform.models.scan_input import ScanInputManifest as ScanInputManifest
 from lexinform.models.sejm import (
     HEARING_APPLICATION_EMAIL,
     ORKA_BASE_URL,

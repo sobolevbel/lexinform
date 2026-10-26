@@ -32,7 +32,7 @@ that current code generated it. Diffs separate observations, input identities an
 means an incomplete requested check. An empty population never becomes a completed run.
 
 Offline suites: `health`, `ci`, `external`, `pdf`, `word`, `input`, `cost`, `amendments`,
-`reextract`, `annotations`, `candidates`, `process`, `senate`. Extra arguments follow `--`;
+`reextract`, `annotations`, `candidates`, `process`, `senate`, `scan`. Extra arguments follow `--`;
 each child module's `--help` lists its required pins/options. `external` uses the existing
 corpus-check profiles; the default `ci` suite requires a manifest corpus such as
 `tests/fixtures/corpus_check`. Process/Senate wrappers preserve old observation semantics and
@@ -45,6 +45,29 @@ and legal correctness still require their own checks. The registry supplies no i
 `out/` survives temporary-directory cleanup but is ignored by Git and is not a backup. Keep the
 whole important run directory, its referenced inputs and original reports when copying elsewhere.
 Storage backend and automatic retention are intentionally undecided.
+
+## Exact scan-input windows
+
+```bash
+uv run --offline --frozen python -m tools.replay_scan_inputs \
+  --corpus "$corpus_path" --output "$PWD/out/corpus/new-scan-inventory.json" --inventory
+uv run --offline --frozen python -m tools.corpus_runs run \
+  --root "$run_root" --id new-scan-inputs --suite scan --corpus "$corpus_path" -- \
+  --manifest "$PWD/out/corpus/new-scan-inventory.json" --manifest-sha256 SHA
+```
+
+Inventory includes saved Sejm PDF attachments, empty cached RCL PDFs and RPW PDFs with raster
+pages. Replay probes both cover-letter settings and eight-page triage, preserving the old byte,
+page and truncation observations for comparisons. New manifests distinguish source SHA/size
+from attached SHA/size and map contiguous input pages to the original PDF. Content/XObject
+streams, page boxes and rotation are checked against the declared source window; pixels are not
+rendered. Raw-derived probes cover dates, amounts, negations, scope and references.
+
+For before/after comparison, run with the same pinned inventory and `--reference PATH
+--reference-sha256 SHA`, or compare two recorded registry runs. Keep an exported baseline's
+source archive and its SHA: `loader_sha256` identifies the actually imported loader. Existing
+byte/page limits remain explicit outcomes. This does not judge legal selection, OCR quality,
+complete attachments or source retention, and makes no network or model calls.
 
 ## New derivative generations and annotation queue
 

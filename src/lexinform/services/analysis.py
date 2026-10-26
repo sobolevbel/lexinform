@@ -2252,7 +2252,12 @@ class AnalysisService:
             self._ledger.charge(record, number=bill.number, kind=purpose)
         else:
             record = _reused(AnalysisRecord.model_validate_json(cached))
-        record.selection = fitted.input_selection(loaded.selection)
+        input_selection = fitted.input_selection(loaded.selection)
+        if cached is not None and loaded.scan is not None:
+            input_selection = input_selection.model_copy(
+                update={"scan_input": record.selection.scan_input}
+            )
+        record.selection = input_selection
         record.source_url = document.url if document else None
         record.source_kind = ctx.source_kind
         record.revision = previous.revision + 1 if previous else 1
@@ -2526,6 +2531,7 @@ class AnalysisService:
         cached = self._memo.get(key)
         if cached is None:
             verdict = self._llm.triage(ctx)
+            verdict.scan_input = shown.scan_input if shown else None
             self._ledger.charge(verdict, number=bill.number, kind="triage")
         else:
             verdict = _reused(TriageRecord.model_validate_json(cached))
@@ -2560,6 +2566,11 @@ class AnalysisService:
                 input_chars=len(ctx.excerpts),
                 truncated=True,
                 text_source="excerpts",
+                selection=(
+                    DocumentSelection(scan_input=verdict.scan_input)
+                    if shown
+                    else DocumentSelection()
+                ),
                 created_at=self._clock.now(),
                 input_tokens=verdict.input_tokens,
                 output_tokens=verdict.output_tokens,
@@ -2773,6 +2784,7 @@ class AnalysisService:
         )
         selection = DocumentSelection(
             belonging=document.version_basis[:1],
+            scan_input=scan.scan_input,
             parts=(
                 DocumentPart(
                     url=document.url,

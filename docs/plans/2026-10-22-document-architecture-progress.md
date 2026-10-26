@@ -2604,3 +2604,91 @@ mypy 374 файлов, Ruff check/format src/tests/tools, strict docs build/link
 `git diff --check` green. CI manifest corpus slice passed; health source fingerprints прежние.
 XML `out/corpus/2026-10-25-corpus-tools-tests-cached.xml`; hashes и cache identity — в
 [validation.json](../assets/audits/2026-10-25-corpus/validation.json).
+
+<a id="j055"></a>
+### J055. DA3/DA5: идентичность отправленных PDF и карты страниц сканов
+
+Дата: 25–26 октября 2026. База: `14c506d0072013083434b006ac416eaa6f883484`.
+Статус: реализован и принят локально; полный gate, corpus replay и rollback compatibility green.
+DA3.6/DA5.5 остаются частичными: completed derivatives не архивируются, coverage/persistence
+прочих secondary consumers и версии extractor/options требуют следующих срезов.
+
+`ScanInputManifest` разделяет source SHA/size и exact attached SHA/size, хранит source page count,
+первую исходную страницу, page count и цепочку cover/triage transformations. `ScannedDocument`
+проверяет, что manifest совпадает с прикреплёнными bytes. После первого cut triage сохраняет
+исходную нумерацию, не начинает её с единицы. Source SHA остаётся прежним document digest;
+новые метаданные не меняют memo key, batch custom ID, provider payload, prompt или цену.
+Legacy snapshots без manifest остаются unknown; null-поле не добавляется в их JSON.
+
+Primary analysis сохраняет manifest в существующем `DocumentSelection`, включая batch meta,
+collect/memo и restore. Отрицательный triage сохраняет manifest реально показанного окна,
+а не полного документа. Дополнительные исходники, тексты и PDF bytes в SQLite не добавляются;
+schema, retention и текущий обязательный pending request прежние. Возможность исторического
+replay completed PDF по одному manifest не обещается, storage backend не выбирается.
+
+Исправлен отказ вырезания cover page: `select_pages` может вернуть исходный PDF. Раньше
+`load_scan` сохранял pages/cover как при успешном cut, хотя отправлялся полный файл. Теперь
+reported window соответствует полному файлу; если он превышает page limit, scan не создаётся.
+При нормальном cut отправляемые bytes и прежние диагностические поля должны совпасть с baseline.
+Regression использует также копию исходных bytes, чтобы не опираться только на object identity.
+
+Работа изолирована в managed worktree `scan-input-manifests`: в общем checkout параллельно
+меняются corpus tools. Своё изменение registry перенесено отдельно; соседние изменения сохранены.
+Корпусные outputs лежат в постоянном `lexinform/out/corpus/j055` и `out/corpus/runs/j055-*`.
+Baseline source export взят из `14c506d`; его archive SHA
+`0416cb7f73cb60e1cd5410508ac7e2e2602b1589a92a1569ad2ace70295f416d`.
+
+Новый runner `tools/replay_scan_inputs.py` фиксирует все сохранённые PDF attachments 980 prints,
+59 empty RCL PDF и raster-bearing RPW. Получилось **1521 raw inputs**: 988 Sejm / 474 RPW / 59 RCL;
+оба cover settings и triage проверяются отдельно. Это физический regression cohort, не 1521
+подтверждённых bill/scan decisions. SHA inventory
+`d5266122ca0be893d88cb57856d0ebb093b3f9112bae008ad7582d7358b49e2f`.
+При наличии нового manifest проверяется соответствие content/encoded XObject streams, page boxes и
+rotation исходному диапазону. Rendering, OCR, legal completeness и неподдержанные формы вне scope.
+Смысловые PDF probes меняют срок, сумму, отрицание, круг лиц и ссылку внутри показанного prefix.
+
+Focused unit/scenario: manifest round trips, legacy serialization, fallback/oversized fallback,
+оба provider payloads/prices, workers 1/4, sync/batch/restore/collect без download и без повторного
+triage, восемь фактически показанных страниц rejection и сохранение прежнего batch identity.
+
+Первоначальное измерение compact state без отдельного triage manifest дало +295 SQL / +59 gzip
+bytes. После сохранения provenance triage memo итог для двух одинаковых production-profile World,
+одного pending scan и fake providers: SQL **14167 → 14764 bytes** (+597), gzip **3720 → 3857** (+137),
+SQLite **249856 → 249856**. Оба восстановленных DB прошли integrity_check. Это bounded fixture,
+не прогноз production growth. Observer `out/corpus/j055/state_probe_final.py`, результат
+`state-sizes-final.json`, отдельный XML `state-final-tests.xml`; `-p tests.conftest` обнуляет credentials.
+Точный исходник observer и SHA сохранены в
+[acceptance evidence](../assets/audits/2026-10-26-scan-input/validation.json).
+
+До исправления переиспользования четыре сценария primary/triage × current/legacy memo воспроизводили
+ошибочную атрибуцию свежего input manifest старому ответу. Сейчас `TriageRecord` сохраняет своё
+реальное окно, cached result сохраняет исходный manifest, legacy остаётся unknown. Paid call,
+memo key и usage accounting не меняются. При подготовке legacy fixture нельзя перезаписать уже
+существующий memo: repository сохраняет его immutable record_json. Поэтому legacy моделируется
+старым untraced loader при первоначальном вычислении. Qualified before XML: четыре failures;
+после исправления focused suite 50 passed. JSON source/part projections остались прежними.
+
+Первый physical checker остановился на 47 JBIG2 files из-за отсутствующего внешнего decoder.
+Failed run `j055-scan-current` сохранён. Исправленный checker сравнивает encoded payload,
+filters/DecodeParms, включая JBIG2Globals, без декодирования; ресурсы/fonts и pixels не рендерятся.
+Сначала пройден pilot всех 47 sources / 94 cover probes, затем повторён полный срез.
+
+`j055-scan-baseline` / `j055-scan-current-v2`: **3042** observations, **0** differences и changed inputs,
+**5880** exact full/triage manifests; все **30** meaningful pair checks passed. В **102** probes
+scan не создаётся: прежние byte/page/unreadable outcomes сохранены, coverage для них не выдумывается.
+Максимальный JSON manifest на этом корпусе — 335 bytes. После отдельного memo fix физический
+loader, page reader, manifest model и AST `ScannedDocument` побайтово/структурно прежние;
+это зафиксировано в `physical-scope-code.json`, новые consumer paths проверены сценариями.
+
+Rollback probe: исходный код `14c506d` восстановил final pending batch, прочитал item и triage memo;
+новые audit fields игнорируются, прежний source SHA остаётся. Старый reader при повторной
+сериализации может потерять новые audit fields; frozen provider payload и схема совместимы.
+Pydantic minimum уточнён до 2.12 для
+[`exclude_if`](https://pydantic.dev/articles/pydantic-v2-12-release#exclude_if-field-option),
+locked package versions не менялись;
+`uv lock --check --offline` passed.
+
+Окончательный полный gate: **4103 passed**, errors/failures/skips/xfails 0, 595,184 s;
+strict mypy 385 файлов, Ruff check/format src/tests/tools, strict docs build/links и diff check green.
+XML `out/corpus/j055/final-tests.xml`; данные и hashes — в acceptance evidence.
+CI, push и deploy записываются отдельно после фактического выпуска.

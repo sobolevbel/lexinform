@@ -6,6 +6,7 @@ from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from lexinform.models.scan_input import ScanInputManifest
 from lexinform.models.word_notes import WordNoteExtraction
 from lexinform.pdf_projection import legacy_pdf_text
 from lexinform.word_projection import legacy_word_text
@@ -131,6 +132,9 @@ class DocumentSelection(BaseModel):
     links: tuple[DocumentLink, ...] = ()
     coverage: tuple[DocumentCoverage, ...] = ()
     normative_sha256: str = ""
+    scan_input: ScanInputManifest | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     def without_text(self) -> DocumentSelection:
         return self.model_copy(

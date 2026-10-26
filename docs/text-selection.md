@@ -141,7 +141,15 @@ rule is one and not four. A file with no text but with pages goes to the model a
 (`ScannedDocument`, `text_source="scan"`, the API's document block — ~1,600 tokens and $0.008 a
 page, which `pricing.estimate_scan_cost` guards by and prices before the call: asking the tokenizer
 would mean uploading the file to learn a number we can multiply out), and what is kept of it is the
-file's `sha256`, standing where a text's digest would. A file with neither text nor pages (a Word
+file's `sha256`, standing where a text's digest would. New primary analyses also retain a compact
+`selection.scan_input`: the exact attached PDF SHA/size, original SHA/size/page count and the
+contiguous page window, including any cover-letter or triage cut. A triage rejection records its
+actual opening window. Legacy records without this manifest remain unknown; the manifest itself
+does not retain PDF bytes or promise historical replay. A memo reuse retains the original paid
+input manifest, including unknown legacy provenance; a fresh download does not replace it.
+If page selection returns the full file,
+the reported window describes that file and its actual page limit still applies.
+A file with neither text nor pages (a Word
 file whose letter we could not cut off, an archive) keeps its text after all: there is nothing to
 fall back to, and a document of that length is not a covering letter. The extracted text comes back
 either way, because the letter is the one page of a scanned print with a text layer and the card's

@@ -26,6 +26,7 @@ SUITES = {
     "candidates": ("replay_document_candidates", ()),
     "process": ("corpus_legacy_suites", ("--kind", "process")),
     "senate": ("corpus_legacy_suites", ("--kind", "senate")),
+    "scan": ("replay_scan_inputs", ()),
 }
 
 RECORD_ONLY = ("sources", "install", "sejm-snapshot")
