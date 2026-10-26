@@ -55,12 +55,16 @@ def test_a_bill_without_a_print_number_still_has_a_downloadable_file(
 
 
 def test_the_print_detail_names_a_file_that_downloads(sejm: SejmApiClient) -> None:
-    """Druk 599's detail names a government position, not bill text, in `599-s.pdf`."""
+    """Druk 599's detail names its own bill text, and the government position filed to it,
+    `599-s.pdf`, sits in its additional prints. Until 2026-10 the API answered `/prints/599` with
+    that filing instead, which is why `PrintInfo.main_pdf` still refuses a filing's file."""
     info = sejm.get_print(TERM, "599")
 
-    assert info.main_pdf is None
-    attachment = next(item for item in info.attachments if item.name == "599-s.pdf")
-    assert sejm.download(attachment.url, max_bytes=8_000_000).startswith(b"%PDF")
+    assert info.main_pdf is not None
+    assert info.main_pdf.name == "599.pdf"
+    assert sejm.download(info.main_pdf.url, max_bytes=8_000_000).startswith(b"%PDF")
+    filing = next(extra for extra in info.additional_prints if extra.number == "599-s")
+    assert [item.name for item in filing.attachments] == ["599-s.pdf"]
 
 
 def test_the_register_is_one_csv_whose_columns_are_still_recognisable() -> None:

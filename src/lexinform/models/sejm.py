@@ -614,9 +614,10 @@ class PrintInfo(BaseModel):
         """The bill text: `{number}.pdf`, else this print's own PDF, the act before an appendix.
 
         The fallback is for a print publishing its text under a name of its own ("2872 (z
-        autopoprawką).pdf"), and must not reach past this print: for druki 599, 1768 and 2821 the
-        API answers `/prints/{n}` with a document filed *to* that number. A filing's file is named
-        `{n}-004.pdf` or `{n}-s.pdf`, which over term 10 occurs on those three prints alone.
+        autopoprawką).pdf"), and must not reach past this print: until 2026-10, for druki 599,
+        1768 and 2821 the API answered `/prints/{n}` with a document filed *to* that number. A
+        filing's file is named `{n}-004.pdf` or `{n}-s.pdf`, which over term 10 occurred on those
+        three prints alone.
         """
         return next(iter(self.pdf_candidates), None)
 
