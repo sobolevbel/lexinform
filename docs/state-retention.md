@@ -24,6 +24,8 @@ Batch metadata and collected records retain `request_sha256` after payload clean
 from the original frozen request by the shared submission/attachment constructor. An absent
 legacy checksum stays unknown; cleanup and reuse never derive it from a fresh context. The hash
 does not pin or archive the request body and does not extend memo retention.
+The offline [request doctor](https://github.com/sobolevbel/lexinform/blob/main/tools/README.md#request-provenance-doctor) inventories these refs
+on a checkpointed copy and reports corruption/unknowns without modifying state or retrying work.
 
 A document review whose batch failed at every allowed submission keeps only its keys and a
 limitation (`ReviewWork.abandoned`): its documents go, and the same source is not asked again.

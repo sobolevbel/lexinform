@@ -47,6 +47,33 @@ and legal correctness still require their own checks. The registry supplies no i
 whole important run directory, its referenced inputs and original reports when copying elsewhere.
 Storage backend and automatic retention are intentionally undecided.
 
+## Request provenance doctor
+
+```bash
+uv run --offline --frozen python -m tools.request_doctor \
+  --database /path/to/checkpointed-copy.db --output "$PWD/out/doctor/report.json"
+```
+
+Use an isolated SQLite copy with its connections closed. The reader opens it with
+`mode=ro&immutable=1` and refuses a nonempty WAL/rollback journal so it cannot silently omit
+uncheckpointed data. It writes only a new report; existing reports and the database cannot be
+overwritten. Input SHA and WAL/journal state are checked before and after reading, including
+a writer starting after preflight. No migrations, repair, provider
+calls, submissions or `.env` reads are performed.
+
+The JSON lists recorded input SHA groups, batch/result references, retained intent checksums
+and findings. It covers current/ready bill results, reviews, supplements, status changes,
+memo and frozen delivery snapshots. Result counts are references, not unique paid calls.
+Malformed JSON/SHA, payload checksum mismatch and an orphaned batch item are errors. A recorded
+result without a matching batch receipt is a warning. Repeated identical input and unknown
+legacy provenance do not establish duplicate billing, corruption or complete historical reading.
+An observed legacy payload hash stays separate from its absent recorded identity.
+
+Exit codes: `0` recorded inventory, `1` detected errors, `2` incomplete/no population or invalid
+arguments/input. `recorded` is not a full-state health verdict. Blob coverage, source selection,
+generation ownership and immutable result/application history remain outside this first doctor.
+Payload and legal text are not copied into the report.
+
 ## Exact scan-input windows
 
 ```bash

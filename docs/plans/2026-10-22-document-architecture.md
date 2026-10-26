@@ -751,7 +751,7 @@ flags ради различающихся контрактов. Отказ от 
   неприменимые поля отсутствуют; идентификаторы не извлекаются обратно из prose сообщения.
   В SQL-отчётах сохранять нужные IDs/краткие причины; подробные traces ограничивать сроком
   и объёмом, не копировать в `runs.report_json` полные документы и каждый повторный проход.
-- [ ] DA10.2. Добавить read-only doctor для missing/corrupt blobs, dangling refs/work,
+- [ ] DA10.2. **Частично: [J060](2026-10-22-document-architecture-progress.md#j060), offline request checksum/result refs doctor, unknown legacy и сохранность snapshot.** Добавить read-only doctor для missing/corrupt blobs, dangling refs/work,
   duplicate application, stale generation, orphaned batch, missing receipt и archive coverage.
   Ремонт и повтор отправки не выполняются doctor автоматически.
 - [ ] DA10.3. Измерять возраст очередей по причинам, доли waiting/ambiguous/unsupported/unknown

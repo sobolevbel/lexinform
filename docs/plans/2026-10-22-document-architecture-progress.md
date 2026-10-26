@@ -2911,3 +2911,60 @@ supplement **+592 / +132**. SQLite size прежний во всех шести 
 [Acceptance evidence](../assets/audits/2026-10-26-request-provenance/validation.json) содержит
 XML/run hashes, captured source, snapshots, repeated observers и точные границы проверки.
 Локальные outputs: `out/corpus/j059`, `out/corpus/runs/j059-*`.
+
+J059 выпущен на `a5d92d8bcc2f5c9262efae30a3c28357b02c632d`: CI
+[40380927692](https://github.com/sobolevbel/lexinform/actions/runs/40380927692) success,
+4203 passed / 32 deselected, test/web/docs green. Deploy relay
+[40381926131](https://github.com/sobolevbel/lexinform/actions/runs/40381926131) success:
+`580fe6956cec → a5d92d8bcc2f`, сервис up 45 s после restart.
+Evidence: `out/corpus/j059/release.json`; independent scheduled bot runs не аудировались.
+
+<a id="j060"></a>
+### J060. DA10: read-only doctor для request fingerprints и result refs
+
+Дата: 26 октября 2026. База: `a5d92d8bcc2f5c9262efae30a3c28357b02c632d`.
+Статус: реализован и принят локально; выпуск проверяется отдельно.
+
+`tools/request_doctor.py` читает checkpointed SQLite copy через `mode=ro&immutable=1`,
+сверяет SHA файла до/после и пишет отдельный exclusive JSON report через общий artifact writer.
+Живой WAL/journal отклоняется; файл БД, старый отчёт и `.env` не открываются для записи.
+Проверяются payload checksum intents, SHA batch metadata, связи result refs с batch receipts,
+orphan batch item и malformed JSON/hash. Один повреждённый row не скрывает следующий.
+Результаты охватывают Bill/ready/reviews/supplements, status changes, memo и frozen deliveries.
+В отчёт попадают IDs/короткие findings; тексты закона, prompts и payload не копируются.
+
+Legacy unknown — допустимое наблюдение. Observed SHA старого retained payload не становится
+приписанным paid result fingerprint. Повтор input не доказывает duplicate billing/application;
+считаются ссылки на результаты, не уникальные paid calls. Unmatched result ref — warning;
+checksum/format/orphan ошибки дают failed/exit 1. Пустой/неполный scope даёт not_run/exit 2,
+completed inventory — recorded/exit 0. Ремонт, retry, migration, SDK и production pipeline
+инструмент не запускает. General doctor blobs/work/generation/receipt semantics остаётся DA10.2.
+
+Первые corrupt fixtures держали SQLite writer открытым, и WAL guard их корректно отверг.
+Fixtures теперь commit/close перед аудитом; guard не ослаблен. Повторяемая подготовка isolated
+копий использует прежние SQL snapshots и отдельные новые DB. Первоначальная попытка открыть
+J059 observer DB с живым WAL также отвергнута; исходник не checkpointed/не менялся doctor.
+
+Отдельная fault injection воспроизвела WAL race: writer начинал после preflight и commit
+оставался в WAL, основной файл/SHA не менялся. Прежний reader ошибочно возвращал recorded.
+Теперь тот же journal guard применяется после чтения; regression получает failed с
+`database_changed_during_audit`. Red XML `out/corpus/j060/race-before.xml` сохранён;
+предыдущий незавершённый full gate прерван и не используется как acceptance.
+
+Приёмка: focused **18 passed**, final full **4221 passed**, errors/failures/skips/xfails 0,
+610,826 s; strict mypy 397 файлов, Ruff src/tests/tools, strict docs build/links и diff check green.
+`j060-ci-accepted` passed, **7 observations**, captured source snapshot. Все **141 runtime source
+files** совпали с J059: adapter/selection/prompt/runtime behavior не менялись, schema прежняя.
+
+Три sealed copies прошли CLI doctor; before/after race-fix reports совпали, SHA всех DB остался
+прежним. Тот же production SQL snapshot `state@8a1ed977119ae20c2e1cfaecc58e38120aa108b7`
+дал **108 batch items / 395 result references**, все fingerprints legacy unknown, findings 0.
+Это не 395 уникальных paid calls и не аудит актуального production runtime. Fake fixture нового
+writer: 2 known items / 4 known result refs, findings 0, completed payloads не retained. Pending
+fixture: 1 retained checksum verified, 1 known item / 3 result refs, findings 0. JSON отчёты не
+содержат payload/законодательный текст; копия БД не меняется и не получает новых sidecars.
+
+[Acceptance evidence](../assets/audits/2026-10-26-request-doctor/validation.json) сохраняет
+qualified XML hashes, old-code snapshot и red WAL race, source SHA и повторяемую подготовку copies.
+Локальные outputs — `out/corpus/j060`, `out/corpus/runs/j060-*`. Repair, storage backend и новые
+production режимы не добавлены; остальные аспекты doctor остаются открытыми в DA10.2.
