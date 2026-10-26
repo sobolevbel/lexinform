@@ -18,7 +18,7 @@ classifiers = [
   "Topic :: Communications :: Chat",
 ]
 dependencies = [
-  "anthropic>=1.4,<2",
+  "anthropic>=1.4,<3",
   "beautifulsoup4>=4.13,<5",
   "httpx2>=2,<3",
   "inflate64>=1.0.4,<2",
