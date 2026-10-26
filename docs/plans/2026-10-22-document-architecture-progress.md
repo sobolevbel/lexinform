@@ -3039,3 +3039,68 @@ reuse policy. `j061-ci`: **7 passed observations**, captured source snapshot.
 qualified XML hashes, source boundaries, production/state measurements и повторяемые observers.
 Локальные outputs: `out/corpus/j061`, registry runs `j061-*`. DA6 остаётся частично открытым;
 следующий шаг — отдельные факты projection/reuse, затем остальные consumers и purposes.
+
+J061 выпущен на `d235aa69e4c7a602f2506ecfe6808fb85363f111`: CI
+[40394214244](https://github.com/sobolevbel/lexinform/actions/runs/40394214244) success,
+4234 passed / 32 deselected, test/web/docs green. Deploy relay
+[40395201863](https://github.com/sobolevbel/lexinform/actions/runs/40395201863) success:
+`7372d48037ae → d235aa69e4c7`, сервис up 45 s после restart.
+Evidence: `out/corpus/j061/release.json`; independent scheduled bot runs не аудировались.
+
+<a id="j062"></a>
+### J062. DA6: применение primary result отдельно от collection
+
+Дата: 26 октября 2026. База: `d235aa69e4c7a602f2506ecfe6808fb85363f111`.
+Статус: реализован и принят локально; выпуск проверяется отдельно.
+
+`AnalysisService._persist` и direct `reanalyze_bill` сохраняют `phase=projection`, outcome applied
+в одной atomic transaction с `Bill.analysis`. Collection ready остаётся отдельным фактом.
+Receipt хранит generation/status дела до записи и причину batch_result/memo_reuse; payload
+не дублируется. Новая SQL-миграция не нужна, схема v49 прежняя. Phase/outcome/reason проверяются
+при чтении; точный повтор application identity с другой датой не заменяет первоначальный timestamp.
+
+Сбой receipt после записи analysis откатывает всю projection, сохраняя ready result для retry.
+Reanalysis preparation не утверждает применение: receipt появляется после фактической записи.
+Quiet source refresh и synchronous/legacy record без computation ref ничего не добавляют.
+Reset + memo reuse создаёт новый короткий application ref для новой generation, без нового
+paid result, токенов или provider request. Original usage в computation history прежний.
+
+Это ограниченный primary-service slice. Tracking/linking, которые применяют `prepare_reanalysis`
+в собственных observation/delivery transactions, ещё не перенесены; отсутствие их receipt
+не выдаётся за неприменение. Secondary purposes, source applicability history и reader delivery
+остаются отдельными частями DA6/DA7. Никаких retroactive application rows для старых дел.
+
+Qualified before: **5 failures** — отсутствующие projection receipts и rollback boundary.
+После: focused **36 passed**, включая отдельное collection/apply, workers=1/4, crash/retry,
+повтор с новой датой, reset/reuse, uncommitted reanalysis preparation и quiet/legacy paths.
+Ранний focused набор: **40 passed**; оба XML сохранены отдельно.
+
+Одинаковые 11 state snapshots до/после сохранили status, answer, reader text, request envelopes,
+payload SHA, custom ID и cost. Одна application: **+439 SQL / +39 gzip bytes**, SQLite прежний;
+два применения successive paid results: **+880 / +60**. Superseded и pending snapshots:
+**0 bytes** прироста. После expiry/repeat число строк остаётся 2 results / 4 decisions для fresh,
+1 / 1 для superseded. Это bounded fixtures, не прогноз общего роста.
+
+На реальных current projections того же production snapshot: **166 AnalysisRecord**, суммарно
+**556116 JSON bytes / 108393 gzip**, median **2169**, p90 **5237**, p95 **6818**, max **25507 bytes**.
+Selection metadata занимает 122781 bytes. Это размеры существующих текущих records, не число
+уникальных paid calls, не восстановленная история и не прогноз SQL/history growth. Observer
+читает sealed copy без записи; source/record text в report не копируются.
+
+Тот же pinned production snapshot `9d571b09a3ae5f67de441d0b503da12e412a1cde` восстановлен
+без pipeline/model/Telegram: **457 bills / 166 analysis records / 141 memos**, projection/memo
+hashes и SQL SHA совпали с J061; **0 bytes** прироста. Существующие данные не backfilled.
+
+Приёмка: full **4241 passed**, errors/failures/skips/xfails 0, 574,666 s; strict mypy 400 файлов,
+Ruff src/tests/tools, format, strict docs build/links и diff check green. CLI local HTTP:
+**21 passed**. Все 49 migrations прежние. **25** file/AST checks подтверждают неизменность
+extraction/input assembly, prompts/schemas/pricing, reuse и batch collection/accounting.
+
+`j062-senate-current` против принятого J061: **816 observations / 1825 файлов**, zero changed
+outcomes/inputs, прежние controls; scope — cached text/raw SHA, не визуальное чтение scans.
+`j062-ci`: **7 passed observations**, captured source snapshot.
+
+[Acceptance evidence](../assets/audits/2026-10-26-result-applications/validation.json) содержит
+qualified XML/source hashes, production/state diffs и observer размеров реальных records.
+Локальные outputs: `out/corpus/j062`, registry runs `j062-*`. Следующие consumers — tracking и
+linking с их исходными atomic observation/delivery boundaries; DA6 целиком не закрыт.

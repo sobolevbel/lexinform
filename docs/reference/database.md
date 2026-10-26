@@ -29,7 +29,7 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `rcl_wykaz_numbers` | `(wykaz_number, project_id)` | Номер wykaz, проект RCL и дата создания; номера wykaz могут использоваться повторно. |
 | `analysis_memo` | `key` | Результат LLM по содержимому, цели и контексту; владелец `(term, number)` и `last_used_at`. |
 | `computation_results` (v49) | `result_id`; уникальный `(provider, batch_id, custom_id)` | Неизменяемый validated primary record либо failure receipt, исходный usage и schema version; без файлов и полных входов. |
-| `result_applications` (v49) | `(result_id, term, number, generation, phase)` | Пока только collection decision: ready/superseded/failed с исходным status/generation; это не подтверждение записи в текущую проекцию или доставки. |
+| `result_applications` (v49) | `(result_id, term, number, generation, phase)` | Collection decision и отдельный projection receipt в primary service; status/generation до применения, fresh batch/memo reuse. Доставку не подтверждает. |
 | `llm_batches` | `batch_id` | Провайдер, состояние batch, оценка стоимости и даты опроса, завершения и очистки. |
 | `llm_batch_items` | `(batch_id, custom_id)` | Задание для bill, метаданные, результат, `consumed_at` и отдельный `accounted_at`. |
 | `llm_batch_intents` | `custom_id` | Сохранённые запросы до отправки провайдеру и состояние попытки. |
@@ -78,6 +78,8 @@ consumed checkpoint сохраняются в существующей atomic tr
 generation guard сохранены. Новое nullable поле `AnalysisRecord.computation_id` совместимо со
 старыми JSON. История сохраняется после очистки memo/batch bodies; состав и временная
 избыточность dual write описаны в [retention](../state-retention.md).
+Projection receipts добавлены без новой SQL-миграции в [J062](../plans/2026-10-22-document-architecture-progress.md#j062):
+сначала `_persist` и direct `reanalyze_bill`; остальные tracking/linking consumers ещё не перенесены.
 
 ## Снимки и обработанное состояние
 

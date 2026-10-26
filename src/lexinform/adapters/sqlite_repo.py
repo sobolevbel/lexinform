@@ -946,7 +946,13 @@ class SqliteBillRepository:
             " AND number = ? AND generation = ? AND phase = ?",
             identity,
         ).fetchone()
-        if row is None or ResultApplication.model_validate_json(row[0]) != application:
+        if (
+            row is None
+            or ResultApplication.model_validate_json(row[0]).model_copy(
+                update={"created_at": application.created_at}
+            )
+            != application
+        ):
             raise ValueError("an immutable result application cannot be replaced")
 
     def list_result_applications(self, term: int, number: str) -> list[ResultApplication]:

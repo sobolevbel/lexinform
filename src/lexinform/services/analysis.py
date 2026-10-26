@@ -1452,6 +1452,10 @@ class AnalysisService:
             )
             with self._repo.atomic():
                 self._repo.save_analysis(bill.term, bill.number, fresh.analysis)
+                if changed:
+                    self._record_projection(
+                        bill, fresh.analysis, from_batch=bill.status is BillStatus.REANALYSIS_READY
+                    )
                 if fresh.authors is not None:
                     self._repo.save_authors(bill.term, bill.number, fresh.authors)
         return fresh.analysis if changed else None
@@ -2744,6 +2748,7 @@ class AnalysisService:
             if authors is not None:
                 self._repo.save_authors(bill.term, bill.number, authors)
             self._repo.save_analysis(bill.term, bill.number, prepared.record)
+            self._record_projection(bill, prepared.record, from_batch=prepared.from_batch)
             if prepared.first and located.stages is not None:
                 self._repo.save_stages(
                     bill.term, bill.number, located.stages, stage_fingerprint(located.stages)
@@ -2759,6 +2764,24 @@ class AnalysisService:
                     observe(fresh, closure_date=(located.summary or bill.summary).closure_date),
                 )
         return prepared.record
+
+    def _record_projection(self, bill: Bill, record: AnalysisRecord, *, from_batch: bool) -> None:
+        if record.computation_id is None:
+            return
+        self._repo.save_result_application(
+            ResultApplication(
+                result_id=record.computation_id,
+                term=bill.term,
+                number=bill.number,
+                generation=bill.analysis_generation,
+                phase="projection",
+                outcome="applied",
+                reason="batch_result" if from_batch else "memo_reuse",
+                observed_generation=bill.analysis_generation,
+                observed_status=bill.status,
+                created_at=self._clock.now(),
+            )
+        )
 
     def _remember_analysis(self, bill: Bill, key: str, record: BaseModel) -> None:
         encoded = record.model_dump_json()

@@ -123,8 +123,9 @@ Command reference and the relay: `docs/operator-commands.md`.
   collection (`repository_dispatch: batch-ready`). A dry run submits nothing (only the triage is
   asked). `/status` names open batches and any `batch_pending` bill no batch holds.
 - **Primary computation history** retains immutable validated `analysis`/`reanalysis` results,
-  original usage and collection decisions with the consumed checkpoint (v49); legacy stays unknown.
-  A collection decision is not a projection/publication receipt. Result IDs name provider items,
+  original usage and collection decisions with the consumed checkpoint (v49); past results are not backfilled.
+  Only a projection receipt confirms primary-service application; neither phase confirms publication.
+  Result IDs name provider items,
   request hashes name inputs; memo reuse never creates a new paid computation. See `docs/state-retention.md`.
 - **Document reviews** use separate secondary batch purposes and exact source citations.
   Participant positions never prove acceptance, project analyses never prove final-act

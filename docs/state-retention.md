@@ -22,24 +22,31 @@ to the transaction that rolls back. All cutoffs are configurable in days:
 | Primary computation history | — | New `analysis`/`reanalysis` batch collections retain one validated `AnalysisRecord` or failure receipt per provider item, original usage and one collection decision. This history does not expire with the memo or batch body. No input text, raw file, request body or raw provider response is added. |
 
 Schema v49 starts primary history from newly collected items; existing completed results are not
-copied or reconstructed. `AnalysisRecord.computation_id` points to that result; legacy and
-synchronous compatibility records omit it. The result ID names a provider/batch/custom item,
+copied or reconstructed. `AnalysisRecord.computation_id` points to that result; previously
+completed legacy records and synchronous compatibility records omit it. A legacy pending item
+collected now gets a known result ID while its absent original request checksum stays unknown.
+The result ID names a provider/batch/custom item,
 whereas `request_sha256` names its frozen input. Reuse retains the same result ID and does not
 create another paid computation. Current provider identities have the repository's existing
 single-account scope; they do not claim cross-account uniqueness.
 
-`result_applications` currently records only the **collection** decision: ready, superseded or
-failed, with the observed status/generation. Ready does not prove application to `Bill.analysis`
-or publication. Final projection/reuse decisions and secondary purposes remain in
-[DA6](plans/2026-10-22-document-architecture.md#da6). Result, decision, memo/ready changes and the
-consumed checkpoint commit together; run cost acknowledgement retains its existing mechanism.
+`result_applications` separates **collection** (ready, superseded or failed) from **projection**
+(applied by `AnalysisService._persist` or direct `reanalyze_bill`). A projection receipt commits
+with `Bill.analysis`, records the target's generation/status before that write, and distinguishes
+the ready batch result from memo reuse. A repeated receipt keeps its original timestamp.
+Preparation and quiet source checks do not create projection receipts. Ready does not prove
+application or publication, and applied does not prove delivery. Other tracking/linking consumers
+and secondary purposes remain in [DA6](plans/2026-10-22-document-architecture.md#da6).
+Result, collection decision, memo/ready changes and consumed checkpoint commit together;
+run cost acknowledgement retains its existing mechanism.
 The history preserves the paid record when a skip/reset makes it inapplicable. Immutable rows
 reject replacement, and an exact repeated write is harmless.
 
 This first migration temporarily retains the answer in both history and legacy bill/memo
 projections. Removing those copies requires all primary consumers, frozen deliveries and
 secondary purposes to use protected result refs; it is not part of this dual-write stage.
-The measured sizes and scope are in [J061](plans/2026-10-22-document-architecture-progress.md#j061).
+The measured sizes and scope are in [J061](plans/2026-10-22-document-architecture-progress.md#j061)
+and [J062](plans/2026-10-22-document-architecture-progress.md#j062).
 
 Batch metadata and collected records retain `request_sha256` after payload cleanup. It is copied
 from the original frozen request by the shared submission/attachment constructor. An absent

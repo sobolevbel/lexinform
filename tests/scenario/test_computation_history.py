@@ -70,7 +70,16 @@ def test_collect_history_and_ready_checkpoint_roll_back_together(
     assert record is not None, "the next collection retries the unconsumed provider item"
     results = world.repo.list_computation_results(10, "3039")
     assert len(results) == 1 and results[0].result_id == record.computation_id
-    assert len(world.repo.list_result_applications(10, "3039")) == 1
+    assert (
+        len(
+            [
+                row
+                for row in world.repo.list_result_applications(10, "3039")
+                if row.phase == "collection"
+            ]
+        )
+        == 1
+    )
     world.run(track=False)
     assert len(world.repo.list_computation_results(10, "3039")) == 1
     assert len(world.batch.submitted) == 1 and len(world.publisher.new_bills) == 1
@@ -118,7 +127,16 @@ def test_collected_result_is_independent_of_projection_memo_and_request_retentio
     with pytest.raises(ValueError, match="cannot be replaced"):
         world.repo.save_result_application(application.model_copy(update={"outcome": "superseded"}))
     assert len(world.repo.list_computation_results(10, "3039")) == 1
-    assert len(world.repo.list_result_applications(10, "3039")) == 1
+    assert (
+        len(
+            [
+                row
+                for row in world.repo.list_result_applications(10, "3039")
+                if row.phase == "collection"
+            ]
+        )
+        == 1
+    )
     assert world.repo.get_computation_result(result.result_id) == result
 
 

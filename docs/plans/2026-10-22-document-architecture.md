@@ -626,11 +626,11 @@ source disappearance. Изменение normalization/digest — отдельн
 **Изменяемые места:** `models/analysis.py`, `models/reviews.py`, `models/batch.py`,
 `services/analysis.py`, `document_reviews.py`, `analysis_records.py`, repository/retention.
 
-- [ ] DA6.1. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), immutable primary results и collection decisions; secondary и отдельная история применения ещё не перенесены.** Добавить immutable `computation_results` и `result_applications` с uniqueness
+- [ ] DA6.1. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), immutable primary results и collection decisions; [J062](2026-10-22-document-architecture-progress.md#j062), projection receipts в primary service. Остальные tracking/linking consumers и secondary ещё не перенесены.** Добавить immutable `computation_results` и `result_applications` с uniqueness
   provider item/accounting и application identity. Большие входы/ответы хранить по профилю DA2:
   ссылка на архив допустима только для действительно сохранённого объекта;
   статус валидации и версия schema сохраняются. Не создавать второй batch submitter.
-- [ ] DA6.2. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), validated primary record, исходный usage, collection outcome и consumed checkpoint атомарны; raw response archive и последующее применение не добавлены.** В одной локальной транзакции collect сохранить raw/validated result ref,
+- [ ] DA6.2. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), validated primary record, исходный usage, collection outcome и consumed checkpoint атомарны; [J062](2026-10-22-document-architecture-progress.md#j062), отдельная atomic projection transaction в `_persist`/direct `reanalyze_bill`. Tracking и raw response archive остаются открытыми.** В одной локальной транзакции collect сохранить raw/validated result ref,
   usage accounting и consumed checkpoint. Применение к проекции — отдельная идемпотентная
   транзакция, учитывающая нынешние generation, skip/reset и ownership; при tracking сохранить
   атомарность processed observation и delivery work.
@@ -639,7 +639,7 @@ source disappearance. Изменение normalization/digest — отдельн
   explanation. Для secondary прежний статус Bill не меняется.
   По §1.4 измерить временную избыточность проекций/memo/results; постоянная история применения
   хранит ссылки и исход, а не ещё один полный контекст и оплаченный ответ на каждый reuse.
-- [ ] DA6.4. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), новые primary results переживают memo cleanup; история reuse/applicability остаётся открытой.** Сохранить memo как индекс переиспользования, не единственную историю оплаченного
+- [ ] DA6.4. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), новые primary results переживают memo cleanup; [J062](2026-10-22-document-architecture-progress.md#j062), memo reuse в primary service создаёт только короткий application ref. Остальная applicability history открыта.** Сохранить memo как индекс переиспользования, не единственную историю оплаченного
   ответа. Request fingerprint и policy reuse — разные сущности; смена prompt сама по себе
   не инвалидирует старые карточки и не инициирует платные вызовы.
   Нынешний `_unchanged()` меняет pointer/source_checked_at: в новой истории это отдельное

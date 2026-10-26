@@ -1,4 +1,4 @@
-"""Immutable primary batch results and their collection decisions."""
+"""Immutable primary batch results and their collection/projection decisions."""
 
 import datetime as dt
 import hashlib
@@ -18,6 +18,7 @@ CollectionReason = Literal[
     "bill_missing",
     "no_validated_result",
 ]
+ApplicationReason = CollectionReason | Literal["batch_result", "memo_reuse"]
 
 
 def computation_id(provider: BatchProvider, batch_id: str, custom_id: str) -> str:
@@ -69,9 +70,18 @@ class ResultApplication(BaseModel):
     term: int
     number: str
     generation: int
-    phase: Literal["collection"] = "collection"
-    outcome: Literal["ready", "superseded", "failed"]
-    reason: CollectionReason
+    phase: Literal["collection", "projection"] = "collection"
+    outcome: Literal["ready", "superseded", "failed", "applied"]
+    reason: ApplicationReason
     observed_generation: int | None
     observed_status: BillStatus | None
     created_at: dt.datetime
+
+    @model_validator(mode="after")
+    def application_phase(self) -> Self:
+        projection = self.phase == "projection"
+        if projection != (self.outcome == "applied"):
+            raise ValueError("only a projection receipt confirms application")
+        if projection != (self.reason in ("batch_result", "memo_reuse")):
+            raise ValueError("the application reason must describe its phase")
+        return self
