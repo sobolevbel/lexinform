@@ -1,7 +1,8 @@
 """Durable typed requests and results for homogeneous provider batches."""
 
 import datetime as dt
-from typing import Annotated, Literal
+import hashlib
+from typing import Annotated, Literal, Self
 
 from pydantic import AliasChoices, BaseModel, Field, model_validator
 
@@ -111,6 +112,9 @@ class BatchRequest(BaseModel):
     number: str
     question: BatchQuestion
     payload_json: str | None = None
+    payload_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
     model: str = ""
     prompt_version: str = ""
     estimated_cost_usd: float = 0.0
@@ -121,6 +125,33 @@ class BatchRequest(BaseModel):
         if isinstance(value, dict) and "question" not in value:
             return {**value, "question": {"kind": value["call_kind"], "ctx": value["ctx"]}}
         return value
+
+    @model_validator(mode="after")
+    def frozen_payload(self) -> Self:
+        return self.verify_payload()
+
+    def verify_payload(self) -> Self:
+        if self.payload_sha256 is not None and (
+            self.payload_json is None
+            or hashlib.sha256(self.payload_json.encode()).hexdigest() != self.payload_sha256
+        ):
+            raise ValueError("Frozen batch payload SHA-256 does not match its serialized request")
+        return self
+
+    def freeze(
+        self, *, payload_json: str, model: str, prompt_version: str, estimated_cost_usd: float
+    ) -> Self:
+        if self.payload_json is not None:
+            raise ValueError("Batch request is already frozen")
+        return self.model_copy(
+            update={
+                "payload_json": payload_json,
+                "payload_sha256": hashlib.sha256(payload_json.encode()).hexdigest(),
+                "model": model,
+                "prompt_version": prompt_version,
+                "estimated_cost_usd": estimated_cost_usd,
+            }
+        )
 
     @property
     def call_kind(self) -> BatchKind:

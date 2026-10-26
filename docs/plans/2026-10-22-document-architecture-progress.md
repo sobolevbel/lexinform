@@ -2790,3 +2790,60 @@ completed memos. Rollback может потерять audit fields при пов
 [Acceptance evidence](../assets/audits/2026-10-26-secondary-scan-input/validation.json) содержит
 hashes XML/run manifests, размеры, повторяемый observer и проверенный rollback; локальные outputs
 в `out/corpus/j057` и `out/corpus/runs/j057-*`. Backend/retention/defaults и SQLite schema прежние.
+
+J057 интегрирован поверх `56b27d08b01fa3eb92ee1341e4d7835b98fb5028`: повторный gate
+**4165 passed**, errors/failures/skips/xfails 0, strict mypy 393 файла, Ruff/docs green.
+`j057-integrated-senate` сохранил все 816 observations и прежние source hashes;
+`j057-integrated-ci` passed, 7 observations. Собственный коммит после rebase —
+`93095a18d8d136302c7cf90ecece02d2f87d708b`, опубликован без чужой незавершённой работы.
+CI [40340814136](https://github.com/sobolevbel/lexinform/actions/runs/40340814136) success,
+test/web/docs green, 4165 passed / 32 deselected. Deploy relay
+[40341580371](https://github.com/sobolevbel/lexinform/actions/runs/40341580371) success:
+`56b27d08b01f → 93095a18d8d1`, сервис up 45 s после restart. Это CI/relay verification,
+не аудит независимых scheduled bot runs.
+
+<a id="j058"></a>
+### J058. DA5: общий freeze и целостность сохранённого batch payload
+
+Дата: 26 октября 2026. База: `93095a18d8d136302c7cf90ecece02d2f87d708b`.
+Статус: реализован и принят локально; выпуск проверяется отдельно.
+
+OpenAI и Anthropic используют один `BatchRequest.freeze` вместо двух копий обновления полей.
+Метод сохраняет готовый payload, model, prompt version, reservation и SHA-256 от его UTF-8 bytes;
+уже подготовленный request повторно не фиксируется. Model reader проверяет checksum при restore;
+оба adapter перед reuse проверяют его также у переданного in-memory объекта. Изменённый payload
+не достигает upload/submission. Поле необязательное и не сериализуется у legacy requests:
+они читаются и отправляются по прежнему frozen контракту без пересборки из текущих defaults.
+
+SHA относится к сохранённому `payload_json`, не к изменяемой routing metadata или wire framing
+SDK. Pending bill linking может менять number в request envelope, не переписывая provider payload.
+После подтверждённого submit действует прежняя очистка intents; этот срез не обещает сохранения
+completed payload и не закрывает DA2/DA6. Provider options/schema/prompt уже входят в сохранённый
+payload; PreparedInput refs и дальнейшая retention остаются частями DA5.6.
+
+Fake backend использует тот же freeze/check контракт. Проверки включают text/scan у обоих
+провайдеров, изменение одного пробела, отказ повторного freeze, несовместимую checksum без
+payload, legacy requests, queued/submitting restore и отсутствие автоматического повтора
+uncertain intent. SDK tests используют MockTransport и проверяют отсутствие любых HTTP calls
+при повреждённом input. До внедрения девять unit cases failed; тесты не ослаблялись и не xfail.
+
+Focused acceptance: **140 passed**, errors/failures/skips 0. Provider observer проверил
+**8** сочетаний OpenAI/Anthropic × amendments/supplement × text/scan: exact payload SHA,
+model, prompt version и reservation совпали с `93095a1`. AST checks подтверждают прежнюю
+assembly до freeze и равенство всех передаваемых freeze значений. PDF loaders, scan manifests,
+selection и AnalysisService побайтово прежние; это не новый extraction/comparison replay.
+`j058-ci` passed, **7 observations**, с captured source snapshot.
+
+Production-profile state fixtures: один pending secondary request добавляет **84 SQL / 57 gzip
+bytes**, SQLite size прежний. У completed amendments/supplement прирост **0 / 0 / 0**.
+Все четыре fixtures прошли integrity/foreign-key checks; baseline `93095a1` восстановил
+новые pending payload и прочитал completed memos. Старый reader может удалить checksum при
+повторной сериализации; первоначальные payload bytes сохраняют прежнюю совместимость.
+Это bounded fixtures, не прогноз production dump growth. Observer sources, hashes и XML
+сохраняются в acceptance evidence; локальные outputs — `out/corpus/j058`.
+
+Полный gate: **4179 passed**, errors/failures/skips/xfails 0, 601,824 s; strict mypy
+395 файлов, Ruff check/format src/tests/tools, strict docs build/links и diff check green.
+[Acceptance evidence](../assets/audits/2026-10-26-batch-payload-identity/validation.json) содержит
+before/after XML hashes, исходники повторяемых observers, unchanged assembly proof, state sizes,
+rollback и captured CI slice. Новых конфигурационных значений, SQL schema или blob copies нет.

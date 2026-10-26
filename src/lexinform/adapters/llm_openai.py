@@ -344,7 +344,7 @@ class OpenAiAnalyzer:
 
     def prepare_request(self, request: BatchRequest) -> BatchRequest:
         if request.payload_json is not None:
-            return request
+            return request.verify_payload()
         ctx = request.ctx
         model = request.model or self._model
         scan = (
@@ -408,22 +408,20 @@ class OpenAiAnalyzer:
             },
         }
         tokens = self.count_input_tokens(ctx) if isinstance(ctx, BillContext) else None
-        return request.model_copy(
-            update={
-                "payload_json": json.dumps(payload, ensure_ascii=False),
-                "model": model,
-                "prompt_version": REVIEW_PROMPT_VERSION
-                if isinstance(ctx, ReviewContext)
-                else PROMPT_VERSION,
-                "estimated_cost_usd": estimate_batch_reservation(
-                    model,
-                    counted_tokens=tokens,
-                    prompt_chars=len(prompt),
-                    system_chars=len(system),
-                    scan_pages=scan.pages if scan is not None else 0,
-                    max_output_tokens=self._max_output_tokens,
-                ),
-            }
+        return request.freeze(
+            payload_json=json.dumps(payload, ensure_ascii=False),
+            model=model,
+            prompt_version=REVIEW_PROMPT_VERSION
+            if isinstance(ctx, ReviewContext)
+            else PROMPT_VERSION,
+            estimated_cost_usd=estimate_batch_reservation(
+                model,
+                counted_tokens=tokens,
+                prompt_chars=len(prompt),
+                system_chars=len(system),
+                scan_pages=scan.pages if scan is not None else 0,
+                max_output_tokens=self._max_output_tokens,
+            ),
         )
 
     def submit(self, requests: Sequence[BatchRequest]) -> str:

@@ -38,6 +38,13 @@ one read costs more than two uncached prefixes. For our small, intermittent batc
 ordinary batch input; synchronous Claude calls retain their five-minute cache. Existing saved
 batch payloads keep their original parameters and reservations.
 
+New saved batch requests carry `payload_sha256`, the SHA-256 of the UTF-8 `payload_json`.
+Both providers use `BatchRequest.freeze` and verify this checksum before reusing a prepared
+request; restoring a mismatched request fails validation. The checksum covers the saved provider
+payload, independently of routing metadata such as a linked bill number. Legacy frozen requests
+without a checksum retain their original payload and do not gain a checksum on reuse. The field
+follows the existing intent lifecycle; completed request archival remains separate work.
+
 GPT-5.1 uses automatic caching without a cache-write surcharge. Both synchronous and batch
 requests use a stable key derived from the system prompt and output schema name, shared across
 bills, and request `prompt_cache_retention="24h"`. This improves opportunities for reuse without

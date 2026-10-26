@@ -770,13 +770,13 @@ class FakeBatchBackend:
         return len(ctx.text) // 2 + 2_000
 
     def prepare_request(self, request: BatchRequest) -> BatchRequest:
-        return request.model_copy(
-            update={
-                "payload_json": request.ctx.model_dump_json(),
-                "model": self.MODEL,
-                "prompt_version": PROMPT_VERSION,
-                "estimated_cost_usd": 0.1,
-            }
+        if request.payload_json is not None:
+            return request.verify_payload()
+        return request.freeze(
+            payload_json=request.ctx.model_dump_json(),
+            model=self.MODEL,
+            prompt_version=PROMPT_VERSION,
+            estimated_cost_usd=0.1,
         )
 
     def submit(self, requests: Sequence[BatchRequest]) -> str:

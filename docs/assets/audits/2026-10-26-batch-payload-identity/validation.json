@@ -1,0 +1,309 @@
+{
+  "version": 1,
+  "stage": "J058",
+  "base": "93095a18d8d136302c7cf90ecece02d2f87d708b",
+  "scope": "One shared provider-payload freeze and optional integrity checksum for durable intents; preserve legacy requests and provider payloads",
+  "regressions_before": {
+    "tests": "9",
+    "errors": "0",
+    "failures": "9",
+    "skipped": "0",
+    "time": "0.969",
+    "xml_sha256": "9ca5de84409ef596dc1617e4e8b422d148bb40889a24b73f9c3e5cdf1bcf5863"
+  },
+  "focused": {
+    "tests": "140",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "time": "2.246",
+    "xml_sha256": "bc8f1b217dfa1dfc7f1b44e8f5435a5e2ad4e9c79f8ded084efcb30e894e21e2"
+  },
+  "quality": {
+    "pytest": {
+      "tests": "4179",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "601.824",
+      "xml_sha256": "efd5a6100878ac854367eb793a49d45962b46e634fda2e2b72eadd8a412ec8ae"
+    },
+    "mypy_files": 395,
+    "ruff": "passed src/tests/tools",
+    "docs": "strict build and links passed"
+  },
+  "unchanged_assembly_and_inputs": {
+    "src/lexinform/adapters/llm_openai.py": {
+      "assembly_ast_sha256": "b5b9872a6216e5fbaccf0049b45896e7cd020bb7d377ab3f946ba1ca032720d2",
+      "frozen_fields": [
+        "estimated_cost_usd",
+        "model",
+        "payload_json",
+        "prompt_version"
+      ],
+      "same_return_values": true
+    },
+    "src/lexinform/adapters/llm_anthropic.py": {
+      "assembly_ast_sha256": "32af1bfccd8a2824783457e6066aa50d3442fd6828373cdf35bf4381133b02c0",
+      "frozen_fields": [
+        "estimated_cost_usd",
+        "model",
+        "payload_json",
+        "prompt_version"
+      ],
+      "same_return_values": true
+    },
+    "src/lexinform/services/documents.py": "5979ba4287bafa59320cfdb1ed526ccd9180357c4744558d435cdeaea576cab6",
+    "src/lexinform/models/scan_input.py": "736fda5637d14c2c5d7f7de19480b42dd19a73a3324910d592445c2520aeaa8e",
+    "src/lexinform/adapters/pdf_text.py": "e46eb0795a68ce41900b5837740474cbc62ce0bfdbd3c3c1822a2ccbd4754101",
+    "src/lexinform/models/documents.py": "79bf620398bbbaffdbd9c2df997344489f7c0b0d15b4c166043deb0282260c81",
+    "src/lexinform/services/analysis.py": "a7e1ebe3b7efec1e1864c222f84305ab7b057b9bd70b692447b91c5bcc01ef6a"
+  },
+  "provider_payload_comparison": {
+    "status": "same",
+    "cases": 8,
+    "payloads": {
+      "openai-amendments-scan=False": {
+        "payload_sha256": "74a5c7d10ed7caf3fc869dcac16346b66548903e686649d61a5d92d456ffd20c",
+        "stored_checksum": "74a5c7d10ed7caf3fc869dcac16346b66548903e686649d61a5d92d456ffd20c",
+        "bytes": 4903,
+        "model": "gpt-5.1",
+        "prompt_version": "2026-10-v12",
+        "estimated_cost_usd": 0.04323625
+      },
+      "openai-supplement-scan=False": {
+        "payload_sha256": "d4999707ef6f1cb00421ea1d01b7aec1983ff0bd9304059fa832a5171057d311",
+        "stored_checksum": "d4999707ef6f1cb00421ea1d01b7aec1983ff0bd9304059fa832a5171057d311",
+        "bytes": 3686,
+        "model": "gpt-5.1",
+        "prompt_version": "2026-10-v12",
+        "estimated_cost_usd": 0.0430025
+      },
+      "openai-amendments-scan=True": {
+        "payload_sha256": "6a640130ae3091cdfa80b351c3d14ae34f9156cf50ed25cd31a104e6404964d1",
+        "stored_checksum": "6a640130ae3091cdfa80b351c3d14ae34f9156cf50ed25cd31a104e6404964d1",
+        "bytes": 5429,
+        "model": "gpt-5.1",
+        "prompt_version": "2026-10-v12",
+        "estimated_cost_usd": 0.072181875
+      },
+      "openai-supplement-scan=True": {
+        "payload_sha256": "09b364ebf69afa3eb1c448e509d280ec39e907f6e60fee59cb43a642a06f7c7c",
+        "stored_checksum": "09b364ebf69afa3eb1c448e509d280ec39e907f6e60fee59cb43a642a06f7c7c",
+        "bytes": 4352,
+        "model": "gpt-5.1",
+        "prompt_version": "2026-10-v12",
+        "estimated_cost_usd": 0.0720325
+      },
+      "anthropic-amendments-scan=False": {
+        "payload_sha256": "a4544d3c5235f989cbab097c5c75734c31583b2bf510f21dd5330f274eb0a573",
+        "stored_checksum": "a4544d3c5235f989cbab097c5c75734c31583b2bf510f21dd5330f274eb0a573",
+        "bytes": 4591,
+        "model": "claude-opus-5",
+        "prompt_version": "2026-10-v12",
+        "estimated_cost_usd": 0.0609725
+      },
+      "anthropic-supplement-scan=False": {
+        "payload_sha256": "3e9d9c65559153cada7f14f9cbd0e5c470248572ac1105abab0f11c3a94be1ab",
+        "stored_checksum": "3e9d9c65559153cada7f14f9cbd0e5c470248572ac1105abab0f11c3a94be1ab",
+        "bytes": 4032,
+        "model": "claude-opus-5",
+        "prompt_version": "2026-10-v12",
+        "estimated_cost_usd": 0.0612425
+      },
+      "anthropic-amendments-scan=True": {
+        "payload_sha256": "015942b5176515f8e96fee4cf4b9315acf69cc4bf4c71746246e0bf9db45dfbc",
+        "stored_checksum": "015942b5176515f8e96fee4cf4b9315acf69cc4bf4c71746246e0bf9db45dfbc",
+        "bytes": 5117,
+        "model": "claude-opus-5",
+        "prompt_version": "2026-10-v12",
+        "estimated_cost_usd": 0.176755
+      },
+      "anthropic-supplement-scan=True": {
+        "payload_sha256": "769f1487580765e47949fce6c756e1690f82dba1b5e96b991646e4b568e9166e",
+        "stored_checksum": "769f1487580765e47949fce6c756e1690f82dba1b5e96b991646e4b568e9166e",
+        "bytes": 4698,
+        "model": "claude-opus-5",
+        "prompt_version": "2026-10-v12",
+        "estimated_cost_usd": 0.1773625
+      }
+    }
+  },
+  "ci_slice": {
+    "status": "passed",
+    "observations": 7,
+    "returncode": 0,
+    "manifest_sha256": "6d23bb43c0bc377ee2e94db40b3940f91f458afd7975e98730abbf036e9f6f08",
+    "result_sha256": "22a74478edd63ec163ab341203dcf37462a1873bdeee78ddf727a0cf3e46709c",
+    "code_snapshot": {
+      "files": 445,
+      "path": "code.tar.gz",
+      "sha256": "465c2512f16457549099824f0b6778508c5f41e6b5ddf57ca986e22f8a8abc84"
+    }
+  },
+  "state": {
+    "scope": "One secondary request per production-profile World with fake providers; pending and completed; fixture measurements are not a production growth forecast",
+    "measurements": {
+      "amendments-pending": {
+        "before": {
+          "sql_bytes": 39328,
+          "gzip_bytes": 7489,
+          "sqlite_bytes": 266240,
+          "sql_sha256": "339b847b99567916a0fdd76718da3504ce94559a49133ab117de4b538ece24bf",
+          "request_sha256": "4e571303a8036130bc65d7f465c642d0ed1061def848ff7dbf109b983b9886ce",
+          "payload_sha256": "c705589c9189d82b2e516147f47ec41afa95814bf99caaa1b1676153c9c5b8ff",
+          "stored_checksum": null,
+          "custom_id": "574e7cc1ee57fcf9777e23cfc1e49d1db32b7a5b47ccef87c1277fd89f224876",
+          "estimated_cost_usd": 0.1
+        },
+        "after": {
+          "sql_bytes": 39412,
+          "gzip_bytes": 7546,
+          "sqlite_bytes": 266240,
+          "sql_sha256": "daa62eab5e0be0b0c438aff685e8fa297e05e95e616859ce1ca7a20e58cf31e0",
+          "request_sha256": "0bef34a9be67ae277e0f6f3fb7c0bd67e77788267a4a6c8da48727ba73d5d4c0",
+          "payload_sha256": "c705589c9189d82b2e516147f47ec41afa95814bf99caaa1b1676153c9c5b8ff",
+          "stored_checksum": "c705589c9189d82b2e516147f47ec41afa95814bf99caaa1b1676153c9c5b8ff",
+          "custom_id": "574e7cc1ee57fcf9777e23cfc1e49d1db32b7a5b47ccef87c1277fd89f224876",
+          "estimated_cost_usd": 0.1
+        },
+        "delta": {
+          "sql_bytes": 84,
+          "gzip_bytes": 57,
+          "sqlite_bytes": 0
+        }
+      },
+      "amendments-completed": {
+        "before": {
+          "sql_bytes": 34104,
+          "gzip_bytes": 7212,
+          "sqlite_bytes": 262144,
+          "sql_sha256": "a4ce6f9d46d6bdc389b23193c217eef66384558db2b987430ff88efadde98dd5",
+          "request_sha256": "4e571303a8036130bc65d7f465c642d0ed1061def848ff7dbf109b983b9886ce",
+          "payload_sha256": "c705589c9189d82b2e516147f47ec41afa95814bf99caaa1b1676153c9c5b8ff",
+          "stored_checksum": null,
+          "custom_id": "574e7cc1ee57fcf9777e23cfc1e49d1db32b7a5b47ccef87c1277fd89f224876",
+          "estimated_cost_usd": 0.1
+        },
+        "after": {
+          "sql_bytes": 34104,
+          "gzip_bytes": 7212,
+          "sqlite_bytes": 262144,
+          "sql_sha256": "a4ce6f9d46d6bdc389b23193c217eef66384558db2b987430ff88efadde98dd5",
+          "request_sha256": "0bef34a9be67ae277e0f6f3fb7c0bd67e77788267a4a6c8da48727ba73d5d4c0",
+          "payload_sha256": "c705589c9189d82b2e516147f47ec41afa95814bf99caaa1b1676153c9c5b8ff",
+          "stored_checksum": "c705589c9189d82b2e516147f47ec41afa95814bf99caaa1b1676153c9c5b8ff",
+          "custom_id": "574e7cc1ee57fcf9777e23cfc1e49d1db32b7a5b47ccef87c1277fd89f224876",
+          "estimated_cost_usd": 0.1
+        },
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      },
+      "supplement-pending": {
+        "before": {
+          "sql_bytes": 39382,
+          "gzip_bytes": 7546,
+          "sqlite_bytes": 266240,
+          "sql_sha256": "52e9768f830427b81ef8aef484eee72112111e8eb0c17f9353f878c10b373810",
+          "request_sha256": "c704fed2223e95009a73b2c67af4821266d6394a23863a281df08bf472433ea3",
+          "payload_sha256": "1ba505693c0f5578f66eaa016366bfc9179e30ee9967a399b60d2df800469750",
+          "stored_checksum": null,
+          "custom_id": "e7557c4c46cdde74ff99346fa5eaec8f70b4bd69216489278b81538a572f0885",
+          "estimated_cost_usd": 0.1
+        },
+        "after": {
+          "sql_bytes": 39466,
+          "gzip_bytes": 7603,
+          "sqlite_bytes": 266240,
+          "sql_sha256": "f46a23155587209a13230469ecf9cbc4651af4224e09648f74a7dd12f6565754",
+          "request_sha256": "a73ad27ebfb49053645b764c89202bef8580439a3ebfe80957d7edffb9d4400f",
+          "payload_sha256": "1ba505693c0f5578f66eaa016366bfc9179e30ee9967a399b60d2df800469750",
+          "stored_checksum": "1ba505693c0f5578f66eaa016366bfc9179e30ee9967a399b60d2df800469750",
+          "custom_id": "e7557c4c46cdde74ff99346fa5eaec8f70b4bd69216489278b81538a572f0885",
+          "estimated_cost_usd": 0.1
+        },
+        "delta": {
+          "sql_bytes": 84,
+          "gzip_bytes": 57,
+          "sqlite_bytes": 0
+        }
+      },
+      "supplement-completed": {
+        "before": {
+          "sql_bytes": 35327,
+          "gzip_bytes": 7347,
+          "sqlite_bytes": 270336,
+          "sql_sha256": "6f95d29d5200e8a8809ca9371d7eee3cf2d5621d4416e1c9833708afb79016a6",
+          "request_sha256": "c704fed2223e95009a73b2c67af4821266d6394a23863a281df08bf472433ea3",
+          "payload_sha256": "1ba505693c0f5578f66eaa016366bfc9179e30ee9967a399b60d2df800469750",
+          "stored_checksum": null,
+          "custom_id": "e7557c4c46cdde74ff99346fa5eaec8f70b4bd69216489278b81538a572f0885",
+          "estimated_cost_usd": 0.1
+        },
+        "after": {
+          "sql_bytes": 35327,
+          "gzip_bytes": 7347,
+          "sqlite_bytes": 270336,
+          "sql_sha256": "6f95d29d5200e8a8809ca9371d7eee3cf2d5621d4416e1c9833708afb79016a6",
+          "request_sha256": "a73ad27ebfb49053645b764c89202bef8580439a3ebfe80957d7edffb9d4400f",
+          "payload_sha256": "1ba505693c0f5578f66eaa016366bfc9179e30ee9967a399b60d2df800469750",
+          "stored_checksum": "1ba505693c0f5578f66eaa016366bfc9179e30ee9967a399b60d2df800469750",
+          "custom_id": "e7557c4c46cdde74ff99346fa5eaec8f70b4bd69216489278b81538a572f0885",
+          "estimated_cost_usd": 0.1
+        },
+        "delta": {
+          "sql_bytes": 0,
+          "gzip_bytes": 0,
+          "sqlite_bytes": 0
+        }
+      }
+    },
+    "observer_source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom pathlib import Path\n\nfrom lexinform.models import TextDocument\nfrom lexinform.services.analysis import Waiting\nfrom tests.fakes import FakeTextExtractor\nfrom tests.harness import World\n\n\ndef test_secondary_state_growth(tmp_path: Path) -> None:\n    output = Path(os.environ[\"J058_PROBE_OUTPUT\"])\n    output.mkdir()\n    report = {}\n    for kind in (\"amendments\", \"supplement\"):\n        data = b\"%PDF-secondary-scan\" * 100\n        world = World(\n            profile=\"production\",\n            extractor=FakeTextExtractor(by_content={data: \"\"}, page_count=3),\n        )\n        world.add_bill(\"3039\", \"Projekt ustawy o cudzoziemcach\")\n        world.run(track=False)\n        world.batch.resolve()\n        world.run(track=False)\n        assert world.bill(\"3039\").analysis is not None\n        url = \"https://api.test/secondary.pdf\"\n        world.gateway.files[url] = data\n        world.analysis.start_run()\n        answer = (\n            world.analysis.summarize_amendments(\n                world.bill(\"3039\"), TextDocument(url=url, kind=\"committee_amendments\")\n            )\n            if kind == \"amendments\"\n            else world.analysis.digest_supplement(\n                world.bill(\"3039\"),\n                TextDocument(url=url, kind=\"government_position\"),\n                number=\"3040\",\n                title=\"Stanowisko Rządu\",\n            )\n        )\n        assert isinstance(answer, Waiting)\n        request = world.repo.list_queued_batch_intents()[0].request\n        assert request.payload_json is not None\n        request_sha = hashlib.sha256(request.model_dump_json().encode()).hexdigest()\n        for stage in (\"pending\", \"completed\"):\n            if stage == \"completed\":\n                world.analysis.submit_queued_batches()\n                world.batch.resolve()\n                world.analysis.collect_batches()\n            identity = f\"{kind}-{stage}\"\n            raw = world.repo.dump().encode()\n            (output / f\"{identity}.sql\").write_bytes(raw)\n            path = tmp_path / f\"{identity}.db\"\n            with sqlite3.connect(path) as db:\n                db.executescript(raw.decode())\n                assert db.execute(\"PRAGMA integrity_check\").fetchone() == (\"ok\",)\n                assert not db.execute(\"PRAGMA foreign_key_check\").fetchall()\n            report[identity] = {\n                \"sql_bytes\": len(raw),\n                \"gzip_bytes\": len(gzip.compress(raw, mtime=0)),\n                \"sqlite_bytes\": path.stat().st_size,\n                \"sql_sha256\": hashlib.sha256(raw).hexdigest(),\n                \"request_sha256\": request_sha,\n                \"payload_sha256\": hashlib.sha256(request.payload_json.encode()).hexdigest(),\n                \"stored_checksum\": request.model_dump().get(\"payload_sha256\"),\n                \"custom_id\": request.custom_id,\n                \"estimated_cost_usd\": request.estimated_cost_usd,\n            }\n    (output / \"measurements.json\").write_text(json.dumps(report, indent=2) + \"\\n\")\n",
+    "observer_sha256": "31295a9c6b67cdb5c903a0808af083c99619c5012852f6df0743c1eb3fe11883"
+  },
+  "payload_observer": {
+    "source": "import hashlib\nimport json\nimport os\nfrom pathlib import Path\n\nfrom lexinform.models import AmendmentsContext, BatchRequest, SupplementContext\nfrom lexinform.models.batch import AmendmentsQuestion, SupplementQuestion\nfrom tests.unit.test_scan_input import loaded_scan\nfrom tests.unit.test_senate_scan_batch import anthropic_backend, openai_backend\n\n\ndef test_provider_payload_identity() -> None:\n    output = Path(os.environ[\"J058_PAYLOAD_OUTPUT\"])\n    output.mkdir()\n    report = {}\n    _, scan = loaded_scan()\n    for name, factory in ((\"openai\", openai_backend), (\"anthropic\", anthropic_backend)):\n        backend = factory()\n        for scanned in (False, True):\n            for kind in (\"amendments\", \"supplement\"):\n                fields = {\n                    \"number\": \"3039\",\n                    \"title\": \"Projekt ustawy o cudzoziemcach\",\n                    \"text\": \"\" if scanned else \"W art. 1 kwotę 200 zł zastępuje się kwotą 300 zł.\",\n                    \"truncated\": False,\n                    \"previous_summary\": \"Opis\",\n                    \"scan\": scan if scanned else None,\n                }\n                question = (\n                    AmendmentsQuestion(ctx=AmendmentsContext(source_kind=\"committee_amendments\", **fields))\n                    if kind == \"amendments\"\n                    else SupplementQuestion(ctx=SupplementContext(source_kind=\"government_position\", document_title=\"Stanowisko Rządu\", **fields))\n                )\n                prepared = backend.prepare_request(BatchRequest(custom_id=\"saved-input\", term=10, number=\"3039\", question=question))\n                assert prepared.payload_json is not None\n                key = f\"{name}-{kind}-scan={scanned}\"\n                data = prepared.payload_json.encode()\n                (output / f\"{key}.json\").write_bytes(data)\n                report[key] = {\n                    \"payload_sha256\": hashlib.sha256(data).hexdigest(),\n                    \"stored_checksum\": prepared.model_dump().get(\"payload_sha256\"),\n                    \"bytes\": len(data),\n                    \"model\": prepared.model,\n                    \"prompt_version\": prepared.prompt_version,\n                    \"estimated_cost_usd\": prepared.estimated_cost_usd,\n                }\n    (output / \"measurements.json\").write_text(json.dumps(report, indent=2) + \"\\n\")\n",
+    "sha256": "3bc1e39c46c83a58a9320a130e0e548589aa1fe7178403b3200fa3e00bda058e"
+  },
+  "rollback": {
+    "commit": "93095a18d8d136302c7cf90ecece02d2f87d708b",
+    "result": {
+      "amendments-pending": {
+        "queued": 1,
+        "secondary_memos_read": 0
+      },
+      "amendments-completed": {
+        "queued": 0,
+        "secondary_memos_read": 1
+      },
+      "supplement-pending": {
+        "queued": 1,
+        "secondary_memos_read": 0
+      },
+      "supplement-completed": {
+        "queued": 0,
+        "secondary_memos_read": 2
+      }
+    },
+    "test": {
+      "tests": "1",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.044",
+      "xml_sha256": "5afed3487071b4367ea651758bd803a41a0376e6fb085e1b4f2ff30e3f2b4952"
+    },
+    "observer_source": "import hashlib\nimport json\nimport os\nfrom pathlib import Path\n\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\nfrom lexinform.models import AmendmentsRecord, SupplementRecord\n\n\ndef test_previous_reader_restores_checksummed_intents() -> None:\n    root = Path(os.environ[\"J058_PROBE_ROOT\"])\n    measurements = json.loads((root / \"state-current/measurements.json\").read_text())\n    report = {}\n    for identity, measurement in measurements.items():\n        repository = SqliteBillRepository(\":memory:\")\n        repository.migrate()\n        repository.restore((root / f\"state-current/{identity}.sql\").read_text())\n        queued = repository.list_queued_batch_intents()\n        if identity.endswith(\"pending\"):\n            assert len(queued) == 1\n            request = queued[0].request\n            assert request.payload_json is not None\n            assert hashlib.sha256(request.payload_json.encode()).hexdigest() == measurement[\"payload_sha256\"]\n            assert \"payload_sha256\" not in request.model_dump()\n        else:\n            assert not queued\n        reads = 0\n        for raw in repository.load_analysis_memo().values():\n            row = json.loads(raw)\n            if \"amendments\" in row:\n                AmendmentsRecord.model_validate_json(raw)\n            elif \"digest\" in row:\n                SupplementRecord.model_validate_json(raw)\n            else:\n                continue\n            reads += 1\n        report[identity] = {\"queued\": len(queued), \"secondary_memos_read\": reads}\n    with (root / \"rollback.json\").open(\"x\") as stream:\n        json.dump(report, stream, indent=2)\n",
+    "observer_sha256": "7d99a3be0fa483f85128e9f3d9e86dbb05311c332bbf4adf3aebf63eda721f6f",
+    "limitation": "Old readers ignore the checksum and may discard it on reserialization; original frozen payloads remain usable."
+  },
+  "exclusions": [
+    "Checksum covers saved payload_json UTF-8 bytes, not HTTP wire framing or mutable bill routing metadata.",
+    "Existing intent cleanup after submission remains; this is not completed-request archival or general result/application history.",
+    "No extraction/selection/normalization or model prompt/schema changes; no fresh raw re-extraction or paid model calls.",
+    "No new storage backend, SQL schema, production pipeline, backfill or reader Telegram call."
+  ]
+}
