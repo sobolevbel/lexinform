@@ -1,13 +1,13 @@
 # База данных и миграции
 
-Статус: актуальный справочник · проверен 21 октября 2026 по локальному коду, схема **v48**.
+Статус: актуальный справочник · проверен 26 октября 2026 по локальному коду, схема **v49**.
 
 Источник истины — append-only
 [`MIGRATIONS` в sqlite_repo.py](https://github.com/sobolevbel/lexinform/blob/main/src/lexinform/adapters/sqlite_repo.py).
 `SCHEMA_VERSION = len(MIGRATIONS)`, версия конкретной базы — `PRAGMA user_version`.
-После всех миграций: **17 таблиц, 28 явных индексов
-(13 обычных и 15 уникальных), 5 внешних ключей**. Автоиндексы `PRIMARY KEY` и
-`UNIQUE` в эти 28 не входят. Копия production dump также восстановлена в v48:
+После всех миграций: **19 таблиц, 30 явных индексов
+(15 обычных и 15 уникальных), 6 внешних ключей**. Автоиндексы `PRIMARY KEY` и
+`UNIQUE` в эти 30 не входят. Копия production dump также восстановлена в v49:
 `integrity_check=ok`, `foreign_key_check` не вернул ошибок.
 
 ## Визуальная схема
@@ -28,6 +28,8 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `commands` | `update_id` | Команды Telegram; выполнение (`executed_at`) отделено от ответа (`handled_at`). |
 | `rcl_wykaz_numbers` | `(wykaz_number, project_id)` | Номер wykaz, проект RCL и дата создания; номера wykaz могут использоваться повторно. |
 | `analysis_memo` | `key` | Результат LLM по содержимому, цели и контексту; владелец `(term, number)` и `last_used_at`. |
+| `computation_results` (v49) | `result_id`; уникальный `(provider, batch_id, custom_id)` | Неизменяемый validated primary record либо failure receipt, исходный usage и schema version; без файлов и полных входов. |
+| `result_applications` (v49) | `(result_id, term, number, generation, phase)` | Пока только collection decision: ready/superseded/failed с исходным status/generation; это не подтверждение записи в текущую проекцию или доставки. |
 | `llm_batches` | `batch_id` | Провайдер, состояние batch, оценка стоимости и даты опроса, завершения и очистки. |
 | `llm_batch_items` | `(batch_id, custom_id)` | Задание для bill, метаданные, результат, `consumed_at` и отдельный `accounted_at`. |
 | `llm_batch_intents` | `custom_id` | Сохранённые запросы до отправки провайдеру и состояние попытки. |
@@ -41,7 +43,8 @@ HTML содержит снимок v34, включая SQL ограничени�
 SQL объявляет внешние ключи:
 `publications.status_change_id → status_changes.id` и
 `llm_batch_items.batch_id → llm_batches.batch_id`;
-`digest_event_links.source_publication_id/owner_publication_id → publications.id` (v40).
+`digest_event_links.source_publication_id/owner_publication_id → publications.id` (v40) и
+`result_applications.result_id → computation_results.result_id` (v49).
 Связи по `(term, number)`, ссылки аудита на публикацию и команду — логические,
 без `FOREIGN KEY`. Дайджест относится к неделе и каналу, а не к одному законопроекту.
 
@@ -69,6 +72,12 @@ batch context неизменяем. Старые dump получают `commissi
 из Sejm `additionalPrints`: URL, роль, орган, forum и версию метаданных. NULL в старом dump
 означает неизвестный каталог, пустой список — проверенный пустой. Первичное заполнение
 учитывает прежние `seen_supplements` и не создаёт исторический batch.
+
+V49 начинает историю новых primary collections без backfill. Результат, collection decision и
+consumed checkpoint сохраняются в существующей atomic transaction; старый usage accounting и
+generation guard сохранены. Новое nullable поле `AnalysisRecord.computation_id` совместимо со
+старыми JSON. История сохраняется после очистки memo/batch bodies; состав и временная
+избыточность dual write описаны в [retention](../state-retention.md).
 
 ## Снимки и обработанное состояние
 

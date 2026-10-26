@@ -122,6 +122,10 @@ Command reference and the relay: `docs/operator-commands.md`.
   the deadline) and is cleared with the observation checkpoint. The VPS poller only hurries
   collection (`repository_dispatch: batch-ready`). A dry run submits nothing (only the triage is
   asked). `/status` names open batches and any `batch_pending` bill no batch holds.
+- **Primary computation history** retains immutable validated `analysis`/`reanalysis` results,
+  original usage and collection decisions with the consumed checkpoint (v49); legacy stays unknown.
+  A collection decision is not a projection/publication receipt. Result IDs name provider items,
+  request hashes name inputs; memo reuse never creates a new paid computation. See `docs/state-retention.md`.
 - **Document reviews** use separate secondary batch purposes and exact source citations.
   Participant positions never prove acceptance, project analyses never prove final-act
   applicability; commission reviews across RCL, Sejm and Senate keep proposals, recommendations and

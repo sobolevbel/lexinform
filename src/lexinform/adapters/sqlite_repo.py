@@ -36,6 +36,7 @@ from lexinform.models import (
     BillSubmission,
     CheckAspect,
     CommandState,
+    ComputationResult,
     DeliveryAlert,
     DeliveryPlan,
     DeliveryResolution,
@@ -56,6 +57,7 @@ from lexinform.models import (
     PublicationStatus,
     RclProject,
     ReadyAnalysis,
+    ResultApplication,
     ReviewSource,
     ReviewWork,
     RunMode,
@@ -499,6 +501,29 @@ MIGRATIONS: tuple[str, ...] = (
     """
     ALTER TABLE bills ADD COLUMN committee_documents_json TEXT;
     """,
+    """
+    CREATE TABLE computation_results (
+        result_id TEXT PRIMARY KEY,
+        provider TEXT NOT NULL,
+        batch_id TEXT NOT NULL,
+        custom_id TEXT NOT NULL,
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        result_json TEXT NOT NULL,
+        UNIQUE (provider, batch_id, custom_id)
+    );
+    CREATE INDEX ix_computation_owner ON computation_results(term, number);
+    CREATE TABLE result_applications (
+        result_id TEXT NOT NULL REFERENCES computation_results(result_id),
+        term INTEGER NOT NULL,
+        number TEXT NOT NULL,
+        generation INTEGER NOT NULL,
+        phase TEXT NOT NULL,
+        application_json TEXT NOT NULL,
+        PRIMARY KEY (result_id, term, number, generation, phase)
+    );
+    CREATE INDEX ix_result_application_owner ON result_applications(term, number, generation);
+    """,
 )
 
 SCHEMA_VERSION = len(MIGRATIONS)
@@ -867,6 +892,72 @@ class SqliteBillRepository:
 
     def load_analysis_memo(self) -> dict[str, str]:
         return dict(self._conn.execute("SELECT key, record_json FROM analysis_memo"))
+
+    def save_computation_result(self, result: ComputationResult) -> None:
+        self._conn.execute(
+            "INSERT INTO computation_results"
+            " (result_id, provider, batch_id, custom_id, term, number, result_json)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            (
+                result.result_id,
+                result.provider,
+                result.batch_id,
+                result.custom_id,
+                result.term,
+                result.number,
+                result.model_dump_json(),
+            ),
+        )
+        if self.get_computation_result(result.result_id) != result:
+            raise ValueError("an immutable computation result cannot be replaced")
+
+    def get_computation_result(self, result_id: str) -> ComputationResult | None:
+        row = self._conn.execute(
+            "SELECT result_json FROM computation_results WHERE result_id = ?", (result_id,)
+        ).fetchone()
+        return ComputationResult.model_validate_json(row[0]) if row else None
+
+    def list_computation_results(self, term: int, number: str) -> list[ComputationResult]:
+        return [
+            ComputationResult.model_validate_json(row[0])
+            for row in self._conn.execute(
+                "SELECT result_json FROM computation_results WHERE term = ? AND number = ?"
+                " ORDER BY rowid",
+                (term, number),
+            )
+        ]
+
+    def save_result_application(self, application: ResultApplication) -> None:
+        identity = (
+            application.result_id,
+            application.term,
+            application.number,
+            application.generation,
+            application.phase,
+        )
+        self._conn.execute(
+            "INSERT INTO result_applications"
+            " (result_id, term, number, generation, phase, application_json)"
+            " VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+            (*identity, application.model_dump_json()),
+        )
+        row = self._conn.execute(
+            "SELECT application_json FROM result_applications WHERE result_id = ? AND term = ?"
+            " AND number = ? AND generation = ? AND phase = ?",
+            identity,
+        ).fetchone()
+        if row is None or ResultApplication.model_validate_json(row[0]) != application:
+            raise ValueError("an immutable result application cannot be replaced")
+
+    def list_result_applications(self, term: int, number: str) -> list[ResultApplication]:
+        return [
+            ResultApplication.model_validate_json(row[0])
+            for row in self._conn.execute(
+                "SELECT application_json FROM result_applications WHERE term = ? AND number = ?"
+                " ORDER BY rowid",
+                (term, number),
+            )
+        ]
 
     def save_review_work(self, term: int, number: str, work: tuple[ReviewWork, ...]) -> None:
         self._conn.execute(

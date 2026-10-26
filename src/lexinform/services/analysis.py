@@ -58,6 +58,7 @@ from lexinform.models import (
     Category,
     ChangeContext,
     ChangedPassage,
+    ComputationResult,
     DigestItemMeta,
     DocumentDigest,
     DocumentPart,
@@ -80,6 +81,7 @@ from lexinform.models import (
     PublicationKind,
     PublicationStatus,
     ReadyAnalysis,
+    ResultApplication,
     ReviewContext,
     ReviewDocument,
     ReviewPurpose,
@@ -94,6 +96,7 @@ from lexinform.models import (
     TokenUsage,
     TriageContext,
     TriageRecord,
+    computation_id,
     merge_usage,
     observe,
     provider_of,
@@ -113,6 +116,7 @@ from lexinform.models.batch import (
     NameQuestion,
     SupplementQuestion,
 )
+from lexinform.models.computations import CollectionReason
 from lexinform.ports import (
     AnalysisBackend,
     AuthorsResolver,
@@ -883,7 +887,11 @@ class AnalysisService:
         items = self._repo.list_llm_batch_items(batch.batch_id)
         if status == "failed":
             for item in items:
-                self._consume(item, BatchResult(custom_id=item.custom_id, error="batch failed"))
+                self._consume(
+                    item,
+                    BatchResult(custom_id=item.custom_id, error="batch failed"),
+                    batch.provider,
+                )
             self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
             self._ledger.release(batch.estimated_cost_usd)
             return True
@@ -894,13 +902,14 @@ class AnalysisService:
         for batch_result in backend.fetch_results(batch.batch_id, batch.call_kind):
             found = by_id.get(batch_result.custom_id)
             if found is not None and batch_result.custom_id not in received:
-                self._consume(found, batch_result)
+                self._consume(found, batch_result, batch.provider)
                 received.add(batch_result.custom_id)
         for custom_id, item in by_id.items():
             if custom_id not in received:
                 self._consume(
                     item,
                     BatchResult(custom_id=custom_id, error="batch item missing from results"),
+                    batch.provider,
                 )
         self._repo.mark_llm_batch_collected(batch.batch_id, completed_at=now)
         self._ledger.release(batch.estimated_cost_usd)
@@ -909,7 +918,9 @@ class AnalysisService:
     def uncertain_batch_intent_ids(self) -> list[str]:
         return [intent.request.custom_id for intent in self._repo.list_submitting_batch_intents()]
 
-    def _consume(self, item: LlmBatchItem, batch_result: BatchResult) -> None:
+    def _consume(
+        self, item: LlmBatchItem, batch_result: BatchResult, provider: BatchProvider
+    ) -> None:
         if isinstance(item.meta, DigestItemMeta):
             self._consume_digest(item, batch_result, item.meta)
         else:
@@ -921,7 +932,12 @@ class AnalysisService:
                 and current.analysis_generation == item.meta.generation
             )
             with self._repo.atomic():
-                record = self._consume_current(item, batch_result, now, active=active)
+                record = self._consume_current(
+                    item, batch_result, now, active=active, provider=provider
+                )
+                self._record_collection(
+                    item, batch_result, record, current, provider, now, active=active
+                )
             self._charge_batch_result(item, batch_result)
             if record is not None and active:
                 self._memo.setdefault(
@@ -929,6 +945,71 @@ class AnalysisService:
                 )
         if batch_result.context_exceeded:
             self._context_rejections.add(item.custom_id)
+
+    def _record_collection(
+        self,
+        item: LlmBatchItem,
+        response: BatchResult,
+        record: AnalysisRecord | None,
+        current: Bill | None,
+        provider: BatchProvider,
+        now: datetime,
+        *,
+        active: bool,
+    ) -> None:
+        assert isinstance(item.meta, BatchItemMeta), (
+            "primary collection uses frozen analysis metadata"
+        )
+        assert item.call_kind in ("analysis", "reanalysis"), (
+            "primary metadata belongs to primary purposes"
+        )
+        result = ComputationResult(
+            provider=provider,
+            batch_id=item.batch_id,
+            custom_id=item.custom_id,
+            purpose=item.call_kind,
+            term=item.term,
+            number=item.number,
+            generation=item.meta.generation,
+            collected_at=now,
+            request_sha256=item.meta.request_sha256,
+            validation="validated" if record is not None else "error",
+            record=record,
+            model=response.model,
+            usage=TokenUsage(
+                batch_input=response.input_tokens or 0,
+                batch_output=response.output_tokens or 0,
+                batch_cache_read=response.cache_read_input_tokens or 0,
+                batch_cache_creation=response.cache_creation_input_tokens or 0,
+            ),
+            error=response.error,
+            context_exceeded=response.context_exceeded,
+        )
+        self._repo.save_computation_result(result)
+        reason: CollectionReason
+        if current is None:
+            reason = "bill_missing"
+        elif current.analysis_generation != item.meta.generation:
+            reason = "generation_changed"
+        elif not active:
+            reason = "inactive_status"
+        elif record is None:
+            reason = "no_validated_result"
+        else:
+            reason = "current_generation"
+        self._repo.save_result_application(
+            ResultApplication(
+                result_id=result.result_id,
+                term=item.term,
+                number=item.number,
+                generation=item.meta.generation,
+                outcome=("ready" if record is not None else "failed") if active else "superseded",
+                reason=reason,
+                observed_generation=current.analysis_generation if current else None,
+                observed_status=current.status if current else None,
+                created_at=now,
+            )
+        )
 
     def _consume_digest(
         self, item: LlmBatchItem, result: BatchResult, meta: DigestItemMeta
@@ -1151,7 +1232,13 @@ class AnalysisService:
         return Waiting(now)
 
     def _consume_current(
-        self, item: LlmBatchItem, batch_result: BatchResult, now: datetime, *, active: bool
+        self,
+        item: LlmBatchItem,
+        batch_result: BatchResult,
+        now: datetime,
+        *,
+        active: bool,
+        provider: BatchProvider,
     ) -> AnalysisRecord | None:
         assert isinstance(item.meta, BatchItemMeta)
         record = None
@@ -1176,6 +1263,7 @@ class AnalysisService:
                     "law_sha256": item.meta.law_sha256,
                     "source_checked_at": now,
                     "selection": item.meta.selection,
+                    "computation_id": computation_id(provider, item.batch_id, item.custom_id),
                 }
             )
             if active:

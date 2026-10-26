@@ -100,6 +100,15 @@ from lexinform.models.commands import (
     parse_command,
     parse_reference,
 )
+from lexinform.models.computations import (
+    ComputationResult as ComputationResult,
+)
+from lexinform.models.computations import (
+    ResultApplication as ResultApplication,
+)
+from lexinform.models.computations import (
+    computation_id as computation_id,
+)
 from lexinform.models.delivery import DeliverySchedule as DeliverySchedule
 from lexinform.models.delivery_alert import DeliveryAlert as DeliveryAlert
 from lexinform.models.digest import (

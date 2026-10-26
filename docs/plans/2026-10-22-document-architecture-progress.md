@@ -2968,3 +2968,74 @@ fixture: 1 retained checksum verified, 1 known item / 3 result refs, findings 0.
 qualified XML hashes, old-code snapshot и red WAL race, source SHA и повторяемую подготовку copies.
 Локальные outputs — `out/corpus/j060`, `out/corpus/runs/j060-*`. Repair, storage backend и новые
 production режимы не добавлены; остальные аспекты doctor остаются открытыми в DA10.2.
+
+J060 выпущен на `7372d48037ae29a0f36a307702cb8a3200debfa7`: CI
+[40387363090](https://github.com/sobolevbel/lexinform/actions/runs/40387363090) success,
+4221 passed / 32 deselected, test/web/docs green. Deploy relay
+[40388358450](https://github.com/sobolevbel/lexinform/actions/runs/40388358450) success:
+`a5d92d8bcc2f → 7372d48037ae`, сервис up 45 s после restart.
+Evidence: `out/corpus/j060/release.json`; independent scheduled bot runs не аудировались.
+
+<a id="j061"></a>
+### J061. DA6: неизменяемая история primary batch collection
+
+Дата: 26 октября 2026. База: `7372d48037ae29a0f36a307702cb8a3200debfa7`.
+Статус: реализован и принят локально; выпуск проверяется отдельно.
+
+Append-only migration v49 добавляет `computation_results` и `result_applications` без backfill.
+Новая primary collection хранит validated `AnalysisRecord` либо failure receipt, исходный
+usage, provider item identity и schema version. Nullable `AnalysisRecord.computation_id`
+сохраняется при reuse; legacy/sync его не придумывают. ID адресует `(provider, batch, custom)`
+в существующем single-account scope, request SHA остаётся отдельной идентичностью входа.
+
+Результат, collection decision, memo/ready и consumed checkpoint записываются в существующей
+локальной atomic transaction. Generation/status guards и run cost acknowledgement прежние.
+Superseded answer сохраняется без применения/публикации; invalid answer сохраняет usage без
+выдуманного analysis. Повтор точного immutable write безопасен, replacement отклоняется.
+`phase=collection` и outcome ready/superseded/failed не означают запись в `Bill.analysis` или
+читательскую доставку. Последующая projection/reuse history, secondary purposes и полный
+DA6 collect/apply protocol остаются открытыми.
+
+Оригиналы файлов, исходные тексты и request/raw provider bodies не добавлены. История новых
+primary results не наследует 180 дней memo retention. Временное дублирование validated answer
+в legacy bill/memo/projections допустимо до перехода всех consumers/frozen deliveries на refs;
+существующие snapshots сейчас не заменяются ссылками на изменяемый Bill.
+
+Qualified before: **4 failures**, отсутствовали history repository API. Первые focused checks
+после реализации: **120 passed / 1 failed**; единственный failure — fixture, которая вручную
+возвращает новую базу к v20 и не удалила две новые таблицы. Fixture дополнена; deployed migrations
+не менялись. Fault injection охватывает сбой до consumed checkpoint и после сохранения result
+перед decision; оба должны откатывать ready/memo/history вместе.
+
+Свежая изолированная копия `state@9d571b09a3ae5f67de441d0b503da12e412a1cde`
+(26 октября 2026, 19:35:57 UTC), SQL SHA
+`d5ae656f9c26b3a639566131b085b6de8b791c71ebee75b23d3953535af9910b`:
+**457 bills / 166 analysis records / 141 memos** прочитаны обоими readers. Projection/memo hashes
+совпали, known bill 2699 читается, integrity ok/FK errors 0. Старые results не скопированы:
+обе новые таблицы пусты. Migration: SQL **+830 bytes**, gzip **+197**, SQLite **+32768**;
+restore 0,339/0,336 s и dump 0,116/0,103 s baseline/current — один замер, не benchmark.
+Production pipeline, модель и Telegram не запускались.
+
+Одинаковые fake production sequences: pending, collected, cleaned, reanalysis, expiry 200 дней
+и repeat. Status, paid answer (кроме нового ref), reader texts, frozen envelopes/payload SHA,
+custom ID и cost совпали. Один свежий primary result вместе с DDL: **+4511 SQL / +403 gzip bytes**;
+superseded: **+4234 / +424**. Два successive paid results: **+7897 / +560** до expiry;
+после expiry **+7799 / +543**. Повтор не добавляет results/decisions: 2/2 fresh, 1/1 superseded.
+Это bounded fixtures с небольшими ответами, не прогноз размера всех будущих результатов.
+
+Приёмка: full **4234 passed**, errors/failures/skips/xfails 0, 600,036 s; strict mypy 399 файлов,
+Ruff src/tests/tools, format, strict docs build/links и diff check green. CLI local HTTP:
+**21 passed**. Init/restore свежего production dump выполнены CLI на отдельной БД, reader 2699
+проверен отдельно. Предыдущий reader `7372d48` прочитал 11 новых snapshots и вернул идентичный
+SQL; это read compatibility, не запуск старого writer и не schema downgrade.
+
+`j061-senate-baseline/current`: **816 observations / 1825 сохранённых файлов**, zero changed
+outcomes/inputs, прежние mutation/negative controls; это cached text/raw SHA replay, не новое
+визуальное чтение scans. Все 48 deployed migrations неизменны, добавлена одна новая. **20**
+file/AST checks подтверждают прежние extraction/input assembly, prompts, schemas, pricing и
+reuse policy. `j061-ci`: **7 passed observations**, captured source snapshot.
+
+[Acceptance evidence](../assets/audits/2026-10-26-computation-history/validation.json) содержит
+qualified XML hashes, source boundaries, production/state measurements и повторяемые observers.
+Локальные outputs: `out/corpus/j061`, registry runs `j061-*`. DA6 остаётся частично открытым;
+следующий шаг — отдельные факты projection/reuse, затем остальные consumers и purposes.

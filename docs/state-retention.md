@@ -19,6 +19,27 @@ to the transaction that rolls back. All cutoffs are configurable in days:
 | Sent delivery payloads | 90 | Clear `delivery_json` only for confirmed `sent` rows with an old `sent_at`; keep row, IDs, status and deduplication keys. |
 | Batch payloads | — | Remove source text, located text, review documents and answer bodies on the first run after consumption, token accounting and provider cleanup; the owning bill must be settled, without a ready analysis or deferred tracking. Nothing reads them after collection: the answer is in the bill and the memo, the located text in `ready_analysis_json`. Keep item/batch rows, `queued_at`, and token/model/error metadata. |
 | Analysis memo | 180 | Delete entries not used since the cutoff only when ownership is known and the bill is settled. Pending analysis, ready results, deferred tracking, unsent/uncertain publications, queued/submitting intents and unconsumed/unaccounted batch items protect that bill's memos. |
+| Primary computation history | — | New `analysis`/`reanalysis` batch collections retain one validated `AnalysisRecord` or failure receipt per provider item, original usage and one collection decision. This history does not expire with the memo or batch body. No input text, raw file, request body or raw provider response is added. |
+
+Schema v49 starts primary history from newly collected items; existing completed results are not
+copied or reconstructed. `AnalysisRecord.computation_id` points to that result; legacy and
+synchronous compatibility records omit it. The result ID names a provider/batch/custom item,
+whereas `request_sha256` names its frozen input. Reuse retains the same result ID and does not
+create another paid computation. Current provider identities have the repository's existing
+single-account scope; they do not claim cross-account uniqueness.
+
+`result_applications` currently records only the **collection** decision: ready, superseded or
+failed, with the observed status/generation. Ready does not prove application to `Bill.analysis`
+or publication. Final projection/reuse decisions and secondary purposes remain in
+[DA6](plans/2026-10-22-document-architecture.md#da6). Result, decision, memo/ready changes and the
+consumed checkpoint commit together; run cost acknowledgement retains its existing mechanism.
+The history preserves the paid record when a skip/reset makes it inapplicable. Immutable rows
+reject replacement, and an exact repeated write is harmless.
+
+This first migration temporarily retains the answer in both history and legacy bill/memo
+projections. Removing those copies requires all primary consumers, frozen deliveries and
+secondary purposes to use protected result refs; it is not part of this dual-write stage.
+The measured sizes and scope are in [J061](plans/2026-10-22-document-architecture-progress.md#j061).
 
 Batch metadata and collected records retain `request_sha256` after payload cleanup. It is copied
 from the original frozen request by the shared submission/attachment constructor. An absent

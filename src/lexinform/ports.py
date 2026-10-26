@@ -29,6 +29,7 @@ from lexinform.models import (
     CommandState,
     Committee,
     CommitteeSitting,
+    ComputationResult,
     DeliveryAlert,
     DeliveryPlan,
     DeliveryResolution,
@@ -63,6 +64,7 @@ from lexinform.models import (
     RclProjectSummary,
     RclStage,
     ReadyAnalysis,
+    ResultApplication,
     ReviewPurpose,
     ReviewSource,
     ReviewWork,
@@ -607,6 +609,16 @@ class BillRepository(Protocol):
     def atomic(self) -> AbstractContextManager[None]: ...
 
     def load_analysis_memo(self) -> dict[str, str]: ...
+
+    def save_computation_result(self, result: ComputationResult) -> None: ...
+
+    def get_computation_result(self, result_id: str) -> ComputationResult | None: ...
+
+    def list_computation_results(self, term: int, number: str) -> list[ComputationResult]: ...
+
+    def save_result_application(self, application: ResultApplication) -> None: ...
+
+    def list_result_applications(self, term: int, number: str) -> list[ResultApplication]: ...
 
     def save_review_work(self, term: int, number: str, work: tuple[ReviewWork, ...]) -> None: ...
 

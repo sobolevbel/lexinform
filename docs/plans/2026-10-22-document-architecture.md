@@ -626,20 +626,20 @@ source disappearance. Изменение normalization/digest — отдельн
 **Изменяемые места:** `models/analysis.py`, `models/reviews.py`, `models/batch.py`,
 `services/analysis.py`, `document_reviews.py`, `analysis_records.py`, repository/retention.
 
-- [ ] DA6.1. Добавить immutable `computation_results` и `result_applications` с uniqueness
+- [ ] DA6.1. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), immutable primary results и collection decisions; secondary и отдельная история применения ещё не перенесены.** Добавить immutable `computation_results` и `result_applications` с uniqueness
   provider item/accounting и application identity. Большие входы/ответы хранить по профилю DA2:
   ссылка на архив допустима только для действительно сохранённого объекта;
   статус валидации и версия schema сохраняются. Не создавать второй batch submitter.
-- [ ] DA6.2. В одной локальной транзакции collect сохранить raw/validated result ref,
+- [ ] DA6.2. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), validated primary record, исходный usage, collection outcome и consumed checkpoint атомарны; raw response archive и последующее применение не добавлены.** В одной локальной транзакции collect сохранить raw/validated result ref,
   usage accounting и consumed checkpoint. Применение к проекции — отдельная идемпотентная
   транзакция, учитывающая нынешние generation, skip/reset и ownership; при tracking сохранить
   атомарность processed observation и delivery work.
-- [ ] DA6.3. Добавить совместимые result refs к актуальным analysis/review полям Bill.
+- [ ] DA6.3. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), nullable `AnalysisRecord.computation_id`, dual write только primary batch collection; размеры измерены, старые записи не backfilled.** Добавить совместимые result refs к актуальным analysis/review полям Bill.
   Dual write начинается с основного анализа; затем amendments/supplement/joint/reviews/
   explanation. Для secondary прежний статус Bill не меняется.
   По §1.4 измерить временную избыточность проекций/memo/results; постоянная история применения
   хранит ссылки и исход, а не ещё один полный контекст и оплаченный ответ на каждый reuse.
-- [ ] DA6.4. Сохранить memo как индекс переиспользования, не единственную историю оплаченного
+- [ ] DA6.4. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), новые primary results переживают memo cleanup; история reuse/applicability остаётся открытой.** Сохранить memo как индекс переиспользования, не единственную историю оплаченного
   ответа. Request fingerprint и policy reuse — разные сущности; смена prompt сама по себе
   не инвалидирует старые карточки и не инициирует платные вызовы.
   Нынешний `_unchanged()` меняет pointer/source_checked_at: в новой истории это отдельное
