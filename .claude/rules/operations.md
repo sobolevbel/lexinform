@@ -127,6 +127,9 @@ Command reference and the relay: `docs/operator-commands.md`.
   Only a projection receipt confirms primary-service application; neither phase confirms publication.
   Result IDs name provider items,
   request hashes name inputs; memo reuse never creates a new paid computation. See `docs/state-retention.md`.
+  Services apply primary analysis only through `services.analysis_applications.apply_analysis`;
+  its receipt uses the actual target generation and shares the caller's transaction. Quiet tracking
+  of the same result adds no receipt; linking reuses its original computation ID.
 - **Document reviews** use separate secondary batch purposes and exact source citations.
   Participant positions never prove acceptance, project analyses never prove final-act
   applicability; commission reviews across RCL, Sejm and Senate keep proposals, recommendations and

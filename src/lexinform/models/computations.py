@@ -18,7 +18,8 @@ CollectionReason = Literal[
     "bill_missing",
     "no_validated_result",
 ]
-ApplicationReason = CollectionReason | Literal["batch_result", "memo_reuse"]
+ProjectionReason = Literal["batch_result", "memo_reuse", "retained_result"]
+ApplicationReason = CollectionReason | ProjectionReason
 
 
 def computation_id(provider: BatchProvider, batch_id: str, custom_id: str) -> str:
@@ -82,6 +83,6 @@ class ResultApplication(BaseModel):
         projection = self.phase == "projection"
         if projection != (self.outcome == "applied"):
             raise ValueError("only a projection receipt confirms application")
-        if projection != (self.reason in ("batch_result", "memo_reuse")):
+        if projection != (self.reason in ("batch_result", "memo_reuse", "retained_result")):
             raise ValueError("the application reason must describe its phase")
         return self

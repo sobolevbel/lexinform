@@ -29,7 +29,7 @@ HTML содержит снимок v34, включая SQL ограничени�
 | `rcl_wykaz_numbers` | `(wykaz_number, project_id)` | Номер wykaz, проект RCL и дата создания; номера wykaz могут использоваться повторно. |
 | `analysis_memo` | `key` | Результат LLM по содержимому, цели и контексту; владелец `(term, number)` и `last_used_at`. |
 | `computation_results` (v49) | `result_id`; уникальный `(provider, batch_id, custom_id)` | Неизменяемый validated primary record либо failure receipt, исходный usage и schema version; без файлов и полных входов. |
-| `result_applications` (v49) | `(result_id, term, number, generation, phase)` | Collection decision и отдельный projection receipt в primary service; status/generation до применения, fresh batch/memo reuse. Доставку не подтверждает. |
+| `result_applications` (v49) | `(result_id, term, number, generation, phase)` | Collection decision и отдельный projection receipt в общем `apply_analysis`; status/generation целевой строки до записи, batch/memo/retained result. Доставку не подтверждает. |
 | `llm_batches` | `batch_id` | Провайдер, состояние batch, оценка стоимости и даты опроса, завершения и очистки. |
 | `llm_batch_items` | `(batch_id, custom_id)` | Задание для bill, метаданные, результат, `consumed_at` и отдельный `accounted_at`. |
 | `llm_batch_intents` | `custom_id` | Сохранённые запросы до отправки провайдеру и состояние попытки. |
@@ -79,7 +79,9 @@ generation guard сохранены. Новое nullable поле `AnalysisRecor
 старыми JSON. История сохраняется после очистки memo/batch bodies; состав и временная
 избыточность dual write описаны в [retention](../state-retention.md).
 Projection receipts добавлены без новой SQL-миграции в [J062](../plans/2026-10-22-document-architecture-progress.md#j062):
-сначала `_persist` и direct `reanalyze_bill`; остальные tracking/linking consumers ещё не перенесены.
+сначала `_persist` и direct `reanalyze_bill`. [J063](../plans/2026-10-22-document-architecture-progress.md#j063)
+переводит все service writes основного анализа на общий command, включая RCL/wykaz/linking;
+identity relocation при rollover и secondary results остаются открытыми.
 
 ## Снимки и обработанное состояние
 

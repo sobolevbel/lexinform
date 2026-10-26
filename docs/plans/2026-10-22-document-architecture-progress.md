@@ -3104,3 +3104,67 @@ outcomes/inputs, прежние controls; scope — cached text/raw SHA, не в
 qualified XML/source hashes, production/state diffs и observer размеров реальных records.
 Локальные outputs: `out/corpus/j062`, registry runs `j062-*`. Следующие consumers — tracking и
 linking с их исходными atomic observation/delivery boundaries; DA6 целиком не закрыт.
+
+J062 выпущен на `5d10eb44a65b2ba6067bdb0849cabc89f0b3a428`: CI
+[40396407179](https://github.com/sobolevbel/lexinform/actions/runs/40396407179) success,
+4241 passed / 32 deselected, test/web/docs green. Deploy relay
+[40397390571](https://github.com/sobolevbel/lexinform/actions/runs/40397390571) success:
+`d235aa69e4c7 → 5d10eb44a65b`, сервис up 45 s после restart.
+Evidence: `out/corpus/j062/release.json`; independent scheduled bot runs не аудировались.
+
+<a id="j063"></a>
+### J063. DA6: общий application command для primary и tracking/linking
+
+Дата: 26 октября 2026. База: `5d10eb44a65b2ba6067bdb0849cabc89f0b3a428`.
+Статус: реализован и принят локально; выпуск проверяется отдельно.
+
+Шесть service writes основного анализа теперь используют `analysis_applications.apply_analysis`:
+primary persist/reanalysis, RCL watcher, wykaz handover и два места RPW/RCL→druk linker.
+Только общий command вызывает repository `save_analysis`. Он читает фактическую целевую строку
+перед записью: receipt получает generation/status нового владельца, а не переносит generation
+предшественника. Existing result ref при tracking/linking получает причину retained_result;
+оплаченный ответ и его ID не копируются в новый computation row. Primary batch/memo причины
+сохранены. Отсутствующий target/legacy ref не создаёт application; quiet same-ref refresh не
+добавляет trace. Изменения источника, очередей, generation guards и reader policy не добавлены.
+
+Command сохраняет analysis/receipt через nested savepoint; существующая outer transaction RCL
+или linking продолжает владеть observation и delivery work. Fault injection перед receipt и
+после receipt при observation checkpoint подтверждает rollback analysis/decision/status change
+вместе; collected paid result остаётся для retry без нового запроса. Это не перенос сетевой
+работы в транзакцию. Существующий порядок Sejm reanalysis до observation checkpoint сохранён;
+его консолидация — отдельная незакрытая часть DA6.2. Rollover identity relocation и secondary
+purposes также остаются открытыми.
+
+Qualified before: **6 failures**, нет applications при linking/RCL, fault не достигает receipt.
+Initial focused **26 passed**; расширенный набор **116 passed**, включая workers=1/4,
+RPW→druk с прежним paid ID, wykaz→RCL, RCL reanalysis, receipt/checkpoint crashes и повтор.
+При наследовании оба новых владельца получили собственную target generation 0; исходный
+computation остался неизменным. Все XML сохранены.
+
+Восемь tracking snapshots baseline/current: Bill hashes, reader text hashes, request envelopes,
+payload SHA/cost и число computations совпали. SQL после удаления только application INSERTs
+идентичен. RPW→druk: **+436 SQL / +24 gzip bytes**, wykaz→RCL: **+452 / +26**, RCL apply:
+**+460 / +30**. Повтор не увеличивает decisions. Ещё 11 прежних primary/superseded snapshots
+совпали побайтово, включая историю. Это bounded fixtures, без input/result body duplication.
+Все 16 tracking SQLite copies прошли integrity/FK; размер SQLite не вырос. Повторяемый
+observer дал идентичные DB SHA/размеры. Validation результата означает output schema,
+не подтверждение legal correctness/completeness; DA9 не выполнялся.
+
+Pinned production snapshot `9d571b09a3ae5f67de441d0b503da12e412a1cde`: **457 bills /
+166 analysis records / 141 memos**, те же projection/memo/SQL hashes, **0 bytes** прироста,
+integrity ok/FK errors 0. Pipeline/model/Telegram и backfill не запускались.
+
+Приёмка: full **4251 passed**, errors/failures/skips/xfails 0, 662,196 s; strict mypy 402 файла,
+Ruff src/tests/tools, format, strict docs build/links и diff check green. CLI local HTTP:
+**21 passed**. Все 49 migrations прежние. **25** file/AST checks сохраняют extraction/input,
+prompts/schemas/pricing, reuse и batch collection/accounting; source graph подтверждает одного
+service owner низкоуровневого `save_analysis`.
+
+`j063-senate-current` против J062: **816 observations / 1825 файлов**, zero changed outcomes/inputs,
+прежние controls; это cached text/raw SHA replay, не новое визуальное чтение scans. `j063-ci`:
+**7 passed observations**, captured source snapshot.
+
+[Acceptance evidence](../assets/audits/2026-10-26-shared-analysis-application/validation.json) содержит
+qualified XML/source hashes, before/after profiles, SQLite integrity и runnable observers.
+Локальные outputs: `out/corpus/j063`, registry runs `j063-*`. DA6 остаётся открытым для
+Sejm observation/application consolidation, rollover identity и secondary results/applications.

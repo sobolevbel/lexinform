@@ -25,6 +25,7 @@ from lexinform.models import (
 )
 from lexinform.ports import BillRepository, Clock, SejmGateway
 from lexinform.services.analysis import AnalysisService
+from lexinform.services.analysis_applications import apply_analysis
 from lexinform.services.posting import Poster
 from lexinform.services.publications import inherit_card
 from lexinform.services.sources import RclTextSource, SejmTextSource, fetch_print
@@ -141,7 +142,7 @@ class Linker:
             )
             # Saving an analysis resets the status and the generation, so a pending batch too.
             if bill.analysis is not None and not read:
-                self._repo.save_analysis(bill.term, bill.number, bill.analysis)
+                apply_analysis(self._repo, bill.term, bill.number, bill.analysis, now=now)
             if bill.authors is not None:
                 self._repo.save_authors(bill.term, bill.number, bill.authors)
             if card is not None and card.status is PublicationStatus.SENT:
@@ -241,7 +242,7 @@ class Linker:
                     pre.number,
                 )
             if pre.analysis is not None:
-                self._repo.save_analysis(pre.term, print_number, pre.analysis)
+                apply_analysis(self._repo, pre.term, print_number, pre.analysis, now=now)
             # The entry's batch answers for the entry's number, which is `linked` from now on.
             if status in _BEING_READ:
                 self._repo.move_batch_work(pre.term, pre.number, print_number)

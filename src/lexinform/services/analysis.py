@@ -148,6 +148,7 @@ from lexinform.sections import (
     trim_print,
 )
 from lexinform.senate_documents import validate_senate_scan
+from lexinform.services.analysis_applications import apply_analysis
 from lexinform.services.cost import CostLedger
 from lexinform.services.documents import MIN_TEXT_CHARS, TextLoader
 from lexinform.services.joint import primary_of, revive_prefilter_skips
@@ -1451,11 +1452,20 @@ class AnalysisService:
                 "prepare_reanalysis returns a new bill only with its record"
             )
             with self._repo.atomic():
-                self._repo.save_analysis(bill.term, bill.number, fresh.analysis)
-                if changed:
-                    self._record_projection(
-                        bill, fresh.analysis, from_batch=bill.status is BillStatus.REANALYSIS_READY
+                apply_analysis(
+                    self._repo,
+                    bill.term,
+                    bill.number,
+                    fresh.analysis,
+                    now=self._clock.now(),
+                    reason=(
+                        "batch_result"
+                        if bill.status is BillStatus.REANALYSIS_READY
+                        else "memo_reuse"
                     )
+                    if changed
+                    else None,
+                )
                 if fresh.authors is not None:
                     self._repo.save_authors(bill.term, bill.number, fresh.authors)
         return fresh.analysis if changed else None
@@ -2747,8 +2757,14 @@ class AnalysisService:
                 self._repo.upsert_summary(summary, now=self._clock.now())
             if authors is not None:
                 self._repo.save_authors(bill.term, bill.number, authors)
-            self._repo.save_analysis(bill.term, bill.number, prepared.record)
-            self._record_projection(bill, prepared.record, from_batch=prepared.from_batch)
+            apply_analysis(
+                self._repo,
+                bill.term,
+                bill.number,
+                prepared.record,
+                now=self._clock.now(),
+                reason="batch_result" if prepared.from_batch else "memo_reuse",
+            )
             if prepared.first and located.stages is not None:
                 self._repo.save_stages(
                     bill.term, bill.number, located.stages, stage_fingerprint(located.stages)
@@ -2764,24 +2780,6 @@ class AnalysisService:
                     observe(fresh, closure_date=(located.summary or bill.summary).closure_date),
                 )
         return prepared.record
-
-    def _record_projection(self, bill: Bill, record: AnalysisRecord, *, from_batch: bool) -> None:
-        if record.computation_id is None:
-            return
-        self._repo.save_result_application(
-            ResultApplication(
-                result_id=record.computation_id,
-                term=bill.term,
-                number=bill.number,
-                generation=bill.analysis_generation,
-                phase="projection",
-                outcome="applied",
-                reason="batch_result" if from_batch else "memo_reuse",
-                observed_generation=bill.analysis_generation,
-                observed_status=bill.status,
-                created_at=self._clock.now(),
-            )
-        )
 
     def _remember_analysis(self, bill: Bill, key: str, record: BaseModel) -> None:
         encoded = record.model_dump_json()

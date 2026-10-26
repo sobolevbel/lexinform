@@ -626,15 +626,15 @@ source disappearance. Изменение normalization/digest — отдельн
 **Изменяемые места:** `models/analysis.py`, `models/reviews.py`, `models/batch.py`,
 `services/analysis.py`, `document_reviews.py`, `analysis_records.py`, repository/retention.
 
-- [ ] DA6.1. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), immutable primary results и collection decisions; [J062](2026-10-22-document-architecture-progress.md#j062), projection receipts в primary service. Остальные tracking/linking consumers и secondary ещё не перенесены.** Добавить immutable `computation_results` и `result_applications` с uniqueness
+- [ ] DA6.1. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), immutable primary results и collection decisions; [J062](2026-10-22-document-architecture-progress.md#j062), projection receipts; [J063](2026-10-22-document-architecture-progress.md#j063), общий application command для всех service writes primary. Secondary ещё не перенесены.** Добавить immutable `computation_results` и `result_applications` с uniqueness
   provider item/accounting и application identity. Большие входы/ответы хранить по профилю DA2:
   ссылка на архив допустима только для действительно сохранённого объекта;
   статус валидации и версия schema сохраняются. Не создавать второй batch submitter.
-- [ ] DA6.2. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), validated primary record, исходный usage, collection outcome и consumed checkpoint атомарны; [J062](2026-10-22-document-architecture-progress.md#j062), отдельная atomic projection transaction в `_persist`/direct `reanalyze_bill`. Tracking и raw response archive остаются открытыми.** В одной локальной транзакции collect сохранить raw/validated result ref,
+- [ ] DA6.2. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), primary collect; [J062](2026-10-22-document-architecture-progress.md#j062), atomic projection; [J063](2026-10-22-document-architecture-progress.md#j063), тот же command внутри существующих RCL/linking checkpoints. Sejm observation/application consolidation, rollover, secondary и raw response archive остаются открытыми.** В одной локальной транзакции collect сохранить raw/validated result ref,
   usage accounting и consumed checkpoint. Применение к проекции — отдельная идемпотентная
   транзакция, учитывающая нынешние generation, skip/reset и ownership; при tracking сохранить
   атомарность processed observation и delivery work.
-- [ ] DA6.3. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), nullable `AnalysisRecord.computation_id`, dual write только primary batch collection; размеры измерены, старые записи не backfilled.** Добавить совместимые result refs к актуальным analysis/review полям Bill.
+- [ ] DA6.3. **Частично: [J061](2026-10-22-document-architecture-progress.md#j061), nullable `AnalysisRecord.computation_id`; [J063](2026-10-22-document-architecture-progress.md#j063), primary projection refs при tracking/linking. Размеры измерены, старые записи не backfilled; secondary/review refs открыты.** Добавить совместимые result refs к актуальным analysis/review полям Bill.
   Dual write начинается с основного анализа; затем amendments/supplement/joint/reviews/
   explanation. Для secondary прежний статус Bill не меняется.
   По §1.4 измерить временную избыточность проекций/memo/results; постоянная история применения

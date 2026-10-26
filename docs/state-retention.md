@@ -29,14 +29,21 @@ The result ID names a provider/batch/custom item,
 whereas `request_sha256` names its frozen input. Reuse retains the same result ID and does not
 create another paid computation. Current provider identities have the repository's existing
 single-account scope; they do not claim cross-account uniqueness.
+Computation validation describes the parsed output schema; it does not certify source
+completeness or legal correctness, which have separate selection and DA9 checks.
 
-`result_applications` separates **collection** (ready, superseded or failed) from **projection**
-(applied by `AnalysisService._persist` or direct `reanalyze_bill`). A projection receipt commits
-with `Bill.analysis`, records the target's generation/status before that write, and distinguishes
-the ready batch result from memo reuse. A repeated receipt keeps its original timestamp.
+`result_applications` separates **collection** (ready, superseded or failed) from **projection**.
+All service writes of primary analysis use `services.analysis_applications.apply_analysis`:
+the primary service, RCL watcher, wykaz handover and RPW/RCL-to-print linker share one command.
+A projection receipt commits with `Bill.analysis` and records the actual target row's
+generation/status before the write. Primary commands distinguish ready batch result from memo
+reuse; tracking/linking records a changed computation ref as `retained_result`, without claiming
+another paid call. An unchanged ref during quiet tracking adds no receipt. A repeated receipt
+keeps its original timestamp. Nested savepoints retain the enclosing observation/delivery
+transaction's rollback boundary.
 Preparation and quiet source checks do not create projection receipts. Ready does not prove
-application or publication, and applied does not prove delivery. Other tracking/linking consumers
-and secondary purposes remain in [DA6](plans/2026-10-22-document-architecture.md#da6).
+application or publication, and applied does not prove delivery. Direct identity relocation
+at term rollover and secondary purposes remain in [DA6](plans/2026-10-22-document-architecture.md#da6).
 Result, collection decision, memo/ready changes and consumed checkpoint commit together;
 run cost acknowledgement retains its existing mechanism.
 The history preserves the paid record when a skip/reset makes it inapplicable. Immutable rows
@@ -46,7 +53,8 @@ This first migration temporarily retains the answer in both history and legacy b
 projections. Removing those copies requires all primary consumers, frozen deliveries and
 secondary purposes to use protected result refs; it is not part of this dual-write stage.
 The measured sizes and scope are in [J061](plans/2026-10-22-document-architecture-progress.md#j061)
-and [J062](plans/2026-10-22-document-architecture-progress.md#j062).
+and [J062](plans/2026-10-22-document-architecture-progress.md#j062), with tracking/linking in
+[J063](plans/2026-10-22-document-architecture-progress.md#j063).
 
 Batch metadata and collected records retain `request_sha256` after payload cleanup. It is copied
 from the original frozen request by the shared submission/attachment constructor. An absent

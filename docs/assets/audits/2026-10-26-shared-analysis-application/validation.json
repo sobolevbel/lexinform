@@ -1,0 +1,528 @@
+{
+  "version": 1,
+  "stage": "J063",
+  "base": "5d10eb44a65b2ba6067bdb0849cabc89f0b3a428",
+  "scope": "One atomic primary analysis application command used by six service writes. Existing network, selection, status/generation, checkpoint and delivery policies remain unchanged; only missing tracking/linking receipts are added.",
+  "qualified_before": {
+    "path": "out/corpus/j063/before.xml",
+    "sha256": "09c912f30b5041da03ae9a269bb790187edb4277faded31ca0e0602dfda21636",
+    "bytes": 15938,
+    "result": {
+      "tests": "6",
+      "errors": "0",
+      "failures": "6",
+      "skipped": "0",
+      "time": "1.219"
+    }
+  },
+  "initial": {
+    "path": "out/corpus/j063/initial.xml",
+    "sha256": "a23d6016e9e66712783100031728476d47d2c10cdbc436f2695f7e028d4abe23",
+    "bytes": 4486,
+    "result": {
+      "tests": "26",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "1.346"
+    }
+  },
+  "focused": {
+    "path": "out/corpus/j063/focused.xml",
+    "sha256": "662c13097122b34dc1abc3e6f9c7d90ed731db562d5dceed0b8574ff34f5d9f0",
+    "bytes": 17587,
+    "result": {
+      "tests": "116",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "3.787"
+    }
+  },
+  "accepted_full": {
+    "path": "out/corpus/j063/tests.xml",
+    "sha256": "e2f71ccf051f3c8e812eb9880db0e6c4e2956fa9487e1e28c73067740cd43577",
+    "bytes": 664568,
+    "result": {
+      "tests": "4251",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "662.196"
+    }
+  },
+  "local_http": {
+    "path": "out/corpus/j063/local-http.xml",
+    "sha256": "c10c95c70cee955cad3bc760638702da264ce7ba465e50a190edd08fa073c41c",
+    "bytes": 2841,
+    "result": {
+      "tests": "21",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "6.207"
+    }
+  },
+  "checks": {
+    "mypy": {
+      "files": 402,
+      "path": "out/corpus/j063/mypy-final.log",
+      "sha256": "0659f7ea879234857f187408ccae85d5284054d0ce544c0f8387bd812cd0bc4d",
+      "bytes": 45
+    },
+    "ruff": {
+      "path": "out/corpus/j063/ruff-final.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "bytes": 19
+    },
+    "format": {
+      "path": "out/corpus/j063/format.log",
+      "sha256": "a1032844f4f06b46decf74c254816779a960ad6c6d80c8e13f3838666a4c38bd",
+      "bytes": 28
+    },
+    "docs": {
+      "path": "out/corpus/j063/docs.log",
+      "sha256": "770ff85a72ead63eb654941733c85ec95e627ee0c4d64fc84955105c46def136",
+      "bytes": 266
+    }
+  },
+  "source_boundaries": {
+    "unchanged": {
+      "src/lexinform/adapters/llm_openai.py": "10c2a84fcb3fc2cd1c6f80b87379655667d681b7adb6e89e021ce63effb491c4",
+      "src/lexinform/adapters/llm_anthropic.py": "eaf8dcdc3d8bd1cf5d816f291f2d8ba6d405a083cbb01bc196b5d821325cecb0",
+      "src/lexinform/adapters/llm_prompts.py": "d45409114b224c4c32c84276ff69eb35a6b74667f53b47be656483f41823bc86",
+      "src/lexinform/pricing.py": "8c473c70afeeebae02802612cecc4a4b87f17822129fbc6b46ce254435f8ecac",
+      "src/lexinform/services/documents.py": "5979ba4287bafa59320cfdb1ed526ccd9180357c4744558d435cdeaea576cab6",
+      "src/lexinform/models/scan_input.py": "736fda5637d14c2c5d7f7de19480b42dd19a73a3324910d592445c2520aeaa8e",
+      "src/lexinform/adapters/pdf_text.py": "e46eb0795a68ce41900b5837740474cbc62ce0bfdbd3c3c1822a2ccbd4754101",
+      "src/lexinform/models/documents.py": "79bf620398bbbaffdbd9c2df997344489f7c0b0d15b4c166043deb0282260c81",
+      "src/lexinform/services/analysis.py:_prepare": "dd54ea27587ae0b95511e48cdb01ccb3d8977b0b1a5bb3fd244cb3e5cdda8b51",
+      "src/lexinform/services/analysis.py:_memo_key": "ff2df27d283d5b1a2364a1802dab78937202150d6190aebe2d677e706de8c830",
+      "src/lexinform/services/analysis.py:_reused": "f5bc4769aab65ccefafdaac6842d3a8acb06904f5d7e645a24894874385bc4f3",
+      "src/lexinform/services/analysis.py:_unchanged": "f3988a4b8a0f12e715b5435d34d84703c16588c014e0ddb496c0f91f6766702a",
+      "src/lexinform/services/analysis.py:_load_scan": "932d57dcb0e084bf28d2a7cda2296437ae0523ae7608e0e212310f9db2a16a9d",
+      "src/lexinform/services/analysis.py:_load_text": "7e53c9e68baa6c7a3f9a9159d36b89109af265f55bf021042117cf3a1ec3570f",
+      "src/lexinform/models/analysis.py:Analysis": "cb1029c5735f04f396ee812b82edcd3c6ba06b90d625f7a524a974a8534f950b",
+      "src/lexinform/models/analysis.py:Amendments": "536495470bb62950e42008b33893513f8f28245190622ef9ba28c6210b3461e0",
+      "src/lexinform/models/analysis.py:DocumentDigest": "1a40ed89f441e257bff045ce5839b470d483991317395b91f565281c5a446546",
+      "src/lexinform/models/analysis.py:JointComparison": "1613a6b0177be707823ff22c32a812880f97dfac37492e6292dbf5dff163eca3",
+      "src/lexinform/models/analysis.py:BillName": "0fd50619ba3369a9e8232dacc6d2ed96e0d6f8211f6f311c9fb49082017c98e7",
+      "src/lexinform/models/analysis.py:ScannedDocument": "a26c65b361e135f731d3237b242dd311af75600e119160a6dda7a5b9fcb76d6e",
+      "src/lexinform/services/analysis.py:_consume_current": "370b45b0c0b13bd00847e1c9cef68a168577ab1fa6ac00f0ed44e14a67255680",
+      "src/lexinform/services/analysis.py:_record_collection": "6506ef5579717c015bd9e71d4b29fe81351ea605debc1d63b86df09438b133f8",
+      "src/lexinform/services/analysis.py:_charge_batch_result": "b61e0e0e36a2639d65c5348e8a3ab5e0f855c0a358fcf92f330410843f2c231d",
+      "src/lexinform/services/analysis.py:_consume_digest": "380808105cc8cd4c16808160477190d05bd4795428ffeb714239b41d4d2089de",
+      "src/lexinform/services/analysis.py:_prepare_first": "a12cb188ae8ead3c93ebef5d6a83f0bb54d2fba7e2e976ea0980d33411932b5d"
+    },
+    "preserved_migrations": 49,
+    "primary_write_owners": [
+      {
+        "path": "src/lexinform/services/analysis_applications.py",
+        "line": 21
+      }
+    ]
+  },
+  "profiles": {
+    "comparison": {
+      "tracking": {
+        "rpw-before": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": 2,
+          "applications_after": 2,
+          "results": 1,
+          "behavior": "same"
+        },
+        "rpw-linked": {
+          "delta": {
+            "sql_bytes": 436,
+            "gzip_bytes": 24
+          },
+          "applications_before": 2,
+          "applications_after": 3,
+          "results": 1,
+          "behavior": "same"
+        },
+        "rpw-repeat": {
+          "delta": {
+            "sql_bytes": 436,
+            "gzip_bytes": 26
+          },
+          "applications_before": 2,
+          "applications_after": 3,
+          "results": 1,
+          "behavior": "same"
+        },
+        "wykaz-before": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": 2,
+          "applications_after": 2,
+          "results": 1,
+          "behavior": "same"
+        },
+        "wykaz-linked": {
+          "delta": {
+            "sql_bytes": 452,
+            "gzip_bytes": 26
+          },
+          "applications_before": 2,
+          "applications_after": 3,
+          "results": 1,
+          "behavior": "same"
+        },
+        "rcl-before": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": 2,
+          "applications_after": 2,
+          "results": 1,
+          "behavior": "same"
+        },
+        "rcl-applied": {
+          "delta": {
+            "sql_bytes": 460,
+            "gzip_bytes": 30
+          },
+          "applications_before": 3,
+          "applications_after": 4,
+          "results": 2,
+          "behavior": "same"
+        },
+        "rcl-repeat": {
+          "delta": {
+            "sql_bytes": 460,
+            "gzip_bytes": 30
+          },
+          "applications_before": 3,
+          "applications_after": 4,
+          "results": 2,
+          "behavior": "same"
+        }
+      },
+      "state": {
+        "fresh-pending": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": null,
+          "applications_after": null,
+          "results": null,
+          "behavior": "same"
+        },
+        "fresh-collected": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": null,
+          "applications_after": null,
+          "results": null,
+          "behavior": "same"
+        },
+        "fresh-cleaned": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": null,
+          "applications_after": null,
+          "results": null,
+          "behavior": "same"
+        },
+        "fresh-reanalysis": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": null,
+          "applications_after": null,
+          "results": null,
+          "behavior": "same"
+        },
+        "fresh-expired": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": null,
+          "applications_after": null,
+          "results": null,
+          "behavior": "same"
+        },
+        "fresh-repeat": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": null,
+          "applications_after": null,
+          "results": null,
+          "behavior": "same"
+        },
+        "superseded-pending": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": null,
+          "applications_after": null,
+          "results": null,
+          "behavior": "same"
+        },
+        "superseded-collected": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": null,
+          "applications_after": null,
+          "results": null,
+          "behavior": "same"
+        },
+        "superseded-cleaned": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": null,
+          "applications_after": null,
+          "results": null,
+          "behavior": "same"
+        },
+        "superseded-expired": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": null,
+          "applications_after": null,
+          "results": null,
+          "behavior": "same"
+        },
+        "superseded-repeat": {
+          "delta": {
+            "sql_bytes": 0,
+            "gzip_bytes": 0
+          },
+          "applications_before": null,
+          "applications_after": null,
+          "results": null,
+          "behavior": "same"
+        }
+      }
+    },
+    "sqlite": {
+      "baseline": {
+        "rcl-applied": {
+          "sqlite_bytes": 413696,
+          "sha256": "746c368510701918f9edd0fd93cc64a27ff07e53e759924c10bb8f2bb9b85cb1"
+        },
+        "rcl-before": {
+          "sqlite_bytes": 331776,
+          "sha256": "89709dc95ba47d97d1f2afeeb6d40df2b09fa116a9c18567ce0ff5b536607a9a"
+        },
+        "rcl-repeat": {
+          "sqlite_bytes": 421888,
+          "sha256": "5e2532e65a2995be440159b05294bbbfcdf3e6433078800431a80d4cb0d12f80"
+        },
+        "rpw-before": {
+          "sqlite_bytes": 294912,
+          "sha256": "f5a51ec67be51046fe8d0eab41e1a29f6d56ea40c609157150e44a0ef4617d70"
+        },
+        "rpw-linked": {
+          "sqlite_bytes": 319488,
+          "sha256": "7d37824f7e24c21f2f41aa944bfff0d7d34befde7dde22f6dcb11def964fae22"
+        },
+        "rpw-repeat": {
+          "sqlite_bytes": 315392,
+          "sha256": "ceaae81529fa4bda2d6526347757b73f223f44fe3c06d68b4a5e9c067f9cbc58"
+        },
+        "wykaz-before": {
+          "sqlite_bytes": 290816,
+          "sha256": "6d34c09af1bedb9b5be79823e7e2c8f11fac241ff1fc65ce3643944f6613cac0"
+        },
+        "wykaz-linked": {
+          "sqlite_bytes": 344064,
+          "sha256": "376d271beba2efba0d46e99bda68c1855a1986419898501c346fb54215cfd8b0"
+        }
+      },
+      "current": {
+        "rcl-applied": {
+          "sqlite_bytes": 413696,
+          "sha256": "7e393f8db77f04c34b0ec59f6511095c56c1c6dcb61abb6aa93b3a2ad65b3a4f"
+        },
+        "rcl-before": {
+          "sqlite_bytes": 331776,
+          "sha256": "89709dc95ba47d97d1f2afeeb6d40df2b09fa116a9c18567ce0ff5b536607a9a"
+        },
+        "rcl-repeat": {
+          "sqlite_bytes": 421888,
+          "sha256": "5ef772c9652c5a831463ddbaa87bdd2aa8d943a116f29144a797b7519d3c9248"
+        },
+        "rpw-before": {
+          "sqlite_bytes": 294912,
+          "sha256": "f5a51ec67be51046fe8d0eab41e1a29f6d56ea40c609157150e44a0ef4617d70"
+        },
+        "rpw-linked": {
+          "sqlite_bytes": 319488,
+          "sha256": "77edb9f8c81b504407466a8627f8b3e62e01981bc3070a81a70014d39d8fd3a2"
+        },
+        "rpw-repeat": {
+          "sqlite_bytes": 315392,
+          "sha256": "c9b3d0d1b5085788a8a1abb885db9fedce686b410b274bd0f02ce58a4766bb50"
+        },
+        "wykaz-before": {
+          "sqlite_bytes": 290816,
+          "sha256": "6d34c09af1bedb9b5be79823e7e2c8f11fac241ff1fc65ce3643944f6613cac0"
+        },
+        "wykaz-linked": {
+          "sqlite_bytes": 344064,
+          "sha256": "5992cd181502e7a7a0a4096f7f287ae9da2d1b474f536a19cd3709c2c9c6cc3b"
+        }
+      }
+    },
+    "sqlite_repeat": {
+      "path": "out/corpus/j063/sqlite-repeat/report.json",
+      "sha256": "954c623dd4794a02f16581853de218c3f1bc115e68cb41cb673d798406d5ffcd",
+      "bytes": 2292
+    },
+    "baseline": {
+      "path": "out/corpus/j063/tracking-baseline/measurements.json",
+      "sha256": "c3eee9f56591fa2384b7951c3a712605939b72733cbbb570e49663bd87f03d16",
+      "bytes": 7073
+    },
+    "current": {
+      "path": "out/corpus/j063/tracking-current/measurements.json",
+      "sha256": "6e2d2d66d39c8a05bffa919ee225c376885bf38477305bb84a7981901ae15054",
+      "bytes": 7073
+    }
+  },
+  "production": {
+    "source_state_commit": "9d571b09a3ae5f67de441d0b503da12e412a1cde",
+    "comparison": {
+      "sql_sha256": "ff2bace0dcad14d837a82d3d1103b368861ecd9e86b1c4e0209686872b783269",
+      "delta": {
+        "sql_bytes": 0,
+        "gzip_bytes": 0,
+        "sqlite_bytes": 0
+      },
+      "bills": 457,
+      "analysis_records": 166,
+      "memos": 141,
+      "new_rows": {
+        "computation_results": 0,
+        "result_applications": 0
+      }
+    },
+    "current": {
+      "source_sha256": "d5ae656f9c26b3a639566131b085b6de8b791c71ebee75b23d3953535af9910b",
+      "source_bytes": 19951482,
+      "sql_sha256": "ff2bace0dcad14d837a82d3d1103b368861ecd9e86b1c4e0209686872b783269",
+      "sql_bytes": 19952312,
+      "gzip_bytes": 4074422,
+      "sqlite_bytes": 20930560,
+      "restore_seconds": 0.3496019580052234,
+      "dump_seconds": 0.09807804199226666,
+      "bills": 457,
+      "analysis_records": 166,
+      "projection_sha256": "7fa6760e52135e73f597e30db629624fa77a16ba8f7a7723bedaad110cfa8f33",
+      "memo_sha256": "8f68b1de19cfc7ef421659465d653664765cd5d1ed9187d359f33c697c6417ce",
+      "memos": 141,
+      "schema": {
+        "tables": 19,
+        "indexes": 30,
+        "version": 49
+      },
+      "new_rows": {
+        "computation_results": 0,
+        "result_applications": 0
+      },
+      "known_bill_2699": "analyzed",
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "scope": "Isolated restore/read; no pipeline, provider or Telegram call; no legacy history backfill."
+    }
+  },
+  "observers": {
+    "tracking_profile.py": {
+      "path": "out/corpus/j063/tracking_profile.py",
+      "sha256": "08852e316d706008946033308a36213c705e8a0a79a46e68a909492508222074",
+      "bytes": 3863,
+      "source": "import datetime as dt\nimport gzip\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\n\nfrom lexinform.models import PublicationKind\nfrom tests.fakes import FakeTextExtractor\nfrom tests.harness import RCL, RPW, WYKAZ, World, rcl_document, rcl_folder, rcl_project, rcl_stage, submission, submission_url\n\n\ndef test_tracking_application_profile():\n    output = Path(os.environ['DA_PROFILE_OUTPUT'])\n    output.mkdir()\n    report = {}\n\n    def snapshot(world, name, numbers):\n        raw = world.repo.dump().encode()\n        (output / f'{name}.sql').write_bytes(raw)\n        without_applications = b'\\n'.join(line for line in raw.splitlines() if not line.startswith(b'INSERT INTO \"result_applications\"'))\n        report[name] = {\n            'sql_bytes': len(raw), 'gzip_bytes': len(gzip.compress(raw, mtime=0)),\n            'sql_sha256': hashlib.sha256(raw).hexdigest(),\n            'without_applications_sha256': hashlib.sha256(without_applications).hexdigest(),\n            'bills_sha256': hashlib.sha256(json.dumps([world.bill(number).model_dump(mode='json') for number in numbers], sort_keys=True).encode()).hexdigest(),\n            'texts_sha256': hashlib.sha256(json.dumps({kind.value:world.publisher.texts(kind) for kind in PublicationKind},sort_keys=True).encode()).hexdigest(),\n            'requests': [{'sha256': hashlib.sha256(request.model_dump_json().encode()).hexdigest(), 'custom_id': request.custom_id, 'payload_sha256': request.payload_sha256, 'cost': request.estimated_cost_usd} for request in world.batch.submitted],\n            'results': sum(len(world.repo.list_computation_results(10, number)) for number in numbers),\n            'applications': sum(len(world.repo.list_result_applications(10, number)) for number in numbers),\n        }\n\n    world = World(profile='production', extractor=FakeTextExtractor(by_content={\n        b'%PDF-orka':'Art. 1. Cudzoziemcy otrzymują poża ru ochronę. '*40,\n        b'%PDF':'Art. 1. Cudzoziemcy otrzymują pożaru ochronę.\\n1) przypis '*40,\n    }))\n    world.gateway.submissions.append(submission())\n    world.gateway.files[submission_url()] = b'%PDF-orka'\n    world.run();world.batch.resolve();world.run()\n    snapshot(world, 'rpw-before', [RPW])\n    world.gateway.submissions[0] = submission(print_number='3100')\n    world.add_bill('3100','Poselski projekt ustawy o zmianie ustawy o udzielaniu cudzoziemcom ochrony')\n    world.touch('3100',dt.datetime(2026,9,8,9,0));world.clock.advance(days=1)\n    world.run();snapshot(world,'rpw-linked',[RPW,'3100'])\n    world.run();snapshot(world,'rpw-repeat',[RPW,'3100'])\n\n    world=World(profile='production')\n    world.add_wykaz_entry();world.run();world.batch.resolve();world.run()\n    snapshot(world,'wykaz-before',[WYKAZ])\n    world.add_rcl_project(rcl_project(wykaz_number='UD408'));world.run()\n    snapshot(world,'wykaz-linked',[WYKAZ,RCL])\n\n    rewritten=b'%PDF-rewritten'\n    world=World(profile='production',extractor=FakeTextExtractor(by_content={rewritten:'Art. 1. Cudzoziemiec składa wniosek o zezwolenie wyłącznie elektronicznie. '*50}))\n    project=world.add_rcl_project();world.run();world.batch.resolve();world.run()\n    snapshot(world,'rcl-before',[RCL])\n    world.clock.advance(days=1);date=dt.date(2026,9,8)\n    document=rcl_document(801,'projekt_po_KP.pdf',created=date)\n    world.add_rcl_project(project.model_copy(update={'stages':(*project.stages[:4],rcl_stage(9,'Stały Komitet Rady Ministrów','reached',modified=date),rcl_stage(10,'Komisja Prawnicza','active',rcl_folder(777,'Projekt',document),modified=date),*project.stages[5:]),'modified':date}))\n    world.rcl.files[document.url]=rewritten;world.run();world.batch.resolve();world.run()\n    snapshot(world,'rcl-applied',[RCL])\n    world.run(full_track=True);snapshot(world,'rcl-repeat',[RCL])\n    (output/'measurements.json').write_text(json.dumps(report,indent=2)+'\\n')\n"
+    },
+    "sqlite_profile.py": {
+      "path": "out/corpus/j063/sqlite_profile.py",
+      "sha256": "0cb7986123fccbe0a7d0207eb4314d24c0ebca98474557c34f4d717a50e716c9",
+      "bytes": 1348,
+      "source": "import hashlib\nimport json\nimport os\nimport sqlite3\nfrom contextlib import closing\nfrom pathlib import Path\n\nroot = Path('/Users/sobaleu/.codex/worktrees/scan-input-manifests/lexinform/out/corpus/j063')\noutput = Path(os.environ['DA_SQLITE_OUTPUT'])\noutput.mkdir()\nreport = {}\nfor tag in ('baseline', 'current'):\n    rows = {}\n    for source in sorted((root / f'tracking-{tag}').glob('*.sql')):\n        target = output / f'{tag}-{source.stem}.db'\n        assert not target.exists()\n        with closing(sqlite3.connect(target)) as database, database:\n            database.executescript(source.read_text())\n            assert database.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n            assert not database.execute('PRAGMA foreign_key_check').fetchall()\n        rows[source.stem] = {'sqlite_bytes': target.stat().st_size, 'sha256': hashlib.sha256(target.read_bytes()).hexdigest()}\n    report[tag] = rows\nfor name in report['baseline']:\n    assert report['baseline'][name]['sqlite_bytes'] == report['current'][name]['sqlite_bytes']\nassert report == json.loads((root / 'sqlite-profile.json').read_text())\nwith (output / 'report.json').open('x') as stream:\n    json.dump(report, stream, indent=2)\n    stream.write('\\n')\nprint({'snapshots': sum(map(len, report.values())), 'sqlite_growth': 0, 'integrity': 'ok', 'foreign_key_errors': 0})\n"
+    }
+  },
+  "shared_observer_sources": {
+    "state_probe.py": {
+      "path": "out/corpus/j061/state_probe.py",
+      "sha256": "676716ff67596f98da979d9bf20a67273d43635196657b9db61e470646f27182",
+      "bytes": 3530
+    },
+    "production_profile.py": {
+      "path": "out/corpus/j061/production_profile.py",
+      "sha256": "666da1b75e2dfa252a2ac028bdc3ad346abad70bfda813fc87286a141687ac61",
+      "bytes": 2880
+    }
+  },
+  "shared_observer_source_location": "Committed J061 validation.json observers maps names to exact Python sources; choose new DA_PROFILE_OUTPUT and DA_STATE_SQL.",
+  "runs": {
+    "j063-ci": {
+      "manifest": {
+        "path": "out/corpus/runs/j063-ci/manifest.json",
+        "sha256": "3bfb3a0e471d12fbc11c082703800c4754718b619069232f060613f105398200",
+        "bytes": 104673
+      },
+      "status": "passed",
+      "observations": 7,
+      "snapshot": {
+        "files": 453,
+        "path": "code.tar.gz",
+        "sha256": "73d75cde06803d6cb86ec233f94197f27a9feca0d4f73f9a93574f754c58a5b4"
+      }
+    },
+    "j063-senate-current": {
+      "manifest": {
+        "path": "out/corpus/runs/j063-senate-current/manifest.json",
+        "sha256": "da9cf7506528ccb81b1654b33238b9454b05051294f6ad6414b786ea0768b157",
+        "bytes": 104407
+      },
+      "status": "recorded",
+      "observations": 816,
+      "snapshot": {
+        "files": 453,
+        "path": "code.tar.gz",
+        "sha256": "73d75cde06803d6cb86ec233f94197f27a9feca0d4f73f9a93574f754c58a5b4"
+      }
+    }
+  },
+  "senate_diff": {
+    "after_manifest_sha256": "da9cf7506528ccb81b1654b33238b9454b05051294f6ad6414b786ea0768b157",
+    "before_manifest_sha256": "aaaf43a26aae25f9b71eb89c630d2be6249cf33c9de7ac8c0fcfdae628741840",
+    "changed_inputs": [],
+    "changes": [],
+    "scope": "Observation differences, not an independent legal accuracy verdict",
+    "status": "same",
+    "suite": "senate",
+    "summary_changes": {},
+    "version": 1
+  },
+  "exclusions": [
+    "No production pipeline/model/Telegram or history backfill.",
+    "Schema validation is not proof of legal correctness/completeness.",
+    "Fixture sizes are not a growth forecast.",
+    "Sejm observation consolidation, rollover identity relocation and secondary history remain open."
+  ]
+}
