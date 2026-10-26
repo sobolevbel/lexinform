@@ -408,6 +408,9 @@ def test_unreadable_word_uses_a_whole_pdf_batch_and_requires_source_evidence(
     item = w.repo.list_llm_batch_items(w.repo.list_open_llm_batches()[0].batch_id)[0]
     assert isinstance(item.meta, DigestItemMeta), "the revision uses secondary batch metadata"
     assert item.meta.scan_input == manifest
+    request_sha256 = request.payload_sha256
+    assert request_sha256 is not None, "the batch backend froze the revision's provider payload"
+    assert item.meta.request_sha256 == request_sha256
     w.repo.restore(w.repo.dump())
     w.batch.resolve()
 
@@ -423,6 +426,7 @@ def test_unreadable_word_uses_a_whole_pdf_batch_and_requires_source_evidence(
         assert amendment is not None and amendment.scan_input == manifest, (
             "the verified revision freezes the answer with its exact input manifest"
         )
+        assert amendment.request_sha256 == request_sha256
     else:
         assert w.repo.publication_by_id(original.id) == original
 

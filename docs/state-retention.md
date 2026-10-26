@@ -20,6 +20,11 @@ to the transaction that rolls back. All cutoffs are configurable in days:
 | Batch payloads | — | Remove source text, located text, review documents and answer bodies on the first run after consumption, token accounting and provider cleanup; the owning bill must be settled, without a ready analysis or deferred tracking. Nothing reads them after collection: the answer is in the bill and the memo, the located text in `ready_analysis_json`. Keep item/batch rows, `queued_at`, and token/model/error metadata. |
 | Analysis memo | 180 | Delete entries not used since the cutoff only when ownership is known and the bill is settled. Pending analysis, ready results, deferred tracking, unsent/uncertain publications, queued/submitting intents and unconsumed/unaccounted batch items protect that bill's memos. |
 
+Batch metadata and collected records retain `request_sha256` after payload cleanup. It is copied
+from the original frozen request by the shared submission/attachment constructor. An absent
+legacy checksum stays unknown; cleanup and reuse never derive it from a fresh context. The hash
+does not pin or archive the request body and does not extend memo retention.
+
 A document review whose batch failed at every allowed submission keeps only its keys and a
 limitation (`ReviewWork.abandoned`): its documents go, and the same source is not asked again.
 A review the provider refused for its length keeps its documents for the overflow model.

@@ -236,6 +236,9 @@ class BatchItemMeta(BaseModel):
     selection: DocumentSelection = DocumentSelection()
     law_sha256: str | None = None
     prompt_version: str = ""
+    request_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
     generation: int = 0
     memo_key: str | None = None
     located: LocatedText | None = None
@@ -260,6 +263,9 @@ class DigestItemMeta(BaseModel):
     memo_key: str
     delivery_key: str = ""
     prompt_version: str = ""
+    request_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
     source_kind: SourceKind = "print"
     title: str = ""
     compared_with: list[str] = Field(default_factory=list)
@@ -288,6 +294,17 @@ class LlmBatchItem(BaseModel):
     meta: BatchItemMeta | DigestItemMeta
     consumed_at: dt.datetime | None = None
     result: BatchResult | None = None
+
+    @classmethod
+    def from_intent(cls, batch_id: str, intent: BatchIntent) -> Self:
+        return cls(
+            batch_id=batch_id,
+            custom_id=intent.request.custom_id,
+            call_kind=intent.request.call_kind,
+            term=intent.request.term,
+            number=intent.request.number,
+            meta=intent.meta.model_copy(update={"request_sha256": intent.request.payload_sha256}),
+        )
 
 
 class BatchIntent(BaseModel):

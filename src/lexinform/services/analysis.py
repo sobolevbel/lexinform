@@ -153,7 +153,9 @@ from lexinform.text_projection import TextProjection
 log = logging.getLogger(__name__)
 
 
-def _batch_records(result: BatchResult, prompt_version: str, now: datetime) -> RecordFactory:
+def _batch_records(
+    result: BatchResult, prompt_version: str, now: datetime, *, request_sha256: str | None = None
+) -> RecordFactory:
     return RecordFactory(
         result.model or "",
         prompt_version,
@@ -164,6 +166,7 @@ def _batch_records(result: BatchResult, prompt_version: str, now: datetime) -> R
             cache_read_input_tokens=result.cache_read_input_tokens,
             cache_creation_input_tokens=result.cache_creation_input_tokens,
         ),
+        request_sha256=request_sha256,
     )
 
 
@@ -818,17 +821,7 @@ class AnalysisService:
                             request_count=len(requests),
                             estimated_cost_usd=sum(req.estimated_cost_usd for req in requests),
                         ),
-                        [
-                            LlmBatchItem(
-                                batch_id=batch_id,
-                                custom_id=intent.request.custom_id,
-                                call_kind=intent.request.call_kind,
-                                term=intent.request.term,
-                                number=intent.request.number,
-                                meta=intent.meta,
-                            )
-                            for intent in group
-                        ],
+                        [LlmBatchItem.from_intent(batch_id, intent) for intent in group],
                     )
                     self._repo.delete_batch_intents(ids)
                 if self._batch_checkpoint is not None:
@@ -941,7 +934,9 @@ class AnalysisService:
         self, item: LlmBatchItem, result: BatchResult, meta: DigestItemMeta
     ) -> None:
         now = self._clock.now()
-        records = _batch_records(result, meta.prompt_version, now)
+        records = _batch_records(
+            result, meta.prompt_version, now, request_sha256=meta.request_sha256
+        )
         record: (
             AnalysisRecord
             | AmendmentsRecord
@@ -1162,7 +1157,10 @@ class AnalysisService:
         record = None
         if batch_result.analysis is not None:
             record = _batch_records(
-                batch_result, item.meta.prompt_version or batch_result.prompt_version or "", now
+                batch_result,
+                item.meta.prompt_version or batch_result.prompt_version or "",
+                now,
+                request_sha256=item.meta.request_sha256,
             ).analysis(
                 batch_result.analysis,
                 input_chars=item.meta.input_chars,

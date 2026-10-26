@@ -2847,3 +2847,67 @@ bytes**, SQLite size прежний. У completed amendments/supplement прир
 [Acceptance evidence](../assets/audits/2026-10-26-batch-payload-identity/validation.json) содержит
 before/after XML hashes, исходники повторяемых observers, unchanged assembly proof, state sizes,
 rollback и captured CI slice. Новых конфигурационных значений, SQL schema или blob copies нет.
+
+J058 выпущен на `580fe6956ceccb3b72ecb5f1e04624dd1a3bcd86`: CI
+[40374767174](https://github.com/sobolevbel/lexinform/actions/runs/40374767174) success,
+4179 passed / 32 deselected, test/web/docs green. Deploy relay
+[40375766600](https://github.com/sobolevbel/lexinform/actions/runs/40375766600) success:
+`93095a18d8d1 → 580fe6956cec`, сервис up 45 s после restart.
+Evidence: `out/corpus/j058/release.json`; independent scheduled bot runs не аудировались.
+
+<a id="j059"></a>
+### J059. DA5: исходный request SHA переживает submit, collect и cleanup
+
+Дата: 26 октября 2026. База: `580fe6956ceccb3b72ecb5f1e04624dd1a3bcd86`.
+Статус: реализован и принят локально; выпуск проверяется отдельно.
+
+После submit прежняя очистка intent удаляет его `payload_sha256`. Новый
+`LlmBatchItem.from_intent` копирует этот SHA как `request_sha256` в metadata и используется
+двумя writers: AnalysisService и операторским `attach-batch-intents`. Общий RecordFactory
+переносит сохранённую identity в primary/reanalysis/explanation, amendments/supplement,
+joint/name и document-review records. SHA не выводится из memo key, нового URL или свежего
+Bill. Legacy requests и synchronous compatibility results остаются unknown; null-поле
+в JSON не добавляется. Некорректный source hash не задаётся моделью в её output schema.
+
+Memo reuse и quiet tracking сохраняют SHA исходного оплаченного input, включая unknown.
+SHA также доходит до frozen amendment revision. Payload cleanup удаляет прежние большие
+поля; batch metadata и актуальный Bill сохраняют input identity после удаления memo.
+Reset/skip не превращает старый paid result в ответ для нынешней generation; его SHA
+остаётся только в batch audit. Настройки, schema 48, lifetime memo и очистка intents прежние.
+
+Это fingerprint input, не ID отдельного оплаченного вызова и не сохранённый request body.
+Сроки хранения оригиналов/завершённых inputs и immutable computation/application history
+остаются DA2/DA6; этот срез не выдаётся за их завершение. Reviews остаются выключенными
+в production; enabled-профили используются только в fake scenarios для проверки consumer.
+
+Qualified before: **18 failures**, все AttributeError отсутствующего поля. Initial fixtures
+с неверным unconsumed-only query и пропущенным commission batch kind исключены из proof.
+После: focused **88 passed**, quiet tracking **4 passed**, full **4203 passed**,
+errors/failures/skips/xfails 0, 564,632 s; strict mypy 396 файлов, Ruff src/tests/tools,
+strict docs build/links и diff check green. CLI local HTTP **21 passed**. Сценарии включают
+legacy/current, workers=1/4, secondary purposes, explanation, revisions, operator attach,
+superseded generation, повторный collect, expired memo и payload cleanup.
+
+`j059-senate-baseline/current`: **816 observations** на **1825 сохранённых файлах**, zero changed
+outcomes/inputs; mutation/negative controls сохранены. Это cached text и raw SHA replay,
+не новое визуальное чтение scans. **20** file/AST checks подтверждают прежние extractors,
+provider payload builders, prompts, pricing, input assembly и reuse policy. CI slice **7 passed**.
+
+Production-profile fixture с одним завершённым primary: **+340 SQL / +75 gzip bytes**, 4 копии
+короткого SHA в существующих snapshots/metadata. Добавление secondary intent даёт те же
+**+340 SQL / +72–73 gzip** относительно baseline; после collect amendments **+508 / +129**,
+supplement **+592 / +132**. SQLite size прежний во всех шести snapshots. Новая duplication —
+компактные receipts, не request bodies; переход к result refs остаётся DA6. Все шесть snapshots
+прошли integrity/FK checks и rollback reader `580fe69`. Payload/envelope SHA, custom ID и cost
+не менялись. Это bounded fixture measurements, не forecast.
+
+Изолированная копия `state@8a1ed977119ae20c2e1cfaecc58e38120aa108b7`
+(26 октября 2026, 14:33:18 UTC): **455 bills / 166 analysis records / 104 paid memos** прочитаны
+обоими readers; 36 иных memo вне проверки paid records. Integrity ok, FK errors 0,
+изначальный и повторный SQL **14568448 bytes**, SHA
+`a5f9a6657376c3ce561bcc33031aa94d2b7d1dc8950f3de17624d035510fa00c` совпал побайтово;
+исторические SHA не придуманы. Pipeline, model calls, Telegram и production writes не запускались.
+
+[Acceptance evidence](../assets/audits/2026-10-26-request-provenance/validation.json) содержит
+XML/run hashes, captured source, snapshots, repeated observers и точные границы проверки.
+Локальные outputs: `out/corpus/j059`, `out/corpus/runs/j059-*`.

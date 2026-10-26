@@ -605,7 +605,7 @@ tables, notes, nested/Deflate64 ZIP, archive limits, Flat OPC, Word 2003 и malf
   применимости поддержки доходит в prompt.
 - [ ] DA5.5. **Частично: [J055](2026-10-22-document-architecture-progress.md#j055), компактный exact-input manifest, full/triage page windows; [J056](2026-10-22-document-architecture-progress.md#j056), сохранение paid-input identity при memo reuse и quiet tracking; [J057](2026-10-22-document-architecture-progress.md#j057), secondary batch/result/revision provenance.** Сохранить scan derivatives из DA3, точные page maps и параметры triage/full scan.
   Token counting, fallback, overflow и output schema относятся к тому же immutable input.
-- [ ] DA5.6. **Частично: [J058](2026-10-22-document-architecture-progress.md#j058), общий freeze сохранённого provider payload и проверка его SHA-256 до отправки/при restore; legacy requests остаются допустимыми.** При постановке batch фиксировать PreparedInput ref, сериализованный request либо
+- [ ] DA5.6. **Частично: [J058](2026-10-22-document-architecture-progress.md#j058), общий freeze сохранённого provider payload и проверка его SHA-256 до отправки/при restore; [J059](2026-10-22-document-architecture-progress.md#j059), исходный SHA остаётся в batch metadata и оплаченных результатах после submit/cleanup. Legacy остаётся unknown.** При постановке batch фиксировать PreparedInput ref, сериализованный request либо
   достаточный проверяемый request manifest, исходный prompt/schema/options. После submit
   не пересобирать контекст из свежего Bill. Provider-specific payload остаётся у adapter.
 - [ ] DA5.7. Использовать сохранённый нормативный baseline там, где он сохранён выбранным профилем.

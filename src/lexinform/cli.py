@@ -704,17 +704,7 @@ def attach_batch_intents(
                     request_count=len(intents),
                     estimated_cost_usd=0.0,
                 ),
-                [
-                    LlmBatchItem(
-                        batch_id=batch_id,
-                        custom_id=intent.request.custom_id,
-                        call_kind=intent.request.call_kind,
-                        term=intent.request.term,
-                        number=intent.request.number,
-                        meta=intent.meta,
-                    )
-                    for intent in intents
-                ],
+                [LlmBatchItem.from_intent(batch_id, intent) for intent in intents],
             )
             c.repo.delete_batch_intents(custom_ids)
     finally:

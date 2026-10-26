@@ -28,6 +28,7 @@ class RecordFields(UsageFields):
     model: str
     prompt_version: str
     created_at: datetime
+    request_sha256: str | None
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,7 @@ class RecordFactory:
     prompt_version: str
     created_at: datetime
     usage: UsageFields
+    request_sha256: str | None = None
 
     def fields(self) -> RecordFields:
         return RecordFields(
@@ -43,6 +45,7 @@ class RecordFactory:
             model=self.model,
             prompt_version=self.prompt_version,
             created_at=self.created_at,
+            request_sha256=self.request_sha256,
         )
 
     def analysis(

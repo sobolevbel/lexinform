@@ -97,6 +97,9 @@ class AnalysisRecord(BaseModel):
     truncated: bool
     text_source: TextSource
     created_at: dt.datetime
+    request_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
     input_tokens: int | None = None
     output_tokens: int | None = None
     cache_read_input_tokens: int | None = None
@@ -191,6 +194,9 @@ class AmendmentsRecord(BaseModel):
     source_url: str
     source_kind: SourceKind
     created_at: dt.datetime
+    request_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
     scan_input: ScanInputManifest | None = Field(
         default=None, exclude_if=lambda value: value is None
     )
@@ -258,6 +264,9 @@ class JointRecord(BaseModel):
     model: str
     prompt_version: str
     created_at: dt.datetime
+    request_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
     input_tokens: int | None = None
     output_tokens: int | None = None
     cache_read_input_tokens: int | None = None
@@ -289,6 +298,9 @@ class NameRecord(BaseModel):
     model: str
     prompt_version: str
     created_at: dt.datetime
+    request_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
     input_tokens: int | None = None
     output_tokens: int | None = None
     cache_read_input_tokens: int | None = None
@@ -399,6 +411,9 @@ class SupplementRecord(BaseModel):
     model: str = ""
     prompt_version: str = ""
     created_at: dt.datetime | None = None
+    request_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
     scan_input: ScanInputManifest | None = Field(
         default=None, exclude_if=lambda value: value is None
     )

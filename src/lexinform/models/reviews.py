@@ -147,6 +147,9 @@ class DocumentReviewRecord(BaseModel):
     model: str = ""
     prompt_version: str = ""
     created_at: dt.datetime
+    request_sha256: str | None = Field(
+        default=None, pattern=r"^[0-9a-f]{64}$", exclude_if=lambda value: value is None
+    )
     input_tokens: int | None = 0
     output_tokens: int | None = 0
     cache_read_input_tokens: int | None = 0

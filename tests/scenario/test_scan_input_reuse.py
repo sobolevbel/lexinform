@@ -10,10 +10,11 @@ from tests.harness import World
 
 
 @pytest.mark.parametrize("legacy", [False, True])
+@pytest.mark.parametrize("batch", [False, True])
 def test_quiet_reanalysis_keeps_the_paid_scan_manifest_or_legacy_unknown(
-    legacy: bool, monkeypatch: pytest.MonkeyPatch
+    legacy: bool, batch: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    world = World(extractor=FakeTextExtractor("", page_count=30))
+    world = World(extractor=FakeTextExtractor("", page_count=30), batch_only=batch)
     world.add_bill("3039", "Projekt ustawy o cudzoziemcach")
     load = TextLoader.load_scan
 
@@ -24,6 +25,9 @@ def test_quiet_reanalysis_keeps_the_paid_scan_manifest_or_legacy_unknown(
     with monkeypatch.context() as patch:
         if legacy:
             patch.setattr(TextLoader, "load_scan", untraced)
+        world.run(track=False)
+    if batch:
+        world.batch.resolve()
         world.run(track=False)
     original = world.bill("3039").analysis
     assert original is not None and original.source_url is not None, "the first scan was analysed"
@@ -49,6 +53,10 @@ def test_quiet_reanalysis_keeps_the_paid_scan_manifest_or_legacy_unknown(
 
     saved = world.bill("3039").analysis
     assert saved is not None, "quiet reanalysis preserves the existing record"
-    assert result is None and len(world.llm.contexts) == 1
+    assert (
+        result is None and (len(world.batch.submitted) if batch else len(world.llm.contexts)) == 1
+    )
     assert saved.source_checked_at == world.clock.now() and saved.created_at == original.created_at
     assert saved.selection.scan_input == original.selection.scan_input
+    assert saved.request_sha256 == original.request_sha256
+    assert (original.request_sha256 is not None) == batch

@@ -44,6 +44,10 @@ request; restoring a mismatched request fails validation. The checksum covers th
 payload, independently of routing metadata such as a linked bill number. Legacy frozen requests
 without a checksum retain their original payload and do not gain a checksum on reuse. The field
 follows the existing intent lifecycle; completed request archival remains separate work.
+Submission and operator attachment copy that identity into `request_sha256` in batch metadata.
+Collected results retain it through memo reuse, quiet tracking and payload cleanup. Legacy and
+synchronous compatibility results keep unknown identity. This checksum identifies an input;
+it does not identify a unique paid invocation or retain the request body after intent cleanup.
 
 GPT-5.1 uses automatic caching without a cache-write surcharge. Both synchronous and batch
 requests use a stable key derived from the system prompt and output schema name, shared across

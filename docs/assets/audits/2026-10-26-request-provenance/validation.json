@@ -1,0 +1,391 @@
+{
+  "version": 1,
+  "stage": "J059",
+  "base": "580fe6956ceccb3b72ecb5f1e04624dd1a3bcd86",
+  "scope": "Retain original frozen input SHA in submitted metadata and paid records through collection, reuse and existing payload cleanup",
+  "qualified_before": {
+    "tests": "18",
+    "errors": "0",
+    "failures": "18",
+    "skipped": "0",
+    "time": "1.406",
+    "xml_sha256": "1239b4daeec7181cb5beb74d917716b3c86ab776d1b4a43027aa9268ad2bea1b"
+  },
+  "focused": {
+    "tests": "88",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "time": "4.771",
+    "xml_sha256": "d977b070e544736222eda82a94cf273a31be73e4b446eb8311f76d4df660ff8c"
+  },
+  "quiet_reuse": {
+    "tests": "4",
+    "errors": "0",
+    "failures": "0",
+    "skipped": "0",
+    "time": "0.634",
+    "xml_sha256": "b446b6361b406c979a5bf1519463d1637e1245d4b6c35212e6e7c10f1d762ab4"
+  },
+  "quality": {
+    "pytest": {
+      "tests": "4203",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "564.632",
+      "xml_sha256": "ccabe30e15a12a9c8e4062d5c0b0cf55d82e5dc869efe5d36e8c4999fc9b879b"
+    },
+    "local_http": {
+      "tests": "21",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "1.706",
+      "xml_sha256": "4fdae09b22a337130d6e9fa96f3a316903a74f8d7a0fa48cb461641f067a3118"
+    },
+    "mypy_files": 396,
+    "ruff": "passed src/tests/tools",
+    "docs": "strict build and links passed"
+  },
+  "unchanged_inputs_and_policy": {
+    "src/lexinform/adapters/llm_openai.py": "10c2a84fcb3fc2cd1c6f80b87379655667d681b7adb6e89e021ce63effb491c4",
+    "src/lexinform/adapters/llm_anthropic.py": "eaf8dcdc3d8bd1cf5d816f291f2d8ba6d405a083cbb01bc196b5d821325cecb0",
+    "src/lexinform/adapters/llm_prompts.py": "d45409114b224c4c32c84276ff69eb35a6b74667f53b47be656483f41823bc86",
+    "src/lexinform/pricing.py": "8c473c70afeeebae02802612cecc4a4b87f17822129fbc6b46ce254435f8ecac",
+    "src/lexinform/services/documents.py": "5979ba4287bafa59320cfdb1ed526ccd9180357c4744558d435cdeaea576cab6",
+    "src/lexinform/models/scan_input.py": "736fda5637d14c2c5d7f7de19480b42dd19a73a3324910d592445c2520aeaa8e",
+    "src/lexinform/adapters/pdf_text.py": "e46eb0795a68ce41900b5837740474cbc62ce0bfdbd3c3c1822a2ccbd4754101",
+    "src/lexinform/models/documents.py": "79bf620398bbbaffdbd9c2df997344489f7c0b0d15b4c166043deb0282260c81",
+    "src/lexinform/services/analysis.py:_prepare": "dd54ea27587ae0b95511e48cdb01ccb3d8977b0b1a5bb3fd244cb3e5cdda8b51",
+    "src/lexinform/services/analysis.py:_memo_key": "ff2df27d283d5b1a2364a1802dab78937202150d6190aebe2d677e706de8c830",
+    "src/lexinform/services/analysis.py:_reused": "f5bc4769aab65ccefafdaac6842d3a8acb06904f5d7e645a24894874385bc4f3",
+    "src/lexinform/services/analysis.py:_unchanged": "f3988a4b8a0f12e715b5435d34d84703c16588c014e0ddb496c0f91f6766702a",
+    "src/lexinform/services/analysis.py:_load_scan": "932d57dcb0e084bf28d2a7cda2296437ae0523ae7608e0e212310f9db2a16a9d",
+    "src/lexinform/services/analysis.py:_load_text": "7e53c9e68baa6c7a3f9a9159d36b89109af265f55bf021042117cf3a1ec3570f",
+    "src/lexinform/models/analysis.py:Analysis": "cb1029c5735f04f396ee812b82edcd3c6ba06b90d625f7a524a974a8534f950b",
+    "src/lexinform/models/analysis.py:Amendments": "536495470bb62950e42008b33893513f8f28245190622ef9ba28c6210b3461e0",
+    "src/lexinform/models/analysis.py:DocumentDigest": "1a40ed89f441e257bff045ce5839b470d483991317395b91f565281c5a446546",
+    "src/lexinform/models/analysis.py:JointComparison": "1613a6b0177be707823ff22c32a812880f97dfac37492e6292dbf5dff163eca3",
+    "src/lexinform/models/analysis.py:BillName": "0fd50619ba3369a9e8232dacc6d2ed96e0d6f8211f6f311c9fb49082017c98e7",
+    "src/lexinform/models/analysis.py:ScannedDocument": "a26c65b361e135f731d3237b242dd311af75600e119160a6dda7a5b9fcb76d6e"
+  },
+  "corpus": {
+    "runs": {
+      "j059-senate-baseline": {
+        "status": "recorded",
+        "observations": 816,
+        "returncode": 0,
+        "manifest_sha256": "a584a1a8a59c1540a22f6a1747eb4af7854cb2c832a642b11e087d29e13234cb",
+        "result_sha256": "4f5ddfd79c77d20dae0cf19ae8fbf6517dad11c2f469436d5f42100b4635013f",
+        "code_snapshot": {
+          "files": 445,
+          "path": "code.tar.gz",
+          "sha256": "465c2512f16457549099824f0b6778508c5f41e6b5ddf57ca986e22f8a8abc84"
+        }
+      },
+      "j059-senate-current": {
+        "status": "recorded",
+        "observations": 816,
+        "returncode": 0,
+        "manifest_sha256": "dc4562a07c6460cb42629174e68d47a7c7e42fa7334f1d21a50411f82d9f44af",
+        "result_sha256": "510fd49bd29ddd7fc42bfeeb1cdf65bd047a5fba7b4739114b9ae58ac400d7fd",
+        "code_snapshot": {
+          "files": 446,
+          "path": "code.tar.gz",
+          "sha256": "1137f83e96958bb37a83517d3db5f2da56891849b4e56ae23cba8fd981fe6a4d"
+        }
+      },
+      "j059-ci": {
+        "status": "passed",
+        "observations": 7,
+        "returncode": 0,
+        "manifest_sha256": "5e2e765a85b02bdb131a5149fe73bfa2d9a31d645c9ad26f6677fde5cb550faf",
+        "result_sha256": "a405c9b5f2a5c66d501321ea1f874ccfea80eb17cc56726cd102494f73a7c3d8",
+        "code_snapshot": {
+          "files": 446,
+          "path": "code.tar.gz",
+          "sha256": "1137f83e96958bb37a83517d3db5f2da56891849b4e56ae23cba8fd981fe6a4d"
+        }
+      }
+    },
+    "comparison": {
+      "after_manifest_sha256": "dc4562a07c6460cb42629174e68d47a7c7e42fa7334f1d21a50411f82d9f44af",
+      "before_manifest_sha256": "a584a1a8a59c1540a22f6a1747eb4af7854cb2c832a642b11e087d29e13234cb",
+      "changed_inputs": [],
+      "changes": [],
+      "scope": "Observation differences, not an independent legal accuracy verdict",
+      "status": "same",
+      "suite": "senate",
+      "summary_changes": {},
+      "version": 1
+    },
+    "counts": {
+      "10/no_unique_stage_date": 1,
+      "10/scan_pending_verification": 4,
+      "10/selected": 165,
+      "8/no_unique_stage_date": 1,
+      "8/scan_pending_verification": 5,
+      "8/selected": 203,
+      "9/not_amendments": 90,
+      "9/scan_pending_verification": 14,
+      "9/selected": 333,
+      "mutation_probes": 4903
+    },
+    "files": 1825,
+    "negative_controls": {
+      "rcl": 10418,
+      "sejm": 980
+    },
+    "coverage": "Saved text and raw-byte identity replay; scan content still needs independent verification; no fresh OCR/model calls."
+  },
+  "state": {
+    "scope": "One completed primary analysis per World, then a pending and completed secondary request; fake providers; not a production growth forecast",
+    "measurements": {
+      "amendments-primary": {
+        "before": {
+          "sql_bytes": 31494,
+          "gzip_bytes": 6789,
+          "sqlite_bytes": 262144,
+          "sql_sha256": "727ee573395271ccdb82397bc282f7eebbe413b3b711b541d513cfc1e289ac2a",
+          "request_receipt_occurrences": 0
+        },
+        "after": {
+          "sql_bytes": 31834,
+          "gzip_bytes": 6864,
+          "sqlite_bytes": 262144,
+          "sql_sha256": "a6b53ac7819662cd3b7697c8ca37b7824cba06e31d9a8d155b08bdec5549cf4c",
+          "request_receipt_occurrences": 4
+        },
+        "delta": {
+          "sql_bytes": 340,
+          "gzip_bytes": 75,
+          "sqlite_bytes": 0,
+          "request_receipt_occurrences": 4
+        }
+      },
+      "amendments-pending": {
+        "before": {
+          "sql_bytes": 39412,
+          "gzip_bytes": 7546,
+          "sqlite_bytes": 266240,
+          "sql_sha256": "daa62eab5e0be0b0c438aff685e8fa297e05e95e616859ce1ca7a20e58cf31e0",
+          "request_receipt_occurrences": 0,
+          "request_envelope_sha256": "0bef34a9be67ae277e0f6f3fb7c0bd67e77788267a4a6c8da48727ba73d5d4c0",
+          "payload_sha256": "c705589c9189d82b2e516147f47ec41afa95814bf99caaa1b1676153c9c5b8ff",
+          "custom_id": "574e7cc1ee57fcf9777e23cfc1e49d1db32b7a5b47ccef87c1277fd89f224876",
+          "estimated_cost_usd": 0.1
+        },
+        "after": {
+          "sql_bytes": 39752,
+          "gzip_bytes": 7619,
+          "sqlite_bytes": 266240,
+          "sql_sha256": "757c716d52e7ac798da3b756ad3bced3512ea40268cd7791695a0b88096afce7",
+          "request_receipt_occurrences": 4,
+          "request_envelope_sha256": "0bef34a9be67ae277e0f6f3fb7c0bd67e77788267a4a6c8da48727ba73d5d4c0",
+          "payload_sha256": "c705589c9189d82b2e516147f47ec41afa95814bf99caaa1b1676153c9c5b8ff",
+          "custom_id": "574e7cc1ee57fcf9777e23cfc1e49d1db32b7a5b47ccef87c1277fd89f224876",
+          "estimated_cost_usd": 0.1
+        },
+        "delta": {
+          "sql_bytes": 340,
+          "gzip_bytes": 73,
+          "sqlite_bytes": 0,
+          "request_receipt_occurrences": 4
+        }
+      },
+      "amendments-completed": {
+        "before": {
+          "sql_bytes": 34104,
+          "gzip_bytes": 7212,
+          "sqlite_bytes": 262144,
+          "sql_sha256": "a4ce6f9d46d6bdc389b23193c217eef66384558db2b987430ff88efadde98dd5",
+          "request_receipt_occurrences": 0,
+          "request_envelope_sha256": "0bef34a9be67ae277e0f6f3fb7c0bd67e77788267a4a6c8da48727ba73d5d4c0",
+          "payload_sha256": "c705589c9189d82b2e516147f47ec41afa95814bf99caaa1b1676153c9c5b8ff",
+          "custom_id": "574e7cc1ee57fcf9777e23cfc1e49d1db32b7a5b47ccef87c1277fd89f224876",
+          "estimated_cost_usd": 0.1
+        },
+        "after": {
+          "sql_bytes": 34612,
+          "gzip_bytes": 7341,
+          "sqlite_bytes": 262144,
+          "sql_sha256": "0531c4bdae675db19d5443dc9dd602397b0c306b965f1b3aa349f86ec41e7200",
+          "request_receipt_occurrences": 6,
+          "request_envelope_sha256": "0bef34a9be67ae277e0f6f3fb7c0bd67e77788267a4a6c8da48727ba73d5d4c0",
+          "payload_sha256": "c705589c9189d82b2e516147f47ec41afa95814bf99caaa1b1676153c9c5b8ff",
+          "custom_id": "574e7cc1ee57fcf9777e23cfc1e49d1db32b7a5b47ccef87c1277fd89f224876",
+          "estimated_cost_usd": 0.1
+        },
+        "delta": {
+          "sql_bytes": 508,
+          "gzip_bytes": 129,
+          "sqlite_bytes": 0,
+          "request_receipt_occurrences": 6
+        }
+      },
+      "supplement-primary": {
+        "before": {
+          "sql_bytes": 31494,
+          "gzip_bytes": 6789,
+          "sqlite_bytes": 262144,
+          "sql_sha256": "727ee573395271ccdb82397bc282f7eebbe413b3b711b541d513cfc1e289ac2a",
+          "request_receipt_occurrences": 0
+        },
+        "after": {
+          "sql_bytes": 31834,
+          "gzip_bytes": 6864,
+          "sqlite_bytes": 262144,
+          "sql_sha256": "a6b53ac7819662cd3b7697c8ca37b7824cba06e31d9a8d155b08bdec5549cf4c",
+          "request_receipt_occurrences": 4
+        },
+        "delta": {
+          "sql_bytes": 340,
+          "gzip_bytes": 75,
+          "sqlite_bytes": 0,
+          "request_receipt_occurrences": 4
+        }
+      },
+      "supplement-pending": {
+        "before": {
+          "sql_bytes": 39466,
+          "gzip_bytes": 7603,
+          "sqlite_bytes": 266240,
+          "sql_sha256": "f46a23155587209a13230469ecf9cbc4651af4224e09648f74a7dd12f6565754",
+          "request_receipt_occurrences": 0,
+          "request_envelope_sha256": "a73ad27ebfb49053645b764c89202bef8580439a3ebfe80957d7edffb9d4400f",
+          "payload_sha256": "1ba505693c0f5578f66eaa016366bfc9179e30ee9967a399b60d2df800469750",
+          "custom_id": "e7557c4c46cdde74ff99346fa5eaec8f70b4bd69216489278b81538a572f0885",
+          "estimated_cost_usd": 0.1
+        },
+        "after": {
+          "sql_bytes": 39806,
+          "gzip_bytes": 7675,
+          "sqlite_bytes": 266240,
+          "sql_sha256": "c6b398492ce6b02dead310ffdcc8017d8d5e60da2ebd4126c4b36cb964f5dd92",
+          "request_receipt_occurrences": 4,
+          "request_envelope_sha256": "a73ad27ebfb49053645b764c89202bef8580439a3ebfe80957d7edffb9d4400f",
+          "payload_sha256": "1ba505693c0f5578f66eaa016366bfc9179e30ee9967a399b60d2df800469750",
+          "custom_id": "e7557c4c46cdde74ff99346fa5eaec8f70b4bd69216489278b81538a572f0885",
+          "estimated_cost_usd": 0.1
+        },
+        "delta": {
+          "sql_bytes": 340,
+          "gzip_bytes": 72,
+          "sqlite_bytes": 0,
+          "request_receipt_occurrences": 4
+        }
+      },
+      "supplement-completed": {
+        "before": {
+          "sql_bytes": 35327,
+          "gzip_bytes": 7347,
+          "sqlite_bytes": 270336,
+          "sql_sha256": "6f95d29d5200e8a8809ca9371d7eee3cf2d5621d4416e1c9833708afb79016a6",
+          "request_receipt_occurrences": 0,
+          "request_envelope_sha256": "a73ad27ebfb49053645b764c89202bef8580439a3ebfe80957d7edffb9d4400f",
+          "payload_sha256": "1ba505693c0f5578f66eaa016366bfc9179e30ee9967a399b60d2df800469750",
+          "custom_id": "e7557c4c46cdde74ff99346fa5eaec8f70b4bd69216489278b81538a572f0885",
+          "estimated_cost_usd": 0.1
+        },
+        "after": {
+          "sql_bytes": 35919,
+          "gzip_bytes": 7479,
+          "sqlite_bytes": 270336,
+          "sql_sha256": "a41aa5e03efdb8075836c662d25a518740c2d14dd110f1fd508b068e35a481bf",
+          "request_receipt_occurrences": 7,
+          "request_envelope_sha256": "a73ad27ebfb49053645b764c89202bef8580439a3ebfe80957d7edffb9d4400f",
+          "payload_sha256": "1ba505693c0f5578f66eaa016366bfc9179e30ee9967a399b60d2df800469750",
+          "custom_id": "e7557c4c46cdde74ff99346fa5eaec8f70b4bd69216489278b81538a572f0885",
+          "estimated_cost_usd": 0.1
+        },
+        "delta": {
+          "sql_bytes": 592,
+          "gzip_bytes": 132,
+          "sqlite_bytes": 0,
+          "request_receipt_occurrences": 7
+        }
+      }
+    },
+    "observer_source": "import gzip\nimport hashlib\nimport json\nimport os\nimport sqlite3\nfrom pathlib import Path\n\nfrom lexinform.models import TextDocument\nfrom lexinform.services.analysis import Waiting\nfrom tests.fakes import FakeTextExtractor\nfrom tests.harness import World\n\n\ndef test_request_identity_state_profile(tmp_path: Path) -> None:\n    output = Path(os.environ[\"J059_PROBE_OUTPUT\"])\n    output.mkdir()\n    report = {}\n\n    def snapshot(world, identity, request=None):\n        raw = world.repo.dump().encode()\n        (output / f\"{identity}.sql\").write_bytes(raw)\n        path = tmp_path / f\"{identity}.db\"\n        with sqlite3.connect(path) as database:\n            database.executescript(raw.decode())\n            assert database.execute(\"PRAGMA integrity_check\").fetchone() == (\"ok\",)\n            assert not database.execute(\"PRAGMA foreign_key_check\").fetchall()\n        row = {\n            \"sql_bytes\": len(raw),\n            \"gzip_bytes\": len(gzip.compress(raw, mtime=0)),\n            \"sqlite_bytes\": path.stat().st_size,\n            \"sql_sha256\": hashlib.sha256(raw).hexdigest(),\n            \"request_receipt_occurrences\": raw.count(b\"request_sha256\"),\n        }\n        if request is not None:\n            assert request.payload_json is not None\n            row.update(\n                request_envelope_sha256=hashlib.sha256(request.model_dump_json().encode()).hexdigest(),\n                payload_sha256=hashlib.sha256(request.payload_json.encode()).hexdigest(),\n                custom_id=request.custom_id,\n                estimated_cost_usd=request.estimated_cost_usd,\n            )\n        report[identity] = row\n\n    for kind in (\"amendments\", \"supplement\"):\n        data = b\"%PDF-secondary-scan\" * 100\n        world = World(\n            profile=\"production\",\n            extractor=FakeTextExtractor(by_content={data: \"\"}, page_count=3),\n        )\n        world.add_bill(\"3039\", \"Projekt ustawy o cudzoziemcach\")\n        world.run(track=False)\n        world.batch.resolve()\n        world.run(track=False)\n        snapshot(world, f\"{kind}-primary\")\n        world.gateway.files[\"https://api.test/secondary.pdf\"] = data\n        world.analysis.start_run()\n        answer = (\n            world.analysis.summarize_amendments(\n                world.bill(\"3039\"), TextDocument(url=\"https://api.test/secondary.pdf\", kind=\"committee_amendments\")\n            )\n            if kind == \"amendments\"\n            else world.analysis.digest_supplement(\n                world.bill(\"3039\"),\n                TextDocument(url=\"https://api.test/secondary.pdf\", kind=\"government_position\"),\n                number=\"3040\", title=\"Stanowisko Rządu\",\n            )\n        )\n        assert isinstance(answer, Waiting)\n        request = world.repo.list_queued_batch_intents()[0].request\n        snapshot(world, f\"{kind}-pending\", request)\n        world.analysis.submit_queued_batches()\n        world.batch.resolve()\n        world.analysis.collect_batches()\n        snapshot(world, f\"{kind}-completed\", request)\n    (output / \"measurements.json\").write_text(json.dumps(report, indent=2) + \"\\n\")\n",
+    "observer_sha256": "f6285760cbd762a28ff668291875a5131e686f7e72ddf2dc7bab57e0c8bc94f3"
+  },
+  "rollback": {
+    "commit": "580fe6956ceccb3b72ecb5f1e04624dd1a3bcd86",
+    "test": {
+      "tests": "1",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "time": "0.062",
+      "xml_sha256": "18f9d1677c2be99a39acc1fc0b54425e922b2748a3cf9cfff206d585a9e1f3d7"
+    },
+    "result": {
+      "amendments-primary": {
+        "queued": 0,
+        "memos_read": 1
+      },
+      "amendments-pending": {
+        "queued": 1,
+        "memos_read": 1
+      },
+      "amendments-completed": {
+        "queued": 0,
+        "memos_read": 2
+      },
+      "supplement-primary": {
+        "queued": 0,
+        "memos_read": 1
+      },
+      "supplement-pending": {
+        "queued": 1,
+        "memos_read": 1
+      },
+      "supplement-completed": {
+        "queued": 0,
+        "memos_read": 3
+      }
+    },
+    "observer_source": "import hashlib\nimport json\nimport os\nfrom pathlib import Path\n\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\nfrom lexinform.models import AmendmentsRecord, AnalysisRecord, SupplementRecord\n\n\ndef test_previous_reader_restores_request_receipts() -> None:\n    root = Path(os.environ[\"J059_PROBE_ROOT\"])\n    measurements = json.loads((root / \"state-current/measurements.json\").read_text())\n    report = {}\n    for identity, measurement in measurements.items():\n        repository = SqliteBillRepository(\":memory:\")\n        repository.migrate()\n        repository.restore((root / f\"state-current/{identity}.sql\").read_text())\n        bill = repository.get(10, \"3039\")\n        assert bill is not None and bill.analysis is not None\n        assert \"request_sha256\" not in bill.analysis.model_dump()\n        queued = repository.list_queued_batch_intents()\n        if identity.endswith(\"pending\"):\n            assert len(queued) == 1\n            request = queued[0].request\n            assert request.payload_json is not None\n            assert hashlib.sha256(request.payload_json.encode()).hexdigest() == measurement[\"payload_sha256\"]\n        else:\n            assert not queued\n        reads = 0\n        for raw in repository.load_analysis_memo().values():\n            row = json.loads(raw)\n            if \"amendments\" in row:\n                record = AmendmentsRecord.model_validate_json(raw)\n            elif \"digest\" in row:\n                record = SupplementRecord.model_validate_json(raw)\n            elif \"analysis\" in row:\n                record = AnalysisRecord.model_validate_json(raw)\n            else:\n                continue\n            assert \"request_sha256\" not in record.model_dump()\n            reads += 1\n        report[identity] = {\"queued\": len(queued), \"memos_read\": reads}\n    with (root / \"rollback.json\").open(\"x\") as stream:\n        json.dump(report, stream, indent=2)\n",
+    "observer_sha256": "18133dba24c009459dd19da46e67f9889b3544099f1c2d649b2863028d122421",
+    "limitation": "Old readers ignore and may discard the optional request receipt on reserialization; pending frozen payloads remain usable."
+  },
+  "production_compatibility": {
+    "status": "same",
+    "state_commit": "8a1ed977119ae20c2e1cfaecc58e38120aa108b7",
+    "state_committed_at": "2026-10-26T14:33:18Z",
+    "profile": {
+      "source_sha256": "a5f9a6657376c3ce561bcc33031aa94d2b7d1dc8950f3de17624d035510fa00c",
+      "source_bytes": 14568448,
+      "roundtrip_sha256": "a5f9a6657376c3ce561bcc33031aa94d2b7d1dc8950f3de17624d035510fa00c",
+      "roundtrip_bytes": 14568448,
+      "sqlite_bytes": 15507456,
+      "integrity": "ok",
+      "foreign_key_errors": 0,
+      "counts": {
+        "analysis_known_request": 0,
+        "analysis_records_parsed": 166,
+        "bills_parsed": 455,
+        "memo_known_request": 0,
+        "other_memos": 36,
+        "paid_memos_parsed": 104
+      },
+      "scope": "Isolated restore/read only; no pipeline, provider or Telegram call. Unknown hashes are not manufactured."
+    },
+    "observer_source": "import hashlib\nimport json\nimport os\nimport sqlite3\nfrom collections import Counter\nfrom pathlib import Path\n\nfrom lexinform.adapters.sqlite_repo import SqliteBillRepository\nfrom lexinform.models import (\n    AmendmentsRecord, AnalysisRecord, DocumentReviewRecord, JointRecord, NameRecord, SupplementRecord,\n)\n\nsource = Path(os.environ['J059_STATE_SQL'])\noutput = Path(os.environ['J059_PROFILE_OUTPUT'])\noutput.mkdir()\nraw = source.read_bytes()\ndatabase = output / 'restored.db'\nrepository = SqliteBillRepository(database)\nrepository.migrate()\nrepository.restore(raw.decode())\ncounts = Counter()\nwith sqlite3.connect(database.as_uri() + '?mode=ro', uri=True) as restored:\n    assert restored.execute('PRAGMA integrity_check').fetchone() == ('ok',)\n    assert not restored.execute('PRAGMA foreign_key_check').fetchall()\n    identities = restored.execute('SELECT term, number FROM bills').fetchall()\nfor term, number in identities:\n    bill = repository.get(term, number)\n    assert bill is not None\n    counts['bills_parsed'] += 1\n    if bill.analysis is not None:\n        counts['analysis_records_parsed'] += 1\n        counts['analysis_known_request'] += bool(bill.analysis.model_dump().get('request_sha256'))\nmodels = {\n    'analysis': AnalysisRecord, 'amendments': AmendmentsRecord, 'digest': SupplementRecord,\n    'comparison': JointRecord, 'proposal': NameRecord,\n}\nfor text in repository.load_analysis_memo().values():\n    row = json.loads(text)\n    model = DocumentReviewRecord if 'review' in row and 'context' in row else next(\n        (value for key, value in models.items() if key in row), None\n    )\n    if model is None:\n        counts['other_memos'] += 1\n        continue\n    record = model.model_validate_json(text)\n    counts['paid_memos_parsed'] += 1\n    counts['memo_known_request'] += bool(record.model_dump().get('request_sha256'))\nfor intent in repository.list_queued_batch_intents() + repository.list_submitting_batch_intents():\n    counts['intents_parsed'] += 1\n    counts['frozen_intent_checksums'] += intent.request.payload_sha256 is not None\nfor batch in repository.list_open_llm_batches():\n    for item in repository.list_llm_batch_items(batch.batch_id):\n        counts['unconsumed_items_parsed'] += 1\n        counts['item_known_request'] += bool(item.meta.model_dump().get('request_sha256'))\nsaved = repository.dump().encode()\nrepository.close()\n(output / 'roundtrip.sql').write_bytes(saved)\nreport = {\n    'source_sha256': hashlib.sha256(raw).hexdigest(), 'source_bytes': len(raw),\n    'roundtrip_sha256': hashlib.sha256(saved).hexdigest(), 'roundtrip_bytes': len(saved),\n    'sqlite_bytes': database.stat().st_size, 'integrity': 'ok', 'foreign_key_errors': 0,\n    'counts': dict(sorted(counts.items())),\n    'scope': 'Isolated restore/read only; no pipeline, provider or Telegram call. Unknown hashes are not manufactured.',\n}\n(output / 'profile.json').write_text(json.dumps(report, indent=2) + '\\n')\nprint(json.dumps(report))\n",
+    "observer_sha256": "02f2afe09fb158fc5f0882797b7b8cd8371b9b106f54815a75489fbd568c2823"
+  },
+  "unqualified_fixture_attempts": {
+    "excluded": [
+      "before.xml",
+      "first-after.xml"
+    ],
+    "reason": "The initial fixture queried consumed items with the unconsumed-only API and omitted commission_review from enabled batch kinds. Qualified before/after use a durable dump for consumed-row checks and explicit fake-only review settings."
+  },
+  "exclusions": [
+    "Request fingerprint is not a unique paid-invocation ID or retained request body.",
+    "No general immutable result/application history, new SQL schema, blob copies, storage backend or retention extension.",
+    "No production pipeline/backfill, paid model or reader Telegram call. Production profile was an isolated restore/read only.",
+    "Production review flags remain unchanged; enabled review settings were used only in fake scenarios."
+  ]
+}
