@@ -5028,3 +5028,59 @@ J097 accepted full gate: **4864 passed / 0 failures/errors/skips**, **575.204 s*
 **26 focused / 21 local HTTP**, mypy **447**, Ruff/format и docs checks green.
 [Acceptance asset](../assets/audits/2026-10-27-document-read-metrics/validation.json) пинует
 checks/source/observer и точные границы metric normalization, bytes и restore.
+
+
+<a id="j098"></a>
+### J098. Read-only диагностика source history и downloader demand
+
+Статус: **завершён**, baseline `8c343d61da2e7969add1f7c753085b8702785a7d`.
+Новые `tools.source_history_doctor` и `tools.document_read_profile` используют общий immutable
+SQLite snapshot, saved-column reader и exclusive artifact writer. Footprint inventory читает
+также unpaid `document_selections`; ни один runtime src не менялся — **153 byte-identical**.
+
+Source doctor проверяет model/canonical ID, SQL identity columns, selection FK и unreferenced
+metadata. Legacy schema 51 без таблиц — not_run, отсутствие таблиц в v52 — error. Current owner/
+source не переоцениваются; unreferenced не означает разрешение удалить. Download profile считает
+только известные метрики: legacy/absent/unsupported/invalid и observed zero различаются. Неполный
+object, missing host counter, URL вместо host и boolean schema version не получают zero defaults.
+Группировка — run-start day UTC, naive date остаётся unknown; cross-run distinct не выдумывается.
+Все outputs без file bodies/URLs/quotes, readonly, без extra downloads/model/Telegram calls.
+
+**35 focused / 4888 full**, **0 failures/errors/skips**, full **584.072 s**; mypy **449**
+(`--no-incremental`), Ruff/format green. Первые lint findings исправлены до accepted gate.
+**168 native snapshots / 324 measured report views / 32 source-observation views** прошли оба
+doctors без errors/warnings. Corpus metadata **3139 decisions / observations**: selected **1683**,
+unverified **653**, unsupported **652**, ambiguous **101**, waiting **50**; IDs/refs valid,
+unreferenced **0**. Это cached fixture history, не independent raw/legal acceptance или traffic.
+Corpus CI **7** / process **3294**: verified, observations/inputs same. Все input SQL unchanged.
+
+Fresh natural state **a317e8e7db9f7d6659e802ca4ba650aecc9d6352**, изолированная копия
+`/private/tmp/lexinform-j098/production.db`: **462 bills / 380 runs / 2 source decisions /
+2 observations / 2 computations / 4 applications**. SQL **20144370 bytes**, SHA
+`58f911cd2fec80f032e6b9c6174fe2a6d1163142b7790a6f493a2daf7eac61f2`; SQLite **21184512**, SHA
+`b208e39fd83d75560fc4144f023efd3304db8e3927d28849347c73160a1fab00`. Integrity ok, FK errors **0**,
+source doctor **0 errors**, policy recorded **2**, selected **1**, unverified **1**.
+
+Это реальные новые prefilter observations для **2995 (committee_report)** и **RCL/12416153**,
+оба current batch_pending без analysis. Сохранённые metadata существуют до получения paid result;
+completed model/publication cycle для них не заявлен. Только четыре metadata INSERT строки:
+**12597 SQL bytes / 3756 whole-dump gzip delta** при снятии этих строк в памяти; DB/dump не
+редактировались, общий рост state этим не объясняем. Download profile — **not_run**: **379**
+неизмеренных reports и одна строка без готового report; старым runs не приписаны нулевые bytes.
+Production вручную не запускался, прочитан лишь existing natural checkpoint.
+
+Fresh source footprint: **662 columns / 149 selections / 450 raw refs / 48 unique SHA**,
+**13 inventory matches / 9585013 bytes**, unmatched **35**; legacy scans без manifest **5**.
+Из добавления нового catalogue на том же DB/inventory: +2 selection columns, +2 selections,
++5 physical ref occurrences, **0 new unique SHA / 0 matched-byte delta**. Старый producer взят
+из pinned file и отдельно SHA-пинован; shared-workspace fingerprint не выдаётся за его provenance.
+Raw availability/production retention не выводятся из этих refs; download missing originals не запускался.
+
+
+[Acceptance asset](../assets/audits/2026-10-27-source-diagnostics/validation.json) содержит source/
+evidence hashes, tests, runtime parity, production/corpus границы и reproduction.
+J097 release `8c343d61da2e7969add1f7c753085b8702785a7d`:
+[CI](https://github.com/sobolevbel/lexinform/actions/runs/40564214424) **4864 passed**, strict mypy
+447, Ruff/docs/web success; [deploy](https://github.com/sobolevbel/lexinform/actions/runs/40565174373)
+exact COMMIT, `7bc500630d66 -> 8c343d61da2e`, listener up **45 s**. Это подтверждение relay,
+не ручной production processing или принятие непроверенной source family.

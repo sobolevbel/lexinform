@@ -25,6 +25,7 @@ _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _CATALOGUE = {
     **CONTEXT_RESULT_TABLES,
     "computation_results": SavedTable(("result_id",), ("result_json",)),
+    "document_selections": SavedTable(("selection_id",), ("record_json",)),
 }
 
 

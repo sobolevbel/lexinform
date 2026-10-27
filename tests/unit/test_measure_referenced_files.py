@@ -88,6 +88,30 @@ def test_non_json_sqlite_values_are_reported_without_a_false_empty_success(tmp_p
     ]
 
 
+def test_unpaid_selection_history_is_included_in_the_physical_reference_inventory(
+    tmp_path: Path,
+) -> None:
+    manifest = inventory(tmp_path)
+    path = database(tmp_path, [])
+    with closing(sqlite3.connect(path)) as db, db:
+        db.execute("CREATE TABLE document_selections (selection_id TEXT, record_json TEXT)")
+        db.execute(
+            "INSERT INTO document_selections VALUES (?, ?)",
+            (
+                "selection-v1:" + "a" * 64,
+                json.dumps({"schema_version": 1, "selection": selection()}),
+            ),
+        )
+
+    result = audit(path, manifest)
+
+    assert result["status"] == "recorded"
+    assert result["summary"].get("saved_answer_occurrences", 0) == 0
+    assert result["summary"]["selections"] == 1
+    assert result["unique_recorded_raw_hashes"] == 1
+    assert result["matched_inventory_unique_bytes"] == 20
+
+
 def test_encoded_snapshots_use_the_common_walker_without_exposing_text(tmp_path: Path) -> None:
     manifest = inventory(tmp_path)
     value = {"analysis": {"summary": MARKER, "selection": selection()}}

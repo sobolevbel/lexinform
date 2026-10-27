@@ -393,7 +393,7 @@ The input inventory is a version-1 `measure_corpus_files` manifest, with exact S
 rows. The J094 measurement adds catalogued Senate originals with the existing `senate_sources`,
 `digest_file` and `totals` helpers; it preserves the five-family inventory separately.
 This reader uses the shared saved-record walker and immutable SQLite snapshot guard, including
-encoded bill snapshots and known computation records. It counts explicit physical fields, uses
+encoded bill snapshots, known computation records and unpaid selection history. It counts explicit physical fields, uses
 outer-container SHA for archive members, and keeps text/law/legacy scan digests out of raw identity.
 Source/inventory checksums and code fingerprints are preserved; bodies/URLs are not emitted.
 
@@ -404,3 +404,36 @@ scope returns `not_run`; size conflicts or malformed saved data fail the report.
 replace earlier artifacts or enter the declared corpus. See the
 [storage profile](../docs/reviews/2026-10-27-storage-profile.md) and
 [J094](../docs/plans/2026-10-22-document-architecture-progress.md#j094).
+
+
+## Source history doctor
+
+```bash
+uv run --offline --frozen python -m tools.source_history_doctor \
+  --database /path/to/checkpointed-copy.db --output "$PWD/out/source-history.json"
+```
+
+Checks canonical selection/observation IDs, SQL identity columns and the recorded selection refs.
+Schema 51 may lack these tables; missing schema-52 tables are damage. Historical observations do
+not require a current Bill or a fresh source fetch. Unreferenced metadata is an inventory count,
+not a GC decision. No bodies, source URLs or evidence quotes are emitted. Exit codes: 0 for recorded
+scope, 1 for errors, 2 for no observed history. The common immutable snapshot guard refuses a live
+WAL/journal, and exclusive outputs preserve earlier evidence.
+
+## Document download profile
+
+```bash
+uv run --offline --frozen python -m tools.document_read_profile \
+  --database /path/to/checkpointed-copy.db --output "$PWD/out/document-reads.json"
+```
+
+Aggregates known `RunReport.document_reads` by host and run-start day in UTC. Unknown legacy reports,
+absent report payloads, unsupported metric versions and measured zero remain distinct. A naive or
+missing recording date is grouped as unknown. Incomplete metric objects fail rather than receive
+zero defaults; reports contain no source bodies or URLs. Exit codes: 0 for measured scope, 1 for
+invalid data, 2 for no supported measurements.
+
+Completed-response bytes exclude wire overhead and unknown partial/refused bytes. Summed per-run
+distinct bytes cannot establish cross-run distinct archive size. Direct gateway reads and
+standalone CLI work outside the pipeline remain outside scope; no retention/backend or file download
+is chosen. See [J098](../docs/plans/2026-10-22-document-architecture-progress.md#j098).
